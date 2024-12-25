@@ -12,16 +12,18 @@ const ranges = [
   {
     start: currentMonth.toISOString(),
     end: dayjs().utc().add(1, 'month').startOf('month').toISOString(),
-    tableName: `delivery_records_partitioned_y${currentYear}m${currentMonth.month() + 1}`,
+    tableName: `delivery_record_partitioned_y${currentYear}m${currentMonth.month() + 1}`,
   },
   {
     start: previousMonth.toISOString(),
     end: currentMonth.toISOString(),
-    tableName: `delivery_records_partitioned_y${currentYear}m${currentMonth.month()}`,
+    tableName: `delivery_record_partitioned_y${currentYear}m${currentMonth.month()}`,
   },
 ];
 
-export class Migration20241019132933 extends Migration {
+export class Migration20241225182327 extends Migration {
+
+
 
   async up(): Promise<void> {
     this.addSql(`CREATE TYPE delivery_record_partitioned_status AS ENUM ('pending-delivery', 'sent', 'failed', 'rejected', 'filtered-out', 'rate-limited', 'medium-rate-limited-by-user');`);
@@ -61,7 +63,7 @@ export class Migration20241019132933 extends Migration {
 
     // primary key on id
     this.addSql(`CREATE INDEX delivery_record_partitioned_id ON delivery_record_partitioned (id);`);
-    this.addSql(`CREATE INDEX delivery_record_partitioned_feed_timeframe_count ON delivery_record_partitioned (feed_id, status, created_at);`);
+    this.addSql(`CREATE INDEX delivery_record_partitioned_feed_timeframe_count ON delivery_record_partitioned (created_at, status, feed_id);`);
     this.addSql(`CREATE INDEX delivery_record_partitioned_medium_timeframe_count ON delivery_record_partitioned (medium_id, status, created_at);`);
     this.addSql(`CREATE INDEX delivery_record_partitioned_article_id_hash ON delivery_record_partitioned (article_id_hash);`);
     // Used for querying delivery records for user views
@@ -73,5 +75,6 @@ export class Migration20241019132933 extends Migration {
     this.addSql(`DROP TYPE delivery_record_partitioned_status;`);
     this.addSql(`DROP TYPE delivery_record_partitioned_content_type;`);
   }
+
 
 }
