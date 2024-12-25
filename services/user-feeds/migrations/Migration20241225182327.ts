@@ -6,18 +6,17 @@ dayjs.extend(utc);
 
 const currentMonth = dayjs().utc().startOf('month')
 const previousMonth  = dayjs().utc().subtract(1, 'month').startOf('month')
-const currentYear = dayjs().utc().year()
 
 const ranges = [
   {
     start: currentMonth.toISOString(),
     end: dayjs().utc().add(1, 'month').startOf('month').toISOString(),
-    tableName: `delivery_record_partitioned_y${currentYear}m${currentMonth.month() + 1}`,
+    tableName: `delivery_record_partitioned_y${currentMonth.year()}m${currentMonth.month() + 1}`,
   },
   {
     start: previousMonth.toISOString(),
     end: currentMonth.toISOString(),
-    tableName: `delivery_record_partitioned_y${currentYear}m${currentMonth.month()}`,
+    tableName: `delivery_record_partitioned_y${previousMonth.year()}m${previousMonth.month() + 1}`,
   },
 ];
 
