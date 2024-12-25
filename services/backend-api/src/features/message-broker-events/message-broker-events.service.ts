@@ -38,6 +38,8 @@ import {
   UserFeedHealthStatus,
 } from "../user-feeds/types";
 import { User, UserDocument } from "../users/entities/user.entity";
+import getFeedRequestLookupDetails from "../../utils/get-feed-request-lookup-details";
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class MessageBrokerEventsService {
@@ -45,7 +47,8 @@ export class MessageBrokerEventsService {
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
     private readonly amqpConnection: AmqpConnection,
     private readonly supportersService: SupportersService,
-    private readonly notificationsService: NotificationsService
+    private readonly notificationsService: NotificationsService,
+    private readonly configService: ConfigService
   ) {}
 
   @RabbitSubscribe({
@@ -101,6 +104,7 @@ export class MessageBrokerEventsService {
       rateSeconds: number;
     };
   }) {
+    logger.debug("Got url fetched event", { lookupKey, url, rateSeconds });
     const healthStatusUpdateCount = await this.userFeedModel.countDocuments({
       ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
       healthStatus: {
@@ -213,10 +217,11 @@ export class MessageBrokerEventsService {
     createQueueIfNotExists: true,
   })
   async handleUrlRejectedDisableFeedsEvent({
-    data: { url, status },
+    data: { url, status, lookupKey },
   }: {
     data: {
       url: string;
+      lookupKey?: string;
       status: Extract<
         FeedFetcherFetchStatus,
         FeedFetcherFetchStatus.RefusedLargeFeed
@@ -229,7 +234,7 @@ export class MessageBrokerEventsService {
       await this.userFeedModel
         .updateMany(
           {
-            url,
+            ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
             disabledCode: {
               $exists: false,
             },
@@ -257,8 +262,7 @@ export class MessageBrokerEventsService {
 
     const relevantFeeds = await this.userFeedModel
       .find({
-        // ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
-        url: lookupKey || url,
+        ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
         disabledCode: {
           $exists: false,
         },
@@ -556,11 +560,24 @@ export class MessageBrokerEventsService {
       }));
 
     const allMediums = discordChannelMediums.concat(discordWebhookMediums);
-
+    const requestLookupDetails = getFeedRequestLookupDetails({
+      feed: userFeed,
+      user: {
+        externalCredentials: user?.externalCredentials,
+      },
+      decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY_HEX"),
+    });
     const publishData = {
       articleDayLimit: maxDailyArticles,
       feed: {
         id: userFeed._id.toHexString(),
+        requestLookupDetails: requestLookupDetails
+          ? {
+              key: requestLookupDetails.key,
+              url: requestLookupDetails.url,
+              headers: requestLookupDetails.headers,
+            }
+          : undefined,
         url: userFeed.url,
         passingComparisons: userFeed.passingComparisons || [],
         blockingComparisons: userFeed.blockingComparisons || [],

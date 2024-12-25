@@ -26,6 +26,7 @@ import { plainToClass } from 'class-transformer';
 import { validateSync } from 'class-validator';
 import { Metadata } from '@grpc/grpc-js';
 import { ConfigService } from '@nestjs/config';
+import { HostRateLimiterService } from '../host-rate-limiter/host-rate-limiter.service';
 
 @Controller({
   version: '1',
@@ -36,6 +37,7 @@ export class FeedFetcherController {
     private readonly feedFetcherService: FeedFetcherService,
     private readonly orm: MikroORM,
     private readonly configService: ConfigService,
+    private readonly hostRateLimiterService: HostRateLimiterService,
   ) {
     this.API_KEY = this.configService.getOrThrow<string>(
       'FEED_REQUESTS_API_KEY',
@@ -50,34 +52,41 @@ export class FeedFetcherController {
         transform: true,
       }),
     )
-    { skip, limit, url }: GetFeedRequestsInputDto,
+    dto: GetFeedRequestsInputDto,
   ): Promise<GetFeedRequestsOutputDto> {
     const [requests] = await Promise.all([
-      this.feedFetcherService.getRequests({
-        skip,
-        limit,
-        url,
-        select: ['id', 'createdAt', 'nextRetryDate', 'status'],
-      }),
+      this.feedFetcherService.getRequests(dto),
     ]);
 
     const nextRetryDate =
       requests[0] && requests[0].status !== RequestStatus.OK
-        ? await this.feedFetcherService.getLatestRetryDate({ lookupKey: url })
+        ? await this.feedFetcherService.getLatestRetryDate({
+            lookupKey: dto.lookupKey || dto.url,
+          })
         : null;
+
+    const globalRateLimit = this.hostRateLimiterService.getLimitForUrl(dto.url);
 
     return {
       result: {
         requests: requests.map((r) => ({
           createdAt: dayjs(r.createdAt).unix(),
           id: r.id,
+          url: r.url,
           status: r.status,
+          headers: r.fetchOptions?.headers,
           response: {
             statusCode: r.response?.statusCode,
           },
         })),
         // unix timestamp in seconds
         nextRetryTimestamp: nextRetryDate ? dayjs(nextRetryDate).unix() : null,
+        feedHostGlobalRateLimit: globalRateLimit
+          ? {
+              intervalSec: globalRateLimit.data.intervalSec,
+              requestLimit: globalRateLimit.data.requestLimit,
+            }
+          : null,
       },
     };
   }
@@ -115,12 +124,24 @@ export class FeedFetcherController {
   private async getLatestRequest(
     data: FetchFeedDto,
   ): Promise<FetchFeedDetailsDto> {
+    const logDebug =
+      data.url ===
+      'https://www.clanaod.net/forums/external.php?type=RSS2&forumids=102';
+
     if (data.executeFetch) {
+      if (logDebug) {
+        logger.warn(`Running debug on schedule: execute fetch`, {
+          data,
+        });
+      }
+
       try {
         await this.feedFetcherService.fetchAndSaveResponse(data.url, {
           saveResponseToObjectStorage: data.debug,
-          lookupKey: data.lookupKey,
+          lookupDetails: data.lookupDetails ? data.lookupDetails : undefined,
           source: undefined,
+          headers: data.lookupDetails?.headers,
+          flushEntities: true,
         });
       } catch (err) {
         logger.error(`Failed to fetch and save response of feed ${data.url}`, {
@@ -143,8 +164,15 @@ export class FeedFetcherController {
       decodedResponseText?: string | null;
     } | null = await this.feedFetcherService.getLatestRequest({
       url: data.url,
-      lookupKey: data.lookupKey,
+      lookupKey: data.lookupDetails?.key,
     });
+
+    if (logDebug) {
+      logger.warn(`Running debug on schedule: after get latest request`, {
+        data,
+        latestRequest,
+      });
+    }
 
     // If there's no text, response must be fetched to be cached
     if (
@@ -158,16 +186,30 @@ export class FeedFetcherController {
           {
             flushEntities: true,
             saveResponseToObjectStorage: data.debug,
-            lookupKey: data.lookupKey,
+            lookupDetails: data.lookupDetails,
             source: undefined,
+            headers: data.lookupDetails?.headers,
           },
         );
+
+        if (logDebug) {
+          logger.warn(
+            `Running debug on schedule: execute fetch if not exists`,
+            {
+              savedData,
+            },
+          );
+        }
 
         latestRequest = {
           request: { ...savedData.request },
           decodedResponseText: savedData.responseText,
         };
       } else {
+        if (logDebug) {
+          logger.warn(`Running debug on schedule: is pending status`);
+        }
+
         return {
           requestStatus: 'PENDING' as const,
         };
@@ -176,6 +218,12 @@ export class FeedFetcherController {
 
     const latestRequestStatus = latestRequest.request.status;
     const latestRequestResponse = latestRequest.request.response;
+
+    if (logDebug) {
+      logger.warn(`Running debug on schedule: response`, {
+        latestRequest,
+      });
+    }
 
     if (
       data.hashToCompare &&

@@ -5,6 +5,8 @@ import { MikroORM } from '@mikro-orm/core';
 import { RequestSource } from '../feed-fetcher/constants/request-source.constants';
 import { Request } from '../feed-fetcher/entities';
 import { RequestStatus } from '../feed-fetcher/constants';
+import { getUrlHost } from '../utils/get-url-host';
+import logger from '../utils/logger';
 
 const sha1 = createHash('sha1');
 
@@ -32,6 +34,17 @@ export default class PartitionedRequestsStoreService {
       await Promise.all(
         this.pendingInserts.map((responseInsert) => {
           const urlHash = sha1.copy().update(responseInsert.url).digest('hex');
+          let hostHash: string | null = null;
+
+          try {
+            const host = getUrlHost(responseInsert.url);
+            hostHash = sha1.copy().update(host).digest('hex');
+          } catch (err) {
+            logger.error('Failed to get host from url', {
+              url: responseInsert.url,
+              err: (err as Error).stack,
+            });
+          }
 
           return em.execute(
             `INSERT INTO request_partitioned (
@@ -41,6 +54,7 @@ export default class PartitionedRequestsStoreService {
               fetch_options,
               url,
               url_hash,
+              host_hash,
               lookup_key,
               created_at,
               next_retry_date,
@@ -51,7 +65,7 @@ export default class PartitionedRequestsStoreService {
               response_redis_cache_key,
               response_headers
             ) VALUES (
-              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             )`,
             [
               randomUUID(),
@@ -60,6 +74,7 @@ export default class PartitionedRequestsStoreService {
               this.stringifyJson(responseInsert.fetchOptions),
               responseInsert.url,
               urlHash,
+              hostHash,
               responseInsert.lookupKey,
               responseInsert.createdAt,
               responseInsert.nextRetryDate,
@@ -169,27 +184,32 @@ export default class PartitionedRequestsStoreService {
     limit,
     skip,
     url,
+    lookupKey,
   }: {
     skip: number;
     limit: number;
     url: string;
+    lookupKey?: string;
   }): Promise<Request[]> {
     const em = this.orm.em.getConnection();
 
     const results = await em.execute(
-      `SELECT id, created_at, next_retry_date, status, response_status_code FROM request_partitioned
+      `SELECT id, url, created_at, next_retry_date, status, response_status_code,` +
+        ` fetch_options FROM request_partitioned
        WHERE lookup_key = ?
        ORDER BY created_at DESC
        LIMIT ?
        OFFSET ?`,
-      [url, limit, skip],
+      [lookupKey || url, limit, skip],
     );
 
     return results.map((result) => ({
       id: result.id,
       createdAt: new Date(result.created_at),
       nextRetryDate: result.next_retry_date,
+      url: result.url,
       status: result.status,
+      fetchOptions: result.fetch_options,
       response: result.response_status_code
         ? {
             statusCode: result.response_status_code,

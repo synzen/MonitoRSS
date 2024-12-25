@@ -39,7 +39,6 @@ import {
   GetUserFeedDeliveryLogsInputDto,
   GetUserFeedOutputDto,
   GetUserFeedRequestsInputDto,
-  GetUserFeedRequestsOutputDto,
   GetUserFeedsInputDto,
   GetUserFeedsOutputDto,
   UpdateUserFeedInputDto,
@@ -201,14 +200,13 @@ export class UserFeedsController {
     [{ feed }]: GetUserFeedsPipeOutput,
     @NestedQuery(TransformValidationPipe)
     { limit, skip }: GetUserFeedRequestsInputDto
-  ): Promise<GetUserFeedRequestsOutputDto> {
-    const requests = await this.userFeedsService.getFeedRequests({
+  ) {
+    return this.userFeedsService.getFeedRequests({
       url: feed.url,
       limit,
       skip,
+      feed,
     });
-
-    return requests;
   }
 
   @Get("/:feed/delivery-logs")
@@ -240,6 +238,7 @@ export class UserFeedsController {
     const input: GetFeedArticlePropertiesInput = {
       url: feed.url,
       customPlaceholders,
+      feed,
     };
 
     const { properties, requestStatus } =
@@ -273,6 +272,7 @@ export class UserFeedsController {
     const input: GetFeedArticlesInput = {
       limit,
       url: feed.url,
+      feed,
       random,
       filters,
       discordUserId: feed.user.discordUserId,
@@ -310,24 +310,6 @@ export class UserFeedsController {
         totalArticles,
       },
     };
-  }
-
-  @Get("/:feedId/retry")
-  @UseFilters(RetryUserFeedFilter, FeedExceptionFilter)
-  async retryFailedFeed(
-    @DiscordAccessToken()
-    { discord: { id: discordUserId } }: SessionAccessToken,
-    @Param("feedId", GetUserFeedsPipe())
-    [{ feed }]: GetUserFeedsPipeOutput
-  ): Promise<GetUserFeedOutputDto> {
-    const updatedFeed = (await this.userFeedsService.retryFailedFeed(
-      feed._id.toHexString()
-    )) as UserFeed;
-
-    return this.userFeedsService.formatForHttpResponse(
-      updatedFeed,
-      discordUserId
-    );
   }
 
   @Post("/:feedId/manual-request")

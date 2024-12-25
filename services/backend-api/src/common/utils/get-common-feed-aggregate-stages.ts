@@ -7,7 +7,7 @@ export function getCommonFeedAggregateStages({
   feedRequestLookupKey,
   withLookupKeys,
 }: {
-  refreshRateSeconds: number;
+  refreshRateSeconds?: number;
   url?: string;
   feedRequestLookupKey?: string;
   withLookupKeys?: boolean;
@@ -22,9 +22,11 @@ export function getCommonFeedAggregateStages({
           feedRequestLookupKey,
         }
       : {}),
-    feedRequestLookupKey: {
-      $exists: withLookupKeys || false,
-    },
+    feedRequestLookupKey: feedRequestLookupKey
+      ? feedRequestLookupKey
+      : {
+          $exists: withLookupKeys || false,
+        },
     $or: [
       {
         "connections.discordChannels.0": {
@@ -57,7 +59,10 @@ export function getCommonFeedAggregateStages({
     {
       $match: query,
     },
-    {
+  ];
+
+  if (refreshRateSeconds) {
+    pipelineStages.push({
       $match: {
         $or: [
           {
@@ -69,16 +74,18 @@ export function getCommonFeedAggregateStages({
           },
         ],
       },
+    });
+  }
+
+  pipelineStages.push({
+    // For their preferences when for user feed events
+    $lookup: {
+      from: "users",
+      localField: "user.discordUserId",
+      foreignField: "discordUserId",
+      as: "users",
     },
-    {
-      $lookup: {
-        from: "users",
-        localField: "user.discordUserId",
-        foreignField: "discordUserId",
-        as: "users",
-      },
-    },
-  ];
+  });
 
   return pipelineStages;
 }

@@ -22,6 +22,7 @@
 !.travis.yml
 !.eslintrc.yaml
 !.cpplint
+!.dockerignore
 
 # === Rules for root dir ===
 /core

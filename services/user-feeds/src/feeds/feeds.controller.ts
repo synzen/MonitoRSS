@@ -38,6 +38,7 @@ import {
   Article,
   discordMediumPayloadDetailsSchema,
   discordMediumTestPayloadDetailsSchema,
+  feedV2EventRequestLookupDetails,
   feedV2EventSchemaDateChecks,
   feedV2EventSchemaFormatOptions,
   GetFeedArticlesRequestStatus,
@@ -107,6 +108,7 @@ export class FeedsController {
       formatter,
       findRssFromHtml,
       executeFetch,
+      requestLookupDetails,
     }: GetUserFeedArticlesInputDto
   ): Promise<GetUserFeedArticlesOutputDto> {
     try {
@@ -124,6 +126,7 @@ export class FeedsController {
         externalFeedProperties: formatter.externalProperties || [],
         findRssFromHtml,
         executeFetch,
+        requestLookupDetails,
       });
 
       if (!fetchResult) {
@@ -296,6 +299,9 @@ export class FeedsController {
               .optional()
               .nullable()
               .default(null),
+            requestLookupDetails: feedV2EventRequestLookupDetails
+              .optional()
+              .nullable(),
           }),
           article: z
             .object({
@@ -330,6 +336,7 @@ export class FeedsController {
             {
               formatOptions,
               externalFeedProperties: feed.externalProperties || [],
+              requestLookupDetails: feed.requestLookupDetails,
             }
           );
         } else {
@@ -339,6 +346,7 @@ export class FeedsController {
             {
               formatOptions,
               externalFeedProperties: feed.externalProperties || [],
+              requestLookupDetails: feed.requestLookupDetails,
             }
           );
         }
@@ -453,6 +461,9 @@ export class FeedsController {
               .optional()
               .nullable()
               .default(null),
+            requestLookupDetails: feedV2EventRequestLookupDetails
+              .optional()
+              .nullable(),
           }),
           article: z.object({
             id: z.string(),
@@ -487,6 +498,7 @@ export class FeedsController {
           {
             formatOptions,
             externalFeedProperties: feed.externalProperties || [],
+            requestLookupDetails: feed.requestLookupDetails,
           }
         );
 

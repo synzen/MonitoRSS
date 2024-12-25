@@ -1,9 +1,12 @@
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsNotEmpty,
+  IsObject,
   IsOptional,
   IsString,
   Validate,
+  ValidateNested,
   ValidatorConstraint,
   ValidatorConstraintInterface,
 } from 'class-validator';
@@ -26,13 +29,25 @@ export class HttpValidator implements ValidatorConstraintInterface {
   }
 }
 
+class GetFeedRequestsLookupDetailsDto {
+  @IsString()
+  @IsNotEmpty()
+  key!: string;
+
+  @IsObject()
+  @IsOptional()
+  headers!: Record<string, string>;
+}
+
 export class FetchFeedDto {
   @Validate(HttpValidator)
   url!: string;
 
-  @IsString()
+  @IsObject()
   @IsOptional()
-  lookupKey?: string;
+  @Type(() => GetFeedRequestsLookupDetailsDto)
+  @ValidateNested()
+  lookupDetails?: GetFeedRequestsLookupDetailsDto;
 
   @IsBoolean()
   @IsOptional()

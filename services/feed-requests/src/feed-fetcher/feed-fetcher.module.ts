@@ -9,6 +9,8 @@ import { FeedFetcherListenerService } from './feed-fetcher-listener.service';
 import { ObjectFileStorageModule } from '../object-file-storage/object-file-storage.module';
 import { CacheStorageModule } from '../cache-storage/cache-storage.module';
 import { PartitionedRequestsStoreModule } from '../partitioned-requests-store/partitioned-requests-store.module';
+import { FeatureFlaggerModule } from '../feature-flagger/feature-flagger.module';
+import { HostRateLimiterModule } from '../host-rate-limiter/host-rate-limiter.module';
 
 @Module({
   controllers: [],
@@ -19,6 +21,8 @@ import { PartitionedRequestsStoreModule } from '../partitioned-requests-store/pa
     CacheStorageModule,
     MikroOrmModule.forFeature([Request, Response]),
     PartitionedRequestsStoreModule,
+    FeatureFlaggerModule.forRoot(),
+    HostRateLimiterModule,
   ],
 })
 export class FeedFetcherModule {

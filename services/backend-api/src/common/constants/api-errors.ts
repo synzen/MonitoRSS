@@ -4,6 +4,7 @@ export enum ApiErrorCode {
   NO_FEED_IN_HTML_PAGE = "NO_FEED_IN_HTML_PAGE",
   FEED_INVALID_SSL_CERT = "FEED_INVALID_SSL_CERT",
   FEED_PARSE_FAILED = "FEED_PARSE_FAILED",
+  FEED_FETCH_FAILED = "FEED_FETCH_FAILED",
   ADD_FEED_PARSE_FAILED = "ADD_FEED_PARSE_FAILED",
   FEED_PARSE_TIMEOUT = "FEED_PARSE_TIMEOUT",
   FEED_REQUEST_TIMEOUT = "FEED_REQUEST_TIMEOUT",
@@ -50,6 +51,7 @@ export enum ApiErrorCode {
 export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   FEED_INVALID: "Invalid feed",
   FEED_PARSE_FAILED: "Failed to parse feed",
+  FEED_FETCH_FAILED: "Failed to fetch feed",
   NO_FEED_IN_HTML_PAGE: "No feed found in HTML page",
   ADD_FEED_PARSE_FAILED: "Failed to parse feed",
   FEED_PARSE_TIMEOUT: "Failed to parse feed due to timeout",

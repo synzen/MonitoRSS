@@ -53,7 +53,6 @@ import {
 import { UserFeedManagerStatus } from "../user-feed-management-invites/constants";
 import { FeedConnectionsDiscordChannelsService } from "../feed-connections/feed-connections-discord-channels.service";
 import dayjs from "dayjs";
-import { User, UserModel } from "../users/entities/user.entity";
 import { FeedFetcherFetchStatus } from "../../services/feed-fetcher/types";
 import { CreateDiscordChannelConnectionOutputDto } from "../feed-connections/dto";
 import { convertToNestedDiscordEmbed } from "../../utils/convert-to-nested-discord-embed";
@@ -64,6 +63,12 @@ import {
   FeedRequestException,
   NoFeedOnHtmlPageException,
 } from "../../services/feed-fetcher/exceptions";
+import { UsersService } from "../users/users.service";
+import { FeedRequestLookupDetails } from "../../common/types/feed-request-lookup-details.type";
+import getFeedRequestLookupDetails from "../../utils/get-feed-request-lookup-details";
+import { ConfigService } from "@nestjs/config";
+import { User, UserModel } from "../users/entities/user.entity";
+import { randomUUID } from "crypto";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual
@@ -91,20 +96,22 @@ interface UpdateFeedInput {
 @Injectable()
 export class UserFeedsService {
   constructor(
+    @InjectModel(User.name) private readonly userModel: UserModel,
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
     @InjectModel(Feed.name) private readonly feedModel: FeedModel,
     @InjectModel(UserFeedLimitOverride.name)
     private readonly limitOverrideModel: UserFeedLimitOverrideModel,
     @InjectModel(LegacyFeedConversionJob.name)
     private readonly legacyFeedConversionJobModel: LegacyFeedConversionJobModel,
-    @InjectModel(User.name) private readonly userModel: UserModel,
+    private readonly configService: ConfigService,
     private readonly feedsService: FeedsService,
     private readonly feedFetcherService: FeedFetcherService,
     private readonly supportersService: SupportersService,
     private readonly feedHandlerService: FeedHandlerService,
     private readonly feedFetcherApiService: FeedFetcherApiService,
     private readonly amqpConnection: AmqpConnection,
-    private readonly feedConnectionsDiscordChannelsService: FeedConnectionsDiscordChannelsService
+    private readonly feedConnectionsDiscordChannelsService: FeedConnectionsDiscordChannelsService,
+    private readonly usersService: UsersService
   ) {}
 
   async formatForHttpResponse(feed: UserFeed, discordUserId: string) {
@@ -304,8 +311,13 @@ export class UserFeedsService {
       url: string;
     }
   ) {
-    const { maxUserFeeds, maxDailyArticles, refreshRateSeconds } =
-      await this.supportersService.getBenefitsOfDiscordUser(discordUserId);
+    const [{ maxUserFeeds, maxDailyArticles, refreshRateSeconds }, user] =
+      await Promise.all([
+        this.supportersService.getBenefitsOfDiscordUser(discordUserId),
+        this.usersService.getOrCreateUserByDiscordId(discordUserId),
+      ]);
+
+    const userId = user._id;
 
     const feedCount = await this.calculateCurrentFeedCountOfDiscordUser(
       discordUserId
@@ -315,17 +327,36 @@ export class UserFeedsService {
       throw new FeedLimitReachedException("Max feeds reached");
     }
 
-    const { finalUrl } = await this.checkUrlIsValid(url);
+    const tempLookupDetails = getFeedRequestLookupDetails({
+      decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY_HEX"),
+      feed: {
+        url,
+        feedRequestLookupKey: randomUUID(),
+      },
+      user,
+    });
+
+    const { finalUrl, enableDateChecks } = await this.checkUrlIsValid(
+      url,
+      tempLookupDetails
+    );
 
     const created = await this.userFeedModel.create({
       title,
       url: finalUrl,
       inputUrl: url,
       user: {
+        id: userId,
         discordUserId,
       },
       refreshRateSeconds,
       maxDailyArticles,
+      feedRequestLookupKey: tempLookupDetails?.key,
+      dateCheckOptions: enableDateChecks
+        ? {
+            oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24, // 1 day
+          }
+        : undefined,
     });
 
     return created;
@@ -344,6 +375,10 @@ export class UserFeedsService {
     if (!found) {
       throw new Error(`Feed ${feedId} not found while cloning`);
     }
+
+    const user = await this.usersService.getOrCreateUserByDiscordId(
+      found.user.discordUserId
+    );
 
     const { maxUserFeeds } =
       await this.supportersService.getBenefitsOfDiscordUser(
@@ -364,7 +399,18 @@ export class UserFeedsService {
     let finalUrl = found.url;
 
     if (data?.url && data.url !== found.url) {
-      finalUrl = (await this.checkUrlIsValid(data.url)).finalUrl;
+      finalUrl = (
+        await this.checkUrlIsValid(
+          data.url,
+          getFeedRequestLookupDetails({
+            feed: found,
+            user,
+            decryptionKey: this.configService.get(
+              "BACKEND_API_ENCRYPTION_KEY_HEX"
+            ),
+          })
+        )
+      ).finalUrl;
       inputUrl = data.url;
     }
 
@@ -375,7 +421,10 @@ export class UserFeedsService {
       url: finalUrl,
       inputUrl,
       connections: {},
+      feedRequestLookupKey: undefined,
     });
+
+    await this.usersService.syncLookupKeys({ feedIds: [newFeedId] });
 
     for (const c of found.connections.discordChannels) {
       await this.feedConnectionsDiscordChannelsService.cloneConnection(
@@ -625,18 +674,29 @@ export class UserFeedsService {
   }
 
   async getFeedRequests({
+    feed,
     skip,
     limit,
     url,
   }: {
+    feed: UserFeed;
     skip: number;
     limit: number;
     url: string;
   }) {
+    const lookupDetails = getFeedRequestLookupDetails({
+      feed,
+      user: await this.usersService.getOrCreateUserByDiscordId(
+        feed.user.discordUserId
+      ),
+      decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY_HEX"),
+    });
+
     return this.feedFetcherApiService.getRequests({
       limit,
       skip,
-      url,
+      url: lookupDetails?.url || url,
+      requestLookupKey: lookupDetails?.key,
     });
   }
 
@@ -661,10 +721,17 @@ export class UserFeedsService {
       ReturnType<typeof this.supportersService.getBenefitsOfDiscordUser>
     > | null = null;
 
-    const foundUser = await this.userFeedModel
+    const feed = await this.userFeedModel
       .findById(new Types.ObjectId(id))
-      .select("user")
       .lean();
+
+    if (!feed) {
+      throw new Error(`Feed ${id} not found while updating feed`);
+    }
+
+    const user = await this.usersService.getOrCreateUserByDiscordId(
+      feed.user.discordUserId
+    );
 
     const useUpdateObject: UpdateQuery<UserFeedDocument> = {
       $set: {},
@@ -680,19 +747,24 @@ export class UserFeedsService {
     }
 
     if (updates.url) {
-      const { finalUrl } = await this.checkUrlIsValid(updates.url);
+      const { finalUrl } = await this.checkUrlIsValid(
+        updates.url,
+        getFeedRequestLookupDetails({
+          feed,
+          user,
+          decryptionKey: this.configService.get(
+            "BACKEND_API_ENCRYPTION_KEY_HEX"
+          ),
+        })
+      );
       useUpdateObject.$set!.url = finalUrl;
       useUpdateObject.$set!.inputUrl = updates.url;
     }
 
     if (updates.disabledCode) {
-      if (!foundUser) {
-        throw new Error(`User ${id} not found while updating refresh rate`);
-      }
-
       if (!userBenefits) {
         userBenefits = await this.supportersService.getBenefitsOfDiscordUser(
-          foundUser.user.discordUserId
+          user.discordUserId
         );
       }
 
@@ -701,7 +773,7 @@ export class UserFeedsService {
         disabledCode === UserFeedDisabledCode.ExceededFeedLimit
       ) {
         const currentFeedCount = await this.userFeedModel.countDocuments({
-          "user.discordUserId": foundUser.user.discordUserId,
+          "user.discordUserId": user.discordUserId,
           disabledCode: {
             $ne: UserFeedDisabledCode.ExceededFeedLimit,
           },
@@ -709,7 +781,7 @@ export class UserFeedsService {
 
         if (userBenefits.maxUserFeeds <= currentFeedCount) {
           throw new FeedLimitReachedException(
-            `Cannot enable feed ${id} because user ${foundUser.user.discordUserId} has reached the feed limit`
+            `Cannot enable feed ${id} because user ${user.discordUserId} has reached the feed limit`
           );
         }
       }
@@ -742,13 +814,9 @@ export class UserFeedsService {
     }
 
     if (updates.userRefreshRateSeconds) {
-      if (!foundUser) {
-        throw new Error(`User ${id} not found while updating refresh rate`);
-      }
-
       if (!userBenefits) {
         userBenefits = await this.supportersService.getBenefitsOfDiscordUser(
-          foundUser.user.discordUserId
+          user.discordUserId
         );
       }
 
@@ -767,7 +835,7 @@ export class UserFeedsService {
         updates.userRefreshRateSeconds < fastestPossibleRate
       ) {
         throw new Error(
-          `Refresh rate ${updates.userRefreshRateSeconds} is not allowed for user ${foundUser.user.discordUserId}`
+          `Refresh rate ${updates.userRefreshRateSeconds} is not allowed for user ${user.discordUserId}`
         );
       } else {
         useUpdateObject.$set!.userRefreshRateSeconds =
@@ -775,11 +843,22 @@ export class UserFeedsService {
       }
     }
 
-    return this.userFeedModel
+    const u = await this.userFeedModel
       .findByIdAndUpdate(id, useUpdateObject, {
         new: true,
       })
       .lean();
+
+    if (updates.url) {
+      // All stored articles of the old feed are now irrelevant
+      this.amqpConnection.publish<{ data: { feed: { id: string } } }>(
+        "",
+        MessageBrokerQueue.FeedDeleted,
+        { data: { feed: { id } } }
+      );
+    }
+
+    return u;
   }
 
   async deleteFeedById(id: string) {
@@ -812,6 +891,9 @@ export class UserFeedsService {
   }
 
   async retryFailedFeed(feedId: string) {
+    await this.usersService.syncLookupKeys({
+      feedIds: [new Types.ObjectId(feedId)],
+    });
     const feed = await this.userFeedModel.findById(feedId);
 
     if (!feed) {
@@ -829,13 +911,27 @@ export class UserFeedsService {
       );
     }
 
-    await this.feedFetcherService.fetchFeed(feed.url, {
-      fetchOptions: {
-        useServiceApi: true,
-        useServiceApiCache: false,
-        debug: feed.debug,
-      },
+    const user = await this.usersService.getOrCreateUserByDiscordId(
+      feed.user.discordUserId
+    );
+
+    const lookupDetails = getFeedRequestLookupDetails({
+      feed,
+      user,
+      decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY_HEX"),
     });
+
+    await this.feedFetcherService.fetchFeed(
+      lookupDetails?.url || feed.url,
+      lookupDetails,
+      {
+        fetchOptions: {
+          useServiceApi: true,
+          useServiceApiCache: false,
+          debug: feed.debug,
+        },
+      }
+    );
 
     return this.userFeedModel
       .findByIdAndUpdate(
@@ -873,20 +969,58 @@ export class UserFeedsService {
     }
 
     const requestDate = new Date();
+    const user = await this.usersService.getOrCreateUserByDiscordId(
+      feed.user.discordUserId
+    );
 
-    const res = await this.feedFetcherApiService.fetchAndSave(feed.url, {
-      getCachedResponse: false,
+    await this.usersService.syncLookupKeys({
+      feedIds: [feed._id],
     });
+    const lookupDetails = getFeedRequestLookupDetails({
+      feed,
+      user,
+      decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY_HEX"),
+    });
+
+    const res = await this.feedFetcherApiService.fetchAndSave(
+      lookupDetails?.url || feed.url,
+      lookupDetails,
+      {
+        getCachedResponse: false,
+      }
+    );
+
+    const isRequestSuccessful =
+      res.requestStatus === FeedFetcherFetchStatus.Success;
+    let canBeEnabled = isRequestSuccessful;
+
+    if (
+      isRequestSuccessful &&
+      feed.disabledCode === UserFeedDisabledCode.InvalidFeed
+    ) {
+      const res2 = await this.getFeedArticleProperties({
+        feed,
+        url: feed.url,
+      });
+
+      canBeEnabled =
+        isRequestSuccessful &&
+        res2.requestStatus === GetArticlesResponseRequestStatus.Success;
+    }
 
     await this.userFeedModel
       .findByIdAndUpdate(feed._id, {
         $set: {
           lastManualRequestAt: requestDate,
-          healthStatus:
-            res.requestStatus === FeedFetcherFetchStatus.Success
-              ? UserFeedHealthStatus.Ok
-              : feed.healthStatus,
+          healthStatus: isRequestSuccessful
+            ? UserFeedHealthStatus.Ok
+            : feed.healthStatus,
         },
+        ...(canBeEnabled && {
+          $unset: {
+            disabledCode: "",
+          },
+        }),
       })
       .lean();
 
@@ -936,42 +1070,46 @@ export class UserFeedsService {
     skip,
     formatter,
     discordUserId,
+    feed,
   }: GetFeedArticlesInput): Promise<GetFeedArticlesOutput> {
-    const user = await this.userModel.findOne(
-      {
-        discordUserId,
-      },
-      {
-        preferences: 1,
-      }
+    const user = await this.usersService.getOrCreateUserByDiscordId(
+      discordUserId
     );
 
-    return this.feedHandlerService.getArticles({
-      url,
-      limit,
-      random,
-      filters,
-      skip: skip || 0,
-      selectProperties,
-      selectPropertyTypes,
-      formatter: {
-        ...formatter,
-        options: {
-          ...formatter?.options,
-          dateFormat:
-            formatter.options.dateFormat || user?.preferences?.dateFormat,
-          dateTimezone:
-            formatter.options.dateTimezone || user?.preferences?.dateTimezone,
-          dateLocale:
-            formatter.options.dateLocale || user?.preferences?.dateLocale,
+    return this.feedHandlerService.getArticles(
+      {
+        url,
+        limit,
+        random,
+        filters,
+        skip: skip || 0,
+        selectProperties,
+        selectPropertyTypes,
+        formatter: {
+          ...formatter,
+          options: {
+            ...formatter?.options,
+            dateFormat:
+              formatter.options.dateFormat || user?.preferences?.dateFormat,
+            dateTimezone:
+              formatter.options.dateTimezone || user?.preferences?.dateTimezone,
+            dateLocale:
+              formatter.options.dateLocale || user?.preferences?.dateLocale,
+          },
         },
       },
-    });
+      getFeedRequestLookupDetails({
+        feed,
+        user,
+        decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY_HEX"),
+      })
+    );
   }
 
   async getFeedArticleProperties({
     url,
     customPlaceholders,
+    feed,
   }: GetFeedArticlePropertiesInput): Promise<GetFeedArticlePropertiesOutput> {
     const input: GetArticlesInput = {
       url,
@@ -992,8 +1130,21 @@ export class UserFeedsService {
       },
     };
 
+    const user = await this.usersService.getOrCreateUserByDiscordId(
+      feed.user.discordUserId
+    );
+
     const { articles, requestStatus } =
-      await this.feedHandlerService.getArticles(input);
+      await this.feedHandlerService.getArticles(
+        input,
+        getFeedRequestLookupDetails({
+          feed,
+          user,
+          decryptionKey: this.configService.get(
+            "BACKEND_API_ENCRYPTION_KEY_HEX"
+          ),
+        })
+      );
 
     const properties = Array.from(
       new Set(articles.map((article) => Object.keys(article)).flat())
@@ -1476,29 +1627,37 @@ export class UserFeedsService {
     );
   }
 
-  private async checkUrlIsValid(url: string): Promise<{ finalUrl: string }> {
-    const getArticlesResponse = await this.feedHandlerService.getArticles({
-      url,
-      formatter: {
-        options: {
-          dateFormat: undefined,
-          dateLocale: undefined,
-          dateTimezone: undefined,
-          disableImageLinkPreviews: false,
-          formatTables: false,
-          stripImages: false,
+  private async checkUrlIsValid(
+    url: string,
+    lookupDetails: FeedRequestLookupDetails | null
+  ): Promise<{ finalUrl: string; enableDateChecks: boolean }> {
+    const getArticlesResponse = await this.feedHandlerService.getArticles(
+      {
+        url,
+        formatter: {
+          options: {
+            dateFormat: undefined,
+            dateLocale: undefined,
+            dateTimezone: undefined,
+            disableImageLinkPreviews: false,
+            formatTables: false,
+            stripImages: false,
+          },
         },
+        selectProperties: ["date"],
+        limit: 1,
+        skip: 0,
+        findRssFromHtml: true,
+        executeFetch: true,
       },
-      limit: 1,
-      skip: 0,
-      findRssFromHtml: true,
-      executeFetch: true,
-    });
+      lookupDetails
+    );
 
     const {
       requestStatus,
       url: finalUrl,
       attemptedToResolveFromHtml,
+      articles,
     } = getArticlesResponse;
 
     if (requestStatus === GetArticlesResponseRequestStatus.Success) {
@@ -1513,6 +1672,7 @@ export class UserFeedsService {
 
       return {
         finalUrl: finalUrl || url,
+        enableDateChecks: !!articles[0]?.date,
       };
     } else if (requestStatus === GetArticlesResponseRequestStatus.TimedOut) {
       throw new FeedFetchTimeoutException(`Feed fetch timed out`);

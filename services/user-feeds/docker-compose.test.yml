@@ -6,6 +6,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    tmpfs: /var/lib/redis/data
   rabbitmq:
     image: rabbitmq:3-management-alpine
     healthcheck:
@@ -13,6 +14,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    tmpfs: /var/lib/rabbitmq/data
     expose:
       - 5672
   pg:

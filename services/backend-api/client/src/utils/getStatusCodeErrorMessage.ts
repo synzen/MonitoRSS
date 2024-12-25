@@ -1,8 +1,12 @@
 const messages = {
-  BAD_REQUEST: "Bad Request",
-  UNAUTHORIZED: "Unauthorized",
-  FORBIDDEN: "Forbidden",
-  INTERNAL_SERVER_ERROR: "Internal Server Error",
+  BAD_REQUEST:
+    "An unexpected issue occurred. If the error persists, please contact support@monitorss.xyz.",
+  UNAUTHORIZED:
+    "Unauthorized. Refresh the page, or log out and log in again. If the error persists, contact support@monitorss.xyz.",
+  FORBIDDEN:
+    "Access forbidden. Refresh the page, or log out and log in again. If the error persists, contact support@monitorss.xyz.",
+  INTERNAL_SERVER_ERROR:
+    "An unexpected issue occurred. Try refreshing the page. If the error persists, please contact support@monitorss.xyz.",
 } as const;
 
 const getStatusCodeErrorMessage = (statusCode: number) => {
@@ -24,7 +28,7 @@ const getStatusCodeErrorMessage = (statusCode: number) => {
     return messages.BAD_REQUEST;
   }
 
-  return `Internal error occurred. You may try refreshing the page. If the error persists, please contact support@monitorss.xyz (status code: ${statusCode})`;
+  return `An unexpected issue occurred (status ${statusCode}). You may try refreshing the page. If the error persists, please contact support@monitorss.xyz.`;
 };
 
 export default getStatusCodeErrorMessage;

@@ -1,7 +1,9 @@
 import { CustomPlaceholderDto } from "../../../common";
 import { GetFeedArticlesFilterReturnType } from "../constants";
+import { UserFeed } from "../entities";
 
 export interface GetFeedArticlesInput {
+  feed: UserFeed;
   limit: number;
   url: string;
   random?: boolean;

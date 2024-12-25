@@ -54,6 +54,7 @@ export class UsersController {
     isOnPatreon,
     migratedToPersonalFeeds,
     supporterFeatures,
+    externalAccounts,
   }: GetUserByDiscordIdOutput) {
     return {
       result: {
@@ -68,6 +69,7 @@ export class UsersController {
         migratedToPersonalFeeds,
         featureFlags: user.featureFlags || {},
         supporterFeatures,
+        externalAccounts,
       },
     };
   }

@@ -6,6 +6,7 @@ import {
   ExternalFeedProperty,
   externalFeedPropertySchema,
 } from "../../article-parser/constants";
+import { FeedRequestLookupDetails } from "./feed-request-lookup-details.type";
 
 export interface FeedV2Event {
   timestamp: number;
@@ -19,6 +20,7 @@ export interface FeedV2Event {
       formatOptions?: UserFeedFormatOptions;
       dateChecks?: UserFeedDateCheckOptions;
       externalProperties?: ExternalFeedProperty[];
+      requestLookupDetails?: FeedRequestLookupDetails;
     };
     mediums: MediumPayload[];
     articleDayLimit: number;
@@ -35,6 +37,12 @@ export const feedV2EventSchemaDateChecks = z.object({
   oldArticleDateDiffMsThreshold: z.number().optional(),
 });
 
+export const feedV2EventRequestLookupDetails = z.object({
+  key: z.string(),
+  url: z.string().optional(),
+  headers: z.record(z.string(), z.string()).optional(),
+});
+
 export const feedV2EventSchema = z.object({
   data: z.object({
     feed: z.object({
@@ -45,6 +53,9 @@ export const feedV2EventSchema = z.object({
       formatOptions: feedV2EventSchemaFormatOptions.optional(),
       dateChecks: feedV2EventSchemaDateChecks.optional(),
       externalProperties: z.array(externalFeedPropertySchema).optional(),
+      requestLookupDetails: feedV2EventRequestLookupDetails
+        .optional()
+        .nullable(),
     }),
     mediums: z.array(mediumPayloadSchema).min(1),
     articleDayLimit: z.number(),

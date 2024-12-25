@@ -22,13 +22,13 @@ import logger from "../../shared/utils/logger";
 import { ConfigService } from "@nestjs/config";
 import { ArticleFormatterService } from "../../article-formatter/article-formatter.service";
 import { FormatOptions } from "../../article-formatter/types";
-import { randomUUID } from "node:crypto";
 import { ArticleFiltersService } from "../../article-filters/article-filters.service";
 import {
   FilterExpressionReference,
   LogicalExpression,
 } from "../../article-filters/types";
 import dayjs from "dayjs";
+import { generateDeliveryId } from "../../shared/utils/generate-delivery-id";
 
 @Injectable()
 export class DiscordMediumService implements DeliveryMedium {
@@ -361,7 +361,7 @@ export class DiscordMediumService implements DeliveryMedium {
     if (!channel && !webhook) {
       return [
         {
-          id: details.deliveryId,
+          id: generateDeliveryId(),
           mediumId: details.mediumId,
           status: ArticleDeliveryStatus.Failed,
           errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
@@ -393,9 +393,13 @@ export class DiscordMediumService implements DeliveryMedium {
 
         const channelId = channel.id;
 
-        return [
-          await this.deliverArticleToChannel(article, channelId, details),
-        ];
+        const res = await this.deliverArticleToChannel(
+          article,
+          channelId,
+          details
+        );
+
+        return [res];
       } else {
         throw new Error("No channel or webhook specified for Discord medium");
       }
@@ -414,7 +418,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
       return [
         {
-          id: details.deliveryId,
+          id: generateDeliveryId(),
           mediumId: details.mediumId,
           status: ArticleDeliveryStatus.Failed,
           errorCode: ArticleDeliveryErrorCode.Internal,
@@ -518,9 +522,11 @@ export class DiscordMediumService implements DeliveryMedium {
       threadId,
     });
 
+    const parentDeliveryId = generateDeliveryId();
+
     const additionalDeliveryStates: ArticleDeliveryState[] = await Promise.all(
       bodies.slice(1, bodies.length).map(async (body) => {
-        const additionalDeliveryId = randomUUID();
+        const additionalDeliveryId = generateDeliveryId();
 
         await this.producer.enqueue(
           channelApiUrl,
@@ -544,7 +550,7 @@ export class DiscordMediumService implements DeliveryMedium {
           status: ArticleDeliveryStatus.PendingDelivery,
           mediumId: details.mediumId,
           contentType: ArticleDeliveryContentType.DiscordArticleMessage,
-          parent: details.deliveryId,
+          parent: parentDeliveryId,
           articleIdHash: article.flattened.idHash,
         };
       })
@@ -552,7 +558,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
     return [
       {
-        id: details.deliveryId,
+        id: parentDeliveryId,
         status: ArticleDeliveryStatus.Sent,
         mediumId: details.mediumId,
         contentType: ArticleDeliveryContentType.DiscordThreadCreation,
@@ -614,20 +620,63 @@ export class DiscordMediumService implements DeliveryMedium {
     });
 
     if (!res.success) {
-      throw new Error(
-        `Failed to create initial thread for forum channel ${channelId}: ${
-          res.detail
-        }. Body: ${JSON.stringify(res.body)}`
-      );
+      if (res.status === 404) {
+        return [
+          {
+            id: generateDeliveryId(),
+            status: ArticleDeliveryStatus.Rejected,
+            mediumId: details.mediumId,
+            contentType: ArticleDeliveryContentType.DiscordThreadCreation,
+            articleIdHash: article.flattened.idHash,
+            errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
+            internalMessage: `Response: ${JSON.stringify(res.body)}`,
+            externalDetail:
+              "Unknown channel. Update the connection to use a different channel.",
+          },
+        ];
+      } else if (res.status === 403) {
+        return [
+          {
+            id: generateDeliveryId(),
+            status: ArticleDeliveryStatus.Rejected,
+            mediumId: details.mediumId,
+            contentType: ArticleDeliveryContentType.DiscordThreadCreation,
+            articleIdHash: article.flattened.idHash,
+            errorCode: ArticleDeliveryErrorCode.ThirdPartyForbidden,
+            internalMessage: `Response: ${JSON.stringify(res.body)}`,
+            externalDetail: "Missing permissions",
+          },
+        ];
+      } else if (res.status === 400) {
+        return [
+          {
+            id: generateDeliveryId(),
+            status: ArticleDeliveryStatus.Rejected,
+            mediumId: details.mediumId,
+            contentType: ArticleDeliveryContentType.DiscordThreadCreation,
+            articleIdHash: article.flattened.idHash,
+            errorCode: ArticleDeliveryErrorCode.ThirdPartyBadRequest,
+            internalMessage: `Response: ${JSON.stringify(res.body)}`,
+            externalDetail: JSON.stringify(res.body, null, 2),
+          },
+        ];
+      } else {
+        throw new Error(
+          `Failed to create initial thread for forum channel ${channelId}: ${
+            res.detail
+          }. Body: ${JSON.stringify(res.body)}`
+        );
+      }
     }
 
     const threadId = (res.body as Record<string, unknown>).id as string;
 
     const channelApiUrl = this.getChannelApiUrl(threadId);
 
+    const parentDeliveryId = generateDeliveryId();
     const additionalDeliveryStates: ArticleDeliveryState[] = await Promise.all(
       bodies.slice(1, bodies.length).map(async (body) => {
-        const additionalDeliveryId = randomUUID();
+        const additionalDeliveryId = generateDeliveryId();
 
         await this.producer.enqueue(
           channelApiUrl,
@@ -651,7 +700,7 @@ export class DiscordMediumService implements DeliveryMedium {
           status: ArticleDeliveryStatus.PendingDelivery,
           mediumId: details.mediumId,
           contentType: ArticleDeliveryContentType.DiscordArticleMessage,
-          parent: details.deliveryId,
+          parent: parentDeliveryId,
           articleIdHash: article.flattened.idHash,
         };
       })
@@ -659,7 +708,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
     return [
       {
-        id: details.deliveryId,
+        id: parentDeliveryId,
         status: ArticleDeliveryStatus.Sent,
         mediumId: details.mediumId,
         contentType: ArticleDeliveryContentType.DiscordThreadCreation,
@@ -697,6 +746,8 @@ export class DiscordMediumService implements DeliveryMedium {
       components,
     });
 
+    const deliveryId = generateDeliveryId();
+
     await Promise.all(
       bodies.map((body) =>
         this.producer.enqueue(
@@ -706,7 +757,7 @@ export class DiscordMediumService implements DeliveryMedium {
             body: JSON.stringify(body),
           },
           {
-            id: details.deliveryId,
+            id: deliveryId,
             articleID: article.flattened.id,
             feedURL: url,
             channel: channelId,
@@ -719,7 +770,7 @@ export class DiscordMediumService implements DeliveryMedium {
     );
 
     return {
-      id: details.deliveryId,
+      id: deliveryId,
       status: ArticleDeliveryStatus.PendingDelivery,
       mediumId: details.mediumId,
       contentType: ArticleDeliveryContentType.DiscordArticleMessage,
@@ -792,6 +843,7 @@ export class DiscordMediumService implements DeliveryMedium {
       }),
     }));
 
+    const deliveryId = generateDeliveryId();
     await Promise.all(
       bodies.map((body) =>
         this.producer.enqueue(
@@ -801,7 +853,7 @@ export class DiscordMediumService implements DeliveryMedium {
             body: JSON.stringify(body),
           },
           {
-            id: details.deliveryId,
+            id: deliveryId,
             articleID: article.flattened.id,
             feedURL: url,
             webhookId,
@@ -814,7 +866,7 @@ export class DiscordMediumService implements DeliveryMedium {
     );
 
     return {
-      id: details.deliveryId,
+      id: generateDeliveryId(),
       status: ArticleDeliveryStatus.PendingDelivery,
       mediumId: details.mediumId,
       contentType: ArticleDeliveryContentType.DiscordArticleMessage,
@@ -1202,7 +1254,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
     try {
       return {
-        success: isOkStatus,
+        success: true,
         status: res.status,
         body: (await res.json()) as Record<string, unknown>,
         detail: !isOkStatus ? `Bad status code: ${res.status}` : undefined,

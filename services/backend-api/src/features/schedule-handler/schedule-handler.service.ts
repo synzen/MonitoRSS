@@ -10,6 +10,9 @@ import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { MessageBrokerQueue } from "../../common/constants/message-broker-queue.constants";
 import { UserFeedsService } from "../user-feeds/user-feeds.service";
 import { getCommonFeedAggregateStages } from "../../common/utils";
+import getFeedRequestLookupDetails from "../../utils/get-feed-request-lookup-details";
+import { User, UserModel } from "../users/entities/user.entity";
+import { UsersService } from "../users/users.service";
 
 @Injectable()
 export class ScheduleHandlerService {
@@ -19,8 +22,10 @@ export class ScheduleHandlerService {
     private readonly configService: ConfigService,
     private readonly supportersService: SupportersService,
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
+    @InjectModel(User.name) private readonly userModel: UserModel,
     private readonly amqpConnection: AmqpConnection,
-    private readonly userFeedsService: UserFeedsService
+    private readonly userFeedsService: UserFeedsService,
+    private readonly usersService: UsersService
   ) {
     this.defaultRefreshRateSeconds =
       (this.configService.get<number>(
@@ -61,6 +66,7 @@ export class ScheduleHandlerService {
 
     await this.syncRefreshRates(allBenefits);
     await this.syncMaxDailyArticles(allBenefits);
+    await this.usersService.syncLookupKeys();
 
     const feedsToDebug = await this.userFeedModel
       .find({
@@ -71,6 +77,7 @@ export class ScheduleHandlerService {
 
     const urlsToDebug = new Set(feedsToDebug.map((f) => f.url));
 
+    // With batched URLs
     const urlsCursor =
       this.getUrlsQueryMatchingRefreshRate(refreshRateSeconds).cursor();
 
@@ -78,9 +85,7 @@ export class ScheduleHandlerService {
       url: string;
       saveToObjectStorage?: boolean;
       lookupKey?: string;
-      requestOptions?: {
-        headers?: Record<string, string>;
-      };
+      headers?: Record<string, string>;
     }[] = [];
 
     for await (const { _id: url } of urlsCursor) {
@@ -100,26 +105,40 @@ export class ScheduleHandlerService {
       }
     }
 
+    // With feed request lookup keys
     const unbatchedUrlsCursor =
       this.getUnbatchedUrlsQueryMatchingRefreshRate(
         refreshRateSeconds
       ).cursor();
 
     for await (const {
-      _id,
       url,
       feedRequestLookupKey,
+      users,
     } of unbatchedUrlsCursor) {
-      if (!url || !feedRequestLookupKey) {
-        throw new Error(
-          `Missing url or feedRequestLookupKey for document ${_id}`
-        );
+      const user = users[0];
+      const externalCredentials = user?.externalCredentials;
+
+      const lookupDetails = getFeedRequestLookupDetails({
+        feed: {
+          url: url,
+          feedRequestLookupKey,
+        },
+        user: {
+          externalCredentials: externalCredentials,
+        },
+        decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY_HEX"),
+      });
+
+      if (!lookupDetails) {
+        continue;
       }
 
       urlBatch.push({
-        url,
+        url: lookupDetails?.url || url,
         saveToObjectStorage: urlsToDebug.has(url),
-        lookupKey: feedRequestLookupKey,
+        lookupKey: lookupDetails?.key,
+        headers: lookupDetails?.headers,
       });
 
       if (urlBatch.length === 25) {
@@ -155,6 +174,7 @@ export class ScheduleHandlerService {
       $project: {
         url: 1,
         feedRequestLookupKey: 1,
+        users: 1,
       },
     });
 

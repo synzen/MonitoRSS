@@ -6,7 +6,7 @@ import { URLSearchParams } from "url";
 import { UnexpectedApiResponseException } from "../../common/exceptions";
 import logger from "../../utils/logger";
 import { FeedFetcherFetchFeedResponse } from "./types/feed-fetcher-fetch-feed-response.type";
-import { FeedFetcherGetRequestsResponse } from "./types/feed-fetcher-get-requests-response.type";
+import { FeedRequestLookupDetails } from "../../common/types/feed-request-lookup-details.type";
 
 interface FeedFetchOptions {
   getCachedResponse?: boolean;
@@ -29,6 +29,7 @@ export class FeedFetcherApiService {
 
   async fetchAndSave(
     url: string,
+    lookupDetails: FeedRequestLookupDetails | null,
     options?: FeedFetchOptions
   ): Promise<FeedFetcherFetchFeedResponse> {
     if (!this.host) {
@@ -45,6 +46,7 @@ export class FeedFetcherApiService {
           url,
           executeFetch: options?.getCachedResponse ? false : true,
           debug: options?.debug,
+          lookupDetails,
         }),
         headers: {
           "Content-Type": "application/json",
@@ -81,11 +83,17 @@ export class FeedFetcherApiService {
     }
   }
 
-  async getRequests(payload: { limit: number; skip: number; url: string }) {
+  async getRequests(payload: {
+    limit: number;
+    skip: number;
+    url: string;
+    requestLookupKey?: string;
+  }) {
     const urlParams = new URLSearchParams({
       limit: payload.limit.toString(),
       skip: payload.skip.toString(),
       url: payload.url,
+      lookupKey: payload.requestLookupKey || "",
     });
 
     const response = await fetch(
@@ -100,14 +108,7 @@ export class FeedFetcherApiService {
 
     await this.validateResponseStatus(response);
 
-    const responseBody = await response.json();
-
-    const body = await this.validateResponseJson(
-      FeedFetcherGetRequestsResponse,
-      responseBody as Record<string, unknown>
-    );
-
-    return body;
+    return response.json();
   }
 
   private async validateResponseStatus(res: Response) {

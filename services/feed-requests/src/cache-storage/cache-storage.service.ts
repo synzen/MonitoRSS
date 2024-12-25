@@ -13,6 +13,38 @@ export class CacheStorageService {
     await this.redisClient.disconnect();
   }
 
+  generateKey(key: string) {
+    return `feed-requests:${key}`;
+  }
+
+  async increment(
+    key: string,
+    opts?: {
+      expire?: {
+        seconds: number;
+        mode: 'NX';
+      };
+    },
+  ): Promise<number> {
+    const useKey = this.generateKey(key);
+
+    const multi = this.redisClient.multi().incr(useKey);
+
+    if (opts?.expire) {
+      multi.expire(useKey, opts?.expire.seconds);
+    }
+
+    const [newVal] = await multi.exec();
+
+    return newVal as number;
+  }
+
+  async decrement(key: string): Promise<number> {
+    const useKey = this.generateKey(key);
+
+    return this.redisClient.decr(useKey);
+  }
+
   async setFeedHtmlContent({ key, body }: { body: string; key: string }) {
     try {
       await this.redisClient.set(key, body, {

@@ -4,7 +4,6 @@ import { ConfigService } from '@nestjs/config';
 import logger from '../utils/logger';
 import { RequestStatus } from './constants';
 import { Request, Response } from './entities';
-import { GetFeedRequestsInput } from './types';
 import { deflate, inflate } from 'zlib';
 import { promisify } from 'util';
 import { ObjectFileStorageService } from '../object-file-storage/object-file-storage.service';
@@ -15,11 +14,21 @@ import iconv from 'iconv-lite';
 import { RequestSource } from './constants/request-source.constants';
 import PartitionedRequestsStoreService from '../partitioned-requests-store/partitioned-requests-store.service';
 import { PartitionedRequestInsert } from '../partitioned-requests-store/types/partitioned-request.type';
+import { request } from 'undici';
+import { GetFeedRequestsInputDto } from './dto';
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);
 
 const sha1 = createHash('sha1');
+
+const convertHeaderValue = (val?: string | string[] | null) => {
+  if (Array.isArray(val)) {
+    return val.join(',');
+  }
+
+  return val || '';
+};
 
 const trimHeadersForStorage = (obj?: HeadersInit) => {
   if (!obj) {
@@ -30,7 +39,7 @@ const trimHeadersForStorage = (obj?: HeadersInit) => {
 
   for (const key in obj) {
     if (obj[key]) {
-      newObj[key] = obj[key];
+      newObj[key.toLowerCase()] = obj[key];
     }
   }
 
@@ -42,8 +51,16 @@ const trimHeadersForStorage = (obj?: HeadersInit) => {
 };
 
 interface FetchOptions {
-  userAgent?: string;
-  headers?: HeadersInit;
+  headers?: Record<string, string>;
+  proxyUri?: string;
+}
+
+interface FetchResponse {
+  ok: boolean;
+  status: number;
+  headers: Map<'etag' | 'last-modified' | 'server' | 'content-type', string>;
+  text: () => Promise<string>;
+  arrayBuffer: () => Promise<ArrayBuffer>;
 }
 
 @Injectable()
@@ -65,11 +82,12 @@ export class FeedFetcherService {
     );
   }
 
-  async getRequests({ skip, limit, url }: GetFeedRequestsInput) {
+  async getRequests({ skip, limit, url, lookupKey }: GetFeedRequestsInputDto) {
     return this.partitionedRequestsStore.getRequests({
       limit,
       skip,
       url,
+      lookupKey,
     });
   }
 
@@ -117,11 +135,19 @@ export class FeedFetcherService {
     request: Request;
     decodedResponseText: string | null | undefined;
   } | null> {
+    const logDebug =
+      url ===
+      'https://www.clanaod.net/forums/external.php?type=RSS2&forumids=102';
+
     const request = await this.partitionedRequestsStore.getLatestRequest(
       lookupKey || url,
     );
 
     if (!request) {
+      if (logDebug) {
+        logger.warn(`Running debug on schedule: no request was found`);
+      }
+
       return null;
     }
 
@@ -136,6 +162,13 @@ export class FeedFetcherService {
           ).toString()
         : '';
 
+      if (logDebug) {
+        logger.warn(
+          `Running debug on schedule: got cache key ${request.response.redisCacheKey}`,
+          { text },
+        );
+      }
+
       return {
         request,
         decodedResponseText: text,
@@ -148,7 +181,11 @@ export class FeedFetcherService {
   async fetchAndSaveResponse(
     url: string,
     options?: {
-      lookupKey: string | undefined;
+      lookupDetails:
+        | {
+            key: string;
+          }
+        | undefined;
       flushEntities?: boolean;
       saveResponseToObjectStorage?: boolean;
       headers?: Record<string, string>;
@@ -159,12 +196,23 @@ export class FeedFetcherService {
     responseText?: string | null;
   }> {
     const fetchOptions: FetchOptions = {
-      userAgent: this.configService.get<string>('feedUserAgent'),
-      headers: options?.headers,
+      headers: {
+        'user-agent':
+          this.configService.get<string>('feedUserAgent') ||
+          this.defaultUserAgent,
+        accept: 'text/html,text/xml,application/xml,application/rss+xml',
+        /**
+         * Currently required for https://developer.oculus.com/blog/rss/ that returns 400 otherwise
+         * Appears to be temporary error given that the page says they're working on fixing it
+         */
+        'Sec-Fetch-Mode': 'navigate',
+        'sec-fetch-site': 'none',
+        ...options?.headers,
+      },
     };
     const request = new Request();
     request.source = options?.source;
-    request.lookupKey = options?.lookupKey || url;
+    request.lookupKey = options?.lookupDetails?.key || url;
     request.url = url;
     request.fetchOptions = {
       ...fetchOptions,
@@ -358,26 +406,18 @@ export class FeedFetcherService {
     url: string,
     options?: FetchOptions,
     log?: boolean,
-  ): Promise<ReturnType<typeof fetch>> {
+  ): Promise<FetchResponse> {
     const controller = new AbortController();
 
     const timer = setTimeout(() => {
       controller.abort();
     }, this.feedRequestTimeoutMs);
 
-    const useOptions: RequestInit = {
+    const useOptions = {
       headers: {
         ...options?.headers,
-        'user-agent': options?.userAgent || this.defaultUserAgent,
-        accept: 'text/html,text/xml,application/xml,application/rss+xml',
-        /**
-         * Currently required for https://developer.oculus.com/blog/rss/ that returns 400 otherwise
-         * Appears to be temporary error given that the page says they're working on fixing it
-         */
-        'Sec-Fetch-Mode': 'navigate',
-        'sec-fetch-site': 'none',
       },
-      redirect: 'follow',
+      redirect: 'follow' as const,
       signal: controller.signal,
     };
 
@@ -388,15 +428,49 @@ export class FeedFetcherService {
       });
     }
 
-    const res = await fetch(url, useOptions);
+    const r = await request(url, {
+      headers: useOptions.headers,
+      signal: useOptions.signal,
+      maxRedirections: 10,
+    });
+
+    const normalizedHeaders = Object.entries(r.headers).reduce(
+      (acc, [key, val]) => {
+        if (typeof val === 'string') {
+          acc.set(key.toLowerCase(), val);
+        }
+
+        return acc;
+      },
+      new Map<string, string>(),
+    );
 
     clearTimeout(timer);
 
-    return res;
+    const headers: FetchResponse['headers'] = new Map();
+
+    headers.set('etag', convertHeaderValue(normalizedHeaders.get('etag')));
+    headers.set(
+      'content-type',
+      convertHeaderValue(normalizedHeaders.get('content-type')),
+    );
+    headers.set(
+      'last-modified',
+      convertHeaderValue(normalizedHeaders.get('last-modified')),
+    );
+    headers.set('server', convertHeaderValue(normalizedHeaders.get('server')));
+
+    return {
+      headers,
+      ok: r.statusCode >= 200 && r.statusCode < 300,
+      status: r.statusCode,
+      text: () => r.body.text(),
+      arrayBuffer: () => r.body.arrayBuffer(),
+    };
   }
 
   private async maybeDecodeResponse(
-    res: Awaited<ReturnType<typeof fetch>>,
+    res: Awaited<FetchResponse>,
   ): Promise<string> {
     const charset = res.headers
       .get('content-type')

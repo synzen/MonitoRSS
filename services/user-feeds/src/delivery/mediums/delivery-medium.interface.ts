@@ -4,7 +4,6 @@ import { Article, FeedV2Event, MediumPayload } from "../../shared";
 import { ArticleDeliveryState } from "../types";
 
 export interface DeliverArticleDetails {
-  deliveryId: string;
   mediumId: string;
   feedDetails: FeedV2Event["data"]["feed"];
   deliverySettings: MediumPayload["details"];

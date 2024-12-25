@@ -3,17 +3,18 @@ import { InjectRepository } from "@mikro-orm/nestjs";
 import { EntityRepository } from "@mikro-orm/postgresql";
 import { Injectable } from "@nestjs/common";
 import { FeedArticleCustomComparison } from "./entities";
-import FeedParser, { Item } from "feedparser";
-import { ArticleIDResolver } from "./utils";
-import { FeedParseTimeoutException, InvalidFeedException } from "./exceptions";
-import { getNestedPrimitiveValue } from "./utils/get-nested-primitive-value";
+import { Item } from "feedparser";
+import { InvalidFeedException } from "./exceptions";
 import {
   EntityManager,
   MikroORM,
   UniqueConstraintViolationException,
 } from "@mikro-orm/core";
 import { Article, UserFeedFormatOptions } from "../shared/types";
-import { ArticleParserService } from "../article-parser/article-parser.service";
+import {
+  ArticleParserService,
+  XmlParsedArticlesOutput,
+} from "../article-parser/article-parser.service";
 import { UserFeedDateCheckOptions } from "../shared/types/user-feed-date-check-options.type";
 import dayjs from "dayjs";
 import logger from "../shared/utils/logger";
@@ -25,16 +26,17 @@ import { createHash } from "crypto";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import { getParserRules } from "../feed-event-handler/utils";
 import { FeedArticleNotFoundException } from "../feed-fetcher/exceptions";
-import { MAX_ARTICLE_INJECTION_ARTICLE_COUNT } from "../shared";
 import { ExternalFeedPropertyDto } from "../article-formatter/types";
 import { CacheStorageService } from "../cache-storage/cache-storage.service";
 import { deflate, inflate } from "zlib";
 import { promisify } from "util";
 import { parse, valid } from "node-html-parser";
-import { chunkArray } from "../shared/utils/chunk-array";
 import { PartitionedFeedArticleFieldStoreService } from "./partitioned-feed-article-field-store.service";
 import { ConfigService } from "@nestjs/config";
 import PartitionedFeedArticleFieldInsert from "./types/pending-feed-article-field-insert.types";
+import { FeedRequestLookupDetails } from "../shared/types/feed-request-lookup-details.type";
+import { pool, Pool } from "workerpool";
+import { join } from "path";
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);
@@ -44,14 +46,13 @@ interface FetchFeedArticleOptions {
   formatOptions: UserFeedFormatOptions;
   externalFeedProperties?: ExternalFeedPropertyDto[];
   findRssFromHtml?: boolean;
+  requestLookupDetails: FeedRequestLookupDetails | undefined | null;
 }
-
-type XmlParsedArticlesOutput = {
-  articles: Article[];
-};
 
 @Injectable()
 export class ArticlesService {
+  feedParserPool: Pool;
+
   constructor(
     @InjectRepository(FeedArticleCustomComparison)
     private readonly articleCustomComparisonRepo: EntityRepository<FeedArticleCustomComparison>,
@@ -61,7 +62,14 @@ export class ArticlesService {
     private readonly cacheStorageService: CacheStorageService,
     private readonly partitionedFieldStoreService: PartitionedFeedArticleFieldStoreService,
     private readonly configService: ConfigService
-  ) {}
+  ) {
+    this.feedParserPool = pool(
+      join(__dirname, "articles.feed-parser.worker.js"),
+      {
+        workerType: "thread",
+      }
+    );
+  }
 
   async doFeedArticlesExistInCache(data: {
     url: string;
@@ -140,7 +148,7 @@ export class ArticlesService {
     }
   ) {
     try {
-      return await this.fetchFeedArticles(originalUrl, options);
+      return await this.fetchFeedArticles(originalUrl, { ...options });
     } catch (err) {
       if (!(err instanceof InvalidFeedException)) {
         throw err;
@@ -175,9 +183,11 @@ export class ArticlesService {
       externalFeedProperties,
       findRssFromHtml,
       executeFetch,
+      requestLookupDetails,
     }: FetchFeedArticleOptions & {
       findRssFromHtml?: boolean;
       executeFetch?: boolean;
+      requestLookupDetails: FeedRequestLookupDetails | undefined | null;
     }
   ): Promise<{
     output: XmlParsedArticlesOutput | null;
@@ -186,13 +196,17 @@ export class ArticlesService {
   }> {
     const cachedArticles = await this.getFeedArticlesFromCache({
       url,
-      options: { formatOptions, externalFeedProperties },
+      options: { formatOptions, externalFeedProperties, requestLookupDetails },
     });
 
     if (cachedArticles) {
       await this.refreshFeedArticlesCacheExpiration({
         url,
-        options: { formatOptions, externalFeedProperties },
+        options: {
+          formatOptions,
+          externalFeedProperties,
+          requestLookupDetails,
+        },
       });
 
       return {
@@ -201,10 +215,14 @@ export class ArticlesService {
       };
     }
 
-    const response = await this.feedFetcherService.fetchWithGrpc(url, {
-      executeFetchIfNotInCache: true,
-      executeFetch,
-    });
+    const response = await this.feedFetcherService.fetch(
+      requestLookupDetails?.url || url,
+      {
+        executeFetchIfNotInCache: true,
+        executeFetch,
+        lookupDetails: requestLookupDetails,
+      }
+    );
 
     if (!response.body) {
       return {
@@ -222,7 +240,11 @@ export class ArticlesService {
 
       await this.setFeedArticlesInCache({
         url,
-        options: { formatOptions, externalFeedProperties },
+        options: {
+          formatOptions,
+          externalFeedProperties,
+          requestLookupDetails,
+        },
         data: fromXml,
       });
 
@@ -241,11 +263,13 @@ export class ArticlesService {
             return this.fetchFeedArticles(newUrl.origin + rssUrl, {
               formatOptions,
               externalFeedProperties,
+              requestLookupDetails,
             });
           } else {
             return this.fetchFeedArticles(rssUrl, {
               formatOptions,
               externalFeedProperties,
+              requestLookupDetails,
             });
           }
         }
@@ -258,11 +282,16 @@ export class ArticlesService {
   async fetchFeedArticle(
     url: string,
     id: string,
-    { formatOptions, externalFeedProperties }: FetchFeedArticleOptions
+    {
+      formatOptions,
+      externalFeedProperties,
+      requestLookupDetails,
+    }: FetchFeedArticleOptions
   ) {
     const { output: result } = await this.fetchFeedArticles(url, {
       formatOptions,
       externalFeedProperties,
+      requestLookupDetails,
     });
 
     if (!result) {
@@ -288,11 +317,16 @@ export class ArticlesService {
 
   async fetchRandomFeedArticle(
     url: string,
-    { formatOptions, externalFeedProperties }: FetchFeedArticleOptions
+    {
+      formatOptions,
+      externalFeedProperties,
+      requestLookupDetails,
+    }: FetchFeedArticleOptions
   ) {
     const { output: result } = await this.fetchFeedArticles(url, {
       formatOptions,
       externalFeedProperties,
+      requestLookupDetails,
     });
 
     if (!result) {
@@ -363,6 +397,8 @@ export class ArticlesService {
     const priorArticlesStored = await this.hasPriorArticlesStored(id);
 
     if (!priorArticlesStored) {
+      logger.debug(`No prior articles stored for feed ${id}`);
+
       await this.storeArticles(id, articles, {
         comparisonFields: [...blockingComparisons, ...passingComparisons],
       });
@@ -377,7 +413,7 @@ export class ArticlesService {
 
     if (debug) {
       logger.datadog(
-        `Debug feed ${id}: ${newArticles.length} new articles determined`,
+        `Debug feed ${id}: ${newArticles.length} new articles determined from ID checks`,
         {
           articles: newArticles.map((a) => ({
             id: a.flattened.id,
@@ -409,6 +445,19 @@ export class ArticlesService {
       newArticles,
       storedComparisons
     );
+
+    if (debug) {
+      logger.datadog(
+        `Debug feed ${id}: ${articlesPastBlocks.length} articles past blocking comparisons`,
+        {
+          articles: articlesPastBlocks.map((a) => ({
+            id: a.flattened.id,
+            title: a.flattened.title,
+          })),
+        }
+      );
+    }
+
     const articlesPassedComparisons = await this.checkPassingComparisons(
       {
         id,
@@ -417,6 +466,18 @@ export class ArticlesService {
       seenArticles,
       storedComparisons
     );
+
+    if (debug) {
+      logger.datadog(
+        `Debug feed ${id}: ${articlesPassedComparisons.length} articles past passing comparisons`,
+        {
+          articles: articlesPassedComparisons.map((a) => ({
+            id: a.flattened.id,
+            title: a.flattened.title,
+          })),
+        }
+      );
+    }
 
     // any new comparisons stored must re-store all articles
     if (newArticles.length > 0) {
@@ -461,7 +522,7 @@ export class ArticlesService {
       logger.datadog(
         `Debug feed ${id}: ${articlesPostDateCheck.length} articles after date checks`,
         {
-          articles: newArticles.map((a) => ({
+          articles: articlesPostDateCheck.map((a) => ({
             id: a.flattened.id,
             title: a.flattened.title,
           })),
@@ -529,20 +590,24 @@ export class ArticlesService {
   ) {
     const fieldsToSave: PartitionedFeedArticleFieldInsert[] = [];
 
-    for (let i = 0; i < articles.length; ++i) {
-      const article = articles[i];
+    if (!options?.skipIdStorage) {
+      for (let i = 0; i < articles.length; ++i) {
+        const article = articles[i];
 
-      fieldsToSave.push({
-        feedId: feedId,
-        fieldName: "id",
-        fieldHashedValue: article.flattened.idHash,
-        createdAt: new Date(),
-      });
+        fieldsToSave.push({
+          feedId: feedId,
+          fieldName: "id",
+          fieldHashedValue: article.flattened.idHash,
+          createdAt: new Date(),
+        });
+      }
     }
 
     try {
       await this.orm.em.transactional(async (em) => {
-        await this.partitionedFieldStoreService.persist(fieldsToSave, em);
+        await this.partitionedFieldStoreService.markForPersistence(
+          fieldsToSave
+        );
 
         await this.storeArticleComparisons(
           em,
@@ -605,7 +670,7 @@ export class ArticlesService {
       const article = articles[i];
 
       comparisonFields.forEach((field) => {
-        const fieldValue = getNestedPrimitiveValue(article.flattened, field);
+        const fieldValue = article.flattened[field];
 
         if (fieldValue) {
           const hashedValue = sha1.copy().update(fieldValue).digest("hex");
@@ -620,29 +685,81 @@ export class ArticlesService {
       });
     }
 
-    await this.partitionedFieldStoreService.persist(fieldsToSave, em);
+    await this.partitionedFieldStoreService.markForPersistence(fieldsToSave);
   }
 
   async filterForNewArticles(
     feedId: string,
     articles: Article[]
   ): Promise<Article[]> {
+    /**
+     * feed has a, b, c
+     *
+     * a - 5 months ago
+     * b - 10 days ago
+     * c - never stored
+     *
+     * Ideal state: c should be delivered, a should be re-stored for efficient lookups
+     *
+     * FIRST PASS - see if any of the articles have been stored within one month
+     *  db returns b
+     *  filter for articles that are not in the db, so we have a and c
+     *
+     *  a and c are candidates for delivery
+     *
+     * SECOND PASS - from the candidates, see if any have been stored older than one month
+     *  db returns a
+     *
+     * filter for articles that are neither in the first pass nor the second pass (a,b), and these
+     * are eligible for delivery
+     *
+     * re-store all articles found in the second pass
+     */
     const mapOfArticles = new Map(
       articles.map((article) => [article.flattened.idHash, article])
     );
     const articleIds = Array.from(mapOfArticles.keys());
+    // Do a first pass to see if any of the articles have been stored within one month
+    const idsStoredInPastMonth = (
+      await this.partitionedFieldStoreService.findIdFieldsForFeed(
+        feedId,
+        articleIds,
+        false
+      )
+    ).map((r) => r.field_hashed_value);
+    const idsStoredInPastMonthSet = new Set(idsStoredInPastMonth);
 
-    const foundIds = new Set(
-      (
-        await this.partitionedFieldStoreService.findIdFieldsForFeed(
-          feedId,
-          articleIds
-        )
-      ).map((r) => r.field_hashed_value)
+    const articleIdsPossibleForDelivery = articleIds.filter(
+      (id) => !idsStoredInPastMonthSet.has(id)
+    );
+
+    if (articleIdsPossibleForDelivery.length === 0) {
+      return [];
+    }
+
+    // Do a second pass to see if any of the articles have been stored older than one month
+    const idsStoredOlderThanOneMonth = (
+      await this.partitionedFieldStoreService.findIdFieldsForFeed(
+        feedId,
+        articleIdsPossibleForDelivery,
+        true
+      )
+    ).map((r) => r.field_hashed_value);
+
+    const articlesOlderThanOneMonthToStore = idsStoredOlderThanOneMonth
+      .map((id) => mapOfArticles.get(id))
+      .filter((a): a is Exclude<typeof a, undefined> => !!a);
+
+    if (articlesOlderThanOneMonthToStore.length) {
+      await this.storeArticles(feedId, articlesOlderThanOneMonthToStore);
+    }
+
+    const allStored = new Set(
+      idsStoredInPastMonth.concat(idsStoredOlderThanOneMonth)
     );
 
     return articleIds
-      .filter((id) => !foundIds.has(id))
+      .filter((id) => !allStored.has(id))
       .map((id) => mapOfArticles.get(id)) as Article[];
   }
 
@@ -675,7 +792,7 @@ export class ArticlesService {
     const queries: Array<{ name: string; value: string }> = [];
 
     for (const key of fieldKeys) {
-      const value = getNestedPrimitiveValue(article.flattened, key);
+      const value = article.flattened[key];
 
       if (value) {
         const hashedValue = sha1.copy().update(value).digest("hex");
@@ -689,162 +806,6 @@ export class ArticlesService {
     }
 
     return this.partitionedFieldStoreService.someFieldsExist(feedId, queries);
-  }
-
-  async getArticlesFromXml(
-    xml: string,
-    options: {
-      timeout?: number;
-      formatOptions: UserFeedFormatOptions;
-      useParserRules: PostProcessParserRule[] | undefined;
-      externalFeedProperties?: Array<ExternalFeedProperty>;
-    }
-  ): Promise<XmlParsedArticlesOutput> {
-    const feedparser = new FeedParser({});
-    const idResolver = new ArticleIDResolver();
-    const rawArticles: FeedParser.Item[] = [];
-
-    const promise = new Promise<{
-      articles: Article[];
-    }>((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new FeedParseTimeoutException());
-      }, options?.timeout || 10000);
-
-      feedparser.on("error", (err: Error) => {
-        if (
-          err.message === "Not a feed" ||
-          err.message.startsWith("Unexpected end")
-        ) {
-          reject(new InvalidFeedException("Invalid feed"));
-        } else {
-          reject(err);
-        }
-      });
-
-      feedparser.on("readable", function (this: FeedParser) {
-        let item;
-
-        do {
-          item = this.read();
-
-          if (item) {
-            idResolver.recordArticle(item as never);
-            rawArticles.push(item);
-          }
-        } while (item);
-      });
-
-      feedparser.on("end", async () => {
-        clearTimeout(timeout);
-
-        if (rawArticles.length === 0) {
-          return resolve({ articles: [] });
-        }
-
-        clearTimeout(timeout);
-        const idType = idResolver.getIDType();
-
-        if (!idType) {
-          return reject(
-            new Error("No ID type found when parsing articles for feed")
-          );
-        }
-
-        try {
-          const mappedArticles = await Promise.all(
-            rawArticles.map(async (rawArticle) => {
-              const id = ArticleIDResolver.getIDTypeValue(
-                rawArticle as never,
-                idType
-              );
-
-              const {
-                flattened,
-                injectArticleContent,
-                hasArticleContentInjection,
-              } = await this.articleParserService.flatten(rawArticle as never, {
-                formatOptions: options.formatOptions,
-                useParserRules: options.useParserRules,
-                externalFeedProperties: options.externalFeedProperties,
-              });
-
-              return {
-                flattened: {
-                  ...flattened,
-                  id,
-                  idHash: sha1.copy().update(id).digest("hex"),
-                },
-                raw: {
-                  date:
-                    !!rawArticle.date && dayjs(rawArticle.date).isValid()
-                      ? rawArticle.date.toISOString()
-                      : undefined,
-                  pubdate:
-                    !!rawArticle.pubdate && dayjs(rawArticle.pubdate).isValid()
-                      ? rawArticle.pubdate.toISOString()
-                      : undefined,
-                },
-                injectArticleContent,
-                hasArticleContentInjection,
-              };
-            })
-          );
-
-          // check for duplicate id hashes
-          const idHashes = new Set<string>();
-
-          for (const article of mappedArticles) {
-            const idHash = article.flattened.idHash;
-
-            if (!idHash) {
-              return reject(new Error("Some articles are missing id hash"));
-            }
-
-            if (idHashes.has(article.flattened.idHash)) {
-              logger.warn(
-                `Feed has duplicate article id hash: ${article.flattened.idHash}`,
-                {
-                  id: article.flattened.id,
-                  idHash,
-                }
-              );
-            }
-
-            idHashes.add(article.flattened.idHash);
-          }
-
-          if (
-            mappedArticles.length <= MAX_ARTICLE_INJECTION_ARTICLE_COUNT &&
-            mappedArticles.some((a) => a.hasArticleContentInjection)
-          ) {
-            const chunked = chunkArray(mappedArticles, 25);
-
-            for (const chunk of chunked) {
-              await Promise.all(
-                chunk.map((a) => a.injectArticleContent(a.flattened))
-              );
-
-              await new Promise((resolve) => setTimeout(resolve, 1000));
-            }
-          }
-
-          resolve({
-            articles: mappedArticles.map((a) => ({
-              flattened: a.flattened,
-              raw: a.raw,
-            })),
-          });
-        } catch (err) {
-          reject(err);
-        }
-      });
-    });
-
-    feedparser.write(xml);
-    feedparser.end();
-
-    return promise;
   }
 
   async checkBlockingComparisons(
@@ -904,29 +865,14 @@ export class ArticlesService {
       return [];
     }
 
-    const storedComparisonResults = await this.areComparisonsStored(
-      id,
-      passingComparisons
-    );
-
-    const relevantComparisons = storedComparisonResults
-      .filter((r) => r.isStored)
-      .map((r) => r.field);
-
-    if (relevantComparisons.length === 0) {
-      /**
-       * Just store the comparison values, otherwise all articles would get delivered since none
-       * of the comparison values have been seen before.
-       */
-      return [];
-    }
+    // All passing comparisons are confirmed to be stored
 
     const articlesToSend = await Promise.all(
       seenArticles.map(async (article) => {
         const shouldPass = await this.articleFieldsSeenBefore(
           id,
           article,
-          relevantComparisons
+          currentlyStoredComparisons
         );
 
         return shouldPass ? null : article;
@@ -961,6 +907,11 @@ export class ArticlesService {
       },
       externalFeedProperties: !!options.externalFeedProperties?.length
         ? options.externalFeedProperties
+        : undefined,
+      requestLookupDetails: options.requestLookupDetails
+        ? {
+            key: options.requestLookupDetails.key,
+          }
         : undefined,
     };
 
@@ -1003,5 +954,25 @@ export class ArticlesService {
     }
 
     return elem.getAttribute("href") || null;
+  }
+
+  private async getArticlesFromXml(
+    ...args: Parameters<ArticleParserService["getArticlesFromXml"]>
+  ): ReturnType<
+    (typeof ArticleParserService)["prototype"]["getArticlesFromXml"]
+  > {
+    if (process.env.NODE_ENV === "test") {
+      return this.articleParserService.getArticlesFromXml(...args);
+    }
+
+    try {
+      return await this.feedParserPool.exec("getArticlesFromXml", args);
+    } catch (err) {
+      if (err instanceof Error && err.message === "Invalid feed") {
+        throw new InvalidFeedException(err.message);
+      }
+
+      throw err;
+    }
   }
 }

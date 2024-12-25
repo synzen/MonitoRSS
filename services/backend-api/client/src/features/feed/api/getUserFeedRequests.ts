@@ -15,6 +15,10 @@ const GetUserFeedRequestsOutputSchema = object({
     .shape({
       requests: array(UserFeedRequestSchema).required(),
       nextRetryTimestamp: number().nullable().default(null),
+      feedHostGlobalRateLimit: object({
+        intervalSec: number().required(),
+        requestLimit: number().required(),
+      }).nullable(),
     })
     .required(),
 }).required();

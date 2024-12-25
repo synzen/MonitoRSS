@@ -17,6 +17,6 @@ import { PartitionedFeedArticleFieldStoreService } from "./partitioned-feed-arti
     FeedFetcherModule,
     CacheStorageModule,
   ],
-  exports: [ArticlesService],
+  exports: [ArticlesService, PartitionedFeedArticleFieldStoreService],
 })
 export class ArticlesModule {}

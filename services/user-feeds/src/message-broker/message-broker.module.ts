@@ -27,7 +27,7 @@ export class MessageBrokerModule implements OnApplicationShutdown {
           },
           channels: {
             default: {
-              prefetchCount: 100,
+              prefetchCount: configValues.USER_FEEDS_PREFETCH_COUNT,
               default: true,
             },
           },

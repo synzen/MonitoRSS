@@ -1,4 +1,5 @@
 import {
+  Alert,
   Badge,
   Box,
   Button,
@@ -13,6 +14,7 @@ import {
   TableContainer,
   Tbody,
   Td,
+  Text,
   Th,
   Thead,
   Tr,
@@ -76,6 +78,7 @@ export const RequestHistory = () => {
   const { t } = useTranslation();
 
   const onFirstPage = skip === 0;
+  const hasNoData = data?.result.requests.length === 0 && skip === 0;
 
   return (
     <Stack spacing={4} mb={8}>
@@ -91,7 +94,21 @@ export const RequestHistory = () => {
           description={error.message}
         />
       )}
-      {data && (
+      {data?.result.feedHostGlobalRateLimit && (
+        <Alert rounded="md">
+          To stay in compliance with rate limits, MonitoRSS is forced to globally limit the number
+          of requests made to this feed&apos;s host to have a maximum of{" "}
+          {data.result.feedHostGlobalRateLimit.requestLimit} request(s) per{" "}
+          {data.result.feedHostGlobalRateLimit.intervalSec} seconds.
+        </Alert>
+      )}
+      {hasNoData && (
+        <Text color="whiteAlpha.700">
+          No historical requests found. This is likely because the feed has not been polled yet -
+          please check back later.
+        </Text>
+      )}
+      {data && !hasNoData && (
         <Stack>
           <Box border="solid 1px" borderColor="gray.600" borderRadius="md">
             <TableContainer>

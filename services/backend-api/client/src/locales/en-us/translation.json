@@ -20,7 +20,7 @@
     },
     "errors": {
       "somethingWentWrong": "Something went wrong.",
-      "tryAgainLater": "Please try again later.",
+      "tryAgainLater": "Please try again later, or contact support@monitorss.xyz for assistance.",
       "detailsTitle": "Details",
       "failedToSave": "Failed to save changes",
       "supporterRequiredAccess": "This server needs to be backed by a supporter to access this.",
@@ -40,7 +40,7 @@
       "feedParseTimeout": "Failed to get feed articles - parsing the feed took too long. Ensure that the feed is not too large. Otherwise, please try again later.",
       "feedRequestTimeout": "Failed to get feed articles - requesting the feed took too long. The feed may be too slow to respond, or may be facing issues. Consider checking the feed is still working by directly going to the feed link. Otherwise, please try again later.",
       "feedRequestFailed": "Failed to get feed articles - request to the feed failed. Please try again later.",
-      "feedRequestForbidden": "Failed to get feed articles - the feed host may have blocked us from requesting the feed. You may either wait a while to see if this resolves on its own, or consider asking the feed host to unblock MonitoRSS (whose user agent contains MonitoRSS) if it was intentional.",
+      "feedRequestForbidden": "Failed to get feed articles - the feed owner may have blocked MonitoRSS. You may either wait a while to see if this resolves on its own, or consider asking the feed owner to unblock MonitoRSS (whose user agent contains MonitoRSS) if it was intentional.",
       "feedRequestPendingArticles": "Feed articles will be available after feed has been fetched on schedule (depending on your feed's refresh rate). Please check again later.",
       "feedRequestInternalError": "Failed to get feed articles - the feed host is reporting that they are experiencing internal issues. You may try again later.",
       "feedRequestTooManyRequests": "Failed to get feed articles - requests to the feed has been rate limited. Please try again later.",
@@ -127,7 +127,7 @@
       "discordWebhookMenuItem": "Discord Webhook",
       "articleDailyLimit": "Article Daily Limit",
       "connectionSectionDescription": "New articles are automatically delivered to every connection when new articles are found. You may add as many connections as you want, but every article that is delivered counts towards the feed's article limit.",
-      "articleDailyLimitHint": "Maximum number of articles within the past 24 hour timeframe, calculated from the time of every article delivery attempt."
+      "articleDailyLimitHint": "Maximum number of articles per feed within the past 24 hour timeframe, calculated from the time of every article delivery attempt."
     },
     "userFeed": {
       "deleteConfirmTitle": "Delete feed",
@@ -138,7 +138,7 @@
       "manuallyDisabledDescription": "Article delivery is paused until it is re-enabled.",
       "manuallyDisabledEnableButtonText": "Re-enable",
       "disableFeedButtonText": "Disable",
-      "disableFeedConfirmTitle": "Are you sure?",
+      "disableFeedConfirmTitle": "Are you sure you want to disable this feed?",
       "disableFeedConfirmDescription": "Articles will not be delivered until it is re-enabled.",
       "connectionFailureTitle": "Disabled due to too many connection failures",
       "connectionFailureText": "There has been too many connection failures within a short period of time. You may attempt to re-enable it. If the feed is verified to be working, it will successfully be re-enabled.",

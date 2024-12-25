@@ -17,6 +17,10 @@ export interface CreateDiscordChannelPreviewInput {
         dateLocale?: string | undefined;
       };
       externalProperties?: Array<ExternalPropertyDto> | null;
+      requestLookupDetails: {
+        key: string;
+        headers?: Record<string, string>;
+      } | null;
     };
     article?: {
       id: string;

@@ -7,6 +7,7 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
+  Badge,
   Box,
   Button,
   Divider,
@@ -49,6 +50,8 @@ import { useGetUpdatePaymentMethodTransaction } from "../features/subscriptionPr
 import { PricingDialogContext } from "../contexts";
 import { DatePreferencesForm } from "../components/DatePreferencesForm";
 import { usePaddleContext } from "../contexts/PaddleContext";
+import { useRemoveRedditLogin } from "../features/feed/hooks/useRemoveRedditLogin";
+import { RedditLoginButton } from "../components/RedditLoginButton/RedditLoginButton";
 
 const formSchema = object({
   alertOnDisabledFeeds: bool(),
@@ -162,7 +165,18 @@ export const UserSettings = () => {
     formState: { isSubmitting, errors },
     reset,
   } = formMethods;
+  const { mutateAsync: removeRedditLogin, status: removeRedditLoginStatus } =
+    useRemoveRedditLogin();
   const hasLoaded = status !== "loading";
+
+  const onClickRemoveRedditLogin = async () => {
+    try {
+      await removeRedditLogin();
+      notifySuccess("Reddit login removed successfully");
+    } catch (err) {
+      notifyError("Failed to remove Reddit", err as Error);
+    }
+  };
 
   useEffect(() => {
     reset(convertUserMeToFormData(data));
@@ -256,6 +270,8 @@ export const UserSettings = () => {
       </Text>
     );
   }
+
+  const redditConnected = data?.result.externalAccounts?.some((a) => a.type === "reddit");
 
   return (
     <DashboardContentV2 error={error} loading={status === "loading"}>
@@ -501,7 +517,7 @@ export const UserSettings = () => {
                                   </Box>
                                 )}
                                 {!subscriptionPendingCancellation && (
-                                  <Button size="sm" variant="outline" onClick={onOpenPricingDialog}>
+                                  <Button size="sm" onClick={onOpenPricingDialog}>
                                     <span>Manage Subscription</span>
                                   </Button>
                                 )}
@@ -518,6 +534,52 @@ export const UserSettings = () => {
                 </Stack>
               </>
             )}
+            <Divider />
+            <Stack spacing={6}>
+              <Heading size="md">Integrations</Heading>
+              <HStack
+                justifyContent="space-between"
+                borderStyle="solid"
+                alignItems="flex-start"
+                borderWidth={1}
+                borderColor="gray.700"
+                rounded="md"
+                p={4}
+                gap={4}
+                flexWrap="wrap"
+              >
+                <Stack>
+                  <Stack spacing={1}>
+                    <HStack alignItems="center" gap={2}>
+                      <Text fontWeight={600}>Reddit</Text>
+                      {redditConnected && <Badge colorScheme="green">Connected</Badge>}
+                      {!redditConnected && <Badge>Not Connected</Badge>}
+                    </HStack>
+                    <Text color="whiteAlpha.600" fontSize="sm">
+                      Allows MonitoRSS to use rate limits specific to your Reddit account, which has
+                      much higher rate limit quotas than the global rate limits. All Reddit feeds
+                      will automatically use your Reddit account if connected.
+                    </Text>
+                  </Stack>
+                </Stack>
+                <HStack>
+                  <RedditLoginButton />
+                  {redditConnected && (
+                    <Button
+                      colorScheme="red"
+                      variant="ghost"
+                      size="sm"
+                      isLoading={removeRedditLoginStatus === "loading"}
+                      onClick={() => {
+                        onClickRemoveRedditLogin();
+                      }}
+                    >
+                      Disconnect
+                    </Button>
+                  )}
+                </HStack>
+              </HStack>
+            </Stack>
             <Divider />
             <FormProvider {...formMethods}>
               <form onSubmit={handleSubmit(onSubmit)}>

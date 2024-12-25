@@ -23,6 +23,7 @@ import { FeedFetcherApiService } from "./feed-fetcher-api.service";
 import { Readable } from "stream";
 import { FeedFetcherFetchStatus } from "./types/feed-fetcher-fetch-feed-response.type";
 import { FeedTooLargeException } from "./exceptions/FeedTooLargeException";
+import { FeedRequestLookupDetails } from "../../common/types/feed-request-lookup-details.type";
 
 interface FetchFeedOptions {
   formatTables?: boolean;
@@ -49,6 +50,7 @@ export class FeedFetcherService {
 
   async fetchFeed(
     url: string,
+    lookupDetails: FeedRequestLookupDetails | null,
     options: FetchFeedOptions
   ): Promise<FeedFetchResult> {
     let inputStream: NodeJS.ReadableStream;
@@ -56,10 +58,14 @@ export class FeedFetcherService {
     if (!options.fetchOptions.useServiceApi) {
       throw new Error("Non-service api fetches are not supported");
     } else {
-      inputStream = await this.fetchFeedStreamFromApiService(url, {
-        getCachedResponse: options.fetchOptions.useServiceApiCache,
-        debug: options.fetchOptions.debug,
-      });
+      inputStream = await this.fetchFeedStreamFromApiService(
+        url,
+        lookupDetails,
+        {
+          getCachedResponse: options.fetchOptions.useServiceApiCache,
+          debug: options.fetchOptions.debug,
+        }
+      );
     }
 
     const { articleList, idType } = await this.parseFeed(inputStream);
@@ -103,12 +109,17 @@ export class FeedFetcherService {
 
   async fetchFeedStreamFromApiService(
     url: string,
+    lookupDetails: FeedRequestLookupDetails | null,
     options?: {
       getCachedResponse?: boolean;
       debug?: boolean;
     }
   ): Promise<NodeJS.ReadableStream> {
-    const result = await this.feedFetcherApiService.fetchAndSave(url, options);
+    const result = await this.feedFetcherApiService.fetchAndSave(
+      url,
+      lookupDetails,
+      options
+    );
 
     if (result.requestStatus === FeedFetcherFetchStatus.BadStatusCode) {
       if (result.response?.statusCode) {

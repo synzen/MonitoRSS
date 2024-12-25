@@ -69,10 +69,7 @@ export const DiscordChannelConnectionPreview = ({
 
   if (useError) {
     return (
-      <InlineErrorAlert
-        title={t("common.errors.somethingWentWrong")}
-        description={useError.message}
-      />
+      <InlineErrorAlert title={useError.message} description={t("common.errors.tryAgainLater")} />
     );
   }
 

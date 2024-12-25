@@ -12,7 +12,6 @@ import { ArticleRateLimitModule } from "./article-rate-limit/article-rate-limit.
 import { FeedsModule } from "./feeds/feeds.module";
 import { MikroORM } from "@mikro-orm/core";
 import logger from "./shared/utils/logger";
-import { CacheStorageService } from "./cache-storage/cache-storage.service";
 import { CacheStorageModule } from "./cache-storage/cache-storage.module";
 
 @Module({

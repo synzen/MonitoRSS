@@ -6,6 +6,7 @@ import {
   Article,
   FeedResponseRequestStatus,
   INJECTED_ARTICLE_PLACEHOLDER_PREFIX,
+  MAX_ARTICLE_INJECTION_ARTICLE_COUNT,
   UserFeedFormatOptions,
 } from "../shared";
 import timezone from "dayjs/plugin/timezone";
@@ -159,16 +160,185 @@ import "dayjs/locale/rw";
 import "dayjs/locale/ru";
 import { FeedFetcherService } from "../feed-fetcher/feed-fetcher.service";
 import logger from "../shared/utils/logger";
+import FeedParser from "feedparser";
+import { ArticleIDResolver } from "../articles/utils";
+import {
+  FeedParseTimeoutException,
+  InvalidFeedException,
+} from "../articles/exceptions";
+import { createHash } from "crypto";
+import { chunkArray } from "../shared/utils/chunk-array";
 
 dayjs.extend(timezone);
 dayjs.extend(utc);
 dayjs.extend(advancedFormat);
+const sha1 = createHash("sha1");
 
 type FlattenedArticleWithoutId = Omit<Article["flattened"], "id" | "idHash">;
+
+export type XmlParsedArticlesOutput = {
+  articles: Article[];
+};
 
 @Injectable()
 export class ArticleParserService {
   constructor(private readonly feedFetcherService: FeedFetcherService) {}
+
+  async getArticlesFromXml(
+    xml: string,
+    options: {
+      timeout?: number;
+      formatOptions: UserFeedFormatOptions;
+      useParserRules: PostProcessParserRule[] | undefined;
+      externalFeedProperties?: Array<ExternalFeedProperty>;
+    }
+  ): Promise<XmlParsedArticlesOutput> {
+    const feedparser = new FeedParser({});
+    const idResolver = new ArticleIDResolver();
+    const rawArticles: FeedParser.Item[] = [];
+
+    const promise = new Promise<{
+      articles: Article[];
+    }>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new FeedParseTimeoutException());
+      }, options?.timeout || 10000);
+
+      feedparser.on("error", (err: Error) => {
+        if (
+          err.message === "Not a feed" ||
+          err.message.startsWith("Unexpected end")
+        ) {
+          reject(new InvalidFeedException("Invalid feed"));
+        } else {
+          reject(err);
+        }
+      });
+
+      feedparser.on("readable", function (this: FeedParser) {
+        let item;
+
+        do {
+          item = this.read();
+
+          if (item) {
+            idResolver.recordArticle(item as never);
+            rawArticles.push(item);
+          }
+        } while (item);
+      });
+
+      feedparser.on("end", async () => {
+        clearTimeout(timeout);
+
+        if (rawArticles.length === 0) {
+          return resolve({ articles: [] });
+        }
+
+        clearTimeout(timeout);
+        const idType = idResolver.getIDType();
+
+        if (!idType) {
+          return reject(
+            new Error("No ID type found when parsing articles for feed")
+          );
+        }
+
+        try {
+          const mappedArticles = await Promise.all(
+            rawArticles.map(async (rawArticle) => {
+              const id = ArticleIDResolver.getIDTypeValue(
+                rawArticle as never,
+                idType
+              );
+
+              const {
+                flattened,
+                injectArticleContent,
+                hasArticleContentInjection,
+              } = await this.flatten(rawArticle as never, {
+                formatOptions: options.formatOptions,
+                useParserRules: options.useParserRules,
+                externalFeedProperties: options.externalFeedProperties,
+              });
+
+              return {
+                flattened: {
+                  ...flattened,
+                  id,
+                  idHash: sha1.copy().update(id).digest("hex"),
+                },
+                raw: {
+                  date:
+                    !!rawArticle.date && dayjs(rawArticle.date).isValid()
+                      ? rawArticle.date.toISOString()
+                      : undefined,
+                  pubdate:
+                    !!rawArticle.pubdate && dayjs(rawArticle.pubdate).isValid()
+                      ? rawArticle.pubdate.toISOString()
+                      : undefined,
+                },
+                injectArticleContent,
+                hasArticleContentInjection,
+              };
+            })
+          );
+
+          // check for duplicate id hashes
+          const idHashes = new Set<string>();
+
+          for (const article of mappedArticles) {
+            const idHash = article.flattened.idHash;
+
+            if (!idHash) {
+              return reject(new Error("Some articles are missing id hash"));
+            }
+
+            if (idHashes.has(article.flattened.idHash)) {
+              logger.warn(
+                `Feed has duplicate article id hash: ${article.flattened.idHash}`,
+                {
+                  id: article.flattened.id,
+                  idHash,
+                }
+              );
+            }
+
+            idHashes.add(article.flattened.idHash);
+          }
+
+          if (
+            mappedArticles.length <= MAX_ARTICLE_INJECTION_ARTICLE_COUNT &&
+            mappedArticles.some((a) => a.hasArticleContentInjection)
+          ) {
+            const chunked = chunkArray(mappedArticles, 25);
+
+            for (const chunk of chunked) {
+              await Promise.all(
+                chunk.map((a) => a.injectArticleContent(a.flattened))
+              );
+
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
+          }
+
+          resolve({
+            articles: mappedArticles.map((a) => ({
+              flattened: a.flattened,
+              raw: a.raw,
+            })),
+          });
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
+
+    feedparser.write(xml);
+    feedparser.end();
+
+    return promise;
+  }
 
   async flatten(
     input: Record<string, unknown>,
@@ -306,11 +476,12 @@ export class ArticleParserService {
               }
 
               if (!parsedBody) {
-                const res = await this.feedFetcherService.fetchWithGrpc(
+                const res = await this.feedFetcherService.fetch(
                   sourceFieldValue,
                   {
                     executeFetchIfNotInCache: true,
                     retries: 3,
+                    lookupDetails: undefined,
                   }
                 );
 

@@ -11,8 +11,9 @@ import {
   Text,
   useDisclosure,
 } from "@chakra-ui/react";
-import { PropsWithChildren, createContext, useCallback, useMemo, useState } from "react";
+import { PropsWithChildren, ReactNode, createContext, useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { FaCheck, FaTimes } from "react-icons/fa";
 import { FeedConnectionType, SendTestArticleDeliveryStatus } from "../types";
 import { CreateDiscordChannelConnectionPreviewInput } from "../features/feedConnections/api";
 import { notifyError } from "../utils/notifyError";
@@ -42,6 +43,7 @@ const MESSAGES_BY_STATUS: Record<
   SendTestArticleDeliveryStatus,
   {
     title: string;
+    titleIcon?: ReactNode;
     description?: string;
     useNotify?: {
       func: (title: string, description?: string) => void;
@@ -56,6 +58,7 @@ const MESSAGES_BY_STATUS: Record<
     useNotify: {
       func: notifySuccess,
     },
+    titleIcon: <FaCheck />,
   },
   [SendTestArticleDeliveryStatus.ThirdPartyInternalError]: {
     title: "features.feedConnections.components.sendTestArticleButton.alertTitleFailure",
@@ -65,6 +68,7 @@ const MESSAGES_BY_STATUS: Record<
     useModal: {
       headerBackgroundColor: getChakraColor("red.600"),
     },
+    titleIcon: <FaTimes />,
   },
   [SendTestArticleDeliveryStatus.BadPayload]: {
     title: "features.feedConnections.components.sendTestArticleButton.alertTitleFailure",
@@ -73,6 +77,7 @@ const MESSAGES_BY_STATUS: Record<
     useModal: {
       headerBackgroundColor: getChakraColor("red.600"),
     },
+    titleIcon: <FaTimes />,
   },
   [SendTestArticleDeliveryStatus.MissingApplicationPermission]: {
     title: "features.feedConnections.components.sendTestArticleButton.alertTitleFailure",
@@ -82,6 +87,7 @@ const MESSAGES_BY_STATUS: Record<
     useModal: {
       headerBackgroundColor: getChakraColor("red.600"),
     },
+    titleIcon: <FaTimes />,
   },
   [SendTestArticleDeliveryStatus.MissingChannel]: {
     title: "features.feedConnections.components.sendTestArticleButton.alertTitleFailure",
@@ -91,6 +97,7 @@ const MESSAGES_BY_STATUS: Record<
     useModal: {
       headerBackgroundColor: getChakraColor("red.600"),
     },
+    titleIcon: <FaTimes />,
   },
   [SendTestArticleDeliveryStatus.TooManyRequests]: {
     title: "features.feedConnections.components.sendTestArticleButton.alertTitleFailure",
@@ -100,6 +107,7 @@ const MESSAGES_BY_STATUS: Record<
     useModal: {
       headerBackgroundColor: getChakraColor("red.600"),
     },
+    titleIcon: <FaTimes />,
   },
   [SendTestArticleDeliveryStatus.NoArticles]: {
     title: "features.feedConnections.components.sendTestArticleButton.alertTitleFailure",
@@ -118,6 +126,7 @@ export const SendTestArticleProvider = ({ children }: PropsWithChildren<{}>) => 
     title: "",
     description: <div />,
     headerBackgroundColor: "",
+    titleIcon: null as ReactNode,
   });
   const { mutateAsync, status, error } = useCreateConnectionTestArticle();
 
@@ -125,7 +134,8 @@ export const SendTestArticleProvider = ({ children }: PropsWithChildren<{}>) => 
     try {
       const { result } = await mutateAsync(data);
 
-      const { title, description, useModal, useNotify } = MESSAGES_BY_STATUS[result.status];
+      const { title, description, useModal, useNotify, titleIcon } =
+        MESSAGES_BY_STATUS[result.status];
 
       if (useNotify) {
         useNotify.func(t(title), description && t(description));
@@ -179,6 +189,7 @@ export const SendTestArticleProvider = ({ children }: PropsWithChildren<{}>) => 
         title: t(title),
         description: descriptionNode,
         headerBackgroundColor: useModal?.headerBackgroundColor || "",
+        titleIcon,
       });
       onOpen();
     } catch (err) {
@@ -206,7 +217,11 @@ export const SendTestArticleProvider = ({ children }: PropsWithChildren<{}>) => 
             backgroundColor={sendResult.headerBackgroundColor}
             borderTopRightRadius="xl"
             borderTopLeftRadius="xl"
+            display="flex"
+            alignItems="center"
+            gap={2}
           >
+            {sendResult.titleIcon}
             {sendResult.title}
           </ModalHeader>
           <ModalBody>{sendResult.description}</ModalBody>

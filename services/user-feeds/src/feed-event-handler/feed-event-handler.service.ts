@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import { Injectable } from "@nestjs/common";
 import { ArticleRateLimitService } from "../article-rate-limit/article-rate-limit.service";
 import { ArticlesService } from "../articles/articles.service";
@@ -16,11 +17,7 @@ import {
   UserFeedFormatOptions,
 } from "../shared";
 import { RabbitSubscribe, AmqpConnection } from "@golevelup/nestjs-rabbitmq";
-import {
-  MikroORM,
-  UniqueConstraintViolationException,
-  UseRequestContext,
-} from "@mikro-orm/core";
+import { MikroORM, UseRequestContext } from "@mikro-orm/core";
 import { ArticleDeliveryResult } from "./types/article-delivery-result.type";
 import logger from "../shared/utils/logger";
 import {
@@ -42,6 +39,8 @@ import { InjectRepository } from "@mikro-orm/nestjs";
 import { EntityRepository } from "@mikro-orm/postgresql";
 import { z } from "zod";
 import { CacheStorageService } from "../cache-storage/cache-storage.service";
+import { PartitionedFeedArticleFieldStoreService } from "../articles/partitioned-feed-article-field-store.service";
+
 @Injectable()
 export class FeedEventHandlerService {
   constructor(
@@ -55,6 +54,7 @@ export class FeedEventHandlerService {
     @InjectRepository(FeedRetryRecord)
     private readonly feedRetryRecordRepo: EntityRepository<FeedRetryRecord>,
     private readonly cacheStorageService: CacheStorageService,
+    private readonly partitionedFeedArticleStoreService: PartitionedFeedArticleFieldStoreService,
     private readonly orm: MikroORM // Required for @UseRequestContext()
   ) {}
 
@@ -63,14 +63,34 @@ export class FeedEventHandlerService {
     queue: MessageBrokerQueue.FeedDeliverArticles,
   })
   async handleV2Event(event: FeedV2Event): Promise<void> {
+    const cacheKey = `processing-${event.data.feed.id}`;
+
     try {
+      const isAlreadyProcessing = await this.cacheStorageService.set({
+        key: cacheKey,
+        body: "1",
+        getOldValue: true,
+      });
+
+      if (isAlreadyProcessing) {
+        logger.info(
+          `User feed event for feed ${event.data.feed.id} is already being processed, ignoring`
+        );
+
+        return;
+      }
+
       // Require to be separated to use with MikroORM's decorator @UseRequestContext()
-      await this.handleV2EventWithDb(event);
+      await this.partitionedFeedArticleStoreService.startContext(
+        async () => await this.handleV2EventWithDb(event)
+      );
     } catch (err) {
       logger.error(`Failed to handle feed event`, {
         feedId: event.data.feed.id,
         error: (err as Error).stack,
       });
+    } finally {
+      await this.cacheStorageService.del(cacheKey);
     }
   }
 
@@ -152,23 +172,12 @@ export class FeedEventHandlerService {
         }
       );
 
-      this.amqpConnection.publish(
-        "",
-        MessageBrokerQueue.FeedRejectedArticleDisableConnection,
-        {
-          data: {
-            rejectedCode: ArticleDeliveryRejectedCode.BadRequest,
-            articleId,
-            rejectedMessage: responseBody,
-            medium: {
-              id: record.medium_id,
-            },
-            feed: {
-              id: record.feed_id,
-            },
-          },
-        }
-      );
+      this.emitBadFormatMediumEvent({
+        feedId: record.feed_id,
+        mediumId: record.medium_id,
+        responseBody,
+        articleId,
+      });
     } else if (result.status >= 500) {
       await this.deliveryRecordService.updateDeliveryStatus(deliveryRecordId, {
         status: ArticleDeliveryStatus.Failed,
@@ -187,21 +196,10 @@ export class FeedEventHandlerService {
         }
       );
 
-      this.amqpConnection.publish(
-        "",
-        MessageBrokerQueue.FeedRejectedArticleDisableConnection,
-        {
-          data: {
-            rejectedCode: ArticleDeliveryRejectedCode.Forbidden,
-            medium: {
-              id: record.medium_id,
-            },
-            feed: {
-              id: record.feed_id,
-            },
-          },
-        }
-      );
+      this.emitMissingPermissionsMediumEvent({
+        feedId: record.feed_id,
+        mediumId: record.medium_id,
+      });
     } else if (result.status === 404) {
       const record = await this.deliveryRecordService.updateDeliveryStatus(
         deliveryRecordId,
@@ -213,21 +211,10 @@ export class FeedEventHandlerService {
         }
       );
 
-      this.amqpConnection.publish(
-        "",
-        MessageBrokerQueue.FeedRejectedArticleDisableConnection,
-        {
-          data: {
-            rejectedCode: ArticleDeliveryRejectedCode.MediumNotFound,
-            medium: {
-              id: record.medium_id,
-            },
-            feed: {
-              id: record.feed_id,
-            },
-          },
-        }
-      );
+      this.emitMissingMediumEvent({
+        feedId: record.feed_id,
+        mediumId: record.medium_id,
+      });
     } else if (result.status < 200 || result.status > 400) {
       await this.deliveryRecordService.updateDeliveryStatus(deliveryRecordId, {
         status: ArticleDeliveryStatus.Failed,
@@ -247,8 +234,6 @@ export class FeedEventHandlerService {
 
   @UseRequestContext()
   async handleV2EventWithDb(event: FeedV2Event) {
-    const cacheKey = `processing-${event.data.feed.id}`;
-
     try {
       feedV2EventSchema.parse(event);
     } catch (err) {
@@ -282,12 +267,6 @@ export class FeedEventHandlerService {
         },
       } = event;
 
-      this.debugLog(
-        `Debug ${event.data.feed.id}: Fetching feed XML from ${url}`,
-        {},
-        event.debug
-      );
-
       let lastHashSaved: string | null = null;
 
       if (
@@ -299,13 +278,23 @@ export class FeedEventHandlerService {
       }
 
       let response: Awaited<
-        ReturnType<typeof this.feedFetcherService.fetchWithGrpc>
+        ReturnType<typeof FeedFetcherService.prototype.fetch>
       > | null = null;
 
+      this.debugLog(
+        `Debug ${event.data.feed.id}: Fetching feed XML from ${url}`,
+        {},
+        event.debug
+      );
+
       try {
-        response = await this.feedFetcherService.fetchWithGrpc(url, {
-          hashToCompare: lastHashSaved || undefined,
-        });
+        response = await this.feedFetcherService.fetch(
+          event.data.feed.requestLookupDetails?.url || url,
+          {
+            hashToCompare: lastHashSaved || undefined,
+            lookupDetails: event.data.feed.requestLookupDetails,
+          }
+        );
       } catch (err) {
         if (
           err instanceof FeedRequestInternalException ||
@@ -322,9 +311,9 @@ export class FeedEventHandlerService {
           );
 
           response = null;
+        } else {
+          throw err;
         }
-
-        return;
       }
 
       if (!response || !response.body) {
@@ -432,21 +421,38 @@ export class FeedEventHandlerService {
       try {
         await this.orm.em.flush();
         await this.deliveryRecordService.flushPendingInserts();
+        deliveryStates.forEach((state) => {
+          if (state.status !== ArticleDeliveryStatus.Rejected) {
+            return;
+          }
+
+          if (state.errorCode === ArticleDeliveryErrorCode.NoChannelOrWebhook) {
+            this.emitMissingMediumEvent({
+              feedId: event.data.feed.id,
+              mediumId: state.mediumId,
+            });
+          } else if (
+            state.errorCode === ArticleDeliveryErrorCode.ThirdPartyForbidden
+          ) {
+            this.emitMissingPermissionsMediumEvent({
+              feedId: event.data.feed.id,
+              mediumId: state.mediumId,
+            });
+          } else if (
+            state.errorCode === ArticleDeliveryErrorCode.ThirdPartyBadRequest
+          ) {
+            this.emitBadFormatMediumEvent({
+              feedId: event.data.feed.id,
+              mediumId: state.mediumId,
+              responseBody: state.externalDetail || "",
+            });
+          }
+        });
       } catch (err) {
-        if (err instanceof UniqueConstraintViolationException) {
-          logger.warn(
-            `Failed to flush ORM due to unique constraint violation`,
-            {
-              event,
-              error: (err as Error).stack,
-            }
-          );
-        } else {
-          logger.error(`Failed to flush ORM while handling feed event`, {
-            event,
-            error: (err as Error).stack,
-          });
-        }
+        logger.error(`Failed to flush ORM while handling feed event`, {
+          event,
+          error: (err as Error).stack,
+        });
       }
 
       await this.responseHashService.set({
@@ -454,7 +460,9 @@ export class FeedEventHandlerService {
         hash: response.bodyHash,
       });
 
-      this.logEventFinish(event);
+      this.logEventFinish(event, {
+        numberOfArticles: allArticles.length,
+      });
 
       return deliveryStates;
     } catch (err) {
@@ -512,17 +520,9 @@ export class FeedEventHandlerService {
             feed_id: event.data.feed.id,
             attempts_so_far: (retryRecord?.attempts_so_far || 0) + 1,
           });
-          await this.orm.em.flush();
         }
-      } else {
-        logger.error(
-          `Error while handling feed event: ${(err as Error).message}`,
-          {
-            err,
-            feedId: event.data.feed.id,
-            stack: (err as Error).stack,
-          }
-        );
+
+        return;
       }
 
       this.logEventFinish(event, {
@@ -531,7 +531,15 @@ export class FeedEventHandlerService {
 
       throw err;
     } finally {
-      await this.cacheStorageService.del(cacheKey);
+      try {
+        await this.orm.em.flush();
+        await this.partitionedFeedArticleStoreService.flush(this.orm.em);
+      } catch (err) {
+        logger.error(`Failed to flush ORM while handling feed event`, {
+          event,
+          error: (err as Error).stack,
+        });
+      }
     }
   }
 
@@ -565,6 +573,7 @@ export class FeedEventHandlerService {
     event: FeedV2Event,
     meta?: {
       error?: Error;
+      numberOfArticles?: number;
     }
   ) {
     if (event.timestamp) {
@@ -580,9 +589,88 @@ export class FeedEventHandlerService {
           feedId: event.data.feed.id,
           feedURL: event.data.feed.url,
           error: meta?.error,
+          numberOfArticles: meta?.numberOfArticles,
         }
       );
     }
+  }
+
+  private emitMissingMediumEvent({
+    feedId,
+    mediumId,
+  }: {
+    feedId: string;
+    mediumId: string;
+  }) {
+    this.amqpConnection.publish(
+      "",
+      MessageBrokerQueue.FeedRejectedArticleDisableConnection,
+      {
+        data: {
+          rejectedCode: ArticleDeliveryRejectedCode.MediumNotFound,
+          medium: {
+            id: mediumId,
+          },
+          feed: {
+            id: feedId,
+          },
+        },
+      }
+    );
+  }
+
+  private emitBadFormatMediumEvent({
+    feedId,
+    mediumId,
+    articleId,
+    responseBody,
+  }: {
+    feedId: string;
+    mediumId: string;
+    articleId?: string;
+    responseBody: string;
+  }) {
+    this.amqpConnection.publish(
+      "",
+      MessageBrokerQueue.FeedRejectedArticleDisableConnection,
+      {
+        data: {
+          rejectedCode: ArticleDeliveryRejectedCode.BadRequest,
+          articleId,
+          rejectedMessage: responseBody,
+          medium: {
+            id: mediumId,
+          },
+          feed: {
+            id: feedId,
+          },
+        },
+      }
+    );
+  }
+
+  private emitMissingPermissionsMediumEvent({
+    mediumId,
+    feedId,
+  }: {
+    mediumId: string;
+    feedId: string;
+  }) {
+    this.amqpConnection.publish(
+      "",
+      MessageBrokerQueue.FeedRejectedArticleDisableConnection,
+      {
+        data: {
+          rejectedCode: ArticleDeliveryRejectedCode.Forbidden,
+          medium: {
+            id: mediumId,
+          },
+          feed: {
+            id: feedId,
+          },
+        },
+      }
+    );
   }
 
   private async updateFeedArticlesInCache({
@@ -605,6 +693,7 @@ export class FeedEventHandlerService {
       options: {
         formatOptions,
         externalFeedProperties: event.data.feed.externalProperties,
+        requestLookupDetails: event.data.feed.requestLookupDetails,
       },
     };
 

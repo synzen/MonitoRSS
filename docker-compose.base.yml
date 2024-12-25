@@ -1,4 +1,3 @@
-version: "3.8"
 services:
   feed-requests-redis-cache:
     image: redis:7.0.7-alpine
@@ -105,37 +104,13 @@ services:
     networks:
       - monitorss-default
 
-  feed-requests-service:
-    restart: on-failure:5
-    build:
-      context: services/feed-requests
-      dockerfile: Dockerfile
-      target: build
-    depends_on:
-      feed-requests-postgres-db:
-        condition: service_started
-      rabbitmq-broker:
-        condition: service_healthy
-    environment:
-      - FEED_REQUESTS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/feedrequests
-      - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mongo:27017/rss
-      - FEED_REQUESTS_API_KEY=feed-requests-api-key
-      - FEED_REQUESTS_API_PORT=5000
-      - FEED_REQUESTS_RABBITMQ_BROKER_URL=amqp://rabbitmq-broker:5672
-      - FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS=48
-      - FEED_REQUESTS_START_TARGET=service
-      - FEED_REQUESTS_REDIS_URI=redis://feed-requests-redis-cache:6379
-      - FEED_REQUESTS_REDIS_DISABLE_CLUSTER=true
-    networks:
-      - monitorss-default
-
   feed-requests-postgres-migration:
     restart: on-failure:5
     build:
       context: services/feed-requests
       dockerfile: Dockerfile
       target: build
-    command: "npm run migration:local:up"
+    command: "npm run migration:up"
     depends_on:
       feed-requests-postgres-db:
         condition: service_started
@@ -154,30 +129,29 @@ services:
     networks:
       - monitorss-default
 
-  feed-requests-api:
+  feed-requests-service:
     restart: on-failure:5
     build:
       context: services/feed-requests
       dockerfile: Dockerfile
       target: build
-    depends_on:
-      feed-requests-postgres-db:
-        condition: service_started
     healthcheck:
       test: "wget --no-verbose --tries=1 --spider http://127.0.0.1:5000/v1/feed-requests/health || exit 1"
       interval: 5s
       timeout: 5s
       retries: 3
+    depends_on:
+      feed-requests-postgres-db:
+        condition: service_started
+      rabbitmq-broker:
+        condition: service_healthy
     environment:
       - FEED_REQUESTS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/feedrequests
       - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mongo:27017/rss
       - FEED_REQUESTS_API_KEY=feed-requests-api-key
       - FEED_REQUESTS_API_PORT=5000
-      # - FEED_REQUESTS_SYNC_DB=true
       - FEED_REQUESTS_RABBITMQ_BROKER_URL=amqp://rabbitmq-broker:5672
-      - FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS=0.02
-      - FEED_REQUESTS_START_TARGET=api
-      - FEED_REQUESTS_S3_ENDPOINT=http://seaweed-fs:8333
+      - FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS=48
       - FEED_REQUESTS_REDIS_URI=redis://feed-requests-redis-cache:6379
       - FEED_REQUESTS_REDIS_DISABLE_CLUSTER=true
     networks:
@@ -204,8 +178,8 @@ services:
       - USER_FEEDS_POSTGRES_DATABASE=userfeeds
       - USER_FEEDS_API_PORT=5000
       - USER_FEEDS_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672
-      - USER_FEEDS_FEED_REQUESTS_API_URL=http://feed-requests-api:5000/v1/feed-requests
-      - USER_FEEDS_FEED_REQUESTS_GRPC_URL=dns:///feed-requests-api:4999
+      - USER_FEEDS_FEED_REQUESTS_API_URL=http://feed-requests-service:5000/v1/feed-requests
+      - USER_FEEDS_FEED_REQUESTS_GRPC_URL=dns:///feed-requests-service:4999
       - USER_FEEDS_FEED_REQUESTS_GRPC_USE_TLS=false
       - USER_FEEDS_FEED_REQUESTS_API_KEY=feed-requests-api-key
       - USER_FEEDS_API_KEY=user-feeds-api-key
@@ -220,7 +194,7 @@ services:
       context: services/user-feeds
       dockerfile: Dockerfile
       target: build
-    command: npm run migration:local:up
+    command: npm run migration:up
     depends_on:
       - user-feeds-postgres-db
     environment:
@@ -229,8 +203,8 @@ services:
       - USER_FEEDS_POSTGRES_DATABASE=userfeeds
       - USER_FEEDS_API_PORT=5000
       - USER_FEEDS_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672
-      - USER_FEEDS_FEED_REQUESTS_API_URL=http://feed-requests-api:5000/v1/feed-requests
-      - USER_FEEDS_FEED_REQUESTS_GRPC_URL=dns:///feed-requests-api:4999
+      - USER_FEEDS_FEED_REQUESTS_API_URL=http://feed-requests-service:5000/v1/feed-requests
+      - USER_FEEDS_FEED_REQUESTS_GRPC_URL=dns:///feed-requests-service:4999
       - USER_FEEDS_FEED_REQUESTS_GRPC_USE_TLS=false
       - USER_FEEDS_FEED_REQUESTS_API_KEY=feed-requests-api-key
       - USER_FEEDS_API_KEY=user-feeds-api-key
@@ -243,7 +217,7 @@ services:
   schedule-emitter-service:
     build:
       context: services/backend-api
-      dockerfile: dockerfiles/web/api.Dockerfile
+      dockerfile: dockerfiles/web/mixed.Dockerfile
       target: build
     restart: on-failure:10
     depends_on:
@@ -254,19 +228,18 @@ services:
       - BACKEND_API_USER_FEEDS_API_KEY=----IRRELEVANT----
       - BACKEND_API_FEED_REQUESTS_API_HOST=----IRRELEVANT----
       - BACKEND_API_FEED_REQUESTS_API_KEY=----IRRELEVANT----
-      - BACKEND_API_LOGIN_REDIRECT_URI=----IRRELEVANT----
       - BACKEND_API_DISCORD_REDIRECT_URI=----IRRELEVANT----
       - BACKEND_API_DEFAULT_MAX_FEEDS=10
       - BACKEND_API_FEED_USER_AGENT=----IRRELEVANT----
       - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672/
     networks:
       - monitorss-default
+    command: npm run start:schedule-emitter:local
 
-  # Schedule emitter
   legacy-feed-bulk-converter-service:
     build:
       context: services/backend-api
-      dockerfile: dockerfiles/legacy-feed-bulk-converter/Dockerfile
+      dockerfile: dockerfiles/web/mixed.Dockerfile
       target: build
     restart: on-failure:10
     depends_on:
@@ -285,12 +258,13 @@ services:
       - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672/
     networks:
       - monitorss-default
+    command: ["node", "dist/scripts/legacy-feed-bulk-converter.js"]
 
   # Web - Backend api
   web-api:
     build:
       context: services/backend-api
-      dockerfile: dockerfiles/web/api.Dockerfile
+      dockerfile: dockerfiles/web/mixed.Dockerfile
       target: build
     restart: on-failure:5
     depends_on:
@@ -299,12 +273,18 @@ services:
       - feed-requests-service
     ports:
       - "8000:8000"
+    healthcheck:
+      test: "wget http://localhost:8000/api/v1/health -q -O - > /dev/null 2>&1"
+      interval: 5s
+      timeout: 5s
+      retries: 3
+    command: ["node", "dist/main"]
     environment:
       - BACKEND_API_NODE_ENV=local
       - BACKEND_API_PORT=8000
       - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss
       - BACKEND_API_USER_FEEDS_API_HOST=http://user-feeds-service:5000
-      - BACKEND_API_FEED_REQUESTS_API_HOST=http://feed-requests-api:5000
+      - BACKEND_API_FEED_REQUESTS_API_HOST=http://feed-requests-service:5000
       - BACKEND_API_DEFAULT_MAX_FEEDS=10
       - BACKEND_API_FEED_USER_AGENT=MonitoRSS
       - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672/

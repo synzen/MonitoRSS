@@ -381,7 +381,7 @@ export const UserFeed: React.FC = () => {
                                     <span>{t("pages.userFeed.disableFeedButtonText")}</span>
                                   </MenuItem>
                                 }
-                                okText={t("common.buttons.yes")}
+                                okText="Disable feed"
                                 colorScheme="blue"
                                 onConfirm={async () =>
                                   onUpdateFeed({
