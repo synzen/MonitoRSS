@@ -381,7 +381,7 @@ export class DiscordMediumService implements DeliveryMedium {
           );
         }
 
-        return [await this.deliverArticleToWebhook(article, webhook, details)];
+        return await this.deliverArticleToWebhook(article, webhook, details);
       } else if (channel) {
         if (channel.type === "forum") {
           return await this.deliverArticleToChannelForum(
@@ -393,13 +393,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
         const channelId = channel.id;
 
-        const res = await this.deliverArticleToChannel(
-          article,
-          channelId,
-          details
-        );
-
-        return [res];
+        return await this.deliverArticleToChannel(article, channelId, details);
       } else {
         throw new Error("No channel or webhook specified for Discord medium");
       }
@@ -722,7 +716,7 @@ export class DiscordMediumService implements DeliveryMedium {
     article: Article,
     channelId: string,
     details: DeliverArticleDetails
-  ): Promise<ArticleDeliveryState> {
+  ): Promise<ArticleDeliveryState[]> {
     const {
       deliverySettings: {
         guildId,
@@ -746,10 +740,12 @@ export class DiscordMediumService implements DeliveryMedium {
       components,
     });
 
-    const deliveryId = generateDeliveryId();
+    const parentDeliveryId = generateDeliveryId();
 
-    await Promise.all(
-      bodies.map((body) =>
+    const allRecords: ArticleDeliveryState[] = await Promise.all(
+      bodies.map(async (body, idx) => {
+        const deliveryId = idx === 0 ? parentDeliveryId : generateDeliveryId();
+
         this.producer.enqueue(
           apiUrl,
           {
@@ -765,17 +761,20 @@ export class DiscordMediumService implements DeliveryMedium {
             guildId,
             emitDeliveryResult: true,
           }
-        )
-      )
+        );
+
+        return {
+          id: deliveryId,
+          status: ArticleDeliveryStatus.PendingDelivery,
+          mediumId: details.mediumId,
+          contentType: ArticleDeliveryContentType.DiscordArticleMessage,
+          parent: idx === 0 ? undefined : parentDeliveryId,
+          articleIdHash: article.flattened.idHash,
+        };
+      })
     );
 
-    return {
-      id: deliveryId,
-      status: ArticleDeliveryStatus.PendingDelivery,
-      mediumId: details.mediumId,
-      contentType: ArticleDeliveryContentType.DiscordArticleMessage,
-      articleIdHash: article.flattened.idHash,
-    };
+    return allRecords;
   }
 
   private async deliverArticleToWebhook(
@@ -794,7 +793,7 @@ export class DiscordMediumService implements DeliveryMedium {
       threadId?: string | null;
     },
     details: DeliverArticleDetails
-  ): Promise<ArticleDeliveryState> {
+  ): Promise<ArticleDeliveryState[]> {
     const {
       deliverySettings: {
         guildId,
@@ -843,10 +842,12 @@ export class DiscordMediumService implements DeliveryMedium {
       }),
     }));
 
-    const deliveryId = generateDeliveryId();
-    await Promise.all(
-      bodies.map((body) =>
-        this.producer.enqueue(
+    const parentDeliveryId = generateDeliveryId();
+    const allRecords: ArticleDeliveryState[] = await Promise.all(
+      bodies.map(async (body, idx) => {
+        const deliveryId = idx === 0 ? parentDeliveryId : generateDeliveryId();
+
+        await this.producer.enqueue(
           apiUrl,
           {
             method: "POST",
@@ -861,17 +862,20 @@ export class DiscordMediumService implements DeliveryMedium {
             guildId,
             emitDeliveryResult: true,
           }
-        )
-      )
+        );
+
+        return {
+          id: deliveryId,
+          status: ArticleDeliveryStatus.PendingDelivery,
+          mediumId: details.mediumId,
+          contentType: ArticleDeliveryContentType.DiscordArticleMessage,
+          articleIdHash: article.flattened.idHash,
+          parent: idx === 0 ? undefined : parentDeliveryId,
+        };
+      })
     );
 
-    return {
-      id: generateDeliveryId(),
-      status: ArticleDeliveryStatus.PendingDelivery,
-      mediumId: details.mediumId,
-      contentType: ArticleDeliveryContentType.DiscordArticleMessage,
-      articleIdHash: article.flattened.idHash,
-    };
+    return allRecords;
   }
 
   getForumTagsToSend(
