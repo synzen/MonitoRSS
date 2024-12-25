@@ -116,7 +116,7 @@ export class PartitionedFeedArticleFieldStoreService {
   > {
     const oneMonthAgo = dayjs().subtract(1, "month").toISOString();
 
-    if (ids.length < 50) {
+    if (ids.length < 15) {
       return this.connection.execute(
         `SELECT field_hashed_value` +
           ` FROM ${this.TABLE_NAME}` +
