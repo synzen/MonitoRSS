@@ -69,6 +69,7 @@ import getFeedRequestLookupDetails from "../../utils/get-feed-request-lookup-det
 import { ConfigService } from "@nestjs/config";
 import { User, UserModel } from "../users/entities/user.entity";
 import { randomUUID } from "crypto";
+import { UserFeedCopyableSetting } from "./dto/copy-user-feed-settings-input.dto";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual
@@ -441,6 +442,98 @@ export class UserFeedsService {
     return {
       id: newFeedId.toHexString(),
     };
+  }
+
+  async copySettings({
+    sourceFeed,
+    targetFeedIds,
+    settingsToCopy,
+  }: {
+    sourceFeed: UserFeed;
+    targetFeedIds: string[];
+    settingsToCopy: UserFeedCopyableSetting[];
+  }) {
+    // this.userFeedModel.updateMany({})
+    const setQuery: UpdateQuery<UserFeedDocument>["$set"] = {};
+
+    if (settingsToCopy.includes(UserFeedCopyableSetting.PassingComparisons)) {
+      setQuery.passingComparisons = sourceFeed.passingComparisons;
+    }
+
+    if (settingsToCopy.includes(UserFeedCopyableSetting.BlockingComparisons)) {
+      setQuery.blockingComparisons = sourceFeed.blockingComparisons;
+    }
+
+    if (settingsToCopy.includes(UserFeedCopyableSetting.ExternalProperties)) {
+      setQuery.externalProperties = sourceFeed.externalProperties?.map((p) => ({
+        ...p,
+        id: new Types.ObjectId().toHexString(),
+      }));
+    }
+
+    if (settingsToCopy.includes(UserFeedCopyableSetting.DateChecks)) {
+      setQuery.dateCheckOptions = sourceFeed.dateCheckOptions;
+    }
+
+    if (
+      settingsToCopy.includes(UserFeedCopyableSetting.DatePlaceholderSettings)
+    ) {
+      setQuery.formatOptions = {
+        ...sourceFeed.formatOptions,
+        dateFormat: sourceFeed.formatOptions?.dateFormat,
+        dateTimezone: sourceFeed.formatOptions?.dateTimezone,
+        dateLocale: sourceFeed.formatOptions?.dateLocale,
+      };
+    }
+
+    if (settingsToCopy.includes(UserFeedCopyableSetting.RefreshRate)) {
+      setQuery.userRefreshRateSeconds = sourceFeed.userRefreshRateSeconds;
+    }
+
+    if (settingsToCopy.includes(UserFeedCopyableSetting.Connections)) {
+      const feedsWithApplicationWebhooks = await this.userFeedModel
+        .find({
+          id: {
+            $in: targetFeedIds.map((id) => new Types.ObjectId(id)),
+          },
+          "connections.discordChannels.details.webhook.isApplicationOwned":
+            true,
+        })
+        .lean();
+
+      await Promise.all(
+        feedsWithApplicationWebhooks.map(async (f) => {
+          await Promise.all(
+            f.connections.discordChannels.map(async (c) => {
+              if (c.details.webhook?.isApplicationOwned === true) {
+                await this.feedConnectionsDiscordChannelsService.deleteConnection(
+                  f._id.toHexString(),
+                  c.id.toHexString()
+                );
+              }
+            })
+          );
+        })
+      );
+
+      setQuery.connections = {
+        discordChannels: sourceFeed.connections.discordChannels.map((c) => ({
+          ...c,
+          id: new Types.ObjectId().toHexString(),
+        })),
+      };
+    }
+
+    await this.userFeedModel.updateMany(
+      {
+        _id: {
+          $in: targetFeedIds.map((id) => new Types.ObjectId(id)),
+        },
+      },
+      {
+        $set: setQuery,
+      }
+    );
   }
 
   async bulkDelete(feedIds: string[]) {

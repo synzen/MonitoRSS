@@ -348,7 +348,7 @@ const mockUserFeeds: UserFeed[] = [
   },
 ];
 
-// for (let i = 0; i < 100; i++) {
+// for (let i = 0; i < 100; i += 1) {
 //   mockUserFeeds.push({
 //     id: `${i + 4}`,
 //     title: `Feed ${i + 4}`,
@@ -363,6 +363,7 @@ const mockUserFeeds: UserFeed[] = [
 //       dateFormat: undefined,
 //       dateTimezone: "UTC",
 //     },
+//     refreshRateOptions: [],
 //   });
 // }
 

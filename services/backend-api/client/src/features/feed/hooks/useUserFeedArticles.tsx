@@ -24,6 +24,7 @@ export const useUserFeedArticles = ({
       feedId,
       inputData,
     },
+    feedId,
   ];
 
   const { data, status, error, refetch, fetchStatus } = useQuery<

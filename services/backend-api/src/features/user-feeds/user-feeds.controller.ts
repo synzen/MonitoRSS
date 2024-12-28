@@ -61,6 +61,7 @@ import { RestoreLegacyUserFeedExceptionFilter } from "./filters/restore-legacy-u
 import { GetUserFeedsPipe, GetUserFeedsPipeOutput } from "./pipes";
 import { GetFeedArticlePropertiesInput, GetFeedArticlesInput } from "./types";
 import { UserFeedsService } from "./user-feeds.service";
+import { CopyUserFeedSettingsInputDto } from "./dto/copy-user-feed-settings-input.dto";
 
 @Controller("user-feeds")
 @UseGuards(DiscordOAuth2Guard)
@@ -397,6 +398,21 @@ export class UserFeedsController {
     )) as UserFeed;
 
     return this.userFeedsService.formatForHttpResponse(updated, discordUserId);
+  }
+
+  @Post("/:feedId/copy-settings")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async copyFeedSettings(
+    @Param("feedId", GetUserFeedsPipe())
+    [{ feed }]: GetUserFeedsPipeOutput,
+    @Body(ValidationPipe)
+    { settings, targetFeedIds }: CopyUserFeedSettingsInputDto
+  ) {
+    await this.userFeedsService.copySettings({
+      sourceFeed: feed,
+      settingsToCopy: settings,
+      targetFeedIds,
+    });
   }
 
   @Post("/:feedId/restore-to-legacy")

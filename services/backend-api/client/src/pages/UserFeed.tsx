@@ -72,6 +72,7 @@ import { ExternalPropertiesTabSection } from "../features/feedConnections/compon
 import { UserFeedProvider } from "../contexts/UserFeedContext";
 import { UserFeedTabSearchParam } from "../constants/userFeedTabSearchParam";
 import { UserFeedHealthAlert } from "../features/feed/components/UserFeedHealthAlert";
+import { CopyUserFeedSettingsDialog } from "../features/feed/components/CopyUserFeedSettingsDialog";
 
 const tabIndexBySearchParam = new Map<string, number>([
   [UserFeedTabSearchParam.Connections, 0],
@@ -84,6 +85,11 @@ const tabIndexBySearchParam = new Map<string, number>([
 export const UserFeed: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
   const { isOpen: editIsOpen, onClose: editOnClose, onOpen: editOnOpen } = useDisclosure();
+  const {
+    isOpen: copySettingsIsOpen,
+    onClose: copySettingsOnClose,
+    onOpen: copySettingsOnOpen,
+  } = useDisclosure();
   const { onOpen: onOpenPricingDialog } = useContext(PricingDialogContext);
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -254,6 +260,11 @@ export const UserFeed: React.FC = () => {
           onUpdate={onUpdateFeed}
           error={updateError?.message}
         />
+        <CopyUserFeedSettingsDialog
+          isOpen={copySettingsIsOpen}
+          onClose={copySettingsOnClose}
+          onCloseRef={menuButtonRef}
+        />
         <Tabs isLazy isFitted defaultIndex={tabIndex ?? 0} index={tabIndex ?? undefined}>
           <Stack
             width="100%"
@@ -340,6 +351,9 @@ export const UserFeed: React.FC = () => {
                           <MenuList>
                             <MenuItem aria-label="Edit" onClick={editOnOpen}>
                               {t("common.buttons.configure")}
+                            </MenuItem>
+                            <MenuItem aria-label="Copy Settings" onClick={copySettingsOnOpen}>
+                              Copy Settings
                             </MenuItem>
                             {feed && (
                               <CloneUserFeedDialog
