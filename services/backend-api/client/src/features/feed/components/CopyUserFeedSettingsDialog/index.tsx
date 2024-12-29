@@ -148,6 +148,7 @@ export const CopyUserFeedSettingsDialog = ({ isOpen, onClose, onCloseRef }: Prop
     return (
       <Stack key={category}>
         <Checkbox
+          aria-controls={allCategorySettings.join(" ")}
           isChecked={allCategorySettingsAreChecked}
           isIndeterminate={!allCategorySettingsAreChecked && !noCategorySettingsAreChecked}
           onChange={(e) => onCheckCategoryChange(category, e.target.checked)}
@@ -164,6 +165,7 @@ export const CopyUserFeedSettingsDialog = ({ isOpen, onClose, onCloseRef }: Prop
               <Checkbox
                 key={setting}
                 pl={6}
+                id={setting}
                 onChange={(e) =>
                   onCheckSettingChange(setting as CopyableUserFeedSettings, e.target.checked)
                 }
@@ -206,60 +208,70 @@ export const CopyUserFeedSettingsDialog = ({ isOpen, onClose, onCloseRef }: Prop
                 </Text>
               </Box>
             </Stack>
-            <Stack spacing={2}>
-              <Heading size="sm" as="h2">
-                Settings to Copy
-              </Heading>
-              <Stack>
-                {otherSettings.map((setting) => {
-                  const settingDescription = CopyableSettingDescriptions[setting];
+            <fieldset>
+              <Stack spacing={2}>
+                <legend>
+                  <Heading size="sm" as="h2">
+                    Settings to Copy
+                  </Heading>
+                </legend>
+                <Stack>
+                  {otherSettings.map((setting) => {
+                    const settingDescription = CopyableSettingDescriptions[setting];
 
-                  return (
-                    <Checkbox
-                      onChange={(e) => onCheckSettingChange(setting, e.target.checked)}
-                      isChecked={checkedSettings.includes(setting)}
-                      key={setting}
-                    >
-                      {settingDescription.description}
-                      <br />
-                      {settingDescription.hint && (
-                        <chakra.span color="whiteAlpha.600" fontSize={14}>
-                          {settingDescription.hint}
-                        </chakra.span>
-                      )}
-                    </Checkbox>
-                  );
-                })}
-                {checkboxesByCategories}
+                    return (
+                      <Checkbox
+                        onChange={(e) => onCheckSettingChange(setting, e.target.checked)}
+                        isChecked={checkedSettings.includes(setting)}
+                        key={setting}
+                      >
+                        {settingDescription.description}
+                        <br />
+                        {settingDescription.hint && (
+                          <chakra.span color="whiteAlpha.600" fontSize={14}>
+                            {settingDescription.hint}
+                          </chakra.span>
+                        )}
+                      </Checkbox>
+                    );
+                  })}
+                  {checkboxesByCategories}
+                </Stack>
               </Stack>
-            </Stack>
-            <Stack spacing={2}>
-              <Heading size="sm" as="h2">
-                Target Feeds
-              </Heading>
-              <Text>
-                The feeds that will have their settings overwritten with the selected settings from
-                the source feed.
-              </Text>
-              <Box>
-                <Button size="sm" onClick={onClickSelectNoneConnections}>
-                  Select none
-                </Button>
-              </Box>
-              <Stack mt={1}>
-                <SelectableUserFeedList
-                  onSelectedIdsChange={setCheckedUserFeeds}
-                  selectedIds={checkedUserFeeds}
-                />
+            </fieldset>
+            <fieldset>
+              <Stack spacing={2}>
+                <legend>
+                  <Stack spacing={2}>
+                    <Heading size="sm" as="h2">
+                      Target Feeds
+                    </Heading>
+                    <Text>
+                      The feeds that will have their settings overwritten with the selected settings
+                      from the source feed.
+                    </Text>
+                  </Stack>
+                </legend>
+                <Box>
+                  <Button size="sm" onClick={onClickSelectNoneConnections}>
+                    Select none
+                  </Button>
+                </Box>
+                <Stack mt={1}>
+                  <SelectableUserFeedList
+                    onSelectedIdsChange={setCheckedUserFeeds}
+                    selectedIds={checkedUserFeeds}
+                  />
+                </Stack>
               </Stack>
-            </Stack>
-            {error && (
-              <InlineErrorAlert
-                title={t("common.errors.somethingWentWrong")}
-                description={error.message}
-              />
-            )}
+            </fieldset>
           </Stack>
+          {error && (
+            <InlineErrorAlert
+              title={t("common.errors.somethingWentWrong")}
+              description={error.message}
+            />
+          )}
         </ModalBody>
         <ModalFooter>
           <HStack>
