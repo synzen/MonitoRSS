@@ -404,7 +404,12 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
                 status === "loading"
               }
             >
-              <span>Confirm</span>
+              <span>
+                Copy to{" "}
+                {checkedConnections.length === 1
+                  ? "1 connection"
+                  : `${checkedConnections.length} connections`}
+              </span>
             </Button>
           </HStack>
         </ModalFooter>

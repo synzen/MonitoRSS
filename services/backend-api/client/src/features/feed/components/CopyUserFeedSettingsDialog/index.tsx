@@ -251,10 +251,6 @@ export const CopyUserFeedSettingsDialog = ({ isOpen, onClose, onCloseRef }: Prop
                   onSelectedIdsChange={setCheckedUserFeeds}
                   selectedIds={checkedUserFeeds}
                 />
-                <Text>
-                  Selected {checkedUserFeeds.length}{" "}
-                  {checkedUserFeeds.length === 1 ? "feed" : "feeds"}
-                </Text>
               </Stack>
             </Stack>
             {error && (
@@ -280,7 +276,10 @@ export const CopyUserFeedSettingsDialog = ({ isOpen, onClose, onCloseRef }: Prop
                 checkedSettings.length === 0 || status === "loading"
               }
             >
-              <span>Confirm</span>
+              <span>
+                Copy to{" "}
+                {checkedUserFeeds.length === 1 ? "1 feed" : `${checkedUserFeeds.length} feeds`}
+              </span>
             </Button>
           </HStack>
         </ModalFooter>
