@@ -304,6 +304,10 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
         <ModalCloseButton />
         <ModalBody>
           <Stack spacing={6}>
+            <Text>
+              Mass-copy settings from the source connection to another. This will overwrite the
+              settings of the target connections.
+            </Text>
             <Stack py={4} px={4} bg="blackAlpha.300" rounded="md">
               <Badge bg="none" p={0}>
                 Source Connection
@@ -317,10 +321,6 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
                 <chakra.span fontWeight={600}>{connection?.name}</chakra.span>
               </Box>
             </Stack>
-            <Text>
-              Mass-copy settings from the source connection to another. This will overwrite the
-              settings of the target connections.
-            </Text>
             <Stack spacing={2}>
               <Heading size="sm" as="h2">
                 Settings to Copy
