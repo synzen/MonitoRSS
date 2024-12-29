@@ -52,7 +52,6 @@ import {
   SearchIcon,
 } from "@chakra-ui/icons";
 import dayjs from "dayjs";
-import { useInView } from "react-intersection-observer";
 import { FaPause, FaPlay } from "react-icons/fa6";
 import { Link as RouterLink, useSearchParams } from "react-router-dom";
 import { useDeleteUserFeeds, useDisableUserFeeds, useEnableUserFeeds } from "../../hooks";
@@ -110,7 +109,6 @@ const STATUS_FILTERS = [
 
 export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
   const { t } = useTranslation();
-  const { ref: scrollRef, inView } = useInView();
   const [searchParams, setSearchParams] = useSearchParams();
   const searchParamsSearch = searchParams.get("search") || "";
   const [searchInput, setSearchInput] = useState(searchParamsSearch);
@@ -138,17 +136,6 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
   const { mutateAsync: disableUserFeeds } = useDisableUserFeeds();
   const { mutateAsync: enableUserFeeds } = useEnableUserFeeds();
   const flatData = React.useMemo(() => data?.pages?.flatMap((page) => page.results) || [], [data]);
-
-  const fetchMoreOnBottomReached = React.useCallback(() => {
-    if (inView && !isFetchingNextPage && hasNextPage) {
-      fetchNextPage();
-    }
-  }, [fetchNextPage, inView, isFetchingNextPage, hasNextPage]);
-
-  // // a check on mount and after a fetch to see if the table is already scrolled to the bottom and immediately needs to fetch more data
-  React.useEffect(() => {
-    fetchMoreOnBottomReached();
-  }, [fetchMoreOnBottomReached]);
 
   const columns = useMemo(
     () => [
@@ -451,7 +438,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
   }
 
   return (
-    <Stack spacing={4} height="100%">
+    <Stack spacing={4}>
       <form
         id="user-feed-search"
         onSubmit={(e) => {
@@ -644,7 +631,6 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
           borderStyle="solid"
           borderRadius="md"
           width="100%"
-          mb={20}
           overflowX="auto"
         >
           <Table
@@ -744,13 +730,22 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
               })}
             </tbody>
           </Table>
-          {isFetchingNextPage && (
-            <Center>
-              <Spinner margin={4} />
-            </Center>
-          )}
-          <div ref={scrollRef} />
         </Box>
+      </Stack>
+      <Stack>
+        <Center>
+          <Text color="whiteAlpha.600" fontSize="sm">
+            Viewed {flatData.length} of {data?.pages[0].total} feeds
+          </Text>
+        </Center>
+        <Button
+          disabled={!hasNextPage || isFetchingNextPage}
+          isLoading={isFetchingNextPage}
+          onClick={() => fetchNextPage()}
+          mb={20}
+        >
+          Load More
+        </Button>
       </Stack>
     </Stack>
   );

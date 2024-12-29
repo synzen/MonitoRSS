@@ -109,7 +109,6 @@ export const UserFeeds: React.FC = () => {
                     <ChakraLink color="blue.300" onClick={onApplyRequiresAttentionFilters}>
                       Apply filters to see which ones they are.
                     </ChakraLink>
-                    .
                     {hasFailedFeedAlertsDisabled && (
                       <>
                         {" "}
