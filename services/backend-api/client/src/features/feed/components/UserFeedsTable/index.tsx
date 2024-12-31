@@ -155,6 +155,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
             isIndeterminate={table.getIsSomeRowsSelected()}
             marginX={3.5}
             cursor="pointer"
+            aria-label="Check all currently loaded feeds for bulk actions"
           />
         ),
         cell: ({ row }) => (
@@ -187,13 +188,14 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
                   borderRadius: "full",
                 },
               }}
+              aria-label={`Check feed ${row.original.title} for bulk actions`}
             />
           </Box>
         ),
       }),
       columnHelper.accessor("computedStatus", {
-        cell: (info) => <UserFeedStatusTag status={info.getValue()} />,
         header: () => <span>{t("pages.feeds.tableStatus")}</span>,
+        cell: (info) => <UserFeedStatusTag status={info.getValue()} />,
       }),
       columnHelper.accessor("title", {
         id: "title",
@@ -420,14 +422,6 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
     setSearch(searchParamsSearch);
   }, [searchParamsSearch, setSearch]);
 
-  if (status === "loading") {
-    return (
-      <Center width="100%" height="100%">
-        <Loading size="lg" />
-      </Center>
-    );
-  }
-
   if (status === "error") {
     return (
       <Alert status="error">
@@ -437,16 +431,26 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
     );
   }
 
+  const isInitiallyLoading = status === "loading" && !data;
+
   return (
     <Stack spacing={4}>
+      <Box srOnly aria-live="polite">
+        {!isInitiallyLoading && (
+          <Text>
+            Loaded table with {flatData.length} of {data?.pages[0].total} feeds loaded
+          </Text>
+        )}
+      </Box>
       <form
+        hidden={isInitiallyLoading}
         id="user-feed-search"
         onSubmit={(e) => {
           e.preventDefault();
           onSearchSubmit();
         }}
       >
-        <HStack width="100%">
+        <HStack as="fieldset" width="100%">
           <InputGroup width="min-content" flex={1}>
             <InputLeftElement pointerEvents="none">
               <SearchIcon color="gray.400" />
@@ -483,18 +487,23 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
           </Button>
         </HStack>
       </form>
-      <Stack>
+      <Center mt={4} hidden={!isInitiallyLoading}>
+        <Stack alignItems="center">
+          <Loading />
+          <Text>Loading feeds...</Text>
+        </Stack>
+      </Center>
+      <Stack hidden={isInitiallyLoading}>
         <Flex justifyContent="space-between" flexWrap="wrap" width="100%" gap={4}>
           <HStack justifyContent="space-between" flexWrap="wrap" flex={1}>
             <Menu>
               <MenuButton
                 as={Button}
-                aria-label="Options"
                 rightIcon={<ChevronDownIcon />}
                 variant="outline"
                 isDisabled={selectedRows.length === 0}
               >
-                Bulk Actions
+                Bulk Feed Actions
               </MenuButton>
               <MenuList zIndex={2}>
                 <ConfirmModal
@@ -695,7 +704,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
 
                 return (
                   <Tr
-                    role="button"
+                    // role="button"
                     key={row.id}
                     _hover={{
                       bg: "gray.700",
@@ -732,7 +741,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
           </Table>
         </Box>
       </Stack>
-      <Stack>
+      <Stack hidden>
         <Center>
           <Text color="whiteAlpha.600" fontSize="sm">
             Viewed {flatData.length} of {data?.pages[0].total} feeds

@@ -8,8 +8,10 @@ import {
   HStack,
   Menu,
   MenuButton,
+  MenuDivider,
   MenuItem,
   MenuList,
+  Text,
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -53,7 +55,14 @@ export const NewHeader = ({ invertBackground }: Props) => {
           <Flex alignItems="center" overflow="hidden">
             {discordBotData && (
               <Link to={pages.userFeeds()}>
-                <Flex alignItems="center" paddingBottom="1" overflow="hidden">
+                <Flex
+                  alignItems="center"
+                  paddingBottom="1"
+                  overflow="hidden"
+                  as="a"
+                  href="/"
+                  aria-label="MonitoRSS Home"
+                >
                   <Avatar
                     src={discordBotData.result.avatar || undefined}
                     size="sm"
@@ -98,7 +107,7 @@ export const NewHeader = ({ invertBackground }: Props) => {
         </HStack>
         <Flex alignItems="center" paddingY="4">
           <Menu placement="bottom-end">
-            <MenuButton as={Button} size="sm" variant="link">
+            <MenuButton as={Button} size="sm" variant="link" aria-label="Account   settings">
               <Avatar
                 src={discordUserMe?.iconUrl}
                 size="sm"
@@ -108,8 +117,14 @@ export const NewHeader = ({ invertBackground }: Props) => {
               />
             </MenuButton>
             <MenuList>
+              <Box overflow="hidden" paddingX={2} title={discordUserMe?.username}>
+                <Text overflow="hidden" maxWidth={300} textOverflow="ellipsis" whiteSpace="nowrap">
+                  {discordUserMe?.username}
+                </Text>
+              </Box>
+              <MenuDivider />
               <MenuItem icon={<SettingsIcon />} onClick={() => navigate(pages.userSettings())}>
-                Settings
+                Account Settings
               </MenuItem>
               <MenuItem
                 alignItems="center"
@@ -118,7 +133,7 @@ export const NewHeader = ({ invertBackground }: Props) => {
                   window.open("https://support.monitorss.xyz", "_blank");
                 }}
               >
-                Support
+                Request Support
               </MenuItem>
               <ReportABugDialog
                 trigger={

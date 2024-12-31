@@ -95,11 +95,11 @@
       "tableUrl": "URL",
       "tableStatus": "Status",
       "tableChannel": "Channel",
-      "tableSearch": "Search by title or url",
+      "tableSearch": "Search feeds by title or url",
       "tableResults": "Showing {{start}}-{{end}} of {{total}} results"
     },
     "userFeeds": {
-      "title": "Personal Feeds",
+      "title": "Feeds",
       "newBadge": "NEW",
       "backToLegacyFeedsButton": "Back to legacy feeds",
       "tabLogs": "Logs",

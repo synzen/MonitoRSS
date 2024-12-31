@@ -127,8 +127,8 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
         ) : (
           <Button
             colorScheme="blue"
-            onClick={onOpen}
-            isDisabled={!isUnderLimit}
+            onClick={() => (isUnderLimit ? onOpen() : undefined)}
+            aria-disabled={!isUnderLimit}
             isLoading={isLoading}
             variant="solid"
           >
