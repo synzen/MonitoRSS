@@ -120,19 +120,11 @@ export default class PartitionedRequestsStoreService {
 
   async getLatestOkRequest(
     lookupKey: string,
-    opts?: {
-      fields?: Record<'response_headers', boolean>;
-    },
-  ): Promise<null | {
-    createdAt: Date;
-    responseHeaders?: Record<string, string>;
-  }> {
+  ): Promise<null | { createdAt: Date }> {
     const em = this.orm.em.getConnection();
 
     const [result] = await em.execute(
-      `SELECT created_at ${
-        opts?.fields?.response_headers ? ', response_headers' : ''
-      } FROM request_partitioned
+      `SELECT created_at FROM request_partitioned
        WHERE lookup_key = ?
        AND status = 'OK'
        ORDER BY created_at DESC
@@ -144,10 +136,7 @@ export default class PartitionedRequestsStoreService {
       return null;
     }
 
-    return {
-      createdAt: new Date(result.created_at),
-      responseHeaders: result.response_headers,
-    };
+    return { createdAt: new Date(result.created_at) };
   }
 
   async countFailedRequests(lookupKey: string, since?: Date) {
