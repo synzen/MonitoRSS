@@ -49,10 +49,7 @@ export class Response {
     type: 'json',
     nullable: true,
   })
-  headers?: {
-    etag?: string;
-    lastModified?: string;
-  } | null;
+  headers?: Record<string, string> | null;
 
   @Property({
     type: 'timestamp with time zone',

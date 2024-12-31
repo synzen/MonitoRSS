@@ -58,7 +58,7 @@ interface FetchOptions {
 interface FetchResponse {
   ok: boolean;
   status: number;
-  headers: Map<'etag' | 'last-modified' | 'server' | 'content-type', string>;
+  headers: Map<string, string>;
   text: () => Promise<string>;
   arrayBuffer: () => Promise<ArrayBuffer>;
 }
@@ -135,19 +135,11 @@ export class FeedFetcherService {
     request: Request;
     decodedResponseText: string | null | undefined;
   } | null> {
-    const logDebug =
-      url ===
-      'https://www.clanaod.net/forums/external.php?type=RSS2&forumids=102';
-
     const request = await this.partitionedRequestsStore.getLatestRequest(
       lookupKey || url,
     );
 
     if (!request) {
-      if (logDebug) {
-        logger.warn(`Running debug on schedule: no request was found`);
-      }
-
       return null;
     }
 
@@ -161,13 +153,6 @@ export class FeedFetcherService {
             await inflatePromise(Buffer.from(compressedText, 'base64'))
           ).toString()
         : '';
-
-      if (logDebug) {
-        logger.warn(
-          `Running debug on schedule: got cache key ${request.response.redisCacheKey}`,
-          { text },
-        );
-      }
 
       return {
         request,
@@ -232,20 +217,13 @@ export class FeedFetcherService {
         request.status = RequestStatus.BAD_STATUS_CODE;
       }
 
-      const etag = res.headers.get('etag');
-      const lastModified = res.headers.get('last-modified');
-
       const response = new Response();
       response.createdAt = request.createdAt;
       response.statusCode = res.status;
       response.headers = {};
 
-      if (etag) {
-        response.headers.etag = etag;
-      }
-
-      if (lastModified) {
-        response.headers.lastModified = lastModified;
+      for (const [key, val] of res.headers.entries()) {
+        response.headers[key] = val;
       }
 
       let text: string | null = null;
@@ -459,6 +437,11 @@ export class FeedFetcherService {
       convertHeaderValue(normalizedHeaders.get('last-modified')),
     );
     headers.set('server', convertHeaderValue(normalizedHeaders.get('server')));
+    headers.set('date', convertHeaderValue(normalizedHeaders.get('date')));
+    headers.set(
+      'cache-control',
+      convertHeaderValue(normalizedHeaders.get('cache-control')),
+    );
 
     return {
       headers,
