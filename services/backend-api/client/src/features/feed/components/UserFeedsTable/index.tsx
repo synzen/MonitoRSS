@@ -704,7 +704,6 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
 
                 return (
                   <Tr
-                    // role="button"
                     key={row.id}
                     _hover={{
                       bg: "gray.700",
@@ -741,14 +740,14 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
           </Table>
         </Box>
       </Stack>
-      <Stack hidden>
+      <Stack hidden={isInitiallyLoading}>
         <Center>
           <Text color="whiteAlpha.600" fontSize="sm">
             Viewed {flatData.length} of {data?.pages[0].total} feeds
           </Text>
         </Center>
         <Button
-          disabled={!hasNextPage || isFetchingNextPage}
+          isDisabled={!hasNextPage || isFetchingNextPage}
           isLoading={isFetchingNextPage}
           onClick={() => fetchNextPage()}
           mb={20}
