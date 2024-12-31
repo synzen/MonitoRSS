@@ -60,7 +60,6 @@ interface FetchResponse {
   status: number;
   headers: Map<'etag' | 'last-modified' | 'server' | 'content-type', string>;
   text: () => Promise<string>;
-  arrayBuffer: () => Promise<ArrayBuffer>;
 }
 
 @Injectable()
@@ -251,10 +250,7 @@ export class FeedFetcherService {
       let text: string | null = null;
 
       try {
-        text =
-          res.status === HttpStatus.NOT_MODIFIED
-            ? ''
-            : await this.maybeDecodeResponse(res);
+        text = res.status === HttpStatus.NOT_MODIFIED ? '' : await res.text();
 
         if (request.status !== RequestStatus.OK) {
           logger.debug(`Bad status code ${res.status} for url ${url}`, {
@@ -434,6 +430,11 @@ export class FeedFetcherService {
       maxRedirections: 10,
     });
 
+    const contentTypes =
+      typeof r.headers['content-type'] === 'string'
+        ? r.headers['content-type'].split(';')
+        : r.headers['content-type'] || [];
+
     const normalizedHeaders = Object.entries(r.headers).reduce(
       (acc, [key, val]) => {
         if (typeof val === 'string') {
@@ -464,28 +465,23 @@ export class FeedFetcherService {
       headers,
       ok: r.statusCode >= 200 && r.statusCode < 300,
       status: r.statusCode,
-      text: () => r.body.text(),
-      arrayBuffer: () => r.body.arrayBuffer(),
+      text: async () => {
+        const charset = contentTypes
+          .find((s) => s.includes('charset'))
+          ?.split('=')[1]
+          .trim();
+
+        if (!charset || /utf-*8/i.test(charset)) {
+          return r.body.text();
+        }
+
+        const arrBuffer = await r.body.arrayBuffer();
+        const decoded = iconv
+          .decode(Buffer.from(arrBuffer), charset)
+          .toString();
+
+        return decoded;
+      },
     };
-  }
-
-  private async maybeDecodeResponse(
-    res: Awaited<FetchResponse>,
-  ): Promise<string> {
-    const charset = res.headers
-      .get('content-type')
-      ?.split(';')
-      .find((s) => s.includes('charset'))
-      ?.split('=')[1]
-      .trim();
-
-    if (!charset || /utf-*8/i.test(charset)) {
-      return res.text();
-    }
-
-    const arrBuffer = await res.arrayBuffer();
-    const decoded = iconv.decode(Buffer.from(arrBuffer), charset).toString();
-
-    return decoded;
   }
 }
