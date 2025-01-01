@@ -178,7 +178,7 @@ export class FeedFetcherController {
     if (
       !latestRequest ||
       (latestRequest.request.response?.redisCacheKey &&
-        !latestRequest.decodedResponseText)
+        latestRequest.decodedResponseText == null)
     ) {
       if (data.executeFetchIfNotExists) {
         const savedData = await this.feedFetcherService.fetchAndSaveResponse(

@@ -37,6 +37,7 @@ import PartitionedFeedArticleFieldInsert from "./types/pending-feed-article-fiel
 import { FeedRequestLookupDetails } from "../shared/types/feed-request-lookup-details.type";
 import { pool, Pool } from "workerpool";
 import { join } from "path";
+import { FeedResponseRequestStatus } from "../shared";
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);
@@ -224,11 +225,10 @@ export class ArticlesService {
       }
     );
 
-    if (!response.body) {
-      return {
-        output: null,
-        url,
-      };
+    if (response.requestStatus !== FeedResponseRequestStatus.Success) {
+      throw new Error(
+        `Unexpected request status when fetching feed articles: ${response.requestStatus}`
+      );
     }
 
     try {
