@@ -212,10 +212,11 @@ export class FeedFetcherListenerService {
       .subtract(Math.round(rateSeconds * 0.75), 'seconds')
       .toDate();
 
-    const latestRequestAfterTime = await this.getLatestRequestAfterTime(
-      { url },
-      dateToCheck,
-    );
+    const latestRequestAfterTime =
+      await this.partitionedRequestsStoreService.getLatestStatusAfterTime(
+        lookupKey || url,
+        dateToCheck,
+      );
 
     if (latestRequestAfterTime) {
       logger.debug(
@@ -240,11 +241,11 @@ export class FeedFetcherListenerService {
       return { successful: false };
     }
 
-    // const latestOkRequest =
-    //   await this.partitionedRequestsStoreService.getLatestOkRequest(
-    //     data.lookupKey || data.url,
-    //     { fields: ['response_headers'] },
-    //   );
+    const latestOkRequest =
+      await this.partitionedRequestsStoreService.getLatestOkRequestWithResponseBody(
+        data.lookupKey || data.url,
+        { fields: ['response_headers'] },
+      );
 
     const { request } = await this.feedFetcherService.fetchAndSaveResponse(
       url,
@@ -258,9 +259,9 @@ export class FeedFetcherListenerService {
         source: RequestSource.Schedule,
         headers: {
           ...data.headers,
-          // 'If-Modified-Since':
-          //   latestOkRequest?.responseHeaders?.['last-modified'] || '',
-          // 'If-None-Match': latestOkRequest?.responseHeaders?.etag || '',
+          'If-Modified-Since':
+            latestOkRequest?.responseHeaders?.['last-modified'],
+          'If-None-Match': latestOkRequest?.responseHeaders?.etag,
         },
       },
     );
@@ -469,7 +470,7 @@ export class FeedFetcherListenerService {
   //   lookupKey: string;
   // }) {
   //   const latestOkRequest =
-  //     await this.partitionedRequestsStoreService.getLatestOkRequest(lookupKey);
+  //     await this.partitionedRequestsStoreService.getLatestOkRequestWithResponseBody(lookupKey);
 
   //   if (!latestOkRequest) {
   //     return false;
@@ -508,7 +509,7 @@ export class FeedFetcherListenerService {
     url: string;
   }): Promise<number> {
     const latestOkRequest =
-      await this.partitionedRequestsStoreService.getLatestOkRequest(
+      await this.partitionedRequestsStoreService.getLatestOkRequestWithResponseBody(
         lookupKey || url,
       );
 
@@ -524,18 +525,5 @@ export class FeedFetcherListenerService {
       Math.pow(2, attemptsSoFar);
 
     return dayjs(referenceDate).add(minutesToWait, 'minute').toDate();
-  }
-
-  async getLatestRequestAfterTime(
-    requestQuery: {
-      lookupKey?: string;
-      url: string;
-    },
-    time: Date,
-  ) {
-    return this.partitionedRequestsStoreService.getLatestStatusAfterTime(
-      requestQuery.lookupKey || requestQuery.url,
-      time,
-    );
   }
 }

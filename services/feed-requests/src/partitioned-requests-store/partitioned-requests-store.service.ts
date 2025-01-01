@@ -118,7 +118,7 @@ export default class PartitionedRequestsStoreService {
     return new Date(result.next_retry_date) || null;
   }
 
-  async getLatestOkRequest(
+  async getLatestOkRequestWithResponseBody(
     lookupKey: string,
     opts?: {
       fields?: Array<'response_headers'>;
@@ -238,12 +238,15 @@ export default class PartitionedRequestsStoreService {
     }));
   }
 
-  async getLatestRequest(lookupKey: string): Promise<Request | null> {
+  async getLatestRequestWithResponseBody(
+    lookupKey: string,
+  ): Promise<Request | null> {
     const em = this.orm.em.getConnection();
 
     const [result] = await em.execute(
       `SELECT * FROM request_partitioned
        WHERE lookup_key = ?
+       AND response_status_code != 304
        ORDER BY created_at DESC
        LIMIT 1`,
       [lookupKey],

@@ -7,16 +7,19 @@ import {
   ArticleDeliveryStatus,
 } from "../shared";
 import { DeliveryRecord } from "./entities";
-import dayjs from "dayjs";
 import { MikroORM } from "@mikro-orm/core";
 import { GetUserFeedDeliveryRecordsOutputDto } from "../feeds/dto";
 import { DeliveryLogStatus } from "../feeds/constants/delivery-log-status.constants";
+import PartitionedDeliveryRecordInsert from "./types/partitioned-delivery-record-insert.type";
+import logger from "../shared/utils/logger";
 
 const { Failed, Rejected, Sent, PendingDelivery, FilteredOut } =
   ArticleDeliveryStatus;
 
 @Injectable()
 export class DeliveryRecordService {
+  pendingInserts: PartitionedDeliveryRecordInsert[] = [];
+
   constructor(
     @InjectRepository(DeliveryRecord)
     private readonly recordRepo: EntityRepository<DeliveryRecord>,
@@ -94,9 +97,33 @@ export class DeliveryRecordService {
       return record;
     });
 
+    const partitionedInserts: PartitionedDeliveryRecordInsert[] = records.map(
+      (record) => {
+        const { id, feed_id, medium_id, created_at, status, content_type } =
+          record;
+
+        return {
+          id,
+          feedId: feed_id,
+          mediumId: medium_id,
+          createdAt: created_at,
+          status,
+          contentType: content_type ?? null,
+          parentId: record.parent?.id ?? null,
+          internalMessage: record.internal_message ?? null,
+          errorCode: record.error_code ?? null,
+          externalDetail: record.external_detail ?? null,
+          articleId: record.article_id ?? null,
+          articleIdHash: record.article_id_hash ?? null,
+        };
+      }
+    );
+
     if (flush) {
       await this.orm.em.persistAndFlush(records);
+      await this.flushPendingInserts();
     } else {
+      this.pendingInserts.push(...partitionedInserts);
       this.orm.em.persist(records);
     }
   }
@@ -122,6 +149,21 @@ export class DeliveryRecordService {
 
     await this.recordRepo.persistAndFlush(record);
 
+    try {
+      await this.orm.em.getConnection().execute(
+        `
+      UPDATE delivery_record_partitioned
+      SET status = ?, error_code = ?, internal_message = ?, external_detail = ?
+      WHERE id = ?
+    `,
+        [status, errorCode, internalMessage, externalDetail, id]
+      );
+    } catch (err) {
+      logger.error("Error while updating partitioned delivery record", {
+        error: (err as Error).stack,
+      });
+    }
+
     return record;
   }
 
@@ -129,41 +171,24 @@ export class DeliveryRecordService {
     { mediumId, feedId }: { mediumId?: string; feedId?: string },
     secondsInPast: number
   ) {
-    // Convert initial counts to the same query below
-    const subquery = this.recordRepo
-      .createQueryBuilder()
-      .count()
-      .where({
-        ...(mediumId
-          ? {
-              medium_id: mediumId,
-            }
-          : {}),
-        ...(feedId
-          ? {
-              feed_id: feedId,
-            }
-          : {}),
-      })
-      .andWhere({
-        status: {
-          $in: [Sent, Rejected],
-        },
-      })
-      .andWhere({
-        created_at: {
-          $gte: dayjs().subtract(secondsInPast, "second").toDate(),
-        },
-      })
-      .groupBy("article_id_hash");
+    // Use partitioned table for faster count
+    const query = await this.orm.em.getConnection().execute(
+      `
+      SELECT COUNT(*) FROM delivery_record_partitioned
+      WHERE created_at >= NOW() - INTERVAL '${secondsInPast} seconds'
+      AND status IN (?, ?)
+      ${mediumId ? "AND medium_id = ?" : ""}
+      ${feedId ? "AND feed_id = ?" : ""}
+      `,
+      [
+        Sent,
+        Rejected,
+        ...(mediumId ? [mediumId] : []),
+        ...(feedId ? [feedId] : []),
+      ]
+    );
 
-    const query = await this.recordRepo
-      .createQueryBuilder()
-      .count()
-      .from(subquery, "subquery")
-      .execute("get");
-
-    return Number(query.count);
+    return Number(query[0].count);
   }
 
   async getDeliveryLogs({
@@ -175,42 +200,44 @@ export class DeliveryRecordService {
     skip: number;
     feedId: string;
   }): Promise<GetUserFeedDeliveryRecordsOutputDto["result"]["logs"]> {
-    const selectFields: Array<keyof DeliveryRecord> = [
-      "id",
-      "status",
-      "error_code",
-      "medium_id",
-      "content_type",
-      "external_detail",
-      "article_id_hash",
-      "created_at",
-    ];
-    const records = await this.recordRepo.find(
-      {
-        feed_id: feedId,
-        parent: null,
-      },
-      {
-        limit,
-        orderBy: {
-          created_at: "DESC",
-        },
-        fields: selectFields,
-        offset: skip,
-      }
+    const records: DeliveryRecord[] = await this.orm.em.getConnection().execute(
+      `
+      SELECT id, status, error_code, medium_id,
+        content_type, external_detail, article_id_hash, created_at
+      FROM delivery_record_partitioned
+      WHERE feed_id = ?
+      AND parent_id IS NULL
+      ORDER BY created_at DESC
+      LIMIT ?
+      OFFSET ?
+    `,
+      [feedId, limit, skip]
     );
 
-    const childRecords = await this.recordRepo.find(
-      {
-        feed_id: feedId,
-        parent: {
-          $in: records.map((record) => record.id),
-        },
-      },
-      {
-        fields: selectFields,
-      }
-    );
+    let childRecords: DeliveryRecord[];
+
+    if (records.length) {
+      const found = await this.orm.em.getConnection().execute(
+        `
+      SELECT id, status, error_code, medium_id,
+        content_type, external_detail, article_id_hash, created_at, parent_id
+      FROM delivery_record_partitioned
+      WHERE feed_id = ?
+      AND parent_id IN (${records.map(() => "?").join(", ")})
+    `,
+        [feedId, ...records.map((record) => record.id)]
+      );
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      childRecords = found.map((record: any) => {
+        return {
+          ...record,
+          parent: {
+            id: record.parent_id,
+          },
+        };
+      });
+    }
 
     return records.map((record) => {
       const children = childRecords.filter(
@@ -304,5 +331,64 @@ export class DeliveryRecordService {
         status,
       };
     });
+  }
+
+  async flushPendingInserts() {
+    if (this.pendingInserts.length === 0) {
+      return;
+    }
+
+    const em = this.orm.em.fork().getConnection();
+    const transaction = await em.begin();
+
+    try {
+      await Promise.all(
+        this.pendingInserts.map((record) => {
+          return em.execute(
+            `INSERT INTO delivery_record_partitioned (
+              id,
+              feed_id,
+              medium_id,
+              created_at,
+              status,
+              content_type,
+              parent_id,
+              internal_message,
+              error_code,
+              external_detail,
+              article_id,
+              article_id_hash
+            ) VALUES (
+             ?,?,?,?,?,?,?,?,?,?,?,?
+            )`,
+            [
+              record.id,
+              record.feedId,
+              record.mediumId,
+              record.createdAt,
+              record.status,
+              record.contentType,
+              record.parentId,
+              record.internalMessage,
+              record.errorCode,
+              record.externalDetail,
+              record.articleId,
+              record.articleIdHash,
+            ],
+            transaction
+          );
+        })
+      );
+
+      await em.commit(transaction);
+    } catch (err) {
+      await em.rollback(transaction);
+
+      logger.error("Error while inserting partitioned delivery records", {
+        error: (err as Error).stack,
+      });
+    } finally {
+      this.pendingInserts.length = 0;
+    }
   }
 }
