@@ -212,10 +212,11 @@ export class FeedFetcherListenerService {
       .subtract(Math.round(rateSeconds * 0.75), 'seconds')
       .toDate();
 
-    const latestRequestAfterTime = await this.getLatestRequestAfterTime(
-      { url },
-      dateToCheck,
-    );
+    const latestRequestAfterTime =
+      await this.partitionedRequestsStoreService.getLatestStatusAfterTime(
+        lookupKey || url,
+        dateToCheck,
+      );
 
     if (latestRequestAfterTime) {
       logger.debug(
@@ -240,6 +241,12 @@ export class FeedFetcherListenerService {
       return { successful: false };
     }
 
+    const latestOkRequest =
+      await this.partitionedRequestsStoreService.getLatestOkRequestWithResponseBody(
+        data.lookupKey || data.url,
+        { fields: ['response_headers'] },
+      );
+
     const { request } = await this.feedFetcherService.fetchAndSaveResponse(
       url,
       {
@@ -250,7 +257,12 @@ export class FeedFetcherListenerService {
             }
           : undefined,
         source: RequestSource.Schedule,
-        headers: data.headers,
+        headers: {
+          ...data.headers,
+          'If-Modified-Since':
+            latestOkRequest?.responseHeaders?.['last-modified'] || '',
+          'If-None-Match': latestOkRequest?.responseHeaders?.etag,
+        },
       },
     );
 
@@ -452,6 +464,43 @@ export class FeedFetcherListenerService {
     }
   }
 
+  // async isLatestResponseStillFreshInCache({
+  //   lookupKey,
+  // }: {
+  //   lookupKey: string;
+  // }) {
+  //   const latestOkRequest =
+  //     await this.partitionedRequestsStoreService.getLatestOkRequestWithResponseBody(lookupKey);
+
+  //   if (!latestOkRequest) {
+  //     return false;
+  //   }
+
+  //   const cacheControl = latestOkRequest.responseHeaders?.['cache-control'];
+
+  //   if (!cacheControl) {
+  //     return false;
+  //   }
+
+  //   const directives = cacheControl.split(',').map((d) => d.trim());
+  //   const maxAgeDirective = directives.find((d) => d.startsWith('max-age='));
+  //   const publicDirective = directives.includes('public');
+
+  //   if (!maxAgeDirective || !publicDirective) {
+  //     return false;
+  //   }
+
+  //   const maxAge = parseInt(maxAgeDirective.split('=')[1]);
+
+  //   const baseDate = latestOkRequest.responseHeaders?.date
+  //     ? new Date(latestOkRequest.responseHeaders?.date)
+  //     : latestOkRequest.createdAt;
+
+  //   const expirationDate = baseDate.getTime() + maxAge * 1000;
+
+  //   return expirationDate > Date.now();
+  // }
+
   async countFailedRequests({
     lookupKey,
     url,
@@ -460,7 +509,7 @@ export class FeedFetcherListenerService {
     url: string;
   }): Promise<number> {
     const latestOkRequest =
-      await this.partitionedRequestsStoreService.getLatestOkRequest(
+      await this.partitionedRequestsStoreService.getLatestOkRequestWithResponseBody(
         lookupKey || url,
       );
 
@@ -476,18 +525,5 @@ export class FeedFetcherListenerService {
       Math.pow(2, attemptsSoFar);
 
     return dayjs(referenceDate).add(minutesToWait, 'minute').toDate();
-  }
-
-  async getLatestRequestAfterTime(
-    requestQuery: {
-      lookupKey?: string;
-      url: string;
-    },
-    time: Date,
-  ) {
-    return this.partitionedRequestsStoreService.getLatestStatusAfterTime(
-      requestQuery.lookupKey || requestQuery.url,
-      time,
-    );
   }
 }
