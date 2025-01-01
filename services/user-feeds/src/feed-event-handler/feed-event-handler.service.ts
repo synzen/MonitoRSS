@@ -334,6 +334,9 @@ export class FeedEventHandlerService {
         return;
       }
 
+      const useResponseBody = response.body || "";
+      const useResponseBodyHash = response.bodyHash || "";
+
       this.debugLog(
         `Debug ${event.data.feed.id}: Parsing feed XML from ${url}`,
         {},
@@ -341,22 +344,25 @@ export class FeedEventHandlerService {
       );
 
       const { allArticles, articlesToDeliver: articles } =
-        await this.articlesService.getArticlesToDeliverFromXml(response.body, {
-          id: event.data.feed.id,
-          blockingComparisons,
-          passingComparisons,
-          formatOptions: {
-            dateFormat: event.data.feed.formatOptions?.dateFormat,
-            dateTimezone: event.data.feed.formatOptions?.dateTimezone,
-            disableImageLinkPreviews:
-              event.data.feed.formatOptions?.disableImageLinkPreviews,
-            dateLocale: event.data.feed.formatOptions?.dateLocale,
-          },
-          dateChecks: event.data.feed.dateChecks,
-          debug: event.debug,
-          useParserRules: getParserRules({ url: event.data.feed.url }),
-          externalFeedProperties: event.data.feed.externalProperties,
-        });
+        await this.articlesService.getArticlesToDeliverFromXml(
+          useResponseBody,
+          {
+            id: event.data.feed.id,
+            blockingComparisons,
+            passingComparisons,
+            formatOptions: {
+              dateFormat: event.data.feed.formatOptions?.dateFormat,
+              dateTimezone: event.data.feed.formatOptions?.dateTimezone,
+              disableImageLinkPreviews:
+                event.data.feed.formatOptions?.disableImageLinkPreviews,
+              dateLocale: event.data.feed.formatOptions?.dateLocale,
+            },
+            dateChecks: event.data.feed.dateChecks,
+            debug: event.debug,
+            useParserRules: getParserRules({ url: event.data.feed.url }),
+            externalFeedProperties: event.data.feed.externalProperties,
+          }
+        );
 
       await this.updateFeedArticlesInCache({ event, articles: allArticles });
 
@@ -395,7 +401,7 @@ export class FeedEventHandlerService {
 
         await this.responseHashService.set({
           feedId: event.data.feed.id,
-          hash: response.bodyHash,
+          hash: useResponseBodyHash,
         });
 
         return [];
@@ -462,7 +468,7 @@ export class FeedEventHandlerService {
 
       await this.responseHashService.set({
         feedId: event.data.feed.id,
-        hash: response.bodyHash,
+        hash: useResponseBodyHash,
       });
 
       this.logEventFinish(event, {
