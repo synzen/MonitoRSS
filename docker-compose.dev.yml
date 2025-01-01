@@ -141,6 +141,8 @@ services:
       - LOG_LEVEL=debug
       - USER_FEEDS_START_TARGET=service
       - NODE_ENV=local
+      - USER_FEEDS_FEED_REQUESTS_API_URL=http://feed-requests-api:5000/v1/feed-requests
+      - USER_FEEDS_FEED_REQUESTS_GRPC_URL=dns:///feed-requests-service:4999
 
   user-feeds-api:
     extends:

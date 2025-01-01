@@ -4,25 +4,15 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { INestApplicationContext } from "@nestjs/common";
 
+dayjs.extend(utc);
+
 async function pruneAndCreatePartitions(app: INestApplicationContext) {
   const orm = app.get(MikroORM);
   const connection = orm.em.getConnection();
   const startOfMonth = dayjs().utc().startOf("month");
-  const sixMonthsAgoDate = startOfMonth.subtract(6, "month");
   const thisMonthDate = startOfMonth;
   const nextMonthDate = startOfMonth.add(1, "month");
   const nextNextMonthDate = startOfMonth.add(2, "month");
-
-  try {
-    // const tableNameToDrop = `feed_article_field_partitioned_y${sixMonthsAgoDate.year()}m${
-    //   sixMonthsAgoDate.month() + 1
-    // }`;
-    // logger.debug(`Old partition ${tableNameToDrop} dropped`);
-  } catch (err) {
-    logger.error("Failed to drop old partition", {
-      error: (err as Error).stack,
-    });
-  }
 
   const tablesToCreate = [
     {
@@ -34,12 +24,28 @@ async function pruneAndCreatePartitions(app: INestApplicationContext) {
       partitionParent: "feed_article_field_partitioned",
     },
     {
+      from: thisMonthDate,
+      to: nextMonthDate,
+      tableName: `delivery_record_partitioned_y${thisMonthDate.year()}m${
+        thisMonthDate.month() + 1
+      }`,
+      partitionParent: "delivery_record_partitioned",
+    },
+    {
       from: nextMonthDate,
       to: nextNextMonthDate,
       tableName: `feed_article_field_partitioned_y${nextMonthDate.year()}m${
         nextMonthDate.month() + 1
       }`,
       partitionParent: "feed_article_field_partitioned",
+    },
+    {
+      from: nextMonthDate,
+      to: nextNextMonthDate,
+      tableName: `delivery_record_partitioned_y${nextMonthDate.year()}m${
+        nextMonthDate.month() + 1
+      }`,
+      partitionParent: "delivery_record_partitioned",
     },
   ];
 
