@@ -419,6 +419,8 @@ export class FeedEventHandlerService {
       );
 
       try {
+        await this.orm.em.flush();
+        await this.deliveryRecordService.flushPendingInserts();
         deliveryStates.forEach((state) => {
           if (state.status !== ArticleDeliveryStatus.Rejected) {
             return;
