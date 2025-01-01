@@ -478,7 +478,7 @@ export class FeedEventHandlerService {
       return deliveryStates;
     } catch (err) {
       if (err instanceof InvalidFeedException) {
-        logger.debug(`Ignoring feed event due to invalid feed`, {
+        logger.info(`Ignoring feed event due to invalid feed`, {
           event,
           stack: (err as Error).stack,
         });

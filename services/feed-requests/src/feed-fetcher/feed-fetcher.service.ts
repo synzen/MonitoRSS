@@ -275,7 +275,10 @@ export class FeedFetcherService {
             }
           }
 
-          response.redisCacheKey = sha1.copy().update(url).digest('hex');
+          const hashKey =
+            url + JSON.stringify(request.fetchOptions) + res.status.toString();
+
+          response.redisCacheKey = sha1.copy().update(hashKey).digest('hex');
           response.textHash = text
             ? sha1.copy().update(text).digest('hex')
             : '';
