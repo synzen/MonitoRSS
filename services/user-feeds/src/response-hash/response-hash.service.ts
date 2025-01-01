@@ -9,6 +9,10 @@ export class ResponseHashService {
 
   async set({ feedId, hash }: { hash: string; feedId: string }) {
     try {
+      if (!hash) {
+        throw new Error(`Hash is required`);
+      }
+
       await this.orm.em.upsert(ResponseHash, {
         feed_id: feedId,
         hash,
@@ -17,6 +21,7 @@ export class ResponseHashService {
     } catch (err) {
       logger.error(`Failed to set in cache storage`, {
         err: (err as Error).stack,
+        feedId,
       });
     }
   }
