@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import logger from '../utils/logger';
 import { RequestStatus } from './constants';
 import { Request, Response } from './entities';
-import { deflate, inflate } from 'zlib';
+import { deflate, inflate, gunzip } from 'zlib';
 import { promisify } from 'util';
 import { ObjectFileStorageService } from '../object-file-storage/object-file-storage.service';
 import { createHash, randomUUID } from 'crypto';
@@ -19,6 +19,7 @@ import { GetFeedRequestsInputDto } from './dto';
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);
+const gunzipPromise = promisify(gunzip);
 
 const sha1 = createHash('sha1');
 
@@ -200,6 +201,7 @@ export class FeedFetcherService {
           this.configService.get<string>('feedUserAgent') ||
           this.defaultUserAgent,
         accept: 'text/html,text/xml,application/xml,application/rss+xml',
+        'accept-encoding': 'gzip',
         /**
          * Currently required for https://developer.oculus.com/blog/rss/ that returns 400 otherwise
          * Appears to be temporary error given that the page says they're working on fixing it
@@ -225,27 +227,22 @@ export class FeedFetcherService {
         options?.saveResponseToObjectStorage,
       );
 
-      if (res.ok || res.status === HttpStatus.NOT_MODIFIED) {
+      if (res.ok) {
         request.status = RequestStatus.OK;
       } else {
         request.status = RequestStatus.BAD_STATUS_CODE;
       }
 
-      const etag = res.headers.get('etag');
-      const lastModified = res.headers.get('last-modified');
-
       const response = new Response();
       response.createdAt = request.createdAt;
       response.statusCode = res.status;
-      response.headers = {};
+      const headersToStore: Record<string, string> = {};
 
-      if (etag) {
-        response.headers.etag = etag;
-      }
+      res.headers.forEach((val, key) => {
+        headersToStore[key] = val;
+      });
 
-      if (lastModified) {
-        response.headers.lastModified = lastModified;
-      }
+      response.headers = headersToStore;
 
       let text: string | null = null;
 
@@ -471,14 +468,20 @@ export class FeedFetcherService {
           ?.split('=')[1]
           .trim();
 
-        if (!charset || /utf-*8/i.test(charset)) {
-          return r.body.text();
+        let responseBuffer: Buffer;
+
+        // handle gzip
+        if (r.headers['content-encoding']?.includes('gzip')) {
+          responseBuffer = await gunzipPromise(await r.body.arrayBuffer());
+        } else {
+          responseBuffer = Buffer.from(await r.body.arrayBuffer());
         }
 
-        const arrBuffer = await r.body.arrayBuffer();
-        const decoded = iconv
-          .decode(Buffer.from(arrBuffer), charset)
-          .toString();
+        if (!charset || /utf-*8/i.test(charset)) {
+          return responseBuffer.toString();
+        }
+
+        const decoded = iconv.decode(responseBuffer, charset).toString();
 
         return decoded;
       },
