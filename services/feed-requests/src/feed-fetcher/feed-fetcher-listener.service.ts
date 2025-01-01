@@ -259,9 +259,9 @@ export class FeedFetcherListenerService {
         source: RequestSource.Schedule,
         headers: {
           ...data.headers,
-          'If-Modified-Since':
-            latestOkRequest?.responseHeaders?.['last-modified'] || '',
-          'If-None-Match': latestOkRequest?.responseHeaders?.etag,
+          // 'If-Modified-Since':
+          //   latestOkRequest?.responseHeaders?.['last-modified'] || '',
+          // 'If-None-Match': latestOkRequest?.responseHeaders?.etag,
         },
       },
     );
