@@ -56,7 +56,11 @@ export const DiscordChannelName: React.FC<Props> = ({
 
   if (error) {
     return (
-      <Tooltip placement="bottom-start" label={`Unable to get channel name (${error?.message})`}>
+      <Tooltip
+        placement="bottom-start"
+        label={`Unable to get channel name (${error?.message})`}
+        display="inline"
+      >
         <Text color="orange.500">{channelId}</Text>
       </Tooltip>
     );

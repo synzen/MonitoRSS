@@ -52,7 +52,6 @@ import {
   SearchIcon,
 } from "@chakra-ui/icons";
 import dayjs from "dayjs";
-import { useInView } from "react-intersection-observer";
 import { FaPause, FaPlay } from "react-icons/fa6";
 import { Link as RouterLink, useSearchParams } from "react-router-dom";
 import { useDeleteUserFeeds, useDisableUserFeeds, useEnableUserFeeds } from "../../hooks";
@@ -110,7 +109,6 @@ const STATUS_FILTERS = [
 
 export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
   const { t } = useTranslation();
-  const { ref: scrollRef, inView } = useInView();
   const [searchParams, setSearchParams] = useSearchParams();
   const searchParamsSearch = searchParams.get("search") || "";
   const [searchInput, setSearchInput] = useState(searchParamsSearch);
@@ -139,17 +137,6 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
   const { mutateAsync: enableUserFeeds } = useEnableUserFeeds();
   const flatData = React.useMemo(() => data?.pages?.flatMap((page) => page.results) || [], [data]);
 
-  const fetchMoreOnBottomReached = React.useCallback(() => {
-    if (inView && !isFetchingNextPage && hasNextPage) {
-      fetchNextPage();
-    }
-  }, [fetchNextPage, inView, isFetchingNextPage, hasNextPage]);
-
-  // // a check on mount and after a fetch to see if the table is already scrolled to the bottom and immediately needs to fetch more data
-  React.useEffect(() => {
-    fetchMoreOnBottomReached();
-  }, [fetchMoreOnBottomReached]);
-
   const columns = useMemo(
     () => [
       columnHelper.display({
@@ -168,6 +155,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
             isIndeterminate={table.getIsSomeRowsSelected()}
             marginX={3.5}
             cursor="pointer"
+            aria-label="Check all currently loaded feeds for bulk actions"
           />
         ),
         cell: ({ row }) => (
@@ -200,13 +188,14 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
                   borderRadius: "full",
                 },
               }}
+              aria-label={`Check feed ${row.original.title} for bulk actions`}
             />
           </Box>
         ),
       }),
       columnHelper.accessor("computedStatus", {
-        cell: (info) => <UserFeedStatusTag status={info.getValue()} />,
         header: () => <span>{t("pages.feeds.tableStatus")}</span>,
+        cell: (info) => <UserFeedStatusTag status={info.getValue()} />,
       }),
       columnHelper.accessor("title", {
         id: "title",
@@ -433,14 +422,6 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
     setSearch(searchParamsSearch);
   }, [searchParamsSearch, setSearch]);
 
-  if (status === "loading") {
-    return (
-      <Center width="100%" height="100%">
-        <Loading size="lg" />
-      </Center>
-    );
-  }
-
   if (status === "error") {
     return (
       <Alert status="error">
@@ -450,16 +431,26 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
     );
   }
 
+  const isInitiallyLoading = status === "loading" && !data;
+
   return (
-    <Stack spacing={4} height="100%">
+    <Stack spacing={4}>
+      <Box srOnly aria-live="polite">
+        {!isInitiallyLoading && (
+          <Text>
+            Loaded table with {flatData.length} of {data?.pages[0].total} feeds loaded
+          </Text>
+        )}
+      </Box>
       <form
+        hidden={isInitiallyLoading}
         id="user-feed-search"
         onSubmit={(e) => {
           e.preventDefault();
           onSearchSubmit();
         }}
       >
-        <HStack width="100%">
+        <HStack as="fieldset" width="100%">
           <InputGroup width="min-content" flex={1}>
             <InputLeftElement pointerEvents="none">
               <SearchIcon color="gray.400" />
@@ -496,18 +487,23 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
           </Button>
         </HStack>
       </form>
-      <Stack>
+      <Center mt={4} hidden={!isInitiallyLoading}>
+        <Stack alignItems="center">
+          <Loading />
+          <Text>Loading feeds...</Text>
+        </Stack>
+      </Center>
+      <Stack hidden={isInitiallyLoading}>
         <Flex justifyContent="space-between" flexWrap="wrap" width="100%" gap={4}>
           <HStack justifyContent="space-between" flexWrap="wrap" flex={1}>
             <Menu>
               <MenuButton
                 as={Button}
-                aria-label="Options"
                 rightIcon={<ChevronDownIcon />}
                 variant="outline"
                 isDisabled={selectedRows.length === 0}
               >
-                Bulk Actions
+                Bulk Feed Actions
               </MenuButton>
               <MenuList zIndex={2}>
                 <ConfirmModal
@@ -644,7 +640,6 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
           borderStyle="solid"
           borderRadius="md"
           width="100%"
-          mb={20}
           overflowX="auto"
         >
           <Table
@@ -709,7 +704,6 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
 
                 return (
                   <Tr
-                    role="button"
                     key={row.id}
                     _hover={{
                       bg: "gray.700",
@@ -744,13 +738,22 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
               })}
             </tbody>
           </Table>
-          {isFetchingNextPage && (
-            <Center>
-              <Spinner margin={4} />
-            </Center>
-          )}
-          <div ref={scrollRef} />
         </Box>
+      </Stack>
+      <Stack hidden={isInitiallyLoading}>
+        <Center>
+          <Text color="whiteAlpha.600" fontSize="sm">
+            Viewed {flatData.length} of {data?.pages[0].total} feeds
+          </Text>
+        </Center>
+        <Button
+          isDisabled={!hasNextPage || isFetchingNextPage}
+          isLoading={isFetchingNextPage}
+          onClick={() => fetchNextPage()}
+          mb={20}
+        >
+          Load More
+        </Button>
       </Stack>
     </Stack>
   );

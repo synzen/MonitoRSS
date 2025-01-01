@@ -18,7 +18,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AddIcon, ArrowLeftIcon } from "@chakra-ui/icons";
-import { useCallback, useContext, useEffect } from "react";
+import { useCallback, useContext, useEffect, useRef } from "react";
 import { FaRegNewspaper } from "react-icons/fa6";
 import { useDiscordUserMe, useUserMe } from "../features/discordUser";
 import {
@@ -40,6 +40,7 @@ export const UserFeeds: React.FC = () => {
   const navigate = useNavigate();
   const { data: discordUserMe } = useDiscordUserMe();
   const { data: userMeData } = useUserMe();
+  const addNewFeedButtonRef = useRef<HTMLButtonElement>(null);
   const { onOpen: onOpenPricingDialog } = useContext(PricingDialogContext);
   const { data: userFeedsRequireAttentionResults } = useUserFeeds({
     limit: 1,
@@ -80,8 +81,10 @@ export const UserFeeds: React.FC = () => {
     userMeData && !userMeData.result?.preferences?.alertOnDisabledFeeds;
 
   useEffect(() => {
-    document.title = "Feeds | MonitoRSS";
-  }, []);
+    if (userFeedsRequireAttentionResults?.total === 0 && addNewFeedButtonRef.current) {
+      addNewFeedButtonRef.current.focus();
+    }
+  }, [addNewFeedButtonRef.current, userFeedsResults?.total]);
 
   return (
     <BoxConstrained.Wrapper justifyContent="flex-start" height="100%" overflow="visible">
@@ -106,10 +109,13 @@ export const UserFeeds: React.FC = () => {
                   </AlertTitle>
                   <AlertDescription>
                     Article delivery may be fully or partially paused.{" "}
-                    <ChakraLink color="blue.300" onClick={onApplyRequiresAttentionFilters}>
-                      Apply filters to see which ones they are.
+                    <ChakraLink
+                      as="button"
+                      color="blue.300"
+                      onClick={onApplyRequiresAttentionFilters}
+                    >
+                      Click here to apply filters and see which ones they are.
                     </ChakraLink>
-                    .
                     {hasFailedFeedAlertsDisabled && (
                       <>
                         {" "}
@@ -128,14 +134,14 @@ export const UserFeeds: React.FC = () => {
             <Alert>
               <AlertIcon />
               <AlertTitle flex={1}>
-                You have {managementInvitesCount.total} pending feed management invite(s)
+                You have {managementInvitesCount.total} pending feed management invites
               </AlertTitle>
               <AlertDescription>
                 <Flex justifyContent="flex-end" flex={1}>
                   <FeedManagementInvitesDialog
                     trigger={
                       <Button variant="outline">
-                        <span>View</span>
+                        <span>View pending management invites</span>
                       </Button>
                     }
                   />
@@ -145,38 +151,46 @@ export const UserFeeds: React.FC = () => {
           )}
           <Flex justifyContent="space-between" alignItems="center" gap="4" flexWrap="wrap">
             <Flex alignItems="center" gap={4}>
-              <Heading size="lg">{t("pages.userFeeds.title")}</Heading>
+              <Heading as="h1" size="lg">
+                {t("pages.userFeeds.title")}
+              </Heading>
             </Flex>
-            <Flex alignItems="center">
+            <Flex alignItems="center" as="aside">
               {discordUserMe?.maxUserFeeds !== undefined && userFeedsResults?.total !== undefined && (
-                <HStack>
-                  <Text fontSize="xl" fontWeight={600}>
-                    {userFeedsResults.total}
+                <Box>
+                  <Text fontSize="sm" srOnly>
+                    Feed Limit
                   </Text>
-                  <Text fontSize="xl" fontWeight={600}>
-                    /
-                  </Text>
-                  {discordUserMe.maxUserFeedsComposition.legacy ? (
-                    <Tooltip
-                      label={
-                        <Box>
-                          <Text>+{discordUserMe.maxUserFeedsComposition.base}: Base Amount</Text>
-                          <Text>
-                            +{discordUserMe.maxUserFeedsComposition.legacy}: Legacy feed conversions
-                          </Text>
-                        </Box>
-                      }
-                    >
+                  <HStack>
+                    <Text fontSize="xl" fontWeight={600}>
+                      {userFeedsResults.total}
+                    </Text>
+                    <Text fontSize="xl" fontWeight={600}>
+                      /
+                    </Text>
+                    {discordUserMe.maxUserFeedsComposition.legacy ? (
+                      <Tooltip
+                        label={
+                          <Box>
+                            <Text>+{discordUserMe.maxUserFeedsComposition.base}: Base Amount</Text>
+                            <Text>
+                              +{discordUserMe.maxUserFeedsComposition.legacy}: Legacy feed
+                              conversions
+                            </Text>
+                          </Box>
+                        }
+                      >
+                        <Text fontSize="xl" fontWeight={600}>
+                          {discordUserMe.maxUserFeeds}
+                        </Text>
+                      </Tooltip>
+                    ) : (
                       <Text fontSize="xl" fontWeight={600}>
                         {discordUserMe.maxUserFeeds}
                       </Text>
-                    </Tooltip>
-                  ) : (
-                    <Text fontSize="xl" fontWeight={600}>
-                      {discordUserMe.maxUserFeeds}
-                    </Text>
-                  )}
-                </HStack>
+                    )}
+                  </HStack>
+                </Box>
               )}
               {!userMeData?.result.enableBilling && (
                 <IconButton
@@ -238,7 +252,11 @@ export const UserFeeds: React.FC = () => {
               </Stack>
               <AddUserFeedDialog
                 trigger={
-                  <Button colorScheme="blue" leftIcon={<AddIcon fontSize={12} />}>
+                  <Button
+                    colorScheme="blue"
+                    leftIcon={<AddIcon fontSize={12} />}
+                    ref={addNewFeedButtonRef}
+                  >
                     Add a new feed
                   </Button>
                 }

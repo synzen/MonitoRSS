@@ -13,7 +13,13 @@ export const useUpdateUserFeed = () => {
   return useMutation<UpdateUserFeedOutput, ApiAdapterError, UpdateUserFeedInput>(
     (details) => updateUserFeed(details),
     {
-      onSuccess: (data, inputData) => {
+      onSuccess: async (data, inputData) => {
+        await queryClient.invalidateQueries({
+          predicate: (query) => {
+            return query.queryKey[0] === "user-feeds" || query.queryKey.includes(inputData.feedId);
+          },
+        });
+
         queryClient.setQueryData<GetUserFeedOutput>(
           [
             "user-feed",
@@ -23,12 +29,6 @@ export const useUpdateUserFeed = () => {
           ],
           data
         );
-
-        return queryClient.invalidateQueries({
-          predicate: (query) => {
-            return query.queryKey[0] === "user-feeds";
-          },
-        });
       },
     }
   );

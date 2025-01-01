@@ -11,18 +11,27 @@ export const useCreateDiscordChannelConnectionCopySettings = () => {
     void,
     ApiAdapterError,
     CreateDiscordChannelConnectionCopySettingsInput
-  >((details) => createDiscordChannelConnectionCopySettings(details), {
-    onSuccess: (data, inputData) =>
-      queryClient.invalidateQueries({
-        queryKey: [
-          "user-feed",
-          {
-            feedId: inputData.feedId,
-          },
-        ],
-        refetchType: "all",
-      }),
-  });
+  >(
+    async (details) => {
+      if (!details.details.targetDiscordChannelConnectionIds.length) {
+        throw new Error("Must select at least one target connection");
+      }
+
+      await createDiscordChannelConnectionCopySettings(details);
+    },
+    {
+      onSuccess: (data, inputData) =>
+        queryClient.invalidateQueries({
+          queryKey: [
+            "user-feed",
+            {
+              feedId: inputData.feedId,
+            },
+          ],
+          refetchType: "all",
+        }),
+    }
+  );
 
   return {
     mutateAsync,

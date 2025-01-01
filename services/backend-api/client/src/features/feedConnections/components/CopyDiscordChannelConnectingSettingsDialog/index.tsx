@@ -239,6 +239,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
     return (
       <Stack key={category}>
         <Checkbox
+          aria-controls={allCategorySettings.join(" ")}
           isChecked={allCategorySettingsAreChecked}
           isIndeterminate={!allCategorySettingsAreChecked && !noCategorySettingsAreChecked}
           onChange={(e) => onCheckCategoryChange(category, e.target.checked)}
@@ -268,6 +269,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
             return (
               <Checkbox
                 key={setting}
+                id={setting}
                 pl={6}
                 onChange={(e) =>
                   onCheckSettingChange(
@@ -304,6 +306,10 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
         <ModalCloseButton />
         <ModalBody>
           <Stack spacing={6}>
+            <Text>
+              Mass-copy settings from the source connection to another. This will overwrite the
+              settings of the target connections.
+            </Text>
             <Stack py={4} px={4} bg="blackAlpha.300" rounded="md">
               <Badge bg="none" p={0}>
                 Source Connection
@@ -317,69 +323,75 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
                 <chakra.span fontWeight={600}>{connection?.name}</chakra.span>
               </Box>
             </Stack>
-            <Text>
-              Mass-copy settings from the source connection to another. This will overwrite the
-              settings of the target connections.
-            </Text>
-            <Stack spacing={2}>
-              <Heading size="sm" as="h2">
-                Settings to Copy
-              </Heading>
-              <Text>Settings to copy from the source connection.</Text>
-              <Stack>
-                {checkboxesByCategories}
-                {otherSettings.map((setting) => {
-                  const settingDescription = CopyableSettingDescriptions[setting];
+            <fieldset>
+              <Stack spacing={2}>
+                <legend>
+                  <Stack spacing={2}>
+                    <Heading size="sm" as="h2">
+                      Settings to Copy
+                    </Heading>
+                    <Text>Settings to copy from the source connection.</Text>
+                  </Stack>
+                </legend>
+                <Stack>
+                  {checkboxesByCategories}
+                  {otherSettings.map((setting) => {
+                    const settingDescription = CopyableSettingDescriptions[setting];
 
-                  if (
-                    setting === CopyableConnectionDiscordChannelSettings.Channel &&
-                    !connection.details.channel
-                  ) {
-                    return null;
-                  }
+                    if (
+                      setting === CopyableConnectionDiscordChannelSettings.Channel &&
+                      !connection.details.channel
+                    ) {
+                      return null;
+                    }
 
-                  return (
-                    <Checkbox
-                      onChange={(e) => onCheckSettingChange(setting, e.target.checked)}
-                      isChecked={checkedSettings.includes(setting)}
-                      key={setting}
-                    >
-                      {settingDescription.description}
-                      <br />
-                      {settingDescription.hint && (
-                        <chakra.span color="whiteAlpha.600" fontSize={14}>
-                          {settingDescription.hint}
-                        </chakra.span>
-                      )}
-                    </Checkbox>
-                  );
-                })}
+                    return (
+                      <Checkbox
+                        onChange={(e) => onCheckSettingChange(setting, e.target.checked)}
+                        isChecked={checkedSettings.includes(setting)}
+                        key={setting}
+                      >
+                        {settingDescription.description}
+                        <br />
+                        {settingDescription.hint && (
+                          <chakra.span color="whiteAlpha.600" fontSize={14}>
+                            {settingDescription.hint}
+                          </chakra.span>
+                        )}
+                      </Checkbox>
+                    );
+                  })}
+                </Stack>
               </Stack>
-            </Stack>
-            <Stack spacing={2}>
-              <Heading size="sm" as="h2">
-                Target Connections
-              </Heading>
-              <Text>
-                The connections that will have their settings overwritten with the selected settings
-                from the source connection.
-              </Text>
-              <HStack>
-                <Button size="sm" onClick={onClickSelectAllConnections}>
-                  Select All
-                </Button>
-                <Button size="sm" onClick={onClickSelectNoneConnections}>
-                  Select None
-                </Button>
-              </HStack>
-              <Stack>
-                <ConnectionsCheckboxList
-                  checkedConnectionIds={checkedConnections}
-                  onCheckConnectionChange={setCheckedConnections}
-                  feed={feed as UserFeed}
-                />
+            </fieldset>
+            <fieldset>
+              <Stack spacing={2}>
+                <legend>
+                  <Heading size="sm" as="h2">
+                    Target Connections
+                  </Heading>
+                  <Text>
+                    The connections that will have their settings overwritten with the selected
+                    settings from the source connection.
+                  </Text>
+                </legend>
+                <HStack>
+                  <Button size="sm" onClick={onClickSelectAllConnections}>
+                    Select All
+                  </Button>
+                  <Button size="sm" onClick={onClickSelectNoneConnections}>
+                    Select None
+                  </Button>
+                </HStack>
+                <Stack>
+                  <ConnectionsCheckboxList
+                    checkedConnectionIds={checkedConnections}
+                    onCheckConnectionChange={setCheckedConnections}
+                    feed={feed as UserFeed}
+                  />
+                </Stack>
               </Stack>
-            </Stack>
+            </fieldset>
             {error && (
               <InlineErrorAlert
                 title={t("common.errors.somethingWentWrong")}
@@ -404,7 +416,12 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
                 status === "loading"
               }
             >
-              <span>Confirm</span>
+              <span>
+                Copy to{" "}
+                {checkedConnections.length === 1
+                  ? "1 connection"
+                  : `${checkedConnections.length} connections`}
+              </span>
             </Button>
           </HStack>
         </ModalFooter>
