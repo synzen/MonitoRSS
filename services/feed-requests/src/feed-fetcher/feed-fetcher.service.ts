@@ -221,7 +221,7 @@ export class FeedFetcherService {
         options?.saveResponseToObjectStorage,
       );
 
-      if (res.ok) {
+      if (res.ok || res.status === HttpStatus.NOT_MODIFIED) {
         request.status = RequestStatus.OK;
       } else {
         request.status = RequestStatus.BAD_STATUS_CODE;
