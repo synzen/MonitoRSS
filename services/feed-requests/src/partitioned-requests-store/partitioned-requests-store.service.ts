@@ -118,15 +118,24 @@ export default class PartitionedRequestsStoreService {
     return new Date(result.next_retry_date) || null;
   }
 
-  async getLatestOkRequest(
+  async getLatestOkRequestWithResponseBody(
     lookupKey: string,
-  ): Promise<null | { createdAt: Date }> {
+    opts?: {
+      fields?: Array<'response_headers'>;
+    },
+  ): Promise<null | {
+    createdAt: Date;
+    responseHeaders?: Record<string, string>;
+  }> {
     const em = this.orm.em.getConnection();
 
     const [result] = await em.execute(
-      `SELECT created_at FROM request_partitioned
+      `SELECT created_at ${
+        opts?.fields?.includes('response_headers') ? ', response_headers' : ''
+      } FROM request_partitioned
        WHERE lookup_key = ?
        AND status = 'OK'
+       AND response_status_code != 304
        ORDER BY created_at DESC
        LIMIT 1`,
       [lookupKey],
@@ -136,7 +145,10 @@ export default class PartitionedRequestsStoreService {
       return null;
     }
 
-    return { createdAt: new Date(result.created_at) };
+    return {
+      createdAt: new Date(result.created_at),
+      responseHeaders: result.response_headers,
+    };
   }
 
   async countFailedRequests(lookupKey: string, since?: Date) {
@@ -151,7 +163,15 @@ export default class PartitionedRequestsStoreService {
     const [result] = await em.execute(
       `SELECT COUNT(*) FROM request_partitioned
        WHERE lookup_key = ?
-       AND status != 'OK'
+       AND status IN (
+        'INTERNAL_ERROR',
+        'FETCH_ERROR',
+        'PARSE_ERROR',
+        'BAD_STATUS_CODE',
+        'FETCH_TIMEOUT',
+        'REFUSED_LARGE_FEED',
+        'INVALID_SSL_CERTIFICATE'
+       )
         ${since ? 'AND created_at >= ?' : ''}
        `,
       params,
@@ -218,12 +238,15 @@ export default class PartitionedRequestsStoreService {
     }));
   }
 
-  async getLatestRequest(lookupKey: string): Promise<Request | null> {
+  async getLatestRequestWithResponseBody(
+    lookupKey: string,
+  ): Promise<Request | null> {
     const em = this.orm.em.getConnection();
 
     const [result] = await em.execute(
       `SELECT * FROM request_partitioned
        WHERE lookup_key = ?
+       AND response_status_code != 304
        ORDER BY created_at DESC
        LIMIT 1`,
       [lookupKey],

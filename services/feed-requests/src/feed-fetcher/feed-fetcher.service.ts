@@ -30,24 +30,32 @@ const convertHeaderValue = (val?: string | string[] | null) => {
   return val || '';
 };
 
-const trimHeadersForStorage = (obj?: HeadersInit) => {
+const trimHeadersForStorage = (
+  obj?: Record<string, string | undefined>,
+): Record<string, string> => {
+  const trimmed = Object.entries(obj || {}).reduce((acc, [key, val]) => {
+    if (val) {
+      acc[key] = val;
+    }
+
+    return acc;
+  }, {} as Record<string, string>);
+
   if (!obj) {
-    return obj;
+    return trimmed;
   }
 
-  const newObj: HeadersInit = {};
-
-  for (const key in obj) {
-    if (obj[key]) {
-      newObj[key.toLowerCase()] = obj[key];
+  for (const key in trimmed) {
+    if (trimmed[key]) {
+      trimmed[key.toLowerCase()] = trimmed[key];
     }
   }
 
-  if (newObj.authorization) {
-    newObj.authorization = 'SECRET';
+  if (trimmed.authorization) {
+    trimmed.authorization = 'SECRET';
   }
 
-  return newObj;
+  return trimmed;
 };
 
 interface FetchOptions {
@@ -134,19 +142,12 @@ export class FeedFetcherService {
     request: Request;
     decodedResponseText: string | null | undefined;
   } | null> {
-    const logDebug =
-      url ===
-      'https://www.clanaod.net/forums/external.php?type=RSS2&forumids=102';
-
-    const request = await this.partitionedRequestsStore.getLatestRequest(
-      lookupKey || url,
-    );
+    const request =
+      await this.partitionedRequestsStore.getLatestRequestWithResponseBody(
+        lookupKey || url,
+      );
 
     if (!request) {
-      if (logDebug) {
-        logger.warn(`Running debug on schedule: no request was found`);
-      }
-
       return null;
     }
 
@@ -160,13 +161,6 @@ export class FeedFetcherService {
             await inflatePromise(Buffer.from(compressedText, 'base64'))
           ).toString()
         : '';
-
-      if (logDebug) {
-        logger.warn(
-          `Running debug on schedule: got cache key ${request.response.redisCacheKey}`,
-          { text },
-        );
-      }
 
       return {
         request,
@@ -187,7 +181,7 @@ export class FeedFetcherService {
         | undefined;
       flushEntities?: boolean;
       saveResponseToObjectStorage?: boolean;
-      headers?: Record<string, string>;
+      headers?: Record<string, string | undefined>;
       source: RequestSource | undefined;
     },
   ): Promise<{
@@ -231,21 +225,16 @@ export class FeedFetcherService {
         request.status = RequestStatus.BAD_STATUS_CODE;
       }
 
-      const etag = res.headers.get('etag');
-      const lastModified = res.headers.get('last-modified');
-
       const response = new Response();
       response.createdAt = request.createdAt;
       response.statusCode = res.status;
-      response.headers = {};
+      const headersToStore: Record<string, string> = {};
 
-      if (etag) {
-        response.headers.etag = etag;
-      }
+      res.headers.forEach((val, key) => {
+        headersToStore[key] = val;
+      });
 
-      if (lastModified) {
-        response.headers.lastModified = lastModified;
-      }
+      response.headers = headersToStore;
 
       let text: string | null = null;
 
@@ -409,10 +398,19 @@ export class FeedFetcherService {
       controller.abort();
     }, this.feedRequestTimeoutMs);
 
+    // Necessary since passing If-None-Match header with empty string may cause a 200 when expecting 304
+    const withoutEmptyHeaderVals = Object.entries(
+      options?.headers || {},
+    ).reduce((acc, [key, val]) => {
+      if (val) {
+        acc[key] = val;
+      }
+
+      return acc;
+    }, {});
+
     const useOptions = {
-      headers: {
-        ...options?.headers,
-      },
+      headers: withoutEmptyHeaderVals,
       redirect: 'follow' as const,
       signal: controller.signal,
     };
