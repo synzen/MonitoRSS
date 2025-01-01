@@ -277,13 +277,18 @@ export class FeedFetcherService {
             }
           }
 
+          response.textHash = text
+            ? sha1.copy().update(text).digest('hex')
+            : '';
+
+          /**
+           * This has a problem where 304 responses will have no feed response, which won't refresh the
+           * previous cache contents for 200 codes
+           */
           const hashKey =
             url + JSON.stringify(request.fetchOptions) + res.status.toString();
 
           response.redisCacheKey = sha1.copy().update(hashKey).digest('hex');
-          response.textHash = text
-            ? sha1.copy().update(text).digest('hex')
-            : '';
 
           await this.cacheStorageService.setFeedHtmlContent({
             key: response.redisCacheKey,
