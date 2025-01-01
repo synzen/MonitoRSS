@@ -15,6 +15,7 @@ import {
   FeedRejectedDisabledCode,
   Article,
   UserFeedFormatOptions,
+  FeedResponseRequestStatus,
 } from "../shared";
 import { RabbitSubscribe, AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { MikroORM, UseRequestContext } from "@mikro-orm/core";
@@ -316,7 +317,11 @@ export class FeedEventHandlerService {
         }
       }
 
-      if (!response || !response.body) {
+      if (
+        !response ||
+        response.requestStatus === FeedResponseRequestStatus.Pending ||
+        response.requestStatus === FeedResponseRequestStatus.MatchedHash
+      ) {
         this.debugLog(
           `Debug ${event.data.feed.id}: no response body. is pending request or` +
             ` matched hash`,
