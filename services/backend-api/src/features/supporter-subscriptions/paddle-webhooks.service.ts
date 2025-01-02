@@ -22,6 +22,7 @@ import { SupportersService } from "../supporters/supporters.service";
 import logger from "../../utils/logger";
 import { UserFeedsService } from "../user-feeds/user-feeds.service";
 import { PaddleService } from "../paddle/paddle.service";
+import { Types } from "mongoose";
 const BENEFITS_BY_TIER: Partial<
   Record<
     SubscriptionProductKey | LegacySubscriptionProductKey,
@@ -188,26 +189,34 @@ export class PaddleWebhooksService {
       );
     }
 
-    const { email } = await this.paddleService.getCustomer(
+    const { email: billingEmail } = await this.paddleService.getCustomer(
       event.data.customer_id
     );
 
+    if (!event.data.custom_data.userId) {
+      throw new Error(
+        `Could not find user id in custom_data when updating subscription for customer ${event.data.customer_id}`
+      );
+    }
+
     const foundUser = await this.userModel
       .findOne({
-        email,
+        _id: new Types.ObjectId(event.data.custom_data.userId),
       })
       .select("discordUserId")
       .lean();
 
-    if (!foundUser) {
+    const discordEmail = foundUser?.email;
+
+    if (!discordEmail) {
       throw new Error(
-        `Could not find user with email ${email} when updating subscription for customer ${event.data.customer_id}`
+        `Could not find user with discord ID ${event.data.custom_data.userId} when updating subscription for customer ${event.data.customer_id}`
       );
     }
 
     const toSet: Supporter["paddleCustomer"] = {
       customerId: event.data.customer_id,
-      email,
+      email: billingEmail,
       lastCurrencyCodeUsed: event.data.currency_code,
       subscription: {
         productKey,
