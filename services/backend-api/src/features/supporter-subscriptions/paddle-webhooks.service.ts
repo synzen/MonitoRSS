@@ -206,11 +206,11 @@ export class PaddleWebhooksService {
       .select("discordUserId")
       .lean();
 
-    const discordEmail = foundUser?.email;
+    const discordEmail = foundUser?.discordUserId;
 
     if (!discordEmail) {
       throw new Error(
-        `Could not find user with discord ID ${event.data.custom_data.userId} when updating subscription for customer ${event.data.customer_id}`
+        `Could not find user with user ID ${event.data.custom_data.userId} when updating subscription for customer ${event.data.customer_id}`
       );
     }
 

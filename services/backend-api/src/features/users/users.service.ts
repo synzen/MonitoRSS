@@ -207,7 +207,7 @@ export class UsersService {
 
     const { subscription, customer } =
       await this.supportersService.getSupporterSubscription({
-        email: user.email,
+        discordUserId: user.discordUserId,
       });
 
     let creditAvailableBalanceFormatted = "0";

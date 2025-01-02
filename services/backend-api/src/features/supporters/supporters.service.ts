@@ -303,17 +303,17 @@ export class SupportersService {
   }
 
   async getSupporterSubscription({
-    email,
+    billingEmail,
     discordUserId,
   }:
-    | { email: string; discordUserId?: string }
-    | { discordUserId: string; email?: string }) {
+    | { billingEmail: string; discordUserId?: string }
+    | { billingEmail?: string; discordUserId: string }) {
     let supporter: Supporter | null = null;
 
-    if (email) {
+    if (billingEmail) {
       supporter = await this.supporterModel
         .findOne({
-          "paddleCustomer.email": email,
+          "paddleCustomer.email": billingEmail,
         })
         .lean();
     } else {

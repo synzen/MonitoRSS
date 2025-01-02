@@ -190,14 +190,14 @@ export class SupporterSubscriptionsService {
   }
 
   async previewSubscriptionChange({
-    email,
+    discordUserId,
     items,
   }: {
-    email: string;
+    discordUserId: string;
     items: Array<{ priceId: string; quantity: number }>;
   }) {
     const { subscription } =
-      await this.supportersService.getSupporterSubscription({ email });
+      await this.supportersService.getSupporterSubscription({ discordUserId });
 
     const existingSubscriptionId = subscription?.id;
 
@@ -267,14 +267,14 @@ export class SupporterSubscriptionsService {
   }
 
   async changeSubscription({
-    email,
+    discordUserId,
     items,
   }: {
-    email: string;
+    discordUserId: string;
     items: Array<{ priceId: string; quantity: number }>;
   }) {
-    const { subscription, discordUserId } =
-      await this.supportersService.getSupporterSubscription({ email });
+    const { subscription } =
+      await this.supportersService.getSupporterSubscription({ discordUserId });
 
     const existingSubscriptionId = subscription?.id;
 
@@ -302,7 +302,7 @@ export class SupporterSubscriptionsService {
     const currentUpdatedAt = subscription.updatedAt.getTime();
 
     await this.pollForSubscriptionChange({
-      email,
+      discordUserId,
       check: (sub) => {
         const latestUpdatedAt = sub.subscription?.updatedAt;
 
@@ -319,9 +319,9 @@ export class SupporterSubscriptionsService {
     }
   }
 
-  async cancelSubscription({ email }: { email: string }) {
+  async cancelSubscription({ discordUserId }: { discordUserId: string }) {
     const { subscription } =
-      await this.supportersService.getSupporterSubscription({ email });
+      await this.supportersService.getSupporterSubscription({ discordUserId });
 
     const existingSubscriptionId = subscription?.id;
 
@@ -342,7 +342,7 @@ export class SupporterSubscriptionsService {
     );
 
     await this.pollForSubscriptionChange({
-      email,
+      discordUserId,
       check: (sub) => {
         const cancellationDate = sub.subscription?.cancellationDate;
 
@@ -351,9 +351,9 @@ export class SupporterSubscriptionsService {
     });
   }
 
-  async resumeSubscription({ email }: { email: string }) {
+  async resumeSubscription({ discordUserId }: { discordUserId: string }) {
     const { subscription } =
-      await this.supportersService.getSupporterSubscription({ email });
+      await this.supportersService.getSupporterSubscription({ discordUserId });
 
     const existingSubscriptionId = subscription?.id;
 
@@ -374,7 +374,7 @@ export class SupporterSubscriptionsService {
     );
 
     await this.pollForSubscriptionChange({
-      email,
+      discordUserId,
       check: (sub) => {
         const cancellationDate = sub.subscription?.cancellationDate;
 
@@ -383,9 +383,13 @@ export class SupporterSubscriptionsService {
     });
   }
 
-  async getUpdatePaymentMethodTransaction({ email }: { email: string }) {
+  async getUpdatePaymentMethodTransaction({
+    discordUserId,
+  }: {
+    discordUserId: string;
+  }) {
     const { subscription } =
-      await this.supportersService.getSupporterSubscription({ email });
+      await this.supportersService.getSupporterSubscription({ discordUserId });
 
     const existingSubscriptionId = subscription?.id;
 
@@ -406,10 +410,10 @@ export class SupporterSubscriptionsService {
   }
 
   async pollForSubscriptionChange({
-    email,
+    discordUserId,
     check,
   }: {
-    email: string;
+    discordUserId: string;
     check: (
       sub: Awaited<ReturnType<SupportersService["getSupporterSubscription"]>>
     ) => boolean;
@@ -420,7 +424,9 @@ export class SupporterSubscriptionsService {
 
     while (true) {
       const subscription =
-        await this.supportersService.getSupporterSubscription({ email });
+        await this.supportersService.getSupporterSubscription({
+          discordUserId,
+        });
 
       if (check(subscription)) {
         break;
