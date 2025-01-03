@@ -59,4 +59,7 @@ export class Response {
     nullable: true,
   })
   createdAt: Date = new Date();
+
+  responseHashKey!: string | null;
+  content!: string | null;
 }

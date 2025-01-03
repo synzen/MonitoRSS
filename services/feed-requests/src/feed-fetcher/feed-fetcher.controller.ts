@@ -227,6 +227,7 @@ export class FeedFetcherController {
 
     if (
       data.hashToCompare &&
+      latestRequest.request.response?.textHash &&
       data.hashToCompare === latestRequest.request.response?.textHash
     ) {
       return {

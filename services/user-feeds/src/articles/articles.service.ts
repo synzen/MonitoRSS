@@ -969,7 +969,7 @@ export class ArticlesService {
       return await this.feedParserPool.exec("getArticlesFromXml", args);
     } catch (err) {
       if (err instanceof Error && err.message === "Invalid feed") {
-        throw new InvalidFeedException(err.message);
+        throw new InvalidFeedException(err.message, args[0]);
       }
 
       throw err;

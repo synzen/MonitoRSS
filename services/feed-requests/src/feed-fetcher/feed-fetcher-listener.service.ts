@@ -242,7 +242,7 @@ export class FeedFetcherListenerService {
     }
 
     const latestOkRequest =
-      await this.partitionedRequestsStoreService.getLatestOkRequestWithResponseBody(
+      await this.partitionedRequestsStoreService.getLatestRequestWithOkStatus(
         data.lookupKey || data.url,
         { fields: ['response_headers'] },
       );
@@ -259,9 +259,9 @@ export class FeedFetcherListenerService {
         source: RequestSource.Schedule,
         headers: {
           ...data.headers,
-          // 'If-Modified-Since':
-          //   latestOkRequest?.responseHeaders?.['last-modified'] || '',
-          // 'If-None-Match': latestOkRequest?.responseHeaders?.etag,
+          'If-Modified-Since':
+            latestOkRequest?.responseHeaders?.['last-modified'] || '',
+          'If-None-Match': latestOkRequest?.responseHeaders?.etag,
         },
       },
     );
@@ -509,8 +509,11 @@ export class FeedFetcherListenerService {
     url: string;
   }): Promise<number> {
     const latestOkRequest =
-      await this.partitionedRequestsStoreService.getLatestOkRequestWithResponseBody(
+      await this.partitionedRequestsStoreService.getLatestRequestWithOkStatus(
         lookupKey || url,
+        {
+          include304: true,
+        },
       );
 
     return this.partitionedRequestsStoreService.countFailedRequests(

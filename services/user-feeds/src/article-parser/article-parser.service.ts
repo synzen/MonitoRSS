@@ -209,7 +209,7 @@ export class ArticleParserService {
           err.message === "Not a feed" ||
           err.message.startsWith("Unexpected end")
         ) {
-          reject(new InvalidFeedException("Invalid feed"));
+          reject(new InvalidFeedException("Invalid feed", xml));
         } else {
           reject(err);
         }

@@ -16,5 +16,9 @@ export interface PartitionedRequestInsert {
     s3ObjectKey: string | null;
     redisCacheKey: string | null;
     headers: object;
+    body: {
+      hashKey: string;
+      contents: string;
+    } | null;
   };
 }

@@ -152,10 +152,16 @@ export class FeedFetcherService {
       return null;
     }
 
-    if (request.response?.redisCacheKey) {
-      const compressedText = await this.cacheStorageService.getFeedHtmlContent({
-        key: request.response.redisCacheKey,
-      });
+    if (request.response?.redisCacheKey || request.response?.content) {
+      let compressedText: string | null = null;
+
+      if (request.response.content) {
+        compressedText = request.response.content;
+      } else if (request.response.redisCacheKey) {
+        compressedText = await this.cacheStorageService.getFeedHtmlContent({
+          key: request.response.redisCacheKey,
+        });
+      }
 
       const text = compressedText
         ? (
@@ -277,23 +283,14 @@ export class FeedFetcherService {
             }
           }
 
-          response.textHash = text
-            ? sha1.copy().update(text).digest('hex')
-            : '';
-
-          /**
-           * This has a problem where 304 responses will have no feed response, which won't refresh the
-           * previous cache contents for 200 codes
-           */
-          const hashKey =
+          const key =
             url + JSON.stringify(request.fetchOptions) + res.status.toString();
 
-          response.redisCacheKey = sha1.copy().update(hashKey).digest('hex');
+          if (text.length) {
+            response.responseHashKey = sha1.copy().update(key).digest('hex');
 
-          await this.cacheStorageService.setFeedHtmlContent({
-            key: response.redisCacheKey,
-            body: compressedText,
-          });
+            response.content = compressedText;
+          }
         } catch (err) {
           if (err instanceof FeedTooLargeException) {
             throw err;
@@ -339,6 +336,13 @@ export class FeedFetcherService {
           s3ObjectKey: response.s3ObjectKey || null,
           redisCacheKey: response.redisCacheKey || null,
           headers: response.headers,
+          body:
+            response.responseHashKey && response.content
+              ? {
+                  hashKey: response.responseHashKey,
+                  contents: response.content,
+                }
+              : null,
         },
       };
 

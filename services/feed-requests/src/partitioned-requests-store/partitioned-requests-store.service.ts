@@ -32,7 +32,7 @@ export default class PartitionedRequestsStoreService {
 
     try {
       await Promise.all(
-        this.pendingInserts.map((responseInsert) => {
+        this.pendingInserts.map(async (responseInsert) => {
           const urlHash = sha1.copy().update(responseInsert.url).digest('hex');
           let hostHash: string | null = null;
 
@@ -44,6 +44,35 @@ export default class PartitionedRequestsStoreService {
               url: responseInsert.url,
               err: (err as Error).stack,
             });
+          }
+
+          if (responseInsert.response?.body) {
+            const contentHash = sha1
+              .copy()
+              .update(responseInsert.response.body.contents)
+              .digest('hex');
+
+            // does this content already exist in the db?
+            const results = await em.execute(
+              `SELECT 1 FROM response_bodies WHERE hash_key = ? AND content_hash = ?`,
+              [responseInsert.response.body.hashKey, contentHash],
+            );
+
+            if (results.length === 0) {
+              await em.execute(
+                `INSERT INTO response_bodies (content, content_hash, hash_key) VALUES (?, ?, ?)
+                ON CONFLICT (hash_key) DO UPDATE SET content = ?, content_hash = ?
+              `,
+                [
+                  responseInsert.response.body.contents,
+                  contentHash,
+                  responseInsert.response.body.hashKey,
+                  responseInsert.response.body.contents,
+                  contentHash,
+                ],
+                transaction,
+              );
+            }
           }
 
           return em.execute(
@@ -61,11 +90,12 @@ export default class PartitionedRequestsStoreService {
               error_message,
               response_status_code,
               response_text_hash,
+              response_body_hash_key,
               response_s3object_key,
               response_redis_cache_key,
               response_headers
             ) VALUES (
-              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             )`,
             [
               randomUUID(),
@@ -80,7 +110,8 @@ export default class PartitionedRequestsStoreService {
               responseInsert.nextRetryDate,
               responseInsert.errorMessage,
               responseInsert.response?.statusCode,
-              responseInsert.response?.textHash,
+              null,
+              responseInsert.response?.body?.hashKey,
               responseInsert.response?.s3ObjectKey,
               responseInsert.response?.redisCacheKey,
               this.stringifyJson(responseInsert.response?.headers),
@@ -118,9 +149,10 @@ export default class PartitionedRequestsStoreService {
     return new Date(result.next_retry_date) || null;
   }
 
-  async getLatestOkRequestWithResponseBody(
+  async getLatestRequestWithOkStatus(
     lookupKey: string,
-    opts?: {
+    opts: {
+      include304?: boolean;
       fields?: Array<'response_headers'>;
     },
   ): Promise<null | {
@@ -244,9 +276,13 @@ export default class PartitionedRequestsStoreService {
     const em = this.orm.em.getConnection();
 
     const [result] = await em.execute(
-      `SELECT * FROM request_partitioned
-       WHERE lookup_key = ?
-       AND response_status_code != 304
+      `SELECT req.*, res.content AS response_body_content,
+        res.content_hash AS response_content_hash
+       FROM request_partitioned req
+       LEFT JOIN response_bodies res
+       ON req.response_body_hash_key = res.hash_key
+       WHERE req.lookup_key = ?
+       AND req.response_status_code != 304
        ORDER BY created_at DESC
        LIMIT 1`,
       [lookupKey],
@@ -274,13 +310,15 @@ export default class PartitionedRequestsStoreService {
         ? {
             id: result.id,
             statusCode: result.response_status_code,
-            textHash: result.response_text_hash,
+            textHash: result.response_content_hash,
             hasCompressedText: true,
             isCloudflare: false,
             s3ObjectKey: result.response_s3object_key,
             redisCacheKey: result.response_redis_cache_key,
             headers: result.response_headers,
             createdAt: new Date(result.created_at),
+            content: result.response_body_content,
+            responseHashKey: result.response_body_hash_key,
           }
         : null,
     };

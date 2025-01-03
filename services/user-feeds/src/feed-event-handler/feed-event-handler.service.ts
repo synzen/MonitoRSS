@@ -480,6 +480,7 @@ export class FeedEventHandlerService {
       if (err instanceof InvalidFeedException) {
         logger.info(`Ignoring feed event due to invalid feed`, {
           event,
+          xml: err.feedText,
           stack: (err as Error).stack,
         });
 
