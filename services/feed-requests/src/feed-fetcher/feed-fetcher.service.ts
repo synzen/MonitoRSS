@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import logger from '../utils/logger';
 import { RequestStatus } from './constants';
 import { Request, Response } from './entities';
-import { deflate, inflate } from 'zlib';
+import { deflate, inflate, gunzip } from 'zlib';
 import { promisify } from 'util';
 import { ObjectFileStorageService } from '../object-file-storage/object-file-storage.service';
 import { createHash, randomUUID } from 'crypto';
@@ -19,6 +19,7 @@ import { GetFeedRequestsInputDto } from './dto';
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);
+const gunzipPromise = promisify(gunzip);
 
 const sha1 = createHash('sha1');
 
@@ -194,6 +195,7 @@ export class FeedFetcherService {
           this.configService.get<string>('feedUserAgent') ||
           this.defaultUserAgent,
         accept: 'text/html,text/xml,application/xml,application/rss+xml',
+        'accept-encoding': 'gzip',
         /**
          * Currently required for https://developer.oculus.com/blog/rss/ that returns 400 otherwise
          * Appears to be temporary error given that the page says they're working on fixing it
@@ -275,13 +277,18 @@ export class FeedFetcherService {
             }
           }
 
+          response.textHash = text
+            ? sha1.copy().update(text).digest('hex')
+            : '';
+
+          /**
+           * This has a problem where 304 responses will have no feed response, which won't refresh the
+           * previous cache contents for 200 codes
+           */
           const hashKey =
             url + JSON.stringify(request.fetchOptions) + res.status.toString();
 
           response.redisCacheKey = sha1.copy().update(hashKey).digest('hex');
-          response.textHash = text
-            ? sha1.copy().update(text).digest('hex')
-            : '';
 
           await this.cacheStorageService.setFeedHtmlContent({
             key: response.redisCacheKey,
@@ -472,14 +479,20 @@ export class FeedFetcherService {
           ?.split('=')[1]
           .trim();
 
-        if (!charset || /utf-*8/i.test(charset)) {
-          return r.body.text();
+        let responseBuffer: Buffer;
+
+        // handle gzip
+        if (r.headers['content-encoding']?.includes('gzip')) {
+          responseBuffer = await gunzipPromise(await r.body.arrayBuffer());
+        } else {
+          responseBuffer = Buffer.from(await r.body.arrayBuffer());
         }
 
-        const arrBuffer = await r.body.arrayBuffer();
-        const decoded = iconv
-          .decode(Buffer.from(arrBuffer), charset)
-          .toString();
+        if (!charset || /utf-*8/i.test(charset)) {
+          return responseBuffer.toString();
+        }
+
+        const decoded = iconv.decode(responseBuffer, charset).toString();
 
         return decoded;
       },
