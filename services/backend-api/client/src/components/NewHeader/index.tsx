@@ -107,7 +107,7 @@ export const NewHeader = ({ invertBackground }: Props) => {
         </HStack>
         <Flex alignItems="center" paddingY="4">
           <Menu placement="bottom-end">
-            <MenuButton as={Button} size="sm" variant="link" aria-label="Account   settings">
+            <MenuButton as={Button} size="sm" variant="link" aria-label="Account settings">
               <Avatar
                 src={discordUserMe?.iconUrl}
                 size="sm"
@@ -120,6 +120,9 @@ export const NewHeader = ({ invertBackground }: Props) => {
               <Box overflow="hidden" paddingX={2} title={discordUserMe?.username}>
                 <Text overflow="hidden" maxWidth={300} textOverflow="ellipsis" whiteSpace="nowrap">
                   {discordUserMe?.username}
+                </Text>
+                <Text fontSize="sm" color="whiteAlpha.600">
+                  Discord ID: {discordUserMe?.id}
                 </Text>
               </Box>
               <MenuDivider />
