@@ -15,6 +15,7 @@ import { HostRateLimiterService } from '../host-rate-limiter/host-rate-limiter.s
 import retryUntilTrue, {
   RetryException,
 } from '../shared/utils/retry-until-true';
+import { CacheStorageService } from '../cache-storage/cache-storage.service';
 
 interface BatchRequestMessage {
   timestamp: number;
@@ -40,6 +41,7 @@ export class FeedFetcherListenerService {
     private readonly em: EntityManager,
     private readonly partitionedRequestsStoreService: PartitionedRequestsStoreService,
     private readonly hostRateLimiterService: HostRateLimiterService,
+    private readonly cacheStorageService: CacheStorageService,
   ) {
     this.maxFailAttempts = this.configService.get(
       'FEED_REQUESTS_MAX_FAIL_ATTEMPTS',
@@ -48,6 +50,14 @@ export class FeedFetcherListenerService {
       'FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT',
     );
   }
+
+  calculateCacheKeyForMessage = (
+    event: BatchRequestMessage['data'][number],
+  ) => {
+    const lookupKey = event.lookupKey || event.url;
+
+    return `listener-service-${lookupKey}`;
+  };
 
   static BASE_FAILED_ATTEMPT_WAIT_MINUTES = 5;
 
@@ -93,6 +103,23 @@ export class FeedFetcherListenerService {
         batchRequest.data.map(async (message) => {
           const { url, lookupKey, saveToObjectStorage, headers } = message;
           let request: PartitionedRequestInsert | undefined = undefined;
+
+          const currentlyProcessing = await this.cacheStorageService.set({
+            key: this.calculateCacheKeyForMessage(message),
+            body: '1',
+            getOldValue: true,
+            expSeconds: rateSeconds,
+          });
+
+          if (currentlyProcessing) {
+            logger.info(
+              `Request with key ${
+                lookupKey || url
+              } with rate ${rateSeconds} is already being processed, skipping`,
+            );
+
+            return;
+          }
 
           try {
             await retryUntilTrue(
@@ -163,6 +190,10 @@ export class FeedFetcherListenerService {
                 },
               );
             }
+
+            await this.cacheStorageService.del(
+              this.calculateCacheKeyForMessage(message),
+            );
           }
         }),
       );
@@ -207,24 +238,6 @@ export class FeedFetcherListenerService {
     const url = data.url;
     const rateSeconds = data.rateSeconds;
     const lookupKey = data.lookupKey;
-
-    const dateToCheck = dayjs()
-      .subtract(Math.round(rateSeconds * 0.75), 'seconds')
-      .toDate();
-
-    const latestRequestAfterTime =
-      await this.partitionedRequestsStoreService.getLatestStatusAfterTime(
-        lookupKey || url,
-        dateToCheck,
-      );
-
-    if (latestRequestAfterTime) {
-      logger.debug(
-        `Request ${url} with rate ${rateSeconds} has been recently processed, skipping`,
-      );
-
-      return { successful: latestRequestAfterTime.status === RequestStatus.OK };
-    }
 
     const { skip, nextRetryDate, failedAttemptsCount } =
       await this.shouldSkipAfterPreviousFailedAttempt({

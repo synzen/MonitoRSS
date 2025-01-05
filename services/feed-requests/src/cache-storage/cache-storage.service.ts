@@ -17,6 +17,39 @@ export class CacheStorageService {
     return `feed-requests:${key}`;
   }
 
+  async set({
+    key,
+    body,
+    expSeconds,
+    getOldValue,
+  }: {
+    body: string;
+    key: string;
+    expSeconds?: number;
+    getOldValue?: boolean;
+  }) {
+    try {
+      return await this.redisClient.set(this.generateKey(key), body, {
+        EX: expSeconds,
+        GET: getOldValue ? true : undefined,
+      });
+    } catch (err) {
+      logger.error(`Failed to set content in cache storage`, {
+        err: (err as Error).stack,
+      });
+    }
+  }
+
+  async del(key: string) {
+    try {
+      await this.redisClient.del(this.generateKey(key));
+    } catch (err) {
+      logger.error(`Failed to delete content from cache storage`, {
+        err: (err as Error).stack,
+      });
+    }
+  }
+
   async increment(
     key: string,
     opts?: {
