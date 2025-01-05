@@ -15,6 +15,8 @@ import { HostRateLimiterService } from '../host-rate-limiter/host-rate-limiter.s
 import retryUntilTrue, {
   RetryException,
 } from '../shared/utils/retry-until-true';
+import calculateResponseFreshnessLifetime from '../shared/utils/calculate-response-freshness-lifetime';
+import calculateCurrentResponseAge from '../shared/utils/calculate-current-response-age';
 
 interface BatchRequestMessage {
   timestamp: number;
@@ -241,11 +243,20 @@ export class FeedFetcherListenerService {
       return { successful: false };
     }
 
-    const latestOkRequest =
-      await this.partitionedRequestsStoreService.getLatestRequestWithOkStatus(
-        data.lookupKey || data.url,
-        { fields: ['response_headers'] },
+    const { isCacheStillActive, latestOkRequest } =
+      await this.isLatestResponseStillFreshInCache({
+        lookupKey: lookupKey || url,
+      });
+
+    if (isCacheStillActive) {
+      logger.debug(
+        `Request with lookup key ${
+          lookupKey || url
+        } still has active cache-control, skipping`,
       );
+
+      return { successful: true };
+    }
 
     const { request } = await this.feedFetcherService.fetchAndSaveResponse(
       url,
@@ -464,42 +475,48 @@ export class FeedFetcherListenerService {
     }
   }
 
-  // async isLatestResponseStillFreshInCache({
-  //   lookupKey,
-  // }: {
-  //   lookupKey: string;
-  // }) {
-  //   const latestOkRequest =
-  //     await this.partitionedRequestsStoreService.getLatestOkRequestWithResponseBody(lookupKey);
+  async isLatestResponseStillFreshInCache({
+    lookupKey,
+  }: {
+    lookupKey: string;
+  }): Promise<{
+    isCacheStillActive: boolean;
+    latestOkRequest?: Awaited<
+      ReturnType<
+        typeof FeedFetcherListenerService.prototype.partitionedRequestsStoreService.getLatestRequestWithOkStatus
+      >
+    >;
+  }> {
+    const latestOkRequest =
+      await this.partitionedRequestsStoreService.getLatestRequestWithOkStatus(
+        lookupKey,
+        {
+          fields: ['response_headers'],
+        },
+      );
 
-  //   if (!latestOkRequest) {
-  //     return false;
-  //   }
+    if (!latestOkRequest) {
+      return {
+        isCacheStillActive: false,
+      };
+    }
 
-  //   const cacheControl = latestOkRequest.responseHeaders?.['cache-control'];
+    const freshnessLifetime = calculateResponseFreshnessLifetime({
+      headers: latestOkRequest.responseHeaders || {},
+    });
+    const currentAgeOfResponse = calculateCurrentResponseAge({
+      headers: latestOkRequest.responseHeaders || {},
+      requestTime: latestOkRequest.createdAt,
+      responseTime: latestOkRequest?.requestInitiatedAt,
+    });
 
-  //   if (!cacheControl) {
-  //     return false;
-  //   }
+    const responseIsFresh = freshnessLifetime > currentAgeOfResponse;
 
-  //   const directives = cacheControl.split(',').map((d) => d.trim());
-  //   const maxAgeDirective = directives.find((d) => d.startsWith('max-age='));
-  //   const publicDirective = directives.includes('public');
-
-  //   if (!maxAgeDirective || !publicDirective) {
-  //     return false;
-  //   }
-
-  //   const maxAge = parseInt(maxAgeDirective.split('=')[1]);
-
-  //   const baseDate = latestOkRequest.responseHeaders?.date
-  //     ? new Date(latestOkRequest.responseHeaders?.date)
-  //     : latestOkRequest.createdAt;
-
-  //   const expirationDate = baseDate.getTime() + maxAge * 1000;
-
-  //   return expirationDate > Date.now();
-  // }
+    return {
+      latestOkRequest,
+      isCacheStillActive: responseIsFresh,
+    };
+  }
 
   async countFailedRequests({
     lookupKey,

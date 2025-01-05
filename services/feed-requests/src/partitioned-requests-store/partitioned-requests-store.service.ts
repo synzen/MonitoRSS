@@ -93,9 +93,10 @@ export default class PartitionedRequestsStoreService {
               response_body_hash_key,
               response_s3object_key,
               response_redis_cache_key,
-              response_headers
+              response_headers,
+              request_initiated_at
             ) VALUES (
-              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             )`,
             [
               randomUUID(),
@@ -115,6 +116,7 @@ export default class PartitionedRequestsStoreService {
               responseInsert.response?.s3ObjectKey,
               responseInsert.response?.redisCacheKey,
               this.stringifyJson(responseInsert.response?.headers),
+              responseInsert.requestInitiatedAt,
             ],
             transaction,
           );
@@ -158,11 +160,12 @@ export default class PartitionedRequestsStoreService {
   ): Promise<null | {
     createdAt: Date;
     responseHeaders?: Record<string, string>;
+    requestInitiatedAt: Date | null;
   }> {
     const em = this.orm.em.getConnection();
 
     const [result] = await em.execute(
-      `SELECT created_at ${
+      `SELECT request_initiated_at, created_at ${
         opts?.fields?.includes('response_headers') ? ', response_headers' : ''
       } FROM request_partitioned
        WHERE lookup_key = ?
@@ -180,6 +183,7 @@ export default class PartitionedRequestsStoreService {
     return {
       createdAt: new Date(result.created_at),
       responseHeaders: result.response_headers,
+      requestInitiatedAt: result.request_initiated_at,
     };
   }
 
@@ -247,7 +251,7 @@ export default class PartitionedRequestsStoreService {
 
     const results = await em.execute(
       `SELECT id, url, created_at, next_retry_date, status, response_status_code,` +
-        ` fetch_options FROM request_partitioned
+        ` fetch_options, response_headers FROM request_partitioned
        WHERE lookup_key = ?
        ORDER BY created_at DESC
        LIMIT ?
@@ -265,6 +269,7 @@ export default class PartitionedRequestsStoreService {
       response: result.response_status_code
         ? {
             statusCode: result.response_status_code,
+            headers: result.response_headers,
           }
         : null,
     }));
@@ -300,7 +305,7 @@ export default class PartitionedRequestsStoreService {
       id: result.id,
       status: result.status,
       source: result.source,
-      createdAt: new Date(result.created_at),
+      createdAt: new Date(result.request_initiated_at),
       lookupKey: result.lookup_key,
       nextRetryDate: result.next_retry_date,
       url: result.url,

@@ -10,6 +10,7 @@ export interface PartitionedRequestInsert {
   createdAt: Date;
   nextRetryDate: Date | null;
   errorMessage: string | null;
+  requestInitiatedAt: Date | null;
   response: null | {
     statusCode: number;
     textHash: string | null;

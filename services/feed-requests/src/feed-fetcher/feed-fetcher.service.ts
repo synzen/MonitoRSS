@@ -31,32 +31,32 @@ const convertHeaderValue = (val?: string | string[] | null) => {
   return val || '';
 };
 
-const trimHeadersForStorage = (
-  obj?: Record<string, string | undefined>,
-): Record<string, string> => {
-  const trimmed = Object.entries(obj || {}).reduce((acc, [key, val]) => {
+// Necessary since passing If-None-Match header with empty string may cause a 200 when expecting 304
+const trimEmptyHeaderVals = (
+  headers?: Record<string, string | undefined>,
+): Record<string, string> | undefined =>
+  Object.entries(headers || {}).reduce((acc, [key, val]) => {
     if (val) {
       acc[key] = val;
     }
 
     return acc;
-  }, {} as Record<string, string>);
+  }, {});
 
-  if (!obj) {
-    return trimmed;
-  }
-
-  for (const key in trimmed) {
-    if (trimmed[key]) {
-      trimmed[key.toLowerCase()] = trimmed[key];
+const convertHeadersForStorage = (
+  obj: Record<string, string>,
+): Record<string, string> => {
+  for (const key in obj) {
+    if (obj[key]) {
+      obj[key.toLowerCase()] = obj[key];
     }
   }
 
-  if (trimmed.authorization) {
-    trimmed.authorization = 'SECRET';
+  if (obj.authorization) {
+    obj.authorization = 'SECRET';
   }
 
-  return trimmed;
+  return obj;
 };
 
 interface FetchOptions {
@@ -67,7 +67,7 @@ interface FetchOptions {
 interface FetchResponse {
   ok: boolean;
   status: number;
-  headers: Map<'etag' | 'last-modified' | 'server' | 'content-type', string>;
+  headers: Map<string, string>;
   text: () => Promise<string>;
 }
 
@@ -215,15 +215,18 @@ export class FeedFetcherService {
     request.source = options?.source;
     request.lookupKey = options?.lookupDetails?.key || url;
     request.url = url;
+
+    const headers = trimEmptyHeaderVals(fetchOptions.headers);
+
     request.fetchOptions = {
       ...fetchOptions,
-      headers: trimHeadersForStorage(fetchOptions.headers),
+      headers: convertHeadersForStorage(headers || {}),
     };
 
     try {
       const res = await this.fetchFeedResponse(
         url,
-        fetchOptions,
+        { ...fetchOptions, headers },
         options?.saveResponseToObjectStorage,
       );
 
@@ -324,7 +327,8 @@ export class FeedFetcherService {
       const partitionedRequest: PartitionedRequestInsert = {
         url: request.url,
         lookupKey: request.lookupKey,
-        createdAt: request.createdAt,
+        createdAt: response.createdAt,
+        requestInitiatedAt: request.createdAt,
         errorMessage: request.errorMessage || null,
         fetchOptions: request.fetchOptions || null,
         nextRetryDate: request.nextRetryDate,
@@ -387,6 +391,7 @@ export class FeedFetcherService {
         source: (request.source as RequestSource | null) || null,
         status: request.status,
         response: null,
+        requestInitiatedAt: request.createdAt,
       };
 
       await this.partitionedRequestsStore.markForPersistence(
@@ -412,19 +417,8 @@ export class FeedFetcherService {
       controller.abort();
     }, this.feedRequestTimeoutMs);
 
-    // Necessary since passing If-None-Match header with empty string may cause a 200 when expecting 304
-    const withoutEmptyHeaderVals = Object.entries(
-      options?.headers || {},
-    ).reduce((acc, [key, val]) => {
-      if (val) {
-        acc[key] = val;
-      }
-
-      return acc;
-    }, {});
-
     const useOptions = {
-      headers: withoutEmptyHeaderVals,
+      headers: options?.headers,
       redirect: 'follow' as const,
       signal: controller.signal,
     };
@@ -451,6 +445,8 @@ export class FeedFetcherService {
       (acc, [key, val]) => {
         if (typeof val === 'string') {
           acc.set(key.toLowerCase(), val);
+        } else if (Array.isArray(val)) {
+          acc.set(key.toLowerCase(), val[0]);
         }
 
         return acc;
@@ -462,16 +458,48 @@ export class FeedFetcherService {
 
     const headers: FetchResponse['headers'] = new Map();
 
-    headers.set('etag', convertHeaderValue(normalizedHeaders.get('etag')));
-    headers.set(
-      'content-type',
-      convertHeaderValue(normalizedHeaders.get('content-type')),
-    );
-    headers.set(
-      'last-modified',
-      convertHeaderValue(normalizedHeaders.get('last-modified')),
-    );
-    headers.set('server', convertHeaderValue(normalizedHeaders.get('server')));
+    if (normalizedHeaders.get('etag')) {
+      headers.set('etag', convertHeaderValue(normalizedHeaders.get('etag')));
+    }
+
+    if (normalizedHeaders.get('content-type')) {
+      headers.set(
+        'content-type',
+        convertHeaderValue(normalizedHeaders.get('content-type')),
+      );
+    }
+
+    if (normalizedHeaders.get('last-modified')) {
+      headers.set(
+        'last-modified',
+        convertHeaderValue(normalizedHeaders.get('last-modified')),
+      );
+    }
+
+    if (normalizedHeaders.get('server')) {
+      headers.set(
+        'server',
+        convertHeaderValue(normalizedHeaders.get('server')),
+      );
+    }
+
+    if (normalizedHeaders.get('cache-control')) {
+      headers.set(
+        'cache-control',
+        convertHeaderValue(normalizedHeaders.get('cache-control')),
+      );
+    }
+
+    if (normalizedHeaders.get('date')) {
+      headers.set('date', convertHeaderValue(normalizedHeaders.get('date')));
+    }
+
+    if (normalizedHeaders.get('expires')) {
+      headers.set(
+        'expires',
+        convertHeaderValue(normalizedHeaders.get('expires')),
+      );
+    }
 
     return {
       headers,

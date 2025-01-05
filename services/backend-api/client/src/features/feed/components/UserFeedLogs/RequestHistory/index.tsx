@@ -17,14 +17,21 @@ import {
   Text,
   Th,
   Thead,
+  Tooltip,
   Tr,
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
+import { QuestionOutlineIcon } from "@chakra-ui/icons";
+import { forwardRef } from "react";
 import { useUserFeedRequestsWithPagination } from "../../../hooks";
 import { UserFeedRequestStatus } from "../../../types";
 import { InlineErrorAlert } from "../../../../../components";
 import { useUserFeedContext } from "../../../../../contexts/UserFeedContext";
+
+const QuestionOutlineComponent = forwardRef<any>((props, ref) => (
+  <QuestionOutlineIcon fontSize={12} tabIndex={0} ref={ref} {...props} />
+));
 
 const createStatusLabel = (
   status: UserFeedRequestStatus,
@@ -117,6 +124,12 @@ export const RequestHistory = () => {
                   <Tr>
                     <Th>{t("features.userFeeds.components.requestsTable.tableHeaderDate")}</Th>
                     <Th>{t("features.userFeeds.components.requestsTable.tableHeaderStatus")}</Th>
+                    <Th>
+                      Cache Duration{" "}
+                      <Tooltip label="The duration for which the contents of a particular request can be re-used before it is polled again, determined by the feed host. This is necessary to comply with feed polling requirements, and so it overrides the refresh rate.">
+                        <QuestionOutlineComponent aria-label="Cache Duration" />
+                      </Tooltip>
+                    </Th>
                   </Tr>
                 </Thead>
                 <Tbody>
@@ -132,6 +145,13 @@ export const RequestHistory = () => {
                           {createStatusLabel(req.status, {
                             statusCode: req.response.statusCode,
                           })}
+                        </Skeleton>
+                      </Td>
+                      <Td>
+                        <Skeleton isLoaded={fetchStatus === "idle"}>
+                          {req.freshnessLifetimeMs
+                            ? dayjs.duration(req.freshnessLifetimeMs, "ms").humanize()
+                            : "N/A"}
                         </Skeleton>
                       </Td>
                     </Tr>
