@@ -514,7 +514,7 @@ export class FeedFetcherListenerService {
 
     return {
       latestOkRequest,
-      isCacheStillActive: responseIsFresh,
+      isCacheStillActive: freshnessLifetime ? responseIsFresh : false,
     };
   }
 
