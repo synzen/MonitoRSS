@@ -44,19 +44,21 @@ const trimEmptyHeaderVals = (
   }, {});
 
 const convertHeadersForStorage = (
-  obj: Record<string, string>,
+  input: Record<string, string>,
 ): Record<string, string> => {
-  for (const key in obj) {
-    if (obj[key]) {
-      obj[key.toLowerCase()] = obj[key];
+  const newObj: Record<string, string> = {};
+
+  for (const key in input) {
+    if (input[key]) {
+      newObj[key.toLowerCase()] = input[key];
     }
   }
 
-  if (obj.authorization) {
-    obj.authorization = 'SECRET';
+  if (newObj.authorization) {
+    newObj.authorization = 'SECRET';
   }
 
-  return obj;
+  return newObj;
 };
 
 interface FetchOptions {
