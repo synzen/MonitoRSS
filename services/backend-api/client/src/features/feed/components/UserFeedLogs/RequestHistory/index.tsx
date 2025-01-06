@@ -126,7 +126,7 @@ export const RequestHistory = () => {
                     <Th>{t("features.userFeeds.components.requestsTable.tableHeaderStatus")}</Th>
                     <Th>
                       Cache Duration{" "}
-                      <Tooltip label="The duration for which the contents of a particular request can be re-used before it is polled again, determined by the feed host. This is necessary to comply with feed polling requirements, and so it overrides the refresh rate.">
+                      <Tooltip label="The duration, determined by the feed host, for which the contents of a particular request will be re-used before a new request is made. This is necessary to comply with polling requirements, and so it overrides this feed's refresh rate.">
                         <QuestionOutlineComponent aria-label="Cache Duration" />
                       </Tooltip>
                     </Th>
