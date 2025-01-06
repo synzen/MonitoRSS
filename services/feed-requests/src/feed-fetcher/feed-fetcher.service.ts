@@ -31,34 +31,32 @@ const convertHeaderValue = (val?: string | string[] | null) => {
   return val || '';
 };
 
-// Necessary since passing If-None-Match header with empty string may cause a 200 when expecting 304
-const trimEmptyHeaderVals = (
-  headers?: Record<string, string | undefined>,
-): Record<string, string> | undefined =>
-  Object.entries(headers || {}).reduce((acc, [key, val]) => {
+const trimHeadersForStorage = (
+  obj?: Record<string, string | undefined>,
+): Record<string, string> => {
+  const trimmed = Object.entries(obj || {}).reduce((acc, [key, val]) => {
     if (val) {
       acc[key] = val;
     }
 
     return acc;
-  }, {});
+  }, {} as Record<string, string>);
 
-const convertHeadersForStorage = (
-  input: Record<string, string>,
-): Record<string, string> => {
-  const newObj: Record<string, string> = {};
+  if (!obj) {
+    return trimmed;
+  }
 
-  for (const key in input) {
-    if (input[key]) {
-      newObj[key.toLowerCase()] = input[key];
+  for (const key in trimmed) {
+    if (trimmed[key]) {
+      trimmed[key.toLowerCase()] = trimmed[key];
     }
   }
 
-  if (newObj.authorization) {
-    newObj.authorization = 'SECRET';
+  if (trimmed.authorization) {
+    trimmed.authorization = 'SECRET';
   }
 
-  return newObj;
+  return trimmed;
 };
 
 interface FetchOptions {
@@ -217,18 +215,15 @@ export class FeedFetcherService {
     request.source = options?.source;
     request.lookupKey = options?.lookupDetails?.key || url;
     request.url = url;
-
-    const headers = trimEmptyHeaderVals(fetchOptions.headers);
-
     request.fetchOptions = {
       ...fetchOptions,
-      headers: convertHeadersForStorage(headers || {}),
+      headers: trimHeadersForStorage(fetchOptions.headers),
     };
 
     try {
       const res = await this.fetchFeedResponse(
         url,
-        { ...fetchOptions, headers },
+        fetchOptions,
         options?.saveResponseToObjectStorage,
       );
 
@@ -419,8 +414,19 @@ export class FeedFetcherService {
       controller.abort();
     }, this.feedRequestTimeoutMs);
 
+    // Necessary since passing If-None-Match header with empty string may cause a 200 when expecting 304
+    const withoutEmptyHeaderVals = Object.entries(
+      options?.headers || {},
+    ).reduce((acc, [key, val]) => {
+      if (val) {
+        acc[key] = val;
+      }
+
+      return acc;
+    }, {});
+
     const useOptions = {
-      headers: options?.headers,
+      headers: withoutEmptyHeaderVals,
       redirect: 'follow' as const,
       signal: controller.signal,
     };
@@ -447,8 +453,6 @@ export class FeedFetcherService {
       (acc, [key, val]) => {
         if (typeof val === 'string') {
           acc.set(key.toLowerCase(), val);
-        } else if (Array.isArray(val)) {
-          acc.set(key.toLowerCase(), val[0]);
         }
 
         return acc;
@@ -460,47 +464,46 @@ export class FeedFetcherService {
 
     const headers: FetchResponse['headers'] = new Map();
 
-    if (normalizedHeaders.get('etag')) {
-      headers.set('etag', convertHeaderValue(normalizedHeaders.get('etag')));
+    const etag = normalizedHeaders.get('etag');
+
+    if (etag) {
+      headers.set('etag', convertHeaderValue(etag));
     }
 
-    if (normalizedHeaders.get('content-type')) {
-      headers.set(
-        'content-type',
-        convertHeaderValue(normalizedHeaders.get('content-type')),
-      );
+    const contentType = normalizedHeaders.get('content-type');
+
+    if (contentType) {
+      headers.set('content-type', convertHeaderValue(contentType));
     }
 
-    if (normalizedHeaders.get('last-modified')) {
-      headers.set(
-        'last-modified',
-        convertHeaderValue(normalizedHeaders.get('last-modified')),
-      );
+    const lastModified = normalizedHeaders.get('last-modified');
+
+    if (lastModified) {
+      headers.set('last-modified', convertHeaderValue(lastModified));
     }
 
-    if (normalizedHeaders.get('server')) {
-      headers.set(
-        'server',
-        convertHeaderValue(normalizedHeaders.get('server')),
-      );
+    const server = normalizedHeaders.get('server');
+
+    if (server) {
+      headers.set('server', convertHeaderValue(server));
     }
 
-    if (normalizedHeaders.get('cache-control')) {
-      headers.set(
-        'cache-control',
-        convertHeaderValue(normalizedHeaders.get('cache-control')),
-      );
+    const cacheControl = normalizedHeaders.get('cache-control');
+
+    if (cacheControl) {
+      headers.set('cache-control', convertHeaderValue(cacheControl));
     }
 
-    if (normalizedHeaders.get('date')) {
-      headers.set('date', convertHeaderValue(normalizedHeaders.get('date')));
+    const date = normalizedHeaders.get('date');
+
+    if (date) {
+      headers.set('date', convertHeaderValue(date));
     }
 
-    if (normalizedHeaders.get('expires')) {
-      headers.set(
-        'expires',
-        convertHeaderValue(normalizedHeaders.get('expires')),
-      );
+    const expires = normalizedHeaders.get('expires');
+
+    if (expires) {
+      headers.set('expires', convertHeaderValue(expires));
     }
 
     return {
