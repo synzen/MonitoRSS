@@ -67,7 +67,7 @@ interface FetchOptions {
 interface FetchResponse {
   ok: boolean;
   status: number;
-  headers: Map<'etag' | 'last-modified' | 'server' | 'content-type', string>;
+  headers: Map<string, string>;
   text: () => Promise<string>;
 }
 
@@ -234,7 +234,6 @@ export class FeedFetcherService {
       }
 
       const response = new Response();
-      response.createdAt = request.createdAt;
       response.statusCode = res.status;
       const headersToStore: Record<string, string> = {};
 
@@ -324,7 +323,8 @@ export class FeedFetcherService {
       const partitionedRequest: PartitionedRequestInsert = {
         url: request.url,
         lookupKey: request.lookupKey,
-        createdAt: request.createdAt,
+        createdAt: response.createdAt,
+        requestInitiatedAt: request.createdAt,
         errorMessage: request.errorMessage || null,
         fetchOptions: request.fetchOptions || null,
         nextRetryDate: request.nextRetryDate,
@@ -387,6 +387,7 @@ export class FeedFetcherService {
         source: (request.source as RequestSource | null) || null,
         status: request.status,
         response: null,
+        requestInitiatedAt: request.createdAt,
       };
 
       await this.partitionedRequestsStore.markForPersistence(
@@ -462,16 +463,47 @@ export class FeedFetcherService {
 
     const headers: FetchResponse['headers'] = new Map();
 
-    headers.set('etag', convertHeaderValue(normalizedHeaders.get('etag')));
-    headers.set(
-      'content-type',
-      convertHeaderValue(normalizedHeaders.get('content-type')),
-    );
-    headers.set(
-      'last-modified',
-      convertHeaderValue(normalizedHeaders.get('last-modified')),
-    );
-    headers.set('server', convertHeaderValue(normalizedHeaders.get('server')));
+    const etag = normalizedHeaders.get('etag');
+
+    if (etag) {
+      headers.set('etag', convertHeaderValue(etag));
+    }
+
+    const contentType = normalizedHeaders.get('content-type');
+
+    if (contentType) {
+      headers.set('content-type', convertHeaderValue(contentType));
+    }
+
+    const lastModified = normalizedHeaders.get('last-modified');
+
+    if (lastModified) {
+      headers.set('last-modified', convertHeaderValue(lastModified));
+    }
+
+    const server = normalizedHeaders.get('server');
+
+    if (server) {
+      headers.set('server', convertHeaderValue(server));
+    }
+
+    const cacheControl = normalizedHeaders.get('cache-control');
+
+    if (cacheControl) {
+      headers.set('cache-control', convertHeaderValue(cacheControl));
+    }
+
+    const date = normalizedHeaders.get('date');
+
+    if (date) {
+      headers.set('date', convertHeaderValue(date));
+    }
+
+    const expires = normalizedHeaders.get('expires');
+
+    if (expires) {
+      headers.set('expires', convertHeaderValue(expires));
+    }
 
     return {
       headers,

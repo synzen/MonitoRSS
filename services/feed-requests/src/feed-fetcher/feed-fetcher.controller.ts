@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import {
   Body,
   Controller,
@@ -27,6 +28,7 @@ import { validateSync } from 'class-validator';
 import { Metadata } from '@grpc/grpc-js';
 import { ConfigService } from '@nestjs/config';
 import { HostRateLimiterService } from '../host-rate-limiter/host-rate-limiter.service';
+import calculateResponseFreshnessLifetime from '../shared/utils/calculate-response-freshness-lifetime';
 
 @Controller({
   version: '1',
@@ -77,7 +79,11 @@ export class FeedFetcherController {
           headers: r.fetchOptions?.headers,
           response: {
             statusCode: r.response?.statusCode,
+            headers: r.response?.headers,
           },
+          freshnessLifetimeMs: calculateResponseFreshnessLifetime({
+            headers: r.response?.headers || {},
+          }),
         })),
         // unix timestamp in seconds
         nextRetryTimestamp: nextRetryDate ? dayjs(nextRetryDate).unix() : null,
