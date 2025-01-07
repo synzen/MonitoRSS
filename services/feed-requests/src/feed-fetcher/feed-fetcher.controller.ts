@@ -160,12 +160,27 @@ export class FeedFetcherController {
           redisCacheKey?: string | null;
         } | null;
         status: RequestStatus;
+        createdAt: Date;
       };
       decodedResponseText?: string | null;
     } | null = await this.feedFetcherService.getLatestRequest({
       url: data.url,
       lookupKey: data.lookupDetails?.key,
     });
+
+    const isFetchedOver30MinutesAgo =
+      latestRequest &&
+      dayjs().diff(latestRequest.request.createdAt, 'minute') > 30;
+
+    if (data.executeFetchIfStale && isFetchedOver30MinutesAgo) {
+      await this.feedFetcherService.fetchAndSaveResponse(data.url, {
+        saveResponseToObjectStorage: data.debug,
+        lookupDetails: data.lookupDetails ? data.lookupDetails : undefined,
+        source: undefined,
+        headers: data.lookupDetails?.headers,
+        flushEntities: true,
+      });
+    }
 
     if (logDebug) {
       logger.warn(`Running debug on schedule: after get latest request`, {
