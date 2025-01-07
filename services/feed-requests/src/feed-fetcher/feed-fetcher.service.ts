@@ -234,7 +234,6 @@ export class FeedFetcherService {
       }
 
       const response = new Response();
-      response.createdAt = request.createdAt;
       response.statusCode = res.status;
       const headersToStore: Record<string, string> = {};
 
