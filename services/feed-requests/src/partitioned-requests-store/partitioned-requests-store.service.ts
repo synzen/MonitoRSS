@@ -154,7 +154,6 @@ export default class PartitionedRequestsStoreService {
   async getLatestRequestWithOkStatus(
     lookupKey: string,
     opts: {
-      include304?: boolean;
       fields?: Array<'response_headers'>;
     },
   ): Promise<null | {
@@ -170,7 +169,6 @@ export default class PartitionedRequestsStoreService {
       } FROM request_partitioned
        WHERE lookup_key = ?
        AND status = 'OK'
-       AND response_status_code != 304
        ORDER BY created_at DESC
        LIMIT 1`,
       [lookupKey],
