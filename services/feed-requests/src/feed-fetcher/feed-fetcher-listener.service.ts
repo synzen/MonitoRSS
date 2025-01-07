@@ -153,7 +153,7 @@ export class FeedFetcherListenerService {
               request = result.request;
             }
 
-            if (result.successful) {
+            if (result.emitFetchCompleted) {
               await this.emitFetchCompleted({
                 lookupKey,
                 url,
@@ -234,7 +234,7 @@ export class FeedFetcherListenerService {
     saveToObjectStorage?: boolean;
     headers?: Record<string, string>;
   }): Promise<{
-    successful: boolean;
+    emitFetchCompleted: boolean;
     request?: PartitionedRequestInsert;
   }> {
     const url = data.url;
@@ -253,7 +253,7 @@ export class FeedFetcherListenerService {
           `recently failed and will be skipped until ${nextRetryDate}`,
       );
 
-      return { successful: false };
+      return { emitFetchCompleted: false };
     }
 
     const { isCacheStillActive, latestOkRequest } =
@@ -268,7 +268,7 @@ export class FeedFetcherListenerService {
         } still has active cache-control, skipping`,
       );
 
-      return { successful: true };
+      return { emitFetchCompleted: false };
     }
 
     const { request } = await this.feedFetcherService.fetchAndSaveResponse(
@@ -309,7 +309,7 @@ export class FeedFetcherListenerService {
 
     return {
       request,
-      successful: request.status === RequestStatus.OK,
+      emitFetchCompleted: request.status === RequestStatus.OK,
     };
   }
 
@@ -541,9 +541,7 @@ export class FeedFetcherListenerService {
     const latestOkRequest =
       await this.partitionedRequestsStoreService.getLatestRequestWithOkStatus(
         lookupKey || url,
-        {
-          include304: true,
-        },
+        {},
       );
 
     return this.partitionedRequestsStoreService.countFailedRequests(
