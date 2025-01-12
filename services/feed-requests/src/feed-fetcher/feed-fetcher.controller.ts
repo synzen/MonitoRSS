@@ -83,7 +83,7 @@ export class FeedFetcherController {
           },
           freshnessLifetimeMs: calculateResponseFreshnessLifetime({
             headers: r.response?.headers || {},
-          }),
+          }).capped,
         })),
         // unix timestamp in seconds
         nextRetryTimestamp: nextRetryDate ? dayjs(nextRetryDate).unix() : null,

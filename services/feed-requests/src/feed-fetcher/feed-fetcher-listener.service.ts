@@ -514,9 +514,10 @@ export class FeedFetcherListenerService {
       };
     }
 
-    const freshnessLifetime = calculateResponseFreshnessLifetime({
+    const { capped: freshnessLifetime } = calculateResponseFreshnessLifetime({
       headers: latestOkRequest.responseHeaders || {},
     });
+
     const currentAgeOfResponse = calculateCurrentResponseAge({
       headers: latestOkRequest.responseHeaders || {},
       requestTime: latestOkRequest.createdAt,

@@ -1,3 +1,13 @@
+const FALLBACK_VALUE = {
+  original: 0,
+  capped: 0,
+};
+
+const capFreshnessLifetime = (ms: number) => {
+  // If freshness lifetime is >= 1 year, consider it a bug and cap it to 1 hour
+  return ms >= 365 * 24 * 60 * 60 * 1000 ? 1 * 60 * 60 * 1000 : ms;
+};
+
 /**
  * Calculate the freshness lifetime of a response based on headers
  *
@@ -9,7 +19,10 @@ const calculateResponseFreshnessLifetime = ({
   headers,
 }: {
   headers: Record<string, string>;
-}) => {
+}): {
+  original: number;
+  capped: number;
+} => {
   const cacheControl = headers['cache-control'];
 
   if (!cacheControl) {
@@ -20,12 +33,17 @@ const calculateResponseFreshnessLifetime = ({
     ).getTime();
 
     if (isNaN(latestOkRequestDateTime) || isNaN(latestOkRequestExpiresTime)) {
-      return 0;
+      return FALLBACK_VALUE;
     } else {
       const remainingTime =
         latestOkRequestExpiresTime - latestOkRequestDateTime;
 
-      return remainingTime > 0 ? remainingTime : 0;
+      return remainingTime > 0
+        ? {
+            original: remainingTime,
+            capped: capFreshnessLifetime(remainingTime),
+          }
+        : FALLBACK_VALUE;
     }
   }
 
@@ -36,16 +54,21 @@ const calculateResponseFreshnessLifetime = ({
   const publicDirective = directives.includes('public');
 
   if (!maxAgeDirective || !publicDirective) {
-    return 0;
+    return FALLBACK_VALUE;
   }
 
   const maxAge = parseInt(maxAgeDirective.split('=')[1]);
 
   if (Number.isNaN(maxAge)) {
-    return 0;
+    return FALLBACK_VALUE;
   }
 
-  return maxAge * 1000;
+  const toReturn = maxAge * 1000;
+
+  return {
+    original: toReturn,
+    capped: capFreshnessLifetime(toReturn),
+  };
 };
 
 export default calculateResponseFreshnessLifetime;

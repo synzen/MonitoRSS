@@ -423,6 +423,7 @@ export class UserFeedsService {
       inputUrl,
       connections: {},
       feedRequestLookupKey: undefined,
+      createdAt: new Date(),
     });
 
     await this.usersService.syncLookupKeys({ feedIds: [newFeedId] });
