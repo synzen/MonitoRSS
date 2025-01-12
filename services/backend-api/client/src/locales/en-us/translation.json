@@ -537,7 +537,7 @@
           "alertTitleSuccess": "Successfully sent!",
           "alertTitleFailure": "Failed to send article",
           "alertDescriptionThirdPartyInternalError": "Internal error occurred at target channel. Try again later.",
-          "alertDescriptionMissingApplicationPermission": "Missing application permissions. Ensure the bot has the proper permissions.",
+          "alertDescriptionMissingApplicationPermission": "Missing application permissions. Ensure the bot has the proper permissions view messages, send messages, and create embeds if applicable in the appropriate channels.",
           "alertDescriptionBadPayload": "Malformed payload detected. Update message setting and try again.",
           "alertDescriptionMissingChannel": "Connection channel no longer exists. Update this connection to target a different channel.",
           "alertDescriptionTooManyRequests": "Too many requests have been sent in a short period of time. Try again later.",
