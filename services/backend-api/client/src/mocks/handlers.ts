@@ -295,6 +295,7 @@ const handlers = [
             dateLanguage: "en",
             timezone: "UTC",
           },
+          includesBot: true,
         },
       })
     )
