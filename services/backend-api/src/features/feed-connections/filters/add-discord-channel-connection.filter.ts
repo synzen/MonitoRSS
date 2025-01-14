@@ -14,39 +14,41 @@ import {
   MissingDiscordChannelException,
 } from "../exceptions";
 
-const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
-  {
-    [MissingDiscordChannelException.name]: {
-      status: HttpStatus.BAD_REQUEST,
-      code: ApiErrorCode.FEED_MISSING_CHANNEL,
-    },
-    [DiscordChannelPermissionsException.name]: {
-      status: HttpStatus.BAD_REQUEST,
-      code: ApiErrorCode.FEED_MISSING_CHANNEL_PERMISSION,
-    },
-    [UserMissingManageGuildException.name]: {
-      status: HttpStatus.FORBIDDEN,
-      code: ApiErrorCode.FEED_USER_MISSING_MANAGE_GUILD,
-    },
-    [MissingChannelPermissionsException.name]: {
-      status: HttpStatus.BAD_REQUEST,
-      code: ApiErrorCode.FEED_MISSING_CHANNEL_PERMISSION,
-    },
-    [InvalidDiscordChannelException.name]: {
-      status: HttpStatus.BAD_REQUEST,
-      code: ApiErrorCode.DISCORD_CAHNNEL_INVALID,
-    },
-    [WebhookMissingPermissionsException.name]: {
-      status: HttpStatus.FORBIDDEN,
-      code: ApiErrorCode.WEBHOOKS_MANAGE_MISSING_PERMISSIONS,
-    },
-    [InsufficientSupporterLevelException.name]: {
-      status: HttpStatus.BAD_REQUEST,
-      code: ApiErrorCode.INSUFFICIENT_SUPPORTER_LEVEL,
-    },
-  };
+export const ADD_DISCORD_CHANNEL_CONNECTION_ERROR_CODES: Record<
+  string,
+  { status: HttpStatus; code: ApiErrorCode }
+> = {
+  [MissingDiscordChannelException.name]: {
+    status: HttpStatus.BAD_REQUEST,
+    code: ApiErrorCode.FEED_MISSING_CHANNEL,
+  },
+  [DiscordChannelPermissionsException.name]: {
+    status: HttpStatus.BAD_REQUEST,
+    code: ApiErrorCode.FEED_MISSING_CHANNEL_PERMISSION,
+  },
+  [UserMissingManageGuildException.name]: {
+    status: HttpStatus.FORBIDDEN,
+    code: ApiErrorCode.FEED_USER_MISSING_MANAGE_GUILD,
+  },
+  [MissingChannelPermissionsException.name]: {
+    status: HttpStatus.BAD_REQUEST,
+    code: ApiErrorCode.FEED_MISSING_CHANNEL_PERMISSION,
+  },
+  [InvalidDiscordChannelException.name]: {
+    status: HttpStatus.BAD_REQUEST,
+    code: ApiErrorCode.DISCORD_CAHNNEL_INVALID,
+  },
+  [WebhookMissingPermissionsException.name]: {
+    status: HttpStatus.FORBIDDEN,
+    code: ApiErrorCode.WEBHOOKS_MANAGE_MISSING_PERMISSIONS,
+  },
+  [InsufficientSupporterLevelException.name]: {
+    status: HttpStatus.BAD_REQUEST,
+    code: ApiErrorCode.INSUFFICIENT_SUPPORTER_LEVEL,
+  },
+};
 
 @Catch(StandardException)
 export class AddDiscordChannelConnectionFilter extends StandardBaseExceptionFilter {
-  exceptions = ERROR_CODES;
+  exceptions = ADD_DISCORD_CHANNEL_CONNECTION_ERROR_CODES;
 }

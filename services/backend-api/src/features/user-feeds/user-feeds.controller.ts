@@ -22,8 +22,9 @@ import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
 import { FastifyReply } from "fastify";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
 
-import { AddDiscordChannelConnectionFilter } from "../feed-connections/filters";
+import { ADD_DISCORD_CHANNEL_CONNECTION_ERROR_CODES } from "../feed-connections/filters";
 import {
+  FEED_EXCEPTION_FILTER_ERROR_CODES,
   FeedExceptionFilter,
   UpdateUserFeedsExceptionFilter,
 } from "../feeds/filters";
@@ -55,13 +56,14 @@ import {
 } from "./exceptions";
 import {
   GetUserFeedArticlesExceptionFilter,
-  RetryUserFeedFilter,
+  RETRY_USER_FEED_ERROR_CODES,
 } from "./filters";
 import { RestoreLegacyUserFeedExceptionFilter } from "./filters/restore-legacy-user-feed-exception.filter";
 import { GetUserFeedsPipe, GetUserFeedsPipeOutput } from "./pipes";
 import { GetFeedArticlePropertiesInput, GetFeedArticlesInput } from "./types";
 import { UserFeedsService } from "./user-feeds.service";
 import { CopyUserFeedSettingsInputDto } from "./dto/copy-user-feed-settings-input.dto";
+import { createMultipleExceptionsFilter } from "../../common/filters/multiple-exceptions.filter";
 
 @Controller("user-feeds")
 @UseGuards(DiscordOAuth2Guard)
@@ -150,7 +152,12 @@ export class UserFeedsController {
   }
 
   @Post("/:feedId/clone")
-  @UseFilters(FeedExceptionFilter, AddDiscordChannelConnectionFilter)
+  @UseFilters(
+    createMultipleExceptionsFilter(
+      FEED_EXCEPTION_FILTER_ERROR_CODES,
+      ADD_DISCORD_CHANNEL_CONNECTION_ERROR_CODES
+    )
+  )
   async createFeedClone(
     @Param("feedId", GetUserFeedsPipe())
     [{ feed }]: GetUserFeedsPipeOutput,
@@ -314,7 +321,12 @@ export class UserFeedsController {
   }
 
   @Post("/:feedId/manual-request")
-  @UseFilters(RetryUserFeedFilter, FeedExceptionFilter)
+  @UseFilters(
+    createMultipleExceptionsFilter(
+      RETRY_USER_FEED_ERROR_CODES,
+      FEED_EXCEPTION_FILTER_ERROR_CODES
+    )
+  )
   async createManualRequest(
     @Res() res: FastifyReply,
     @Param("feedId", GetUserFeedsPipe())
