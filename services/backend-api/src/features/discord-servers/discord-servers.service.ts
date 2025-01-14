@@ -183,6 +183,20 @@ export class DiscordServersService {
     return this.getProfileSettingsWithDefaults(profile);
   }
 
+  async getGuild(guildId: string): Promise<{ exists: boolean }> {
+    try {
+      await this.discordApiService.getGuild(guildId);
+
+      return { exists: true };
+    } catch (err) {
+      if (err instanceof DiscordAPIError && err.statusCode === 404) {
+        return { exists: false };
+      }
+
+      throw err;
+    }
+  }
+
   async updateServerProfile(
     serverId: string,
     updates: {

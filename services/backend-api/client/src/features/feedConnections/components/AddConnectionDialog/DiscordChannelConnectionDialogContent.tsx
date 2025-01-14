@@ -34,8 +34,8 @@ import { InlineErrorAlert } from "../../../../components";
 
 const formSchema = object({
   name: string().required("Name is required").max(250, "Name must be less than 250 characters"),
-  channelId: string().required("Channel ID is required"),
-  serverId: string().required("Server ID is required"),
+  channelId: string().required("Channel is required"),
+  serverId: string().required("Server is required"),
 });
 
 interface Props {
@@ -109,7 +109,7 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
             <form id="addfeed" onSubmit={handleSubmit(onSubmit)}>
               <Stack spacing={4}>
                 <FormControl isInvalid={!!errors.serverId} isRequired>
-                  <FormLabel>
+                  <FormLabel htmlFor="server-select" id="server-select">
                     {t(
                       "features.feed.components.addDiscordChannelConnectionDialog.formServerLabel"
                     )}
@@ -123,6 +123,8 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
                         onChange={field.onChange}
                         value={field.value}
                         inputRef={initialFocusRef}
+                        ariaLabelledBy="server-select"
+                        inputId="server-select"
                       />
                     )}
                   />

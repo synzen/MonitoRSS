@@ -1,6 +1,6 @@
 /* eslint-disable react/no-unstable-nested-components */
 import { Avatar, HStack, Text, useColorModeValue } from "@chakra-ui/react";
-import Select, { GroupBase, StylesConfig, components } from "react-select";
+import Select, { AriaOnFocusProps, GroupBase, StylesConfig, components } from "react-select";
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import StateManagedSelect from "react-select/dist/declarations/src/stateManager";
 import { REACT_SELECT_STYLES } from "@/constants/reactSelectStyles";
@@ -48,8 +48,13 @@ export const ThemedSelect = <T,>({
 }: Props<T>) => {
   // @ts-ignore
   const styles = useColorModeValue<SelectStyles, SelectStyles>({}, REACT_SELECT_STYLES);
-
   const selectedOption = options.find((option) => option.value === value);
+
+  const onFocus = ({ focused }: AriaOnFocusProps<SelectOption<T>, GroupBase<SelectOption<T>>>) => {
+    const msg = `You are currently focused on option ${focused.label}`;
+
+    return msg;
+  };
 
   return (
     <Select
@@ -59,6 +64,7 @@ export const ThemedSelect = <T,>({
       options={options}
       onBlur={onBlur}
       name={name}
+      ariaLiveMessages={{ onFocus: onFocus as never }}
       placeholder={placeholder}
       isClearable={isClearable}
       ref={inputRef}
@@ -96,7 +102,7 @@ const IconOption = <T,>(props: IconOptionProps) => {
     <Option {...props}>
       <HStack alignItems="center">
         {typeof castedData.icon === "string" && (
-          <Avatar src={castedData.icon} name={castedData.value} size="xs" />
+          <Avatar aria-hidden src={castedData.icon} name={castedData.value} size="xs" />
         )}
         {typeof castedData.icon === "object" && castedData.icon}
         <Text>{castedData.label}</Text>

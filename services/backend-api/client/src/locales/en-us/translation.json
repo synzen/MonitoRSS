@@ -57,7 +57,7 @@
       "feedFilterInvalidExpression": "Invalid filter expression",
       "feedConnectionCannotEnableAutoDisabled": "Unable to enable connection when it was disabled automatically",
       "feedArticleNotFound": "Article does not exist. Try selecting another article or refreshing the page.",
-      "discordServerNotFound": "The bot does not access to this server. Make sure the bot is in the server.",
+      "discordServerNotFound": "The bot does not have access to this server. Make sure the bot is in the server.",
       "discordChannelInvalid": "That is an unacceptable channel. Try another one.",
       "webhookForumUnsupported": "Webhooks attached to forum channels are currently unsupported. Consider using a Discord channel connection instead."
     }
@@ -386,7 +386,7 @@
         "addDiscordChannelConnectionDialog": {
           "title": "Add a Discord channel connection",
           "saveButton": "Add",
-          "formServerLabel": "Server",
+          "formServerLabel": "Discord Server",
           "formNameLabel": "Connection name",
           "formNameDescription": "Used to identify the connection.",
           "formChannelLabel": "Channel",

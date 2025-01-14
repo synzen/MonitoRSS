@@ -54,9 +54,14 @@ export class DiscordUsersController {
   @Get("bot")
   @UseGuards(DiscordOAuth2Guard)
   async getBot(): Promise<GetBotOutputDto> {
+    const botClientId = this.configService.getOrThrow<string>(
+      "BACKEND_API_DISCORD_CLIENT_ID"
+    );
     const bot = await this.discordUsersService.getBot();
 
-    return GetBotOutputDto.fromEntity(bot);
+    const inviteLink = `https://discord.com/oauth2/authorize?client_id=${botClientId}&scope=bot&permissions=19456`;
+
+    return GetBotOutputDto.fromEntity(bot, inviteLink);
   }
 
   @Get("@me")

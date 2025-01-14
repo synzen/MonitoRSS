@@ -51,14 +51,22 @@ export class DiscordServersController {
   @Get(":serverId")
   @UseGuards(BotHasServerGuard)
   @UseGuards(UserManagesServerGuard)
-  async getServer(
-    @Param("serverId") serverId: string
-  ): Promise<GetServerOutputDto> {
-    const profile = await this.discordServersService.getServerProfile(serverId);
+  async getServer(@Param("serverId") serverId: string): Promise<
+    GetServerOutputDto & {
+      result: {
+        includesBot: boolean;
+      };
+    }
+  > {
+    const [profile, { exists }] = await Promise.all([
+      this.discordServersService.getServerProfile(serverId),
+      this.discordServersService.getGuild(serverId),
+    ]);
 
     return {
       result: {
         profile,
+        includesBot: exists,
       },
     };
   }

@@ -5,14 +5,16 @@ export class GetBotOutputDto {
     username: string;
     id: string;
     avatar: string | null;
+    inviteLink: string;
   };
 
-  static fromEntity(user: DiscordBotUser): GetBotOutputDto {
+  static fromEntity(user: DiscordBotUser, inviteLink: string): GetBotOutputDto {
     return {
       result: {
         username: user.username,
         id: user.id,
         avatar: user.avatar,
+        inviteLink,
       },
     };
   }
