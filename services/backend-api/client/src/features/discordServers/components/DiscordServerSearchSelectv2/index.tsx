@@ -27,11 +27,9 @@ export const DiscordServerSearchSelectv2: React.FC<Props> = ({
     isFetching: isFetchingServerSettings,
     refetch: refetchServerSettings,
     data: discordServerSettings,
-    status: discordServerSettingsStatus,
   } = useDiscordServerSettings({
     serverId: value,
   });
-  console.log("🚀 ~ discordServerSettings:", discordServerSettings, discordServerSettingsStatus);
   const { data: discordBot } = useDiscordBot();
 
   const loading = status === "loading";
