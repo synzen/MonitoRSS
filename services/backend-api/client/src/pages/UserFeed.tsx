@@ -276,7 +276,6 @@ export const UserFeed: React.FC = () => {
             <Stack maxWidth="1400px" width="100%" paddingX={{ base: 4, md: 8, lg: 12 }} spacing={6}>
               <Stack spacing={6}>
                 <Stack spacing={4}>
-                  {/* <HStack justifyContent="space-between"> */}
                   <Stack flex={1}>
                     <Breadcrumb>
                       <BreadcrumbItem>
@@ -292,7 +291,7 @@ export const UserFeed: React.FC = () => {
                       <HStack alignItems="flex-start" justifyContent="space-between">
                         <Stack width="fit-content">
                           <Flex alignItems="center" gap={0}>
-                            <Heading size="lg" marginRight={4}>
+                            <Heading as="h1" size="lg" marginRight={4}>
                               {feed?.title}
                             </Heading>
                             {feed && feed?.sharedAccessDetails?.inviteId && (
@@ -310,9 +309,6 @@ export const UserFeed: React.FC = () => {
                               target="_blank"
                               rel="noopener noreferrer"
                               wordBreak="break-all"
-                              aria-label={
-                                urlIsDifferentFromInput ? "Original input feed url" : "RSS feed url"
-                              }
                             >
                               {feed?.inputUrl || feed?.url}
                             </Link>
@@ -326,7 +322,6 @@ export const UserFeed: React.FC = () => {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     fontSize="sm"
-                                    aria-label="RSS feed url"
                                   >
                                     {feed?.url}
                                   </Link>
@@ -492,6 +487,7 @@ export const UserFeed: React.FC = () => {
                   }}
                   columnGap="20"
                   rowGap={{ base: "8", lg: "14" }}
+                  as="ul"
                 >
                   <CategoryText title={t("pages.feed.refreshRateLabel")}>
                     {feed
@@ -507,6 +503,7 @@ export const UserFeed: React.FC = () => {
                     title={t("pages.feed.articleDailyLimit")}
                     helpTooltip={{
                       description: t("pages.feed.articleDailyLimitHint"),
+                      buttonLabel: "What is article daily limit?",
                     }}
                   >
                     <HStack>
@@ -611,7 +608,7 @@ export const UserFeed: React.FC = () => {
                   <Stack spacing={6} mb={16}>
                     <Stack spacing={3}>
                       <Flex justifyContent="space-between" alignItems="flex-start">
-                        <Heading size="md" as="h3">
+                        <Heading size="md" as="h2">
                           {t("pages.userFeeds.tabConnections")}
                         </Heading>
                         <Menu placement="bottom-end">
@@ -620,7 +617,7 @@ export const UserFeed: React.FC = () => {
                             as={Button}
                             rightIcon={<ChevronDownIcon />}
                           >
-                            Add new
+                            Add new connection
                           </MenuButton>
                           <MenuList maxWidth="300px">
                             <MenuItem onClick={() => onAddConnection("discord-channel")}>
@@ -694,8 +691,8 @@ export const UserFeed: React.FC = () => {
                     )}
                     {disabledConnections?.length ? (
                       <Stack spacing={4} mt={2}>
-                        <Heading size="xs" as="h3" fontWeight={600} color="whiteAlpha.800">
-                          Disabled Conections
+                        <Heading size="xs" as="h2" fontWeight={600} color="whiteAlpha.800">
+                          Disabled Connections
                         </Heading>
                         <SimpleGrid
                           spacing={4}
@@ -718,7 +715,7 @@ export const UserFeed: React.FC = () => {
                 </BoxConstrained.Container>
               </BoxConstrained.Wrapper>
             </TabPanel>
-            <TabPanel width="100%">
+            <TabPanel width="100%" tabIndex={-1}>
               <BoxConstrained.Wrapper>
                 <BoxConstrained.Container>
                   <ComparisonsTabSection

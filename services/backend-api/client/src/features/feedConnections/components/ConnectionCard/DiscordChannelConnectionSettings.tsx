@@ -130,7 +130,7 @@ export const DiscordChannelConnectionSettings = ({
           <MenuButton
             as={IconButton}
             ref={actionsButtonRef}
-            aria-label="Connection settings"
+            aria-label={`${connection.name} connection actions`}
             variant="ghost"
             size="sm"
             icon={<FaEllipsisVertical />}

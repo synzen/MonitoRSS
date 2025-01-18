@@ -57,18 +57,21 @@ export const ConnectionCard = ({ feedId, connection }: Props) => {
       borderLeft={cardLeftBorder}
       rounded="lg"
       paddingX={1}
+      as="article"
     >
       <CardHeader>
         <HStack justifyContent="space-between" alignItems="flex-start">
           <Stack spacing="1">
             <Box>
-              <Text color="gray.500" fontSize="sm">
+              <Text color="gray.400" fontSize="sm">
                 {getPrettyConnectionName(connection as never)}
               </Text>
               {connectionDetail ? <Box> {connectionDetail}</Box> : null}
             </Box>
             <HStack>
-              <Text fontWeight={600}>{connection.name}</Text>
+              <Text fontWeight={600} as="h3" id={connection.id}>
+                {connection.name}
+              </Text>
               {connection.disabledCode === FeedConnectionDisabledCode.Manual && (
                 <Badge fontSize="x-small" colorScheme="gray">
                   Disabled
@@ -99,6 +102,8 @@ export const ConnectionCard = ({ feedId, connection }: Props) => {
             connectionId: connection.id,
           })}
           rightIcon={<ChevronRightIcon />}
+          aria-labelledby={`manage-${connection.id} ${connection.id}`}
+          id={`manage-${connection.id}`}
         >
           Manage
         </Button>

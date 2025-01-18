@@ -92,7 +92,7 @@ export const UserFeedHealthAlert = () => {
               You may also manually attempt a request via the button below.
               <HStack>
                 <Button isLoading={manualRequestStatus === "loading"} onClick={handleManualAttempt}>
-                  <span>Attempt request</span>
+                  <span>Retry feed request</span>
                 </Button>
                 <Button
                   variant="outline"

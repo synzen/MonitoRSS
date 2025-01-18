@@ -267,7 +267,7 @@
       "formValueDescription": "Each new line indicates a new and separate filter. Modifiers would apply to the beginning to each line."
     },
     "categoryText": {
-      "defaullTooltipLabel": "What is this?"
+      "defaultTooltipLabel": "What is this?"
     },
     "discordMessageForm": {
       "textSectionTitle": "Text",

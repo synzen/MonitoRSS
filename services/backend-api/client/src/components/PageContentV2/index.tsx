@@ -1,4 +1,4 @@
-import { Flex, chakra } from "@chakra-ui/react";
+import { Flex } from "@chakra-ui/react";
 
 import { NewHeader } from "../NewHeader";
 
@@ -12,9 +12,7 @@ interface Props {
 export const PageContentV2 = ({ children, invertBackground }: Props) => {
   return (
     <Flex flexGrow={1} alignItems="center" flexDir="column" overflow="auto">
-      <chakra.header width="full">
-        <NewHeader invertBackground={invertBackground} />
-      </chakra.header>
+      <NewHeader invertBackground={invertBackground} />
       <Flex as="main" width="100%" justifyContent="center" alignItems="flex-start" flex={1}>
         {children}
       </Flex>

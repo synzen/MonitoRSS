@@ -18,7 +18,7 @@ const BoxConstrainedWidthContainer = ({
   children,
   ...props
 }: BoxConstrainedWidthContainerProps) => (
-  <Stack maxWidth="1400px" width="100%" paddingX={[0, 2, 4, 12]} {...props} className="foooobar">
+  <Stack maxWidth="1400px" width="100%" paddingX={[0, 2, 4, 12]} {...props}>
     {children}
   </Stack>
 );
