@@ -1,13 +1,14 @@
-import { Box, Spinner, Tag, TagCloseButton, TagLabel, TagRightIcon } from "@chakra-ui/react";
+import { Spinner, Tag, TagCloseButton, TagLabel, TagRightIcon } from "@chakra-ui/react";
 import { useState } from "react";
 
 interface Props {
   colorScheme: string;
   title: string;
   onDelete: () => Promise<void>;
+  deleteButtonAriaLabel?: string;
 }
 
-export const ComparisonTag = ({ colorScheme, title, onDelete }: Props) => {
+export const ComparisonTag = ({ colorScheme, title, onDelete, deleteButtonAriaLabel }: Props) => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const onClickDelete = async () => {
@@ -17,12 +18,12 @@ export const ComparisonTag = ({ colorScheme, title, onDelete }: Props) => {
   };
 
   return (
-    <Box>
-      <Tag size="lg" colorScheme={colorScheme} margin={0}>
-        <TagLabel>{title}</TagLabel>
-        {isDeleting && <TagRightIcon as={Spinner} />}
-        {!isDeleting && <TagCloseButton aria-label="Delete" onClick={() => onClickDelete()} />}
-      </Tag>
-    </Box>
+    <Tag size="lg" colorScheme={colorScheme} margin={0} as="li">
+      <TagLabel>{title}</TagLabel>
+      {isDeleting && <TagRightIcon as={Spinner} />}
+      {!isDeleting && (
+        <TagCloseButton aria-label={deleteButtonAriaLabel} onClick={() => onClickDelete()} />
+      )}
+    </Tag>
   );
 };

@@ -643,7 +643,7 @@ const handlers = [
 
     return res(
       ctx.delay(500),
-      ctx.status(404),
+      ctx.status(200),
       ctx.json<UpdateUserFeedOutput>({
         result: matchingUserFeed,
       })

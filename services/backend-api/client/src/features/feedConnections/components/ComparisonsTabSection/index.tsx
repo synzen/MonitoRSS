@@ -4,6 +4,7 @@ import {
   AlertIcon,
   AlertTitle,
   Button,
+  Divider,
   Flex,
   Heading,
   HStack,
@@ -177,7 +178,7 @@ export const ComparisonsTabSection = ({
   const hasAlert = !!(fetchErrorAlert || parseErrorAlert || noArticlesAlert);
 
   return (
-    <Stack spacing={16} marginBottom={16}>
+    <Stack spacing={12} marginBottom={16}>
       {error && (
         <Stack spacing={4}>
           <Alert status="error">
@@ -191,112 +192,170 @@ export const ComparisonsTabSection = ({
           </Alert>
         </Stack>
       )}
-      <Stack background="gray.700" padding={4} borderRadius="md">
-        <Flex justifyContent="space-between">
-          <Heading size="sm" as="h3">
-            Sample Article Properties
-          </Heading>
-          <ArticleSelectDialog
-            trigger={
-              <Button
-                leftIcon={<FiMousePointer />}
-                isLoading={!!selectedArticleId && userFeedArticlesFetchStatus === "fetching"}
-                isDisabled={userFeedArticlesFetchStatus === "fetching"}
+      <Stack>
+        <Heading size="md" as="h2">
+          Comparisons
+        </Heading>
+        <Text>
+          If you are either not receiving articles or getting duplicate articles, you can add
+          additional properties that can be used to determine if an article should or should not get
+          delivered.
+        </Text>
+      </Stack>
+      <Stack spacing={8}>
+        <Stack spacing={4} border="1px solid" borderColor="gray.700" borderRadius="md" padding={4}>
+          <Stack>
+            <Heading size="sm" as="h3">
+              {t(
+                "features.feedConnections.components.comparisonsTabSection.passingComparisonsTitle"
+              )}
+            </Heading>
+            <Text>
+              {t(
+                "features.feedConnections.components.comparisonsTabSection.passingComparisonsDescription"
+              )}
+            </Text>
+          </Stack>
+          <Stack>
+            <Heading srOnly as="h4" id="passing-comparisons">
+              Current passing comparisons
+            </Heading>
+            {!passingComparisons?.length && (
+              <Text color="whiteAlpha.700">You currently have no passing comparisons created.</Text>
+            )}
+            {!!passingComparisons?.length && (
+              <HStack
+                flexWrap="wrap"
+                alignItems="center"
+                as="ul"
+                aria-labelledby="passing-comparisons"
               >
-                {t("features.feedConnections.components.articlePlaceholderTable.selectArticle")}
-              </Button>
-            }
-            feedId={feedId}
-            onArticleSelected={onSelectedArticle}
-            onClickRandomArticle={onClickRandomFeedArticle}
-            articleFormatOptions={articleFormatOptions}
-          />
-        </Flex>
-        {fetchErrorAlert || parseErrorAlert || noArticlesAlert}
-        {userFeedArticlesStatus === "loading" && (
-          <Stack borderRadius="lg" background="gray.800" padding={4} alignItems="center">
-            <Spinner size="md" />
-            <Text>Loading article...</Text>
-          </Stack>
-        )}
-        {!hasAlert && userFeedArticles?.result.articles.length && (
-          <Stack
-            maxHeight={400}
-            overflow="auto"
-            borderRadius="lg"
-            background="gray.800"
-            padding={4}
-          >
-            <ArticlePlaceholderTable
-              article={userFeedArticles?.result.articles[0]}
-              searchText=""
-              isFetching={userFeedArticlesFetchStatus === "fetching"}
-              withoutCopy
+                {passingComparisons.map((comparison) => (
+                  <ComparisonTag
+                    title={comparison}
+                    colorScheme="cyan"
+                    onDelete={() => onRemovePassingComparison(comparison)}
+                    deleteButtonAriaLabel={`Delete passing comparison ${comparison}`}
+                  />
+                ))}
+              </HStack>
+            )}
+            <Divider my={2} />
+            <AddComparisonSelect
+              isDisabled={status !== "success"}
+              isLoading={status === "loading" || fetchStatus === "fetching"}
+              onChange={onAddPassingComparison}
+              properties={passingComaprisonsToAdd}
+              formLabel="Add a new passing comparison"
             />
           </Stack>
-        )}
-      </Stack>
-      <Stack spacing={4}>
-        <Stack>
-          <Heading size="md" as="h3">
-            {t("features.feedConnections.components.comparisonsTabSection.passingComparisonsTitle")}
-          </Heading>
-          <Text>
-            {t(
-              "features.feedConnections.components.comparisonsTabSection.passingComparisonsDescription"
-            )}
-          </Text>
+          {updateError && errorLocation === "passing" && (
+            <InlineErrorAlert title={t("common.errors.failedToSave")} description={updateError} />
+          )}
         </Stack>
-        <HStack flexWrap="wrap" alignItems="center">
-          {passingComparisons?.map((comparison) => (
-            <ComparisonTag
-              title={comparison}
-              colorScheme="cyan"
-              onDelete={() => onRemovePassingComparison(comparison)}
+        <Stack spacing={4} border="1px solid" borderColor="gray.700" borderRadius="md" padding={4}>
+          <Stack>
+            <Heading size="sm" as="h3">
+              {t(
+                "features.feedConnections.components.comparisonsTabSection.blockingComparisonsTitle"
+              )}
+            </Heading>
+            <Text>
+              {t(
+                "features.feedConnections.components.comparisonsTabSection.blockingComparisonsDescription"
+              )}
+            </Text>
+          </Stack>
+          <Stack>
+            <Heading srOnly as="h4" id="blocking-comparisons">
+              Current blocking comparisons
+            </Heading>
+            {!blockingComparisons?.length && (
+              <Text color="whiteAlpha.700">
+                You currently have no blocking comparisons created.
+              </Text>
+            )}
+            {!!blockingComparisons?.length && (
+              <HStack
+                flexWrap="wrap"
+                alignItems="center"
+                as="ul"
+                aria-labelledby="blocking-comparisons"
+              >
+                {blockingComparisons?.map((comparison) => (
+                  <ComparisonTag
+                    title={comparison}
+                    colorScheme="red"
+                    onDelete={() => onRemoveBlockingComparison(comparison)}
+                    deleteButtonAriaLabel={`Delete blocking comparison ${comparison}`}
+                  />
+                ))}
+              </HStack>
+            )}
+            <Divider my={2} />
+            <AddComparisonSelect
+              isDisabled={status !== "success"}
+              isLoading={status === "loading" || fetchStatus === "fetching"}
+              onChange={onAddBlockingComparison}
+              properties={blockingComparisonsToAdd}
+              formLabel="Add a new blocking comparison"
             />
-          ))}
-          <AddComparisonSelect
-            isDisabled={status !== "success"}
-            isLoading={status === "loading" || fetchStatus === "fetching"}
-            onChange={onAddPassingComparison}
-            properties={passingComaprisonsToAdd}
-          />
-        </HStack>
-        {updateError && errorLocation === "passing" && (
-          <InlineErrorAlert title={t("common.errors.failedToSave")} description={updateError} />
-        )}
-      </Stack>
-      <Stack spacing={4}>
-        <Stack>
-          <Heading size="md" as="h3">
-            {t(
-              "features.feedConnections.components.comparisonsTabSection.blockingComparisonsTitle"
-            )}
-          </Heading>
-          <Text>
-            {t(
-              "features.feedConnections.components.comparisonsTabSection.blockingComparisonsDescription"
-            )}
-          </Text>
+          </Stack>
+          {updateError && errorLocation === "blocking" && (
+            <InlineErrorAlert title={t("common.errors.failedToSave")} description={updateError} />
+          )}
         </Stack>
-        <HStack flexWrap="wrap" alignItems="center">
-          {blockingComparisons?.map((comparison) => (
-            <ComparisonTag
-              title={comparison}
-              colorScheme="red"
-              onDelete={() => onRemoveBlockingComparison(comparison)}
+        <Stack background="gray.700" padding={4} borderRadius="md" as="aside">
+          <Flex justifyContent="space-between" flexWrap="wrap">
+            <Stack mb={1}>
+              <Heading size="sm" as="h3">
+                Preview Sample Article Properties
+              </Heading>
+              <Text>
+                Preview an article to see the properties that can be used for comparisons.
+              </Text>
+            </Stack>
+            <ArticleSelectDialog
+              trigger={
+                <Button
+                  leftIcon={<FiMousePointer />}
+                  isLoading={!!selectedArticleId && userFeedArticlesFetchStatus === "fetching"}
+                  isDisabled={userFeedArticlesFetchStatus === "fetching"}
+                  size="sm"
+                >
+                  Select article to preview
+                </Button>
+              }
+              feedId={feedId}
+              onArticleSelected={onSelectedArticle}
+              onClickRandomArticle={onClickRandomFeedArticle}
+              articleFormatOptions={articleFormatOptions}
             />
-          ))}
-          <AddComparisonSelect
-            isDisabled={status !== "success"}
-            isLoading={status === "loading" || fetchStatus === "fetching"}
-            onChange={onAddBlockingComparison}
-            properties={blockingComparisonsToAdd}
-          />
-        </HStack>
-        {updateError && errorLocation === "blocking" && (
-          <InlineErrorAlert title={t("common.errors.failedToSave")} description={updateError} />
-        )}
+          </Flex>
+          {fetchErrorAlert || parseErrorAlert || noArticlesAlert}
+          {userFeedArticlesStatus === "loading" && (
+            <Stack borderRadius="lg" background="gray.800" padding={4} alignItems="center">
+              <Spinner size="md" />
+              <Text>Loading article...</Text>
+            </Stack>
+          )}
+          {!hasAlert && userFeedArticles?.result.articles.length && (
+            <Stack
+              maxHeight={400}
+              overflow="auto"
+              borderRadius="lg"
+              background="gray.800"
+              padding={4}
+            >
+              <ArticlePlaceholderTable
+                article={userFeedArticles?.result.articles[0]}
+                searchText=""
+                isFetching={userFeedArticlesFetchStatus === "fetching"}
+                withoutCopy
+              />
+            </Stack>
+          )}
+        </Stack>
       </Stack>
     </Stack>
   );

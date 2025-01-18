@@ -320,6 +320,7 @@ const mockUserFeeds: UserFeed[] = [
     updatedAt: new Date().toISOString(),
     refreshRateOptions: [],
     healthStatus: UserFeedHealthStatus.Failed,
+    passingComparisons: ["title", "description"],
     connections: [],
     disabledCode: UserFeedDisabledCode.Manual,
     refreshRateSeconds: 60,
