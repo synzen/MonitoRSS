@@ -48,9 +48,7 @@ const calculateResponseFreshnessLifetime = ({
   }
 
   const directives = cacheControl.split(',').map((d) => d.trim());
-  const sMaxAgeDirective = directives.find((d) => d.startsWith('s-maxage='));
-  const maxAgeDirective =
-    sMaxAgeDirective || directives.find((d) => d.startsWith('max-age='));
+  const maxAgeDirective = directives.find((d) => d.startsWith('max-age='));
   const publicDirective = directives.includes('public');
 
   if (!maxAgeDirective || !publicDirective) {
