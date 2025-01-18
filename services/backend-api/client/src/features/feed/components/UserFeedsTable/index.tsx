@@ -743,7 +743,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
       <Stack hidden={isInitiallyLoading}>
         <Center>
           <Text color="whiteAlpha.600" fontSize="sm">
-            Viewed {flatData.length} of {data?.pages[0].total} feeds
+            Viewed {flatData.length} of {data?.pages[0].total || 0} feeds
           </Text>
         </Center>
         <Button
