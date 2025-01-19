@@ -457,7 +457,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
                                 const shorterProductPrice =
                                   associatedPrice?.formattedPrice.endsWith(".00") ? (
                                     <Text fontSize={priceTextSize} fontWeight="bold">
-                                      {associatedPrice?.formattedPrice.slice(0, -3)}
+                                      {associatedPrice?.formattedPrice.slice(0, -3) || 0}
                                     </Text>
                                   ) : (
                                     associatedPrice?.formattedPrice
@@ -485,7 +485,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
                                       <Stack>
                                         <HStack justifyContent="flex-start">
                                           <Heading size="md" fontWeight="semibold">
-                                            {associatedProduct?.name}
+                                            {associatedProduct?.name || ""}
                                           </Heading>
                                           {/* {highlighted && (
                                             <Tag size="sm" colorScheme="blue" fontWeight="bold">
@@ -513,8 +513,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
                                               (shorterProductPrice || "N/A")}
                                           </Text>
                                           <Text fontSize="lg" color="whiteAlpha.600">
-                                            {interval === "month" && "per month"}
-                                            {interval === "year" && "per year"}
+                                            {interval === "month" ? "per month" : "per year"}
                                           </Text>
                                         </Box>
                                         <Stack>
@@ -604,7 +603,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
                           Let&apos;s chat!
                         </Link>
                       </Text>
-                    </Box>                    
+                    </Box>
                     <Text textAlign="center" color="whiteAlpha.600">
                       * External properties are currently limited to feeds with fewer than{" "}
                       {EXTERNAL_PROPERTIES_MAX_ARTICLES} articles <br /> <br />
