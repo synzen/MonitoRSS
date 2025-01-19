@@ -169,7 +169,7 @@ const FeedClone: React.FC = () => {
             isDisabled={!selectedFeedId || !properties.length || loadingFeeds || saving}
             colorScheme="blue"
           >
-            {t("pages.cloneFeed.cloneButtonLabel")}
+            <span>{t("pages.cloneFeed.cloneButtonLabel")}</span>
           </Button>
         </HStack>
       </Stack>

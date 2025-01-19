@@ -323,7 +323,7 @@ export const ComparisonsTabSection = ({
                   isDisabled={userFeedArticlesFetchStatus === "fetching"}
                   size="sm"
                 >
-                  Select article to preview
+                  <span>Select article to preview</span>
                 </Button>
               }
               feedId={feedId}

@@ -57,7 +57,7 @@ export const AddComparisonSelect = ({
           minW={32}
           isLoading={isAdding || isLoading}
         >
-          Add
+          <span>Add</span>
         </Button>
       </Stack>
     </Box>

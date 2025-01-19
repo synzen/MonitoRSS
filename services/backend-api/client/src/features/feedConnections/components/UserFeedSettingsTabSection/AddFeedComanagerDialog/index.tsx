@@ -246,7 +246,7 @@ export const AddFeedComanagerDialog = ({
                 isDisabled={!selectedMention || !checkedConnections.length || saving}
                 isLoading={saving}
               >
-                {okButtonText || t("common.buttons.save")}
+                <span>{okButtonText || t("common.buttons.save")}</span>
               </Button>
             </HStack>
           </ModalFooter>

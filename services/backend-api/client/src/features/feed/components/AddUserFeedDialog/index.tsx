@@ -132,7 +132,7 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
             isLoading={isLoading}
             variant="solid"
           >
-            {t("features.userFeeds.components.addUserFeedDialog.addButton")}
+            <span>{t("features.userFeeds.components.addUserFeedDialog.addButton")}</span>
           </Button>
         )}
       </Tooltip>

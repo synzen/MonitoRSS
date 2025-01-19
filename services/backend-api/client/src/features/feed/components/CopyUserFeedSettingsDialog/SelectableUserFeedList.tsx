@@ -97,7 +97,7 @@ export const SelectableUserFeedList = ({ selectedIds, onSelectedIdsChange }: Pro
             size="sm"
             width="full"
           >
-            Load more
+            <span>Load more</span>
           </Button>
         </Flex>
       </Stack>

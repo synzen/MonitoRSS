@@ -752,7 +752,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
           onClick={() => fetchNextPage()}
           mb={20}
         >
-          Load More
+          <span>Load More</span>
         </Button>
       </Stack>
     </Stack>

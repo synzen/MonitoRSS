@@ -138,7 +138,7 @@ export const CloneDiscordConnectionCloneDialog = ({
                 Cancel
               </Button>
               <Button colorScheme="blue" type="submit" form="clonefeed" isLoading={isSubmitting}>
-                Clone
+                <span>Clone</span>
               </Button>
             </HStack>
           </ModalFooter>

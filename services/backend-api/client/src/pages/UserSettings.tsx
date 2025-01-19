@@ -140,8 +140,9 @@ const ChangePaymentMethodUrlButton = () => {
         isDisabled={!!error}
         colorScheme={error ? "red" : undefined}
       >
-        {!error && <span>Change Payment Method</span>}
-        {error && <span>Failed to load change payment method button</span>}
+        <span>
+          {error ? "Failed to load change payment method button" : "Change Payment Method"}
+        </span>
       </Button>
     </Box>
   );
@@ -574,7 +575,7 @@ export const UserSettings = () => {
                         onClickRemoveRedditLogin();
                       }}
                     >
-                      Disconnect
+                      <span>Disconnect</span>
                     </Button>
                   )}
                 </HStack>
