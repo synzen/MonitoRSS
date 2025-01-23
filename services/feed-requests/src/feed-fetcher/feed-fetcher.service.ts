@@ -34,29 +34,44 @@ const convertHeaderValue = (val?: string | string[] | null) => {
 const trimHeadersForStorage = (
   obj?: Record<string, string | undefined>,
 ): Record<string, string> => {
+  if (!obj) {
+    return {};
+  }
+
   const trimmed = Object.entries(obj || {}).reduce((acc, [key, val]) => {
     if (val) {
-      acc[key] = val;
+      acc[key.toLowerCase()] = val;
     }
 
     return acc;
   }, {} as Record<string, string>);
-
-  if (!obj) {
-    return trimmed;
-  }
-
-  for (const key in trimmed) {
-    if (trimmed[key]) {
-      trimmed[key.toLowerCase()] = trimmed[key];
-    }
-  }
 
   if (trimmed.authorization) {
     trimmed.authorization = 'SECRET';
   }
 
   return trimmed;
+};
+
+const convertFetchOptionsForHashKey = (options: FetchOptions) => {
+  const { headers, ...rest } = options;
+
+  const prunedHeaders = Object.entries(headers || {}).reduce(
+    (acc, [key, val]) => {
+      // these keys would result in a new hash every time, so ignore it to save space
+      if (key !== 'if-none-match' && key !== 'if-modified-since') {
+        acc[key] = val;
+      }
+
+      return acc;
+    },
+    {} as Record<string, string>,
+  );
+
+  return JSON.stringify({
+    ...rest,
+    headers: prunedHeaders,
+  });
 };
 
 interface FetchOptions {
@@ -106,32 +121,6 @@ export class FeedFetcherService {
   }): Promise<Date | null> {
     return this.partitionedRequestsStore.getLatestNextRetryDate(lookupKey);
   }
-
-  // async getLatestRequestHeaders({
-  //   url,
-  // }: {
-  //   url: string;
-  // }): Promise<Response['headers']> {
-  //   const request = await this.requestRepo.findOne(
-  //     {
-  //       url,
-  //       status: RequestStatus.OK,
-  //     },
-  //     {
-  //       orderBy: {
-  //         createdAt: 'DESC',
-  //       },
-  //       populate: ['response'],
-  //       fields: ['response.headers'],
-  //     },
-  //   );
-
-  //   if (!request) {
-  //     return {};
-  //   }
-
-  //   return request.response?.headers || {};
-  // }
 
   async getLatestRequest({
     url,
@@ -283,7 +272,9 @@ export class FeedFetcherService {
           }
 
           const key =
-            url + JSON.stringify(request.fetchOptions) + res.status.toString();
+            url +
+            convertFetchOptionsForHashKey(request.fetchOptions) +
+            res.status.toString();
 
           if (text.length) {
             response.responseHashKey = sha1.copy().update(key).digest('hex');
