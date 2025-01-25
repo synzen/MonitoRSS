@@ -96,7 +96,6 @@ export const UserFeed: React.FC = () => {
   const { search: urlSearch } = useLocation();
   const { isOpen, onClose, onOpen } = useDisclosure();
   const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const feedsBreadcrumbLinkRef = useRef<HTMLAnchorElement>(null);
   const [addConnectionType, setAddConnectionType] = useState<
     { type: "discord-channel" | "discord-webhook"; isChannelThread?: boolean } | undefined
   >(undefined);
@@ -138,12 +137,6 @@ export const UserFeed: React.FC = () => {
       document.title = `${feedTitle} | MonitoRSS`;
     }
   }, [feedTitle]);
-
-  useEffect(() => {
-    if (feedsBreadcrumbLinkRef.current) {
-      feedsBreadcrumbLinkRef.current?.focus();
-    }
-  }, [feedsBreadcrumbLinkRef.current]);
 
   const isAtLimit = dailyLimit ? dailyLimit.current >= dailyLimit.max : false;
 
@@ -286,11 +279,7 @@ export const UserFeed: React.FC = () => {
                   <Stack flex={1}>
                     <Breadcrumb>
                       <BreadcrumbItem>
-                        <BreadcrumbLink
-                          ref={feedsBreadcrumbLinkRef}
-                          as={RouterLink}
-                          to={pages.userFeeds()}
-                        >
+                        <BreadcrumbLink as={RouterLink} to={pages.userFeeds()}>
                           Feeds
                         </BreadcrumbLink>
                       </BreadcrumbItem>
@@ -302,7 +291,7 @@ export const UserFeed: React.FC = () => {
                       <HStack alignItems="flex-start" justifyContent="space-between">
                         <Stack width="fit-content">
                           <Flex alignItems="center" gap={0}>
-                            <Heading as="h1" size="lg" marginRight={4}>
+                            <Heading as="h1" size="lg" marginRight={4} tabIndex={-1}>
                               {feed?.title}
                             </Heading>
                             {feed && feed?.sharedAccessDetails?.inviteId && (

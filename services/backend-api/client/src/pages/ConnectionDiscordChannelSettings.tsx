@@ -164,7 +164,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                         </BreadcrumbItem>
                       </Breadcrumb>
                       <HStack alignItems="center" justifyContent="space-between">
-                        <Heading size="lg" marginRight={4}>
+                        <Heading size="lg" marginRight={4} tabIndex={-1} as="h1">
                           {connection?.name}
                         </Heading>
                         {connection && (

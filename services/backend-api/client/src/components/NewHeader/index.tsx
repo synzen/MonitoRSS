@@ -4,7 +4,6 @@ import {
   Box,
   Button,
   Flex,
-  Heading,
   HStack,
   Menu,
   MenuButton,
@@ -65,17 +64,16 @@ export const NewHeader = ({ invertBackground }: Props) => {
                       marginRight="2"
                       backgroundColor="transparent"
                     />
-                    <Heading
+                    <chakra.span
                       fontSize="xl"
                       whiteSpace="nowrap"
                       overflow="hidden"
                       textOverflow="ellipsis"
+                      fontWeight="bold"
                       title="MonitoRSS"
-                      // title={discordBotData.result.username}
                     >
                       MonitoRSS
-                      {/* {discordBotData.result.username} */}
-                    </Heading>
+                    </chakra.span>
                   </Flex>
                 </Link>
               )}

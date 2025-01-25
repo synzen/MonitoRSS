@@ -151,7 +151,7 @@ export const UserFeeds: React.FC = () => {
           )}
           <Flex justifyContent="space-between" alignItems="center" gap="4" flexWrap="wrap">
             <Flex alignItems="center" gap={4}>
-              <Heading as="h1" size="lg">
+              <Heading as="h1" size="lg" tabIndex={-1}>
                 {t("pages.userFeeds.title")}
               </Heading>
             </Flex>

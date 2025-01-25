@@ -13,7 +13,14 @@ export const AccessibleNavigationAnnouncer = () => {
     // ignore the /
     if (location.pathname.slice(1)) {
       // make sure navigation has occurred and screen reader is ready
-      setTimeout(() => setMessage(`Navigated to ${location.pathname.slice(1)} page.`), 500);
+      setTimeout(() => {
+        setMessage(`Navigated to ${location.pathname.slice(1)} page.`);
+        const h1Element = document.querySelector("h1");
+
+        if (h1Element) {
+          h1Element.focus();
+        }
+      }, 500);
     } else {
       // just ignore the / route
       setMessage("");
