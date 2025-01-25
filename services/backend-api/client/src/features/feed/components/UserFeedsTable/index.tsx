@@ -445,6 +445,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
       <form
         hidden={isInitiallyLoading}
         id="user-feed-search"
+        role="search"
         onSubmit={(e) => {
           e.preventDefault();
           onSearchSubmit();

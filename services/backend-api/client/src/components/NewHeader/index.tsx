@@ -56,15 +56,8 @@ export const NewHeader = ({ invertBackground }: Props) => {
           <HStack overflow="hidden" gap={8}>
             <Flex alignItems="center" overflow="hidden">
               {discordBotData && (
-                <Link to={pages.userFeeds()}>
-                  <Flex
-                    alignItems="center"
-                    paddingBottom="1"
-                    overflow="hidden"
-                    as="a"
-                    href="/"
-                    aria-label="MonitoRSS Home"
-                  >
+                <Link to={pages.userFeeds()} aria-label="MonitoRSS Home">
+                  <Flex alignItems="center" paddingBottom="1" overflow="hidden">
                     <Avatar
                       src={discordBotData.result.avatar || undefined}
                       size="sm"

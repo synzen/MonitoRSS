@@ -306,7 +306,7 @@ const mockUserFeeds: UserFeed[] = [
       },
     ],
     healthStatus: UserFeedHealthStatus.Ok,
-    disabledCode: UserFeedDisabledCode.FeedTooLarge,
+    disabledCode: undefined,
     refreshRateSeconds: 60,
     userRefreshRateSeconds: 120,
   },

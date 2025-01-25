@@ -10,6 +10,7 @@ import advancedFormat from "dayjs/plugin/advancedFormat";
 import dayjs from "dayjs";
 import { SendTestArticleProvider } from "./contexts";
 import Pages from "./pages";
+import { AccessibleNavigationAnnouncer } from "./components/AccessibleNavigationAnnouncer";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -20,6 +21,7 @@ dayjs.extend(relativeTime);
 const App: React.FC = () => {
   return (
     <Box display="flex" flexDir="column" height="100vh" className="he">
+      <AccessibleNavigationAnnouncer />
       <SendTestArticleProvider>
         <Pages />
       </SendTestArticleProvider>
