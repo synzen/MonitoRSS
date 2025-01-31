@@ -43,9 +43,9 @@ services:
     # Comment below to show logs
     logging:
       driver: none
-    image: postgres:14.1-alpine
+    image: postgres:16.3-alpine
     volumes:
-      - feed-requests-postgres-data:/var/lib/postgresql/data
+      - feed-requests-postgres16-data:/var/lib/postgresql/data
       - ./services/feed-requests/sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
     networks:
       - monitorss-default
@@ -63,9 +63,9 @@ services:
     # Comment below to show logs
     logging:
       driver: none
-    image: postgres:14.1-alpine
+    image: postgres:16.3-alpine
     volumes:
-      - user-feeds-postgres-data:/var/lib/postgresql/data
+      - user-feeds-postgres16-data:/var/lib/postgresql/data
       - ./services/user-feeds/sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
     networks:
       - monitorss-default
@@ -319,8 +319,8 @@ services:
 
 volumes:
   mongodb-data:
-  feed-requests-postgres-data:
-  user-feeds-postgres-data:
+  feed-requests-postgres16-data:
+  user-feeds-postgres16-data:
   feed-requests-redis-data:
   fs-s3-storage-data:
     driver: local

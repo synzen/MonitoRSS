@@ -231,8 +231,8 @@ services:
 
 volumes:
   mongodb-data:
-  feed-requests-postgres-data:
-  user-feeds-postgres-data:
+  feed-requests-postgres16-data:
+  user-feeds-postgres16-data:
   feed-requests-redis-data:
   fs-s3-storage-data:
     driver: local
