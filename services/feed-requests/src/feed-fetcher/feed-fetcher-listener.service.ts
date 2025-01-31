@@ -158,6 +158,7 @@ export class FeedFetcherListenerService {
                 lookupKey,
                 url,
                 rateSeconds: rateSeconds,
+                debug: saveToObjectStorage,
               });
             }
           } catch (err) {
@@ -454,10 +455,12 @@ export class FeedFetcherListenerService {
     lookupKey,
     url,
     rateSeconds,
+    debug,
   }: {
     lookupKey?: string;
     url: string;
     rateSeconds: number;
+    debug?: boolean;
   }) {
     try {
       logger.debug(
@@ -472,12 +475,14 @@ export class FeedFetcherListenerService {
           lookupKey?: string;
           url: string;
           rateSeconds: number;
+          debug?: boolean;
         };
       }>('', 'url.fetch.completed', {
         data: {
           lookupKey,
           url,
           rateSeconds,
+          debug,
         },
       });
     } catch (err) {

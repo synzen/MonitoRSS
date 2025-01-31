@@ -96,14 +96,23 @@ export class MessageBrokerEventsService {
     createQueueIfNotExists: true,
   })
   async handleUrlFetchCompletedEvent({
-    data: { url, lookupKey, rateSeconds },
+    data: { url, lookupKey, rateSeconds, debug },
   }: {
     data: {
       url: string;
       lookupKey?: string;
       rateSeconds: number;
+      debug?: boolean;
     };
   }) {
+    if (debug) {
+      logger.info(`DEBUG ${lookupKey || url}: In url fetch completed`, {
+        url,
+        lookupKey,
+        rateSeconds,
+      });
+    }
+
     logger.debug("Got url fetched event", { lookupKey, url, rateSeconds });
     const healthStatusUpdateCount = await this.userFeedModel.countDocuments({
       ...(lookupKey ? { feedRequestLookupKey: lookupKey } : { url }),
@@ -134,11 +143,13 @@ export class MessageBrokerEventsService {
       feedCursor = this.getFeedsQueryWithLookupKeysMatchingRefreshRate({
         feedRequestLookupKey: lookupKey,
         refreshRateSeconds: rateSeconds,
+        debug,
       }).cursor();
     } else {
       feedCursor = this.getFeedsQueryMatchingRefreshRate({
         url,
         refreshRateSeconds: rateSeconds,
+        debug,
       }).cursor();
     }
 
@@ -624,14 +635,34 @@ export class MessageBrokerEventsService {
   getFeedsQueryMatchingRefreshRate(data: {
     refreshRateSeconds: number;
     url: string;
+    debug?: boolean;
   }): Aggregate<(UserFeedDocument & { users: UserDocument[] })[]> {
-    return this.userFeedModel.aggregate(getCommonFeedAggregateStages(data));
+    const pipeline = getCommonFeedAggregateStages(data);
+
+    if (data.debug) {
+      logger.info(
+        `DEBUG ${data.url}: Looking for feeds with MongoDB aggregate pipeline`,
+        { pipeline, ...data }
+      );
+    }
+
+    return this.userFeedModel.aggregate(pipeline);
   }
 
   getFeedsQueryWithLookupKeysMatchingRefreshRate(data: {
     refreshRateSeconds: number;
     feedRequestLookupKey: string;
+    debug?: boolean;
   }): Aggregate<(UserFeedDocument & { users: UserDocument[] })[]> {
-    return this.userFeedModel.aggregate(getCommonFeedAggregateStages(data));
+    const pipeline = getCommonFeedAggregateStages(data);
+
+    if (data.debug) {
+      logger.info(
+        `DEBUG ${data.feedRequestLookupKey}: Looking for feeds via lookup key with MongoDB aggregate pipeline`,
+        { pipeline, ...data }
+      );
+    }
+
+    return this.userFeedModel.aggregate(pipeline);
   }
 }

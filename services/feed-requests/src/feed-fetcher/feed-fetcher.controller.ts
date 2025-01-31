@@ -130,17 +130,7 @@ export class FeedFetcherController {
   private async getLatestRequest(
     data: FetchFeedDto,
   ): Promise<FetchFeedDetailsDto> {
-    const logDebug =
-      data.url ===
-      'https://www.clanaod.net/forums/external.php?type=RSS2&forumids=102';
-
     if (data.executeFetch) {
-      if (logDebug) {
-        logger.warn(`Running debug on schedule: execute fetch`, {
-          data,
-        });
-      }
-
       try {
         await this.feedFetcherService.fetchAndSaveResponse(data.url, {
           saveResponseToObjectStorage: data.debug,
@@ -188,13 +178,6 @@ export class FeedFetcherController {
       });
     }
 
-    if (logDebug) {
-      logger.warn(`Running debug on schedule: after get latest request`, {
-        data,
-        latestRequest,
-      });
-    }
-
     // If there's no text, response must be fetched to be cached
     if (
       !latestRequest ||
@@ -213,24 +196,11 @@ export class FeedFetcherController {
           },
         );
 
-        if (logDebug) {
-          logger.warn(
-            `Running debug on schedule: execute fetch if not exists`,
-            {
-              savedData,
-            },
-          );
-        }
-
         latestRequest = {
           request: { ...savedData.request },
           decodedResponseText: savedData.responseText,
         };
       } else {
-        if (logDebug) {
-          logger.warn(`Running debug on schedule: is pending status`);
-        }
-
         return {
           requestStatus: 'PENDING' as const,
         };
@@ -239,12 +209,6 @@ export class FeedFetcherController {
 
     const latestRequestStatus = latestRequest.request.status;
     const latestRequestResponse = latestRequest.request.response;
-
-    if (logDebug) {
-      logger.warn(`Running debug on schedule: response`, {
-        latestRequest,
-      });
-    }
 
     if (
       data.hashToCompare &&
