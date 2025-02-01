@@ -4,14 +4,9 @@ const FALLBACK_VALUE = {
 };
 
 const capFreshnessLifetime = (ms: number) => {
-  // If freshness lifetime is >= 1 year, consider it a bug and cap it to 1 hour
-  if (ms >= 365 * 24 * 60 * 60 * 1000) {
+  // If freshness lifetime is >= 1 hour, cap it to once per hour
+  if (ms >= 60 * 60 * 1000) {
     return 60 * 60 * 1000;
-  }
-
-  // If freshness lifetime is 1 month, cap it to once a day
-  if (ms >= 30 * 24 * 60 * 60 * 1000) {
-    return 24 * 60 * 60 * 1000;
   }
 
   return ms;
