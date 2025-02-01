@@ -80,7 +80,8 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   DISCORD_CAHNNEL_INVALID: "Selected channel is not accepted",
   FEED_NOT_FAILED:
     "The feed is not in a failed state. It must be in a failed state for it to be retried.",
-  FEED_NOT_FOUND: "Feed does not exist",
+  FEED_NOT_FOUND:
+    "Feed does not exist or is not accessible. You may confirm by directly going to the feed link and checking that the feed is valid and publicly accessible.",
   FEED_TOO_LARGE: "Feed is too large to be processed",
   FEED_INVALID_FILTER_EXPRESSION: "Invalid filter expression",
   FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED:
