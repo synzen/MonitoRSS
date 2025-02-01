@@ -419,7 +419,7 @@ export class FeedEventHandlerService {
 
       this.debugLog(
         `Debug ${event.data.feed.id}: Storing delivery states`,
-        {},
+        { deliveryStates },
         event.debug
       );
 
