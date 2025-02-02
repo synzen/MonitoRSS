@@ -154,6 +154,7 @@ export const DiscordWebhookConnectionDialogContent: React.FC<Props> = ({ isOpen,
                         onChange={(id) => field.onChange(id)}
                         value={field.value}
                         inputRef={initialFocusRef}
+                        alertOnArticleEligibility
                       />
                     )}
                   />

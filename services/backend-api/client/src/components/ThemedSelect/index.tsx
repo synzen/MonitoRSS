@@ -51,6 +51,7 @@ export const ThemedSelect = <T,>({
   const selectedOption = options.find((option) => option.value === value);
 
   const onFocus = ({ focused }: AriaOnFocusProps<SelectOption<T>, GroupBase<SelectOption<T>>>) => {
+    console.log("on focus", focused);
     const msg = `You are currently focused on option ${focused.label}`;
 
     return msg;
@@ -72,19 +73,19 @@ export const ThemedSelect = <T,>({
       // @ts-ignore
       styles={styles}
       value={selectedOption || ""}
-      onChange={(option) => {
+      onChange={(option: any) => {
         onChange((option as SelectOption<T>)?.value || "", (option as SelectOption<T>)?.data);
       }}
       components={{
         Option: IconOption as never,
-        NoOptionsMessage: (props) => (
+        NoOptionsMessage: (props: any) => (
           <components.NoOptionsMessage {...props}>
             <span>No results found</span>
           </components.NoOptionsMessage>
         ),
         DropdownIndicator: ChakraDropdownIndicator as never,
       }}
-      onInputChange={(input) => onInputChange?.(input)}
+      onInputChange={(input: any) => onInputChange?.(input)}
       {...selectProps}
     />
   );

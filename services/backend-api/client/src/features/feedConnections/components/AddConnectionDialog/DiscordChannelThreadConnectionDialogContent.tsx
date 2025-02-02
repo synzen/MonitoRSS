@@ -126,6 +126,7 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
                         onChange={field.onChange}
                         value={field.value}
                         inputRef={initialFocusRef}
+                        alertOnArticleEligibility
                       />
                     )}
                   />

@@ -125,6 +125,7 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
                         inputRef={initialFocusRef}
                         ariaLabelledBy="server-select"
                         inputId="server-select"
+                        alertOnArticleEligibility
                       />
                     )}
                   />

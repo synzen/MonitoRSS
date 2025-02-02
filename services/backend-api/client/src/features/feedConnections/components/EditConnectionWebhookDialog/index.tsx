@@ -177,6 +177,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                         onChange={(id) => field.onChange(id)}
                         value={field.value || ""}
                         isDisabled={isSubmitting}
+                        alertOnArticleEligibility
                       />
                     )}
                   />

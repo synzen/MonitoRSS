@@ -151,6 +151,7 @@ export const EditConnectionChannelDialog: React.FC<Props> = ({
                       {...field}
                       onChange={(id) => field.onChange(id)}
                       value={field.value || ""}
+                      alertOnArticleEligibility
                     />
                   )}
                 />

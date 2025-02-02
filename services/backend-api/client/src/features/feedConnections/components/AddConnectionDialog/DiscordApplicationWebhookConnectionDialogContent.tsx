@@ -144,6 +144,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                         value={field.value}
                         inputRef={initialFocusRef}
                         isDisabled={isSubmitting}
+                        alertOnArticleEligibility
                       />
                     )}
                   />

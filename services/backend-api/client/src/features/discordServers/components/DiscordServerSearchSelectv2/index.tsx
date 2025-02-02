@@ -11,6 +11,8 @@ interface Props {
   isDisabled?: boolean;
   inputId?: string;
   ariaLabelledBy?: string;
+  alertOnArticleEligibility?: boolean;
+  placeholder?: string;
 }
 
 export const DiscordServerSearchSelectv2: React.FC<Props> = ({
@@ -20,6 +22,8 @@ export const DiscordServerSearchSelectv2: React.FC<Props> = ({
   isDisabled,
   inputId,
   ariaLabelledBy,
+  alertOnArticleEligibility,
+  placeholder,
 }) => {
   const { status, data } = useDiscordServers();
   const {
@@ -61,6 +65,7 @@ export const DiscordServerSearchSelectv2: React.FC<Props> = ({
         onChange={onChangedValue}
         loading={loading}
         value={value}
+        placeholder={placeholder}
         inputRef={inputRef}
         isDisabled={isDisabled}
         options={
@@ -76,44 +81,46 @@ export const DiscordServerSearchSelectv2: React.FC<Props> = ({
           inputId,
         }}
       />
-      <div aria-live="polite" aria-busy={isFetchingServerSettings}>
-        {isFetchingServerSettings && (
-          <Alert status="info" mt={2}>
-            Checking server eligibility...
-          </Alert>
-        )}
-        {discordServerSettings && (
-          <Alert status="success" mt={2}>
-            <AlertIcon />
-            Server is eligible for articles to be sent
-          </Alert>
-        )}
-        {getServerError?.statusCode === 404 && (
-          <Box mt={2}>
-            <InlineErrorAlert
-              title={`${discordBot?.result.username} is not currently in this server`}
-              description={
-                <Flex flexDirection="column">
-                  <span>
-                    Articles are unable to be sent to this server until the bot is invited.
-                  </span>
-                  <Button
-                    as="a"
-                    href={discordBot?.result.inviteLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    size="sm"
-                    mt="2"
-                    tabIndex={0}
-                  >
-                    Invite {discordBot?.result.username} to this server
-                  </Button>
-                </Flex>
-              }
-            />
-          </Box>
-        )}
-      </div>
+      {alertOnArticleEligibility && (
+        <div aria-live="polite" aria-busy={isFetchingServerSettings}>
+          {isFetchingServerSettings && (
+            <Alert status="info" mt={2}>
+              Checking server eligibility...
+            </Alert>
+          )}
+          {discordServerSettings && (
+            <Alert status="success" mt={2}>
+              <AlertIcon />
+              Server is eligible for articles to be sent
+            </Alert>
+          )}
+          {getServerError?.statusCode === 404 && (
+            <Box mt={2}>
+              <InlineErrorAlert
+                title={`${discordBot?.result.username} is not currently in this server`}
+                description={
+                  <Flex flexDirection="column">
+                    <span>
+                      Articles are unable to be sent to this server until the bot is invited.
+                    </span>
+                    <Button
+                      as="a"
+                      href={discordBot?.result.inviteLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      size="sm"
+                      mt="2"
+                      tabIndex={0}
+                    >
+                      Invite {discordBot?.result.username} to this server
+                    </Button>
+                  </Flex>
+                }
+              />
+            </Box>
+          )}
+        </div>
+      )}
     </Flex>
   );
 };

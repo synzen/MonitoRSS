@@ -165,15 +165,20 @@ export const AddFeedComanagerDialog = ({
             <Stack spacing={8}>
               {description}
               <Stack spacing={6}>
-                <FormControl isInvalid={isInvalidServer}>
-                  <FormLabel>Discord Server</FormLabel>
-                  <DiscordServerSearchSelectv2 onChange={(id) => setGuildId(id)} value={guildId} />
+                <FormControl isInvalid={isInvalidServer} isRequired>
+                  <FormLabel htmlFor="server-select">Discord Server</FormLabel>
+                  <DiscordServerSearchSelectv2
+                    inputId="server-select"
+                    onChange={(id) => setGuildId(id)}
+                    value={guildId}
+                    placeholder="Search or select the server user's server"
+                  />
                   {isInvalidServer && (
                     <FormErrorMessage>The bot has no access to this server.</FormErrorMessage>
                   )}
                 </FormControl>
-                <FormControl>
-                  <FormLabel>User</FormLabel>
+                <FormControl isRequired>
+                  <FormLabel htmlFor="user-select">User</FormLabel>
                   <ThemedSelect
                     loading={isFetchingUsers}
                     onInputChange={(value) => setCurrentInput(value)}
@@ -185,9 +190,10 @@ export const AddFeedComanagerDialog = ({
                         icon: option.icon,
                       })
                     }
-                    placeholder="Search for a user..."
+                    placeholder="Search for a user"
                     selectProps={{
                       filterOption: () => true,
+                      inputId: "user-select",
                     }}
                   />
                 </FormControl>
@@ -203,28 +209,30 @@ export const AddFeedComanagerDialog = ({
                 {usersError && (
                   <InlineErrorAlert title="Failed to get users" description={usersError.message} />
                 )}
-                <Stack>
-                  <Box>
-                    <FormLabel>Connections</FormLabel>
-                    <Text fontSize="sm">
-                      The connections the invitee will be able to view and have access to for
-                      management.
-                    </Text>
-                  </Box>
-                  <HStack mt={1}>
-                    <Button size="sm" onClick={onClickSelectAllConnections}>
-                      Select All
-                    </Button>
-                    <Button size="sm" onClick={onClickSelectNoneConnections}>
-                      Select None
-                    </Button>
-                  </HStack>
-                  <ConnectionsCheckboxList
-                    checkedConnectionIds={checkedConnections}
-                    onCheckConnectionChange={setCheckedConnections}
-                    feed={feed as UserFeed}
-                  />
-                </Stack>
+                <FormControl isRequired as="fieldset">
+                  <Stack>
+                    <Box>
+                      <FormLabel as="legend">Connections</FormLabel>
+                      <Text fontSize="sm">
+                        The connections the invitee will be able to view and have access to for
+                        management.
+                      </Text>
+                    </Box>
+                    <HStack mt={1}>
+                      <Button size="sm" onClick={onClickSelectAllConnections}>
+                        Select all Connections
+                      </Button>
+                      <Button size="sm" onClick={onClickSelectNoneConnections}>
+                        Unselect all Connections
+                      </Button>
+                    </HStack>
+                    <ConnectionsCheckboxList
+                      checkedConnectionIds={checkedConnections}
+                      onCheckConnectionChange={setCheckedConnections}
+                      feed={feed as UserFeed}
+                    />
+                  </Stack>
+                </FormControl>
               </Stack>
               {error && (
                 <InlineErrorAlert

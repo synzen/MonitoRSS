@@ -4,6 +4,7 @@ import {
   Button,
   Center,
   Code,
+  Divider,
   FormControl,
   FormErrorMessage,
   FormHelperText,
@@ -27,7 +28,6 @@ import {
   Select,
   Skeleton,
   Stack,
-  StackDivider,
   Table,
   TableContainer,
   Tag,
@@ -260,10 +260,13 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
         isOpen={manageInviteDialogState.isOpen}
         onClose={() => setManageInviteDialogState({ isOpen: false, inviteId: "" })}
       />
-      <Stack spacing={12} marginBottom={8} divider={<StackDivider />}>
-        <Stack spacing={4}>
-          <Stack>
-            <Heading size="md" as="h3">
+      <Heading size="md" as="h2" mb={8}>
+        Miscellaneous Feed Settings
+      </Heading>
+      <Stack spacing={8} marginBottom={8}>
+        <Stack spacing={4} border="1px solid" borderColor="gray.700" borderRadius="md" p={4}>
+          <Stack spacing={2}>
+            <Heading size="sm" as="h3">
               Feed Management Invites
             </Heading>
             <Text>
@@ -271,6 +274,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
               accept it, this shared feed will count towards their feed limit. To revoke access,
               delete their invite.
             </Text>
+            <Divider mt={2} />
           </Stack>
           <Stack>
             {feed && feed.sharedAccessDetails && (
@@ -404,7 +408,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                     </Text>
                   }
                   title="Invite User to Co-manage Feed"
-                  okButtonText="Invite"
+                  okButtonText="Invite User to Co-manage"
                   error={createInviteError?.message}
                   onAdded={({ id, connections }) =>
                     onAddUser({ id, type: UserFeedManagerInviteType.CoManage, connections })
@@ -420,7 +424,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                     </Text>
                   }
                   title="Invite User to Transfer Ownership"
-                  okButtonText="Invite"
+                  okButtonText="Invite User to Transfer Ownership"
                   onAdded={({ id }) =>
                     onAddUser({ id, type: UserFeedManagerInviteType.Transfer, connections: [] })
                   }
@@ -431,9 +435,9 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
             </Menu>
           </Stack>
         </Stack>
-        <Stack spacing={4}>
-          <Stack>
-            <Heading size="md" as="h3">
+        <Stack spacing={4} border="1px solid" borderColor="gray.700" borderRadius="md" p={4}>
+          <Stack spacing={2}>
+            <Heading size="sm" as="h3">
               Refresh Rate
             </Heading>
             <Text>
@@ -442,57 +446,68 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
               rate-limit-related issues. If other users are using this feed at a rate faster than
               what you set here, the bot will ignore this setting.
             </Text>
+            <Divider mt={2} />
           </Stack>
-          <Controller
-            name="userRefreshRateSeconds"
-            control={control}
-            render={({ field }) => {
-              return (
-                <FormControl isInvalid={!!formErrors.oldArticleDateDiffMsThreshold}>
-                  <RadioGroup
-                    {...field}
-                    value={field.value?.toString()}
-                    onChange={(v) => field.onChange(Number(v))}
-                    isDisabled={!user}
-                  >
-                    <Stack>
-                      {feed?.refreshRateOptions.map((r) => {
-                        const { disabledCode } = r;
+          {!feed?.refreshRateOptions.length && (
+            <Text color="whiteAlpha.700">This feed does not have any refresh rate options.</Text>
+          )}
+          {!!feed?.refreshRateOptions.length && (
+            <Controller
+              name="userRefreshRateSeconds"
+              control={control}
+              render={({ field }) => {
+                return (
+                  <FormControl isInvalid={!!formErrors.oldArticleDateDiffMsThreshold} as="fieldset">
+                    <RadioGroup
+                      value={field.value?.toString()}
+                      onChange={(v) => field.onChange(Number(v))}
+                      onBlur={() => field.onBlur()}
+                      isDisabled={!user || field.disabled}
+                      ref={field.ref}
+                      name={field.name}
+                    >
+                      <Stack>
+                        {feed?.refreshRateOptions.map((r) => {
+                          const { disabledCode } = r;
 
-                        let reason: string = "";
+                          let reason: string = "";
 
-                        if (disabledCode === "INSUFFICIENT_SUPPORTER_TIER") {
-                          reason = "(only available if feed owner has a higher supporter tier)";
-                        }
+                          if (disabledCode === "INSUFFICIENT_SUPPORTER_TIER") {
+                            reason = "(only available if feed owner has a higher supporter tier)";
+                          }
 
-                        const displayDuration = formatRefreshRateSeconds(r.rateSeconds);
+                          const displayDuration = formatRefreshRateSeconds(r.rateSeconds);
 
-                        return (
-                          <Radio
-                            value={r.rateSeconds.toString()}
-                            isDisabled={!!r.disabledCode}
-                            key={r.rateSeconds}
-                          >
-                            {displayDuration}
-                            {reason ? ` ${reason}` : ""}
-                          </Radio>
-                        );
-                      })}
-                    </Stack>
-                  </RadioGroup>
-                  {formErrors.userRefreshRateSeconds && (
-                    <FormErrorMessage>{formErrors.userRefreshRateSeconds.message}</FormErrorMessage>
-                  )}
-                </FormControl>
-              );
-            }}
-          />
+                          return (
+                            <Radio
+                              value={r.rateSeconds.toString()}
+                              isDisabled={!!r.disabledCode}
+                              key={r.rateSeconds}
+                            >
+                              {displayDuration}
+                              {reason ? ` ${reason}` : ""}
+                            </Radio>
+                          );
+                        })}
+                      </Stack>
+                    </RadioGroup>
+                    {formErrors.userRefreshRateSeconds && (
+                      <FormErrorMessage>
+                        {formErrors.userRefreshRateSeconds.message}
+                      </FormErrorMessage>
+                    )}
+                  </FormControl>
+                );
+              }}
+            />
+          )}
         </Stack>
-        <Stack spacing={4}>
-          <Stack>
-            <Heading size="md" as="h3">
+        <Stack spacing={4} border="1px solid" borderColor="gray.700" borderRadius="md" p={4}>
+          <Stack spacing={2}>
+            <Heading size="sm" as="h3" pb={2}>
               Article Date Checks
             </Heading>
+            <Divider />
           </Stack>
           <Controller
             name="oldArticleDateDiffMsThreshold"
@@ -500,7 +515,9 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
             render={({ field }) => {
               return (
                 <FormControl isInvalid={!!formErrors.oldArticleDateDiffMsThreshold}>
-                  <FormLabel>Never deliver articles older than</FormLabel>
+                  <FormLabel id={`${field.name}-label-1`}>
+                    Never deliver articles older than
+                  </FormLabel>
                   <HStack alignItems="center" spacing={4}>
                     <NumberInput
                       min={0}
@@ -510,6 +527,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                       value={
                         typeof field.value === "number" ? field.value / 1000 / 60 / 60 / 24 : 0
                       }
+                      aria-describedby={`${field.name}-label-1 ${field.name}-label-2`}
                     >
                       <NumberInputField />
                       <NumberInputStepper>
@@ -517,7 +535,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                         <NumberDecrementStepper />
                       </NumberInputStepper>
                     </NumberInput>
-                    <FormLabel>days</FormLabel>
+                    <FormLabel id={`${field.name}-label-2`}>days</FormLabel>
                   </HStack>
                   <FormHelperText>
                     Set to <Code>0</Code> to disable. Articles that have no published date will also
@@ -534,23 +552,25 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
             }}
           />
         </Stack>
-        <Stack spacing={4}>
-          <Stack>
-            <Heading size="md" as="h3">
+        <Stack spacing={4} border="1px solid" borderColor="gray.700" borderRadius="md" p={4}>
+          <Stack spacing={2}>
+            <Heading size="sm" as="h3">
               {t(
                 "features.feedConnections.components.userFeedSettingsTabSection.dateSettingsTitle"
               )}
             </Heading>
             <Text>
-              If you&apos;ve configured date settings in your{" "}
+              Change how dates are formatted if you use date placeholders in your message. If
+              you&apos;ve already configured date settings in your{" "}
               <Link as={RouterLink} to={pages.userSettings()} color="blue.300">
                 Account Settings
               </Link>
               , they will be overridden by the settings here.
             </Text>
+            <Divider mt={2} />
           </Stack>
           <Stack spacing={4}>
-            <FormControl>
+            <FormControl aria-live="polite" aria-busy={!!datePreviewData}>
               <FormLabel marginBottom={0}>
                 {t(
                   "features.feedConnections.components.userFeedSettingsTabSection.dateSettingsPreviewTitle"
@@ -587,7 +607,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                       "features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputLabel"
                     )}
                   </FormLabel>
-                  <Input spellCheck={false} {...field} />
+                  <Input spellCheck={false} autoComplete="off" {...field} />
                   {!formErrors.dateTimezone && (
                     <FormHelperText>
                       <Trans
@@ -633,7 +653,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                       "features.feedConnections.components.userFeedSettingsTabSection.dateFormatInputLabel"
                     )}
                   </FormLabel>
-                  <Input spellCheck={false} autoComplete="" {...field} />
+                  <Input spellCheck={false} autoComplete="off" {...field} />
                   {!formErrors.dateFormat && (
                     <FormHelperText>
                       This will dictate how the placeholders with dates (such as{" "}
