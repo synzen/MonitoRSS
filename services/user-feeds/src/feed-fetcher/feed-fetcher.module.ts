@@ -13,35 +13,33 @@ import { FeedFetcherService } from "./feed-fetcher.service";
   imports: [
     ClientsModule.registerAsync({
       clients: [
-        {
-          name: "FEED_FETCHER_PACKAGE",
-          useFactory: (configService: ConfigService) => {
-            const url = configService.getOrThrow<string>(
-              "USER_FEEDS_FEED_REQUESTS_GRPC_URL"
-            );
-            const useTls =
-              configService.getOrThrow<string>(
-                "USER_FEEDS_FEED_REQUESTS_GRPC_USE_TLS"
-              ) === "true";
-
-            return {
-              transport: Transport.GRPC,
-              options: {
-                url,
-                package: "feedfetcher",
-                protoPath: join(__dirname, "feed-fetcher.proto"),
-                // https://github.com/grpc/grpc-node/issues/2093#issuecomment-1117969843
-                credentials: useTls ? credentials.createSsl() : undefined,
-                channelOptions: {
-                  "grpc.max_receive_message_length": 1024 * 1024 * 100,
-                  "grpc.use_local_subchannel_pool": 1,
-                },
-              },
-            };
-          },
-
-          inject: [ConfigService],
-        },
+        // {
+        //   name: "FEED_FETCHER_PACKAGE",
+        //   useFactory: (configService: ConfigService) => {
+        //     const url = configService.getOrThrow<string>(
+        //       "USER_FEEDS_FEED_REQUESTS_GRPC_URL"
+        //     );
+        //     const useTls =
+        //       configService.getOrThrow<string>(
+        //         "USER_FEEDS_FEED_REQUESTS_GRPC_USE_TLS"
+        //       ) === "true";
+        //     return {
+        //       transport: Transport.GRPC,
+        //       options: {
+        //         url,
+        //         package: "feedfetcher",
+        //         protoPath: join(__dirname, "feed-fetcher.proto"),
+        //         // https://github.com/grpc/grpc-node/issues/2093#issuecomment-1117969843
+        //         credentials: useTls ? credentials.createSsl() : undefined,
+        //         channelOptions: {
+        //           "grpc.max_receive_message_length": 1024 * 1024 * 100,
+        //           "grpc.use_local_subchannel_pool": 1,
+        //         },
+        //       },
+        //     };
+        //   },
+        //   inject: [ConfigService],
+        // },
       ],
     }),
   ],

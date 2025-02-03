@@ -13,8 +13,7 @@ import {
 import logger from './utils/logger';
 import { MikroORM } from '@mikro-orm/core';
 import { RequestContext } from '@mikro-orm/core';
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { join } from 'path';
+import { MicroserviceOptions } from '@nestjs/microservices';
 import compression from '@fastify/compress';
 import pruneAndCreatePartitions from './utils/prune-and-create-partitions';
 
@@ -31,18 +30,18 @@ async function startApi() {
   const microservice =
     await NestFactory.createMicroservice<MicroserviceOptions>(
       AppModule.forApi(),
-      {
-        transport: Transport.GRPC,
-        options: {
-          package: 'feedfetcher',
-          protoPath: join(__dirname, './feed-fetcher/feed-fetcher.proto'),
-          url: '0.0.0.0:4999',
-          channelOptions: {
-            'grpc.default_compression_algorithm': 2,
-            'grpc.default_compression_level': 2,
-          },
-        },
-      },
+      // {
+      //   transport: Transport.GRPC,
+      //   options: {
+      //     package: 'feedfetcher',
+      //     protoPath: join(__dirname, './feed-fetcher/feed-fetcher.proto'),
+      //     url: '0.0.0.0:4999',
+      //     channelOptions: {
+      //       'grpc.default_compression_algorithm': 2,
+      //       'grpc.default_compression_level': 2,
+      //     },
+      //   },
+      // },
     );
 
   microservice.enableShutdownHooks();
