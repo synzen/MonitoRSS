@@ -29,7 +29,7 @@ export class MessageBrokerModule implements OnApplicationShutdown {
             heartbeatIntervalInSeconds: 0,
           },
           defaultExchangeType: "direct",
-          defaultSubscribeErrorBehavior: MessageHandlerErrorBehavior.NACK,
+          defaultSubscribeErrorBehavior: MessageHandlerErrorBehavior.ACK,
           channels: {
             default: {
               prefetchCount: 100,
