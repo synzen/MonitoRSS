@@ -106,142 +106,144 @@ export const RequestHistory = () => {
           <Divider />
         </Box>
       </Box>
-      <Box srOnly aria-live="polite">
-        {status === "loading" && `Loading request history rows ${skip} through ${skip + limit}`}
-        {status === "success" &&
-          `Finished loading request history rows ${skip} through ${skip + limit}`}
-        {status === "success" &&
-          fetchStatus === "fetching" &&
-          `Loading request history rows ${skip} through ${skip + limit}`}
-      </Box>
-      {status === "loading" && (
-        <Center pb={8}>
-          <Spinner />
-        </Center>
-      )}
-      {error && (
-        <InlineErrorAlert
-          title={t("common.errors.somethingWentWrong")}
-          description={error.message}
-        />
-      )}
-      {data?.result.feedHostGlobalRateLimit && (
-        <Alert rounded="md">
-          To stay in compliance with rate limits, MonitoRSS is forced to globally limit the number
-          of requests made to this feed&apos;s host to have a maximum of{" "}
-          {data.result.feedHostGlobalRateLimit.requestLimit} request(s) per{" "}
-          {data.result.feedHostGlobalRateLimit.intervalSec} seconds.
-        </Alert>
-      )}
-      {hasNoData && (
-        <Text color="whiteAlpha.700">
-          No historical requests found. This is likely because the feed has not been polled yet -
-          please check back later.
-        </Text>
-      )}
-      {data && !hasNoData && (
-        <Stack>
-          <Box>
-            <TableContainer px={4}>
-              <Table size="sm" variant="simple" aria-labelledby="request-history-table-title">
-                <Thead>
-                  <Tr>
-                    <Th>{t("features.userFeeds.components.requestsTable.tableHeaderDate")}</Th>
-                    <Th>{t("features.userFeeds.components.requestsTable.tableHeaderStatus")}</Th>
-                    <Th>
-                      Cache Duration{" "}
-                      <Popover>
-                        <PopoverTrigger>
-                          <Button variant="ghost" size="xs" aria-label="What is cache duration?">
-                            <QuestionOutlineComponent />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent>
-                          <PopoverArrow />
-                          <PopoverCloseButton />
-                          <PopoverBody>
-                            <Text
-                              fontFamily="var(--chakra-fonts-body)"
-                              whiteSpace="initial"
-                              textTransform="none"
-                              fontWeight="normal"
-                              color="var(--chakra-colors-chakra-body-text)"
-                              fontSize={14}
-                              lineHeight="var(--chakra-lineHeights-base)"
-                            >
-                              The duration, determined by the feed host, for which the contents of a
-                              particular request will be re-used before a new request is made. This
-                              is necessary to comply with polling requirements, and so it overrides
-                              this feed&apos;s refresh rate.
-                            </Text>
-                          </PopoverBody>
-                        </PopoverContent>
-                      </Popover>
-                    </Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {data?.result.requests.map((req) => (
-                    <Tr key={req.id}>
-                      <Td>
-                        <Skeleton isLoaded={fetchStatus === "idle"}>
-                          {dayjs.unix(req.createdAt).format("DD MMM YYYY, HH:mm:ss")}
-                        </Skeleton>
-                      </Td>
-                      <Td>
-                        <Skeleton isLoaded={fetchStatus === "idle"}>
-                          {createStatusLabel(req.status, {
-                            statusCode: req.response.statusCode,
-                          })}
-                        </Skeleton>
-                      </Td>
-                      <Td>
-                        <Skeleton isLoaded={fetchStatus === "idle"}>
-                          {req.freshnessLifetimeMs
-                            ? dayjs.duration(req.freshnessLifetimeMs, "ms").humanize()
-                            : "N/A"}
-                        </Skeleton>
-                      </Td>
+      <Box px={4} pb={4}>
+        <Box srOnly aria-live="polite">
+          {status === "loading" && `Loading request history rows ${skip} through ${skip + limit}`}
+          {status === "success" &&
+            `Finished loading request history rows ${skip} through ${skip + limit}`}
+          {status === "success" &&
+            fetchStatus === "fetching" &&
+            `Loading request history rows ${skip} through ${skip + limit}`}
+        </Box>
+        {status === "loading" && (
+          <Center>
+            <Spinner />
+          </Center>
+        )}
+        {error && (
+          <InlineErrorAlert
+            title={t("common.errors.somethingWentWrong")}
+            description={error.message}
+          />
+        )}
+        {data?.result.feedHostGlobalRateLimit && (
+          <Alert rounded="md">
+            To stay in compliance with rate limits, MonitoRSS is forced to globally limit the number
+            of requests made to this feed&apos;s host to have a maximum of{" "}
+            {data.result.feedHostGlobalRateLimit.requestLimit} request(s) per{" "}
+            {data.result.feedHostGlobalRateLimit.intervalSec} seconds.
+          </Alert>
+        )}
+        {hasNoData && (
+          <Text color="whiteAlpha.700">
+            No historical requests found. This is likely because the feed has not been polled yet -
+            please check back later.
+          </Text>
+        )}
+        {data && !hasNoData && (
+          <Stack>
+            <Box>
+              <TableContainer>
+                <Table size="sm" variant="simple" aria-labelledby="request-history-table-title">
+                  <Thead>
+                    <Tr>
+                      <Th>{t("features.userFeeds.components.requestsTable.tableHeaderDate")}</Th>
+                      <Th>{t("features.userFeeds.components.requestsTable.tableHeaderStatus")}</Th>
+                      <Th>
+                        Cache Duration{" "}
+                        <Popover>
+                          <PopoverTrigger>
+                            <Button variant="ghost" size="xs" aria-label="What is cache duration?">
+                              <QuestionOutlineComponent />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent>
+                            <PopoverArrow />
+                            <PopoverCloseButton />
+                            <PopoverBody>
+                              <Text
+                                fontFamily="var(--chakra-fonts-body)"
+                                whiteSpace="initial"
+                                textTransform="none"
+                                fontWeight="normal"
+                                color="var(--chakra-colors-chakra-body-text)"
+                                fontSize={14}
+                                lineHeight="var(--chakra-lineHeights-base)"
+                              >
+                                The duration, determined by the feed host, for which the contents of
+                                a particular request will be re-used before a new request is made.
+                                This is necessary to comply with polling requirements, and so it
+                                overrides this feed&apos;s refresh rate.
+                              </Text>
+                            </PopoverBody>
+                          </PopoverContent>
+                        </Popover>
+                      </Th>
                     </Tr>
-                  ))}
-                </Tbody>
-              </Table>
-            </TableContainer>
-          </Box>
-          <Flex p={4}>
-            <HStack>
-              <Button
-                width="min-content"
-                size="sm"
-                onClick={() => {
-                  if (onFirstPage || fetchStatus === "fetching") {
-                    return;
-                  }
+                  </Thead>
+                  <Tbody>
+                    {data?.result.requests.map((req) => (
+                      <Tr key={req.id}>
+                        <Td>
+                          <Skeleton isLoaded={fetchStatus === "idle"}>
+                            {dayjs.unix(req.createdAt).format("DD MMM YYYY, HH:mm:ss")}
+                          </Skeleton>
+                        </Td>
+                        <Td>
+                          <Skeleton isLoaded={fetchStatus === "idle"}>
+                            {createStatusLabel(req.status, {
+                              statusCode: req.response.statusCode,
+                            })}
+                          </Skeleton>
+                        </Td>
+                        <Td>
+                          <Skeleton isLoaded={fetchStatus === "idle"}>
+                            {req.freshnessLifetimeMs
+                              ? dayjs.duration(req.freshnessLifetimeMs, "ms").humanize()
+                              : "N/A"}
+                          </Skeleton>
+                        </Td>
+                      </Tr>
+                    ))}
+                  </Tbody>
+                </Table>
+              </TableContainer>
+            </Box>
+            <Flex pt={4}>
+              <HStack>
+                <Button
+                  width="min-content"
+                  size="sm"
+                  onClick={() => {
+                    if (onFirstPage || fetchStatus === "fetching") {
+                      return;
+                    }
 
-                  prevPage();
-                }}
-                aria-disabled={onFirstPage || fetchStatus === "fetching"}
-              >
-                Previous Page
-              </Button>
-              <Button
-                width="min-content"
-                size="sm"
-                onClick={() => {
-                  if (fetchStatus === "fetching" || data?.result.requests.length === 0) {
-                    return;
-                  }
+                    prevPage();
+                  }}
+                  aria-disabled={onFirstPage || fetchStatus === "fetching"}
+                >
+                  Previous Page
+                </Button>
+                <Button
+                  width="min-content"
+                  size="sm"
+                  onClick={() => {
+                    if (fetchStatus === "fetching" || data?.result.requests.length === 0) {
+                      return;
+                    }
 
-                  nextPage();
-                }}
-                aria-disabled={fetchStatus === "fetching" || data?.result.requests.length === 0}
-              >
-                Next Page
-              </Button>
-            </HStack>
-          </Flex>
-        </Stack>
-      )}
+                    nextPage();
+                  }}
+                  aria-disabled={fetchStatus === "fetching" || data?.result.requests.length === 0}
+                >
+                  Next Page
+                </Button>
+              </HStack>
+            </Flex>
+          </Stack>
+        )}
+      </Box>
     </Stack>
   );
 };
