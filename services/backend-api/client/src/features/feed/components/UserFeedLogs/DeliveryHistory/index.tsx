@@ -29,6 +29,7 @@ import {
   ModalFooter,
   chakra,
   Tooltip,
+  Divider,
 } from "@chakra-ui/react";
 import dayjs from "dayjs";
 import { Link } from "react-router-dom";
@@ -131,7 +132,7 @@ export const DeliveryHistory = () => {
   const hasNoData = data?.result.logs.length === 0 && skip === 0;
 
   return (
-    <Stack spacing={4} mb={16}>
+    <Stack spacing={4} mb={16} border="solid 1px" borderColor="gray.700" borderRadius="md">
       <Modal isOpen={!!detailsData} onClose={onCloseDetailsModal} size="6xl">
         <ModalOverlay />
         <ModalContent>
@@ -147,9 +148,19 @@ export const DeliveryHistory = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
-      <Heading size="md">Article Delivery History</Heading>
+      <Box>
+        <Stack px={4} py={4}>
+          <Heading as="h3" size="sm" m={0} id="delivery-history-table-title">
+            Article Delivery History
+          </Heading>
+          <Text>Delivery attempts for articles across all connections.</Text>
+        </Stack>
+        <Box px={4}>
+          <Divider />
+        </Box>
+      </Box>
       {status === "loading" && (
-        <Center>
+        <Center pb={8}>
           <Spinner />
         </Center>
       )}
@@ -164,14 +175,14 @@ export const DeliveryHistory = () => {
       )}
       {data?.result && !hasNoData && (
         <Stack>
-          <Box border="solid 1px" borderColor="gray.600" borderRadius="md">
-            <TableContainer>
-              <Table size="sm">
+          <Box>
+            <TableContainer px={4}>
+              <Table size="sm" variant="simple" aria-labelledby="delivery-history-table-title">
                 <Thead>
                   <Tr>
                     <Th>Date</Th>
                     <Th>Connection</Th>
-                    <Th>Article</Th>
+                    <Th>Article Title</Th>
                     <Th>Status</Th>
                     <Th>Details</Th>
                   </Tr>
@@ -229,7 +240,7 @@ export const DeliveryHistory = () => {
                             {!matchedArticle && (
                               <Tooltip label="The referenced article either no longer exists on the feed or has no title">
                                 <Text color="whiteAlpha.700" fontStyle="italic">
-                                  (unknown article)
+                                  (unknown article title)
                                 </Text>
                               </Tooltip>
                             )}
@@ -275,23 +286,35 @@ export const DeliveryHistory = () => {
               </Table>
             </TableContainer>
           </Box>
-          <Flex justifyContent="flex-end">
+          <Flex p={4}>
             <HStack>
               <Button
                 width="min-content"
                 size="sm"
-                onClick={prevPage}
-                isDisabled={onFirstPage || fetchStatus === "fetching"}
+                onClick={() => {
+                  if (onFirstPage || fetchStatus === "fetching") {
+                    return;
+                  }
+
+                  prevPage();
+                }}
+                aria-disabled={onFirstPage || fetchStatus === "fetching"}
               >
-                <span>Previous</span>
+                <span>Previous Page</span>
               </Button>
               <Button
                 width="min-content"
                 size="sm"
-                onClick={nextPage}
+                onClick={() => {
+                  if (fetchStatus === "fetching" || data?.result.logs.length === 0) {
+                    return;
+                  }
+
+                  nextPage();
+                }}
                 isDisabled={fetchStatus === "fetching" || data?.result.logs.length === 0}
               >
-                <span>Next</span>
+                <span>Next Page</span>
               </Button>
             </HStack>
           </Flex>

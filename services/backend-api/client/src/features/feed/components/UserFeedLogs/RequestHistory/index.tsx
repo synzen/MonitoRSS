@@ -4,9 +4,16 @@ import {
   Box,
   Button,
   Center,
+  Divider,
   Flex,
   HStack,
   Heading,
+  Popover,
+  PopoverArrow,
+  PopoverBody,
+  PopoverCloseButton,
+  PopoverContent,
+  PopoverTrigger,
   Skeleton,
   Spinner,
   Stack,
@@ -17,7 +24,6 @@ import {
   Text,
   Th,
   Thead,
-  Tooltip,
   Tr,
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
@@ -88,10 +94,20 @@ export const RequestHistory = () => {
   const hasNoData = data?.result.requests.length === 0 && skip === 0;
 
   return (
-    <Stack spacing={4} mb={8}>
-      <Heading size="md">{t("features.userFeeds.components.requestsTable.title")}</Heading>
+    <Stack spacing={4} mb={8} border="solid 1px" borderColor="gray.700" borderRadius="md">
+      <Box>
+        <Stack px={4} py={4}>
+          <Heading size="sm" as="h3" m={0} id="request-history-table-title">
+            {t("features.userFeeds.components.requestsTable.title")}
+          </Heading>
+          <Text>Outgoing HTTP requests to the feed URL along with their response details.</Text>
+        </Stack>
+        <Box px={4}>
+          <Divider />
+        </Box>
+      </Box>
       {status === "loading" && (
-        <Center>
+        <Center pb={8}>
           <Spinner />
         </Center>
       )}
@@ -117,18 +133,42 @@ export const RequestHistory = () => {
       )}
       {data && !hasNoData && (
         <Stack>
-          <Box border="solid 1px" borderColor="gray.600" borderRadius="md">
-            <TableContainer>
-              <Table size="sm">
+          <Box>
+            <TableContainer px={4}>
+              <Table size="sm" variant="simple" aria-labelledby="request-history-table-title">
                 <Thead>
                   <Tr>
                     <Th>{t("features.userFeeds.components.requestsTable.tableHeaderDate")}</Th>
                     <Th>{t("features.userFeeds.components.requestsTable.tableHeaderStatus")}</Th>
                     <Th>
                       Cache Duration{" "}
-                      <Tooltip label="The duration, determined by the feed host, for which the contents of a particular request will be re-used before a new request is made. This is necessary to comply with polling requirements, and so it overrides this feed's refresh rate.">
-                        <QuestionOutlineComponent aria-label="Cache Duration" />
-                      </Tooltip>
+                      <Popover>
+                        <PopoverTrigger>
+                          <Button variant="ghost" size="xs" aria-label="What is cache duration?">
+                            <QuestionOutlineComponent />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent>
+                          <PopoverArrow />
+                          <PopoverCloseButton />
+                          <PopoverBody>
+                            <Text
+                              fontFamily="var(--chakra-fonts-body)"
+                              whiteSpace="initial"
+                              textTransform="none"
+                              fontWeight="normal"
+                              color="var(--chakra-colors-chakra-body-text)"
+                              fontSize={14}
+                              lineHeight="var(--chakra-lineHeights-base)"
+                            >
+                              The duration, determined by the feed host, for which the contents of a
+                              particular request will be re-used before a new request is made. This
+                              is necessary to comply with polling requirements, and so it overrides
+                              this feed&apos;s refresh rate.
+                            </Text>
+                          </PopoverBody>
+                        </PopoverContent>
+                      </Popover>
                     </Th>
                   </Tr>
                 </Thead>
@@ -160,23 +200,35 @@ export const RequestHistory = () => {
               </Table>
             </TableContainer>
           </Box>
-          <Flex justifyContent="flex-end">
+          <Flex p={4}>
             <HStack>
               <Button
                 width="min-content"
                 size="sm"
-                onClick={prevPage}
-                isDisabled={onFirstPage || fetchStatus === "fetching"}
+                onClick={() => {
+                  if (onFirstPage || fetchStatus === "fetching") {
+                    return;
+                  }
+
+                  prevPage();
+                }}
+                aria-disabled={onFirstPage || fetchStatus === "fetching"}
               >
-                {t("features.feedConnections.components.filtersTabSection.prevPage")}
+                Previous Page
               </Button>
               <Button
                 width="min-content"
                 size="sm"
-                onClick={nextPage}
-                isDisabled={fetchStatus === "fetching" || data?.result.requests.length === 0}
+                onClick={() => {
+                  if (fetchStatus === "fetching" || data?.result.requests.length === 0) {
+                    return;
+                  }
+
+                  nextPage();
+                }}
+                aria-disabled={fetchStatus === "fetching" || data?.result.requests.length === 0}
               >
-                {t("features.feedConnections.components.filtersTabSection.nextPage")}
+                Next Page
               </Button>
             </HStack>
           </Flex>
