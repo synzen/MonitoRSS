@@ -107,8 +107,12 @@ export const RequestHistory = () => {
         </Box>
       </Box>
       <Box srOnly aria-live="polite">
-        {fetchStatus === "fetching" && `Loading rows ${skip} through ${skip + limit}`}
-        {data && `Finished loading rows ${skip} through ${skip + limit}`}
+        {status === "loading" && `Loading request history rows ${skip} through ${skip + limit}`}
+        {status === "success" &&
+          `Finished loading request history rows ${skip} through ${skip + limit}`}
+        {status === "success" &&
+          fetchStatus === "fetching" &&
+          `Loading request history rows ${skip} through ${skip + limit}`}
       </Box>
       {status === "loading" && (
         <Center pb={8}>
