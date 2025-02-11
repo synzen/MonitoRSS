@@ -36,7 +36,7 @@ import { InlineErrorAlert } from "../../../../../components";
 import { useUserFeedContext } from "../../../../../contexts/UserFeedContext";
 
 const QuestionOutlineComponent = forwardRef<any>((props, ref) => (
-  <QuestionOutlineIcon fontSize={12} tabIndex={0} ref={ref} {...props} />
+  <QuestionOutlineIcon fontSize={12} tabIndex={-1} ref={ref} aria-hidden {...props} />
 ));
 
 const createStatusLabel = (
@@ -83,7 +83,7 @@ export const RequestHistory = () => {
   const {
     userFeed: { id: feedId },
   } = useUserFeedContext();
-  const { data, status, error, skip, nextPage, prevPage, fetchStatus } =
+  const { data, status, error, skip, nextPage, prevPage, fetchStatus, limit } =
     useUserFeedRequestsWithPagination({
       feedId,
       data: {},
@@ -105,6 +105,10 @@ export const RequestHistory = () => {
         <Box px={4}>
           <Divider />
         </Box>
+      </Box>
+      <Box srOnly aria-live="polite">
+        {fetchStatus === "fetching" && `Loading rows ${skip} through ${skip + limit}`}
+        {data && `Finished loading rows ${skip} through ${skip + limit}`}
       </Box>
       {status === "loading" && (
         <Center pb={8}>

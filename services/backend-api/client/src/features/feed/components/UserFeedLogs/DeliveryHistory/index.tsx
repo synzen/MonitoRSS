@@ -101,7 +101,7 @@ const createStatusLabel = ({ status }: { status: UserFeedDeliveryLogStatus }) =>
 export const DeliveryHistory = () => {
   const [detailsData, setDetailsData] = useState("");
   const { articleFormatOptions, userFeed } = useUserFeedContext();
-  const { data, status, error, skip, nextPage, prevPage, fetchStatus } =
+  const { data, status, error, skip, nextPage, prevPage, fetchStatus, limit } =
     useUserFeedDeliveryLogsWithPagination({
       feedId: userFeed.id,
       data: {},
@@ -158,6 +158,10 @@ export const DeliveryHistory = () => {
         <Box px={4}>
           <Divider />
         </Box>
+      </Box>
+      <Box srOnly aria-live="polite">
+        {fetchStatus === "fetching" && `Loading rows ${skip} through ${skip + limit}`}
+        {data && `Finished loading rows ${skip} through ${skip + limit}`}
       </Box>
       {status === "loading" && (
         <Center pb={8}>
