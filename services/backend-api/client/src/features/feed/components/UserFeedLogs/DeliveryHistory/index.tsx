@@ -178,7 +178,7 @@ export const DeliveryHistory = () => {
           <InlineErrorAlert title="Failed to get delivery logs" description={error.message} />
         )}
         {hasNoData && (
-          <Box px={4} pb={4}>
+          <Box>
             <Text color="whiteAlpha.700">
               There have been no delivery attempts. Attempts will be logged as soon as new articles
               are found on the feed for delivery to enabled connections.
