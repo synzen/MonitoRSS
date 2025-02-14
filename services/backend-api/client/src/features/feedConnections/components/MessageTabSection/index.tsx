@@ -183,7 +183,6 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
             searchText={placeholderTableSearch}
             hideEmptyPlaceholders={hideEmptyPlaceholders}
             isFetching={userFeedArticlesFetchStatus === "fetching"}
-            withoutCopy
           />
         )}
       </Stack>
@@ -191,7 +190,7 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
   );
 
   return (
-    <Stack spacing={24}>
+    <Stack spacing={12}>
       <Modal isOpen={isOpen} onClose={onClose} size="full" scrollBehavior="inside">
         <ModalOverlay />
         <ModalContent>
@@ -209,17 +208,21 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
           </ModalFooter>
         </ModalContent>
       </Modal>
-      <Stack spacing={4}>
+      <Stack>
+        <Heading size="md" as="h2">
+          Message Format
+        </Heading>
+        <Text>Customize how your feed&apos;s articles are displayed in your Discord messages.</Text>
+      </Stack>
+      <Stack spacing={4} as="aside" aria-labelledby="placeholders-title">
         <Stack>
-          <Heading as="h2" size="md">
-            {t(
-              "features.feedConnections.components." +
-                "articlePlaceholderTable.headingSamplePlaceholders"
-            )}
+          <Heading as="h3" size="sm" id="placeholders-title">
+            Article Placeholders Reference
           </Heading>
           <Text>
-            Placeholders can be used to inject article content into your messages. View any
-            article&apos;s placeholders below.
+            Customize your message format with the use of placeholders by copying their names and
+            pasting them into any part of your message format for them to be replaced with the their
+            corresponding article content.
           </Text>
         </Stack>
         {fetchErrorAlert || parseErrorAlert || noArticlesAlert}
@@ -231,7 +234,7 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
         {!hasAlert && firstArticle && (
           <Card size="md">
             <CardHeader padding={0} margin={5}>
-              <Heading size="xs" textTransform="uppercase">
+              <Heading size="xs" as="h4" textTransform="uppercase">
                 Selected Article
               </Heading>
             </CardHeader>
@@ -240,7 +243,7 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
                 <HStack justifyContent="space-between" flexWrap="wrap">
                   <Box>
                     {firstArticleDate && <Text color="gray.400">{firstArticleDate}</Text>}
-                    <Heading size="md">
+                    <Text size="md" fontWeight="semibold">
                       {firstArticleTitle || (
                         <span
                           style={{
@@ -250,7 +253,7 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
                           (no title available)
                         </span>
                       )}
-                    </Heading>
+                    </Text>
                   </Box>
                   <HStack alignItems="center" flexWrap="wrap">
                     <ArticleSelectDialog
@@ -261,7 +264,7 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
                           isLoading={
                             !!selectedArticleId && userFeedArticlesFetchStatus === "fetching"
                           }
-                          isDisabled={userFeedArticlesFetchStatus === "fetching"}
+                          aria-disabled={userFeedArticlesFetchStatus === "fetching"}
                         >
                           <span>
                             {t(
@@ -277,8 +280,14 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
                     <Button
                       leftIcon={<RepeatIcon />}
                       isLoading={!selectedArticleId && userFeedArticlesFetchStatus === "fetching"}
-                      isDisabled={userFeedArticlesFetchStatus === "fetching"}
-                      onClick={onClickRandomFeedArticle}
+                      aria-disabled={userFeedArticlesFetchStatus === "fetching"}
+                      onClick={() => {
+                        if (userFeedArticlesFetchStatus === "fetching") {
+                          return;
+                        }
+
+                        onClickRandomFeedArticle();
+                      }}
                     >
                       <span>
                         {t(
@@ -303,7 +312,8 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
                         </HStack>
                         <IconButton
                           icon={<FaExpandAlt />}
-                          aria-label="Show bigger"
+                          aria-hidden
+                          aria-label="Show bigger" // adding just to satisfy lint
                           variant="ghost"
                           size="sm"
                           color="blue.300"

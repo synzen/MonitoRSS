@@ -305,10 +305,16 @@ export const ComparisonsTabSection = ({
             <InlineErrorAlert title={t("common.errors.failedToSave")} description={updateError} />
           )}
         </Stack>
-        <Stack background="gray.700" padding={4} borderRadius="md" as="aside">
+        <Stack
+          background="gray.700"
+          padding={4}
+          borderRadius="md"
+          as="aside"
+          aria-labelledby="preview-article-props"
+        >
           <Flex justifyContent="space-between" flexWrap="wrap">
             <Stack mb={1}>
-              <Heading size="sm" as="h3">
+              <Heading size="sm" as="h3" id="preview-article-props">
                 Preview Sample Article Properties
               </Heading>
               <Text>

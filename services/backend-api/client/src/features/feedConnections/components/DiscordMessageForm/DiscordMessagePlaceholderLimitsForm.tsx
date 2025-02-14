@@ -25,6 +25,7 @@ import { AddIcon } from "@chakra-ui/icons";
 import { FaEllipsisVertical } from "react-icons/fa6";
 import { DiscordMessageFormData } from "@/types/discord";
 import { PlaceholderLimitDialog } from "../PlaceholderLimitDialog";
+import MessagePlaceholderText from "../../../../components/MessagePlaceholderText";
 
 export const DiscordMessagePlaceholderLimitsForm = () => {
   const { control } = useFormContext<DiscordMessageFormData>();
@@ -54,17 +55,6 @@ export const DiscordMessagePlaceholderLimitsForm = () => {
         <Text>
           {t("features.feedConnections.components.discordMessagePlaceholderLimitsForm.description")}
         </Text>
-        {fields.length && (
-          <PlaceholderLimitDialog
-            trigger={
-              <Button leftIcon={<AddIcon fontSize="xs" />} size="sm">
-                {t("common.buttons.add")}
-              </Button>
-            }
-            onSubmit={onSubmitNewLimit}
-            mode="add"
-          />
-        )}
       </HStack>
       {fields.length && (
         <Box borderStyle="solid" borderWidth="1px" borderRadius="md">
@@ -87,14 +77,18 @@ export const DiscordMessagePlaceholderLimitsForm = () => {
                       "features.feedConnections.components.discordMessagePlaceholderLimitsForm.appendTextColumnLabel"
                     )}
                   </Th>
-                  <Th isNumeric />
+                  <Th isNumeric>Actions</Th>
                 </Tr>
               </Thead>
               <Tbody>
                 {fields.map((field, index) => {
                   return (
                     <Tr key={field.placeholder}>
-                      <Td>{field.placeholder}</Td>
+                      <Td>
+                        <MessagePlaceholderText withBraces>
+                          {field.placeholder}
+                        </MessagePlaceholderText>
+                      </Td>
                       <Td>{field.characterCount}</Td>
                       <Td>
                         {field.appendString === "\n" && (
@@ -115,7 +109,7 @@ export const DiscordMessagePlaceholderLimitsForm = () => {
                           <MenuList>
                             <PlaceholderLimitDialog
                               mode="update"
-                              trigger={<MenuItem>{t("common.buttons.edit")}</MenuItem>}
+                              trigger={<MenuItem>Update</MenuItem>}
                               onSubmit={(limit) => {
                                 update(index, limit);
                               }}
@@ -125,9 +119,7 @@ export const DiscordMessagePlaceholderLimitsForm = () => {
                                 characterCount: field.characterCount,
                               }}
                             />
-                            <MenuItem onClick={() => remove(index)}>
-                              {t("common.buttons.delete")}
-                            </MenuItem>
+                            <MenuItem onClick={() => remove(index)}>Delete</MenuItem>
                           </MenuList>
                         </Menu>
                       </Td>
@@ -139,17 +131,13 @@ export const DiscordMessagePlaceholderLimitsForm = () => {
           </TableContainer>
         </Box>
       )}
-      {!fields.length && (
-        <Flex>
-          <PlaceholderLimitDialog
-            trigger={
-              <Button leftIcon={<AddIcon fontSize="sm" />}>{t("common.buttons.add")}</Button>
-            }
-            onSubmit={onSubmitNewLimit}
-            mode="add"
-          />
-        </Flex>
-      )}
+      <Flex>
+        <PlaceholderLimitDialog
+          trigger={<Button leftIcon={<AddIcon fontSize="sm" />}>Add placeholder limit</Button>}
+          onSubmit={onSubmitNewLimit}
+          mode="add"
+        />
+      </Flex>
     </Stack>
   );
 };

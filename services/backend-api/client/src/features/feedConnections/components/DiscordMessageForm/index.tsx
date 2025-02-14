@@ -259,11 +259,11 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
       <FormProvider {...formMethods}>
         <form onSubmit={handleSubmit(onSubmit)}>
           <Stack spacing={24} mb={36}>
-            <Stack>
+            <Stack as="aside" aria-labelledby="preview-message-format-title">
               <Stack>
                 <HStack justifyContent="space-between" flexWrap="wrap" alignItems="center">
                   <HStack spacing={4} alignItems="center" flexWrap="wrap">
-                    <Heading as="h2" size="md">
+                    <Heading as="h3" size="sm" id="preview-message-format-title">
                       {t("components.discordMessageForm.previewSectionTitle")}
                     </Heading>
                     {isDirty && (
@@ -293,7 +293,13 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                     <span>{t("components.discordMessageForm.sendPreviewToDiscordButtonText")}</span>
                   </Button>
                 </HStack>
-                <Text>{t("components.discordMessageForm.previewSectionDescription")}</Text>
+                <Text aria-hidden>
+                  {t("components.discordMessageForm.previewSectionDescription")}
+                </Text>
+                <Text srOnly>
+                  Live preview of the message format is disabled for screen readers. To preview the
+                  message format, click the &apos;Send to Discord&apos; button instead.
+                </Text>
                 {sendTestArticleError && (
                   <Box mt={3} mb={3}>
                     <InlineErrorAlert
@@ -303,37 +309,47 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                   </Box>
                 )}
               </Stack>
-              {connection.key === FeedConnectionType.DiscordChannel && (
-                <SuspenseErrorBoundary>
-                  <Suspense
-                    fallback={
-                      <Center my={8}>
-                        <Spinner />
-                      </Center>
-                    }
-                  >
-                    <DiscordChannelConnectionPreview
-                      connectionId={connection.id}
-                      data={previewInput.data as CreateDiscordChannelConnectionPreviewInput["data"]}
-                      feedId={userFeed.id}
-                      hasErrors={errorsExist}
-                    />
-                  </Suspense>
-                </SuspenseErrorBoundary>
-              )}
+              <Box aria-hidden>
+                {connection.key === FeedConnectionType.DiscordChannel && (
+                  <SuspenseErrorBoundary>
+                    <Suspense
+                      fallback={
+                        <Center my={8}>
+                          <Spinner />
+                        </Center>
+                      }
+                    >
+                      <DiscordChannelConnectionPreview
+                        connectionId={connection.id}
+                        data={
+                          previewInput.data as CreateDiscordChannelConnectionPreviewInput["data"]
+                        }
+                        feedId={userFeed.id}
+                        hasErrors={errorsExist}
+                      />
+                    </Suspense>
+                  </SuspenseErrorBoundary>
+                )}
+              </Box>
             </Stack>
             {showForumForms && (
               <Stack>
-                <Heading size="md">{t("components.discordMessageForumThreadForm.title")}</Heading>
+                <Heading size="sm" as="h3">
+                  {t("components.discordMessageForumThreadForm.title")}
+                </Heading>
                 <DiscordMessageForumThreadForm />
               </Stack>
             )}
             <Stack>
-              <Heading size="md">{t("components.discordMessageForm.textSectionTitle")}</Heading>
+              <Heading size="sm" as="h3">
+                {t("components.discordMessageForm.textSectionTitle")}
+              </Heading>
               <DiscordMessageContentForm />
             </Stack>
             <Stack>
-              <Heading size="md">{t("components.discordMessageForm.embedSectionTitle")}</Heading>
+              <Heading size="sm" as="h3">
+                {t("components.discordMessageForm.embedSectionTitle")}
+              </Heading>
               <Text>{t("components.discordMessageForm.embedSectionDescription")}</Text>
               <Tabs variant="solid-rounded" index={activeEmbedIndex} onChange={onEmbedTabChanged}>
                 <HStack overflow="auto">
@@ -350,7 +366,7 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                       aria-label="Add new embed"
                       leftIcon={<AddIcon fontSize="sm" />}
                     >
-                      Add
+                      Add new embed
                     </Button>
                   )}
                 </HStack>
@@ -367,9 +383,7 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                                 variant="outline"
                                 onClick={() => onRemoveEmbed(index)}
                               >
-                                {t(
-                                  "features.feedConnections.components.embedForm.deleteButtonText"
-                                )}
+                                Delete embed {index + 1}
                               </Button>
                             </Flex>
                             <DiscordMessageEmbedForm index={index} />
@@ -382,15 +396,21 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
               </Tabs>
             </Stack>
             <Stack>
-              <Heading size="md">Buttons</Heading>
+              <Heading size="sm" as="h3">
+                Buttons
+              </Heading>
               <DiscordMessageComponentsForm connectionId={connection.id} feedId={userFeed.id} />
             </Stack>
             <Stack>
-              <Heading size="md">{t("components.discordMessageMentionForm.title")}</Heading>
+              <Heading size="sm" as="h3">
+                {t("components.discordMessageMentionForm.title")}
+              </Heading>
               <DiscordMessageMentionForm guildId={guildId} />
             </Stack>
             <Stack>
-              <Heading size="md">Placeholder Limits</Heading>
+              <Heading size="sm" as="h3">
+                Placeholder Limits
+              </Heading>
               <DiscordMessagePlaceholderLimitsForm />
             </Stack>
             <AnimatedComponent>

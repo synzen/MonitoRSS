@@ -1,4 +1,5 @@
 import {
+  Box,
   Button,
   FormControl,
   FormErrorMessage,
@@ -25,6 +26,7 @@ import { InferType, number, object, string } from "yup";
 import { ArticlePropertySelect } from "../ArticlePropertySelect";
 import { AutoResizeTextarea } from "../../../../components/AutoResizeTextarea";
 import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
+import { InlineErrorAlert } from "../../../../components";
 
 const formDataSchema = object({
   placeholder: string()
@@ -55,7 +57,7 @@ export const PlaceholderLimitDialog = ({
     handleSubmit,
     control,
     reset,
-    formState: { isDirty, isSubmitting, errors },
+    formState: { isSubmitting, errors, isSubmitted },
   } = useForm<FormData>({
     resolver: yupResolver(formDataSchema),
     defaultValues,
@@ -81,6 +83,7 @@ export const PlaceholderLimitDialog = ({
   }
 
   const initialRef = useRef<any>(null);
+  const errorLength = Object.keys(errors).length;
 
   return (
     <>
@@ -109,7 +112,7 @@ export const PlaceholderLimitDialog = ({
                   control={control}
                   render={({ field }) => {
                     return (
-                      <FormControl isInvalid={!!errors.placeholder}>
+                      <FormControl isInvalid={!!errors.placeholder} isRequired>
                         <FormLabel>
                           {t(
                             "features.feedConnections.components.placeholderLimitDialog.placeholderInputLabel"
@@ -142,7 +145,7 @@ export const PlaceholderLimitDialog = ({
                   control={control}
                   render={({ field }) => {
                     return (
-                      <FormControl isInvalid={!!errors.characterCount}>
+                      <FormControl isInvalid={!!errors.characterCount} isRequired>
                         <FormLabel>
                           {t(
                             "features.feedConnections.components.placeholderLimitDialog.limitInputLabel"
@@ -199,6 +202,14 @@ export const PlaceholderLimitDialog = ({
                 />
               </Stack>
             </form>
+            {isSubmitted && Object.keys(errors).length && (
+              <Box mt="4">
+                <InlineErrorAlert
+                  title="Failed to save changes"
+                  description={`${Object.keys(errors).length} fields have invalid values`}
+                />
+              </Box>
+            )}
           </ModalBody>
           <ModalFooter>
             <HStack>
@@ -206,7 +217,8 @@ export const PlaceholderLimitDialog = ({
                 {t("common.buttons.cancel")}
               </Button>
               <Button
-                isDisabled={!isDirty || isSubmitting}
+                // isDisabled={!isDirty || isSubmitting}
+                aria-disabled={isSubmitting}
                 colorScheme="blue"
                 type="submit"
                 form="placeholder-limit"

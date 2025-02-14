@@ -1,14 +1,4 @@
-import {
-  Avatar,
-  Code,
-  Flex,
-  HStack,
-  IconButton,
-  Spinner,
-  Stack,
-  Tag,
-  Text,
-} from "@chakra-ui/react";
+import { Avatar, Flex, HStack, IconButton, Spinner, Stack, Tag, Text } from "@chakra-ui/react";
 import { Controller, useFormContext } from "react-hook-form";
 import { Trans, useTranslation } from "react-i18next";
 import { SettingsIcon } from "@chakra-ui/icons";
@@ -18,6 +8,7 @@ import { MentionSelectDialog } from "../MentionSelectDialog";
 import { useDiscordServerRoles } from "../../../discordServers";
 import { DiscordMentionSettingsDialog } from "./DiscordMentionSettingsDialog";
 import { useDiscordUser } from "../../../discordUser";
+import MessagePlaceholderText from "../../../../components/MessagePlaceholderText";
 
 interface Props {
   guildId: string | undefined;
@@ -110,7 +101,7 @@ export const DiscordMessageMentionForm = ({ guildId }: Props) => {
         <Trans
           i18nKey="components.discordMessageMentionForm.description"
           t={t}
-          components={[<Code />]}
+          components={[<MessagePlaceholderText />]}
         />
       </Text>
       <Controller

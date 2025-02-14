@@ -280,7 +280,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                       });
                     }}
                   >
-                    Message
+                    Message Format
                   </Tab>
                   <Tab
                     fontWeight="semibold"

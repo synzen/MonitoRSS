@@ -25,6 +25,7 @@ import { useCallback, useEffect, useState } from "react";
 import { DiscordMessageFormData } from "@/types/discord";
 import { HelpDialog } from "../../../../components";
 import { AutoResizeTextarea } from "../../../../components/AutoResizeTextarea";
+import MessagePlaceholderText from "../../../../components/MessagePlaceholderText";
 
 export const DiscordMessageContentForm = () => {
   const {
@@ -72,7 +73,7 @@ export const DiscordMessageContentForm = () => {
               <Trans
                 t={t}
                 i18nKey="components.discordMessageForm.contentSectionDescription"
-                components={[<Code />]}
+                components={[<MessagePlaceholderText />]}
               />
             </FormHelperText>
           </Box>

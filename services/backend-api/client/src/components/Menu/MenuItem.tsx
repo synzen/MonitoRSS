@@ -24,12 +24,11 @@ export const MenuItem: React.FC<MenuItemProps> = (props: MenuItemProps) => {
       _hover={{ bg: mode("gray.50", "gray.600") }}
     >
       <HStack spacing={4}>
-        {icon && <Avatar name="Dan" src={icon} />}
-        <Box as="dl">
+        {icon && <Avatar name="Dan" aria-hidden src={icon} />}
+        <Box>
           <Text
             display="inline-block"
             textAlign="left"
-            as="dt"
             fontWeight="semibold"
             transition="0.2s all"
             _groupHover={{ color: "blue.500" }}

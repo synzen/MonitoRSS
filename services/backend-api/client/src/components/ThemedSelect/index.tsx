@@ -51,7 +51,6 @@ export const ThemedSelect = <T,>({
   const selectedOption = options.find((option) => option.value === value);
 
   const onFocus = ({ focused }: AriaOnFocusProps<SelectOption<T>, GroupBase<SelectOption<T>>>) => {
-    console.log("on focus", focused);
     const msg = `You are currently focused on option ${focused.label}`;
 
     return msg;

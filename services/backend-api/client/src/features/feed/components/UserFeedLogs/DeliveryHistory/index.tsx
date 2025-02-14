@@ -162,12 +162,12 @@ export const DeliveryHistory = () => {
       <Box px={4} pb={4}>
         <Box srOnly aria-live="polite">
           {status === "loading" &&
-            `Loading article delivery history rows ${skip} through ${skip + limit}`}
+            `Loading article delivery history rows ${skip + 1} through ${skip + limit}`}
           {status === "success" &&
-            `Finished loading article delivery history rows ${skip} through ${skip + limit}`}
+            `Finished loading article delivery history rows ${skip + 1} through ${skip + limit}`}
           {status === "success" &&
             fetchStatus === "fetching" &&
-            `Loading article delivery history rows ${skip} through ${skip + limit}`}
+            `Loading article delivery history rows ${skip + 1} through ${skip + limit}`}
         </Box>
         {status === "loading" && (
           <Center>
