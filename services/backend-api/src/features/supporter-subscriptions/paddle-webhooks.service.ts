@@ -295,7 +295,7 @@ export class PaddleWebhooksService {
     );
 
     if (supporter?._id) {
-      await this.enforceFeedLimits()
+      await this.enforceFeedLimits();
 
       try {
         await this.supportersService.syncDiscordSupporterRoles(supporter._id);
