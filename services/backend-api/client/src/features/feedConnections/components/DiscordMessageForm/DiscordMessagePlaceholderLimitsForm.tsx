@@ -85,7 +85,7 @@ export const DiscordMessagePlaceholderLimitsForm = () => {
                   return (
                     <Tr key={field.placeholder}>
                       <Td>
-                        <MessagePlaceholderText withBraces>
+                        <MessagePlaceholderText withBrackets>
                           {field.placeholder}
                         </MessagePlaceholderText>
                       </Td>

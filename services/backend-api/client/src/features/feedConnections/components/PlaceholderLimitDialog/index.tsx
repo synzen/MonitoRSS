@@ -217,7 +217,6 @@ export const PlaceholderLimitDialog = ({
                 {t("common.buttons.cancel")}
               </Button>
               <Button
-                // isDisabled={!isDirty || isSubmitting}
                 aria-disabled={isSubmitting}
                 colorScheme="blue"
                 type="submit"

@@ -310,7 +310,7 @@
     },
     "discordMessageMentionForm": {
       "title": "Mentions",
-      "description": "Roles and users that will be mentioned in the <0>discord::mentions</0> placeholder. Directly copy <0>discord::mentions</0> and paste it somewhere in your message format for it to show up.",
+      "description": "Roles and users that will be mentioned in the <0>discord::mentions</0> placeholder. Directly copy the placeholder paste it somewhere in your message format for it to show up.",
       "mentionSettingsTitle": "Mention Settings",
       "mentionFiltersTitle": "Filters",
       "mentionFiltersDescription": "Filters ensure that this mention will only be added to articles that match these filters. If no filters are added, this mention will be added to all articles that have the mention placeholder.",

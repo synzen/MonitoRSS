@@ -3,13 +3,13 @@ import { PropsWithChildren } from "react";
 import { notifyInfo } from "../../utils/notifyInfo";
 
 interface Props {
-  withBraces?: boolean;
+  withBrackets?: boolean;
   withoutCopy?: boolean;
 }
 
 const MessagePlaceholderText = ({
   children,
-  withBraces,
+  withBrackets,
   withoutCopy,
 }: PropsWithChildren<Props>) => {
   const onCopy = () => {
@@ -23,11 +23,11 @@ const MessagePlaceholderText = ({
   return (
     <Flex alignItems="center" display="inline">
       <Code>
-        {withBraces && <chakra.span srOnly>double open curly brackets</chakra.span>}
-        {withBraces && <chakra.span aria-hidden>{"{{"}</chakra.span>}
+        {withBrackets && <chakra.span srOnly>double open curly brackets</chakra.span>}
+        {withBrackets && <chakra.span aria-hidden>{"{{"}</chakra.span>}
         {children}
-        {withBraces && <chakra.span aria-hidden>{"}}"}</chakra.span>}
-        {withBraces && <chakra.span srOnly>double close curly brackets</chakra.span>}
+        {withBrackets && <chakra.span aria-hidden>{"}}"}</chakra.span>}
+        {withBrackets && <chakra.span srOnly>double close curly brackets</chakra.span>}
       </Code>
       {!withoutCopy && (
         <Button srOnly size="xs" variant="ghost" colorScheme="gray" marginLeft="2" onClick={onCopy}>

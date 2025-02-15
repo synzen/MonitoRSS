@@ -27,12 +27,12 @@ interface Props {
 const PlaceholderRow = ({
   placeholderKey,
   value,
-  withBraces,
+  withBrackets,
   withoutCopy,
 }: {
   placeholderKey: string;
   value: string;
-  withBraces?: boolean;
+  withBrackets?: boolean;
   withoutCopy?: boolean;
 }) => {
   return (
@@ -45,7 +45,7 @@ const PlaceholderRow = ({
     >
       <Td>
         <HStack width="auto">
-          <MessagePlaceholderText withoutCopy={withoutCopy} withBraces={withBraces}>
+          <MessagePlaceholderText withoutCopy={withoutCopy} withBrackets={withBrackets}>
             {placeholderKey}
           </MessagePlaceholderText>
         </HStack>
@@ -131,7 +131,7 @@ export const ArticlePlaceholderTable = ({
                       key={key}
                       placeholderKey={placeholderKey}
                       value={value}
-                      withBraces={asPlaceholders}
+                      withBrackets={asPlaceholders}
                       withoutCopy={withoutCopy}
                     />
                   );

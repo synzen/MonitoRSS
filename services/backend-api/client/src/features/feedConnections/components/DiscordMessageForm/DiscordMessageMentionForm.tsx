@@ -101,7 +101,7 @@ export const DiscordMessageMentionForm = ({ guildId }: Props) => {
         <Trans
           i18nKey="components.discordMessageMentionForm.description"
           t={t}
-          components={[<MessagePlaceholderText />]}
+          components={[<MessagePlaceholderText withBrackets />]}
         />
       </Text>
       <Controller
