@@ -1,7 +1,6 @@
 import { useFormContext } from "react-hook-form";
 import { Button, Flex, HStack, Text } from "@chakra-ui/react";
 import { motion } from "framer-motion";
-import { useTranslation } from "react-i18next";
 import { isEqual } from "lodash";
 import { AnimatedComponent } from "../AnimatedComponent";
 
@@ -15,7 +14,6 @@ interface Props {
 }
 
 export const SavedUnsavedChangesPopupBar = ({ useDirtyFormCheck }: Props) => {
-  const { t } = useTranslation();
   const {
     formState: { isSubmitting, isValid, defaultValues, isDirty: formContextIsDirty },
     reset,
@@ -45,14 +43,14 @@ export const SavedUnsavedChangesPopupBar = ({ useDirtyFormCheck }: Props) => {
           exit={{ opacity: 0, bottom: "-100px" }}
         >
           <HStack justifyContent="space-between" width="100%">
-            <Text>You have unsaved changes!</Text>
+            <Text>You have unsaved changes on this page!</Text>
             <HStack>
               <Button
                 onClick={() => reset(defaultValues)}
                 variant="ghost"
                 isDisabled={!isDirty || isSubmitting}
               >
-                <span>{t("features.feed.components.sidebar.resetButton")}</span>
+                <span>Discard all changes</span>
               </Button>
               <Button
                 type="submit"
@@ -60,7 +58,7 @@ export const SavedUnsavedChangesPopupBar = ({ useDirtyFormCheck }: Props) => {
                 isDisabled={isSubmitting || !isDirty || !isValid}
                 isLoading={isSubmitting}
               >
-                <span>{t("features.feed.components.sidebar.saveButton")}</span>
+                <span>Save all changes</span>
               </Button>
             </HStack>
           </HStack>

@@ -433,14 +433,14 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                   exit={{ opacity: 0, bottom: "-100px" }}
                 >
                   <HStack justifyContent="space-between" width="100%">
-                    <Text>You have unsaved changes!</Text>
+                    <Text>You have unsaved changes on this page!</Text>
                     <HStack>
                       <Button
                         onClick={() => reset()}
                         variant="ghost"
                         isDisabled={!isDirty || isSubmitting}
                       >
-                        <span>{t("features.feed.components.sidebar.resetButton")}</span>
+                        <span>Discard all changes</span>
                       </Button>
                       <Button
                         type="submit"
@@ -448,7 +448,7 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                         isDisabled={isSubmitting || !isDirty || errorsExist}
                         isLoading={isSubmitting}
                       >
-                        <span>{t("features.feed.components.sidebar.saveButton")}</span>
+                        <span>Save all changes</span>
                       </Button>
                     </HStack>
                   </HStack>
