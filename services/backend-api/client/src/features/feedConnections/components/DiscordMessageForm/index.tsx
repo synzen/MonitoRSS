@@ -293,13 +293,7 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                     <span>{t("components.discordMessageForm.sendPreviewToDiscordButtonText")}</span>
                   </Button>
                 </HStack>
-                <Text aria-hidden>
-                  {t("components.discordMessageForm.previewSectionDescription")}
-                </Text>
-                <Text srOnly>
-                  Live preview of the message format is disabled for screen readers. To preview the
-                  message format, click the &apos;Send to Discord&apos; button instead.
-                </Text>
+                <Text>{t("components.discordMessageForm.previewSectionDescription")}</Text>
                 {sendTestArticleError && (
                   <Box mt={3} mb={3}>
                     <InlineErrorAlert
@@ -309,7 +303,7 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                   </Box>
                 )}
               </Stack>
-              <Box aria-hidden>
+              <Box>
                 {connection.key === FeedConnectionType.DiscordChannel && (
                   <SuspenseErrorBoundary>
                     <Suspense

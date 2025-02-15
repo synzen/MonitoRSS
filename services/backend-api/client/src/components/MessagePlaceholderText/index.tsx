@@ -14,7 +14,7 @@ const MessagePlaceholderText = ({
 }: PropsWithChildren<Props>) => {
   const onCopy = () => {
     if (typeof children === "string") {
-      navigator.clipboard.writeText(children);
+      navigator.clipboard.writeText(`{{${children}}}`);
     }
 
     notifyInfo("Successfully copied to clipboard");
@@ -30,8 +30,8 @@ const MessagePlaceholderText = ({
         {withBrackets && <chakra.span srOnly>double close curly brackets</chakra.span>}
       </Code>
       {!withoutCopy && (
-        <Button srOnly size="xs" variant="ghost" colorScheme="gray" marginLeft="2" onClick={onCopy}>
-          Click to copy this placeholder
+        <Button size="xs" variant="outline" colorScheme="gray" marginLeft="2" onClick={onCopy}>
+          Copy this placeholder
         </Button>
       )}
     </Flex>

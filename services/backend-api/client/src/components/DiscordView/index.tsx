@@ -82,14 +82,14 @@ const CozyMessageHeader = ({
   }
 
   return (
-    <h2 style={{ lineHeight: "16px" }}>
+    <discord-header style={{ lineHeight: "16px" }}>
       <span className="username-wrapper v-btm">
         <strong className="user-name">{username}</strong>
         <span className="bot-tag">BOT</span>
       </span>
       <span className="highlight-separator"> - </span>
       <MessageTimestamp compactMode={compactMode} />
-    </h2>
+    </discord-header>
   );
 };
 

@@ -312,8 +312,7 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
                         </HStack>
                         <IconButton
                           icon={<FaExpandAlt />}
-                          aria-hidden
-                          aria-label="Show bigger" // adding just to satisfy lint
+                          aria-label="Open dialog listing all placeholders" // adding just to satisfy lint
                           variant="ghost"
                           size="sm"
                           color="blue.300"

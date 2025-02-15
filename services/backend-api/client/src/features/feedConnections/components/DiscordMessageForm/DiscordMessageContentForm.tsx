@@ -73,7 +73,7 @@ export const DiscordMessageContentForm = () => {
               <Trans
                 t={t}
                 i18nKey="components.discordMessageForm.contentSectionDescription"
-                components={[<MessagePlaceholderText />]}
+                components={[<MessagePlaceholderText withBrackets />]}
               />
             </FormHelperText>
           </Box>
