@@ -12,6 +12,9 @@ interface Props {
   onChange: (value: string) => void;
   value?: string;
   placeholder?: string;
+  isInvalid: boolean;
+  ariaLabelledBy: string;
+  inputId: string;
 }
 
 export const ArticlePropertySelect = ({
@@ -20,6 +23,9 @@ export const ArticlePropertySelect = ({
   value,
   onChange,
   placeholder,
+  ariaLabelledBy,
+  inputId,
+  isInvalid,
 }: Props) => {
   const {
     userFeed: { id: feedId },
@@ -49,6 +55,11 @@ export const ArticlePropertySelect = ({
         onChange={onChange}
         value={value}
         placeholder={placeholder}
+        isInvalid={isInvalid}
+        selectProps={{
+          inputId,
+          "aria-labelledby": ariaLabelledBy,
+        }}
       />
       {error && (
         <InlineErrorAlert

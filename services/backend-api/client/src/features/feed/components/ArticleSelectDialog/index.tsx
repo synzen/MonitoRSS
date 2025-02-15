@@ -178,9 +178,19 @@ export const ArticleSelectDialog = ({
                     <Flex>
                       <HStack alignItems="center" flexGrow={1} flexWrap="wrap">
                         <FormControl flexGrow={1}>
-                          <FormLabel>Article Property</FormLabel>
+                          <FormLabel
+                            id="article-select-dialog-property-label"
+                            htmlFor="article-select-dialog-property-select"
+                          >
+                            Article Property
+                          </FormLabel>
                           {/* {!singleProperty && ( */}
                           <ThemedSelect
+                            isInvalid={false}
+                            selectProps={{
+                              inputId: "article-select-dialog-property-select",
+                              "aria-labelledby": "article-select-dialog-property-label",
+                            }}
                             options={
                               feedArticlePropertiesResult?.result.properties.map((property) => ({
                                 value: property,

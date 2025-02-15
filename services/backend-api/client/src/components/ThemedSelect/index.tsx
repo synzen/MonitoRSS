@@ -29,6 +29,7 @@ interface Props<T> {
   placeholder?: string | React.ReactNode;
   selectProps?: React.ComponentProps<typeof StateManagedSelect>;
   inputRef?: React.ComponentProps<typeof Select>["ref"];
+  isInvalid: boolean;
 }
 
 export const ThemedSelect = <T,>({
@@ -45,6 +46,7 @@ export const ThemedSelect = <T,>({
   onInputChange,
   selectProps,
   inputRef,
+  isInvalid,
 }: Props<T>) => {
   // @ts-ignore
   const styles = useColorModeValue<SelectStyles, SelectStyles>({}, REACT_SELECT_STYLES);
@@ -64,6 +66,7 @@ export const ThemedSelect = <T,>({
       options={options}
       onBlur={onBlur}
       name={name}
+      aria-invalid={isInvalid}
       ariaLiveMessages={{ onFocus: onFocus as never }}
       placeholder={placeholder}
       isClearable={isClearable}

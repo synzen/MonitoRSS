@@ -166,23 +166,30 @@ export const AddFeedComanagerDialog = ({
               {description}
               <Stack spacing={6}>
                 <FormControl isInvalid={isInvalidServer} isRequired>
-                  <FormLabel htmlFor="server-select">Discord Server</FormLabel>
+                  <FormLabel htmlFor="server-select" id="server-select-label">
+                    Discord Server
+                  </FormLabel>
                   <DiscordServerSearchSelectv2
                     inputId="server-select"
                     onChange={(id) => setGuildId(id)}
                     value={guildId}
+                    isInvalid={isInvalidServer || false}
                     placeholder="Search or select the server user's server"
+                    ariaLabelledBy="server-select-label"
                   />
                   {isInvalidServer && (
                     <FormErrorMessage>The bot has no access to this server.</FormErrorMessage>
                   )}
                 </FormControl>
                 <FormControl isRequired>
-                  <FormLabel htmlFor="user-select">User</FormLabel>
+                  <FormLabel htmlFor="user-select" id="user-select-label">
+                    User
+                  </FormLabel>
                   <ThemedSelect
                     loading={isFetchingUsers}
                     onInputChange={(value) => setCurrentInput(value)}
                     options={options}
+                    isInvalid={!!usersError}
                     onChange={(id, option) =>
                       onSelected({
                         value: id,
@@ -194,6 +201,7 @@ export const AddFeedComanagerDialog = ({
                     selectProps={{
                       filterOption: () => true,
                       inputId: "user-select",
+                      "aria-labelledby": "user-select-label",
                     }}
                   />
                 </FormControl>

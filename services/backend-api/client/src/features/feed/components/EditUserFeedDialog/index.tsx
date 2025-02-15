@@ -19,7 +19,10 @@ import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, object, string } from "yup";
 import React, { useEffect, useRef } from "react";
-import { InlineErrorAlert } from "../../../../components/InlineErrorAlert";
+import {
+  InlineErrorAlert,
+  InlineErrorIncompleteFormAlert,
+} from "../../../../components/InlineErrorAlert";
 
 const formSchema = object({
   title: string().optional(),
@@ -51,7 +54,7 @@ export const EditUserFeedDialog: React.FC<Props> = ({
     handleSubmit,
     control,
     reset,
-    formState: { isDirty, errors, isSubmitting },
+    formState: { isDirty, errors, isSubmitting, isSubmitted },
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
     mode: "all",
@@ -60,6 +63,12 @@ export const EditUserFeedDialog: React.FC<Props> = ({
 
   const onSubmit = async ({ title, url }: FormData) => {
     try {
+      if (!isDirty) {
+        onClose();
+
+        return;
+      }
+
       await onUpdate({ title, url });
       onClose();
       reset({ title, url });
@@ -71,6 +80,8 @@ export const EditUserFeedDialog: React.FC<Props> = ({
   useEffect(() => {
     reset(defaultValues);
   }, [isOpen]);
+
+  const formErrorCount = Object.keys(errors).length;
 
   return (
     <Modal
@@ -108,7 +119,9 @@ export const EditUserFeedDialog: React.FC<Props> = ({
                   <Controller
                     name="url"
                     control={control}
-                    render={({ field }) => <Input {...field} tabIndex={0} bg="gray.800" />}
+                    render={({ field }) => (
+                      <Input type="url" {...field} tabIndex={0} bg="gray.800" />
+                    )}
                   />
                   {errors.url && <FormErrorMessage>{errors.url.message}</FormErrorMessage>}
                   <FormHelperText>
@@ -119,6 +132,9 @@ export const EditUserFeedDialog: React.FC<Props> = ({
             </form>
             {error && (
               <InlineErrorAlert title={t("common.errors.failedToSave")} description={error} />
+            )}
+            {isSubmitted && formErrorCount > 0 && (
+              <InlineErrorIncompleteFormAlert fieldCount={formErrorCount} />
             )}
           </Stack>
         </ModalBody>
@@ -131,7 +147,7 @@ export const EditUserFeedDialog: React.FC<Props> = ({
             type="submit"
             form="update-user-feed"
             isLoading={isSubmitting}
-            isDisabled={!isDirty || isSubmitting}
+            aria-disabled={isSubmitting}
           >
             <span>{t("common.buttons.save")}</span>
           </Button>

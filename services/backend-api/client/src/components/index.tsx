@@ -12,7 +12,6 @@ export * from "./BoxConstrainedWidth";
 export * from "./InlineErrorAlert";
 export * from "./HelpDialog";
 export * from "./AnimatedComponent";
-export * from "./UserFeedStatusSelectDropdown";
 export * from "./NewHeader";
 export * from "./SaveUnsavedChangesPopupBar";
 export * from "./FAQ";

@@ -26,7 +26,7 @@ import { InferType, number, object, string } from "yup";
 import { ArticlePropertySelect } from "../ArticlePropertySelect";
 import { AutoResizeTextarea } from "../../../../components/AutoResizeTextarea";
 import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
-import { InlineErrorAlert } from "../../../../components";
+import { InlineErrorIncompleteFormAlert } from "../../../../components";
 
 const formDataSchema = object({
   placeholder: string()
@@ -113,12 +113,15 @@ export const PlaceholderLimitDialog = ({
                   render={({ field }) => {
                     return (
                       <FormControl isInvalid={!!errors.placeholder} isRequired>
-                        <FormLabel>
+                        <FormLabel id="placeholder-label" htmlFor="placeholder-select">
                           {t(
                             "features.feedConnections.components.placeholderLimitDialog.placeholderInputLabel"
                           )}
                         </FormLabel>
                         <ArticlePropertySelect
+                          inputId="placeholder-select"
+                          ariaLabelledBy="placeholder-label"
+                          isInvalid={!!errors.placeholder}
                           onChange={(val) => {
                             field.onChange(val);
                           }}
@@ -202,12 +205,9 @@ export const PlaceholderLimitDialog = ({
                 />
               </Stack>
             </form>
-            {isSubmitted && Object.keys(errors).length && (
+            {isSubmitted && errorLength && (
               <Box mt="4">
-                <InlineErrorAlert
-                  title="Failed to save changes"
-                  description={`${Object.keys(errors).length} fields have invalid values`}
-                />
+                <InlineErrorIncompleteFormAlert fieldCount={errorLength} />
               </Box>
             )}
           </ModalBody>

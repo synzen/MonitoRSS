@@ -4,6 +4,7 @@ import {
   ButtonGroup,
   Flex,
   FormControl,
+  FormLabel,
   HStack,
   Modal,
   ModalBody,
@@ -161,7 +162,11 @@ export const MentionSelectDialog = ({ guildId, onAdded }: Props) => {
                   </ButtonGroup>
                 </FormControl>
                 <FormControl>
+                  <FormLabel htmlFor="mention-search" id="mention-label" srOnly>
+                    Select a {selectedType}
+                  </FormLabel>
                   <ThemedSelect
+                    isInvalid={selectedType === "role" ? !!rolesError : !!usersError}
                     loading={isFetching || isFetchingUsers}
                     onInputChange={(value) => setCurrentInput(value)}
                     options={options}
@@ -179,6 +184,8 @@ export const MentionSelectDialog = ({ guildId, onAdded }: Props) => {
                     }
                     selectProps={{
                       filterOption: selectedType === "user" ? () => true : undefined,
+                      "aria-labelledby": "mention-label",
+                      inputId: "mention-search",
                     }}
                   />
                 </FormControl>

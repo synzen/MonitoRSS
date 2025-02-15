@@ -102,6 +102,7 @@ export const DiscordMessagePlaceholderLimitsForm = () => {
                         <Menu>
                           <MenuButton
                             as={IconButton}
+                            aria-label="Placeholder options"
                             icon={<FaEllipsisVertical />}
                             size="sm"
                             variant="ghost"

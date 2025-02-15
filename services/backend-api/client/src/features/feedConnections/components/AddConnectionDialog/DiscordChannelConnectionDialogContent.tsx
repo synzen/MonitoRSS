@@ -30,12 +30,18 @@ import {
 import RouteParams from "../../../../types/RouteParams";
 import { useCreateDiscordChannelConnection } from "../../hooks";
 import { notifySuccess } from "../../../../utils/notifySuccess";
-import { InlineErrorAlert } from "../../../../components";
+import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "../../../../components";
 
 const formSchema = object({
-  name: string().required("Name is required").max(250, "Name must be less than 250 characters"),
-  channelId: string().required("Channel is required"),
-  serverId: string().required("Server is required"),
+  name: string().required("Name is required").max(250, "Name must be fewer than 250 characters"),
+  serverId: string().required("Discord server is required"),
+  channelId: string().when("serverId", ([serverId], schema) => {
+    if (serverId) {
+      return schema.required("Channel is required");
+    }
+
+    return schema.optional();
+  }),
 });
 
 interface Props {
@@ -52,7 +58,7 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
     handleSubmit,
     control,
     reset,
-    formState: { errors, isSubmitting, isValid },
+    formState: { errors, isSubmitting, isValid, isSubmitted },
     watch,
     setValue,
   } = useForm<FormData>({
@@ -87,6 +93,8 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
     reset();
   }, [isOpen]);
 
+  const formErrorLength = Object.keys(errors).length;
+
   return (
     <Modal
       isOpen={isOpen}
@@ -109,7 +117,7 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
             <form id="addfeed" onSubmit={handleSubmit(onSubmit)}>
               <Stack spacing={4}>
                 <FormControl isInvalid={!!errors.serverId} isRequired>
-                  <FormLabel htmlFor="server-select" id="server-select">
+                  <FormLabel htmlFor="server-select">
                     {t(
                       "features.feed.components.addDiscordChannelConnectionDialog.formServerLabel"
                     )}
@@ -126,6 +134,7 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
                         ariaLabelledBy="server-select"
                         inputId="server-select"
                         alertOnArticleEligibility
+                        isInvalid={!!errors.serverId}
                       />
                     )}
                   />
@@ -134,9 +143,10 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
                     If you don&apos;t have this permission, you may ask someone who does to add the
                     feed and share it with you.
                   </FormHelperText>
+                  <FormErrorMessage>{errors.serverId?.message}</FormErrorMessage>
                 </FormControl>
                 <FormControl isInvalid={!!errors.channelId} isRequired>
-                  <FormLabel>
+                  <FormLabel id="channel-select-label" htmlFor="channel-select">
                     {t(
                       "features.feed.components.addDiscordChannelConnectionDialog.formChannelLabel"
                     )}
@@ -147,6 +157,7 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
                     render={({ field }) => (
                       <DiscordChannelDropdown
                         value={field.value}
+                        isInvalid={!!errors.channelId}
                         onChange={(value, name) => {
                           field.onChange(value);
                           setValue("name", name, {
@@ -159,6 +170,8 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
                         onBlur={field.onBlur}
                         isDisabled={isSubmitting}
                         serverId={serverId}
+                        inputId="channel-select"
+                        ariaLabelledBy="channel-select-label"
                       />
                     )}
                   />
@@ -189,6 +202,9 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
                 description={error.message}
               />
             )}
+            {isSubmitted && formErrorLength > 0 && (
+              <InlineErrorIncompleteFormAlert fieldCount={formErrorLength} />
+            )}
           </Stack>
         </ModalBody>
         <ModalFooter>
@@ -201,7 +217,7 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
               type="submit"
               form="addfeed"
               isLoading={isSubmitting}
-              isDisabled={isSubmitting || !isValid}
+              aria-disabled={isSubmitting || !isValid}
             >
               <span>
                 {t("features.feed.components.addDiscordChannelConnectionDialog.saveButton")}

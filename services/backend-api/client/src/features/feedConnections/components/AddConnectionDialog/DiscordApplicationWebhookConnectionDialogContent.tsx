@@ -34,7 +34,7 @@ import {
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import { SubscriberBlockText } from "@/components/SubscriberBlockText";
 import { BlockableFeature, SupporterTier } from "../../../../constants";
-import { InlineErrorAlert } from "../../../../components";
+import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "../../../../components";
 
 const formSchema = object({
   name: string().required("Name is required").max(250, "Name must be less than 250 characters"),
@@ -66,7 +66,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
     reset,
     watch,
     setValue,
-    formState: { errors, isSubmitting, isValid },
+    formState: { errors, isSubmitting, isValid, isSubmitted },
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
     mode: "all",
@@ -104,6 +104,8 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
     reset();
   }, [isOpen]);
 
+  const errorCount = Object.keys(errors).length;
+
   return (
     <Modal
       isOpen={isOpen}
@@ -129,7 +131,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
             <form id="addconnection" onSubmit={handleSubmit(onSubmit)}>
               <Stack spacing={4}>
                 <FormControl isInvalid={!!errors.serverId} isRequired>
-                  <FormLabel>
+                  <FormLabel id="server-select-label" htmlFor="server-select">
                     {t(
                       "features.feed.components.addDiscordWebhookConnectionDialog.formServerLabel"
                     )}
@@ -145,6 +147,9 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                         inputRef={initialFocusRef}
                         isDisabled={isSubmitting}
                         alertOnArticleEligibility
+                        isInvalid={!!errors.serverId}
+                        inputId="server-select"
+                        ariaLabelledBy="server-select-label"
                       />
                     )}
                   />
@@ -153,14 +158,18 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                     If you don&apos;t have this permission, you may ask someone who does to add the
                     feed and share it with you.
                   </FormHelperText>
+                  <FormErrorMessage>{errors.serverId?.message}</FormErrorMessage>
                 </FormControl>
                 <FormControl isInvalid={!!errors.channelId} isRequired>
-                  <FormLabel>Channel</FormLabel>
+                  <FormLabel id="channel-select-label" htmlFor="channel-select">
+                    Channel
+                  </FormLabel>
                   <Controller
                     name="channelId"
                     control={control}
                     render={({ field }) => (
                       <DiscordChannelDropdown
+                        isInvalid={!!errors.channelId}
                         value={field.value || ""}
                         onChange={(value, name) => {
                           field.onChange(value);
@@ -182,6 +191,8 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                         onBlur={field.onBlur}
                         isDisabled={isSubmitting}
                         serverId={serverId}
+                        inputId="channel-select"
+                        ariaLabelledBy="channel-select-label"
                       />
                     )}
                   />
@@ -190,13 +201,18 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                   )}
                 </FormControl>
                 <FormControl isInvalid={!!errors.threadId?.message}>
-                  <FormLabel>Forum Thread</FormLabel>
+                  <FormLabel id="forum-thread-label" htmlFor="forum-thread-select">
+                    Forum Thread
+                  </FormLabel>
                   <Controller
                     name="threadId"
                     control={control}
                     render={({ field }) => (
                       <DiscordActiveThreadDropdown
                         value={field.value || ""}
+                        ariaLabelledBy="forum-thread-label"
+                        isInvalid={!!errors.threadId}
+                        inputId="forum-thread-select"
                         onChange={(value, name) => {
                           field.onChange(value);
 
@@ -316,6 +332,9 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                 description={error.message}
               />
             )}
+            {isSubmitted && errorCount > 0 && (
+              <InlineErrorIncompleteFormAlert fieldCount={errorCount} />
+            )}
           </Stack>
         </ModalBody>
         <ModalFooter>
@@ -328,7 +347,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
               type="submit"
               form="addconnection"
               isLoading={isSubmitting}
-              isDisabled={isSubmitting || !isValid}
+              aria-disabled={isSubmitting || !isValid}
             >
               <span>{t("common.buttons.save")}</span>
             </Button>

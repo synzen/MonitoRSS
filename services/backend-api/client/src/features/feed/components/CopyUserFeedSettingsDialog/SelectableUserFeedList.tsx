@@ -3,7 +3,6 @@ import {
   Button,
   Center,
   Checkbox,
-  Divider,
   Flex,
   Spinner,
   Stack,
@@ -27,8 +26,18 @@ export const SelectableUserFeedList = ({ selectedIds, onSelectedIdsChange }: Pro
 
   const fetchedSoFarCount = data?.pages.reduce((acc, page) => acc + page.results.length, 0) ?? 0;
 
+  const offsets = data?.pageParams as Array<number | undefined>; // [undefined, 10, 20] etc
+  const latestOffset = offsets?.[offsets.length - 1] || 0;
+
   return (
     <Stack>
+      <Box srOnly aria-live="polite">
+        {!!offsets &&
+          `Finished loading available target feeds ${latestOffset} to ${
+            latestOffset + 10
+          } out of ${totalCount}`}
+        {status === "loading" && "Loading available target feeds"}
+      </Box>
       <Stack
         px={4}
         py={3}
@@ -39,16 +48,16 @@ export const SelectableUserFeedList = ({ selectedIds, onSelectedIdsChange }: Pro
         overflow="auto"
         bg="blackAlpha.300"
       >
-        <Stack divider={<Divider />}>
+        <Stack as="ul" listStyleType="none" gap={4}>
           {data?.pages.map((page) => {
             if (!page.results.length) {
               return null;
             }
 
             return (
-              <Stack gap={1} divider={<Divider />}>
+              <>
                 {page.results.map((userFeed) => (
-                  <Box key={`feed-${userFeed.id}`}>
+                  <Box key={`feed-${userFeed.id}`} as="li">
                     <Checkbox
                       width="100%"
                       onChange={(e) => {
@@ -66,7 +75,7 @@ export const SelectableUserFeedList = ({ selectedIds, onSelectedIdsChange }: Pro
                       <chakra.span
                         ml={2}
                         display="block"
-                        color="whiteAlpha.600"
+                        color="whiteAlpha.700"
                         fontSize="sm"
                         whiteSpace="nowrap"
                       >
@@ -75,7 +84,7 @@ export const SelectableUserFeedList = ({ selectedIds, onSelectedIdsChange }: Pro
                     </Checkbox>
                   </Box>
                 ))}
-              </Stack>
+              </>
             );
           })}
         </Stack>
@@ -85,19 +94,19 @@ export const SelectableUserFeedList = ({ selectedIds, onSelectedIdsChange }: Pro
           </Center>
         )}
         {error && <InlineErrorAlert title="Failed to list feeds" description={error.message} />}
-        <Text color="whiteAlpha.600" fontSize="sm" textAlign="center" mt={6}>
+        <Text color="whiteAlpha.700" fontSize="sm" textAlign="center" mt={6}>
           Viewed {fetchedSoFarCount} of {totalCount} feeds
         </Text>
         <Flex width="full">
           <Button
             hidden={!hasNextPage}
             onClick={() => fetchNextPage()}
-            isLoading={isFetchingNextPage}
             variant="outline"
             size="sm"
             width="full"
+            aria-disabled={isFetchingNextPage || !hasNextPage}
           >
-            <span>Load more</span>
+            <span>Load more feeds</span>
           </Button>
         </Flex>
       </Stack>

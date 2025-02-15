@@ -25,10 +25,10 @@ import { useCreateDiscordChannelConnectionClone } from "../../hooks";
 import { pages } from "../../../../constants";
 import { FeedConnectionType } from "../../../../types";
 import { notifySuccess } from "../../../../utils/notifySuccess";
-import { InlineErrorAlert } from "../../../../components";
+import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "../../../../components";
 
 const formSchema = object({
-  name: string().required(),
+  name: string().required("Name is required").max(250, "Name must be fewer than 250 characters"),
 });
 
 type FormData = InferType<typeof formSchema>;
@@ -56,7 +56,7 @@ export const CloneDiscordConnectionCloneDialog = ({
     handleSubmit,
     control,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isValid, isSubmitted },
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
     defaultValues,
@@ -103,6 +103,8 @@ export const CloneDiscordConnectionCloneDialog = ({
     } catch (err) {}
   };
 
+  const formErrorCount = Object.keys(errors).length;
+
   return (
     <>
       {cloneElement(trigger, { onClick: onOpen })}
@@ -114,7 +116,7 @@ export const CloneDiscordConnectionCloneDialog = ({
           <ModalBody>
             <Stack>
               <form id="clonefeed" onSubmit={handleSubmit(onSubmit)}>
-                <FormControl isInvalid={!!errors.name}>
+                <FormControl isInvalid={!!errors.name} isRequired>
                   <FormLabel>Name</FormLabel>
                   <Controller
                     name="name"
@@ -130,6 +132,9 @@ export const CloneDiscordConnectionCloneDialog = ({
                   description={error.message}
                 />
               )}
+              {isSubmitted && !formErrorCount && (
+                <InlineErrorIncompleteFormAlert fieldCount={formErrorCount} />
+              )}
             </Stack>
           </ModalBody>
           <ModalFooter>
@@ -137,7 +142,13 @@ export const CloneDiscordConnectionCloneDialog = ({
               <Button variant="ghost" onClick={onClose}>
                 Cancel
               </Button>
-              <Button colorScheme="blue" type="submit" form="clonefeed" isLoading={isSubmitting}>
+              <Button
+                colorScheme="blue"
+                type="submit"
+                form="clonefeed"
+                isLoading={isSubmitting}
+                aria-disabled={isSubmitting || !isValid}
+              >
                 <span>Clone</span>
               </Button>
             </HStack>

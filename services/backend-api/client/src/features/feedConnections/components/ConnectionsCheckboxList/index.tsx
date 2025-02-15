@@ -16,7 +16,7 @@ export const ConnectionsCheckboxList = ({
   onCheckConnectionChange,
 }: Props) => {
   return (
-    <Stack>
+    <Stack as="ul" listStyleType="none">
       {feed?.connections
         .filter((c) => c.key === FeedConnectionType.DiscordChannel)
         .map((c) => {
@@ -30,7 +30,6 @@ export const ConnectionsCheckboxList = ({
               rounded="md"
             >
               <Checkbox
-                aria-labelledby={c.id}
                 px={4}
                 py={3}
                 onChange={(e) => {
@@ -43,8 +42,8 @@ export const ConnectionsCheckboxList = ({
                 isChecked={checkedConnectionIds.includes(c.id)}
                 width="100%"
               >
-                <chakra.span ml={4} display="inline-block" id={c.id}>
-                  <chakra.span color="gray.500" fontSize="sm">
+                <chakra.span ml={4} display="inline-block">
+                  <chakra.span color="gray.400" fontSize="sm">
                     {getPrettyConnectionName(c as never)}
                   </chakra.span>
                   {connectionDetail ? (

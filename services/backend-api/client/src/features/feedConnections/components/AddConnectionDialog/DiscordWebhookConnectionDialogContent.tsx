@@ -141,7 +141,7 @@ export const DiscordWebhookConnectionDialogContent: React.FC<Props> = ({ isOpen,
               />
               <Stack spacing={4}>
                 <FormControl isInvalid={!!errors.serverId} isRequired>
-                  <FormLabel>
+                  <FormLabel id="server-select-label" htmlFor="server-select">
                     {t(
                       "features.feed.components.addDiscordWebhookConnectionDialog.formServerLabel"
                     )}
@@ -155,6 +155,9 @@ export const DiscordWebhookConnectionDialogContent: React.FC<Props> = ({ isOpen,
                         value={field.value}
                         inputRef={initialFocusRef}
                         alertOnArticleEligibility
+                        isInvalid={!!errors.serverId}
+                        inputId="server-select"
+                        ariaLabelledBy="server-select-label"
                       />
                     )}
                   />
@@ -171,6 +174,7 @@ export const DiscordWebhookConnectionDialogContent: React.FC<Props> = ({ isOpen,
                     render={({ field }) => (
                       <ThemedSelect
                         {...field}
+                        isInvalid={!!errors.webhook?.id}
                         loading={isLoading}
                         isDisabled={isSubmitting || isLoading || !serverId}
                         options={
@@ -229,7 +233,9 @@ export const DiscordWebhookConnectionDialogContent: React.FC<Props> = ({ isOpen,
                   </Stack>
                 </FormControl>
                 <FormControl>
-                  <FormLabel>Forum Thread</FormLabel>
+                  <FormLabel id="forum-thread-label" htmlFor="forum-thread-select">
+                    Forum Thread
+                  </FormLabel>
                   <Controller
                     name="webhook.threadId"
                     control={control}
@@ -240,6 +246,9 @@ export const DiscordWebhookConnectionDialogContent: React.FC<Props> = ({ isOpen,
 
                       return (
                         <DiscordActiveThreadDropdown
+                          inputId="forum-thread-select"
+                          ariaLabelledBy="forum-thread-label"
+                          isInvalid={!!errors.webhook?.threadId}
                           value={field.value || ""}
                           onChange={(value) => {
                             field.onChange(value);

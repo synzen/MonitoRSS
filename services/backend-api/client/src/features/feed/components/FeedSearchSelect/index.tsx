@@ -56,6 +56,7 @@ export const FeedSearchSelect: React.FC<Props> = () => {
 
   return (
     <ThemedSelect
+      isInvalid={false}
       onChange={onChangedValue}
       loading={isInitiallyLoading || isSearching}
       isDisabled={isInitiallyLoading}

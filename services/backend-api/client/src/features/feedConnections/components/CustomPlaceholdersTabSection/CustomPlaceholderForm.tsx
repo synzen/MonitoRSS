@@ -414,7 +414,13 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
         {referenceNameError && <FormErrorMessage>{referenceNameError.message}</FormErrorMessage>}
       </FormControl>
       <FormControl isInvalid={!!sourcePlaceholderError}>
-        <FormLabel variant="inline">Source Placeholder</FormLabel>
+        <FormLabel
+          variant="inline"
+          id="source-placeholder-label"
+          htmlFor="source-placeholder-select"
+        >
+          Source Placeholder
+        </FormLabel>
         {userFeedArticlesMessage && (
           <Alert status="error" mb={2} rounded="lg">
             <AlertTitle>Failed to load placeholders</AlertTitle>
@@ -432,6 +438,9 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                 field.onChange(val);
               }}
               customPlaceholders={[]}
+              ariaLabelledBy="source-placeholder-label"
+              inputId="source-placeholder-select"
+              isInvalid={!!sourcePlaceholderError}
             />
           )}
         />

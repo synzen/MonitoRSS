@@ -154,6 +154,7 @@ const FeedClone: React.FC = () => {
           <Stack spacing={3}>
             <Heading size="md">{t("pages.cloneFeed.targetFeedSectionTitle")}</Heading>
             <ThemedSelect
+              isInvalid={false}
               onChange={onFeedSelected}
               loading={loadingFeeds}
               onInputChange={onInputChange}

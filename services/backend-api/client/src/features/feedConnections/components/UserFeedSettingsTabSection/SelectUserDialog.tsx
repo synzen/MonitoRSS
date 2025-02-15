@@ -142,12 +142,16 @@ export const SelectUserDialog = ({
               {description}
               <Stack spacing={4}>
                 <FormControl isInvalid={isInvalidServer} isRequired>
-                  <FormLabel htmlFor="server-select">Discord Server</FormLabel>
+                  <FormLabel htmlFor="server-select" id="server-select-id">
+                    Discord Server
+                  </FormLabel>
                   <DiscordServerSearchSelectv2
                     onChange={(id) => setGuildId(id)}
                     value={guildId}
                     inputId="server-select"
                     placeholder="Search for select the user's server"
+                    isInvalid={isInvalidServer || false}
+                    ariaLabelledBy="server-select-id"
                   />
                   {isInvalidServer && (
                     <FormErrorMessage>The bot has no access to this server.</FormErrorMessage>
@@ -159,6 +163,7 @@ export const SelectUserDialog = ({
                     loading={isFetchingUsers}
                     onInputChange={(value) => setCurrentInput(value)}
                     options={options}
+                    isInvalid={!!usersError}
                     onChange={(id, option) =>
                       onSelected({
                         value: id,

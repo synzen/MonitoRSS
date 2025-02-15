@@ -108,7 +108,12 @@ export const ArticleFilterResults = ({ title, filters, tableContainer }: Props) 
         )}
         {!alertComponent && (
           <HStack alignItems="center">
-            <Text whiteSpace="nowrap">
+            <Text
+              as="label"
+              whiteSpace="nowrap"
+              id="article-property-select-label"
+              htmlFor="article-property-select"
+            >
               {t(
                 "features.feedConnections.components" +
                   ".filtersTabSection.displayPropertyDropdownLabel"
@@ -127,6 +132,11 @@ export const ArticleFilterResults = ({ title, filters, tableContainer }: Props) 
                 loading={feedArticlePropertiesStatus === "loading"}
                 value={useArticleProperty}
                 onChange={onChangeFeedArticleProperty}
+                isInvalid={false}
+                selectProps={{
+                  inputId: "article-property-select",
+                  "aria-labelledby": "article-property-select-label",
+                }}
               />
             </Box>
           </HStack>

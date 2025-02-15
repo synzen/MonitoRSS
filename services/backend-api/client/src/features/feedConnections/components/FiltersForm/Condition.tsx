@@ -7,6 +7,7 @@ import {
   FormErrorMessage,
   HStack,
   Select,
+  chakra,
 } from "@chakra-ui/react";
 import { Controller, FieldError, useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -60,6 +61,11 @@ export const Condition = ({ onDelete, prefix = "", deletable }: Props) => {
         rules={{ required: true }}
         render={({ field }) => (
           <>
+            <chakra.label
+              srOnly
+              id={`${prefix}-property-label`}
+              htmlFor={`${prefix}-property-select`}
+            />
             <ArticlePropertySelect
               customPlaceholders={articleFormatOptions.customPlaceholders || []}
               value={field.value}
@@ -67,6 +73,9 @@ export const Condition = ({ onDelete, prefix = "", deletable }: Props) => {
               placeholder={t(
                 "features.feedConnections.components.filtersForm.placeholderSelectArticleProperty"
               )}
+              isInvalid={!!error}
+              ariaLabelledBy="property-label"
+              inputId="property-select"
             />
             {error?.type === "required" && (
               <FormErrorMessage>

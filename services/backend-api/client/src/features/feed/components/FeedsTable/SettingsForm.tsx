@@ -100,7 +100,7 @@ export const SettingsForm: React.FC<Props> = ({ feedId, serverId, onUpdated }) =
           <FormHelperText>{t("features.feed.components.sidebar.titleFormHint")}</FormHelperText>
         </FormControl>
         <FormControl>
-          <FormLabel htmlFor="channelId">
+          <FormLabel htmlFor="channel-select" id="channel-select-label">
             {t("features.feed.components.sidebar.channelFormLabel")}
           </FormLabel>
           <Controller
@@ -108,10 +108,13 @@ export const SettingsForm: React.FC<Props> = ({ feedId, serverId, onUpdated }) =
             control={control}
             render={({ field }) => (
               <DiscordChannelDropdown
+                isInvalid={false}
                 onBlur={field.onBlur}
                 onChange={field.onChange}
                 serverId={serverId}
                 value={field.value}
+                inputId="channel-select"
+                ariaLabelledBy="channel-select-label"
               />
             )}
           />

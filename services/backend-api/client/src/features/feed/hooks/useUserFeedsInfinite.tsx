@@ -19,31 +19,40 @@ export const useUserFeedsInfinite = (input: Omit<GetUserFeedsInput, "search">) =
     },
   ];
 
-  const { data, status, error, fetchNextPage, isFetching, isFetchingNextPage, hasNextPage } =
-    useInfiniteQuery<GetUserFeedsOutput, ApiAdapterError>(
-      queryKey,
-      async ({ pageParam: newOffset }) => {
-        const result = await getUserFeeds({
-          ...input,
-          offset: newOffset,
-          search,
-        });
+  const {
+    data,
+    status,
+    error,
+    fetchNextPage,
+    isFetching,
+    isFetchingNextPage,
+    hasNextPage,
+    isFetchedAfterMount,
+    fetchStatus,
+  } = useInfiniteQuery<GetUserFeedsOutput, ApiAdapterError>(
+    queryKey,
+    async ({ pageParam: newOffset }) => {
+      const result = await getUserFeeds({
+        ...input,
+        offset: newOffset,
+        search,
+      });
 
-        return result;
+      return result;
+    },
+    {
+      keepPreviousData: true,
+      refetchOnWindowFocus: false,
+      // Returns the next offset
+      getNextPageParam: (lastPage, allPages) => {
+        if (lastPage.results.length < useLimit) {
+          return undefined;
+        }
+
+        return allPages.length * useLimit;
       },
-      {
-        keepPreviousData: true,
-        refetchOnWindowFocus: false,
-        // Returns the next offset
-        getNextPageParam: (lastPage, allPages) => {
-          if (lastPage.results.length < useLimit) {
-            return undefined;
-          }
-
-          return allPages.length * useLimit;
-        },
-      }
-    );
+    }
+  );
 
   return {
     data,
@@ -55,5 +64,7 @@ export const useUserFeedsInfinite = (input: Omit<GetUserFeedsInput, "search">) =
     hasNextPage,
     isFetchingNextPage,
     search: search || "",
+    isFetchedAfterMount,
+    fetchStatus,
   };
 };

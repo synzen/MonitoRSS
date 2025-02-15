@@ -10,8 +10,10 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@chakra-ui/anatomy": "^2.3.4",
     "@chakra-ui/icons": "^2.0.10",
     "@chakra-ui/react": "^2.7.0",
+    "@chakra-ui/theme-tools": "^2.2.6",
     "@hookform/resolvers": "^3.0.0",
     "@paddle/paddle-js": "^1.2.3",
     "@sentry/react": "^7.109.0",

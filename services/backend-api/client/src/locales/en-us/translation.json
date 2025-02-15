@@ -389,7 +389,7 @@
           "formServerLabel": "Discord Server",
           "formNameLabel": "Connection name",
           "formNameDescription": "Used to identify the connection.",
-          "formChannelLabel": "Channel",
+          "formChannelLabel": "Discord Channel",
           "failedToGetChannels": "Failed to get server channels"
         },
         "updateDiscordChannelConnectionDialog": {
@@ -403,9 +403,9 @@
           "formServerDescription": "The Discord server the webhook belong to",
           "formNameDescription": "Used to identify the connection.",
           "webhookNameLabel": "Webhook Name",
-          "webhookNameDescription": "This will override the webhook's name.",
+          "webhookNameDescription": "This overrides the webhook's name.",
           "webhookIconUrlLabel": "Webhook Icon URL",
-          "webhookIconUrlDescription": "This will override the webhook's icon.",
+          "webhookIconUrlDescription": "This overrides the webhook's icon.",
           "webhooksInputHelperText": "If enabled webhooks, the channel of the feed will only ever be used if the webhook fails.",
           "webhookFormLabel": "Webhook",
           "failedToGetWebhooks": "Failed to get server webhooks"

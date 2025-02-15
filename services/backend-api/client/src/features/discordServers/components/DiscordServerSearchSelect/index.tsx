@@ -24,6 +24,7 @@ export const DiscordServerSearchSelect: React.FC<Props> = ({ onClick }) => {
 
   return (
     <ThemedSelect
+      isInvalid={false}
       onChange={onChangedValue}
       loading={loading}
       value={serverId}

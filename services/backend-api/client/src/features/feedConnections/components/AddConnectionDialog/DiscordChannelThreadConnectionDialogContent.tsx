@@ -32,7 +32,7 @@ import {
   GetDiscordChannelType,
 } from "../../../discordServers";
 import { notifySuccess } from "../../../../utils/notifySuccess";
-import { InlineErrorAlert } from "../../../../components";
+import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "../../../../components";
 
 const formSchema = object({
   name: string().required("Name is required").max(250, "Name must be less than 250 characters"),
@@ -60,7 +60,7 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
     reset,
     watch,
     setValue,
-    formState: { errors, isSubmitting, isValid },
+    formState: { errors, isSubmitting, isValid, isSubmitted },
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
     mode: "all",
@@ -93,6 +93,8 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
     reset();
   }, [isOpen]);
 
+  const errorCount = Object.keys(errors).length;
+
   return (
     <Modal
       isOpen={isOpen}
@@ -112,7 +114,7 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
             <form id="addfeed" onSubmit={handleSubmit(onSubmit)}>
               <Stack spacing={4}>
                 <FormControl isInvalid={!!errors.serverId} isRequired>
-                  <FormLabel>
+                  <FormLabel id="server-select-label" htmlFor="server-select">
                     {t(
                       "features.feed.components.addDiscordChannelConnectionDialog.formServerLabel"
                     )}
@@ -127,6 +129,9 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
                         value={field.value}
                         inputRef={initialFocusRef}
                         alertOnArticleEligibility
+                        isInvalid={!!errors.serverId}
+                        inputId="server-select"
+                        ariaLabelledBy="server-select-label"
                       />
                     )}
                   />
@@ -135,9 +140,10 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
                     If you don&apos;t have this permission, you may ask someone who does to add the
                     feed and share it with you.
                   </FormHelperText>
+                  <FormErrorMessage>{errors.serverId?.message}</FormErrorMessage>
                 </FormControl>
                 <FormControl isInvalid={!!errors.channelId} isRequired>
-                  <FormLabel>
+                  <FormLabel id="channel-select-label" htmlFor="channel-select">
                     {t(
                       "features.feed.components.addDiscordChannelConnectionDialog.formChannelLabel"
                     )}
@@ -147,6 +153,7 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
                     control={control}
                     render={({ field }) => (
                       <DiscordChannelDropdown
+                        isInvalid={!!errors.channelId}
                         value={field.value || ""}
                         onChange={(value) => {
                           field.onChange(value);
@@ -155,13 +162,15 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
                         onBlur={field.onBlur}
                         isDisabled={isSubmitting}
                         serverId={serverId}
+                        inputId="channel-select"
+                        ariaLabelledBy="channel-select-label"
                       />
                     )}
                   />
                   <FormErrorMessage>{errors.channelId?.message}</FormErrorMessage>
                 </FormControl>
                 <FormControl isInvalid={!!errors.threadId} isRequired>
-                  <FormLabel>
+                  <FormLabel id="forum-thread-label" htmlFor="forum-thread-select">
                     {t(
                       "features.feed.components.addDiscordChannelThreadConnectionDialog.formThreadLabel"
                     )}
@@ -171,6 +180,9 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
                     control={control}
                     render={({ field }) => (
                       <DiscordActiveThreadDropdown
+                        ariaLabelledBy="forum-thread-label"
+                        isInvalid={!!errors.threadId}
+                        inputId="forum-thread-select"
                         value={field.value || ""}
                         onChange={(value, name) => {
                           field.onChange(value);
@@ -227,6 +239,9 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
                 description={error.message}
               />
             )}
+            {isSubmitted && errorCount > 0 && (
+              <InlineErrorIncompleteFormAlert fieldCount={errorCount} />
+            )}
           </Stack>
         </ModalBody>
         <ModalFooter>
@@ -239,7 +254,7 @@ export const DiscordChannelThreadConnectionDialogContent: React.FC<Props> = ({
               type="submit"
               form="addfeed"
               isLoading={isSubmitting}
-              isDisabled={isSubmitting || !isValid}
+              aria-disabled={isSubmitting || !isValid}
             >
               <span>{t("common.buttons.save")}</span>
             </Button>

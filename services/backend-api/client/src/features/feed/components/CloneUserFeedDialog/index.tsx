@@ -24,10 +24,13 @@ import { useTranslation } from "react-i18next";
 import { pages } from "../../../../constants";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import { useCreateUserFeedClone } from "../../hooks";
-import { InlineErrorAlert } from "../../../../components/InlineErrorAlert";
+import {
+  InlineErrorAlert,
+  InlineErrorIncompleteFormAlert,
+} from "../../../../components/InlineErrorAlert";
 
 const formSchema = object({
-  title: string().required(),
+  title: string().required("Title is required"),
   url: string().required().matches(/^http/, {
     message: "Must be a valid URL",
   }),
@@ -55,7 +58,7 @@ export const CloneUserFeedDialog = ({
     handleSubmit,
     control,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isSubmitted, isValid },
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
     defaultValues,
@@ -92,6 +95,8 @@ export const CloneUserFeedDialog = ({
     } catch (err) {}
   };
 
+  const formErrorCount = Object.keys(errors).length;
+
   return (
     <>
       {cloneElement(trigger, { onClick: onOpen })}
@@ -118,7 +123,7 @@ export const CloneUserFeedDialog = ({
                     <Controller
                       name="url"
                       control={control}
-                      render={({ field }) => <Input {...field} bg="gray.800" />}
+                      render={({ field }) => <Input type="url" {...field} bg="gray.800" />}
                     />
                     {errors.url && <FormErrorMessage>{errors.url.message}</FormErrorMessage>}
                   </FormControl>
@@ -130,6 +135,9 @@ export const CloneUserFeedDialog = ({
                   description={error.message}
                 />
               )}
+              {isSubmitted && formErrorCount && (
+                <InlineErrorIncompleteFormAlert fieldCount={formErrorCount} />
+              )}
             </Stack>
           </ModalBody>
           <ModalFooter>
@@ -137,7 +145,13 @@ export const CloneUserFeedDialog = ({
               <Button variant="ghost" onClick={onClose}>
                 <span>Cancel</span>
               </Button>
-              <Button colorScheme="blue" type="submit" form="clonefeed" isLoading={isSubmitting}>
+              <Button
+                colorScheme="blue"
+                type="submit"
+                form="clonefeed"
+                isLoading={isSubmitting}
+                aria-disabled={isSubmitting || !isValid}
+              >
                 <span>Clone</span>
               </Button>
             </HStack>

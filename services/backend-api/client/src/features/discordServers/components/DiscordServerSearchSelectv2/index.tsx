@@ -10,9 +10,10 @@ interface Props {
   inputRef?: React.ComponentProps<typeof ThemedSelect>["inputRef"];
   isDisabled?: boolean;
   inputId?: string;
-  ariaLabelledBy?: string;
+  ariaLabelledBy: string;
   alertOnArticleEligibility?: boolean;
   placeholder?: string;
+  isInvalid: boolean;
 }
 
 export const DiscordServerSearchSelectv2: React.FC<Props> = ({
@@ -24,6 +25,7 @@ export const DiscordServerSearchSelectv2: React.FC<Props> = ({
   ariaLabelledBy,
   alertOnArticleEligibility,
   placeholder,
+  isInvalid,
 }) => {
   const { status, data } = useDiscordServers();
   const {
@@ -65,6 +67,7 @@ export const DiscordServerSearchSelectv2: React.FC<Props> = ({
         onChange={onChangedValue}
         loading={loading}
         value={value}
+        isInvalid={isInvalid}
         placeholder={placeholder}
         inputRef={inputRef}
         isDisabled={isDisabled}
@@ -91,7 +94,7 @@ export const DiscordServerSearchSelectv2: React.FC<Props> = ({
           {discordServerSettings && (
             <Alert status="success" mt={2}>
               <AlertIcon />
-              Server is eligible for articles to be sent
+              Selected Discord server is eligible for articles to be sent
             </Alert>
           )}
           {getServerError?.statusCode === 404 && (
