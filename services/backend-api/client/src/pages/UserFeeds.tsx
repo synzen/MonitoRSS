@@ -88,7 +88,7 @@ export const UserFeeds: React.FC = () => {
 
   return (
     <BoxConstrained.Wrapper justifyContent="flex-start" height="100%" overflow="visible">
-      <BoxConstrained.Container paddingTop={6} spacing={6} height="100%">
+      <BoxConstrained.Container paddingTop={6} spacing={6} height="100%" paddingX={4}>
         <Stack spacing={4}>
           <Box>
             {!userMeData?.result.migratedToPersonalFeeds && (

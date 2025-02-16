@@ -567,7 +567,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
                     : "Filter by Status"}
                 </Text>
               </MenuButton>
-              <MenuList minWidth="240px">
+              <MenuList maxW="300px">
                 <MenuOptionGroup
                   type="checkbox"
                   onChange={(s) => onStatusSelect(s)}
@@ -575,15 +575,15 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
                 >
                   {STATUS_FILTERS.map((val) => (
                     <MenuItemOption key={val.value} value={val.value}>
-                      <HStack alignItems="center" gap={4}>
-                        <UserFeedStatusTag status={val.value} />
-                        <div>
+                      <Stack>
+                        <HStack alignItems="center">
+                          <UserFeedStatusTag status={val.value} />
                           <chakra.span>{val.label}</chakra.span>
-                          <chakra.span display="block" color="whiteAlpha.600">
-                            {val.description}
-                          </chakra.span>
-                        </div>
-                      </HStack>
+                        </HStack>
+                        <chakra.span display="block" color="whiteAlpha.600">
+                          {val.description}
+                        </chakra.span>
+                      </Stack>
                     </MenuItemOption>
                   ))}
                 </MenuOptionGroup>

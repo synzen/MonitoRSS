@@ -121,13 +121,15 @@ const ExternalPropertyForm = ({
       border="solid 2px"
       borderColor="gray.600"
       bg="gray.700"
-      p={[4, 4, 6]}
+      px={[4, 4, 6]}
+      pb={[4, 4, 6]}
+      pt={[4, 4, 4]}
       rounded="lg"
       spacing={0}
       position="relative"
     >
       <Stack spacing={4} flexWrap="wrap">
-        <Flex justifyContent="space-between" flexWrap="wrap">
+        <Flex justifyContent="space-between" flexWrap="wrap" gap={3}>
           <HStack>
             <Heading
               as="h3"

@@ -29,8 +29,14 @@ export const UserFeedStatusTag: React.FC<Props> = ({ status }) => {
   }
 
   if (status === UserFeedComputedStatus.ManuallyDisabled) {
-    return <FaPauseCircle aria-label="Manually disabled" opacity="0.5" fontSize={18} />;
+    return (
+      <FaPauseCircle
+        aria-label="Manually disabled"
+        color={getChakraColor("whiteAlpha.800")}
+        fontSize={18}
+      />
+    );
   }
 
-  return <FaCheckCircle aria-label="Ok" color={getChakraColor("green.500")} fontSize={18} />;
+  return <FaCheckCircle aria-label="Ok" color={getChakraColor("green.300")} fontSize={18} />;
 };
