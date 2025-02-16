@@ -3,10 +3,11 @@ import { GroupBase, StylesConfig } from "react-select";
 import { theme } from "@chakra-ui/react";
 import getChakraColor from "@/utils/getChakraColor";
 
-interface SelectOption {
+export interface SelectOption {
   value: string;
   label: string;
   icon?: string | React.ReactNode;
+  description?: string;
 }
 
 type SelectStyles = StylesConfig<SelectOption, false, GroupBase<SelectOption>> | undefined;

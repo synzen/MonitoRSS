@@ -5,11 +5,11 @@ import {
   Box,
   Button,
   Center,
-  Code,
   FormControl,
   FormLabel,
   HStack,
   Link,
+  ListItem,
   Select,
   Skeleton,
   Spinner,
@@ -22,6 +22,7 @@ import {
   Th,
   Thead,
   Tr,
+  UnorderedList,
 } from "@chakra-ui/react";
 import { useState } from "react";
 import { ExternalLinkIcon, RepeatIcon } from "@chakra-ui/icons";
@@ -38,6 +39,7 @@ import {
   UserFeedConnectionProvider,
   useUserFeedConnectionContext,
 } from "../../../../contexts/UserFeedConnectionContext";
+import MessagePlaceholderText from "../../../../components/MessagePlaceholderText";
 
 interface Props {
   externalProperties: ExternalProperty[];
@@ -51,32 +53,34 @@ const ArticlesSection = ({
 }: Props & { articleId?: string }) => {
   const { userFeed, articleFormatOptions } = useUserFeedConnectionContext();
   const isIncomplete = externalProperties.some((i) => !i.sourceField || !i.cssSelector || !i.label);
+  const queryData = {
+    limit: 1,
+    skip: 0,
+    selectProperties: ["id", ...externalProperties.map((p) => p.sourceField)],
+    filters: articleId
+      ? {
+          articleId,
+        }
+      : undefined,
+    random: true,
+    selectPropertyTypes: [SelectArticlePropertyType.ExternalInjections],
+    formatOptions: {
+      formatTables: articleFormatOptions?.formatTables ?? false,
+      stripImages: articleFormatOptions?.stripImages ?? false,
+      disableImageLinkPreviews: articleFormatOptions?.disableImageLinkPreviews ?? false,
+      ignoreNewLines: articleFormatOptions?.ignoreNewLines ?? false,
+      dateFormat: articleFormatOptions?.dateFormat,
+      dateTimezone: articleFormatOptions?.dateTimezone,
+      customPlaceholders: [],
+      externalProperties,
+    },
+  };
 
   const { data, status, error, fetchStatus } = useUserFeedArticles({
-    data: {
-      limit: 1,
-      skip: 0,
-      selectProperties: ["id", ...externalProperties.map((p) => p.sourceField)],
-      filters: articleId
-        ? {
-            articleId,
-          }
-        : undefined,
-      random: true,
-      selectPropertyTypes: [SelectArticlePropertyType.ExternalInjections],
-      formatOptions: {
-        formatTables: articleFormatOptions?.formatTables ?? false,
-        stripImages: articleFormatOptions?.stripImages ?? false,
-        disableImageLinkPreviews: articleFormatOptions?.disableImageLinkPreviews ?? false,
-        ignoreNewLines: articleFormatOptions?.ignoreNewLines ?? false,
-        dateFormat: articleFormatOptions?.dateFormat,
-        dateTimezone: articleFormatOptions?.dateTimezone,
-        customPlaceholders: [],
-        externalProperties,
-      },
-    },
+    data: queryData,
     disabled: disabled || externalProperties.length === 0 || isIncomplete,
     feedId: userFeed.id,
+    queryKeyFields: externalProperties.map((p) => `external-property-preview-page-${p.id}`),
   });
 
   const articleEntries = Object.entries(data?.result.articles[0] || {}).filter(
@@ -95,6 +99,17 @@ const ArticlesSection = ({
 
   const article = data?.result.articles[0] as Record<string, string> | undefined;
 
+  if (status === "loading" || !data) {
+    return (
+      <Center flexDir="column" gap={2} bg="gray.800" rounded="lg" p={4}>
+        <Spinner />
+        <Text color="whiteAlpha.700" fontSize="sm" aria-live="polite">
+          Loading preview...this might take a while
+        </Text>
+      </Center>
+    );
+  }
+
   if (!article) {
     return (
       <Alert status="info" rounded="lg">
@@ -107,21 +122,62 @@ const ArticlesSection = ({
     return (
       <Alert status="info" justifyContent="center">
         <AlertDescription>
-          No additional properties were generated for this article. If this is unexpected, consider
-          adjusting your CSS selector.
+          No external placeholders were generated for this article. If this is unexpected, consider
+          adjusting your CSS selector or select a different preview article.
         </AlertDescription>
       </Alert>
     );
   }
 
+  const someExternalWebPageLinkExists = externalProperties.some((i) => !!article[i.sourceField]);
+
   return (
     <Stack>
+      <Box srOnly aria-live="polite">
+        {articleEntries.length > 0 &&
+          fetchStatus === "idle" &&
+          `Finished loading ${articleEntries.length} external properties`}
+        {fetchStatus === "fetching" && "Loading preview..."}
+      </Box>
       <Box padding={2} rounded="lg" maxHeight={300} overflow="scroll">
+        {someExternalWebPageLinkExists && (
+          <Stack mb={8}>
+            <Text display="block">
+              The following placeholders were extracted from the external webpages:
+            </Text>
+            <UnorderedList>
+              {externalProperties.map(({ sourceField, id }) => {
+                const href = article[sourceField];
+
+                if (!href) {
+                  return null;
+                }
+
+                return (
+                  <ListItem key={id}>
+                    <Link
+                      key={id}
+                      gap={2}
+                      isExternal
+                      target="_blank"
+                      href={href || undefined}
+                      rel="noopener noreferrer"
+                      color="blue.300"
+                    >
+                      {href}
+                      <ExternalLinkIcon paddingLeft={1} />
+                    </Link>
+                  </ListItem>
+                );
+              })}
+            </UnorderedList>
+          </Stack>
+        )}
         <TableContainer>
           <Table size="sm" variant="simple">
             <Thead>
               <Tr>
-                <Th>Generated Property</Th>
+                <Th>Generated Placeholder</Th>
                 <Th>Value</Th>
               </Tr>
             </Thead>
@@ -131,7 +187,7 @@ const ArticlesSection = ({
                   <Tr key={key}>
                     <Td>
                       <Skeleton isLoaded={fetchStatus === "idle"}>
-                        <Code>{key}</Code>
+                        <MessagePlaceholderText withBrackets>{key}</MessagePlaceholderText>
                       </Skeleton>
                     </Td>
                     <Td>
@@ -146,7 +202,7 @@ const ArticlesSection = ({
       </Box>
       <Stack>
         <Text fontSize="sm" color="whiteAlpha.700" textAlign="center">
-          These generated properties may be used while creating custom message formats per
+          These generated placeholders may be used while creating custom message formats per
           connection.
         </Text>
       </Stack>
@@ -170,7 +226,7 @@ export const ExternalPropertyPreview = ({
     data: {
       limit: 1,
       skip: 0,
-      selectProperties: ["id"],
+      selectProperties: ["*"],
       random: true,
       formatOptions: {
         formatTables: false,
@@ -194,10 +250,6 @@ export const ExternalPropertyPreview = ({
   if (hasAlert) {
     return alertComponent;
   }
-
-  const articleEntries = Object.entries(data?.result.articles[0] || {}).filter(
-    ([key, value]) => key.startsWith("external::") && !!value
-  );
 
   if (isIncomplete) {
     return (
@@ -231,88 +283,23 @@ export const ExternalPropertyPreview = ({
     );
   }
 
-  if (
-    !data ||
-    status === "loading" ||
-    (data && !articleEntries.length && fetchStatus === "fetching")
-  ) {
-    return (
-      <Center flexDir="column" gap={2} bg="gray.800" rounded="lg" p={4}>
-        <Spinner />
-        <Text color="whiteAlpha.700" fontSize="sm">
-          Loading preview...this might take a while
-        </Text>
-      </Center>
-    );
-  }
-
-  const article = data?.result.articles[0] as Record<string, string> | undefined;
-
-  if (!article) {
-    return (
-      <Alert status="info" rounded="lg">
-        <AlertTitle>No articles were found in the feed to preview</AlertTitle>
-      </Alert>
-    );
-  }
-
   return (
     <Stack px={[4, 4, 6]} py={4}>
+      <Box srOnly aria-live="polite">
+        {fetchStatus === "fetching" && "Loading preview..."}
+      </Box>
       <UserFeedConnectionProvider feedId={userFeed.id} connectionId={selectedConnectionId}>
         <UserFeedConnectionContext.Consumer>
           {(connectionContext) => {
             return (
               <>
-                <ArticleSelectDialog
-                  trigger={
-                    <Button size="sm" leftIcon={<RepeatIcon />}>
-                      Change Preview Article
-                    </Button>
-                  }
-                  feedId={userFeed.id}
-                  onArticleSelected={(id) => setArticleId(id)}
-                  articleFormatOptions={articleFormatOptions}
-                />
-                <HStack>
-                  <FormControl>
-                    <FormLabel>
-                      External Pages from Preview Article (
-                      <HStack display="inline">
-                        {externalProperties.map((p) => (
-                          <Code key={p.id}>{p.sourceField}</Code>
-                        ))}
-                      </HStack>
-                      )
-                    </FormLabel>
-                    <Stack>
-                      {externalProperties.map(({ sourceField, id }) => {
-                        const href = article[sourceField];
-
-                        if (!href) {
-                          return null;
-                        }
-
-                        return (
-                          <Link
-                            key={id}
-                            gap={2}
-                            isExternal
-                            target="_blank"
-                            href={href || undefined}
-                            rel="noopener noreferrer"
-                            color="blue.300"
-                          >
-                            {href}
-                            <ExternalLinkIcon paddingLeft={1} />
-                          </Link>
-                        );
-                      })}
-                    </Stack>
-                  </FormControl>
-                </HStack>
                 <HStack>
                   <FormControl flex={1}>
-                    <FormLabel>Preview Connection</FormLabel>
+                    <FormLabel
+                      id={`preview-connection-${inputExternalProperties.map((p) => p.id)}`}
+                    >
+                      Preview Connection
+                    </FormLabel>
                     <HStack flexWrap="wrap">
                       <Select
                         size="sm"
@@ -320,6 +307,9 @@ export const ExternalPropertyPreview = ({
                         flex={1}
                         minWidth={200}
                         onChange={(e) => onChangeSelectedConnection(e.target.value)}
+                        aria-labelledby={`preview-connection-${inputExternalProperties.map(
+                          (p) => p.id
+                        )}`}
                       >
                         {userFeed.connections.map((con) => (
                           <option key={con.id} value={con.id}>
@@ -350,6 +340,16 @@ export const ExternalPropertyPreview = ({
                   externalProperties={externalProperties}
                   articleId={articleId}
                   disabled={disabled}
+                />
+                <ArticleSelectDialog
+                  trigger={
+                    <Button size="sm" leftIcon={<RepeatIcon />} mt={4}>
+                      Change Preview Article
+                    </Button>
+                  }
+                  feedId={userFeed.id}
+                  onArticleSelected={(id) => setArticleId(id)}
+                  articleFormatOptions={articleFormatOptions}
                 />
               </>
             );

@@ -93,7 +93,7 @@ export const SubscriberBlockText = ({ alternateText, onClick, feature, supporter
 
   return (
     <Stack>
-      <Alert rounded="md" colorScheme="purple">
+      <Alert rounded="md" colorScheme="purple" status="info" role={undefined}>
         <AlertDescription>
           <Box>
             <Text>

@@ -10,6 +10,7 @@ export interface UseUserFeedArticlesProps {
   };
   onSuccess?: (data: GetUserFeedArticlesOutput) => void;
   disabled?: boolean;
+  queryKeyFields?: string[];
 }
 
 export const useUserFeedArticles = ({
@@ -17,6 +18,7 @@ export const useUserFeedArticles = ({
   data: inputData,
   onSuccess,
   disabled,
+  queryKeyFields,
 }: UseUserFeedArticlesProps) => {
   const queryKey = [
     "user-feed-articles",
@@ -25,6 +27,7 @@ export const useUserFeedArticles = ({
       inputData,
     },
     feedId,
+    ...(queryKeyFields || []),
   ];
 
   const { data, status, error, refetch, fetchStatus } = useQuery<
