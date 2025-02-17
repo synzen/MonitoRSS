@@ -1,7 +1,6 @@
 import {
   Box,
   Button,
-  CloseButton,
   FormControl,
   FormErrorMessage,
   FormHelperText,
@@ -22,7 +21,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { AddIcon } from "@chakra-ui/icons";
+import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import { notifyError } from "../../../../utils/notifyError";
 import { useUpdateConnection } from "../../hooks";
 import { SavedUnsavedChangesPopupBar } from "@/components";
@@ -110,84 +109,112 @@ export const DeliveryRateLimitsTabSection = () => {
       <FormProvider {...formMethods}>
         <form onSubmit={handleSubmit(onSubmit)}>
           <Stack spacing={4}>
-            {fields.map((item, index) => {
-              return (
-                <HStack key={item.id} bg="gray.700" p={4} rounded="lg" shadow="lg">
-                  <FormControl isInvalid={!!errors.rateLimits?.[index]?.limit}>
-                    <FormLabel>Article Limit</FormLabel>
-                    <Controller
-                      name={`rateLimits.${index}.limit`}
-                      control={control}
-                      render={({ field }) => (
-                        <NumberInput
-                          min={0}
-                          max={10000}
-                          {...field}
-                          onChange={(str, num) => field.onChange(num)}
-                        >
-                          <NumberInputField bg="gray.800" />
-                          <NumberInputStepper>
-                            <NumberIncrementStepper />
-                            <NumberDecrementStepper />
-                          </NumberInputStepper>
-                        </NumberInput>
-                      )}
-                    />
-                    {!errors.rateLimits?.[index]?.limit && (
-                      <FormHelperText>
-                        The maximum number of articles to allow for delivery.
-                      </FormHelperText>
-                    )}
-                    {errors.rateLimits?.[index]?.limit && (
-                      <FormErrorMessage>
-                        {errors.rateLimits?.[index]?.limit?.message}
-                      </FormErrorMessage>
-                    )}
-                  </FormControl>
-                  <FormControl isInvalid={!!errors.rateLimits?.[index]?.timeWindowSeconds}>
-                    <FormLabel>Time Window (seconds)</FormLabel>
-                    <Controller
-                      name={`rateLimits.${index}.timeWindowSeconds`}
-                      control={control}
-                      render={({ field }) => {
-                        return (
+            <Stack spacing={4} role="list">
+              {fields.map((item, index) => {
+                return (
+                  <HStack
+                    role="listitem"
+                    key={item.id}
+                    // bg="gray.700"
+                    borderStyle="solid"
+                    borderColor="gray.600"
+                    borderWidth={1}
+                    p={4}
+                    rounded="lg"
+                    shadow="lg"
+                  >
+                    <FormControl isInvalid={!!errors.rateLimits?.[index]?.limit} isRequired>
+                      <FormLabel>Article Limit</FormLabel>
+                      <Controller
+                        name={`rateLimits.${index}.limit`}
+                        control={control}
+                        render={({ field }) => (
                           <NumberInput
                             min={0}
-                            max={2592000}
+                            max={10000}
                             {...field}
                             onChange={(str, num) => field.onChange(num)}
                           >
-                            <NumberInputField bg="gray.800" />
+                            <NumberInputField />
                             <NumberInputStepper>
                               <NumberIncrementStepper />
                               <NumberDecrementStepper />
                             </NumberInputStepper>
                           </NumberInput>
-                        );
-                      }}
-                    />
-                    {!errors.rateLimits?.[index]?.timeWindowSeconds && (
-                      <FormHelperText>
-                        The duration of the time window this rate limit applies to in seconds.
-                      </FormHelperText>
-                    )}
-                    {errors.rateLimits?.[index]?.timeWindowSeconds && (
-                      <FormErrorMessage>
-                        {errors.rateLimits?.[index]?.timeWindowSeconds?.message}
-                      </FormErrorMessage>
-                    )}
-                  </FormControl>
-                  <CloseButton alignSelf="flex-start" onClick={() => onDelete(index)} />
-                </HStack>
-              );
-            })}
+                        )}
+                      />
+                      {!errors.rateLimits?.[index]?.limit && (
+                        <FormHelperText>
+                          The maximum number of articles to allow for delivery.
+                        </FormHelperText>
+                      )}
+                      {errors.rateLimits?.[index]?.limit && (
+                        <FormErrorMessage>
+                          {errors.rateLimits?.[index]?.limit?.message}
+                        </FormErrorMessage>
+                      )}
+                    </FormControl>
+                    <FormControl
+                      isInvalid={!!errors.rateLimits?.[index]?.timeWindowSeconds}
+                      isRequired
+                    >
+                      <FormLabel>Time Window (seconds)</FormLabel>
+                      <Controller
+                        name={`rateLimits.${index}.timeWindowSeconds`}
+                        control={control}
+                        render={({ field }) => {
+                          return (
+                            <NumberInput
+                              min={0}
+                              max={2592000}
+                              {...field}
+                              onChange={(str, num) => field.onChange(num)}
+                            >
+                              <NumberInputField />
+                              <NumberInputStepper>
+                                <NumberIncrementStepper />
+                                <NumberDecrementStepper />
+                              </NumberInputStepper>
+                            </NumberInput>
+                          );
+                        }}
+                      />
+                      {!errors.rateLimits?.[index]?.timeWindowSeconds && (
+                        <FormHelperText>
+                          The duration of the time window this rate limit applies to in seconds.
+                        </FormHelperText>
+                      )}
+                      {errors.rateLimits?.[index]?.timeWindowSeconds && (
+                        <FormErrorMessage>
+                          {errors.rateLimits?.[index]?.timeWindowSeconds?.message}
+                        </FormErrorMessage>
+                      )}
+                    </FormControl>
+                    <Box>
+                      <Button
+                        variant="ghost"
+                        colorScheme="red"
+                        onClick={() => onDelete(index)}
+                        size="sm"
+                      >
+                        <HStack>
+                          <DeleteIcon />
+                          <Text>Delete rate limit</Text>
+                        </HStack>
+                      </Button>
+                    </Box>
+                    {/* <CloseButton alignSelf="flex-start" onClick={() => onDelete(index)} /> */}
+                  </HStack>
+                );
+              })}
+            </Stack>
             <Box>
               <Button
                 leftIcon={<AddIcon fontSize={13} />}
                 onClick={onAddRateLimit}
                 isDisabled={fields.length >= 10}
               >
-                Add
+                Add rate limit
               </Button>
             </Box>
           </Stack>

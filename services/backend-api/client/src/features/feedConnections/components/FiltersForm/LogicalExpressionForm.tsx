@@ -175,9 +175,29 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", containerProps }
                 width="100%"
                 borderRadius="md"
               >
-                <HStack>
-                  {isExpanded ? <ChevronUpIcon fontSize="lg" /> : <ChevronDownIcon fontSize="lg" />}
-                  <Text>Condition Group</Text>
+                <HStack justifyContent="space-between">
+                  <HStack>
+                    {isExpanded ? (
+                      <ChevronUpIcon fontSize="lg" />
+                    ) : (
+                      <ChevronDownIcon fontSize="lg" />
+                    )}
+                    <Text>Condition Group</Text>
+                  </HStack>
+                  <Button
+                    variant="ghost"
+                    colorScheme="red"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleted();
+                    }}
+                  >
+                    <HStack>
+                      <DeleteIcon />
+                      <Text>Delete Condition Group</Text>
+                    </HStack>
+                  </Button>
                 </HStack>
               </chakra.button>
             );
@@ -261,7 +281,7 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", containerProps }
                   </MenuItem>
                 </MenuList>
               </Menu>
-              <Button
+              {/* <Button
                 onClick={onDeleted}
                 leftIcon={<DeleteIcon />}
                 size="sm"
@@ -269,7 +289,7 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", containerProps }
                 colorScheme="red"
               >
                 Delete condition group
-              </Button>
+              </Button> */}
             </HStack>
           </Stack>
         )}

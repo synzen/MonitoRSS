@@ -23,6 +23,7 @@ export const AnyAllSelector = ({ value, onChange }: Props) => {
         onClick={onSelectAnd}
         colorScheme={value === And ? "blue" : undefined}
         variant={value === And ? "solid" : "outline"}
+        aria-label="All conditions must match"
       >
         ALL
       </Button>
@@ -30,6 +31,7 @@ export const AnyAllSelector = ({ value, onChange }: Props) => {
         onClick={onSelectOr}
         colorScheme={value === Or ? "blue" : undefined}
         variant={value === Or ? "solid" : "outline"}
+        aria-label="Any condition can match"
       >
         ANY
       </Button>

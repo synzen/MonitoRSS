@@ -1,18 +1,19 @@
 import {
+  Box,
   BoxProps,
   Button,
   ButtonGroup,
-  CloseButton,
-  Flex,
   FormControl,
   FormErrorMessage,
   FormLabel,
   HStack,
   Select,
+  Text,
   chakra,
 } from "@chakra-ui/react";
 import { Controller, FieldError, useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { DeleteIcon } from "@chakra-ui/icons";
 import {
   RelationalExpressionLeftOperandType,
   RelationalExpressionOperator,
@@ -102,7 +103,7 @@ export const Condition = ({ onDelete, prefix = "", deletable, containerProps }: 
     <HStack
       onKeyDown={(e) => e.stopPropagation()}
       width="100%"
-      alignItems="flex-start"
+      alignItems="center"
       {...containerProps}
       borderRadius="md"
       outline={isFocused ? `2px solid ${getChakraColor("blue.300")}` : undefined}
@@ -111,11 +112,12 @@ export const Condition = ({ onDelete, prefix = "", deletable, containerProps }: 
         outline: `2px solid ${getChakraColor("blue.100")} !important`,
         background: "blackAlpha.700",
       }}
+      overflow="auto"
       pt={2}
       px={2}
       pb={2}
     >
-      <HStack width="100%" spacing={8} alignItems="flex-start" overflow="auto">
+      <HStack spacing={4} alignItems="center" flex={1}>
         {leftOperandElement}
         <FormControl width="min-content">
           <Controller
@@ -145,7 +147,7 @@ export const Condition = ({ onDelete, prefix = "", deletable, containerProps }: 
         </FormControl>
         <FormControl isRequired>
           <FormLabel id={`${prefix}op-label`} srOnly>
-            Relational Operator
+            Expression operator
           </FormLabel>
           <Controller
             name={`${prefix}op`}
@@ -174,9 +176,14 @@ export const Condition = ({ onDelete, prefix = "", deletable, containerProps }: 
         />
       </HStack>
       {deletable && (
-        <Flex>
-          <CloseButton aria-label="Delete condition" size="sm" onClick={onDelete} />
-        </Flex>
+        <Box>
+          <Button variant="ghost" size="sm" colorScheme="red" onClick={onDelete}>
+            <HStack alignItems="center">
+              <DeleteIcon />
+              <Text>Delete Condition</Text>
+            </HStack>
+          </Button>
+        </Box>
       )}
     </HStack>
   );
