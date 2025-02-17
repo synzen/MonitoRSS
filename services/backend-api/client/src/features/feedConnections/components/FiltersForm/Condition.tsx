@@ -105,10 +105,10 @@ export const Condition = ({ onDelete, prefix = "", deletable, containerProps }: 
       alignItems="flex-start"
       {...containerProps}
       borderRadius="md"
-      outline={isFocused ? `2px solid ${getChakraColor("whiteAlpha.600")}` : undefined}
+      outline={isFocused ? `2px solid ${getChakraColor("blue.300")}` : undefined}
       bg={isFocused ? "blackAlpha.500" : undefined}
       _hover={{
-        outline: `2px solid ${getChakraColor("whiteAlpha.800")} !important`,
+        outline: `2px solid ${getChakraColor("blue.100")} !important`,
         background: "blackAlpha.700",
       }}
       pt={2}

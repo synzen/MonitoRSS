@@ -3,7 +3,6 @@ import {
   Box,
   BoxProps,
   Button,
-  CloseButton,
   Divider,
   Flex,
   FormControl,
@@ -158,30 +157,26 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", containerProps }
         // overflow="auto"
         bg={isFocused ? "blackAlpha.500" : undefined}
         outlineOffset={4}
-        outline={isFocused ? `2px solid ${getChakraColor("whiteAlpha.600")}` : undefined}
+        outline={isFocused ? `2px solid ${getChakraColor("blue.300")}` : undefined}
         _hover={{
-          outline: `2px solid ${getChakraColor("whiteAlpha.800")} !important`,
+          outline: `2px solid ${getChakraColor("blue.100")} !important`,
           background: "blackAlpha.700",
         }}
       >
         <NavigableTreeItemExpandButton>
-          {({ onClick, isFocused, isExpanded }) => {
+          {({ onClick }) => {
             return (
               <chakra.button
                 tabIndex={-1}
                 type="button"
                 p={4}
-                textAlign={"left"}
+                textAlign="left"
                 onClick={onClick}
                 width="100%"
-                borderRadius={"md"}
+                borderRadius="md"
               >
                 <HStack>
-                  {isExpanded ? (
-                    <ChevronUpIcon fontSize="lg" />
-                  ) : (
-                    <ChevronDownIcon fontSize={"lg"} />
-                  )}
+                  {isExpanded ? <ChevronUpIcon fontSize="lg" /> : <ChevronDownIcon fontSize="lg" />}
                   <Text>Condition Group</Text>
                 </HStack>
               </chakra.button>
@@ -205,7 +200,7 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", containerProps }
         {isExpanded && (
           <Stack px={2} pt={4}>
             {!!fields.length && (
-              <NavigableTreeItemGroup display="flex" gap={2} flexDirection={"column"} width="100%">
+              <NavigableTreeItemGroup display="flex" gap={2} flexDirection="column" width="100%">
                 {(fields as Array<FilterExpression & { id: string }>)?.map((child, childIndex) => {
                   const childPrefix = `${prefix}children.${childIndex}.`;
 
@@ -266,14 +261,12 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", containerProps }
                   </MenuItem>
                 </MenuList>
               </Menu>
-
               <Button
                 onClick={onDeleted}
                 leftIcon={<DeleteIcon />}
                 size="sm"
                 variant="ghost"
                 colorScheme="red"
-                // w="100%"
               >
                 Delete condition group
               </Button>

@@ -49,7 +49,6 @@ export const FiltersForm = ({
     control,
     formState: { isDirty, isSubmitting },
     setValue,
-    resetField,
     reset,
   } = formMethods;
 
@@ -58,11 +57,6 @@ export const FiltersForm = ({
     control,
     name: "expression",
   });
-
-  const onClickReset = (e?: React.MouseEvent) => {
-    e?.preventDefault();
-    resetField("expression");
-  };
 
   const onDeletedExpression = async () => {
     setValue("expression", null, {
