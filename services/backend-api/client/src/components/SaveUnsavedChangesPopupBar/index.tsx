@@ -42,12 +42,12 @@ export const SavedUnsavedChangesPopupBar = ({ useDirtyFormCheck }: Props) => {
           animate={{ opacity: 1, bottom: "0px" }}
           exit={{ opacity: 0, bottom: "-100px" }}
         >
-          <HStack justifyContent="space-between" width="100%">
+          <HStack justifyContent="space-between" width="100%" flexWrap="wrap" gap={4}>
             <Text>You have unsaved changes on this page!</Text>
-            <HStack>
+            <HStack flexWrap="wrap">
               <Button
                 onClick={() => reset(defaultValues)}
-                variant="ghost"
+                variant="outline"
                 isDisabled={!isDirty || isSubmitting}
               >
                 <span>Discard all changes</span>

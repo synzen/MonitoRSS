@@ -25,7 +25,6 @@ import { getNestedField } from "../../../../utils/getNestedField";
 import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
 import { useNavigableTreeItemContext } from "../../../../contexts/NavigableTreeItemContext";
 import getChakraColor from "../../../../utils/getChakraColor";
-import { useEffect, useRef } from "react";
 import { getReadableLabelForRelationalOp } from "./utils/getReadableLabelForRelationalOp";
 
 const { Equals, Contains, Matches } = RelationalExpressionOperator;
@@ -74,7 +73,7 @@ export const Condition = ({ onDelete, prefix = "", deletable, containerProps }: 
               id={`${prefix}-property-label`}
               htmlFor={`${prefix}-property-select`}
             >
-              Article Property
+              Article Property to Filter On
             </chakra.label>
             <ArticlePropertySelect
               customPlaceholders={articleFormatOptions.customPlaceholders || []}
@@ -105,7 +104,7 @@ export const Condition = ({ onDelete, prefix = "", deletable, containerProps }: 
       width="100%"
       alignItems="flex-start"
       {...containerProps}
-      borderRadius={"md"}
+      borderRadius="md"
       outline={isFocused ? `2px solid ${getChakraColor("whiteAlpha.600")}` : undefined}
       bg={isFocused ? "blackAlpha.500" : undefined}
       _hover={{

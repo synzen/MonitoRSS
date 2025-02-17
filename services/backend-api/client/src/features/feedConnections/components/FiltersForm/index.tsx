@@ -1,4 +1,4 @@
-import { Box, BoxProps, Button, HStack, Stack, TableHeadProps } from "@chakra-ui/react";
+import { BoxProps, Button, HStack, Stack, TableHeadProps } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
 import React from "react";

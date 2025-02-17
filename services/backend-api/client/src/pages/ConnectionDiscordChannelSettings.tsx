@@ -144,7 +144,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
         <UserFeedConnectionProvider feedId={feedId} connectionId={connectionId}>
           <Tabs isLazy isFitted defaultIndex={tabIndex ?? 0} index={tabIndex ?? undefined}>
             <BoxConstrained.Wrapper paddingTop={10} background="gray.700">
-              <BoxConstrained.Container spacing={12}>
+              <BoxConstrained.Container spacing={12} px={4}>
                 <Stack spacing={6}>
                   <Stack spacing={4}>
                     <Stack>

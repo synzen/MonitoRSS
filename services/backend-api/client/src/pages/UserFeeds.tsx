@@ -110,6 +110,7 @@ export const UserFeeds: React.FC = () => {
                   <AlertDescription>
                     Article delivery may be fully or partially paused.{" "}
                     <ChakraLink
+                      textAlign="left"
                       as="button"
                       color="blue.300"
                       onClick={onApplyRequiresAttentionFilters}
@@ -132,21 +133,31 @@ export const UserFeeds: React.FC = () => {
             )}
           {managementInvitesCount?.total && (
             <Alert>
-              <AlertIcon />
-              <AlertTitle flex={1}>
-                You have {managementInvitesCount.total} pending feed management invites
-              </AlertTitle>
-              <AlertDescription>
-                <Flex justifyContent="flex-end" flex={1}>
-                  <FeedManagementInvitesDialog
-                    trigger={
-                      <Button variant="outline">
-                        <span>View pending management invites</span>
-                      </Button>
-                    }
-                  />
+              <HStack
+                justifyContent="space-between"
+                alignItems="center"
+                flexWrap="wrap"
+                gap={4}
+                w="100%"
+              >
+                <Flex>
+                  <AlertIcon />
+                  <AlertTitle flex={1}>
+                    You have {managementInvitesCount.total} pending feed management invites
+                  </AlertTitle>
                 </Flex>
-              </AlertDescription>
+                <AlertDescription>
+                  <Flex>
+                    <FeedManagementInvitesDialog
+                      trigger={
+                        <Button variant="outline">
+                          <span>View pending management invites</span>
+                        </Button>
+                      }
+                    />
+                  </Flex>
+                </AlertDescription>
+              </HStack>
             </Alert>
           )}
           <Flex justifyContent="space-between" alignItems="center" gap="4" flexWrap="wrap">
@@ -156,42 +167,45 @@ export const UserFeeds: React.FC = () => {
               </Heading>
             </Flex>
             <Flex alignItems="center" as="aside">
-              {discordUserMe?.maxUserFeeds !== undefined && userFeedsResults?.total !== undefined && (
-                <Box>
-                  <Text fontSize="sm" srOnly>
-                    Feed Limit
-                  </Text>
-                  <HStack>
-                    <Text fontSize="xl" fontWeight={600}>
-                      {userFeedsResults.total}
+              {discordUserMe?.maxUserFeeds !== undefined &&
+                userFeedsResults?.total !== undefined && (
+                  <Box>
+                    <Text fontSize="sm" srOnly>
+                      Feed Limit
                     </Text>
-                    <Text fontSize="xl" fontWeight={600}>
-                      /
-                    </Text>
-                    {discordUserMe.maxUserFeedsComposition.legacy ? (
-                      <Tooltip
-                        label={
-                          <Box>
-                            <Text>+{discordUserMe.maxUserFeedsComposition.base}: Base Amount</Text>
-                            <Text>
-                              +{discordUserMe.maxUserFeedsComposition.legacy}: Legacy feed
-                              conversions
-                            </Text>
-                          </Box>
-                        }
-                      >
+                    <HStack>
+                      <Text fontSize="xl" fontWeight={600}>
+                        {userFeedsResults.total}
+                      </Text>
+                      <Text fontSize="xl" fontWeight={600}>
+                        /
+                      </Text>
+                      {discordUserMe.maxUserFeedsComposition.legacy ? (
+                        <Tooltip
+                          label={
+                            <Box>
+                              <Text>
+                                +{discordUserMe.maxUserFeedsComposition.base}: Base Amount
+                              </Text>
+                              <Text>
+                                +{discordUserMe.maxUserFeedsComposition.legacy}: Legacy feed
+                                conversions
+                              </Text>
+                            </Box>
+                          }
+                        >
+                          <Text fontSize="xl" fontWeight={600}>
+                            {discordUserMe.maxUserFeeds}
+                          </Text>
+                        </Tooltip>
+                      ) : (
                         <Text fontSize="xl" fontWeight={600}>
                           {discordUserMe.maxUserFeeds}
                         </Text>
-                      </Tooltip>
-                    ) : (
-                      <Text fontSize="xl" fontWeight={600}>
-                        {discordUserMe.maxUserFeeds}
-                      </Text>
-                    )}
-                  </HStack>
-                </Box>
-              )}
+                      )}
+                    </HStack>
+                  </Box>
+                )}
               {!userMeData?.result.enableBilling && (
                 <IconButton
                   as="a"
