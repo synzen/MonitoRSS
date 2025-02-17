@@ -1,10 +1,12 @@
 import {
+  BoxProps,
   Button,
   ButtonGroup,
   CloseButton,
   Flex,
   FormControl,
   FormErrorMessage,
+  FormLabel,
   HStack,
   Select,
   chakra,
@@ -21,6 +23,10 @@ import { ConditionInput } from "./ConditionInput";
 import { ArticlePropertySelect } from "../ArticlePropertySelect";
 import { getNestedField } from "../../../../utils/getNestedField";
 import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
+import { useNavigableTreeItemContext } from "../../../../contexts/NavigableTreeItemContext";
+import getChakraColor from "../../../../utils/getChakraColor";
+import { useEffect, useRef } from "react";
+import { getReadableLabelForRelationalOp } from "./utils/getReadableLabelForRelationalOp";
 
 const { Equals, Contains, Matches } = RelationalExpressionOperator;
 
@@ -28,15 +34,17 @@ interface Props {
   onDelete: () => void;
   prefix?: string;
   deletable?: boolean;
+  containerProps?: BoxProps;
 }
 
-export const Condition = ({ onDelete, prefix = "", deletable }: Props) => {
+export const Condition = ({ onDelete, prefix = "", deletable, containerProps }: Props) => {
   const {
     control,
     watch,
     formState: { errors },
   } = useFormContext();
   const { articleFormatOptions } = useUserFeedConnectionContext();
+  const { isFocused } = useNavigableTreeItemContext();
 
   const { t } = useTranslation();
   const leftOperandType = watch(`${prefix}left.type`) as
@@ -65,17 +73,20 @@ export const Condition = ({ onDelete, prefix = "", deletable }: Props) => {
               srOnly
               id={`${prefix}-property-label`}
               htmlFor={`${prefix}-property-select`}
-            />
+            >
+              Article Property
+            </chakra.label>
             <ArticlePropertySelect
               customPlaceholders={articleFormatOptions.customPlaceholders || []}
               value={field.value}
               onChange={field.onChange}
+              isRequired
               placeholder={t(
                 "features.feedConnections.components.filtersForm.placeholderSelectArticleProperty"
               )}
               isInvalid={!!error}
-              ariaLabelledBy="property-label"
-              inputId="property-select"
+              ariaLabelledBy={`${prefix}-property-label`}
+              inputId={`${prefix}-property-select`}
             />
             {error?.type === "required" && (
               <FormErrorMessage>
@@ -89,8 +100,23 @@ export const Condition = ({ onDelete, prefix = "", deletable }: Props) => {
   }
 
   return (
-    <HStack width="100%" alignItems="flex-start">
-      <HStack width="100%" spacing={8} alignItems="flex-start" overflow="auto" pb={2}>
+    <HStack
+      onKeyDown={(e) => e.stopPropagation()}
+      width="100%"
+      alignItems="flex-start"
+      {...containerProps}
+      borderRadius={"md"}
+      outline={isFocused ? `2px solid ${getChakraColor("whiteAlpha.600")}` : undefined}
+      bg={isFocused ? "blackAlpha.500" : undefined}
+      _hover={{
+        outline: `2px solid ${getChakraColor("whiteAlpha.800")} !important`,
+        background: "blackAlpha.700",
+      }}
+      pt={2}
+      px={2}
+      pb={2}
+    >
+      <HStack width="100%" spacing={8} alignItems="flex-start" overflow="auto">
         {leftOperandElement}
         <FormControl width="min-content">
           <Controller
@@ -98,7 +124,7 @@ export const Condition = ({ onDelete, prefix = "", deletable }: Props) => {
             control={control}
             render={({ field }) => {
               return (
-                <ButtonGroup isAttached variant="outline">
+                <ButtonGroup isAttached variant="outline" aria-label="Relational Operator">
                   <Button
                     onClick={() => field.onChange(false)}
                     colorScheme={!field.value ? "blue" : undefined}
@@ -118,22 +144,26 @@ export const Condition = ({ onDelete, prefix = "", deletable }: Props) => {
             }}
           />
         </FormControl>
-        <FormControl>
+        <FormControl isRequired>
+          <FormLabel id={`${prefix}op-label`} srOnly>
+            Relational Operator
+          </FormLabel>
           <Controller
             name={`${prefix}op`}
             control={control}
             render={({ field }) => {
               return (
-                <Select flexShrink={1} minWidth={150} {...field}>
-                  <option value={Equals}>
-                    {t("features.feedConnections.components.filtersForm.relationalOpEquals")}
-                  </option>
-                  <option value={Contains}>
-                    {t("features.feedConnections.components.filtersForm.relationalOpContains")}
-                  </option>
-                  <option value={Matches}>
-                    {t("features.feedConnections.components.filtersForm.relationalOpMatches")}
-                  </option>
+                <Select
+                  flexShrink={1}
+                  minWidth={150}
+                  bg="gray.800"
+                  {...field}
+                  aria-labelledby={`${prefix}op-label`}
+                  ref={null}
+                >
+                  <option value={Equals}>{getReadableLabelForRelationalOp(Equals)}</option>
+                  <option value={Contains}>{getReadableLabelForRelationalOp(Contains)}</option>
+                  <option value={Matches}>{getReadableLabelForRelationalOp(Matches)}</option>
                 </Select>
               );
             }}

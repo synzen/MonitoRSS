@@ -18,7 +18,7 @@ export const AnyAllSelector = ({ value, onChange }: Props) => {
   };
 
   return (
-    <ButtonGroup size="sm" isAttached variant="outline">
+    <ButtonGroup size="sm" isAttached variant="outline" aria-label="Any or all condition selector">
       <Button
         onClick={onSelectAnd}
         colorScheme={value === And ? "blue" : undefined}

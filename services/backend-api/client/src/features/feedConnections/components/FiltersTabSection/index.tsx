@@ -1,4 +1,4 @@
-import { Heading, Link, Stack, Text } from "@chakra-ui/react";
+import { Heading, Link, Stack, Text, chakra } from "@chakra-ui/react";
 
 import { LogicalFilterExpression } from "../../types";
 import { FiltersForm } from "../FiltersForm";
@@ -13,7 +13,7 @@ export const FiltersTabSection = ({ filters, onFiltersUpdated }: Props) => {
     <Stack spacing={8} mb={24}>
       <Stack>
         <Heading as="h2" size="md">
-          Filters
+          Article Filters
         </Heading>
         <Text>
           Block articles based on placeholder content so only relevant articles are delivered. If
@@ -29,7 +29,17 @@ export const FiltersTabSection = ({ filters, onFiltersUpdated }: Props) => {
           (with JavaScript flavor) to test your regex on sample content.
         </Text>
       </Stack>
-      <FiltersForm onSave={onFiltersUpdated} expression={filters} />
+      <chakra.aside aria-labelledby="filter-results-preview-title">
+        <FiltersForm
+          onSave={onFiltersUpdated}
+          expression={filters}
+          previewTitle={
+            <Heading as="h3" size="sm" id="filter-results-preview-title">
+              Filter Results Preview
+            </Heading>
+          }
+        />
+      </chakra.aside>
     </Stack>
   );
 };

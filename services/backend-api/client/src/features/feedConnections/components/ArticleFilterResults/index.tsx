@@ -114,10 +114,7 @@ export const ArticleFilterResults = ({ title, filters, tableContainer }: Props) 
               id="article-property-select-label"
               htmlFor="article-property-select"
             >
-              {t(
-                "features.feedConnections.components" +
-                  ".filtersTabSection.displayPropertyDropdownLabel"
-              )}
+              Display article property:
             </Text>
             <Box width={{ md: "250px", lg: "350px" }}>
               <ThemedSelect
@@ -174,18 +171,30 @@ export const ArticleFilterResults = ({ title, filters, tableContainer }: Props) 
                 <Button
                   size="sm"
                   width="min-content"
-                  onClick={prevPage}
-                  isDisabled={onFirstPage || fetchStatus === "fetching"}
+                  onClick={() => {
+                    if (onFirstPage || fetchStatus === "fetching") {
+                      return;
+                    }
+
+                    prevPage();
+                  }}
+                  aria-disabled={onFirstPage || fetchStatus === "fetching"}
                 >
-                  <span>{t("features.feedConnections.components.filtersTabSection.prevPage")}</span>
+                  <span>Previous Page</span>
                 </Button>
                 <Button
                   size="sm"
                   width="min-content"
-                  onClick={nextPage}
-                  isDisabled={onLastPage || fetchStatus === "fetching"}
+                  onClick={() => {
+                    if (onLastPage || fetchStatus === "fetching") {
+                      return;
+                    }
+
+                    nextPage();
+                  }}
+                  aria-disabled={onLastPage || fetchStatus === "fetching"}
                 >
-                  <span>{t("features.feedConnections.components.filtersTabSection.nextPage")}</span>
+                  <span>Next Page</span>
                 </Button>
               </HStack>
             </Flex>

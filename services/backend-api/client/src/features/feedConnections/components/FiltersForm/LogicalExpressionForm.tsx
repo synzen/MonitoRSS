@@ -1,18 +1,21 @@
-import { ChevronDownIcon } from "@chakra-ui/icons";
+import { ChevronDownIcon, ChevronUpIcon, DeleteIcon } from "@chakra-ui/icons";
 import {
   Box,
   BoxProps,
   Button,
   CloseButton,
+  Divider,
   Flex,
   FormControl,
   FormErrorMessage,
+  HStack,
   Menu,
   MenuButton,
   MenuItem,
   MenuList,
   Stack,
   Text,
+  chakra,
 } from "@chakra-ui/react";
 import { FieldError, useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -30,6 +33,15 @@ import {
 import { AnyAllSelector } from "./AnyAllSelector";
 import { Condition } from "./Condition";
 import { getNestedField } from "../../../../utils/getNestedField";
+import {
+  NavigableTreeItem,
+  NavigableTreeItemExpandButton,
+  NavigableTreeItemGroup,
+} from "../../../../components/NavigableTree";
+import { useNavigableTreeItemContext } from "../../../../contexts/NavigableTreeItemContext";
+import getChakraColor from "../../../../utils/getChakraColor";
+import { getAriaLabelForExpressionGroup } from "./utils/getAriaLabelForExpressionGroup";
+import { getAriaLabelForExpression } from "./utils/getAriaLableForExpression";
 
 interface Props {
   onDeleted: () => void;
@@ -55,8 +67,8 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", containerProps }
     control,
     name: `${prefix}op`,
   });
-  // console.log("🚀 ~ LogicalExpressionForm ~ errors:", errors);
-  // console.log("🚀 ~ useEffect ~ childrenName:", childrenName);
+  const { isExpanded, isFocused } = useNavigableTreeItemContext();
+
   useEffect(() => {
     if (fields.length === 0) {
       setError(childrenName, {
@@ -140,71 +152,134 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", containerProps }
         border="solid"
         borderWidth="1px"
         borderColor="gray.600"
-        padding="4"
+        // padding="4"
         borderRadius="md"
         width="100%"
-        overflow="auto"
+        // overflow="auto"
+        bg={isFocused ? "blackAlpha.500" : undefined}
+        outlineOffset={4}
+        outline={isFocused ? `2px solid ${getChakraColor("whiteAlpha.600")}` : undefined}
+        _hover={{
+          outline: `2px solid ${getChakraColor("whiteAlpha.800")} !important`,
+          background: "blackAlpha.700",
+        }}
       >
-        <Flex justifyContent="space-between">
-          <Box width="100%">
-            <Text display="inline" paddingRight={2}>
-              When
-            </Text>
-            <AnyAllSelector value={operator} onChange={onAnyAllChange} />
-            <Text display="inline" paddingLeft={2} paddingBottom={4}>
-              of the conditions match:
-            </Text>
-          </Box>
-          <CloseButton aria-label="Delete condition group" onClick={onDeleted} />
-        </Flex>
-        <Stack>
-          {!!fields.length && (
-            <Stack spacing={2} marginTop={4} width="100%">
-              {(fields as Array<FilterExpression & { id: string }>)?.map((child, childIndex) => {
-                if (child?.type === FilterExpressionType.Logical) {
-                  return (
-                    <LogicalExpressionForm
-                      key={child.id}
-                      onDeleted={() => onChildDeleted(childIndex)}
-                      prefix={`${prefix}children.${childIndex}.`}
-                    />
-                  );
-                }
+        <NavigableTreeItemExpandButton>
+          {({ onClick, isFocused, isExpanded }) => {
+            return (
+              <chakra.button
+                tabIndex={-1}
+                type="button"
+                p={4}
+                textAlign={"left"}
+                onClick={onClick}
+                width="100%"
+                borderRadius={"md"}
+              >
+                <HStack>
+                  {isExpanded ? (
+                    <ChevronUpIcon fontSize="lg" />
+                  ) : (
+                    <ChevronDownIcon fontSize={"lg"} />
+                  )}
+                  <Text>Condition Group</Text>
+                </HStack>
+              </chakra.button>
+            );
+          }}
+        </NavigableTreeItemExpandButton>
+        <Divider />
+        {isExpanded && (
+          <Flex justifyContent="space-between" px={4} pt={4}>
+            <Box width="100%" flex={1}>
+              <Text display="inline" paddingRight={2}>
+                When
+              </Text>
+              <AnyAllSelector value={operator} onChange={onAnyAllChange} />
+              <Text display="inline" paddingLeft={2} paddingBottom={4}>
+                of the conditions match:
+              </Text>
+            </Box>
+          </Flex>
+        )}
+        {isExpanded && (
+          <Stack px={2} pt={4}>
+            {!!fields.length && (
+              <NavigableTreeItemGroup display="flex" gap={2} flexDirection={"column"} width="100%">
+                {(fields as Array<FilterExpression & { id: string }>)?.map((child, childIndex) => {
+                  const childPrefix = `${prefix}children.${childIndex}.`;
 
-                if (child?.type === FilterExpressionType.Relational) {
-                  return (
-                    <Condition
-                      key={child.id}
-                      onDelete={() => onChildDeleted(childIndex)}
-                      prefix={`${prefix}children.${childIndex}.`}
-                      deletable
-                    />
-                  );
-                }
+                  if (child?.type === FilterExpressionType.Logical) {
+                    return (
+                      <NavigableTreeItem
+                        key={child.id}
+                        id={childPrefix}
+                        ariaLabel={getAriaLabelForExpressionGroup(child.op)}
+                      >
+                        <LogicalExpressionForm
+                          key={child.id}
+                          onDeleted={() => onChildDeleted(childIndex)}
+                          prefix={childPrefix}
+                          containerProps={{
+                            px: 2,
+                          }}
+                        />
+                      </NavigableTreeItem>
+                    );
+                  }
 
-                return null;
-              })}
-            </Stack>
-          )}
-          <FormControl isInvalid={childrenError?.type === "required"}>
-            <FormErrorMessage my={4}>At least one condition is required.</FormErrorMessage>
-          </FormControl>
-          <Box>
-            <Menu>
-              <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
-                {t("features.feedConnections.components.filtersForm.addButtonText")}
-              </MenuButton>
-              <MenuList>
-                <MenuItem onClick={onAddRelational}>
-                  {t("features.feedConnections.components.filtersForm.addRelationalButtonText")}
-                </MenuItem>
-                <MenuItem onClick={onAddLogical}>
-                  {t("features.feedConnections.components.filtersForm.addLogicalButtonText")}
-                </MenuItem>
-              </MenuList>
-            </Menu>
-          </Box>
-        </Stack>
+                  if (child?.type === FilterExpressionType.Relational) {
+                    return (
+                      <NavigableTreeItem
+                        key={childPrefix}
+                        id={childPrefix}
+                        ariaLabel={getAriaLabelForExpression(child)}
+                      >
+                        <Condition
+                          key={child.id}
+                          onDelete={() => onChildDeleted(childIndex)}
+                          prefix={childPrefix}
+                          deletable
+                        />
+                      </NavigableTreeItem>
+                    );
+                  }
+
+                  return null;
+                })}
+              </NavigableTreeItemGroup>
+            )}
+            <FormControl isInvalid={childrenError?.type === "required"}>
+              <FormErrorMessage my={4}>At least one condition is required.</FormErrorMessage>
+            </FormControl>
+            <HStack justifyContent="space-between" pb={2}>
+              <Menu>
+                <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
+                  {t("features.feedConnections.components.filtersForm.addButtonText")}
+                </MenuButton>
+                <MenuList>
+                  <MenuItem onClick={onAddRelational}>
+                    {t("features.feedConnections.components.filtersForm.addRelationalButtonText")}
+                  </MenuItem>
+                  <MenuItem onClick={onAddLogical}>
+                    {t("features.feedConnections.components.filtersForm.addLogicalButtonText")}
+                  </MenuItem>
+                </MenuList>
+              </Menu>
+
+              <Button
+                onClick={onDeleted}
+                leftIcon={<DeleteIcon />}
+                size="sm"
+                variant="ghost"
+                colorScheme="red"
+                // w="100%"
+              >
+                Delete condition group
+              </Button>
+            </HStack>
+          </Stack>
+        )}
       </Box>
     </Stack>
   );

@@ -46,7 +46,7 @@ export const ArticleFilterResultsView = ({
                         ".articleFilterResultsTable.columnHeaderPassedFilters"
                     )}
                   </Th>
-                  <Th width="100%">{displayPropertyName}</Th>
+                  <Th width="100%">Article {displayPropertyName}</Th>
                 </Tr>
               </Thead>
               <Tbody>

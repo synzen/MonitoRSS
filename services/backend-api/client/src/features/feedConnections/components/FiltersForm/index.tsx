@@ -1,4 +1,4 @@
-import { BoxProps, Button, HStack, Stack, TableHeadProps } from "@chakra-ui/react";
+import { Box, BoxProps, Button, HStack, Stack, TableHeadProps } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
 import React from "react";
@@ -12,6 +12,9 @@ import {
 } from "../../types";
 import { LogicalExpressionForm } from "./LogicalExpressionForm";
 import { ArticleFilterResults } from "../ArticleFilterResults";
+import NavigableTree, { NavigableTreeItem } from "../../../../components/NavigableTree";
+import { getAriaLabelForExpressionGroup } from "./utils/getAriaLabelForExpressionGroup";
+import { SavedUnsavedChangesPopupBar } from "../../../../components";
 
 interface FormData {
   expression: LogicalFilterExpression | null;
@@ -151,26 +154,19 @@ export const FiltersForm = ({
       <form onSubmit={onSubmit}>
         <Stack spacing={12}>
           <Stack>
-            <LogicalExpressionForm
-              onDeleted={onDeletedExpression}
-              prefix="expression."
-              containerProps={formContainerProps}
-            />
-            <HStack justifyContent="flex-end">
-              {isDirty && (
-                <Button variant="ghost" onClick={onClickReset} type="reset">
-                  <span>{t("common.buttons.reset")}</span>
-                </Button>
-              )}
-              <Button
-                colorScheme="blue"
-                isLoading={isSubmitting}
-                isDisabled={!isDirty || isSubmitting}
-                type="submit"
+            <NavigableTree accessibleLabel="Filter expression">
+              <NavigableTreeItem
+                isRootItem
+                id="expression."
+                ariaLabel={getAriaLabelForExpressionGroup(watchedExpression.op)}
               >
-                <span>{t("common.buttons.save")}</span>
-              </Button>
-            </HStack>
+                <LogicalExpressionForm
+                  onDeleted={onDeletedExpression}
+                  prefix="expression."
+                  containerProps={formContainerProps}
+                />
+              </NavigableTreeItem>
+            </NavigableTree>
           </Stack>
           <ArticleFilterResults
             filters={watchedExpression}
@@ -180,6 +176,7 @@ export const FiltersForm = ({
             }}
           />
         </Stack>
+        <SavedUnsavedChangesPopupBar useDirtyFormCheck />
       </form>
     </FormProvider>
   );

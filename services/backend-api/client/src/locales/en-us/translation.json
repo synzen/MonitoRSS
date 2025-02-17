@@ -525,7 +525,7 @@
           "placeholderArticleProperty": "Article property",
           "placeholderSelectArticleProperty": "Select article property",
           "placeholderArticleValue": "Article value",
-          "valueIsRequired": "Value is required"
+          "valueIsRequired": "Filter value is required"
         },
         "deleteButton": {
           "confirmTitle": "Confirmation",

@@ -290,7 +290,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                       });
                     }}
                   >
-                    Filters
+                    Article Filters
                   </Tab>
                   <Tab
                     fontWeight="semibold"
