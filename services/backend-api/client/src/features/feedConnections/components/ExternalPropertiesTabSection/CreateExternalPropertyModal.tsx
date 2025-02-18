@@ -96,8 +96,9 @@ const CreateExternalPropertyModal = ({ trigger, onSubmitted }: Props) => {
           <ModalCloseButton />
           <ModalBody tabIndex={-1}>
             <Box srOnly aria-live="polite" aria-busy={status === "loading"}>
-              {status === "success" &&
-                `Finished loading ${articleObjectEntries.length} article properties`}
+              {status === "success" && (
+                <span>Finished loading ${articleObjectEntries.length} article properties</span>
+              )}
             </Box>
             <Stack spacing={4} paddingBottom={4}>
               {error && (

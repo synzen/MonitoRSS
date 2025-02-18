@@ -32,11 +32,13 @@ export const SelectableUserFeedList = ({ selectedIds, onSelectedIdsChange }: Pro
   return (
     <Stack>
       <Box srOnly aria-live="polite">
-        {!!offsets &&
-          `Finished loading available target feeds ${latestOffset} to ${
-            latestOffset + 10
-          } out of ${totalCount}`}
-        {status === "loading" && "Loading available target feeds"}
+        {!!offsets && (
+          <span>
+            Finished loading available target feeds ${latestOffset} to ${latestOffset + 10} out of $
+            {totalCount}
+          </span>
+        )}
+        {status === "loading" && <span>Loading available target feeds</span>}
       </Box>
       <Stack
         px={4}

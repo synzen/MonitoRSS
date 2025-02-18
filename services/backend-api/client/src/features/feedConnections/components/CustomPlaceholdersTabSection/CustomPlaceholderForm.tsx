@@ -5,7 +5,6 @@ import {
   AlertTitle,
   Box,
   Button,
-  CloseButton,
   Code,
   Divider,
   Flex,
@@ -47,6 +46,7 @@ import { ArticleSelectDialog } from "../../../feed/components";
 import { useUserFeedArticles } from "../../../feed";
 import { useUserMe } from "../../../discordUser";
 import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
+import { notifyInfo } from "../../../../utils/notifyInfo";
 
 interface Props {
   index: number;
@@ -123,14 +123,22 @@ const RegexStep = ({ customPlaceholderIndex, stepIndex }: StepProps) => {
           {regexSearchError && <FormErrorMessage>{regexSearchError.message}</FormErrorMessage>}
         </FormControl>
         <FormControl flex={0}>
-          <FormLabel variant="inline">Flags</FormLabel>
+          <FormLabel variant="inline" whiteSpace="nowrap">
+            Regex Flags
+          </FormLabel>
           <Controller
             name={`customPlaceholders.${customPlaceholderIndex}.steps.${stepIndex}.regexSearchFlags`}
             control={control}
             render={({ field }) => {
               return (
                 <Menu closeOnSelect={false}>
-                  <MenuButton as={Button} size="sm" bg="gray.800" rightIcon={<ChevronDownIcon />}>
+                  <MenuButton
+                    as={Button}
+                    size="sm"
+                    bg="gray.800"
+                    rightIcon={<ChevronDownIcon />}
+                    aria-label="Regex Flags"
+                  >
                     {field.value || "/"}
                   </MenuButton>
                   <MenuList minWidth="240px">
@@ -454,7 +462,7 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
           will be the content of the custom placeholder. At least 1 step must be defined.
         </FormHelperText>
         {isNewAndIncompletePlaceholder && (
-          <Alert>
+          <Alert role={undefined}>
             <AlertDescription>
               Input a reference name and source placeholder to start adding steps
             </AlertDescription>
@@ -534,6 +542,7 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                           <HStack justifyContent="space-between" width="100%">
                             <Box>
                               <Text fontWeight={600}>
+                                Transformation Step:{" "}
                                 {!step.type ||
                                   (step.type === CustomPlaceholderStepType.Regex &&
                                     "Regex Replace")}
@@ -561,10 +570,18 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                                 </Text>
                               )}
                             </Box>
-                            <CloseButton
+                            <Button
+                              colorScheme="red"
                               size="sm"
-                              isDisabled={steps.length === 1}
+                              variant="ghost"
+                              aria-disabled={steps.length === 1}
                               onClick={() => {
+                                if (steps.length === 1) {
+                                  notifyInfo("At least one transformation step is required");
+
+                                  return;
+                                }
+
                                 setValue(
                                   `customPlaceholders.${index}.steps`,
                                   steps.filter((_, i) => i !== stepIndex),
@@ -575,7 +592,9 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                                   }
                                 );
                               }}
-                            />
+                            >
+                              Delete Step
+                            </Button>
                           </HStack>
                           <Divider mb={2} />
                           {!step.type ||

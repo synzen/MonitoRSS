@@ -150,13 +150,21 @@ export const ArticleSelectDialog = ({
           <ModalCloseButton />
           <ModalBody>
             <Box aria-live="polite" srOnly>
-              {userFeedArticlesStatus === "loading" &&
-                `Loading articles ${skip + 1} through ${skip + limit}`}
-              {userFeedArticlesStatus === "success" &&
-                `Finished loading articles ${skip + 1} through ${Math.max(skip + limit)}`}
-              {userFeedArticlesStatus === "success" &&
-                fetchStatus === "fetching" &&
-                `Loading articles ${skip + 1} through ${skip + limit}`}
+              {userFeedArticlesStatus === "loading" && (
+                <span>
+                  Loading articles ${skip + 1} through ${skip + limit}
+                </span>
+              )}
+              {userFeedArticlesStatus === "success" && (
+                <span>
+                  Finished loading articles ${skip + 1} through ${Math.max(skip + limit)}
+                </span>
+              )}
+              {userFeedArticlesStatus === "success" && fetchStatus === "fetching" && (
+                <span>
+                  Loading articles ${skip + 1} through ${skip + limit}
+                </span>
+              )}
             </Box>
             <Stack spacing={4}>
               <Box>
@@ -226,12 +234,23 @@ export const ArticleSelectDialog = ({
                             />
                           </InputGroup>
                           <Button
-                            leftIcon={<RepeatIcon />}
-                            isLoading={fetchStatus === "fetching"}
-                            onClick={() => refetch()}
+                            leftIcon={fetchStatus === "fetching" ? undefined : <RepeatIcon />}
+                            onClick={() => {
+                              if (fetchStatus === "fetching") {
+                                return;
+                              }
+
+                              refetch();
+                            }}
                             aria-label="Refresh list of articles"
                           >
-                            <span>Refresh</span>
+                            <span>
+                              {fetchStatus === "fetching" ? (
+                                <Spinner size="sm" />
+                              ) : (
+                                "Refresh Articles"
+                              )}
+                            </span>
                           </Button>
                         </HStack>
                       </FormControl>
@@ -334,7 +353,7 @@ export const ArticleSelectDialog = ({
               </Box>
               {!alertComponent && (
                 <>
-                  <Alert borderRadius="md">
+                  <Alert borderRadius="md" role={undefined}>
                     <AlertDescription>
                       <Text fontSize="sm">
                         {t("features.userFeeds.components.articleSelectPrompt.mayBeDelayWarning")}

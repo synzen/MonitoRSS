@@ -134,10 +134,10 @@ const ArticlesSection = ({
   return (
     <Stack>
       <Box srOnly aria-live="polite">
-        {articleEntries.length > 0 &&
-          fetchStatus === "idle" &&
-          `Finished loading ${articleEntries.length} external properties`}
-        {fetchStatus === "fetching" && "Loading preview..."}
+        {articleEntries.length > 0 && fetchStatus === "idle" && (
+          <span>Finished loading ${articleEntries.length} external properties</span>
+        )}
+        {fetchStatus === "fetching" && <span>Loading preview...</span>}
       </Box>
       <Box padding={2} rounded="lg" maxHeight={300} overflow="scroll">
         {someExternalWebPageLinkExists && (
@@ -286,7 +286,7 @@ export const ExternalPropertyPreview = ({
   return (
     <Stack px={[4, 4, 6]} py={4}>
       <Box srOnly aria-live="polite">
-        {fetchStatus === "fetching" && "Loading preview..."}
+        {fetchStatus === "fetching" && <span>Loading preview...</span>}
       </Box>
       <UserFeedConnectionProvider feedId={userFeed.id} connectionId={selectedConnectionId}>
         <UserFeedConnectionContext.Consumer>
