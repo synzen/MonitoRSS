@@ -188,6 +188,7 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", containerProps }
                     variant="ghost"
                     colorScheme="red"
                     size="sm"
+                    tabIndex={isFocused ? 0 : -1}
                     onClick={(e) => {
                       e.stopPropagation();
                       onDeleted();
@@ -269,7 +270,11 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", containerProps }
             </FormControl>
             <HStack justifyContent="space-between" pb={2}>
               <Menu>
-                <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
+                <MenuButton
+                  as={Button}
+                  rightIcon={<ChevronDownIcon />}
+                  tabIndex={isFocused ? 0 : -1}
+                >
                   {t("features.feedConnections.components.filtersForm.addButtonText")}
                 </MenuButton>
                 <MenuList>

@@ -122,7 +122,7 @@ export const CustomPlaceholdersTabSection = () => {
   return (
     <Stack spacing={8} mb={24}>
       <Stack>
-        <Heading as="h2" size="md">
+        <Heading as="h2" size="md" id="custom-placeholders-title">
           Custom Placeholders
         </Heading>
         <Text>
@@ -139,18 +139,19 @@ export const CustomPlaceholdersTabSection = () => {
       <FormProvider {...formMethods}>
         <form onSubmit={handleSubmit(onSubmit)}>
           <Stack spacing={4}>
-            {fields.length && (
-              <Accordion
-                allowToggle
-                index={activeIndex}
-                onChange={(newIndex) => setActiveIndex(newIndex)}
-              >
-                {fields.map((item, index) => {
-                  const hasUnsavedChanges = dirtyFields.customPlaceholders?.[index];
+            <Stack spacing={4} role="list" aria-labelledby="custom-placeholders-title">
+              {fields.length && (
+                <Accordion
+                  allowToggle
+                  role="listitem"
+                  index={activeIndex}
+                  onChange={(newIndex) => setActiveIndex(newIndex)}
+                >
+                  {fields.map((item, index) => {
+                    const hasUnsavedChanges = dirtyFields.customPlaceholders?.[index];
 
-                  return (
-                    <AccordionItem key={item.id}>
-                      <h2>
+                    return (
+                      <AccordionItem key={item.id}>
                         <AccordionButton>
                           <HStack width="100%" spacing={4}>
                             <AccordionIcon />
@@ -181,21 +182,21 @@ export const CustomPlaceholdersTabSection = () => {
                             </HStack>
                           </HStack>
                         </AccordionButton>
-                      </h2>
-                      <AccordionPanel pb={4}>
-                        <Stack>
-                          <CustomPlaceholderForm
-                            isExpanded={activeIndex === index}
-                            onDelete={() => onDeleteCustomPlaceholder(index)}
-                            index={index}
-                          />
-                        </Stack>
-                      </AccordionPanel>
-                    </AccordionItem>
-                  );
-                })}
-              </Accordion>
-            )}
+                        <AccordionPanel pb={4}>
+                          <Stack>
+                            <CustomPlaceholderForm
+                              isExpanded={activeIndex === index}
+                              onDelete={() => onDeleteCustomPlaceholder(index)}
+                              index={index}
+                            />
+                          </Stack>
+                        </AccordionPanel>
+                      </AccordionItem>
+                    );
+                  })}
+                </Accordion>
+              )}
+            </Stack>
             <Box>
               <Button onClick={onAddCustomPlaceholder} leftIcon={<AddIcon fontSize={13} />}>
                 Add Custom Placeholder

@@ -87,6 +87,7 @@ export const Condition = ({ onDelete, prefix = "", deletable, containerProps }: 
               isInvalid={!!error}
               ariaLabelledBy={`${prefix}-property-label`}
               inputId={`${prefix}-property-select`}
+              tabIndex={isFocused ? 0 : -1}
             />
             {error?.type === "required" && (
               <FormErrorMessage>
@@ -130,6 +131,7 @@ export const Condition = ({ onDelete, prefix = "", deletable, containerProps }: 
                     onClick={() => field.onChange(false)}
                     colorScheme={!field.value ? "blue" : undefined}
                     variant={!field.value ? "solid" : "outline"}
+                    tabIndex={isFocused ? 0 : -1}
                   >
                     {t("features.feedConnections.components.filtersForm.relationalOpDoes")}
                   </Button>
@@ -137,6 +139,7 @@ export const Condition = ({ onDelete, prefix = "", deletable, containerProps }: 
                     onClick={() => field.onChange(true)}
                     colorScheme={field.value ? "blue" : undefined}
                     variant={field.value ? "solid" : "outline"}
+                    tabIndex={isFocused ? 0 : -1}
                   >
                     {t("features.feedConnections.components.filtersForm.relationalOpDoesNot")}
                   </Button>
@@ -161,6 +164,7 @@ export const Condition = ({ onDelete, prefix = "", deletable, containerProps }: 
                   {...field}
                   aria-labelledby={`${prefix}op-label`}
                   ref={null}
+                  tabIndex={isFocused ? 0 : -1}
                 >
                   <option value={Equals}>{getReadableLabelForRelationalOp(Equals)}</option>
                   <option value={Contains}>{getReadableLabelForRelationalOp(Contains)}</option>
@@ -177,7 +181,13 @@ export const Condition = ({ onDelete, prefix = "", deletable, containerProps }: 
       </HStack>
       {deletable && (
         <Box>
-          <Button variant="ghost" size="sm" colorScheme="red" onClick={onDelete}>
+          <Button
+            variant="ghost"
+            size="sm"
+            colorScheme="red"
+            onClick={onDelete}
+            tabIndex={isFocused ? 0 : -1}
+          >
             <HStack alignItems="center">
               <DeleteIcon />
               <Text>Delete Condition</Text>

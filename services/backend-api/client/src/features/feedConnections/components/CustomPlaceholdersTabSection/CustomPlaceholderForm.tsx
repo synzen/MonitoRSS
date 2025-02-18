@@ -386,7 +386,7 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
 
   return (
     <Stack background="gray.700" p={4} spacing={4} rounded="lg">
-      <FormControl isInvalid={!!referenceNameError}>
+      <FormControl isInvalid={!!referenceNameError} isRequired>
         <FormLabel variant="inline">Reference Name</FormLabel>
         <Controller
           name={`customPlaceholders.${index}.referenceName`}
@@ -401,19 +401,18 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
               bg="gray.800"
               {...field}
               value={field.value || ""}
+              ref={null}
             />
           )}
         />
-        {!referenceNameError && (
-          <FormHelperText>
-            The reference name for this custom placeholder. For example, if the reference name is{" "}
-            <Code>mytitle</Code>, then the placeholder to use into your custom message contente will
-            be <Code>{`{{custom::mytitle}}`}</Code>.
-          </FormHelperText>
-        )}
-        {referenceNameError && <FormErrorMessage>{referenceNameError.message}</FormErrorMessage>}
+        <FormErrorMessage>{referenceNameError?.message}</FormErrorMessage>
+        <FormHelperText>
+          The reference name for this custom placeholder. For example, if the reference name is{" "}
+          <Code>mytitle</Code>, then the placeholder to use into your custom message contente will
+          be <Code>{`{{custom::mytitle}}`}</Code>.
+        </FormHelperText>
       </FormControl>
-      <FormControl isInvalid={!!sourcePlaceholderError}>
+      <FormControl isInvalid={!!sourcePlaceholderError} isRequired>
         <FormLabel
           variant="inline"
           id="source-placeholder-label"
@@ -440,19 +439,16 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
               customPlaceholders={[]}
               ariaLabelledBy="source-placeholder-label"
               inputId="source-placeholder-select"
+              isRequired
               isInvalid={!!sourcePlaceholderError}
             />
           )}
         />
-        {!sourcePlaceholderError && (
-          <FormHelperText>The placeholder where the content should originate from.</FormHelperText>
-        )}
-        {sourcePlaceholderError && (
-          <FormErrorMessage>{sourcePlaceholderError.message}</FormErrorMessage>
-        )}
+        <FormErrorMessage>{sourcePlaceholderError?.message}</FormErrorMessage>
+        <FormHelperText>The placeholder where the content should originate from.</FormHelperText>
       </FormControl>
       <FormControl isInvalid={!!hasStepsError}>
-        <FormLabel variant="inline">Steps</FormLabel>
+        <FormLabel variant="inline">Transformation Steps</FormLabel>
         <FormHelperText pb={2}>
           The steps to apply in sequence to the content of the source placeholder. The final result
           will be the content of the custom placeholder. At least 1 step must be defined.

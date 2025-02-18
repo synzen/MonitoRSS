@@ -2,6 +2,7 @@ import { FormControl, FormErrorMessage, FormLabel, Input } from "@chakra-ui/reac
 import { Controller, FieldError, useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { getNestedField } from "../../../../utils/getNestedField";
+import { useNavigableTreeItemContext } from "../../../../contexts/NavigableTreeItemContext";
 
 interface Props {
   controllerName: string;
@@ -16,6 +17,7 @@ export const ConditionInput = ({ controllerName, placeholder }: Props) => {
   } = useFormContext();
   // Using bracket notation on the errors object will not work since the prefix is a string
   const error = getNestedField<FieldError>(errors, controllerName);
+  const { isFocused } = useNavigableTreeItemContext();
 
   return (
     <FormControl isInvalid={!!error} isRequired>
@@ -40,6 +42,7 @@ export const ConditionInput = ({ controllerName, placeholder }: Props) => {
               }}
               {...field}
               ref={null}
+              tabIndex={isFocused ? 0 : -1}
             />
             {error?.type === "required" && (
               <FormErrorMessage>

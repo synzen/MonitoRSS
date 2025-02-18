@@ -16,6 +16,7 @@ interface Props {
   ariaLabelledBy: string;
   inputId: string;
   isRequired?: boolean;
+  tabIndex?: number;
 }
 
 export const ArticlePropertySelect = ({
@@ -28,6 +29,7 @@ export const ArticlePropertySelect = ({
   inputId,
   isInvalid,
   isRequired,
+  tabIndex,
 }: Props) => {
   const {
     userFeed: { id: feedId },
@@ -62,6 +64,7 @@ export const ArticlePropertySelect = ({
           inputId,
           "aria-labelledby": ariaLabelledBy,
           required: isRequired,
+          tabIndex,
         }}
       />
       {error && (
