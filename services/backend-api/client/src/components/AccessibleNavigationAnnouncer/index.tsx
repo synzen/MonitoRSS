@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { chakra } from "@chakra-ui/react";
+import { pages } from "../../constants";
 
 export const AccessibleNavigationAnnouncer = () => {
   // the message that will be announced
@@ -14,7 +15,14 @@ export const AccessibleNavigationAnnouncer = () => {
     if (location.pathname.slice(1)) {
       // make sure navigation has occurred and screen reader is ready
       setTimeout(() => {
-        setMessage(`Navigated to ${location.pathname.slice(1)} page.`);
+        const checkoutRootPath = pages.checkout(":id").split("/")[0];
+
+        if (location.pathname.includes(checkoutRootPath)) {
+          setMessage(`Navigated to checkout page.`);
+        } else {
+          setMessage(`Navigated to ${location.pathname.slice(1)} page.`);
+        }
+
         const h1Element = document.querySelector("h1");
 
         if (h1Element) {

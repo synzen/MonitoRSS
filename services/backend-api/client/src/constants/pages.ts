@@ -12,6 +12,7 @@ const getConnectionPathByType = (type: FeedConnectionType) => {
 };
 
 export const pages = {
+  checkout: (priceId: string) => `/paddle-checkout/${priceId}`,
   userSettings: () => "/settings",
   userFeeds: () => "/feeds",
   notFound: () => "/not-found",

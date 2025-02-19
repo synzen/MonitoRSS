@@ -1,9 +1,7 @@
 import {
   Box,
   Button,
-  Divider,
-  HStack,
-  Heading,
+  Flex,
   Link,
   Modal,
   ModalBody,
@@ -14,7 +12,12 @@ import {
   ModalOverlay,
   Skeleton,
   Stack,
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
   Text,
+  Tr,
 } from "@chakra-ui/react";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -147,9 +150,9 @@ export const ChangeSubscriptionDialog = ({
                     <Text>{product?.name}</Text>
                     {!data && <Skeleton width={64} height={12} mt={2} />}
                     {data && price && (
-                      <Heading size="lg">
+                      <Text fontSize="xx-large" fontWeight={700}>
                         {price?.formattedPrice}/{price?.interval}
-                      </Heading>
+                      </Text>
                     )}
                     {!data && <Skeleton width={64} height={6} mt={2} />}
                     {data && (
@@ -173,64 +176,90 @@ export const ChangeSubscriptionDialog = ({
                     )}
                   </Box>
                 </Stack>
-                <Divider />
-                <Stack>
-                  <HStack justifyContent="space-between">
-                    <Box>
-                      <Text>Subtotal</Text>
-                      <Text color="whiteAlpha.700" fontSize={14}>
-                        for remaining time on new plan
-                      </Text>
-                    </Box>
-                    {!data && <Skeleton width={16} height={6} />}
-                    {data && <Text>{data.data.immediateTransaction.subtotalFormatted}</Text>}
-                  </HStack>
-                  <HStack justifyContent="space-between">
-                    <Box>
-                      <Text>Tax</Text>
-                      <Text color="whiteAlpha.700" fontSize={14}>
-                        Included in plan price
-                      </Text>
-                    </Box>
-                    {!data && <Skeleton width={16} height={6} />}
-                    {data && <Text>{data.data.immediateTransaction.taxFormatted}</Text>}
-                  </HStack>
-                  <HStack justifyContent="space-between">
-                    <Box>
-                      <Text>Total</Text>
-                    </Box>
-                    {!data && <Skeleton width={16} height={6} />}
-                    {data && <Text>{data.data.immediateTransaction.totalFormatted}</Text>}
-                  </HStack>
-                  {data && data.data.immediateTransaction.credit !== "0" && (
-                    <HStack justifyContent="space-between">
-                      <Box>
-                        <Text>Credit</Text>
-                        <Text color="whiteAlpha.700" fontSize={14}>
-                          Includes refund for time remaining on current plan
-                        </Text>
-                      </Box>
-                      {!data && <Skeleton width={16} height={6} />}
-                      {data && (
-                        <Text color="green.200">
-                          -{data.data.immediateTransaction.creditFormatted}
-                        </Text>
+                <TableContainer pt={4}>
+                  <Table variant="unstyled">
+                    <Tbody>
+                      <Tr>
+                        <Td padding={0}>
+                          <Text>Subtotal</Text>
+                          <Text color="whiteAlpha.700" fontSize={14}>
+                            for remaining time on new plan
+                          </Text>
+                        </Td>
+                        <Td textAlign="right" p={0}>
+                          <Flex justifyContent="flex-end">
+                            {!data && <Skeleton width={16} height={6} />}
+                            {data && (
+                              <Text>{data.data.immediateTransaction.subtotalFormatted}</Text>
+                            )}
+                          </Flex>
+                        </Td>
+                      </Tr>
+                      <Tr>
+                        <Td pt={4} pl={0} pr={0} pb={0}>
+                          <Text>Tax</Text>
+                          <Text color="whiteAlpha.700" fontSize={14}>
+                            Included in plan price
+                          </Text>
+                        </Td>
+                        <Td textAlign="right" p={0}>
+                          <Flex justifyContent="flex-end">
+                            {!data && <Skeleton width={16} height={6} />}
+                            {data && <Text>{data.data.immediateTransaction.taxFormatted}</Text>}
+                          </Flex>
+                        </Td>
+                      </Tr>
+                      <Tr>
+                        <Td pt={4} pl={0} pr={0} pb={0}>
+                          <Text>Total</Text>
+                        </Td>
+                        <Td textAlign="right" p={0}>
+                          <Flex justifyContent="flex-end">
+                            {!data && <Skeleton width={16} height={6} />}
+                            {data && <Text>{data.data.immediateTransaction.totalFormatted}</Text>}
+                          </Flex>
+                        </Td>
+                      </Tr>
+                      {data && data.data.immediateTransaction.credit !== "0" && (
+                        <Tr>
+                          <Td pt={4} pl={0} pr={0} pb={0}>
+                            <Text>Credit</Text>
+                            <Text color="whiteAlpha.700" fontSize={14}>
+                              Includes refund for time remaining on current plan
+                            </Text>
+                          </Td>
+                          <Td p={0} textAlign="right">
+                            <Flex justifyContent="flex-end">
+                              {!data && <Skeleton width={16} height={6} />}
+                              {data && (
+                                <Text color="green.200">
+                                  -{data.data.immediateTransaction.creditFormatted}
+                                </Text>
+                              )}
+                            </Flex>
+                          </Td>
+                        </Tr>
                       )}
-                    </HStack>
-                  )}
-                  <Divider my={4} />
-                  <HStack justifyContent="space-between">
-                    <Text fontWeight="semibold">Due Today</Text>
-                    {!data && <Skeleton width={16} height={6} />}
-                    {data && (
-                      <Text fontWeight="bold">
-                        {data.data.immediateTransaction.grandTotalFormatted}
-                      </Text>
-                    )}
-                  </HStack>
-                </Stack>
+                    </Tbody>
+                    <Tr>
+                      <Td pt={8} pl={0} pr={0} pb={0}>
+                        <Text fontWeight="bold">Due Today</Text>
+                      </Td>
+                      <Td textAlign="right" pt={8} pl={0} pr={0} pb={0}>
+                        <Flex justifyContent="flex-end">
+                          {!data && <Skeleton width={16} height={6} />}
+                          {data && (
+                            <Text fontWeight="bold">
+                              {data.data.immediateTransaction.grandTotalFormatted}
+                            </Text>
+                          )}
+                        </Flex>
+                      </Td>
+                    </Tr>
+                  </Table>
+                </TableContainer>
               </Stack>
-              <Text color="whiteAlpha.700">
+              <Text color="whiteAlpha.700" pt={4}>
                 By proceeding, you are agreeing to our{" "}
                 <Link target="_blank" href="https://monitorss.xyz/terms" color="blue.300">
                   terms and conditions

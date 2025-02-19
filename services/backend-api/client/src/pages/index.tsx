@@ -35,6 +35,12 @@ const UserSettings = lazy(() =>
   }))
 );
 
+const Checkout = lazy(() =>
+  import("./Checkout").then(({ Checkout: c }) => ({
+    default: c,
+  }))
+);
+
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
 const Pages: React.FC = () => (
@@ -91,6 +97,20 @@ const Pages: React.FC = () => (
               <Feeds />
             </PageContent>
           </RequireDiscordServers>
+        </RequireAuth>
+      }
+    />
+    <Route
+      path={pages.checkout(":priceId")}
+      element={
+        <RequireAuth>
+          <PageContentV2 invertBackground>
+            <SuspenseErrorBoundary>
+              <Suspense fallback={<Spinner mt={24} />}>
+                <Checkout cancelUrl={pages.userFeeds()} />
+              </Suspense>
+            </SuspenseErrorBoundary>
+          </PageContentV2>
         </RequireAuth>
       }
     />

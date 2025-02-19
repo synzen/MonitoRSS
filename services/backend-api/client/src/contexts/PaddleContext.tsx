@@ -11,12 +11,11 @@ import {
 import { initializePaddle, Paddle } from "@paddle/paddle-js";
 import { useNavigate } from "react-router-dom";
 import { captureException } from "@sentry/react";
-import { Spinner, Stack, Text } from "@chakra-ui/react";
+import { Box, Spinner, Stack, Text } from "@chakra-ui/react";
 import { useUserMe } from "../features/discordUser";
 import { pages, PRODUCT_NAMES, ProductKey } from "../constants";
 import { CheckoutSummaryData } from "../types/CheckoutSummaryData";
 import { PricePreview } from "../types/PricePreview";
-import { notifySuccess } from "../utils/notifySuccess";
 
 const pwAuth = import.meta.env.VITE_PADDLE_PW_AUTH;
 const clientToken = import.meta.env.VITE_PADDLE_CLIENT_TOKEN;
@@ -59,8 +58,9 @@ interface ContextProps {
   updateCheckout: ({ priceId }: { priceId: string }) => void;
   resetCheckoutData: () => void;
   isLoaded?: boolean;
-  openCheckout: ({ priceId }: { priceId: string }) => void;
+  openCheckout: (p: { priceId: string; frameTarget?: string }) => void;
   getPricePreview: (priceIdsToGet: string[]) => Promise<Array<PricePreview>>;
+  isSubscriptionCreated: boolean;
 }
 
 export const PaddleContext = createContext<ContextProps>({
@@ -71,11 +71,13 @@ export const PaddleContext = createContext<ContextProps>({
   openCheckout: () => {},
   getPricePreview: async () => [],
   resetCheckoutData: () => {},
+  isSubscriptionCreated: false,
 });
 
 export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
   const [paddle, setPaddle] = useState<Paddle | undefined>();
   const [checkForSubscriptionCreated, setCheckForSubscriptionCreated] = useState(false);
+  const [isSubscriptionCreated, setIsSubscriptionCreated] = useState(false);
   const { data: user } = useUserMe({ checkForSubscriptionCreated });
   const navigate = useNavigate();
   const [checkoutLoadedData, setCheckoutLoadedData] = useState<CheckoutSummaryData | undefined>();
@@ -84,7 +86,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
   useEffect(() => {
     if (checkForSubscriptionCreated && paidSubscriptionExists) {
       setCheckForSubscriptionCreated(false);
-      notifySuccess(`Your benefits have been provisioned. Thank you for supporting MonitoRSS!`);
+      setIsSubscriptionCreated(true);
     }
   }, [checkForSubscriptionCreated, paidSubscriptionExists]);
 
@@ -240,6 +242,8 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
 
   const updatePaymentMethod = useCallback(
     (transactionId: string) => {
+      setIsSubscriptionCreated(false);
+
       paddle?.Checkout.open({
         transactionId,
         settings: {
@@ -254,6 +258,8 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
 
   const updateCheckout = useCallback(
     ({ priceId }: { priceId: string }) => {
+      setIsSubscriptionCreated(false);
+
       if (!paddle) {
         return;
       }
@@ -266,7 +272,9 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
   );
 
   const openCheckout = useCallback(
-    ({ priceId }: { priceId: string }) => {
+    ({ priceId, frameTarget }: { priceId: string; frameTarget?: string }) => {
+      setIsSubscriptionCreated(false);
+
       if (!user?.result.email) {
         navigate(pages.userSettings());
 
@@ -286,7 +294,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
         },
         settings: {
           displayMode: "inline",
-          frameTarget: "checkout-modal",
+          frameTarget: frameTarget || "checkout-modal",
           frameInitialHeight: 450,
           allowLogout: false,
           variant: "one-page",
@@ -303,6 +311,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
   );
 
   const resetCheckoutData = useCallback(() => {
+    setIsSubscriptionCreated(false);
     setCheckoutLoadedData(undefined);
   }, []);
 
@@ -315,6 +324,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       openCheckout,
       getPricePreview,
       resetCheckoutData,
+      isSubscriptionCreated,
     }),
     [
       JSON.stringify(checkoutLoadedData),
@@ -324,28 +334,31 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       openCheckout,
       getPricePreview,
       resetCheckoutData,
+      isSubscriptionCreated,
     ]
   );
 
   return (
     <PaddleContext.Provider value={providerVal}>
-      {checkForSubscriptionCreated && (
-        <Stack
-          backdropFilter="blur(3px)"
-          alignItems="center"
-          justifyContent="center"
-          height="100vh"
-          position="absolute"
-          background="blackAlpha.700"
-          top={0}
-          left={0}
-          width="100vw"
-          zIndex={10}
-        >
-          <Spinner />
-          <Text>Provisioning benefits...</Text>
-        </Stack>
-      )}
+      <Box role="status" aria-live="polite" aria-atomic="true">
+        {checkForSubscriptionCreated && (
+          <Stack
+            backdropFilter="blur(3px)"
+            alignItems="center"
+            justifyContent="center"
+            height="100vh"
+            position="absolute"
+            background="blackAlpha.700"
+            top={0}
+            left={0}
+            width="100vw"
+            zIndex={10}
+          >
+            <Spinner />
+            <Text>Provisioning benefits...</Text>
+          </Stack>
+        )}
+      </Box>
       {children}
     </PaddleContext.Provider>
   );

@@ -24,24 +24,24 @@ import {
   ModalCloseButton,
   Badge,
 } from "@chakra-ui/react";
-import { ChangeEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 import { captureException } from "@sentry/react";
+import { useNavigate } from "react-router-dom";
 import { InlineErrorAlert } from "../InlineErrorAlert";
 import { useUserMe } from "../../features/discordUser";
 import { FAQ } from "../FAQ";
 import { ChangeSubscriptionDialog } from "../ChangeSubscriptionDialog";
-import { ProductKey } from "../../constants";
+import { pages, ProductKey } from "../../constants";
 import { useSubscriptionProducts } from "../../features/subscriptionProducts";
 import { EXTERNAL_PROPERTIES_MAX_ARTICLES } from "../../constants/externalPropertiesMaxArticles";
-import CheckoutSummary from "./CheckoutSummary";
 import { usePaddleContext } from "../../contexts/PaddleContext";
 import { PricePreview } from "../../types/PricePreview";
+import { notifyInfo } from "../../utils/notifyInfo";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   onOpen: () => void;
-  openWithPriceId?: string | null;
 }
 
 enum Feature {
@@ -191,24 +191,21 @@ interface ChangeSubscriptionDetails {
   isDowngrade?: boolean;
 }
 
-export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Props) => {
-  const { openCheckout, updateCheckout, getPricePreview, checkoutLoadedData, resetCheckoutData } =
-    usePaddleContext();
+export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
+  const { getPricePreview, resetCheckoutData } = usePaddleContext();
   const [pricePreviewErrored, setPricePreviewErrored] = useState(false);
   const [isLoadingPricePreview, setIsLoadingPricePreview] = useState(true);
   const [products, setProducts] = useState<Array<PricePreview>>();
   const { status: userStatus, error: userError, data: userData } = useUserMe();
-  const [checkingOutPriceId, setCheckingOutPriceId] = useState<string>();
   const [interval, setInterval] = useState<"month" | "year">(initialInterval);
   const { data: subProducts, error: subProductsError } = useSubscriptionProducts();
   const [changeSubscriptionDetails, setChangeSubscriptionDetails] =
     useState<ChangeSubscriptionDetails>();
+  const navigate = useNavigate();
   const userBillingInterval = userData?.result.subscription.billingInterval;
   const billingPeriodEndsAt = userData?.result.subscription.billingPeriod?.end;
-  const initialFocusRef = useRef<HTMLInputElement>(null);
 
   const onClosePricingModal = () => {
-    setCheckingOutPriceId(undefined);
     resetCheckoutData();
     onClose();
   };
@@ -228,51 +225,24 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
       return;
     }
 
-    onClose();
-
     if (userData.result.subscription.product.key === ProductKey.Free) {
-      setCheckingOutPriceId(priceId);
-      openCheckout({
-        priceId,
-      });
+      navigate(pages.checkout(priceId));
+      onClose();
     } else {
       setChangeSubscriptionDetails({
         priceId,
         productId,
         isDowngrade,
       });
+      onClose();
     }
   };
-
-  useEffect(() => {
-    if (
-      openWithPriceId &&
-      userData &&
-      userData.result.subscription.product.key === ProductKey.Free
-    ) {
-      openCheckout({
-        priceId: openWithPriceId,
-      });
-    }
-  }, [openWithPriceId, !!userData, openCheckout]);
-
-  useEffect(() => {
-    if (!isLoadingPricePreview) {
-      initialFocusRef.current?.focus();
-    }
-  }, [isLoadingPricePreview, initialFocusRef.current]);
 
   useEffect(() => {
     if (userBillingInterval) {
       setInterval(userBillingInterval);
     }
   }, [userBillingInterval]);
-
-  useEffect(() => {
-    if (!checkoutLoadedData) {
-      setCheckingOutPriceId(undefined);
-    }
-  }, [!!checkoutLoadedData]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -320,37 +290,6 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
 
   return (
     <Box>
-      <Box display={checkingOutPriceId ? "block" : "none"}>
-        <CheckoutSummary
-          onChangeInterval={(newInterval) => {
-            const product = subProducts?.data.products.find((p) =>
-              p.prices.find((pr) => pr.id === checkingOutPriceId)
-            );
-
-            if (!product) {
-              return;
-            }
-
-            const price = product.prices.find((pr) => pr.interval === newInterval);
-
-            if (!price) {
-              return;
-            }
-
-            updateCheckout({
-              priceId: price.id,
-            });
-          }}
-          checkoutData={checkoutLoadedData}
-          onClose={() => {
-            setCheckingOutPriceId(undefined);
-          }}
-          onGoBack={() => {
-            setCheckingOutPriceId(undefined);
-            onOpen();
-          }}
-        />
-      </Box>
       <ChangeSubscriptionDialog
         products={products}
         isDowngrade={changeSubscriptionDetails?.isDowngrade}
@@ -375,20 +314,21 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
         isOpen={isOpen}
         isCentered
         size="6xl"
-        initialFocusRef={initialFocusRef}
         motionPreset="slideInBottom"
         scrollBehavior="inside"
       >
         <ModalOverlay backdropFilter="blur(3px)" />
         <ModalContent bg="none" shadow="none" maxHeight="100vh">
           <ModalCloseButton />
-          <ModalBody bg="transparent" shadow="none">
+          <ModalBody bg="transparent" shadow="none" tabIndex={-1}>
             <Box mt={12}>
               <Stack>
                 <Flex alignItems="center" justifyContent="center">
                   <Stack width="100%" alignItems="center" spacing={12} justifyContent="center">
                     <Stack justifyContent="center" textAlign="center">
-                      <Heading>Pricing</Heading>
+                      <Heading as="h1" tabIndex={-1}>
+                        Pricing
+                      </Heading>
                       <Text color="whiteAlpha.800" fontSize="lg" fontWeight="light">
                         MonitoRSS is able to stay open-source and free thanks to its supporters.
                         <br />
@@ -402,7 +342,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
                     {failedToLoadPrices && (
                       <Stack mb={4}>
                         <InlineErrorAlert
-                          title="Sorry, something went wrong while loading prices"
+                          title="Something went wrong while loading prices"
                           description="This issue has been automatically sent for diagnostics. Please try again later, or contact us at support@monitorss.xyz"
                         />
                       </Stack>
@@ -418,8 +358,8 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
                               size="lg"
                               colorScheme="green"
                               onChange={onChangeInterval}
-                              ref={initialFocusRef}
                               isChecked={interval === "year"}
+                              aria-label="Switch to yearly pricing"
                             />
                             <Text fontSize="lg" fontWeight="semibold">
                               Yearly
@@ -442,6 +382,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
                               "325px 325px 325px",
                             ]}
                             spacing={4}
+                            role="list"
                           >
                             {tiers.map(
                               (
@@ -480,22 +421,19 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
                                     userSubscription.billingInterval === "year");
 
                                 return (
-                                  <Card size="lg" shadow="lg" key={associatedProduct?.name}>
+                                  <Card
+                                    size="lg"
+                                    shadow="lg"
+                                    key={associatedProduct?.name}
+                                    role="listitem"
+                                  >
                                     <CardHeader pb={0}>
                                       <Stack>
                                         <HStack justifyContent="flex-start">
                                           <Heading size="md" fontWeight="semibold">
                                             {associatedProduct?.name || ""}
                                           </Heading>
-                                          {/* {highlighted && (
-                                            <Tag size="sm" colorScheme="blue" fontWeight="bold">
-                                              Most Popular
-                                            </Tag>
-                                          )} */}
                                         </HStack>
-                                        {/* <Text color="whiteAlpha.600" fontSize="lg">
-                                          {description}
-                                        </Text> */}
                                       </Stack>
                                     </CardHeader>
                                     <CardBody pt={1}>
@@ -516,12 +454,17 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
                                             {interval === "month" ? "per month" : "per year"}
                                           </Text>
                                         </Box>
-                                        <Stack>
+                                        <Stack as="ul" listStyleType="none">
                                           {features.map((f) => {
                                             return (
-                                              <HStack key={f.name}>
+                                              <HStack key={f.name} as="li">
                                                 {f.enabled ? (
-                                                  <Flex bg="blue.500" rounded="full" p={1}>
+                                                  <Flex
+                                                    bg="blue.500"
+                                                    rounded="full"
+                                                    p={1}
+                                                    aria-disabled
+                                                  >
                                                     <CheckIcon fontSize="md" width={3} height={3} />
                                                   </Flex>
                                                 ) : (
@@ -540,15 +483,21 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
                                     <CardFooter justifyContent="center">
                                       <Stack width="100%" spacing={0}>
                                         <Button
-                                          isDisabled={isOnThisTier}
+                                          aria-disabled={isOnThisTier}
                                           width="100%"
-                                          onClick={() =>
+                                          onClick={() => {
+                                            if (isOnThisTier) {
+                                              notifyInfo("You are already on this plan");
+
+                                              return;
+                                            }
+
                                             onClickPrice(
                                               associatedPrice?.id,
                                               productId,
                                               isBelowUserTier
-                                            )
-                                          }
+                                            );
+                                          }}
                                           variant={
                                             isOnThisTier
                                               ? "outline"
@@ -564,9 +513,13 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, openWithPriceId }: Prop
                                               : undefined
                                           }
                                         >
-                                          {isOnThisTier && "Current Plan"}
-                                          {isBelowUserTier && "Downgrade"}
-                                          {isAboveUserTier && "Upgrade"}
+                                          {isOnThisTier && <span>Current Plan</span>}
+                                          {isBelowUserTier && (
+                                            <span>Downgrade to {associatedProduct?.name}</span>
+                                          )}
+                                          {isAboveUserTier && (
+                                            <span>Upgrade to {associatedProduct?.name}</span>
+                                          )}
                                         </Button>
                                       </Stack>
                                     </CardFooter>
