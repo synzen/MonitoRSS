@@ -38,10 +38,19 @@ export const RedditLoginButton = ({ size, colorScheme, onConnected }: Props) => 
   return (
     <Button
       size={size || "sm"}
-      isDisabled={fetchStatus === "fetching"}
-      onClick={() => openRedditLogin()}
+      aria-disabled={fetchStatus === "fetching"}
+      onClick={() => {
+        if (fetchStatus === "fetching") {
+          return;
+        }
+
+        openRedditLogin();
+      }}
       colorScheme={colorScheme}
       rightIcon={<ExternalLinkIcon />}
+      aria-label={
+        redditConnected ? "Reconnect Reddit in popup window" : "Connect Reddit in popup window"
+      }
     >
       {redditConnected ? "Reconnect" : "Connect"}
     </Button>

@@ -17,6 +17,7 @@ import {
   FormLabel,
   HStack,
   Heading,
+  Input,
   Link,
   ListItem,
   OrderedList,
@@ -136,8 +137,14 @@ const ChangePaymentMethodUrlButton = () => {
         size="sm"
         variant="outline"
         isLoading={fetchStatus === "fetching"}
-        onClick={onClick}
-        isDisabled={!!error}
+        onClick={() => {
+          if (error) {
+            return;
+          }
+
+          onClick();
+        }}
+        aria-disabled={!!error}
         colorScheme={error ? "red" : undefined}
       >
         <span>
@@ -277,23 +284,21 @@ export const UserSettings = () => {
   return (
     <DashboardContentV2 error={error} loading={status === "loading"}>
       <BoxConstrained.Wrapper>
-        <BoxConstrained.Container paddingTop={10} spacing={6} paddingBottom={32}>
-          <Stack spacing={8}>
+        <BoxConstrained.Container paddingTop={10} spacing={6} paddingBottom={120}>
+          <Stack spacing={8} mx={8}>
             <Stack justifyContent="flex-start" width="100%">
-              <Heading>Account Settings</Heading>
+              <Heading as="h1">Account Settings</Heading>
             </Stack>
             <Stack spacing={8}>
               {/* <Heading size="md">Account</Heading> */}
-              <Stack>
-                <Text fontWeight={600} color="whiteAlpha.700">
+              <FormControl isReadOnly>
+                <FormLabel fontWeight={600} color="whiteAlpha.700">
                   Email
-                </Text>
-                <Flex justifyContent="space-between" alignItems="center" flexWrap="wrap">
-                  <Text>
-                    {data?.result?.email || (
-                      <chakra.span color="gray.560">(no email available)</chakra.span>
-                    )}
-                  </Text>
+                </FormLabel>
+                <Flex justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={4}>
+                  <Box>
+                    <Input isReadOnly value={data?.result.email || "(no email available)"} />
+                  </Box>
                   <Button
                     variant="link"
                     color="blue.300"
@@ -303,14 +308,16 @@ export const UserSettings = () => {
                     <span>Refresh Email</span>
                   </Button>
                 </Flex>
-              </Stack>
+              </FormControl>
             </Stack>
             {data?.result.enableBilling && (
               <>
                 <Divider />
                 <Stack spacing={8}>
                   <Stack>
-                    <Heading size="md">Billing</Heading>
+                    <Heading as="h2" size="md">
+                      Billing
+                    </Heading>
                   </Stack>
                   {!hasEmailAvailable && (
                     <Alert status="warning" borderRadius="md">
@@ -480,7 +487,7 @@ export const UserSettings = () => {
                           )}
                           {data.result.subscription.product.key !== ProductKey.Free && (
                             <Stack>
-                              <Text fontWeight={600} color="whiteAlpha.700">
+                              <Text as="h3" fontWeight={600} color="whiteAlpha.700">
                                 Credit Balance
                               </Text>
                               <Text>
@@ -495,12 +502,12 @@ export const UserSettings = () => {
                             </Stack>
                           )}
                           <Stack>
-                            <Text fontWeight={600} color="whiteAlpha.700">
+                            <Text as="h3" fontWeight={600} color="whiteAlpha.700">
                               Current Tier
                             </Text>
                             <Stack spacing={3}>
                               {subscriptionText}
-                              <HStack>
+                              <HStack flexWrap="wrap">
                                 {subscriptionPendingCancellation && (
                                   <Box>
                                     <ConfirmModal
@@ -537,7 +544,9 @@ export const UserSettings = () => {
             )}
             <Divider />
             <Stack spacing={6}>
-              <Heading size="md">Integrations</Heading>
+              <Heading as="h2" size="md">
+                Integrations
+              </Heading>
               <HStack
                 justifyContent="space-between"
                 borderStyle="solid"
@@ -585,10 +594,14 @@ export const UserSettings = () => {
             <FormProvider {...formMethods}>
               <form onSubmit={handleSubmit(onSubmit)}>
                 <Stack spacing={6}>
-                  <Heading size="md">Preferences</Heading>
+                  <Heading as="h2" size="md" id="preferences-title">
+                    Preferences
+                  </Heading>
                   <Stack spacing={12}>
                     <Stack spacing={4}>
-                      <Heading size="sm">Notifications</Heading>
+                      <Heading as="h3" size="sm" id="notifications">
+                        Notifications
+                      </Heading>
                       {!hasEmailAvailable && (
                         <Alert status="warning" borderRadius="md">
                           <Stack>
@@ -605,78 +618,82 @@ export const UserSettings = () => {
                           </Stack>
                         </Alert>
                       )}
-                      {hasEmailAvailable && (
-                        <Stack spacing={4}>
-                          <FormControl
-                            as={Flex}
-                            justifyContent="space-between"
-                            flexWrap="wrap"
-                            gap={4}
-                          >
-                            <Box>
-                              <FormLabel htmlFor="email-alerts">
-                                Disabled feed or feed connections
-                              </FormLabel>
-                              <FormHelperText>
-                                Whenever feed or feed connections automatically get disabled due to
-                                issues while processing.
-                              </FormHelperText>
-                            </Box>
-                            <Controller
-                              name="alertOnDisabledFeeds"
-                              control={control}
-                              render={({ field }) => {
-                                return (
-                                  <Switch
-                                    size="lg"
-                                    isDisabled={!hasLoaded || !hasEmailAvailable || isSubmitting}
-                                    isChecked={!!field.value}
-                                    onChange={(e) => field.onChange(e.target.checked)}
-                                  />
-                                );
-                              }}
-                            />
-                          </FormControl>
-                        </Stack>
-                      )}
-                      <SavedUnsavedChangesPopupBar />
+                      <Box role="list" aria-labelledby="notifications preferences-title">
+                        {hasEmailAvailable && (
+                          <Stack spacing={4} role="listitem">
+                            <FormControl
+                              as={Flex}
+                              justifyContent="space-between"
+                              flexWrap="wrap"
+                              gap={4}
+                            >
+                              <Box>
+                                <FormLabel>Disabled feed or feed connections</FormLabel>
+                                <FormHelperText>
+                                  Whenever feed or feed connections automatically get disabled due
+                                  to issues while processing.
+                                </FormHelperText>
+                              </Box>
+                              <Controller
+                                name="alertOnDisabledFeeds"
+                                control={control}
+                                render={({ field }) => {
+                                  return (
+                                    <Switch
+                                      size="lg"
+                                      isDisabled={!hasLoaded || !hasEmailAvailable || isSubmitting}
+                                      isChecked={!!field.value}
+                                      onChange={(e) => field.onChange(e.target.checked)}
+                                    />
+                                  );
+                                }}
+                              />
+                            </FormControl>
+                          </Stack>
+                        )}
+                      </Box>
                     </Stack>
                     <Stack spacing={4}>
                       <Stack mb={2}>
-                        <Heading size="sm">Date Placeholders</Heading>
+                        <Heading as="h3" size="sm" id="date-preferences">
+                          Date Placeholders
+                        </Heading>
                         <Text>
                           Customize the format, locale, and timezone used for date placeholders
                           across all feeds.
                         </Text>
                       </Stack>
-                      <Controller
-                        name="dates"
-                        control={control}
-                        render={({ field }) => {
-                          return (
-                            <DatePreferencesForm
-                              errors={{
-                                timezone: errors.dates?.timezone?.message,
-                              }}
-                              onChange={(values) => {
-                                field.onChange({
-                                  format: values.format,
-                                  locale: values.locale,
-                                  timezone: values.timezone,
-                                });
-                              }}
-                              values={{
-                                format: field.value?.format,
-                                locale: field.value?.locale,
-                                timezone: field.value?.timezone,
-                              }}
-                            />
-                          );
-                        }}
-                      />
+                      <fieldset aria-labelledby="date-preferences preferences-title">
+                        <Controller
+                          name="dates"
+                          control={control}
+                          render={({ field }) => {
+                            return (
+                              <DatePreferencesForm
+                                errors={{
+                                  timezone: errors.dates?.timezone?.message,
+                                }}
+                                onChange={(values) => {
+                                  field.onChange({
+                                    format: values.format,
+                                    locale: values.locale,
+                                    timezone: values.timezone,
+                                  });
+                                }}
+                                values={{
+                                  format: field.value?.format,
+                                  locale: field.value?.locale,
+                                  timezone: field.value?.timezone,
+                                }}
+                              />
+                            );
+                          }}
+                        />
+                      </fieldset>
                     </Stack>
                   </Stack>
                 </Stack>
+                <SavedUnsavedChangesPopupBar />
               </form>
             </FormProvider>
           </Stack>
