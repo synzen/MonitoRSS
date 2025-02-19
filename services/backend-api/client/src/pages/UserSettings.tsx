@@ -320,7 +320,7 @@ export const UserSettings = () => {
                     </Heading>
                   </Stack>
                   {!hasEmailAvailable && (
-                    <Alert status="warning" borderRadius="md">
+                    <Alert status="warning" borderRadius="md" role={undefined}>
                       <Stack>
                         <AlertTitle>
                           To enable billing for subscriptions, your email is required
@@ -342,7 +342,7 @@ export const UserSettings = () => {
                       {data && (
                         <Stack spacing={8}>
                           {data.result.isOnPatreon && (
-                            <Alert status="info" borderRadius="md">
+                            <Alert status="info" borderRadius="md" role={undefined}>
                               <Stack width="100%">
                                 <AlertTitle>
                                   You are currently still on a legacy Patreon plan!
@@ -603,7 +603,7 @@ export const UserSettings = () => {
                         Notifications
                       </Heading>
                       {!hasEmailAvailable && (
-                        <Alert status="warning" borderRadius="md">
+                        <Alert status="warning" borderRadius="md" role={undefined}>
                           <Stack>
                             <AlertTitle>To enable notifications, your email is required</AlertTitle>
                             <AlertDescription>
