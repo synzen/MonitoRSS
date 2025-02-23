@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { rest } from "msw";
+import { delay, HttpResponse, http } from "msw";
 import {
   GetDiscordAuthStatusOutput,
   GetDiscordBotOutput,
@@ -88,191 +88,205 @@ import { mockUserFeedDeliveryLogs } from "./data/userFeedDeliveryLogs";
 import { CreateUserFeedUrlValidationOutput } from "../features/feed/api/createUserFeedUrlValidation";
 
 const handlers = [
-  rest.get("/api/v1/subscription-products/update-preview", (req, res, ctx) => {
-    return res(
-      ctx.delay(500),
-      ctx.json<GetSubscriptionChangePreviewOutput>({
-        data: {
-          immediateTransaction: {
-            billingPeriod: {
-              startsAt: new Date(2020, 1, 1).toISOString(),
-              endsAt: new Date(2021, 2, 1).toISOString(),
-            },
-            subtotalFormatted: `$${(Math.random() * 100).toFixed(2)}`,
-            taxFormatted: `$${(Math.random() * 100).toFixed(2)}`,
-            creditFormatted: `$${(Math.random() * 100).toFixed(2)}`,
-            credit: `${(Math.random() * 100).toFixed(2)}`,
-            totalFormatted: `$${(Math.random() * 100).toFixed(2)}`,
-            grandTotalFormatted: `$${(Math.random() * 100).toFixed(2)}`,
+  http.get("/api/v1/subscription-products/update-preview", async () => {
+    await delay(500);
+
+    return HttpResponse.json<GetSubscriptionChangePreviewOutput>({
+      data: {
+        immediateTransaction: {
+          billingPeriod: {
+            startsAt: new Date(2020, 1, 1).toISOString(),
+            endsAt: new Date(2021, 2, 1).toISOString(),
           },
+          subtotalFormatted: `$${(Math.random() * 100).toFixed(2)}`,
+          taxFormatted: `$${(Math.random() * 100).toFixed(2)}`,
+          creditFormatted: `$${(Math.random() * 100).toFixed(2)}`,
+          credit: `${(Math.random() * 100).toFixed(2)}`,
+          totalFormatted: `$${(Math.random() * 100).toFixed(2)}`,
+          grandTotalFormatted: `$${(Math.random() * 100).toFixed(2)}`,
         },
-      })
+      },
+    });
+  }),
+  http.post("/api/v1/subscription-products/update", async () => {
+    await delay(500);
+
+    return new HttpResponse(null, {
+      status: 204,
+    });
+  }),
+  http.get("/api/v1/subscription-products/cancel", async () => {
+    await delay(500);
+
+    return new HttpResponse(null, {
+      status: 204,
+    });
+  }),
+  http.get("/api/v1/subscription-products", async ({ request }) => {
+    const url = new URL(request.url);
+    const currencyCode = url.searchParams.get("currency") || "USD";
+
+    await delay(500);
+
+    return HttpResponse.json<GetSubscriptionProductsOutput>({
+      data: {
+        products: [
+          {
+            id: "free",
+            name: "Free",
+            prices: [
+              {
+                interval: "month",
+                formattedPrice: "$0",
+                currencyCode,
+                id: "f0",
+              },
+              {
+                interval: "year",
+                formattedPrice: "$0",
+                currencyCode,
+                id: "f1",
+              },
+            ],
+          },
+          {
+            id: "tier1",
+            name: "Tier 1",
+            prices: [
+              {
+                interval: "month",
+                formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
+                currencyCode,
+                id: "p1",
+              },
+              {
+                interval: "year",
+                formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
+                currencyCode,
+                id: "p2",
+              },
+            ],
+          },
+          {
+            id: "tier2",
+            name: "Tier 2",
+            prices: [
+              {
+                interval: "month",
+                formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
+                currencyCode,
+                id: "p3",
+              },
+              {
+                interval: "year",
+                formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
+                currencyCode,
+                id: "p4",
+              },
+            ],
+          },
+          {
+            id: "tier3",
+            name: "Tier 3",
+            prices: [
+              {
+                interval: "month",
+                formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
+                currencyCode,
+                id: "p5",
+              },
+              {
+                interval: "year",
+                formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
+                currencyCode,
+                id: "p6",
+              },
+            ],
+          },
+        ],
+        currencies: [
+          { code: "USD", symbol: "$" },
+          {
+            code: "EUR",
+            symbol: "€",
+          },
+        ],
+      },
+    });
+  }),
+  http.post("/api/v1/error-reports", async () => {
+    await delay(500);
+
+    return HttpResponse.json(
+      {},
+      {
+        status: 204,
+      }
     );
   }),
-  rest.post("/api/v1/subscription-products/update", (req, res, ctx) => {
-    return res(ctx.delay(500), ctx.status(204));
-  }),
-  rest.get("/api/v1/subscription-products/cancel", (req, res, ctx) => {
-    return res(ctx.delay(500), ctx.status(204));
-  }),
-  rest.get("/api/v1/subscription-products", (req, res, ctx) => {
-    const currencyCode = req.url.searchParams.get("currency") || "USD";
+  http.get("/api/v1/users/@me", async () => {
+    await delay(500);
 
-    return res(
-      ctx.delay(500),
-      ctx.json<GetSubscriptionProductsOutput>({
-        data: {
-          products: [
-            {
-              id: "free",
-              name: "Free",
-              prices: [
-                {
-                  interval: "month",
-                  formattedPrice: "$0",
-                  currencyCode,
-                  id: "f0",
-                },
-                {
-                  interval: "year",
-                  formattedPrice: "$0",
-                  currencyCode,
-                  id: "f1",
-                },
-              ],
-            },
-            {
-              id: "tier1",
-              name: "Tier 1",
-              prices: [
-                {
-                  interval: "month",
-                  formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
-                  currencyCode,
-                  id: "p1",
-                },
-                {
-                  interval: "year",
-                  formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
-                  currencyCode,
-                  id: "p2",
-                },
-              ],
-            },
-            {
-              id: "tier2",
-              name: "Tier 2",
-              prices: [
-                {
-                  interval: "month",
-                  formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
-                  currencyCode,
-                  id: "p3",
-                },
-                {
-                  interval: "year",
-                  formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
-                  currencyCode,
-                  id: "p4",
-                },
-              ],
-            },
-            {
-              id: "tier3",
-              name: "Tier 3",
-              prices: [
-                {
-                  interval: "month",
-                  formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
-                  currencyCode,
-                  id: "p5",
-                },
-                {
-                  interval: "year",
-                  formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
-                  currencyCode,
-                  id: "p6",
-                },
-              ],
-            },
-          ],
-          currencies: [
-            { code: "USD", symbol: "$" },
-            {
-              code: "EUR",
-              symbol: "€",
-            },
-          ],
-        },
-      })
-    );
+    return HttpResponse.json<GetUserMeOutput>({ result: mockUserMe });
   }),
-  rest.post("/api/v1/error-reports", (req, res, ctx) => {
-    return res(ctx.delay(500), ctx.json({}));
+  http.patch("/api/v1/users/@me", async () => {
+    await delay(500);
+
+    return HttpResponse.json<UpdateUserMeOutput>({ result: mockUserMe });
+  }),
+  http.get("/api/v1/discord-users/bot", async () =>
+    HttpResponse.json<GetDiscordBotOutput>({
+      result: mockDiscordBot,
+    })
+  ),
+  http.get("/api/v1/discord-users/@me", async () =>
+    HttpResponse.json<GetDiscordMeOutput>(mockDiscordUserMe)
+  ),
+
+  http.get("/api/v1/discord-users/:id", async () => {
+    await delay(500);
+
+    return HttpResponse.json<GetDiscordUserOutput>({
+      result: mockDiscordUser,
+    });
   }),
 
-  rest.get("/api/v1/users/@me", (req, res, ctx) => {
-    return res(ctx.delay(500), ctx.json<GetUserMeOutput>({ result: mockUserMe }));
+  http.get("/api/v1/discord-users/@me/auth-status", async () =>
+    HttpResponse.json<GetDiscordAuthStatusOutput>({
+      authenticated: true,
+    })
+  ),
+
+  http.patch(
+    "/api/v1/discord-users/@me/supporter",
+    async () =>
+      new HttpResponse(null, {
+        status: 204,
+      })
+  ),
+
+  http.get("/api/v1/discord-users/@me/servers", async () =>
+    HttpResponse.json<GetServersOutput>({
+      total: mockDiscordServers.length,
+      results: mockDiscordServers,
+    })
+  ),
+
+  http.get("/api/v1/discord-servers/:serverId/status", async () =>
+    HttpResponse.json<GetServerStatusOutput>({
+      result: {
+        authorized: true,
+      },
+    })
+  ),
+
+  http.get("/api/v1/discord-servers/:serverId/legacy-conversion", async () => {
+    await delay(500);
+
+    return HttpResponse.json<GetServerLegacyFeedBulkConversionOutput>(legacyFeedBulkConversion);
   }),
 
-  rest.patch("/api/v1/users/@me", (req, res, ctx) => {
-    return res(ctx.delay(500), ctx.json<UpdateUserMeOutput>({ result: mockUserMe }));
-  }),
-
-  rest.get("/api/v1/discord-users/bot", (req, res, ctx) =>
-    res(
-      ctx.json<GetDiscordBotOutput>({
-        result: mockDiscordBot,
-      })
-    )
-  ),
-  rest.get("/api/v1/discord-users/@me", (req, res, ctx) =>
-    res(ctx.json<GetDiscordMeOutput>(mockDiscordUserMe))
-  ),
-
-  rest.get("/api/v1/discord-users/:id", (req, res, ctx) =>
-    res(
-      ctx.delay(1000),
-      ctx.json<GetDiscordUserOutput>({
-        result: mockDiscordUser,
-      })
-    )
-  ),
-
-  rest.get("/api/v1/discord-users/@me/auth-status", (req, res, ctx) =>
-    res(
-      ctx.json<GetDiscordAuthStatusOutput>({
-        authenticated: true,
-      })
-    )
-  ),
-
-  rest.patch("/api/v1/discord-users/@me/supporter", (req, res, ctx) => res(ctx.status(204))),
-
-  rest.get("/api/v1/discord-users/@me/servers", (req, res, ctx) =>
-    res(
-      ctx.json<GetServersOutput>({
-        total: mockDiscordServers.length,
-        results: mockDiscordServers,
-      })
-    )
-  ),
-
-  rest.get("/api/v1/discord-servers/:serverId/status", (req, res, ctx) =>
-    res(
-      ctx.json<GetServerStatusOutput>({
-        result: {
-          authorized: true,
-        },
-      })
-    )
-  ),
-
-  rest.get("/api/v1/discord-servers/:serverId/legacy-conversion", (req, res, ctx) =>
-    res(ctx.delay(500), ctx.json<GetServerLegacyFeedBulkConversionOutput>(legacyFeedBulkConversion))
-  ),
-
-  rest.post("/api/v1/discord-servers/:serverId/legacy-conversion", (req, res, ctx) => {
+  http.post("/api/v1/discord-servers/:serverId/legacy-conversion", async () => {
     if (legacyFeedBulkConversion.status !== "IN_PROGRESS") {
       legacyFeedBulkConversion.status = "IN_PROGRESS";
     } else {
@@ -280,58 +294,53 @@ const handlers = [
       legacyFeedBulkConversion.failedFeeds = [];
     }
 
-    return res(
-      ctx.delay(1000),
-      ctx.json<CreateServerLegacyFeedBulkConversionOutput>({
+    await delay(500);
+
+    return HttpResponse.json<CreateServerLegacyFeedBulkConversionOutput>({
+      total: 5,
+    });
+  }),
+  http.get("/api/v1/discord-servers/:serverId", async () =>
+    HttpResponse.json<GetServerSettingsOutput>({
+      result: {
+        profile: {
+          dateFormat: "YYYY-MM-DD",
+          dateLanguage: "en",
+          timezone: "UTC",
+        },
+        includesBot: true,
+      },
+    })
+  ),
+
+  http.patch("/api/v1/discord-servers/:serverId", async () =>
+    HttpResponse.json<UpdateServerSettingsOutput>({
+      result: {
+        profile: {
+          dateFormat: "YYYY-MM-DD",
+          dateLanguage: "en",
+          timezone: "UTC",
+        },
+      },
+    })
+  ),
+
+  http.get("/api/v1/discord-servers/:serverId/legacy-feed-count", async () => {
+    await delay(700);
+
+    return HttpResponse.json<GetLegacyFeedCountOutput>({
+      result: {
         total: 5,
-      })
-    );
-  }),
-  rest.get("/api/v1/discord-servers/:serverId", (req, res, ctx) =>
-    res(
-      ctx.json<GetServerSettingsOutput>({
-        result: {
-          profile: {
-            dateFormat: "YYYY-MM-DD",
-            dateLanguage: "en",
-            timezone: "UTC",
-          },
-          includesBot: true,
-        },
-      })
-    )
-  ),
-
-  rest.patch("/api/v1/discord-servers/:serverId", (req, res, ctx) =>
-    res(
-      ctx.delay(1000),
-      ctx.json<UpdateServerSettingsOutput>({
-        result: {
-          profile: {
-            dateFormat: "YYYY-MM-DD",
-            dateLanguage: "en",
-            timezone: "UTC",
-          },
-        },
-      })
-    )
-  ),
-
-  rest.get("/api/v1/discord-servers/:serverId/legacy-feed-count", (req, res, ctx) => {
-    return res(
-      ctx.delay(700),
-      ctx.json<GetLegacyFeedCountOutput>({
-        result: {
-          total: 5,
-        },
-      })
-    );
+      },
+    });
   }),
 
-  rest.get("/api/v1/discord-servers/:serverId/feeds", (req, res, ctx) => {
-    const limit = Number(req.url.searchParams.get("limit") || "10");
-    const offset = Number(req.url.searchParams.get("offset") || "0");
-    const search = req.url.searchParams.get("search");
+  http.get("/api/v1/discord-servers/:serverId/feeds", async ({ request }) => {
+    const url = new URL(request.url);
+
+    const limit = Number(url.searchParams.get("limit") || "10");
+    const offset = Number(url.searchParams.get("offset") || "0");
+    const search = url.searchParams.get("search");
 
     const theseMockSummariesTotal = mockFeedSummaries.length * 5;
     const theseMockSummaries: FeedSummary[] = new Array(theseMockSummariesTotal)
@@ -348,112 +357,91 @@ const handlers = [
 
     const results = theseMockSummaries.slice(offset, offset + limit);
 
-    return res(
-      ctx.delay(700),
-      ctx.json<GetFeedsOutput>({
-        total: theseMockSummariesTotal,
-        results,
-      })
-    );
+    await delay(700);
+
+    return HttpResponse.json<GetFeedsOutput>({
+      total: theseMockSummariesTotal,
+      results,
+    });
   }),
 
-  rest.get("/api/v1/discord-servers/:serverId/active-threads", (req, res, ctx) =>
-    res(
-      ctx.delay(1000),
-      ctx.json<GetServerActiveThreadsOutput>({
-        total: mockDiscordThreads.length,
-        results: mockDiscordThreads,
-      })
+  http.get("/api/v1/discord-servers/:serverId/active-threads", async () =>
+    HttpResponse.json<GetServerActiveThreadsOutput>({
+      total: mockDiscordThreads.length,
+      results: mockDiscordThreads,
+    })
+  ),
+
+  http.get("/api/v1/discord-servers/:serverId/channels", () =>
+    HttpResponse.json<GetServerChannelsOutput>({
+      total: mockDiscordChannels.length,
+      results: mockDiscordChannels,
+    })
+  ),
+
+  http.get("/api/v1/discord-servers/:serverId/roles", () =>
+    HttpResponse.json<GetServerRolesOutput>({
+      total: mockDiscordRoles.length,
+      results: mockDiscordRoles,
+    })
+  ),
+
+  http.get("/api/v1/discord-servers/:serverId/members", () =>
+    HttpResponse.json<GetServerMembersOutput>({
+      total: mockDiscordServerMembers.length,
+      results: mockDiscordServerMembers,
+    })
+  ),
+
+  http.get("/api/v1/discord-webhooks", () =>
+    HttpResponse.json<GetDiscordWebhooksOutput>({
+      results: mockDiscordWebhooks,
+    })
+  ),
+
+  http.post("/api/v1/feeds", () =>
+    HttpResponse.json(
+      generateMockApiErrorResponse({
+        code: "WEBHOOKS_MANAGE_MISSING_PERMISSIONS",
+      }),
+      {
+        status: 403,
+      }
     )
   ),
 
-  rest.get("/api/v1/discord-servers/:serverId/channels", (req, res, ctx) =>
-    res(
-      ctx.delay(1000),
-      ctx.json<GetServerChannelsOutput>({
-        total: mockDiscordChannels.length,
-        results: mockDiscordChannels,
-      })
-    )
-  ),
+  http.get("/api/v1/user-feed-management-invites/pending", async () => {
+    await delay(500);
 
-  rest.get("/api/v1/discord-servers/:serverId/roles", (req, res, ctx) =>
-    res(
-      // ctx.delay(1000),
-      ctx.json<GetServerRolesOutput>({
-        total: mockDiscordRoles.length,
-        results: mockDiscordRoles,
-      })
-    )
-  ),
-
-  rest.get("/api/v1/discord-servers/:serverId/members", (req, res, ctx) =>
-    res(
-      ctx.delay(1000),
-      ctx.json<GetServerMembersOutput>({
-        total: mockDiscordServerMembers.length,
-        results: mockDiscordServerMembers,
-      })
-    )
-  ),
-
-  rest.get("/api/v1/discord-webhooks", (req, res, ctx) =>
-    res(
-      // ctx.status(403),
-      // ctx.json(generateMockApiErrorResponse({
-      //   code: 'WEBHOOKS_MANAGE_MISSING_PERMISSIONS',
-      // })),
-      ctx.json<GetDiscordWebhooksOutput>({
-        results: mockDiscordWebhooks,
-      })
-    )
-  ),
-
-  rest.post("/api/v1/feeds", (req, res, ctx) =>
-    res(
-      ctx.delay(1000),
-      ctx.status(403),
-      ctx.json(
-        generateMockApiErrorResponse({
-          code: "WEBHOOKS_MANAGE_MISSING_PERMISSIONS",
-        })
-      )
-    )
-  ),
-
-  rest.get("/api/v1/user-feed-management-invites/pending", async (req, res, ctx) => {
-    return res(
-      ctx.delay(500),
-      ctx.json<GetUserFeedManagementInvitesCountOutput>({
-        total: mockUserFeedManagementInvites.length,
-      })
-    );
+    return HttpResponse.json<GetUserFeedManagementInvitesCountOutput>({
+      total: mockUserFeedManagementInvites.length,
+    });
   }),
 
-  rest.get("/api/v1/user-feed-management-invites", async (req, res, ctx) => {
-    return res(
-      ctx.delay(500),
-      ctx.json<GetUserFeedManagementInvitesOutput>({
-        results: mockUserFeedManagementInvites,
-      })
-    );
+  http.get("/api/v1/user-feed-management-invites", async () => {
+    await delay(500);
+
+    return HttpResponse.json<GetUserFeedManagementInvitesOutput>({
+      results: mockUserFeedManagementInvites,
+    });
   }),
 
-  rest.post("/api/v1/user-feed-management-invites", async (req, res, ctx) => {
-    const body = await req.json();
+  http.post("/api/v1/user-feed-management-invites", async ({ request }) => {
+    const body = await request.json();
     const { feedId, discordUserId } = body as { feedId: string; discordUserId: string };
 
     const feed = mockUserFeeds.find((f) => f.id === feedId);
 
     if (!feed) {
-      return res(
-        ctx.delay(500),
-        ctx.status(404),
-        ctx.json(
-          generateMockApiErrorResponse({
-            code: "FEED_NOT_FOUND",
-          })
-        )
+      await delay(500);
+
+      return HttpResponse.json(
+        generateMockApiErrorResponse({
+          code: "FEED_NOT_FOUND",
+        }),
+        {
+          status: 404,
+        }
       );
     }
 
@@ -470,53 +458,73 @@ const handlers = [
       status: UserFeedManagerStatus.Pending,
     });
 
-    return res(
-      ctx.delay(500),
-      ctx.status(404),
-      ctx.json<CreateUserFeedManagementInviteOutput>({
-        result: {
-          status: "success",
-        },
-      })
-    );
+    await delay(500);
+
+    return HttpResponse.json<CreateUserFeedManagementInviteOutput>({
+      result: {
+        status: "success",
+      },
+    });
   }),
 
-  rest.patch("/api/v1/user-feed-management-invites/:id/status", async (req, res, ctx) => {
-    const { id } = req.params;
+  http.patch("/api/v1/user-feed-management-invites/:id/status", async ({ params }) => {
+    const { id } = params;
 
     mockUserFeedManagementInvites.splice(
       mockUserFeedManagementInvites.findIndex((u) => u.id === id),
       1
     );
 
-    return res(ctx.delay(500), ctx.status(404));
+    await delay(500);
+
+    return new HttpResponse(null, {
+      status: 404,
+    });
   }),
 
-  rest.post("/api/v1/user-feed-management-invites/:id/resend", async (req, res, ctx) => {
-    const { id } = req.params;
+  http.post("/api/v1/user-feed-management-invites/:id/resend", async ({ params }) => {
+    const { id } = params;
 
     const matchedFeed = mockUserFeeds.find((f) =>
       f.shareManageOptions?.invites.find((u) => u.id === id)
     );
 
     if (!matchedFeed) {
-      return res(ctx.delay(500), ctx.status(404), ctx.json({}));
+      await delay(500);
+
+      return HttpResponse.json(
+        {},
+        {
+          status: 404,
+        }
+      );
     }
 
     matchedFeed.shareManageOptions!.invites.find((u) => u.id === id)!.status =
       UserFeedManagerStatus.Pending;
 
-    return res(ctx.delay(500), ctx.status(404));
+    await delay(500);
+
+    return new HttpResponse(null, {
+      status: 404,
+    });
   }),
 
-  rest.delete("/api/v1/user-feed-management-invites/:id", async (req, res, ctx) => {
-    const { id } = req.params;
+  http.delete("/api/v1/user-feed-management-invites/:id", async ({ params }) => {
+    const { id } = params;
     const matchedFeed = mockUserFeeds.find((f) =>
       f.shareManageOptions?.invites.find((u) => u.id === id)
     );
 
     if (!matchedFeed) {
-      return res(ctx.delay(500), ctx.status(404), ctx.json({}));
+      await delay(500);
+
+      return HttpResponse.json(
+        {},
+        {
+          status: 404,
+        }
+      );
     }
 
     matchedFeed.shareManageOptions?.invites.splice(
@@ -524,14 +532,19 @@ const handlers = [
       1
     );
 
-    return res(ctx.delay(500), ctx.status(404));
+    await delay(500);
+
+    return new HttpResponse(null, {
+      status: 404,
+    });
   }),
 
-  rest.get("/api/v1/user-feeds", (req, res, ctx) => {
-    const limit = Number(req.url.searchParams.get("limit") || "10");
-    const offset = Number(req.url.searchParams.get("offset") || "0");
-    const search = req.url.searchParams.get("search");
-    const disabledCodes = req.url.searchParams.get("filters[disabledCodes]")?.split(",");
+  http.get("/api/v1/user-feeds", async ({ request }) => {
+    const url = new URL(request.url);
+    const limit = Number(url.searchParams.get("limit") || "10");
+    const offset = Number(url.searchParams.get("offset") || "0");
+    const search = url.searchParams.get("search");
+    const disabledCodes = url.searchParams.get("filters[disabledCodes]")?.split(",");
 
     const filtered = mockUserFeedSummary
       .filter((feed) => (search ? feed.title.toLowerCase().includes(search) : true))
@@ -556,28 +569,26 @@ const handlers = [
       ownedByUser: Math.random() > 0.5,
     }));
 
-    return res(
-      ctx.delay(500),
-      ctx.json<GetUserFeedsOutput>({
-        results: limitedResults,
-        total: filtered.length,
-      })
-    );
+    await delay(500);
+
+    return HttpResponse.json<GetUserFeedsOutput>({
+      results: limitedResults,
+      total: filtered.length,
+    });
   }),
 
-  rest.post("/api/v1/user-feeds/:id/restore-to-legacy", async (req, res, ctx) => {
-    return res(
-      ctx.delay(500),
-      ctx.json<CreateUserFeedLegacyRestoreOutput>({
-        result: {
-          status: "success",
-        },
-      })
-    );
+  http.post("/api/v1/user-feeds/:id/restore-to-legacy", async () => {
+    await delay(500);
+
+    return HttpResponse.json<CreateUserFeedLegacyRestoreOutput>({
+      result: {
+        status: "success",
+      },
+    });
   }),
 
-  rest.patch("/api/v1/user-feeds", async (req, res, ctx) => {
-    const body = await req.json();
+  http.patch("/api/v1/user-feeds", async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>;
 
     if (body.op === "bulk-delete") {
       const castedBody = body.data as DeleteUserFeedsInput["data"];
@@ -589,104 +600,116 @@ const handlers = [
         }
       }
 
-      return res(
-        ctx.delay(500),
-        ctx.json<DeleteUserFeedsOutput>({
-          results: feedIdsToDelete.map((id) => ({
-            id,
-            deleted: true,
-            isLegacy: false,
-          })),
-        })
-      );
+      await delay(500);
+
+      return HttpResponse.json<DeleteUserFeedsOutput>({
+        results: feedIdsToDelete.map((id) => ({
+          id,
+          deleted: true,
+          isLegacy: false,
+        })),
+      });
     }
 
-    return res(ctx.delay(500), ctx.status(500), ctx.json({}));
+    await delay(500);
+
+    return HttpResponse.json(
+      {},
+      {
+        status: 500,
+      }
+    );
   }),
 
-  rest.post("/api/v1/user-feeds/url-validation", (req, res, ctx) =>
-    res(
-      ctx.delay(500),
-      ctx.status(200),
-      ctx.json<CreateUserFeedUrlValidationOutput>({
-        result: {
-          resolvedToUrl: "https://www.monitorss.xyz",
-        },
-      })
-    )
-  ),
-  rest.post("/api/v1/user-feeds", (req, res, ctx) =>
-    res(
-      ctx.delay(500),
-      ctx.status(400),
-      ctx.json<CreateUserFeedOutput>({
-        result: mockUserFeeds[0],
-      })
-    )
-  ),
+  http.post("/api/v1/user-feeds/url-validation", async () => {
+    await delay(500);
 
-  rest.delete("/api/v1/user-feeds/:feedId", (req, res, ctx) => {
-    const { feedId } = req.params;
+    return HttpResponse.json<CreateUserFeedUrlValidationOutput>({
+      result: {
+        resolvedToUrl: "https://www.monitorss.xyz",
+      },
+    });
+  }),
+  http.post("/api/v1/user-feeds", async () => {
+    await delay(500);
+
+    return HttpResponse.json<CreateUserFeedOutput>(
+      {
+        result: mockUserFeeds[0],
+      },
+      {
+        status: 400,
+      }
+    );
+  }),
+
+  http.delete("/api/v1/user-feeds/:feedId", async ({ params }) => {
+    const { feedId } = params;
 
     const index = mockUserFeeds.findIndex((feed) => feed.id === feedId);
 
     if (index === -1) {
-      return res(
-        ctx.status(404),
-        ctx.json(
-          generateMockApiErrorResponse({
-            code: "FEED_NOT_FOUND",
-          })
-        )
+      return HttpResponse.json(
+        generateMockApiErrorResponse({
+          code: "FEED_NOT_FOUND",
+        }),
+        {
+          status: 404,
+        }
       );
     }
 
     mockUserFeeds.splice(index, 1);
 
-    return res(ctx.delay(500), ctx.status(404), ctx.status(204));
+    await delay(500);
+
+    return new HttpResponse(null, {
+      status: 204,
+    });
   }),
 
-  rest.patch("/api/v1/user-feeds/:feedId", (req, res, ctx) => {
-    const matchingUserFeed = mockUserFeeds.find((feed) => feed.id === req.params.feedId);
+  http.patch("/api/v1/user-feeds/:feedId", async ({ params }) => {
+    const matchingUserFeed = mockUserFeeds.find((feed) => feed.id === params.feedId);
 
     if (!matchingUserFeed) {
-      return res(ctx.status(404), ctx.json({}));
+      return HttpResponse.json({}, { status: 404 });
     }
 
-    return res(
-      ctx.delay(500),
-      ctx.status(200),
-      ctx.json<UpdateUserFeedOutput>({
-        result: matchingUserFeed,
-      })
-    );
+    await delay(500);
+
+    return HttpResponse.json<UpdateUserFeedOutput>({
+      result: matchingUserFeed,
+    });
   }),
 
-  rest.get("/api/v1/user-feeds/:feedId", (req, res, ctx) => {
-    const { feedId } = req.params;
+  http.get("/api/v1/user-feeds/:feedId", async ({ params }) => {
+    const { feedId } = params;
     const feed = mockUserFeeds.find((f) => f.id === feedId);
 
     if (!feed) {
-      return res(
-        ctx.status(404),
-        ctx.json(
-          generateMockApiErrorResponse({
-            code: "FEED_NOT_FOUND",
-          })
-        )
+      return HttpResponse.json(
+        generateMockApiErrorResponse({
+          code: "FEED_NOT_FOUND",
+        }),
+        {
+          status: 404,
+        }
       );
     }
 
-    return res(
-      ctx.delay(500),
-      ctx.json<GetUserFeedOutput>({
-        result: feed,
-      })
-    );
+    await delay(500);
+
+    return HttpResponse.json<GetUserFeedOutput>({
+      result: feed,
+    });
   }),
 
-  rest.post("/api/v1/user-feeds/:feedId/get-articles", async (req, res, ctx) => {
-    const { skip, limit, filters } = await req.json();
+  http.post("/api/v1/user-feeds/:feedId/get-articles", async ({ request }) => {
+    const { skip, limit, filters } = (await request.json()) as {
+      skip: number;
+      limit: number;
+      filters: Record<string, unknown>;
+    };
 
     const useSkip = skip || 0;
     const useLimit = limit || 10;
@@ -701,273 +724,279 @@ const handlers = [
       })
       .slice(useSkip, useSkip + useLimit);
 
-    return res(
-      ctx.delay(500),
-      ctx.json<GetUserFeedArticlesOutput>({
-        result: {
-          articles,
-          totalArticles: mockUserFeedArticles.length,
-          requestStatus: UserFeedArticleRequestStatus.Success,
-          response: {
-            statusCode: 403,
-          },
-          filterStatuses: mockUserFeedArticles.map((_, index) => ({ passed: index % 2 === 0 })),
-          selectedProperties: ["id", "title"],
+    await delay(500);
+
+    return HttpResponse.json<GetUserFeedArticlesOutput>({
+      result: {
+        articles,
+        totalArticles: mockUserFeedArticles.length,
+        requestStatus: UserFeedArticleRequestStatus.Success,
+        response: {
+          statusCode: 200,
         },
-      })
-    );
+        filterStatuses: mockUserFeedArticles.map((_, index) => ({ passed: index % 2 === 0 })),
+        selectedProperties: ["id", "title"],
+      },
+    });
   }),
 
-  rest.post("/api/v1/user-feeds/:feedId/get-article-properties", async (req, res, ctx) => {
-    return res(
-      ctx.delay(500),
-      ctx.json<GetUserFeedArticlePropertiesOutput>({
-        result: {
-          requestStatus: UserFeedArticleRequestStatus.Success,
-          properties: ["id", "title"],
-        },
-      })
-    );
+  http.post("/api/v1/user-feeds/:feedId/get-article-properties", async () => {
+    await delay(500);
+
+    return HttpResponse.json<GetUserFeedArticlePropertiesOutput>({
+      result: {
+        requestStatus: UserFeedArticleRequestStatus.Success,
+        properties: ["id", "title"],
+      },
+    });
   }),
 
-  rest.get("/api/v1/user-feeds/:feedId/requests", async (req, res, ctx) =>
-    res(
-      ctx.delay(500),
-      ctx.json<GetUserFeedRequestsOutput>({
-        result: {
-          requests: mockUserFeedRequests,
-          nextRetryTimestamp: null,
-          feedHostGlobalRateLimit: null,
-        },
-      })
-    )
-  ),
+  http.get("/api/v1/user-feeds/:feedId/requests", async () => {
+    await delay(500);
 
-  rest.get("/api/v1/user-feeds/:feedId/delivery-logs", async (req, res, ctx) =>
-    res(
-      ctx.delay(500),
-      ctx.json<GetUserFeedDeliveryLogsOutput>({
-        result: {
-          logs: mockUserFeedDeliveryLogs,
-        },
-      })
-    )
-  ),
+    return HttpResponse.json<GetUserFeedRequestsOutput>({
+      result: {
+        requests: mockUserFeedRequests,
+        nextRetryTimestamp: null,
+        feedHostGlobalRateLimit: null,
+      },
+    });
+  }),
 
-  rest.get("/api/v1/user-feeds/:feedId/article-properties", async (req, res, ctx) =>
-    res(
-      ctx.delay(500),
-      ctx.json<GetUserFeedArticlePropertiesOutput>({
-        result: {
-          requestStatus: UserFeedArticleRequestStatus.Success,
-          properties: ["id", "title"],
-        },
-      })
-    )
-  ),
+  http.get("/api/v1/user-feeds/:feedId/delivery-logs", async () => {
+    await delay(500);
 
-  rest.get("/api/v1/user-feeds/:feedId/daily-limit", (req, res, ctx) =>
-    res(
-      ctx.delay(500),
-      ctx.json({
-        result: {
-          current: 100,
-          max: 500,
-        },
-      })
-    )
-  ),
+    return HttpResponse.json<GetUserFeedDeliveryLogsOutput>({
+      result: {
+        logs: mockUserFeedDeliveryLogs,
+      },
+    });
+  }),
 
-  rest.get("/api/v1/user-feeds/:feedId/retry", (req, res, ctx) => {
-    const { feedId } = req.params as Record<string, unknown>;
+  http.get("/api/v1/user-feeds/:feedId/article-properties", async () => {
+    await delay(500);
+
+    return HttpResponse.json<GetUserFeedArticlePropertiesOutput>({
+      result: {
+        requestStatus: UserFeedArticleRequestStatus.Success,
+        properties: ["id", "title"],
+      },
+    });
+  }),
+
+  http.get("/api/v1/user-feeds/:feedId/daily-limit", async () => {
+    await delay(500);
+
+    return HttpResponse.json({
+      result: {
+        current: 100,
+        max: 500,
+      },
+    });
+  }),
+
+  http.get("/api/v1/user-feeds/:feedId/retry", async ({ params }) => {
+    const { feedId } = params as Record<string, unknown>;
     const feed = mockUserFeeds.find((f) => f.id === feedId);
 
     if (!feed) {
-      return res(
-        ctx.status(404),
-        ctx.json(
-          generateMockApiErrorResponse({
-            code: "FEED_NOT_FOUND",
-          })
-        )
+      await delay(500);
+
+      return HttpResponse.json(
+        generateMockApiErrorResponse({
+          code: "FEED_NOT_FOUND",
+        }),
+        {
+          status: 404,
+        }
       );
     }
 
     feed.disabledCode = undefined;
     feed.healthStatus = UserFeedHealthStatus.Ok;
 
-    return res(
-      ctx.delay(500),
-      ctx.json<GetUserFeedOutput>({
-        result: feed,
-      })
+    await delay(500);
+
+    return HttpResponse.json<UpdateUserFeedOutput>({
+      result: feed,
+    });
+  }),
+
+  http.get("/api/v1/feeds/:feedId", async () => {
+    await delay(500);
+
+    return HttpResponse.json<GetFeedOutput>({
+      result: mockFeeds[0],
+    });
+  }),
+
+  http.get("/api/v1/feeds/:feedId", async () => {
+    await delay(500);
+
+    return HttpResponse.json<GetFeedOutput>({
+      result: mockFeeds[0],
+    });
+  }),
+
+  http.delete("/api/v1/feeds/:feedId", async () => {
+    await delay(500);
+
+    return new HttpResponse(null, {
+      status: 204,
+    });
+  }),
+
+  http.post("/api/v1/feeds/:feedId/clone", async () => {
+    await delay(500);
+
+    return HttpResponse.json<CloneFeedOutput>({
+      results: mockFeeds,
+    });
+  }),
+
+  http.post("/api/v1/user-feeds/:feedId/connections/discord-channels", async () => {
+    await delay(500);
+
+    return HttpResponse.json<CreateDiscordChannelConnectionOutput>(
+      {
+        result: mockFeedChannelConnections[0],
+      },
+      {
+        status: 400,
+      }
     );
   }),
 
-  rest.get("/api/v1/feeds/:feedId", (req, res, ctx) =>
-    res(
-      ctx.delay(500),
-      ctx.json<GetFeedOutput>({
-        result: mockFeeds[0],
-      })
-    )
-  ),
+  http.post("/api/v1/user-feeds/:feedId/connections/discord-channels/:id/clone", async () => {
+    await delay(500);
 
-  rest.get("/api/v1/feeds/:feedId", (req, res, ctx) =>
-    res(
-      ctx.delay(500),
-      ctx.json<GetFeedOutput>({
-        result: mockFeeds[0],
-      })
-    )
-  ),
-
-  rest.delete("/api/v1/feeds/:feedId", (req, res, ctx) => res(ctx.delay(500), ctx.status(204))),
-
-  rest.post("/api/v1/feeds/:feedId/clone", (req, res, ctx) =>
-    res(
-      ctx.delay(500),
-      ctx.json<CloneFeedOutput>({
-        results: mockFeeds,
-      })
-    )
-  ),
-
-  rest.post("/api/v1/user-feeds/:feedId/connections/discord-channels", (req, res, ctx) =>
-    res(
-      ctx.delay(500),
-      ctx.status(400),
-      ctx.json<CreateDiscordChannelConnectionOutput>({
-        result: mockFeedChannelConnections[0],
-      })
-    )
-  ),
-
-  rest.post("/api/v1/user-feeds/:feedId/connections/discord-channels/:id/clone", (req, res, ctx) =>
-    res(
-      ctx.delay(500),
-      ctx.status(400),
-
-      ctx.json<CreateDiscordChannelConnectionCloneOutput>({
+    return HttpResponse.json<CreateDiscordChannelConnectionCloneOutput>(
+      {
         result: {
           id: mockUserFeeds[0].connections[1].id,
         },
-      })
-    )
-  ),
-
-  rest.post(
-    "/api/v1/user-feeds/:feedId/connections/discord-channels/:id/copy-connection-settings",
-    (req, res, ctx) => res(ctx.delay(500), ctx.status(400), ctx.status(204))
-  ),
-
-  rest.post("/api/v1/user-feeds/:feedId/connections/discord-channels/:id/test", (req, res, ctx) =>
-    res(
-      ctx.delay(500),
-      ctx.status(404),
-      ctx.json<CreateDiscordChannelConnectionTestArticleOutput>({
-        result: mockSendTestArticleResult,
-      })
-    )
-  ),
-
-  rest.post(
-    "/api/v1/user-feeds/:feedId/connections/discord-channels/:id/preview",
-    (req, res, ctx) => {
-      return res(
-        ctx.delay(500),
-        ctx.json<CreateDiscordChannelConnectionPreviewOutput>({
-          result: mockCreatePreviewResult,
-        })
-      );
-    }
-  ),
-
-  rest.patch("/api/v1/user-feeds/:feedId/connections/discord-channels/:id", (req, res, ctx) => {
-    return res(
-      ctx.delay(500),
-      ctx.status(200),
-      ctx.json<UpdateDiscordChannelConnectionOutput>({
-        result: mockFeedChannelConnections[0],
-      })
+      },
+      {
+        status: 400,
+      }
     );
   }),
 
-  rest.delete("/api/v1/user-feeds/:feedId/connections/discord-channels/:id", (req, res, ctx) =>
-    res(ctx.delay(500), ctx.status(404))
+  http.post(
+    "/api/v1/user-feeds/:feedId/connections/discord-channels/:id/copy-connection-settings",
+    async () => {
+      await delay(500);
+
+      return new HttpResponse(null, {
+        status: 204,
+      });
+    }
   ),
 
-  rest.delete("/api/v1/user-feeds/:feedId/connections/discord-webhooks/:id", (req, res, ctx) =>
-    res(ctx.delay(500), ctx.status(204))
-  ),
+  http.post("/api/v1/user-feeds/:feedId/connections/discord-channels/:id/test", async () => {
+    await delay(500);
 
-  rest.get("/api/v1/feeds/:feedId/subscribers", (req, res, ctx) =>
-    res(
-      ctx.json<GetFeedSubscribersOutput>({
-        results: mockFeedSubscribers,
-        total: mockFeedSubscribers.length,
-      })
-    )
-  ),
+    return HttpResponse.json<CreateDiscordChannelConnectionTestArticleOutput>(
+      {
+        result: mockSendTestArticleResult,
+      },
+      { status: 404 }
+    );
+  }),
 
-  rest.post("/api/v1/feeds/:feedId/subscribers", (req, res, ctx) =>
-    res(
-      ctx.delay(500),
-      ctx.json<CreateFeedSubscriberOutput>({
-        result: {
-          id: "3",
-          discordId: mockDiscordRoles[2].id,
-          feed: mockFeeds[0].id,
-          filters: [],
-          type: "role",
-        },
-      })
-    )
-  ),
+  http.post("/api/v1/user-feeds/:feedId/connections/discord-channels/:id/preview", async () => {
+    await delay(500);
 
-  rest.patch("/api/v1/feeds/:feedId/subscribers/:subscriberId", (req, res, ctx) =>
-    res(
-      ctx.delay(500),
-      ctx.json<UpdateFeedSubscriberOutput>({
-        result: mockFeedSubscribers[0],
-      })
-    )
-  ),
+    return HttpResponse.json<CreateDiscordChannelConnectionPreviewOutput>({
+      result: mockCreatePreviewResult,
+    });
+  }),
 
-  rest.delete("/api/v1/feeds/:feedId/subscribers/:subscriberId", (req, res, ctx) =>
-    res(ctx.delay(500), ctx.status(204))
-  ),
+  http.patch("/api/v1/user-feeds/:feedId/connections/discord-channels/:id", async () => {
+    await delay(500);
 
-  rest.patch("/api/v1/feeds/:feedId", (req, res, ctx) =>
-    res(
-      ctx.status(400),
-      ctx.json(
-        generateMockApiErrorResponse({
-          code: "WEBHOOK_INVALID",
-        })
-      )
-      // ctx.json<UpdateFeedOutput>({
-      //   result: mockFeeds[0],
-      // }),
-    )
-  ),
+    return HttpResponse.json<UpdateDiscordChannelConnectionOutput>({
+      result: mockFeedChannelConnections[0],
+    });
+  }),
 
-  rest.get("/api/v1/feeds/:feedId/articles", (req, res, ctx) =>
-    res(
-      ctx.json<GetFeedArticlesOutput>({
-        result: mockFeedArticles,
-      })
-    )
-  ),
+  http.delete("/api/v1/user-feeds/:feedId/connections/discord-channels/:id", async () => {
+    await delay(500);
 
-  rest.get("/api/v1/feeds/:feedId/refresh", (req, res, ctx) =>
-    res(
-      ctx.status(200),
-      ctx.json<GetFeedOutput>({
-        result: mockFeeds[0],
-      })
-    )
-  ),
+    return new HttpResponse(null, {
+      status: 404,
+    });
+  }),
+
+  http.delete("/api/v1/user-feeds/:feedId/connections/discord-webhooks/:id", async () => {
+    await delay(500);
+
+    return new HttpResponse(null, {
+      status: 204,
+    });
+  }),
+
+  http.get("/api/v1/feeds/:feedId/subscribers", async () => {
+    return HttpResponse.json<GetFeedSubscribersOutput>({
+      results: mockFeedSubscribers,
+      total: mockFeedSubscribers.length,
+    });
+  }),
+
+  http.post("/api/v1/feeds/:feedId/subscribers", async () => {
+    await delay(500);
+
+    return HttpResponse.json<CreateFeedSubscriberOutput>({
+      result: {
+        id: "3",
+        discordId: mockDiscordRoles[2].id,
+        feed: mockFeeds[0].id,
+        filters: [],
+        type: "role",
+      },
+    });
+  }),
+
+  http.patch("/api/v1/feeds/:feedId/subscribers/:subscriberId", async () => {
+    await delay(500);
+
+    return HttpResponse.json<UpdateFeedSubscriberOutput>({
+      result: mockFeedSubscribers[0],
+    });
+  }),
+
+  http.delete("/api/v1/feeds/:feedId/subscribers/:subscriberId", async () => {
+    await delay(500);
+
+    return new HttpResponse(null, {
+      status: 204,
+    });
+  }),
+
+  http.patch("/api/v1/feeds/:feedId", async () => {
+    await delay(500);
+
+    return HttpResponse.json(
+      generateMockApiErrorResponse({
+        code: "WEBHOOK_INVALID",
+      }),
+      {
+        status: 400,
+      }
+    );
+  }),
+
+  http.get("/api/v1/feeds/:feedId/articles", async () => {
+    return HttpResponse.json<GetFeedArticlesOutput>({
+      result: mockFeedArticles,
+    });
+  }),
+
+  http.get("/api/v1/feeds/:feedId/refresh", async () => {
+    return HttpResponse.json<GetFeedOutput>({
+      result: mockFeeds[0],
+    });
+  }),
 ];
 
 export default handlers;
