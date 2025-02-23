@@ -30,7 +30,7 @@ const defaultOptions = [
 
 export const FilterCategorySelect: React.FC<Props> = ({ onChangeValue }) => (
   <CreatableSelect
-    onChange={(option) => option && onChangeValue(option.value)}
+    onChange={(option: any) => option && onChangeValue(option.value)}
     styles={REACT_SELECT_STYLES}
     options={defaultOptions}
   />
