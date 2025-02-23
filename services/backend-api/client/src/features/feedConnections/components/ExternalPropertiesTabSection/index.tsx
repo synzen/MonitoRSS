@@ -298,20 +298,16 @@ const ExternalPropertyForm = ({
                 aria-invalid={!!cssSelectorError}
                 noOptionsMessage={() => null}
                 ariaLiveMessages={{
-                  onFocus: ({ focused }) => {
-                    return `You are currently focused on option ${focused.label} (${
-                      focused.description || ""
+                  onFocus: (data: any) => {
+                    return `You are currently focused on option ${data.focused.label} (${
+                      data.focused.description || ""
                     })`;
                   },
                 }}
-                onInputChange={(value, action) => {
-                  if (action.action === "input-change") {
-                    onChange(value);
-                  }
-                }}
+                onChange={(val: any) => onChange(val.value)}
                 styles={{
                   ...REACT_SELECT_STYLES,
-                  input: (provided, props) => {
+                  input: (provided: any, props: any) => {
                     return {
                       ...provided,
                       ...REACT_SELECT_STYLES?.input?.(provided, props),
@@ -322,8 +318,8 @@ const ExternalPropertyForm = ({
                     };
                   },
                 }}
-                formatCreateLabel={(input) => `Custom: ${input}`}
-                formatOptionLabel={(option) => {
+                formatCreateLabel={(input: any) => `Custom: ${input}`}
+                formatOptionLabel={(option: any) => {
                   const { label } = option as { label: string };
 
                   return CssSelectorFormattedOption({
