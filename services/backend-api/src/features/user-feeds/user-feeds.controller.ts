@@ -64,6 +64,7 @@ import { GetFeedArticlePropertiesInput, GetFeedArticlesInput } from "./types";
 import { UserFeedsService } from "./user-feeds.service";
 import { CopyUserFeedSettingsInputDto } from "./dto/copy-user-feed-settings-input.dto";
 import { createMultipleExceptionsFilter } from "../../common/filters/multiple-exceptions.filter";
+import { CreateUserFeedUrlValidationInputDto } from "./dto/create-user-feed-url-validation-input.dto";
 
 @Controller("user-feeds")
 @UseGuards(DiscordOAuth2Guard)
@@ -92,6 +93,28 @@ export class UserFeedsController {
     );
 
     return this.userFeedsService.formatForHttpResponse(result, discordUserId);
+  }
+
+  @Post("url-validation")
+  @UseFilters(FeedExceptionFilter)
+  async createFeedUrlValidation(
+    @Body(ValidationPipe)
+    { url }: CreateUserFeedUrlValidationInputDto,
+    @DiscordAccessToken()
+    { discord: { id: discordUserId } }: SessionAccessToken
+  ) {
+    const result = await this.userFeedsService.validateFeedUrl(
+      {
+        discordUserId,
+      },
+      {
+        url,
+      }
+    );
+
+    return {
+      result,
+    };
   }
 
   @Patch()

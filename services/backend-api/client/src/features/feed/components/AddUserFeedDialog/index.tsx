@@ -4,6 +4,9 @@ import {
   AccordionIcon,
   AccordionItem,
   AccordionPanel,
+  Alert,
+  AlertIcon,
+  AlertTitle,
   Button,
   Divider,
   Flex,
@@ -39,6 +42,7 @@ import getChakraColor from "../../../../utils/getChakraColor";
 import { InlineErrorAlert } from "../../../../components/InlineErrorAlert";
 import { FixFeedRequestsCTA } from "../FixFeedRequestsCTA";
 import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage copy";
+import { useCreateUserFeedUrlValidation } from "../../hooks/useCreateUserFeedUrlValidation";
 
 const formSchema = object({
   title: string().required(),
@@ -71,7 +75,13 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
   });
-  const { mutateAsync, error, reset: resetMutation } = useCreateUserFeed();
+  const { mutateAsync, error: createError, reset: resetMutation } = useCreateUserFeed();
+  const {
+    data: feedUrlValidationData,
+    mutateAsync: createUserFeedUrlValidation,
+    error: validationError,
+    reset: resetValidationMutation,
+  } = useCreateUserFeedUrlValidation();
   const { data: discordUserMe, status: discordUserStatus } = useDiscordUserMe();
   const { data: userFeeds, status: userFeedsStatus } = useUserFeeds({
     limit: 1,
@@ -79,13 +89,28 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
   });
   const navigate = useNavigate();
   const initialFocusRef = useRef<HTMLInputElement>(null);
+  const isConfirming = !!feedUrlValidationData?.result.resolvedToUrl;
 
   const onSubmit = async ({ title, url }: FormData) => {
+    if (isSubmitting) {
+      return;
+    }
+
     try {
+      if (!feedUrlValidationData) {
+        const { result } = await createUserFeedUrlValidation({ details: { url } });
+
+        if (result.resolvedToUrl) {
+          return;
+        }
+      }
+
       const result = await mutateAsync({
         details: {
           title,
-          url,
+          url: feedUrlValidationData?.result.resolvedToUrl
+            ? feedUrlValidationData.result.resolvedToUrl
+            : url,
         },
       });
 
@@ -99,6 +124,7 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
   useEffect(() => {
     reset();
     resetMutation();
+    resetValidationMutation();
   }, [isOpen]);
 
   const totalFeeds = userFeeds?.total;
@@ -110,6 +136,7 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
 
   const isLoading = discordUserStatus === "loading" || userFeedsStatus === "loading";
 
+  const error = createError || validationError;
   const canResolveError = error?.errorCode && RESOLVABLE_ERRORS.includes(error.errorCode);
 
   return (
@@ -140,169 +167,226 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
         <ModalOverlay />
         <ModalContent>
           <form onSubmit={handleSubmit(onSubmit)}>
-            <ModalHeader>{t("features.userFeeds.components.addUserFeedDialog.title")}</ModalHeader>
+            <ModalHeader>
+              {isConfirming
+                ? "Confirm feed addition"
+                : t("features.userFeeds.components.addUserFeedDialog.title")}
+            </ModalHeader>
             <ModalCloseButton />
             <ModalBody>
-              <Stack spacing={4}>
-                <FormControl isInvalid={!!errors.title} isRequired>
-                  <FormLabel>
-                    {t("features.userFeeds.components.addUserFeedDialog.formTitleLabel")}
-                  </FormLabel>
-                  <Controller
-                    name="title"
-                    control={control}
-                    render={({ field }) => (
+              {isConfirming && (
+                <Stack spacing={4} role="alert">
+                  <Alert status="warning" role={undefined}>
+                    <AlertIcon />
+                    <AlertTitle>
+                      The url you put in did not directly point to a valid feed!
+                    </AlertTitle>
+                  </Alert>
+                  <Stack spacing={4} aria-live="polite">
+                    <Text>
+                      We found a feed URL that might be related to the url you provided. Do you want
+                      to add the URL below instead?
+                    </Text>
+                    <FormControl>
+                      <FormLabel>Updated Feed URL</FormLabel>
                       <Input
-                        isDisabled={isSubmitting}
-                        {...field}
-                        value={field.value || ""}
-                        ref={initialFocusRef}
-                        autoComplete="off"
+                        isReadOnly
                         bg="gray.800"
+                        value={feedUrlValidationData.result.resolvedToUrl || ""}
                       />
-                    )}
-                  />
-                  <FormHelperText>
-                    {t("features.userFeeds.components.addUserFeedDialog.onlyForYourReferenceLabel")}
-                  </FormHelperText>
-                  <FormErrorMessage>{errors.title?.message}</FormErrorMessage>
-                </FormControl>
-                <FormControl isInvalid={!!errors.url} isRequired>
-                  <FormLabel>Feed Link</FormLabel>
-                  <Controller
-                    name="url"
-                    control={control}
-                    render={({ field }) => (
-                      <Input
-                        isDisabled={isSubmitting}
-                        {...field}
-                        value={field.value || ""}
-                        bg="gray.800"
-                        type="url"
-                      />
-                    )}
-                  />
-                  <FormHelperText>
-                    Must be a link to a valid RSS feed, or a page that contains an embedded link to
-                    an RSS feed.
-                  </FormHelperText>
-                  <FormErrorMessage>{errors.url?.message}</FormErrorMessage>
-                </FormControl>
-                <Divider />
-                <Heading as="h2" size="sm" fontWeight="medium">
-                  Frequently Asked Questions
-                </Heading>
-                <Accordion allowToggle>
-                  <AccordionItem
-                    border="none"
-                    borderLeft={`solid 1px ${getChakraColor("blue.200")}`}
-                  >
-                    <AccordionButton border="none">
-                      <Flex
-                        flex="1"
-                        gap={4}
-                        fontSize={13}
-                        color="blue.200"
-                        alignItems="center"
-                        textAlign="left"
-                      >
-                        What is an RSS feed?
-                        <AccordionIcon />
-                      </Flex>
-                    </AccordionButton>
-                    <AccordionPanel>
-                      <Text fontSize={13}>
-                        An RSS feed is a specially-formatted webpage with XML text that&apos;s
-                        designed to contain news articles. An example of an RSS feed link is{" "}
-                        <Text as="code">http://feeds.feedburner.com/ign/game-reviews</Text>.
-                        <br />
-                        <br />
-                        To see if a link is a valid RSS feed, you may search for &quot;online feed
-                        validators&quot; and input feed URLs to test.
-                      </Text>
-                    </AccordionPanel>
-                  </AccordionItem>
-                  <AccordionItem
-                    border="none"
-                    borderLeft={`solid 1px ${getChakraColor("blue.200")}`}
-                  >
-                    <AccordionButton border="none">
-                      <Flex
-                        flex="1"
-                        gap={4}
-                        fontSize={13}
-                        color="blue.200"
-                        alignItems="center"
-                        textAlign="left"
-                      >
-                        How do I find RSS feeds?
-                        <AccordionIcon />
-                      </Flex>
-                    </AccordionButton>
-                    <AccordionPanel>
-                      <Text fontSize={13}>
-                        You can find RSS feed pages by searching for what you&apos;re looking for,
-                        plus &quot;RSS feed&quot;, such as &quot;podcast RSS feeds&quot;. You may
-                        also contact site owners for links to RSS feeds they may have. An example
-                        RSS feed link is{" "}
-                        <Text as="code">http://feeds.feedburner.com/ign/game-reviews</Text>.
-                        <br />
-                        <br />
-                        You may also try submitting links to regular webpages and MonitoRSS will
-                        attempt to find RSS feeds related to the webpage.
-                      </Text>
-                    </AccordionPanel>
-                  </AccordionItem>
-                  <AccordionItem
-                    border="none"
-                    borderLeft={`solid 1px ${getChakraColor("blue.200")}`}
-                  >
-                    <AccordionButton border="none">
-                      <Flex
-                        flex="1"
-                        gap={4}
-                        fontSize={13}
-                        color="blue.200"
-                        alignItems="center"
-                        textAlign="left"
-                      >
-                        When do new articles get delivered?
-                        <AccordionIcon />
-                      </Flex>
-                    </AccordionButton>
-                    <AccordionPanel>
-                      <Text fontSize={13}>
-                        With RSS, article delivery is not instant. New articles are checked on a
-                        regular interval (every 10 minutes by default for free). Once new articles
-                        are found, they are automatically delivered.
-                      </Text>
-                    </AccordionPanel>
-                  </AccordionItem>
-                </Accordion>
-                {error && (
-                  <InlineErrorAlert
-                    title="Failed to add feed"
-                    description={
-                      <Stack>
-                        <Text>{error.message}</Text>
-                      </Stack>
-                    }
-                  />
-                )}
-                {canResolveError && (
-                  <FixFeedRequestsCTA
-                    url={getValues().url}
-                    onCorrected={() => onSubmit(getValues())}
-                  />
-                )}
-              </Stack>
+                    </FormControl>
+                  </Stack>
+                </Stack>
+              )}
+              {!isConfirming && (
+                <Stack spacing={4}>
+                  <FormControl isInvalid={!!errors.title} isRequired>
+                    <FormLabel>
+                      {t("features.userFeeds.components.addUserFeedDialog.formTitleLabel")}
+                    </FormLabel>
+                    <Controller
+                      name="title"
+                      control={control}
+                      render={({ field }) => (
+                        <Input
+                          isDisabled={isSubmitting}
+                          {...field}
+                          value={field.value || ""}
+                          ref={initialFocusRef}
+                          autoComplete="off"
+                          bg="gray.800"
+                        />
+                      )}
+                    />
+                    <FormHelperText>
+                      {t(
+                        "features.userFeeds.components.addUserFeedDialog.onlyForYourReferenceLabel"
+                      )}
+                    </FormHelperText>
+                    <FormErrorMessage>{errors.title?.message}</FormErrorMessage>
+                  </FormControl>
+                  <FormControl isInvalid={!!errors.url} isRequired>
+                    <FormLabel>Feed Link</FormLabel>
+                    <Controller
+                      name="url"
+                      control={control}
+                      render={({ field }) => (
+                        <Input
+                          isDisabled={isSubmitting}
+                          {...field}
+                          value={field.value || ""}
+                          bg="gray.800"
+                          type="url"
+                        />
+                      )}
+                    />
+                    <FormHelperText>
+                      Must be a link to a valid RSS feed, or a page that contains an embedded link
+                      to an RSS feed.
+                    </FormHelperText>
+                    <FormErrorMessage>{errors.url?.message}</FormErrorMessage>
+                  </FormControl>
+                  <Divider />
+                  <Heading as="h2" size="sm" fontWeight="medium" id="faq-accordion">
+                    Frequently Asked Questions
+                  </Heading>
+                  <Accordion allowToggle role="list" aria-labelledby="faq-accordion">
+                    <AccordionItem
+                      role="listitem"
+                      border="none"
+                      borderLeft={`solid 1px ${getChakraColor("blue.200")}`}
+                    >
+                      <AccordionButton border="none">
+                        <Flex
+                          flex="1"
+                          gap={4}
+                          fontSize={13}
+                          color="blue.200"
+                          alignItems="center"
+                          textAlign="left"
+                        >
+                          What is an RSS feed?
+                          <AccordionIcon />
+                        </Flex>
+                      </AccordionButton>
+                      <AccordionPanel>
+                        <Text fontSize={13}>
+                          An RSS feed is a specially-formatted webpage with XML text that&apos;s
+                          designed to contain news articles. An example of an RSS feed link is{" "}
+                          <Text as="code">http://feeds.feedburner.com/ign/game-reviews</Text>.
+                          <br />
+                          <br />
+                          To see if a link is a valid RSS feed, you may search for &quot;online feed
+                          validators&quot; and input feed URLs to test.
+                        </Text>
+                      </AccordionPanel>
+                    </AccordionItem>
+                    <AccordionItem
+                      role="listitem"
+                      border="none"
+                      borderLeft={`solid 1px ${getChakraColor("blue.200")}`}
+                    >
+                      <AccordionButton border="none">
+                        <Flex
+                          flex="1"
+                          gap={4}
+                          fontSize={13}
+                          color="blue.200"
+                          alignItems="center"
+                          textAlign="left"
+                        >
+                          How do I find RSS feeds?
+                          <AccordionIcon />
+                        </Flex>
+                      </AccordionButton>
+                      <AccordionPanel>
+                        <Text fontSize={13}>
+                          You can find RSS feed pages by searching for what you&apos;re looking for,
+                          plus &quot;RSS feed&quot;, such as &quot;podcast RSS feeds&quot;. You may
+                          also contact site owners for links to RSS feeds they may have. An example
+                          RSS feed link is{" "}
+                          <Text as="code">http://feeds.feedburner.com/ign/game-reviews</Text>.
+                          <br />
+                          <br />
+                          You may also try submitting links to regular webpages and MonitoRSS will
+                          attempt to find RSS feeds related to the webpage.
+                        </Text>
+                      </AccordionPanel>
+                    </AccordionItem>
+                    <AccordionItem
+                      role="listitem"
+                      border="none"
+                      borderLeft={`solid 1px ${getChakraColor("blue.200")}`}
+                    >
+                      <AccordionButton border="none">
+                        <Flex
+                          flex="1"
+                          gap={4}
+                          fontSize={13}
+                          color="blue.200"
+                          alignItems="center"
+                          textAlign="left"
+                        >
+                          When do new articles get delivered?
+                          <AccordionIcon />
+                        </Flex>
+                      </AccordionButton>
+                      <AccordionPanel>
+                        <Text fontSize={13}>
+                          With RSS, article delivery is not instant. New articles are checked on a
+                          regular interval (every 10 minutes by default for free). Once new articles
+                          are found, they are automatically delivered.
+                        </Text>
+                      </AccordionPanel>
+                    </AccordionItem>
+                  </Accordion>
+                  {error && (
+                    <InlineErrorAlert
+                      title="Failed to add feed"
+                      description={
+                        <Stack>
+                          <Text>{error.message}</Text>
+                        </Stack>
+                      }
+                    />
+                  )}
+                  {canResolveError && (
+                    <FixFeedRequestsCTA
+                      url={getValues().url}
+                      onCorrected={() => onSubmit(getValues())}
+                    />
+                  )}
+                </Stack>
+              )}
             </ModalBody>
             <ModalFooter>
-              <Button variant="ghost" mr={3} onClick={onClose} isDisabled={isSubmitting}>
-                <span>{t("common.buttons.cancel")}</span>
+              <Button
+                variant="ghost"
+                mr={3}
+                onClick={() => {
+                  if (isSubmitting) {
+                    return;
+                  }
+
+                  if (isConfirming) {
+                    reset();
+                    resetValidationMutation();
+                  } else {
+                    onClose();
+                  }
+                }}
+                aria-disabled={isSubmitting}
+              >
+                <span>{isConfirming ? "Go back" : t("common.buttons.cancel")}</span>
               </Button>
-              <Button colorScheme="blue" type="submit" isLoading={isSubmitting}>
-                <span>{t("common.buttons.save")}</span>
+              <Button colorScheme="blue" type="submit" aria-disabled={isSubmitting}>
+                {isSubmitting ? (
+                  "Saving..."
+                ) : (
+                  <span>
+                    {isConfirming ? "Add feed with updated url" : t("common.buttons.save")}
+                  </span>
+                )}
               </Button>
             </ModalFooter>
           </form>

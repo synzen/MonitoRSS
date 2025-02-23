@@ -41,18 +41,18 @@ const mockUserFeedSummary: UserFeedSummary[] = [
   },
 ];
 
-for (let i = 0; i < 100; i += 1) {
-  mockUserFeedSummary.push({
-    id: `${i + 4}`,
-    title: `Feed ${i + 4}`,
-    url: `https://www.feed${i + 4}.com`,
-    createdAt: new Date().toISOString(),
-    healthStatus: UserFeedHealthStatus.Ok,
-    disabledCode: undefined,
-    computedStatus: UserFeedComputedStatus.Ok,
-    isLegacyFeed: false,
-    ownedByUser: true,
-  });
-}
+// for (let i = 0; i < 100; i += 1) {
+//   mockUserFeedSummary.push({
+//     id: `${i + 4}`,
+//     title: `Feed ${i + 4}`,
+//     url: `https://www.feed${i + 4}.com`,
+//     createdAt: new Date().toISOString(),
+//     healthStatus: UserFeedHealthStatus.Ok,
+//     disabledCode: undefined,
+//     computedStatus: UserFeedComputedStatus.Ok,
+//     isLegacyFeed: false,
+//     ownedByUser: true,
+//   });
+// }
 
 export default mockUserFeedSummary;

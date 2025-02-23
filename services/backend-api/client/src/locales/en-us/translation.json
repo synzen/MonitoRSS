@@ -319,7 +319,7 @@
       "addRoleButton": "Role",
       "addUserButton": "User",
       "addMentionButton": "Add a new mention",
-      "removeMentionButton":"Remove Mention",
+      "removeMentionButton": "Remove Mention",
       "searchRolePlaceholder": "Search for a role...",
       "searchUserPlaceholder": "Search for a user..."
     },
@@ -367,7 +367,7 @@
           "cancelButton": "Cancel",
           "saveButton": "Add",
           "formTitleLabel": "Title",
-          "formTitleDescription": "Used to identify the feed.",
+          "formTitleDescription": "Used to help you identify the feed.",
           "formChannelLabel": "Channel",
           "formLinkDescription": "Must be a link to a valid RSS XML feed.",
           "failedToAdd": "Failed to add feed"

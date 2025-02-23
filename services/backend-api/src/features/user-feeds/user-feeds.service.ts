@@ -298,6 +298,43 @@ export class UserFeedsService {
     }
   }
 
+  async validateFeedUrl(
+    { discordUserId }: { discordUserId: string },
+    { url }: { url: string }
+  ) {
+    const [{ maxUserFeeds }, user] = await Promise.all([
+      this.supportersService.getBenefitsOfDiscordUser(discordUserId),
+      this.usersService.getOrCreateUserByDiscordId(discordUserId),
+    ]);
+
+    const feedCount = await this.calculateCurrentFeedCountOfDiscordUser(
+      discordUserId
+    );
+
+    if (feedCount >= maxUserFeeds) {
+      throw new FeedLimitReachedException("Max feeds reached");
+    }
+
+    const tempLookupDetails = getFeedRequestLookupDetails({
+      decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY_HEX"),
+      feed: {
+        url,
+        feedRequestLookupKey: randomUUID(),
+      },
+      user,
+    });
+
+    const { finalUrl } = await this.checkUrlIsValid(url, tempLookupDetails);
+
+    if (finalUrl !== url) {
+      return {
+        resolvedToUrl: finalUrl,
+      };
+    }
+
+    return { resolvedToUrl: null };
+  }
+
   async addFeed(
     {
       discordUserId,

@@ -85,6 +85,7 @@ import {
   GetSubscriptionProductsOutput,
 } from "../features/subscriptionProducts";
 import { mockUserFeedDeliveryLogs } from "./data/userFeedDeliveryLogs";
+import { CreateUserFeedUrlValidationOutput } from "../features/feed/api/createUserFeedUrlValidation";
 
 const handlers = [
   rest.get("/api/v1/subscription-products/update-preview", (req, res, ctx) => {
@@ -603,6 +604,17 @@ const handlers = [
     return res(ctx.delay(500), ctx.status(500), ctx.json({}));
   }),
 
+  rest.post("/api/v1/user-feeds/url-validation", (req, res, ctx) =>
+    res(
+      ctx.delay(500),
+      ctx.status(200),
+      ctx.json<CreateUserFeedUrlValidationOutput>({
+        result: {
+          resolvedToUrl: "https://www.monitorss.xyz",
+        },
+      })
+    )
+  ),
   rest.post("/api/v1/user-feeds", (req, res, ctx) =>
     res(
       ctx.delay(500),

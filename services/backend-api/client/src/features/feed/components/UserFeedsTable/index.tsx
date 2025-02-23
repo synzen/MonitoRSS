@@ -438,7 +438,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
       <Box srOnly aria-live="polite">
         {!isInitiallyLoading && (
           <Text>
-            Loaded table with {flatData.length} of {data?.pages[0].total} feeds loaded
+            Loaded table with {flatData.length} of {data?.pages[0].total} feeds
           </Text>
         )}
       </Box>
