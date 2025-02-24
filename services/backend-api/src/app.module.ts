@@ -40,6 +40,9 @@ import { RedditLoginModule } from "./features/reddit-login/reddit-login.module";
     MongoMigrationsModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, "..", "client", "dist"),
+      serveStaticOptions: {
+        fallthrough: true,
+      },
     }),
   ],
   controllers: [AppController, ErrorReportsController],
