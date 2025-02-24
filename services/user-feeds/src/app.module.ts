@@ -13,6 +13,7 @@ import { FeedsModule } from "./feeds/feeds.module";
 import { MikroORM } from "@mikro-orm/core";
 import logger from "./shared/utils/logger";
 import { CacheStorageModule } from "./cache-storage/cache-storage.module";
+import { defineConfig } from "@mikro-orm/postgresql";
 
 @Module({
   imports: [
@@ -48,12 +49,11 @@ export class AppModule implements OnApplicationShutdown {
 
             logger.info(`${replicaUris.length} read replicas discovered`);
 
-            return {
+            return defineConfig({
               entities: ["dist/**/*.entity.js"],
               entitiesTs: ["src/**/*.entity.ts"],
               clientUrl: configVals.USER_FEEDS_POSTGRES_URI,
               dbName: configVals.USER_FEEDS_POSTGRES_DATABASE,
-              type: "postgresql",
               forceUtcTimezone: true,
               timezone: "UTC",
               pool: {
@@ -63,7 +63,7 @@ export class AppModule implements OnApplicationShutdown {
               replicas: replicaUris.map((url) => ({
                 clientUrl: url,
               })),
-            };
+            });
           },
           inject: [ConfigService],
         }),

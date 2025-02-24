@@ -18,7 +18,7 @@ import {
   FeedResponseRequestStatus,
 } from "../shared";
 import { RabbitSubscribe, AmqpConnection } from "@golevelup/nestjs-rabbitmq";
-import { MikroORM, UseRequestContext } from "@mikro-orm/core";
+import { MikroORM, CreateRequestContext } from "@mikro-orm/core";
 import { ArticleDeliveryResult } from "./types/article-delivery-result.type";
 import logger from "../shared/utils/logger";
 import {
@@ -140,7 +140,7 @@ export class FeedEventHandlerService {
     }
   }
 
-  @UseRequestContext()
+  @CreateRequestContext()
   private async handleArticleDeliveryResult({
     result,
     job,
@@ -234,7 +234,7 @@ export class FeedEventHandlerService {
     }
   }
 
-  @UseRequestContext()
+  @CreateRequestContext()
   async handleV2EventWithDb(event: FeedV2Event) {
     try {
       feedV2EventSchema.parse(event);
@@ -573,7 +573,7 @@ export class FeedEventHandlerService {
     }
   }
 
-  @UseRequestContext()
+  @CreateRequestContext()
   async handleFeedDeletedEvent(data: FeedDeletedEvent) {
     const {
       data: {

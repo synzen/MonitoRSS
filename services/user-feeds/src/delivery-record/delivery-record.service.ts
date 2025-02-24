@@ -147,7 +147,7 @@ export class DeliveryRecordService {
     record.internal_message = internalMessage;
     record.external_detail = externalDetail;
 
-    await this.recordRepo.persistAndFlush(record);
+    await this.orm.em.persistAndFlush(record);
 
     try {
       await this.orm.em.getConnection().execute(

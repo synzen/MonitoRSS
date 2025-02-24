@@ -1,15 +1,15 @@
-import { EntityName, MikroOrmModule } from "@mikro-orm/nestjs";
+import { MikroOrmModule } from "@mikro-orm/nestjs";
 import { ModuleMetadata } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
-import type { TestingModule } from "@nestjs/testing";
 import { config } from "../../config";
-import { MikroORM } from "@mikro-orm/core";
+import { EntityName, MikroORM } from "@mikro-orm/core";
 import { randomUUID } from "crypto";
 import { SqlEntityManager } from "@mikro-orm/postgresql";
 import {
   FastifyAdapter,
   NestFastifyApplication,
 } from "@nestjs/platform-fastify";
+import { TestingModule } from "@nestjs/testing";
 
 let testingModule: TestingModule;
 let orm: MikroORM;
@@ -44,7 +44,7 @@ export async function setupIntegrationTests(
         entitiesTs: ["src/**/*.entity.ts"],
         clientUrl: configVals.USER_FEEDS_POSTGRES_URI,
         dbName: configVals.USER_FEEDS_POSTGRES_DATABASE,
-        type: "postgresql",
+        // type: "postgresql",
         forceUtcTimezone: true,
         timezone: "UTC",
         schema: postgresSchema,

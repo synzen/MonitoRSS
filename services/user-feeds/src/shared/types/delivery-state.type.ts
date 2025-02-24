@@ -50,6 +50,7 @@ interface ArticleDeliveryMediumRateLimitedState
 
 interface ArticleDeliveryRejectedState extends BaseArticleDeliveryState {
   status: ArticleDeliveryStatus.Rejected;
+  contentType?: ArticleDeliveryContentType;
   errorCode: ArticleDeliveryErrorCode;
   /**
    * User-facing detail.
