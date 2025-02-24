@@ -39,21 +39,13 @@ import { UsersModule } from "../users/users.module";
     FeedsModule,
     SupportersModule,
     FeedHandlerModule,
+    UsersModule,
+    MessageBrokerModule.forRoot(),
+    FeedConnectionsDiscordChannelsModule,
   ],
   exports: [UserFeedsService, MongooseModule.forFeature([UserFeedFeature])],
 })
 export class UserFeedsModule {
-  static forRoot(): DynamicModule {
-    return {
-      module: UserFeedsModule,
-      imports: [
-        UsersModule.forRoot(),
-        MessageBrokerModule.forRoot(),
-        FeedConnectionsDiscordChannelsModule.forRoot(),
-      ],
-    };
-  }
-
   static forTest(): DynamicModule {
     return {
       module: UserFeedsModule,

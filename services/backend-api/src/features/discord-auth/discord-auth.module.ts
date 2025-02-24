@@ -6,7 +6,7 @@ import { DiscordAuthService } from "./discord-auth.service";
 import { DiscordPermissionsService } from "./discord-permissions.service";
 
 @Module({
-  imports: [DiscordApiModule, UsersModule.forRoot()],
+  imports: [DiscordApiModule, UsersModule],
   controllers: [DiscordAuthController],
   providers: [DiscordAuthService, DiscordPermissionsService],
   exports: [DiscordAuthService, DiscordPermissionsService],

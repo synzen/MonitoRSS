@@ -13,7 +13,7 @@ import { UserFeedManagementInvitesService } from "./user-feed-management-invites
   providers: [UserFeedManagementInvitesService],
   imports: [
     MongooseModule.forFeature([UserFeedFeature]),
-    UserFeedsModule.forRoot(),
+    UserFeedsModule,
     SupportersModule,
     DiscordAuthModule,
   ],

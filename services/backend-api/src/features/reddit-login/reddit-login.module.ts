@@ -5,6 +5,6 @@ import { RedditApiModule } from "../../services/apis/reddit/reddit-api.module";
 
 @Module({
   controllers: [RedditLoginController],
-  imports: [UsersModule.forRoot(), RedditApiModule],
+  imports: [UsersModule, RedditApiModule],
 })
 export class RedditLoginModule {}

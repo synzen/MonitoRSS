@@ -9,7 +9,7 @@ services:
 
   seaweed-fs:
     image: chrislusf/seaweedfs
-    container_name: 'seaweed-fs'
+    container_name: "seaweed-fs"
     ports:
       - 8333:8333
     command: server -s3
@@ -22,14 +22,14 @@ services:
       - fs-s3-storage-data:/data/seaweed-s3
     networks:
       - monitorss-default
-  
+
   rabbitmq-broker:
     extends:
       file: docker-compose.base.yml
       service: rabbitmq-broker
     ports:
-        - 5672:5672
-        - 15672:15672
+      - 5672:5672
+      - 15672:15672
 
   mongo:
     extends:
@@ -37,20 +37,20 @@ services:
       service: mongo
     ports:
       - "27018:27017"
-  
+
   feed-requests-postgres-db:
     extends:
       file: docker-compose.base.yml
       service: feed-requests-postgres-db
     ports:
       - "5431:5432"
-      
+
   user-feeds-postgres-db:
     extends:
       file: docker-compose.base.yml
       service: user-feeds-postgres-db
     ports:
-      - '5430:5432'
+      - "5430:5432"
 
   bot-presence-service:
     extends:
@@ -174,7 +174,7 @@ services:
       - ./.env.local
     environment:
       - NODE_ENV=local
-  
+
   # Schedule emitter
   schedule-emitter-service:
     extends:
@@ -201,7 +201,7 @@ services:
       - ./.env.local
     environment:
       - NODE_ENV=local
-    command: npm run start:legacy-feed-converter:local
+    command: npm run start:legacy-feed-converter
 
   # Web - Backend api
   web-api:
@@ -220,7 +220,7 @@ services:
       - NODE_ENV=local
       - BACKEND_API_USER_FEEDS_API_HOST=http://user-feeds-api:5000
       - BACKEND_API_FEED_REQUESTS_API_HOST=http://feed-requests-api:5000
-    command: npm run start:local
+    command: npm run start:watch
     networks:
       - monitorss-default
 

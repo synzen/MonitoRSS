@@ -37,7 +37,7 @@ import { NotificationDeliveryAttemptFeature } from "./entities/notification-deli
   ],
   exports: [NotificationsService],
   imports: [
-    UsersModule.forRoot(),
+    UsersModule,
     MongooseModule.forFeature([
       UserFeedFeature,
       NotificationDeliveryAttemptFeature,

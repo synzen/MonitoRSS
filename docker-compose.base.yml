@@ -3,14 +3,14 @@ services:
     image: redis:7.0.7-alpine
     restart: always
     command: redis-server --save 60 1
-    volumes: 
+    volumes:
       - feed-requests-redis-data:/data
     networks:
       - monitorss-default
-  
+
   rabbitmq-broker:
     image: rabbitmq:3-management-alpine
-    container_name: 'rabbitmq-broker'
+    container_name: "rabbitmq-broker"
     healthcheck:
       test: rabbitmq-diagnostics -q ping
       interval: 5s
@@ -29,7 +29,7 @@ services:
       - "mongodb-data:/data/db"
     networks:
       - monitorss-default
-  
+
   feed-requests-postgres-db:
     restart: always
     healthcheck:
@@ -49,11 +49,11 @@ services:
       - ./services/feed-requests/sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
     networks:
       - monitorss-default
-      
+
   user-feeds-postgres-db:
     restart: always
     healthcheck:
-      test: ['CMD', 'pg_isready', '-q', '-d', 'postgres', '-U', 'postgres']
+      test: ["CMD", "pg_isready", "-q", "-d", "postgres", "-U", "postgres"]
       timeout: 45s
       interval: 10s
       retries: 10
@@ -187,7 +187,7 @@ services:
       - USER_FEEDS_REDIS_DISABLE_CLUSTER=true
     networks:
       - monitorss-default
-  
+
   user-feeds-postgres-migration:
     restart: on-failure:5
     build:
@@ -212,7 +212,7 @@ services:
       - USER_FEEDS_REDIS_DISABLE_CLUSTER=true
     networks:
       - monitorss-default
-  
+
   # Schedule emitter
   schedule-emitter-service:
     build:
@@ -234,7 +234,7 @@ services:
       - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672/
     networks:
       - monitorss-default
-    command: npm run start:schedule-emitter:local
+    command: npm run start:schedule-emitter
 
   legacy-feed-bulk-converter-service:
     build:

@@ -7,14 +7,14 @@ import { MessageBrokerEventsService } from "./message-broker-events.service";
 
 @Module({
   providers: [],
-  imports: [SupportersModule, NotificationsModule.forRoot()],
+  imports: [SupportersModule, NotificationsModule.forRoot(), UserFeedsModule],
 })
 export class MessageBrokerEventsModule {
   static forRoot(): DynamicModule {
     return {
       module: MessageBrokerEventsModule,
       providers: [MessageBrokerEventsService],
-      imports: [MessageBrokerModule.forRoot(), UserFeedsModule.forRoot()],
+      imports: [MessageBrokerModule.forRoot()],
     };
   }
 }

@@ -37,11 +37,7 @@ export class ScheduleHandlerService {
     rateSeconds: number;
     data: Array<{ url: string }>;
   }) {
-    this.amqpConnection.publish<{
-      rateSeconds: number;
-      timestamp: number;
-      data: Array<{ url: string; saveToObjectStorage?: boolean }>;
-    }>(
+    this.amqpConnection.publish(
       "",
       MessageBrokerQueue.UrlFetchBatch,
       { ...data, timestamp: Date.now() },

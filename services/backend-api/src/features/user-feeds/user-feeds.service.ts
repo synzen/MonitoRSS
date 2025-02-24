@@ -621,11 +621,9 @@ export class UserFeedsService {
     for (let i = 0; i < found.length; i++) {
       const thisId = found[i]._id.toHexString();
 
-      this.amqpConnection.publish<{ data: { feed: { id: string } } }>(
-        "",
-        MessageBrokerQueue.FeedDeleted,
-        { data: { feed: { id: thisId } } }
-      );
+      this.amqpConnection.publish("", MessageBrokerQueue.FeedDeleted, {
+        data: { feed: { id: thisId } },
+      });
     }
 
     return feedIds.map((id) => ({
@@ -982,11 +980,9 @@ export class UserFeedsService {
 
     if (updates.url) {
       // All stored articles of the old feed are now irrelevant
-      this.amqpConnection.publish<{ data: { feed: { id: string } } }>(
-        "",
-        MessageBrokerQueue.FeedDeleted,
-        { data: { feed: { id } } }
-      );
+      this.amqpConnection.publish("", MessageBrokerQueue.FeedDeleted, {
+        data: { feed: { id } },
+      });
     }
 
     return u;
@@ -1012,11 +1008,9 @@ export class UserFeedsService {
       _id: id,
     });
 
-    this.amqpConnection.publish<{ data: { feed: { id: string } } }>(
-      "",
-      MessageBrokerQueue.FeedDeleted,
-      { data: { feed: { id } } }
-    );
+    this.amqpConnection.publish("", MessageBrokerQueue.FeedDeleted, {
+      data: { feed: { id } },
+    });
 
     return found;
   }

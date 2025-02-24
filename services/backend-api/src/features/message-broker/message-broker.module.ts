@@ -9,24 +9,20 @@ import logger from "../../utils/logger";
 import { MessageBrokerService } from "./message-broker.service";
 
 @Module({
-  providers: [],
-  imports: [],
-})
-export class MessageBrokerModule implements OnApplicationShutdown {
-  static forRoot(): DynamicModule {
-    const configValues = config();
+  providers: [MessageBrokerService],
+  imports: [
+    RabbitMQModule.forRootAsync({
+      useFactory: () => {
+        const configValues = config();
 
-    return {
-      module: MessageBrokerModule,
-      providers: [MessageBrokerService],
-      imports: [
-        RabbitMQModule.forRoot(RabbitMQModule, {
+        return {
           uri: configValues.BACKEND_API_RABBITMQ_BROKER_URL,
           connectionInitOptions: {
             wait: false,
           },
           connectionManagerOptions: {
             heartbeatIntervalInSeconds: 0,
+            reconnectTimeInSeconds: 5,
           },
           defaultExchangeType: "direct",
           defaultSubscribeErrorBehavior: MessageHandlerErrorBehavior.ACK,
@@ -36,9 +32,16 @@ export class MessageBrokerModule implements OnApplicationShutdown {
               default: true,
             },
           },
-        }),
-      ],
-      exports: [RabbitMQModule, MessageBrokerService],
+        };
+      },
+    }),
+  ],
+  exports: [RabbitMQModule, MessageBrokerService],
+})
+export class MessageBrokerModule implements OnApplicationShutdown {
+  static forRoot(): DynamicModule {
+    return {
+      module: MessageBrokerModule,
     };
   }
 

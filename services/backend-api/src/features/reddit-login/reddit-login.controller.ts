@@ -28,7 +28,7 @@ export class RedditLoginController {
   async login(@Res() res: FastifyReply) {
     const authorizationUri = this.redditApiService.getAuthorizeUrl();
 
-    res.redirect(303, authorizationUri);
+    res.redirect(authorizationUri, 303);
   }
 
   @Get("remove")
