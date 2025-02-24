@@ -35,9 +35,6 @@ export class MessageBrokerModule implements OnApplicationShutdown {
           connectionInitOptions: {
             wait: false,
           },
-          connectionManagerOptions: {
-            heartbeatIntervalInSeconds: 0,
-          },
         }),
       ],
       exports: [RabbitMQModule],
