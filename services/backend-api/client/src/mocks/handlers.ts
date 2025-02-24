@@ -15,6 +15,7 @@ import {
   CreateServerLegacyFeedBulkConversionOutput,
   CreateUserFeedLegacyRestoreOutput,
   CreateUserFeedManagementInviteOutput,
+  CreateUserFeedManualRequestOutput,
   CreateUserFeedOutput,
   DeleteUserFeedsInput,
   DeleteUserFeedsOutput,
@@ -574,6 +575,17 @@ const handlers = [
     return HttpResponse.json<GetUserFeedsOutput>({
       results: limitedResults,
       total: filtered.length,
+    });
+  }),
+
+  http.post("/api/v1/user-feeds/:id/manual-request", async () => {
+    await delay(500);
+
+    return HttpResponse.json<CreateUserFeedManualRequestOutput>({
+      result: {
+        requestStatus: UserFeedArticleRequestStatus.BadStatusCode,
+        requestStatusCode: 404,
+      },
     });
   }),
 

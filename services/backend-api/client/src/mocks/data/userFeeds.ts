@@ -306,7 +306,7 @@ const mockUserFeeds: UserFeed[] = [
       },
     ],
     healthStatus: UserFeedHealthStatus.Ok,
-    disabledCode: undefined,
+    disabledCode: UserFeedDisabledCode.FailedRequests,
     refreshRateSeconds: 60,
     userRefreshRateSeconds: 120,
   },
