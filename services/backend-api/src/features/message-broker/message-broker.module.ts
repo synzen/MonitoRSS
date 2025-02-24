@@ -20,10 +20,6 @@ import { MessageBrokerService } from "./message-broker.service";
           connectionInitOptions: {
             wait: false,
           },
-          connectionManagerOptions: {
-            heartbeatIntervalInSeconds: 0,
-            reconnectTimeInSeconds: 5,
-          },
           defaultExchangeType: "direct",
           defaultSubscribeErrorBehavior: MessageHandlerErrorBehavior.ACK,
           channels: {
