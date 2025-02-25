@@ -53,7 +53,7 @@ export class FeedFetcherListenerService {
     );
   }
 
-  calculateCacheKeyForMessage = (
+  calculateCurrentlyProcessingCacheKeyForMessage = (
     event: BatchRequestMessage['data'][number],
   ) => {
     const lookupKey = event.lookupKey || event.url;
@@ -82,7 +82,6 @@ export class FeedFetcherListenerService {
   private async onBrokerFetchRequestBatchHandler(
     batchRequest: BatchRequestMessage,
   ): Promise<void> {
-    const urls = batchRequest?.data?.map((u) => u.url);
     const rateSeconds = batchRequest?.rateSeconds;
 
     if (!batchRequest.data || rateSeconds == null) {
@@ -96,6 +95,14 @@ export class FeedFetcherListenerService {
       return;
     }
 
+    const fetchCompletedToEmit: Array<{
+      lookupKey?: string;
+      url: string;
+      rateSeconds: number;
+      debug?: boolean;
+    }> = [];
+    const requestInsertsToFlush: PartitionedRequestInsert[] = [];
+
     logger.debug(`Fetch batch request message received for batch urls`, {
       event: batchRequest,
     });
@@ -106,8 +113,14 @@ export class FeedFetcherListenerService {
           const { url, lookupKey, saveToObjectStorage, headers } = message;
           let request: PartitionedRequestInsert | undefined = undefined;
 
+          if (saveToObjectStorage) {
+            logger.info(
+              `DEBUG: Beginning to process fetch request in batch request for ${url} with rate ${rateSeconds}s`,
+            );
+          }
+
           const currentlyProcessing = await this.cacheStorageService.set({
-            key: this.calculateCacheKeyForMessage(message),
+            key: this.calculateCurrentlyProcessingCacheKeyForMessage(message),
             body: '1',
             getOldValue: true,
             expSeconds: rateSeconds,
@@ -118,6 +131,23 @@ export class FeedFetcherListenerService {
               `Request with key ${
                 lookupKey || url
               } with rate ${rateSeconds} is already being processed, skipping`,
+            );
+
+            return;
+          }
+
+          const recentlyProcessed =
+            await this.partitionedRequestsStoreService.wasRequestedInPastSeconds(
+              lookupKey || url,
+              Math.round(rateSeconds * 0.75),
+            );
+
+          if (recentlyProcessed) {
+            // Check is necessary if a feed is checked on both 10m and 2m intervals for example
+            logger.info(
+              `Request with key ${
+                lookupKey || url
+              } with rate ${rateSeconds} was recently processed, skipping`,
             );
 
             return;
@@ -153,11 +183,15 @@ export class FeedFetcherListenerService {
               request = result.request;
             }
 
+            if (result.request) {
+              requestInsertsToFlush.push(result.request);
+            }
+
             if (result.emitFetchCompleted) {
-              await this.emitFetchCompleted({
+              fetchCompletedToEmit.push({
                 lookupKey,
                 url,
-                rateSeconds: rateSeconds,
+                rateSeconds,
                 debug: saveToObjectStorage,
               });
             }
@@ -195,7 +229,7 @@ export class FeedFetcherListenerService {
             }
 
             await this.cacheStorageService.del(
-              this.calculateCacheKeyForMessage(message),
+              this.calculateCurrentlyProcessingCacheKeyForMessage(message),
             );
           }
         }),
@@ -213,13 +247,22 @@ export class FeedFetcherListenerService {
         });
       }
 
-      await this.em.flush();
+      await Promise.all([
+        this.partitionedRequestsStoreService.flushInserts(
+          requestInsertsToFlush,
+        ),
+        this.em.flush(),
+      ]);
 
-      await this.partitionedRequestsStoreService.flushPendingInserts();
-
-      logger.debug(`Fetch batch request message processed for urls`, {
-        urls,
+      fetchCompletedToEmit.forEach((event) => {
+        this.emitFetchCompleted(event);
       });
+
+      if (batchRequest.data.some((d) => d.saveToObjectStorage)) {
+        logger.info(
+          `DEBUG: Finished processing fetch batch request message for urls for refresh rate ${batchRequest.rateSeconds}s. Flushed pending inserts.`,
+        );
+      }
     } catch (err) {
       logger.error(`Error processing fetch batch request message`, {
         event: batchRequest,
@@ -270,6 +313,12 @@ export class FeedFetcherListenerService {
       );
 
       return { emitFetchCompleted: false };
+    }
+
+    if (data.saveToObjectStorage) {
+      logger.info(
+        `DEBUG: About to fetch and response for ${url} for refresh rate ${data.rateSeconds}s`,
+      );
     }
 
     const { request } = await this.feedFetcherService.fetchAndSaveResponse(

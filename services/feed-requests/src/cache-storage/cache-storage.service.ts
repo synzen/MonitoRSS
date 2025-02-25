@@ -17,6 +17,18 @@ export class CacheStorageService {
     return `feed-requests:${key}`;
   }
 
+  async get(key: string): Promise<string | null> {
+    try {
+      return await this.redisClient.get(this.generateKey(key));
+    } catch (err) {
+      logger.error(`Failed to get content from cache storage`, {
+        err: (err as Error).stack,
+      });
+
+      return null;
+    }
+  }
+
   async set({
     key,
     body,

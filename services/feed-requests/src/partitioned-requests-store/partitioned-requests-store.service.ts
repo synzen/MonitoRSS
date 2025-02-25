@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PartitionedRequestInsert } from './types/partitioned-request.type';
-import { createHash, randomUUID } from 'crypto';
+import { createHash } from 'crypto';
 import { MikroORM } from '@mikro-orm/core';
 import { RequestSource } from '../feed-fetcher/constants/request-source.constants';
 import { Request } from '../feed-fetcher/entities';
@@ -12,18 +12,27 @@ const sha1 = createHash('sha1');
 
 @Injectable()
 export default class PartitionedRequestsStoreService {
-  private pendingInserts: PartitionedRequestInsert[] = [];
-
   constructor(private readonly orm: MikroORM) {}
 
-  async markForPersistence(
-    responseInsert: PartitionedRequestInsert,
-  ): Promise<void> {
-    this.pendingInserts.push(responseInsert);
+  async wasRequestedInPastSeconds(
+    lookupKey: string,
+    timeframeSeconds: number,
+  ): Promise<boolean> {
+    const em = this.orm.em.getConnection();
+
+    const [result] = await em.execute(
+      `SELECT 1 FROM request_partitioned
+       WHERE lookup_key = ?
+       AND created_at >= NOW() - INTERVAL ? SECOND
+       LIMIT 1`,
+      [lookupKey, timeframeSeconds.toString()],
+    );
+
+    return !!result;
   }
 
-  async flushPendingInserts(): Promise<void> {
-    if (this.pendingInserts.length === 0) {
+  async flushInserts(inserts: PartitionedRequestInsert[]): Promise<void> {
+    if (inserts.length === 0) {
       return;
     }
 
@@ -31,8 +40,18 @@ export default class PartitionedRequestsStoreService {
     const transaction = await em.begin();
 
     try {
+      if (inserts.some((i) => i.response?.s3ObjectKey)) {
+        logger.info('DEBUG: Flushing pending inserts', {
+          pendingInserts: inserts.map((i) => ({
+            id: i.id,
+            lookupKey: i.lookupKey,
+            url: i.url,
+          })),
+        });
+      }
+
       await Promise.all(
-        this.pendingInserts.map(async (responseInsert) => {
+        inserts.map(async (responseInsert) => {
           const urlHash = sha1.copy().update(responseInsert.url).digest('hex');
           let hostHash: string | null = null;
 
@@ -99,7 +118,7 @@ export default class PartitionedRequestsStoreService {
               ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             )`,
             [
-              randomUUID(),
+              responseInsert.id,
               responseInsert.status,
               responseInsert.source,
               this.stringifyJson(responseInsert.fetchOptions),
@@ -127,8 +146,6 @@ export default class PartitionedRequestsStoreService {
       await em.rollback(transaction);
 
       throw err;
-    } finally {
-      this.pendingInserts.length = 0;
     }
   }
 

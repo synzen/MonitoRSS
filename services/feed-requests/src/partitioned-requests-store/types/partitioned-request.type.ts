@@ -2,6 +2,7 @@ import { RequestStatus } from '../../feed-fetcher/constants';
 import { RequestSource } from '../../feed-fetcher/constants/request-source.constants';
 
 export interface PartitionedRequestInsert {
+  id: string;
   status: RequestStatus;
   source: RequestSource | null;
   fetchOptions: object | null;

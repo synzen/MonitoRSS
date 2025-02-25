@@ -90,6 +90,12 @@ export class ScheduleHandlerService {
         continue;
       }
 
+      if (urlsToDebug.has(url)) {
+        logger.info(
+          `DEBUG: Schedule handler pushing url ${url} for ${refreshRateSeconds}s refresh rate`
+        );
+      }
+
       urlBatch.push({
         url,
         saveToObjectStorage: urlsToDebug.has(url),
