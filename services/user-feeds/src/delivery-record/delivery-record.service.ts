@@ -325,7 +325,7 @@ export class DeliveryRecordService {
       return {
         id: record.id,
         mediumId: record.medium_id,
-        createdAt: record.created_at.toISOString(),
+        createdAt: new Date(record.created_at).toISOString(),
         details,
         articleIdHash: record.article_id_hash,
         status,
