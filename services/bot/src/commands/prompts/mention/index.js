@@ -1,7 +1,0 @@
-exports.addSubscriber = require('./addSubscriber.js')
-exports.addSubscriberSuccess = require('./addSubscriberSuccess.js')
-exports.listSubscribers = require('./listSubscribers.js')
-exports.removeAllSubscribersSuccess = require('./removeAllSubscribersSuccess.js')
-exports.removeSubscriber = require('./removeSubscriber.js')
-exports.removeSubscriberSuccess = require('./removeSubscriberSuccess.js')
-exports.selectAction = require('./selectAction.js')
