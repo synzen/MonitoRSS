@@ -142,24 +142,25 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
       columnHelper.display({
         id: "select",
         header: ({ table }) => (
-          <Checkbox
-            as={Flex}
-            alignItems="center"
-            width="min-content"
-            isChecked={table.getIsAllRowsSelected()}
-            // onChange will not work for some reason with chakra checkboxes
-            onChangeCapture={(e) => {
-              e.stopPropagation();
-              table.getToggleAllRowsSelectedHandler()(e);
-            }}
-            isIndeterminate={table.getIsSomeRowsSelected()}
-            marginX={3.5}
-            cursor="pointer"
-            aria-label="Check all currently loaded feeds for bulk actions"
-          />
+          <Flex justifyContent="center" alignItems="center" width="100%">
+            <Checkbox
+              alignItems="center"
+              width="min-content"
+              isChecked={table.getIsAllRowsSelected()}
+              onChange={(e) => {
+                e.stopPropagation();
+                table.getToggleAllRowsSelectedHandler()(e);
+              }}
+              isIndeterminate={table.getIsSomeRowsSelected()}
+              cursor="pointer"
+              aria-label="Check all currently loaded feeds for bulk actions"
+            />
+          </Flex>
         ),
         cell: ({ row }) => (
-          <Box
+          <Flex
+            alignItems="center"
+            justifyContent="center"
             onClick={(e) => {
               /**
                * Stopping propagation at the checkbox level does not work for some reason with
@@ -169,13 +170,16 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
             }}
           >
             <Checkbox
-              as={Flex}
+              display="flex"
               alignItems="center"
-              width="min-content"
+              // width="min-content"
               isChecked={row.getIsSelected()}
-              isDisabled={!row.getCanSelect()}
-              // onChange will not work for some reason with chakra checkboxes
-              onChangeCapture={(e) => {
+              aria-disabled={!row.getCanSelect()}
+              onChange={(e) => {
+                if (!row.getCanSelect()) {
+                  return;
+                }
+
                 e.stopPropagation();
                 row.getToggleSelectedHandler()(e);
               }}
@@ -190,7 +194,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
               }}
               aria-label={`Check feed ${row.original.title} for bulk actions`}
             />
-          </Box>
+          </Flex>
         ),
       }),
       columnHelper.accessor("computedStatus", {
@@ -208,6 +212,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
               <Link
                 as={RouterLink}
                 to={pages.userFeed(info.row.original.id)}
+                color="blue.300"
                 _hover={{
                   textDecoration: "underline",
                 }}
@@ -250,6 +255,7 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
                   _hover={{
                     textDecoration: "underline",
                   }}
+                  color="blue.300"
                   title={info.row.original.inputUrl || value}
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -672,7 +678,6 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
                         cursor={cursor}
                         onClick={header.column.getToggleSortingHandler()}
                         userSelect="none"
-                        aria-label={canSort ? "sort" : undefined}
                       >
                         <HStack alignItems="center">
                           {header.isPlaceholder
@@ -701,27 +706,8 @@ export const UserFeedsTable: React.FC<Props> = ({ onSelectedFeedId }) => {
             </Thead>
             <tbody>
               {getRowModel().rows.map((row) => {
-                const feed = row.original as RowData;
-
                 return (
-                  <Tr
-                    key={row.id}
-                    _hover={{
-                      bg: "gray.700",
-                      cursor: "pointer",
-                      // boxShadow: "outline",
-                    }}
-                    _focus={{
-                      // boxShadow: "outline",
-                      outline: "none",
-                    }}
-                    onClick={() => onClickFeedRow(feed.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        onClickFeedRow(feed.id);
-                      }
-                    }}
-                  >
+                  <Tr key={row.id}>
                     {row.getVisibleCells().map((cell) => (
                       <Td
                         paddingY={2}
