@@ -150,6 +150,13 @@ export class FeedFetcherListenerService {
               } with rate ${rateSeconds} was recently processed, skipping`,
             );
 
+            fetchCompletedToEmit.push({
+              lookupKey,
+              url,
+              rateSeconds,
+              debug: saveToObjectStorage,
+            });
+
             return;
           }
 
