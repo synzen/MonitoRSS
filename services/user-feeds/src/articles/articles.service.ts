@@ -569,7 +569,8 @@ export class ArticlesService {
 
       const diffMs = dayjs().diff(dateValue, "millisecond");
 
-      return diffMs <= oldArticleDateDiffMsThreshold;
+      // If less than 0, it is in the future
+      return diffMs < 0 || diffMs <= oldArticleDateDiffMsThreshold;
     });
   }
 
