@@ -15,6 +15,7 @@ class ResultDto {
   selectedProperties: string[];
   url: string;
   attemptedToResolveFromHtml?: boolean;
+  feedTitle: string | null;
 }
 
 export class GetUserFeedArticlesOutputDto {

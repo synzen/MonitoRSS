@@ -139,7 +139,7 @@ export class FeedFetcherListenerService {
           const recentlyProcessed =
             await this.partitionedRequestsStoreService.wasRequestedInPastSeconds(
               lookupKey || url,
-              Math.round(rateSeconds * 0.75),
+              Math.round(rateSeconds * 0.5),
             );
 
           if (recentlyProcessed) {

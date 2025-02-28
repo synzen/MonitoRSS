@@ -129,19 +129,6 @@ export class FeedsController {
         requestLookupDetails,
       });
 
-      if (!fetchResult) {
-        return {
-          result: {
-            requestStatus: GetFeedArticlesRequestStatus.Pending,
-            articles: [],
-            totalArticles: 0,
-            selectedProperties: [],
-            url: resolvedUrl,
-            attemptedToResolveFromHtml,
-          },
-        };
-      }
-
       if (fetchResult.articles.length === 0) {
         return {
           result: {
@@ -151,6 +138,7 @@ export class FeedsController {
             selectedProperties: [],
             url: resolvedUrl,
             attemptedToResolveFromHtml,
+            feedTitle: fetchResult.feed.title || null,
           },
         };
       }
@@ -187,6 +175,7 @@ export class FeedsController {
           selectedProperties: properties,
           url: resolvedUrl,
           attemptedToResolveFromHtml,
+          feedTitle: fetchResult.feed.title || null,
         },
       };
     } catch (err) {
@@ -202,6 +191,7 @@ export class FeedsController {
             selectedProperties: [],
             url,
             attemptedToResolveFromHtml: true,
+            feedTitle: null,
           },
         };
       }
@@ -215,6 +205,7 @@ export class FeedsController {
             selectedProperties: [],
             url,
             attemptedToResolveFromHtml: false,
+            feedTitle: null,
           },
         };
       }
@@ -231,6 +222,7 @@ export class FeedsController {
             selectedProperties: [],
             url,
             attemptedToResolveFromHtml: false,
+            feedTitle: null,
           },
         };
       }
@@ -247,6 +239,7 @@ export class FeedsController {
             selectedProperties: [],
             url,
             attemptedToResolveFromHtml: false,
+            feedTitle: null,
           },
         };
       }

@@ -32,7 +32,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, object, string } from "yup";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCreateUserFeed, useUserFeeds } from "../../hooks";
 import { useDiscordUserMe } from "../../../discordUser";
@@ -45,7 +45,7 @@ import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage copy
 import { useCreateUserFeedUrlValidation } from "../../hooks/useCreateUserFeedUrlValidation";
 
 const formSchema = object({
-  title: string().required(),
+  title: string().optional(),
   // test url is a string that starts with http
   url: string().required().matches(/^http/, {
     message: "Must be a valid URL",
@@ -88,7 +88,6 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
     offset: 0,
   });
   const navigate = useNavigate();
-  const initialFocusRef = useRef<HTMLInputElement>(null);
   const isConfirming = !!feedUrlValidationData?.result.resolvedToUrl;
 
   const onSubmit = async ({ title, url }: FormData) => {
@@ -163,7 +162,7 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
           </Button>
         )}
       </Tooltip>
-      <Modal isOpen={isOpen} onClose={onClose} size="xl" initialFocusRef={initialFocusRef}>
+      <Modal isOpen={isOpen} onClose={onClose} size="xl">
         <ModalOverlay />
         <ModalContent>
           <form onSubmit={handleSubmit(onSubmit)}>
@@ -200,31 +199,6 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
               )}
               {!isConfirming && (
                 <Stack spacing={4}>
-                  <FormControl isInvalid={!!errors.title} isRequired>
-                    <FormLabel>
-                      {t("features.userFeeds.components.addUserFeedDialog.formTitleLabel")}
-                    </FormLabel>
-                    <Controller
-                      name="title"
-                      control={control}
-                      render={({ field }) => (
-                        <Input
-                          isDisabled={isSubmitting}
-                          {...field}
-                          value={field.value || ""}
-                          ref={initialFocusRef}
-                          autoComplete="off"
-                          bg="gray.800"
-                        />
-                      )}
-                    />
-                    <FormHelperText>
-                      {t(
-                        "features.userFeeds.components.addUserFeedDialog.onlyForYourReferenceLabel"
-                      )}
-                    </FormHelperText>
-                    <FormErrorMessage>{errors.title?.message}</FormErrorMessage>
-                  </FormControl>
                   <FormControl isInvalid={!!errors.url} isRequired>
                     <FormLabel>Feed Link</FormLabel>
                     <Controller
@@ -232,7 +206,7 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                       control={control}
                       render={({ field }) => (
                         <Input
-                          isDisabled={isSubmitting}
+                          isReadOnly={isSubmitting}
                           {...field}
                           value={field.value || ""}
                           bg="gray.800"
@@ -245,6 +219,28 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                       to an RSS feed.
                     </FormHelperText>
                     <FormErrorMessage>{errors.url?.message}</FormErrorMessage>
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>
+                      {t("features.userFeeds.components.addUserFeedDialog.formTitleLabel")}
+                    </FormLabel>
+                    <Controller
+                      name="title"
+                      control={control}
+                      render={({ field }) => (
+                        <Input
+                          isReadOnly={isSubmitting}
+                          {...field}
+                          value={field.value || ""}
+                          bg="gray.800"
+                        />
+                      )}
+                    />
+                    <FormHelperText>
+                      An optional title for your own reference. If left blank, the feed&apos;s title
+                      will be automatically detected.
+                    </FormHelperText>
+                    <FormErrorMessage>{errors.title?.message}</FormErrorMessage>
                   </FormControl>
                   <Divider />
                   <Heading as="h2" size="sm" fontWeight="medium" id="faq-accordion">

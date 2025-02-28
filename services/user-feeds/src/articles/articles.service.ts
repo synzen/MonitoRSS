@@ -113,7 +113,7 @@ export class ArticlesService {
     data: {
       url: string;
       options: FetchFeedArticleOptions;
-      data: XmlParsedArticlesOutput;
+      data: Omit<XmlParsedArticlesOutput, "feed">;
     },
     options?: { useOldTTL?: boolean }
   ) {
@@ -191,7 +191,7 @@ export class ArticlesService {
       requestLookupDetails: FeedRequestLookupDetails | undefined | null;
     }
   ): Promise<{
-    output: XmlParsedArticlesOutput | null;
+    output: XmlParsedArticlesOutput;
     url: string;
     attemptedToResolveFromHtml?: boolean;
   }> {

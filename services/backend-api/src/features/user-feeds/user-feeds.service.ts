@@ -324,7 +324,10 @@ export class UserFeedsService {
       user,
     });
 
-    const { finalUrl } = await this.checkUrlIsValid(url, tempLookupDetails);
+    const { finalUrl, feedTitle } = await this.checkUrlIsValid(
+      url,
+      tempLookupDetails
+    );
 
     if (finalUrl !== url) {
       return {
@@ -332,7 +335,7 @@ export class UserFeedsService {
       };
     }
 
-    return { resolvedToUrl: null };
+    return { resolvedToUrl: null, feedTitle };
   }
 
   async addFeed(
@@ -345,7 +348,7 @@ export class UserFeedsService {
       title,
       url,
     }: {
-      title: string;
+      title?: string;
       url: string;
     }
   ) {
@@ -374,13 +377,11 @@ export class UserFeedsService {
       user,
     });
 
-    const { finalUrl, enableDateChecks } = await this.checkUrlIsValid(
-      url,
-      tempLookupDetails
-    );
+    const { finalUrl, enableDateChecks, feedTitle } =
+      await this.checkUrlIsValid(url, tempLookupDetails);
 
     const created = await this.userFeedModel.create({
-      title,
+      title: title || feedTitle || "Untitled Feed",
       url: finalUrl,
       inputUrl: url,
       user: {
@@ -1755,7 +1756,11 @@ export class UserFeedsService {
   private async checkUrlIsValid(
     url: string,
     lookupDetails: FeedRequestLookupDetails | null
-  ): Promise<{ finalUrl: string; enableDateChecks: boolean }> {
+  ): Promise<{
+    finalUrl: string;
+    enableDateChecks: boolean;
+    feedTitle: string | null;
+  }> {
     const getArticlesResponse = await this.feedHandlerService.getArticles(
       {
         url,
@@ -1783,6 +1788,7 @@ export class UserFeedsService {
       url: finalUrl,
       attemptedToResolveFromHtml,
       articles,
+      feedTitle,
     } = getArticlesResponse;
 
     if (requestStatus === GetArticlesResponseRequestStatus.Success) {
@@ -1798,6 +1804,7 @@ export class UserFeedsService {
       return {
         finalUrl: finalUrl || url,
         enableDateChecks: !!articles[0]?.date,
+        feedTitle: feedTitle || null,
       };
     } else if (requestStatus === GetArticlesResponseRequestStatus.TimedOut) {
       throw new FeedFetchTimeoutException(`Feed fetch timed out`);

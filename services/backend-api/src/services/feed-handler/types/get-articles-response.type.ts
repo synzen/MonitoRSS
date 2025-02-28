@@ -8,6 +8,7 @@ import {
   IsOptional,
   IsString,
   Min,
+  ValidateIf,
   ValidateNested,
 } from "class-validator";
 
@@ -66,6 +67,11 @@ class Result {
   @IsBoolean()
   @IsOptional()
   attemptedToResolveFromHtml?: boolean;
+
+  @IsString()
+  @IsOptional()
+  @ValidateIf((v) => v !== null)
+  feedTitle?: string | null;
 }
 
 export class GetArticlesResponse {
