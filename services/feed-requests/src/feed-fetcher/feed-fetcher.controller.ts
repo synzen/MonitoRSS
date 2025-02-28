@@ -5,8 +5,6 @@ import {
   Post,
   UseGuards,
   ValidationPipe,
-  BadRequestException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { Get } from '@nestjs/common/decorators';
 import dayjs from 'dayjs';
@@ -21,11 +19,7 @@ import {
   GetFeedRequestsOutputDto,
 } from './dto';
 import { FeedFetcherService } from './feed-fetcher.service';
-import { GrpcMethod } from '@nestjs/microservices';
-import { MikroORM, UseRequestContext } from '@mikro-orm/core';
-import { plainToClass } from 'class-transformer';
-import { validateSync } from 'class-validator';
-import { Metadata } from '@grpc/grpc-js';
+import { MikroORM } from '@mikro-orm/core';
 import { ConfigService } from '@nestjs/config';
 import { HostRateLimiterService } from '../host-rate-limiter/host-rate-limiter.service';
 import calculateResponseFreshnessLifetime from '../shared/utils/calculate-response-freshness-lifetime';
@@ -104,28 +98,6 @@ export class FeedFetcherController {
   async fetchFeed(
     @Body(ValidationPipe) data: FetchFeedDto,
   ): Promise<FetchFeedDetailsDto> {
-    return this.getLatestRequest(data);
-  }
-
-  @GrpcMethod('FeedFetcherGrpc', 'FetchFeed')
-  @UseRequestContext()
-  async fetchFeedGrpc(
-    data: FetchFeedDto,
-    metadata: Metadata,
-  ): Promise<FetchFeedDetailsDto> {
-    const classData = plainToClass(FetchFeedDto, data);
-    const results = validateSync(classData);
-
-    if (results.length > 0) {
-      throw new BadRequestException(results.join(','));
-    }
-
-    const auth = metadata.get('api-key')[0];
-
-    if (auth !== this.API_KEY) {
-      throw new UnauthorizedException('Invalid authorization');
-    }
-
     return this.getLatestRequest(data);
   }
 
