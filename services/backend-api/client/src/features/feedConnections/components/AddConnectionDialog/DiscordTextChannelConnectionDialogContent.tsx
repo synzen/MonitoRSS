@@ -251,7 +251,6 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                             });
                           }
                         }}
-                        include={[GetDiscordChannelType.Forum]}
                         onBlur={field.onBlur}
                         isDisabled={isSubmitting}
                         serverId={serverId}

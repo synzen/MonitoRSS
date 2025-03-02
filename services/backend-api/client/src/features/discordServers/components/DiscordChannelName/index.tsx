@@ -24,7 +24,7 @@ export const DiscordChannelName: React.FC<Props> = ({
 }) => {
   const { data, status, error } = useDiscordServerChannels({
     serverId,
-    include: [
+    types: [
       GetDiscordChannelType.Forum,
       GetDiscordChannelType.Announcement,
       GetDiscordChannelType.Text,

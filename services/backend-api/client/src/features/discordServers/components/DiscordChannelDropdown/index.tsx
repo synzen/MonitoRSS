@@ -11,7 +11,6 @@ interface Props {
   onBlur: () => void;
   value?: string;
   isDisabled?: boolean;
-  include?: GetDiscordChannelType[];
   inputId?: string;
   isInvalid: boolean;
   ariaLabelledBy: string;
@@ -30,13 +29,12 @@ export const DiscordChannelDropdown: React.FC<Props> = ({
   onBlur,
   value,
   isDisabled,
-  include,
   inputId,
   isInvalid,
   ariaLabelledBy,
   types,
 }) => {
-  const { data, error, isFetching } = useDiscordServerChannels({ serverId, include, types });
+  const { data, error, isFetching } = useDiscordServerChannels({ serverId, types });
 
   const options =
     data?.results.map((channel) => ({

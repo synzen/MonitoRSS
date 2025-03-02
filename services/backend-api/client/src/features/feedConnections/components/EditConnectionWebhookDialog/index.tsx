@@ -205,7 +205,11 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                         onChange={(value) => {
                           field.onChange(value);
                         }}
-                        include={[GetDiscordChannelType.Forum]}
+                        types={[
+                          GetDiscordChannelType.Text,
+                          GetDiscordChannelType.Forum,
+                          GetDiscordChannelType.Announcement,
+                        ]}
                         onBlur={field.onBlur}
                         isDisabled={isSubmitting}
                         serverId={serverId}

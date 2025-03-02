@@ -187,7 +187,11 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                             });
                           }
                         }}
-                        include={[GetDiscordChannelType.Forum]}
+                        types={[
+                          GetDiscordChannelType.Text,
+                          GetDiscordChannelType.Forum,
+                          GetDiscordChannelType.Announcement,
+                        ]}
                         onBlur={field.onBlur}
                         isDisabled={isSubmitting}
                         serverId={serverId}

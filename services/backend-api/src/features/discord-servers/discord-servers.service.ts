@@ -278,7 +278,6 @@ export class DiscordServersService {
   async getTextChannelsOfServer(
     serverId: string,
     options?: {
-      include?: Array<string>;
       types?: Array<string>;
     }
   ): Promise<DiscordGuildChannelFormatted[]> {
@@ -319,10 +318,6 @@ export class DiscordServersService {
           c.type === DiscordChannelType.GUILD_ANNOUNCEMENT
         ) {
           return true;
-        }
-
-        if (c.type === DiscordChannelType.GUILD_FORUM) {
-          return options?.include?.includes("forum");
         }
       });
 
