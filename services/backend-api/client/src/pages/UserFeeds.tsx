@@ -22,7 +22,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AddIcon, ChevronDownIcon, DeleteIcon } from "@chakra-ui/icons";
-import { useCallback, useContext, useEffect, useRef } from "react";
+import { useCallback, useContext } from "react";
 import { FaRegNewspaper } from "react-icons/fa6";
 import { FaPause, FaPlay } from "react-icons/fa";
 import { useUserMe } from "../features/discordUser";
@@ -50,7 +50,6 @@ export const UserFeeds: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { data: userMeData } = useUserMe();
-  const addNewFeedButtonRef = useRef<HTMLButtonElement>(null);
   const { data: userFeedsRequireAttentionResults } = useUserFeeds({
     limit: 1,
     offset: 0,
@@ -84,12 +83,6 @@ export const UserFeeds: React.FC = () => {
 
   const hasFailedFeedAlertsDisabled =
     userMeData && !userMeData.result?.preferences?.alertOnDisabledFeeds;
-
-  useEffect(() => {
-    if (userFeedsRequireAttentionResults?.total === 0 && addNewFeedButtonRef.current) {
-      addNewFeedButtonRef.current.focus();
-    }
-  }, [addNewFeedButtonRef.current, userFeedsResults?.total]);
 
   const onEnableSelectedFeeds = async () => {
     const feedIds = selectedFeeds.map((f) => f.id);
@@ -345,11 +338,7 @@ export const UserFeeds: React.FC = () => {
               </Stack>
               <AddUserFeedDialog
                 trigger={
-                  <Button
-                    colorScheme="blue"
-                    leftIcon={<AddIcon fontSize={12} />}
-                    ref={addNewFeedButtonRef}
-                  >
+                  <Button colorScheme="blue" leftIcon={<AddIcon fontSize={12} />}>
                     Add a new feed
                   </Button>
                 }
