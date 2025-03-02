@@ -378,13 +378,16 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                 <span>{isConfirming ? "Go back" : t("common.buttons.cancel")}</span>
               </Button>
               <Button colorScheme="blue" type="submit" aria-disabled={isSubmitting}>
-                {isSubmitting ? (
-                  "Saving..."
-                ) : (
-                  <span>
-                    {isConfirming ? "Add feed with updated url" : t("common.buttons.save")}
-                  </span>
-                )}
+                <span>
+                  {isSubmitting ? (
+                    "Saving..."
+                  ) : (
+                    <>
+                      {isConfirming && "Add feed with updated url"}
+                      {!isConfirming && "Save"}
+                    </>
+                  )}
+                </span>
               </Button>
             </ModalFooter>
           </form>
