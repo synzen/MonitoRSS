@@ -39,6 +39,7 @@ export interface UpdateDiscordChannelConnectionInput {
       timeWindowSeconds: number;
       limit: number;
     }> | null;
+    threadCreationMethod?: "new-thread" | null;
     disabledCode?: FeedConnectionDisabledCode.Manual | null;
     passingComparisons?: string[];
     blockingComparisons?: string[];

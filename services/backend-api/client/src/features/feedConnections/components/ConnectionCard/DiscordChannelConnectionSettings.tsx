@@ -22,8 +22,9 @@ import { UpdateDiscordChannelConnectionInput } from "../../api";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import { EditConnectionWebhookDialog } from "../EditConnectionWebhookDialog";
 import { DeleteConnectionButton } from "../DeleteConnectionButton";
-import { EditConnectionChannelDialog } from "../EditConnectionChannelDialog";
 import { CopyDiscordChannelConnectionSettingsDialog } from "../CopyDiscordChannelConnectingSettingsDialog";
+import { DiscordTextChannelConnectionDialogContent } from "../AddConnectionDialog/DiscordTextChannelConnectionDialogContent";
+import { DiscordForumChannelConnectionDialogContent } from "../AddConnectionDialog/DiscordForumChannelConnectionDialogContent";
 
 interface Props {
   feedId: string;
@@ -75,21 +76,16 @@ export const DiscordChannelConnectionSettings = ({
         onClose={isCopySettingsOnClose}
         onCloseRef={actionsButtonRef}
       />
-      {connection.details.channel && (
-        <EditConnectionChannelDialog
-          onCloseRef={actionsButtonRef}
-          defaultValues={{
-            channelId: connection.details.channel.id,
-            name: connection.name,
-            serverId: connection.details.channel.guildId,
-          }}
-          type={connection.details.channel.type}
-          onUpdate={({ channelId: updatedChannelId, name }) =>
-            onUpdate({
-              channelId: updatedChannelId,
-              name,
-            })
-          }
+      {connection.details.channel && connection.details.channel?.type !== "forum" && (
+        <DiscordTextChannelConnectionDialogContent
+          connection={connection}
+          isOpen={editIsOpen}
+          onClose={editOnClose}
+        />
+      )}
+      {connection.details.channel && connection.details.channel?.type === "forum" && (
+        <DiscordForumChannelConnectionDialogContent
+          connection={connection}
           isOpen={editIsOpen}
           onClose={editOnClose}
         />

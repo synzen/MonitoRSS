@@ -15,6 +15,7 @@ interface Props {
   inputId?: string;
   isInvalid: boolean;
   ariaLabelledBy: string;
+  types?: GetDiscordChannelType[];
 }
 
 const iconsByChannelType: Record<GetDiscordChannelType, React.ReactNode> = {
@@ -33,8 +34,9 @@ export const DiscordChannelDropdown: React.FC<Props> = ({
   inputId,
   isInvalid,
   ariaLabelledBy,
+  types,
 }) => {
-  const { data, error, isFetching } = useDiscordServerChannels({ serverId, include });
+  const { data, error, isFetching } = useDiscordServerChannels({ serverId, include, types });
 
   const options =
     data?.results.map((channel) => ({

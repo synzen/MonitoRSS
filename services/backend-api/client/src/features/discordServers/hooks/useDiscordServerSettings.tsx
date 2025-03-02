@@ -36,7 +36,7 @@ export const useDiscordServerSettings = ({ serverId }: Props) => {
       };
     },
     {
-      enabled: accessStatus?.result.authorized && !hasErrored,
+      enabled: accessStatus?.result.authorized && !hasErrored && !!serverId,
       onError: () => setHasErrored(true),
       retry(failureCount, e) {
         if (e.statusCode === 404) {

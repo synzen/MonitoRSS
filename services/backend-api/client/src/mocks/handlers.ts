@@ -13,6 +13,7 @@ import {
   CloneFeedOutput,
   CreateFeedSubscriberOutput,
   CreateServerLegacyFeedBulkConversionOutput,
+  CreateUserFeedDatePreviewOutput,
   CreateUserFeedInput,
   CreateUserFeedLegacyRestoreOutput,
   CreateUserFeedManagementInviteOutput,
@@ -584,6 +585,17 @@ const handlers = [
     return HttpResponse.json<GetUserFeedsOutput>({
       results: limitedResults,
       total: filtered.length,
+    });
+  }),
+
+  http.post("/api/v1/user-feeds/:id/date-preview", async () => {
+    await delay(500);
+
+    return HttpResponse.json<CreateUserFeedDatePreviewOutput>({
+      result: {
+        valid: true,
+        output: "some date",
+      },
     });
   }),
 

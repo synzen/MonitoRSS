@@ -301,7 +301,7 @@ export const UserFeeds: React.FC = () => {
                     borderLeftRadius={0}
                   />
                   <MenuList>
-                    <MenuItem as={Link} to={pages.addFeeds()}>
+                    <MenuItem icon={<AddIcon />} as={Link} to={pages.addFeeds()}>
                       Add multiple feeds
                     </MenuItem>
                   </MenuList>

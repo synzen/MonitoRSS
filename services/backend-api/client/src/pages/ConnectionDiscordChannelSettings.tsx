@@ -35,7 +35,6 @@ import {
   UpdateDiscordChannelConnectionInput,
 } from "../features/feedConnections";
 import { CustomPlaceholdersTabSection } from "../features/feedConnections/components/CustomPlaceholdersTabSection";
-import { FeedDiscordChannelConnection } from "../types";
 import RouteParams from "../types/RouteParams";
 import { notifyError } from "../utils/notifyError";
 import { notifySuccess } from "../utils/notifySuccess";
@@ -45,6 +44,7 @@ import { DiscordChannelConnectionSettings } from "../features/feedConnections/co
 import { UserFeedConnectionTabSearchParam } from "../constants/userFeedConnectionTabSearchParam";
 import { UserFeedConnectionProvider } from "../contexts/UserFeedConnectionContext";
 import { UserFeedProvider } from "../contexts/UserFeedContext";
+import { getPrettyConnectionName } from "../utils/getPrettyConnectionName";
 
 const tabIndexBySearchParam = new Map<string, number>([
   [UserFeedConnectionTabSearchParam.Message, 0],
@@ -52,36 +52,6 @@ const tabIndexBySearchParam = new Map<string, number>([
   [UserFeedConnectionTabSearchParam.RateLimits, 2],
   [UserFeedConnectionTabSearchParam.CustomPlaceholders, 3],
 ]);
-
-const getPrettyChannelType = (details?: FeedDiscordChannelConnection["details"]) => {
-  const { t } = useTranslation();
-
-  if (details?.webhook) {
-    const { type } = details.webhook;
-
-    if (type === "forum") {
-      return t("pages.discordChannelConnection.channelTypeForum");
-    }
-
-    return "Discord Webhook";
-  }
-
-  if (details?.channel) {
-    const { type } = details.channel;
-
-    if (type === "thread") {
-      return t("pages.discordChannelConnection.channelTypeThread");
-    }
-
-    if (type === "forum") {
-      return t("pages.discordChannelConnection.channelTypeForum");
-    }
-
-    return t("pages.discordChannelConnection.channelTypeTextChannel");
-  }
-
-  return "";
-};
 
 export const ConnectionDiscordChannelSettings: React.FC = () => {
   const { feedId, connectionId } = useParams<RouteParams>();
@@ -229,7 +199,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                       title={t("pages.discordChannelConnection.channelTypeLabel")}
                       hidden={!!connection?.details.webhook}
                     >
-                      <Text>{getPrettyChannelType(connection?.details)}</Text>
+                      <Text>{connection ? getPrettyConnectionName(connection) : ""}</Text>
                     </CategoryText>
                     <CategoryText
                       title="Webhook"

@@ -72,6 +72,7 @@ export class FeedConnectionsDiscordChannelsController {
       name,
       webhook,
       applicationWebhook,
+      threadCreationMethod,
     }: CreateDiscordChnnnelConnectionInputDto,
     @DiscordAccessToken()
     { access_token, discord: { id: discordUserId } }: SessionAccessToken
@@ -85,6 +86,7 @@ export class FeedConnectionsDiscordChannelsController {
         webhook,
         applicationWebhook,
         userDiscordUserId: discordUserId,
+        threadCreationMethod,
       }
     );
 
@@ -235,6 +237,7 @@ export class FeedConnectionsDiscordChannelsController {
       componentRows,
       externalProperties,
       includeCustomPlaceholderPreviews,
+      channelNewThreadTitle,
     }: CreateDiscordChannelConnectionPreviewInputDto
   ): Promise<CreateDiscordChannelConnectionPreviewOutputDto> {
     const result = await this.service.createPreview({
@@ -253,6 +256,7 @@ export class FeedConnectionsDiscordChannelsController {
       componentRows,
       includeCustomPlaceholderPreviews,
       externalProperties,
+      channelNewThreadTitle,
     });
 
     return {
@@ -289,6 +293,8 @@ export class FeedConnectionsDiscordChannelsController {
       rateLimits,
       componentRows,
       applicationWebhook,
+      channelNewThreadTitle,
+      threadCreationMethod,
     }: UpdateDiscordChannelConnectionInputDto,
     @DiscordAccessToken() { access_token }: SessionAccessToken
   ): Promise<UpdateDiscordChannelConnectionOutputDto> {
@@ -337,6 +343,7 @@ export class FeedConnectionsDiscordChannelsController {
         updates: {
           filters,
           name,
+          threadCreationMethod,
           disabledCode: useDisableCode,
           splitOptions,
           mentions,
@@ -344,6 +351,7 @@ export class FeedConnectionsDiscordChannelsController {
           rateLimits,
           details: {
             placeholderLimits,
+            channelNewThreadTitle,
             componentRows,
             channel: useChannelId
               ? {

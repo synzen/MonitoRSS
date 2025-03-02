@@ -48,7 +48,7 @@
       "feedRequestNotFound": "Failed to get feed articles - the feed host has reported that the feed does not exist. Check that the feed both exists and is publicly accessible.",
       "bannedFeed": "This feed is banned",
       "feedMissingChannelPermission": "The bot does not have permission to send messages within the channel. Ensure that the bot has the channel-level \"View Channel\" and \"Send Messages\" permissions and try again.",
-      "feedLimitReached": "You have reached your feed limit",
+      "feedLimitReached": "You have reached your feed limit. Consider supporting MonitoRSS to increase your feed limit.",
       "feedMissingChannel": "The channel does not exist",
       "feedUserMissingManageGuild": "You are missing the server-wide Manage Channels permission. Please contact your server administrator to grant you this permission.",
       "webhooksManageMissingPermissions": "The bot is missing the \"Manage Webhooks\" permission in this server or channel.",
@@ -381,7 +381,7 @@
           "formNameLabel": "Connection name",
           "formNameDescription": "Used to identify the connection.",
           "formThreadLabel": "Thread",
-          "formThreadDescripton": "Only unlocked (unarchived) threads are listed.",
+          "formThreadDescripton": "Only unarchived threads are listed.",
           "failedToGetThreads": "Failed to get threads"
         },
         "addDiscordChannelConnectionDialog": {

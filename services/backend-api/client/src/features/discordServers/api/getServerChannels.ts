@@ -6,6 +6,7 @@ import { GetDiscordChannelType } from "../constants";
 export interface GetServerChannelsInput {
   serverId: string;
   include?: GetDiscordChannelType[];
+  types?: GetDiscordChannelType[];
 }
 
 const GetServersChannelsOutputSchema = object({
@@ -20,6 +21,7 @@ export const getServerChannels = async (
 ): Promise<GetServerChannelsOutput> => {
   const searchParams = new URLSearchParams({
     include: options.include?.join(",") || "",
+    types: options.types?.join(",") || "",
   });
 
   const res = await fetchRest(

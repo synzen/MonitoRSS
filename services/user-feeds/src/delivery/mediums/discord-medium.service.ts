@@ -80,7 +80,7 @@ export class DiscordMediumService implements DeliveryMedium {
     }/webhooks/${webhookId}/${webhookToken}?${urlQueries.toString()}`;
   }
 
-  private getForumApiUrl(channelId: string) {
+  private getCreateChannelThreadUrl(channelId: string) {
     return `${DiscordMediumService.BASE_API_URL}/channels/${channelId}/threads`;
   }
 
@@ -126,6 +126,7 @@ export class DiscordMediumService implements DeliveryMedium {
         placeholderLimits,
         enablePlaceholderFallback,
         components,
+        channelNewThreadTitle,
       },
       filterReferences,
     } = details;
@@ -134,7 +135,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
     if (isForum) {
       const apiUrl = channelId
-        ? this.getForumApiUrl(channelId)
+        ? this.getCreateChannelThreadUrl(channelId)
         : webhook
         ? this.getWebhookApiUrl(webhook.id, webhook.token)
         : undefined;
@@ -143,11 +144,13 @@ export class DiscordMediumService implements DeliveryMedium {
         throw new Error("No channel or webhook specified for Discord forum");
       }
 
+      const threadNameContent = forumThreadTitle || "{{title}}";
+
       let bodies: DiscordMessageApiPayload[];
       let threadBody: Record<string, unknown>;
       const threadName =
         this.generateApiTextPayload(article, {
-          content: forumThreadTitle || "{{title}}",
+          content: threadNameContent,
           limit: 100,
           mentions,
           filterReferences,
@@ -175,6 +178,7 @@ export class DiscordMediumService implements DeliveryMedium {
             forumThreadTags,
             filterReferences
           ),
+          type: 11,
         };
       } else {
         bodies = this.generateApiPayloads(article, {
@@ -214,10 +218,11 @@ export class DiscordMediumService implements DeliveryMedium {
             forumThreadTags,
             filterReferences
           ),
+          type: 11,
         };
       }
 
-      const firstResponse = await this.sendDscordApiRequest(apiUrl, {
+      const firstResponse = await this.sendDiscordApiRequest(apiUrl, {
         method: "POST",
         body: threadBody,
       });
@@ -246,7 +251,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
       await Promise.all(
         bodies.slice(1, bodies.length).map((body) =>
-          this.sendDscordApiRequest(threadChannelUrl, {
+          this.sendDiscordApiRequest(threadChannelUrl, {
             method: "POST",
             body,
           })
@@ -298,7 +303,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
       const results = await Promise.all(
         apiPayloads.map((payload) =>
-          this.sendDscordApiRequest(apiUrl, {
+          this.sendDiscordApiRequest(apiUrl, {
             method: "POST",
             body: payload,
           })
@@ -315,7 +320,47 @@ export class DiscordMediumService implements DeliveryMedium {
         },
       };
     } else if (channelId) {
-      const apiUrl = this.getChannelApiUrl(channelId);
+      const shouldCreateThread = channel.type === "new-thread";
+
+      let useChannelId = channelId;
+
+      if (shouldCreateThread) {
+        const threadName =
+          this.generateApiTextPayload(article, {
+            content: channelNewThreadTitle || "{{title}}",
+            limit: 100,
+            mentions,
+            filterReferences,
+            placeholderLimits,
+            enablePlaceholderFallback,
+            components,
+          }) || "New Article";
+
+        const threadBody = {
+          name: threadName,
+          type: 11,
+        };
+
+        const apiUrl = this.getCreateChannelThreadUrl(channelId);
+        const firstResponse = await this.sendDiscordApiRequest(apiUrl, {
+          method: "POST",
+          body: threadBody,
+        });
+
+        if (!firstResponse.success) {
+          throw new Error(
+            `Failed to create initial thread for forum channel ${channelId}: ` +
+              `${firstResponse.detail}. Body: ${JSON.stringify(
+                firstResponse.body
+              )}`
+          );
+        }
+
+        useChannelId = (firstResponse.body as Record<string, unknown>)
+          .id as string;
+      }
+
+      const apiUrl = this.getChannelApiUrl(useChannelId);
       const apiPayloads = this.generateApiPayloads(article, {
         embeds: details.mediumDetails.embeds,
         content: details.mediumDetails.content,
@@ -329,7 +374,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
       const results = await Promise.all(
         apiPayloads.map((payload) =>
-          this.sendDscordApiRequest(apiUrl, {
+          this.sendDiscordApiRequest(apiUrl, {
             method: "POST",
             body: payload,
           })
@@ -497,7 +542,7 @@ export class DiscordMediumService implements DeliveryMedium {
       applied_tags: this.getForumTagsToSend(forumThreadTags, filterReferences),
     };
 
-    const res = await this.sendDscordApiRequest(apiUrl, {
+    const res = await this.sendDiscordApiRequest(apiUrl, {
       method: "POST",
       body: threadBody,
     });
@@ -570,18 +615,20 @@ export class DiscordMediumService implements DeliveryMedium {
     const {
       deliverySettings: {
         guildId,
+        channelNewThreadTitle,
         forumThreadTitle,
         forumThreadTags,
         mentions,
         enablePlaceholderFallback,
         placeholderLimits,
         components,
+        channel,
       },
       feedDetails: { id, url },
       filterReferences,
     } = details;
 
-    const forumApiUrl = this.getForumApiUrl(channelId);
+    const forumApiUrl = this.getCreateChannelThreadUrl(channelId);
     const bodies = this.generateApiPayloads(article, {
       embeds: details.deliverySettings.embeds,
       content: details.deliverySettings.content,
@@ -593,10 +640,15 @@ export class DiscordMediumService implements DeliveryMedium {
       components,
     });
 
+    const threadNameContent =
+      (channel?.type === "new-thread"
+        ? channelNewThreadTitle
+        : forumThreadTitle) || "{{title}}";
+
     const threadBody = {
       name:
         this.generateApiTextPayload(article, {
-          content: forumThreadTitle || "{{title}}",
+          content: threadNameContent,
           limit: 100,
           filterReferences,
           mentions,
@@ -606,9 +658,10 @@ export class DiscordMediumService implements DeliveryMedium {
         }) || "New Article",
       message: bodies[0],
       applied_tags: this.getForumTagsToSend(forumThreadTags, filterReferences),
+      type: 11,
     };
 
-    const res = await this.sendDscordApiRequest(forumApiUrl, {
+    const res = await this.sendDiscordApiRequest(forumApiUrl, {
       method: "POST",
       body: threadBody,
     });
@@ -724,11 +777,102 @@ export class DiscordMediumService implements DeliveryMedium {
         placeholderLimits,
         enablePlaceholderFallback,
         components,
+        channelNewThreadTitle,
+        channel,
       },
       feedDetails: { id, url },
       filterReferences,
     } = details;
-    const apiUrl = this.getChannelApiUrl(channelId);
+    const parentDeliveryId = generateDeliveryId();
+
+    const shouldCreateThread = channel?.type === "new-thread";
+
+    let useChannelId = channelId;
+
+    if (shouldCreateThread) {
+      const threadName =
+        this.generateApiTextPayload(article, {
+          content: channelNewThreadTitle || "{{title}}",
+          limit: 100,
+          mentions,
+          filterReferences,
+          placeholderLimits,
+          enablePlaceholderFallback,
+          components,
+        }) || "New Article";
+
+      const threadBody = {
+        name: threadName,
+        type: 11,
+      };
+
+      const apiUrl = this.getCreateChannelThreadUrl(channelId);
+      const firstResponse = await this.sendDiscordApiRequest(apiUrl, {
+        method: "POST",
+        body: threadBody,
+      });
+
+      if (!firstResponse.success) {
+        if (firstResponse.status === 404) {
+          return [
+            {
+              id: generateDeliveryId(),
+              status: ArticleDeliveryStatus.Rejected,
+              mediumId: details.mediumId,
+              contentType: ArticleDeliveryContentType.DiscordThreadCreation,
+              articleIdHash: article.flattened.idHash,
+              errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
+              internalMessage: `Response: ${JSON.stringify(
+                firstResponse.body
+              )}`,
+              externalDetail:
+                "Unknown channel. Update the connection to use a different channel.",
+            },
+          ];
+        } else if (firstResponse.status === 403) {
+          return [
+            {
+              id: generateDeliveryId(),
+              status: ArticleDeliveryStatus.Rejected,
+              mediumId: details.mediumId,
+              contentType: ArticleDeliveryContentType.DiscordThreadCreation,
+              articleIdHash: article.flattened.idHash,
+              errorCode: ArticleDeliveryErrorCode.ThirdPartyForbidden,
+              internalMessage: `Response: ${JSON.stringify(
+                firstResponse.body
+              )}`,
+              externalDetail: "Missing permissions",
+            },
+          ];
+        } else if (firstResponse.status === 400) {
+          return [
+            {
+              id: generateDeliveryId(),
+              status: ArticleDeliveryStatus.Rejected,
+              mediumId: details.mediumId,
+              contentType: ArticleDeliveryContentType.DiscordThreadCreation,
+              articleIdHash: article.flattened.idHash,
+              errorCode: ArticleDeliveryErrorCode.ThirdPartyBadRequest,
+              internalMessage: `Response: ${JSON.stringify(
+                firstResponse.body
+              )}`,
+              externalDetail: JSON.stringify(firstResponse.body, null, 2),
+            },
+          ];
+        } else {
+          throw new Error(
+            `Failed to create initial thread for forum channel ${channelId}: ${
+              firstResponse.detail
+            }. Body: ${JSON.stringify(firstResponse.body)}`
+          );
+        }
+      }
+
+      useChannelId = (firstResponse.body as Record<string, unknown>)
+        .id as string;
+    }
+
+    const apiUrl = this.getChannelApiUrl(useChannelId);
     const bodies = this.generateApiPayloads(article, {
       embeds: details.deliverySettings.embeds,
       content: details.deliverySettings.content,
@@ -740,11 +884,9 @@ export class DiscordMediumService implements DeliveryMedium {
       components,
     });
 
-    const parentDeliveryId = generateDeliveryId();
-
     const allRecords: ArticleDeliveryState[] = await Promise.all(
-      bodies.map(async (body, idx) => {
-        const deliveryId = idx === 0 ? parentDeliveryId : generateDeliveryId();
+      bodies.map(async (body) => {
+        const deliveryId = generateDeliveryId();
 
         this.producer.enqueue(
           apiUrl,
@@ -756,7 +898,7 @@ export class DiscordMediumService implements DeliveryMedium {
             id: deliveryId,
             articleID: article.flattened.id,
             feedURL: url,
-            channel: channelId,
+            channel: useChannelId,
             feedId: id,
             guildId,
             emitDeliveryResult: true,
@@ -768,13 +910,22 @@ export class DiscordMediumService implements DeliveryMedium {
           status: ArticleDeliveryStatus.PendingDelivery,
           mediumId: details.mediumId,
           contentType: ArticleDeliveryContentType.DiscordArticleMessage,
-          parent: idx === 0 ? undefined : parentDeliveryId,
+          parent: parentDeliveryId,
           articleIdHash: article.flattened.idHash,
         };
       })
     );
 
-    return allRecords;
+    return [
+      {
+        id: parentDeliveryId,
+        status: ArticleDeliveryStatus.Sent,
+        mediumId: details.mediumId,
+        contentType: ArticleDeliveryContentType.DiscordThreadCreation,
+        articleIdHash: article.flattened.idHash,
+      },
+      ...allRecords,
+    ];
   }
 
   private async deliverArticleToWebhook(
@@ -1241,7 +1392,7 @@ export class DiscordMediumService implements DeliveryMedium {
     return value;
   }
 
-  private async sendDscordApiRequest(
+  private async sendDiscordApiRequest(
     url: string,
     { method, body }: { method: "POST"; body: object }
   ) {

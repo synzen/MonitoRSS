@@ -487,6 +487,7 @@ export class MessageBrokerEventsService {
           : null,
         rateLimits: con.rateLimits,
         details: {
+          channelNewThreadTitle: con.details.channelNewThreadTitle,
           guildId: con.details.channel?.guildId || con.details.webhook!.guildId,
           channel: con.details.channel
             ? {
@@ -531,46 +532,7 @@ export class MessageBrokerEventsService {
         },
       }));
 
-    const discordWebhookMediums = userFeed.connections.discordWebhooks
-      .filter((c) => !c.disabledCode)
-      .map<DiscordMediumEvent>((con) => ({
-        id: con.id.toHexString(),
-        key: "discord",
-        filters: con.filters?.expression
-          ? { expression: con.filters.expression }
-          : null,
-        rateLimits: con.rateLimits,
-        details: {
-          guildId: con.details.webhook.guildId,
-          webhook: {
-            id: con.details.webhook.id,
-            token: con.details.webhook.token,
-            name: con.details.webhook.name,
-            iconUrl: con.details.webhook.iconUrl,
-            type: con.details.webhook.type,
-          },
-          content: castDiscordContentForMedium(con.details.content),
-          embeds: castDiscordEmbedsForMedium(con.details.embeds),
-          forumThreadTitle: con.details.forumThreadTitle,
-          formatter: {
-            formatTables: con.details.formatter?.formatTables,
-            stripImages: con.details.formatter?.stripImages,
-            disableImageLinkPreviews:
-              con.details.formatter?.disableImageLinkPreviews,
-          },
-          splitOptions: con.splitOptions?.isEnabled
-            ? con.splitOptions
-            : undefined,
-          mentions: con.mentions,
-          customPlaceholders: parseCustomPlaceholders
-            ? con.customPlaceholders
-            : [],
-          placeholderLimits: con.details.placeholderLimits,
-          enablePlaceholderFallback: con.details.enablePlaceholderFallback,
-        },
-      }));
-
-    const allMediums = discordChannelMediums.concat(discordWebhookMediums);
+    const allMediums = discordChannelMediums;
     const requestLookupDetails = getFeedRequestLookupDetails({
       feed: userFeed,
       user: {

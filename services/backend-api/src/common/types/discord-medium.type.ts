@@ -7,6 +7,7 @@ export interface DiscordMediumEvent {
   } | null;
   details: {
     guildId: string;
+    channelNewThreadTitle?: string;
     channel?: {
       id: string;
       type?: FeedConnectionDiscordChannelType | null;

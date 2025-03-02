@@ -28,16 +28,17 @@ import {
   GetDiscordChannelType,
 } from "@/features/discordServers";
 import RouteParams from "../../../../types/RouteParams";
-import { useCreateDiscordChannelConnection } from "../../hooks";
+import { useCreateDiscordChannelConnection, useUpdateDiscordChannelConnection } from "../../hooks";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "../../../../components";
+import { FeedDiscordChannelConnection } from "../../../../types";
 
 const formSchema = object({
   name: string().required("Name is required").max(250, "Name must be fewer than 250 characters"),
   serverId: string().required("Discord server is required"),
   channelId: string().when("serverId", ([serverId], schema) => {
     if (serverId) {
-      return schema.required("Channel is required");
+      return schema.required("Discord forum channel is required");
     }
 
     return schema.optional();
@@ -47,11 +48,21 @@ const formSchema = object({
 interface Props {
   onClose: () => void;
   isOpen: boolean;
+  connection?: FeedDiscordChannelConnection;
 }
 
 type FormData = InferType<typeof formSchema>;
 
-export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose, isOpen }) => {
+export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
+  connection,
+  onClose,
+  isOpen,
+}) => {
+  const defaultValues: Partial<FormData> = {
+    name: connection?.name,
+    serverId: connection?.details.channel?.guildId,
+    channelId: connection?.details.channel?.id,
+  };
   const { feedId } = useParams<RouteParams>();
   const { t } = useTranslation();
   const {
@@ -64,14 +75,39 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
     mode: "all",
+    defaultValues,
   });
   const serverId = watch("serverId");
   const { mutateAsync, error } = useCreateDiscordChannelConnection();
+  const { mutateAsync: updateMutateAsync, error: updateError } =
+    useUpdateDiscordChannelConnection();
   const initialFocusRef = useRef<any>(null);
+
+  useEffect(() => {
+    reset(defaultValues);
+  }, [connection?.id]);
 
   const onSubmit = async ({ channelId, name }: FormData) => {
     if (!feedId) {
       throw new Error("Feed ID missing while creating discord channel connection");
+    }
+
+    if (connection) {
+      try {
+        await updateMutateAsync({
+          feedId,
+          connectionId: connection.id,
+          details: {
+            name,
+            channelId,
+          },
+        });
+
+        notifySuccess(t("common.success.savedChanges"));
+        onClose();
+      } catch (err) {}
+
+      return;
     }
 
     try {
@@ -95,6 +131,8 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
 
   const formErrorLength = Object.keys(errors).length;
 
+  const useError = error || updateError;
+
   return (
     <Modal
       isOpen={isOpen}
@@ -105,15 +143,12 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>
-          {t("features.feed.components.addDiscordChannelConnectionDialog.title")}
+          {connection ? "Edit Discord Forum Connection" : "Add Discord Forum Connection"}
         </ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <Stack spacing={4}>
-            <Text>
-              Send articles as messages authored by the bot to a Discord channel, or as a thread in
-              a forum channel.
-            </Text>
+            <Text>Send articles as messages authored by the bot to a Discord forum</Text>
             <form id="addfeed" onSubmit={handleSubmit(onSubmit)}>
               <Stack spacing={4}>
                 <FormControl isInvalid={!!errors.serverId} isRequired>
@@ -147,9 +182,7 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
                 </FormControl>
                 <FormControl isInvalid={!!errors.channelId} isRequired>
                   <FormLabel id="channel-select-label" htmlFor="channel-select">
-                    {t(
-                      "features.feed.components.addDiscordChannelConnectionDialog.formChannelLabel"
-                    )}
+                    Discord Forum Channel
                   </FormLabel>
                   <Controller
                     name="channelId"
@@ -166,7 +199,7 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
                             shouldValidate: true,
                           });
                         }}
-                        include={[GetDiscordChannelType.Forum]}
+                        types={[GetDiscordChannelType.Forum]}
                         onBlur={field.onBlur}
                         isDisabled={isSubmitting}
                         serverId={serverId}
@@ -196,10 +229,10 @@ export const DiscordChannelConnectionDialogContent: React.FC<Props> = ({ onClose
                 </FormControl>
               </Stack>
             </form>
-            {error && (
+            {useError && (
               <InlineErrorAlert
                 title={t("common.errors.somethingWentWrong")}
-                description={error.message}
+                description={useError.message}
               />
             )}
             {isSubmitted && formErrorLength > 0 && (

@@ -103,7 +103,7 @@ export const UserFeed: React.FC = () => {
   const { isOpen, onClose, onOpen } = useDisclosure();
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [addConnectionType, setAddConnectionType] = useState<
-    { type: "discord-channel" | "discord-webhook"; isChannelThread?: boolean } | undefined
+    { type: "discord-channel" | "discord-forum" | "discord-webhook" } | undefined
   >(undefined);
   const { data: dailyLimit } = useArticleDailyLimit({
     feedId,
@@ -130,11 +130,8 @@ export const UserFeed: React.FC = () => {
   const { mutateAsync: updateInvite } = useUpdateUserFeedManagementInviteStatus();
   const isSharedWithMe = !!feed?.sharedAccessDetails?.inviteId;
 
-  const onAddConnection = (
-    type: "discord-channel" | "discord-webhook",
-    isChannelThread?: boolean
-  ) => {
-    setAddConnectionType({ type, isChannelThread });
+  const onAddConnection = (type: "discord-channel" | "discord-webhook" | "discord-forum") => {
+    setAddConnectionType({ type });
     onOpen();
   };
 
@@ -220,10 +217,10 @@ export const UserFeed: React.FC = () => {
       </Button>
       <Button
         variant="outline"
-        onClick={() => onAddConnection("discord-channel", true)}
+        onClick={() => onAddConnection("discord-forum")}
         leftIcon={<AddIcon fontSize="sm" />}
       >
-        Add Discord thread
+        Add Discord forum
       </Button>
       <Button
         variant="outline"
@@ -246,12 +243,7 @@ export const UserFeed: React.FC = () => {
   return (
     <DashboardContentV2 error={error} loading={status === "loading"}>
       <UserFeedProvider feedId={feedId}>
-        <AddConnectionDialog
-          isOpen={isOpen}
-          type={addConnectionType?.type}
-          isChannelThread={addConnectionType?.isChannelThread}
-          onClose={onClose}
-        />
+        <AddConnectionDialog isOpen={isOpen} type={addConnectionType?.type} onClose={onClose} />
         <EditUserFeedDialog
           onCloseRef={menuButtonRef}
           isOpen={editIsOpen}
@@ -634,19 +626,18 @@ export const UserFeed: React.FC = () => {
                           <MenuList maxWidth="300px">
                             <MenuItem onClick={() => onAddConnection("discord-channel")}>
                               <Stack spacing={1}>
-                                <Text>{t("pages.feed.discordChannelMenuItem")}</Text>
-                                <Text fontSize={13} color="whiteAlpha.600" whiteSpace="normal">
+                                <Text>Discord Channel</Text>
+                                <Text fontSize={13} color="whiteAlpha.600">
                                   Send articles as messages authored by the bot to a Discord
-                                  channel, or as a thread in a forum channel.
+                                  channel.
                                 </Text>
                               </Stack>
                             </MenuItem>
-                            <MenuItem onClick={() => onAddConnection("discord-channel", true)}>
+                            <MenuItem onClick={() => onAddConnection("discord-forum")}>
                               <Stack spacing={1}>
-                                <Text>{t("pages.feed.discordThreadMenuItem")}</Text>
-                                <Text fontSize={13} color="whiteAlpha.600">
-                                  Send articles authored by the bot as a message to an existing
-                                  thread.
+                                <Text>Discord Forum</Text>
+                                <Text fontSize={13} color="whiteAlpha.600" whiteSpace="normal">
+                                  Send articles as messages authored by the bot to a Discord forum.
                                 </Text>
                               </Stack>
                             </MenuItem>
@@ -654,8 +645,8 @@ export const UserFeed: React.FC = () => {
                               <Stack spacing={1}>
                                 <Text>{t("pages.feed.discordWebhookMenuItem")}</Text>
                                 <Text fontSize={13} color="whiteAlpha.600">
-                                  Send articles authored by a webhook with a custom name and avatar
-                                  as a message to a Discord channel
+                                  Send articles as messages authored by a webhook with a custom name
+                                  and avatar to a Discord channel.
                                 </Text>
                               </Stack>
                             </MenuItem>

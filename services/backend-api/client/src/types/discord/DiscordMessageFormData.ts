@@ -103,6 +103,7 @@ export const discordMessageFormSchema = object({
   )
     .max(5)
     .nullable(),
+  channelNewThreadTitle: string().optional(),
   forumThreadTitle: string().optional(),
   forumThreadTags: array(
     object({

@@ -1,5 +1,6 @@
-import { Button, chakra, Code, Flex } from "@chakra-ui/react";
+import { chakra, Code, Flex, IconButton } from "@chakra-ui/react";
 import { PropsWithChildren } from "react";
+import { CopyIcon } from "@chakra-ui/icons";
 import { notifyInfo } from "../../utils/notifyInfo";
 
 interface Props {
@@ -17,7 +18,7 @@ const MessagePlaceholderText = ({
       navigator.clipboard.writeText(`{{${children}}}`);
     }
 
-    notifyInfo("Successfully copied to clipboard");
+    notifyInfo("Successfully copied placeholder to clipboard");
   };
 
   return (
@@ -30,9 +31,14 @@ const MessagePlaceholderText = ({
         {withBrackets && <chakra.span srOnly>double close curly brackets</chakra.span>}
       </Code>
       {!withoutCopy && (
-        <Button size="xs" variant="outline" colorScheme="gray" marginLeft="2" onClick={onCopy}>
-          Copy this placeholder
-        </Button>
+        <IconButton
+          ml={1}
+          icon={<CopyIcon />}
+          variant="outline"
+          aria-label="Copy this placeholder"
+          onClick={onCopy}
+          size="xs"
+        />
       )}
     </Flex>
   );

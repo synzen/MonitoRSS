@@ -73,6 +73,7 @@ export interface UpdateDiscordChannelConnectionInput {
   updates: {
     filters?: DiscordChannelConnection["filters"] | null;
     name?: string;
+    threadCreationMethod?: "new-thread" | null;
     disabledCode?: FeedConnectionDisabledCode | null;
     splitOptions?: DiscordChannelConnection["splitOptions"] | null;
     mentions?: DiscordChannelConnection["mentions"] | null;
@@ -96,6 +97,9 @@ export interface UpdateDiscordChannelConnectionInput {
         iconUrl?: string;
         threadId?: string;
       };
+      channelNewThreadTitle:
+        | DiscordChannelConnection["details"]["channelNewThreadTitle"]
+        | undefined;
       applicationWebhook?: {
         channelId: string;
         name: string;
@@ -137,6 +141,7 @@ interface CreatePreviewInput {
   enablePlaceholderFallback?: boolean;
   componentRows?: DiscordChannelConnection["details"]["componentRows"] | null;
   includeCustomPlaceholderPreviews?: boolean;
+  channelNewThreadTitle?: DiscordChannelConnection["details"]["channelNewThreadTitle"];
 }
 
 @Injectable()
@@ -163,6 +168,7 @@ export class FeedConnectionsDiscordChannelsService {
     applicationWebhook,
     userAccessToken,
     userDiscordUserId,
+    threadCreationMethod,
   }: {
     feed: UserFeed;
     name: string;
@@ -181,6 +187,7 @@ export class FeedConnectionsDiscordChannelsService {
     };
     userAccessToken: string;
     userDiscordUserId: string;
+    threadCreationMethod?: "new-thread";
   }): Promise<DiscordChannelConnection> {
     const connectionId = new Types.ObjectId();
     let channelToAdd: DiscordChannelConnection["details"]["channel"];
@@ -194,7 +201,10 @@ export class FeedConnectionsDiscordChannelsService {
 
       channelToAdd = {
         id: channelId,
-        type,
+        type:
+          threadCreationMethod === "new-thread"
+            ? FeedConnectionDiscordChannelType.NewThread
+            : type,
         guildId: channel.guild_id,
       };
     } else if (inputWebhook?.id || applicationWebhook?.channelId) {
@@ -587,7 +597,10 @@ export class FeedConnectionsDiscordChannelsService {
       setRecordDetails["connections.discordChannels.$.details.channel"] = {
         id: updates.details.channel.id,
         guildId: channel.guild_id,
-        type,
+        type:
+          updates.threadCreationMethod === "new-thread"
+            ? FeedConnectionDiscordChannelType.NewThread
+            : type,
       };
       // @ts-ignore
       setRecordDetails["connections.discordChannels.$.details.webhook"] = null;
@@ -941,6 +954,7 @@ export class FeedConnectionsDiscordChannelsService {
       },
       article: details?.article ? details.article : undefined,
       mediumDetails: {
+        ...connection.details,
         channel: connection.details.channel
           ? {
               id: connection.details.channel.id,
@@ -1009,6 +1023,7 @@ export class FeedConnectionsDiscordChannelsService {
     componentRows,
     includeCustomPlaceholderPreviews,
     externalProperties,
+    channelNewThreadTitle,
   }: CreatePreviewInput) {
     const user = await this.usersService.getOrCreateUserByDiscordId(
       userFeed.user.discordUserId
@@ -1039,6 +1054,7 @@ export class FeedConnectionsDiscordChannelsService {
       },
       article: articleId ? { id: articleId } : undefined,
       mediumDetails: {
+        channelNewThreadTitle,
         channel: connection.details.channel
           ? {
               id: connection.details.channel.id,

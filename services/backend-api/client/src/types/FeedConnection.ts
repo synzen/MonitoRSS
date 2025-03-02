@@ -40,10 +40,11 @@ const DiscordChannelConnectionDetailsSchema = object({
   channel: object({
     id: string().required(),
     guildId: string().required(),
-    type: string().optional().nullable().oneOf(["forum", "thread"]),
+    type: string().optional().nullable().oneOf(["forum", "thread", "new-thread"]),
   })
     .optional()
     .nullable(),
+  channelNewThreadTitle: string().optional(),
   webhook: object({
     id: string().required(),
     name: string().optional(),

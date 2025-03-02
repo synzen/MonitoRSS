@@ -43,6 +43,7 @@ import {
   useUserFeedConnectionContext,
 } from "../../../../contexts/UserFeedConnectionContext";
 import getChakraColor from "../../../../utils/getChakraColor";
+import { DiscordMessageChannelThreadForm } from "./DiscordMessageChannelThreadForm";
 
 const DiscordMessageEmbedForm = lazy(() =>
   import("./DiscordMessageEmbedForm").then(({ DiscordMessageEmbedForm: component }) => ({
@@ -82,6 +83,7 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
   } = useContext(SendTestArticleContext);
   const showForumForms =
     connection.details.channel?.type === "forum" || connection.details.webhook?.type === "forum";
+  const showChannelThreadForm = connection.details.channel?.type === "new-thread";
   const formMethods = useForm<DiscordMessageFormData>({
     resolver: yupResolver(discordMessageFormSchema),
     defaultValues: {
@@ -333,6 +335,14 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                   {t("components.discordMessageForumThreadForm.title")}
                 </Heading>
                 <DiscordMessageForumThreadForm />
+              </Stack>
+            )}
+            {showChannelThreadForm && (
+              <Stack>
+                <Heading size="sm" as="h3">
+                  Channel Thread
+                </Heading>
+                <DiscordMessageChannelThreadForm />
               </Stack>
             )}
             <Stack>

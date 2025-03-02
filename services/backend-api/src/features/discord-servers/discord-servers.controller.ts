@@ -217,12 +217,14 @@ export class DiscordServersController {
   @CacheTTL(1)
   async getServerChannels(
     @Param("serverId") serverId: string,
-    @Query("include") include?: string
+    @Query("include") include?: string,
+    @Query("types") types?: string
   ): Promise<GetServerChannelsOutputDto> {
     const channels = await this.discordServersService.getTextChannelsOfServer(
       serverId,
       {
         include: include?.split(","),
+        types: types?.split(","),
       }
     );
 

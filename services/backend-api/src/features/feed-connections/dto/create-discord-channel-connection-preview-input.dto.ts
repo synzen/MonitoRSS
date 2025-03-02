@@ -45,6 +45,10 @@ export class CreateDiscordChannelConnectionPreviewInputDto {
   @Type(() => DiscordPreviewEmbed)
   embeds?: DiscordPreviewEmbed[];
 
+  @IsString()
+  @IsOptional()
+  channelNewThreadTitle?: string;
+
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })

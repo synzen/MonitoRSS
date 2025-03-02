@@ -7,6 +7,7 @@ export interface CreateDiscordChannelConnectionInput {
   details: {
     name: string;
     channelId?: string;
+    threadCreationMethod?: "new-thread";
     webhook?: {
       id: string;
       name?: string | null;
