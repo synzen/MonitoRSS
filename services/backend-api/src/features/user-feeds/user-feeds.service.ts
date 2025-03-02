@@ -298,6 +298,26 @@ export class UserFeedsService {
     }
   }
 
+  async deduplicateFeedUrls(discordUserId: string, urls: string[]) {
+    const found = await this.userFeedModel
+      .find(
+        {
+          url: {
+            $in: urls,
+          },
+          "user.discordUserId": discordUserId,
+        },
+        {
+          url: 1,
+        }
+      )
+      .lean();
+
+    const foundUrls = new Set(found.map((f) => f.url));
+
+    return urls.filter((u) => !foundUrls.has(u));
+  }
+
   async validateFeedUrl(
     { discordUserId }: { discordUserId: string },
     { url }: { url: string }

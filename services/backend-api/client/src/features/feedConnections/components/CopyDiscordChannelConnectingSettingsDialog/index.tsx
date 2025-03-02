@@ -380,7 +380,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
                 Mass-copy settings from the source connection to another. This will overwrite the
                 settings of the target connections.
               </Text>
-              <Stack py={4} px={4} bg="blackAlpha.300" rounded="md">
+              <Stack py={4} px={4} bg="gray.800" rounded="md">
                 <Badge bg="none" p={0}>
                   Source Connection
                 </Badge>
@@ -478,7 +478,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
                             Select all connections as targets
                           </Button>
                           <Button size="sm" onClick={() => field.onChange([])}>
-                            Clear target connection selections
+                            Clear {checkedConnectionsLength} target connection selections
                           </Button>
                         </HStack>
                         <Stack>

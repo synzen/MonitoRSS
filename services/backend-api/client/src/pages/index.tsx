@@ -28,6 +28,8 @@ import { NewHeader } from "../components";
 import { UserFeedStatusFilterProvider } from "../contexts";
 import { NotFound } from "./NotFound";
 import { SuspenseErrorBoundary } from "../components/SuspenseErrorBoundary";
+import AddUserFeeds from "./AddUserFeeds";
+import { MultiSelectUserFeedProvider } from "../contexts/MultiSelectUserFeedContext";
 
 const UserSettings = lazy(() =>
   import("./UserSettings").then(({ UserSettings: c }) => ({
@@ -129,14 +131,25 @@ const Pages: React.FC = () => (
       }
     />
     <Route
+      path={pages.addFeeds()}
+      element={
+        <RequireAuth waitForUserFetch>
+          <NewHeader invertBackground />
+          <AddUserFeeds />
+        </RequireAuth>
+      }
+    />
+    <Route
       path={pages.userFeeds()}
       element={
         <RequireAuth waitForUserFetch>
           {/* <PageContentV2 invertBackground> */}
           <NewHeader invertBackground />
-          <UserFeedStatusFilterProvider>
-            <UserFeeds />
-          </UserFeedStatusFilterProvider>
+          <MultiSelectUserFeedProvider>
+            <UserFeedStatusFilterProvider>
+              <UserFeeds />
+            </UserFeedStatusFilterProvider>
+          </MultiSelectUserFeedProvider>
           {/* </PageContentV2> */}
         </RequireAuth>
       }

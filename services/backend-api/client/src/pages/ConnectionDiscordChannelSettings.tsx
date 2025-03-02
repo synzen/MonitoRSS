@@ -163,12 +163,17 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                           <BreadcrumbLink href="#">{connection?.name}</BreadcrumbLink>
                         </BreadcrumbItem>
                       </Breadcrumb>
-                      <HStack alignItems="center" justifyContent="space-between">
+                      <HStack
+                        alignItems="center"
+                        justifyContent="space-between"
+                        flexWrap="wrap"
+                        gap={3}
+                      >
                         <Heading size="lg" marginRight={4} tabIndex={-1} as="h1">
                           {connection?.name}
                         </Heading>
                         {connection && (
-                          <HStack>
+                          <HStack flexWrap="wrap">
                             <SendConnectionTestArticleButton />
                             <DiscordChannelConnectionSettings
                               connection={connection}
@@ -179,9 +184,8 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                                   as={Button}
                                   variant="outline"
                                   rightIcon={<ChevronDownIcon />}
-                                  aria-label="Connection actions"
                                 >
-                                  {t("common.buttons.actions")}
+                                  Connection Actions
                                 </MenuButton>
                               }
                               feedId={feedId as string}

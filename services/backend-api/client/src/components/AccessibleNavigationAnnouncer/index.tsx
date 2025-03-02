@@ -15,7 +15,17 @@ export const AccessibleNavigationAnnouncer = () => {
     if (location.pathname.slice(1)) {
       // make sure navigation has occurred and screen reader is ready
       setTimeout(() => {
-        const checkoutRootPath = pages.checkout(":id").split("/")[0];
+        /**
+         * check if current focus is on an input field. If so, don't announce navigation.
+         * specifically for non-screen-reader users who immediately focus on an input after navigation
+         */
+        const activeElement = document.activeElement as HTMLElement;
+
+        if (activeElement && ["INPUT", "TEXTAREA"].includes(activeElement.tagName)) {
+          return;
+        }
+
+        const checkoutRootPath = pages.checkout(":id").split("/")[1];
 
         if (location.pathname.includes(checkoutRootPath)) {
           setMessage(`Navigated to checkout page.`);

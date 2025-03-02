@@ -23,7 +23,6 @@ import { LogoutButton } from "../../features/auth";
 
 import { useDiscordBot, useDiscordUserMe, useUserMe } from "../../features/discordUser";
 import { Loading } from "../Loading";
-import { AddUserFeedDialog } from "../../features/feed";
 import { ReportABugDialog } from "../ReportABugDialog";
 
 interface Props {
@@ -94,7 +93,6 @@ export const NewHeader = ({ invertBackground }: Props) => {
                   FAQ
                 </Button>
               )}
-              <AddUserFeedDialog />
             </HStack>
           </HStack>
           <Flex alignItems="center" paddingY="4">

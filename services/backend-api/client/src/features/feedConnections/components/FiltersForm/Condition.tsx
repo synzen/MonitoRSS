@@ -110,8 +110,8 @@ export const Condition = ({ onDelete, prefix = "", deletable, containerProps }: 
       outline={isFocused ? `2px solid ${getChakraColor("blue.300")}` : undefined}
       bg={isFocused ? "blackAlpha.500" : undefined}
       _hover={{
-        outline: `2px solid ${getChakraColor("blue.100")} !important`,
-        background: "blackAlpha.700",
+        outline: `2px solid ${getChakraColor("blue.50")} !important`,
+        background: "blackAlpha.500",
       }}
       overflow="auto"
       pt={2}

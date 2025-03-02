@@ -285,7 +285,7 @@ export const CopyUserFeedSettingsDialog = ({ isOpen, onClose, onCloseRef }: Prop
                 Copy settings from the source feed to another. This will overwrite the settings of
                 the target feeds.
               </Text>
-              <Stack py={4} px={4} bg="blackAlpha.300" rounded="md">
+              <Stack py={4} px={4} bg="gray.800" rounded="md">
                 <Badge bg="none" p={0}>
                   Source Feed
                 </Badge>
@@ -364,7 +364,7 @@ export const CopyUserFeedSettingsDialog = ({ isOpen, onClose, onCloseRef }: Prop
                         </legend>
                         <Box>
                           <Button size="sm" onClick={() => field.onChange([])}>
-                            Clear target feed selections
+                            Clear {checkedUserFeedsLength} target feed selections
                           </Button>
                         </Box>
                         <Stack mt={1}>

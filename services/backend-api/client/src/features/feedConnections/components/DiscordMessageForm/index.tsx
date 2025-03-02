@@ -20,8 +20,8 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { lazy, Suspense, useContext, useState } from "react";
 import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { FiPlay } from "react-icons/fi";
 import { motion } from "framer-motion";
+import { FaDiscord } from "react-icons/fa";
 import {
   DiscordMessageEmbedFormData,
   DiscordMessageFormData,
@@ -42,6 +42,7 @@ import {
   UserFeedConnectionProvider,
   useUserFeedConnectionContext,
 } from "../../../../contexts/UserFeedConnectionContext";
+import getChakraColor from "../../../../utils/getChakraColor";
 
 const DiscordMessageEmbedForm = lazy(() =>
   import("./DiscordMessageEmbedForm").then(({ DiscordMessageEmbedForm: component }) => ({
@@ -283,7 +284,7 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                     )}
                   </HStack>
                   <Button
-                    leftIcon={<FiPlay />}
+                    leftIcon={<FaDiscord fontSize={18} color={getChakraColor("gray.700")} />}
                     onClick={onClickSendPreviewToDiscord}
                     size="sm"
                     colorScheme="blue"

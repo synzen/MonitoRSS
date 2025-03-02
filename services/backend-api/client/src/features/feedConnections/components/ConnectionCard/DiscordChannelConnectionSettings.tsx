@@ -141,7 +141,7 @@ export const DiscordChannelConnectionSettings = ({
             {t("common.buttons.configure")}
           </MenuItem>
           <MenuItem aria-label="Edit" onClick={isCopySettingsOnOpen}>
-            Copy Settings
+            Copy settings to...
           </MenuItem>
           <CloneDiscordConnectionCloneDialog
             trigger={<MenuItem>Clone</MenuItem>}

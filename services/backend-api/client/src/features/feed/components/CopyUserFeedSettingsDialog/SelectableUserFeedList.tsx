@@ -4,11 +4,19 @@ import {
   Center,
   Checkbox,
   Flex,
+  HStack,
+  IconButton,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  InputRightElement,
   Spinner,
   Stack,
   Text,
   chakra,
 } from "@chakra-ui/react";
+import { CloseIcon, SearchIcon } from "@chakra-ui/icons";
+import { useState } from "react";
 import { useUserFeedsInfinite } from "../../hooks/useUserFeedsInfinite";
 import { InlineErrorAlert } from "../../../../components";
 
@@ -18,10 +26,20 @@ interface Props {
 }
 
 export const SelectableUserFeedList = ({ selectedIds, onSelectedIdsChange }: Props) => {
-  const { data, error, status, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useUserFeedsInfinite({
-      limit: 10,
-    });
+  const [searchInput, setSearchInput] = useState("");
+  const {
+    data,
+    error,
+    status,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    setSearch,
+    isFetching,
+    search,
+  } = useUserFeedsInfinite({
+    limit: 10,
+  });
   const totalCount = data?.pages[0].total;
 
   const fetchedSoFarCount = data?.pages.reduce((acc, page) => acc + page.results.length, 0) ?? 0;
@@ -30,7 +48,7 @@ export const SelectableUserFeedList = ({ selectedIds, onSelectedIdsChange }: Pro
   const latestOffset = offsets?.[offsets.length - 1] || 0;
 
   return (
-    <Stack>
+    <Stack spacing={1}>
       <Box srOnly aria-live="polite">
         {!!offsets && (
           <span>
@@ -40,15 +58,69 @@ export const SelectableUserFeedList = ({ selectedIds, onSelectedIdsChange }: Pro
         )}
         {status === "loading" && <span>Loading available target feeds</span>}
       </Box>
+      <HStack>
+        <InputGroup>
+          <InputLeftElement>
+            <SearchIcon />
+          </InputLeftElement>
+          <Input
+            bg="gray.800"
+            placeholder="Search for target feeds"
+            onChange={(e) => setSearchInput(e.target.value)}
+            value={searchInput}
+            aria-label="Search for target feeds"
+            isInvalid={false}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                setSearch(searchInput);
+              }
+            }}
+          />
+          {search && !isFetching && (
+            <InputRightElement>
+              <IconButton
+                aria-label="Clear search"
+                icon={<CloseIcon color="gray.400" />}
+                size="sm"
+                variant="link"
+                onClick={() => {
+                  setSearchInput("");
+                  setSearch("");
+                }}
+              />
+            </InputRightElement>
+          )}
+          {search && isFetching && (
+            <InputRightElement>
+              <Spinner size="sm" />
+            </InputRightElement>
+          )}
+        </InputGroup>
+        <Button
+          leftIcon={<SearchIcon />}
+          onClick={() => {
+            if (isFetching) {
+              return;
+            }
+
+            setSearch(searchInput);
+          }}
+          aria-disabled={isFetching}
+          aria-busy={isFetching}
+        >
+          Search
+        </Button>
+      </HStack>
       <Stack
         px={4}
         py={3}
         borderRadius="md"
         maxHeight={350}
-        border="2px"
-        borderColor="gray.600"
+        border="1px"
+        borderColor="gray.700"
         overflow="auto"
-        bg="blackAlpha.300"
+        bg="gray.800"
       >
         <Stack as="ul" listStyleType="none" gap={4}>
           {data?.pages.map((page) => {
@@ -79,7 +151,8 @@ export const SelectableUserFeedList = ({ selectedIds, onSelectedIdsChange }: Pro
                         display="block"
                         color="whiteAlpha.700"
                         fontSize="sm"
-                        whiteSpace="nowrap"
+                        whiteSpace="break-spaces"
+                        wordBreak="break-all"
                       >
                         {userFeed.url}
                       </chakra.span>
@@ -96,9 +169,16 @@ export const SelectableUserFeedList = ({ selectedIds, onSelectedIdsChange }: Pro
           </Center>
         )}
         {error && <InlineErrorAlert title="Failed to list feeds" description={error.message} />}
-        <Text color="whiteAlpha.700" fontSize="sm" textAlign="center" mt={6}>
-          Viewed {fetchedSoFarCount} of {totalCount} feeds
-        </Text>
+        {totalCount !== undefined && totalCount > 0 && (
+          <Text color="whiteAlpha.700" fontSize="sm" textAlign="center" mt={6}>
+            Viewed {fetchedSoFarCount} of {totalCount} feeds
+          </Text>
+        )}
+        {totalCount !== undefined && totalCount === 0 && (
+          <Text color="whiteAlpha.700" fontSize="sm" textAlign="center" mt={0}>
+            No feeds found
+          </Text>
+        )}
         <Flex width="full">
           <Button
             hidden={!hasNextPage}

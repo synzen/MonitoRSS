@@ -95,6 +95,25 @@ export class UserFeedsController {
     return this.userFeedsService.formatForHttpResponse(result, discordUserId);
   }
 
+  @Post("deduplicate-feed-urls")
+  async deduplicateFeedUrls(
+    @Body(ValidationPipe)
+    { urls }: { urls: string[] },
+    @DiscordAccessToken()
+    { discord: { id: discordUserId } }: SessionAccessToken
+  ) {
+    const deduplicated = await this.userFeedsService.deduplicateFeedUrls(
+      discordUserId,
+      urls
+    );
+
+    return {
+      result: {
+        urls: deduplicated,
+      },
+    };
+  }
+
   @Post("url-validation")
   @UseFilters(FeedExceptionFilter)
   async createFeedUrlValidation(

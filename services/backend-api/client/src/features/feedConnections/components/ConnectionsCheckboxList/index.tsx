@@ -16,7 +16,7 @@ export const ConnectionsCheckboxList = ({
   onCheckConnectionChange,
 }: Props) => {
   return (
-    <Stack as="ul" listStyleType="none">
+    <Stack as="ul" listStyleType="none" spacing={1}>
       {feed?.connections
         .filter((c) => c.key === FeedConnectionType.DiscordChannel)
         .map((c) => {
@@ -24,7 +24,7 @@ export const ConnectionsCheckboxList = ({
 
           return (
             <Box
-              bg="blackAlpha.300"
+              bg="gray.800"
               borderWidth="2px"
               borderColor={checkedConnectionIds.includes(c.id) ? "blue.400" : "transparent"}
               rounded="md"

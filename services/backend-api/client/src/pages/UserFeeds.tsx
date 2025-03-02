@@ -7,41 +7,49 @@ import {
   Stack,
   Button,
   Link as ChakraLink,
-  IconButton,
   Alert,
   AlertIcon,
   AlertTitle,
   AlertDescription,
-  Tooltip,
   Center,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  MenuDivider,
 } from "@chakra-ui/react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AddIcon, ArrowLeftIcon } from "@chakra-ui/icons";
+import { AddIcon, ChevronDownIcon, DeleteIcon } from "@chakra-ui/icons";
 import { useCallback, useContext, useEffect, useRef } from "react";
 import { FaRegNewspaper } from "react-icons/fa6";
-import { useDiscordUserMe, useUserMe } from "../features/discordUser";
+import { FaPause, FaPlay } from "react-icons/fa";
+import { useUserMe } from "../features/discordUser";
 import {
   AddUserFeedDialog,
   FeedManagementInvitesDialog,
+  useDeleteUserFeeds,
+  useDisableUserFeeds,
+  useEnableUserFeeds,
   UserFeedComputedStatus,
+  UserFeedDisabledCode,
   UserFeedsTable,
   useUserFeedManagementInvitesCount,
   useUserFeeds,
 } from "../features/feed";
 import { pages } from "../constants";
-import { BoxConstrained } from "../components";
-import { PricingDialogContext, UserFeedStatusFilterContext } from "../contexts";
+import { BoxConstrained, ConfirmModal } from "../components";
+import { UserFeedStatusFilterContext } from "../contexts";
 import { notifySuccess } from "../utils/notifySuccess";
 import { notifyInfo } from "../utils/notifyInfo";
+import { useMultiSelectUserFeedContext } from "../contexts/MultiSelectUserFeedContext";
+import { notifyError } from "../utils/notifyError";
 
 export const UserFeeds: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { data: discordUserMe } = useDiscordUserMe();
   const { data: userMeData } = useUserMe();
   const addNewFeedButtonRef = useRef<HTMLButtonElement>(null);
-  const { onOpen: onOpenPricingDialog } = useContext(PricingDialogContext);
   const { data: userFeedsRequireAttentionResults } = useUserFeeds({
     limit: 1,
     offset: 0,
@@ -55,15 +63,11 @@ export const UserFeeds: React.FC = () => {
     offset: 0,
   });
   const { statusFilters, setStatusFilters } = useContext(UserFeedStatusFilterContext);
-
-  const onSelectedFeed = (feedId: string, newTab?: boolean) => {
-    if (!newTab) {
-      navigate(pages.userFeed(feedId));
-    } else {
-      const w = window.open(pages.userFeed(feedId), "_blank");
-      w?.focus();
-    }
-  };
+  const { selectedFeeds, clearSelection } = useMultiSelectUserFeedContext();
+  const { mutateAsync: enableUserFeeds } = useEnableUserFeeds();
+  const { mutateAsync: disableUserFeeds } = useDisableUserFeeds();
+  const { mutateAsync: deleteUserFeeds } = useDeleteUserFeeds();
+  const totalFeedCount = userFeedsResults?.total;
 
   const onApplyRequiresAttentionFilters = useCallback(() => {
     if (
@@ -86,9 +90,59 @@ export const UserFeeds: React.FC = () => {
     }
   }, [addNewFeedButtonRef.current, userFeedsResults?.total]);
 
+  const onEnableSelectedFeeds = async () => {
+    const feedIds = selectedFeeds.map((f) => f.id);
+
+    try {
+      await enableUserFeeds({
+        data: {
+          feeds: feedIds.map((id) => ({ id })),
+        },
+      });
+      clearSelection();
+
+      notifySuccess(t("common.success.savedChanges"));
+    } catch (err) {
+      notifyError(t("common.errors.somethingWentWrong"), err as Error);
+    }
+  };
+
+  const onDisableSelectedFeeds = async () => {
+    const feedIds = selectedFeeds.map((f) => f.id);
+
+    try {
+      await disableUserFeeds({
+        data: {
+          feeds: feedIds.map((id) => ({ id })),
+        },
+      });
+      clearSelection();
+
+      notifySuccess(t("common.success.savedChanges"));
+    } catch (err) {
+      notifyError(t("common.errors.somethingWentWrong"), err as Error);
+    }
+  };
+
+  const onDeleteSelectedFeeds = async () => {
+    const feedIds = selectedFeeds.map((f) => f.id);
+
+    try {
+      await deleteUserFeeds({
+        data: {
+          feeds: feedIds.map((id) => ({ id })),
+        },
+      });
+      clearSelection();
+      notifySuccess(t("common.success.deleted"));
+    } catch (err) {
+      notifyError(t("common.errors.somethingWentWrong"), err as Error);
+    }
+  };
+
   return (
     <BoxConstrained.Wrapper justifyContent="flex-start" height="100%" overflow="visible">
-      <BoxConstrained.Container paddingTop={6} spacing={6} height="100%" paddingX={4}>
+      <BoxConstrained.Container paddingTop={6} spacing={6} height="100%">
         <Stack spacing={4}>
           <Box>
             {!userMeData?.result.migratedToPersonalFeeds && (
@@ -160,80 +214,84 @@ export const UserFeeds: React.FC = () => {
               </HStack>
             </Alert>
           )}
-          <Flex justifyContent="space-between" alignItems="center" gap="4" flexWrap="wrap">
+          <Flex alignItems="center" justifyContent="space-between" gap="4" flexWrap="wrap">
             <Flex alignItems="center" gap={4}>
               <Heading as="h1" size="lg" tabIndex={-1}>
-                {t("pages.userFeeds.title")}
+                {t("pages.userFeeds.title")}{" "}
+                {totalFeedCount !== undefined &&
+                  selectedFeeds.length > 0 &&
+                  `(${selectedFeeds.length}/${totalFeedCount})`}
+                {totalFeedCount !== undefined && !selectedFeeds.length && `(${totalFeedCount})`}
               </Heading>
             </Flex>
-            <Flex alignItems="center" as="aside">
-              {discordUserMe?.maxUserFeeds !== undefined &&
-                userFeedsResults?.total !== undefined && (
-                  <Box>
-                    <Text fontSize="sm" srOnly>
-                      Feed Limit
-                    </Text>
-                    <HStack>
-                      <Text fontSize="xl" fontWeight={600}>
-                        {userFeedsResults.total}
-                      </Text>
-                      <Text fontSize="xl" fontWeight={600}>
-                        /
-                      </Text>
-                      {discordUserMe.maxUserFeedsComposition.legacy ? (
-                        <Tooltip
-                          label={
-                            <Box>
-                              <Text>
-                                +{discordUserMe.maxUserFeedsComposition.base}: Base Amount
-                              </Text>
-                              <Text>
-                                +{discordUserMe.maxUserFeedsComposition.legacy}: Legacy feed
-                                conversions
-                              </Text>
-                            </Box>
-                          }
-                        >
-                          <Text fontSize="xl" fontWeight={600}>
-                            {discordUserMe.maxUserFeeds}
-                          </Text>
-                        </Tooltip>
-                      ) : (
-                        <Text fontSize="xl" fontWeight={600}>
-                          {discordUserMe.maxUserFeeds}
-                        </Text>
-                      )}
-                    </HStack>
-                  </Box>
-                )}
-              {!userMeData?.result.enableBilling && (
-                <IconButton
-                  as="a"
-                  href="https://www.patreon.com/monitorss"
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  marginLeft="4"
-                  aria-label="Increase feed limit"
+            <HStack>
+              <Menu>
+                <MenuButton
+                  as={Button}
+                  rightIcon={<ChevronDownIcon />}
                   variant="outline"
-                  icon={<ArrowLeftIcon />}
-                  size="sm"
-                  transform="rotate(90deg)"
-                />
-              )}
-              {userMeData?.result.enableBilling && (
-                <IconButton
-                  aria-label="Increase article daily limit"
-                  variant="outline"
-                  icon={<ArrowLeftIcon />}
-                  size="sm"
-                  transform="rotate(90deg)"
-                  marginLeft="4"
-                  onClick={onOpenPricingDialog}
-                />
-              )}
-            </Flex>
+                  // isDisabled={selectedFeeds.length === 0}
+                >
+                  Feed Actions
+                </MenuButton>
+                <MenuList zIndex={2}>
+                  <ConfirmModal
+                    trigger={
+                      <MenuItem
+                        isDisabled={
+                          !selectedFeeds.length ||
+                          !selectedFeeds.some((f) => f.disabledCode === UserFeedDisabledCode.Manual)
+                        }
+                        icon={<FaPlay />}
+                      >
+                        Enable
+                      </MenuItem>
+                    }
+                    title={`Are you sure you want to enable ${selectedFeeds.length} feed(s)?`}
+                    description="Only feeds that were manually disabled will be enabled."
+                    onConfirm={onEnableSelectedFeeds}
+                    colorScheme="blue"
+                  />
+                  <ConfirmModal
+                    trigger={
+                      <MenuItem
+                        isDisabled={
+                          !selectedFeeds.length || !selectedFeeds.some((r) => !r.disabledCode)
+                        }
+                        icon={<FaPause />}
+                      >
+                        Disable
+                      </MenuItem>
+                    }
+                    title={`Are you sure you want to disable ${selectedFeeds.length} feed(s)?`}
+                    description="Only feeds that are not currently disabled will be affected."
+                    onConfirm={onDisableSelectedFeeds}
+                    colorScheme="blue"
+                  />
+                  <MenuDivider />
+                  <ConfirmModal
+                    trigger={
+                      <MenuItem
+                        icon={<DeleteIcon color="red.200" />}
+                        isDisabled={!selectedFeeds.length}
+                      >
+                        <Text color="red.200">Delete</Text>
+                      </MenuItem>
+                    }
+                    title={`Are you sure you want to delete ${selectedFeeds.length} feed(s)?`}
+                    description="This action cannot be undone."
+                    onConfirm={onDeleteSelectedFeeds}
+                    colorScheme="red"
+                    okText={t("common.buttons.delete")}
+                  />
+                </MenuList>
+              </Menu>
+              <Button as={Link} to={pages.addFeeds()} colorScheme="blue" leftIcon={<AddIcon />}>
+                Add Feeds
+              </Button>
+            </HStack>
           </Flex>
-          <Stack spacing={6}>
+          <HStack spacing={6}>
             {!userMeData?.result.migratedToPersonalFeeds && (
               <Text>
                 Personal feeds are a new type of feed that will replace current (now considered
@@ -251,7 +309,7 @@ export const UserFeeds: React.FC = () => {
                 you may then specify where you want articles for that feed to be sent to.
               </Text>
             )}
-          </Stack>
+          </HStack>
         </Stack>
         {userFeedsResults?.total === 0 && (
           <Center>
@@ -278,9 +336,7 @@ export const UserFeeds: React.FC = () => {
             </Stack>
           </Center>
         )}
-        {userFeedsResults && userFeedsResults.total > 0 ? (
-          <UserFeedsTable onSelectedFeedId={onSelectedFeed} />
-        ) : null}
+        {userFeedsResults && userFeedsResults.total > 0 ? <UserFeedsTable /> : null}
       </BoxConstrained.Container>
     </BoxConstrained.Wrapper>
   );

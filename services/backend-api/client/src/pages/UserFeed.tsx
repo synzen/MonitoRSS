@@ -35,7 +35,13 @@ import {
 } from "@chakra-ui/react";
 import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AddIcon, ArrowLeftIcon, ChevronDownIcon, QuestionOutlineIcon } from "@chakra-ui/icons";
+import {
+  AddIcon,
+  ArrowLeftIcon,
+  ChevronDownIcon,
+  ExternalLinkIcon,
+  QuestionOutlineIcon,
+} from "@chakra-ui/icons";
 import { useContext, useEffect, useRef, useState } from "react";
 import { BoxConstrained, CategoryText, ConfirmModal } from "@/components";
 import {
@@ -288,7 +294,12 @@ export const UserFeed: React.FC = () => {
                       </BreadcrumbItem>
                     </Breadcrumb>
                     <Stack flex={1}>
-                      <HStack alignItems="flex-start" justifyContent="space-between">
+                      <HStack
+                        alignItems="flex-start"
+                        justifyContent="space-between"
+                        flexWrap="wrap"
+                        gap={3}
+                      >
                         <Stack width="fit-content">
                           <Flex alignItems="center" gap={0}>
                             <Heading as="h1" size="lg" marginRight={4} tabIndex={-1}>
@@ -309,8 +320,12 @@ export const UserFeed: React.FC = () => {
                               target="_blank"
                               rel="noopener noreferrer"
                               wordBreak="break-all"
+                              color="blue.300"
+                              display="flex"
+                              alignItems="center"
+                              gap={2}
                             >
-                              {feed?.inputUrl || feed?.url}
+                              {feed?.inputUrl || feed?.url} <ExternalLinkIcon />
                             </Link>
                             {urlIsDifferentFromInput && (
                               <Flex alignItems="center">
@@ -339,17 +354,14 @@ export const UserFeed: React.FC = () => {
                             variant="outline"
                             ref={menuButtonRef}
                             rightIcon={<ChevronDownIcon />}
-                            aria-label="Feed actions"
                           >
-                            <span>{t("pages.userFeed.actionsButtonText")}</span>
+                            <span>Feed Actions</span>
                           </MenuButton>
                           <MenuList>
                             <MenuItem aria-label="Edit" onClick={editOnOpen}>
                               {t("common.buttons.configure")}
                             </MenuItem>
-                            <MenuItem aria-label="Copy Settings" onClick={copySettingsOnOpen}>
-                              Copy Settings
-                            </MenuItem>
+                            <MenuItem onClick={copySettingsOnOpen}>Copy settings to...</MenuItem>
                             {feed && (
                               <CloneUserFeedDialog
                                 trigger={
@@ -691,7 +703,7 @@ export const UserFeed: React.FC = () => {
                     )}
                     {disabledConnections?.length ? (
                       <Stack spacing={4} mt={2}>
-                        <Heading size="xs" as="h2" fontWeight={600} color="whiteAlpha.800">
+                        <Heading size="sm" as="h3" fontWeight={600} color="whiteAlpha.800">
                           Disabled Connections
                         </Heading>
                         <SimpleGrid

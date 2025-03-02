@@ -13,6 +13,7 @@ import {
   CloneFeedOutput,
   CreateFeedSubscriberOutput,
   CreateServerLegacyFeedBulkConversionOutput,
+  CreateUserFeedInput,
   CreateUserFeedLegacyRestoreOutput,
   CreateUserFeedManagementInviteOutput,
   CreateUserFeedManualRequestOutput,
@@ -86,7 +87,15 @@ import {
   GetSubscriptionProductsOutput,
 } from "../features/subscriptionProducts";
 import { mockUserFeedDeliveryLogs } from "./data/userFeedDeliveryLogs";
-import { CreateUserFeedUrlValidationOutput } from "../features/feed/api/createUserFeedUrlValidation";
+import {
+  CreateUserFeedUrlValidationInput,
+  CreateUserFeedUrlValidationOutput,
+} from "../features/feed/api/createUserFeedUrlValidation";
+import { ApiErrorCode } from "../utils/getStandardErrorCodeMessage copy";
+import {
+  CreateUserFeedDeduplicatedUrlsInput,
+  CreateUserFeedDeduplicatedUrlsOutput,
+} from "../features/feed/api/createUserFeedDeduplicatedUrls";
 
 const handlers = [
   http.get("/api/v1/subscription-products/update-preview", async () => {
@@ -633,24 +642,99 @@ const handlers = [
     );
   }),
 
-  http.post("/api/v1/user-feeds/url-validation", async () => {
+  http.post("/api/v1/user-feeds/deduplicate-feed-urls", async ({ request }) => {
+    const { urls } = (await request.json()) as CreateUserFeedDeduplicatedUrlsInput["details"];
+
     await delay(500);
 
-    return HttpResponse.json<CreateUserFeedUrlValidationOutput>({
+    return HttpResponse.json<CreateUserFeedDeduplicatedUrlsOutput>({
       result: {
-        resolvedToUrl: "https://www.monitorss.xyz",
+        urls,
       },
     });
   }),
-  http.post("/api/v1/user-feeds", async () => {
+
+  http.post("/api/v1/user-feeds/url-validation", async ({ request }) => {
+    const { url } = (await request.json()) as CreateUserFeedUrlValidationInput["details"];
+
     await delay(500);
+
+    let shouldReturnDifferentUrl = true;
+
+    if (url.includes("bulk")) {
+      await delay(1000);
+      const shouldReturnError = Math.random() > 1;
+
+      const sampleErrorCodes: ApiErrorCode[] = [
+        ApiErrorCode.FEED_FETCH_FAILED,
+        ApiErrorCode.FEED_INVALID,
+        ApiErrorCode.FEED_LIMIT_REACHED,
+        ApiErrorCode.FEED_INVALID_SSL_CERT,
+        ApiErrorCode.FEED_REQUEST_FORBIDDEN,
+        ApiErrorCode.FEED_REQUEST_INTERNAL_ERROR,
+        ApiErrorCode.FEED_REQUEST_TIMEOUT,
+      ];
+
+      const randomErrorCode = sampleErrorCodes[Math.floor(Math.random() * sampleErrorCodes.length)];
+
+      const mockApiError = generateMockApiErrorResponse({
+        code: randomErrorCode,
+      });
+
+      shouldReturnDifferentUrl = Math.random() > 1;
+
+      if (shouldReturnError) {
+        return HttpResponse.json(mockApiError, {
+          status: 400,
+        });
+      }
+    }
+
+    return HttpResponse.json<CreateUserFeedUrlValidationOutput>({
+      result: {
+        resolvedToUrl: shouldReturnDifferentUrl ? "https://www.monitorss.xyz" : null,
+      },
+    });
+  }),
+
+  http.post("/api/v1/user-feeds", async ({ request }) => {
+    const { url } = (await request.json()) as CreateUserFeedInput["details"];
+
+    await delay(500);
+
+    if (url.includes("bulk")) {
+      await delay(1000);
+      const shouldReturnError = Math.random() > 1;
+
+      const sampleErrorCodes: ApiErrorCode[] = [
+        ApiErrorCode.FEED_FETCH_FAILED,
+        ApiErrorCode.FEED_INVALID,
+        ApiErrorCode.FEED_LIMIT_REACHED,
+        ApiErrorCode.FEED_INVALID_SSL_CERT,
+        ApiErrorCode.FEED_REQUEST_FORBIDDEN,
+        ApiErrorCode.FEED_REQUEST_INTERNAL_ERROR,
+        ApiErrorCode.FEED_REQUEST_TIMEOUT,
+      ];
+
+      const randomErrorCode = sampleErrorCodes[Math.floor(Math.random() * sampleErrorCodes.length)];
+
+      const mockApiError = generateMockApiErrorResponse({
+        code: randomErrorCode,
+      });
+
+      if (shouldReturnError) {
+        return HttpResponse.json(mockApiError, {
+          status: 400,
+        });
+      }
+    }
 
     return HttpResponse.json<CreateUserFeedOutput>(
       {
         result: mockUserFeeds[0],
       },
       {
-        status: 400,
+        status: 200,
       }
     );
   }),
