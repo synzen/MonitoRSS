@@ -25,7 +25,6 @@ import {
   ModalOverlay,
   Stack,
   Text,
-  Tooltip,
   useDisclosure,
 } from "@chakra-ui/react";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -34,8 +33,7 @@ import { useTranslation } from "react-i18next";
 import { InferType, object, string } from "yup";
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCreateUserFeed, useUserFeeds } from "../../hooks";
-import { useDiscordUserMe } from "../../../discordUser";
+import { useCreateUserFeed } from "../../hooks";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import getChakraColor from "../../../../utils/getChakraColor";
 import { InlineErrorAlert } from "../../../../components/InlineErrorAlert";
@@ -82,11 +80,6 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
     error: validationError,
     reset: resetValidationMutation,
   } = useCreateUserFeedUrlValidation();
-  const { data: discordUserMe, status: discordUserStatus } = useDiscordUserMe();
-  const { data: userFeeds, status: userFeedsStatus } = useUserFeeds({
-    limit: 1,
-    offset: 0,
-  });
   const navigate = useNavigate();
   const isConfirming = !!feedUrlValidationData?.result.resolvedToUrl;
 
@@ -128,42 +121,20 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
     resetValidationMutation();
   }, [isOpen]);
 
-  const totalFeeds = userFeeds?.total;
-
-  const isUnderLimit =
-    totalFeeds !== undefined &&
-    discordUserMe?.maxUserFeeds !== undefined &&
-    totalFeeds < discordUserMe.maxUserFeeds;
-
-  const isLoading = discordUserStatus === "loading" || userFeedsStatus === "loading";
-
   const error = createError || validationError;
   const canResolveError = error?.errorCode && RESOLVABLE_ERRORS.includes(error.errorCode);
 
   return (
     <>
-      <Tooltip
-        label={t("features.userFeeds.components.addUserFeedDialog.overLimitHint")}
-        hidden={isUnderLimit === true}
-      >
-        {trigger ? (
-          React.cloneElement(trigger, {
-            onClick: onOpen,
-            isDisabled: !isUnderLimit,
-            isLoading,
-          })
-        ) : (
-          <Button
-            colorScheme="blue"
-            onClick={() => (isUnderLimit ? onOpen() : undefined)}
-            aria-disabled={!isUnderLimit}
-            isLoading={isLoading}
-            variant="solid"
-          >
-            <span>{t("features.userFeeds.components.addUserFeedDialog.addButton")}</span>
-          </Button>
-        )}
-      </Tooltip>
+      {trigger ? (
+        React.cloneElement(trigger, {
+          onClick: onOpen,
+        })
+      ) : (
+        <Button colorScheme="blue" onClick={() => onOpen()} variant="solid">
+          <span>{t("features.userFeeds.components.addUserFeedDialog.addButton")}</span>
+        </Button>
+      )}
       <Modal isOpen={isOpen} onClose={onClose} size="xl">
         <ModalOverlay />
         <ModalContent>
@@ -378,16 +349,9 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                 <span>{isConfirming ? "Go back" : t("common.buttons.cancel")}</span>
               </Button>
               <Button colorScheme="blue" type="submit" aria-disabled={isSubmitting}>
-                <span>
-                  {isSubmitting ? (
-                    "Saving..."
-                  ) : (
-                    <>
-                      {isConfirming && "Add feed with updated url"}
-                      {!isConfirming && "Save"}
-                    </>
-                  )}
-                </span>
+                <span>{isSubmitting && "Saving..."}</span>
+                <span>{!isSubmitting && isConfirming && "Add feed with updated url"}</span>
+                <span>{!isSubmitting && !isConfirming && "Save"}</span>
               </Button>
             </ModalFooter>
           </form>
