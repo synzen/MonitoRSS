@@ -33,6 +33,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, object, string } from "yup";
 import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useCreateUserFeed, useUserFeeds } from "../../hooks";
 import { useDiscordUserMe } from "../../../discordUser";
 import { notifySuccess } from "../../../../utils/notifySuccess";
@@ -41,6 +42,7 @@ import { InlineErrorAlert } from "../../../../components/InlineErrorAlert";
 import { FixFeedRequestsCTA } from "../FixFeedRequestsCTA";
 import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage copy";
 import { useCreateUserFeedUrlValidation } from "../../hooks/useCreateUserFeedUrlValidation";
+import { pages } from "../../../../constants";
 
 const formSchema = object({
   title: string().optional(),
@@ -85,6 +87,7 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
     limit: 1,
     offset: 0,
   });
+  const navigate = useNavigate();
   const isConfirming = !!feedUrlValidationData?.result.resolvedToUrl;
 
   const onSubmit = async ({ title, url }: FormData) => {
@@ -101,7 +104,9 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
         }
       }
 
-      await mutateAsync({
+      const {
+        result: { id },
+      } = await mutateAsync({
         details: {
           title,
           url: feedUrlValidationData?.result.resolvedToUrl
@@ -113,6 +118,7 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
       reset();
       onClose();
       notifySuccess(t("features.userFeeds.components.addUserFeedDialog.successAdd"));
+      navigate(pages.userFeed(id));
     } catch (err) {}
   };
 
