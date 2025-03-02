@@ -212,10 +212,14 @@ export const UserFeeds: React.FC = () => {
             <Flex alignItems="center" gap={4}>
               <Heading as="h1" size="lg" tabIndex={-1}>
                 {t("pages.userFeeds.title")}{" "}
-                {totalFeedCount !== undefined &&
-                  selectedFeeds.length > 0 &&
-                  `(${selectedFeeds.length}/${totalFeedCount})`}
-                {totalFeedCount !== undefined && !selectedFeeds.length && `(${totalFeedCount})`}
+                <span>
+                  {totalFeedCount !== undefined &&
+                    selectedFeeds.length > 0 &&
+                    `(${selectedFeeds.length}/${totalFeedCount})`}
+                </span>
+                <span>
+                  {totalFeedCount !== undefined && !selectedFeeds.length && `(${totalFeedCount})`}
+                </span>
               </Heading>
             </Flex>
             <HStack>
