@@ -185,7 +185,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
                                   variant="outline"
                                   rightIcon={<ChevronDownIcon />}
                                 >
-                                  Connection Actions
+                                  <span>Connection Actions</span>
                                 </MenuButton>
                               }
                               feedId={feedId as string}

@@ -160,7 +160,7 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", containerProps }
         outline={isFocused ? `2px solid ${getChakraColor("blue.300")}` : undefined}
         _hover={{
           outline: `2px solid ${getChakraColor("blue.50")} !important`,
-          background: "blackAlpha.5 00",
+          background: "blackAlpha.500",
         }}
       >
         <NavigableTreeItemExpandButton>
