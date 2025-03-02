@@ -15,6 +15,7 @@ import {
   FormHelperText,
   FormLabel,
   Heading,
+  HStack,
   Input,
   Modal,
   ModalBody,
@@ -23,7 +24,9 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  Spinner,
   Stack,
+  StackDivider,
   Text,
   useDisclosure,
 } from "@chakra-ui/react";
@@ -31,16 +34,19 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, object, string } from "yup";
-import React, { useEffect } from "react";
+import React, { useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCreateUserFeed } from "../../hooks";
+import { ArrowLeftIcon } from "@chakra-ui/icons";
+import { useCreateUserFeed, useUserFeeds } from "../../hooks";
 import { notifySuccess } from "../../../../utils/notifySuccess";
 import getChakraColor from "../../../../utils/getChakraColor";
 import { InlineErrorAlert } from "../../../../components/InlineErrorAlert";
 import { FixFeedRequestsCTA } from "../FixFeedRequestsCTA";
 import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage copy";
 import { useCreateUserFeedUrlValidation } from "../../hooks/useCreateUserFeedUrlValidation";
-import { pages } from "../../../../constants";
+import { pages, ProductKey } from "../../../../constants";
+import { useDiscordUserMe, useUserMe } from "../../../discordUser";
+import { PricingDialogContext } from "../../../../contexts";
 
 const formSchema = object({
   title: string().optional(),
@@ -73,6 +79,13 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
   });
+  const { data: discordUserMe } = useDiscordUserMe();
+  const { data: userMe } = useUserMe();
+  const { data: userFeedsResults } = useUserFeeds({
+    limit: 1,
+    offset: 0,
+  });
+  const { onOpen: onOpenPricingDialog } = useContext(PricingDialogContext);
   const { mutateAsync, error: createError, reset: resetMutation } = useCreateUserFeed();
   const {
     data: feedUrlValidationData,
@@ -172,6 +185,64 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
               )}
               {!isConfirming && (
                 <Stack spacing={4}>
+                  <Stack
+                    flex={1}
+                    spacing={4}
+                    px={4}
+                    py={4}
+                    borderStyle="solid"
+                    borderWidth={1}
+                    borderRadius="md"
+                    borderColor="gray.600"
+                    as="aside"
+                  >
+                    <HStack
+                      justifyContent="space-between"
+                      alignItems="flex-start"
+                      flexWrap="wrap"
+                      gap={4}
+                      aria-labelledby="limits"
+                    >
+                      <Heading as="h2" size="md" id="limits">
+                        Limits
+                      </Heading>
+                      <Button
+                        variant="outline"
+                        leftIcon={<ArrowLeftIcon transform="rotate(90deg)" />}
+                        onClick={onOpenPricingDialog}
+                        size="sm"
+                      >
+                        Increase Limits
+                      </Button>
+                    </HStack>
+                    <HStack divider={<StackDivider />}>
+                      <Stack flex={1}>
+                        <Heading as="h3" size="sm" fontWeight="semibold">
+                          Feed Limit
+                        </Heading>
+                        {userFeedsResults && discordUserMe && (
+                          <Text>
+                            {userFeedsResults.total}/{discordUserMe.maxUserFeeds}
+                          </Text>
+                        )}
+                        {(!userFeedsResults || !discordUserMe) && <Spinner size="sm" />}
+                      </Stack>
+                      <Stack flex={1}>
+                        <Heading as="h3" size="sm" fontWeight="semibold">
+                          Daily Feed Article Limit
+                        </Heading>
+                        <Text>
+                          {userMe &&
+                            userMe.result.subscription.product.key !== ProductKey.Free &&
+                            1000}
+                          {userMe &&
+                            userMe.result.subscription.product.key === ProductKey.Free &&
+                            50}
+                          {!userMe && <Spinner size="sm" />}
+                        </Text>
+                      </Stack>
+                    </HStack>
+                  </Stack>
                   <FormControl isInvalid={!!errors.url} isRequired>
                     <FormLabel>Feed Link</FormLabel>
                     <Controller
