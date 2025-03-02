@@ -1,5 +1,5 @@
 import { WarningTwoIcon } from "@chakra-ui/icons";
-import { Code, Divider, Heading, Stack, Text } from "@chakra-ui/react";
+import { Divider, Heading, Stack, Text } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 
 interface Props {
@@ -20,6 +20,7 @@ export const ErrorAlert: React.FC<Props> = ({ description }) => {
       textAlign="center"
       paddingX="12"
       spacing="6"
+      role="alert"
     >
       <Stack display="flex" justifyContent="center" alignItems="center">
         <WarningTwoIcon fontSize="8rem" color="red.500" />
@@ -30,10 +31,8 @@ export const ErrorAlert: React.FC<Props> = ({ description }) => {
         <>
           <Divider maxWidth="50%" />
           <Stack>
-            <Text color="gray.500">{t("common.errors.detailsTitle")}</Text>
-            <Code marginTop="4" color="gray.400">
-              {description}
-            </Code>
+            <Text color="gray.400">{t("common.errors.detailsTitle")}</Text>
+            <Text>{description}</Text>
           </Stack>
         </>
       )}
