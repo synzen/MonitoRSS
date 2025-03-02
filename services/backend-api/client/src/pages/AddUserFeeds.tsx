@@ -753,7 +753,11 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
                     You can increase your limits by choosing to support MonitoRSS&apos;s open-source
                     development and upgrading your plan.
                   </Text>
-                  <Button mt={2} onClick={onOpenPricingDialog}>
+                  <Button
+                    leftIcon={<ArrowLeftIcon transform="rotate(90deg)" />}
+                    mt={2}
+                    onClick={onOpenPricingDialog}
+                  >
                     Upgrade Plan
                   </Button>
                 </AlertDescription>

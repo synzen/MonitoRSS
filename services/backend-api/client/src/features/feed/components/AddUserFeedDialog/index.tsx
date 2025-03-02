@@ -7,6 +7,7 @@ import {
   Alert,
   AlertIcon,
   AlertTitle,
+  Box,
   Button,
   Divider,
   Flex,
@@ -384,9 +385,27 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                     <InlineErrorAlert
                       title="Failed to add feed"
                       description={
-                        <Stack>
-                          <Text>{error.message}</Text>
-                        </Stack>
+                        error.errorCode === ApiErrorCode.FEED_LIMIT_REACHED ? (
+                          <Stack>
+                            <Text>
+                              You&apos;ve reached your feed limit. Consider supporting
+                              MonitoRSS&apos;s open-source development by upgrading your plan and
+                              increasing your feed limit.
+                            </Text>
+                            <Box>
+                              <Button
+                                leftIcon={<ArrowLeftIcon transform="rotate(90deg)" />}
+                                onClick={onOpenPricingDialog}
+                              >
+                                Upgrade Plan
+                              </Button>
+                            </Box>
+                          </Stack>
+                        ) : (
+                          <Stack>
+                            <Text>{error.message}</Text>
+                          </Stack>
+                        )
                       }
                     />
                   )}
