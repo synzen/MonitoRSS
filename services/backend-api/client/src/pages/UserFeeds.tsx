@@ -17,6 +17,7 @@ import {
   MenuList,
   MenuItem,
   MenuDivider,
+  IconButton,
 } from "@chakra-ui/react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -286,9 +287,29 @@ export const UserFeeds: React.FC = () => {
                   />
                 </MenuList>
               </Menu>
-              <Button as={Link} to={pages.addFeeds()} colorScheme="blue" leftIcon={<AddIcon />}>
-                Add Feeds
-              </Button>
+              <HStack gap={1}>
+                <AddUserFeedDialog
+                  trigger={
+                    <Button colorScheme="blue" leftIcon={<AddIcon />} borderRightRadius={0}>
+                      Add Feed
+                    </Button>
+                  }
+                />
+                <Menu>
+                  <MenuButton
+                    as={IconButton}
+                    colorScheme="blue"
+                    icon={<ChevronDownIcon fontSize={24} />}
+                    aria-label="Additional add feed options"
+                    borderLeftRadius={0}
+                  />
+                  <MenuList>
+                    <MenuItem as={Link} to={pages.addFeeds()}>
+                      Add multiple feeds
+                    </MenuItem>
+                  </MenuList>
+                </Menu>
+              </HStack>
             </HStack>
           </Flex>
           <HStack spacing={6}>
