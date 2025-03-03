@@ -9,6 +9,8 @@ interface Props {
 export const ErrorAlert: React.FC<Props> = ({ description }) => {
   const { t } = useTranslation();
 
+  const isGoogleTranslateUsed = !!document.getElementById("goog-gt-tt");
+
   return (
     <Stack
       display="flex"
@@ -33,6 +35,12 @@ export const ErrorAlert: React.FC<Props> = ({ description }) => {
           <Stack>
             <Text color="gray.400">{t("common.errors.detailsTitle")}</Text>
             <Text>{description}</Text>
+            {isGoogleTranslateUsed && (
+              <Text>
+                If you are using Google Translate and are facing persistent issues, you may try
+                disabling it as there are known issues with it.
+              </Text>
+            )}
           </Stack>
         </>
       )}
