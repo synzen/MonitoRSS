@@ -1,7 +1,6 @@
 /* eslint-disable max-len */
 import { z } from "zod";
 import { CustomPlaceholderStepType } from "../constants";
-import { DiscordChannelThreadCreateMethod } from "../constants/discord-channel-thread-create-method.constants";
 
 const buttonSchema = z.object({
   type: z.number().min(2).max(2),
