@@ -488,6 +488,8 @@ export class MessageBrokerEventsService {
         rateLimits: con.rateLimits,
         details: {
           channelNewThreadTitle: con.details.channelNewThreadTitle,
+          channelNewThreadExcludesPreview:
+            con.details.channelNewThreadExcludesPreview,
           guildId: con.details.channel?.guildId || con.details.webhook!.guildId,
           channel: con.details.channel
             ? {

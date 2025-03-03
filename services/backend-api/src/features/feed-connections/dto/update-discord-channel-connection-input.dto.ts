@@ -70,6 +70,10 @@ export class UpdateDiscordChannelConnectionInputDto {
   @IsOptional()
   channelNewThreadTitle?: string;
 
+  @IsBoolean()
+  @IsOptional()
+  channelNewThreadExcludesPreview?: boolean;
+
   @IsObject()
   @IsOptional()
   @ValidateNested()

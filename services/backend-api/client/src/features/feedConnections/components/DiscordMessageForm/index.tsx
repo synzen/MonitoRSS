@@ -127,6 +127,8 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
     forumThreadTitle,
     componentRows,
     externalProperties,
+    channelNewThreadTitle,
+    channelNewThreadExcludesPreview,
   ] = useWatch({
     control,
     name: [
@@ -142,6 +144,8 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
       "forumThreadTitle",
       "componentRows",
       "externalProperties",
+      "channelNewThreadTitle",
+      "channelNewThreadExcludesPreview",
     ],
   });
 
@@ -170,6 +174,8 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
       forumThreadTitle,
       componentRows,
       externalProperties,
+      channelNewThreadTitle,
+      channelNewThreadExcludesPreview,
     },
   };
 

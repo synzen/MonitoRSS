@@ -334,7 +334,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
       let useChannelId = channelId;
 
-      let apiPayloads = this.generateApiPayloads(article, {
+      const apiPayloads = this.generateApiPayloads(article, {
         embeds: details.mediumDetails.embeds,
         content: details.mediumDetails.content,
         splitOptions,
@@ -344,10 +344,18 @@ export class DiscordMediumService implements DeliveryMedium {
         enablePlaceholderFallback,
         components,
       });
+      let currentApiPayloadIndex = 0;
+
+      const apiPayloadResults: {
+        status: number;
+        success: boolean;
+        detail?: string;
+        body: object;
+      }[] = [];
 
       if (shouldCreateThread) {
-        const shouldCreatePostFirst =
-          details.mediumDetails.channelNewThreadWithPost;
+        const createThreadFirst =
+          details.mediumDetails.channelNewThreadExcludesPreview;
 
         const threadName =
           this.generateApiTextPayload(article, {
@@ -365,7 +373,8 @@ export class DiscordMediumService implements DeliveryMedium {
           type: 11,
         };
 
-        if (shouldCreatePostFirst) {
+        if (!createThreadFirst) {
+          // Send the post, create a thread, and then send the rest
           const apiUrl = this.getChannelApiUrl(channelId);
           const firstResponse = await this.sendDiscordApiRequest(apiUrl, {
             method: "POST",
@@ -409,8 +418,10 @@ export class DiscordMediumService implements DeliveryMedium {
           useChannelId = (threadResponse.body as Record<string, unknown>)
             .id as string;
 
-          apiPayloads = apiPayloads.slice(1);
+          currentApiPayloadIndex = 1;
+          apiPayloadResults.push(firstResponse);
         } else {
+          // Create a thread and then send all the posts
           const apiUrl = this.getCreateChannelThreadUrl(channelId);
           const firstResponse = await this.sendDiscordApiRequest(apiUrl, {
             method: "POST",
@@ -434,21 +445,25 @@ export class DiscordMediumService implements DeliveryMedium {
       const apiUrl = this.getChannelApiUrl(useChannelId);
 
       const results = await Promise.all(
-        apiPayloads.map((payload) =>
-          this.sendDiscordApiRequest(apiUrl, {
-            method: "POST",
-            body: payload,
-          })
-        )
+        apiPayloads
+          .slice(currentApiPayloadIndex, apiPayloads.length)
+          .map((payload) =>
+            this.sendDiscordApiRequest(apiUrl, {
+              method: "POST",
+              body: payload,
+            })
+          )
       );
+
+      apiPayloadResults.push(...results);
 
       return {
         apiPayload: apiPayloads[0] as Record<string, unknown>,
         result: {
-          status: results[0].status,
-          state: results[0].success ? "success" : "error",
-          body: results[0].body,
-          message: results[0].detail || "",
+          status: apiPayloadResults[0].status,
+          state: apiPayloadResults[0].success ? "success" : "error",
+          body: apiPayloadResults[0].body,
+          message: apiPayloadResults[0].detail || "",
         },
       };
     } else {
@@ -728,7 +743,12 @@ export class DiscordMediumService implements DeliveryMedium {
     });
 
     const threadCreationDeliveryStates =
-      this.parseThreadCreateResponseToDeliveryStates(res, article, details);
+      this.parseThreadCreateResponseToDeliveryStates(
+        res,
+        article,
+        details,
+        ArticleDeliveryContentType.DiscordThreadCreation
+      );
 
     if (!res.success) {
       return threadCreationDeliveryStates;
@@ -788,6 +808,7 @@ export class DiscordMediumService implements DeliveryMedium {
         enablePlaceholderFallback,
         components,
         channelNewThreadTitle,
+        channelNewThreadExcludesPreview,
         channel,
       },
       feedDetails: { id, url },
@@ -806,11 +827,13 @@ export class DiscordMediumService implements DeliveryMedium {
       enablePlaceholderFallback,
       components,
     });
+    let currentBodiesIndex = 0;
     const shouldCreateThread = channel?.type === "new-thread";
 
     let useChannelId = channelId;
 
     if (shouldCreateThread) {
+      const shouldCreateThreadFirst = !!channelNewThreadExcludesPreview;
       const threadName =
         this.generateApiTextPayload(article, {
           content: channelNewThreadTitle || "{{title}}",
@@ -827,25 +850,104 @@ export class DiscordMediumService implements DeliveryMedium {
         type: 11,
       };
 
-      const apiUrl = this.getCreateChannelThreadUrl(channelId);
-      const firstResponse = await this.sendDiscordApiRequest(apiUrl, {
-        method: "POST",
-        body: threadBody,
-      });
+      if (shouldCreateThreadFirst) {
+        // Create the thread first and send all the posts into it
+        const apiUrl = this.getCreateChannelThreadUrl(channelId);
+        const firstResponse = await this.sendDiscordApiRequest(apiUrl, {
+          method: "POST",
+          body: threadBody,
+        });
 
-      threadCreationDeliveryStates =
-        this.parseThreadCreateResponseToDeliveryStates(
-          firstResponse,
-          article,
-          details
+        threadCreationDeliveryStates =
+          this.parseThreadCreateResponseToDeliveryStates(
+            firstResponse,
+            article,
+            details,
+            ArticleDeliveryContentType.DiscordThreadCreation
+          );
+
+        if (!firstResponse.success) {
+          return threadCreationDeliveryStates;
+        }
+
+        useChannelId = (firstResponse.body as Record<string, unknown>)
+          .id as string;
+      } else {
+        // Send the post, create a thread, and then send the rest
+        const apiUrl = this.getChannelApiUrl(channelId);
+        const firstPostResponse = await this.sendDiscordApiRequest(apiUrl, {
+          method: "POST",
+          body: bodies[0],
+        });
+
+        if (!firstPostResponse.success) {
+          return this.parseThreadCreateResponseToDeliveryStates(
+            firstPostResponse,
+            article,
+            details,
+            ArticleDeliveryContentType.DiscordArticleMessage
+          );
+        }
+
+        threadCreationDeliveryStates.push({
+          id: generateDeliveryId(),
+          status: ArticleDeliveryStatus.Sent,
+          mediumId: details.mediumId,
+          contentType: ArticleDeliveryContentType.DiscordArticleMessage,
+          articleIdHash: article.flattened.idHash,
+        });
+
+        const messageId = (firstPostResponse.body as Record<string, unknown>)
+          .id as string;
+
+        const messageThreadUrl = this.getCreateChannelMessageThreadUrl(
+          channelId,
+          messageId
         );
 
-      if (!firstResponse.success) {
-        return threadCreationDeliveryStates;
-      }
+        const threadResponse = await this.sendDiscordApiRequest(
+          messageThreadUrl,
+          {
+            method: "POST",
+            body: threadBody,
+          }
+        );
 
-      useChannelId = (firstResponse.body as Record<string, unknown>)
-        .id as string;
+        if (!threadResponse.success) {
+          const failureStates = this.parseThreadCreateResponseToDeliveryStates(
+            threadResponse,
+            article,
+            details,
+            ArticleDeliveryContentType.DiscordThreadCreation
+          );
+
+          failureStates.map((s) => {
+            s.parent =
+              threadCreationDeliveryStates[
+                threadCreationDeliveryStates.length - 1
+              ].id;
+          });
+
+          return [...threadCreationDeliveryStates, ...failureStates];
+        }
+
+        threadCreationDeliveryStates.push({
+          id: generateDeliveryId(),
+          status: ArticleDeliveryStatus.Sent,
+          mediumId: details.mediumId,
+          contentType: ArticleDeliveryContentType.DiscordThreadCreation,
+          articleIdHash: article.flattened.idHash,
+          parent:
+            threadCreationDeliveryStates[
+              threadCreationDeliveryStates.length - 1
+            ].id,
+        });
+
+        useChannelId = (threadResponse.body as Record<string, unknown>)
+          .id as string;
+
+        currentBodiesIndex = 1;
+      }
     }
 
     if (threadCreationDeliveryStates.length > 0) {
@@ -857,7 +959,7 @@ export class DiscordMediumService implements DeliveryMedium {
     const apiUrl = this.getChannelApiUrl(useChannelId);
 
     const allRecords: ArticleDeliveryState[] = await Promise.all(
-      bodies.map(async (body) => {
+      bodies.slice(currentBodiesIndex, bodies.length).map(async (body) => {
         const deliveryId = generateDeliveryId();
 
         this.producer.enqueue(
@@ -997,7 +1099,8 @@ export class DiscordMediumService implements DeliveryMedium {
       ReturnType<typeof DiscordMediumService.prototype.sendDiscordApiRequest>
     >,
     article: Article,
-    details: DeliverArticleDetails
+    details: DeliverArticleDetails,
+    contentType: ArticleDeliveryContentType
   ): ArticleDeliveryState[] {
     if (!response.success) {
       if (response.status === 404) {
@@ -1006,7 +1109,7 @@ export class DiscordMediumService implements DeliveryMedium {
             id: generateDeliveryId(),
             status: ArticleDeliveryStatus.Rejected,
             mediumId: details.mediumId,
-            contentType: ArticleDeliveryContentType.DiscordThreadCreation,
+            contentType: contentType,
             articleIdHash: article.flattened.idHash,
             errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
             internalMessage: `Response: ${JSON.stringify(response.body)}`,
@@ -1020,7 +1123,7 @@ export class DiscordMediumService implements DeliveryMedium {
             id: generateDeliveryId(),
             status: ArticleDeliveryStatus.Rejected,
             mediumId: details.mediumId,
-            contentType: ArticleDeliveryContentType.DiscordThreadCreation,
+            contentType: contentType,
             articleIdHash: article.flattened.idHash,
             errorCode: ArticleDeliveryErrorCode.ThirdPartyForbidden,
             internalMessage: `Response: ${JSON.stringify(response.body)}`,
@@ -1033,7 +1136,7 @@ export class DiscordMediumService implements DeliveryMedium {
             id: generateDeliveryId(),
             status: ArticleDeliveryStatus.Rejected,
             mediumId: details.mediumId,
-            contentType: ArticleDeliveryContentType.DiscordThreadCreation,
+            contentType: contentType,
             articleIdHash: article.flattened.idHash,
             errorCode: ArticleDeliveryErrorCode.ThirdPartyBadRequest,
             internalMessage: `Response: ${JSON.stringify(response.body)}`,
@@ -1053,7 +1156,7 @@ export class DiscordMediumService implements DeliveryMedium {
           id: generateDeliveryId(),
           status: ArticleDeliveryStatus.Sent,
           mediumId: details.mediumId,
-          contentType: ArticleDeliveryContentType.DiscordThreadCreation,
+          contentType: contentType,
           articleIdHash: article.flattened.idHash,
         },
       ];

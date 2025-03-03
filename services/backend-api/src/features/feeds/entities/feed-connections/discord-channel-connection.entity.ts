@@ -193,6 +193,11 @@ class Details {
   channelNewThreadTitle?: string;
 
   @Prop({
+    required: false,
+  })
+  channelNewThreadExcludesPreview?: boolean;
+
+  @Prop({
     type: DiscordWebhookSchema,
     required: false,
   })

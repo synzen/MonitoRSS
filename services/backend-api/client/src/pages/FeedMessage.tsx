@@ -55,6 +55,7 @@ const FeedMessage: React.FC = () => {
                 splitOptions: null,
                 forumThreadTags: null,
                 mentions: null,
+                channelNewThreadExcludesPreview: false,
               }}
               onClickSave={onFormSaved}
             />

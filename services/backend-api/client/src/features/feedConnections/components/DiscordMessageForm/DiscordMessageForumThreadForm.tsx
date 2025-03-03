@@ -126,7 +126,7 @@ export const DiscordMessageForumThreadForm = () => {
 
   return (
     <Stack spacing={8} divider={<StackDivider />}>
-      <FormControl isInvalid={!!errors.content}>
+      <FormControl isInvalid={!!errors.forumThreadTitle}>
         <Stack
           direction={{ base: "column", md: "row" }}
           spacing={{ base: "1.5", md: "8" }}
@@ -161,7 +161,9 @@ export const DiscordMessageForumThreadForm = () => {
                 />
               )}
             />
-            {errors.content && <FormErrorMessage>{errors.content.message}</FormErrorMessage>}
+            {errors.forumThreadTitle && (
+              <FormErrorMessage>{errors.forumThreadTitle.message}</FormErrorMessage>
+            )}
           </Stack>
         </Stack>
       </FormControl>

@@ -49,6 +49,10 @@ export class CreateDiscordChannelConnectionPreviewInputDto {
   @IsOptional()
   channelNewThreadTitle?: string;
 
+  @IsBoolean()
+  @IsOptional()
+  channelNewThreadExcludesPreview?: boolean;
+
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })

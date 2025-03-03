@@ -97,7 +97,9 @@ export const getStandardErrorCodeMessage = (code: ApiErrorCode) => {
   const mappedError = ERROR_CODE_MESSAGES[code];
 
   if (!mappedError) {
-    return t("common.errors.somethingWentWrong");
+    return `${t(
+      "common.errors.somethingWentWrong"
+    )} Please try again later, or contact support if the issue persists.`;
   }
 
   return mappedError;

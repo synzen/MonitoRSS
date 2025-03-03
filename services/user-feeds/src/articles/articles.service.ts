@@ -97,7 +97,17 @@ export class ArticlesService {
       await inflatePromise(Buffer.from(compressedValue, "base64"))
     ).toString();
 
-    return JSON.parse(jsonText) as XmlParsedArticlesOutput;
+    const parsed = JSON.parse(jsonText) as XmlParsedArticlesOutput;
+
+    if (!parsed.feed) {
+      /**
+       * The schema was updated to include a new "feed" property. If it doesn't exist, it's an old cache
+       * and we should invalidate it.
+       */
+      return null;
+    }
+
+    return parsed;
   }
 
   async invalidateFeedArticlesCache(data: {
@@ -147,7 +157,7 @@ export class ArticlesService {
       findRssFromHtml?: boolean;
       executeFetch?: boolean;
     }
-  ) {
+  ): ReturnType<typeof this.fetchFeedArticles> {
     try {
       return await this.fetchFeedArticles(originalUrl, { ...options });
     } catch (err) {

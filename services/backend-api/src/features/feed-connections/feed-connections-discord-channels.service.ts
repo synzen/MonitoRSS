@@ -100,6 +100,9 @@ export interface UpdateDiscordChannelConnectionInput {
       channelNewThreadTitle:
         | DiscordChannelConnection["details"]["channelNewThreadTitle"]
         | undefined;
+      channelNewThreadExcludesPreview:
+        | DiscordChannelConnection["details"]["channelNewThreadExcludesPreview"]
+        | undefined;
       applicationWebhook?: {
         channelId: string;
         name: string;
@@ -142,6 +145,8 @@ interface CreatePreviewInput {
   componentRows?: DiscordChannelConnection["details"]["componentRows"] | null;
   includeCustomPlaceholderPreviews?: boolean;
   channelNewThreadTitle?: DiscordChannelConnection["details"]["channelNewThreadTitle"];
+  channelNewThreadExcludesPreview?:
+    | DiscordChannelConnection["details"]["channelNewThreadExcludesPreview"];
 }
 
 @Injectable()
@@ -999,6 +1004,12 @@ export class FeedConnectionsDiscordChannelsService {
         components: castDiscordComponentRowsForMedium(
           previewInput?.componentRows || connection.details.componentRows
         ),
+        channelNewThreadTitle:
+          previewInput?.channelNewThreadTitle ||
+          connection.details.channelNewThreadTitle,
+        channelNewThreadExcludesPreview:
+          previewInput?.channelNewThreadExcludesPreview ??
+          connection.details.channelNewThreadExcludesPreview,
       },
     } as const;
 

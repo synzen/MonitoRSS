@@ -41,7 +41,11 @@ export const discordMediumPayloadDetailsSchema = z.object({
     .nullable()
     .default(null),
   channelNewThreadTitle: z.string().optional().nullable(),
-  channelNewThreadWithPost: z.boolean().optional().nullable().default(false),
+  channelNewThreadExcludesPreview: z
+    .boolean()
+    .optional()
+    .nullable()
+    .default(false),
   webhook: z
     .object({
       id: z.string(),

@@ -104,6 +104,7 @@ export const discordMessageFormSchema = object({
     .max(5)
     .nullable(),
   channelNewThreadTitle: string().optional(),
+  channelNewThreadExcludesPreview: boolean().optional().nullable().default(false),
   forumThreadTitle: string().optional(),
   forumThreadTags: array(
     object({
