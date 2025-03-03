@@ -475,7 +475,10 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
   const navigate = useNavigate();
 
   const remainingFeedsAllowed =
-    discordUserMe && userFeedsResults ? discordUserMe.maxUserFeeds - userFeedsResults.total : 99999;
+    discordUserMe && userFeedsResults
+      ? Math.max(discordUserMe.maxUserFeeds - userFeedsResults.total, 0)
+      : 99999;
+  const isAtFeedLimit = remainingFeedsAllowed <= 0;
 
   const onChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setError(undefined);
@@ -574,12 +577,13 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
                   <Heading as="h3" size="sm" fontWeight="semibold">
                     Feed Limit
                   </Heading>
-                  {userFeedsResults && discordUserMe && (
-                    <Text>
-                      {userFeedsResults.total}/{discordUserMe.maxUserFeeds}
-                    </Text>
-                  )}
-                  {(!userFeedsResults || !discordUserMe) && <Spinner />}
+                  <Text
+                    hidden={!userFeedsResults || !discordUserMe}
+                    color={isAtFeedLimit ? "red.400" : undefined}
+                  >
+                    {userFeedsResults?.total}/{discordUserMe?.maxUserFeeds}
+                  </Text>
+                  <Spinner hidden={!!userFeedsResults && !!discordUserMe} />
                 </Stack>
                 <Stack flex={1}>
                   <Heading as="h3" size="sm" fontWeight="semibold">

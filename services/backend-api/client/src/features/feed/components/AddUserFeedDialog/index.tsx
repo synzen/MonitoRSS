@@ -138,6 +138,8 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
 
   const error = createError || validationError;
   const canResolveError = error?.errorCode && RESOLVABLE_ERRORS.includes(error.errorCode);
+  const isAtLimit =
+    userFeedsResults && discordUserMe && userFeedsResults?.total >= discordUserMe?.maxUserFeeds;
 
   return (
     <>
@@ -222,12 +224,13 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                         <Heading as="h3" size="sm" fontWeight="semibold">
                           Feed Limit
                         </Heading>
-                        {userFeedsResults && discordUserMe && (
-                          <Text>
-                            {userFeedsResults.total}/{discordUserMe.maxUserFeeds}
-                          </Text>
-                        )}
-                        {(!userFeedsResults || !discordUserMe) && <Spinner size="sm" />}
+                        <Text
+                          color={isAtLimit ? "red.300" : undefined}
+                          hidden={!userFeedsResults || !discordUserMe}
+                        >
+                          {userFeedsResults?.total}/{discordUserMe?.maxUserFeeds}
+                        </Text>
+                        <Spinner hidden={!!userFeedsResults && !!discordUserMe} size="sm" />
                       </Stack>
                       <Stack flex={1}>
                         <Heading as="h3" size="sm" fontWeight="semibold">
