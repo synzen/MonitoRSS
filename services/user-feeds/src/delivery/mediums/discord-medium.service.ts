@@ -691,14 +691,12 @@ export class DiscordMediumService implements DeliveryMedium {
     const {
       deliverySettings: {
         guildId,
-        channelNewThreadTitle,
         forumThreadTitle,
         forumThreadTags,
         mentions,
         enablePlaceholderFallback,
         placeholderLimits,
         components,
-        channel,
       },
       feedDetails: { id, url },
       filterReferences,
@@ -716,10 +714,7 @@ export class DiscordMediumService implements DeliveryMedium {
       components,
     });
 
-    const threadNameContent =
-      (channel?.type === "new-thread"
-        ? channelNewThreadTitle
-        : forumThreadTitle) || "{{title}}";
+    const threadNameContent = forumThreadTitle || "{{title}}";
 
     const threadBody = {
       name:

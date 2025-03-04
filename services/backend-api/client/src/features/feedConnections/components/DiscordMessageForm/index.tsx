@@ -293,11 +293,17 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                   </HStack>
                   <Button
                     leftIcon={<FaDiscord fontSize={18} color={getChakraColor("gray.700")} />}
-                    onClick={onClickSendPreviewToDiscord}
+                    onClick={() => {
+                      if (isSendingTestArticle || !articleIdToPreview) {
+                        return;
+                      }
+
+                      onClickSendPreviewToDiscord();
+                    }}
                     size="sm"
                     colorScheme="blue"
                     isLoading={isSendingTestArticle}
-                    isDisabled={isSendingTestArticle || !articleIdToPreview}
+                    aria-disabled={isSendingTestArticle || !articleIdToPreview}
                   >
                     <span>{t("components.discordMessageForm.sendPreviewToDiscordButtonText")}</span>
                   </Button>

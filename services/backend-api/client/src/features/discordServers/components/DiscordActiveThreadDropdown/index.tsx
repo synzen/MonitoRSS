@@ -14,9 +14,11 @@ interface Props {
   inputId?: string;
   ariaLabelledBy: string;
   isInvalid: boolean;
+  placeholder?: string;
 }
 
 export const DiscordActiveThreadDropdown: React.FC<Props> = ({
+  placeholder,
   serverId,
   parentChannelId,
   onChange,
@@ -58,6 +60,7 @@ export const DiscordActiveThreadDropdown: React.FC<Props> = ({
           "aria-labelledby": ariaLabelledBy,
         }}
         isInvalid={isInvalid}
+        placeholder={placeholder}
       />
       {serverId && error && (
         <Alert status="error">

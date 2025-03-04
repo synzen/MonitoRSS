@@ -279,7 +279,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                             createThreadMethodField.onChange(value);
                           }}
                           value={createThreadMethodField.value}
-                          aria-labelledby="   -kind-label"
+                          aria-labelledby="thread-kind-label"
                         >
                           <Stack>
                             <Radio value={DiscordCreateChannelThreadMethod.None}>

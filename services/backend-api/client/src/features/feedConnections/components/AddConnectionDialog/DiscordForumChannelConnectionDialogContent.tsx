@@ -23,6 +23,7 @@ import { useParams } from "react-router-dom";
 import { InferType, object, string } from "yup";
 import { useEffect, useRef } from "react";
 import {
+  DiscordActiveThreadDropdown,
   DiscordChannelDropdown,
   DiscordServerSearchSelectv2,
   GetDiscordChannelType,
@@ -43,6 +44,7 @@ const formSchema = object({
 
     return schema.optional();
   }),
+  threadId: string(),
 });
 
 interface Props {
@@ -77,7 +79,7 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
     mode: "all",
     defaultValues,
   });
-  const serverId = watch("serverId");
+  const [serverId, channelId] = watch(["serverId", "channelId"]);
   const { mutateAsync, error } = useCreateDiscordChannelConnection();
   const { mutateAsync: updateMutateAsync, error: updateError } =
     useUpdateDiscordChannelConnection();
@@ -87,41 +89,68 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
     reset(defaultValues);
   }, [connection?.id]);
 
-  const onSubmit = async ({ channelId, name }: FormData) => {
+  const executeUpdate = async ({ channelId: inputChannelId, name, threadId }: FormData) => {
+    if (!feedId) {
+      throw new Error("Feed ID missing while updating discord forum channel connection");
+    }
+
+    if (!connection) {
+      throw new Error("Connection missing while updating discord forum channel connection");
+    }
+
+    if (threadId) {
+      await updateMutateAsync({
+        feedId,
+        connectionId: connection.id,
+        details: {
+          channelId: threadId,
+        },
+      });
+    } else {
+      await updateMutateAsync({
+        feedId,
+        connectionId: connection.id,
+        details: {
+          name,
+          channelId: inputChannelId,
+        },
+      });
+    }
+
+    notifySuccess(t("common.success.savedChanges"));
+    onClose();
+  };
+
+  const executeCreate = async ({ channelId: inputChannelId, name, threadId }: FormData) => {
+    if (!feedId) {
+      throw new Error("Feed ID missing while creating discord forum channel connection");
+    }
+
+    await mutateAsync({
+      feedId,
+      details: {
+        name,
+        channelId: threadId || inputChannelId,
+      },
+    });
+
+    notifySuccess(
+      "Succesfully added connection. New articles will be automatically delivered when found."
+    );
+    onClose();
+  };
+
+  const onSubmit = async (form: FormData) => {
     if (!feedId) {
       throw new Error("Feed ID missing while creating discord channel connection");
     }
 
-    if (connection) {
-      try {
-        await updateMutateAsync({
-          feedId,
-          connectionId: connection.id,
-          details: {
-            name,
-            channelId,
-          },
-        });
-
-        notifySuccess(t("common.success.savedChanges"));
-        onClose();
-      } catch (err) {}
-
-      return;
-    }
-
     try {
-      await mutateAsync({
-        feedId,
-        details: {
-          name,
-          channelId,
-        },
-      });
-      notifySuccess(
-        "Succesfully added connection. New articles will be automatically delivered when found."
-      );
-      onClose();
+      if (connection) {
+        await executeUpdate(form);
+      } else {
+        await executeCreate(form);
+      }
     } catch (err) {}
   };
 
@@ -209,6 +238,46 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
                     )}
                   />
                   <FormErrorMessage>{errors.channelId?.message}</FormErrorMessage>
+                </FormControl>
+                <FormControl>
+                  <FormLabel>Existing Forum Thread</FormLabel>
+                  <Controller
+                    name="threadId"
+                    control={control}
+                    render={({ field }) => (
+                      <DiscordActiveThreadDropdown
+                        ariaLabelledBy="channel-thread-label"
+                        isInvalid={false}
+                        isClearable
+                        inputId="channel-thread-select"
+                        value={field.value || ""}
+                        onChange={(value, name) => {
+                          field.onChange(value);
+
+                          if (name) {
+                            setValue("name", name, {
+                              shouldDirty: true,
+                              shouldTouch: true,
+                              shouldValidate: true,
+                            });
+                          }
+                        }}
+                        onBlur={field.onBlur}
+                        isDisabled={isSubmitting}
+                        serverId={serverId}
+                        parentChannelId={channelId}
+                        placeholder={
+                          !channelId
+                            ? "Must select a forum channel first"
+                            : "Optionally select a thread"
+                        }
+                      />
+                    )}
+                  />
+                  <FormHelperText>
+                    Optionally specify an existing thread that new articles should be sent to rather
+                    than creating new threads.
+                  </FormHelperText>
                 </FormControl>
                 <FormControl isInvalid={!!errors.name} isRequired>
                   <FormLabel>
