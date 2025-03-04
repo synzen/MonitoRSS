@@ -240,16 +240,16 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
                   <FormErrorMessage>{errors.channelId?.message}</FormErrorMessage>
                 </FormControl>
                 <FormControl>
-                  <FormLabel>Existing Forum Thread</FormLabel>
+                  <FormLabel id="thread-label">Existing Forum Thread</FormLabel>
                   <Controller
                     name="threadId"
                     control={control}
                     render={({ field }) => (
                       <DiscordActiveThreadDropdown
-                        ariaLabelledBy="channel-thread-label"
+                        ariaLabelledBy="thread-label"
                         isInvalid={false}
                         isClearable
-                        inputId="channel-thread-select"
+                        inputId="thread-select"
                         value={field.value || ""}
                         onChange={(value, name) => {
                           field.onChange(value);
