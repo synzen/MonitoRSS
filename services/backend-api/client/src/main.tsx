@@ -67,9 +67,9 @@ function catchGoogleTranslateErrors() {
           Sentry.withScope((scope) => {
             scope.setExtra("child", stringifyNode(child));
             scope.setExtra("this", stringifyNode(this));
-            scope.setTransactionName("Google Translate Error");
+            scope.setTransactionName("Google Translate Error (removeChild)");
             scope.captureException(
-              new GoogleTranslateError(`Google Translate crash was prevented`)
+              new GoogleTranslateError(`Google Translate crash was prevented (removeChild)`)
             );
           });
         }
@@ -99,9 +99,9 @@ function catchGoogleTranslateErrors() {
           Sentry.withScope((scope) => {
             scope.setExtra("referenceNode", stringifyNode(referenceNode));
             scope.setExtra("this", stringifyNode(this));
-            scope.setTransactionName("Google Translate Error");
+            scope.setTransactionName("Google Translate Error (insertBefore)");
             scope.captureException(
-              new GoogleTranslateError(`Google Translate crash was prevented`)
+              new GoogleTranslateError(`Google Translate crash was prevented (insertBefore)`)
             );
           });
         }
