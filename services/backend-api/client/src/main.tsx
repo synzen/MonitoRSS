@@ -20,6 +20,102 @@ import App from "./App";
 import { PricingDialogProvider } from "./contexts";
 import { PaddleContextProvider } from "./contexts/PaddleContext";
 
+class GoogleTranslateError extends Error {
+  message = "Google Translate crash was prevented";
+}
+
+function stringifyNode(node: Node): string {
+  let text = "";
+
+  if (node instanceof Text) {
+    text = node.wholeText;
+  } else if (node instanceof Element) {
+    text = node.outerHTML;
+  } else {
+    text = node.textContent || "";
+  }
+
+  return JSON.stringify(
+    {
+      nodeType: node.nodeType,
+      text,
+    },
+    null,
+    2
+  );
+}
+
+/**
+ * From https://github.com/facebook/react/issues/11538#issuecomment-417504600
+ */
+function catchGoogleTranslateErrors() {
+  if (typeof Node === "function" && Node.prototype) {
+    const originalRemoveChild = Node.prototype.removeChild;
+
+    // @ts-ignore
+    // eslint-disable-next-line func-names
+    Node.prototype.removeChild = function (child) {
+      if (child.parentNode !== this) {
+        if (console) {
+          // eslint-disable-next-line no-console
+          console.error(
+            "Google Translate Error: Cannot remove a child from a different parent",
+            child,
+            this
+          );
+
+          Sentry.withScope((scope) => {
+            scope.setExtra("child", stringifyNode(child));
+            scope.setExtra("this", stringifyNode(this));
+            scope.setTransactionName("Google Translate Error");
+            scope.captureException(
+              new GoogleTranslateError(`Google Translate crash was prevented`)
+            );
+          });
+        }
+
+        return child;
+      }
+
+      // @ts-ignore
+      // eslint-disable-next-line prefer-rest-params
+      return originalRemoveChild.apply(this, arguments);
+    };
+
+    const originalInsertBefore = Node.prototype.insertBefore;
+
+    // @ts-ignore
+    // eslint-disable-next-line func-names
+    Node.prototype.insertBefore = function (newNode, referenceNode) {
+      if (referenceNode && referenceNode.parentNode !== this) {
+        if (console) {
+          // eslint-disable-next-line no-console
+          console.error(
+            "Google Translate Error: Cannot insert before a reference node from a different parent",
+            referenceNode,
+            this
+          );
+
+          Sentry.withScope((scope) => {
+            scope.setExtra("referenceNode", stringifyNode(referenceNode));
+            scope.setExtra("this", stringifyNode(this));
+            scope.setTransactionName("Google Translate Error");
+            scope.captureException(
+              new GoogleTranslateError(`Google Translate crash was prevented`)
+            );
+          });
+        }
+
+        return newNode;
+      }
+
+      // @ts-ignore
+      // eslint-disable-next-line prefer-rest-params
+      return originalInsertBefore.apply(this, arguments);
+    };
+  }
+}
+
 async function prepare() {
   if (["development-mockapi"].includes(import.meta.env.MODE)) {
     await setupMockBrowserWorker().then((worker) => worker.start());
@@ -51,6 +147,8 @@ async function prepare() {
       });
     }
   }
+
+  catchGoogleTranslateErrors();
 
   return Promise.resolve();
 }
