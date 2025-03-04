@@ -222,7 +222,7 @@ export const UserFeeds: React.FC = () => {
                 </span>
               </Heading>
             </Flex>
-            <HStack>
+            <HStack flexWrap="wrap">
               <Menu>
                 <MenuButton
                   as={Button}
