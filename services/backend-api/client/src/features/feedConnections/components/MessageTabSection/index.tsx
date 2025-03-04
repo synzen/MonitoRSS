@@ -204,7 +204,7 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
           </Center>
         )}
         {!alertComponent && firstArticle && (
-          <Card size="md">
+          <Card size="md" overflow="auto">
             <CardHeader padding={0} margin={5}>
               <Heading size="xs" as="h4" textTransform="uppercase">
                 Selected Article

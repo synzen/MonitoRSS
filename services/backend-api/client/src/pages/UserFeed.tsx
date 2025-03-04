@@ -611,7 +611,12 @@ export const UserFeed: React.FC = () => {
                 <BoxConstrained.Container>
                   <Stack spacing={6} mb={16}>
                     <Stack spacing={3}>
-                      <Flex justifyContent="space-between" alignItems="flex-start">
+                      <Flex
+                        justifyContent="space-between"
+                        alignItems="flex-start"
+                        flexWrap="wrap"
+                        gap={4}
+                      >
                         <Heading size="md" as="h2">
                           {t("pages.userFeeds.tabConnections")}
                         </Heading>
@@ -677,7 +682,10 @@ export const UserFeed: React.FC = () => {
                     {feed?.connections.length && (
                       <SimpleGrid
                         spacing={4}
-                        templateColumns="repeat(auto-fill, minmax(320px, 1fr))"
+                        templateColumns={[
+                          "repeat(auto-fill, minmax(225px, 1fr))",
+                          "repeat(auto-fill, minmax(320px, 1fr))",
+                        ]}
                       >
                         {feed?.connections
                           ?.filter((c) => c.disabledCode !== FeedConnectionDisabledCode.Manual)
@@ -699,7 +707,10 @@ export const UserFeed: React.FC = () => {
                         </Heading>
                         <SimpleGrid
                           spacing={4}
-                          templateColumns="repeat(auto-fill, minmax(320px, 1fr))"
+                          templateColumns={[
+                            "repeat(auto-fill, minmax(225px, 1fr))",
+                            "repeat(auto-fill, minmax(320px, 1fr))",
+                          ]}
                         >
                           {disabledConnections?.map((connection) => {
                             return (

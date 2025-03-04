@@ -90,13 +90,17 @@ export const DiscordServerSearchSelectv2: React.FC<Props> = ({
         aria-busy={isFetchingServerSettings}
         hidden={!alertOnArticleEligibility}
       >
-        <Alert status="info" mt={2} hidden={!isFetchingServerSettings}>
-          Checking server eligibility...
-        </Alert>
-        <Alert status="success" mt={2} hidden={!discordServerSettings}>
-          <AlertIcon />
-          Selected Discord server is eligible for articles to be sent
-        </Alert>
+        {isFetchingServerSettings && (
+          <Alert status="info" mt={2}>
+            Checking server eligibility...
+          </Alert>
+        )}
+        {discordServerSettings && (
+          <Alert status="success" mt={2}>
+            <AlertIcon />
+            Selected Discord server is eligible for articles to be sent
+          </Alert>
+        )}
         <Box mt={2} hidden={getServerError?.statusCode !== 404}>
           <InlineErrorAlert
             title={`${discordBot?.result.username} is not currently in this server`}

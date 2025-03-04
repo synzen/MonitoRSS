@@ -26,7 +26,7 @@ export const mockCreatePreviewResult: CreatePreviewResult = {
             icon_url: "https://example.com/icon.png",
           },
           image: {
-            url: "https://example.com/image.png",
+            url: "https://placehold.co/600x400",
           },
           thumbnail: {
             url: "https://example.com/thumbnail.png",
