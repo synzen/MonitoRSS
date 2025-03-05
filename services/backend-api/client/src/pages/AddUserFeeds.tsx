@@ -411,7 +411,7 @@ const UploadProgressView = ({
               <Thead>
                 <Tr>
                   <Th>Control Panel Link</Th>
-                  <Th>Feed URL</Th>
+                  <Th>Feed Link</Th>
                   <Th>Status</Th>
                   <Th>Details</Th>
                 </Tr>

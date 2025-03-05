@@ -39,7 +39,7 @@
       "feedParseFailed": "Failed to parse feed articles. The feed may be incorrectly formatted. Please double check that this feed is a valid feed.",
       "feedParseTimeout": "Failed to get feed articles - parsing the feed took too long. Ensure that the feed is not too large. Otherwise, please try again later.",
       "feedRequestTimeout": "Failed to get feed articles - requesting the feed took too long. The feed may be too slow to respond, or may be facing issues. Consider checking the feed is still working by directly going to the feed link. Otherwise, please try again later.",
-      "feedRequestFailed": "Failed to get feed articles - request to the feed failed. Please try again later, or reach out to support@monitorss.xyz for support.",
+      "feedRequestFailed": "Failed to get feed articles - request to the feed failed. Double check that the feed link leads to valid feed, try again later, or reach out to support@monitorss.xyz for support.",
       "feedRequestForbidden": "Failed to get feed articles - the feed owner may have blocked MonitoRSS. You may either wait a while to see if this resolves on its own, or consider asking the feed owner to unblock MonitoRSS (whose user agent contains MonitoRSS) if it was intentional.",
       "feedRequestPendingArticles": "Feed articles will be available after feed has been fetched on schedule (depending on your feed's refresh rate). Please check again later.",
       "feedRequestInternalError": "Failed to get feed articles - the feed host is reporting that they are experiencing internal issues. You may try again later.",
