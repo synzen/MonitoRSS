@@ -17,7 +17,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { lazy, Suspense, useContext, useState } from "react";
+import { Suspense, useContext, useState } from "react";
 import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
@@ -44,14 +44,15 @@ import {
 } from "../../../../contexts/UserFeedConnectionContext";
 import getChakraColor from "../../../../utils/getChakraColor";
 import { DiscordMessageChannelThreadForm } from "./DiscordMessageChannelThreadForm";
+import { lazyWithRetries } from "../../../../utils/lazyImportWithRetry";
 
-const DiscordMessageEmbedForm = lazy(() =>
+const DiscordMessageEmbedForm = lazyWithRetries(() =>
   import("./DiscordMessageEmbedForm").then(({ DiscordMessageEmbedForm: component }) => ({
     default: component,
   }))
 );
 
-const DiscordChannelConnectionPreview = lazy(() =>
+const DiscordChannelConnectionPreview = lazyWithRetries(() =>
   import("./DiscordChannelConnectionPreview").then(
     ({ DiscordChannelConnectionPreview: component }) => ({
       default: component,

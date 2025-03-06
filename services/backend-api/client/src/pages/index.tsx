@@ -1,7 +1,7 @@
 import { Route, Routes, Navigate } from "react-router-dom";
 import * as Sentry from "@sentry/react";
 import { Spinner } from "@chakra-ui/react";
-import { Suspense, lazy } from "react";
+import { Suspense } from "react";
 import Feed from "./Feed";
 import FeedFilters from "./FeedFilters";
 import FeedMessage from "./FeedMessage";
@@ -30,14 +30,15 @@ import { NotFound } from "./NotFound";
 import { SuspenseErrorBoundary } from "../components/SuspenseErrorBoundary";
 import AddUserFeeds from "./AddUserFeeds";
 import { MultiSelectUserFeedProvider } from "../contexts/MultiSelectUserFeedContext";
+import { lazyWithRetries } from "../utils/lazyImportWithRetry";
 
-const UserSettings = lazy(() =>
+const UserSettings = lazyWithRetries(() =>
   import("./UserSettings").then(({ UserSettings: c }) => ({
     default: c,
   }))
 );
 
-const Checkout = lazy(() =>
+const Checkout = lazyWithRetries(() =>
   import("./Checkout").then(({ Checkout: c }) => ({
     default: c,
   }))
