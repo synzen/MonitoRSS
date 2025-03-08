@@ -1,6 +1,9 @@
 import {
   Alert,
   AlertDescription,
+  AlertIcon,
+  AlertTitle,
+  Box,
   Button,
   Center,
   Code,
@@ -44,7 +47,7 @@ import dayjs from "dayjs";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import { Trans, useTranslation } from "react-i18next";
 import { array, InferType, number, object, string } from "yup";
-import { ChevronDownIcon, DeleteIcon, SettingsIcon } from "@chakra-ui/icons";
+import { ChevronDownIcon, DeleteIcon, ExternalLinkIcon, SettingsIcon } from "@chakra-ui/icons";
 import { useState } from "react";
 import {
   ConfirmModal,
@@ -73,6 +76,7 @@ import {
   PageAlertProvider,
   usePageAlertContext,
 } from "../../../../contexts/PageAlertContext";
+import { UserFeedTabSearchParam } from "../../../../constants/userFeedTabSearchParam";
 
 interface Props {
   feedId: string;
@@ -114,7 +118,7 @@ const FormSchema = object({
 
 type FormValues = InferType<typeof FormSchema>;
 
-export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
+export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
   const { t } = useTranslation();
   const {
     status: feedStatus,
@@ -147,7 +151,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
     handleSubmit,
     control,
     reset,
-    formState: { isDirty, isSubmitting, errors: formErrors },
+    formState: { errors: formErrors },
     watch,
   } = formMethods;
 
@@ -294,9 +298,36 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                   accept it, this shared feed will count towards their feed limit. To revoke access,
                   delete their invite.
                 </Text>
+                {!feed?.connections.length && (
+                  <Alert role="none">
+                    <AlertIcon />
+                    <Stack>
+                      <AlertTitle>
+                        You must have at least one feed connection created to create feed management
+                        invites.
+                      </AlertTitle>
+                      <Box>
+                        <Button
+                          as={Link}
+                          href={pages.userFeed(feed?.id || "", {
+                            tab: UserFeedTabSearchParam.Connections,
+                          })}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <HStack alignItems="center">
+                            <Text>View and create connections</Text>
+                            <ExternalLinkIcon />
+                          </HStack>
+                        </Button>
+                      </Box>
+                    </Stack>
+                  </Alert>
+                )}
                 <PageAlertContextOutlet />
               </Stack>
               <Stack>
+                <Divider />
                 {feed && feed.sharedAccessDetails && (
                   <Alert status="warning">
                     <AlertDescription>
@@ -304,139 +335,156 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                     </AlertDescription>
                   </Alert>
                 )}
-                {feed && !feed.sharedAccessDetails && feed?.shareManageOptions?.invites.length && (
-                  <TableContainer>
-                    <Table variant="simple">
-                      <Thead>
-                        <Tr>
-                          <Th>Name</Th>
-                          <Th>Type</Th>
-                          <Th>Status</Th>
-                          <Th>Connections</Th>
-                          <Th>Added On</Th>
-                          <Th />
-                        </Tr>
-                      </Thead>
-                      <Tbody>
-                        {feed.shareManageOptions.invites.map((u) => {
-                          const connectionIds = new Set(
-                            u.connections?.map((c) => c.connectionId) || []
-                          );
-                          const connectionNames = Object.values(feed.connections)
-                            .filter((c) => connectionIds.has(c.id))
-                            .map((c) => c.name);
+                {feed && !feed.sharedAccessDetails && (
+                  <Stack>
+                    <Text
+                      hidden={!!feed.shareManageOptions?.invites.length}
+                      color="gray.400"
+                      pt={2}
+                    >
+                      This feed does not have any users with feed management access.
+                    </Text>
+                    <TableContainer hidden={!feed.shareManageOptions?.invites.length}>
+                      <Table variant="simple">
+                        <Thead>
+                          <Tr>
+                            <Th>Name</Th>
+                            <Th>Type</Th>
+                            <Th>Status</Th>
+                            <Th>Connections</Th>
+                            <Th>Added On</Th>
+                            <Th />
+                          </Tr>
+                        </Thead>
+                        <Tbody>
+                          {feed.shareManageOptions?.invites.map((u) => {
+                            const connectionIds = new Set(
+                              u.connections?.map((c) => c.connectionId) || []
+                            );
+                            const connectionNames = Object.values(feed.connections)
+                              .filter((c) => connectionIds.has(c.id))
+                              .map((c) => c.name);
 
-                          return (
-                            <Tr key={u.id}>
-                              <Td>
-                                <DiscordUsername userId={u.discordUserId} />
-                              </Td>
-                              <Td>
-                                {(!u.type || u.type === UserFeedManagerInviteType.CoManage) && (
-                                  <Text>Co-manage</Text>
-                                )}
-                                {u.type === UserFeedManagerInviteType.Transfer && (
-                                  <Text>Ownership transfer</Text>
-                                )}
-                              </Td>
-                              <Td>
-                                {u.status === UserFeedManagerStatus.Accepted && (
-                                  <Tag colorScheme="green">Accepted</Tag>
-                                )}
-                                {u.status === UserFeedManagerStatus.Pending && (
-                                  <Tag colorScheme="yellow">Pending</Tag>
-                                )}
-                                {u.status === UserFeedManagerStatus.Declined && (
+                            return (
+                              <Tr key={u.id}>
+                                <Td>
+                                  <DiscordUsername userId={u.discordUserId} />
+                                </Td>
+                                <Td>
+                                  {(!u.type || u.type === UserFeedManagerInviteType.CoManage) && (
+                                    <Text>Co-manage</Text>
+                                  )}
+                                  {u.type === UserFeedManagerInviteType.Transfer && (
+                                    <Text>Ownership transfer</Text>
+                                  )}
+                                </Td>
+                                <Td>
+                                  {u.status === UserFeedManagerStatus.Accepted && (
+                                    <Tag colorScheme="green">Accepted</Tag>
+                                  )}
+                                  {u.status === UserFeedManagerStatus.Pending && (
+                                    <Tag colorScheme="yellow">Pending</Tag>
+                                  )}
+                                  {u.status === UserFeedManagerStatus.Declined && (
+                                    <HStack>
+                                      <Tag colorScheme="red">Declined</Tag>
+                                      <ResendUserFeedManagementInviteButton
+                                        feedId={feedId}
+                                        inviteId={u.id}
+                                      />
+                                    </HStack>
+                                  )}
+                                </Td>
+                                <Td>
+                                  <Stack>
+                                    {!connectionNames.length && <Text>All</Text>}
+                                    {connectionNames.map((n) => (
+                                      <Text display="block" key={n}>
+                                        {n}
+                                      </Text>
+                                    ))}
+                                  </Stack>
+                                </Td>
+                                <Td>{u.createdAt}</Td>
+                                <Td isNumeric>
                                   <HStack>
-                                    <Tag colorScheme="red">Declined</Tag>
-                                    <ResendUserFeedManagementInviteButton
-                                      feedId={feedId}
-                                      inviteId={u.id}
+                                    <IconButton
+                                      aria-label="Manage invite settings"
+                                      icon={<SettingsIcon />}
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() =>
+                                        setManageInviteDialogState({ isOpen: true, inviteId: u.id })
+                                      }
+                                    />
+                                    <ConfirmModal
+                                      trigger={
+                                        <IconButton
+                                          size="sm"
+                                          aria-label="Delete user"
+                                          icon={<DeleteIcon />}
+                                          variant="ghost"
+                                          isDisabled={deletingInviteStatus === "loading"}
+                                        />
+                                      }
+                                      okText="Delete"
+                                      title="Delete User"
+                                      description="Are you sure you want to remove this user? They will lose access to this feed."
+                                      colorScheme="red"
+                                      onConfirm={() => removeInvite(u.id)}
+                                      onClosed={resetDeleteInvite}
+                                      error={deleteInviteError?.message}
                                     />
                                   </HStack>
-                                )}
-                              </Td>
-                              <Td>
-                                <Stack>
-                                  {!connectionNames.length && <Text>All</Text>}
-                                  {connectionNames.map((n) => (
-                                    <Text display="block" key={n}>
-                                      {n}
-                                    </Text>
-                                  ))}
-                                </Stack>
-                              </Td>
-                              <Td>{u.createdAt}</Td>
-                              <Td isNumeric>
-                                <HStack>
-                                  <IconButton
-                                    aria-label="Manage invite settings"
-                                    icon={<SettingsIcon />}
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() =>
-                                      setManageInviteDialogState({ isOpen: true, inviteId: u.id })
-                                    }
-                                  />
-                                  <ConfirmModal
-                                    trigger={
-                                      <IconButton
-                                        size="sm"
-                                        aria-label="Delete user"
-                                        icon={<DeleteIcon />}
-                                        variant="ghost"
-                                        isDisabled={deletingInviteStatus === "loading"}
-                                      />
-                                    }
-                                    okText="Delete"
-                                    title="Delete User"
-                                    description="Are you sure you want to remove this user? They will lose access to this feed."
-                                    colorScheme="red"
-                                    onConfirm={() => removeInvite(u.id)}
-                                    onClosed={resetDeleteInvite}
-                                    error={deleteInviteError?.message}
-                                  />
-                                </HStack>
-                              </Td>
-                            </Tr>
-                          );
-                        })}
-                      </Tbody>
-                    </Table>
-                  </TableContainer>
+                                </Td>
+                              </Tr>
+                            );
+                          })}
+                        </Tbody>
+                      </Table>
+                    </TableContainer>
+                  </Stack>
                 )}
-                <Menu>
-                  <MenuButton
-                    isDisabled={
-                      creatingInvitesStatus === "loading" || !!feed?.sharedAccessDetails?.inviteId
-                    }
-                    as={Button}
-                    rightIcon={<ChevronDownIcon />}
-                    width="min-content"
-                  >
-                    Invite user to...
-                  </MenuButton>
-                  <MenuList>
-                    <AddFeedComanagerDialog trigger={<MenuItem>Co-manage feed</MenuItem>} />
-                    <SelectUserDialog
-                      trigger={<MenuItem color="red.300">Transfer ownership</MenuItem>}
-                      description={
-                        <Text>
-                          This user will have full ownership of this feed, and you will lose access
-                          to it after they accept the invite. They must accept the invite by logging
-                          in.
-                        </Text>
+                {!!feed?.connections.length && (
+                  <Menu>
+                    <MenuButton
+                      aria-disabled={
+                        !feed?.connections.length ||
+                        creatingInvitesStatus === "loading" ||
+                        !!feed?.sharedAccessDetails?.inviteId
                       }
-                      title="Invite User to Transfer Ownership"
-                      okButtonText="Invite User to Transfer Ownership"
-                      onAdded={({ id }) =>
-                        onAddUser({ id, type: UserFeedManagerInviteType.Transfer, connections: [] })
-                      }
-                      onClosed={resetCreateInvite}
-                      error={createInviteError?.message}
-                    />
-                  </MenuList>
-                </Menu>
+                      as={Button}
+                      rightIcon={<ChevronDownIcon />}
+                      width="min-content"
+                    >
+                      Invite user to...
+                    </MenuButton>
+                    <MenuList>
+                      <AddFeedComanagerDialog trigger={<MenuItem>Co-manage feed</MenuItem>} />
+                      <SelectUserDialog
+                        trigger={<MenuItem color="red.300">Transfer ownership</MenuItem>}
+                        description={
+                          <Text>
+                            This user will have full ownership of this feed, and you will lose
+                            access to it after they accept the invite. They must accept the invite
+                            by logging in.
+                          </Text>
+                        }
+                        title="Invite User to Transfer Ownership"
+                        okButtonText="Invite User to Transfer Ownership"
+                        onAdded={({ id }) =>
+                          onAddUser({
+                            id,
+                            type: UserFeedManagerInviteType.Transfer,
+                            connections: [],
+                          })
+                        }
+                        onClosed={resetCreateInvite}
+                        error={createInviteError?.message}
+                      />
+                    </MenuList>
+                  </Menu>
+                )}
               </Stack>
             </Stack>
             <Stack spacing={4} border="1px solid" borderColor="gray.700" borderRadius="md" p={4}>
@@ -453,9 +501,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
                 <Divider mt={2} />
               </Stack>
               {!feed?.refreshRateOptions.length && (
-                <Text color="whiteAlpha.700">
-                  This feed does not have any refresh rate options.
-                </Text>
+                <Text color="gray.400">This feed does not have any refresh rate options.</Text>
               )}
               {!!feed?.refreshRateOptions.length && (
                 <Controller

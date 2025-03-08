@@ -68,7 +68,7 @@ import { DashboardContentV2 } from "../components/DashboardContentV2";
 import {
   AddConnectionDialog,
   ComparisonsTabSection,
-  UserFeedSettingsTabSection,
+  UserFeedMiscSettingsTabSection,
   ConnectionCard,
 } from "../features/feedConnections";
 
@@ -849,7 +849,7 @@ const UserFeedInner: React.FC = () => {
             <BoxConstrained.Wrapper>
               <BoxConstrained.Container>
                 <TabContentContainer>
-                  <UserFeedSettingsTabSection feedId={feedId as string} />
+                  <UserFeedMiscSettingsTabSection feedId={feedId as string} />
                 </TabContentContainer>
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>

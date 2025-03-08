@@ -9,7 +9,7 @@ export * from "./MessageTabSection";
 export * from "./ArticleFilterResults/ArticleFilterResultsView";
 export * from "./ConnectionDisabledAlert";
 export * from "./ComparisonsTabSection";
-export * from "./UserFeedSettingsTabSection";
+export * from "./UserFeedMiscSettingsTabSection";
 export * from "./DiscordMessageForm";
 export * from "./ArticlePropertySelect";
 export * from "./CloneDiscordConnectionCloneDialog";
