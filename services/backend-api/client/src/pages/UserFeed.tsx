@@ -32,6 +32,12 @@ import {
   AlertIcon,
   Tooltip,
   SimpleGrid,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverArrow,
+  PopoverCloseButton,
+  PopoverBody,
 } from "@chakra-ui/react";
 import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -504,6 +510,65 @@ const UserFeedInner: React.FC = () => {
                   <Heading as="h2" size="md">
                     Feed Overview
                   </Heading>
+                  <CategoryText title="Feed Link">
+                    <Stack spacing={1}>
+                      <Link
+                        href={feed?.inputUrl || feed?.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        wordBreak="break-all"
+                        color="blue.300"
+                        display="flex"
+                        alignItems="center"
+                        gap={2}
+                      >
+                        {feed?.inputUrl || feed?.url} <ExternalLinkIcon />
+                      </Link>
+                      {urlIsDifferentFromInput && (
+                        <Flex alignItems="center">
+                          <Text color="whiteAlpha.600" fontSize="sm" display="inline">
+                            Resolved to{" "}
+                            <Link
+                              color="whiteAlpha.600"
+                              href={feed?.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              fontSize="sm"
+                              wordBreak="break-all"
+                            >
+                              {feed?.url}
+                            </Link>
+                          </Text>
+                          <Popover>
+                            <PopoverTrigger>
+                              <Button
+                                variant="ghost"
+                                size="xs"
+                                aria-label="What is cache duration?"
+                              >
+                                <QuestionOutlineIcon
+                                  fontSize={12}
+                                  tabIndex={-1}
+                                  ml={2}
+                                  aria-hidden
+                                />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent>
+                              <PopoverArrow />
+                              <PopoverCloseButton />
+                              <PopoverBody>
+                                <Text>
+                                  The feed link that is actually being used since the original link
+                                  was not a valid RSS feed feed.
+                                </Text>
+                              </PopoverBody>
+                            </PopoverContent>
+                          </Popover>
+                        </Flex>
+                      )}
+                    </Stack>
+                  </CategoryText>
                   <Grid
                     templateColumns={{
                       base: "1fr",
@@ -514,41 +579,6 @@ const UserFeedInner: React.FC = () => {
                     rowGap={{ base: "8", lg: "14" }}
                     as="ul"
                   >
-                    <CategoryText title="Feed Link">
-                      <Stack spacing={1}>
-                        <Link
-                          href={feed?.inputUrl || feed?.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          wordBreak="break-all"
-                          color="blue.300"
-                          display="flex"
-                          alignItems="center"
-                          gap={2}
-                        >
-                          {feed?.inputUrl || feed?.url} <ExternalLinkIcon />
-                        </Link>
-                        {urlIsDifferentFromInput && (
-                          <Flex alignItems="center">
-                            <Text color="whiteAlpha.600" fontSize="sm" display="inline">
-                              Resolved to{" "}
-                              <Link
-                                color="whiteAlpha.600"
-                                href={feed?.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                fontSize="sm"
-                              >
-                                {feed?.url}
-                              </Link>
-                            </Text>
-                            <Tooltip label="The RSS feed that is actually being used since the original URL was not a valid RSS feed">
-                              <QuestionOutlineIcon ml={2} color="whiteAlpha.600" />
-                            </Tooltip>
-                          </Flex>
-                        )}
-                      </Stack>
-                    </CategoryText>
                     <CategoryText title={t("pages.feed.refreshRateLabel")}>
                       {feed
                         ? formatRefreshRateSeconds(

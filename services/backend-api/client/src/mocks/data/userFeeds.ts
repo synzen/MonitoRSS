@@ -38,6 +38,7 @@ const mockUserFeeds: UserFeed[] = [
     title: "New York Times",
     url: "https://www.feed1.com",
     createdAt: new Date().toISOString(),
+    inputUrl: "https://www.google.com",
     updatedAt: new Date().toISOString(),
     externalProperties: [
       {
