@@ -3,8 +3,6 @@ import { Flex } from "@chakra-ui/react";
 import { NewHeader } from "../NewHeader";
 
 interface Props {
-  // eslint-disable-next-line react/no-unused-prop-types
-  requireFeed?: boolean;
   children?: React.ReactNode;
   invertBackground?: boolean;
 }

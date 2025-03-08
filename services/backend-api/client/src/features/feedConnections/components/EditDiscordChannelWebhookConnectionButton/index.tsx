@@ -1,46 +1,24 @@
-import { useTranslation } from "react-i18next";
 import { useDisclosure, Button } from "@chakra-ui/react";
 import { useRef } from "react";
 import { FeedDiscordChannelConnection } from "../../../../types";
-import { useUpdateDiscordChannelConnection } from "../../hooks";
-import { UpdateDiscordChannelConnectionInput } from "../../api";
-import { notifySuccess } from "../../../../utils/notifySuccess";
-import { notifyError } from "../../../../utils/notifyError";
 import { EditConnectionWebhookDialog } from "../EditConnectionWebhookDialog";
 
 interface Props {
-  feedId: string;
   connection: FeedDiscordChannelConnection;
 }
 
-export const EditDiscordChannelWebhookConnectionButton = ({ feedId, connection }: Props) => {
-  const { mutateAsync, status: updateStatus } = useUpdateDiscordChannelConnection();
+export const EditDiscordChannelWebhookConnectionButton = ({ connection }: Props) => {
   const { isOpen: editIsOpen, onClose: editOnClose, onOpen: editOnOpen } = useDisclosure();
-  const { t } = useTranslation();
   const actionsButtonRef = useRef<HTMLButtonElement>(null);
-
-  const onUpdate = async (details: UpdateDiscordChannelConnectionInput["details"]) => {
-    try {
-      await mutateAsync({
-        feedId,
-        connectionId: connection.id,
-        details,
-      });
-      notifySuccess(t("common.success.savedChanges"));
-    } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
-      throw err;
-    }
-  };
 
   return (
     <>
       {connection?.details.webhook && (
         <EditConnectionWebhookDialog
+          connectionId={connection.id}
           onCloseRef={actionsButtonRef}
           isOpen={editIsOpen}
           onClose={editOnClose}
-          onUpdate={onUpdate}
           defaultValues={{
             name: connection.name,
             serverId: connection.details.webhook.guildId,
@@ -53,7 +31,7 @@ export const EditDiscordChannelWebhookConnectionButton = ({ feedId, connection }
           }}
         />
       )}
-      <Button onClick={editOnOpen} isLoading={updateStatus === "loading"}>
+      <Button onClick={editOnOpen}>
         <span>Update webhook connection</span>
       </Button>
     </>

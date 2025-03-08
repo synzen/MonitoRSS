@@ -19,26 +19,20 @@ import { useUpdateDiscordChannelConnection } from "../../hooks";
 import { CloneDiscordConnectionCloneDialog } from "../CloneDiscordConnectionCloneDialog";
 import { ConfirmModal } from "../../../../components";
 import { UpdateDiscordChannelConnectionInput } from "../../api";
-import { notifySuccess } from "../../../../utils/notifySuccess";
 import { EditConnectionWebhookDialog } from "../EditConnectionWebhookDialog";
 import { DeleteConnectionButton } from "../DeleteConnectionButton";
 import { CopyDiscordChannelConnectionSettingsDialog } from "../CopyDiscordChannelConnectingSettingsDialog";
 import { DiscordTextChannelConnectionDialogContent } from "../AddConnectionDialog/DiscordTextChannelConnectionDialogContent";
 import { DiscordForumChannelConnectionDialogContent } from "../AddConnectionDialog/DiscordForumChannelConnectionDialogContent";
+import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 
 interface Props {
   feedId: string;
   connection: FeedDiscordChannelConnection;
   trigger?: React.ReactElement;
-  redirectOnCloneSuccess?: boolean;
 }
 
-export const DiscordChannelConnectionSettings = ({
-  feedId,
-  connection,
-  trigger,
-  redirectOnCloneSuccess,
-}: Props) => {
+export const DiscordChannelConnectionSettings = ({ feedId, connection, trigger }: Props) => {
   const {
     mutateAsync,
     status: updateStatus,
@@ -58,6 +52,7 @@ export const DiscordChannelConnectionSettings = ({
     onOpen: isCopySettingsOnOpen,
   } = useDisclosure();
   const actionsButtonRef = useRef<HTMLButtonElement>(null);
+  const { createSuccessAlert } = usePageAlertContext();
 
   const onUpdate = async (details: UpdateDiscordChannelConnectionInput["details"]) => {
     await mutateAsync({
@@ -92,10 +87,10 @@ export const DiscordChannelConnectionSettings = ({
       )}
       {connection?.details.webhook && (
         <EditConnectionWebhookDialog
+          connectionId={connection.id}
           onCloseRef={actionsButtonRef}
           isOpen={editIsOpen}
           onClose={editOnClose}
-          onUpdate={onUpdate}
           defaultValues={{
             name: connection.name,
             serverId: connection.details.webhook.guildId,
@@ -111,11 +106,11 @@ export const DiscordChannelConnectionSettings = ({
       {/** For converting a channel to webhook */}
       <EditConnectionWebhookDialog
         excludeName
+        connectionId={connection.id}
         title="Convert to Discord Webhook"
         isOpen={isConvertToWebhookIsOpen}
         onClose={isConvertToWebhookOnClose}
         onCloseRef={actionsButtonRef}
-        onUpdate={onUpdate}
       />
       <Menu>
         {trigger ? (
@@ -141,7 +136,6 @@ export const DiscordChannelConnectionSettings = ({
           </MenuItem>
           <CloneDiscordConnectionCloneDialog
             trigger={<MenuItem>Clone</MenuItem>}
-            redirectOnSuccess={redirectOnCloneSuccess}
             defaultValues={{
               name: `${connection.name} (Clone)`,
             }}
@@ -166,7 +160,9 @@ export const DiscordChannelConnectionSettings = ({
                 await onUpdate({
                   disabledCode: FeedConnectionDisabledCode.Manual,
                 });
-                notifySuccess(t("common.success.savedChanges"));
+                createSuccessAlert({
+                  title: `Successfully disabled connection: ${connection.name}`,
+                });
               }}
             />
           )}
@@ -183,7 +179,9 @@ export const DiscordChannelConnectionSettings = ({
                 await onUpdate({
                   disabledCode: null,
                 });
-                notifySuccess(t("common.success.savedChanges"));
+                createSuccessAlert({
+                  title: `Successfully re-enabled connection: ${connection.name}`,
+                });
               }}
             />
           )}

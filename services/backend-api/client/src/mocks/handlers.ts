@@ -13,6 +13,7 @@ import {
   CloneFeedOutput,
   CreateFeedSubscriberOutput,
   CreateServerLegacyFeedBulkConversionOutput,
+  CreateUserFeedCloneOutput,
   CreateUserFeedDatePreviewOutput,
   CreateUserFeedInput,
   CreateUserFeedLegacyRestoreOutput,
@@ -489,7 +490,7 @@ const handlers = [
     await delay(500);
 
     return new HttpResponse(null, {
-      status: 404,
+      status: 200,
     });
   }),
 
@@ -530,12 +531,7 @@ const handlers = [
     if (!matchedFeed) {
       await delay(500);
 
-      return HttpResponse.json(
-        {},
-        {
-          status: 404,
-        }
-      );
+      return HttpResponse.json({});
     }
 
     matchedFeed.shareManageOptions?.invites.splice(
@@ -749,6 +745,14 @@ const handlers = [
         status: 200,
       }
     );
+  }),
+
+  http.post("/api/v1/user-feeds/:feedId/clone", async () => {
+    return HttpResponse.json<CreateUserFeedCloneOutput>({
+      result: {
+        id: mockUserFeeds[0].id,
+      },
+    });
   }),
 
   http.delete("/api/v1/user-feeds/:feedId", async ({ params }) => {
@@ -965,29 +969,19 @@ const handlers = [
   http.post("/api/v1/user-feeds/:feedId/connections/discord-channels", async () => {
     await delay(500);
 
-    return HttpResponse.json<CreateDiscordChannelConnectionOutput>(
-      {
-        result: mockFeedChannelConnections[0],
-      },
-      {
-        status: 400,
-      }
-    );
+    return HttpResponse.json<CreateDiscordChannelConnectionOutput>({
+      result: mockFeedChannelConnections[0],
+    });
   }),
 
   http.post("/api/v1/user-feeds/:feedId/connections/discord-channels/:id/clone", async () => {
     await delay(500);
 
-    return HttpResponse.json<CreateDiscordChannelConnectionCloneOutput>(
-      {
-        result: {
-          id: mockUserFeeds[0].connections[1].id,
-        },
+    return HttpResponse.json<CreateDiscordChannelConnectionCloneOutput>({
+      result: {
+        id: mockUserFeeds[0].connections[1].id,
       },
-      {
-        status: 400,
-      }
-    );
+    });
   }),
 
   http.post(
@@ -1032,7 +1026,7 @@ const handlers = [
     await delay(500);
 
     return new HttpResponse(null, {
-      status: 404,
+      status: 204,
     });
   }),
 

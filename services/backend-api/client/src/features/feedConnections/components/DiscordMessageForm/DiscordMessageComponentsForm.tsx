@@ -268,7 +268,7 @@ export const DiscordMessageComponentsForm = ({ connectionId, feedId }: Props) =>
         connection.key === FeedConnectionType.DiscordChannel &&
         (connection as FeedDiscordChannelConnection).details.webhook &&
         !(connection as FeedDiscordChannelConnection).details.webhook?.isApplicationOwned && (
-          <Alert status="warning">
+          <Alert status="warning" role="none">
             <AlertIcon />
             <Box>
               <AlertTitle>
@@ -284,7 +284,6 @@ export const DiscordMessageComponentsForm = ({ connectionId, feedId }: Props) =>
                   </Text>
                   <Box>
                     <EditDiscordChannelWebhookConnectionButton
-                      feedId={feedId as string}
                       connection={connection as FeedDiscordChannelConnection}
                     />
                   </Box>

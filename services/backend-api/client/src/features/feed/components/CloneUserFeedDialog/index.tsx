@@ -1,10 +1,12 @@
 import {
+  Box,
   Button,
   FormControl,
   FormErrorMessage,
   FormLabel,
   HStack,
   Input,
+  Link,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -19,15 +21,15 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { cloneElement, useEffect, useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { InferType, object, string } from "yup";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { pages } from "../../../../constants";
-import { notifySuccess } from "../../../../utils/notifySuccess";
+import { ExternalLinkIcon } from "@chakra-ui/icons";
 import { useCreateUserFeedClone } from "../../hooks";
 import {
   InlineErrorAlert,
   InlineErrorIncompleteFormAlert,
 } from "../../../../components/InlineErrorAlert";
+import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
+import { pages } from "../../../../constants";
 
 const formSchema = object({
   title: string().required("Title is required"),
@@ -45,15 +47,9 @@ interface Props {
     url: string;
   };
   trigger: React.ReactElement;
-  redirectOnSuccess?: boolean;
 }
 
-export const CloneUserFeedDialog = ({
-  feedId,
-  defaultValues,
-  trigger,
-  redirectOnSuccess,
-}: Props) => {
+export const CloneUserFeedDialog = ({ feedId, defaultValues, trigger }: Props) => {
   const {
     handleSubmit,
     control,
@@ -66,8 +62,8 @@ export const CloneUserFeedDialog = ({
   const { isOpen, onOpen, onClose } = useDisclosure();
   const initialRef = useRef<HTMLInputElement>(null);
   const { mutateAsync, error, reset: resetError } = useCreateUserFeedClone();
-  const navigate = useNavigate();
   const { t } = useTranslation();
+  const { createSuccessAlert } = usePageAlertContext();
 
   useEffect(() => {
     reset(defaultValues);
@@ -80,15 +76,21 @@ export const CloneUserFeedDialog = ({
         result: { id },
       } = await mutateAsync({ feedId, details: { title, url } });
 
-      if (redirectOnSuccess) {
-        navigate(pages.userFeed(id));
-        notifySuccess(
-          t("common.success.savedChanges"),
-          "You are now viewing your newly cloned feed"
-        );
-      } else {
-        notifySuccess("Successfully cloned");
-      }
+      createSuccessAlert({
+        title: `Successfully cloned feed to: ${title}.`,
+        description: (
+          <Box mt={2}>
+            <Button
+              as={Link}
+              href={pages.userFeed(id)}
+              target="_blank"
+              rightIcon={<ExternalLinkIcon />}
+            >
+              View cloned feed
+            </Button>
+          </Box>
+        ),
+      });
 
       onClose();
       reset({ title });

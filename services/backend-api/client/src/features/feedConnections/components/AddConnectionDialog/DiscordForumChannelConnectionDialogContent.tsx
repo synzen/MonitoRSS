@@ -30,9 +30,9 @@ import {
 } from "@/features/discordServers";
 import RouteParams from "../../../../types/RouteParams";
 import { useCreateDiscordChannelConnection, useUpdateDiscordChannelConnection } from "../../hooks";
-import { notifySuccess } from "../../../../utils/notifySuccess";
 import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "../../../../components";
 import { FeedDiscordChannelConnection } from "../../../../types";
+import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 
 const formSchema = object({
   name: string().required("Name is required").max(250, "Name must be fewer than 250 characters"),
@@ -83,6 +83,7 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
   const { mutateAsync, error } = useCreateDiscordChannelConnection();
   const { mutateAsync: updateMutateAsync, error: updateError } =
     useUpdateDiscordChannelConnection();
+  const { createSuccessAlert } = usePageAlertContext();
   const initialFocusRef = useRef<any>(null);
 
   useEffect(() => {
@@ -117,7 +118,9 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
       });
     }
 
-    notifySuccess(t("common.success.savedChanges"));
+    createSuccessAlert({
+      title: "Successfully updated connection.",
+    });
     onClose();
   };
 
@@ -134,9 +137,10 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
       },
     });
 
-    notifySuccess(
-      "Succesfully added connection. New articles will be automatically delivered when found."
-    );
+    createSuccessAlert({
+      title: "Successfully added connection.",
+      description: "New articles will be delivered automatically when found.",
+    });
     onClose();
   };
 

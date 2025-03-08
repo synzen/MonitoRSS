@@ -107,7 +107,7 @@ export const ArticleFilterResults = ({ title, filters, tableContainer }: Props) 
           </Heading>
         )}
         {!alertComponent && (
-          <HStack alignItems="center">
+          <HStack alignItems="center" flexWrap="wrap">
             <Text
               as="label"
               whiteSpace="nowrap"
@@ -161,7 +161,7 @@ export const ArticleFilterResults = ({ title, filters, tableContainer }: Props) 
               }
               displayPropertyName={useArticleProperty as string}
             />
-            <Flex justifyContent="space-between">
+            <Flex justifyContent="space-between" flexWrap="wrap" gap={2}>
               {t("common.table.results", {
                 start: skip + 1,
                 end: skip + limit,

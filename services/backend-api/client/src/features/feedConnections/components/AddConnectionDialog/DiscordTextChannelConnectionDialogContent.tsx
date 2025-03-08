@@ -36,9 +36,9 @@ import {
   DiscordServerSearchSelectv2,
   GetDiscordChannelType,
 } from "../../../discordServers";
-import { notifySuccess } from "../../../../utils/notifySuccess";
 import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "../../../../components";
 import { FeedDiscordChannelConnection } from "../../../../types";
+import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 
 enum DiscordCreateChannelThreadMethod {
   Existing = "EXISTING",
@@ -112,6 +112,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
   const { mutateAsync: updateMutateAsync, error: updateError } =
     useUpdateDiscordChannelConnection();
   const initialFocusRef = useRef<any>(null);
+  const { createSuccessAlert } = usePageAlertContext();
 
   useEffect(() => {
     if (connection) {
@@ -147,7 +148,9 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
           },
         });
 
-        notifySuccess(t("common.success.savedChanges"));
+        createSuccessAlert({
+          title: "Successfully updated connection.",
+        });
         onClose();
       } catch (err) {}
 
@@ -164,9 +167,10 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
             createThreadMethod === DiscordCreateChannelThreadMethod.New ? "new-thread" : undefined,
         },
       });
-      notifySuccess(
-        "Succesfully added connection. New articles will be automatically delivered when found."
-      );
+      createSuccessAlert({
+        title: "Successfully added connection.",
+        description: "New articles will be delivered automatically when found.",
+      });
       onClose();
     } catch (err) {}
   };

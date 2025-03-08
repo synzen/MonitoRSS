@@ -41,13 +41,17 @@ import {
 import { Link as RouterLink } from "react-router-dom";
 import { yupResolver } from "@hookform/resolvers/yup";
 import dayjs from "dayjs";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, FormProvider, useForm } from "react-hook-form";
 import { Trans, useTranslation } from "react-i18next";
 import { array, InferType, number, object, string } from "yup";
 import { ChevronDownIcon, DeleteIcon, SettingsIcon } from "@chakra-ui/icons";
 import { useState } from "react";
-import { ConfirmModal, InlineErrorAlert, Loading } from "../../../../components";
-import { notifySuccess } from "../../../../utils/notifySuccess";
+import {
+  ConfirmModal,
+  InlineErrorAlert,
+  Loading,
+  SavedUnsavedChangesPopupBar,
+} from "../../../../components";
 import {
   useCreateUserFeedManagementInvite,
   useDeleteUserFeedManagementInvite,
@@ -64,6 +68,11 @@ import { useDebounce } from "../../../../hooks";
 import { formatRefreshRateSeconds } from "../../../../utils/formatRefreshRateSeconds";
 import { ManageUserFeedManagementInviteSettingsDialog } from "./ManageUserFeedManagementInviteSettingsDialog";
 import { AddFeedComanagerDialog } from "./AddFeedComanagerDialog";
+import {
+  PageAlertContextOutlet,
+  PageAlertProvider,
+  usePageAlertContext,
+} from "../../../../contexts/PageAlertContext";
 
 interface Props {
   feedId: string;
@@ -123,13 +132,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
     inviteId: "",
   });
 
-  const {
-    handleSubmit,
-    control,
-    reset,
-    formState: { isDirty, isSubmitting, errors: formErrors },
-    watch,
-  } = useForm<FormValues>({
+  const formMethods = useForm<FormValues>({
     resolver: yupResolver(FormSchema),
     defaultValues: {
       dateFormat: feed?.formatOptions?.dateFormat || "",
@@ -140,6 +143,13 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
       userRefreshRateSeconds: feed?.userRefreshRateSeconds || feed?.refreshRateSeconds,
     },
   });
+  const {
+    handleSubmit,
+    control,
+    reset,
+    formState: { isDirty, isSubmitting, errors: formErrors },
+    watch,
+  } = formMethods;
 
   const [dateFormat, dateTimezone, dateLocale] = watch([
     "dateFormat",
@@ -174,6 +184,7 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
     error: deleteInviteError,
     reset: resetDeleteInvite,
   } = useDeleteUserFeedManagementInvite({ feedId });
+  const { createSuccessAlert } = usePageAlertContext();
 
   const onUpdatedFeed = async (values: FormValues) => {
     try {
@@ -206,7 +217,9 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
         userRefreshRateSeconds:
           updatedFeed.result.userRefreshRateSeconds || updatedFeed.result.refreshRateSeconds,
       });
-      notifySuccess(t("common.success.savedChanges"));
+      createSuccessAlert({
+        title: "Successfully updated feed settings",
+      });
     } catch (e) {}
   };
 
@@ -227,12 +240,17 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
         connections,
       },
     });
-    notifySuccess("Successfully sent invite");
+    createSuccessAlert({
+      title: `Successfully sent feed management invite`,
+    });
   };
 
   const removeInvite = async (id: string) => {
     await deleteUserFeedManagementInvite({ id });
-    notifySuccess("Successfully removed invite");
+
+    createSuccessAlert({
+      title: `Successfully removed feed management invite`,
+    });
   };
 
   if (feedStatus === "loading") {
@@ -253,476 +271,458 @@ export const UserFeedSettingsTabSection = ({ feedId }: Props) => {
   }
 
   return (
-    <form onSubmit={handleSubmit(onUpdatedFeed)} id="user-management">
-      <ManageUserFeedManagementInviteSettingsDialog
-        feedId={feedId}
-        inviteId={manageInviteDialogState.inviteId}
-        isOpen={manageInviteDialogState.isOpen}
-        onClose={() => setManageInviteDialogState({ isOpen: false, inviteId: "" })}
-      />
-      <Heading size="md" as="h2" mb={8}>
-        Miscellaneous Feed Settings
-      </Heading>
-      <Stack spacing={8} marginBottom={8}>
-        <Stack spacing={4} border="1px solid" borderColor="gray.700" borderRadius="md" p={4}>
-          <Stack spacing={2}>
-            <Heading size="sm" as="h3">
-              Feed Management Invites
-            </Heading>
-            <Text>
-              Share this feed with users who you would like to also manage this feed. After they
-              accept it, this shared feed will count towards their feed limit. To revoke access,
-              delete their invite.
-            </Text>
-            <Divider mt={2} />
-          </Stack>
-          <Stack>
-            {feed && feed.sharedAccessDetails && (
-              <Alert status="warning">
-                <AlertDescription>
-                  Only the feed owner can manage feed management invites.
-                </AlertDescription>
-              </Alert>
-            )}
-            {feed && !feed.sharedAccessDetails && feed?.shareManageOptions?.invites.length && (
-              <TableContainer>
-                <Table variant="simple">
-                  <Thead>
-                    <Tr>
-                      <Th>Name</Th>
-                      <Th>Type</Th>
-                      <Th>Status</Th>
-                      <Th>Connections</Th>
-                      <Th>Added On</Th>
-                      <Th />
-                    </Tr>
-                  </Thead>
-                  <Tbody>
-                    {feed.shareManageOptions.invites.map((u) => {
-                      const connectionIds = new Set(
-                        u.connections?.map((c) => c.connectionId) || []
-                      );
-                      const connectionNames = Object.values(feed.connections)
-                        .filter((c) => connectionIds.has(c.id))
-                        .map((c) => c.name);
-
-                      return (
-                        <Tr key={u.id}>
-                          <Td>
-                            <DiscordUsername userId={u.discordUserId} />
-                          </Td>
-                          <Td>
-                            {(!u.type || u.type === UserFeedManagerInviteType.CoManage) && (
-                              <Text>Co-manage</Text>
-                            )}
-                            {u.type === UserFeedManagerInviteType.Transfer && (
-                              <Text>Ownership transfer</Text>
-                            )}
-                          </Td>
-                          <Td>
-                            {u.status === UserFeedManagerStatus.Accepted && (
-                              <Tag colorScheme="green">Accepted</Tag>
-                            )}
-                            {u.status === UserFeedManagerStatus.Pending && (
-                              <Tag colorScheme="yellow">Pending</Tag>
-                            )}
-                            {u.status === UserFeedManagerStatus.Declined && (
-                              <HStack>
-                                <Tag colorScheme="red">Declined</Tag>
-                                <ResendUserFeedManagementInviteButton
-                                  feedId={feedId}
-                                  inviteId={u.id}
-                                />
-                              </HStack>
-                            )}
-                          </Td>
-                          <Td>
-                            <Stack>
-                              {!connectionNames.length && <Text>All</Text>}
-                              {connectionNames.map((n) => (
-                                <Text display="block" key={n}>
-                                  {n}
-                                </Text>
-                              ))}
-                            </Stack>
-                          </Td>
-                          <Td>{u.createdAt}</Td>
-                          <Td isNumeric>
-                            <HStack>
-                              <IconButton
-                                aria-label="Manage invite settings"
-                                icon={<SettingsIcon />}
-                                size="sm"
-                                variant="ghost"
-                                onClick={() =>
-                                  setManageInviteDialogState({ isOpen: true, inviteId: u.id })
-                                }
-                              />
-                              <ConfirmModal
-                                trigger={
-                                  <IconButton
-                                    size="sm"
-                                    aria-label="Delete user"
-                                    icon={<DeleteIcon />}
-                                    variant="ghost"
-                                    isDisabled={deletingInviteStatus === "loading"}
-                                  />
-                                }
-                                okText="Delete"
-                                title="Delete User"
-                                description="Are you sure you want to remove this user? They will lose access to this feed."
-                                colorScheme="red"
-                                onConfirm={() => removeInvite(u.id)}
-                                onClosed={resetDeleteInvite}
-                                error={deleteInviteError?.message}
-                              />
-                            </HStack>
-                          </Td>
+    <PageAlertProvider>
+      <FormProvider {...formMethods}>
+        <form onSubmit={handleSubmit(onUpdatedFeed)} id="user-management">
+          <ManageUserFeedManagementInviteSettingsDialog
+            feedId={feedId}
+            inviteId={manageInviteDialogState.inviteId}
+            isOpen={manageInviteDialogState.isOpen}
+            onClose={() => setManageInviteDialogState({ isOpen: false, inviteId: "" })}
+          />
+          <Heading size="md" as="h2" mb={8}>
+            Miscellaneous Feed Settings
+          </Heading>
+          <Stack spacing={8} marginBottom={8}>
+            <Stack spacing={4} border="1px solid" borderColor="gray.700" borderRadius="md" p={4}>
+              <Stack spacing={2}>
+                <Heading size="sm" as="h3">
+                  Feed Management Invites
+                </Heading>
+                <Text>
+                  Share this feed with users who you would like to also manage this feed. After they
+                  accept it, this shared feed will count towards their feed limit. To revoke access,
+                  delete their invite.
+                </Text>
+                <PageAlertContextOutlet />
+              </Stack>
+              <Stack>
+                {feed && feed.sharedAccessDetails && (
+                  <Alert status="warning">
+                    <AlertDescription>
+                      Only the feed owner can manage feed management invites.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {feed && !feed.sharedAccessDetails && feed?.shareManageOptions?.invites.length && (
+                  <TableContainer>
+                    <Table variant="simple">
+                      <Thead>
+                        <Tr>
+                          <Th>Name</Th>
+                          <Th>Type</Th>
+                          <Th>Status</Th>
+                          <Th>Connections</Th>
+                          <Th>Added On</Th>
+                          <Th />
                         </Tr>
-                      );
-                    })}
-                  </Tbody>
-                </Table>
-              </TableContainer>
-            )}
-            <Menu>
-              <MenuButton
-                isDisabled={
-                  creatingInvitesStatus === "loading" || !!feed?.sharedAccessDetails?.inviteId
-                }
-                as={Button}
-                rightIcon={<ChevronDownIcon />}
-                width="min-content"
-              >
-                Invite user to...
-              </MenuButton>
-              <MenuList>
-                <AddFeedComanagerDialog
-                  feedId={feedId}
-                  trigger={<MenuItem>Co-manage feed</MenuItem>}
-                  description={
-                    <Text>
-                      This user will have access to manage the settings and the existing connections
-                      of this feed. You will retain ownership of this feed after they accept the
-                      invite. They must accept the invite by logging in.
-                    </Text>
-                  }
-                  title="Invite User to Co-manage Feed"
-                  okButtonText="Invite User to Co-manage"
-                  error={createInviteError?.message}
-                  onAdded={({ id, connections }) =>
-                    onAddUser({ id, type: UserFeedManagerInviteType.CoManage, connections })
-                  }
-                  onClosed={resetCreateInvite}
-                />
-                <SelectUserDialog
-                  trigger={<MenuItem color="red.300">Transfer ownership</MenuItem>}
-                  description={
-                    <Text>
-                      This user will have full ownership of this feed, and you will lose access to
-                      it after they accept the invite. They must accept the invite by logging in.
-                    </Text>
-                  }
-                  title="Invite User to Transfer Ownership"
-                  okButtonText="Invite User to Transfer Ownership"
-                  onAdded={({ id }) =>
-                    onAddUser({ id, type: UserFeedManagerInviteType.Transfer, connections: [] })
-                  }
-                  onClosed={resetCreateInvite}
-                  error={createInviteError?.message}
-                />
-              </MenuList>
-            </Menu>
-          </Stack>
-        </Stack>
-        <Stack spacing={4} border="1px solid" borderColor="gray.700" borderRadius="md" p={4}>
-          <Stack spacing={2}>
-            <Heading size="sm" as="h3">
-              Refresh Rate
-            </Heading>
-            <Text>
-              Change the rate at which the bot sends requests for this feed. If you are facing rate
-              limits for this feed, this may be helpful, but is not guaranteed to resolve
-              rate-limit-related issues. If other users are using this feed at a rate faster than
-              what you set here, the bot will ignore this setting.
-            </Text>
-            <Divider mt={2} />
-          </Stack>
-          {!feed?.refreshRateOptions.length && (
-            <Text color="whiteAlpha.700">This feed does not have any refresh rate options.</Text>
-          )}
-          {!!feed?.refreshRateOptions.length && (
-            <Controller
-              name="userRefreshRateSeconds"
-              control={control}
-              render={({ field }) => {
-                return (
-                  <FormControl isInvalid={!!formErrors.oldArticleDateDiffMsThreshold} as="fieldset">
-                    <RadioGroup
-                      value={field.value?.toString()}
-                      onChange={(v) => field.onChange(Number(v))}
-                      onBlur={() => field.onBlur()}
-                      isDisabled={!user || field.disabled}
-                      ref={field.ref}
-                      name={field.name}
-                    >
-                      <Stack>
-                        {feed?.refreshRateOptions.map((r) => {
-                          const { disabledCode } = r;
-
-                          let reason: string = "";
-
-                          if (disabledCode === "INSUFFICIENT_SUPPORTER_TIER") {
-                            reason = "(only available if feed owner has a higher supporter tier)";
-                          }
-
-                          const displayDuration = formatRefreshRateSeconds(r.rateSeconds);
+                      </Thead>
+                      <Tbody>
+                        {feed.shareManageOptions.invites.map((u) => {
+                          const connectionIds = new Set(
+                            u.connections?.map((c) => c.connectionId) || []
+                          );
+                          const connectionNames = Object.values(feed.connections)
+                            .filter((c) => connectionIds.has(c.id))
+                            .map((c) => c.name);
 
                           return (
-                            <Radio
-                              value={r.rateSeconds.toString()}
-                              isDisabled={!!r.disabledCode}
-                              key={r.rateSeconds}
-                            >
-                              {displayDuration}
-                              {reason ? ` ${reason}` : ""}
-                            </Radio>
+                            <Tr key={u.id}>
+                              <Td>
+                                <DiscordUsername userId={u.discordUserId} />
+                              </Td>
+                              <Td>
+                                {(!u.type || u.type === UserFeedManagerInviteType.CoManage) && (
+                                  <Text>Co-manage</Text>
+                                )}
+                                {u.type === UserFeedManagerInviteType.Transfer && (
+                                  <Text>Ownership transfer</Text>
+                                )}
+                              </Td>
+                              <Td>
+                                {u.status === UserFeedManagerStatus.Accepted && (
+                                  <Tag colorScheme="green">Accepted</Tag>
+                                )}
+                                {u.status === UserFeedManagerStatus.Pending && (
+                                  <Tag colorScheme="yellow">Pending</Tag>
+                                )}
+                                {u.status === UserFeedManagerStatus.Declined && (
+                                  <HStack>
+                                    <Tag colorScheme="red">Declined</Tag>
+                                    <ResendUserFeedManagementInviteButton
+                                      feedId={feedId}
+                                      inviteId={u.id}
+                                    />
+                                  </HStack>
+                                )}
+                              </Td>
+                              <Td>
+                                <Stack>
+                                  {!connectionNames.length && <Text>All</Text>}
+                                  {connectionNames.map((n) => (
+                                    <Text display="block" key={n}>
+                                      {n}
+                                    </Text>
+                                  ))}
+                                </Stack>
+                              </Td>
+                              <Td>{u.createdAt}</Td>
+                              <Td isNumeric>
+                                <HStack>
+                                  <IconButton
+                                    aria-label="Manage invite settings"
+                                    icon={<SettingsIcon />}
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                      setManageInviteDialogState({ isOpen: true, inviteId: u.id })
+                                    }
+                                  />
+                                  <ConfirmModal
+                                    trigger={
+                                      <IconButton
+                                        size="sm"
+                                        aria-label="Delete user"
+                                        icon={<DeleteIcon />}
+                                        variant="ghost"
+                                        isDisabled={deletingInviteStatus === "loading"}
+                                      />
+                                    }
+                                    okText="Delete"
+                                    title="Delete User"
+                                    description="Are you sure you want to remove this user? They will lose access to this feed."
+                                    colorScheme="red"
+                                    onConfirm={() => removeInvite(u.id)}
+                                    onClosed={resetDeleteInvite}
+                                    error={deleteInviteError?.message}
+                                  />
+                                </HStack>
+                              </Td>
+                            </Tr>
                           );
                         })}
-                      </Stack>
-                    </RadioGroup>
-                    {formErrors.userRefreshRateSeconds && (
-                      <FormErrorMessage>
-                        {formErrors.userRefreshRateSeconds.message}
-                      </FormErrorMessage>
-                    )}
-                  </FormControl>
-                );
-              }}
-            />
-          )}
-        </Stack>
-        <Stack spacing={4} border="1px solid" borderColor="gray.700" borderRadius="md" p={4}>
-          <Stack spacing={2}>
-            <Heading size="sm" as="h3" pb={2}>
-              Article Date Checks
-            </Heading>
-            <Divider />
-          </Stack>
-          <Controller
-            name="oldArticleDateDiffMsThreshold"
-            control={control}
-            render={({ field }) => {
-              return (
-                <FormControl isInvalid={!!formErrors.oldArticleDateDiffMsThreshold}>
-                  <FormLabel id={`${field.name}-label-1`}>
-                    Never deliver articles older than
-                  </FormLabel>
-                  <HStack alignItems="center" spacing={4}>
-                    <NumberInput
-                      min={0}
-                      allowMouseWheel
-                      {...field}
-                      onChange={(str, num) => field.onChange(num * 1000 * 60 * 60 * 24)}
-                      value={
-                        typeof field.value === "number" ? field.value / 1000 / 60 / 60 / 24 : 0
-                      }
-                      aria-describedby={`${field.name}-label-1 ${field.name}-label-2`}
-                    >
-                      <NumberInputField />
-                      <NumberInputStepper>
-                        <NumberIncrementStepper />
-                        <NumberDecrementStepper />
-                      </NumberInputStepper>
-                    </NumberInput>
-                    <FormLabel id={`${field.name}-label-2`}>days</FormLabel>
-                  </HStack>
-                  <FormHelperText>
-                    Set to <Code>0</Code> to disable. Articles that have no published date will also
-                    be ignored if this is enabled. It is strongly advised to leave this at the
-                    default, unless you face issues otherwise.
-                  </FormHelperText>
-                  {formErrors.oldArticleDateDiffMsThreshold && (
-                    <FormErrorMessage>
-                      {formErrors.oldArticleDateDiffMsThreshold.message}
-                    </FormErrorMessage>
-                  )}
-                </FormControl>
-              );
-            }}
-          />
-        </Stack>
-        <Stack spacing={4} border="1px solid" borderColor="gray.700" borderRadius="md" p={4}>
-          <Stack spacing={2}>
-            <Heading size="sm" as="h3">
-              {t(
-                "features.feedConnections.components.userFeedSettingsTabSection.dateSettingsTitle"
-              )}
-            </Heading>
-            <Text>
-              Change how dates are formatted if you use date placeholders in your message. If
-              you&apos;ve already configured date settings in your{" "}
-              <Link as={RouterLink} to={pages.userSettings()} color="blue.300">
-                Account Settings
-              </Link>
-              , they will be overridden by the settings here.
-            </Text>
-            <Divider mt={2} />
-          </Stack>
-          <Stack spacing={4}>
-            <FormControl aria-live="polite" aria-busy={!!datePreviewData}>
-              <FormLabel marginBottom={0}>
-                {t(
-                  "features.feedConnections.components.userFeedSettingsTabSection.dateSettingsPreviewTitle"
+                      </Tbody>
+                    </Table>
+                  </TableContainer>
                 )}
-              </FormLabel>
-              {!datePreviewError && (
-                <Skeleton isLoaded={!!datePreviewData}>
-                  <Text
-                    fontSize="xl"
-                    color={datePreviewData?.result.valid ? "gray.400" : "red.400"}
+                <Menu>
+                  <MenuButton
+                    isDisabled={
+                      creatingInvitesStatus === "loading" || !!feed?.sharedAccessDetails?.inviteId
+                    }
+                    as={Button}
+                    rightIcon={<ChevronDownIcon />}
+                    width="min-content"
                   >
-                    {datePreviewData?.result.valid && datePreviewData?.result.output}
-                    {!datePreviewData?.result.valid &&
-                      t(
-                        "features.feedConnections.components.userFeedSettingsTabSection.invalidTimezone"
-                      )}
-                  </Text>
-                </Skeleton>
+                    Invite user to...
+                  </MenuButton>
+                  <MenuList>
+                    <AddFeedComanagerDialog trigger={<MenuItem>Co-manage feed</MenuItem>} />
+                    <SelectUserDialog
+                      trigger={<MenuItem color="red.300">Transfer ownership</MenuItem>}
+                      description={
+                        <Text>
+                          This user will have full ownership of this feed, and you will lose access
+                          to it after they accept the invite. They must accept the invite by logging
+                          in.
+                        </Text>
+                      }
+                      title="Invite User to Transfer Ownership"
+                      okButtonText="Invite User to Transfer Ownership"
+                      onAdded={({ id }) =>
+                        onAddUser({ id, type: UserFeedManagerInviteType.Transfer, connections: [] })
+                      }
+                      onClosed={resetCreateInvite}
+                      error={createInviteError?.message}
+                    />
+                  </MenuList>
+                </Menu>
+              </Stack>
+            </Stack>
+            <Stack spacing={4} border="1px solid" borderColor="gray.700" borderRadius="md" p={4}>
+              <Stack spacing={2}>
+                <Heading size="sm" as="h3">
+                  Refresh Rate
+                </Heading>
+                <Text>
+                  Change the rate at which the bot sends requests for this feed. If you are facing
+                  rate limits for this feed, this may be helpful, but is not guaranteed to resolve
+                  rate-limit-related issues. If other users are using this feed at a rate faster
+                  than what you set here, the bot will ignore this setting.
+                </Text>
+                <Divider mt={2} />
+              </Stack>
+              {!feed?.refreshRateOptions.length && (
+                <Text color="whiteAlpha.700">
+                  This feed does not have any refresh rate options.
+                </Text>
               )}
-              {datePreviewError && (
-                <InlineErrorAlert
-                  title="Failed to load date preview"
-                  description={datePreviewError.message}
+              {!!feed?.refreshRateOptions.length && (
+                <Controller
+                  name="userRefreshRateSeconds"
+                  control={control}
+                  render={({ field }) => {
+                    return (
+                      <FormControl
+                        isInvalid={!!formErrors.oldArticleDateDiffMsThreshold}
+                        as="fieldset"
+                      >
+                        <RadioGroup
+                          value={field.value?.toString()}
+                          onChange={(v) => field.onChange(Number(v))}
+                          onBlur={() => field.onBlur()}
+                          isDisabled={!user || field.disabled}
+                          ref={field.ref}
+                          name={field.name}
+                        >
+                          <Stack>
+                            {feed?.refreshRateOptions.map((r) => {
+                              const { disabledCode } = r;
+
+                              let reason: string = "";
+
+                              if (disabledCode === "INSUFFICIENT_SUPPORTER_TIER") {
+                                reason =
+                                  "(only available if feed owner has a higher supporter tier)";
+                              }
+
+                              const displayDuration = formatRefreshRateSeconds(r.rateSeconds);
+
+                              return (
+                                <Radio
+                                  value={r.rateSeconds.toString()}
+                                  isDisabled={!!r.disabledCode}
+                                  key={r.rateSeconds}
+                                >
+                                  {displayDuration}
+                                  {reason ? ` ${reason}` : ""}
+                                </Radio>
+                              );
+                            })}
+                          </Stack>
+                        </RadioGroup>
+                        {formErrors.userRefreshRateSeconds && (
+                          <FormErrorMessage>
+                            {formErrors.userRefreshRateSeconds.message}
+                          </FormErrorMessage>
+                        )}
+                      </FormControl>
+                    );
+                  }}
                 />
               )}
-            </FormControl>
-            <Controller
-              name="dateTimezone"
-              control={control}
-              render={({ field }) => (
-                <FormControl isInvalid={!!formErrors.dateTimezone}>
-                  <FormLabel>
+            </Stack>
+            <Stack spacing={4} border="1px solid" borderColor="gray.700" borderRadius="md" p={4}>
+              <Stack spacing={2}>
+                <Heading size="sm" as="h3" pb={2}>
+                  Article Date Checks
+                </Heading>
+                <Divider />
+              </Stack>
+              <Controller
+                name="oldArticleDateDiffMsThreshold"
+                control={control}
+                render={({ field }) => {
+                  return (
+                    <FormControl isInvalid={!!formErrors.oldArticleDateDiffMsThreshold}>
+                      <FormLabel id={`${field.name}-label-1`}>
+                        Never deliver articles older than
+                      </FormLabel>
+                      <HStack alignItems="center" spacing={4}>
+                        <NumberInput
+                          min={0}
+                          allowMouseWheel
+                          {...field}
+                          onChange={(str, num) => field.onChange(num * 1000 * 60 * 60 * 24)}
+                          value={
+                            typeof field.value === "number" ? field.value / 1000 / 60 / 60 / 24 : 0
+                          }
+                          aria-describedby={`${field.name}-label-1 ${field.name}-label-2`}
+                        >
+                          <NumberInputField />
+                          <NumberInputStepper>
+                            <NumberIncrementStepper />
+                            <NumberDecrementStepper />
+                          </NumberInputStepper>
+                        </NumberInput>
+                        <FormLabel id={`${field.name}-label-2`}>days</FormLabel>
+                      </HStack>
+                      <FormHelperText>
+                        Set to <Code>0</Code> to disable. Articles that have no published date will
+                        also be ignored if this is enabled. It is strongly advised to leave this at
+                        the default, unless you face issues otherwise.
+                      </FormHelperText>
+                      {formErrors.oldArticleDateDiffMsThreshold && (
+                        <FormErrorMessage>
+                          {formErrors.oldArticleDateDiffMsThreshold.message}
+                        </FormErrorMessage>
+                      )}
+                    </FormControl>
+                  );
+                }}
+              />
+            </Stack>
+            <Stack spacing={4} border="1px solid" borderColor="gray.700" borderRadius="md" p={4}>
+              <Stack spacing={2}>
+                <Heading size="sm" as="h3">
+                  {t(
+                    "features.feedConnections.components.userFeedSettingsTabSection.dateSettingsTitle"
+                  )}
+                </Heading>
+                <Text>
+                  Change how dates are formatted if you use date placeholders in your message. If
+                  you&apos;ve already configured date settings in your{" "}
+                  <Link as={RouterLink} to={pages.userSettings()} color="blue.300">
+                    Account Settings
+                  </Link>
+                  , they will be overridden by the settings here.
+                </Text>
+                <Divider mt={2} />
+              </Stack>
+              <Stack spacing={4}>
+                <FormControl aria-live="polite" aria-busy={!!datePreviewData}>
+                  <FormLabel marginBottom={0}>
                     {t(
-                      "features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputLabel"
+                      "features.feedConnections.components.userFeedSettingsTabSection.dateSettingsPreviewTitle"
                     )}
                   </FormLabel>
-                  <Input spellCheck={false} autoComplete="off" {...field} />
-                  {!formErrors.dateTimezone && (
-                    <FormHelperText>
-                      <Trans
-                        i18nKey="features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputDescription"
-                        components={[
-                          <Link
-                            href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
-                            target="_blank"
-                            rel="noreferrer noopener"
-                            color="blue.300"
-                          />,
-                        ]}
-                      />
-                    </FormHelperText>
-                  )}
-                  {formErrors.dateTimezone && (
-                    <FormErrorMessage>
-                      {formErrors.dateTimezone.message} (
-                      <Trans
-                        i18nKey="features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputDescription"
-                        components={[
-                          <Link
-                            href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
-                            target="_blank"
-                            rel="noreferrer noopener"
-                            color="blue.400"
-                          />,
-                        ]}
-                      />
-                      )
-                    </FormErrorMessage>
-                  )}
-                </FormControl>
-              )}
-            />
-            <Controller
-              name="dateFormat"
-              control={control}
-              render={({ field }) => (
-                <FormControl isInvalid={!!formErrors.dateFormat}>
-                  <FormLabel>
-                    {t(
-                      "features.feedConnections.components.userFeedSettingsTabSection.dateFormatInputLabel"
-                    )}
-                  </FormLabel>
-                  <Input spellCheck={false} autoComplete="off" {...field} />
-                  {!formErrors.dateFormat && (
-                    <FormHelperText>
-                      This will dictate how the placeholders with dates (such as{" "}
-                      <Code>{`{{date}}`}</Code> ) will be formatted. For more information on
-                      formatting, see{" "}
-                      <Link
-                        color="blue.300"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        href="https://day.js.org/docs/en/display/format"
+                  {!datePreviewError && (
+                    <Skeleton isLoaded={!!datePreviewData}>
+                      <Text
+                        fontSize="xl"
+                        color={datePreviewData?.result.valid ? "gray.400" : "red.400"}
                       >
-                        https://day.js.org/docs/en/display/format
-                      </Link>
-                    </FormHelperText>
+                        {datePreviewData?.result.valid && datePreviewData?.result.output}
+                        {!datePreviewData?.result.valid &&
+                          t(
+                            "features.feedConnections.components.userFeedSettingsTabSection.invalidTimezone"
+                          )}
+                      </Text>
+                    </Skeleton>
                   )}
-                  {formErrors.dateFormat && (
-                    <FormErrorMessage>{formErrors.dateFormat.message}</FormErrorMessage>
-                  )}
-                </FormControl>
-              )}
-            />
-            <Controller
-              name="dateLocale"
-              control={control}
-              render={({ field }) => (
-                <FormControl isInvalid={!!formErrors.dateLocale}>
-                  <FormLabel>Date Format Locale</FormLabel>
-                  <Select placeholder="Select option" {...field}>
-                    {DATE_LOCALES.map(({ key, name }) => (
-                      <option key={key} value={key}>
-                        {name}
-                      </option>
-                    ))}
-                  </Select>
-                  {!formErrors.dateLocale && (
-                    <FormHelperText>
-                      The locale to use for formatting dates. Leave blank to use the default (
-                      <Code>English</Code>).
-                    </FormHelperText>
-                  )}
-                  {formErrors.dateLocale?.message && (
-                    <FormErrorMessage>{formErrors.dateLocale.message}</FormErrorMessage>
+                  {datePreviewError && (
+                    <InlineErrorAlert
+                      title="Failed to load date preview"
+                      description={datePreviewError.message}
+                    />
                   )}
                 </FormControl>
-              )}
-            />
+                <Controller
+                  name="dateTimezone"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControl isInvalid={!!formErrors.dateTimezone}>
+                      <FormLabel>
+                        {t(
+                          "features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputLabel"
+                        )}
+                      </FormLabel>
+                      <Input spellCheck={false} autoComplete="off" {...field} />
+                      {!formErrors.dateTimezone && (
+                        <FormHelperText>
+                          <Trans
+                            i18nKey="features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputDescription"
+                            components={[
+                              <Link
+                                href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
+                                target="_blank"
+                                rel="noreferrer noopener"
+                                color="blue.300"
+                              />,
+                            ]}
+                          />
+                        </FormHelperText>
+                      )}
+                      {formErrors.dateTimezone && (
+                        <FormErrorMessage>
+                          {formErrors.dateTimezone.message} (
+                          <Trans
+                            i18nKey="features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputDescription"
+                            components={[
+                              <Link
+                                href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
+                                target="_blank"
+                                rel="noreferrer noopener"
+                                color="blue.400"
+                              />,
+                            ]}
+                          />
+                          )
+                        </FormErrorMessage>
+                      )}
+                    </FormControl>
+                  )}
+                />
+                <Controller
+                  name="dateFormat"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControl isInvalid={!!formErrors.dateFormat}>
+                      <FormLabel>
+                        {t(
+                          "features.feedConnections.components.userFeedSettingsTabSection.dateFormatInputLabel"
+                        )}
+                      </FormLabel>
+                      <Input spellCheck={false} autoComplete="off" {...field} />
+                      {!formErrors.dateFormat && (
+                        <FormHelperText>
+                          This will dictate how the placeholders with dates (such as{" "}
+                          <Code>{`{{date}}`}</Code> ) will be formatted. For more information on
+                          formatting, see{" "}
+                          <Link
+                            color="blue.300"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            href="https://day.js.org/docs/en/display/format"
+                          >
+                            https://day.js.org/docs/en/display/format
+                          </Link>
+                        </FormHelperText>
+                      )}
+                      {formErrors.dateFormat && (
+                        <FormErrorMessage>{formErrors.dateFormat.message}</FormErrorMessage>
+                      )}
+                    </FormControl>
+                  )}
+                />
+                <Controller
+                  name="dateLocale"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControl isInvalid={!!formErrors.dateLocale}>
+                      <FormLabel>Date Format Locale</FormLabel>
+                      <Select placeholder="Select option" {...field}>
+                        {DATE_LOCALES.map(({ key, name }) => (
+                          <option key={key} value={key}>
+                            {name}
+                          </option>
+                        ))}
+                      </Select>
+                      {!formErrors.dateLocale && (
+                        <FormHelperText>
+                          The locale to use for formatting dates. Leave blank to use the default (
+                          <Code>English</Code>).
+                        </FormHelperText>
+                      )}
+                      {formErrors.dateLocale?.message && (
+                        <FormErrorMessage>{formErrors.dateLocale.message}</FormErrorMessage>
+                      )}
+                    </FormControl>
+                  )}
+                />
+              </Stack>
+            </Stack>
+            {error && (
+              <InlineErrorAlert
+                title={t("common.errors.failedToSave")}
+                description={error.message}
+                scrollIntoViewOnMount
+              />
+            )}
           </Stack>
-        </Stack>
-        {error && (
-          <InlineErrorAlert
-            title={t("common.errors.failedToSave")}
-            description={error.message}
-            scrollIntoViewOnMount
-          />
-        )}
-      </Stack>
-      <HStack justifyContent="flex-end" mb={16}>
-        <Button isDisabled={!isDirty || isSubmitting} onClick={() => reset()} variant="ghost">
-          <span>{t("common.buttons.reset")}</span>
-        </Button>
-        <Button
-          type="submit"
-          colorScheme="blue"
-          isLoading={isSubmitting}
-          isDisabled={isSubmitting || !isDirty}
-        >
-          <span>{t("common.buttons.save")}</span>
-        </Button>
-      </HStack>
-    </form>
+          <SavedUnsavedChangesPopupBar useDirtyFormCheck />
+        </form>
+      </FormProvider>
+    </PageAlertProvider>
   );
 };

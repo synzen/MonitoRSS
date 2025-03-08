@@ -17,8 +17,8 @@ import { useEffect, useState } from "react";
 import { useUpdateUserFeedManagementInvite, useUserFeed } from "../../../../feed/hooks";
 import { ConnectionsCheckboxList } from "../../ConnectionsCheckboxList";
 import { UserFeed } from "../../../../feed/types";
-import { notifySuccess } from "../../../../../utils/notifySuccess";
 import { InlineErrorAlert } from "../../../../../components";
+import { usePageAlertContext } from "../../../../../contexts/PageAlertContext";
 
 interface Props {
   feedId?: string;
@@ -43,6 +43,7 @@ export const ManageUserFeedManagementInviteSettingsDialog = ({
     ?.connections?.map((c) => c.connectionId);
   const allConnectionIds = feed?.connections.map((c) => c.id) || [];
   const [checkedConnections, setCheckedConnections] = useState<string[]>([]);
+  const { createSuccessAlert } = usePageAlertContext();
 
   const resetState = () => {
     if (currentConnectionIds?.length) {
@@ -81,7 +82,9 @@ export const ManageUserFeedManagementInviteSettingsDialog = ({
         },
       });
       onClose();
-      notifySuccess(t("common.success.savedChanges"));
+      createSuccessAlert({
+        title: "Successfully updated feed management invite.",
+      });
       setCheckedConnections([]);
     } catch (err) {}
   };

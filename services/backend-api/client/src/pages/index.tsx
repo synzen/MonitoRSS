@@ -121,7 +121,7 @@ const Pages: React.FC = () => (
       path={pages.userSettings()}
       element={
         <RequireAuth>
-          <PageContentV2 invertBackground>
+          <PageContentV2>
             <SuspenseErrorBoundary>
               <Suspense fallback={<Spinner mt={24} />}>
                 <UserSettings />
@@ -144,14 +144,12 @@ const Pages: React.FC = () => (
       path={pages.userFeeds()}
       element={
         <RequireAuth waitForUserFetch>
-          {/* <PageContentV2 invertBackground> */}
-          <NewHeader invertBackground />
+          <NewHeader />
           <MultiSelectUserFeedProvider>
             <UserFeedStatusFilterProvider>
               <UserFeeds />
             </UserFeedStatusFilterProvider>
           </MultiSelectUserFeedProvider>
-          {/* </PageContentV2> */}
         </RequireAuth>
       }
     />
@@ -181,7 +179,7 @@ const Pages: React.FC = () => (
       path={pages.userFeed(":feedId")}
       element={
         <RequireAuth>
-          <PageContentV2 requireFeed>
+          <PageContentV2>
             <UserFeed />
           </PageContentV2>
         </RequireAuth>

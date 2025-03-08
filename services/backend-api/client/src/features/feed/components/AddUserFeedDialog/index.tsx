@@ -38,9 +38,8 @@ import { useTranslation } from "react-i18next";
 import { InferType, object, string } from "yup";
 import React, { useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeftIcon } from "@chakra-ui/icons";
+import { ArrowLeftIcon, ExternalLinkIcon } from "@chakra-ui/icons";
 import { useCreateUserFeed, useUserFeeds } from "../../hooks";
-import { notifySuccess } from "../../../../utils/notifySuccess";
 import getChakraColor from "../../../../utils/getChakraColor";
 import { InlineErrorAlert } from "../../../../components/InlineErrorAlert";
 import { FixFeedRequestsCTA } from "../FixFeedRequestsCTA";
@@ -125,8 +124,11 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
 
       reset();
       onClose();
-      notifySuccess(t("features.userFeeds.components.addUserFeedDialog.successAdd"));
-      navigate(pages.userFeed(id));
+      navigate(pages.userFeed(id), {
+        state: {
+          isNewFeed: true,
+        },
+      });
     } catch (err) {}
   };
 
@@ -174,16 +176,19 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                   <Stack spacing={4} aria-live="polite">
                     <Text>
                       We found a feed URL that might be related to the url you provided. Do you want
-                      to add the URL below instead?
+                      to use the feed link below instead?
                     </Text>
-                    <FormControl>
-                      <FormLabel>Updated Feed URL</FormLabel>
-                      <Input
-                        isReadOnly
-                        bg="gray.800"
-                        value={feedUrlValidationData.result.resolvedToUrl || ""}
-                      />
-                    </FormControl>
+                    <Link
+                      color="blue.300"
+                      href={feedUrlValidationData.result.resolvedToUrl || "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <HStack alignItems="center">
+                        <Text>{feedUrlValidationData.result.resolvedToUrl}</Text>
+                        <ExternalLinkIcon />
+                      </HStack>
+                    </Link>
                   </Stack>
                 </Stack>
               )}
@@ -460,7 +465,7 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
               </Button>
               <Button colorScheme="blue" type="submit" aria-disabled={isSubmitting}>
                 <span>{isSubmitting && "Saving..."}</span>
-                <span>{!isSubmitting && isConfirming && "Add feed with updated url"}</span>
+                <span>{!isSubmitting && isConfirming && "Add feed with updated link"}</span>
                 <span>{!isSubmitting && !isConfirming && "Save"}</span>
               </Button>
             </ModalFooter>

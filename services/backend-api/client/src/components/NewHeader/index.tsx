@@ -38,7 +38,7 @@ export const NewHeader = ({ invertBackground }: Props) => {
   const { pathname } = useLocation();
 
   return (
-    <chakra.header width="full">
+    <chakra.header width="full" borderBottom="solid 1px" borderColor="gray.700">
       <Box
         width="100%"
         background={invertBackground ? "gray.700" : "none"}

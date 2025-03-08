@@ -19,13 +19,11 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { cloneElement, useEffect, useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { InferType, object, string } from "yup";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCreateDiscordChannelConnectionClone } from "../../hooks";
-import { pages } from "../../../../constants";
 import { FeedConnectionType } from "../../../../types";
-import { notifySuccess } from "../../../../utils/notifySuccess";
 import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "../../../../components";
+import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 
 const formSchema = object({
   name: string().required("Name is required").max(250, "Name must be fewer than 250 characters"),
@@ -41,7 +39,6 @@ interface Props {
     name: string;
   };
   trigger: React.ReactElement;
-  redirectOnSuccess?: boolean;
 }
 
 export const CloneDiscordConnectionCloneDialog = ({
@@ -50,7 +47,6 @@ export const CloneDiscordConnectionCloneDialog = ({
   type,
   defaultValues,
   trigger,
-  redirectOnSuccess,
 }: Props) => {
   const {
     handleSubmit,
@@ -64,8 +60,8 @@ export const CloneDiscordConnectionCloneDialog = ({
   const { isOpen, onOpen, onClose } = useDisclosure();
   const initialRef = useRef<HTMLInputElement>(null);
   const { mutateAsync: createChannelClone, error } = useCreateDiscordChannelConnectionClone();
-  const navigate = useNavigate();
   const { t } = useTranslation();
+  const { createSuccessAlert } = usePageAlertContext();
 
   useEffect(() => {
     reset(defaultValues);
@@ -73,30 +69,15 @@ export const CloneDiscordConnectionCloneDialog = ({
 
   const onSubmit = async ({ name }: FormData) => {
     try {
-      let newConnectionId: string;
-
       if (type === FeedConnectionType.DiscordChannel) {
-        const res = await createChannelClone({ feedId, connectionId, details: { name } });
-        newConnectionId = res.result.id;
+        await createChannelClone({ feedId, connectionId, details: { name } });
       } else {
         throw new Error(`Unsupported connection type when cloning discord connection: ${type}`);
       }
 
-      if (redirectOnSuccess) {
-        navigate(
-          pages.userFeedConnection({
-            connectionId: newConnectionId,
-            feedId,
-            connectionType: type,
-          })
-        );
-        notifySuccess(
-          t("common.success.savedChanges"),
-          "You are now viewing your newly cloned connection"
-        );
-      } else {
-        notifySuccess("Successfully cloned");
-      }
+      createSuccessAlert({
+        title: `Successfully created cloned connection: ${name}`,
+      });
 
       onClose();
       reset({ name });
@@ -132,7 +113,7 @@ export const CloneDiscordConnectionCloneDialog = ({
                   description={error.message}
                 />
               )}
-              {isSubmitted && !formErrorCount && (
+              {isSubmitted && formErrorCount > 0 && (
                 <InlineErrorIncompleteFormAlert fieldCount={formErrorCount} />
               )}
             </Stack>

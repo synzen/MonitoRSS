@@ -1,5 +1,5 @@
 // 1. import `extendTheme` function
-import { extendTheme, ThemeConfig } from "@chakra-ui/react";
+import { AlertProps, extendTheme, ThemeConfig } from "@chakra-ui/react";
 import { formAnatomy } from "@chakra-ui/anatomy";
 import type { PartsStyleFunction, SystemStyleFunction } from "@chakra-ui/theme-tools";
 import { mode } from "@chakra-ui/theme-tools";
@@ -38,8 +38,29 @@ const theme = extendTheme({
   config,
   components: {
     Alert: {
-      baseStyle: {
-        borderRadius: "md",
+      baseStyle: (props: AlertProps) => {
+        if (props.variant === "solid") {
+          return undefined;
+        }
+
+        let backgroundColor;
+
+        if (props.status === "error") {
+          backgroundColor = "red.800";
+        } else if (props.status === "success") {
+          backgroundColor = "green.700";
+        } else if (props.status === "warning") {
+          backgroundColor = "yellow.900";
+        } else if (!props.status || props.status === "info") {
+          backgroundColor = "blue.700";
+        }
+
+        return {
+          container: {
+            borderRadius: "md",
+            background: backgroundColor,
+          },
+        };
       },
     },
     Form: {

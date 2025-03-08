@@ -28,14 +28,18 @@ interface ContextProps {
       connectionType: FeedConnectionType;
       previewInput: CreateDiscordChannelConnectionPreviewInput;
     },
-    opts?: { disableToastErrors?: boolean }
-  ) => Promise<void>;
+    opts?: { disableToastErrors?: boolean; disableToast?: boolean }
+  ) => Promise<{
+    status: "info" | "success" | "error";
+    title: string;
+    description?: string;
+  } | null>;
   isFetching: boolean;
   error?: string;
 }
 
 export const SendTestArticleContext = createContext<ContextProps>({
-  sendTestArticle: async () => {},
+  sendTestArticle: async () => null,
   isFetching: false,
 });
 
@@ -46,6 +50,7 @@ const MESSAGES_BY_STATUS: Record<
     titleIcon?: ReactNode;
     description?: string;
     useNotify?: {
+      status: "info" | "success";
       func: (title: string, description?: string) => void;
     };
     useModal?: {
@@ -56,6 +61,7 @@ const MESSAGES_BY_STATUS: Record<
   [SendTestArticleDeliveryStatus.Success]: {
     title: "features.feedConnections.components.sendTestArticleButton.alertTitleSuccess",
     useNotify: {
+      status: "success",
       func: notifySuccess,
     },
     titleIcon: <FaCheck />,
@@ -114,6 +120,7 @@ const MESSAGES_BY_STATUS: Record<
     description:
       "features.feedConnections.components.sendTestArticleButton.alertDescriptionNoArticles",
     useNotify: {
+      status: "info",
       func: notifyInfo,
     },
   },
@@ -138,9 +145,15 @@ export const SendTestArticleProvider = ({ children }: PropsWithChildren<{}>) => 
         MESSAGES_BY_STATUS[result.status];
 
       if (useNotify) {
-        useNotify.func(t(title), description && t(description));
+        if (!opts?.disableToast) {
+          useNotify.func(t(title), description && t(description));
+        }
 
-        return;
+        return {
+          status: useNotify.status,
+          title: t(title),
+          description: description ? t(description) : undefined,
+        };
       }
 
       const descriptionNode = !description ? (
@@ -192,10 +205,18 @@ export const SendTestArticleProvider = ({ children }: PropsWithChildren<{}>) => 
         titleIcon,
       });
       onOpen();
+
+      return null;
     } catch (err) {
-      if (!opts?.disableToastErrors) {
+      if (!opts?.disableToastErrors && !opts?.disableToast) {
         notifyError(t("common.errors.somethingWentWrong"), err as Error);
       }
+
+      return {
+        status: "error",
+        title: "Failed to send test article.",
+        description: (err as Error).message,
+      };
     }
   }, []);
 

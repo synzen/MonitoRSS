@@ -150,11 +150,9 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", containerProps }
       <Box
         border="solid"
         borderWidth="1px"
-        borderColor="gray.600"
-        // padding="4"
+        borderColor="gray.700"
         borderRadius="md"
         width="100%"
-        // overflow="auto"
         bg={isFocused ? "blackAlpha.500" : undefined}
         outlineOffset={4}
         outline={isFocused ? `2px solid ${getChakraColor("blue.300")}` : undefined}
@@ -175,7 +173,7 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", containerProps }
                 width="100%"
                 borderRadius="md"
               >
-                <HStack justifyContent="space-between">
+                <HStack justifyContent="space-between" flexWrap="wrap" gap={2}>
                   <HStack>
                     {isExpanded ? (
                       <ChevronUpIcon fontSize="lg" />
@@ -193,11 +191,9 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", containerProps }
                       e.stopPropagation();
                       onDeleted();
                     }}
+                    leftIcon={<DeleteIcon />}
                   >
-                    <HStack>
-                      <DeleteIcon />
-                      <Text>Delete Condition Group</Text>
-                    </HStack>
+                    Delete Condition Group
                   </Button>
                 </HStack>
               </chakra.button>

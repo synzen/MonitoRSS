@@ -19,12 +19,12 @@ import { useUserFeedArticleProperties, useUserFeedArticles } from "../../../feed
 import { AddComparisonSelect } from "./AddComparisonSelect";
 import { ComparisonTag } from "./ComparisonTag";
 import { ArticleSelectDialog } from "../../../feed/components";
-import { notifyError } from "../../../../utils/notifyError";
 import { ArticlePlaceholderTable } from "../ArticlePlaceholderTable";
 import { getErrorMessageForArticleRequestStatus } from "../../../feed/utils";
 import { UserFeedArticleRequestStatus } from "../../../feed/types";
 import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
 import { InlineErrorAlert } from "../../../../components";
+import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 
 interface Props {
   passingComparisons?: string[];
@@ -67,13 +67,17 @@ export const ComparisonsTabSection = ({
     },
   });
   const [errorLocation, setErrorLocation] = useState<"passing" | "blocking" | "">("");
+  const { createErrorAlert } = usePageAlertContext();
 
   const onClickRandomFeedArticle = async () => {
     try {
       setSelectedArticleId(undefined);
       await refetchUserFeedArticle();
     } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
+      createErrorAlert({
+        title: "Failed to fetch article.",
+        description: (err as Error).message,
+      });
     }
   };
 

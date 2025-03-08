@@ -18,8 +18,17 @@ export const pages = {
   userFeeds: () => "/feeds",
   notFound: () => "/not-found",
   testPaddle: () => "/test-paddle",
-  userFeed: (feedId: string, opts?: { tab?: UserFeedTabSearchParam }) =>
-    `/feeds/${feedId}${opts?.tab ? opts.tab : ""}`,
+  userFeed: (feedId: string, opts?: { tab?: UserFeedTabSearchParam; new?: boolean }) => {
+    let str = `/feeds/${feedId}${opts?.tab ? opts.tab : ""}`;
+
+    if (opts?.tab && opts.new) {
+      str += "&new=true";
+    } else if (opts?.new) {
+      str += "?new=true";
+    }
+
+    return str;
+  },
   userFeedConnection: (
     data: {
       feedId: string;

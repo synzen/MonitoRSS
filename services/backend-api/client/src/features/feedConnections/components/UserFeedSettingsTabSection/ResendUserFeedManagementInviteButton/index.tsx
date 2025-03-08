@@ -1,8 +1,8 @@
 import { IconButton } from "@chakra-ui/react";
 import { FiSend } from "react-icons/fi";
 import { useCreateUserFeedManagementInviteResend } from "../../../../feed/hooks";
-import { notifySuccess } from "@/utils/notifySuccess";
 import { ConfirmModal } from "../../../../../components";
+import { usePageAlertContext } from "../../../../../contexts/PageAlertContext";
 
 interface Props {
   feedId: string;
@@ -11,13 +11,16 @@ interface Props {
 
 export const ResendUserFeedManagementInviteButton = ({ feedId, inviteId }: Props) => {
   const { mutateAsync, status, error, reset } = useCreateUserFeedManagementInviteResend({ feedId });
+  const { createSuccessAlert } = usePageAlertContext();
 
   const onClick = async () => {
     await mutateAsync({
       id: inviteId,
     });
 
-    notifySuccess("Invite has been re-sent!");
+    createSuccessAlert({
+      title: "Successfully re-sent feed management invite",
+    });
   };
 
   return (

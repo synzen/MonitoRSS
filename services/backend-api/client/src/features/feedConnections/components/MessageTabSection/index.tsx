@@ -38,7 +38,6 @@ import { useState } from "react";
 import { FaExpandAlt } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { DiscordMessageFormData } from "../../../../types/discord";
-import { notifyError } from "../../../../utils/notifyError";
 import { useUserFeedArticles } from "../../../feed/hooks";
 import { ArticlePlaceholderTable } from "../ArticlePlaceholderTable";
 import { DiscordMessageForm } from "../DiscordMessageForm";
@@ -49,6 +48,7 @@ import { UserFeedConnectionTabSearchParam } from "../../../../constants/userFeed
 import { UserFeedTabSearchParam } from "../../../../constants/userFeedTabSearchParam";
 import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
 import { useGetUserFeedArticlesError } from "../../hooks";
+import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 
 interface Props {
   onMessageUpdated: (data: DiscordMessageFormData) => Promise<void>;
@@ -80,6 +80,7 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
       random: !selectedArticleId,
     },
   });
+  const { createErrorAlert } = usePageAlertContext();
 
   const { alertComponent } = useGetUserFeedArticlesError({
     getUserFeedArticlesStatus: userFeedArticlesStatus,
@@ -96,7 +97,10 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
       setSelectedArticleId(undefined);
       await refetchUserFeedArticle();
     } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
+      createErrorAlert({
+        title: "Failed to fetch random article.",
+        description: (err as Error).message,
+      });
     }
   };
 

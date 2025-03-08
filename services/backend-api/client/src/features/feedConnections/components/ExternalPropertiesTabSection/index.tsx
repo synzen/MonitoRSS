@@ -41,7 +41,6 @@ import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
 import CreateExternalPropertyModal from "./CreateExternalPropertyModal";
 import { SavedUnsavedChangesPopupBar, SubscriberBlockText } from "../../../../components";
 import { useUpdateUserFeed } from "../../../feed";
-import { notifySuccess } from "../../../../utils/notifySuccess";
 import { ExternalPropertyPreview } from "./ExternalPropertyPreview";
 import { BlockableFeature, SupporterTier } from "../../../../constants";
 import { useExternalPropertiesEligibility } from "./hooks/useExternalPropertiesEligibility";
@@ -49,7 +48,7 @@ import { ExternalProperty } from "../../../../types";
 import UpdateExternalPropertyModal from "./UpdateExternalPropertyModal";
 import { REACT_SELECT_STYLES, SelectOption } from "../../../../constants/reactSelectStyles";
 import { CssSelectorFormattedOption } from "./CssSelectorFormattedOption";
-import { notifyError } from "../../../../utils/notifyError";
+import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 
 const formSchema = object({
   externalProperties: array(
@@ -424,6 +423,7 @@ export const ExternalPropertiesTabSection = () => {
   const { mutateAsync } = useUpdateUserFeed({
     queryKeyStringsToIgnoreValidation: fields.map((f) => `external-property-preview-page-${f.id}`),
   });
+  const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -435,9 +435,14 @@ export const ExternalPropertiesTabSection = () => {
       });
 
       reset(data);
-      notifySuccess(t("common.success.savedChanges"));
+      createSuccessAlert({
+        title: "Successfully updated external properties.",
+      });
     } catch (err) {
-      notifyError(t("common.errors.failedToSave"), (err as Error).message);
+      createErrorAlert({
+        title: "Failed to update external properties.",
+        description: (err as Error).message,
+      });
     }
   };
 

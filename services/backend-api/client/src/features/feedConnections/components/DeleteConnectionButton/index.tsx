@@ -5,9 +5,9 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { ConfirmModal } from "../../../../components";
 import { FeedConnectionType } from "../../../../types";
-import { notifySuccess } from "../../../../utils/notifySuccess";
-import { useDeleteConnection } from "../../hooks";
+import { useConnection, useDeleteConnection } from "../../hooks";
 import { pages } from "@/constants";
+import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 
 interface Props {
   feedId: string;
@@ -20,6 +20,11 @@ export const DeleteConnectionButton = ({ feedId, connectionId, type, trigger }: 
   const { t } = useTranslation();
   const { mutateAsync, status, error, reset } = useDeleteConnection(type);
   const navigate = useNavigate();
+  const { createSuccessAlert } = usePageAlertContext();
+  const { connection } = useConnection({
+    feedId,
+    connectionId,
+  });
 
   const onDelete = async () => {
     await mutateAsync({
@@ -27,7 +32,9 @@ export const DeleteConnectionButton = ({ feedId, connectionId, type, trigger }: 
       connectionId,
     });
     navigate(pages.userFeed(feedId));
-    notifySuccess(t("common.success.deleted"));
+    createSuccessAlert({
+      title: `Successfully deleted feed connection: ${connection?.name}`,
+    });
   };
 
   return (

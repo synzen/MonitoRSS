@@ -34,7 +34,7 @@ export const ArticleFilterResultsView = ({
 
   return (
     <Box position="relative" rounded="md">
-      <Box position="relative" border="solid 1px" borderColor="gray.600" rounded="md">
+      <Box position="relative" border="solid 1px" borderColor="gray.700" rounded="md">
         <Box maxHeight="sm" overflow="auto" rounded="md">
           <TableContainer rounded="md">
             <Table size="sm" rounded="md">

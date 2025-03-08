@@ -20,7 +20,7 @@ dayjs.extend(relativeTime);
 
 const App: React.FC = () => {
   return (
-    <Box display="flex" flexDir="column" height="100vh" className="he">
+    <Box display="flex" flexDir="column" height="100vh">
       <AccessibleNavigationAnnouncer />
       <SendTestArticleProvider>
         <Pages />

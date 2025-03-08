@@ -36,7 +36,6 @@ import { CustomPlaceholdersFormData } from "./constants/CustomPlaceholderFormSch
 import { AnimatedComponent, ConfirmModal } from "../../../../components";
 import { CustomPlaceholderPreview } from "./CustomPlaceholderPreview";
 import { CustomPlaceholderDateFormatStep } from "../../../../types";
-import { notifyError } from "../../../../utils/notifyError";
 import { useGetUserFeedArticlesError } from "../../hooks";
 import { AutoResizeTextarea } from "../../../../components/AutoResizeTextarea";
 import { CustomPlaceholderStepType } from "../../../../constants";
@@ -47,6 +46,7 @@ import { useUserFeedArticles } from "../../../feed";
 import { useUserMe } from "../../../discordUser";
 import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
 import { notifyInfo } from "../../../../utils/notifyInfo";
+import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 
 interface Props {
   index: number;
@@ -350,6 +350,7 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
       },
     },
   });
+  const { createErrorAlert } = usePageAlertContext();
 
   const { data: userMeData } = useUserMe();
 
@@ -381,7 +382,10 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
       setSelectedArticleId(undefined);
       await refetchUserFeedArticles();
     } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
+      createErrorAlert({
+        title: "Failed to fetch random article.",
+        description: (err as Error).message,
+      });
     }
   };
 

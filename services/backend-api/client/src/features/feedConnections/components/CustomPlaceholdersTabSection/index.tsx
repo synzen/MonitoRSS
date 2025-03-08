@@ -15,11 +15,9 @@ import {
 } from "@chakra-ui/react";
 import { FormProvider, useFieldArray, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { AddIcon } from "@chakra-ui/icons";
 import { v4 as uuidv4 } from "uuid";
-import { notifyError } from "../../../../utils/notifyError";
 import {
   CustomPlaceholdersFormData,
   CustomPlaceholdersFormSchema,
@@ -27,10 +25,10 @@ import {
 import { CustomPlaceholderForm } from "./CustomPlaceholderForm";
 import { useUpdateConnection } from "../../hooks";
 import { SavedUnsavedChangesPopupBar } from "@/components";
-import { notifySuccess } from "@/utils/notifySuccess";
 import { BlockableFeature, CustomPlaceholderStepType, SupporterTier } from "@/constants";
 import { SubscriberBlockText } from "@/components/SubscriberBlockText";
 import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
+import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 
 export const CustomPlaceholdersTabSection = () => {
   const {
@@ -58,13 +56,13 @@ export const CustomPlaceholdersTabSection = () => {
     reset,
     formState: { dirtyFields },
   } = formMethods;
-  const { t } = useTranslation();
   const { fields, append, remove } = useFieldArray({
     control,
     name: "customPlaceholders",
     keyName: "hookKey",
   });
   const [activeIndex, setActiveIndex] = useState<number | number[] | undefined>();
+  const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
 
   const onSubmit = async ({ customPlaceholders }: CustomPlaceholdersFormData) => {
     try {
@@ -89,9 +87,14 @@ export const CustomPlaceholdersTabSection = () => {
         },
       });
       reset({ customPlaceholders });
-      notifySuccess(t("common.success.savedChanges"));
+      createSuccessAlert({
+        title: "Successfully updated custom placeholders.",
+      });
     } catch (err) {
-      notifyError(t("common.errors.failedToSave"), err as Error);
+      createErrorAlert({
+        title: "Failed to update custom placeholders.",
+        description: (err as Error).message,
+      });
     }
   };
 

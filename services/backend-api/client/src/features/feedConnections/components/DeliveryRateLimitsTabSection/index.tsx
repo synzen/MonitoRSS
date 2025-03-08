@@ -18,19 +18,17 @@ import {
 } from "@chakra-ui/react";
 import { Controller, FormProvider, useFieldArray, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
-import { notifyError } from "../../../../utils/notifyError";
 import { useUpdateConnection } from "../../hooks";
 import { SavedUnsavedChangesPopupBar } from "@/components";
-import { notifySuccess } from "@/utils/notifySuccess";
 import {
   DeliveryRateLimitsFormData,
   DeliveryRateLimitsFormSchema,
 } from "./constants/DeliveryRateLimitsFormSchema";
 import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
+import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 
 export const DeliveryRateLimitsTabSection = () => {
   const { userFeed, connection } = useUserFeedConnectionContext();
@@ -53,7 +51,7 @@ export const DeliveryRateLimitsTabSection = () => {
     name: "rateLimits",
     keyName: "hookKey",
   });
-  const { t } = useTranslation();
+  const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
   const currentData = connection?.rateLimits;
 
   useEffect(() => {
@@ -73,9 +71,14 @@ export const DeliveryRateLimitsTabSection = () => {
           rateLimits,
         },
       });
-      notifySuccess(t("common.success.savedChanges"));
+      createSuccessAlert({
+        title: "Successfully saved delivery rate limits.",
+      });
     } catch (err) {
-      notifyError(t("common.errors.failedToSave"), err as Error);
+      createErrorAlert({
+        title: "Failed to save delivery rate limits.",
+        description: (err as Error).message,
+      });
     }
   };
 
@@ -115,13 +118,13 @@ export const DeliveryRateLimitsTabSection = () => {
                   <HStack
                     role="listitem"
                     key={item.id}
-                    // bg="gray.700"
                     borderStyle="solid"
-                    borderColor="gray.600"
+                    borderColor="gray.700"
                     borderWidth={1}
                     p={4}
                     rounded="lg"
                     shadow="lg"
+                    flexWrap="wrap"
                   >
                     <FormControl isInvalid={!!errors.rateLimits?.[index]?.limit} isRequired>
                       <FormLabel>Article Limit</FormLabel>

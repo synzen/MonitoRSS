@@ -8,11 +8,12 @@ export const AccessibleNavigationAnnouncer = () => {
   const [message, setMessage] = useState("");
   // get location from router
   const location = useLocation();
+  const locationPathname = location.pathname;
 
   // only run this when location change (note the dependency [location])
   useEffect(() => {
     // ignore the /
-    if (location.pathname.slice(1)) {
+    if (locationPathname.slice(1)) {
       // make sure navigation has occurred and screen reader is ready
       setTimeout(() => {
         /**
@@ -27,10 +28,10 @@ export const AccessibleNavigationAnnouncer = () => {
 
         const checkoutRootPath = pages.checkout(":id").split("/")[1];
 
-        if (location.pathname.includes(checkoutRootPath)) {
+        if (locationPathname.includes(checkoutRootPath)) {
           setMessage(`Navigated to checkout page.`);
         } else {
-          setMessage(`Navigated to ${location.pathname.slice(1)} page.`);
+          setMessage(`Navigated to ${locationPathname.slice(1)} page.`);
         }
 
         const h1Element = document.querySelector("h1");
@@ -43,7 +44,7 @@ export const AccessibleNavigationAnnouncer = () => {
       // just ignore the / route
       setMessage("");
     }
-  }, [location]);
+  }, [locationPathname]);
 
   return (
     <chakra.span srOnly role="status" aria-live="polite" aria-atomic="true">

@@ -1,25 +1,34 @@
 import { Alert, AlertDescription, AlertTitle, Box, Button } from "@chakra-ui/react";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FeedConnectionDisabledCode } from "../../../../types";
+import { useUpdateDiscordChannelConnection } from "../../hooks";
+import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
+import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 
-interface Props {
-  disabledCode?: FeedConnectionDisabledCode | null;
-  onEnable: () => Promise<void>;
-}
-
-export const ConnectionDisabledAlert = ({ disabledCode, onEnable }: Props) => {
+export const ConnectionDisabledAlert = () => {
   const { t } = useTranslation();
-  const [isUpdating, setIsUpdating] = useState(false);
+  const { connection, userFeed } = useUserFeedConnectionContext();
+  const { mutateAsync, status } = useUpdateDiscordChannelConnection();
+  const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
+  const { disabledCode } = connection;
 
   const onClickEnable = async () => {
     try {
-      setIsUpdating(true);
-      await onEnable();
+      await mutateAsync({
+        feedId: userFeed.id,
+        connectionId: connection.id,
+        details: {
+          disabledCode: null,
+        },
+      });
+      createSuccessAlert({
+        title: "Successfully re-enabled feed connection",
+      });
     } catch (err) {
-      // do nothing - this is handled in onEnable()
-    } finally {
-      setIsUpdating(false);
+      createErrorAlert({
+        title: "Failed to re-enable connection",
+        description: (err as Error).message,
+      });
     }
   };
 
@@ -35,7 +44,7 @@ export const ConnectionDisabledAlert = ({ disabledCode, onEnable }: Props) => {
               "features.feedConnections.components.connectionDisabledAlert.manuallyDisabledDescription"
             )}
             <Box marginTop="1rem">
-              <Button isLoading={isUpdating} onClick={onClickEnable}>
+              <Button isLoading={status === "loading"} onClick={onClickEnable}>
                 <span>{t("common.buttons.reEnable")}</span>
               </Button>
             </Box>
@@ -91,8 +100,8 @@ export const ConnectionDisabledAlert = ({ disabledCode, onEnable }: Props) => {
               "features.feedConnections.components.connectionDisabledAlert.missingPermissionsDescription"
             )}
             <Box marginTop="1rem">
-              <Button isLoading={isUpdating} onClick={onClickEnable}>
-                <span>{t("common.buttons.reEnable")}</span>
+              <Button isLoading={status === "loading"} onClick={onClickEnable}>
+                <span>Attempt to re-enable</span>
               </Button>
             </Box>
           </AlertDescription>

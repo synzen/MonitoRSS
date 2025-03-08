@@ -1,17 +1,17 @@
 import { Alert, AlertDescription, AlertTitle, Box, Button } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { notifySuccess } from "../../../../utils/notifySuccess";
-import { notifyError } from "../../../../utils/notifyError";
 import { useUpdateUserFeed } from "../../hooks";
 import { UserFeedDisabledCode } from "../../types";
 import { UpdateUserFeedInput } from "../../api";
 import { RefreshUserFeedButton } from "../RefreshUserFeedButton";
 import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
+import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 
 export const UserFeedDisabledAlert = () => {
   const { userFeed: feed } = useUserFeedContext();
   const { t } = useTranslation();
   const { mutateAsync: mutateAsyncUserFeed, status: updatingStatus } = useUpdateUserFeed();
+  const { createErrorAlert, createSuccessAlert } = usePageAlertContext();
 
   const onUpdateFeed = async ({ url, ...rest }: UpdateUserFeedInput["data"]) => {
     try {
@@ -22,10 +22,14 @@ export const UserFeedDisabledAlert = () => {
           ...rest,
         },
       });
-      notifySuccess(t("common.success.savedChanges"));
+      createSuccessAlert({
+        title: "Successfully re-enabled feed",
+      });
     } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
-      throw err;
+      createErrorAlert({
+        title: "Failed to re-enable feed",
+        description: (err as Error).message,
+      });
     }
   };
 

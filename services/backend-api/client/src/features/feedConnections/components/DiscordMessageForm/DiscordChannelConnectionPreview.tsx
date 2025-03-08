@@ -74,7 +74,7 @@ export const DiscordChannelConnectionPreview = ({
   }
 
   return (
-    <Box position="relative" borderRadius="md" overflow="hidden" zIndex={10}>
+    <Box position="relative" borderRadius="md" overflow="hidden" isolation="isolate">
       {(isFetching || waitingForArticle) && (
         <Box
           borderRadius="md"
@@ -82,12 +82,12 @@ export const DiscordChannelConnectionPreview = ({
           width="100%"
           height="100%"
           background="rgba(0,0,0,0.75)"
-          zIndex={10}
           display="flex"
           alignItems="center"
           justifyContent="center"
           p={8}
           textAlign="center"
+          zIndex={1}
         >
           {isFetching && <Spinner />}
           {waitingForArticle && <Text>Waiting for article...</Text>}
@@ -100,7 +100,6 @@ export const DiscordChannelConnectionPreview = ({
           width="100%"
           height="100%"
           background="rgba(0,0,0,0.75)"
-          zIndex={10}
           display="flex"
           alignItems="center"
           justifyContent="center"

@@ -29,11 +29,11 @@ import { FeedDiscordChannelConnection } from "../../../../types";
 import { getPrettyConnectionName } from "../../../../utils/getPrettyConnectionName";
 import { CopyableConnectionDiscordChannelSettings } from "../../constants";
 import { useConnection, useCreateDiscordChannelConnectionCopySettings } from "../../hooks";
-import { notifySuccess } from "../../../../utils/notifySuccess";
 import { getPrettyConnectionDetail } from "../../../../utils/getPrettyConnectionDetail";
 import { ConnectionsCheckboxList } from "../ConnectionsCheckboxList";
 import { UserFeed } from "../../../feed/types";
 import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "../../../../components";
+import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 
 enum CopyCategory {
   Message = "Message Format",
@@ -180,6 +180,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
     feedId,
     connectionId,
   });
+  const { createSuccessAlert } = usePageAlertContext();
   const connection = uncastedConnection as FeedDiscordChannelConnection;
   const connectionIsInForum =
     connection?.details.channel?.type === "forum" || connection?.details.webhook?.type === "forum";
@@ -240,7 +241,9 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
         },
       });
       onClose();
-      notifySuccess(t("common.success.savedChanges"));
+      createSuccessAlert({
+        title: `Successfully copied connection settings of ${connection.name} to ${targetDiscordChannelConnectionIds.length} other connections.`,
+      });
       reset();
     } catch (err) {}
   };

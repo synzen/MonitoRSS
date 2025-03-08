@@ -28,8 +28,10 @@ import {
   DiscordServerSearchSelectv2,
   GetDiscordChannelType,
 } from "../../../discordServers";
-import { notifySuccess } from "../../../../utils/notifySuccess";
 import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "../../../../components";
+import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
+import { useUpdateDiscordChannelConnection } from "../../hooks";
+import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
 
 const formSchema = object({
   name: string().optional(),
@@ -46,22 +48,22 @@ type FormData = InferType<typeof formSchema>;
 
 interface Props {
   defaultValues?: Required<FormData>;
-  onUpdate: (data: FormData) => Promise<void>;
   isOpen: boolean;
   onClose: () => void;
   onCloseRef: React.RefObject<HTMLButtonElement>;
   excludeName?: boolean;
   title?: string;
+  connectionId: string;
 }
 
 export const EditConnectionWebhookDialog: React.FC<Props> = ({
   defaultValues,
-  onUpdate,
   isOpen,
   onClose,
   onCloseRef,
   excludeName,
   title,
+  connectionId,
 }) => {
   const { t } = useTranslation();
   const {
@@ -74,30 +76,42 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
     resolver: yupResolver(formSchema),
     defaultValues,
   });
+  const { userFeed } = useUserFeedContext();
   const [serverId, channelId] = watch(["serverId", "applicationWebhook.channelId"]);
   const { data: discordUser, status: discordUserStatus } = useDiscordUserMe();
   const initialRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState("");
+  const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
+  const { mutateAsync } = useUpdateDiscordChannelConnection();
 
   const onSubmit = async (formData: FormData) => {
-    const { name, serverId: inputServerId, applicationWebhook } = formData;
+    const { name, applicationWebhook } = formData;
 
     try {
-      await onUpdate({
-        name,
-        serverId: inputServerId,
-        applicationWebhook: {
-          name: applicationWebhook.name,
-          channelId: applicationWebhook.channelId,
-          iconUrl: applicationWebhook.iconUrl,
-          threadId: applicationWebhook.threadId,
+      await mutateAsync({
+        feedId: userFeed.id,
+        connectionId,
+        details: {
+          name,
+          applicationWebhook: {
+            name: applicationWebhook.name,
+            channelId: applicationWebhook.channelId,
+            iconUrl: applicationWebhook.iconUrl,
+            threadId: applicationWebhook.threadId,
+          },
         },
       });
+
       onClose();
       reset(formData);
-      notifySuccess(t("common.success.savedChanges"));
+      createSuccessAlert({
+        title: "Successfully updated connection.",
+      });
     } catch (err) {
-      setError((err as Error).message);
+      createErrorAlert({
+        title: "Failed to update connection.",
+        description: (err as Error).message,
+      });
     }
   };
 

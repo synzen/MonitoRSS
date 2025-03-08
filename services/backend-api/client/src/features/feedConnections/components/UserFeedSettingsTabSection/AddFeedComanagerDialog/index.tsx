@@ -32,8 +32,10 @@ import {
   useDiscordServerMembers,
 } from "../../../../discordServers";
 import { ConnectionsCheckboxList } from "../../ConnectionsCheckboxList";
-import { useUserFeed } from "../../../../feed/hooks";
-import { UserFeed } from "../../../../feed/types";
+import { useCreateUserFeedManagementInvite } from "../../../../feed/hooks";
+import { useUserFeedContext } from "../../../../../contexts/UserFeedContext";
+import { UserFeedManagerInviteType } from "../../../../../constants";
+import { usePageAlertContext } from "../../../../../contexts/PageAlertContext";
 
 interface OptionData {
   id: string;
@@ -42,34 +44,16 @@ interface OptionData {
 }
 
 interface Props {
-  onAdded: (data: { id: string; connections: Array<{ connectionId: string }> }) => Promise<void>;
   trigger: React.ReactElement;
-  description?: React.ReactNode;
-  title?: React.ReactNode;
-  okButtonText?: string;
-  feedId?: string;
-  error?: string;
-  onClosed?: () => void;
 }
 
-export const AddFeedComanagerDialog = ({
-  onAdded,
-  trigger,
-  title,
-  description,
-  okButtonText,
-  feedId,
-  error,
-  onClosed,
-}: Props) => {
+export const AddFeedComanagerDialog = ({ trigger }: Props) => {
   const { t } = useTranslation();
-  const { feed } = useUserFeed({ feedId });
+  const { userFeed } = useUserFeedContext();
   const [currentInput, setCurrentInput] = useState("");
   const [guildId, setGuildId] = useState("");
   const [selectedMention, setSelectedMention] = useState<OptionData>();
-  const { isOpen, onOpen, onClose } = useDisclosure({
-    onClose: onClosed,
-  });
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const { data: discordUserMe } = useDiscordUserMe();
   const [checkedConnections, setCheckedConnections] = useState<string[]>([]);
   const debouncedSearch = useDebounce(currentInput, 500);
@@ -86,7 +70,16 @@ export const AddFeedComanagerDialog = ({
       search: debouncedSearch,
     },
   });
-  const [saving, setSaving] = useState(false);
+  const {
+    mutateAsync: createUserFeedManagementInvite,
+    status: creatingInvitesStatus,
+    error: createInviteError,
+    reset: resetCreateInvite,
+  } = useCreateUserFeedManagementInvite();
+  const { createSuccessAlert } = usePageAlertContext();
+
+  const submitIsDisabled =
+    !selectedMention || !checkedConnections.length || creatingInvitesStatus === "loading";
 
   const onSelected = (data: { label: string; value: string; icon?: React.ReactElement | null }) => {
     setSelectedMention({
@@ -97,26 +90,30 @@ export const AddFeedComanagerDialog = ({
   };
 
   const onClickSave = async () => {
-    if (!selectedMention) {
+    if (!selectedMention || submitIsDisabled) {
       return;
     }
 
     try {
-      setSaving(true);
-      await onAdded({
-        id: selectedMention.id,
-        connections: checkedConnections.map((id) => ({
-          connectionId: id,
-        })),
+      await createUserFeedManagementInvite({
+        data: {
+          feedId: userFeed.id,
+          discordUserId: selectedMention.id,
+          type: UserFeedManagerInviteType.CoManage,
+          connections: checkedConnections.map((id) => ({
+            connectionId: id,
+          })),
+        },
+      });
+      createSuccessAlert({
+        title: `Successfully sent invite to ${selectedMention.name}`,
       });
       onClose();
-    } finally {
-      setSaving(false);
-    }
+    } catch (err) {}
   };
 
   const onClickSelectAllConnections = () => {
-    setCheckedConnections(feed?.connections.map((c) => c.id) || []);
+    setCheckedConnections(userFeed.connections.map((c) => c.id) || []);
   };
 
   const onClickSelectNoneConnections = () => {
@@ -126,6 +123,7 @@ export const AddFeedComanagerDialog = ({
   useEffect(() => {
     setSelectedMention(undefined);
     setGuildId("");
+    resetCreateInvite();
   }, [isOpen]);
 
   const options: Array<{
@@ -159,11 +157,15 @@ export const AddFeedComanagerDialog = ({
       <Modal isOpen={isOpen} onClose={onClose} size="lg">
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>{title || "Select a User"}</ModalHeader>
+          <ModalHeader>Invite User to Co-manage Feed</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <Stack spacing={8}>
-              {description}
+              <Text>
+                This user will have access to manage the settings and the existing connections of
+                this feed. You will retain ownership of this feed after they accept the invite. They
+                must accept the invite by logging in.
+              </Text>
               <Stack spacing={6}>
                 <FormControl isInvalid={isInvalidServer} isRequired>
                   <FormLabel htmlFor="server-select" id="server-select-label">
@@ -237,15 +239,15 @@ export const AddFeedComanagerDialog = ({
                     <ConnectionsCheckboxList
                       checkedConnectionIds={checkedConnections}
                       onCheckConnectionChange={setCheckedConnections}
-                      feed={feed as UserFeed}
+                      feed={userFeed}
                     />
                   </Stack>
                 </FormControl>
               </Stack>
-              {error && (
+              {createInviteError?.message && (
                 <InlineErrorAlert
                   title={t("common.errors.somethingWentWrong")}
-                  description={error}
+                  description={createInviteError.message}
                 />
               )}
             </Stack>
@@ -259,10 +261,10 @@ export const AddFeedComanagerDialog = ({
                 colorScheme="blue"
                 mr={3}
                 onClick={onClickSave}
-                isDisabled={!selectedMention || !checkedConnections.length || saving}
-                isLoading={saving}
+                aria-disabled={submitIsDisabled}
+                isLoading={creatingInvitesStatus === "loading"}
               >
-                <span>{okButtonText || t("common.buttons.save")}</span>
+                <span>Invite User to Co-manage</span>
               </Button>
             </HStack>
           </ModalFooter>

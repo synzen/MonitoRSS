@@ -2,16 +2,17 @@ import { Button } from "@chakra-ui/react";
 import { useContext } from "react";
 import { useTranslation } from "react-i18next";
 import { FaDiscord } from "react-icons/fa";
-import { notifyError } from "../../../../utils/notifyError";
 import { ArticleSelectDialog } from "../../../feed/components";
 import { SendTestArticleContext } from "../../../../contexts";
 import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
 import getChakraColor from "../../../../utils/getChakraColor";
+import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 
 export const SendConnectionTestArticleButton = () => {
   const { userFeed, connection, articleFormatOptions } = useUserFeedConnectionContext();
   const { t } = useTranslation();
   const { sendTestArticle, isFetching } = useContext(SendTestArticleContext);
+  const { createErrorAlert, createSuccessAlert, createInfoAlert } = usePageAlertContext();
 
   const onClick = async (articleId?: string) => {
     if (!articleId) {
@@ -19,20 +20,45 @@ export const SendConnectionTestArticleButton = () => {
     }
 
     try {
-      await sendTestArticle({
-        connectionType: connection.key,
-        previewInput: {
-          feedId: userFeed.id,
-          connectionId: connection.id,
-          data: {
-            article: {
-              id: articleId,
+      const resultInfo = await sendTestArticle(
+        {
+          connectionType: connection.key,
+          previewInput: {
+            feedId: userFeed.id,
+            connectionId: connection.id,
+            data: {
+              article: {
+                id: articleId,
+              },
             },
           },
         },
-      });
+        {
+          disableToast: true,
+        }
+      );
+
+      if (resultInfo?.status === "error") {
+        createErrorAlert({
+          title: resultInfo.title,
+          description: resultInfo.description,
+        });
+      } else if (resultInfo?.status === "success") {
+        createSuccessAlert({
+          title: resultInfo.title,
+          description: resultInfo.description,
+        });
+      } else if (resultInfo?.status === "info") {
+        createInfoAlert({
+          title: resultInfo.title,
+          description: resultInfo.description,
+        });
+      }
     } catch (err) {
-      notifyError(t("common.errors.somethingWentWrong"), err as Error);
+      createErrorAlert({
+        title: "Failed to send article to Discord.",
+        description: (err as Error).message,
+      });
     }
   };
 

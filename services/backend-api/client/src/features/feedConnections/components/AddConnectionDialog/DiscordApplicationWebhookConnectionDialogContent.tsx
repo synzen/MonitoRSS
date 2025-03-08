@@ -31,10 +31,10 @@ import {
   DiscordServerSearchSelectv2,
   GetDiscordChannelType,
 } from "../../../discordServers";
-import { notifySuccess } from "../../../../utils/notifySuccess";
 import { SubscriberBlockText } from "@/components/SubscriberBlockText";
 import { BlockableFeature, SupporterTier } from "../../../../constants";
 import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "../../../../components";
+import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 
 const formSchema = object({
   name: string().required("Name is required").max(250, "Name must be less than 250 characters"),
@@ -73,6 +73,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
   });
   const [serverId, channelId, threadId] = watch(["serverId", "channelId", "threadId"]);
   const { mutateAsync, error } = useCreateDiscordChannelConnection();
+  const { createSuccessAlert } = usePageAlertContext();
   const initialFocusRef = useRef<any>(null);
 
   const onSubmit = async ({ threadId: inputThreadId, name, webhook }: FormData) => {
@@ -93,9 +94,10 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
           },
         },
       });
-      notifySuccess(
-        "Succesfully added connection. New articles will be automatically delivered when found."
-      );
+      createSuccessAlert({
+        title: "Successfully added connection",
+        description: "New articles will be delivered automatically when found.",
+      });
       onClose();
     } catch (err) {}
   };
