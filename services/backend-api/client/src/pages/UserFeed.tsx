@@ -657,7 +657,7 @@ const UserFeedInner: React.FC = () => {
           </Stack>
         </Stack>
         <TabPanels width="100%" display="flex" justifyContent="center">
-          <TabPanel width="100%">
+          <TabPanel padding={0} py={4} width="100%">
             {/**
              * https://github.com/chakra-ui/chakra-ui/issues/5636
              * There is a bug with Chakra where the connection card settings dropdown will cause
@@ -787,7 +787,7 @@ const UserFeedInner: React.FC = () => {
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>
           </TabPanel>
-          <TabPanel width="100%" tabIndex={-1}>
+          <TabPanel padding={0} py={4} width="100%" tabIndex={-1}>
             <BoxConstrained.Wrapper>
               <BoxConstrained.Container>
                 <TabContentContainer>
@@ -806,7 +806,7 @@ const UserFeedInner: React.FC = () => {
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>
           </TabPanel>
-          <TabPanel width="100%">
+          <TabPanel padding={0} py={4} width="100%">
             <BoxConstrained.Wrapper>
               <BoxConstrained.Container>
                 <TabContentContainer>
@@ -815,7 +815,7 @@ const UserFeedInner: React.FC = () => {
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>
           </TabPanel>
-          <TabPanel width="100%">
+          <TabPanel padding={0} py={4} width="100%">
             <BoxConstrained.Wrapper>
               <BoxConstrained.Container>
                 <TabContentContainer>
@@ -824,7 +824,7 @@ const UserFeedInner: React.FC = () => {
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>
           </TabPanel>
-          <TabPanel width="100%">
+          <TabPanel padding={0} py={4} width="100%">
             <BoxConstrained.Wrapper>
               <BoxConstrained.Container>
                 <TabContentContainer>

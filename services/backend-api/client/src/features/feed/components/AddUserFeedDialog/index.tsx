@@ -185,7 +185,9 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                       rel="noopener noreferrer"
                     >
                       <HStack alignItems="center">
-                        <Text>{feedUrlValidationData.result.resolvedToUrl}</Text>
+                        <Text wordBreak={"break-all"}>
+                          {feedUrlValidationData.result.resolvedToUrl}
+                        </Text>
                         <ExternalLinkIcon />
                       </HStack>
                     </Link>

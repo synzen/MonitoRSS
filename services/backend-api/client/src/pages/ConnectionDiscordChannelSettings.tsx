@@ -329,7 +329,7 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
           </BoxConstrained.Container>
         </BoxConstrained.Wrapper>
         <TabPanels width="100%" display="flex" justifyContent="center">
-          <TabPanel width="100%">
+          <TabPanel padding={0} py={4} width="100%">
             <BoxConstrained.Wrapper>
               <BoxConstrained.Container>
                 <TabContentContainer>
@@ -341,7 +341,7 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>
           </TabPanel>
-          <TabPanel width="100%">
+          <TabPanel padding={0} py={4} width="100%">
             <BoxConstrained.Wrapper>
               <BoxConstrained.Container>
                 <TabContentContainer>
@@ -364,7 +364,7 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>
           </TabPanel>
-          <TabPanel width="100%">
+          <TabPanel padding={0} py={4} width="100%">
             <BoxConstrained.Wrapper>
               <BoxConstrained.Container>
                 <TabContentContainer>
@@ -373,7 +373,7 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>
           </TabPanel>
-          <TabPanel width="100%">
+          <TabPanel padding={0} py={4} width="100%">
             <BoxConstrained.Wrapper>
               <BoxConstrained.Container>
                 <TabContentContainer>
