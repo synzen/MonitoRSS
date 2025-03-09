@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Alert, AlertIcon, Box, Button, Flex } from "@chakra-ui/react";
+import { Alert, Box, Button, Flex } from "@chakra-ui/react";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
 import { InlineErrorAlert, ThemedSelect } from "@/components";
 import { useDiscordServers, useDiscordServerSettings } from "@/features/discordServers";
@@ -33,7 +33,6 @@ export const DiscordServerSearchSelectv2: React.FC<Props> = ({
     error: getServerError,
     isFetching: isFetchingServerSettings,
     refetch: refetchServerSettings,
-    data: discordServerSettings,
   } = useDiscordServerSettings({
     serverId: value,
   });
@@ -93,12 +92,6 @@ export const DiscordServerSearchSelectv2: React.FC<Props> = ({
         {isFetchingServerSettings && (
           <Alert status="info" mt={2}>
             Checking server eligibility...
-          </Alert>
-        )}
-        {discordServerSettings && (
-          <Alert status="success" mt={2}>
-            <AlertIcon />
-            Selected Discord server is eligible for articles to be sent
           </Alert>
         )}
         <Box mt={2} hidden={getServerError?.statusCode !== 404}>
