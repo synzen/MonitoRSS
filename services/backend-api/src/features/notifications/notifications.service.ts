@@ -83,6 +83,7 @@ const USER_FEED_CONNECTION_DISABLED_REASONS: Partial<
 @Injectable()
 export class NotificationsService {
   EMAIL_ALERT_FROM = '"MonitoRSS Alerts" <alerts@monitorss.xyz>';
+  LOGIN_REDIRECT_URL = "https://my.monitorss.xyz";
 
   constructor(
     @Inject(SmtpTransport)
@@ -94,9 +95,16 @@ export class NotificationsService {
     private readonly configService: ConfigService
   ) {
     const smtpFrom = this.configService.get<string>("BACKEND_API_SMTP_FROM");
+    const loginRedirectUrl = this.configService.get<string>(
+      "BACKEND_API_LOGIN_REDIRECT_URI"
+    );
 
     if (smtpFrom) {
       this.EMAIL_ALERT_FROM = smtpFrom;
+    }
+
+    if (loginRedirectUrl) {
+      this.LOGIN_REDIRECT_URL = loginRedirectUrl;
     }
   }
 
@@ -175,10 +183,10 @@ export class NotificationsService {
             feedName,
             feedUrlDisplay: feedUrl,
             feedUrlLink: feed.url,
-            controlPanelUrl: `https://my.monitorss.xyz/feeds/${feed._id}`,
+            controlPanelUrl: `${this.LOGIN_REDIRECT_URL}/feeds/${feed._id}`,
             reason: reason?.reason || data.disabledCode,
             actionRequired: reason?.action,
-            manageNotificationsUrl: "https://my.monitorss.xyz/alerting",
+            manageNotificationsUrl: `${this.LOGIN_REDIRECT_URL}/alerting`,
           };
 
           try {
@@ -344,13 +352,13 @@ export class NotificationsService {
       feedName: feedName,
       feedUrlDisplay: feedUrl,
       feedUrlLink: feed.url,
-      controlPanelUrl: `https://my.monitorss.xyz/feeds/${feed._id}${
+      controlPanelUrl: `${this.LOGIN_REDIRECT_URL}/feeds/${feed._id}${
         connectionPrefix ? `/${connectionPrefix}/${connection.id}` : ""
       }`,
       reason: reason?.reason || disabledCode,
       actionRequired: reason?.action,
       connectionName: connectionName,
-      manageNotificationsUrl: "https://my.monitorss.xyz/settings",
+      manageNotificationsUrl: `${this.LOGIN_REDIRECT_URL}/settings`,
       articleId,
       rejectedMessage,
     };
