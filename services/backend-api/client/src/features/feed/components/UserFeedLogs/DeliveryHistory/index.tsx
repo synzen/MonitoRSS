@@ -19,7 +19,6 @@ import {
   Thead,
   Tr,
   Link as ChakraLink,
-  IconButton,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -286,16 +285,16 @@ export const DeliveryHistory = () => {
                             <Skeleton isLoaded={fetchStatus === "idle"}>
                               {item.details?.message}
                               {item.details?.data && (
-                                <IconButton
-                                  aria-label="View details"
-                                  ml={1}
-                                  icon={<Search2Icon />}
+                                <Button
+                                  leftIcon={<Search2Icon />}
                                   size="xs"
-                                  variant="link"
+                                  variant="outline"
                                   onClick={() =>
                                     setDetailsData(JSON.stringify(item.details?.data, null, 2))
                                   }
-                                />
+                                >
+                                  View Details
+                                </Button>
                               )}
                             </Skeleton>
                           </Td>

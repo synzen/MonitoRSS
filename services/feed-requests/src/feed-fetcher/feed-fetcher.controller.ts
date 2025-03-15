@@ -69,6 +69,8 @@ export class FeedFetcherController {
       result: {
         requests: requests.map((r) => ({
           createdAt: dayjs(r.createdAt).unix(),
+          finishedAtIso: r.finishedAt?.toISOString(),
+          createdAtIso: r.createdAt.toISOString(),
           id: r.id,
           url: r.url,
           status: r.status,

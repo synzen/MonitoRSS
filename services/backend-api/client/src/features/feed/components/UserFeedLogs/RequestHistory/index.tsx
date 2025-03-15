@@ -28,12 +28,13 @@ import {
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
-import { QuestionOutlineIcon } from "@chakra-ui/icons";
+import { QuestionOutlineIcon, Search2Icon } from "@chakra-ui/icons";
 import { forwardRef } from "react";
 import { useUserFeedRequestsWithPagination } from "../../../hooks";
 import { UserFeedRequestStatus } from "../../../types";
 import { InlineErrorAlert } from "../../../../../components";
 import { useUserFeedContext } from "../../../../../contexts/UserFeedContext";
+import { RequestDetails } from "./RequestDetails";
 
 const QuestionOutlineComponent = forwardRef<any>((props, ref) => (
   <QuestionOutlineIcon fontSize={12} tabIndex={-1} ref={ref} aria-hidden {...props} />
@@ -188,6 +189,7 @@ export const RequestHistory = () => {
                           </PopoverContent>
                         </Popover>
                       </Th>
+                      <Th>Details</Th>
                     </Tr>
                   </Thead>
                   <Tbody>
@@ -210,6 +212,23 @@ export const RequestHistory = () => {
                             {req.freshnessLifetimeMs
                               ? dayjs.duration(req.freshnessLifetimeMs, "ms").humanize()
                               : "N/A"}
+                          </Skeleton>
+                        </Td>
+                        <Td>
+                          <Skeleton isLoaded={fetchStatus === "idle"}>
+                            <RequestDetails
+                              trigger={
+                                <Button
+                                  leftIcon={<Search2Icon />}
+                                  variant="outline"
+                                  size="xs"
+                                  onClick={() => {}}
+                                >
+                                  View Details
+                                </Button>
+                              }
+                              request={req}
+                            />
                           </Skeleton>
                         </Td>
                       </Tr>

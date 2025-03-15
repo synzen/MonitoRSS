@@ -261,12 +261,22 @@ export default class PartitionedRequestsStoreService {
     limit: number;
     url: string;
     lookupKey?: string;
-  }): Promise<Request[]> {
+  }) {
     const em = this.orm.em.getConnection();
 
-    const results = await em.execute(
+    const results: Array<{
+      id: number;
+      url: string;
+      created_at: Date;
+      next_retry_date: Date;
+      status: RequestStatus;
+      response_status_code: number | null;
+      fetch_options: Record<string, string> | null;
+      response_headers: Record<string, string> | null;
+      request_initiated_at: Date | null;
+    }> = await em.execute(
       `SELECT id, url, created_at, next_retry_date, status, response_status_code,` +
-        ` fetch_options, response_headers FROM request_partitioned
+        ` fetch_options, response_headers, request_initiated_at FROM request_partitioned
        WHERE lookup_key = ?
        ORDER BY created_at DESC
        LIMIT ?
@@ -276,7 +286,8 @@ export default class PartitionedRequestsStoreService {
 
     return results.map((result) => ({
       id: result.id,
-      createdAt: new Date(result.created_at),
+      createdAt: new Date(result.request_initiated_at || result.created_at),
+      finishedAt: new Date(result.created_at),
       nextRetryDate: result.next_retry_date,
       url: result.url,
       status: result.status,

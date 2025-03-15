@@ -12,10 +12,15 @@ export enum UserFeedRequestStatus {
 
 export const UserFeedRequestSchema = object({
   id: string().required(),
+  url: string().required(),
   status: string().oneOf(Object.values(UserFeedRequestStatus)).required(),
   createdAt: number().required(),
+  createdAtIso: string().required(),
+  finishedAtIso: string().optional().nullable(),
+  headers: object().nullable(),
   response: object({
     statusCode: number().nullable(),
+    headers: object().nullable(),
   }).required(),
   freshnessLifetimeMs: number().nullable().optional(),
 });
