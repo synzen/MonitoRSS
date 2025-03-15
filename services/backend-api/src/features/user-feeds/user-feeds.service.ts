@@ -825,14 +825,12 @@ export class UserFeedsService {
 
   async getFeedRequests({
     feed,
-    skip,
-    limit,
     url,
+    query,
   }: {
     feed: UserFeed;
-    skip: number;
-    limit: number;
     url: string;
+    query: Record<string, string>;
   }) {
     const lookupDetails = getFeedRequestLookupDetails({
       feed,
@@ -843,8 +841,7 @@ export class UserFeedsService {
     });
 
     return this.feedFetcherApiService.getRequests({
-      limit,
-      skip,
+      query,
       url: lookupDetails?.url || url,
       requestLookupKey: lookupDetails?.key,
     });

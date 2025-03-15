@@ -84,14 +84,12 @@ export class FeedFetcherApiService {
   }
 
   async getRequests(payload: {
-    limit: number;
-    skip: number;
+    query: Record<string, string>;
     url: string;
     requestLookupKey?: string;
   }) {
     const urlParams = new URLSearchParams({
-      limit: payload.limit.toString(),
-      skip: payload.skip.toString(),
+      ...payload.query,
       url: payload.url,
       lookupKey: payload.requestLookupKey || "",
     });

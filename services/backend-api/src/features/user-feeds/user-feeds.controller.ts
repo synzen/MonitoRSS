@@ -9,6 +9,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Res,
   UseFilters,
   UseGuards,
@@ -19,7 +20,7 @@ import { NestedFieldPipe } from "../../common/pipes/nested-field.pipe";
 import { TransformValidationPipe } from "../../common/pipes/TransformValidationPipe";
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
 import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
-import { FastifyReply } from "fastify";
+import { FastifyReply, FastifyRequest } from "fastify";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
 
 import { ADD_DISCORD_CHANNEL_CONNECTION_ERROR_CODES } from "../feed-connections/filters";
@@ -39,7 +40,6 @@ import {
   GetUserFeedDailyLimitOutputDto,
   GetUserFeedDeliveryLogsInputDto,
   GetUserFeedOutputDto,
-  GetUserFeedRequestsInputDto,
   GetUserFeedsInputDto,
   GetUserFeedsOutputDto,
   UpdateUserFeedInputDto,
@@ -248,13 +248,11 @@ export class UserFeedsController {
   async getFeedRequests(
     @Param("feed", GetUserFeedsPipe())
     [{ feed }]: GetUserFeedsPipeOutput,
-    @NestedQuery(TransformValidationPipe)
-    { limit, skip }: GetUserFeedRequestsInputDto
+    @Query() query: FastifyRequest["query"]
   ) {
     return this.userFeedsService.getFeedRequests({
       url: feed.url,
-      limit,
-      skip,
+      query: query as Record<string, string>,
       feed,
     });
   }

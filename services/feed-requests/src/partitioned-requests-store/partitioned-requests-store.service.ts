@@ -256,11 +256,15 @@ export default class PartitionedRequestsStoreService {
     skip,
     url,
     lookupKey,
+    afterDate,
+    beforeDate,
   }: {
     skip: number;
     limit: number;
     url: string;
     lookupKey?: string;
+    afterDate?: string;
+    beforeDate?: string;
   }) {
     const em = this.orm.em.getConnection();
 
@@ -278,10 +282,18 @@ export default class PartitionedRequestsStoreService {
       `SELECT id, url, created_at, next_retry_date, status, response_status_code,` +
         ` fetch_options, response_headers, request_initiated_at FROM request_partitioned
        WHERE lookup_key = ?
+       ${afterDate ? 'AND created_at >= ?' : ''}
+       ${beforeDate ? 'AND created_at <= ?' : ''}
        ORDER BY created_at DESC
        LIMIT ?
        OFFSET ?`,
-      [lookupKey || url, limit, skip],
+      [
+        lookupKey || url,
+        ...(afterDate ? [afterDate] : []),
+        ...(beforeDate ? [beforeDate] : []),
+        limit,
+        skip,
+      ],
     );
 
     return results.map((result) => ({

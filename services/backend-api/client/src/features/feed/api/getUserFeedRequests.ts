@@ -7,6 +7,8 @@ export interface GetUserFeedRequestsInput {
   data: {
     limit: number;
     skip: number;
+    afterDate?: string;
+    beforeDate?: string;
   };
 }
 
@@ -33,6 +35,14 @@ export const getUserFeedRequests = async ({
 
   params.append("limit", data.limit.toString());
   params.append("skip", data.skip.toString());
+
+  if (data.afterDate) {
+    params.append("afterDate", data.afterDate);
+  }
+
+  if (data.beforeDate) {
+    params.append("beforeDate", data.beforeDate);
+  }
 
   const query = params.toString();
 

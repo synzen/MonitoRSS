@@ -6,8 +6,11 @@ import {
   Center,
   Divider,
   Flex,
+  FormControl,
+  FormLabel,
   HStack,
   Heading,
+  Input,
   Popover,
   PopoverArrow,
   PopoverBody,
@@ -29,12 +32,14 @@ import {
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import { QuestionOutlineIcon, Search2Icon } from "@chakra-ui/icons";
-import { forwardRef } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { useUserFeedRequestsWithPagination } from "../../../hooks";
 import { UserFeedRequestStatus } from "../../../types";
 import { InlineErrorAlert } from "../../../../../components";
 import { useUserFeedContext } from "../../../../../contexts/UserFeedContext";
 import { RequestDetails } from "./RequestDetails";
+import { GetUserFeedRequestsInput } from "../../../api";
+import { DismissableAlert } from "../../../../../components/DismissableAlert";
 
 const QuestionOutlineComponent = forwardRef<any>((props, ref) => (
   <QuestionOutlineIcon fontSize={12} tabIndex={-1} ref={ref} aria-hidden {...props} />
@@ -84,15 +89,94 @@ export const RequestHistory = () => {
   const {
     userFeed: { id: feedId },
   } = useUserFeedContext();
+  const [startDate, setStartDate] = useState<string>();
+  const [endDate, setEndDate] = useState<string>();
+  const [requestData, setRequestData] = useState<Partial<GetUserFeedRequestsInput["data"]>>({});
   const { data, status, error, skip, nextPage, prevPage, fetchStatus, limit } =
     useUserFeedRequestsWithPagination({
       feedId,
-      data: {},
+      data: requestData,
     });
+  const [isInvalidDateRange, setIsInvalidDateRange] = useState(false);
   const { t } = useTranslation();
 
   const onFirstPage = skip === 0;
   const hasNoData = data?.result.requests.length === 0 && skip === 0;
+
+  useEffect(() => {
+    setIsInvalidDateRange(false);
+  }, [fetchStatus]);
+
+  const onApplyDateRange = () => {
+    if (fetchStatus === "fetching") {
+      return;
+    }
+
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      setIsInvalidDateRange(true);
+    } else {
+      const newDateRange = {
+        ...requestData,
+        afterDate: startDate ? new Date(startDate).toISOString() : undefined,
+        beforeDate: endDate ? new Date(endDate).toISOString() : undefined,
+      };
+      setRequestData(newDateRange);
+      setIsInvalidDateRange(false);
+    }
+  };
+
+  const dateRangeForm = (
+    <Stack
+      as="form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onApplyDateRange();
+      }}
+    >
+      <HStack flexWrap="wrap">
+        <FormControl flex={1}>
+          <FormLabel>Start Date Range</FormLabel>
+          <Input
+            bg="gray.900"
+            type="datetime-local"
+            size="sm"
+            onChange={(e) => {
+              setStartDate(e.target.value);
+            }}
+          />
+        </FormControl>
+        <FormControl flex={1}>
+          <FormLabel>End Date Range</FormLabel>
+          <Input
+            bg="gray.900"
+            type="datetime-local"
+            size="sm"
+            onChange={(e) => {
+              setEndDate(e.target.value);
+            }}
+          />
+        </FormControl>
+      </HStack>
+      {isInvalidDateRange && (
+        <DismissableAlert
+          status="error"
+          title="Invalid Date Range"
+          description="The start date must be before the end date."
+          onClosed={() => setIsInvalidDateRange(false)}
+        />
+      )}
+      <Box>
+        <Button
+          size="sm"
+          onClick={onApplyDateRange}
+          aria-disabled={fetchStatus === "fetching"}
+          type="submit"
+        >
+          Apply Date Range
+        </Button>
+      </Box>
+    </Stack>
+  );
 
   return (
     <Stack spacing={4} mb={8} border="solid 1px" borderColor="gray.700" borderRadius="md">
@@ -111,17 +195,17 @@ export const RequestHistory = () => {
         <Box srOnly aria-live="polite">
           {status === "loading" && (
             <span>
-              Loading request history rows ${skip + 1} through ${skip + limit}
+              Loading request history rows {skip + 1} through {skip + limit}
             </span>
           )}
           {status === "success" && (
             <span>
-              Finished loading request history rows ${skip + 1} through ${skip + limit}
+              Finished loading request history rows {skip + 1} through {skip + limit}
             </span>
           )}
           {status === "success" && fetchStatus === "fetching" && (
             <span>
-              Loading request history rows ${skip + 1} through ${skip + limit}
+              Loading request history rows {skip + 1} through {skip + limit}
             </span>
           )}
         </Box>
@@ -145,13 +229,14 @@ export const RequestHistory = () => {
           </Alert>
         )}
         {hasNoData && (
-          <Text color="whiteAlpha.700">
-            No historical requests found. This is likely because the feed has not been polled yet -
-            please check back later.
-          </Text>
+          <Stack>
+            {dateRangeForm}
+            <Text color="whiteAlpha.700">No requests found.</Text>
+          </Stack>
         )}
         {data && !hasNoData && (
           <Stack>
+            {dateRangeForm}
             <Box>
               <TableContainer>
                 <Table size="sm" variant="simple" aria-labelledby="request-history-table-title">

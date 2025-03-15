@@ -105,12 +105,21 @@ export class FeedFetcherService {
     );
   }
 
-  async getRequests({ skip, limit, url, lookupKey }: GetFeedRequestsInputDto) {
+  async getRequests({
+    skip,
+    limit,
+    url,
+    lookupKey,
+    afterDate,
+    beforeDate,
+  }: GetFeedRequestsInputDto) {
     return this.partitionedRequestsStore.getRequests({
       limit,
       skip,
       url,
       lookupKey,
+      afterDate,
+      beforeDate,
     });
   }
 
