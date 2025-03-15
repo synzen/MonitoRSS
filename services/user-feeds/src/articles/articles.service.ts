@@ -574,7 +574,8 @@ export class ArticlesService {
         .find((v) => !!v);
 
       if (!dateValue) {
-        return false;
+        // In case of invalid dates, err on the side of caution and deliver the article
+        return true;
       }
 
       const diffMs = dayjs().diff(dateValue, "millisecond");
