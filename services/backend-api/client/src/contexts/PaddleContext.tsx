@@ -16,6 +16,7 @@ import { useUserMe } from "../features/discordUser";
 import { pages, PRODUCT_NAMES, ProductKey } from "../constants";
 import { CheckoutSummaryData } from "../types/CheckoutSummaryData";
 import { PricePreview } from "../types/PricePreview";
+import { retryPromise } from "../utils/retryPromise";
 
 const pwAuth = import.meta.env.VITE_PADDLE_PW_AUTH;
 const clientToken = import.meta.env.VITE_PADDLE_CLIENT_TOKEN;
@@ -173,9 +174,11 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       > = {};
 
       try {
-        const previewData = await paddle.PricePreview({
-          items: priceIdsToGet.map((priceId) => ({ priceId, quantity: 1 })),
-        });
+        const previewData = await retryPromise(async () =>
+          paddle.PricePreview({
+            items: priceIdsToGet.map((priceId) => ({ priceId, quantity: 1 })),
+          })
+        );
 
         const { details, currencyCode } = previewData.data;
 
