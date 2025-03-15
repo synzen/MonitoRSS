@@ -197,7 +197,10 @@ export const Checkout = ({ cancelUrl }: Props) => {
                       <Box px={4} pb={4}>
                         <Skeleton isLoaded={isLoaded}>
                           <Text fontSize="4xl" fontWeight="semibold" display="inline">
-                            {formatCurrency(checkoutData?.recurringTotals.total)}
+                            {/** Recurring total may not exist for cancelled subscriptions */}
+                            {checkoutData?.recurringTotals
+                              ? formatCurrency(checkoutData?.recurringTotals.total)
+                              : "Error"}
                           </Text>
                           <Text display="inline"> per {checkoutData?.item.interval}</Text>
                         </Skeleton>
@@ -288,7 +291,10 @@ export const Checkout = ({ cancelUrl }: Props) => {
                             <Td py={2} px="0" isNumeric textAlign="end">
                               <Skeleton isLoaded={isLoaded}>
                                 <Text fontSize="sm" color="whiteAlpha.700">
-                                  {formatCurrency(checkoutData?.recurringTotals.total) || "100"}
+                                  {/** Recurring total may not exist for cancelled subscriptions */}
+                                  {checkoutData?.recurringTotals
+                                    ? formatCurrency(checkoutData?.recurringTotals.total) || "100"
+                                    : "Error"}
                                 </Text>
                               </Skeleton>
                             </Td>

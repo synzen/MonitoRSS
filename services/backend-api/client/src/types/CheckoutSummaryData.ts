@@ -24,7 +24,7 @@ interface PriceInformation {
 
 export interface CheckoutSummaryData {
   currencyCode: string;
-  recurringTotals: PriceInformation;
+  recurringTotals?: PriceInformation;
   totals: PriceInformation;
   item: {
     interval: "month" | "year";

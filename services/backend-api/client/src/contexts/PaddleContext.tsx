@@ -31,7 +31,7 @@ export interface PaddleCheckoutLoadedEvent {
       };
     }>;
     currency_code: string;
-    recurring_totals: {
+    recurring_totals?: {
       balance: number;
       credit: number;
       discount: number;
@@ -125,13 +125,15 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
               productName: data.items[0].product.name,
               interval: data.items[0].billing_cycle.interval,
             },
-            recurringTotals: {
-              balance: data.recurring_totals.balance,
-              credit: data.recurring_totals.credit,
-              subtotal: data.recurring_totals.subtotal,
-              tax: data.recurring_totals.tax,
-              total: data.recurring_totals.total,
-            },
+            recurringTotals: data.recurring_totals
+              ? {
+                  balance: data.recurring_totals.balance,
+                  credit: data.recurring_totals.credit,
+                  subtotal: data.recurring_totals.subtotal,
+                  tax: data.recurring_totals.tax,
+                  total: data.recurring_totals.total,
+                }
+              : undefined,
             totals: {
               balance: data.totals.balance,
               credit: data.totals.credit,
