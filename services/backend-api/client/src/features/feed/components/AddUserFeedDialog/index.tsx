@@ -241,7 +241,7 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                       </Stack>
                       <Stack flex={1}>
                         <Heading as="h3" size="sm" fontWeight="semibold">
-                          Daily Feed Article Limit
+                          Daily Article Limit Per Feed
                         </Heading>
                         <Text>
                           {userMe &&

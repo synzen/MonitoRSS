@@ -110,7 +110,6 @@ export const SubscriberBlockText = ({ alternateText, onClick, feature, supporter
               <Button
                 as="a"
                 mt={4}
-                colorScheme="purple"
                 href="https://www.patreon.com/monitorss"
                 target="_blank"
                 rel="noreferrer noopener"

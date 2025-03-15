@@ -587,7 +587,7 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
                 </Stack>
                 <Stack flex={1}>
                   <Heading as="h3" size="sm" fontWeight="semibold">
-                    Daily Feed Article Limit
+                    Daily Article Limit Per Feed
                   </Heading>
                   <Text>
                     {userMe && userMe.result.subscription.product.key !== ProductKey.Free && 1000}
