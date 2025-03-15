@@ -129,6 +129,19 @@ export const Checkout = ({ cancelUrl }: Props) => {
     ? dayjs().add(1, checkoutData.item.interval).format("D MMM YYYY")
     : todayFormatted;
 
+  const checkoutDataExists = !!checkoutData;
+  const checkoutRecurringTotalsExist = !!checkoutData?.recurringTotals;
+
+  useEffect(() => {
+    if (checkoutDataExists && !checkoutRecurringTotalsExist) {
+      captureException(new Error("Recurring totals do not exist"), {
+        extra: {
+          checkoutData,
+        },
+      });
+    }
+  }, [checkoutRecurringTotalsExist, checkoutDataExists]);
+
   return (
     <DashboardContentV2 error={error} loading={false}>
       <BoxConstrained.Wrapper>
