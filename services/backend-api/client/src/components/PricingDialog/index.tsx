@@ -265,7 +265,11 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
         setProducts(pricePreview);
       } catch (err) {
         setPricePreviewErrored(true);
-        captureException(err);
+        captureException(new Error(`Price preview failed to load`), {
+          extra: {
+            error: err,
+          },
+        });
       } finally {
         setIsLoadingPricePreview(false);
       }
