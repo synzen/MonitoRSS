@@ -7,12 +7,18 @@ import { Request } from '../feed-fetcher/entities';
 import { RequestStatus } from '../feed-fetcher/constants';
 import { getUrlHost } from '../utils/get-url-host';
 import logger from '../utils/logger';
+import { CacheStorageService } from '../cache-storage/cache-storage.service';
+import { ObjectFileStorageService } from '../object-file-storage/object-file-storage.service';
 
 const sha1 = createHash('sha1');
 
 @Injectable()
 export default class PartitionedRequestsStoreService {
-  constructor(private readonly orm: MikroORM) {}
+  constructor(
+    private readonly orm: MikroORM,
+    private readonly cacheStorageService: CacheStorageService,
+    private readonly objectFileStorageService: ObjectFileStorageService,
+  ) {}
 
   async wasRequestedInPastSeconds(
     lookupKey: string,
@@ -52,12 +58,12 @@ export default class PartitionedRequestsStoreService {
 
       await Promise.all(
         inserts.map(async (responseInsert) => {
-          const urlHash = sha1.copy().update(responseInsert.url).digest('hex');
+          const urlHash = this.getHashFromText(responseInsert.url);
           let hostHash: string | null = null;
 
           try {
             const host = getUrlHost(responseInsert.url);
-            hostHash = sha1.copy().update(host).digest('hex');
+            hostHash = this.getHashFromText(host);
           } catch (err) {
             logger.error('Failed to get host from url', {
               url: responseInsert.url,
@@ -71,15 +77,27 @@ export default class PartitionedRequestsStoreService {
               .update(responseInsert.response.body.contents)
               .digest('hex');
 
-            // does this content already exist in the db?
+            // do a lightweight check to see if the content is already in the database
+            // without having to send the body content
             const results = await em.execute(
               `SELECT 1 FROM response_bodies WHERE hash_key = ? AND content_hash = ?`,
               [responseInsert.response.body.hashKey, contentHash],
             );
 
             if (results.length === 0) {
+              await this.cacheStorageService.setFeedHtmlContent({
+                key: responseInsert.response.body.hashKey,
+                body: responseInsert.response.body.contents,
+              });
+
+              await this.objectFileStorageService.uploadFeedHtmlContent({
+                key: responseInsert.response.body.hashKey,
+                body: responseInsert.response.body.contents,
+              });
+
               await em.execute(
-                `INSERT INTO response_bodies (content, content_hash, hash_key) VALUES (?, ?, ?)
+                `INSERT INTO response_bodies (content, content_hash, hash_key)
+                 VALUES (?, ?, ?)
                 ON CONFLICT (hash_key) DO UPDATE SET content = ?, content_hash = ?
               `,
                 [
@@ -318,14 +336,18 @@ export default class PartitionedRequestsStoreService {
   ): Promise<Request | null> {
     const em = this.orm.em.getConnection();
 
+    /**
+     * response_body_hash_key may be null if all requests are either not OK or 304
+     */
     const [result] = await em.execute(
-      `SELECT req.*, res.content AS response_body_content,
+      `SELECT req.*,
         res.content_hash AS response_content_hash
        FROM request_partitioned req
        LEFT JOIN response_bodies res
        ON req.response_body_hash_key = res.hash_key
        WHERE req.lookup_key = ?
        AND req.response_status_code != 304
+       AND response_body_hash_key IS NOT NULL
        ORDER BY created_at DESC
        LIMIT 1`,
       [lookupKey],
@@ -335,7 +357,43 @@ export default class PartitionedRequestsStoreService {
       return null;
     }
 
-    return this.mapPartitionedRequestToModel(result);
+    const bodyHashKey = result.response_body_hash_key;
+
+    let bodyContent: string | undefined =
+      await this.cacheStorageService.getFeedHtmlContent({
+        key: bodyHashKey,
+      });
+
+    if (!bodyContent) {
+      bodyContent = await this.objectFileStorageService.getFeedHtmlContent({
+        key: bodyHashKey,
+      });
+    }
+
+    if (!bodyContent) {
+      const [bodyResult] = await em.execute(
+        `SELECT content FROM response_bodies WHERE hash_key = ?`,
+        [bodyHashKey],
+      );
+
+      if (bodyResult && bodyResult.content) {
+        bodyContent = bodyResult.content;
+
+        await this.objectFileStorageService.uploadFeedHtmlContent({
+          key: bodyHashKey,
+          body: bodyResult.content,
+        });
+      }
+    }
+
+    if (!bodyContent) {
+      throw new Error(`Failed to get body content from storage`);
+    }
+
+    return this.mapPartitionedRequestToModel({
+      ...result,
+      response_body_content: bodyContent,
+    });
   }
 
   private mapPartitionedRequestToModel(result: any) {
@@ -375,5 +433,9 @@ export default class PartitionedRequestsStoreService {
     }
 
     return JSON.stringify(json);
+  }
+
+  private getHashFromText(text: string): string {
+    return sha1.copy().update(text).digest('hex');
   }
 }

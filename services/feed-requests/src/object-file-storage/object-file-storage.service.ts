@@ -17,6 +17,9 @@ export class ObjectFileStorageService {
         Bucket: FEED_RESPONSE_BUCKET,
         Key: key,
         Body: body,
+        Metadata: {
+          lastModified: new Date().toISOString(),
+        },
       }),
     );
   }

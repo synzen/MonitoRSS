@@ -3,6 +3,8 @@ import { RedisClient } from './constants/redis-client.constant';
 import { RedisClientType } from 'redis';
 import logger from '../utils/logger';
 
+const FEED_HTML_CONTENT_EXPIRY = 60 * 15; // 15 minutes
+
 @Injectable()
 export class CacheStorageService {
   constructor(
@@ -81,7 +83,7 @@ export class CacheStorageService {
   async setFeedHtmlContent({ key, body }: { body: string; key: string }) {
     try {
       await this.redisClient.set(key, body, {
-        EX: 60 * 15, // 15 minutes
+        EX: FEED_HTML_CONTENT_EXPIRY, // 15 minutes
       });
     } catch (err) {
       logger.error(`Failed to set html content in cache storage`, {
@@ -97,6 +99,9 @@ export class CacheStorageService {
       if (!res) {
         return '';
       }
+
+      // reset expiry
+      await this.redisClient.expire(key, FEED_HTML_CONTENT_EXPIRY); // 15 minutes
 
       return res;
     } catch (err) {
