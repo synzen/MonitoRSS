@@ -1,6 +1,6 @@
 services:
   feed-requests-redis-cache:
-    image: redis:7.0.7-alpine
+    image: redis:7.4.2
     restart: always
     command: redis-server --save 60 1
     volumes:
@@ -24,7 +24,7 @@ services:
     command: mongod --port 27017
     logging:
       driver: none
-    image: mongo:7.0.2
+    image: mongo:8.0.5
     volumes:
       - "mongodb-data:/data/db"
     networks:
@@ -43,7 +43,7 @@ services:
     # Comment below to show logs
     logging:
       driver: none
-    image: postgres:16.3-alpine
+    image: postgres:16.8-alpine
     volumes:
       - feed-requests-postgres16-data:/var/lib/postgresql/data
       - ./services/feed-requests/sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
@@ -63,7 +63,7 @@ services:
     # Comment below to show logs
     logging:
       driver: none
-    image: postgres:16.3-alpine
+    image: postgres:16.8-alpine
     volumes:
       - user-feeds-postgres16-data:/var/lib/postgresql/data
       - ./services/user-feeds/sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
