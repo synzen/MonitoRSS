@@ -1,6 +1,6 @@
 services:
   feed-requests-redis-cache:
-    image: redis:7.4.2
+    image: redis:7.4.2-alpine
     restart: always
     command: redis-server --save 60 1
     volumes:
