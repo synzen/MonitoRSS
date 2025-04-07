@@ -326,12 +326,20 @@ export default class PartitionedRequestsStoreService {
        ON req.response_body_hash_key = res.hash_key
        WHERE req.lookup_key = ?
        AND req.response_status_code != 304
+       AND response_body_hash_key IS NOT NULL
        ORDER BY created_at DESC
        LIMIT 1`,
       [lookupKey],
     );
 
     if (!result) {
+      return null;
+    }
+
+    if (!result.response_body_content) {
+      /**
+       * Handle cases where response bodies were temporarily stored in S3 and Redis instead
+       */
       return null;
     }
 

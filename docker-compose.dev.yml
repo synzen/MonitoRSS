@@ -110,6 +110,9 @@ services:
     environment:
       - FEED_REQUESTS_START_TARGET=api
       - NODE_ENV=local
+      - FEED_REQUESTS_S3_ENDPOINT=http://seaweed-fs:8333
+      - FEED_REQUESTS_S3_API_KEY_ID=1
+      - FEED_REQUESTS_S3_API_KEY=1
     networks:
       - monitorss-default
 
