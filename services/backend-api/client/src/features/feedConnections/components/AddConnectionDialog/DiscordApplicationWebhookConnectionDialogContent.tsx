@@ -35,6 +35,7 @@ import { SubscriberBlockText } from "@/components/SubscriberBlockText";
 import { BlockableFeature, SupporterTier } from "../../../../constants";
 import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "../../../../components";
 import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
+import { useIsFeatureAllowed } from "../../../../hooks";
 
 const formSchema = object({
   name: string().required("Name is required").max(250, "Name must be less than 250 characters"),
@@ -74,6 +75,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
   const [serverId, channelId, threadId] = watch(["serverId", "channelId", "threadId"]);
   const { mutateAsync, error } = useCreateDiscordChannelConnection();
   const { createSuccessAlert } = usePageAlertContext();
+  const { allowed } = useIsFeatureAllowed({ feature: BlockableFeature.DiscordWebhooks });
   const initialFocusRef = useRef<any>(null);
 
   const onSubmit = async ({ threadId: inputThreadId, name, webhook }: FormData) => {
@@ -130,7 +132,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
               supporterTier={SupporterTier.Any}
               onClick={onClose}
             />
-            <form id="addconnection" onSubmit={handleSubmit(onSubmit)}>
+            <form id="addconnection" onSubmit={handleSubmit(onSubmit)} hidden={!allowed}>
               <Stack spacing={4}>
                 <FormControl isInvalid={!!errors.serverId} isRequired>
                   <FormLabel id="server-select-label" htmlFor="server-select">
@@ -344,20 +346,27 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
           </Stack>
         </ModalBody>
         <ModalFooter>
-          <HStack>
-            <Button variant="ghost" mr={3} onClick={onClose} isDisabled={isSubmitting}>
-              <span>{t("common.buttons.cancel")}</span>
+          {allowed && (
+            <HStack>
+              <Button variant="ghost" mr={3} onClick={onClose} isDisabled={isSubmitting}>
+                <span>{t("common.buttons.cancel")}</span>
+              </Button>
+              <Button
+                colorScheme="blue"
+                type="submit"
+                form="addconnection"
+                isLoading={isSubmitting}
+                aria-disabled={isSubmitting || !isValid}
+              >
+                <span>{t("common.buttons.save")}</span>
+              </Button>
+            </HStack>
+          )}
+          {!allowed && (
+            <Button onClick={onClose}>
+              <span>Close</span>
             </Button>
-            <Button
-              colorScheme="blue"
-              type="submit"
-              form="addconnection"
-              isLoading={isSubmitting}
-              aria-disabled={isSubmitting || !isValid}
-            >
-              <span>{t("common.buttons.save")}</span>
-            </Button>
-          </HStack>
+          )}
         </ModalFooter>
       </ModalContent>
     </Modal>
