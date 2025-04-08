@@ -7,7 +7,9 @@ const config = {
   maxRequestsPerSecond: Number(
     process.env.DISCORD_REST_LISTENER_MAX_REQ_PER_SEC
   ),
-  rabbitmqUri: encodeURI(process.env.DISCORD_REST_LISTENER_RABBITMQ_URI),
+  rabbitmqUri: encodeURI(
+    (process.env.DISCORD_REST_LISTENER_RABBITMQ_URI as string) || ""
+  ),
   discordClientId: process.env.DISCORD_REST_LISTENER_BOT_CLIENT_ID,
   datadog: {
     apiKey: process.env.DISCORD_REST_LISTENER_DATADOG_API_KEY,
