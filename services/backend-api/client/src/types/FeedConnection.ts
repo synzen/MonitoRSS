@@ -11,6 +11,7 @@ export enum FeedConnectionDisabledCode {
   BadFormat = "BAD_FORMAT",
   MissingPermissions = "MISSING_PERMISSIONS",
   MissingMedium = "MISSING_MEDIUM",
+  NotPaidSubscriber = "NOT_PAID_SUBSCRIBER",
 }
 
 export enum DiscordComponentType {

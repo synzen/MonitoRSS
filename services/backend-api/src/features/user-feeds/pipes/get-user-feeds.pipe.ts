@@ -49,9 +49,9 @@ const createGetUserFeedsPipe = (
     async transform(
       inputFeedIds: string[] | string
     ): Promise<GetUserFeedsPipeOutput> {
-      const feedIds = Array.isArray(inputFeedIds)
-        ? inputFeedIds
-        : [inputFeedIds];
+      const feedIds = (
+        Array.isArray(inputFeedIds) ? inputFeedIds : [inputFeedIds]
+      ).filter((value, index, self) => self.indexOf(value) === index);
 
       if (feedIds.some((id) => !Types.ObjectId.isValid(id))) {
         throw new NotFoundException(
