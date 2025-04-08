@@ -76,8 +76,9 @@ export default function config(options?: {
       .BACKEND_API_USER_FEEDS_API_HOST as string,
     BACKEND_API_USER_FEEDS_API_KEY: process.env
       .BACKEND_API_USER_FEEDS_API_KEY as string,
-    BACKEND_API_RABBITMQ_BROKER_URL: process.env
-      .BACKEND_API_RABBITMQ_BROKER_URL as string,
+    BACKEND_API_RABBITMQ_BROKER_URL: encodeURI(
+      process.env.BACKEND_API_RABBITMQ_BROKER_URL as string
+    ),
     BACKEND_API_DEFAULT_MAX_USER_FEEDS: Number(
       (process.env.BACKEND_API_DEFAULT_MAX_USER_FEEDS as string) || 0
     ),

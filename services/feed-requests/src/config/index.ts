@@ -38,8 +38,9 @@ export default function config(): EnvironmentVariables {
       process.env.FEED_REQUESTS_MAX_FAIL_ATTEMPTS || 11,
     ),
     FEED_REQUESTS_API_PORT: Number(process.env.FEED_REQUESTS_API_PORT),
-    FEED_REQUESTS_RABBITMQ_BROKER_URL: process.env
-      .FEED_REQUESTS_RABBITMQ_BROKER_URL as string,
+    FEED_REQUESTS_RABBITMQ_BROKER_URL: encodeURI(
+      process.env.FEED_REQUESTS_RABBITMQ_BROKER_URL as string,
+    ),
     FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT: process.env
       .FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT as string,
     FEED_REQUESTS_S3_ENDPOINT: process.env.FEED_REQUESTS_S3_ENDPOINT,

@@ -49,6 +49,8 @@ export class AppConfigService {
   }
 
   getRabbitMqUrl() {
-    return this.configService.getOrThrow<string>('BOT_PRESENCE_RABBITMQ_URL');
+    return encodeURI(
+      this.configService.getOrThrow<string>('BOT_PRESENCE_RABBITMQ_URL'),
+    );
   }
 }

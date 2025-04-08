@@ -51,8 +51,9 @@ export function config(options?: {
       .USER_FEEDS_DISCORD_RABBITMQ_URI as string,
     USER_FEEDS_API_PORT: process.env.USER_FEEDS_API_PORT as string,
     USER_FEEDS_API_KEY: process.env.USER_FEEDS_API_KEY as string,
-    USER_FEEDS_RABBITMQ_BROKER_URL: process.env
-      .USER_FEEDS_RABBITMQ_BROKER_URL as string,
+    USER_FEEDS_RABBITMQ_BROKER_URL: encodeURI(
+      process.env.USER_FEEDS_RABBITMQ_BROKER_URL as string
+    ),
     USER_FEEDS_POSTGRES_REPLICA1_URI: process.env
       .USER_FEEDS_POSTGRES_REPLICA1_URI as string,
     USER_FEEDS_REDIS_DISABLE_CLUSTER:
