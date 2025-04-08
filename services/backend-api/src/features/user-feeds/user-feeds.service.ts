@@ -1461,7 +1461,10 @@ export class UserFeedsService {
               $exists: true,
             },
             disabledCode: {
-              $ne: FeedConnectionDisabledCode.NotPaidSubscriber,
+              $nin: [
+                FeedConnectionDisabledCode.NotPaidSubscriber,
+                FeedConnectionDisabledCode.Manual,
+              ],
             },
           },
         },
@@ -1483,6 +1486,7 @@ export class UserFeedsService {
         .filter(
           (c) =>
             !!c.details.webhook?.id &&
+            c.disabledCode !== FeedConnectionDisabledCode.Manual &&
             c.disabledCode !== FeedConnectionDisabledCode.NotPaidSubscriber
         )
         .forEach((c) => {
@@ -1492,7 +1496,52 @@ export class UserFeedsService {
       await feed.save();
     }
 
-    return feedIds.length;
+    const feedsWithConnectionsToEnable = await this.userFeedModel
+      .find({
+        "user.discordUserId": {
+          $in: supporterDiscordUserIds,
+        },
+        "connections.discordChannels": {
+          $elemMatch: {
+            "details.webhook.id": {
+              $exists: true,
+            },
+            disabledCode: {
+              $eq: FeedConnectionDisabledCode.NotPaidSubscriber,
+            },
+          },
+        },
+      })
+      .select("_id")
+      .lean();
+
+    // Enable the connections for those feeds
+    const feedIds2 = feedsWithConnectionsToEnable.map((feed) => feed._id);
+
+    for (const feedId of feedIds2) {
+      const feed = await this.userFeedModel.findById(feedId);
+
+      if (!feed) {
+        continue;
+      }
+
+      feed.connections.discordChannels
+        .filter(
+          (c) =>
+            !!c.details.webhook?.id &&
+            c.disabledCode === FeedConnectionDisabledCode.NotPaidSubscriber
+        )
+        .forEach((c) => {
+          c.disabledCode = undefined;
+        });
+
+      await feed.save();
+    }
+
+    return {
+      disabledCount: feedsWithConnectionsToDisable.length,
+      enabledCount: feedsWithConnectionsToEnable.length,
+    };
   }
 
   async enforceUserFeedLimits(

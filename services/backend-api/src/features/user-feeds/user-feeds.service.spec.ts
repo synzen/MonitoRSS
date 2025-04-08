@@ -41,12 +41,15 @@ import { FeedConnectionsDiscordChannelsService } from "../feed-connections/feed-
 import { UsersService } from "../users/users.service";
 
 const createMockDiscordChannelConnection: (
-  overrideDetails?: Partial<DiscordChannelConnection["details"]>
+  overrideDetails?: Omit<Partial<DiscordChannelConnection>, "details"> & {
+    details: Partial<DiscordChannelConnection["details"]>;
+  }
 ) => DiscordChannelConnection = (overrideDetails) => ({
   id: new Types.ObjectId(),
   name: "name",
   createdAt: new Date(),
   updatedAt: new Date(),
+  ...overrideDetails,
   details: {
     channel: {
       id: "1",
@@ -54,7 +57,7 @@ const createMockDiscordChannelConnection: (
     },
     embeds: [],
     formatter: {},
-    ...overrideDetails,
+    ...overrideDetails?.details,
   },
 });
 
@@ -1562,20 +1565,24 @@ describe("UserFeedsService", () => {
             discordChannels: [
               {
                 ...createMockDiscordChannelConnection({
-                  webhook: {
-                    id: "1",
-                    guildId: "1",
-                    token: "1",
+                  details: {
+                    webhook: {
+                      id: "1",
+                      guildId: "1",
+                      token: "1",
+                    },
                   },
                 }),
                 disabledCode: FeedConnectionDisabledCode.MissingMedium,
               },
               {
                 ...createMockDiscordChannelConnection({
-                  webhook: {
-                    id: "1",
-                    guildId: "1",
-                    token: "1",
+                  details: {
+                    webhook: {
+                      id: "1",
+                      guildId: "1",
+                      token: "1",
+                    },
                   },
                 }),
               },
@@ -1596,10 +1603,12 @@ describe("UserFeedsService", () => {
             discordChannels: [
               {
                 ...createMockDiscordChannelConnection({
-                  webhook: {
-                    id: "1",
-                    guildId: "1",
-                    token: "1",
+                  details: {
+                    webhook: {
+                      id: "1",
+                      guildId: "1",
+                      token: "1",
+                    },
                   },
                 }),
               },
@@ -1617,10 +1626,12 @@ describe("UserFeedsService", () => {
             discordChannels: [
               {
                 ...createMockDiscordChannelConnection({
-                  webhook: {
-                    id: "1",
-                    guildId: "1",
-                    token: "1",
+                  details: {
+                    webhook: {
+                      id: "1",
+                      guildId: "1",
+                      token: "1",
+                    },
                   },
                 }),
               },
@@ -1660,6 +1671,98 @@ describe("UserFeedsService", () => {
       expect(
         updatedFeeds[2].connections?.discordChannels[0].disabledCode
       ).toEqual(FeedConnectionDisabledCode.NotPaidSubscriber);
+    });
+
+    it("does not disable manually-disabled webohook connections if user is not a supporter", async () => {
+      const created = await userFeedModel.create([
+        {
+          title: "title1",
+          url: "url",
+          user: {
+            discordUserId,
+          },
+          refreshRateSeconds: 600,
+          connections: {
+            discordChannels: [
+              {
+                ...createMockDiscordChannelConnection({
+                  disabledCode: FeedConnectionDisabledCode.Manual,
+                  details: {
+                    webhook: {
+                      id: "1",
+                      guildId: "1",
+                      token: "1",
+                    },
+                  },
+                }),
+              },
+            ],
+          },
+        },
+      ]);
+
+      await service.enforceWebhookBenefits({
+        supporterDiscordUserIds: [],
+      });
+
+      const updatedFeeds = await userFeedModel
+        .find({
+          _id: {
+            $in: created.map((c) => c._id),
+          },
+        })
+        .lean();
+
+      expect(updatedFeeds).toHaveLength(1);
+      expect(
+        updatedFeeds[0].connections?.discordChannels[0].disabledCode
+      ).toEqual(FeedConnectionDisabledCode.Manual);
+    });
+
+    it("enables webhooks if the user is a supporter", async () => {
+      const created = await userFeedModel.create([
+        {
+          title: "title1",
+          url: "url",
+          user: {
+            discordUserId,
+          },
+          refreshRateSeconds: 600,
+          connections: {
+            discordChannels: [
+              {
+                ...createMockDiscordChannelConnection({
+                  disabledCode: FeedConnectionDisabledCode.NotPaidSubscriber,
+                  details: {
+                    webhook: {
+                      id: "1",
+                      guildId: "1",
+                      token: "1",
+                    },
+                  },
+                }),
+              },
+            ],
+          },
+        },
+      ]);
+
+      await service.enforceWebhookBenefits({
+        supporterDiscordUserIds: [discordUserId],
+      });
+
+      const updatedFeeds = await userFeedModel
+        .find({
+          _id: {
+            $in: created.map((c) => c._id),
+          },
+        })
+        .lean();
+
+      expect(updatedFeeds).toHaveLength(1);
+      expect(
+        updatedFeeds[0].connections?.discordChannels[0].disabledCode
+      ).toBeUndefined();
     });
   });
 
