@@ -1,15 +1,19 @@
 import { Alert, AlertDescription, AlertTitle, Box, Button } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
+import { useContext } from "react";
+import { ArrowLeftIcon } from "@chakra-ui/icons";
 import { FeedConnectionDisabledCode } from "../../../../types";
 import { useUpdateDiscordChannelConnection } from "../../hooks";
 import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
 import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
+import { PricingDialogContext } from "../../../../contexts";
 
 export const ConnectionDisabledAlert = () => {
   const { t } = useTranslation();
   const { connection, userFeed } = useUserFeedConnectionContext();
   const { mutateAsync, status } = useUpdateDiscordChannelConnection();
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
+  const { onOpen: onOpenPricingDialog } = useContext(PricingDialogContext);
   const { disabledCode } = connection;
 
   const onClickEnable = async () => {
@@ -102,6 +106,32 @@ export const ConnectionDisabledAlert = () => {
             <Box marginTop="1rem">
               <Button isLoading={status === "loading"} onClick={onClickEnable}>
                 <span>Attempt to re-enable</span>
+              </Button>
+            </Box>
+          </AlertDescription>
+        </Box>
+      </Alert>
+    );
+  }
+
+  if (disabledCode === FeedConnectionDisabledCode.NotPaidSubscriber) {
+    return (
+      <Alert status="error" borderRadius="md">
+        <Box>
+          <AlertTitle>
+            This webhook connection has been disabled because you are not currently a paid
+            subscriber to be able to access webhooks.
+          </AlertTitle>
+          <AlertDescription display="block">
+            Consider supporting MonitoRSS&apos;s open-source development by subscribing to a paid
+            plan and get access to this feature.
+            <Box marginTop="1rem">
+              <Button
+                variant="outline"
+                leftIcon={<ArrowLeftIcon transform="rotate(90deg)" />}
+                onClick={onOpenPricingDialog}
+              >
+                Upgrade to a paid plan
               </Button>
             </Box>
           </AlertDescription>

@@ -239,7 +239,7 @@ const mockUserFeeds: UserFeed[] = [
         },
         filters: sampleFilters,
         id: "1",
-        disabledCode: FeedConnectionDisabledCode.MissingPermissions,
+        disabledCode: FeedConnectionDisabledCode.NotPaidSubscriber,
         key: FeedConnectionType.DiscordChannel,
         name: "Discord Channel 1",
       },

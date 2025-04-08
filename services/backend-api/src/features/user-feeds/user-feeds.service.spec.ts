@@ -34,16 +34,15 @@ import { UserFeedComputedStatus } from "./constants/user-feed-computed-status.ty
 import { GetUserFeedsInputDto, GetUserFeedsInputSortKey } from "./dto";
 import { UserFeed, UserFeedFeature, UserFeedModel } from "./entities";
 import { FeedNotFailedException } from "./exceptions/feed-not-failed.exception";
-import {
-  GetFeedArticlesInput,
-  UserFeedDisabledCode,
-  UserFeedHealthStatus,
-} from "./types";
+import { UserFeedDisabledCode, UserFeedHealthStatus } from "./types";
 import { UserFeedsService } from "./user-feeds.service";
 import { UserFeature } from "../users/entities/user.entity";
 import { FeedConnectionsDiscordChannelsService } from "../feed-connections/feed-connections-discord-channels.service";
+import { UsersService } from "../users/users.service";
 
-const mockDiscordChannelConnection: DiscordChannelConnection = {
+const createMockDiscordChannelConnection: (
+  overrideDetails?: Partial<DiscordChannelConnection["details"]>
+) => DiscordChannelConnection = (overrideDetails) => ({
   id: new Types.ObjectId(),
   name: "name",
   createdAt: new Date(),
@@ -55,8 +54,9 @@ const mockDiscordChannelConnection: DiscordChannelConnection = {
     },
     embeds: [],
     formatter: {},
+    ...overrideDetails,
   },
-};
+});
 
 const mockDiscordWebhookConnection: DiscordWebhookConnection = {
   id: new Types.ObjectId(),
@@ -86,6 +86,7 @@ describe("UserFeedsService", () => {
     getBenefitsOfDiscordUser: jest.fn(),
     defaultMaxUserFeeds: 2,
   };
+  const usersService = {};
 
   beforeAll(async () => {
     const { uncompiledModule, init } = await setupIntegrationTests({
@@ -113,6 +114,10 @@ describe("UserFeedsService", () => {
             deleteConnection: jest.fn(),
             cloneConnection: jest.fn(),
           },
+        },
+        {
+          provide: UsersService,
+          useValue: usersService,
         },
       ],
       imports: [
@@ -785,7 +790,7 @@ describe("UserFeedsService", () => {
           connections: {
             discordChannels: [
               {
-                ...mockDiscordChannelConnection,
+                ...createMockDiscordChannelConnection(),
                 disabledCode: FeedConnectionDisabledCode.MissingMedium,
               },
             ],
@@ -1101,7 +1106,7 @@ describe("UserFeedsService", () => {
           connections: {
             discordChannels: [
               {
-                ...mockDiscordChannelConnection,
+                ...createMockDiscordChannelConnection(),
                 disabledCode: FeedConnectionDisabledCode.MissingMedium,
               },
             ],
@@ -1541,93 +1546,120 @@ describe("UserFeedsService", () => {
     });
   });
 
-  describe("getFeedArticles", () => {
-    const validInput: GetFeedArticlesInput = {
-      limit: 1,
-      random: true,
-      url: "random-url",
-      discordUserId: "user-id",
-      formatter: {
-        options: {
-          formatTables: false,
-          stripImages: false,
-          dateFormat: "foo",
-          dateTimezone: "bar",
-          disableImageLinkPreviews: false,
-          dateLocale: undefined,
+  describe("enforceWebhookBenefits", () => {
+    it("disables webhooks if the user is not a supporter", async () => {
+      const secondDiscordUserId = discordUserId + "2";
+      const thirdDiscordUserId = discordUserId + "3";
+      const created = await userFeedModel.create([
+        {
+          title: "title1",
+          url: "url",
+          user: {
+            discordUserId: discordUserId,
+          },
+          refreshRateSeconds: 600,
+          connections: {
+            discordChannels: [
+              {
+                ...createMockDiscordChannelConnection({
+                  webhook: {
+                    id: "1",
+                    guildId: "1",
+                    token: "1",
+                  },
+                }),
+                disabledCode: FeedConnectionDisabledCode.MissingMedium,
+              },
+              {
+                ...createMockDiscordChannelConnection({
+                  webhook: {
+                    id: "1",
+                    guildId: "1",
+                    token: "1",
+                  },
+                }),
+              },
+              {
+                ...createMockDiscordChannelConnection(),
+              },
+            ],
+          },
         },
-      },
-    };
-
-    it("returns correctly", async () => {
-      const returned = {
-        requestStatus: GetArticlesResponseRequestStatus.Success,
-        articles: [],
-        totalArticles: 0,
-        selectedProperties: [],
-      };
-
-      jest.spyOn(feedHandlerService, "getArticles").mockResolvedValue(returned);
-
-      const result = await service.getFeedArticles(validInput);
-
-      expect(result).toEqual(returned);
-    });
-  });
-
-  describe("getFeedArticleProperties", () => {
-    it("returns correctly", async () => {
-      jest.spyOn(feedHandlerService, "getArticles").mockResolvedValue({
-        requestStatus: "foo",
-        articles: [
-          {
-            a: "1",
+        {
+          title: "title2",
+          url: "url",
+          user: {
+            discordUserId: secondDiscordUserId,
           },
-          {
-            b: "2",
-            a: "a",
+          refreshRateSeconds: 600,
+          connections: {
+            discordChannels: [
+              {
+                ...createMockDiscordChannelConnection({
+                  webhook: {
+                    id: "1",
+                    guildId: "1",
+                    token: "1",
+                  },
+                }),
+              },
+            ],
           },
-          {
-            c: "3",
+        },
+        {
+          title: "title3",
+          url: "url",
+          user: {
+            discordUserId: thirdDiscordUserId,
           },
-        ],
-      } as never);
+          refreshRateSeconds: 600,
+          connections: {
+            discordChannels: [
+              {
+                ...createMockDiscordChannelConnection({
+                  webhook: {
+                    id: "1",
+                    guildId: "1",
+                    token: "1",
+                  },
+                }),
+              },
+            ],
+          },
+        },
+      ]);
 
-      const result = await service.getFeedArticleProperties({
-        url: "url",
+      await service.enforceWebhookBenefits({
+        supporterDiscordUserIds: [secondDiscordUserId],
       });
 
-      expect(result).toEqual({
-        requestStatus: "foo",
-        properties: ["a", "b", "c"],
-      });
-    });
-
-    it("returns sorts the returned properties", async () => {
-      jest.spyOn(feedHandlerService, "getArticles").mockResolvedValue({
-        requestStatus: "foo",
-        articles: [
-          {
-            z: "1",
+      const updatedFeeds = await userFeedModel
+        .find({
+          _id: {
+            $in: created.map((c) => c._id),
           },
-          {
-            c: "2",
-            a: "a",
-          },
-          {
-            b: "3",
-          },
-        ],
-      } as never);
+        })
+        .lean();
 
-      const result = await service.getFeedArticleProperties({
-        url: "url",
-      });
-
-      expect(result).toEqual({
-        requestStatus: "foo",
-        properties: ["a", "b", "c", "z"],
-      });
+      expect(updatedFeeds).toHaveLength(3);
+      // first user's webhook connections should be disabled
+      expect(
+        updatedFeeds[0].connections?.discordChannels[0].disabledCode
+      ).toEqual(FeedConnectionDisabledCode.NotPaidSubscriber);
+      expect(
+        updatedFeeds[0].connections?.discordChannels[1].disabledCode
+      ).toEqual(FeedConnectionDisabledCode.NotPaidSubscriber);
+      expect(
+        updatedFeeds[0].connections?.discordChannels[2].disabledCode
+      ).toBeUndefined();
+      // second user's webhook connection should be enabled
+      expect(
+        updatedFeeds[1].connections?.discordChannels[0].disabledCode
+      ).toBeUndefined();
+      // third user's webhook connection should be disabled
+      expect(
+        updatedFeeds[2].connections?.discordChannels[0].disabledCode
+      ).toEqual(FeedConnectionDisabledCode.NotPaidSubscriber);
     });
   });
 

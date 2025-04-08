@@ -178,8 +178,8 @@ const UserFeedsInner: React.FC = () => {
     }
   };
 
-  const totalFeedsRequiringAttention = 0;
-  const totalManagementInvites = 0;
+  const totalFeedsRequiringAttention = userFeedsRequireAttentionResults?.total || 0;
+  const totalManagementInvites = managementInvitesCount?.total || 0;
 
   return (
     <>
