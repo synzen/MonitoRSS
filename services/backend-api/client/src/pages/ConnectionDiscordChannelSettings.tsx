@@ -281,7 +281,13 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                     <CategoryText title="Webhook name" hidden={!connection?.details.webhook}>
                       {connection?.details.webhook?.name || "N/A"}
                     </CategoryText>
-                    <CategoryText title="Webhook icon" hidden={!connection?.details.webhook}>
+                    <CategoryText
+                      title="Webhook icon"
+                      hidden={!connection?.details.webhook}
+                      valueContainerProps={{
+                        wordBreak: "break-all",
+                      }}
+                    >
                       {connection?.details.webhook?.iconUrl || "N/A"}
                     </CategoryText>
                   </Grid>

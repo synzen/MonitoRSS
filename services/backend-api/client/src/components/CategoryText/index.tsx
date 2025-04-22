@@ -2,6 +2,7 @@
 import { QuestionOutlineIcon } from "@chakra-ui/icons";
 import {
   Box,
+  BoxProps,
   Button,
   HStack,
   Popover,
@@ -25,6 +26,7 @@ interface DescriptionProps extends StackProps {
     description: string;
   };
   helpText?: string;
+  valueContainerProps?: BoxProps;
 }
 
 const QuestionOutlineComponent = React.forwardRef<any>((props, ref) => (
@@ -35,6 +37,7 @@ export const CategoryText: React.FC<DescriptionProps> = ({
   title,
   children,
   helpTooltip,
+  valueContainerProps,
   ...styles
 }) => {
   const { t } = useTranslation();
@@ -77,7 +80,9 @@ export const CategoryText: React.FC<DescriptionProps> = ({
           </Popover>
         )}
       </HStack>
-      <Box aria-labelledby={ariaLabelledBy}>{children}</Box>
+      <Box aria-labelledby={ariaLabelledBy} {...valueContainerProps}>
+        {children}
+      </Box>
     </Stack>
   );
 };

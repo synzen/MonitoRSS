@@ -60,6 +60,7 @@ import { User, UserModel } from "../users/entities/user.entity";
 import getFeedRequestLookupDetails from "../../utils/get-feed-request-lookup-details";
 import { UsersService } from "../users/users.service";
 import { ConfigService } from "@nestjs/config";
+import { DiscordChannelMissingViewPermissionsException } from "./exceptions/discord-channel-missing-view-permissions.exception";
 
 export interface UpdateDiscordChannelConnectionInput {
   accessToken: string;
@@ -201,7 +202,8 @@ export class FeedConnectionsDiscordChannelsService {
     if (channelId) {
       const { channel, type } = await this.assertDiscordChannelCanBeUsed(
         userAccessToken,
-        channelId
+        channelId,
+        applicationWebhook ? true : false
       );
 
       channelToAdd = {
@@ -238,7 +240,8 @@ export class FeedConnectionsDiscordChannelsService {
         const { channel: fetchedChannel } =
           await this.assertDiscordChannelCanBeUsed(
             userAccessToken,
-            applicationWebhook.channelId
+            applicationWebhook.channelId,
+            true
           );
 
         channel = fetchedChannel;
@@ -357,7 +360,8 @@ export class FeedConnectionsDiscordChannelsService {
     if (newChannelId) {
       const channel = await this.assertDiscordChannelCanBeUsed(
         userAccessToken,
-        newChannelId
+        newChannelId,
+        connection.details.webhook?.id ? true : false
       );
 
       channelDetailsToUse = {
@@ -645,7 +649,8 @@ export class FeedConnectionsDiscordChannelsService {
         const { channel: fetchedChannel } =
           await this.assertDiscordChannelCanBeUsed(
             accessToken,
-            updates.details.applicationWebhook.channelId
+            updates.details.applicationWebhook.channelId,
+            true
           );
         channel = fetchedChannel;
 
@@ -667,7 +672,7 @@ export class FeedConnectionsDiscordChannelsService {
 
       if (threadId) {
         const { channel: threadChannel } =
-          await this.assertDiscordChannelCanBeUsed(accessToken, threadId);
+          await this.assertDiscordChannelCanBeUsed(accessToken, threadId, true);
 
         if (threadChannel.type === DiscordChannelType.PUBLIC_THREAD) {
           type = FeedConnectionDiscordWebhookType.Thread;
@@ -1122,12 +1127,14 @@ export class FeedConnectionsDiscordChannelsService {
 
   private async assertDiscordChannelCanBeUsed(
     accessToken: string,
-    channelId: string
+    channelId: string,
+    skipBotPermissionAssertions = false
   ) {
     try {
       const channel = await this.feedsService.canUseChannel({
         channelId,
         userAccessToken: accessToken,
+        skipBotPermissionAssertions,
       });
 
       let type: FeedConnectionDiscordChannelType | undefined = undefined;
@@ -1149,7 +1156,13 @@ export class FeedConnectionsDiscordChannelsService {
         }
 
         if (err.statusCode === HttpStatus.FORBIDDEN) {
-          throw new DiscordChannelPermissionsException();
+          if (skipBotPermissionAssertions) {
+            // triggers a permission error around just viewing. Required for getting discord channels.
+            throw new DiscordChannelMissingViewPermissionsException();
+          } else {
+            // triggers a permission error around viewing AND sending messages in the channel
+            throw new DiscordChannelPermissionsException();
+          }
         }
       } else if (err instanceof NoDiscordChannelPermissionOverwritesException) {
         throw new InvalidDiscordChannelException();

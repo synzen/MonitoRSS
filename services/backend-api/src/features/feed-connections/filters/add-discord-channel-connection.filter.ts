@@ -13,6 +13,7 @@ import {
   InvalidDiscordChannelException,
   MissingDiscordChannelException,
 } from "../exceptions";
+import { DiscordChannelMissingViewPermissionsException } from "../exceptions/discord-channel-missing-view-permissions.exception";
 
 export const ADD_DISCORD_CHANNEL_CONNECTION_ERROR_CODES: Record<
   string,
@@ -45,6 +46,10 @@ export const ADD_DISCORD_CHANNEL_CONNECTION_ERROR_CODES: Record<
   [InsufficientSupporterLevelException.name]: {
     status: HttpStatus.BAD_REQUEST,
     code: ApiErrorCode.INSUFFICIENT_SUPPORTER_LEVEL,
+  },
+  [DiscordChannelMissingViewPermissionsException.name]: {
+    status: HttpStatus.BAD_REQUEST,
+    code: ApiErrorCode.FEED_MISSING_VIEW_CHANNEL_PERMISSION,
   },
 };
 

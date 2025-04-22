@@ -177,9 +177,11 @@ export class FeedsService {
   async canUseChannel({
     channelId,
     userAccessToken,
+    skipBotPermissionAssertions,
   }: {
     channelId: string;
     userAccessToken: string;
+    skipBotPermissionAssertions?: boolean;
   }) {
     const channel = await this.discordApiService.getChannel(channelId);
 
@@ -201,6 +203,7 @@ export class FeedsService {
     }
 
     if (
+      !skipBotPermissionAssertions &&
       !(await this.discordPermissionsService.botHasPermissionInChannel(
         channel,
         [SEND_CHANNEL_MESSAGE, VIEW_CHANNEL]

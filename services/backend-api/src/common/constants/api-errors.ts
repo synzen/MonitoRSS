@@ -19,6 +19,7 @@ export enum ApiErrorCode {
   WEBHOOK_MISSING = "WEBHOOK_MISSING",
   WEBHOOK_INVALID = "WEBHOOK_INVALID",
   FEED_MISSING_CHANNEL_PERMISSION = "FEED_MISSING_CHANNEL_PERMISSION",
+  FEED_MISSING_VIEW_CHANNEL_PERMISSION = "FEED_MISSING_VIEW_CHANNEL_PERMISSION",
   FEED_MISSING_CHANNEL = "FEED_MISSING_CHANNEL",
   FEED_USER_MISSING_MANAGE_GUILD = "FEED_USER_MISSING_MANAGE_GUILD",
   FEED_LIMIT_REACHED = "FEED_LIMIT_REACHED",
@@ -72,6 +73,8 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
     " that has not been created by another application",
   FEED_MISSING_CHANNEL: "Channel does not exist",
   FEED_MISSING_CHANNEL_PERMISSION: "Insufficient bot permissions in channel",
+  FEED_MISSING_VIEW_CHANNEL_PERMISSION:
+    "Bot is missing View Channel permission",
   FEED_USER_MISSING_MANAGE_GUILD: "User is missing Manage Server permission",
   FEED_LIMIT_REACHED: "Feed limit reached",
   BANNED_FEED: "Feed is banned",

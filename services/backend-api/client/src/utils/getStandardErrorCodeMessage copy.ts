@@ -19,6 +19,7 @@ export enum ApiErrorCode {
   WEBHOOKS_MANAGE_MISSING_PERMISSIONS = "WEBHOOKS_MANAGE_MISSING_PERMISSIONS",
   WEBHOOK_INVALID = "WEBHOOK_INVALID",
   FEED_MISSING_CHANNEL_PERMISSION = "FEED_MISSING_CHANNEL_PERMISSION",
+  FEED_MISSING_VIEW_CHANNEL_PERMISSION = "FEED_MISSING_VIEW_CHANNEL_PERMISSION",
   FEED_MISSING_CHANNEL = "FEED_MISSING_CHANNEL",
   FEED_USER_MISSING_MANAGE_GUILD = "FEED_USER_MISSING_MANAGE_GUILD",
   FEED_LIMIT_REACHED = "FEED_LIMIT_REACHED",
@@ -63,6 +64,8 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   WEBHOOK_INVALID: t("common.apiErrors.webhookInvalid"),
   BANNED_FEED: t("common.apiErrors.bannedFeed"),
   FEED_MISSING_CHANNEL_PERMISSION: t("common.apiErrors.feedMissingChannelPermission"),
+  FEED_MISSING_VIEW_CHANNEL_PERMISSION:
+    'The bot does not have permission to view the channel. Ensure that the bot has the channel-level "View Channel" permission and try again.',
   FEED_LIMIT_REACHED: t("common.apiErrors.feedLimitReached"),
   FEED_MISSING_CHANNEL: t("common.apiErrors.feedMissingChannel"),
   FEED_USER_MISSING_MANAGE_GUILD: t("common.apiErrors.feedUserMissingManageGuild"),

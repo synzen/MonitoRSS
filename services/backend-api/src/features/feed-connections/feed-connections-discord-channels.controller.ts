@@ -178,6 +178,7 @@ export class FeedConnectionsDiscordChannelsController {
   }
 
   @Post("/discord-channels/:connectionId/clone")
+  @UseFilters(AddDiscordChannelConnectionFilter)
   async clone(
     @Param(
       "feedId",
@@ -304,6 +305,9 @@ export class FeedConnectionsDiscordChannelsController {
     let useDisableCode: FeedConnectionDisabledCode | undefined | null =
       undefined;
     let useChannelId: string | undefined = channelId;
+    let useApplicationWebhook:
+      | UpdateDiscordChannelConnectionInputDto["applicationWebhook"]
+      | undefined = undefined;
 
     if (connection.disabledCode) {
       if (connection.disabledCode === FeedConnectionDisabledCode.BadFormat) {
@@ -324,10 +328,27 @@ export class FeedConnectionsDiscordChannelsController {
         connection.disabledCode ===
         FeedConnectionDisabledCode.MissingPermissions
       ) {
-        if (disabledCode === null && connection.details.channel) {
+        if (disabledCode === null) {
           // Force re-validation of channel permissions
-          useChannelId = channelId || connection.details.channel.id;
-          useDisableCode = null;
+          if (connection.details.channel) {
+            useChannelId = channelId || connection.details.channel.id;
+            useDisableCode = null;
+          } else if (
+            connection.details.webhook?.channelId &&
+            connection.details.webhook.name
+          ) {
+            useApplicationWebhook = {
+              channelId: connection.details.webhook?.channelId,
+              name: connection.details.webhook?.name,
+              iconUrl: connection.details.webhook?.iconUrl,
+              threadId: connection.details.webhook?.threadId,
+            };
+            useDisableCode = null;
+          } else {
+            throw new Error(
+              `Unhandled case when attempting to enable connection due to missing permissions`
+            );
+          }
         }
       } else if (disabledCode === null) {
         throw new CannotEnableAutoDisabledConnection();
@@ -357,13 +378,17 @@ export class FeedConnectionsDiscordChannelsController {
             channelNewThreadTitle,
             channelNewThreadExcludesPreview,
             componentRows,
-            channel: useChannelId
-              ? {
-                  id: useChannelId,
-                }
-              : undefined,
-            webhook: useChannelId ? undefined : webhook,
-            applicationWebhook: useChannelId ? undefined : applicationWebhook,
+            channel:
+              !useApplicationWebhook && useChannelId
+                ? {
+                    id: useChannelId,
+                  }
+                : undefined,
+            webhook:
+              useApplicationWebhook || useChannelId ? undefined : webhook,
+            applicationWebhook:
+              useApplicationWebhook ||
+              (useChannelId ? undefined : applicationWebhook),
             embeds: convertToFlatDiscordEmbeds(embeds),
             content,
             formatter,
