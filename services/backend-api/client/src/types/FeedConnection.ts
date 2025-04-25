@@ -42,6 +42,7 @@ const DiscordChannelConnectionDetailsSchema = object({
     id: string().required(),
     guildId: string().required(),
     type: string().optional().nullable().oneOf(["forum", "thread", "new-thread", "forum-thread"]),
+    parentChannelId: string().optional().nullable(),
   })
     .optional()
     .nullable(),

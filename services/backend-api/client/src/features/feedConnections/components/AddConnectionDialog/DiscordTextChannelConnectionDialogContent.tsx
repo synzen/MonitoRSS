@@ -81,7 +81,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
 }) => {
   const defaultFormValues: Partial<FormData> = {
     name: connection?.name,
-    channelId: connection?.details.channel?.id,
+    channelId: connection?.details.channel?.parentChannelId || connection?.details.channel?.id,
     serverId: connection?.details.channel?.guildId,
     threadId:
       connection?.details.channel?.type === "thread" ? connection?.details.channel?.id : undefined,
@@ -162,7 +162,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
         feedId,
         details: {
           name,
-          channelId: inputChannelId,
+          channelId: threadId || inputChannelId,
           threadCreationMethod:
             createThreadMethod === DiscordCreateChannelThreadMethod.New ? "new-thread" : undefined,
         },

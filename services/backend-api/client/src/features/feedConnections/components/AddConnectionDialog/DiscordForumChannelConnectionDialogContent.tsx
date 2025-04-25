@@ -63,7 +63,10 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
   const defaultValues: Partial<FormData> = {
     name: connection?.name,
     serverId: connection?.details.channel?.guildId,
-    channelId: connection?.details.channel?.id,
+    threadId: connection?.details.channel?.parentChannelId
+      ? connection?.details.channel?.id
+      : undefined,
+    channelId: connection?.details.channel?.parentChannelId || connection?.details.channel?.id,
   };
   const { feedId } = useParams<RouteParams>();
   const { t } = useTranslation();

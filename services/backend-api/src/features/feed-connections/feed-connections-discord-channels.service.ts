@@ -200,11 +200,12 @@ export class FeedConnectionsDiscordChannelsService {
     let webhookToAdd: DiscordChannelConnection["details"]["webhook"];
 
     if (channelId) {
-      const { channel, type } = await this.assertDiscordChannelCanBeUsed(
-        userAccessToken,
-        channelId,
-        applicationWebhook ? true : false
-      );
+      const { channel, type, parentChannel } =
+        await this.assertDiscordChannelCanBeUsed(
+          userAccessToken,
+          channelId,
+          applicationWebhook ? true : false
+        );
 
       channelToAdd = {
         id: channelId,
@@ -213,6 +214,7 @@ export class FeedConnectionsDiscordChannelsService {
             ? FeedConnectionDiscordChannelType.NewThread
             : type,
         guildId: channel.guild_id,
+        parentChannelId: parentChannel?.id,
       };
     } else if (inputWebhook?.id || applicationWebhook?.channelId) {
       const benefits = await this.supportersService.getBenefitsOfDiscordUser(
@@ -368,6 +370,7 @@ export class FeedConnectionsDiscordChannelsService {
         id: newChannelId,
         type: channel.type,
         guildId: channel.channel.guild_id,
+        parentChannelId: channel.parentChannel?.id,
       };
     }
 
@@ -597,10 +600,11 @@ export class FeedConnectionsDiscordChannelsService {
     let createdApplicationWebhookId: string | undefined = undefined;
 
     if (updates.details?.channel?.id) {
-      const { channel, type } = await this.assertDiscordChannelCanBeUsed(
-        accessToken,
-        updates.details.channel.id
-      );
+      const { channel, type, parentChannel } =
+        await this.assertDiscordChannelCanBeUsed(
+          accessToken,
+          updates.details.channel.id
+        );
 
       // @ts-ignore
       setRecordDetails["connections.discordChannels.$.details.channel"] = {
@@ -610,6 +614,7 @@ export class FeedConnectionsDiscordChannelsService {
           updates.threadCreationMethod === "new-thread"
             ? FeedConnectionDiscordChannelType.NewThread
             : type,
+        parentChannelId: parentChannel?.id,
       };
       // @ts-ignore
       setRecordDetails["connections.discordChannels.$.details.webhook"] = null;
@@ -1131,6 +1136,7 @@ export class FeedConnectionsDiscordChannelsService {
     skipBotPermissionAssertions = false
   ) {
     try {
+      let parentChannel: DiscordGuildChannel | undefined = undefined;
       const channel = await this.feedsService.canUseChannel({
         channelId,
         userAccessToken: accessToken,
@@ -1147,7 +1153,7 @@ export class FeedConnectionsDiscordChannelsService {
         const parentChannelId = channel.parent_id;
 
         if (parentChannelId) {
-          const parentChannel = await this.discordApiService.getChannel(
+          parentChannel = await this.discordApiService.getChannel(
             parentChannelId
           );
 
@@ -1159,6 +1165,7 @@ export class FeedConnectionsDiscordChannelsService {
 
       return {
         channel,
+        parentChannel,
         type,
       };
     } catch (err) {
