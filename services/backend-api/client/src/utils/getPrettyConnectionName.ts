@@ -19,6 +19,10 @@ export function getPrettyConnectionName(connection: FeedDiscordChannelConnection
         return "Discord Forum";
       }
 
+      if (casted.details.channel.type === "forum-thread") {
+        return "Discord Forum Thread";
+      }
+
       return "Discord Channel";
     }
 

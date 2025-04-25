@@ -62,6 +62,10 @@ export const DiscordChannelConnectionSettings = ({ feedId, connection, trigger }
     });
   };
 
+  const isForum =
+    connection.details.channel?.type === "forum" ||
+    connection.details.channel?.type === "forum-thread";
+
   return (
     <>
       <CopyDiscordChannelConnectionSettingsDialog
@@ -71,14 +75,14 @@ export const DiscordChannelConnectionSettings = ({ feedId, connection, trigger }
         onClose={isCopySettingsOnClose}
         onCloseRef={actionsButtonRef}
       />
-      {connection.details.channel && connection.details.channel?.type !== "forum" && (
+      {connection.details.channel && !isForum && (
         <DiscordTextChannelConnectionDialogContent
           connection={connection}
           isOpen={editIsOpen}
           onClose={editOnClose}
         />
       )}
-      {connection.details.channel && connection.details.channel?.type === "forum" && (
+      {connection.details.channel && isForum && (
         <DiscordForumChannelConnectionDialogContent
           connection={connection}
           isOpen={editIsOpen}

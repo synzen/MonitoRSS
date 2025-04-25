@@ -1143,6 +1143,18 @@ export class FeedConnectionsDiscordChannelsService {
         type = FeedConnectionDiscordChannelType.Forum;
       } else if (channel.type === DiscordChannelType.PUBLIC_THREAD) {
         type = FeedConnectionDiscordChannelType.Thread;
+
+        const parentChannelId = channel.parent_id;
+
+        if (parentChannelId) {
+          const parentChannel = await this.discordApiService.getChannel(
+            parentChannelId
+          );
+
+          if (parentChannel.type === DiscordChannelType.GUILD_FORUM) {
+            type = FeedConnectionDiscordChannelType.ForumThread;
+          }
+        }
       }
 
       return {
