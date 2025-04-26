@@ -435,6 +435,16 @@ export class DiscordMediumService implements DeliveryMedium {
                   firstResponse.body
                 )}`
             );
+          } else if (firstResponse.status !== 201) {
+            return {
+              apiPayload: threadBody,
+              result: {
+                status: firstResponse.status,
+                state: "success",
+                body: firstResponse.body,
+                message: firstResponse.detail || "",
+              },
+            };
           }
 
           useChannelId = (firstResponse.body as Record<string, unknown>)
