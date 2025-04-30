@@ -33,6 +33,7 @@ export const discordMediumPayloadDetailsSchema = z.object({
           z.literal("forum"),
           z.literal("thread"),
           z.literal("new-thread"),
+          z.literal("forum-thread"),
         ])
         .optional()
         .nullable(),
