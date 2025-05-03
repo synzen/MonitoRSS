@@ -402,7 +402,7 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                       <AccordionPanel>
                         <Text fontSize={13}>
                           With RSS, article delivery is not instant. New articles are checked on a
-                          regular interval (every 10 minutes by default for free). Once new articles
+                          regular interval (every 20 minutes by default for free). Once new articles
                           are found, they are automatically delivered.
                         </Text>
                       </AccordionPanel>

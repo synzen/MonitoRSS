@@ -43,6 +43,7 @@ export class FeedFetcherService implements OnModuleInit {
     options?: {
       executeFetch?: boolean;
       executeFetchIfNotInCache?: boolean;
+      executeFetchIfStale?: boolean;
       retries?: number;
       hashToCompare?: string;
       lookupDetails: FeedRequestLookupDetails | undefined | null;
@@ -62,6 +63,7 @@ export class FeedFetcherService implements OnModuleInit {
               executeFetchIfNotExists:
                 options?.executeFetchIfNotInCache ?? false,
               executeFetch: options?.executeFetch ?? false,
+              executeFetchIfStale: options?.executeFetchIfStale ?? false,
               hashToCompare: options?.hashToCompare || undefined,
               lookupDetails: options?.lookupDetails,
             }),

@@ -698,7 +698,7 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
                   <AccordionPanel>
                     <Text>
                       With RSS, article delivery is not instant. New articles are checked on a
-                      regular interval (every 10 minutes by default for free). Once new articles are
+                      regular interval (every 20 minutes by default for free). Once new articles are
                       found, they are automatically delivered.
                     </Text>
                   </AccordionPanel>

@@ -156,6 +156,7 @@ export class ArticlesService {
     options: FetchFeedArticleOptions & {
       findRssFromHtml?: boolean;
       executeFetch?: boolean;
+      executeFetchIfStale?: boolean;
     }
   ): ReturnType<typeof this.fetchFeedArticles> {
     try {
@@ -195,9 +196,11 @@ export class ArticlesService {
       findRssFromHtml,
       executeFetch,
       requestLookupDetails,
+      executeFetchIfStale,
     }: FetchFeedArticleOptions & {
       findRssFromHtml?: boolean;
       executeFetch?: boolean;
+      executeFetchIfStale?: boolean;
       requestLookupDetails: FeedRequestLookupDetails | undefined | null;
     }
   ): Promise<{
@@ -232,6 +235,7 @@ export class ArticlesService {
         executeFetchIfNotInCache: true,
         executeFetch,
         lookupDetails: requestLookupDetails,
+        executeFetchIfStale,
       }
     );
 

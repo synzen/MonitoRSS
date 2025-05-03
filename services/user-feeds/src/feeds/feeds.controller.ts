@@ -109,6 +109,7 @@ export class FeedsController {
       findRssFromHtml,
       executeFetch,
       requestLookupDetails,
+      executeFetchIfStale,
     }: GetUserFeedArticlesInputDto
   ): Promise<GetUserFeedArticlesOutputDto> {
     try {
@@ -126,6 +127,7 @@ export class FeedsController {
         externalFeedProperties: formatter.externalProperties || [],
         findRssFromHtml,
         executeFetch,
+        executeFetchIfStale,
         requestLookupDetails,
       });
 

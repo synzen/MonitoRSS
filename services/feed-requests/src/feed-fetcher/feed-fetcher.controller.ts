@@ -160,6 +160,11 @@ export class FeedFetcherController {
       );
 
       await this.partitionedRequestsStoreService.flushInserts([request]);
+
+      latestRequest = await this.feedFetcherService.getLatestRequest({
+        url: data.url,
+        lookupKey: data.lookupDetails?.key,
+      });
     }
 
     // If there's no text, response must be fetched to be cached
