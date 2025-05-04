@@ -688,13 +688,13 @@ export class FeedConnectionsDiscordChannelsService {
       let type: FeedConnectionDiscordWebhookType | undefined = undefined;
 
       if (threadId) {
-        const { channel: threadChannel } =
-          await this.assertDiscordChannelCanBeUsed(accessToken, threadId, true);
+        const { type: detectedType } = await this.assertDiscordChannelCanBeUsed(
+          accessToken,
+          threadId,
+          true
+        );
 
-        if (
-          threadChannel.type === DiscordChannelType.PUBLIC_THREAD ||
-          threadChannel.type === DiscordChannelType.ANNOUNCEMENT_THREAD
-        ) {
+        if (detectedType === FeedConnectionDiscordChannelType.Thread) {
           type = FeedConnectionDiscordWebhookType.Thread;
         } else {
           throw new InvalidDiscordChannelException();
