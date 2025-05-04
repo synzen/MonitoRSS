@@ -24,7 +24,6 @@ import {
   FeedLimitReachedException,
   MissingChannelException,
   MissingChannelPermissionsException,
-  NoDiscordChannelPermissionOverwritesException,
   UserMissingManageGuildException,
 } from "./exceptions";
 import { SupportersService } from "../supporters/supporters.service";
@@ -198,11 +197,8 @@ export class FeedsService {
       return channel;
     }
 
-    if (!channel.permission_overwrites) {
-      throw new NoDiscordChannelPermissionOverwritesException();
-    }
-
     if (
+      channel.permission_overwrites &&
       !skipBotPermissionAssertions &&
       !(await this.discordPermissionsService.botHasPermissionInChannel(
         channel,

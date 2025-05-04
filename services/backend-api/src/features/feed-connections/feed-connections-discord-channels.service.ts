@@ -34,7 +34,6 @@ import {
   FeedConnectionType,
 } from "../feeds/constants";
 import { DiscordChannelConnection } from "../feeds/entities/feed-connections";
-import { NoDiscordChannelPermissionOverwritesException } from "../feeds/exceptions";
 import { FeedsService } from "../feeds/feeds.service";
 import { SupportersService } from "../supporters/supporters.service";
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
@@ -266,10 +265,12 @@ export class FeedConnectionsDiscordChannelsService {
       let type: FeedConnectionDiscordWebhookType | undefined = undefined;
 
       if (threadId) {
-        const { channel: threadChannel } =
-          await this.assertDiscordChannelCanBeUsed(userAccessToken, threadId);
+        const { type: detectedType } = await this.assertDiscordChannelCanBeUsed(
+          userAccessToken,
+          threadId
+        );
 
-        if (threadChannel.type === DiscordChannelType.PUBLIC_THREAD) {
+        if (detectedType === FeedConnectionDiscordChannelType.Thread) {
           type = FeedConnectionDiscordWebhookType.Thread;
         } else {
           throw new InvalidDiscordChannelException();
@@ -690,7 +691,10 @@ export class FeedConnectionsDiscordChannelsService {
         const { channel: threadChannel } =
           await this.assertDiscordChannelCanBeUsed(accessToken, threadId, true);
 
-        if (threadChannel.type === DiscordChannelType.PUBLIC_THREAD) {
+        if (
+          threadChannel.type === DiscordChannelType.PUBLIC_THREAD ||
+          threadChannel.type === DiscordChannelType.ANNOUNCEMENT_THREAD
+        ) {
           type = FeedConnectionDiscordWebhookType.Thread;
         } else {
           throw new InvalidDiscordChannelException();
@@ -1158,7 +1162,10 @@ export class FeedConnectionsDiscordChannelsService {
 
       if (channel.type === DiscordChannelType.GUILD_FORUM) {
         type = FeedConnectionDiscordChannelType.Forum;
-      } else if (channel.type === DiscordChannelType.PUBLIC_THREAD) {
+      } else if (
+        channel.type === DiscordChannelType.PUBLIC_THREAD ||
+        channel.type === DiscordChannelType.ANNOUNCEMENT_THREAD
+      ) {
         type = FeedConnectionDiscordChannelType.Thread;
 
         const parentChannelId = channel.parent_id;
@@ -1194,8 +1201,6 @@ export class FeedConnectionsDiscordChannelsService {
             throw new DiscordChannelPermissionsException();
           }
         }
-      } else if (err instanceof NoDiscordChannelPermissionOverwritesException) {
-        throw new InvalidDiscordChannelException();
       }
 
       throw err;

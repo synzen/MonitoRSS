@@ -7,5 +7,4 @@ export * from "./user-missing-manage-guild.exception";
 export * from "./webhooks-disabled.exception";
 export * from "./webhook-missing.exception";
 export * from "./webhook-invalid.exception";
-export * from "./no-discord-channel-permission-overwrites.exception";
 export * from "./already-converted-to-user-feed.exception";
