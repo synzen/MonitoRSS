@@ -51,6 +51,7 @@ import {
   usePageAlertContext,
 } from "../contexts/PageAlertContext";
 import { CopyUserFeedSettingsDialog } from "../features/feed/components/CopyUserFeedSettingsDialog";
+import { ReducedLimitAlert } from "../components/ReducedLimitAlert";
 
 export const UserFeeds = () => {
   return (
@@ -225,6 +226,7 @@ const UserFeedsInner: React.FC = () => {
               mt: 4,
             }}
           />
+          <ReducedLimitAlert />
           {totalFeedsRequiringAttention !== undefined && totalFeedsRequiringAttention > 0 && (
             <Alert status="warning" mt={2}>
               <AlertIcon />
