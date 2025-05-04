@@ -3,7 +3,12 @@ import { useState } from "react";
 import { getUserFeeds, GetUserFeedsInput, GetUserFeedsOutput } from "../api";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 
-export const useUserFeedsInfinite = (input: Omit<GetUserFeedsInput, "search">) => {
+export const useUserFeedsInfinite = (
+  input: Omit<GetUserFeedsInput, "search">,
+  opts?: {
+    disabled?: boolean;
+  }
+) => {
   const [search, setSearch] = useState("");
   const useLimit = input.limit || 10;
 
@@ -41,6 +46,7 @@ export const useUserFeedsInfinite = (input: Omit<GetUserFeedsInput, "search">) =
       return result;
     },
     {
+      enabled: !opts?.disabled,
       keepPreviousData: true,
       refetchOnWindowFocus: false,
       // Returns the next offset

@@ -24,6 +24,7 @@ import { LogoutButton } from "../../features/auth";
 import { useDiscordBot, useDiscordUserMe, useUserMe } from "../../features/discordUser";
 import { Loading } from "../Loading";
 import { ReportABugDialog } from "../ReportABugDialog";
+import { SearchFeedsModal } from "../SearchFeedsModal";
 
 interface Props {
   invertBackground?: boolean;
@@ -51,7 +52,7 @@ export const NewHeader = ({ invertBackground }: Props) => {
           maxWidth="1400px"
           paddingX={{ base: 4, lg: 12 }}
         >
-          <HStack overflow="hidden" gap={8}>
+          <HStack gap={8}>
             <Flex alignItems="center" overflow="hidden">
               {discordBotData && (
                 <Link to={pages.userFeeds()} aria-label="MonitoRSS Home">
@@ -93,6 +94,7 @@ export const NewHeader = ({ invertBackground }: Props) => {
                   FAQ
                 </Button>
               )}
+              <SearchFeedsModal />
             </HStack>
           </HStack>
           <Flex alignItems="center" paddingY="4">
