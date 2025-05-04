@@ -18,16 +18,19 @@ import {
   MenuItem,
   MenuDivider,
   IconButton,
+  Portal,
 } from "@chakra-ui/react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AddIcon, ChevronDownIcon, DeleteIcon } from "@chakra-ui/icons";
-import { useCallback, useContext, useEffect } from "react";
-import { FaRegNewspaper } from "react-icons/fa6";
+import { useCallback, useContext, useEffect, useState } from "react";
+import { FaCopy, FaRegNewspaper } from "react-icons/fa6";
 import { FaPause, FaPlay } from "react-icons/fa";
+import { IoDuplicate } from "react-icons/io5";
 import { useUserMe } from "../features/discordUser";
 import {
   AddUserFeedDialog,
+  CloneUserFeedDialog,
   FeedManagementInvitesDialog,
   useDeleteUserFeeds,
   useDisableUserFeeds,
@@ -47,6 +50,7 @@ import {
   PageAlertProvider,
   usePageAlertContext,
 } from "../contexts/PageAlertContext";
+import { CopyUserFeedSettingsDialog } from "../features/feed/components/CopyUserFeedSettingsDialog";
 
 export const UserFeeds = () => {
   return (
@@ -57,6 +61,32 @@ export const UserFeeds = () => {
         </PageAlertProvider>
       </BoxConstrained.Container>
     </BoxConstrained.Wrapper>
+  );
+};
+
+const CopyUserFeedSettingsMenuItem = ({
+  selectedFeedId,
+  onSuccess,
+}: {
+  selectedFeedId?: string;
+  onSuccess: () => void;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      <MenuItem isDisabled={!selectedFeedId} icon={<FaCopy />} onClick={() => setIsOpen(true)}>
+        Copy settings to...
+      </MenuItem>
+      <Portal>
+        <CopyUserFeedSettingsDialog
+          feedId={selectedFeedId}
+          isOpen={isOpen}
+          onClose={() => setIsOpen(false)}
+          onSuccess={onSuccess}
+        />
+      </Portal>
+    </>
   );
 };
 
@@ -190,7 +220,11 @@ const UserFeedsInner: React.FC = () => {
           </Button>
         )}
         <Stack spacing={2}>
-          <PageAlertContextOutlet />
+          <PageAlertContextOutlet
+            containerProps={{
+              mt: 4,
+            }}
+          />
           {totalFeedsRequiringAttention !== undefined && totalFeedsRequiringAttention > 0 && (
             <Alert status="warning" mt={2}>
               <AlertIcon />
@@ -309,6 +343,24 @@ const UserFeedsInner: React.FC = () => {
                   description="Only feeds that are not currently disabled will be affected."
                   onConfirm={onDisableSelectedFeeds}
                   colorScheme="blue"
+                />
+                <CloneUserFeedDialog
+                  feedId={selectedFeeds[0]?.id}
+                  trigger={
+                    <MenuItem isDisabled={selectedFeeds.length !== 1} icon={<IoDuplicate />}>
+                      Clone
+                    </MenuItem>
+                  }
+                  defaultValues={{
+                    title: `${selectedFeeds[0]?.title} (Clone)`,
+                    url: selectedFeeds[0]?.url,
+                  }}
+                />
+                <CopyUserFeedSettingsMenuItem
+                  selectedFeedId={selectedFeeds.length === 1 ? selectedFeeds[0]?.id : undefined}
+                  onSuccess={() => {
+                    clearSelection();
+                  }}
                 />
                 <MenuDivider />
                 <ConfirmModal

@@ -45,10 +45,14 @@ import {
   AddIcon,
   ArrowLeftIcon,
   ChevronDownIcon,
+  DeleteIcon,
   ExternalLinkIcon,
   QuestionOutlineIcon,
 } from "@chakra-ui/icons";
 import { useContext, useEffect, useRef, useState } from "react";
+import { FaBackward, FaGear, FaPause, FaUserSlash } from "react-icons/fa6";
+import { FaCopy } from "react-icons/fa";
+import { IoDuplicate } from "react-icons/io5";
 import { BoxConstrained, CategoryText, ConfirmModal } from "@/components";
 import {
   CloneUserFeedDialog,
@@ -325,6 +329,7 @@ const UserFeedInner: React.FC = () => {
           isOpen={copySettingsIsOpen}
           onClose={copySettingsOnClose}
           onCloseRef={menuButtonRef}
+          feedId={feedId}
         />
         <Stack width="100%" minWidth="100%" alignItems="center">
           <Stack maxWidth="1400px" width="100%" paddingX={{ base: 4, md: 8, lg: 12 }} spacing={4}>
@@ -373,14 +378,16 @@ const UserFeedInner: React.FC = () => {
                           <span>Feed Actions</span>
                         </MenuButton>
                         <MenuList>
-                          <MenuItem aria-label="Edit" onClick={editOnOpen}>
+                          <MenuItem aria-label="Edit" onClick={editOnOpen} icon={<FaGear />}>
                             {t("common.buttons.configure")}
                           </MenuItem>
-                          <MenuItem onClick={copySettingsOnOpen}>Copy settings to...</MenuItem>
+                          <MenuItem onClick={copySettingsOnOpen} icon={<FaCopy />}>
+                            Copy settings to...
+                          </MenuItem>
                           {feed && (
                             <CloneUserFeedDialog
                               trigger={
-                                <MenuItem>
+                                <MenuItem icon={<IoDuplicate />}>
                                   <span>Clone</span>
                                 </MenuItem>
                               }
@@ -396,7 +403,10 @@ const UserFeedInner: React.FC = () => {
                               title="Remove my shared access"
                               description="Are you sure you want to remove your access to this feed? You will no longer be able to view or manage this feed."
                               trigger={
-                                <MenuItem isDisabled={updatingStatus === "loading"}>
+                                <MenuItem
+                                  isDisabled={updatingStatus === "loading"}
+                                  icon={<FaUserSlash />}
+                                >
                                   <span>Remove my shared access</span>
                                 </MenuItem>
                               }
@@ -412,7 +422,10 @@ const UserFeedInner: React.FC = () => {
                               title={t("pages.userFeed.disableFeedConfirmTitle")}
                               description={t("pages.userFeed.disableFeedConfirmDescription")}
                               trigger={
-                                <MenuItem isDisabled={updatingStatus === "loading"}>
+                                <MenuItem
+                                  isDisabled={updatingStatus === "loading"}
+                                  icon={<FaPause />}
+                                >
                                   <span>{t("pages.userFeed.disableFeedButtonText")}</span>
                                 </MenuItem>
                               }
@@ -478,7 +491,9 @@ const UserFeedInner: React.FC = () => {
                               onConfirm={onRestoreLegacyFeed}
                               colorScheme="red"
                               okText="Restore legacy feed"
-                              trigger={<MenuItem>Restore legacy feed</MenuItem>}
+                              trigger={
+                                <MenuItem icon={<FaBackward />}>Restore legacy feed</MenuItem>
+                              }
                             />
                           )}
                           {feedId && (
@@ -486,8 +501,11 @@ const UserFeedInner: React.FC = () => {
                               title={t("pages.userFeed.deleteConfirmTitle")}
                               description={t("pages.userFeed.deleteConfirmDescription")}
                               trigger={
-                                <MenuItem isDisabled={deleteingStatus === "loading"}>
-                                  <span>{t("common.buttons.delete")}</span>
+                                <MenuItem
+                                  isDisabled={deleteingStatus === "loading"}
+                                  icon={<DeleteIcon color="red.200" />}
+                                >
+                                  <Text color="red.200">{t("common.buttons.delete")}</Text>
                                 </MenuItem>
                               }
                               okText={t("pages.userFeed.deleteConfirmOk")}

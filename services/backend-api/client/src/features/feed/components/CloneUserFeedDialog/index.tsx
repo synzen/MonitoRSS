@@ -41,7 +41,7 @@ const formSchema = object({
 type FormData = InferType<typeof formSchema>;
 
 interface Props {
-  feedId: string;
+  feedId?: string;
   defaultValues: {
     title: string;
     url: string;
@@ -54,7 +54,7 @@ export const CloneUserFeedDialog = ({ feedId, defaultValues, trigger }: Props) =
     handleSubmit,
     control,
     reset,
-    formState: { errors, isSubmitting, isSubmitted, isValid },
+    formState: { errors, isSubmitting, isSubmitted },
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
     defaultValues,
@@ -70,7 +70,15 @@ export const CloneUserFeedDialog = ({ feedId, defaultValues, trigger }: Props) =
     resetError();
   }, [isOpen]);
 
+  useEffect(() => {
+    reset(defaultValues);
+  }, [JSON.stringify(defaultValues)]);
+
   const onSubmit = async ({ title, url }: FormData) => {
+    if (!feedId) {
+      return;
+    }
+
     try {
       const {
         result: { id },
@@ -149,12 +157,17 @@ export const CloneUserFeedDialog = ({ feedId, defaultValues, trigger }: Props) =
               </Button>
               <Button
                 colorScheme="blue"
-                type="submit"
-                form="clonefeed"
-                isLoading={isSubmitting}
-                aria-disabled={isSubmitting || !isValid}
+                aria-disabled={isSubmitting}
+                onClick={() => {
+                  if (isSubmitting) {
+                    return;
+                  }
+
+                  handleSubmit(onSubmit)();
+                }}
               >
-                <span>Clone</span>
+                <span>{!isSubmitting && "Clone"}</span>
+                <span>{isSubmitting && "Cloning..."}</span>
               </Button>
             </HStack>
           </ModalFooter>

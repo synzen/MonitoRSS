@@ -17,6 +17,8 @@ import {
   Box,
   FormControl,
   FormErrorMessage,
+  Spinner,
+  Center,
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { array, InferType, mixed, object, string } from "yup";
@@ -26,9 +28,9 @@ import { useEffect } from "react";
 import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "../../../../components";
 import { useCreateUserFeedCopySettings } from "../../hooks/useCreateUserFeedCopySettings";
 import { CopyableUserFeedSettings } from "../../constants/copyableUserFeedSettings";
-import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
 import { SelectableUserFeedList } from "./SelectableUserFeedList";
 import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
+import { useUserFeed } from "../../hooks";
 
 enum CopyCategory {
   Comparisons = "Comparisons",
@@ -94,15 +96,23 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onCloseRef?: React.MutableRefObject<HTMLButtonElement | null>;
+  feedId?: string;
+  onSuccess?: () => void;
 }
 
-export const CopyUserFeedSettingsDialog = ({ isOpen, onClose, onCloseRef }: Props) => {
+export const CopyUserFeedSettingsDialog = ({
+  isOpen,
+  onClose,
+  onCloseRef,
+  feedId,
+  onSuccess,
+}: Props) => {
   const { mutateAsync, status, error, reset: resetMutation } = useCreateUserFeedCopySettings();
   const { t } = useTranslation();
-  const { userFeed: feed } = useUserFeedContext();
+  const { feed } = useUserFeed({ feedId });
   const {
     control,
-    formState: { errors, isSubmitted, isSubmitting, isValid },
+    formState: { errors, isSubmitted, isSubmitting },
     handleSubmit,
     reset,
     watch,
@@ -157,7 +167,7 @@ export const CopyUserFeedSettingsDialog = ({ isOpen, onClose, onCloseRef }: Prop
 
   const onSubmit = async ({ checkedSettings, checkedUserFeeds }: FormData) => {
     try {
-      if (checkedSettings.length === 0 || status === "loading") {
+      if (checkedSettings.length === 0 || status === "loading" || !feed) {
         return;
       }
 
@@ -173,6 +183,7 @@ export const CopyUserFeedSettingsDialog = ({ isOpen, onClose, onCloseRef }: Prop
         title: `Successfully copied feed settings ${checkedUserFeeds.length} other feeds`,
       });
       reset();
+      onSuccess?.();
     } catch (err) {}
   };
 
@@ -283,106 +294,113 @@ export const CopyUserFeedSettingsDialog = ({ isOpen, onClose, onCloseRef }: Prop
           <ModalHeader>Copy feed settings</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <Stack spacing={6}>
-              <Text>
-                Copy settings from the source feed to another. This will overwrite the settings of
-                the target feeds.
-              </Text>
-              <Stack py={4} px={4} bg="gray.800" rounded="md">
-                <Badge bg="none" p={0}>
-                  Source Feed
-                </Badge>
-                <Divider />
-                <Box>
-                  <Text>{feed.title}</Text>
-                  <Text fontSize="sm" color="whiteAlpha.700" wordBreak="break-all">
-                    {feed.url}
-                  </Text>
-                </Box>
-              </Stack>
-              <fieldset>
-                <Controller
-                  name="checkedSettings"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl isInvalid={!!errors.checkedSettings}>
-                      <Stack spacing={2}>
-                        <legend>
-                          <Text size="sm" fontWeight="semibold">
-                            Settings to Copy
-                          </Text>
-                        </legend>
-                        <Stack>
-                          {otherSettings.map((setting) => {
-                            const settingDescription = CopyableSettingDescriptions[setting];
+            {!feed && (
+              <Center>
+                <Spinner />
+              </Center>
+            )}
+            {feed && (
+              <Stack spacing={6}>
+                <Text>
+                  Copy settings from the source feed to another. This will overwrite the settings of
+                  the target feeds.
+                </Text>
+                <Stack py={4} px={4} bg="gray.800" rounded="md">
+                  <Badge bg="none" p={0}>
+                    Source Feed
+                  </Badge>
+                  <Divider />
+                  <Box>
+                    <Text>{feed.title}</Text>
+                    <Text fontSize="sm" color="whiteAlpha.700" wordBreak="break-all">
+                      {feed.url}
+                    </Text>
+                  </Box>
+                </Stack>
+                <fieldset>
+                  <Controller
+                    name="checkedSettings"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControl isInvalid={!!errors.checkedSettings}>
+                        <Stack spacing={2}>
+                          <legend>
+                            <Text size="sm" fontWeight="semibold">
+                              Settings to Copy
+                            </Text>
+                          </legend>
+                          <Stack>
+                            {otherSettings.map((setting) => {
+                              const settingDescription = CopyableSettingDescriptions[setting];
 
-                            return (
-                              <Checkbox
-                                onChange={(e) => {
-                                  const newSettings = calculateNewCheckedSettings(
-                                    field.value,
-                                    setting,
-                                    e.target.checked
-                                  );
-                                  field.onChange(newSettings);
-                                }}
-                                isChecked={field.value.includes(setting)}
-                                key={setting}
-                              >
-                                {settingDescription.description}
-                                <br />
-                                {settingDescription.hint && (
-                                  <chakra.span color="whiteAlpha.600" fontSize={14}>
-                                    {settingDescription.hint}
-                                  </chakra.span>
-                                )}
-                              </Checkbox>
-                            );
-                          })}
-                          {checkboxesByCategories}
-                        </Stack>
-                      </Stack>
-                      <FormErrorMessage>{errors.checkedSettings?.message}</FormErrorMessage>
-                    </FormControl>
-                  )}
-                />
-              </fieldset>
-              <fieldset>
-                <Controller
-                  name="checkedUserFeeds"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl isInvalid={!!errors.checkedUserFeeds}>
-                      <Stack spacing={2}>
-                        <legend>
-                          <Stack spacing={2}>
-                            <Text fontWeight="semibold" size="sm">
-                              Target Feeds
-                            </Text>
-                            <Text>
-                              The feeds that will have their settings overwritten with the selected
-                              settings from the source feed.
-                            </Text>
+                              return (
+                                <Checkbox
+                                  onChange={(e) => {
+                                    const newSettings = calculateNewCheckedSettings(
+                                      field.value,
+                                      setting,
+                                      e.target.checked
+                                    );
+                                    field.onChange(newSettings);
+                                  }}
+                                  isChecked={field.value.includes(setting)}
+                                  key={setting}
+                                >
+                                  {settingDescription.description}
+                                  <br />
+                                  {settingDescription.hint && (
+                                    <chakra.span color="whiteAlpha.600" fontSize={14}>
+                                      {settingDescription.hint}
+                                    </chakra.span>
+                                  )}
+                                </Checkbox>
+                              );
+                            })}
+                            {checkboxesByCategories}
                           </Stack>
-                        </legend>
-                        <Box>
-                          <Button size="sm" onClick={() => field.onChange([])}>
-                            Clear {checkedUserFeedsLength} target feed selections
-                          </Button>
-                        </Box>
-                        <Stack mt={1}>
-                          <SelectableUserFeedList
-                            onSelectedIdsChange={field.onChange}
-                            selectedIds={field.value}
-                          />
                         </Stack>
-                        <FormErrorMessage>{errors.checkedUserFeeds?.message}</FormErrorMessage>
-                      </Stack>
-                    </FormControl>
-                  )}
-                />
-              </fieldset>
-            </Stack>
+                        <FormErrorMessage>{errors.checkedSettings?.message}</FormErrorMessage>
+                      </FormControl>
+                    )}
+                  />
+                </fieldset>
+                <fieldset>
+                  <Controller
+                    name="checkedUserFeeds"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControl isInvalid={!!errors.checkedUserFeeds}>
+                        <Stack spacing={2}>
+                          <legend>
+                            <Stack spacing={2}>
+                              <Text fontWeight="semibold" size="sm">
+                                Target Feeds
+                              </Text>
+                              <Text>
+                                The feeds that will have their settings overwritten with the
+                                selected settings from the source feed.
+                              </Text>
+                            </Stack>
+                          </legend>
+                          <Box>
+                            <Button size="sm" onClick={() => field.onChange([])}>
+                              Clear {checkedUserFeedsLength} target feed selections
+                            </Button>
+                          </Box>
+                          <Stack mt={1}>
+                            <SelectableUserFeedList
+                              onSelectedIdsChange={field.onChange}
+                              selectedIds={field.value}
+                            />
+                          </Stack>
+                          <FormErrorMessage>{errors.checkedUserFeeds?.message}</FormErrorMessage>
+                        </Stack>
+                      </FormControl>
+                    )}
+                  />
+                </fieldset>
+              </Stack>
+            )}
             {error && (
               <Box mt={4}>
                 <InlineErrorAlert
@@ -405,14 +423,22 @@ export const CopyUserFeedSettingsDialog = ({ isOpen, onClose, onCloseRef }: Prop
               <Button
                 colorScheme="blue"
                 mr={3}
-                type="submit"
-                isLoading={status === "loading"}
-                aria-disabled={isSubmitting || !isValid}
+                aria-disabled={isSubmitting}
+                onClick={() => {
+                  if (isSubmitting) {
+                    return;
+                  }
+
+                  handleSubmit(onSubmit)();
+                }}
               >
                 <span>
-                  Copy to{" "}
-                  {checkedUserFeedsLength === 1 ? "1 feed" : `${checkedUserFeedsLength} feeds`}
+                  {!isSubmitting &&
+                    `Copy to ${
+                      checkedUserFeedsLength === 1 ? "1 feed" : `${checkedUserFeedsLength} feeds`
+                    }`}
                 </span>
+                <span>{isSubmitting && "Copying..."}</span>
               </Button>
             </HStack>
           </ModalFooter>

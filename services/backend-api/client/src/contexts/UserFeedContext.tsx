@@ -28,11 +28,7 @@ export const UserFeedProvider = ({
 }) => {
   const { feed, status } = useUserFeed({ feedId });
 
-  if (status === "loading" || !feed) {
-    return <Spinner />;
-  }
-
-  const value: ContextProps = useMemo(
+  const value: Partial<ContextProps> = useMemo(
     () => ({
       userFeed: feed,
       articleFormatOptions: {
@@ -48,7 +44,13 @@ export const UserFeedProvider = ({
     [feed]
   );
 
-  return <UserFeedContext.Provider value={value}>{children}</UserFeedContext.Provider>;
+  if (status === "loading" || !feed) {
+    return <Spinner />;
+  }
+
+  return (
+    <UserFeedContext.Provider value={value as ContextProps}>{children}</UserFeedContext.Provider>
+  );
 };
 
 export const useUserFeedContext = () => {
