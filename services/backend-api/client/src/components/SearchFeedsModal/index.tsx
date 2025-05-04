@@ -8,6 +8,7 @@ import {
   Input,
   InputGroup,
   InputLeftElement,
+  Kbd,
   ListItem,
   Modal,
   ModalBody,
@@ -18,6 +19,7 @@ import {
   Stack,
   Text,
   UnorderedList,
+  chakra,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -53,7 +55,9 @@ const SearchResultItem = ({
         to={pages.userFeed(feedId)}
         px={4}
         py={4}
-        bg="gray.800"
+        bg="whiteAlpha.200"
+        // border="solid 3px"
+        // borderColor="gray.600"
         borderRadius="md"
         mt={3}
         alignItems="center"
@@ -129,6 +133,22 @@ export const SearchFeedsModal = () => {
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    // listen for ctrl k
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey && event.key === "k") {
+        event.preventDefault();
+        setIsOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
   const isEmpty = !feeds?.pages?.[0]?.total;
   const allFeeds = feeds?.pages.flatMap((item) => item.results) || [];
 
@@ -145,7 +165,12 @@ export const SearchFeedsModal = () => {
         alignItems="center"
         onClick={() => setIsOpen(true)}
       >
-        Navigate to my feeds
+        <HStack justifyContent="space-between" w="100%" alignItems="center">
+          <Text>Navigate to my feeds</Text>
+          <chakra.div mb={1}>
+            <Kbd>Ctrl</Kbd> + <Kbd>K</Kbd>
+          </chakra.div>
+        </HStack>
       </Button>
       <IconButton
         variant="outline"
