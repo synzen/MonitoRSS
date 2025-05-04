@@ -33,6 +33,7 @@ import {
   FeedConnectionsDiscordChannelsService,
   UpdateDiscordChannelConnectionInput,
 } from "./feed-connections-discord-channels.service";
+import { CustomPlaceholderStepType } from "../../common/constants/custom-placeholder-step-type.constants";
 
 describe("FeedConnectionsDiscordChannelsService", () => {
   let service: FeedConnectionsDiscordChannelsService;
@@ -135,12 +136,12 @@ describe("FeedConnectionsDiscordChannelsService", () => {
       });
 
       const creationDetails = {
-        feedId: createdFeed._id.toHexString(),
-        channelId,
+        feed: createdFeed,
         name: "name",
+        channelId,
         userAccessToken: "user-access-token",
         guildId: guildId,
-        discordUserId: "user-id",
+        userDiscordUserId: "user-id",
       };
       await service.createDiscordChannelConnection(creationDetails);
 
@@ -212,14 +213,17 @@ describe("FeedConnectionsDiscordChannelsService", () => {
         },
       });
 
-      const { id: clonedConnectionId } = await service.cloneConnection(
-        createdFeed,
+      const { ids } = await service.cloneConnection(
+        [createdFeed],
         connection,
         {
           name: connection.name + "new-name",
         },
-        "token"
+        "token",
+        "user-id"
       );
+
+      const clonedConnectionId = ids[0];
 
       const updatedFeed = await userFeedsModel.findById(createdFeed._id).lean();
 
@@ -318,6 +322,7 @@ describe("FeedConnectionsDiscordChannelsService", () => {
                   id: randomUUID(),
                   regexSearch: "regex-search",
                   replacementString: "replacement",
+                  type: CustomPlaceholderStepType.Regex,
                 },
               ],
             },
@@ -330,6 +335,8 @@ describe("FeedConnectionsDiscordChannelsService", () => {
             channel: {
               id: "updatedChannelId",
             },
+            channelNewThreadExcludesPreview: false,
+            channelNewThreadTitle: "",
             content: "updatedContent",
             embeds: [
               {

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { IsArray, IsNotEmpty, IsOptional, IsString } from "class-validator";
 
 export class CreateDiscordChannelConnectionCloneInputDto {
   @IsString()
@@ -8,4 +8,9 @@ export class CreateDiscordChannelConnectionCloneInputDto {
   @IsString()
   @IsOptional()
   channelId?: string;
+
+  @IsString({ each: true })
+  @IsArray()
+  @IsOptional()
+  targetFeedIds?: string[];
 }

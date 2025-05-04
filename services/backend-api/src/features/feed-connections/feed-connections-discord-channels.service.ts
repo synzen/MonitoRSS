@@ -346,7 +346,7 @@ export class FeedConnectionsDiscordChannelsService {
   }
 
   async cloneConnection(
-    userFeed: UserFeed,
+    targetUserFeeds: UserFeed[],
     connection: DiscordChannelConnection,
     {
       name,
@@ -355,7 +355,7 @@ export class FeedConnectionsDiscordChannelsService {
     userAccessToken: string,
     userDiscordUserId: string
   ) {
-    const newId = new Types.ObjectId();
+    const newIds = targetUserFeeds.map(() => new Types.ObjectId());
     let channelDetailsToUse: DiscordChannelConnection["details"]["channel"] =
       connection.details.channel;
 
@@ -381,7 +381,7 @@ export class FeedConnectionsDiscordChannelsService {
       const newWebhook = await this.getOrCreateApplicationWebhook({
         channelId: connection.details.webhook.channelId as string,
         webhook: {
-          name: `feed-${userFeed._id}-${newId}`,
+          name: `feed-${targetUserFeeds[0]._id}-${newIds[0]}`,
         },
       });
 
@@ -390,40 +390,51 @@ export class FeedConnectionsDiscordChannelsService {
     }
 
     try {
-      await this.userFeedModel.findOneAndUpdate(
-        {
-          _id: userFeed._id,
-        },
-        {
-          $push: {
-            "connections.discordChannels": {
-              ...connection,
-              id: newId,
-              name,
-              details: {
-                ...connection.details,
-                channel: channelDetailsToUse,
-                webhook: connection.details.webhook
-                  ? {
-                      ...connection.details.webhook,
-                      id: newWebhookId || connection.details.webhook.id,
-                      token:
-                        newWebhookToken || connection.details.webhook.token,
-                    }
-                  : undefined,
-              },
-            },
-          },
-        }
-      );
+      const session = await this.userFeedModel.startSession();
 
-      await this.connectionEventsService.handleCreatedEvent({
-        feed: userFeed,
-        connectionId: newId,
-        creator: {
-          discordUserId: userDiscordUserId,
-        },
+      await session.withTransaction(async () => {
+        await Promise.all(
+          targetUserFeeds.map(async (userFeed, index) => {
+            await this.userFeedModel.updateOne(
+              {
+                _id: userFeed._id,
+              },
+              {
+                $push: {
+                  "connections.discordChannels": {
+                    id: newIds[index],
+                    name,
+                    details: {
+                      ...connection.details,
+                      channel: channelDetailsToUse,
+                      webhook: connection.details.webhook
+                        ? {
+                            ...connection.details.webhook,
+                            id: newWebhookId || connection.details.webhook.id,
+                            token:
+                              newWebhookToken ||
+                              connection.details.webhook.token,
+                          }
+                        : null,
+                    },
+                  },
+                },
+              },
+              { session }
+            );
+
+            await this.connectionEventsService.handleCreatedEvent({
+              feed: userFeed,
+              connectionId: newIds[index],
+              creator: {
+                discordUserId: userDiscordUserId,
+              },
+            });
+          })
+        );
       });
+
+      await session.endSession();
     } catch (err) {
       if (newWebhookId) {
         await this.cleanupWebhook(newWebhookId);
@@ -433,7 +444,7 @@ export class FeedConnectionsDiscordChannelsService {
     }
 
     return {
-      id: newId,
+      ids: newIds,
     };
   }
 

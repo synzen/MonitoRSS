@@ -488,7 +488,7 @@ export class UserFeedsService {
 
     for (const c of found.connections.discordChannels) {
       await this.feedConnectionsDiscordChannelsService.cloneConnection(
-        created,
+        [created],
         c,
         {
           name: c.name,

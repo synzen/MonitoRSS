@@ -142,6 +142,7 @@ export const DiscordChannelConnectionSettings = ({ feedId, connection, trigger }
             trigger={<MenuItem>Clone</MenuItem>}
             defaultValues={{
               name: `${connection.name} (Clone)`,
+              targetFeedIds: [feedId],
             }}
             type={FeedConnectionType.DiscordChannel}
             connectionId={connection.id}

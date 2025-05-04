@@ -2,6 +2,7 @@ import {
   Button,
   FormControl,
   FormErrorMessage,
+  FormHelperText,
   FormLabel,
   HStack,
   Input,
@@ -18,15 +19,19 @@ import {
 import { yupResolver } from "@hookform/resolvers/yup";
 import { cloneElement, useEffect, useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { InferType, object, string } from "yup";
+import { array, InferType, object, string } from "yup";
 import { useTranslation } from "react-i18next";
 import { useCreateDiscordChannelConnectionClone } from "../../hooks";
 import { FeedConnectionType } from "../../../../types";
 import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "../../../../components";
 import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
+import { SelectableUserFeedList } from "../../../feed/components/CopyUserFeedSettingsDialog/SelectableUserFeedList";
 
 const formSchema = object({
   name: string().required("Name is required").max(250, "Name must be fewer than 250 characters"),
+  targetFeedIds: array(string().required())
+    .min(1, "At least one target feed is required to copy the connection to")
+    .required(),
 });
 
 type FormData = InferType<typeof formSchema>;
@@ -37,6 +42,7 @@ interface Props {
   type: FeedConnectionType;
   defaultValues: {
     name: string;
+    targetFeedIds: string[];
   };
   trigger: React.ReactElement;
 }
@@ -52,7 +58,7 @@ export const CloneDiscordConnectionCloneDialog = ({
     handleSubmit,
     control,
     reset,
-    formState: { errors, isSubmitting, isValid, isSubmitted },
+    formState: { errors, isSubmitting, isSubmitted },
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
     defaultValues,
@@ -67,10 +73,18 @@ export const CloneDiscordConnectionCloneDialog = ({
     reset(defaultValues);
   }, [isOpen]);
 
-  const onSubmit = async ({ name }: FormData) => {
+  const onSubmit = async ({ name, targetFeedIds }: FormData) => {
     try {
+      if (isSubmitting) {
+        return;
+      }
+
       if (type === FeedConnectionType.DiscordChannel) {
-        await createChannelClone({ feedId, connectionId, details: { name } });
+        await createChannelClone({
+          feedId,
+          connectionId,
+          details: { name, targetFeedIds },
+        });
       } else {
         throw new Error(`Unsupported connection type when cloning discord connection: ${type}`);
       }
@@ -89,23 +103,46 @@ export const CloneDiscordConnectionCloneDialog = ({
   return (
     <>
       {cloneElement(trigger, { onClick: onOpen })}
-      <Modal isOpen={isOpen} onClose={onClose} initialFocusRef={initialRef}>
+      <Modal isOpen={isOpen} onClose={onClose} initialFocusRef={initialRef} size="xl">
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Clone connection</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <Stack>
+            <Stack spacing={4}>
               <form id="clonefeed" onSubmit={handleSubmit(onSubmit)}>
-                <FormControl isInvalid={!!errors.name} isRequired>
-                  <FormLabel>Name</FormLabel>
-                  <Controller
-                    name="name"
-                    control={control}
-                    render={({ field }) => <Input {...field} ref={initialRef} bg="gray.800" />}
-                  />
-                  {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
-                </FormControl>
+                <Stack spacing={4}>
+                  <FormControl isInvalid={!!errors.name} isRequired>
+                    <FormLabel>Name</FormLabel>
+                    <Controller
+                      name="name"
+                      control={control}
+                      render={({ field }) => <Input {...field} ref={initialRef} bg="gray.800" />}
+                    />
+                    {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
+                    <FormHelperText>The name for the newly-cloned connection.</FormHelperText>
+                  </FormControl>
+                  <FormControl isInvalid={!!errors.targetFeedIds} isRequired>
+                    <FormLabel>Target feeds</FormLabel>
+                    <Controller
+                      name="targetFeedIds"
+                      control={control}
+                      render={({ field }) => (
+                        <SelectableUserFeedList
+                          selectedIds={field.value || []}
+                          onSelectedIdsChange={(ids) => field.onChange(ids)}
+                        />
+                      )}
+                    />
+                    {errors.targetFeedIds && (
+                      <FormErrorMessage>{errors.targetFeedIds.message}</FormErrorMessage>
+                    )}
+                    <FormHelperText>
+                      Select the feeds you want to copy this connection to. You can select multiple
+                      feeds.
+                    </FormHelperText>
+                  </FormControl>
+                </Stack>
               </form>
               {error && (
                 <InlineErrorAlert
@@ -125,12 +162,18 @@ export const CloneDiscordConnectionCloneDialog = ({
               </Button>
               <Button
                 colorScheme="blue"
-                type="submit"
+                onClick={() => {
+                  if (isSubmitting) {
+                    return;
+                  }
+
+                  handleSubmit(onSubmit)();
+                }}
                 form="clonefeed"
-                isLoading={isSubmitting}
-                aria-disabled={isSubmitting || !isValid}
+                aria-disabled={isSubmitting}
               >
-                <span>Clone</span>
+                <span>{!isSubmitting && "Clone"}</span>
+                <span>{isSubmitting && "Cloning..."}</span>
               </Button>
             </HStack>
           </ModalFooter>

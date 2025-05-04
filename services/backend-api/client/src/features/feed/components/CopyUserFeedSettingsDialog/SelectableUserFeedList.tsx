@@ -52,7 +52,7 @@ export const SelectableUserFeedList = ({ selectedIds, onSelectedIdsChange }: Pro
       <Box srOnly aria-live="polite">
         {!!offsets && (
           <span>
-            Finished loading available target feeds ${latestOffset} to ${latestOffset + 10} out of $
+            Finished loading available target feeds {latestOffset} to {latestOffset + 10} out of $
             {totalCount}
           </span>
         )}
@@ -70,6 +70,7 @@ export const SelectableUserFeedList = ({ selectedIds, onSelectedIdsChange }: Pro
             value={searchInput}
             aria-label="Search for target feeds"
             isInvalid={false}
+            isRequired={false}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
@@ -142,6 +143,8 @@ export const SelectableUserFeedList = ({ selectedIds, onSelectedIdsChange }: Pro
                         }
                       }}
                       isChecked={selectedIds.includes(userFeed.id)}
+                      isInvalid={false}
+                      isRequired={false}
                     >
                       <chakra.span ml={2} display="block" fontSize="sm" fontWeight={600}>
                         {userFeed.title}

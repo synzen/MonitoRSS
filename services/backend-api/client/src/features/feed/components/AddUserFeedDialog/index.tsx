@@ -465,7 +465,17 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
               >
                 <span>{isConfirming ? "Go back" : t("common.buttons.cancel")}</span>
               </Button>
-              <Button colorScheme="blue" type="submit" aria-disabled={isSubmitting}>
+              <Button
+                colorScheme="blue"
+                onClick={() => {
+                  if (isSubmitting) {
+                    return;
+                  }
+
+                  handleSubmit(onSubmit)();
+                }}
+                aria-disabled={isSubmitting}
+              >
                 <span>{isSubmitting && "Saving..."}</span>
                 <span>{!isSubmitting && isConfirming && "Add feed with updated link"}</span>
                 <span>{!isSubmitting && !isConfirming && "Save"}</span>

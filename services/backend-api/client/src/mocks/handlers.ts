@@ -979,7 +979,7 @@ const handlers = [
 
     return HttpResponse.json<CreateDiscordChannelConnectionCloneOutput>({
       result: {
-        id: mockUserFeeds[0].connections[1].id,
+        ids: [mockUserFeeds[0].connections[1].id],
       },
     });
   }),

@@ -49,6 +49,10 @@ const createGetUserFeedsPipe = (
     async transform(
       inputFeedIds: string[] | string
     ): Promise<GetUserFeedsPipeOutput> {
+      if (!inputFeedIds) {
+        return [];
+      }
+
       const feedIds = (
         Array.isArray(inputFeedIds) ? inputFeedIds : [inputFeedIds]
       ).filter((value, index, self) => self.indexOf(value) === index);

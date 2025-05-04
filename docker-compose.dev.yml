@@ -32,11 +32,17 @@ services:
       - 15672:15672
 
   mongo:
-    extends:
-      file: docker-compose.base.yml
-      service: mongo
+    restart: on-failure:5
+    image: mongo:7.0.2
+    hostname: mongo
+    volumes:
+      - mongodb-dev-data:/data/db
+      - ./rs-initiate.js:/docker-entrypoint-initdb.d/rs-initiate.js
     ports:
       - "27018:27017"
+    command: ["--replSet", "dbrs", "--bind_ip_all", "--port", "27017"]
+    networks:
+      - monitorss-default
 
   feed-requests-postgres-db:
     extends:
@@ -75,6 +81,8 @@ services:
     command: npm start
     env_file:
       - ./.env.local
+    environment:
+      - DISCORD_REST_LISTENER_MONGO_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
 
   feed-requests-service:
     extends:
@@ -93,6 +101,7 @@ services:
       - FEED_REQUESTS_S3_API_KEY=1
       - FEED_REQUESTS_START_TARGET=service
       - NODE_ENV=local
+      - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
 
   feed-requests-api:
     extends:
@@ -113,6 +122,7 @@ services:
       - FEED_REQUESTS_S3_ENDPOINT=http://seaweed-fs:8333
       - FEED_REQUESTS_S3_API_KEY_ID=1
       - FEED_REQUESTS_S3_API_KEY=1
+      - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
     networks:
       - monitorss-default
 
@@ -204,6 +214,7 @@ services:
       - ./.env.local
     environment:
       - NODE_ENV=local
+      - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
     command: npm run start:legacy-feed-converter
 
   # Web - Backend api
@@ -223,6 +234,7 @@ services:
       - NODE_ENV=local
       - BACKEND_API_USER_FEEDS_API_HOST=http://user-feeds-api:5000
       - BACKEND_API_FEED_REQUESTS_API_HOST=http://feed-requests-api:5000
+      - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
     command: npm run start:watch
     networks:
       - monitorss-default
@@ -233,7 +245,7 @@ services:
       service: web-client
 
 volumes:
-  mongodb-data:
+  mongodb-dev-data:
   feed-requests-postgres16-data:
   user-feeds-postgres16-data:
   feed-requests-redis-data:
