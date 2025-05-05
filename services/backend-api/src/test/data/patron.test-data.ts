@@ -5,7 +5,7 @@ import {
 } from "../../features/supporters/entities/patron.entity";
 
 const boilerplate: Patron = {
-  _id: new Types.ObjectId(),
+  _id: new Types.ObjectId().toHexString(),
   email: "email@email.com",
   name: "name",
   pledge: 100,
@@ -16,6 +16,6 @@ const boilerplate: Patron = {
 
 export const createTestPatron = (overrides: Partial<Patron> = {}): Patron => ({
   ...boilerplate,
-  _id: new Types.ObjectId(),
+  _id: new Types.ObjectId().toHexString(),
   ...overrides,
 });

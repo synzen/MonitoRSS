@@ -1,92 +1,133 @@
 import { NestFactory } from "@nestjs/core";
-import { getModelToken } from "@nestjs/mongoose";
-import { randomUUID } from "crypto";
-import { writeFileSync } from "fs";
 import { AppModule } from "../app.module";
-import { DiscordChannelConnection } from "../features/feeds/entities/feed-connections";
-import { UserFeed, UserFeedModel } from "../features/user-feeds/entities";
 import logger from "../utils/logger";
+import { SupportersService } from "../features/supporters/supporters.service";
+import { SupporterSource } from "../features/supporters/constants/supporter-source.constants";
+import { UserFeed, UserFeedModel } from "../features/user-feeds/entities";
+import { getModelToken } from "@nestjs/mongoose";
+import { UserFeedDisabledCode } from "../features/user-feeds/types";
+import {
+  Patron,
+  PatronModel,
+} from "../features/supporters/entities/patron.entity";
 
 bootstrap();
 
 async function bootstrap() {
+  const app = await NestFactory.createApplicationContext(AppModule.forRoot());
+
   try {
     logger.info("Starting script...");
-    const app = await NestFactory.createApplicationContext(AppModule.forApi());
     await app.init();
     const userFeedModel = app.get<UserFeedModel>(getModelToken(UserFeed.name));
+    const patronModel = app.get<PatronModel>(getModelToken(Patron.name));
+    const supportersService = app.get(SupportersService);
+    const allSupporters =
+      await supportersService.getBenefitsOfAllDiscordUsers();
 
-    const cursor = userFeedModel
+    const patrons = allSupporters.filter((s) => {
+      return (
+        s.maxPatreonPledge === 100 &&
+        s.isSupporter === true &&
+        s.source === SupporterSource.Patron
+      );
+    });
+    const discordUserIds = patrons.map((p) => p.discordUserId);
+    const targets = await userFeedModel
       .find({
-        "connections.discordChannels": {
-          $elemMatch: {
-            customPlaceholders: {
-              $elemMatch: {
-                id: { $exists: true },
-                steps: {
-                  $elemMatch: {
-                    id: { $exists: true },
-                  },
-                },
-              },
-            },
-          },
+        "user.discordUserId": { $in: discordUserIds },
+        disabledCode: {
+          $eq: UserFeedDisabledCode.ExceededFeedLimit,
         },
       })
-      .cursor();
+      .lean();
 
-    // iterate through the cursor and add types to all the steps
+    const targetUserIds = targets.map((t) => t.user.discordUserId);
+    const targetPatrons = await patronModel
+      .find({
+        discord: { $in: targetUserIds },
+      })
+      .select("_id")
+      .lean();
+    // eslint-disable-next-line no-console
+    console.log(
+      "Target patrons",
+      targetPatrons.map((p) => p._id)
+    );
 
-    const fileIds: string[] = [];
+    // const cursor = userFeedModel
+    //   .find({
+    //     "connections.discordChannels": {
+    //       $elemMatch: {
+    //         customPlaceholders: {
+    //           $elemMatch: {
+    //             id: { $exists: true },
+    //             steps: {
+    //               $elemMatch: {
+    //                 id: { $exists: true },
+    //               },
+    //             },
+    //           },
+    //         },
+    //       },
+    //     },
+    //   })
+    //   .cursor();
 
-    for await (const doc of cursor) {
-      const updatedSteps = doc
-        .get("connections")
-        .discordChannels.map((channel) => {
-          const updatedPlaceholders = channel.customPlaceholders?.map(
-            (placeholder) => {
-              const updatedSteps = placeholder.steps
-                .map((step) => {
-                  // @ts-ignore
-                  step["id"] = randomUUID();
+    // // iterate through the cursor and add types to all the steps
 
-                  return step;
-                })
-                .filter((s) => !!s) as Exclude<
-                DiscordChannelConnection["customPlaceholders"],
-                undefined
-              >[number]["steps"];
+    // const fileIds: string[] = [];
 
-              return {
-                ...placeholder,
-                steps: updatedSteps,
-              };
-            }
-          );
+    // for await (const doc of cursor) {
+    //   const updatedSteps = doc
+    //     .get("connections")
+    //     .discordChannels.map((channel) => {
+    //       const updatedPlaceholders = channel.customPlaceholders?.map(
+    //         (placeholder) => {
+    //           const updatedSteps = placeholder.steps
+    //             .map((step) => {
+    //               // @ts-ignore
+    //               step["id"] = randomUUID();
 
-          return {
-            ...channel,
-            customPlaceholders: updatedPlaceholders,
-          };
-        });
+    //               return step;
+    //             })
+    //             .filter((s) => !!s) as Exclude<
+    //             DiscordChannelConnection["customPlaceholders"],
+    //             undefined
+    //           >[number]["steps"];
 
-      doc.connections.discordChannels = updatedSteps;
-      await doc.save();
+    //           return {
+    //             ...placeholder,
+    //             steps: updatedSteps,
+    //           };
+    //         }
+    //       );
 
-      fileIds.push(doc._id.toHexString());
-    }
+    //       return {
+    //         ...channel,
+    //         customPlaceholders: updatedPlaceholders,
+    //       };
+    //     });
 
-    if (fileIds.length > 0) {
-      writeFileSync(
-        `src/scripts/fix-custom-placeholder-steps-${new Date().getTime()}.json`,
-        JSON.stringify(fileIds, null, 2)
-      );
-    }
+    //   doc.connections.discordChannels = updatedSteps;
+    //   await doc.save();
+
+    //   fileIds.push(doc._id.toHexString());
+    // }
+
+    // if (fileIds.length > 0) {
+    //   writeFileSync(
+    //     `src/scripts/fix-custom-placeholder-steps-${new Date().getTime()}.json`,
+    //     JSON.stringify(fileIds, null, 2)
+    //   );
+    // }
 
     logger.info("Initiailized");
   } catch (err) {
     logger.error(`Error encountered`, {
       stack: err.stack,
     });
+  } finally {
+    await app.close();
   }
 }
