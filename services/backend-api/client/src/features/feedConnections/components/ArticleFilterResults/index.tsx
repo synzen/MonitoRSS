@@ -61,7 +61,7 @@ export const ArticleFilterResults = ({ title, filters, tableContainer }: Props) 
   } = useUserFeedArticlesWithPagination({
     feedId,
     data: {
-      selectProperties: [selectedArticleProperty, "id"],
+      selectProperties: [selectedArticleProperty, "id"].filter((v) => !!v),
       filters: {
         returnType: GetArticlesFilterReturnType.IncludeEvaluationResults,
         expression: debouncedFilters || undefined,
