@@ -1,10 +1,16 @@
 import {
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  Box,
   Button,
   FormControl,
   FormErrorMessage,
   FormHelperText,
   FormLabel,
+  HStack,
   Input,
+  Link,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -13,16 +19,19 @@ import {
   ModalHeader,
   ModalOverlay,
   Stack,
+  Text,
 } from "@chakra-ui/react";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, object, string } from "yup";
 import React, { useEffect, useRef } from "react";
+import { ExternalLinkIcon } from "@chakra-ui/icons";
 import {
   InlineErrorAlert,
   InlineErrorIncompleteFormAlert,
 } from "../../../../components/InlineErrorAlert";
+import { useCreateUserFeedUrlValidation } from "../../hooks/useCreateUserFeedUrlValidation";
 
 const formSchema = object({
   title: string().optional(),
@@ -46,7 +55,7 @@ export const EditUserFeedDialog: React.FC<Props> = ({
   onCloseRef,
   onClose,
   isOpen,
-  error,
+  error: updateError,
 }) => {
   const { t } = useTranslation();
   const initialFocusRef = useRef<HTMLInputElement>(null);
@@ -55,23 +64,44 @@ export const EditUserFeedDialog: React.FC<Props> = ({
     control,
     reset,
     formState: { isDirty, errors, isSubmitting, isSubmitted },
+    watch,
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
     mode: "all",
     defaultValues,
   });
+  const [urlFromForm] = watch(["url"]);
+  const {
+    data: feedUrlValidationData,
+    mutateAsync: createUserFeedUrlValidation,
+    error: validationError,
+    reset: resetValidationMutation,
+    status: validationStatus,
+  } = useCreateUserFeedUrlValidation();
+  const error = updateError || validationError?.message;
+  const isConfirming = !!feedUrlValidationData?.result.resolvedToUrl;
+  const isLoading = isSubmitting || validationStatus === "loading";
 
   const onSubmit = async ({ title, url }: FormData) => {
-    try {
-      if (!isDirty) {
-        onClose();
+    if (!isDirty) {
+      onClose();
 
-        return;
+      return;
+    }
+
+    try {
+      if (url && !feedUrlValidationData) {
+        const { result } = await createUserFeedUrlValidation({ details: { url } });
+
+        if (result.resolvedToUrl) {
+          return;
+        }
       }
 
-      await onUpdate({ title, url });
+      const useUrl = feedUrlValidationData?.result.resolvedToUrl || url;
+      await onUpdate({ title, url: useUrl });
       onClose();
-      reset({ title, url });
+      reset({ title, url: useUrl });
     } catch (err) {
       console.error(err);
     }
@@ -79,6 +109,7 @@ export const EditUserFeedDialog: React.FC<Props> = ({
 
   useEffect(() => {
     reset(defaultValues);
+    resetValidationMutation();
   }, [isOpen]);
 
   const formErrorCount = Object.keys(errors).length;
@@ -92,13 +123,68 @@ export const EditUserFeedDialog: React.FC<Props> = ({
     >
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>{t("features.feed.components.updateUserFeedDialog.title")}</ModalHeader>
+        <ModalHeader>
+          {isConfirming
+            ? "Confirm feed link change"
+            : t("features.feed.components.updateUserFeedDialog.title")}
+        </ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <Stack spacing={4}>
-            <form id="update-user-feed" onSubmit={handleSubmit(onSubmit)}>
+            {isConfirming && (
+              <Stack spacing={4} role="alert">
+                <Alert status="warning" role={undefined}>
+                  <AlertIcon />
+                  <AlertTitle>
+                    The url you put in did not directly point to a valid feed.
+                  </AlertTitle>
+                </Alert>
+                <Stack spacing={4} aria-live="polite">
+                  <Box>
+                    <Text display="inline">We found </Text>
+                    <Link
+                      display="inline"
+                      color="blue.300"
+                      href={feedUrlValidationData.result.resolvedToUrl || "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <HStack alignItems="center" display="inline">
+                        <Text wordBreak="break-all" display="inline">
+                          {feedUrlValidationData.result.resolvedToUrl}
+                        </Text>
+                        <ExternalLinkIcon ml={1} />
+                      </HStack>
+                    </Link>{" "}
+                    <Text display="inline">
+                      instead that might be related to the url you provided. Do you want to use this
+                      feed link instead?
+                    </Text>
+                  </Box>
+                  <span
+                    style={{
+                      fontWeight: 600,
+                    }}
+                  >
+                    <Text display="inline">Your original link </Text>
+                    <Link
+                      display="inline"
+                      color="blue.300"
+                      href={urlFromForm || "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      wordBreak="break-all"
+                    >
+                      {urlFromForm}
+                    </Link>
+                    <Text display="inline"> will not be used.</Text>
+                  </span>
+                </Stack>
+              </Stack>
+            )}
+            {!isConfirming && (
               <Stack spacing={4}>
-                <FormControl isInvalid={!!errors.title}>
+                <FormControl isInvalid={!!errors.title} isRequired>
                   <FormLabel>
                     {t("features.feed.components.addFeedDialog.formTitleLabel")}
                   </FormLabel>
@@ -114,7 +200,7 @@ export const EditUserFeedDialog: React.FC<Props> = ({
                     {t("features.feed.components.addFeedDialog.formTitleDescription")}
                   </FormHelperText>
                 </FormControl>
-                <FormControl isInvalid={!!errors.title}>
+                <FormControl isInvalid={!!errors.title} isRequired>
                   <FormLabel>RSS Feed Link</FormLabel>
                   <Controller
                     name="url"
@@ -129,7 +215,7 @@ export const EditUserFeedDialog: React.FC<Props> = ({
                   </FormHelperText>
                 </FormControl>
               </Stack>
-            </form>
+            )}
             {error && (
               <InlineErrorAlert title={t("common.errors.failedToSave")} description={error} />
             )}
@@ -144,12 +230,17 @@ export const EditUserFeedDialog: React.FC<Props> = ({
           </Button>
           <Button
             colorScheme="blue"
-            type="submit"
-            form="update-user-feed"
-            isLoading={isSubmitting}
-            aria-disabled={isSubmitting}
+            aria-disabled={isLoading}
+            onClick={() => {
+              if (isLoading) {
+                return;
+              }
+
+              handleSubmit(onSubmit)();
+            }}
           >
-            <span>{t("common.buttons.save")}</span>
+            <span>{isLoading && "Saving..."}</span>
+            <span>{!isLoading && t("common.buttons.save")}</span>
           </Button>
         </ModalFooter>
       </ModalContent>

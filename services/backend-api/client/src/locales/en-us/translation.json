@@ -42,7 +42,7 @@
       "feedRequestFailed": "Failed to get feed articles - request to the feed failed. Double check that the feed link leads to valid feed, try again later, or reach out to support@monitorss.xyz for support.",
       "feedRequestForbidden": "Failed to get feed articles - the feed owner may have blocked MonitoRSS. You may either wait a while to see if this resolves on its own, or consider asking the feed owner to unblock MonitoRSS (whose user agent contains MonitoRSS) if it was intentional.",
       "feedRequestPendingArticles": "Feed articles will be available after feed has been fetched on schedule (depending on your feed's refresh rate). Please check again later.",
-      "feedRequestInternalError": "Failed to get feed articles - the feed host is reporting that they are experiencing internal issues. You may try again later.",
+      "feedRequestInternalError": "Failed to get feed articles - the feed host is reporting that they are experiencing internal issues. Double check that the feed link is working, or try again later.",
       "feedRequestTooManyRequests": "Failed to get feed articles - requests to the feed has been rate limited. Try again later.",
       "feedRequestUnauthorized": "Failed to get feed articles - the feed host is requesting authorization. Check if the feed is publicly accessible, or ensure that some authorization key is included in the feed URL if it is required.",
       "feedRequestNotFound": "Failed to get feed articles - the feed host has reported that the feed does not exist. Check that the feed both exists and is publicly accessible.",

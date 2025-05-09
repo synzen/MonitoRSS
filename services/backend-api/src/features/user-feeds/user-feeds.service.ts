@@ -322,18 +322,10 @@ export class UserFeedsService {
     { discordUserId }: { discordUserId: string },
     { url }: { url: string }
   ) {
-    const [{ maxUserFeeds }, user] = await Promise.all([
+    const [, user] = await Promise.all([
       this.supportersService.getBenefitsOfDiscordUser(discordUserId),
       this.usersService.getOrCreateUserByDiscordId(discordUserId),
     ]);
-
-    const feedCount = await this.calculateCurrentFeedCountOfDiscordUser(
-      discordUserId
-    );
-
-    if (feedCount >= maxUserFeeds) {
-      throw new FeedLimitReachedException("Max feeds reached");
-    }
 
     const tempLookupDetails = getFeedRequestLookupDetails({
       decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY_HEX"),

@@ -77,9 +77,11 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
     reset,
     formState: { errors, isSubmitting },
     getValues,
+    watch,
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
   });
+  const [urlFromForm] = watch(["url"]);
   const { data: discordUserMe } = useDiscordUserMe();
   const { data: userMe } = useUserMe();
   const { data: userFeedsResults } = useUserFeeds({
@@ -160,7 +162,7 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
           <form onSubmit={handleSubmit(onSubmit)}>
             <ModalHeader>
               {isConfirming
-                ? "Confirm feed addition"
+                ? "Confirm feed link change"
                 : t("features.userFeeds.components.addUserFeedDialog.title")}
             </ModalHeader>
             <ModalCloseButton />
@@ -170,27 +172,49 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                   <Alert status="warning" role={undefined}>
                     <AlertIcon />
                     <AlertTitle>
-                      The url you put in did not directly point to a valid feed!
+                      The url you put in did not directly point to a valid feed.
                     </AlertTitle>
                   </Alert>
                   <Stack spacing={4} aria-live="polite">
-                    <Text>
-                      We found a feed URL that might be related to the url you provided. Do you want
-                      to use the feed link below instead?
-                    </Text>
-                    <Link
-                      color="blue.300"
-                      href={feedUrlValidationData.result.resolvedToUrl || "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <Box>
+                      <Text display="inline">We found </Text>
+                      <Link
+                        display="inline"
+                        color="blue.300"
+                        href={feedUrlValidationData.result.resolvedToUrl || "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <HStack alignItems="center" display="inline">
+                          <Text wordBreak="break-all" display="inline">
+                            {feedUrlValidationData.result.resolvedToUrl}
+                          </Text>
+                          <ExternalLinkIcon ml={1} />
+                        </HStack>
+                      </Link>{" "}
+                      <Text display="inline">
+                        instead that might be related to the url you provided. Do you want to use
+                        this feed link instead?
+                      </Text>
+                    </Box>
+                    <span
+                      style={{
+                        fontWeight: 600,
+                      }}
                     >
-                      <HStack alignItems="center">
-                        <Text wordBreak="break-all">
-                          {feedUrlValidationData.result.resolvedToUrl}
-                        </Text>
-                        <ExternalLinkIcon />
-                      </HStack>
-                    </Link>
+                      <Text display="inline">Your original link </Text>
+                      <Link
+                        display="inline"
+                        color="blue.300"
+                        href={urlFromForm || "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        wordBreak="break-all"
+                      >
+                        {urlFromForm}
+                      </Link>
+                      <Text display="inline"> will not be used.</Text>
+                    </span>
                   </Stack>
                 </Stack>
               )}
