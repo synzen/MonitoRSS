@@ -63,15 +63,6 @@ function catchGoogleTranslateErrors() {
             child,
             this
           );
-
-          Sentry.withScope((scope) => {
-            scope.setExtra("child", stringifyNode(child));
-            scope.setExtra("this", stringifyNode(this));
-            scope.setTransactionName("Google Translate Error (removeChild)");
-            scope.captureException(
-              new GoogleTranslateError(`Google Translate crash was prevented (removeChild)`)
-            );
-          });
         }
 
         return child;
@@ -95,15 +86,6 @@ function catchGoogleTranslateErrors() {
             referenceNode,
             this
           );
-
-          Sentry.withScope((scope) => {
-            scope.setExtra("referenceNode", stringifyNode(referenceNode));
-            scope.setExtra("this", stringifyNode(this));
-            scope.setTransactionName("Google Translate Error (insertBefore)");
-            scope.captureException(
-              new GoogleTranslateError(`Google Translate crash was prevented (insertBefore)`)
-            );
-          });
         }
 
         return newNode;
@@ -138,11 +120,13 @@ async function prepare() {
           Sentry.replayIntegration({
             maskAllText: false,
             blockAllMedia: false,
+            maskAllInputs: false,
+            networkDetailAllowUrls: ["/api/v1/*"],
           }),
         ],
         tracesSampleRate: 0.2,
         // Session Replay
-        replaysSessionSampleRate: 0.25, // This sets the sample rate at 10%. You may want to change it to 100% while in development and then sample at a lower rate in production.
+        replaysSessionSampleRate: 0.5, // This sets the sample rate at 10%. You may want to change it to 100% while in development and then sample at a lower rate in production.
         replaysOnErrorSampleRate: 1.0, // If you're not already sampling the entire session, change the sample rate to 100% when sampling sessions where errors occur.
       });
     }

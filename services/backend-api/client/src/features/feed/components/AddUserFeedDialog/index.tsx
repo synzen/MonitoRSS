@@ -52,7 +52,7 @@ import { PricingDialogContext } from "../../../../contexts";
 const formSchema = object({
   title: string().optional(),
   // test url is a string that starts with http
-  url: string().required().matches(/^http/, {
+  url: string().required("Feed link is required").matches(/^http/, {
     message: "Must be a valid URL",
   }),
 });

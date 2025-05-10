@@ -327,6 +327,10 @@ export const Checkout = ({ cancelUrl }: Props) => {
                 />
               </HStack>
             </Stack>
+            <Text fontSize="sm" color="whiteAlpha.700" textAlign="center">
+              If the checkout form does not fully load, please try refreshing the page or using a
+              different browser.
+            </Text>
           </Stack>
         </BoxConstrained.Container>
       </BoxConstrained.Wrapper>
