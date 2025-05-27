@@ -374,7 +374,10 @@ export class FeedFetcherService {
       ) {
         request.status = RequestStatus.INVALID_SSL_CERTIFICATE;
         request.errorMessage = err['cause']?.['message'];
-      } else if ((err as Error).name === 'AbortError') {
+      } else if (
+        (err as Error).name === 'AbortError' ||
+        (err as Error).message.includes('Connect Timeout Error')
+      ) {
         request.status = RequestStatus.FETCH_TIMEOUT;
         request.errorMessage =
           `Request took longer than` +
