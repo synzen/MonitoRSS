@@ -334,7 +334,12 @@ const UserFeedsInner: React.FC = () => {
                   trigger={
                     <MenuItem
                       isDisabled={
-                        !selectedFeeds.length || !selectedFeeds.some((r) => !r.disabledCode)
+                        !selectedFeeds.length ||
+                        selectedFeeds.every(
+                          (r) =>
+                            !!r.disabledCode &&
+                            r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit
+                        )
                       }
                       icon={<FaPause />}
                     >

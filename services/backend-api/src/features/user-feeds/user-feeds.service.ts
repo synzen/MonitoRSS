@@ -650,12 +650,27 @@ export class UserFeedsService {
   async bulkDisable(feedIds: string[]) {
     const found = await this.userFeedModel
       .find({
-        _id: {
-          $in: feedIds.map((id) => new Types.ObjectId(id)),
-        },
-        disabledCode: {
-          $exists: false,
-        },
+        $and: [
+          {
+            _id: {
+              $in: feedIds.map((id) => new Types.ObjectId(id)),
+            },
+          },
+          {
+            $or: [
+              {
+                disabledCode: {
+                  $exists: false,
+                },
+              },
+              {
+                disabledCode: {
+                  $in: DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
+                },
+              },
+            ],
+          },
+        ],
       })
       .select("_id user")
       .lean();
