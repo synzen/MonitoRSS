@@ -259,7 +259,7 @@ export class PaddleWebhooksService {
       }
     );
 
-    await this.enforceFeedLimits();
+    await this.enforceFeedLimits(foundUser.discordUserId);
 
     try {
       await this.supportersService.syncDiscordSupporterRoles(
@@ -295,7 +295,7 @@ export class PaddleWebhooksService {
     );
 
     if (supporter?._id) {
-      await this.enforceFeedLimits();
+      await this.enforceFeedLimits(supporter._id);
 
       try {
         await this.supportersService.syncDiscordSupporterRoles(supporter._id);
@@ -327,18 +327,9 @@ export class PaddleWebhooksService {
     return mapped;
   }
 
-  private async enforceFeedLimits() {
+  private async enforceFeedLimits(discordUserId: string) {
     try {
-      const benefits =
-        await this.supportersService.getBenefitsOfAllDiscordUsers();
-
-      await this.userFeedsService.enforceUserFeedLimits(
-        benefits.map(({ discordUserId, maxUserFeeds, refreshRateSeconds }) => ({
-          discordUserId,
-          maxUserFeeds,
-          refreshRateSeconds,
-        }))
-      );
+      await this.userFeedsService.enforceUserFeedLimit(discordUserId);
     } catch (err) {
       logger.error(
         `Error while enforcing feed limit after paddle webhook event`,

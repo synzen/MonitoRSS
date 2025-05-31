@@ -193,7 +193,7 @@ export class ScheduleHandlerService {
     const benefits =
       await this.supportersService.getBenefitsOfAllDiscordUsers();
 
-    await this.userFeedsService.enforceUserFeedLimits(
+    await this.userFeedsService.enforceAllUserFeedLimits(
       benefits.map(({ discordUserId, maxUserFeeds, refreshRateSeconds }) => ({
         discordUserId,
         maxUserFeeds,

@@ -1641,6 +1641,7 @@ describe("UserFeedsService", () => {
       ]);
 
       await service.enforceWebhookBenefits({
+        enforcementType: "all-users",
         supporterDiscordUserIds: [secondDiscordUserId],
       });
 
@@ -1702,6 +1703,7 @@ describe("UserFeedsService", () => {
       ]);
 
       await service.enforceWebhookBenefits({
+        enforcementType: "all-users",
         supporterDiscordUserIds: [],
       });
 
@@ -1748,6 +1750,7 @@ describe("UserFeedsService", () => {
       ]);
 
       await service.enforceWebhookBenefits({
+        enforcementType: "all-users",
         supporterDiscordUserIds: [discordUserId],
       });
 
@@ -1766,7 +1769,7 @@ describe("UserFeedsService", () => {
     });
   });
 
-  describe("enforceUserFeedLimits", () => {
+  describe("enforceAllUserFeedLimits", () => {
     describe("supporter limits", () => {
       it("enforces feed limits correctly", async () => {
         const feed = await userFeedModel.create([
@@ -1818,7 +1821,7 @@ describe("UserFeedsService", () => {
           }
         );
 
-        await service.enforceUserFeedLimits([
+        await service.enforceAllUserFeedLimits([
           {
             discordUserId,
             maxUserFeeds: 2,
@@ -1874,7 +1877,7 @@ describe("UserFeedsService", () => {
           },
         ]);
 
-        await service.enforceUserFeedLimits([
+        await service.enforceAllUserFeedLimits([
           {
             discordUserId,
             maxUserFeeds: 2,
@@ -1924,7 +1927,7 @@ describe("UserFeedsService", () => {
           },
         ]);
 
-        await service.enforceUserFeedLimits([
+        await service.enforceAllUserFeedLimits([
           {
             discordUserId,
             maxUserFeeds: 2,
@@ -1963,7 +1966,7 @@ describe("UserFeedsService", () => {
           },
         ]);
 
-        await service.enforceUserFeedLimits([
+        await service.enforceAllUserFeedLimits([
           {
             discordUserId: discordUserId,
             maxUserFeeds: 3,
@@ -2018,7 +2021,7 @@ describe("UserFeedsService", () => {
           },
         ]);
 
-        await service.enforceUserFeedLimits([
+        await service.enforceAllUserFeedLimits([
           {
             discordUserId: discordUserId,
             maxUserFeeds: 1,
@@ -2078,7 +2081,7 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      await service.enforceUserFeedLimits([
+      await service.enforceAllUserFeedLimits([
         {
           discordUserId: discordUserId,
           maxUserFeeds: 1,
@@ -2123,7 +2126,7 @@ describe("UserFeedsService", () => {
           },
         ]);
 
-        await service.enforceUserFeedLimits([]);
+        await service.enforceAllUserFeedLimits([]);
 
         const result = await userFeedModel
           .find({
@@ -2164,7 +2167,7 @@ describe("UserFeedsService", () => {
           },
         ]);
 
-        await service.enforceUserFeedLimits([]);
+        await service.enforceAllUserFeedLimits([]);
 
         const result = await userFeedModel
           .find({
@@ -2239,7 +2242,7 @@ describe("UserFeedsService", () => {
           }
         );
 
-        await service.enforceUserFeedLimits([]);
+        await service.enforceAllUserFeedLimits([]);
 
         const result = await userFeedModel
           .find({
@@ -2285,7 +2288,7 @@ describe("UserFeedsService", () => {
           },
         ]);
 
-        await service.enforceUserFeedLimits([]);
+        await service.enforceAllUserFeedLimits([]);
 
         const result = await userFeedModel
           .find({

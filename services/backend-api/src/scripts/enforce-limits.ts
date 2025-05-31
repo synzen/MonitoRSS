@@ -17,7 +17,7 @@ async function bootstrap() {
 
     const benefits = await supportersService.getBenefitsOfAllDiscordUsers();
 
-    await userFeedsService.enforceUserFeedLimits(
+    await userFeedsService.enforceAllUserFeedLimits(
       benefits.map(({ discordUserId, maxUserFeeds, refreshRateSeconds }) => ({
         discordUserId,
         maxUserFeeds,
