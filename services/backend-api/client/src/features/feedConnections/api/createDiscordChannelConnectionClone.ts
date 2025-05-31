@@ -7,6 +7,8 @@ export interface CreateDiscordChannelConnectionCloneInput {
   details: {
     name: string;
     targetFeedIds?: string[];
+    targetFeedSelectionType?: "all" | "selected";
+    targetFeedSearch?: string;
   };
 }
 

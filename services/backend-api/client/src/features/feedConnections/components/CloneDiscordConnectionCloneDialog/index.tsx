@@ -19,7 +19,7 @@ import {
 import { yupResolver } from "@hookform/resolvers/yup";
 import { cloneElement, useEffect, useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { array, InferType, object, string } from "yup";
+import { array, InferType, number, object, string } from "yup";
 import { useTranslation } from "react-i18next";
 import { useCreateDiscordChannelConnectionClone } from "../../hooks";
 import { FeedConnectionType } from "../../../../types";
@@ -29,9 +29,22 @@ import { SelectableUserFeedList } from "../../../feed/components/CopyUserFeedSet
 
 const formSchema = object({
   name: string().required("Name is required").max(250, "Name must be fewer than 250 characters"),
-  targetFeedIds: array(string().required())
-    .min(1, "At least one target feed is required to copy the connection to")
-    .required(),
+  userFeedSelection: object({
+    // selected feeds must have at least one item if type is "selected"
+    type: string().oneOf(["all", "selected"]).required(),
+    searchTerm: string().optional(),
+    selectedFeeds: array()
+      .of(string().required())
+      .required()
+      .when("type", ([type], schema) => {
+        if (type === "selected") {
+          return schema.min(1, "At least one target feed must be selected");
+        }
+
+        return schema;
+      }),
+    total: number().required(),
+  }).required(),
 });
 
 type FormData = InferType<typeof formSchema>;
@@ -51,9 +64,18 @@ export const CloneDiscordConnectionCloneDialog = ({
   feedId,
   connectionId,
   type,
-  defaultValues,
+  defaultValues: inputDefaultValues,
   trigger,
 }: Props) => {
+  const defaultValues: FormData = {
+    name: inputDefaultValues.name,
+    userFeedSelection: {
+      type: "selected",
+      searchTerm: "",
+      selectedFeeds: inputDefaultValues.targetFeedIds,
+      total: inputDefaultValues.targetFeedIds.length,
+    },
+  };
   const {
     handleSubmit,
     control,
@@ -71,9 +93,9 @@ export const CloneDiscordConnectionCloneDialog = ({
 
   useEffect(() => {
     reset(defaultValues);
-  }, [isOpen]);
+  }, [isOpen, JSON.stringify(defaultValues)]);
 
-  const onSubmit = async ({ name, targetFeedIds }: FormData) => {
+  const onSubmit = async ({ name, userFeedSelection }: FormData) => {
     try {
       if (isSubmitting) {
         return;
@@ -83,7 +105,12 @@ export const CloneDiscordConnectionCloneDialog = ({
         await createChannelClone({
           feedId,
           connectionId,
-          details: { name, targetFeedIds },
+          details: {
+            name,
+            targetFeedSelectionType: userFeedSelection.type,
+            targetFeedSearch: userFeedSelection.searchTerm,
+            targetFeedIds: userFeedSelection.selectedFeeds,
+          },
         });
       } else {
         throw new Error(`Unsupported connection type when cloning discord connection: ${type}`);
@@ -112,8 +139,8 @@ export const CloneDiscordConnectionCloneDialog = ({
             <Stack spacing={4}>
               <form id="clonefeed" onSubmit={handleSubmit(onSubmit)}>
                 <Stack spacing={4}>
-                  <FormControl isInvalid={!!errors.name} isRequired>
-                    <FormLabel>Name</FormLabel>
+                  <FormControl isInvalid={!!errors.name}>
+                    <FormLabel fontWeight={600}>Name</FormLabel>
                     <Controller
                       name="name"
                       control={control}
@@ -122,25 +149,40 @@ export const CloneDiscordConnectionCloneDialog = ({
                     {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
                     <FormHelperText>The name for the newly-cloned connection.</FormHelperText>
                   </FormControl>
-                  <FormControl isInvalid={!!errors.targetFeedIds} isRequired>
-                    <FormLabel>Target feeds</FormLabel>
+                  <FormControl isInvalid={!!errors.userFeedSelection} isRequired>
                     <Controller
-                      name="targetFeedIds"
+                      name="userFeedSelection"
                       control={control}
                       render={({ field }) => (
                         <SelectableUserFeedList
-                          selectedIds={field.value || []}
-                          onSelectedIdsChange={(ids) => field.onChange(ids)}
+                          selectedIds={field.value.selectedFeeds}
+                          onSelectedIdsChange={(ids) => {
+                            field.onChange({
+                              type: "selected",
+                              selectedFeeds: ids,
+                              total: ids.length,
+                            });
+                          }}
+                          description="Select the feeds you want to copy this connection to. You can select multiple
+                      feeds."
+                          isSelectedAll={field.value.type === "all"}
+                          onSelectAll={(total, search, isChecked) =>
+                            field.onChange({
+                              ...field.value,
+                              type: isChecked ? "all" : "selected",
+                              searchTerm: search,
+                              selectedFeeds: isChecked
+                                ? Array.from({ length: total }, (_, i) => String(i + 1))
+                                : [],
+                              total,
+                            })
+                          }
                         />
                       )}
                     />
-                    {errors.targetFeedIds && (
-                      <FormErrorMessage>{errors.targetFeedIds.message}</FormErrorMessage>
-                    )}
-                    <FormHelperText>
-                      Select the feeds you want to copy this connection to. You can select multiple
-                      feeds.
-                    </FormHelperText>
+                    <FormErrorMessage>
+                      {errors.userFeedSelection?.selectedFeeds?.message}
+                    </FormErrorMessage>
                   </FormControl>
                 </Stack>
               </form>

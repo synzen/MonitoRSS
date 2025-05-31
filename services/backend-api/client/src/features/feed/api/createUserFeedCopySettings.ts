@@ -5,7 +5,9 @@ export interface CreateUserFeedCopySettingsInput {
   feedId: string;
   data: {
     settings: CopyableUserFeedSettings[];
-    targetFeedIds: string[];
+    targetFeedIds?: string[];
+    targetFeedSelectionType?: "all" | "selected";
+    targetFeedSearch?: string;
   };
 }
 

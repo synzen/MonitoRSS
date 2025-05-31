@@ -14,10 +14,6 @@ export const useCreateUserFeedCopySettings = () => {
     CreateUserFeedCopySettingsInput
   >(
     async (details) => {
-      if (!details.data.targetFeedIds.length) {
-        throw new Error("Must select at least 1 target feed");
-      }
-
       await createUserFeedCopySettings(details);
     },
     {

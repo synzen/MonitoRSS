@@ -9,7 +9,7 @@ import {
 } from "../feeds/exceptions";
 import { FeedsService } from "../feeds/feeds.service";
 import { UserFeed, UserFeedDocument, UserFeedModel } from "./entities";
-import _, { chunk } from "lodash";
+import { chunk } from "lodash";
 import { SupportersService } from "../supporters/supporters.service";
 import {
   DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
@@ -70,7 +70,13 @@ import getFeedRequestLookupDetails from "../../utils/get-feed-request-lookup-det
 import { ConfigService } from "@nestjs/config";
 import { User, UserModel } from "../users/entities/user.entity";
 import { randomUUID } from "crypto";
-import { UserFeedCopyableSetting } from "./dto/copy-user-feed-settings-input.dto";
+import {
+  CopyUserFeedSettingsInputDto,
+  UserFeedCopyableSetting,
+} from "./dto/copy-user-feed-settings-input.dto";
+import { generateUserFeedOwnershipFilters } from "./utils/get-user-feed-ownership-filters.utils";
+import { generateUserFeedSearchFilters } from "./utils/get-user-feed-search-filters.utils";
+import { UserFeedTargetFeedSelectionType } from "./constants/target-feed-selection-type.type";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual
@@ -466,7 +472,7 @@ export class UserFeedsService {
       inputUrl = data.url;
     }
 
-    const created = await this.userFeedModel.create({
+    await this.userFeedModel.create({
       ...found,
       _id: newFeedId,
       title: data?.title || found.title,
@@ -481,10 +487,10 @@ export class UserFeedsService {
 
     for (const c of found.connections.discordChannels) {
       await this.feedConnectionsDiscordChannelsService.cloneConnection(
-        [created],
         c,
         {
           name: c.name,
+          targetFeedIds: [newFeedId.toHexString()],
         },
         userAccessToken,
         found.user.discordUserId
@@ -498,12 +504,17 @@ export class UserFeedsService {
 
   async copySettings({
     sourceFeed,
-    targetFeedIds,
-    settingsToCopy,
+    dto: {
+      targetFeedIds: inputTargetFeedIds,
+      settings: settingsToCopy,
+      targetFeedSearch,
+      targetFeedSelectionType,
+    },
+    discordUserId,
   }: {
     sourceFeed: UserFeed;
-    targetFeedIds: string[];
-    settingsToCopy: UserFeedCopyableSetting[];
+    dto: CopyUserFeedSettingsInputDto;
+    discordUserId: string;
   }) {
     // this.userFeedModel.updateMany({})
     const setQuery: UpdateQuery<UserFeedDocument>["$set"] = {};
@@ -542,15 +553,40 @@ export class UserFeedsService {
       setQuery.userRefreshRateSeconds = sourceFeed.userRefreshRateSeconds;
     }
 
+    const selectionTypeSelectedFilters = {
+      _id: {
+        $in: inputTargetFeedIds?.map((id) => new Types.ObjectId(id)),
+      },
+      ...generateUserFeedOwnershipFilters(discordUserId),
+    };
+    const selectionTypeAllFilters = {
+      _id: {
+        $ne: sourceFeed._id,
+      },
+      $and: [
+        {
+          ...(targetFeedSearch
+            ? generateUserFeedSearchFilters(targetFeedSearch)
+            : {}),
+        },
+        {
+          ...generateUserFeedOwnershipFilters(discordUserId),
+        },
+      ],
+    };
+    const useFilters =
+      targetFeedSelectionType === UserFeedTargetFeedSelectionType.All
+        ? selectionTypeAllFilters
+        : selectionTypeSelectedFilters;
+
     if (settingsToCopy.includes(UserFeedCopyableSetting.Connections)) {
       const feedsWithApplicationWebhooks = await this.userFeedModel
         .find({
-          id: {
-            $in: targetFeedIds.map((id) => new Types.ObjectId(id)),
-          },
+          ...useFilters,
           "connections.discordChannels.details.webhook.isApplicationOwned":
             true,
         })
+        .select("connections")
         .lean();
 
       await Promise.all(
@@ -576,16 +612,9 @@ export class UserFeedsService {
       };
     }
 
-    await this.userFeedModel.updateMany(
-      {
-        _id: {
-          $in: targetFeedIds.map((id) => new Types.ObjectId(id)),
-        },
-      },
-      {
-        $set: setQuery,
-      }
-    );
+    await this.userFeedModel.updateMany(useFilters, {
+      $set: setQuery,
+    });
   }
 
   async bulkDelete(feedIds: string[]) {
@@ -1360,21 +1389,7 @@ export class UserFeedsService {
   ) {
     const pipeline: PipelineStage[] = [
       {
-        $match: {
-          $or: [
-            {
-              "user.discordUserId": userId,
-            },
-            {
-              "shareManageOptions.invites": {
-                $elemMatch: {
-                  discordUserId: userId,
-                  status: UserFeedManagerStatus.Accepted,
-                },
-              },
-            },
-          ],
-        },
+        $match: generateUserFeedOwnershipFilters(userId),
       },
       {
         $addFields: {
@@ -1441,14 +1456,7 @@ export class UserFeedsService {
     }
 
     if (search) {
-      $match.$or = [
-        {
-          title: new RegExp(_.escapeRegExp(search), "i"),
-        },
-        {
-          url: new RegExp(_.escapeRegExp(search), "i"),
-        },
-      ];
+      $match.$or = generateUserFeedSearchFilters(search).$or;
     }
 
     if (filters?.disabledCodes) {

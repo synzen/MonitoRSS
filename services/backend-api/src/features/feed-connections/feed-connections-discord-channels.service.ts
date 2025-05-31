@@ -55,11 +55,13 @@ import { castDiscordComponentRowsForMedium } from "../../common/utils";
 import logger from "../../utils/logger";
 import { WebhookMissingPermissionsException } from "../discord-webhooks/exceptions";
 import { UserFeedConnectionEventsService } from "../user-feed-connection-events/user-feed-connection-events.service";
-import { User, UserModel } from "../users/entities/user.entity";
 import getFeedRequestLookupDetails from "../../utils/get-feed-request-lookup-details";
 import { UsersService } from "../users/users.service";
 import { ConfigService } from "@nestjs/config";
 import { DiscordChannelMissingViewPermissionsException } from "./exceptions/discord-channel-missing-view-permissions.exception";
+import { UserFeedTargetFeedSelectionType } from "../user-feeds/constants/target-feed-selection-type.type";
+import { generateUserFeedOwnershipFilters } from "../user-feeds/utils/get-user-feed-ownership-filters.utils";
+import { generateUserFeedSearchFilters } from "../user-feeds/utils/get-user-feed-search-filters.utils";
 
 export interface UpdateDiscordChannelConnectionInput {
   accessToken: string;
@@ -154,7 +156,6 @@ export class FeedConnectionsDiscordChannelsService {
   constructor(
     private readonly feedsService: FeedsService,
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
-    @InjectModel(User.name) private readonly userModel: UserModel,
     private readonly feedHandlerService: FeedHandlerService,
     private readonly supportersService: SupportersService,
     private readonly discordWebhooksService: DiscordWebhooksService,
@@ -328,13 +329,15 @@ export class FeedConnectionsDiscordChannelsService {
         );
       }
 
-      await this.connectionEventsService.handleCreatedEvent({
-        feed,
-        connectionId: createdConnection.id,
-        creator: {
-          discordUserId: userDiscordUserId,
+      await this.connectionEventsService.handleCreatedEvents([
+        {
+          feedId: feed._id.toHexString(),
+          connectionId: createdConnection.id,
+          creator: {
+            discordUserId: userDiscordUserId,
+          },
         },
-      });
+      ]);
 
       return createdConnection;
     } catch (err) {
@@ -347,16 +350,17 @@ export class FeedConnectionsDiscordChannelsService {
   }
 
   async cloneConnection(
-    targetUserFeeds: UserFeed[],
     connection: DiscordChannelConnection,
     {
       name,
       channelId: newChannelId,
+      targetFeedIds,
+      targetFeedSelectionType,
+      targetFeedSearch,
     }: CreateDiscordChannelConnectionCloneInputDto,
     userAccessToken: string,
     userDiscordUserId: string
   ) {
-    const newIds = targetUserFeeds.map(() => new Types.ObjectId());
     let channelDetailsToUse: DiscordChannelConnection["details"]["channel"] =
       connection.details.channel;
 
@@ -382,7 +386,7 @@ export class FeedConnectionsDiscordChannelsService {
       const newWebhook = await this.getOrCreateApplicationWebhook({
         channelId: connection.details.webhook.channelId as string,
         webhook: {
-          name: `feed-${targetUserFeeds[0]._id}-${newIds[0]}`,
+          name: `monitorss-managed-connection`,
         },
       });
 
@@ -390,52 +394,80 @@ export class FeedConnectionsDiscordChannelsService {
       newWebhookToken = newWebhook.token as string;
     }
 
-    try {
-      const session = await this.userFeedModel.startSession();
+    const newConnectionIdsWithFeedIds: Array<[Types.ObjectId, Types.ObjectId]> =
+      [];
 
-      await session.withTransaction(async () => {
-        await Promise.all(
-          targetUserFeeds.map(async (userFeed, index) => {
-            await this.userFeedModel.updateOne(
-              {
-                _id: userFeed._id,
+    try {
+      const feedQuery =
+        targetFeedSelectionType === UserFeedTargetFeedSelectionType.Selected
+          ? {
+              _id: {
+                $in: targetFeedIds?.map((id) => new Types.ObjectId(id)),
               },
-              {
-                $push: {
-                  "connections.discordChannels": {
-                    id: newIds[index],
-                    name,
-                    details: {
-                      ...connection.details,
-                      channel: channelDetailsToUse,
-                      webhook: connection.details.webhook
-                        ? {
-                            ...connection.details.webhook,
-                            id: newWebhookId || connection.details.webhook.id,
-                            token:
-                              newWebhookToken ||
-                              connection.details.webhook.token,
-                          }
-                        : null,
-                    },
+            }
+          : {
+              $and: [
+                generateUserFeedOwnershipFilters(userDiscordUserId) || {},
+                {
+                  ...(targetFeedSearch
+                    ? { ...generateUserFeedSearchFilters(targetFeedSearch) }
+                    : {}),
+                },
+              ],
+            };
+
+      const feedsToUpdate = await this.userFeedModel.find(feedQuery).cursor();
+      const bulkWriteDocs: Parameters<typeof this.userFeedModel.bulkWrite>[0] =
+        [];
+
+      for await (const feed of feedsToUpdate) {
+        const newConnectionId = new Types.ObjectId();
+        newConnectionIdsWithFeedIds.push([newConnectionId, feed._id]);
+
+        bulkWriteDocs.push({
+          updateOne: {
+            filter: {
+              _id: feed._id,
+            },
+            update: {
+              // @ts-ignore
+              $push: {
+                "connections.discordChannels": {
+                  ...connection,
+                  id: newConnectionId,
+                  name,
+                  details: {
+                    ...connection.details,
+                    channel: channelDetailsToUse,
+                    webhook: connection.details.webhook
+                      ? {
+                          ...connection.details.webhook,
+                          id: newWebhookId || connection.details.webhook.id,
+                          token:
+                            newWebhookToken || connection.details.webhook.token,
+                        }
+                      : null,
                   },
                 },
               },
-              { session }
-            );
+            },
+          },
+        });
+      }
 
-            await this.connectionEventsService.handleCreatedEvent({
-              feed: userFeed,
-              connectionId: newIds[index],
-              creator: {
-                discordUserId: userDiscordUserId,
-              },
-            });
-          })
+      await this.userFeedModel.bulkWrite(bulkWriteDocs);
+
+      if (newConnectionIdsWithFeedIds.length) {
+        await this.connectionEventsService.handleCreatedEvents(
+          newConnectionIdsWithFeedIds.map(([connectionId, feedId]) => ({
+            connectionId,
+            creator: {
+              discordUserId: userDiscordUserId,
+            },
+            feedId: feedId.toHexString(),
+          }))
         );
-      });
-
-      await session.endSession();
+      }
     } catch (err) {
       if (newWebhookId) {
         await this.cleanupWebhook(newWebhookId);
@@ -445,7 +477,7 @@ export class FeedConnectionsDiscordChannelsService {
     }
 
     return {
-      ids: newIds,
+      ids: newConnectionIdsWithFeedIds.map(([connectionId]) => connectionId),
     };
   }
 

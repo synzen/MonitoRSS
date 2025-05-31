@@ -34,6 +34,8 @@ import {
   UpdateDiscordChannelConnectionInput,
 } from "./feed-connections-discord-channels.service";
 import { CustomPlaceholderStepType } from "../../common/constants/custom-placeholder-step-type.constants";
+import { UserFeedConnectionEventsService } from "../user-feed-connection-events/user-feed-connection-events.service";
+import { UsersService } from "../users/users.service";
 
 describe("FeedConnectionsDiscordChannelsService", () => {
   let service: FeedConnectionsDiscordChannelsService;
@@ -57,6 +59,12 @@ describe("FeedConnectionsDiscordChannelsService", () => {
   };
   const discordAuthService = {
     userManagesGuild: jest.fn(),
+  };
+  const userFeedConnectionEventsService = {
+    handleCreatedEvents: jest.fn(),
+  };
+  const usersService = {
+    getOrCreateUserByDiscordId: jest.fn(),
   };
 
   beforeAll(async () => {
@@ -86,6 +94,14 @@ describe("FeedConnectionsDiscordChannelsService", () => {
         {
           provide: DiscordAuthService,
           useValue: discordAuthService,
+        },
+        {
+          provide: UserFeedConnectionEventsService,
+          useValue: userFeedConnectionEventsService,
+        },
+        {
+          provide: UsersService,
+          useValue: usersService,
         },
       ],
       imports: [
@@ -214,10 +230,10 @@ describe("FeedConnectionsDiscordChannelsService", () => {
       });
 
       const { ids } = await service.cloneConnection(
-        [createdFeed],
         connection,
         {
           name: connection.name + "new-name",
+          targetFeedIds: [createdFeed._id.toHexString()],
         },
         "token",
         "user-id"

@@ -190,16 +190,13 @@ export class FeedConnectionsDiscordChannelsController {
       }),
       GetFeedDiscordChannelConnectionPipe
     )
-    [{ feed, connection }]: GetFeedDiscordChannelConnectionPipeOutput[],
+    [{ connection }]: GetFeedDiscordChannelConnectionPipeOutput[],
     @Body(ValidationPipe)
     data: CreateDiscordChannelConnectionCloneInputDto,
-    @Body("targetFeedIds", GetUserFeedsPipe())
-    feeds: GetUserFeedsPipeOutput,
     @DiscordAccessToken()
     { access_token, discord: { id: discordUserId } }: SessionAccessToken
   ) {
     const result = await this.service.cloneConnection(
-      feeds.length === 0 ? [feed] : feeds.map((f) => f.feed),
       connection,
       data,
       access_token,

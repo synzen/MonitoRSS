@@ -13,14 +13,10 @@ export const useCreateDiscordChannelConnectionClone = () => {
     ApiAdapterError,
     CreateDiscordChannelConnectionCloneInput
   >((details) => createDiscordChannelConnectionClone(details), {
-    onSuccess: (data, inputData) =>
+    onSuccess: () =>
       queryClient.invalidateQueries({
-        queryKey: [
-          "user-feed",
-          {
-            feedId: inputData.feedId,
-          },
-        ],
+        predicate: ({ queryKey }) =>
+          typeof queryKey[0] === "string" && queryKey[0].includes("user-feed"),
       }),
   });
 

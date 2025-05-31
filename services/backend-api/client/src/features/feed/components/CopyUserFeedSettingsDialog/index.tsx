@@ -21,7 +21,7 @@ import {
   Center,
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { array, InferType, mixed, object, string } from "yup";
+import { array, InferType, mixed, number, object, string } from "yup";
 import { Controller, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useEffect } from "react";
@@ -84,10 +84,22 @@ const formSchema = object({
     )
     .min(1, "At least one setting must be selected")
     .required(),
-  checkedUserFeeds: array()
-    .of(string().required())
-    .min(1, "At least one feed must be selected")
-    .required(),
+  userFeedSelection: object({
+    // selected feeds must have at least one item if type is "selected"
+    type: string().oneOf(["all", "selected"]).required(),
+    searchTerm: string().optional(),
+    selectedFeeds: array()
+      .of(string().required())
+      .required()
+      .when("type", ([type], schema) => {
+        if (type === "selected") {
+          return schema.min(1, "At least one target feed must be selected");
+        }
+
+        return schema;
+      }),
+    total: number().required(),
+  }).required(),
 });
 
 type FormData = InferType<typeof formSchema>;
@@ -120,11 +132,16 @@ export const CopyUserFeedSettingsDialog = ({
     resolver: yupResolver(formSchema),
     defaultValues: {
       checkedSettings: [],
-      checkedUserFeeds: [],
+      userFeedSelection: {
+        type: "selected",
+        searchTerm: "",
+        selectedFeeds: [],
+        total: 0,
+      },
     },
   });
   const { createSuccessAlert } = usePageAlertContext();
-  const [{ length: checkedUserFeedsLength }] = watch(["checkedUserFeeds"]);
+  const [userFeedSelection] = watch(["userFeedSelection"]);
 
   useEffect(() => {
     reset();
@@ -165,7 +182,7 @@ export const CopyUserFeedSettingsDialog = ({
     );
   };
 
-  const onSubmit = async ({ checkedSettings, checkedUserFeeds }: FormData) => {
+  const onSubmit = async ({ checkedSettings, userFeedSelection: targetSelection }: FormData) => {
     try {
       if (checkedSettings.length === 0 || status === "loading" || !feed) {
         return;
@@ -175,12 +192,15 @@ export const CopyUserFeedSettingsDialog = ({
         feedId: feed.id,
         data: {
           settings: checkedSettings as CopyableUserFeedSettings[],
-          targetFeedIds: checkedUserFeeds,
+          targetFeedIds:
+            targetSelection.type === "selected" ? targetSelection.selectedFeeds : undefined,
+          targetFeedSelectionType: targetSelection.type,
+          targetFeedSearch: targetSelection.searchTerm,
         },
       });
       onClose();
       createSuccessAlert({
-        title: `Successfully copied feed settings ${checkedUserFeeds.length} other feeds`,
+        title: `Successfully copied feed settings`,
       });
       reset();
       onSuccess?.();
@@ -366,34 +386,36 @@ export const CopyUserFeedSettingsDialog = ({
                 </fieldset>
                 <fieldset>
                   <Controller
-                    name="checkedUserFeeds"
+                    name="userFeedSelection"
                     control={control}
                     render={({ field }) => (
-                      <FormControl isInvalid={!!errors.checkedUserFeeds}>
+                      <FormControl isInvalid={!!errors.userFeedSelection}>
                         <Stack spacing={2}>
-                          <legend>
-                            <Stack spacing={2}>
-                              <Text fontWeight="semibold" size="sm">
-                                Target Feeds
-                              </Text>
-                              <Text>
-                                The feeds that will have their settings overwritten with the
-                                selected settings from the source feed.
-                              </Text>
-                            </Stack>
-                          </legend>
-                          <Box>
-                            <Button size="sm" onClick={() => field.onChange([])}>
-                              Clear {checkedUserFeedsLength} target feed selections
-                            </Button>
-                          </Box>
-                          <Stack mt={1}>
-                            <SelectableUserFeedList
-                              onSelectedIdsChange={field.onChange}
-                              selectedIds={field.value}
-                            />
-                          </Stack>
-                          <FormErrorMessage>{errors.checkedUserFeeds?.message}</FormErrorMessage>
+                          <SelectableUserFeedList
+                            onSelectedIdsChange={(ids) =>
+                              field.onChange({
+                                ...field.value,
+                                type: "selected",
+                                selectedFeeds: ids,
+                                total: ids.length,
+                              })
+                            }
+                            selectedIds={field.value.selectedFeeds || []}
+                            description="The feeds that will have their settings overwritten with the selected settings from the source feed."
+                            isSelectedAll={field.value.type === "all"}
+                            onSelectAll={(totalCount, search, isChecked) => {
+                              field.onChange({
+                                ...field.value,
+                                type: isChecked ? "all" : "selected",
+                                selectedFeeds: field.value.selectedFeeds,
+                                total: totalCount,
+                                searchTerm: search,
+                              });
+                            }}
+                          />
+                          <FormErrorMessage>
+                            {errors.userFeedSelection?.selectedFeeds?.message}
+                          </FormErrorMessage>
                         </Stack>
                       </FormControl>
                     )}
@@ -432,12 +454,7 @@ export const CopyUserFeedSettingsDialog = ({
                   handleSubmit(onSubmit)();
                 }}
               >
-                <span>
-                  {!isSubmitting &&
-                    `Copy to ${
-                      checkedUserFeedsLength === 1 ? "1 feed" : `${checkedUserFeedsLength} feeds`
-                    }`}
-                </span>
+                <span>{!isSubmitting && `Copy to ${userFeedSelection.total} matching feeds`}</span>
                 <span>{isSubmitting && "Copying..."}</span>
               </Button>
             </HStack>

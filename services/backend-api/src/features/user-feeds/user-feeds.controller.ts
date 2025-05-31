@@ -65,6 +65,7 @@ import { UserFeedsService } from "./user-feeds.service";
 import { CopyUserFeedSettingsInputDto } from "./dto/copy-user-feed-settings-input.dto";
 import { createMultipleExceptionsFilter } from "../../common/filters/multiple-exceptions.filter";
 import { CreateUserFeedUrlValidationInputDto } from "./dto/create-user-feed-url-validation-input.dto";
+import { UserFeedTargetFeedSelectionType } from "./constants/target-feed-selection-type.type";
 
 @Controller("user-feeds")
 @UseGuards(DiscordOAuth2Guard)
@@ -455,15 +456,28 @@ export class UserFeedsController {
   @Post("/:feedId/copy-settings")
   @HttpCode(HttpStatus.NO_CONTENT)
   async copyFeedSettings(
+    @DiscordAccessToken()
+    { discord: { id: discordUserId } }: SessionAccessToken,
     @Param("feedId", GetUserFeedsPipe())
     [{ feed }]: GetUserFeedsPipeOutput,
     @Body(ValidationPipe)
-    { settings, targetFeedIds }: CopyUserFeedSettingsInputDto
+    dto: CopyUserFeedSettingsInputDto
   ) {
+    if (
+      (!dto.targetFeedSelectionType ||
+        dto.targetFeedSelectionType ===
+          UserFeedTargetFeedSelectionType.Selected) &&
+      !dto.targetFeedIds
+    ) {
+      throw new BadRequestException(
+        "Target feed selection type is required when no target feed IDs are provided"
+      );
+    }
+
     await this.userFeedsService.copySettings({
       sourceFeed: feed,
-      settingsToCopy: settings,
-      targetFeedIds,
+      dto,
+      discordUserId,
     });
   }
 
