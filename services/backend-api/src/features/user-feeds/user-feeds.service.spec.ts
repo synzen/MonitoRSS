@@ -1845,6 +1845,104 @@ describe("UserFeedsService", () => {
         );
       });
 
+      it("enforces feed limits with manually disabled feeds correctly", async () => {
+        await userFeedModel.create([
+          {
+            title: "title1",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+            refreshRateSeconds: 600,
+          },
+          {
+            title: "title2",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+            refreshRateSeconds: 600,
+            disabledCode: UserFeedDisabledCode.Manual,
+          },
+          {
+            title: "title3",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+            refreshRateSeconds: 600,
+          },
+        ]);
+
+        await service.enforceUserFeedLimits([
+          {
+            discordUserId,
+            maxUserFeeds: 2,
+            refreshRateSeconds: 600,
+          },
+        ]);
+
+        const result = await userFeedModel
+          .find({
+            disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+            "user.discordUserId": discordUserId,
+          })
+          .select("title")
+          .lean();
+
+        expect(result).toHaveLength(0);
+      });
+
+      it("should not enable manually disabled codes while enforcing limits", async () => {
+        await userFeedModel.create([
+          {
+            title: "title1",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+            refreshRateSeconds: 600,
+            disabledCode: UserFeedDisabledCode.Manual,
+          },
+          {
+            title: "title2",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+            refreshRateSeconds: 600,
+            disabledCode: UserFeedDisabledCode.Manual,
+          },
+          {
+            title: "title3",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+            refreshRateSeconds: 600,
+            disabledCode: UserFeedDisabledCode.Manual,
+          },
+        ]);
+
+        await service.enforceUserFeedLimits([
+          {
+            discordUserId,
+            maxUserFeeds: 2,
+            refreshRateSeconds: 600,
+          },
+        ]);
+
+        const result = await userFeedModel
+          .find({
+            disabledCode: UserFeedDisabledCode.Manual,
+            "user.discordUserId": discordUserId,
+          })
+          .select("title")
+          .lean();
+
+        expect(result).toHaveLength(3);
+      });
+
       it("does not disable any feeds if not over limit", async () => {
         const feed = await userFeedModel.create([
           {
@@ -1949,6 +2047,56 @@ describe("UserFeedsService", () => {
       });
     });
 
+    it("does not enable manually disabled feeds if user is under limit", async () => {
+      await userFeedModel.create([
+        {
+          title: "title1",
+          url: "url",
+          user: {
+            discordUserId,
+          },
+          disabledCode: UserFeedDisabledCode.Manual,
+          refreshRateSeconds: 600,
+        },
+        {
+          title: "title2",
+          url: "url",
+          user: {
+            discordUserId,
+          },
+          disabledCode: UserFeedDisabledCode.Manual,
+          refreshRateSeconds: 600,
+        },
+        {
+          title: "title3",
+          url: "url",
+          user: {
+            discordUserId,
+          },
+          disabledCode: UserFeedDisabledCode.Manual,
+          refreshRateSeconds: 600,
+        },
+      ]);
+
+      await service.enforceUserFeedLimits([
+        {
+          discordUserId: discordUserId,
+          maxUserFeeds: 1,
+          refreshRateSeconds: 600,
+        },
+      ]);
+
+      const result = await userFeedModel
+        .find({
+          "user.discordUserId": discordUserId,
+          disabledCode: UserFeedDisabledCode.Manual,
+        })
+        .select(["title", "disabledCode"])
+        .lean();
+
+      expect(result).toHaveLength(3);
+    });
+
     describe("default limits", () => {
       it("disables over-limit feeds for non-supporters", async () => {
         await userFeedModel.create([
@@ -1988,6 +2136,57 @@ describe("UserFeedsService", () => {
           .lean();
 
         expect(result).toHaveLength(supportersService.defaultMaxUserFeeds);
+      });
+
+      it("treats manually disabled as same as exceeded feed limit", async () => {
+        await userFeedModel.create([
+          {
+            title: "title1",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+          },
+          {
+            title: "title2",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+            disabledCode: UserFeedDisabledCode.Manual,
+          },
+          {
+            title: "title3",
+            url: "url",
+            user: {
+              discordUserId: discordUserId,
+            },
+          },
+        ]);
+
+        await service.enforceUserFeedLimits([]);
+
+        const result = await userFeedModel
+          .find({
+            disabledCode: {
+              $exists: false,
+            },
+            "user.discordUserId": discordUserId,
+          })
+          .select("title")
+          .lean();
+
+        expect(result).toHaveLength(supportersService.defaultMaxUserFeeds);
+
+        const manuallyDisabled = await userFeedModel
+          .find({
+            disabledCode: UserFeedDisabledCode.Manual,
+            "user.discordUserId": discordUserId,
+          })
+          .select("title")
+          .lean();
+
+        expect(manuallyDisabled).toHaveLength(1);
       });
 
       it("enables feeds if user is under limit with disabled feeds", async () => {

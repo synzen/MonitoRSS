@@ -12,6 +12,7 @@ import { UserFeed, UserFeedDocument, UserFeedModel } from "./entities";
 import _, { chunk } from "lodash";
 import { SupportersService } from "../supporters/supporters.service";
 import {
+  DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
   GetFeedArticlePropertiesInput,
   GetFeedArticlePropertiesOutput,
   GetFeedArticlesInput,
@@ -1570,9 +1571,9 @@ export class UserFeedsService {
               $sum: {
                 $cond: [
                   {
-                    $eq: [
+                    $in: [
                       "$disabledCode",
-                      UserFeedDisabledCode.ExceededFeedLimit,
+                      DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
                     ],
                   },
                   1,
@@ -1584,9 +1585,13 @@ export class UserFeedsService {
               $sum: {
                 $cond: [
                   {
-                    $ne: [
-                      "$disabledCode",
-                      UserFeedDisabledCode.ExceededFeedLimit,
+                    $not: [
+                      {
+                        $in: [
+                          "$disabledCode",
+                          DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
+                        ],
+                      },
                     ],
                   },
                   1,
@@ -1611,7 +1616,7 @@ export class UserFeedsService {
         .find({
           "user.discordUserId": discordUserId,
           disabledCode: {
-            $ne: UserFeedDisabledCode.ExceededFeedLimit,
+            $nin: DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
           },
         })
         .sort({
@@ -1653,9 +1658,9 @@ export class UserFeedsService {
               $sum: {
                 $cond: [
                   {
-                    $eq: [
+                    $in: [
                       "$disabledCode",
-                      UserFeedDisabledCode.ExceededFeedLimit,
+                      DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
                     ],
                   },
                   1,
@@ -1667,9 +1672,13 @@ export class UserFeedsService {
               $sum: {
                 $cond: [
                   {
-                    $ne: [
-                      "$disabledCode",
-                      UserFeedDisabledCode.ExceededFeedLimit,
+                    $not: [
+                      {
+                        $in: [
+                          "$disabledCode",
+                          DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
+                        ],
+                      },
                     ],
                   },
                   1,
@@ -1703,7 +1712,9 @@ export class UserFeedsService {
       const docs = await this.userFeedModel
         .find({
           "user.discordUserId": discordUserId,
-          disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+          disabledCode: {
+            $in: UserFeedDisabledCode.ExceededFeedLimit,
+          },
         })
         .sort({
           // Re-enable the newest feeds first
@@ -1740,42 +1751,43 @@ export class UserFeedsService {
 
       await Promise.all(
         chunk.map(async ({ discordUserId, maxUserFeeds }) => {
-          const undisabledFeedCount = await this.userFeedModel.countDocuments({
-            "user.discordUserId": discordUserId,
-            disabledCode: {
-              $ne: UserFeedDisabledCode.ExceededFeedLimit,
-            },
-          });
+          const countOfAllowableFeedsUnderLimit =
+            await this.userFeedModel.countDocuments({
+              "user.discordUserId": discordUserId,
+              disabledCode: {
+                $nin: DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
+              },
+            });
 
-          if (undisabledFeedCount === maxUserFeeds) {
+          if (countOfAllowableFeedsUnderLimit === maxUserFeeds) {
             return;
           }
 
-          if (undisabledFeedCount > maxUserFeeds) {
+          if (countOfAllowableFeedsUnderLimit > maxUserFeeds) {
             logger.info(
               `Disabling ${
-                undisabledFeedCount - maxUserFeeds
+                countOfAllowableFeedsUnderLimit - maxUserFeeds
               } feeds for user ${discordUserId} (limit: ${maxUserFeeds})`
             );
-            const docs = await this.userFeedModel
+            const allowableFeedsUnderLimit = await this.userFeedModel
               .find({
                 "user.discordUserId": discordUserId,
                 disabledCode: {
-                  $ne: UserFeedDisabledCode.ExceededFeedLimit,
+                  $nin: DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
                 },
               })
               .sort({
                 // Disable the oldest feeds first
                 createdAt: 1,
               })
-              .limit(undisabledFeedCount - maxUserFeeds)
+              .limit(countOfAllowableFeedsUnderLimit - maxUserFeeds)
               .select("_id")
               .lean();
 
             await this.userFeedModel.updateMany(
               {
                 _id: {
-                  $in: docs.map((doc) => doc._id),
+                  $in: allowableFeedsUnderLimit.map((doc) => doc._id),
                 },
               },
               {
@@ -1788,12 +1800,14 @@ export class UserFeedsService {
             return;
           }
 
-          const enableCount = maxUserFeeds - undisabledFeedCount;
+          const enableCount = maxUserFeeds - countOfAllowableFeedsUnderLimit;
 
           // Some feeds should be enabled
           const disabledFeedCount = await this.userFeedModel.countDocuments({
             "user.discordUserId": discordUserId,
-            disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+            disabledCode: {
+              $in: DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
+            },
           });
 
           if (disabledFeedCount > 0) {
@@ -1804,7 +1818,9 @@ export class UserFeedsService {
             const docs = await this.userFeedModel
               .find({
                 "user.discordUserId": discordUserId,
-                disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+                disabledCode: {
+                  $in: UserFeedDisabledCode.ExceededFeedLimit,
+                },
               })
               .sort({
                 // Re-enable the newest feeds first

@@ -7,3 +7,8 @@ export enum UserFeedDisabledCode {
   ExcessivelyActive = "EXCESSIVELY_ACTIVE",
   FeedTooLarge = "FEED_TOO_LARGE",
 }
+
+export const DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS = [
+  UserFeedDisabledCode.ExceededFeedLimit,
+  UserFeedDisabledCode.Manual,
+];
