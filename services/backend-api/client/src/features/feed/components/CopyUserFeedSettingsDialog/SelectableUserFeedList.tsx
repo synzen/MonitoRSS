@@ -16,7 +16,7 @@ import {
   chakra,
 } from "@chakra-ui/react";
 import { CloseIcon, SearchIcon } from "@chakra-ui/icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useUserFeedsInfinite } from "../../hooks/useUserFeedsInfinite";
 import { InlineErrorAlert } from "../../../../components";
 
@@ -54,6 +54,12 @@ export const SelectableUserFeedList = ({
   const totalCount = data?.pages[0].total;
 
   const fetchedSoFarCount = data?.pages.reduce((acc, page) => acc + page.results.length, 0) ?? 0;
+
+  useEffect(() => {
+    if (isSelectedAll) {
+      onSelectAll(totalCount || 0, search, true);
+    }
+  }, [isSelectedAll, totalCount, search]);
 
   return (
     <Stack spacing={2}>
