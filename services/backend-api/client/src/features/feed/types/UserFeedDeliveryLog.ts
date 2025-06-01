@@ -21,6 +21,7 @@ export const UserFeedDeliveryLogSchema = object({
     message: string(),
     data: object().optional(),
   }).optional(),
+  articleData: mixed().optional().nullable(),
 });
 
 export type UserFeedDeliveryLog = InferType<typeof UserFeedDeliveryLogSchema>;

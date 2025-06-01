@@ -498,6 +498,7 @@ export class DiscordMediumService implements DeliveryMedium {
           errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
           internalMessage: "No channel or webhook specified",
           articleIdHash: article.flattened.idHash,
+          article,
         },
       ];
     }
@@ -549,6 +550,7 @@ export class DiscordMediumService implements DeliveryMedium {
           errorCode: ArticleDeliveryErrorCode.Internal,
           internalMessage: (err as Error).message,
           articleIdHash: article.flattened.idHash,
+          article,
         },
       ];
     }
@@ -677,6 +679,7 @@ export class DiscordMediumService implements DeliveryMedium {
           contentType: ArticleDeliveryContentType.DiscordArticleMessage,
           parent: parentDeliveryId,
           articleIdHash: article.flattened.idHash,
+          article,
         };
       })
     );
@@ -688,6 +691,7 @@ export class DiscordMediumService implements DeliveryMedium {
         mediumId: details.mediumId,
         contentType: ArticleDeliveryContentType.DiscordThreadCreation,
         articleIdHash: article.flattened.idHash,
+        article,
       },
       ...additionalDeliveryStates,
     ];
@@ -793,6 +797,7 @@ export class DiscordMediumService implements DeliveryMedium {
           contentType: ArticleDeliveryContentType.DiscordArticleMessage,
           parent: parentDeliveryId,
           articleIdHash: article.flattened.idHash,
+          article,
         };
       })
     );
@@ -900,6 +905,7 @@ export class DiscordMediumService implements DeliveryMedium {
           mediumId: details.mediumId,
           contentType: ArticleDeliveryContentType.DiscordArticleMessage,
           articleIdHash: article.flattened.idHash,
+          article,
         });
 
         const messageId = (firstPostResponse.body as Record<string, unknown>)
@@ -946,6 +952,7 @@ export class DiscordMediumService implements DeliveryMedium {
             threadCreationDeliveryStates[
               threadCreationDeliveryStates.length - 1
             ].id,
+          article,
         });
 
         useChannelId = (threadResponse.body as Record<string, unknown>)
@@ -991,6 +998,7 @@ export class DiscordMediumService implements DeliveryMedium {
           contentType: ArticleDeliveryContentType.DiscordArticleMessage,
           parent: parentDeliveryId || undefined,
           articleIdHash: article.flattened.idHash,
+          article,
         };
       })
     );
@@ -1092,6 +1100,7 @@ export class DiscordMediumService implements DeliveryMedium {
           contentType: ArticleDeliveryContentType.DiscordArticleMessage,
           articleIdHash: article.flattened.idHash,
           parent: idx === 0 ? undefined : parentDeliveryId,
+          article,
         };
       })
     );
@@ -1120,6 +1129,7 @@ export class DiscordMediumService implements DeliveryMedium {
             internalMessage: `Response: ${JSON.stringify(response.body)}`,
             externalDetail:
               "Unknown channel. Update the connection to use a different channel.",
+            article,
           },
         ];
       } else if (response.status === 403) {
@@ -1133,6 +1143,7 @@ export class DiscordMediumService implements DeliveryMedium {
             errorCode: ArticleDeliveryErrorCode.ThirdPartyForbidden,
             internalMessage: `Response: ${JSON.stringify(response.body)}`,
             externalDetail: "Missing permissions",
+            article,
           },
         ];
       } else if (response.status === 400) {
@@ -1146,6 +1157,7 @@ export class DiscordMediumService implements DeliveryMedium {
             errorCode: ArticleDeliveryErrorCode.ThirdPartyBadRequest,
             internalMessage: `Response: ${JSON.stringify(response.body)}`,
             externalDetail: JSON.stringify(response.body, null, 2),
+            article,
           },
         ];
       } else {
@@ -1163,6 +1175,7 @@ export class DiscordMediumService implements DeliveryMedium {
           mediumId: details.mediumId,
           contentType: contentType,
           articleIdHash: article.flattened.idHash,
+          article,
         },
       ];
     }

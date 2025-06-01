@@ -10,6 +10,7 @@ class DeliveryLogDto {
     message?: string;
     data?: Record<string, unknown>;
   };
+  articleData: Record<string, string> | null;
 }
 
 class ResultDto {

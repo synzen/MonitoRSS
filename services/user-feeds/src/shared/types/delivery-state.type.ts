@@ -1,5 +1,6 @@
 import { ArticleDeliveryErrorCode } from "../constants";
 import { ArticleDeliveryContentType } from "./article-delivery-content-type.type";
+import { Article } from "./article.type";
 
 export enum ArticleDeliveryStatus {
   // The article is being delivered
@@ -21,6 +22,7 @@ interface BaseArticleDeliveryState {
   id: string;
   mediumId: string;
   articleIdHash: string;
+  article: Article | null;
 }
 
 interface ArticleDeliveryPendingDeliveryState extends BaseArticleDeliveryState {

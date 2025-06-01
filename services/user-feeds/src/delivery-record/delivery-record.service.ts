@@ -51,6 +51,12 @@ export class DeliveryRecordService {
       let record: DeliveryRecord;
       const recordId = articleState.id;
 
+      const useArticleData = articleState.article?.flattened.title
+        ? {
+            title: articleState.article?.flattened.title,
+          }
+        : null;
+
       if (articleStatus === Sent) {
         record = new DeliveryRecord({
           id: recordId,
@@ -62,6 +68,7 @@ export class DeliveryRecordService {
           parent: articleState.parent
             ? ({ id: articleState.parent } as never)
             : null,
+          article_data: useArticleData,
         });
       } else if (articleStatus === Failed || articleStatus === Rejected) {
         record = new DeliveryRecord({
@@ -74,6 +81,7 @@ export class DeliveryRecordService {
           article_id_hash: articleState.articleIdHash,
           external_detail:
             articleStatus === Rejected ? articleState.externalDetail : null,
+          article_data: useArticleData,
         });
       } else if (articleStatus === PendingDelivery) {
         record = new DeliveryRecord({
@@ -88,6 +96,7 @@ export class DeliveryRecordService {
             : null,
           content_type: articleState.contentType,
           article_id_hash: articleState.articleIdHash,
+          article_data: useArticleData,
         });
       } else if (articleStatus === FilteredOut) {
         record = new DeliveryRecord({
@@ -97,6 +106,7 @@ export class DeliveryRecordService {
           medium_id: articleState.mediumId,
           article_id_hash: articleState.articleIdHash,
           external_detail: articleState.externalDetail,
+          article_data: useArticleData,
         });
       } else {
         record = new DeliveryRecord({
@@ -105,6 +115,7 @@ export class DeliveryRecordService {
           status: articleStatus,
           medium_id: articleState.mediumId,
           article_id_hash: articleState.articleIdHash,
+          article_data: useArticleData,
         });
       }
 
@@ -129,6 +140,7 @@ export class DeliveryRecordService {
           externalDetail: record.external_detail ?? null,
           articleId: record.article_id ?? null,
           articleIdHash: record.article_id_hash ?? null,
+          articleData: record.article_data ?? null,
         };
       }
     );
@@ -219,7 +231,7 @@ export class DeliveryRecordService {
     const records: DeliveryRecord[] = await this.orm.em.getConnection().execute(
       `
       SELECT id, status, error_code, medium_id,
-        content_type, external_detail, article_id_hash, created_at
+        content_type, external_detail, article_id_hash, created_at, article_data
       FROM delivery_record_partitioned
       WHERE feed_id = ?
       AND parent_id IS NULL
@@ -236,7 +248,7 @@ export class DeliveryRecordService {
       const found = await this.orm.em.getConnection().execute(
         `
       SELECT id, status, error_code, medium_id,
-        content_type, external_detail, article_id_hash, created_at, parent_id
+        content_type, external_detail, article_id_hash, created_at, parent_id, article_data
       FROM delivery_record_partitioned
       WHERE feed_id = ?
       AND parent_id IN (${records.map(() => "?").join(", ")})
@@ -345,6 +357,7 @@ export class DeliveryRecordService {
         details,
         articleIdHash: record.article_id_hash,
         status,
+        articleData: record.article_data,
       };
     });
   }
@@ -381,9 +394,10 @@ export class DeliveryRecordService {
               error_code,
               external_detail,
               article_id,
-              article_id_hash
+              article_id_hash,
+              article_data
             ) VALUES (
-             ?,?,?,?,?,?,?,?,?,?,?,?
+             ?,?,?,?,?,?,?,?,?,?,?,?,?
             )`,
             [
               record.id,
@@ -398,6 +412,7 @@ export class DeliveryRecordService {
               record.externalDetail,
               record.articleId,
               record.articleIdHash,
+              record.articleData,
             ],
             transaction
           );

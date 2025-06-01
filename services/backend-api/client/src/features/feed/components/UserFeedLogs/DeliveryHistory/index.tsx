@@ -213,6 +213,9 @@ export const DeliveryHistory = () => {
                         (a) => a.idHash === item.articleIdHash
                       );
 
+                      // @ts-ignore
+                      const articleTitle = matchedArticle?.["title"] || item.articleData?.title;
+
                       return (
                         <Tr key={item.id}>
                           <Td>
@@ -256,23 +259,12 @@ export const DeliveryHistory = () => {
                                 )
                               }
                             >
-                              {!matchedArticle && (
+                              {articleTitle || (
                                 <Tooltip label="The referenced article either no longer exists on the feed or has no title">
                                   <Text color="whiteAlpha.700" fontStyle="italic">
                                     (unknown article title)
                                   </Text>
                                 </Tooltip>
-                              )}
-                              {matchedArticle &&
-                                // @ts-ignore
-                                matchedArticle?.["title"] &&
-                                // @ts-ignore
-                                matchedArticle?.["title"]}
-                              {/* @ts-ignore */}
-                              {matchedArticle && !matchedArticle?.["title"] && (
-                                <Text color="whiteAlpha.700" fontStyle="italic">
-                                  (no title)
-                                </Text>
                               )}
                             </Skeleton>
                           </Td>

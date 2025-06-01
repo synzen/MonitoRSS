@@ -62,12 +62,14 @@ describe("DeliveryRecordService", () => {
           mediumId: "medium-id",
           status: ArticleDeliveryStatus.Sent,
           articleIdHash: "hash",
+          article: null,
         },
         {
           id: "2",
           mediumId: "medium-id",
           status: ArticleDeliveryStatus.Sent,
           articleIdHash: "hash2",
+          article: null,
         },
       ];
       await insertItems(feedId, articleStates);
@@ -99,6 +101,7 @@ describe("DeliveryRecordService", () => {
           errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
           internalMessage: "internal-message",
           articleIdHash: "hash",
+          article: null,
         },
         {
           id: "2",
@@ -107,6 +110,7 @@ describe("DeliveryRecordService", () => {
           errorCode: ArticleDeliveryErrorCode.Internal,
           internalMessage: "internal-message-2",
           articleIdHash: "hash2",
+          article: null,
         },
       ];
       await insertItems(feedId, articleStates);
@@ -155,6 +159,7 @@ describe("DeliveryRecordService", () => {
           internalMessage: "internal-message",
           articleIdHash: "hash",
           externalDetail: "",
+          article: null,
         },
         {
           id: "2",
@@ -164,6 +169,7 @@ describe("DeliveryRecordService", () => {
           internalMessage: "internal-message-2",
           articleIdHash: "hash2",
           externalDetail: "",
+          article: null,
         },
       ];
       await insertItems(feedId, articleStates);
@@ -202,6 +208,7 @@ describe("DeliveryRecordService", () => {
           status: ArticleDeliveryStatus.PendingDelivery,
           contentType: ArticleDeliveryContentType.DiscordArticleMessage,
           articleIdHash: "hash",
+          article: null,
         },
         {
           id: "id-2",
@@ -210,6 +217,7 @@ describe("DeliveryRecordService", () => {
           contentType: ArticleDeliveryContentType.DiscordArticleMessage,
           parent: "id-1",
           articleIdHash: "hash2",
+          article: null,
         },
       ];
       await insertItems(feedId, articleStates);
@@ -247,6 +255,14 @@ describe("DeliveryRecordService", () => {
           status: ArticleDeliveryStatus.FilteredOut,
           articleIdHash: "hash",
           externalDetail: "",
+          article: {
+            flattened: {
+              id: randomUUID(),
+              idHash: "hash",
+              title: "Test Article",
+            },
+            raw: {},
+          },
         },
         {
           id: "id-2",
@@ -254,6 +270,7 @@ describe("DeliveryRecordService", () => {
           status: ArticleDeliveryStatus.FilteredOut,
           articleIdHash: "hash2",
           externalDetail: "",
+          article: null,
         },
       ];
       await insertItems(feedId, articleStates);
@@ -266,6 +283,7 @@ describe("DeliveryRecordService", () => {
       deepStrictEqual(record1?.status, ArticleDeliveryStatus.FilteredOut);
       deepStrictEqual(record1?.feed_id, feedId);
       deepStrictEqual(record1?.article_id_hash, "hash");
+      deepStrictEqual(record1.article_data?.title, "Test Article");
 
       const record2 = records.find((record) => record.id === "id-2");
       deepStrictEqual(record2?.status, ArticleDeliveryStatus.FilteredOut);
@@ -281,6 +299,7 @@ describe("DeliveryRecordService", () => {
         feed_id: "feed-id",
         status: ArticleDeliveryStatus.PendingDelivery,
         medium_id: "1",
+        article_data: null,
       });
 
       await deliveryRecordRepo.insert(existingRecord);
@@ -310,6 +329,7 @@ describe("DeliveryRecordService", () => {
         feed_id: "feed-id",
         status: ArticleDeliveryStatus.PendingDelivery,
         medium_id: "1",
+        article_data: null,
       });
 
       await deliveryRecordRepo.insert(existingRecord);
@@ -344,6 +364,7 @@ describe("DeliveryRecordService", () => {
           mediumId,
           articleIdHash: "hash1",
           status: ArticleDeliveryStatus.Sent,
+          article: null,
         },
         {
           id: "2",
@@ -353,12 +374,14 @@ describe("DeliveryRecordService", () => {
           errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
           externalDetail: "",
           internalMessage: "internal-message",
+          article: null,
         },
         {
           id: "3",
           mediumId,
           articleIdHash: "hash3",
           status: ArticleDeliveryStatus.Sent,
+          article: null,
         },
       ]);
 
@@ -380,6 +403,7 @@ describe("DeliveryRecordService", () => {
           mediumId: mediumId,
           articleIdHash: "hash1",
           status: ArticleDeliveryStatus.Sent,
+          article: null,
         },
         {
           id: "2",
@@ -389,12 +413,14 @@ describe("DeliveryRecordService", () => {
           errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
           externalDetail: "",
           internalMessage: "internal-message",
+          article: null,
         },
         {
           id: "3",
           mediumId: mediumId,
           articleIdHash: "hash2",
           status: ArticleDeliveryStatus.Sent,
+          article: null,
         },
       ]);
 
@@ -416,6 +442,7 @@ describe("DeliveryRecordService", () => {
           mediumId: mediumId,
           articleIdHash: "hash1",
           status: ArticleDeliveryStatus.Sent,
+          article: null,
         },
         {
           id: "2",
@@ -425,12 +452,14 @@ describe("DeliveryRecordService", () => {
           errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
           externalDetail: "",
           internalMessage: "internal-message",
+          article: null,
         },
         {
           id: "3",
           mediumId: mediumId,
           articleIdHash: "hash2",
           status: ArticleDeliveryStatus.Sent,
+          article: null,
         },
       ]);
 

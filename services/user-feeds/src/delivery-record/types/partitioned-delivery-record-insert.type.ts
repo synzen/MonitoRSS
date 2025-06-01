@@ -16,4 +16,5 @@ export default interface PartitionedDeliveryRecordInsert {
   externalDetail: string | null;
   articleId: string | null;
   articleIdHash: string | null;
+  articleData: Record<string, string> | null;
 }

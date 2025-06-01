@@ -126,6 +126,7 @@ export class DeliveryService {
                 ? ArticleDeliveryStatus.RateLimited
                 : ArticleDeliveryStatus.MediumRateLimitedByUser,
             articleIdHash: article.flattened.idHash,
+            article,
           },
         ];
       }
@@ -160,6 +161,7 @@ export class DeliveryService {
                     explainBlocked,
                   })
                 : null,
+              article,
             },
           ];
         }
@@ -192,6 +194,7 @@ export class DeliveryService {
             externalDetail: JSON.stringify({
               message: (err as Error).message,
             }),
+            article,
           },
         ];
       }
@@ -214,6 +217,7 @@ export class DeliveryService {
           errorCode: ArticleDeliveryErrorCode.Internal,
           internalMessage: (err as Error).message,
           articleIdHash: article.flattened.idHash,
+          article,
         },
       ];
     }
