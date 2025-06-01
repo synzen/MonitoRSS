@@ -659,6 +659,25 @@ export class UserFeedsService {
           $in: found.map((doc) => doc._id),
         },
       });
+
+      const allUserIds = Array.from(
+        new Set(found.map((doc) => doc.user.discordUserId))
+      );
+
+      try {
+        await Promise.all(
+          allUserIds.map((discordUserId) =>
+            this.enforceUserFeedLimit(discordUserId)
+          )
+        );
+      } catch (err) {
+        logger.error(
+          `Failed to enforce user feed limit after bulk deleting feeds`,
+          {
+            stack: (err as Error).stack,
+          }
+        );
+      }
     }
 
     for (let i = 0; i < found.length; i++) {
@@ -1107,6 +1126,17 @@ export class UserFeedsService {
     this.amqpConnection.publish("", MessageBrokerQueue.FeedDeleted, {
       data: { feed: { id } },
     });
+
+    try {
+      await this.enforceUserFeedLimit(found.user.discordUserId);
+    } catch (err) {
+      logger.error(
+        `Failed to enforce user feed limit after deleting feed ${id}`,
+        {
+          stack: (err as Error).stack,
+        }
+      );
+    }
 
     return found;
   }
