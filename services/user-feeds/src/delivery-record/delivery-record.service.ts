@@ -12,19 +12,33 @@ import { GetUserFeedDeliveryRecordsOutputDto } from "../feeds/dto";
 import { DeliveryLogStatus } from "../feeds/constants/delivery-log-status.constants";
 import PartitionedDeliveryRecordInsert from "./types/partitioned-delivery-record-insert.type";
 import logger from "../shared/utils/logger";
+import { AsyncLocalStorage } from "node:async_hooks";
 
 const { Failed, Rejected, Sent, PendingDelivery, FilteredOut } =
   ArticleDeliveryStatus;
 
+interface AsyncStore {
+  toInsert: PartitionedDeliveryRecordInsert[];
+}
+
+const asyncLocalStorage = new AsyncLocalStorage<AsyncStore>();
+
 @Injectable()
 export class DeliveryRecordService {
-  pendingInserts: PartitionedDeliveryRecordInsert[] = [];
-
   constructor(
     @InjectRepository(DeliveryRecord)
     private readonly recordRepo: EntityRepository<DeliveryRecord>,
     private readonly orm: MikroORM // Required for @UseRequestContext()
   ) {}
+
+  async startContext<T>(cb: () => Promise<T>) {
+    return asyncLocalStorage.run(
+      {
+        toInsert: [],
+      },
+      cb
+    );
+  }
 
   async store(
     feedId: string,
@@ -119,11 +133,18 @@ export class DeliveryRecordService {
       }
     );
 
+    const store = asyncLocalStorage.getStore();
+
+    if (!store) {
+      throw new Error("No context was started for DeliveryRecordService");
+    }
+
+    store.toInsert.push(...partitionedInserts);
+
     if (flush) {
       await this.orm.em.persistAndFlush(records);
       await this.flushPendingInserts();
     } else {
-      this.pendingInserts.push(...partitionedInserts);
       this.orm.em.persist(records);
     }
   }
@@ -176,16 +197,11 @@ export class DeliveryRecordService {
       `
       SELECT COUNT(*) FROM delivery_record_partitioned
       WHERE created_at >= NOW() - INTERVAL '${secondsInPast} seconds'
-      AND status IN (?, ?)
+      AND status IN (?)
       ${mediumId ? "AND medium_id = ?" : ""}
       ${feedId ? "AND feed_id = ?" : ""}
       `,
-      [
-        Sent,
-        Rejected,
-        ...(mediumId ? [mediumId] : []),
-        ...(feedId ? [feedId] : []),
-      ]
+      [Sent, ...(mediumId ? [mediumId] : []), ...(feedId ? [feedId] : [])]
     );
 
     return Number(query[0].count);
@@ -334,7 +350,15 @@ export class DeliveryRecordService {
   }
 
   async flushPendingInserts() {
-    if (this.pendingInserts.length === 0) {
+    const store = asyncLocalStorage.getStore();
+
+    if (!store) {
+      throw new Error("No context was started for DeliveryRecordService");
+    }
+
+    const { toInsert: inserts } = store;
+
+    if (inserts.length === 0) {
       return;
     }
 
@@ -343,7 +367,7 @@ export class DeliveryRecordService {
 
     try {
       await Promise.all(
-        this.pendingInserts.map((record) => {
+        inserts.map((record) => {
           return em.execute(
             `INSERT INTO delivery_record_partitioned (
               id,
@@ -388,7 +412,7 @@ export class DeliveryRecordService {
         error: (err as Error).stack,
       });
     } finally {
-      this.pendingInserts.length = 0;
+      store.toInsert = [];
     }
   }
 }

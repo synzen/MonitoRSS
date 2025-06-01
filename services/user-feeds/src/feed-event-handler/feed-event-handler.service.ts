@@ -83,8 +83,10 @@ export class FeedEventHandlerService {
       }
 
       // Require to be separated to use with MikroORM's decorator @UseRequestContext()
-      await this.partitionedFeedArticleStoreService.startContext(
-        async () => await this.handleV2EventWithDb(event)
+      await this.partitionedFeedArticleStoreService.startContext(async () =>
+        this.deliveryRecordService.startContext(
+          async () => await this.handleV2EventWithDb(event)
+        )
       );
     } catch (err) {
       logger.error(`Failed to handle feed event`, {

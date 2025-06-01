@@ -132,6 +132,7 @@ describe("FeedsModule", () => {
 
   describe(`POST /user-feeds/test`, () => {
     const mediumDetails: DiscordMediumTestPayloadDetails = {
+      channelNewThreadExcludesPreview: false,
       channel: {
         id: "channel-id",
       },

@@ -11,9 +11,9 @@ import {
 } from "../shared";
 import { DeliveryRecordService } from "./delivery-record.service";
 import { DeliveryRecord } from "./entities";
-import dayjs from "dayjs";
 import { describe, it, afterEach, before, after } from "node:test";
 import { deepStrictEqual } from "node:assert";
+import { randomUUID } from "node:crypto";
 
 describe("DeliveryRecordService", () => {
   let service: DeliveryRecordService;
@@ -49,6 +49,10 @@ describe("DeliveryRecordService", () => {
     deepStrictEqual(typeof service, "object");
   });
 
+  const insertItems = async (feedId: string, items: ArticleDeliveryState[]) => {
+    await service.startContext(async () => service.store(feedId, items));
+  };
+
   describe("store", () => {
     it("stores sent article states correctly", async () => {
       const feedId = "feed-id";
@@ -66,7 +70,7 @@ describe("DeliveryRecordService", () => {
           articleIdHash: "hash2",
         },
       ];
-      await service.store(feedId, articleStates);
+      await insertItems(feedId, articleStates);
 
       const records = await deliveryRecordRepo.findAll();
 
@@ -105,7 +109,7 @@ describe("DeliveryRecordService", () => {
           articleIdHash: "hash2",
         },
       ];
-      await service.store(feedId, articleStates);
+      await insertItems(feedId, articleStates);
 
       const records = await deliveryRecordRepo.findAll();
 
@@ -162,7 +166,7 @@ describe("DeliveryRecordService", () => {
           externalDetail: "",
         },
       ];
-      await service.store(feedId, articleStates);
+      await insertItems(feedId, articleStates);
 
       const records = await deliveryRecordRepo.findAll();
 
@@ -208,7 +212,7 @@ describe("DeliveryRecordService", () => {
           articleIdHash: "hash2",
         },
       ];
-      await service.store(feedId, articleStates);
+      await insertItems(feedId, articleStates);
 
       const records = await deliveryRecordRepo.findAll();
 
@@ -252,7 +256,7 @@ describe("DeliveryRecordService", () => {
           externalDetail: "",
         },
       ];
-      await service.store(feedId, articleStates);
+      await insertItems(feedId, articleStates);
 
       const records = await deliveryRecordRepo.findAll();
 
@@ -279,7 +283,7 @@ describe("DeliveryRecordService", () => {
         medium_id: "1",
       });
 
-      await deliveryRecordRepo.persistAndFlush(existingRecord);
+      await deliveryRecordRepo.insert(existingRecord);
 
       const updatedRecord = await service.updateDeliveryStatus(
         existingRecord.id,
@@ -308,7 +312,7 @@ describe("DeliveryRecordService", () => {
         medium_id: "1",
       });
 
-      await deliveryRecordRepo.persistAndFlush(existingRecord);
+      await deliveryRecordRepo.insert(existingRecord);
 
       await service.updateDeliveryStatus(existingRecord.id, {
         status: ArticleDeliveryStatus.Failed,
@@ -331,48 +335,32 @@ describe("DeliveryRecordService", () => {
 
   describe("countDeliveriesInPastTimeframe", () => {
     it("returns the correct number of sent and rejected deliveries", async () => {
-      const feedId = "feed-id";
+      const feedId = randomUUID();
+      const mediumId = randomUUID();
 
-      const [record1, record2, record3] = [
-        new DeliveryRecord(
-          {
-            id: "1",
-            feed_id: feedId,
-            status: ArticleDeliveryStatus.Sent,
-            medium_id: "1",
-            article_id_hash: "hash1",
-          },
-          {
-            created_at: dayjs().subtract(1, "hour").toDate(),
-          }
-        ),
-        new DeliveryRecord(
-          {
-            id: "2",
-            feed_id: feedId,
-            status: ArticleDeliveryStatus.Rejected,
-            medium_id: "1",
-            article_id_hash: "hash2",
-          },
-          {
-            created_at: dayjs().subtract(1, "hour").toDate(),
-          }
-        ),
-        new DeliveryRecord(
-          {
-            id: "3",
-            feed_id: feedId,
-            status: ArticleDeliveryStatus.Sent,
-            medium_id: "1",
-            article_id_hash: "hash3",
-          },
-          {
-            created_at: dayjs().subtract(1, "day").toDate(),
-          }
-        ),
-      ];
-
-      await deliveryRecordRepo.persistAndFlush([record1, record2, record3]);
+      await insertItems(feedId, [
+        {
+          id: "1",
+          mediumId,
+          articleIdHash: "hash1",
+          status: ArticleDeliveryStatus.Sent,
+        },
+        {
+          id: "2",
+          mediumId,
+          articleIdHash: "hash2",
+          status: ArticleDeliveryStatus.Rejected,
+          errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
+          externalDetail: "",
+          internalMessage: "internal-message",
+        },
+        {
+          id: "3",
+          mediumId,
+          articleIdHash: "hash3",
+          status: ArticleDeliveryStatus.Sent,
+        },
+      ]);
 
       const count = await service.countDeliveriesInPastTimeframe(
         { feedId },
@@ -381,109 +369,77 @@ describe("DeliveryRecordService", () => {
 
       deepStrictEqual(count, 2);
     });
-  });
 
-  it("returns the correct number with duplicate article id hashes", async () => {
-    const feedId = "feed-id";
+    it("returns the correct number with duplicate article id hashes", async () => {
+      const feedId = randomUUID();
+      const mediumId = randomUUID();
 
-    const [record1, record2, record3] = [
-      new DeliveryRecord(
+      await insertItems(feedId, [
         {
           id: "1",
-          feed_id: feedId,
+          mediumId: mediumId,
+          articleIdHash: "hash1",
           status: ArticleDeliveryStatus.Sent,
-          medium_id: "1",
-          article_id_hash: "hash1",
         },
-        {
-          created_at: dayjs().subtract(1, "hour").toDate(),
-        }
-      ),
-      new DeliveryRecord(
         {
           id: "2",
-          feed_id: feedId,
+          mediumId: mediumId,
+          articleIdHash: "hash1",
           status: ArticleDeliveryStatus.Rejected,
-          medium_id: "1",
-          article_id_hash: "hash1",
+          errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
+          externalDetail: "",
+          internalMessage: "internal-message",
         },
-        {
-          created_at: dayjs().subtract(1, "hour").toDate(),
-        }
-      ),
-      new DeliveryRecord(
         {
           id: "3",
-          feed_id: feedId,
+          mediumId: mediumId,
+          articleIdHash: "hash2",
           status: ArticleDeliveryStatus.Sent,
-          medium_id: "1",
-          article_id_hash: "hash2",
         },
-        {
-          created_at: dayjs().subtract(1, "hour").toDate(),
-        }
-      ),
-    ];
+      ]);
 
-    await deliveryRecordRepo.persistAndFlush([record1, record2, record3]);
+      const count = await service.countDeliveriesInPastTimeframe(
+        { feedId },
+        60 * 60 * 2 // 2 hours
+      );
 
-    const count = await service.countDeliveriesInPastTimeframe(
-      { feedId },
-      60 * 60 * 2 // 2 hours
-    );
+      deepStrictEqual(count, 2);
+    });
 
-    deepStrictEqual(count, 2);
-  });
+    it("returns the correct number with duplicate article id hashes with medium id", async () => {
+      const feedId = randomUUID();
+      const mediumId = randomUUID();
 
-  it("returns the correct number with duplicate article id hashes with medium id", async () => {
-    const feedId = "feed-id";
-
-    const [record1, record2, record3] = [
-      new DeliveryRecord(
+      await insertItems(feedId, [
         {
           id: "1",
-          feed_id: feedId,
+          mediumId: mediumId,
+          articleIdHash: "hash1",
           status: ArticleDeliveryStatus.Sent,
-          medium_id: "1",
-          article_id_hash: "hash1",
         },
-        {
-          created_at: dayjs().subtract(1, "hour").toDate(),
-        }
-      ),
-      new DeliveryRecord(
         {
           id: "2",
-          feed_id: feedId,
+          mediumId: mediumId,
+          articleIdHash: "hash1",
           status: ArticleDeliveryStatus.Rejected,
-          medium_id: "1",
-          article_id_hash: "hash1",
+          errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
+          externalDetail: "",
+          internalMessage: "internal-message",
         },
-        {
-          created_at: dayjs().subtract(1, "hour").toDate(),
-        }
-      ),
-      new DeliveryRecord(
         {
           id: "3",
-          feed_id: feedId,
+          mediumId: mediumId,
+          articleIdHash: "hash2",
           status: ArticleDeliveryStatus.Sent,
-          medium_id: "1",
-          article_id_hash: "hash2",
         },
-        {
-          created_at: dayjs().subtract(1, "hour").toDate(),
-        }
-      ),
-    ];
+      ]);
 
-    await deliveryRecordRepo.persistAndFlush([record1, record2, record3]);
+      const count = await service.countDeliveriesInPastTimeframe(
+        { mediumId: mediumId },
+        60 * 60 * 2 // 2 hours
+      );
 
-    const count = await service.countDeliveriesInPastTimeframe(
-      { mediumId: "1" },
-      60 * 60 * 2 // 2 hours
-    );
-
-    deepStrictEqual(count, 2);
+      deepStrictEqual(count, 2);
+    });
   });
 });

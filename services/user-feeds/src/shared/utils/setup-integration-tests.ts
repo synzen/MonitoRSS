@@ -4,7 +4,7 @@ import { ConfigModule } from "@nestjs/config";
 import { config } from "../../config";
 import { EntityName, MikroORM } from "@mikro-orm/core";
 import { randomUUID } from "crypto";
-import { SqlEntityManager } from "@mikro-orm/postgresql";
+import { PostgreSqlDriver, SqlEntityManager } from "@mikro-orm/postgresql";
 import {
   FastifyAdapter,
   NestFastifyApplication,
@@ -40,6 +40,7 @@ export async function setupIntegrationTests(
       }),
       MikroOrmModule.forFeature(options?.models || []),
       MikroOrmModule.forRoot({
+        driver: PostgreSqlDriver,
         entities: ["dist/**/*.entity.js"],
         entitiesTs: ["src/**/*.entity.ts"],
         clientUrl: configVals.USER_FEEDS_POSTGRES_URI,
