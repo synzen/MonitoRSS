@@ -116,6 +116,11 @@ export default function config(options?: {
       .BACKEND_API_REDDIT_CLIENT_SECRET as string,
     BACKEND_API_REDDIT_REDIRECT_URI: process.env
       .BACKEND_API_REDDIT_REDIRECT_URI as string,
+    BACKEND_API_ADMIN_USER_IDS: process.env.BACKEND_API_ADMIN_USER_IDS
+      ? process.env.BACKEND_API_ADMIN_USER_IDS.split(",")
+          .map((id) => id.trim())
+          .filter(Boolean)
+      : [],
   };
 
   if (!options?.skipValidation) {

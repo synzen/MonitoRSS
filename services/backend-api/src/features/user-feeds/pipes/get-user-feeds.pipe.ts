@@ -21,7 +21,7 @@ import { InjectModel } from "@nestjs/mongoose";
 import { UserFeed, UserFeedModel } from "../entities";
 import { ConfigService } from "@nestjs/config";
 import { UserFeedConnection } from "../types";
-import { SupportersService } from "../../supporters/supporters.service";
+import { UsersService } from "../../users/users.service";
 
 interface PipeOptions {
   userTypes: UserFeedManagerType[];
@@ -43,7 +43,7 @@ const createGetUserFeedsPipe = (
       @Inject(forwardRef(() => REQUEST))
       private readonly request: FastifyRequest,
       private readonly configService: ConfigService,
-      private readonly supportersService: SupportersService
+      private readonly usersService: UsersService
     ) {}
 
     async transform(
@@ -69,17 +69,41 @@ const createGetUserFeedsPipe = (
         throw new UnauthorizedException();
       }
 
-      const allFound = await this.userFeedModel
-        .find({
-          _id: {
-            $in: feedIds,
-          },
-        })
-        .lean();
+      const [allFound, user] = await Promise.all([
+        this.userFeedModel
+          .find({
+            _id: {
+              $in: feedIds,
+            },
+          })
+          .lean(),
+        this.usersService.getOrCreateUserByDiscordId(accessToken.discord.id),
+      ]);
+
+      const adminIds = this.configService.get<string[]>(
+        "BACKEND_API_ADMIN_USER_IDS"
+      );
+
+      const isAdmin = adminIds?.includes(user._id.toString());
+
+      if (allFound.length !== feedIds.length) {
+        throw new NotFoundException(`Some or all feeds do not exist`);
+      }
 
       const filtered = (
         await Promise.all(
           allFound.map(async (found) => {
+            const allowLegacyReversion =
+              !!this.configService.get("BACKEND_API_ALLOW_LEGACY_REVERSION") ||
+              found.allowLegacyReversion;
+
+            if (isAdmin) {
+              return {
+                ...found,
+                allowLegacyReversion,
+              };
+            }
+
             const allowOwner =
               userTypes.includes(UserFeedManagerType.Creator) &&
               found?.user.discordUserId === accessToken.discord.id;
@@ -126,18 +150,11 @@ const createGetUserFeedsPipe = (
 
             return {
               ...found,
-              allowLegacyReversion:
-                !!this.configService.get(
-                  "BACKEND_API_ALLOW_LEGACY_REVERSION"
-                ) || found.allowLegacyReversion,
+              allowLegacyReversion,
             };
           })
         )
       ).filter((f) => !!f) as UserFeed[];
-
-      if (filtered.length !== feedIds.length) {
-        throw new NotFoundException(`Some or all feeds do not exist`);
-      }
 
       return filtered.map((feed) => ({
         feed,

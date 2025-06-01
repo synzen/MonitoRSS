@@ -7,6 +7,7 @@ import { UserFeedFeature } from "../user-feeds/entities";
 import { UserFeedsModule } from "../user-feeds/user-feeds.module";
 import { UserFeedManagementInvitesController } from "./user-feed-management-invites.controller";
 import { UserFeedManagementInvitesService } from "./user-feed-management-invites.service";
+import { UsersModule } from "../users/users.module";
 
 @Module({
   controllers: [UserFeedManagementInvitesController],
@@ -16,6 +17,7 @@ import { UserFeedManagementInvitesService } from "./user-feed-management-invites
     UserFeedsModule,
     SupportersModule,
     DiscordAuthModule,
+    UsersModule,
   ],
   exports: [UserFeedManagementInvitesService],
 })

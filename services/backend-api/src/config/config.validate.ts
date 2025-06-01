@@ -212,6 +212,10 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   BACKEND_API_REDDIT_REDIRECT_URI?: string;
+
+  @IsString({ each: true })
+  @IsOptional()
+  BACKEND_API_ADMIN_USER_IDS?: string[];
 }
 
 export function validateConfig(
