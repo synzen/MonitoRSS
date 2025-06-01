@@ -948,11 +948,7 @@ export class UserFeedsService {
 
     const useUpdateObject: UpdateQuery<UserFeedDocument> = {
       $set: {},
-      $unset: {
-        ...(updates.disabledCode === null && {
-          disabledCode: "",
-        }),
-      },
+      $unset: {},
     };
 
     if (updates.title) {
@@ -1000,7 +996,11 @@ export class UserFeedsService {
         }
       }
 
-      useUpdateObject.$set!.disabledCode = updates.disabledCode;
+      if (updates.disabledCode !== null) {
+        useUpdateObject.$set!.disabledCode = updates.disabledCode;
+      } else {
+        useUpdateObject.$unset!.disabledCode = "";
+      }
     }
 
     if (updates.passingComparisons) {
