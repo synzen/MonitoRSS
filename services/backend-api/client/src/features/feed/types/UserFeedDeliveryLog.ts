@@ -1,4 +1,4 @@
-import { InferType, object, string } from "yup";
+import { InferType, mixed, object, string } from "yup";
 
 export enum UserFeedDeliveryLogStatus {
   DELIVERED = "DELIVERED",
