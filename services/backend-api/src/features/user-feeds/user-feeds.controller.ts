@@ -79,18 +79,19 @@ export class UserFeedsController {
   @UseFilters(FeedExceptionFilter)
   async createFeed(
     @Body(ValidationPipe)
-    { title, url }: CreateUserFeedInputDto,
+    dto: CreateUserFeedInputDto,
     @DiscordAccessToken()
-    { discord: { id: discordUserId } }: SessionAccessToken
+    {
+      discord: { id: discordUserId },
+      access_token: userAccessToken,
+    }: SessionAccessToken
   ): Promise<GetUserFeedOutputDto> {
     const result = await this.userFeedsService.addFeed(
       {
         discordUserId,
+        userAccessToken,
       },
-      {
-        title,
-        url,
-      }
+      dto
     );
 
     return this.userFeedsService.formatForHttpResponse(result, discordUserId);

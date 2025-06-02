@@ -31,7 +31,11 @@ import {
 } from "../../services/feed-handler/types";
 import logger from "../../utils/logger";
 import { FilterQuery, PipelineStage, Types, UpdateQuery } from "mongoose";
-import { GetUserFeedsInputDto, GetUserFeedsInputSortKey } from "./dto";
+import {
+  CreateUserFeedInputDto,
+  GetUserFeedsInputDto,
+  GetUserFeedsInputSortKey,
+} from "./dto";
 import {
   FeedConnectionDisabledCode,
   FeedConnectionType,
@@ -77,6 +81,7 @@ import {
 import { generateUserFeedOwnershipFilters } from "./utils/get-user-feed-ownership-filters.utils";
 import { generateUserFeedSearchFilters } from "./utils/get-user-feed-search-filters.utils";
 import { UserFeedTargetFeedSelectionType } from "./constants/target-feed-selection-type.type";
+import { SourceFeedNotFoundException } from "./exceptions/source-feed-not-found.exception";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual
@@ -360,22 +365,35 @@ export class UserFeedsService {
   async addFeed(
     {
       discordUserId,
+      userAccessToken,
     }: {
       discordUserId: string;
+      userAccessToken: string;
     },
-    {
-      title,
-      url,
-    }: {
-      title?: string;
-      url: string;
-    }
+    { title, url, inheritSettingsFromFeedId }: CreateUserFeedInputDto
   ) {
-    const [{ maxUserFeeds, maxDailyArticles, refreshRateSeconds }, user] =
-      await Promise.all([
-        this.supportersService.getBenefitsOfDiscordUser(discordUserId),
-        this.usersService.getOrCreateUserByDiscordId(discordUserId),
-      ]);
+    const [
+      { maxUserFeeds, maxDailyArticles, refreshRateSeconds },
+      user,
+      sourceFeedToCopyFrom,
+    ] = await Promise.all([
+      this.supportersService.getBenefitsOfDiscordUser(discordUserId),
+      this.usersService.getOrCreateUserByDiscordId(discordUserId),
+      inheritSettingsFromFeedId
+        ? this.userFeedModel
+            .findOne({
+              _id: new Types.ObjectId(inheritSettingsFromFeedId),
+              ...generateUserFeedOwnershipFilters(discordUserId),
+            })
+            .lean()
+        : null,
+    ]);
+
+    if (inheritSettingsFromFeedId && !sourceFeedToCopyFrom) {
+      throw new SourceFeedNotFoundException(
+        `Feed with ID ${inheritSettingsFromFeedId} not found for user ${discordUserId}`
+      );
+    }
 
     const userId = user._id;
 
@@ -399,7 +417,10 @@ export class UserFeedsService {
     const { finalUrl, enableDateChecks, feedTitle } =
       await this.checkUrlIsValid(url, tempLookupDetails);
 
+    const { connections, ...propertiesToCopy } = sourceFeedToCopyFrom || {};
+
     const created = await this.userFeedModel.create({
+      ...propertiesToCopy,
       title: title || feedTitle || "Untitled Feed",
       url: finalUrl,
       inputUrl: url,
@@ -417,6 +438,20 @@ export class UserFeedsService {
         : undefined,
     });
 
+    if (connections) {
+      for (const c of connections.discordChannels) {
+        await this.feedConnectionsDiscordChannelsService.cloneConnection(
+          c,
+          {
+            name: c.name,
+            targetFeedIds: [created._id.toHexString()],
+          },
+          userAccessToken,
+          discordUserId
+        );
+      }
+    }
+
     return created;
   }
 
@@ -428,23 +463,25 @@ export class UserFeedsService {
       url?: string;
     }
   ) {
-    const found = await this.userFeedModel.findById(feedId).lean();
+    const foundResult = await this.userFeedModel.findById(feedId).lean();
 
-    if (!found) {
+    if (!foundResult) {
       throw new Error(`Feed ${feedId} not found while cloning`);
     }
 
+    const { connections, ...sourceFeed } = foundResult;
+
     const user = await this.usersService.getOrCreateUserByDiscordId(
-      found.user.discordUserId
+      sourceFeed.user.discordUserId
     );
 
     const { maxUserFeeds } =
       await this.supportersService.getBenefitsOfDiscordUser(
-        found.user.discordUserId
+        sourceFeed.user.discordUserId
       );
 
     const feedCount = await this.calculateCurrentFeedCountOfDiscordUser(
-      found.user.discordUserId
+      sourceFeed.user.discordUserId
     );
 
     if (feedCount >= maxUserFeeds) {
@@ -453,15 +490,15 @@ export class UserFeedsService {
 
     const newFeedId = new Types.ObjectId();
 
-    let inputUrl = found.inputUrl;
-    let finalUrl = found.url;
+    let inputUrl = sourceFeed.inputUrl;
+    let finalUrl = sourceFeed.url;
 
-    if (data?.url && data.url !== found.url) {
+    if (data?.url && data.url !== sourceFeed.url) {
       finalUrl = (
         await this.checkUrlIsValid(
           data.url,
           getFeedRequestLookupDetails({
-            feed: found,
+            feed: sourceFeed,
             user,
             decryptionKey: this.configService.get(
               "BACKEND_API_ENCRYPTION_KEY_HEX"
@@ -473,9 +510,9 @@ export class UserFeedsService {
     }
 
     await this.userFeedModel.create({
-      ...found,
+      ...sourceFeed,
       _id: newFeedId,
-      title: data?.title || found.title,
+      title: data?.title || sourceFeed.title,
       url: finalUrl,
       inputUrl,
       connections: {},
@@ -485,7 +522,7 @@ export class UserFeedsService {
 
     await this.usersService.syncLookupKeys({ feedIds: [newFeedId] });
 
-    for (const c of found.connections.discordChannels) {
+    for (const c of connections.discordChannels) {
       await this.feedConnectionsDiscordChannelsService.cloneConnection(
         c,
         {
@@ -493,7 +530,7 @@ export class UserFeedsService {
           targetFeedIds: [newFeedId.toHexString()],
         },
         userAccessToken,
-        found.user.discordUserId
+        sourceFeed.user.discordUserId
       );
     }
 
@@ -624,7 +661,7 @@ export class UserFeedsService {
           $in: feedIds.map((id) => new Types.ObjectId(id)),
         },
       })
-      .select("_id legacyFeedId connections")
+      .select("_id legacyFeedId connections user")
       .lean();
 
     const foundIds = new Set(found.map((doc) => doc._id.toHexString()));

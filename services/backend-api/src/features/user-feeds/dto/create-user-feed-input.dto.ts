@@ -9,4 +9,8 @@ export class CreateUserFeedInputDto {
   @IsNotEmpty()
   @IsString()
   url: string;
+
+  @IsString()
+  @IsOptional()
+  inheritSettingsFromFeedId?: string;
 }

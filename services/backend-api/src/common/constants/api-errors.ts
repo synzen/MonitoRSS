@@ -26,6 +26,7 @@ export enum ApiErrorCode {
   FEED_NOT_FAILED = "FEED_NOT_FAILED",
   FEED_NOT_FOUND = "FEED_NOT_FOUND",
   FEED_TOO_LARGE = "FEED_TOO_LARGE",
+  ADD_FEED_WITH_SOURCE_FEED_NOT_FOUND = "ADD_FEED_WITH_SOURCE_FEED_NOT_FOUND",
   FEED_INVALID_FILTER_EXPRESSION = "FEED_INVALID_FILTER_EXPRESSION",
   BANNED_FEED = "BANNED_FEED",
   DISCORD_CHANNEL_NOT_OWNED_BY_GUILD = "DISCORD_CHANNEL_NOT_OWNED_BY_GUILD",
@@ -110,4 +111,5 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
     "Invalid preview input in regex search for custom placeholders",
   INVALID_FILTERS_REGEX: "Invalid filters regex",
   FEED_INVALID_SSL_CERT: "Invalid SSL certificate on feed site",
+  ADD_FEED_WITH_SOURCE_FEED_NOT_FOUND: "Source feed not found",
 };

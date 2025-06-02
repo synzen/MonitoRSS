@@ -18,6 +18,7 @@ import {
 } from "../../../services/feed-fetcher/exceptions";
 import { FeedTooLargeException } from "../../../services/feed-fetcher/exceptions/FeedTooLargeException";
 import { FeedLimitReachedException } from "../exceptions";
+import { SourceFeedNotFoundException } from "../../user-feeds/exceptions/source-feed-not-found.exception";
 
 export const FEED_EXCEPTION_FILTER_ERROR_CODES: Record<
   string,
@@ -82,6 +83,10 @@ export const FEED_EXCEPTION_FILTER_ERROR_CODES: Record<
   [FeedTooLargeException.name]: {
     status: HttpStatus.BAD_REQUEST,
     code: ApiErrorCode.FEED_TOO_LARGE,
+  },
+  [SourceFeedNotFoundException.name]: {
+    status: HttpStatus.BAD_REQUEST,
+    code: ApiErrorCode.ADD_FEED_WITH_SOURCE_FEED_NOT_FOUND,
   },
 };
 
