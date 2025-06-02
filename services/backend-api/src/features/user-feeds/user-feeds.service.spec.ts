@@ -205,6 +205,7 @@ describe("UserFeedsService", () => {
         service.addFeed(
           {
             discordUserId: "123",
+            userAccessToken: "",
           },
           {
             title: "title",
@@ -222,6 +223,7 @@ describe("UserFeedsService", () => {
         service.addFeed(
           {
             discordUserId: "123",
+            userAccessToken: "",
           },
           {
             title: "title",
@@ -248,6 +250,7 @@ describe("UserFeedsService", () => {
         service.addFeed(
           {
             discordUserId,
+            userAccessToken: "",
           },
           {
             title: "title",
@@ -269,6 +272,7 @@ describe("UserFeedsService", () => {
       const entity = await service.addFeed(
         {
           discordUserId,
+          userAccessToken: "",
         },
         createDetails
       );
@@ -1549,7 +1553,7 @@ describe("UserFeedsService", () => {
     });
   });
 
-  describe("enforceWebhookBenefits", () => {
+  describe("getEnforceWebhookWrites", () => {
     it("disables webhooks if the user is not a supporter", async () => {
       const secondDiscordUserId = discordUserId + "2";
       const thirdDiscordUserId = discordUserId + "3";
@@ -1640,10 +1644,12 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      await service.enforceWebhookBenefits({
+      const writes = service.getEnforceWebhookWrites({
         enforcementType: "all-users",
         supporterDiscordUserIds: [secondDiscordUserId],
       });
+
+      await userFeedModel.bulkWrite(writes);
 
       const updatedFeeds = await userFeedModel
         .find({
@@ -1663,11 +1669,13 @@ describe("UserFeedsService", () => {
       ).toEqual(FeedConnectionDisabledCode.NotPaidSubscriber);
       expect(
         updatedFeeds[0].connections?.discordChannels[2].disabledCode
-      ).toBeUndefined();
+      ).toEqual(FeedConnectionDisabledCode.NotPaidSubscriber);
+
       // second user's webhook connection should be enabled
       expect(
         updatedFeeds[1].connections?.discordChannels[0].disabledCode
       ).toBeUndefined();
+
       // third user's webhook connection should be disabled
       expect(
         updatedFeeds[2].connections?.discordChannels[0].disabledCode
@@ -1702,10 +1710,12 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      await service.enforceWebhookBenefits({
+      const writes = service.getEnforceWebhookWrites({
         enforcementType: "all-users",
         supporterDiscordUserIds: [],
       });
+
+      await userFeedModel.bulkWrite(writes);
 
       const updatedFeeds = await userFeedModel
         .find({
@@ -1749,10 +1759,12 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      await service.enforceWebhookBenefits({
+      const writes = service.getEnforceWebhookWrites({
         enforcementType: "all-users",
         supporterDiscordUserIds: [discordUserId],
       });
+
+      await userFeedModel.bulkWrite(writes);
 
       const updatedFeeds = await userFeedModel
         .find({

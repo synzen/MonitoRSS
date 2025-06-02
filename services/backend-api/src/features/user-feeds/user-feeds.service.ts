@@ -91,6 +91,10 @@ const badUserFeedCodes = Object.values(UserFeedDisabledCode).filter(
 );
 const feedConnectionTypeKeys = Object.values(FeedConnectionTypeEntityKey);
 
+type UserFeedBulkWriteDocument = Parameters<
+  UserFeedModel["bulkWrite"]
+>[0][number];
+
 interface UpdateFeedInput {
   title?: string;
   url?: string;
@@ -1568,7 +1572,7 @@ export class UserFeedsService {
     return pipeline;
   }
 
-  async enforceWebhookBenefits(
+  getEnforceWebhookWrites(
     opts:
       | {
           enforcementType: "all-users";
@@ -1579,125 +1583,89 @@ export class UserFeedsService {
           allowWebhooks: boolean;
           discordUserId: string;
         }
-  ) {
+  ): UserFeedBulkWriteDocument[] {
+    const bulkWriteOps: UserFeedBulkWriteDocument[] = [];
+
     // Find all the user feeds that are not owned by a supporter with active webhooks
-    const feedsWithConnectionsToDisable =
-      opts.enforcementType === "all-users" || !opts.allowWebhooks
-        ? await this.userFeedModel
-            .find({
-              "user.discordUserId":
-                opts.enforcementType === "all-users"
-                  ? {
-                      $nin: opts.supporterDiscordUserIds,
-                    }
-                  : opts.discordUserId,
-              "connections.discordChannels": {
-                $elemMatch: {
-                  "details.webhook.id": {
-                    $exists: true,
-                  },
-                  disabledCode: {
-                    $nin: [
-                      FeedConnectionDisabledCode.NotPaidSubscriber,
-                      FeedConnectionDisabledCode.Manual,
-                    ],
-                  },
+    if (opts.enforcementType === "all-users" || !opts.allowWebhooks) {
+      bulkWriteOps.push({
+        updateMany: {
+          filter: {
+            "user.discordUserId":
+              opts.enforcementType === "all-users"
+                ? {
+                    $nin: opts.supporterDiscordUserIds,
+                  }
+                : opts.discordUserId,
+            "connections.discordChannels": {
+              $elemMatch: {
+                "details.webhook.id": {
+                  $exists: true,
+                },
+                disabledCode: {
+                  $nin: [
+                    FeedConnectionDisabledCode.NotPaidSubscriber,
+                    FeedConnectionDisabledCode.Manual,
+                  ],
                 },
               },
-            })
-            .select("_id")
-            .lean()
-        : [];
-
-    // Disable the connections for those feeds
-    const feedIds = feedsWithConnectionsToDisable.map((feed) => feed._id);
-
-    for (const feedId of feedIds) {
-      const feed = await this.userFeedModel.findById(feedId);
-
-      if (!feed) {
-        continue;
-      }
-
-      feed.connections.discordChannels
-        .filter(
-          (c) =>
-            !!c.details.webhook?.id &&
-            c.disabledCode !== FeedConnectionDisabledCode.Manual &&
-            c.disabledCode !== FeedConnectionDisabledCode.NotPaidSubscriber
-        )
-        .forEach((c) => {
-          c.disabledCode = FeedConnectionDisabledCode.NotPaidSubscriber;
-        });
-
-      await feed.save();
+            },
+          },
+          update: {
+            $set: {
+              "connections.discordChannels.$[].disabledCode":
+                FeedConnectionDisabledCode.NotPaidSubscriber,
+            },
+          },
+        },
+      });
     }
 
-    const feedsWithConnectionsToEnable =
-      opts.enforcementType === "all-users" || opts.allowWebhooks
-        ? await this.userFeedModel
-            .find({
-              "user.discordUserId":
-                opts.enforcementType === "all-users"
-                  ? {
-                      $in: opts.supporterDiscordUserIds,
-                    }
-                  : opts.discordUserId,
-              "connections.discordChannels": {
-                $elemMatch: {
-                  "details.webhook.id": {
-                    $exists: true,
-                  },
-                  disabledCode: {
-                    $eq: FeedConnectionDisabledCode.NotPaidSubscriber,
-                  },
+    if (opts.enforcementType === "all-users" || opts.allowWebhooks) {
+      bulkWriteOps.push({
+        updateMany: {
+          filter: {
+            "user.discordUserId":
+              opts.enforcementType === "all-users"
+                ? {
+                    $in: opts.supporterDiscordUserIds,
+                  }
+                : opts.discordUserId,
+            "connections.discordChannels": {
+              $elemMatch: {
+                "details.webhook.id": {
+                  $exists: true,
+                },
+                disabledCode: {
+                  $eq: FeedConnectionDisabledCode.NotPaidSubscriber,
                 },
               },
-            })
-            .select("_id")
-            .lean()
-        : [];
-
-    // Enable the connections for those feeds
-    const feedIds2 = feedsWithConnectionsToEnable.map((feed) => feed._id);
-
-    for (const feedId of feedIds2) {
-      const feed = await this.userFeedModel.findById(feedId);
-
-      if (!feed) {
-        continue;
-      }
-
-      feed.connections.discordChannels
-        .filter(
-          (c) =>
-            !!c.details.webhook?.id &&
-            c.disabledCode === FeedConnectionDisabledCode.NotPaidSubscriber
-        )
-        .forEach((c) => {
-          c.disabledCode = undefined;
-        });
-
-      await feed.save();
+            },
+          },
+          update: {
+            // unset the disabledCode for those connections
+            $unset: {
+              "connections.discordChannels.$[].disabledCode": "",
+            },
+          },
+        },
+      });
     }
 
-    return {
-      disabledCount: feedsWithConnectionsToDisable.length,
-      enabledCount: feedsWithConnectionsToEnable.length,
-    };
+    return bulkWriteOps;
   }
 
   async enforceUserFeedLimit(discordUserId: string) {
     const { isSupporter, refreshRateSeconds, maxUserFeeds } =
       await this.supportersService.getBenefitsOfDiscordUser(discordUserId);
 
-    await this.enforceWebhookBenefits({
+    const enforceWebhookDocs = this.getEnforceWebhookWrites({
       enforcementType: "single-user",
       allowWebhooks: isSupporter,
       discordUserId,
     });
 
-    await this.enforceRefreshRates({
+    const enforceRefreshRateDocs = this.enforceRefreshRates({
       enforcementType: "single-user",
       discordUserId,
       refreshRateSeconds,
@@ -1715,6 +1683,11 @@ export class UserFeedsService {
         discordUserId,
       });
     }
+
+    await this.userFeedModel.bulkWrite([
+      ...enforceWebhookDocs,
+      ...enforceRefreshRateDocs,
+    ]);
   }
 
   async enforceAllUserFeedLimits(
@@ -1727,12 +1700,12 @@ export class UserFeedsService {
     const supporterDiscordUserIds = supporterLimits.map(
       ({ discordUserId }) => discordUserId
     );
-    await this.enforceWebhookBenefits({
+    const enforceWebhookDocs = this.getEnforceWebhookWrites({
       enforcementType: "all-users",
       supporterDiscordUserIds,
     });
 
-    await this.enforceRefreshRates({
+    const enforceRefreshRateDocs = this.enforceRefreshRates({
       enforcementType: "all-users",
       supporterLimits,
     });
@@ -1745,6 +1718,11 @@ export class UserFeedsService {
       enforcementType: "all-users",
       supporterLimits,
     });
+
+    await this.userFeedModel.bulkWrite([
+      ...enforceWebhookDocs,
+      ...enforceRefreshRateDocs,
+    ]);
   }
 
   private async enforceNonSupporterLimits(
@@ -2070,7 +2048,7 @@ export class UserFeedsService {
     }
   }
 
-  private async enforceRefreshRates(
+  private enforceRefreshRates(
     opts:
       | {
           enforcementType: "all-users";
@@ -2085,7 +2063,8 @@ export class UserFeedsService {
           discordUserId: string;
           refreshRateSeconds: number;
         }
-  ) {
+  ): UserFeedBulkWriteDocument[] {
+    const bulkWriteDocs: UserFeedBulkWriteDocument[] = [];
     // Unset the lower user refresh rate seconds for users who are not supporters
     const supporterRefreshRate =
       this.supportersService.defaultSupporterRefreshRateSeconds;
@@ -2097,40 +2076,45 @@ export class UserFeedsService {
             refreshRateSeconds === supporterRefreshRate
         )
         .map(({ discordUserId }) => discordUserId);
-
-      await this.userFeedModel.updateMany(
-        {
-          userRefreshRateSeconds: supporterRefreshRate,
-          "user.discordUserId": {
-            $nin: supporterDiscordUserIds,
+      bulkWriteDocs.push({
+        updateMany: {
+          filter: {
+            userRefreshRateSeconds: supporterRefreshRate,
+            "user.discordUserId": {
+              $nin: supporterDiscordUserIds,
+            },
+          },
+          update: {
+            $unset: {
+              userRefreshRateSeconds: "",
+            },
           },
         },
-        {
-          $unset: {
-            userRefreshRateSeconds: "",
-          },
-        }
-      );
+      });
     } else {
       const { discordUserId, refreshRateSeconds } = opts;
 
       if (refreshRateSeconds === supporterRefreshRate) {
         // If the user is a supporter, we don't need to do anything
-        return;
+        return bulkWriteDocs;
       }
 
-      await this.userFeedModel.updateMany(
-        {
-          userRefreshRateSeconds: refreshRateSeconds,
-          "user.discordUserId": discordUserId,
-        },
-        {
-          $unset: {
-            userRefreshRateSeconds: "",
+      bulkWriteDocs.push({
+        updateMany: {
+          filter: {
+            userRefreshRateSeconds: refreshRateSeconds,
+            "user.discordUserId": discordUserId,
           },
-        }
-      );
+          update: {
+            $unset: {
+              userRefreshRateSeconds: "",
+            },
+          },
+        },
+      });
     }
+
+    return bulkWriteDocs;
   }
 
   private async checkUrlIsValid(
