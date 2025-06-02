@@ -1665,7 +1665,7 @@ export class UserFeedsService {
       discordUserId,
     });
 
-    const enforceRefreshRateDocs = this.enforceRefreshRates({
+    const enforceRefreshRateDocs = this.getEnforceRefreshRateWrites({
       enforcementType: "single-user",
       discordUserId,
       refreshRateSeconds,
@@ -1684,10 +1684,11 @@ export class UserFeedsService {
       });
     }
 
-    await this.userFeedModel.bulkWrite([
-      ...enforceWebhookDocs,
-      ...enforceRefreshRateDocs,
-    ]);
+    const allWriteDocs = [...enforceWebhookDocs, ...enforceRefreshRateDocs];
+
+    if (allWriteDocs.length > 0) {
+      await this.userFeedModel.bulkWrite(allWriteDocs);
+    }
   }
 
   async enforceAllUserFeedLimits(
@@ -1705,7 +1706,7 @@ export class UserFeedsService {
       supporterDiscordUserIds,
     });
 
-    const enforceRefreshRateDocs = this.enforceRefreshRates({
+    const enforceRefreshRateDocs = this.getEnforceRefreshRateWrites({
       enforcementType: "all-users",
       supporterLimits,
     });
@@ -1719,10 +1720,11 @@ export class UserFeedsService {
       supporterLimits,
     });
 
-    await this.userFeedModel.bulkWrite([
-      ...enforceWebhookDocs,
-      ...enforceRefreshRateDocs,
-    ]);
+    const writeDocs = [...enforceWebhookDocs, ...enforceRefreshRateDocs];
+
+    if (writeDocs.length > 0) {
+      await this.userFeedModel.bulkWrite(writeDocs);
+    }
   }
 
   private async enforceNonSupporterLimits(
@@ -2048,7 +2050,7 @@ export class UserFeedsService {
     }
   }
 
-  private enforceRefreshRates(
+  private getEnforceRefreshRateWrites(
     opts:
       | {
           enforcementType: "all-users";
