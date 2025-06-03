@@ -8,7 +8,10 @@ import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 
 import { MessageBrokerQueue } from "../../common/constants/message-broker-queue.constants";
-import { UserFeedsService } from "../user-feeds/user-feeds.service";
+import {
+  UserFeedBulkWriteDocument,
+  UserFeedsService,
+} from "../user-feeds/user-feeds.service";
 import { getCommonFeedAggregateStages } from "../../common/utils";
 import getFeedRequestLookupDetails from "../../utils/get-feed-request-lookup-details";
 import { User, UserModel } from "../users/entities/user.entity";
@@ -60,9 +63,16 @@ export class ScheduleHandlerService {
     const allBenefits =
       await this.supportersService.getBenefitsOfAllDiscordUsers();
 
-    await this.syncRefreshRates(allBenefits);
-    await this.syncMaxDailyArticles(allBenefits);
+    const syncRefreshRateWriteDocs =
+      this.getSyncRefreshRatesWriteDocs(allBenefits);
+    const syncArticlesWriteDocs =
+      this.getSyncMaxDailyArticlesWriteDocs(allBenefits);
     await this.usersService.syncLookupKeys();
+
+    await this.userFeedModel.bulkWrite([
+      ...syncRefreshRateWriteDocs,
+      ...syncArticlesWriteDocs,
+    ]);
 
     const feedsToDebug = await this.userFeedModel
       .find({
@@ -163,7 +173,9 @@ export class ScheduleHandlerService {
       },
     });
 
-    return this.userFeedModel.aggregate(pipeline);
+    return this.userFeedModel.aggregate(pipeline, {
+      readPreference: "secondaryPreferred",
+    });
   }
 
   getUnbatchedUrlsQueryMatchingRefreshRate(refreshRateSeconds: number) {
@@ -180,8 +192,11 @@ export class ScheduleHandlerService {
       },
     });
 
-    return this.userFeedModel.aggregate(pipeline);
+    return this.userFeedModel.aggregate(pipeline, {
+      readPreference: "secondaryPreferred",
+    });
   }
+
   async getValidDiscordUserSupporters() {
     const allBenefits =
       await this.supportersService.getBenefitsOfAllDiscordUsers();
@@ -202,11 +217,11 @@ export class ScheduleHandlerService {
     );
   }
 
-  async syncRefreshRates(
+  getSyncRefreshRatesWriteDocs(
     benefits: Awaited<
       ReturnType<typeof this.supportersService.getBenefitsOfAllDiscordUsers>
     >
-  ) {
+  ): UserFeedBulkWriteDocument[] {
     const validSupporters = benefits.filter(({ isSupporter }) => isSupporter);
 
     const supportersByRefreshRates = new Map<number, string[]>();
@@ -226,12 +241,12 @@ export class ScheduleHandlerService {
 
     const refreshRates = Array.from(supportersByRefreshRates.entries());
 
-    const specialDiscordUserIds: string[] = [];
+    const specialDiscordUserIds: string[] = refreshRates.flatMap((d) => d[1]);
 
-    await Promise.all(
-      refreshRates.map(async ([refreshRateSeconds, discordUserIds]) => {
-        await this.userFeedModel.updateMany(
-          {
+    return [
+      ...refreshRates.map(([refreshRateSeconds, discordUserIds]) => ({
+        updateMany: {
+          filter: {
             "user.discordUserId": {
               $in: discordUserIds,
             },
@@ -239,39 +254,38 @@ export class ScheduleHandlerService {
               $ne: refreshRateSeconds,
             },
           },
-          {
+          update: {
             $set: {
               refreshRateSeconds,
             },
-          }
-        );
-
-        specialDiscordUserIds.push(...discordUserIds);
-      })
-    );
-
-    await this.userFeedModel.updateMany(
-      {
-        "user.discordUserId": {
-          $nin: specialDiscordUserIds,
+          },
         },
-        refreshRateSeconds: {
-          $ne: this.defaultRefreshRateSeconds,
+      })),
+      {
+        updateMany: {
+          filter: {
+            "user.discordUserId": {
+              $nin: specialDiscordUserIds,
+            },
+            refreshRateSeconds: {
+              $ne: this.defaultRefreshRateSeconds,
+            },
+          },
+          update: {
+            $set: {
+              refreshRateSeconds: this.defaultRefreshRateSeconds,
+            },
+          },
         },
       },
-      {
-        $set: {
-          refreshRateSeconds: this.defaultRefreshRateSeconds,
-        },
-      }
-    );
+    ];
   }
 
-  async syncMaxDailyArticles(
+  getSyncMaxDailyArticlesWriteDocs(
     benefits: Awaited<
       ReturnType<typeof this.supportersService.getBenefitsOfAllDiscordUsers>
     >
-  ) {
+  ): UserFeedBulkWriteDocument[] {
     const validSupporters = benefits.filter(({ isSupporter }) => isSupporter);
 
     const supportersByMaxDailyArticles = new Map<number, string[]>();
@@ -291,12 +305,14 @@ export class ScheduleHandlerService {
 
     const maxDailyArticles = Array.from(supportersByMaxDailyArticles.entries());
 
-    const specialDiscordUserIds: string[] = [];
+    const specialDiscordUserIds: string[] = maxDailyArticles.flatMap(
+      (d) => d[1]
+    );
 
-    await Promise.all(
-      maxDailyArticles.map(async ([maxDailyArticles, discordUserIds]) => {
-        await this.userFeedModel.updateMany(
-          {
+    return [
+      ...maxDailyArticles.map(([maxDailyArticles, discordUserIds]) => ({
+        updateMany: {
+          filter: {
             "user.discordUserId": {
               $in: discordUserIds,
             },
@@ -304,31 +320,30 @@ export class ScheduleHandlerService {
               $ne: maxDailyArticles,
             },
           },
-          {
+          update: {
             $set: {
               maxDailyArticles,
             },
-          }
-        );
-
-        specialDiscordUserIds.push(...discordUserIds);
-      })
-    );
-
-    await this.userFeedModel.updateMany(
-      {
-        "user.discordUserId": {
-          $nin: specialDiscordUserIds,
+          },
         },
-        maxDailyArticles: {
-          $ne: this.supportersService.maxDailyArticlesDefault,
+      })),
+      {
+        updateMany: {
+          filter: {
+            "user.discordUserId": {
+              $nin: specialDiscordUserIds,
+            },
+            maxDailyArticles: {
+              $ne: this.supportersService.maxDailyArticlesDefault,
+            },
+          },
+          update: {
+            $set: {
+              maxDailyArticles: this.supportersService.maxDailyArticlesDefault,
+            },
+          },
         },
       },
-      {
-        $set: {
-          maxDailyArticles: this.supportersService.maxDailyArticlesDefault,
-        },
-      }
-    );
+    ];
   }
 }

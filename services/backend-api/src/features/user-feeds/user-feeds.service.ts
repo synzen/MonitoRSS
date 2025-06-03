@@ -9,7 +9,6 @@ import {
 } from "../feeds/exceptions";
 import { FeedsService } from "../feeds/feeds.service";
 import { UserFeed, UserFeedDocument, UserFeedModel } from "./entities";
-import { chunk } from "lodash";
 import { SupportersService } from "../supporters/supporters.service";
 import {
   DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
@@ -91,7 +90,7 @@ const badUserFeedCodes = Object.values(UserFeedDisabledCode).filter(
 );
 const feedConnectionTypeKeys = Object.values(FeedConnectionTypeEntityKey);
 
-type UserFeedBulkWriteDocument = Parameters<
+export type UserFeedBulkWriteDocument = Parameters<
   UserFeedModel["bulkWrite"]
 >[0][number];
 
@@ -1671,20 +1670,24 @@ export class UserFeedsService {
       refreshRateSeconds,
     });
 
+    const allWriteDocs = [...enforceWebhookDocs, ...enforceRefreshRateDocs];
+
     if (isSupporter) {
-      await this.enforceSupporterLimits({
+      const docs = await this.enforceSupporterLimits({
         enforcementType: "single-user",
         discordUserId,
         maxUserFeeds,
       });
+
+      allWriteDocs.push(...docs);
     } else {
-      await this.enforceNonSupporterLimits({
+      const docs = await this.enforceNonSupporterLimits({
         enforcementType: "single-user",
         discordUserId,
       });
-    }
 
-    const allWriteDocs = [...enforceWebhookDocs, ...enforceRefreshRateDocs];
+      allWriteDocs.push(...docs);
+    }
 
     if (allWriteDocs.length > 0) {
       await this.userFeedModel.bulkWrite(allWriteDocs);
@@ -1711,16 +1714,24 @@ export class UserFeedsService {
       supporterLimits,
     });
 
-    await this.enforceNonSupporterLimits({
-      enforcementType: "all-users",
-      supporterDiscordUserIds,
-    });
-    await this.enforceSupporterLimits({
-      enforcementType: "all-users",
-      supporterLimits,
-    });
+    const [enforceNonSupporterLimitDocs, enforceSupporterLimitDocs] =
+      await Promise.all([
+        this.enforceNonSupporterLimits({
+          enforcementType: "all-users",
+          supporterDiscordUserIds,
+        }),
+        this.enforceSupporterLimits({
+          enforcementType: "all-users",
+          supporterLimits,
+        }),
+      ]);
 
-    const writeDocs = [...enforceWebhookDocs, ...enforceRefreshRateDocs];
+    const writeDocs = [
+      ...enforceWebhookDocs,
+      ...enforceRefreshRateDocs,
+      ...enforceSupporterLimitDocs,
+      ...enforceNonSupporterLimitDocs,
+    ];
 
     if (writeDocs.length > 0) {
       await this.userFeedModel.bulkWrite(writeDocs);
@@ -1737,10 +1748,9 @@ export class UserFeedsService {
           enforcementType: "single-user";
           discordUserId: string;
         }
-  ) {
+  ): Promise<UserFeedBulkWriteDocument[]> {
     const defaultMaxUserFeeds = this.supportersService.defaultMaxUserFeeds;
 
-    // Handle non-supporter feed disabling first
     const usersWithPotentialFeedsToDisable = await this.userFeedModel
       .aggregate([
         {
@@ -1754,89 +1764,15 @@ export class UserFeedsService {
           },
         },
         {
-          $group: {
-            _id: "$user.discordUserId",
-            enabledCount: {
-              $sum: {
-                $cond: [
-                  {
-                    $not: [
-                      {
-                        $in: [
-                          "$disabledCode",
-                          DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
-                        ],
-                      },
-                    ],
-                  },
-                  1,
-                  0,
-                ],
-              },
-            },
-          },
-        },
-        {
-          $match: {
-            enabledCount: {
-              $gt: defaultMaxUserFeeds,
-            },
-          },
-        },
-      ])
-      .cursor();
-
-    for await (const {
-      _id: discordUserId,
-      enabledCount,
-    } of usersWithPotentialFeedsToDisable) {
-      const docs = await this.userFeedModel
-        .find({
-          "user.discordUserId": discordUserId,
-          disabledCode: {
-            $nin: DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
-          },
-        })
-        .sort({
-          // Disable the oldest feeds first
-          createdAt: 1,
-        })
-        .limit(enabledCount - defaultMaxUserFeeds)
-        .select("_id")
-        .lean();
-
-      await this.userFeedModel.updateMany(
-        {
-          _id: {
-            $in: docs.map((doc) => doc._id),
-          },
-        },
-        {
-          $set: {
-            disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
-          },
-        }
-      );
-    }
-
-    // Handle feed enabling now
-    const usersToEnable = this.userFeedModel
-      .aggregate([
-        {
-          $match: {
-            "user.discordUserId":
-              opts.enforcementType === "all-users"
-                ? {
-                    $nin: opts.supporterDiscordUserIds,
-                  }
-                : opts.discordUserId,
+          $sort: {
+            createdAt: 1,
           },
         },
         {
           $group: {
             _id: "$user.discordUserId",
-            disabledCount: {
-              $sum: {
+            disabledFeedIds: {
+              $push: {
                 $cond: [
                   {
                     $in: [
@@ -1844,13 +1780,13 @@ export class UserFeedsService {
                       [UserFeedDisabledCode.ExceededFeedLimit],
                     ],
                   },
-                  1,
-                  0,
+                  "$_id",
+                  "$$REMOVE",
                 ],
               },
             },
-            enabledCount: {
-              $sum: {
+            enabledFeedIds: {
+              $push: {
                 $cond: [
                   {
                     $not: [
@@ -1862,62 +1798,83 @@ export class UserFeedsService {
                       },
                     ],
                   },
-                  1,
-                  0,
+                  "$_id",
+                  "$$REMOVE",
                 ],
               },
-            },
-          },
-        },
-        {
-          $match: {
-            enabledCount: {
-              $lt: defaultMaxUserFeeds,
-            },
-            // We should only be enabling feeds if some of them are disabled because of the feed limit
-            disabledCount: {
-              $gt: 0,
             },
           },
         },
       ])
       .cursor();
 
-    for await (const { _id: discordUserId, enabledCount } of usersToEnable) {
-      const countToEnable = defaultMaxUserFeeds - enabledCount;
+    const arrayOfFeedIdsToDisable: Types.ObjectId[] = [];
+    const arrayOfFeedIdsToEnable: Types.ObjectId[] = [];
 
-      if (countToEnable === 0) {
-        return;
+    for await (const res of usersWithPotentialFeedsToDisable) {
+      const disabledFeedIds = res.disabledFeedIds as Types.ObjectId[];
+      const enabledFeedIds = res.enabledFeedIds as Types.ObjectId[];
+
+      const enabledFeedCount = enabledFeedIds.length;
+
+      if (enabledFeedCount > defaultMaxUserFeeds) {
+        const toDisable = enabledFeedIds.slice(
+          0,
+          enabledFeedCount - defaultMaxUserFeeds
+        );
+
+        arrayOfFeedIdsToDisable.push(...toDisable);
+      } else if (
+        enabledFeedCount < defaultMaxUserFeeds &&
+        disabledFeedIds.length > 0
+      ) {
+        const numberOfFeedsToEnable = defaultMaxUserFeeds - enabledFeedCount;
+        // Enable the newest ones first
+        const toEnable = disabledFeedIds.slice(
+          disabledFeedIds.length - numberOfFeedsToEnable
+        );
+
+        arrayOfFeedIdsToEnable.push(...toEnable);
       }
+    }
 
-      const docs = await this.userFeedModel
-        .find({
-          "user.discordUserId": discordUserId,
-          disabledCode: {
-            $in: UserFeedDisabledCode.ExceededFeedLimit,
+    const bulkWriteDocs: UserFeedBulkWriteDocument[] = [];
+
+    if (arrayOfFeedIdsToDisable.length > 0) {
+      bulkWriteDocs.push({
+        updateMany: {
+          filter: {
+            _id: {
+              $in: arrayOfFeedIdsToDisable,
+            },
           },
-        })
-        .sort({
-          // Re-enable the newest feeds first
-          createdAt: -1,
-        })
-        .limit(countToEnable)
-        .select("_id")
-        .lean();
-
-      await this.userFeedModel.updateMany(
-        {
-          _id: {
-            $in: docs.map((doc) => doc._id),
+          update: {
+            $set: {
+              disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+            },
           },
         },
-        {
-          $unset: {
-            disabledCode: "",
-          },
-        }
-      );
+      });
     }
+
+    if (arrayOfFeedIdsToEnable.length > 0) {
+      bulkWriteDocs.push({
+        updateMany: {
+          filter: {
+            _id: {
+              $in: arrayOfFeedIdsToEnable,
+            },
+          },
+          update: {
+            $unset: {
+              disabledCode: "",
+            },
+          },
+        },
+      });
+    }
+
+    return bulkWriteDocs;
   }
 
   private async enforceSupporterLimits(
@@ -1934,120 +1891,150 @@ export class UserFeedsService {
           discordUserId: string;
           maxUserFeeds: number;
         }
-  ) {
-    const chunks =
+  ): Promise<UserFeedBulkWriteDocument[]> {
+    const userIds =
       opts.enforcementType === "all-users"
-        ? chunk(opts.supporterLimits, 5)
-        : [
-            [
-              {
-                discordUserId: opts.discordUserId,
-                maxUserFeeds: opts.maxUserFeeds,
-              },
-            ],
-          ];
+        ? opts.supporterLimits.map((l) => l.discordUserId)
+        : [opts.discordUserId];
 
-    for (let i = 0; i < chunks.length; ++i) {
-      const chunk = chunks[i];
-
-      await Promise.all(
-        chunk.map(async ({ discordUserId, maxUserFeeds }) => {
-          const countOfFeedsForLimit = await this.userFeedModel.countDocuments({
-            "user.discordUserId": discordUserId,
-            disabledCode: {
-              $nin: DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
-            },
-          });
-
-          if (countOfFeedsForLimit === maxUserFeeds) {
-            return;
-          }
-
-          if (countOfFeedsForLimit > maxUserFeeds) {
-            logger.info(
-              `Disabling ${
-                countOfFeedsForLimit - maxUserFeeds
-              } feeds for user ${discordUserId} (limit: ${maxUserFeeds})`
-            );
-            const allowableFeedsUnderLimit = await this.userFeedModel
-              .find({
-                "user.discordUserId": discordUserId,
-                disabledCode: {
-                  $nin: DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
-                },
-              })
-              .sort({
-                // Disable the oldest feeds first
-                createdAt: 1,
-              })
-              .limit(countOfFeedsForLimit - maxUserFeeds)
-              .select("_id")
-              .lean();
-
-            await this.userFeedModel.updateMany(
-              {
-                _id: {
-                  $in: allowableFeedsUnderLimit.map((doc) => doc._id),
-                },
-              },
-              {
-                $set: {
-                  disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
-                },
-              }
-            );
-
-            return;
-          }
-
-          const enableCount = maxUserFeeds - countOfFeedsForLimit;
-
-          // Some feeds should be enabled
-          const disabledFeedCount = await this.userFeedModel.countDocuments({
-            "user.discordUserId": discordUserId,
-            disabledCode: {
-              $in: DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
-            },
-          });
-
-          if (disabledFeedCount > 0) {
-            logger.info(
-              `Enabling ${enableCount} feeds for user ${discordUserId} (limit: ${maxUserFeeds})`
-            );
-
-            const docs = await this.userFeedModel
-              .find({
-                "user.discordUserId": discordUserId,
-                disabledCode: {
-                  $in: UserFeedDisabledCode.ExceededFeedLimit,
-                },
-              })
-              .sort({
-                // Re-enable the newest feeds first
-                createdAt: -1,
-              })
-              .limit(enableCount)
-              .select("_id")
-              .lean();
-
-            await this.userFeedModel.updateMany(
-              {
-                _id: {
-                  $in: docs.map((doc) => doc._id),
-                },
-              },
-              {
-                $unset: {
-                  disabledCode: "",
-                },
-              }
-            );
-
-            return;
-          }
-        })
-      );
+    if (userIds.length === 0) {
+      return [];
     }
+
+    const feedLimitsByUserId: Record<string, number> =
+      opts.enforcementType === "all-users"
+        ? Object.fromEntries(
+            opts.supporterLimits.map(({ discordUserId, maxUserFeeds }) => [
+              discordUserId,
+              maxUserFeeds,
+            ])
+          )
+        : {
+            [opts.discordUserId]: opts.maxUserFeeds,
+          };
+
+    const aggregateResult = await this.userFeedModel
+      .aggregate([
+        {
+          $match: {
+            "user.discordUserId": {
+              $in: userIds,
+            },
+          },
+        },
+        {
+          $sort: {
+            createdAt: 1,
+          },
+        },
+        {
+          $group: {
+            _id: "$user.discordUserId",
+            disabledFeedIds: {
+              $push: {
+                $cond: [
+                  {
+                    $in: [
+                      "$disabledCode",
+                      [UserFeedDisabledCode.ExceededFeedLimit],
+                    ],
+                  },
+                  "$_id",
+                  "$$REMOVE",
+                ],
+              },
+            },
+            enabledFeedIds: {
+              $push: {
+                $cond: [
+                  {
+                    $not: [
+                      {
+                        $in: [
+                          "$disabledCode",
+                          DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
+                        ],
+                      },
+                    ],
+                  },
+                  "$_id",
+                  "$$REMOVE",
+                ],
+              },
+            },
+          },
+        },
+      ])
+      .cursor();
+
+    const arrayOfFeedIdsToDisable: Types.ObjectId[] = [];
+    const arrayOfFeedIdsToEnable: Types.ObjectId[] = [];
+    const bulkWriteDocs: UserFeedBulkWriteDocument[] = [];
+
+    for await (const res of aggregateResult) {
+      const discordUserId = res._id as string;
+      const enabledFeedIds = res.enabledFeedIds as Types.ObjectId[];
+      const disabledFeedIds = res.disabledFeedIds as Types.ObjectId[];
+      const limit = feedLimitsByUserId[discordUserId];
+
+      if (!limit) {
+        throw new Error(
+          `No feed limit found for user ${discordUserId} while enforcing limits`
+        );
+      }
+
+      const enabledFeedCount = enabledFeedIds.length;
+
+      if (enabledFeedCount > limit) {
+        const toDisable = enabledFeedIds.slice(0, enabledFeedCount - limit);
+
+        arrayOfFeedIdsToDisable.push(...toDisable);
+      } else if (enabledFeedCount < limit && disabledFeedIds.length > 0) {
+        const numberOfFeedsToEnable = limit - enabledFeedCount;
+        // Enable the newest ones first
+        const toEnable = disabledFeedIds.slice(
+          disabledFeedIds.length - numberOfFeedsToEnable
+        );
+
+        arrayOfFeedIdsToEnable.push(...toEnable);
+      }
+    }
+
+    if (arrayOfFeedIdsToDisable.length > 0) {
+      bulkWriteDocs.push({
+        updateMany: {
+          filter: {
+            _id: {
+              $in: arrayOfFeedIdsToDisable,
+            },
+          },
+          update: {
+            $set: {
+              disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+            },
+          },
+        },
+      });
+    }
+
+    if (arrayOfFeedIdsToEnable.length > 0) {
+      bulkWriteDocs.push({
+        updateMany: {
+          filter: {
+            _id: {
+              $in: arrayOfFeedIdsToEnable,
+            },
+          },
+          update: {
+            $unset: {
+              disabledCode: "",
+            },
+          },
+        },
+      });
+    }
+
+    return bulkWriteDocs;
   }
 
   private getEnforceRefreshRateWrites(

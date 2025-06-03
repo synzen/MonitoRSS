@@ -28,6 +28,7 @@ import { UserExternalCredentialStatus } from "../../common/constants/user-extern
 import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 import { randomUUID } from "crypto";
 import { getRedditUrlRegex } from "../../utils/get-reddit-url-regex";
+import { UserFeedBulkWriteDocument } from "../user-feeds/user-feeds.service";
 
 function getPrettySubscriptioNameFromKey(key: string) {
   if (key === "free") {
@@ -506,29 +507,28 @@ export class UsersService {
       ])
       .cursor();
 
-    const validLookupKeys: string[] = [];
+    const bulkWriteDocs: UserFeedBulkWriteDocument[] = [];
 
     for await (const { feedId, lookupKey } of feedIdsToUpdate) {
       if (lookupKey) {
-        validLookupKeys.push(lookupKey);
         logger.debug(`Feed ${feedId} already has a lookup key, skipping`);
         continue;
       }
 
       logger.debug(`Updating lookup key for feed ${feedId}`);
       const newLookupKey = randomUUID();
-      await this.userFeedModel.updateOne(
-        {
-          _id: feedId,
-        },
-        {
-          $set: {
-            feedRequestLookupKey: newLookupKey,
+      bulkWriteDocs.push({
+        updateOne: {
+          filter: {
+            _id: feedId,
           },
-        }
-      );
-
-      validLookupKeys.push(newLookupKey);
+          update: {
+            $set: {
+              feedRequestLookupKey: newLookupKey,
+            },
+          },
+        },
+      });
     }
 
     // Remove lookup keys as necessary
@@ -607,16 +607,23 @@ export class UsersService {
 
     for await (const { feedId } of feedIdsToRemove) {
       logger.info(`Removing lookup key for feed ${feedId}`);
-      await this.userFeedModel.updateOne(
-        {
-          _id: feedId,
-        },
-        {
-          $unset: {
-            feedRequestLookupKey: "",
+
+      bulkWriteDocs.push({
+        updateOne: {
+          filter: {
+            _id: feedId,
           },
-        }
-      );
+          update: {
+            $unset: {
+              feedRequestLookupKey: "",
+            },
+          },
+        },
+      });
+    }
+
+    if (bulkWriteDocs.length) {
+      await this.userFeedModel.bulkWrite(bulkWriteDocs);
     }
   }
 

@@ -1817,7 +1817,7 @@ describe("UserFeedsService", () => {
           },
           {
             $set: {
-              createdAt: dayjs().subtract(5, "days"),
+              createdAt: dayjs().subtract(5, "days").toDate(),
             },
           }
         );
@@ -1828,7 +1828,7 @@ describe("UserFeedsService", () => {
           },
           {
             $set: {
-              createdAt: dayjs().subtract(10, "days"),
+              createdAt: dayjs().subtract(10, "days").toDate(),
             },
           }
         );
