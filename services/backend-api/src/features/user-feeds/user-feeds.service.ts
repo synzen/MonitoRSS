@@ -446,6 +446,7 @@ export class UserFeedsService {
         await this.feedConnectionsDiscordChannelsService.cloneConnection(
           c,
           {
+            targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
             name: c.name,
             targetFeedIds: [created._id.toHexString()],
           },
@@ -529,6 +530,7 @@ export class UserFeedsService {
       await this.feedConnectionsDiscordChannelsService.cloneConnection(
         c,
         {
+          targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
           name: c.name,
           targetFeedIds: [newFeedId.toHexString()],
         },

@@ -45,6 +45,7 @@ import {
   GetFeedDiscordChannelConnectionPipe,
   GetFeedDiscordChannelConnectionPipeOutput,
 } from "./pipes";
+import { UserFeedTargetFeedSelectionType } from "../user-feeds/constants/target-feed-selection-type.type";
 
 @Controller("user-feeds/:feedId/connections")
 @UseGuards(DiscordOAuth2Guard)
@@ -198,7 +199,11 @@ export class FeedConnectionsDiscordChannelsController {
   ) {
     const result = await this.service.cloneConnection(
       connection,
-      data,
+      {
+        ...data,
+        targetFeedSelectionType:
+          data.targetFeedSelectionType || UserFeedTargetFeedSelectionType.All,
+      },
       access_token,
       discordUserId
     );

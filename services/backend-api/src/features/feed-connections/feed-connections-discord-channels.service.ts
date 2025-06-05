@@ -357,7 +357,12 @@ export class FeedConnectionsDiscordChannelsService {
       targetFeedIds,
       targetFeedSelectionType,
       targetFeedSearch,
-    }: CreateDiscordChannelConnectionCloneInputDto,
+    }: Omit<
+      CreateDiscordChannelConnectionCloneInputDto,
+      "targetFeedSelectionType"
+    > & {
+      targetFeedSelectionType: UserFeedTargetFeedSelectionType;
+    },
     userAccessToken: string,
     userDiscordUserId: string
   ) {
