@@ -1,6 +1,5 @@
 /* eslint-disable no-await-in-loop */
 import {
-  Alert,
   AlertDescription,
   AlertIcon,
   Box,
@@ -40,6 +39,7 @@ import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
+  Alert,
 } from "@chakra-ui/react";
 import { ArrowLeftIcon, CheckIcon, CloseIcon, ExternalLinkIcon, TimeIcon } from "@chakra-ui/icons";
 import { RefObject, useCallback, useContext, useEffect, useRef, useState } from "react";
@@ -51,8 +51,10 @@ import { useCreateUserFeed, useUserFeeds } from "../features/feed";
 import { useCreateUserFeedUrlValidation } from "../features/feed/hooks/useCreateUserFeedUrlValidation";
 import { useDiscordUserMe, useUserMe } from "../features/discordUser";
 import { PricingDialogContext } from "../contexts";
+import { SourceFeedContext, SourceFeedProvider } from "../contexts/SourceFeedContext";
 import { useCreateUserFeedDeduplicatedUrls } from "../features/feed/hooks/useCreateUserFeedDeduplicatedUrls";
 import { notifyInfo } from "../utils/notifyInfo";
+import { SourceFeedSelector } from "../components/SourceFeedSelector";
 
 interface RowData {
   url: string;
@@ -231,52 +233,59 @@ const UploadProgressView = ({
   const isInProgress = firstPendingIndex > -1;
   const hasCompleted = !isInProgress;
 
-  const fetchUrl = useCallback(async (url: string) => {
-    const rowData: RowData = {
-      status: "pending",
-      url,
-    };
+  // Access the source feed context
+  const { sourceFeed } = useContext(SourceFeedContext);
 
-    try {
-      const {
-        result: { resolvedToUrl },
-      } = await createUrlValidation({
-        details: {
-          url,
-        },
-      });
+  const fetchUrl = useCallback(
+    async (url: string) => {
+      const rowData: RowData = {
+        status: "pending",
+        url,
+      };
 
-      if (resolvedToUrl) {
-        rowData.alternateUrl = resolvedToUrl;
-        rowData.status = "prompt-url-change";
-      } else {
+      try {
         const {
-          result: { title, id },
-        } = await createUserFeed({
+          result: { resolvedToUrl },
+        } = await createUrlValidation({
           details: {
             url,
           },
         });
 
-        rowData.title = title;
-        rowData.status = "success";
-        rowData.controlPaneLink = pages.userFeed(id);
-      }
-    } catch (err) {
-      rowData.status = "failed";
-      rowData.error = (err as Error).message;
-    }
+        if (resolvedToUrl) {
+          rowData.alternateUrl = resolvedToUrl;
+          rowData.status = "prompt-url-change";
+        } else {
+          const {
+            result: { title, id },
+          } = await createUserFeed({
+            details: {
+              url,
+              sourceFeedId: sourceFeed?.id,
+            },
+          });
 
-    setAllResults((prev) =>
-      prev.map((r) => {
-        if (r.url === url) {
-          return rowData;
+          rowData.title = title;
+          rowData.status = "success";
+          rowData.controlPaneLink = pages.userFeed(id);
         }
+      } catch (err) {
+        rowData.status = "failed";
+        rowData.error = (err as Error).message;
+      }
 
-        return r;
-      })
-    );
-  }, []);
+      setAllResults((prev) =>
+        prev.map((r) => {
+          if (r.url === url) {
+            return rowData;
+          }
+
+          return r;
+        })
+      );
+    },
+    [createUrlValidation, createUserFeed, sourceFeed?.id]
+  );
 
   useEffect(() => {
     if (firstPendingIndex === -1) {
@@ -498,18 +507,14 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
       return;
     }
 
-    if (urls.length > remainingFeedsAllowed) {
-      setError("WILL_EXCEED_LIMIT");
-
-      return;
-    }
-
     if (ignoreExisting) {
       try {
         const {
           result: { urls: deduplicatedUrls },
         } = await deduplicateUrls({
-          details: { urls },
+          details: {
+            urls,
+          },
         });
 
         onSubmitted(deduplicatedUrls);
@@ -706,44 +711,64 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
               </Accordion>
             </Stack>
           </Stack>
-          <FormControl isInvalid={error === "WILL_EXCEED_LIMIT" || error === "EMPTY"} isRequired>
+          <FormControl isInvalid={error === "EMPTY"} isRequired>
             <FormLabel>RSS Feed Links</FormLabel>
+            <FormHelperText mb={3}>
+              Add one RSS feed link per line. Feed titles will be automatically generated. Duplicate
+              links will be ignored.
+            </FormHelperText>
             <AutoResizeTextarea
               aria-invalid={!!error}
               bg="gray.900"
               minRows={10}
               onChange={onChange}
             />
+            <Checkbox
+              mt={2}
+              w="100%"
+              onChange={(e) => setIgnoreExisting(e.target.checked)}
+              py={3}
+              px={4}
+              isRequired={false}
+              borderStyle="solid"
+              borderWidth={1}
+              borderColor={ignoreExisting ? "blue.300" : "whiteAlpha.300"}
+              borderRadius="md"
+              bg="gray.900"
+            >
+              <Box ml={2}>
+                <Text>Ignore feed links that are already added</Text>
+                <Text fontSize="sm" color="gray.400">
+                  If any of the input links have the same link as any of your existing feeds, they
+                  will be ignored.
+                </Text>
+              </Box>
+            </Checkbox>
+            {/* <Checkbox onChange={(e) => setIgnoreExisting(e.target.checked)}>
+              <Box ml={2}>
+                <Text>Ignore feed links that that are the same link as any existing feeds</Text>
+              </Box>
+            </Checkbox> */}
             <FormErrorMessage>
               {error === "EMPTY" && "At least one feed link is required"}
-              {error === "WILL_EXCEED_LIMIT" &&
+              {/* {error === "WILL_EXCEED_LIMIT" &&
                 `You can only add ${remainingFeedsAllowed} more feeds with your current limits. You are attempting to add ${
                   urls?.length || 0
-                } feeds.`}
+                } feeds.`} */}
             </FormErrorMessage>
-            <FormHelperText>
-              Add one RSS feed link per line. Feed titles will be automatically generated. Duplicate
-              links will be ignored.
-            </FormHelperText>
           </FormControl>
-          <Checkbox
-            onChange={(e) => setIgnoreExisting(e.target.checked)}
-            p={4}
-            borderStyle="solid"
-            borderWidth={1}
-            borderColor={ignoreExisting ? "blue.300" : "whiteAlpha.300"}
-            borderRadius="md"
-            bg="gray.900"
-          >
-            <Box ml={2}>
-              <Text>Ignore feeds that are already added</Text>
-              <Text fontSize="sm" color="gray.400">
-                If any of the input links have the same link as any of your existing feeds, they
-                will be ignored.
+          <Stack spacing={4}>
+            <Box>
+              <Text>Source Feed</Text>
+              <Text color="whiteAlpha.700">
+                Optionally copy settings from an existing feed that will be applied to the new
+                feeds.
               </Text>
             </Box>
-          </Checkbox>
-          {/* </Box> */}
+            <Box>
+              <SourceFeedSelector />
+            </Box>
+          </Stack>
           {error === "WILL_EXCEED_LIMIT" && (
             <Alert status="error">
               <AlertIcon />
@@ -817,16 +842,18 @@ const AddUserFeeds = () => {
   }, [urls.length]);
 
   return (
-    <Box>
-      <BoxConstrained.Wrapper justifyContent="flex-start" height="100%" overflow="visible">
-        <BoxConstrained.Container paddingTop={6} spacing={6} height="100%" mb={12}>
-          {urls.length === 0 && <AddFormView onSubmitted={setUrls} />}
-          {urls.length > 0 && (
-            <UploadProgressView urls={urls} onClickAddMoreFeeds={onClickAddMoreFeeds} />
-          )}
-        </BoxConstrained.Container>
-      </BoxConstrained.Wrapper>
-    </Box>
+    <SourceFeedProvider>
+      <Box>
+        <BoxConstrained.Wrapper justifyContent="flex-start" height="100%" overflow="visible">
+          <BoxConstrained.Container paddingTop={6} spacing={6} height="100%" mb={12}>
+            {urls.length === 0 && <AddFormView onSubmitted={setUrls} />}
+            {urls.length > 0 && (
+              <UploadProgressView urls={urls} onClickAddMoreFeeds={onClickAddMoreFeeds} />
+            )}
+          </BoxConstrained.Container>
+        </BoxConstrained.Wrapper>
+      </Box>
+    </SourceFeedProvider>
   );
 };
 

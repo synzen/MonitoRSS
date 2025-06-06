@@ -12,5 +12,5 @@ export class CreateUserFeedInputDto {
 
   @IsString()
   @IsOptional()
-  inheritSettingsFromFeedId?: string;
+  sourceFeedId?: string;
 }

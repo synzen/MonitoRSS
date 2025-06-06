@@ -6,6 +6,7 @@ export interface CreateUserFeedInput {
   details: {
     title?: string;
     url: string;
+    sourceFeedId?: string;
   };
 }
 

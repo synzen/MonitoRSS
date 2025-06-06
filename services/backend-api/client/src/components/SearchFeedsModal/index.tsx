@@ -253,7 +253,7 @@ export const SearchFeedsModal = () => {
                   {fetchStatus === "idle" && allFeeds.length === LIMIT && (
                     <Center>
                       <Text color="whiteAlpha.700" fontSize="sm" mt={2}>
-                        Only the first {LIMIT} results are shown. Refine your search to better
+                        Only the first {LIMIT} results are shown. Refine your search for better
                         results.
                       </Text>
                     </Center>

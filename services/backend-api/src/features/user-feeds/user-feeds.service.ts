@@ -373,7 +373,7 @@ export class UserFeedsService {
       discordUserId: string;
       userAccessToken: string;
     },
-    { title, url, inheritSettingsFromFeedId }: CreateUserFeedInputDto
+    { title, url, sourceFeedId }: CreateUserFeedInputDto
   ) {
     const [
       { maxUserFeeds, maxDailyArticles, refreshRateSeconds },
@@ -382,19 +382,19 @@ export class UserFeedsService {
     ] = await Promise.all([
       this.supportersService.getBenefitsOfDiscordUser(discordUserId),
       this.usersService.getOrCreateUserByDiscordId(discordUserId),
-      inheritSettingsFromFeedId
+      sourceFeedId
         ? this.userFeedModel
             .findOne({
-              _id: new Types.ObjectId(inheritSettingsFromFeedId),
+              _id: new Types.ObjectId(sourceFeedId),
               ...generateUserFeedOwnershipFilters(discordUserId),
             })
             .lean()
         : null,
     ]);
 
-    if (inheritSettingsFromFeedId && !sourceFeedToCopyFrom) {
+    if (sourceFeedId && !sourceFeedToCopyFrom) {
       throw new SourceFeedNotFoundException(
-        `Feed with ID ${inheritSettingsFromFeedId} not found for user ${discordUserId}`
+        `Feed with ID ${sourceFeedId} not found for user ${discordUserId}`
       );
     }
 
@@ -424,6 +424,7 @@ export class UserFeedsService {
 
     const created = await this.userFeedModel.create({
       ...propertiesToCopy,
+      _id: new Types.ObjectId(),
       title: title || feedTitle || "Untitled Feed",
       url: finalUrl,
       inputUrl: url,
