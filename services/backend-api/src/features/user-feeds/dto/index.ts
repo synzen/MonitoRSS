@@ -14,3 +14,7 @@ export * from "./create-user-feed-management-invite-input.dto";
 export * from "./create-user-feed-clone-input.dto";
 export * from "./get-user-feed-article-properties-input.dto";
 export * from "./get-user-feed-delivery-logs-input.dto";
+export * from "./get-user-feed-tags-output.dto";
+export * from "./update-user-feed-tag-input.dto";
+export * from "./get-user-feed-tag-output.dto";
+export * from "./create-user-feed-tag-input.dto";
