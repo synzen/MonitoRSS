@@ -8,7 +8,12 @@ import {
   FeedLimitReachedException,
 } from "../feeds/exceptions";
 import { FeedsService } from "../feeds/feeds.service";
-import { UserFeed, UserFeedDocument, UserFeedModel } from "./entities";
+import {
+  UserFeed,
+  UserFeedDocument,
+  UserFeedModel,
+  UserFeedWithTags,
+} from "./entities";
 import { SupportersService } from "../supporters/supporters.service";
 import {
   DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
@@ -81,6 +86,7 @@ import { generateUserFeedOwnershipFilters } from "./utils/get-user-feed-ownershi
 import { generateUserFeedSearchFilters } from "./utils/get-user-feed-search-filters.utils";
 import { UserFeedTargetFeedSelectionType } from "./constants/target-feed-selection-type.type";
 import { SourceFeedNotFoundException } from "./exceptions/source-feed-not-found.exception";
+import { getUserFeedTagLookupAggregateStage } from "./constants/user-feed-tag-lookup-aggregate-stage.constants";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual
@@ -130,7 +136,7 @@ export class UserFeedsService {
     private readonly usersService: UsersService
   ) {}
 
-  async formatForHttpResponse(feed: UserFeed, discordUserId: string) {
+  async formatForHttpResponse(feed: UserFeedWithTags, discordUserId: string) {
     const discordChannelConnections: CreateDiscordChannelConnectionOutputDto[] =
       feed.connections.discordChannels.map((con) => ({
         id: con.id.toHexString(),
@@ -231,6 +237,7 @@ export class UserFeedsService {
         updatedAt: feed.updatedAt.toISOString(),
         formatOptions: feed.formatOptions,
         dateCheckOptions: feed.dateCheckOptions,
+        userTags: feed.userTags,
         refreshRateSeconds:
           feed.refreshRateSeconds ||
           (
@@ -877,7 +884,8 @@ export class UserFeedsService {
   }
 
   async getFeedsByUser(
-    userId: string,
+    userId: Types.ObjectId,
+    discordUserId: string,
     { limit = 10, offset = 0, search, sort, filters }: GetUserFeedsInputDto
   ): Promise<
     Array<{
@@ -900,7 +908,7 @@ export class UserFeedsService {
     const sortKey: string = sortSplit[sortSplit.length - 1];
 
     const aggregateResults = await this.userFeedModel.aggregate([
-      ...this.generateGetFeedsAggregatePipeline(userId, {
+      ...this.generateGetFeedsAggregatePipeline(discordUserId, userId, {
         search,
         filters,
       }),
@@ -927,6 +935,7 @@ export class UserFeedsService {
           computedStatus: 1,
           legacyFeedId: 1,
           ownedByUser: 1,
+          userTags: 1,
         },
       },
     ]);
@@ -935,11 +944,12 @@ export class UserFeedsService {
   }
 
   async getFeedCountByUser(
-    userId: string,
+    userId: Types.ObjectId,
+    discordUserId: string,
     { search, filters }: Omit<GetUserFeedsInputDto, "offset" | "limit" | "sort">
   ) {
     const aggregateResults = await this.userFeedModel.aggregate([
-      ...this.generateGetFeedsAggregatePipeline(userId, {
+      ...this.generateGetFeedsAggregatePipeline(discordUserId, userId, {
         search,
         filters,
       }),
@@ -1451,7 +1461,8 @@ export class UserFeedsService {
   }
 
   private generateGetFeedsAggregatePipeline(
-    userId: string,
+    discordUserId: string,
+    userId: Types.ObjectId,
     {
       search,
       filters,
@@ -1462,12 +1473,12 @@ export class UserFeedsService {
   ) {
     const pipeline: PipelineStage[] = [
       {
-        $match: generateUserFeedOwnershipFilters(userId),
+        $match: generateUserFeedOwnershipFilters(discordUserId),
       },
       {
         $addFields: {
           ownedByUser: {
-            $eq: ["$user.discordUserId", userId],
+            $eq: ["$user.discordUserId", discordUserId],
           },
           computedStatus: {
             $cond: {
@@ -1569,6 +1580,22 @@ export class UserFeedsService {
       }
 
       pipeline.push(toPush);
+    }
+
+    pipeline.push(getUserFeedTagLookupAggregateStage(userId));
+
+    if (filters?.userTagIds?.length) {
+      pipeline.push({
+        $match: {
+          userTags: {
+            $elemMatch: {
+              _id: {
+                $in: filters.userTagIds.map((id) => new Types.ObjectId(id)),
+              },
+            },
+          },
+        },
+      });
     }
 
     return pipeline;

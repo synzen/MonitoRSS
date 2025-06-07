@@ -1,9 +1,10 @@
 import { ModelDefinition, Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Document, Types, Model } from "mongoose";
+import { Document, Types, Model, Schema as MongooseSchema } from "mongoose";
 
 @Schema({
   timestamps: true,
   autoIndex: true,
+  collection: "user_feed_tags",
 })
 export class UserFeedTag {
   _id: Types.ObjectId;
@@ -12,6 +13,25 @@ export class UserFeedTag {
     required: true,
   })
   label: string;
+
+  @Prop({
+    type: String,
+  })
+  color?: string;
+
+  @Prop({
+    type: [MongooseSchema.Types.ObjectId],
+    required: true,
+    index: true,
+  })
+  feedIds: Types.ObjectId[];
+
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    required: true,
+    index: true,
+  })
+  userId: Types.ObjectId;
 
   createdAt: Date;
   updatedAt: Date;

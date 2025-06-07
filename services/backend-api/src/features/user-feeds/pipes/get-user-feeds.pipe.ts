@@ -18,22 +18,29 @@ import {
   UserFeedManagerType,
 } from "../../user-feed-management-invites/constants";
 import { InjectModel } from "@nestjs/mongoose";
-import { UserFeed, UserFeedModel } from "../entities";
+import { UserFeed, UserFeedModel, UserFeedWithTags } from "../entities";
 import { ConfigService } from "@nestjs/config";
 import { UserFeedConnection } from "../types";
 import { UsersService } from "../../users/users.service";
+import { getUserFeedTagLookupAggregateStage } from "../constants/user-feed-tag-lookup-aggregate-stage.constants";
 
 interface PipeOptions {
-  userTypes: UserFeedManagerType[];
+  userTypes?: UserFeedManagerType[];
+  include?: ["tags"];
 }
 
 export type GetUserFeedsPipeOutput = Array<{
-  feed: UserFeed;
+  feed: UserFeedWithTags;
 }>;
 
+const DEFAULT_USER_TYPES = [
+  UserFeedManagerType.Creator,
+  UserFeedManagerType.SharedManager,
+];
+
 const createGetUserFeedsPipe = (
-  { userTypes }: PipeOptions = {
-    userTypes: [UserFeedManagerType.Creator, UserFeedManagerType.SharedManager],
+  { userTypes: inputUserTypes, include }: PipeOptions = {
+    userTypes: DEFAULT_USER_TYPES,
   }
 ): Type<PipeTransform> => {
   class GetUserFeedsPipe implements PipeTransform {
@@ -69,16 +76,33 @@ const createGetUserFeedsPipe = (
         throw new UnauthorizedException();
       }
 
-      const [allFound, user] = await Promise.all([
-        this.userFeedModel
-          .find({
+      const user = await this.usersService.getOrCreateUserByDiscordId(
+        accessToken.discord.id
+      );
+
+      const allFound: UserFeedWithTags[] = await this.userFeedModel.aggregate([
+        {
+          $match: {
             _id: {
-              $in: feedIds,
+              $in: feedIds.map((id) => new Types.ObjectId(id)),
             },
-          })
-          .lean(),
-        this.usersService.getOrCreateUserByDiscordId(accessToken.discord.id),
+          },
+        },
+        ...(include?.includes("tags")
+          ? [getUserFeedTagLookupAggregateStage(user._id)]
+          : []),
       ]);
+
+      // const [allFound, user] = await Promise.all([
+      //   this.userFeedModel
+      //     .find({
+      //       _id: {
+      //         $in: feedIds,
+      //       },
+      //     })
+      //     .lean(),
+      //   this.usersService.getOrCreateUserByDiscordId(accessToken.discord.id),
+      // ]);
 
       const adminIds = this.configService.get<string[]>(
         "BACKEND_API_ADMIN_USER_IDS"
@@ -89,6 +113,8 @@ const createGetUserFeedsPipe = (
       if (allFound.length !== feedIds.length) {
         throw new NotFoundException(`Some or all feeds do not exist`);
       }
+
+      const userTypes = inputUserTypes || DEFAULT_USER_TYPES;
 
       const filtered = (
         await Promise.all(

@@ -36,9 +36,14 @@ import { UserFeed, UserFeedFeature, UserFeedModel } from "./entities";
 import { FeedNotFailedException } from "./exceptions/feed-not-failed.exception";
 import { UserFeedDisabledCode, UserFeedHealthStatus } from "./types";
 import { UserFeedsService } from "./user-feeds.service";
-import { UserFeature } from "../users/entities/user.entity";
+import { User, UserFeature, UserModel } from "../users/entities/user.entity";
 import { FeedConnectionsDiscordChannelsService } from "../feed-connections/feed-connections-discord-channels.service";
 import { UsersService } from "../users/users.service";
+import {
+  UserFeedTag,
+  UserFeedTagFeature,
+  UserFeedTagModel,
+} from "./entities/user-feed-tag.entity";
 
 const createMockDiscordChannelConnection: (
   overrideDetails?: Omit<Partial<DiscordChannelConnection>, "details"> & {
@@ -80,6 +85,8 @@ const mockDiscordWebhookConnection: DiscordWebhookConnection = {
 describe("UserFeedsService", () => {
   let service: UserFeedsService;
   let userFeedModel: UserFeedModel;
+  let userModel: UserModel;
+  let userFeedTagModel: UserFeedTagModel;
   let userFeedLimitOverrideModel: UserFeedLimitOverrideModel;
   let feedFetcherService: FeedFetcherService;
   let feedsService: FeedsService;
@@ -127,6 +134,7 @@ describe("UserFeedsService", () => {
         MongooseTestModule.forRoot(),
         MongooseModule.forFeature([
           FeedFeature,
+          UserFeedTagFeature,
           LegacyFeedConversionJobFeature,
           UserFeedFeature,
           UserFeedLimitOverrideFeature,
@@ -158,6 +166,10 @@ describe("UserFeedsService", () => {
 
     service = module.get<UserFeedsService>(UserFeedsService);
     userFeedModel = module.get<UserFeedModel>(getModelToken(UserFeed.name));
+    userFeedTagModel = module.get<UserFeedTagModel>(
+      getModelToken(UserFeedTag.name)
+    );
+    userModel = module.get<UserModel>(getModelToken(User.name));
     userFeedLimitOverrideModel = module.get<UserFeedLimitOverrideModel>(
       getModelToken(UserFeedLimitOverride.name)
     );
@@ -818,7 +830,11 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      const result = await service.getFeedsByUser(user.discordUserId, dto);
+      const result = await service.getFeedsByUser(
+        new Types.ObjectId(),
+        user.discordUserId,
+        dto
+      );
 
       expect(result).toHaveLength(5);
       expect(result).toEqual(
@@ -871,10 +887,14 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      const result = await service.getFeedsByUser(user.discordUserId, {
-        ...dto,
-        search: "2 here",
-      });
+      const result = await service.getFeedsByUser(
+        new Types.ObjectId(),
+        user.discordUserId,
+        {
+          ...dto,
+          search: "2 here",
+        }
+      );
 
       expect(result).toHaveLength(1);
       expect(result).toMatchObject([
@@ -882,7 +902,6 @@ describe("UserFeedsService", () => {
           _id: feed3._id,
           title: feed3.title,
           url: feed3.url,
-          user,
         },
       ]);
     });
@@ -911,10 +930,14 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      const result = await service.getFeedsByUser(user.discordUserId, {
-        ...dto,
-        search: "here",
-      });
+      const result = await service.getFeedsByUser(
+        new Types.ObjectId(),
+        user.discordUserId,
+        {
+          ...dto,
+          search: "here",
+        }
+      );
 
       expect(result).toHaveLength(1);
       expect(result).toMatchObject([
@@ -922,7 +945,6 @@ describe("UserFeedsService", () => {
           _id: feed2._id,
           title: feed2.title,
           url: feed2.url,
-          user,
         },
       ]);
     });
@@ -952,12 +974,16 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      const result = await service.getFeedsByUser(user.discordUserId, {
-        ...dto,
-        filters: {
-          disabledCodes: [UserFeedDisabledCode.Manual],
-        },
-      });
+      const result = await service.getFeedsByUser(
+        new Types.ObjectId(),
+        user.discordUserId,
+        {
+          ...dto,
+          filters: {
+            disabledCodes: [UserFeedDisabledCode.Manual],
+          },
+        }
+      );
 
       expect(result).toHaveLength(1);
       expect(result).toMatchObject([
@@ -965,7 +991,6 @@ describe("UserFeedsService", () => {
           _id: feed2._id,
           title: feed2.title,
           url: feed2.url,
-          user,
         },
       ]);
     });
@@ -974,49 +999,69 @@ describe("UserFeedsService", () => {
       const user = {
         discordUserId: "123",
       };
-      const [feed1Id, feed2Id, feed3Id, feed4Id] = [
-        new Types.ObjectId(),
-        new Types.ObjectId(),
-        new Types.ObjectId(),
-        new Types.ObjectId(),
-      ];
 
-      await userFeedModel.collection.insertMany([
+      const [feed1, feed2, feed3, feed4] = await userFeedModel.create([
         {
-          _id: feed1Id,
           title: "title1",
           url: "url1",
           user,
-          createdAt: new Date(2020),
         },
         {
-          _id: feed2Id,
           title: "title2",
           url: "url2",
           user,
-          createdAt: new Date(2021),
         },
         {
-          _id: feed3Id,
           title: "title3",
           url: "url3",
           user,
-          createdAt: new Date(2022),
         },
         {
-          _id: feed4Id,
           title: "title4",
           url: "url4",
           user,
-          createdAt: new Date(2023),
         },
       ]);
+      const feed1Id = feed1._id;
+      const feed2Id = feed2._id;
+      const feed3Id = feed3._id;
+      const feed4Id = feed4._id;
 
-      const result = await service.getFeedsByUser(user.discordUserId, {
-        ...dto,
-        limit: 1,
-        offset: 1,
-      });
+      await userFeedModel.collection.bulkWrite([
+        {
+          updateOne: {
+            filter: { _id: feed1Id },
+            update: { $set: { createdAt: dayjs("2020-01-01").toDate() } },
+          },
+        },
+        {
+          updateOne: {
+            filter: { _id: feed2Id },
+            update: { $set: { createdAt: dayjs("2021-01-01").toDate() } },
+          },
+        },
+        {
+          updateOne: {
+            filter: { _id: feed3Id },
+            update: { $set: { createdAt: dayjs("2022-01-01").toDate() } },
+          },
+        },
+        {
+          updateOne: {
+            filter: { _id: feed4Id },
+            update: { $set: { createdAt: dayjs("2023-01-01").toDate() } },
+          },
+        },
+      ]);
+      const result = await service.getFeedsByUser(
+        new Types.ObjectId(),
+        user.discordUserId,
+        {
+          ...dto,
+          limit: 1,
+          offset: 1,
+        }
+      );
 
       expect(result).toHaveLength(1);
       expect(result).toMatchObject([
@@ -1024,7 +1069,6 @@ describe("UserFeedsService", () => {
           _id: feed3Id,
           title: "title3",
           url: "url3",
-          user,
         },
       ]);
     });
@@ -1033,38 +1077,59 @@ describe("UserFeedsService", () => {
       const user = {
         discordUserId: "123",
       };
-      const [feed1Id, feed2Id, feed3Id] = [
-        new Types.ObjectId(),
-        new Types.ObjectId(),
-        new Types.ObjectId(),
-        new Types.ObjectId(),
-      ];
 
-      await userFeedModel.collection.insertMany([
+      const [feed1, feed2, feed3] = await userFeedModel.create([
         {
-          _id: feed1Id,
           title: "title1",
           url: "url1",
           user,
-          createdAt: new Date(2020),
         },
         {
-          _id: feed2Id,
           title: "title2",
           url: "url2",
           user,
-          createdAt: new Date(2021),
         },
         {
-          _id: feed3Id,
           title: "title3",
           url: "url3",
           user,
-          createdAt: new Date(2022),
         },
       ]);
 
-      const result = await service.getFeedsByUser(user.discordUserId, dto);
+      const feed1Id = feed1._id;
+      const feed2Id = feed2._id;
+      const feed3Id = feed3._id;
+
+      await userFeedModel.collection.bulkWrite([
+        {
+          updateOne: {
+            filter: { _id: feed1Id },
+            update: {
+              $set: {
+                createdAt: dayjs("2020-01-01").toDate(),
+              },
+            },
+          },
+        },
+        {
+          updateOne: {
+            filter: { _id: feed2Id },
+            update: { $set: { createdAt: dayjs("2021-01-01").toDate() } },
+          },
+        },
+        {
+          updateOne: {
+            filter: { _id: feed3Id },
+            update: { $set: { createdAt: dayjs("2022-01-01").toDate() } },
+          },
+        },
+      ]);
+
+      const result = await service.getFeedsByUser(
+        new Types.ObjectId(),
+        user.discordUserId,
+        dto
+      );
 
       expect(result).toHaveLength(3);
       expect(result).toMatchObject([
@@ -1072,19 +1137,16 @@ describe("UserFeedsService", () => {
           _id: feed3Id,
           title: "title3",
           url: "url3",
-          user,
         },
         {
           _id: feed2Id,
           title: "title2",
           url: "url2",
-          user,
         },
         {
           _id: feed1Id,
           title: "title1",
           url: "url1",
-          user,
         },
       ]);
     });
@@ -1127,19 +1189,27 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      const result = await service.getFeedsByUser(user.discordUserId, {
-        ...dto,
-        filters: {
-          computedStatuses: [UserFeedComputedStatus.RequiresAttention],
-        },
-      });
+      const result = await service.getFeedsByUser(
+        new Types.ObjectId(),
+        user.discordUserId,
+        {
+          ...dto,
+          filters: {
+            computedStatuses: [UserFeedComputedStatus.RequiresAttention],
+          },
+        }
+      );
 
-      const retryingResult = await service.getFeedsByUser(user.discordUserId, {
-        ...dto,
-        filters: {
-          computedStatuses: [UserFeedComputedStatus.Retrying],
-        },
-      });
+      const retryingResult = await service.getFeedsByUser(
+        new Types.ObjectId(),
+        user.discordUserId,
+        {
+          ...dto,
+          filters: {
+            computedStatuses: [UserFeedComputedStatus.Retrying],
+          },
+        }
+      );
 
       expect(result).toHaveLength(1);
       expect(result).toMatchObject([
@@ -1151,6 +1221,62 @@ describe("UserFeedsService", () => {
       expect(retryingResult).toMatchObject([
         {
           title: "title4",
+        },
+      ]);
+    });
+
+    it("works with user feed tag filters", async () => {
+      const user = {
+        discordUserId: "123",
+      };
+      const [feed1, feed2, feed3] = await userFeedModel.create([
+        {
+          title: "title1",
+          url: "url",
+          user,
+        },
+        {
+          title: "title2",
+          url: "url HERE",
+          user: {
+            discordUserId: user.discordUserId + "-other",
+          },
+        },
+        {
+          title: "title3",
+          url: "url HERE",
+          user,
+        },
+      ]);
+      const { _id: userId } = await userModel.create({
+        discordUserId: user.discordUserId,
+      });
+
+      const [, userFeedTag2] = await userFeedTagModel.create([
+        {
+          label: "tag1",
+          feedIds: [feed1._id, feed2._id],
+          userId: new Types.ObjectId(),
+        },
+        {
+          label: "tag2",
+          feedIds: [feed2._id, feed3._id],
+          userId: userId,
+        },
+      ]);
+
+      const result = await service.getFeedsByUser(userId, user.discordUserId, {
+        ...dto,
+        filters: {
+          userTagIds: [userFeedTag2._id.toHexString()],
+        },
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result).toMatchObject([
+        {
+          _id: feed3._id,
+          title: feed3.title,
         },
       ]);
     });
@@ -1239,12 +1365,16 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      const result = await service.getFeedsByUser(user.discordUserId, {
-        ...dto,
-        filters: {
-          connectionDisabledCodes: [FeedConnectionDisabledCode.Manual],
-        },
-      });
+      const result = await service.getFeedsByUser(
+        new Types.ObjectId(),
+        user.discordUserId,
+        {
+          ...dto,
+          filters: {
+            connectionDisabledCodes: [FeedConnectionDisabledCode.Manual],
+          },
+        }
+      );
 
       expect(result).toHaveLength(2);
       expect(result).toMatchObject([
@@ -1315,12 +1445,16 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      const result = await service.getFeedsByUser(user.discordUserId, {
-        ...dto,
-        filters: {
-          connectionDisabledCodes: [""],
-        },
-      });
+      const result = await service.getFeedsByUser(
+        new Types.ObjectId(),
+        user.discordUserId,
+        {
+          ...dto,
+          filters: {
+            connectionDisabledCodes: [""],
+          },
+        }
+      );
 
       expect(result).toHaveLength(2);
       expect(result).toMatchObject(
@@ -1358,7 +1492,11 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      const result = await service.getFeedCountByUser(user.discordUserId, dto);
+      const result = await service.getFeedCountByUser(
+        new Types.ObjectId(),
+        user.discordUserId,
+        dto
+      );
 
       expect(result).toEqual(1);
     });
@@ -1387,10 +1525,14 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      const result = await service.getFeedCountByUser(user.discordUserId, {
-        ...dto,
-        search: "3",
-      });
+      const result = await service.getFeedCountByUser(
+        new Types.ObjectId(),
+        user.discordUserId,
+        {
+          ...dto,
+          search: "3",
+        }
+      );
 
       expect(result).toEqual(1);
     });
@@ -1419,10 +1561,14 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      const result = await service.getFeedCountByUser(user.discordUserId, {
-        ...dto,
-        search: "here",
-      });
+      const result = await service.getFeedCountByUser(
+        new Types.ObjectId(),
+        user.discordUserId,
+        {
+          ...dto,
+          search: "here",
+        }
+      );
 
       expect(result).toEqual(1);
     });
@@ -1452,12 +1598,16 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      const result = await service.getFeedCountByUser(user.discordUserId, {
-        ...dto,
-        filters: {
-          disabledCodes: [UserFeedDisabledCode.Manual],
-        },
-      });
+      const result = await service.getFeedCountByUser(
+        new Types.ObjectId(),
+        user.discordUserId,
+        {
+          ...dto,
+          filters: {
+            disabledCodes: [UserFeedDisabledCode.Manual],
+          },
+        }
+      );
 
       expect(result).toEqual(1);
     });
@@ -1481,10 +1631,14 @@ describe("UserFeedsService", () => {
         },
       ]);
 
-      const result = await service.getFeedCountByUser(user.discordUserId, {
-        ...dto,
-        search: "no matches",
-      });
+      const result = await service.getFeedCountByUser(
+        new Types.ObjectId(),
+        user.discordUserId,
+        {
+          ...dto,
+          search: "no matches",
+        }
+      );
 
       expect(result).toEqual(0);
     });

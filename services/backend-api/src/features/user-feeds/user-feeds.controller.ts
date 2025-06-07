@@ -29,7 +29,6 @@ import {
   FeedExceptionFilter,
   UpdateUserFeedsExceptionFilter,
 } from "../feeds/filters";
-import { SupportersService } from "../supporters/supporters.service";
 import { UserFeedManagerType } from "../user-feed-management-invites/constants";
 import {
   CreateUserFeedCloneInput,
@@ -66,13 +65,14 @@ import { CopyUserFeedSettingsInputDto } from "./dto/copy-user-feed-settings-inpu
 import { createMultipleExceptionsFilter } from "../../common/filters/multiple-exceptions.filter";
 import { CreateUserFeedUrlValidationInputDto } from "./dto/create-user-feed-url-validation-input.dto";
 import { UserFeedTargetFeedSelectionType } from "./constants/target-feed-selection-type.type";
+import { UsersService } from "../users/users.service";
 
 @Controller("user-feeds")
 @UseGuards(DiscordOAuth2Guard)
 export class UserFeedsController {
   constructor(
     private readonly userFeedsService: UserFeedsService,
-    private readonly supportersService: SupportersService
+    private readonly usersService: UsersService
   ) {}
 
   @Post()
@@ -184,7 +184,12 @@ export class UserFeedsController {
 
   @Get("/:feedId")
   async getFeed(
-    @Param("feedId", GetUserFeedsPipe())
+    @Param(
+      "feedId",
+      GetUserFeedsPipe({
+        include: ["tags"],
+      })
+    )
     [{ feed }]: GetUserFeedsPipeOutput,
     @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken
@@ -508,9 +513,12 @@ export class UserFeedsController {
     @NestedQuery(TransformValidationPipe)
     dto: GetUserFeedsInputDto
   ): Promise<GetUserFeedsOutputDto> {
+    const { _id: userId } = await this.usersService.getOrCreateUserByDiscordId(
+      discordUserId
+    );
     const [feeds, count] = await Promise.all([
-      this.userFeedsService.getFeedsByUser(discordUserId, dto),
-      this.userFeedsService.getFeedCountByUser(discordUserId, dto),
+      this.userFeedsService.getFeedsByUser(userId, discordUserId, dto),
+      this.userFeedsService.getFeedCountByUser(userId, discordUserId, dto),
     ]);
 
     return {

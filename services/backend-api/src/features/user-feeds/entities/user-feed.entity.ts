@@ -198,3 +198,11 @@ export const UserFeedFeature: ModelDefinition = {
   name: UserFeed.name,
   schema: UserFeedSchema,
 };
+
+export type UserFeedWithTags = UserFeed & {
+  userTags?: {
+    _id: Types.ObjectId;
+    label: string;
+    color: string;
+  }[];
+};
