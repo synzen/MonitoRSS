@@ -21,14 +21,12 @@ services:
 
   mongo:
     restart: on-failure:5
-    # command: mongod --port 27017
-    # logging:
-    # driver: none
+    command: mongod --port 27017
+    logging:
+      driver: none
     image: mongo:7.0.2
     volumes:
       - "mongodb-data:/data/db"
-      - ./rs-initiate.js:/docker-entrypoint-initdb.d/rs-initiate.js
-    command: ["--replSet", "dbrs", "--bind_ip_all", "--port", "27017"]
     networks:
       - monitorss-default
 
