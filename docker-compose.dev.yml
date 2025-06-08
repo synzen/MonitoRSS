@@ -200,6 +200,7 @@ services:
       - ./.env.local
     environment:
       - NODE_ENV=local
+      - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
       - LOG_LEVEL=debug
 
   # Schedule emitter

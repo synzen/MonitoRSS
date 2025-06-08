@@ -42,6 +42,7 @@ Docker is required to easily coordinate and run multiple services at once.
 7. Run `docker compose up -d`. Make sure all containers, except those with "migration" in it, are running via `docker ps`.
    - If you run into issues with network timeouts, pass the parallel flag to only build 1 container at once: `docker compose --parallel 1 up -d`
    - Any containers ending in `-migration` do not need to be running
+   - If any containers are failing to start, troubleshoot by getting the last few logs for the container with `docker logs <container_name or ID> --tail 100`
 8. Access the control panel via http://localhost:8000
 
 #### Customize Site Domain
