@@ -18,6 +18,8 @@ services:
       retries: 20
     networks:
       - monitorss-default
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
 
   mongo:
     restart: on-failure:5
@@ -319,6 +321,7 @@ services:
 
 volumes:
   mongodb-data:
+  rabbitmq-data:
   feed-requests-postgres16-data:
   user-feeds-postgres16-data:
   feed-requests-redis-data:
