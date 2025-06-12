@@ -13,7 +13,7 @@ services:
     extends:
       file: ./docker-compose.base.yml
       service: feed-requests-redis-cache
-  
+
   rabbitmq-broker:
     extends:
       file: ./docker-compose.base.yml
@@ -23,12 +23,12 @@ services:
     extends:
       file: ./docker-compose.base.yml
       service: mongo
-  
+
   feed-requests-postgres-db:
     extends:
       file: ./docker-compose.base.yml
       service: feed-requests-postgres-db
-      
+
   user-feeds-postgres-db:
     extends:
       file: ./docker-compose.base.yml
@@ -138,9 +138,9 @@ services:
     networks:
       - monitorss-default
 
-
 volumes:
   mongodb-data:
+  rabbitmq-data:
   feed-requests-postgres16-data:
   user-feeds-postgres16-data:
   feed-requests-redis-data:

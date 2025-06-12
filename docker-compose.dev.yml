@@ -247,6 +247,7 @@ services:
 
 volumes:
   mongodb-dev-data:
+  rabbitmq-data:
   feed-requests-postgres16-data:
   user-feeds-postgres16-data:
   feed-requests-redis-data:
