@@ -568,6 +568,7 @@ export class UserFeedsService {
   }) {
     // this.userFeedModel.updateMany({})
     const setQuery: UpdateQuery<UserFeedDocument>["$set"] = {};
+    const unsetQuery: UpdateQuery<UserFeedDocument>["$unset"] = {};
 
     if (settingsToCopy.includes(UserFeedCopyableSetting.PassingComparisons)) {
       setQuery.passingComparisons = sourceFeed.passingComparisons;
@@ -600,7 +601,11 @@ export class UserFeedsService {
     }
 
     if (settingsToCopy.includes(UserFeedCopyableSetting.RefreshRate)) {
-      setQuery.userRefreshRateSeconds = sourceFeed.userRefreshRateSeconds;
+      if (sourceFeed.userRefreshRateSeconds) {
+        setQuery.userRefreshRateSeconds = sourceFeed.userRefreshRateSeconds;
+      } else {
+        unsetQuery.userRefreshRateSeconds = "";
+      }
     }
 
     const selectionTypeSelectedFilters = {
@@ -664,6 +669,7 @@ export class UserFeedsService {
 
     await this.userFeedModel.updateMany(useFilters, {
       $set: setQuery,
+      $unset: unsetQuery,
     });
   }
 
