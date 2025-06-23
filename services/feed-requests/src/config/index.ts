@@ -58,6 +58,9 @@ export default function config(): EnvironmentVariables {
       process.env.FEED_REQUESTS_RABBITMQ_PREFETCH_COUNT || '3',
     ),
     FEED_REQUESTS_SPLIT_SDK_KEY: process.env.FEED_REQUESTS_SPLIT_SDK_KEY,
+    FEED_REQUESTS_HISTORY_PERSISTENCE_MONTHS: Number(
+      process.env.FEED_REQUESTS_HISTORY_PERSISTENCE_MONTHS || '2',
+    ),
   };
 
   setGlobalDispatcher(

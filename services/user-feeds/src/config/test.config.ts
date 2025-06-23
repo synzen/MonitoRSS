@@ -25,6 +25,8 @@ export function testConfig(): EnvironmentVariables {
     USER_FEEDS_REDIS_URI:
       process.env.USER_FEEDS_REDIS_URI || "redis://localhost:6379",
     USER_FEEDS_POSTGRES_REPLICA1_URI: "",
+    USER_FEEDS_ARTICLE_PERSISTENCE_MONTHS: 2,
+    USER_FEEDS_DELIVERY_RECORD_PERSISTENCE_MONTHS: 2,
   };
 
   validateConfig(vals);

@@ -88,6 +88,9 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   FEED_REQUESTS_SPLIT_SDK_KEY?: string;
+
+  @IsNumber()
+  FEED_REQUESTS_HISTORY_PERSISTENCE_MONTHS!: number;
 }
 
 export function validateConfig(

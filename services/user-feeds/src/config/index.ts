@@ -65,6 +65,15 @@ export function config(options?: {
       (process.env.USER_FEEDS_PREFETCH_COUNT as string) || "100",
       10
     ),
+    USER_FEEDS_DELIVERY_RECORD_PERSISTENCE_MONTHS: parseInt(
+      (process.env.USER_FEEDS_DELIVERY_RECORD_PERSISTENCE_MONTHS as string) ||
+        "2",
+      10
+    ),
+    USER_FEEDS_ARTICLE_PERSISTENCE_MONTHS: parseInt(
+      (process.env.USER_FEEDS_ARTICLE_PERSISTENCE_MONTHS as string) || "12",
+      10
+    ),
   } as const;
 
   if (!options?.skipValidation) {
