@@ -116,26 +116,28 @@ async function pruneAndCreatePartitions(app: INestApplicationContext) {
       orm,
     );
 
-    const numberOfPartitionsToKeep = configService.getOrThrow<number>(
-      'FEED_REQUESTS_HISTORY_PERSISTENCE_MONTHS',
-    ); // Keep the last two partitions
-    const partitionsToDrop =
-      currentPartitions.length - numberOfPartitionsToKeep;
-    const tablesToDrop = currentPartitions.slice(0, partitionsToDrop);
+    if (currentPartitions.length > 1) {
+      const numberOfPartitionsToKeep = configService.getOrThrow<number>(
+        'FEED_REQUESTS_HISTORY_PERSISTENCE_MONTHS',
+      ); // Keep the last two partitions
+      const partitionsToDrop =
+        currentPartitions.length - numberOfPartitionsToKeep;
+      const tablesToDrop = currentPartitions.slice(0, partitionsToDrop);
 
-    if (tablesToDrop.length > 0) {
-      logger.info('Dropping old partitions for request_partitioned', {
-        tablesToDrop: tablesToDrop.map((table) => table.child),
-      });
+      if (tablesToDrop.length > 0) {
+        logger.info('Dropping old partitions for request_partitioned', {
+          tablesToDrop: tablesToDrop.map((table) => table.child),
+        });
 
-      await Promise.all(
-        tablesToDrop.map(async (table) => {
-          const tableName = `${table.parentSchema}.${table.child}`;
-          await connection.execute(`DROP TABLE IF EXISTS ${tableName};`);
-        }),
-      );
-    } else {
-      logger.debug('No old partitions to drop');
+        await Promise.all(
+          tablesToDrop.map(async (table) => {
+            const tableName = `${table.parentSchema}.${table.child}`;
+            await connection.execute(`DROP TABLE IF EXISTS ${tableName};`);
+          }),
+        );
+      } else {
+        logger.debug('No old partitions to drop');
+      }
     }
   } catch (err) {
     logger.error('Failed to prune old partitions', {

@@ -116,23 +116,26 @@ async function pruneAndCreatePartitions(app: INestApplicationContext) {
     const numberOfPartitionsToKeep = configService.getOrThrow<number>(
       "USER_FEEDS_ARTICLE_PERSISTENCE_MONTHS"
     );
-    const numberOfPartitionsToDrop =
-      currentPartitions.length - numberOfPartitionsToKeep;
 
-    const tablesToDrop = currentPartitions.slice(0, numberOfPartitionsToDrop);
+    if (currentPartitions.length > 1) {
+      const numberOfPartitionsToDrop =
+        currentPartitions.length - numberOfPartitionsToKeep;
 
-    if (tablesToDrop.length) {
-      logger.info(`Dropping partitions for feed_article_field_partitioned`, {
-        partitions: tablesToDrop.map((partition) => partition.child),
-      });
+      const tablesToDrop = currentPartitions.slice(0, numberOfPartitionsToDrop);
 
-      await Promise.all(
-        tablesToDrop.map(async (partition) => {
-          await connection.execute(
-            `DROP TABLE IF EXISTS ${partition.childSchema}.${partition.child};`
-          );
-        })
-      );
+      if (tablesToDrop.length) {
+        logger.info(`Dropping partitions for feed_article_field_partitioned`, {
+          partitions: tablesToDrop.map((partition) => partition.child),
+        });
+
+        await Promise.all(
+          tablesToDrop.map(async (partition) => {
+            await connection.execute(
+              `DROP TABLE IF EXISTS ${partition.childSchema}.${partition.child};`
+            );
+          })
+        );
+      }
     }
   } catch (err) {
     logger.error(
@@ -149,29 +152,31 @@ async function pruneAndCreatePartitions(app: INestApplicationContext) {
       orm
     );
 
-    const numberOfDeliveryPartitionsToKeep = configService.getOrThrow<number>(
-      "USER_FEEDS_DELIVERY_RECORD_PERSISTENCE_MONTHS"
-    );
-    const numberOfDeliveryPartitionsToDrop =
-      currentDeliveryPartitions.length - numberOfDeliveryPartitionsToKeep;
-
-    const deliveryTablesToDrop = currentDeliveryPartitions.slice(
-      0,
-      numberOfDeliveryPartitionsToDrop
-    );
-
-    if (deliveryTablesToDrop.length) {
-      logger.info(`Dropping partitions for delivery_record_partitioned`, {
-        partitions: deliveryTablesToDrop.map((partition) => partition.child),
-      });
-
-      await Promise.all(
-        deliveryTablesToDrop.map(async (partition) => {
-          await connection.execute(
-            `DROP TABLE IF EXISTS ${partition.childSchema}.${partition.child};`
-          );
-        })
+    if (currentDeliveryPartitions.length > 1) {
+      const numberOfDeliveryPartitionsToKeep = configService.getOrThrow<number>(
+        "USER_FEEDS_DELIVERY_RECORD_PERSISTENCE_MONTHS"
       );
+      const numberOfDeliveryPartitionsToDrop =
+        currentDeliveryPartitions.length - numberOfDeliveryPartitionsToKeep;
+
+      const deliveryTablesToDrop = currentDeliveryPartitions.slice(
+        0,
+        numberOfDeliveryPartitionsToDrop
+      );
+
+      if (deliveryTablesToDrop.length) {
+        logger.info(`Dropping partitions for delivery_record_partitioned`, {
+          partitions: deliveryTablesToDrop.map((partition) => partition.child),
+        });
+
+        await Promise.all(
+          deliveryTablesToDrop.map(async (partition) => {
+            await connection.execute(
+              `DROP TABLE IF EXISTS ${partition.childSchema}.${partition.child};`
+            );
+          })
+        );
+      }
     }
   } catch (err) {
     logger.error(
