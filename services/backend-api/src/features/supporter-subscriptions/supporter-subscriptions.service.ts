@@ -87,6 +87,14 @@ export class SupporterSubscriptionsService {
   }
 
   async getProductCurrencies(currency: string, data: { ipAddress?: string }) {
+    const paddleKey = this.configService.get("BACKEND_API_PADDLE_KEY");
+
+    if (!paddleKey) {
+      return {
+        products: {},
+      };
+    }
+
     const { products } = await this.paddleService.getProducts();
 
     const priceIds = products
