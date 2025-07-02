@@ -47,37 +47,44 @@ async function pruneAndCreatePartitions(app: INestApplicationContext) {
   const nextMonthDate = startOfMonth.add(1, "month");
   const nextNextMonthDate = startOfMonth.add(2, "month");
 
+  const tableNamesToCreate = [
+    `feed_article_field_partitioned_y${thisMonthDate.year()}m${
+      thisMonthDate.month() + 1
+    }`,
+    `delivery_record_partitioned_y${thisMonthDate.year()}m${
+      thisMonthDate.month() + 1
+    }`,
+    `feed_article_field_partitioned_y${nextMonthDate.year()}m${
+      nextMonthDate.month() + 1
+    }`,
+    `delivery_record_partitioned_y${nextMonthDate.year()}m${
+      nextMonthDate.month() + 1
+    }`,
+  ];
+
   const tablesToCreate = [
     {
       from: thisMonthDate,
       to: nextMonthDate,
-      tableName: `feed_article_field_partitioned_y${thisMonthDate.year()}m${
-        thisMonthDate.month() + 1
-      }`,
+      tableName: tableNamesToCreate[0],
       partitionParent: "feed_article_field_partitioned",
     },
     {
       from: thisMonthDate,
       to: nextMonthDate,
-      tableName: `delivery_record_partitioned_y${thisMonthDate.year()}m${
-        thisMonthDate.month() + 1
-      }`,
+      tableName: tableNamesToCreate[1],
       partitionParent: "delivery_record_partitioned",
     },
     {
       from: nextMonthDate,
       to: nextNextMonthDate,
-      tableName: `feed_article_field_partitioned_y${nextMonthDate.year()}m${
-        nextMonthDate.month() + 1
-      }`,
+      tableName: tableNamesToCreate[2],
       partitionParent: "feed_article_field_partitioned",
     },
     {
       from: nextMonthDate,
       to: nextNextMonthDate,
-      tableName: `delivery_record_partitioned_y${nextMonthDate.year()}m${
-        nextMonthDate.month() + 1
-      }`,
+      tableName: tableNamesToCreate[3],
       partitionParent: "delivery_record_partitioned",
     },
   ];
@@ -117,25 +124,25 @@ async function pruneAndCreatePartitions(app: INestApplicationContext) {
       "USER_FEEDS_ARTICLE_PERSISTENCE_MONTHS"
     );
 
-    if (currentPartitions.length > 1) {
-      const numberOfPartitionsToDrop =
-        currentPartitions.length - numberOfPartitionsToKeep;
+    const numberOfPartitionsToDrop =
+      currentPartitions.length - numberOfPartitionsToKeep;
 
-      const tablesToDrop = currentPartitions.slice(0, numberOfPartitionsToDrop);
+    const tablesToDrop = currentPartitions
+      .slice(0, numberOfPartitionsToDrop)
+      .filter((partition) => !tableNamesToCreate.includes(partition.child));
 
-      if (tablesToDrop.length) {
-        logger.info(`Dropping partitions for feed_article_field_partitioned`, {
-          partitions: tablesToDrop.map((partition) => partition.child),
-        });
+    if (tablesToDrop.length) {
+      logger.info(`Dropping partitions for feed_article_field_partitioned`, {
+        partitions: tablesToDrop.map((partition) => partition.child),
+      });
 
-        await Promise.all(
-          tablesToDrop.map(async (partition) => {
-            await connection.execute(
-              `DROP TABLE IF EXISTS ${partition.childSchema}.${partition.child};`
-            );
-          })
-        );
-      }
+      await Promise.all(
+        tablesToDrop.map(async (partition) => {
+          await connection.execute(
+            `DROP TABLE IF EXISTS ${partition.childSchema}.${partition.child};`
+          );
+        })
+      );
     }
   } catch (err) {
     logger.error(
