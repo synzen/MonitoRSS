@@ -73,7 +73,7 @@ const tiers: Array<{
       },
       {
         name: Feature.ArticleLimit,
-        description: "Limit of 1000 articles daily per feed",
+        description: "1000 articles daily per feed",
         enabled: true,
       },
       {
@@ -106,7 +106,7 @@ const tiers: Array<{
       },
       {
         name: Feature.ArticleLimit,
-        description: "Limit of 1000 articles daily per feed",
+        description: "1000 articles daily per feed",
         enabled: true,
       },
       {
@@ -143,7 +143,7 @@ const tiers: Array<{
       },
       {
         name: Feature.ArticleLimit,
-        description: "Limit of 1000 articles daily per feed",
+        description: "1000 articles daily per feed",
         enabled: true,
       },
       {
@@ -552,7 +552,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                     </Box>
                     <Box textAlign="center" pb={3} fontSize="lg">
                       <Text>
-                        Don&apos;t see what you&apos;re looking for?{" "}
+                        Need a higher tier?{" "}
                         <Link
                           color="blue.300"
                           href="mailto:support@monitorss.xyz?subject=Custom%20Plan%20Inquiry"
