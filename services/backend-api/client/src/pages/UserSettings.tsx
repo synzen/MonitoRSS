@@ -286,6 +286,21 @@ const UserSettingsInner = () => {
 
   const subscriptionPendingCancellation = subscription && subscription?.cancellationDate;
 
+  // Get additional feeds count
+  const additionalFeedsCount =
+    subscription?.addons?.find((addon) => addon.key === ProductKey.Tier3Feed)?.quantity || 0;
+
+  // Helper function to format tier name with additional feeds
+  const formatTierName = (tierName: string) => {
+    if (additionalFeedsCount > 0) {
+      return `${tierName} + ${additionalFeedsCount} additional feed${
+        additionalFeedsCount > 1 ? "s" : ""
+      }`;
+    }
+
+    return tierName;
+  };
+
   let subscriptionText: React.ReactNode;
 
   if (subscription?.cancellationDate) {
@@ -293,7 +308,7 @@ const UserSettingsInner = () => {
       <Text>
         You are currently on{" "}
         <chakra.span fontWeight={600}>
-          {subscription?.product.name} (billed every {subscription.billingInterval})
+          {formatTierName(subscription?.product.name)} (billed every {subscription.billingInterval})
         </chakra.span>
         , scheduled to be cancelled on{" "}
         {new Date(subscription.cancellationDate).toLocaleDateString(undefined, {
@@ -309,7 +324,7 @@ const UserSettingsInner = () => {
       <Text>
         You are currently on{" "}
         <chakra.span fontWeight={600}>
-          {subscription?.product.name} (billed every {subscription.billingInterval})
+          {formatTierName(subscription?.product.name)} (billed every {subscription.billingInterval})
         </chakra.span>
         , scheduled to renew on{" "}
         {new Date(subscription.nextBillDate).toLocaleDateString(undefined, {
@@ -325,7 +340,7 @@ const UserSettingsInner = () => {
       <Text>
         You are currently on{" "}
         <chakra.span fontWeight={600}>
-          {subscription.product.name}
+          {formatTierName(subscription.product.name)}
           {subscription.billingInterval && ` (billed every ${subscription.billingInterval})`}
         </chakra.span>
         .

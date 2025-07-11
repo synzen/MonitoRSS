@@ -23,14 +23,14 @@ import logger from "../../utils/logger";
 import { UserFeedsService } from "../user-feeds/user-feeds.service";
 import { PaddleService } from "../paddle/paddle.service";
 import { Types } from "mongoose";
+
+type TierBenefits = Exclude<
+  Exclude<Supporter["paddleCustomer"], undefined>["subscription"],
+  undefined | null
+>["benefits"];
+
 const BENEFITS_BY_TIER: Partial<
-  Record<
-    SubscriptionProductKey | LegacySubscriptionProductKey,
-    Exclude<
-      Exclude<Supporter["paddleCustomer"], undefined>["subscription"],
-      undefined | null
-    >["benefits"]
-  >
+  Record<SubscriptionProductKey | LegacySubscriptionProductKey, TierBenefits>
 > = {
   [SubscriptionProductKey.Tier1]: {
     allowWebhooks: true,
@@ -170,22 +170,37 @@ export class PaddleWebhooksService {
       return;
     }
 
-    const { id: productKey } = await this.paddleService.getProduct(
-      event.data.items[0].price.product_id
+    const subscriptionItemsWithProduct = await Promise.all(
+      event.data.items.map(async (i) => {
+        const paddleProductId = i.price.product_id;
+        const product = await this.paddleService.getProduct(paddleProductId);
+
+        return {
+          item: i,
+          product,
+        };
+      })
     );
 
-    if (!productKey) {
+    if (subscriptionItemsWithProduct.some((p) => !p.product.id)) {
       throw new Error(
-        `Could not find product key for product id ${event.data.items[0].price.product_id} when updating subscription`
+        `Could not find product key for product ids ${subscriptionItemsWithProduct
+          .map((p) => p.item.price.product_id)
+          .join(", ")} when updating subscription`
       );
     }
 
-    const benefitsOfKey =
-      BENEFITS_BY_TIER[productKey as SubscriptionProductKey];
+    const topLevelBenefits = subscriptionItemsWithProduct.find(
+      (p) => BENEFITS_BY_TIER[p.product.id as SubscriptionProductKey]
+    );
 
-    if (!benefitsOfKey) {
+    const topLevelBenefitsProductKey = topLevelBenefits?.product.id;
+
+    if (!topLevelBenefits || !topLevelBenefitsProductKey) {
       throw new Error(
-        `Could not find benefits for product key ${productKey} in BENEFITS_BY_TIER when updating subscription`
+        `Could not find benefits in BENEFITS_BY_TIER when updating subscription. Keys: ${subscriptionItemsWithProduct
+          .map((p) => p.product.id)
+          .join(", ")}`
       );
     }
 
@@ -214,19 +229,44 @@ export class PaddleWebhooksService {
       );
     }
 
+    const extraFeedsToAdd = subscriptionItemsWithProduct.find(
+      (p) => p.product.id === SubscriptionProductKey.Tier3AdditionalFeed
+    )?.item.quantity;
+
+    const benefits = BENEFITS_BY_TIER[topLevelBenefitsProductKey];
+
+    if (!benefits) {
+      throw new Error(
+        `Could not find benefits for product key ${topLevelBenefitsProductKey} when updating subscription`
+      );
+    }
+
+    const useBenefits: TierBenefits = {
+      ...benefits,
+      maxUserFeeds: benefits.maxUserFeeds + (extraFeedsToAdd || 0),
+    };
+
     const toSet: Supporter["paddleCustomer"] = {
       customerId: event.data.customer_id,
       email: billingEmail,
       lastCurrencyCodeUsed: event.data.currency_code,
       subscription: {
-        productKey,
+        productKey: topLevelBenefitsProductKey,
         status: this.convertPaddleStatusToSubscriptionStatus({
           status: event.data.status,
         }),
         id: event.data.id,
         createdAt: new Date(event.data.created_at),
         updatedAt: new Date(event.data.updated_at),
-        benefits: benefitsOfKey,
+        benefits: useBenefits,
+        addons: extraFeedsToAdd
+          ? [
+              {
+                key: SubscriptionProductKey.Tier3AdditionalFeed,
+                quantity: extraFeedsToAdd,
+              },
+            ]
+          : [],
         cancellationDate:
           event.data.scheduled_change?.action === "cancel"
             ? new Date(event.data.current_billing_period.ends_at)

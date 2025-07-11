@@ -44,6 +44,7 @@ export enum ApiErrorCode {
   INVALID_FILTERS_REGEX = "INVALID_FILTERS_REGEX",
   FEED_INVALID_SSL_CERT = "FEED_INVALID_SSL_CERT",
   ADD_FEED_WITH_SOURCE_FEED_NOT_FOUND = "ADD_FEED_WITH_SOURCE_FEED_NOT_FOUND",
+  TRANSACTION_BALANCE_TOO_LOW = "TRANSACTION_BALANCE_TOO_LOW",
 }
 
 const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
@@ -97,6 +98,8 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
     "Feed host has invalid SSL certificate. Please contact the feed site for them to correct their certificate.",
   ADD_FEED_WITH_SOURCE_FEED_NOT_FOUND:
     "Source feed to copy settings from was not found. Ensure the source feed exists and you have permission to view it.",
+  TRANSACTION_BALANCE_TOO_LOW:
+    "A minimum of $0.70 USD is required for a transaction whose total (including prorated credit for time remaining on the current tier) is greater than $0.00. Try again by either increasing your tier or waiting until the end of your billing period.",
 };
 
 export const getStandardErrorCodeMessage = (code: ApiErrorCode) => {

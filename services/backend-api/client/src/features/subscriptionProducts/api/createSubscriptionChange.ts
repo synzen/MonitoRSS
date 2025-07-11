@@ -2,7 +2,10 @@ import fetchRest from "../../../utils/fetchRest";
 
 export interface CreateSubscriptionChangeInput {
   data: {
-    priceId: string;
+    prices: Array<{
+      priceId: string;
+      quantity: number;
+    }>;
   };
 }
 

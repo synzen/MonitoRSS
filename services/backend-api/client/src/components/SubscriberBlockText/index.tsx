@@ -27,6 +27,7 @@ const tierByProductKey = {
     patreon: SupporterTier.T6,
     regular: SupporterTier.T3,
   },
+  [ProductKey.Tier3Feed]: null, // Additional feed product, not a main tier
 };
 
 const supporterTiersOrdered = [

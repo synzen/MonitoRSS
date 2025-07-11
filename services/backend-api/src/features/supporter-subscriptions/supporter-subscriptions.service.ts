@@ -20,6 +20,7 @@ const PRODUCT_NAMES: Record<SubscriptionProductKey, string> = {
   [SubscriptionProductKey.Tier1]: "Tier 1",
   [SubscriptionProductKey.Tier2]: "Tier 2",
   [SubscriptionProductKey.Tier3]: "Tier 3",
+  [SubscriptionProductKey.Tier3AdditionalFeed]: "Additional Feed",
 };
 
 const PRODUCT_KEYS_BY_PLEDGE: Record<string, string> = {

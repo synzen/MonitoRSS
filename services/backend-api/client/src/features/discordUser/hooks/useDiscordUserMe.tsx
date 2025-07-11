@@ -5,7 +5,7 @@ import { useDiscordAuthStatus } from "./useDiscordAuthStatus";
 
 export const useDiscordUserMe = () => {
   const { data: authStatusData, status: authStatus, error: authError } = useDiscordAuthStatus();
-  const { data, status, error } = useQuery<GetDiscordMeOutput, ApiAdapterError>(
+  const { data, status, error, refetch } = useQuery<GetDiscordMeOutput, ApiAdapterError>(
     ["discord-user-me"],
     async () => getDiscordMe(),
     {
@@ -22,5 +22,6 @@ export const useDiscordUserMe = () => {
     data,
     status,
     error,
+    refetch,
   };
 };

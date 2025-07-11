@@ -8,5 +8,6 @@ export interface PricePreview {
     interval: "month" | "year" | "day" | "week";
     formattedPrice: string;
     currencyCode: string;
+    quantity: number;
   }>;
 }

@@ -12,11 +12,12 @@ import { initializePaddle, Paddle } from "@paddle/paddle-js";
 import { useNavigate } from "react-router-dom";
 import { captureException } from "@sentry/react";
 import { Box, Spinner, Stack, Text } from "@chakra-ui/react";
-import { useUserMe } from "../features/discordUser";
+import { useDiscordUserMe, useUserMe } from "../features/discordUser";
 import { pages, PRODUCT_NAMES, ProductKey } from "../constants";
 import { CheckoutSummaryData } from "../types/CheckoutSummaryData";
 import { PricePreview } from "../types/PricePreview";
 import { retryPromise } from "../utils/retryPromise";
+import formatCurrency from "../utils/formatCurrency";
 
 const pwAuth = import.meta.env.VITE_PADDLE_PW_AUTH;
 const clientToken = import.meta.env.VITE_PADDLE_CLIENT_TOKEN;
@@ -24,11 +25,22 @@ const clientToken = import.meta.env.VITE_PADDLE_CLIENT_TOKEN;
 export interface PaddleCheckoutLoadedEvent {
   data: {
     items: Array<{
+      price_id: string;
       billing_cycle: {
         interval: "month" | "year";
       };
       product: {
+        id: string;
         name: string;
+      };
+      quantity: number;
+      totals: {
+        balance: number;
+        credit: number;
+        discount: number;
+        subtotal: number;
+        tax: number;
+        total: number;
       };
     }>;
     currency_code: string;
@@ -56,12 +68,25 @@ export type PaddleCheckoutUpdatedEvent = PaddleCheckoutLoadedEvent;
 interface ContextProps {
   checkoutLoadedData?: CheckoutSummaryData;
   updatePaymentMethod: (transactionId: string) => void;
-  updateCheckout: ({ priceId }: { priceId: string }) => void;
+  updateCheckout: (data: {
+    prices: Array<{
+      priceId: string;
+      quantity: number;
+    }>;
+  }) => void;
   resetCheckoutData: () => void;
   isLoaded?: boolean;
-  openCheckout: (p: { priceId: string; frameTarget?: string }) => void;
-  getPricePreview: (priceIdsToGet: string[]) => Promise<Array<PricePreview>>;
+  openCheckout: (p: {
+    prices: Array<{ priceId: string; quantity: number }>;
+    frameTarget?: string;
+  }) => void;
+  getPricePreview: (
+    pricesToGet: Array<{ priceId: string; quantity: number }>
+  ) => Promise<Array<PricePreview>>;
   isSubscriptionCreated: boolean;
+  getChargePreview: (
+    items: Array<{ priceId: string; quantity: number }>
+  ) => Promise<{ totalFormatted: string }>;
 }
 
 export const PaddleContext = createContext<ContextProps>({
@@ -73,6 +98,9 @@ export const PaddleContext = createContext<ContextProps>({
   getPricePreview: async () => [],
   resetCheckoutData: () => {},
   isSubscriptionCreated: false,
+  getChargePreview: async () => {
+    throw new Error("getChargePreview is not implemented");
+  },
 });
 
 export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
@@ -80,14 +108,17 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
   const [checkForSubscriptionCreated, setCheckForSubscriptionCreated] = useState(false);
   const [isSubscriptionCreated, setIsSubscriptionCreated] = useState(false);
   const { data: user } = useUserMe({ checkForSubscriptionCreated });
+  const { refetch: refetchDiscordUserMe } = useDiscordUserMe();
   const navigate = useNavigate();
   const [checkoutLoadedData, setCheckoutLoadedData] = useState<CheckoutSummaryData | undefined>();
   const paidSubscriptionExists = user && user?.result.subscription.product.key !== ProductKey.Free;
 
   useEffect(() => {
     if (checkForSubscriptionCreated && paidSubscriptionExists) {
-      setCheckForSubscriptionCreated(false);
-      setIsSubscriptionCreated(true);
+      refetchDiscordUserMe().finally(() => {
+        setCheckForSubscriptionCreated(false);
+        setIsSubscriptionCreated(true);
+      });
     }
   }, [checkForSubscriptionCreated, paidSubscriptionExists]);
 
@@ -120,12 +151,23 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
           });
         } else if (event.name === "checkout.loaded" || event.name === "checkout.updated") {
           const { data } = event as PaddleCheckoutLoadedEvent;
+
           setCheckoutLoadedData({
             currencyCode: data.currency_code,
-            item: {
-              productName: data.items[0].product.name,
-              interval: data.items[0].billing_cycle.interval,
-            },
+            items: data.items.map((item) => ({
+              priceId: item.price_id,
+              productId: item.product.id,
+              productName: item.product.name,
+              interval: item.billing_cycle.interval,
+              totals: {
+                balance: item.totals.balance,
+                credit: item.totals.credit,
+                subtotal: item.totals.subtotal,
+                tax: item.totals.tax,
+                total: item.totals.total,
+              },
+              quantity: item.quantity,
+            })),
             recurringTotals: data.recurring_totals
               ? {
                   balance: data.recurring_totals.balance,
@@ -152,10 +194,42 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
     });
   }, []);
 
-  const getPricePreview = useCallback(
-    async (priceIdsToGet: string[]) => {
+  const getChargePreview = useCallback(
+    async (
+      items: Array<{
+        priceId: string;
+        quantity: number;
+      }>
+    ) => {
       if (!paddle) {
         throw new Error("Paddle is not initialized");
+      }
+
+      if (items.length === 0) {
+        throw new Error(`Missing at least 1 item to preview charge`);
+      }
+
+      const transactionPreview = await paddle.TransactionPreview({
+        items: items.map(({ priceId, quantity }) => ({ priceId, quantity, includeInTotals: true })),
+      });
+
+      const { details, currencyCode } = transactionPreview.data;
+
+      return {
+        totalFormatted: formatCurrency(details.totals.total, currencyCode),
+      };
+    },
+    [!!paddle]
+  );
+
+  const getPricePreview = useCallback(
+    async (pricesToGet: Array<{ priceId: string; quantity: number }>) => {
+      if (!paddle) {
+        throw new Error("Paddle is not initialized");
+      }
+
+      if (pricesToGet.length === 0) {
+        throw new Error(`Missing at least 1 price to preview`);
       }
 
       const pricesByProduct: Partial<
@@ -168,6 +242,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
               interval: "month" | "year" | "day" | "week";
               formattedPrice: string;
               currencyCode: string;
+              quantity: number;
             }>;
           }
         >
@@ -176,7 +251,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       try {
         const previewData = await retryPromise(async () =>
           paddle.PricePreview({
-            items: priceIdsToGet.map((priceId) => ({ priceId, quantity: 1 })),
+            items: pricesToGet.map(({ priceId, quantity }) => ({ priceId, quantity })),
           })
         );
 
@@ -187,6 +262,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
             formattedTotals,
             product,
             price: { billingCycle, id: priceId },
+            quantity,
           } = previewData.data.details.lineItems[i];
           const useProductId = product.customData?.key as ProductKey;
 
@@ -199,6 +275,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
             interval: billingCycle.interval,
             formattedPrice: formattedTotals.total,
             currencyCode,
+            quantity,
           };
 
           const prices = pricesByProduct[useProductId]?.prices;
@@ -221,6 +298,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
             interval: d.interval,
             formattedPrice: d.formattedPrice,
             currencyCode: d.currencyCode,
+            quantity: d.quantity,
           })),
         }));
       } catch (e) {
@@ -261,23 +339,27 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
     [!!paddle]
   );
 
-  const updateCheckout = useCallback(
-    ({ priceId }: { priceId: string }) => {
+  const updateCheckout: ContextProps["updateCheckout"] = useCallback(
+    ({ prices }) => {
       setIsSubscriptionCreated(false);
 
       if (!paddle) {
         return;
       }
 
-      paddle.Checkout.updateCheckout({
-        items: [{ priceId, quantity: 1 }],
-      });
+      paddle.Checkout.updateItems(prices);
     },
     [!!paddle]
   );
 
   const openCheckout = useCallback(
-    ({ priceId, frameTarget }: { priceId: string; frameTarget?: string }) => {
+    ({
+      prices,
+      frameTarget,
+    }: {
+      prices: Array<{ priceId: string; quantity: number }>;
+      frameTarget?: string;
+    }) => {
       setIsSubscriptionCreated(false);
 
       if (!user?.result.email) {
@@ -293,19 +375,22 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       }
 
       paddle?.Checkout.open({
-        items: [{ priceId }],
+        items: prices.map(({ priceId, quantity }) => ({
+          priceId,
+          quantity,
+        })),
         customer: {
           email: user.result.email,
         },
         settings: {
           displayMode: "inline",
           frameTarget: frameTarget || "checkout-modal",
-          frameInitialHeight: 450,
+          frameInitialHeight: 634,
           allowLogout: false,
           variant: "one-page",
           showAddDiscounts: false,
           frameStyle:
-            "width: 100%; height: 100%; min-width: 312px; min-height:550px; padding-left: 8px; padding-right: 8px;",
+            "width: 100%; height: 100%; min-width: 312px; min-height:634px; padding-left: 8px; padding-right: 8px;",
         },
         customData: {
           userId: user.result.id,
@@ -330,6 +415,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       getPricePreview,
       resetCheckoutData,
       isSubscriptionCreated,
+      getChargePreview,
     }),
     [
       JSON.stringify(checkoutLoadedData),
@@ -340,6 +426,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       getPricePreview,
       resetCheckoutData,
       isSubscriptionCreated,
+      getChargePreview,
     ]
   );
 

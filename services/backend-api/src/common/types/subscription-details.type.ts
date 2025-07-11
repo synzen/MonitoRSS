@@ -6,6 +6,10 @@ export interface SubscriptionDetails {
     key: SubscriptionProductKey;
     name: string;
   };
+  addons: Array<{
+    key: SubscriptionProductKey;
+    quantity: number;
+  }>;
   status: SubscriptionStatus;
   billingPeriod?: {
     start: Date;

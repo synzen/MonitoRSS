@@ -23,7 +23,7 @@ import dayjs from "dayjs";
 import { ChevronLeftIcon } from "@chakra-ui/icons";
 import { FaCircleCheck } from "react-icons/fa6";
 import { BoxConstrained, DashboardContentV2 } from "../components";
-import { pages } from "../constants";
+import { pages, ProductKey } from "../constants";
 import { usePaddleContext } from "../contexts/PaddleContext";
 import { useSubscriptionProducts } from "../features/subscriptionProducts";
 import { useUserMe } from "../features/discordUser";
@@ -36,7 +36,11 @@ interface Props {
 export const Checkout = ({ cancelUrl }: Props) => {
   const location = useLocation();
   const originalPriceId = location.pathname.split("/").pop();
-  const [priceId] = useState(originalPriceId);
+  const searchParams = new URLSearchParams(location.search);
+  const feedsParam = searchParams.get("feeds")?.split(",");
+  const feedsQuantity = feedsParam ? parseInt(feedsParam[0], 10) : 0;
+  const feedsPriceId = feedsParam ? feedsParam[1] : undefined;
+  const [priceId, setPriceId] = useState(originalPriceId);
   const {
     openCheckout,
     updateCheckout,
@@ -48,6 +52,11 @@ export const Checkout = ({ cancelUrl }: Props) => {
   const checkoutRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const { status: userStatus, error: userError } = useUserMe();
+  const topLevelProductCheckoutData = checkoutData?.items.find((item) => item.priceId === priceId);
+  const feedsCheckoutData = checkoutData?.items.find((item) => item.priceId === feedsPriceId);
+  const additionalFeedsProduct = subProducts?.data.products.find(
+    (p) => p.id === ProductKey.Tier3Feed
+  );
 
   useEffect(() => {
     if (isSubscriptionCreated && headingRef.current) {
@@ -61,7 +70,7 @@ export const Checkout = ({ cancelUrl }: Props) => {
     }
 
     setWaitingForUpdate(false);
-  }, [checkoutData?.item.interval]);
+  }, [topLevelProductCheckoutData?.interval]);
 
   useEffect(() => {
     if (!priceId || !checkoutRef.current) {
@@ -69,7 +78,20 @@ export const Checkout = ({ cancelUrl }: Props) => {
     }
 
     openCheckout({
-      priceId,
+      prices: [
+        {
+          priceId,
+          quantity: 1,
+        },
+        ...(feedsPriceId && feedsQuantity > 0
+          ? [
+              {
+                priceId: feedsPriceId,
+                quantity: feedsQuantity,
+              },
+            ]
+          : []),
+      ],
       frameTarget: checkoutRef.current.className,
     });
   }, [priceId, openCheckout, checkoutRef.current]);
@@ -116,8 +138,26 @@ export const Checkout = ({ cancelUrl }: Props) => {
       return;
     }
 
+    const priceIdOfAdditionalFeeds = additionalFeedsProduct?.prices.find(
+      (pr) => pr.interval === newInterval
+    )?.id;
+
+    setPriceId(price.id);
     updateCheckout({
-      priceId: price.id,
+      prices: [
+        {
+          priceId: price.id,
+          quantity: 1,
+        },
+        ...(priceIdOfAdditionalFeeds && feedsQuantity > 0
+          ? [
+              {
+                priceId: priceIdOfAdditionalFeeds,
+                quantity: feedsQuantity,
+              },
+            ]
+          : []),
+      ],
     });
   };
 
@@ -125,8 +165,8 @@ export const Checkout = ({ cancelUrl }: Props) => {
   const error = subProductsError || userError;
 
   const todayFormatted = dayjs().format("D MMM YYYY");
-  const expirationFormatted = checkoutData
-    ? dayjs().add(1, checkoutData.item.interval).format("D MMM YYYY")
+  const expirationFormatted = topLevelProductCheckoutData
+    ? dayjs().add(1, topLevelProductCheckoutData.interval).format("D MMM YYYY")
     : todayFormatted;
 
   const checkoutDataExists = !!checkoutData;
@@ -201,47 +241,92 @@ export const Checkout = ({ cancelUrl }: Props) => {
                     <Heading fontWeight={600} fontSize="md" as="h1" tabIndex={-1}>
                       Checkout Summary
                     </Heading>
-                    <Stack spacing={0} borderColor="gray.800" borderWidth={2} rounded="md">
-                      <HStack alignItems="center" px={4} pt={4}>
+                    <Stack
+                      spacing={4}
+                      borderColor="whiteAlpha.300"
+                      borderWidth={2}
+                      rounded="md"
+                      p={4}
+                    >
+                      {/* Product Name Header */}
+                      <HStack alignItems="center">
                         <Skeleton isLoaded={isLoaded}>
-                          <Text fontSize="xl">{checkoutData?.item.productName}</Text>
-                        </Skeleton>
-                      </HStack>
-                      <Box px={4} pb={4}>
-                        <Skeleton isLoaded={isLoaded}>
-                          <Text fontSize="4xl" fontWeight="semibold" display="inline">
-                            {/** Recurring total may not exist for cancelled subscriptions */}
-                            {checkoutData?.recurringTotals
-                              ? formatCurrency(checkoutData?.recurringTotals.total)
-                              : "Error"}
+                          <Text fontSize="xl" fontWeight="semibold">
+                            {topLevelProductCheckoutData?.productName} (
+                            {topLevelProductCheckoutData?.interval === "year"
+                              ? "Annual"
+                              : "Monthly"}
+                            )
                           </Text>
-                          <Text display="inline"> per {checkoutData?.item.interval}</Text>
-                        </Skeleton>
-                      </Box>
-                      <Divider />
-                      <HStack px={4} py={2} bg="gray.800">
-                        <Switch
-                          checked={checkoutData?.item.interval === "year"}
-                          colorScheme="green"
-                          aria-label="Toggle annual billing for 15% savings"
-                          aria-disabled={!isLoaded}
-                          isChecked={checkoutData?.item.interval === "year"}
-                          onChange={(e) => {
-                            if (!isLoaded) {
-                              return;
-                            }
-
-                            onChangeInterval(e.target.checked ? "year" : "month");
-                            setWaitingForUpdate(true);
-                          }}
-                        />
-                        <Skeleton isLoaded={isLoaded}>
-                          <Badge colorScheme="green">
-                            <Text>Save 15%</Text>
-                          </Badge>
-                          <Text display="inline"> with annual billing</Text>
                         </Skeleton>
                       </HStack>
+                      <Stack spacing={3}>
+                        {/* Base Plan Cost */}
+                        <HStack justifyContent="space-between" alignItems="flex-start">
+                          <Stack spacing={1}>
+                            <Text fontSize="md" fontWeight="medium">
+                              {topLevelProductCheckoutData?.productName}
+                            </Text>
+                          </Stack>
+                          <Skeleton isLoaded={isLoaded}>
+                            <Text fontSize="lg" fontWeight="semibold">
+                              {formatCurrency(topLevelProductCheckoutData?.totals.subtotal)}
+                            </Text>
+                          </Skeleton>
+                        </HStack>
+                        {/* Additional Feeds Cost (if applicable) */}
+                        {feedsCheckoutData && feedsQuantity > 0 && (
+                          <HStack justifyContent="space-between" alignItems="flex-start">
+                            <Stack spacing={1}>
+                              <Text fontSize="md" fontWeight="medium">
+                                Additional Feeds ({feedsQuantity})
+                              </Text>
+                              <Skeleton isLoaded={isLoaded}>
+                                <Text fontSize="sm" color="whiteAlpha.700">
+                                  {formatCurrency(
+                                    (feedsCheckoutData?.totals.subtotal || 0) / feedsQuantity
+                                  )}{" "}
+                                  each × {feedsQuantity}
+                                </Text>
+                              </Skeleton>
+                            </Stack>
+                            <Skeleton isLoaded={isLoaded}>
+                              <Text fontSize="lg" fontWeight="semibold">
+                                {formatCurrency(feedsCheckoutData?.totals.subtotal)}
+                              </Text>
+                            </Skeleton>
+                          </HStack>
+                        )}
+                      </Stack>
+                      {/* Divider and Billing Toggle - Hidden when additional feeds are specified due to Paddle checkout update bug */}
+                      {feedsQuantity === 0 && (
+                        <>
+                          <Divider />
+                          <HStack py={2} bg="gray.800" rounded="md" px={3}>
+                            <Switch
+                              checked={topLevelProductCheckoutData?.interval === "year"}
+                              colorScheme="green"
+                              aria-label="Toggle annual billing for 15% savings"
+                              aria-disabled={!isLoaded}
+                              isChecked={topLevelProductCheckoutData?.interval === "year"}
+                              onChange={(e) => {
+                                if (!isLoaded) {
+                                  return;
+                                }
+
+                                onChangeInterval(e.target.checked ? "year" : "month");
+                                setWaitingForUpdate(true);
+                              }}
+                            />
+                            <Skeleton isLoaded={isLoaded}>
+                              <Badge colorScheme="green">
+                                <Text>Save 15%</Text>
+                              </Badge>
+                              <Text display="inline"> with annual billing</Text>
+                            </Skeleton>
+                          </HStack>
+                        </>
+                      )}
                     </Stack>
                     <TableContainer mt={6}>
                       <Table variant="unstyled">

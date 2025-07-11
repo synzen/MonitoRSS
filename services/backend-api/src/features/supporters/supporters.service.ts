@@ -366,6 +366,7 @@ export class SupportersService {
           end: supporter.paddleCustomer.subscription.billingPeriodEnd,
         },
         updatedAt: supporter.paddleCustomer.subscription.updatedAt,
+        addons: supporter.paddleCustomer.subscription.addons,
       },
     };
   }

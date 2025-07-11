@@ -26,8 +26,12 @@ export interface CheckoutSummaryData {
   currencyCode: string;
   recurringTotals?: PriceInformation;
   totals: PriceInformation;
-  item: {
-    interval: "month" | "year";
+  items: Array<{
+    productId: string;
     productName: string;
-  };
+    interval: "month" | "year";
+    totals: PriceInformation;
+    quantity: number;
+    priceId: string;
+  }>;
 }

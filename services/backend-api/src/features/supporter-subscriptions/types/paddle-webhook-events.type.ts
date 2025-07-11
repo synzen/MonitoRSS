@@ -27,6 +27,7 @@ export interface PaddleEventSubscriptionUpdated {
     };
     updated_at: string;
     items: Array<{
+      quantity: number;
       price: {
         id: string;
         product_id: string;
@@ -62,6 +63,7 @@ export interface PaddleEventSubscriptionActivated {
     };
     updated_at: string;
     items: Array<{
+      quantity: number;
       price: {
         id: string;
         product_id: string;

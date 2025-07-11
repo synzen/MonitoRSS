@@ -3,7 +3,11 @@ import fetchRest from "../../../utils/fetchRest";
 
 export interface GetSubscriptionChangePreviewInput {
   data: {
-    priceId: string;
+    priceId?: string;
+    prices?: Array<{
+      priceId: string;
+      quantity: number;
+    }>;
   };
 }
 
@@ -31,16 +35,17 @@ export type GetSubscriptionChangePreviewOutput = InferType<
 export const getSubscriptionChangePreview = async ({
   data,
 }: GetSubscriptionChangePreviewInput): Promise<GetSubscriptionChangePreviewOutput> => {
-  const searchParams = new URLSearchParams();
+  if (!data.priceId && !data.prices) {
+    throw new Error("Missing priceId or prices while getting subscription change preview");
+  }
 
-  searchParams.set("priceId", data.priceId);
-
-  const res = await fetchRest(
-    `/api/v1/subscription-products/update-preview?${searchParams.toString()}`,
-    {
-      validateSchema: GetSubscriptionChangePreviewSchema,
-    }
-  );
+  const res = await fetchRest(`/api/v1/subscription-products/update-preview`, {
+    requestOptions: {
+      method: "POST",
+      body: JSON.stringify(data),
+    },
+    validateSchema: GetSubscriptionChangePreviewSchema,
+  });
 
   return res as GetSubscriptionChangePreviewOutput;
 };

@@ -30,25 +30,32 @@ import {
 import { InlineErrorAlert } from "../InlineErrorAlert";
 import { notifyError } from "../../utils/notifyError";
 import { notifySuccess } from "../../utils/notifySuccess";
-import { ProductKey } from "../../constants";
+import { ProductKey, TOP_LEVEL_PRODUCTS } from "../../constants";
 
 interface Props {
   onClose: (reopenPricing?: boolean) => void;
   details?: {
-    priceId: string;
+    prices: Array<{
+      productKey: ProductKey;
+      productName: string;
+      formattedPrice: string;
+      interval: "month" | "year" | "day" | "week";
+      priceId: string;
+      quantity: number;
+    }>;
   };
   isDowngrade?: boolean;
   billingPeriodEndsAt?: string;
-  products?: {
-    id: ProductKey;
-    name: string;
-    prices: {
-      id: string;
-      interval: "month" | "year" | "day" | "week";
-      formattedPrice: string;
-      currencyCode: string;
-    }[];
-  }[];
+  // products?: {
+  //   id: ProductKey;
+  //   name: string;
+  //   prices: {
+  //     id: string;
+  //     interval: "month" | "year" | "day" | "week";
+  //     formattedPrice: string;
+  //     currencyCode: string;
+  //   }[];
+  // }[];
 }
 
 export const ChangeSubscriptionDialog = ({
@@ -56,34 +63,40 @@ export const ChangeSubscriptionDialog = ({
   onClose,
   isDowngrade,
   billingPeriodEndsAt,
-  products,
 }: Props) => {
-  const priceId = details?.priceId;
-  const product =
-    priceId && products
-      ? products.find((p) => p.prices.find((pr) => pr.id === priceId))
-      : undefined;
+  // const priceId = details?.prices;
+  const pricesToUseForUpdate = details?.prices;
+  const topLevelPriceToUseForUpdate = pricesToUseForUpdate
+    ? pricesToUseForUpdate.find((p) => TOP_LEVEL_PRODUCTS.includes(p.productKey))
+    : undefined;
 
-  const price = product?.prices.find((p) => p.id === priceId);
+  const additionalFeedsPriceToUseForUpdate = pricesToUseForUpdate
+    ? pricesToUseForUpdate.find((p) => p.productKey === ProductKey.Tier3Feed)
+    : undefined;
 
-  const isChangingToFree = priceId?.startsWith("free");
+  // const price = product?.prices.find((p) => p.id === priceId);
+
+  const isChangingToFree = details?.prices.some((p) => p.priceId.startsWith("free"));
   const { mutateAsync, status: createStatus } = useCreateSubscriptionChange();
   const { mutateAsync: cancelSubscription, status: cancelStatus } = useCreateSubscriptionCancel();
   const initialRef = useRef<HTMLButtonElement>(null);
   const { t } = useTranslation();
 
-  const isOpen = !!priceId;
+  const isOpen = !!details?.prices && details.prices.length > 0;
   const { data, error } = useSubscriptionChangePreview({
     data:
-      priceId && !isChangingToFree
+      details?.prices && !isChangingToFree
         ? {
-            priceId,
+            prices: details.prices.map((p) => ({
+              priceId: p.priceId,
+              quantity: p.quantity,
+            })),
           }
         : undefined,
   });
 
   const onConfirm = async () => {
-    if (!priceId) {
+    if (!pricesToUseForUpdate) {
       return;
     }
 
@@ -97,7 +110,10 @@ export const ChangeSubscriptionDialog = ({
       } else {
         await mutateAsync({
           data: {
-            priceId,
+            prices: pricesToUseForUpdate.map((p) => ({
+              priceId: p.priceId,
+              quantity: p.quantity,
+            })),
           },
         });
       }
@@ -128,12 +144,17 @@ export const ChangeSubscriptionDialog = ({
         <ModalHeader>Confirm Subscription Changes</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          {isLoading && (
+          {isLoading && !error && (
             <Flex justifyContent="center" m={6}>
               <Spinner />
             </Flex>
           )}
-          {error && <InlineErrorAlert title="Failed to get preview" description={error.message} />}
+          {error && (
+            <InlineErrorAlert
+              title="Failed to get preview of subscription changes"
+              description={error.message}
+            />
+          )}
           {!isLoading && isChangingToFree && (
             <Stack>
               <Text>
@@ -155,12 +176,29 @@ export const ChangeSubscriptionDialog = ({
                 <Stack spacing={8}>
                   <Stack>
                     <Box>
-                      <Text>{product?.name}</Text>
+                      <Flex alignItems="baseline" gap={3} flexWrap="wrap">
+                        <Text>{topLevelPriceToUseForUpdate?.productName}</Text>
+                        {additionalFeedsPriceToUseForUpdate && (
+                          <Text fontSize="sm" color="whiteAlpha.700">
+                            + {additionalFeedsPriceToUseForUpdate.quantity} additional feed
+                            {additionalFeedsPriceToUseForUpdate.quantity > 1 ? "s" : ""}
+                          </Text>
+                        )}
+                      </Flex>
                       {!data && <Skeleton width={64} height={12} mt={2} />}
-                      {data && price && (
-                        <Text fontSize="xx-large" fontWeight={700}>
-                          {price?.formattedPrice}/{price?.interval}
-                        </Text>
+                      {data && topLevelPriceToUseForUpdate && (
+                        <Flex alignItems="baseline" gap={3} flexWrap="wrap">
+                          <Text fontSize="xx-large" fontWeight={700}>
+                            {topLevelPriceToUseForUpdate?.formattedPrice}/
+                            {topLevelPriceToUseForUpdate?.interval}
+                          </Text>
+                          {additionalFeedsPriceToUseForUpdate && (
+                            <Text fontSize="lg" fontWeight={500} color="whiteAlpha.800">
+                              + {additionalFeedsPriceToUseForUpdate.formattedPrice}/
+                              {additionalFeedsPriceToUseForUpdate.interval}
+                            </Text>
+                          )}
+                        </Flex>
                       )}
                       {!data && <Skeleton width={64} height={6} mt={2} />}
                       {data && (

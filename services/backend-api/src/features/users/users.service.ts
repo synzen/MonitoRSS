@@ -167,6 +167,7 @@ export class UsersService {
         key: SubscriptionProductKey.Free,
         name: "Free",
       },
+      addons: [],
       status: SubscriptionStatus.Active,
       updatedAt: new Date(2020, 1, 1), // doesn't matter here
     };
@@ -262,6 +263,7 @@ export class UsersService {
           key: subscription.product.key,
           name: getPrettySubscriptioNameFromKey(subscription.product.key),
         },
+        addons: subscription.addons || [],
         status: subscription.status,
         cancellationDate: subscription.cancellationDate,
         nextBillDate: subscription.nextBillDate,

@@ -9,6 +9,7 @@ import {
   PaddleProductsResponse,
 } from "../supporter-subscriptions/types/paddle-products-response.type";
 import { PaddleSubscriptionResponse } from "../supporter-subscriptions/types/paddle-subscription-response.type";
+import { TransactionBalanceTooLowException } from "./exceptions/transaction-balance-too-low.exception";
 
 @Injectable()
 export class PaddleService {
@@ -70,6 +71,7 @@ export class PaddleService {
     }
 
     return {
+      paddleProductId: response.data.id,
       id: response.data.custom_data?.key as SubscriptionProductKey | undefined,
     };
   }
@@ -117,14 +119,22 @@ export class PaddleService {
     });
 
     if (!res.ok) {
-      let responseJson = null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let responseJson: any | null = null;
+      let responseText = "";
 
-      try {
-        responseJson = JSON.stringify(await res.json());
-      } catch (err) {}
+      responseJson = (await res.json()) as Record<string, unknown>;
+      responseText = JSON.stringify(responseJson);
+
+      if (
+        responseJson?.error?.code ===
+        "subscription_update_transaction_balance_less_than_charge_limit"
+      ) {
+        throw new TransactionBalanceTooLowException();
+      }
 
       throw new Error(
-        `Failed to make Paddle request (${url}) due to bad status code: ${res.status}. Response: ${responseJson}`
+        `Failed to make Paddle request (${url}) due to bad status code: ${res.status}. Response: ${responseText}`
       );
     }
 

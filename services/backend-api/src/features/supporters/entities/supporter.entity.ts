@@ -39,6 +39,29 @@ const PaddleCustomerBenefitsSchema = SchemaFactory.createForClass(
   versionKey: false,
   timestamps: false,
 })
+class PaddleCustomerSubscriptionAddon {
+  @Prop({
+    required: true,
+    type: String,
+    enum: [SubscriptionProductKey.Tier3AdditionalFeed],
+  })
+  key: SubscriptionProductKey;
+
+  @Prop({
+    required: true,
+  })
+  quantity: number;
+}
+
+const PaddleCustomerSubscriptionAddonSchema = SchemaFactory.createForClass(
+  PaddleCustomerSubscriptionAddon
+);
+
+@Schema({
+  _id: false,
+  versionKey: false,
+  timestamps: false,
+})
 class PaddleCustomerSubscription {
   @Prop({
     required: true,
@@ -99,6 +122,12 @@ class PaddleCustomerSubscription {
     type: PaddleCustomerBenefitsSchema,
   })
   benefits: PaddleCustomerBenefits;
+
+  @Prop({
+    type: [PaddleCustomerSubscriptionAddonSchema],
+    default: [],
+  })
+  addons?: PaddleCustomerSubscriptionAddon[];
 
   @Prop({
     required: true,

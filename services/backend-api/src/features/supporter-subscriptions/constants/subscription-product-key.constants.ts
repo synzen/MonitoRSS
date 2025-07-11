@@ -3,6 +3,7 @@ export enum SubscriptionProductKey {
   Tier1 = "tier1",
   Tier2 = "tier2",
   Tier3 = "tier3",
+  Tier3AdditionalFeed = "t3feed",
 }
 
 export const SUBSCRIPTION_PRODUCT_KEYS = Object.values(SubscriptionProductKey);

@@ -11,6 +11,7 @@ import {
   Query,
   Req,
   UnauthorizedException,
+  UseFilters,
   UseGuards,
   UseInterceptors,
   ValidationPipe,
@@ -30,6 +31,7 @@ import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.typ
 import logger from "../../utils/logger";
 import { FastifyRequest } from "fastify";
 import { CacheInterceptor, CacheTTL } from "@nestjs/cache-manager";
+import { PreviewSubscriptionUpdateExceptionFilters } from "./filters/preview-subscription-update-exception.filters";
 
 type ProductId = string;
 
@@ -251,8 +253,14 @@ export class SupporterSubscriptionsController {
     @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken,
     @NestedQuery(ValidationPipe)
-    { priceId }: CreateSubscriptionPreviewInputDto
+    { priceId, prices }: CreateSubscriptionPreviewInputDto
   ) {
+    if (!priceId && !prices) {
+      throw new BadRequestException(
+        "Either priceId or prices must be provided"
+      );
+    }
+
     const email =
       await this.supporterSubscriptionsService.getEmailFromDiscordUserId(
         discordUserId
@@ -265,12 +273,17 @@ export class SupporterSubscriptionsController {
     const preview =
       await this.supporterSubscriptionsService.previewSubscriptionChange({
         discordUserId,
-        items: [
-          {
-            priceId: priceId,
-            quantity: 1,
-          },
-        ],
+        items: prices
+          ? prices.map((p) => ({
+              priceId: p.priceId,
+              quantity: p.quantity,
+            }))
+          : [
+              {
+                priceId: priceId as string,
+                quantity: 1,
+              },
+            ],
       });
 
     return {
@@ -279,14 +292,66 @@ export class SupporterSubscriptionsController {
   }
 
   @UseGuards(DiscordOAuth2Guard)
+  @UseFilters(PreviewSubscriptionUpdateExceptionFilters)
+  @Post("update-preview")
+  async postPreviewChange(
+    @DiscordAccessToken()
+    { discord: { id: discordUserId } }: SessionAccessToken,
+    @Body(ValidationPipe)
+    { priceId, prices }: CreateSubscriptionPreviewInputDto
+  ) {
+    if (!priceId && !prices) {
+      throw new BadRequestException(
+        "Either priceId or prices must be provided"
+      );
+    }
+
+    const email =
+      await this.supporterSubscriptionsService.getEmailFromDiscordUserId(
+        discordUserId
+      );
+
+    if (!email) {
+      throw new BadRequestException("No email found");
+    }
+
+    const preview =
+      await this.supporterSubscriptionsService.previewSubscriptionChange({
+        discordUserId,
+        items: prices
+          ? prices.map((p) => ({
+              priceId: p.priceId,
+              quantity: p.quantity,
+            }))
+          : [
+              {
+                priceId: priceId as string,
+                quantity: 1,
+              },
+            ],
+      });
+
+    return {
+      data: preview,
+    };
+  }
+
+  @UseGuards(DiscordOAuth2Guard)
+  @UseFilters(PreviewSubscriptionUpdateExceptionFilters)
   @Post("update")
   @HttpCode(HttpStatus.NO_CONTENT)
   async uppdateSubscription(
     @DiscordAccessToken()
     { discord: { id: discordUserId } }: SessionAccessToken,
     @Body(ValidationPipe)
-    { priceId }: CreateSubscriptionPreviewInputDto
+    { priceId, prices }: CreateSubscriptionPreviewInputDto
   ) {
+    if (!priceId && !prices) {
+      throw new BadRequestException(
+        "Either priceId or prices must be provided"
+      );
+    }
+
     const email =
       await this.supporterSubscriptionsService.getEmailFromDiscordUserId(
         discordUserId
@@ -298,12 +363,17 @@ export class SupporterSubscriptionsController {
 
     await this.supporterSubscriptionsService.changeSubscription({
       discordUserId,
-      items: [
-        {
-          priceId: priceId,
-          quantity: 1,
-        },
-      ],
+      items: prices
+        ? prices.map((p) => ({
+            priceId: p.priceId,
+            quantity: p.quantity,
+          }))
+        : [
+            {
+              priceId: priceId as string,
+              quantity: 1,
+            },
+          ],
     });
   }
 

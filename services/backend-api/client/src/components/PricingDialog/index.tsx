@@ -1,5 +1,5 @@
 /* eslint-disable no-nested-ternary */
-import { CheckIcon, CloseIcon } from "@chakra-ui/icons";
+import { CheckIcon, CloseIcon, AddIcon, MinusIcon } from "@chakra-ui/icons";
 import {
   Box,
   Button,
@@ -23,6 +23,14 @@ import {
   Link,
   ModalCloseButton,
   Badge,
+  IconButton,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
+  Divider,
+  Skeleton,
 } from "@chakra-ui/react";
 import { ChangeEvent, useEffect, useState } from "react";
 import { captureException } from "@sentry/react";
@@ -55,16 +63,20 @@ enum Feature {
 
 const tiers: Array<{
   name: string;
-  productId: string;
+  productId: ProductKey;
   disableSubscribe?: boolean;
   priceFormatted: string;
   highlighted?: boolean;
+  baseFeedLimit: number;
+  supportsAdditionalFeeds?: boolean;
   features: Array<{ name: string; description: string; enabled?: boolean }>;
 }> = [
   {
     name: "TIER 1",
     productId: ProductKey.Tier1,
     priceFormatted: "$5",
+    baseFeedLimit: 35,
+    supportsAdditionalFeeds: false,
     features: [
       {
         name: Feature.Feeds,
@@ -98,6 +110,8 @@ const tiers: Array<{
     productId: ProductKey.Tier2,
     priceFormatted: "$10",
     highlighted: true,
+    baseFeedLimit: 70,
+    supportsAdditionalFeeds: false,
     features: [
       {
         name: Feature.Feeds,
@@ -135,6 +149,8 @@ const tiers: Array<{
     name: "TIER 3",
     productId: ProductKey.Tier3,
     priceFormatted: "$20",
+    baseFeedLimit: 140,
+    supportsAdditionalFeeds: true,
     features: [
       {
         name: Feature.Feeds,
@@ -186,24 +202,48 @@ const initialInterval =
   (localStorage.getItem("preferredPricingInterval") as "month" | "year") || "month";
 
 interface ChangeSubscriptionDetails {
-  priceId: string;
+  prices: Array<{
+    priceId: string;
+    quantity: number;
+  }>;
   productId: string;
   isDowngrade?: boolean;
 }
 
 export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
-  const { getPricePreview, resetCheckoutData } = usePaddleContext();
+  const { getPricePreview, getChargePreview, resetCheckoutData } = usePaddleContext();
   const [pricePreviewErrored, setPricePreviewErrored] = useState(false);
   const [isLoadingPricePreview, setIsLoadingPricePreview] = useState(true);
   const [products, setProducts] = useState<Array<PricePreview>>();
+  const [additionalFeedPricePreview, setAdditionalFeedPricePreview] = useState<PricePreview | null>(
+    null
+  );
+  const [chargePreview, setChargePreview] = useState<string | null>(null);
+  const [additionalFeedsInput, setAdditionalFeedsInput] = useState<number>(0);
+  const [loadingAdditionalFeedsChange, setLoadingAdditionalFeedsChange] = useState(false);
   const { status: userStatus, error: userError, data: userData } = useUserMe();
   const [interval, setInterval] = useState<"month" | "year">(initialInterval);
   const { data: subProducts, error: subProductsError } = useSubscriptionProducts();
+  const [baseAdditionalFeedsPrice, setBaseAdditionalFeedsPrice] = useState<string | null>(null);
   const [changeSubscriptionDetails, setChangeSubscriptionDetails] =
     useState<ChangeSubscriptionDetails>();
   const navigate = useNavigate();
   const userBillingInterval = userData?.result.subscription.billingInterval;
   const billingPeriodEndsAt = userData?.result.subscription.billingPeriod?.end;
+  const priceIdOfAdditionalFeeds = subProducts?.data.products
+    .filter((p) => p.id === ProductKey.Tier3Feed)
+    .map((p) => p.prices.find((price) => price.interval === interval)?.id)
+    .filter((id): id is string => !!id)[0];
+
+  const priceIdOfTier3 = subProducts?.data.products
+    .filter((p) => p.id === ProductKey.Tier3)
+    .map((p) => p.prices.find((price) => price.interval === interval)?.id)
+    .filter((id): id is string => !!id)[0];
+
+  const additionalFeedsQuantity = additionalFeedPricePreview?.prices[0].quantity;
+  const userSubscriptionAdditionalFeeds = userData?.result.subscription.addons?.find(
+    (a) => a.key === ProductKey.Tier3Feed
+  )?.quantity;
 
   const onClosePricingModal = () => {
     resetCheckoutData();
@@ -220,17 +260,46 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
     }
   };
 
-  const onClickPrice = (priceId?: string, productId?: string, isDowngrade?: boolean) => {
+  const onClickPrice = (priceId?: string, productId?: ProductKey, isDowngrade?: boolean) => {
     if (!priceId || !productId || !userData) {
       return;
     }
 
     if (userData.result.subscription.product.key === ProductKey.Free) {
-      navigate(pages.checkout(priceId));
+      navigate(
+        pages.checkout(
+          priceId,
+          productId === ProductKey.Tier3 &&
+            !!additionalFeedsQuantity &&
+            additionalFeedsQuantity > 0 &&
+            priceIdOfAdditionalFeeds
+            ? {
+                priceId: priceIdOfAdditionalFeeds,
+                quantity: additionalFeedsQuantity,
+              }
+            : undefined
+        )
+      );
       onClose();
     } else {
       setChangeSubscriptionDetails({
-        priceId,
+        prices: [
+          {
+            priceId,
+            quantity: 1,
+          },
+          ...(productId === ProductKey.Tier3 &&
+          !!additionalFeedsQuantity &&
+          additionalFeedsQuantity > 0 &&
+          priceIdOfAdditionalFeeds
+            ? [
+                {
+                  priceId: priceIdOfAdditionalFeeds,
+                  quantity: additionalFeedsQuantity,
+                },
+              ]
+            : []),
+        ],
         productId,
         isDowngrade,
       });
@@ -244,26 +313,189 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
     }
   }, [userBillingInterval]);
 
+  // useEffect(() => {
+  //   const addons = userData?.result.subscription.addons || [];
+
+  //   const extraFeedsAddonQuantity = addons.find((a) => a.key === ProductKey.Tier3Feed)?.quantity;
+
+  //   if (extraFeedsAddonQuantity) {
+  //     setAdditionalFeeds(extraFeedsAddonQuantity);
+  //   }
+
+  //   getPricePreview([
+  //     {
+  //       priceId: priceIdOfAdditionalFeeds as string,
+  //       quantity: additionalFeeds || 1,
+  //     },
+  //   ]).then((preview) => {
+  //     const additionalFeedsPreview = preview.find((p) => p.id === ProductKey.Tier3Feed);
+
+  //     if (additionalFeedsPreview) {
+  //       setAdditionalFeedPricePreview(additionalFeedsPreview);
+  //     }
+  //   });
+  // }, [userData?.result.subscription.addons?.length]);
+
+  // useEffect(() => {
+  //   if (!priceIdOfAdditionalFeeds || !priceIdOfTier3) {
+  //     return;
+  //   }
+
+  //   async function getPreview() {
+  //     const [preview, chargePreviewResult] = await Promise.all([
+  //       getPricePreview([
+  //         {
+  //           priceId: priceIdOfAdditionalFeeds as string,
+  //           quantity: additionalFeeds || 1,
+  //         },
+  //       ]),
+  //       getChargePreview([
+  //         {
+  //           priceId: priceIdOfAdditionalFeeds as string,
+  //           quantity: additionalFeeds || 1,
+  //         },
+  //         {
+  //           priceId: priceIdOfTier3 as string,
+  //           quantity: 1,
+  //         },
+  //       ]),
+  //     ]);
+
+  //     const additionalFeedsPreview = preview.find((p) => p.id === ProductKey.Tier3Feed);
+
+  //     if (additionalFeedsPreview) {
+  //       setAdditionalFeedPricePreview(additionalFeedsPreview);
+  //     }
+
+  //     setChargePreview(chargePreviewResult.totalFormatted);
+  //   }
+
+  //   setAdditionalFeedPricePreview(null);
+  //   setChargePreview(null);
+  //   getPreview();
+  // }, [additionalFeeds, interval, priceIdOfAdditionalFeeds, priceIdOfTier3]);
+
+  const onChangeAdditionalFeeds = (newQuantity: number) => {
+    if (!priceIdOfAdditionalFeeds || !priceIdOfTier3) {
+      return;
+    }
+
+    setLoadingAdditionalFeedsChange(true);
+
+    async function getPreview() {
+      const [preview, chargePreviewResult] = await Promise.all([
+        getPricePreview([
+          {
+            priceId: priceIdOfAdditionalFeeds as string,
+            quantity: newQuantity,
+          },
+        ]),
+        getChargePreview([
+          {
+            priceId: priceIdOfAdditionalFeeds as string,
+            quantity: newQuantity,
+          },
+          {
+            priceId: priceIdOfTier3 as string,
+            quantity: 1,
+          },
+        ]),
+      ]);
+      const additionalFeedsPreview = preview.find((p) => p.id === ProductKey.Tier3Feed);
+
+      if (additionalFeedsPreview) {
+        setAdditionalFeedPricePreview(additionalFeedsPreview);
+      }
+
+      setChargePreview(chargePreviewResult.totalFormatted);
+      setLoadingAdditionalFeedsChange(false);
+    }
+
+    getPreview();
+  };
+
+  useEffect(() => {
+    onChangeAdditionalFeeds(additionalFeedsInput);
+  }, [interval]);
+
   useEffect(() => {
     if (!isOpen) {
       return;
     }
 
     async function execute() {
-      if (!subProducts) {
+      if (!subProducts || !userData) {
         return;
       }
 
       try {
         setIsLoadingPricePreview(true);
-        const pricePreview = await getPricePreview(
-          subProducts.data.products.flatMap((p) =>
-            p.prices.map((pr) => pr.id).filter((pr) => pr.startsWith("pri_"))
-          )
+
+        const userAdditionalFeedsAddon = userData.result.subscription.addons?.find(
+          (a) => a.key === ProductKey.Tier3Feed
         );
 
+        if (userAdditionalFeedsAddon?.quantity) {
+          setAdditionalFeedsInput(userAdditionalFeedsAddon.quantity);
+        }
+
+        // Fetch main tier prices
+        const pricesToPreview = [
+          ProductKey.Tier1,
+          ProductKey.Tier2,
+          ProductKey.Tier3,
+          ProductKey.Tier3Feed,
+        ];
+        const [pricePreview, totalT3ChargePreview] = await Promise.all([
+          getPricePreview(
+            subProducts.data.products.flatMap((product) => {
+              if (!pricesToPreview.includes(product.id as ProductKey)) {
+                return [];
+              }
+
+              if (product.id === ProductKey.Tier3Feed && userAdditionalFeedsAddon) {
+                return product.prices.map((p) => ({
+                  priceId: p.id,
+                  quantity: userAdditionalFeedsAddon.quantity,
+                }));
+              }
+
+              return product.prices.map((price) => ({
+                priceId: price.id,
+                quantity: 1,
+              }));
+            })
+          ),
+          getChargePreview([
+            {
+              priceId: priceIdOfAdditionalFeeds as string,
+              quantity: userAdditionalFeedsAddon?.quantity || 1,
+            },
+            {
+              priceId: priceIdOfTier3 as string,
+              quantity: 1,
+            },
+          ]),
+        ]);
+
+        setChargePreview(totalT3ChargePreview.totalFormatted);
         setProducts(pricePreview);
+
+        const t3FeedPricePreview = pricePreview.find((p) => p.id === ProductKey.Tier3Feed);
+
+        if (t3FeedPricePreview) {
+          setAdditionalFeedPricePreview(t3FeedPricePreview);
+
+          const basePriceFormatted = t3FeedPricePreview.prices.find(
+            (p) => p.interval === "month"
+          )?.formattedPrice;
+
+          if (basePriceFormatted) {
+            setBaseAdditionalFeedsPrice(basePriceFormatted);
+          }
+        }
       } catch (err) {
+        console.error(err);
         setPricePreviewErrored(true);
         captureException(new Error(`Price preview failed to load`), {
           extra: {
@@ -276,7 +508,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
     }
 
     execute();
-  }, [!!subProducts, isOpen]);
+  }, [!!subProducts, !!userData, isOpen]);
 
   const biggestPriceLength = products
     ? Math.max(
@@ -291,17 +523,47 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
   const userSubscription = userData?.result.subscription;
   const userTierIndex = tiers?.findIndex((p) => p.productId === userSubscription?.product.key);
   const failedToLoadPrices = pricePreviewErrored || subProductsError || userError;
+  const changeSubscriptionDetailsWithProduct = changeSubscriptionDetails?.prices
+    .map((price) => {
+      if (price.priceId === "free-monthly") {
+        return {
+          ...price,
+          productKey: ProductKey.Free,
+          productName: "Free",
+          formattedPrice: "0",
+          interval: "month" as const,
+        };
+      }
+
+      const product = products?.find((prod) =>
+        prod.prices.some((thisPrice) => thisPrice.id === price.priceId)
+      );
+
+      const productPrice = product?.prices.find((p) => p.id === price.priceId);
+
+      if (!product || !productPrice) {
+        return null;
+      }
+
+      return {
+        ...price,
+        productKey: product.id,
+        productName: product.name,
+        formattedPrice: productPrice.formattedPrice,
+        interval: productPrice.interval,
+      };
+    })
+    .filter((p): p is NonNullable<typeof p> => !!p);
 
   return (
     <Box>
       <ChangeSubscriptionDialog
-        products={products}
         isDowngrade={changeSubscriptionDetails?.isDowngrade}
         billingPeriodEndsAt={billingPeriodEndsAt}
         details={
-          changeSubscriptionDetails
+          changeSubscriptionDetailsWithProduct?.length
             ? {
-                priceId: changeSubscriptionDetails.priceId,
+                prices: changeSubscriptionDetailsWithProduct,
               }
             : undefined
         }
@@ -346,7 +608,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                     {failedToLoadPrices && (
                       <Stack mb={4}>
                         <InlineErrorAlert
-                          title="Something went wrong while loading prices"
+                          title="Something went wrong while loading prices."
                           description="This issue has been automatically sent for diagnostics. Please try again later, refreshing the page, or contacting us at support@monitorss.xyz"
                         />
                       </Stack>
@@ -390,7 +652,15 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                           >
                             {tiers.map(
                               (
-                                { name, priceFormatted, highlighted, features, productId },
+                                {
+                                  name: _name,
+                                  priceFormatted: _priceFormatted,
+                                  highlighted: _highlighted,
+                                  features,
+                                  productId,
+                                  baseFeedLimit: _baseFeedLimit,
+                                  supportsAdditionalFeeds,
+                                },
                                 currentTierIndex
                               ) => {
                                 const associatedProduct = products?.find((p) => p.id === productId);
@@ -399,14 +669,17 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                   (p) => p.interval === interval
                                 );
 
-                                const shorterProductPrice =
-                                  associatedPrice?.formattedPrice.endsWith(".00") ? (
-                                    <Text fontSize={priceTextSize} fontWeight="bold">
-                                      {associatedPrice?.formattedPrice.slice(0, -3) || 0}
-                                    </Text>
-                                  ) : (
-                                    associatedPrice?.formattedPrice
-                                  );
+                                const basePrice = associatedPrice?.formattedPrice || "$0";
+
+                                const shorterProductPrice = basePrice.endsWith(".00") ? (
+                                  <Text fontSize={priceTextSize} fontWeight="bold">
+                                    {basePrice.slice(0, -3)}
+                                  </Text>
+                                ) : (
+                                  <Text fontSize={priceTextSize} fontWeight="bold">
+                                    {basePrice}
+                                  </Text>
+                                );
 
                                 const isOnThisTier =
                                   userSubscription.product.key === productId &&
@@ -423,6 +696,9 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                   (userSubscription.product.key === productId &&
                                     userSubscription.billingInterval !== interval &&
                                     userSubscription.billingInterval === "year");
+                                const isUpdate =
+                                  isOnThisTier &&
+                                  userSubscriptionAdditionalFeeds !== additionalFeedsQuantity;
 
                                 return (
                                   <Card
@@ -482,15 +758,138 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                             );
                                           })}
                                         </Stack>
+                                        {supportsAdditionalFeeds && (
+                                          <Box>
+                                            <Divider my={4} />
+                                            <Stack spacing={3}>
+                                              <Text fontSize="md" fontWeight="semibold">
+                                                Additional Feeds
+                                              </Text>
+                                              {!baseAdditionalFeedsPrice ? (
+                                                <Skeleton height="18px" width="30px" />
+                                              ) : (
+                                                <Text fontSize="sm" color="whiteAlpha.700">
+                                                  Add more feeds for{" "}
+                                                  {baseAdditionalFeedsPrice || "-"} each per month.
+                                                </Text>
+                                              )}
+                                              <HStack spacing={2} alignItems="center">
+                                                <IconButton
+                                                  aria-label="Decrease additional feeds"
+                                                  icon={<MinusIcon />}
+                                                  size="sm"
+                                                  variant="outline"
+                                                  onClick={() => {
+                                                    const newQuantity = additionalFeedsInput - 1;
+
+                                                    if (newQuantity > 0) {
+                                                      onChangeAdditionalFeeds(newQuantity);
+                                                      setAdditionalFeedsInput(newQuantity);
+                                                    }
+                                                  }}
+                                                  isDisabled={!additionalFeedsQuantity}
+                                                />
+                                                <NumberInput
+                                                  value={additionalFeedsInput}
+                                                  onChange={(valueString) => {
+                                                    const newQuantity = Math.max(
+                                                      0,
+                                                      parseInt(valueString, 10)
+                                                    );
+                                                    onChangeAdditionalFeeds(newQuantity);
+                                                    setAdditionalFeedsInput(newQuantity);
+                                                  }}
+                                                  min={0}
+                                                  max={1000}
+                                                  width="80px"
+                                                  size="sm"
+                                                >
+                                                  <NumberInputField textAlign="center" />
+                                                  <NumberInputStepper>
+                                                    <NumberIncrementStepper />
+                                                    <NumberDecrementStepper />
+                                                  </NumberInputStepper>
+                                                </NumberInput>
+                                                <IconButton
+                                                  aria-label="Increase additional feeds"
+                                                  icon={<AddIcon />}
+                                                  size="sm"
+                                                  variant="outline"
+                                                  onClick={() => {
+                                                    const newQuantity = additionalFeedsInput + 1;
+
+                                                    onChangeAdditionalFeeds(newQuantity);
+                                                    setAdditionalFeedsInput(newQuantity);
+                                                  }}
+                                                />
+                                              </HStack>
+                                              <Text
+                                                fontSize="sm"
+                                                color="blue.300"
+                                                aria-live="polite"
+                                                aria-busy={
+                                                  loadingAdditionalFeedsChange ||
+                                                  !additionalFeedPricePreview
+                                                }
+                                                hidden={additionalFeedsQuantity === undefined}
+                                              >
+                                                {loadingAdditionalFeedsChange ||
+                                                !additionalFeedPricePreview ? (
+                                                  <Skeleton height="22px" width="180px" />
+                                                ) : (
+                                                  <Text as="span">
+                                                    {additionalFeedPricePreview.prices[0].quantity}{" "}
+                                                    additional feeds: +
+                                                    {
+                                                      additionalFeedPricePreview.prices.find(
+                                                        (p) => p.interval === interval
+                                                      )?.formattedPrice
+                                                    }
+                                                    {interval === "month"
+                                                      ? " per month"
+                                                      : " per year"}
+                                                  </Text>
+                                                )}
+                                              </Text>
+                                            </Stack>
+                                          </Box>
+                                        )}
+                                        {supportsAdditionalFeeds && additionalFeedsInput > 0 && (
+                                          <Box
+                                            aria-live="polite"
+                                            aria-busy={loadingAdditionalFeedsChange}
+                                          >
+                                            <Divider my={4} />
+                                            <Stack spacing={2}>
+                                              <Text fontSize="md" fontWeight="semibold">
+                                                Total
+                                              </Text>
+                                              {loadingAdditionalFeedsChange ? (
+                                                <Skeleton height="28px" width="120px" />
+                                              ) : (
+                                                <Text
+                                                  fontSize="lg"
+                                                  fontWeight="bold"
+                                                  color="blue.300"
+                                                >
+                                                  {chargePreview}
+                                                  {interval === "month"
+                                                    ? " per month"
+                                                    : " per year"}
+                                                </Text>
+                                              )}
+                                            </Stack>
+                                          </Box>
+                                        )}
                                       </Stack>
                                     </CardBody>
                                     <CardFooter justifyContent="center">
                                       <Stack width="100%" spacing={0}>
                                         <Button
-                                          aria-disabled={isOnThisTier}
+                                          aria-disabled={isOnThisTier && !isUpdate}
                                           width="100%"
                                           onClick={() => {
-                                            if (isOnThisTier) {
+                                            if (isOnThisTier && !isUpdate) {
                                               notifyInfo("You are already on this plan");
 
                                               return;
@@ -503,21 +902,22 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                             );
                                           }}
                                           variant={
-                                            isOnThisTier
+                                            isOnThisTier || (isOnThisTier && isUpdate)
                                               ? "outline"
                                               : isAboveUserTier
                                               ? "solid"
                                               : "outline"
                                           }
                                           colorScheme={
-                                            isAboveUserTier
+                                            isAboveUserTier || (isOnThisTier && isUpdate)
                                               ? "blue"
                                               : isBelowUserTier
                                               ? "red"
                                               : undefined
                                           }
                                         >
-                                          {isOnThisTier && <span>Current Plan</span>}
+                                          {isOnThisTier && !isUpdate && <span>Current Plan</span>}
+                                          {isOnThisTier && isUpdate && <span>Update Plan</span>}
                                           {isBelowUserTier && (
                                             <span>Downgrade to {associatedProduct?.name}</span>
                                           )}

@@ -1,4 +1,4 @@
-import { InferType, array, bool, object, string } from "yup";
+import { InferType, array, bool, number, object, string } from "yup";
 import { ProductKey } from "../../../constants";
 
 export const UserMeSchema = object({
@@ -15,6 +15,14 @@ export const UserMeSchema = object({
       key: string().oneOf(Object.values(ProductKey)).required(),
       name: string().required(),
     }).required(),
+    addons: array(
+      object({
+        key: string().required(),
+        quantity: number().required(),
+      }).required()
+    )
+      .optional()
+      .nullable(),
     status: string().oneOf(["ACTIVE", "CANCELLED", "PAST_DUE", "PAUSED"]).required(),
     nextBillDate: string().nullable(),
     cancellationDate: string().nullable(),
