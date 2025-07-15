@@ -123,7 +123,7 @@ export class FeedFetcherListenerService {
             key: this.calculateCurrentlyProcessingCacheKeyForMessage(message),
             body: '1',
             getOldValue: true,
-            expSeconds: rateSeconds,
+            expSeconds: Math.floor(rateSeconds * 0.75),
           });
 
           if (currentlyProcessing) {

@@ -273,6 +273,10 @@ export class FeedConnectionsDiscordChannelsService {
 
         if (detectedType === FeedConnectionDiscordChannelType.Thread) {
           type = FeedConnectionDiscordWebhookType.Thread;
+        } else if (
+          detectedType === FeedConnectionDiscordChannelType.ForumThread
+        ) {
+          type = FeedConnectionDiscordWebhookType.ForumThread;
         } else {
           throw new InvalidDiscordChannelException();
         }
@@ -733,6 +737,10 @@ export class FeedConnectionsDiscordChannelsService {
 
         if (detectedType === FeedConnectionDiscordChannelType.Thread) {
           type = FeedConnectionDiscordWebhookType.Thread;
+        } else if (
+          detectedType === FeedConnectionDiscordChannelType.ForumThread
+        ) {
+          type = FeedConnectionDiscordWebhookType.ForumThread;
         } else {
           throw new InvalidDiscordChannelException();
         }

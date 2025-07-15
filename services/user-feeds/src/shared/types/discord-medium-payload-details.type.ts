@@ -54,7 +54,11 @@ export const discordMediumPayloadDetailsSchema = z.object({
       name: z.string().optional(),
       iconUrl: z.string().optional(),
       type: z
-        .union([z.literal("forum"), z.literal("thread")])
+        .union([
+          z.literal("forum"),
+          z.literal("thread"),
+          z.literal("forum-thread"),
+        ])
         .optional()
         .nullable()
         .default(null),

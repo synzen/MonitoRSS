@@ -52,7 +52,7 @@ const DiscordChannelConnectionDetailsSchema = object({
     name: string().optional(),
     iconUrl: string().optional(),
     guildId: string().required(),
-    type: string().nullable().oneOf(["forum", "thread"]),
+    type: string().nullable().oneOf(["forum", "thread", "forum-thread"]),
     threadId: string(),
     isApplicationOwned: boolean(),
     channelId: string(),

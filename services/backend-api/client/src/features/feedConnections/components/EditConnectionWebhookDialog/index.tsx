@@ -20,7 +20,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, object, string } from "yup";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { useDiscordUserMe } from "../../../discordUser";
 import {
   DiscordActiveThreadDropdown,
@@ -80,9 +80,8 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
   const [serverId, channelId] = watch(["serverId", "applicationWebhook.channelId"]);
   const { data: discordUser, status: discordUserStatus } = useDiscordUserMe();
   const initialRef = useRef<HTMLInputElement>(null);
-  const [error, setError] = useState("");
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
-  const { mutateAsync } = useUpdateDiscordChannelConnection();
+  const { mutateAsync, error } = useUpdateDiscordChannelConnection();
 
   const onSubmit = async (formData: FormData) => {
     const { name, applicationWebhook } = formData;
@@ -117,7 +116,6 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
 
   useEffect(() => {
     reset();
-    setError("");
   }, [isOpen]);
 
   const webhooksDisabled = discordUserStatus !== "success" || !discordUser?.supporter;
@@ -328,9 +326,12 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                   <FormErrorMessage>{errors.applicationWebhook?.iconUrl?.message}</FormErrorMessage>
                 </FormControl>
                 {error && (
-                  <InlineErrorAlert title={t("common.errors.failedToSave")} description={error} />
+                  <InlineErrorAlert
+                    title={t("common.errors.failedToSave")}
+                    description={error.message}
+                  />
                 )}
-                {isSubmitted && !formErrorCount && (
+                {isSubmitted && !!formErrorCount && (
                   <InlineErrorIncompleteFormAlert fieldCount={formErrorCount} />
                 )}
               </Stack>
