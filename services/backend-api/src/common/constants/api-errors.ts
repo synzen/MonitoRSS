@@ -47,6 +47,7 @@ export enum ApiErrorCode {
   INVALID_CUSTOM_PLACEHOLDERS_REGEX_PREVIEW_INPUT = "INVALID_CUSTOM_PLACEHOLDERS_REGEX_PREVIEW_INPUT",
   INVALID_FILTERS_REGEX = "INVALID_FILTERS_REGEX",
   TRANSACTION_BALANCE_TOO_LOW = "TRANSACTION_BALANCE_TOO_LOW",
+  SUBSCRIPTION_ABOUT_TO_RENEW = "SUBSCRIPTION_ABOUT_TO_RENEW",
 }
 
 // Create a package for the frontend?
@@ -114,4 +115,6 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   FEED_INVALID_SSL_CERT: "Invalid SSL certificate on feed site",
   ADD_FEED_WITH_SOURCE_FEED_NOT_FOUND: "Source feed not found",
   TRANSACTION_BALANCE_TOO_LOW: "Transaction balance is too low.",
+  SUBSCRIPTION_ABOUT_TO_RENEW:
+    "Subscription is about to renew. Wait at least 30 minutes before trying again.",
 };

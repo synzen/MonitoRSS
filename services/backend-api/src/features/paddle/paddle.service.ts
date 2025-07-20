@@ -10,6 +10,7 @@ import {
 } from "../supporter-subscriptions/types/paddle-products-response.type";
 import { PaddleSubscriptionResponse } from "../supporter-subscriptions/types/paddle-subscription-response.type";
 import { TransactionBalanceTooLowException } from "./exceptions/transaction-balance-too-low.exception";
+import { CannotRenewSubscriptionBeforeRenewal } from "./exceptions/cannot-renew-subscription-before-renewal.exception";
 
 @Injectable()
 export class PaddleService {
@@ -131,6 +132,10 @@ export class PaddleService {
         "subscription_update_transaction_balance_less_than_charge_limit"
       ) {
         throw new TransactionBalanceTooLowException();
+      }
+
+      if (responseJson?.error?.code === "subscription_locked_renewal") {
+        throw new CannotRenewSubscriptionBeforeRenewal();
       }
 
       throw new Error(

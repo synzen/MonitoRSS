@@ -45,6 +45,7 @@ export enum ApiErrorCode {
   FEED_INVALID_SSL_CERT = "FEED_INVALID_SSL_CERT",
   ADD_FEED_WITH_SOURCE_FEED_NOT_FOUND = "ADD_FEED_WITH_SOURCE_FEED_NOT_FOUND",
   TRANSACTION_BALANCE_TOO_LOW = "TRANSACTION_BALANCE_TOO_LOW",
+  SUBSCRIPTION_ABOUT_TO_RENEW = "SUBSCRIPTION_ABOUT_TO_RENEW",
 }
 
 const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
@@ -100,6 +101,8 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
     "Source feed to copy settings from was not found. Ensure the source feed exists and you have permission to view it.",
   TRANSACTION_BALANCE_TOO_LOW:
     "A minimum of $0.70 USD is required for a transaction whose total (including prorated credit for time remaining on the current tier) is greater than $0.00. Try again by either increasing your tier or waiting until the end of your billing period.",
+  SUBSCRIPTION_ABOUT_TO_RENEW:
+    "Cannot update subscription when renewal is within the next 30 minutes. Try again later.",
 };
 
 export const getStandardErrorCodeMessage = (code: ApiErrorCode) => {
