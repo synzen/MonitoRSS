@@ -430,7 +430,9 @@ export class ArticleFormatterService {
     });
 
     if (splitOptions?.isEnabled) {
-      if (split.length === 1) {
+      if (split.length === 0) {
+        return [""];
+      } else if (split.length === 1) {
         return [split[0].trim()];
       } else if (split.length === 2) {
         const firstPart = split[0].trimStart();
