@@ -1,5 +1,3 @@
-import { InjectRepository } from "@mikro-orm/nestjs";
-import { EntityRepository } from "@mikro-orm/postgresql";
 import { Injectable } from "@nestjs/common";
 import {
   ArticleDeliveryErrorCode,
@@ -11,7 +9,6 @@ import { MikroORM } from "@mikro-orm/core";
 import { GetUserFeedDeliveryRecordsOutputDto } from "../feeds/dto";
 import { DeliveryLogStatus } from "../feeds/constants/delivery-log-status.constants";
 import PartitionedDeliveryRecordInsert from "./types/partitioned-delivery-record-insert.type";
-import logger from "../shared/utils/logger";
 import { AsyncLocalStorage } from "node:async_hooks";
 
 const { Failed, Rejected, Sent, PendingDelivery, FilteredOut } =
@@ -26,8 +23,6 @@ const asyncLocalStorage = new AsyncLocalStorage<AsyncStore>();
 @Injectable()
 export class DeliveryRecordService {
   constructor(
-    @InjectRepository(DeliveryRecord)
-    private readonly recordRepo: EntityRepository<DeliveryRecord>,
     private readonly orm: MikroORM // Required for @UseRequestContext()
   ) {}
 
@@ -154,10 +149,11 @@ export class DeliveryRecordService {
     store.toInsert.push(...partitionedInserts);
 
     if (flush) {
-      await this.orm.em.persistAndFlush(records);
-      await this.flushPendingInserts();
-    } else {
-      this.orm.em.persist(records);
+      const { affectedRows } = await this.flushPendingInserts();
+
+      return {
+        inserted: affectedRows,
+      };
     }
   }
 
@@ -169,35 +165,38 @@ export class DeliveryRecordService {
       internalMessage?: string;
       externalDetail?: string;
       articleId?: string;
-    }
-  ) {
+    },
+    returnRecord?: boolean
+  ): Promise<{
+    feed_id: string;
+    medium_id: string;
+    status: ArticleDeliveryStatus;
+    error_code?: string;
+    internal_message?: string;
+  }> {
     const { status, errorCode, internalMessage, externalDetail } = details;
 
-    const record = await this.recordRepo.findOneOrFail(id);
-
-    record.status = status;
-    record.error_code = errorCode;
-    record.internal_message = internalMessage;
-    record.external_detail = externalDetail;
-
-    await this.orm.em.persistAndFlush(record);
-
-    try {
-      await this.orm.em.getConnection().execute(
-        `
+    const [res] = await this.orm.em.getConnection().execute(
+      `
       UPDATE delivery_record_partitioned
       SET status = ?, error_code = ?, internal_message = ?, external_detail = ?
       WHERE id = ?
+      ${
+        returnRecord
+          ? "RETURNING status, error_code, feed_id, medium_id, internal_message"
+          : "RETURNING id"
+      }
     `,
-        [status, errorCode, internalMessage, externalDetail, id]
+      [status, errorCode, internalMessage, externalDetail, id]
+    );
+
+    if (!res) {
+      throw new Error(
+        `Failed to update status of delivery record for ${id}: Record not found`
       );
-    } catch (err) {
-      logger.error("Error while updating partitioned delivery record", {
-        error: (err as Error).stack,
-      });
     }
 
-    return record;
+    return res;
   }
 
   async countDeliveriesInPastTimeframe(
@@ -372,14 +371,16 @@ export class DeliveryRecordService {
     const { toInsert: inserts } = store;
 
     if (inserts.length === 0) {
-      return;
+      return {
+        affectedRows: 0,
+      };
     }
 
     const em = this.orm.em.fork().getConnection();
     const transaction = await em.begin();
 
     try {
-      await Promise.all(
+      const res = await Promise.all(
         inserts.map((record) => {
           return em.execute(
             `INSERT INTO delivery_record_partitioned (
@@ -420,12 +421,15 @@ export class DeliveryRecordService {
       );
 
       await em.commit(transaction);
+
+      return {
+        affectedRows: res.reduce((accumulator, cv) => {
+          return accumulator + cv.affectedRows;
+        }, 0) as number,
+      };
     } catch (err) {
       await em.rollback(transaction);
-
-      logger.error("Error while inserting partitioned delivery records", {
-        error: (err as Error).stack,
-      });
+      throw err;
     } finally {
       store.toInsert = [];
     }

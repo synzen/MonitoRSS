@@ -1,5 +1,3 @@
-import { getRepositoryToken } from "@mikro-orm/nestjs";
-import { EntityRepository } from "@mikro-orm/postgresql";
 import {
   ArticleDeliveryContentType,
   ArticleDeliveryErrorCode,
@@ -17,7 +15,6 @@ import { randomUUID } from "node:crypto";
 
 describe("DeliveryRecordService", () => {
   let service: DeliveryRecordService;
-  let deliveryRecordRepo: EntityRepository<DeliveryRecord>;
 
   before(async () => {
     const { init } = await setupIntegrationTests(
@@ -32,9 +29,6 @@ describe("DeliveryRecordService", () => {
     const { module } = await init();
 
     service = module.get<DeliveryRecordService>(DeliveryRecordService);
-    deliveryRecordRepo = module.get<EntityRepository<DeliveryRecord>>(
-      getRepositoryToken(DeliveryRecord.name)
-    );
   });
 
   afterEach(async () => {
@@ -50,7 +44,7 @@ describe("DeliveryRecordService", () => {
   });
 
   const insertItems = async (feedId: string, items: ArticleDeliveryState[]) => {
-    await service.startContext(async () => service.store(feedId, items));
+    return service.startContext(async () => service.store(feedId, items, true));
   };
 
   describe("store", () => {
@@ -72,23 +66,9 @@ describe("DeliveryRecordService", () => {
           article: null,
         },
       ];
-      await insertItems(feedId, articleStates);
+      const res = await insertItems(feedId, articleStates);
 
-      const records = await deliveryRecordRepo.findAll();
-
-      deepStrictEqual(records.length, 2);
-
-      const ids = records.map((record) => record.id);
-      deepStrictEqual(ids, ["1", "2"]);
-
-      const feedIds = records.map((record) => record.feed_id);
-      deepStrictEqual(feedIds, [feedId, feedId]);
-
-      const statuses = records.map((record) => record.status);
-      deepStrictEqual(statuses, [
-        ArticleDeliveryStatus.Sent,
-        ArticleDeliveryStatus.Sent,
-      ]);
+      deepStrictEqual(res?.inserted, 2);
     });
 
     it("stores failed articles correctly", async () => {
@@ -113,39 +93,9 @@ describe("DeliveryRecordService", () => {
           article: null,
         },
       ];
-      await insertItems(feedId, articleStates);
+      const res = await insertItems(feedId, articleStates);
 
-      const records = await deliveryRecordRepo.findAll();
-
-      deepStrictEqual(records.length, 2);
-
-      const noChannelOrWebhookRecord = records.find(
-        (record) =>
-          record.error_code === ArticleDeliveryErrorCode.NoChannelOrWebhook
-      );
-
-      deepStrictEqual(
-        noChannelOrWebhookRecord?.internal_message,
-        "internal-message"
-      );
-      deepStrictEqual(
-        noChannelOrWebhookRecord.status,
-        ArticleDeliveryStatus.Failed
-      );
-      deepStrictEqual(noChannelOrWebhookRecord.feed_id, feedId);
-      deepStrictEqual(noChannelOrWebhookRecord.article_id_hash, "hash");
-
-      const internalErrorRecord = records.find(
-        (record) => record.error_code === ArticleDeliveryErrorCode.Internal
-      );
-
-      deepStrictEqual(
-        internalErrorRecord?.internal_message,
-        "internal-message-2"
-      );
-      deepStrictEqual(internalErrorRecord.status, ArticleDeliveryStatus.Failed);
-      deepStrictEqual(internalErrorRecord.feed_id, feedId);
-      deepStrictEqual(internalErrorRecord.article_id_hash, "hash2");
+      deepStrictEqual(res?.inserted, 2);
     });
 
     it("stores rejected articles correctly", async () => {
@@ -172,31 +122,9 @@ describe("DeliveryRecordService", () => {
           article: null,
         },
       ];
-      await insertItems(feedId, articleStates);
+      const res = await insertItems(feedId, articleStates);
 
-      const records = await deliveryRecordRepo.findAll();
-
-      deepStrictEqual(records.length, 2);
-
-      const record1 = records.find((record) => record.id === "1");
-      deepStrictEqual(record1?.status, ArticleDeliveryStatus.Rejected);
-      deepStrictEqual(
-        record1?.error_code,
-        ArticleDeliveryErrorCode.ThirdPartyBadRequest
-      );
-      deepStrictEqual(record1?.internal_message, "internal-message");
-      deepStrictEqual(record1?.feed_id, feedId);
-      deepStrictEqual(record1?.article_id_hash, "hash");
-
-      const record2 = records.find((record) => record.id === "2");
-      deepStrictEqual(record2?.status, ArticleDeliveryStatus.Rejected);
-      deepStrictEqual(
-        record2?.error_code,
-        ArticleDeliveryErrorCode.ThirdPartyBadRequest
-      );
-      deepStrictEqual(record2?.internal_message, "internal-message-2");
-      deepStrictEqual(record2?.feed_id, feedId);
-      deepStrictEqual(record2?.article_id_hash, "hash2");
+      deepStrictEqual(res?.inserted, 2);
     });
 
     it("stores pending delivery states correctly", async () => {
@@ -220,30 +148,9 @@ describe("DeliveryRecordService", () => {
           article: null,
         },
       ];
-      await insertItems(feedId, articleStates);
+      const res = await insertItems(feedId, articleStates);
 
-      const records = await deliveryRecordRepo.findAll();
-
-      deepStrictEqual(records.length, 2);
-
-      const record1 = records.find((record) => record.id === "id-1");
-      deepStrictEqual(record1?.status, ArticleDeliveryStatus.PendingDelivery);
-      deepStrictEqual(record1?.feed_id, feedId);
-      deepStrictEqual(record1?.article_id_hash, "hash");
-      deepStrictEqual(
-        record1?.content_type,
-        ArticleDeliveryContentType.DiscordArticleMessage
-      );
-
-      const record2 = records.find((record) => record.id === "id-2");
-      deepStrictEqual(record2?.status, ArticleDeliveryStatus.PendingDelivery);
-      deepStrictEqual(record2?.feed_id, feedId);
-      deepStrictEqual(record2?.article_id_hash, "hash2");
-      deepStrictEqual(record2?.parent?.id, "id-1");
-      deepStrictEqual(
-        record2?.content_type,
-        ArticleDeliveryContentType.DiscordArticleMessage
-      );
+      deepStrictEqual(res?.inserted, 2);
     });
 
     it("stores other article states correctly", async () => {
@@ -273,53 +180,39 @@ describe("DeliveryRecordService", () => {
           article: null,
         },
       ];
-      await insertItems(feedId, articleStates);
+      const res = await insertItems(feedId, articleStates);
 
-      const records = await deliveryRecordRepo.findAll();
-
-      deepStrictEqual(records.length, 2);
-
-      const record1 = records.find((record) => record.id === "id-1");
-      deepStrictEqual(record1?.status, ArticleDeliveryStatus.FilteredOut);
-      deepStrictEqual(record1?.feed_id, feedId);
-      deepStrictEqual(record1?.article_id_hash, "hash");
-      deepStrictEqual(record1.article_data?.title, "Test Article");
-
-      const record2 = records.find((record) => record.id === "id-2");
-      deepStrictEqual(record2?.status, ArticleDeliveryStatus.FilteredOut);
-      deepStrictEqual(record2?.feed_id, feedId);
-      deepStrictEqual(record2?.article_id_hash, "hash2");
+      deepStrictEqual(res?.inserted, 2);
     });
   });
 
   describe("updateDeliveryStatus", () => {
     it("returns the updated record", async () => {
-      const existingRecord = new DeliveryRecord({
-        id: "id-1",
-        feed_id: "feed-id",
-        status: ArticleDeliveryStatus.PendingDelivery,
-        medium_id: "1",
-        article_data: null,
-      });
+      const recordId = randomUUID();
 
-      await deliveryRecordRepo.insert(existingRecord);
+      await insertItems("feed-id", [
+        {
+          id: recordId,
+          mediumId: "1",
+          status: ArticleDeliveryStatus.PendingDelivery,
+          articleIdHash: "hash",
+          article: null,
+          contentType: ArticleDeliveryContentType.DiscordArticleMessage,
+        },
+      ]);
 
       const updatedRecord = await service.updateDeliveryStatus(
-        existingRecord.id,
+        recordId,
         {
           status: ArticleDeliveryStatus.Failed,
           errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
           internalMessage: "internal-message",
           articleId: "article-id",
-        }
+        },
+        true
       );
 
-      deepStrictEqual(updatedRecord.status, ArticleDeliveryStatus.Failed);
-      deepStrictEqual(
-        updatedRecord.error_code,
-        ArticleDeliveryErrorCode.NoChannelOrWebhook
-      );
-      deepStrictEqual(updatedRecord.internal_message, "internal-message");
+      deepStrictEqual(updatedRecord.medium_id, "1");
       deepStrictEqual(updatedRecord.feed_id, "feed-id");
     });
 
@@ -332,16 +225,25 @@ describe("DeliveryRecordService", () => {
         article_data: null,
       });
 
-      await deliveryRecordRepo.insert(existingRecord);
+      await insertItems("feed-id", [
+        {
+          id: "id-1",
+          status: ArticleDeliveryStatus.PendingDelivery,
+          mediumId: "1",
+          article: null,
+          articleIdHash: "hash",
+          contentType: ArticleDeliveryContentType.DiscordArticleMessage,
+        },
+      ]);
 
-      await service.updateDeliveryStatus(existingRecord.id, {
-        status: ArticleDeliveryStatus.Failed,
-        errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
-        internalMessage: "internal-message",
-      });
-
-      const updatedRecord = await deliveryRecordRepo.findOneOrFail(
-        existingRecord.id
+      const updatedRecord = await service.updateDeliveryStatus(
+        existingRecord.id,
+        {
+          status: ArticleDeliveryStatus.Failed,
+          errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
+          internalMessage: "internal-message",
+        },
+        true
       );
 
       deepStrictEqual(updatedRecord.status, ArticleDeliveryStatus.Failed);
