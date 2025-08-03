@@ -51,13 +51,6 @@ services:
     ports:
       - "5431:5432"
 
-  user-feeds-postgres-db:
-    extends:
-      file: docker-compose.base.yml
-      service: user-feeds-postgres-db
-    ports:
-      - "5430:5432"
-
   bot-presence-service:
     extends:
       file: docker-compose.base.yml
@@ -249,7 +242,6 @@ volumes:
   mongodb-dev-data:
   rabbitmq-data:
   feed-requests-postgres16-data:
-  user-feeds-postgres16-data:
   feed-requests-redis-data:
   fs-s3-storage-data:
     driver: local

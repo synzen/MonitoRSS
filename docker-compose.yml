@@ -29,11 +29,6 @@ services:
       file: ./docker-compose.base.yml
       service: feed-requests-postgres-db
 
-  user-feeds-postgres-db:
-    extends:
-      file: ./docker-compose.base.yml
-      service: user-feeds-postgres-db
-
   discord-rest-listener-service:
     extends:
       file: ./docker-compose.base.yml
@@ -142,7 +137,6 @@ volumes:
   mongodb-data:
   rabbitmq-data:
   feed-requests-postgres16-data:
-  user-feeds-postgres16-data:
   feed-requests-redis-data:
     driver: local
 

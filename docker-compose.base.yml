@@ -52,26 +52,6 @@ services:
     networks:
       - monitorss-default
 
-  user-feeds-postgres-db:
-    restart: always
-    healthcheck:
-      test: ["CMD", "pg_isready", "-q", "-d", "postgres", "-U", "postgres"]
-      timeout: 45s
-      interval: 10s
-      retries: 10
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    # Comment below to show logs
-    logging:
-      driver: none
-    image: postgres:16.3-alpine
-    volumes:
-      - user-feeds-postgres16-data:/var/lib/postgresql/data
-      - ./services/user-feeds/sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
-    networks:
-      - monitorss-default
-
   bot-presence-service:
     restart: on-failure:5
     build:
@@ -118,6 +98,7 @@ services:
         condition: service_started
     environment:
       - FEED_REQUESTS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/feedrequests
+      - FEED_REQUESTS_POSTGRES_SCHEMA=feedrequests
       - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
       - FEED_REQUESTS_API_KEY=feed-requests-api-key
       - FEED_REQUESTS_API_PORT=5000
@@ -149,6 +130,7 @@ services:
         condition: service_healthy
     environment:
       - FEED_REQUESTS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/feedrequests
+      - FEED_REQUESTS_POSTGRES_SCHEMA=feedrequests
       - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
       - FEED_REQUESTS_API_KEY=feed-requests-api-key
       - FEED_REQUESTS_API_PORT=5000
@@ -166,7 +148,7 @@ services:
       dockerfile: Dockerfile
       target: build
     depends_on:
-      - user-feeds-postgres-db
+      - feed-requests-postgres-db
       - feed-requests-service
       - rabbitmq-broker
     healthcheck:
@@ -175,7 +157,8 @@ services:
       timeout: 5s
       retries: 3
     environment:
-      - USER_FEEDS_POSTGRES_URI=postgres://postgres:postgres@user-feeds-postgres-db:5432
+      - USER_FEEDS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432
+      - USER_FEEDS_POSTGRES_SCHEMA=userfeeds
       - USER_FEEDS_DISCORD_RABBITMQ_URI=amqp://rabbitmq-broker:5672
       - USER_FEEDS_POSTGRES_DATABASE=userfeeds
       - USER_FEEDS_API_PORT=5000
@@ -198,9 +181,10 @@ services:
       target: build
     command: npm run migration:up
     depends_on:
-      - user-feeds-postgres-db
+      - feed-requests-postgres-db
     environment:
-      - USER_FEEDS_POSTGRES_URI=postgres://postgres:postgres@user-feeds-postgres-db:5432
+      - USER_FEEDS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432
+      - USER_FEEDS_POSTGRES_SCHEMA=userfeeds
       - USER_FEEDS_DISCORD_RABBITMQ_URI=amqp://rabbitmq-broker:5672
       - USER_FEEDS_POSTGRES_DATABASE=userfeeds
       - USER_FEEDS_API_PORT=5000
@@ -323,7 +307,6 @@ volumes:
   mongodb-data:
   rabbitmq-data:
   feed-requests-postgres16-data:
-  user-feeds-postgres16-data:
   feed-requests-redis-data:
   fs-s3-storage-data:
     driver: local
