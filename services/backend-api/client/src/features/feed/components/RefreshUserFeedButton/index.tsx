@@ -8,6 +8,7 @@ import { UserFeedArticleRequestStatus } from "../../types";
 import { getErrorMessageForArticleRequestStatus } from "../../utils";
 import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 import { ConfirmModal } from "../../../../components";
+import { UserFeedUrlRequestStatus } from "../../types/UserFeedUrlRequestStatus";
 
 export const RefreshUserFeedButton = () => {
   const {
@@ -24,17 +25,23 @@ export const RefreshUserFeedButton = () => {
 
     try {
       const {
-        result: { requestStatus, requestStatusCode },
+        result: { requestStatus, requestStatusCode, getArticlesRequestStatus },
       } = await mutateAsync({
         feedId,
       });
 
-      if (requestStatus === UserFeedArticleRequestStatus.Success) {
+      if (
+        requestStatus === UserFeedUrlRequestStatus.Success &&
+        getArticlesRequestStatus === UserFeedArticleRequestStatus.Success
+      ) {
         createSuccessAlert({
           title: "Successfully re-enabled feed.",
         });
       } else {
-        const message = getErrorMessageForArticleRequestStatus(requestStatus, requestStatusCode);
+        const message = getErrorMessageForArticleRequestStatus(
+          getArticlesRequestStatus || requestStatus,
+          requestStatusCode
+        );
         createErrorAlert({
           title: "Failed to re-enable feed. Request to the feed was not successful.",
           description: t(message.ref),

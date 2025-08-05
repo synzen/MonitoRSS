@@ -1304,6 +1304,9 @@ export class UserFeedsService {
       res.requestStatus === FeedFetcherFetchStatus.Success;
     let canBeEnabled = isRequestSuccessful;
 
+    let getArticlesRequestStatus: GetArticlesResponseRequestStatus | null =
+      null;
+
     if (
       isRequestSuccessful &&
       feed.disabledCode === UserFeedDisabledCode.InvalidFeed
@@ -1312,6 +1315,8 @@ export class UserFeedsService {
         feed,
         url: feed.url,
       });
+
+      getArticlesRequestStatus = res2.requestStatus;
 
       canBeEnabled =
         isRequestSuccessful &&
@@ -1340,6 +1345,7 @@ export class UserFeedsService {
         res.requestStatus === FeedFetcherFetchStatus.BadStatusCode
           ? res.response?.statusCode
           : undefined,
+      getArticlesRequestStatus,
     };
   }
 

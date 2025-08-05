@@ -380,13 +380,14 @@ export class UserFeedsController {
     [{ feed }]: GetUserFeedsPipeOutput
   ) {
     try {
-      const { requestStatus, requestStatusCode } =
+      const { requestStatus, requestStatusCode, getArticlesRequestStatus } =
         await this.userFeedsService.manuallyRequest(feed);
 
       return res.send({
         result: {
           requestStatus,
           requestStatusCode,
+          getArticlesRequestStatus,
         },
       });
     } catch (err) {

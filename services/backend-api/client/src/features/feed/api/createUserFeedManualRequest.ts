@@ -1,6 +1,7 @@
 import { InferType, number, object, string } from "yup";
 import fetchRest from "../../../utils/fetchRest";
 import { UserFeedArticleRequestStatus } from "../types";
+import { UserFeedUrlRequestStatus } from "../types/UserFeedUrlRequestStatus";
 
 export interface CreateUserManualRequestInput {
   feedId: string;
@@ -8,7 +9,11 @@ export interface CreateUserManualRequestInput {
 
 const CreateUserFeedManualRequestOutputSchema = object({
   result: object({
-    requestStatus: string().oneOf(Object.values(UserFeedArticleRequestStatus)).required(),
+    requestStatus: string().oneOf(Object.values(UserFeedUrlRequestStatus)).required(),
+    getArticlesRequestStatus: string()
+      .oneOf(Object.values(UserFeedArticleRequestStatus))
+      .optional()
+      .nullable(),
     requestStatusCode: number(),
   }).required(),
 }).required();
