@@ -1,4 +1,4 @@
-import { InferType, number, object, string } from "yup";
+import { InferType, number, object, string, boolean } from "yup";
 import fetchRest from "../../../utils/fetchRest";
 import { UserFeedArticleRequestStatus } from "../types";
 import { UserFeedUrlRequestStatus } from "../types/UserFeedUrlRequestStatus";
@@ -15,6 +15,7 @@ const CreateUserFeedManualRequestOutputSchema = object({
       .optional()
       .nullable(),
     requestStatusCode: number(),
+    hasEnabledFeed: boolean().optional().nullable(),
   }).required(),
 }).required();
 

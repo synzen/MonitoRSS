@@ -4,11 +4,9 @@ import { ExternalLinkIcon, WarningTwoIcon } from "@chakra-ui/icons";
 import { useCreateUserFeedManualRequest } from "../../hooks";
 import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
 import ApiAdapterError from "../../../../utils/ApiAdapterError";
-import { UserFeedArticleRequestStatus } from "../../types";
 import { getErrorMessageForArticleRequestStatus } from "../../utils";
 import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 import { ConfirmModal } from "../../../../components";
-import { UserFeedUrlRequestStatus } from "../../types/UserFeedUrlRequestStatus";
 
 export const RefreshUserFeedButton = () => {
   const {
@@ -25,15 +23,12 @@ export const RefreshUserFeedButton = () => {
 
     try {
       const {
-        result: { requestStatus, requestStatusCode, getArticlesRequestStatus },
+        result: { requestStatus, requestStatusCode, getArticlesRequestStatus, hasEnabledFeed },
       } = await mutateAsync({
         feedId,
       });
 
-      if (
-        requestStatus === UserFeedUrlRequestStatus.Success &&
-        getArticlesRequestStatus === UserFeedArticleRequestStatus.Success
-      ) {
+      if (hasEnabledFeed) {
         createSuccessAlert({
           title: "Successfully re-enabled feed.",
         });

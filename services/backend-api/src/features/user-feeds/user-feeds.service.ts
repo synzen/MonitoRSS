@@ -1346,6 +1346,7 @@ export class UserFeedsService {
           ? res.response?.statusCode
           : undefined,
       getArticlesRequestStatus,
+      hasEnabledFeed: canBeEnabled,
     };
   }
 
