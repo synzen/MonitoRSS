@@ -301,6 +301,12 @@ export class DeliveryRecordService {
           record.error_code === ArticleDeliveryErrorCode.ThirdPartyBadRequest
         ) {
           details.message = "Invalid message format";
+
+          try {
+            if (record.external_detail) {
+              details.data = JSON.parse(record.external_detail);
+            }
+          } catch (err) {}
         } else if (
           record.error_code === ArticleDeliveryErrorCode.ThirdPartyForbidden
         ) {

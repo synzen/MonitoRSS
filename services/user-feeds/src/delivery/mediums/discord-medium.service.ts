@@ -636,9 +636,9 @@ export class DiscordMediumService implements DeliveryMedium {
       body: threadBody,
     });
 
-    if (!res.success) {
+    if (!res.success || res.status >= 300 || res.status < 200) {
       throw new Error(
-        `Failed to create initial thread for webhok forum ${webhookId}: ${
+        `Failed to create initial thread for webhook forum ${webhookId}: ${
           res.detail
         }. Body: ${JSON.stringify(res.body)}`
       );
@@ -759,7 +759,7 @@ export class DiscordMediumService implements DeliveryMedium {
         ArticleDeliveryContentType.DiscordThreadCreation
       );
 
-    if (!res.success) {
+    if (!res.success || res.status >= 300 || res.status < 200) {
       return threadCreationDeliveryStates;
     }
 
@@ -1115,6 +1115,12 @@ export class DiscordMediumService implements DeliveryMedium {
     contentType: ArticleDeliveryContentType
   ): ArticleDeliveryState[] {
     if (!response.success) {
+      throw new Error(
+        `Failed to create thread for medium ${details.mediumId}: ${
+          response.detail
+        }. Body: ${JSON.stringify(response.body)}`
+      );
+    } else {
       if (response.status === 404) {
         return [
           {
@@ -1158,14 +1164,20 @@ export class DiscordMediumService implements DeliveryMedium {
             article,
           },
         ];
-      } else {
-        throw new Error(
-          `Failed to create thread for medium ${details.mediumId}: ${
-            response.detail
-          }. Body: ${JSON.stringify(response.body)}`
-        );
+      } else if (response.status > 300 || response.status < 200) {
+        return [
+          {
+            id: generateDeliveryId(),
+            status: ArticleDeliveryStatus.Failed,
+            mediumId: details.mediumId,
+            articleIdHash: article.flattened.idHash,
+            errorCode: ArticleDeliveryErrorCode.ThirdPartyBadRequest,
+            internalMessage: `Response: ${JSON.stringify(response.body)}`,
+            article,
+          },
+        ];
       }
-    } else {
+
       return [
         {
           id: generateDeliveryId(),

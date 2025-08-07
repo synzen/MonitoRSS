@@ -275,19 +275,21 @@ export const DeliveryHistory = () => {
                           </Td>
                           <Td>
                             <Skeleton isLoaded={fetchStatus === "idle"}>
-                              {item.details?.message}
-                              {item.details?.data && (
-                                <Button
-                                  leftIcon={<Search2Icon />}
-                                  size="xs"
-                                  variant="outline"
-                                  onClick={() =>
-                                    setDetailsData(JSON.stringify(item.details?.data, null, 2))
-                                  }
-                                >
-                                  View Details
-                                </Button>
-                              )}
+                              <HStack>
+                                <span>{item.details?.message}</span>
+                                {item.details?.data && (
+                                  <Button
+                                    leftIcon={<Search2Icon />}
+                                    size="xs"
+                                    variant="outline"
+                                    onClick={() =>
+                                      setDetailsData(JSON.stringify(item.details?.data, null, 2))
+                                    }
+                                  >
+                                    View Details
+                                  </Button>
+                                )}
+                              </HStack>
                             </Skeleton>
                           </Td>
                         </Tr>
