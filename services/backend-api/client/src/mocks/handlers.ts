@@ -98,6 +98,7 @@ import {
   CreateUserFeedDeduplicatedUrlsInput,
   CreateUserFeedDeduplicatedUrlsOutput,
 } from "../features/feed/api/createUserFeedDeduplicatedUrls";
+import { UserFeedUrlRequestStatus } from "../features/feed/types/UserFeedUrlRequestStatus";
 
 const handlers = [
   http.get("/api/v1/subscription-products/update-preview", async () => {
@@ -600,7 +601,9 @@ const handlers = [
 
     return HttpResponse.json<CreateUserFeedManualRequestOutput>({
       result: {
-        requestStatus: UserFeedArticleRequestStatus.BadStatusCode,
+        requestStatus: UserFeedUrlRequestStatus.BadStatusCode,
+        getArticlesRequestStatus: null,
+        hasEnabledFeed: null,
         requestStatusCode: 404,
       },
     });
