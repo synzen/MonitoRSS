@@ -11,7 +11,7 @@ import {
 import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { UserFeedArticleRequestStatus, UserFeedDisabledCode } from "../../types";
+import { UserFeedDisabledCode } from "../../types";
 import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
 import {
   getErrorMessageForArticleRequestStatus,
@@ -23,6 +23,7 @@ import { pages } from "../../../../constants";
 import { UserFeedTabSearchParam } from "../../../../constants/userFeedTabSearchParam";
 import { FixFeedRequestsCTA } from "../FixFeedRequestsCTA";
 import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
+import { UserFeedUrlRequestStatus } from "../../types/UserFeedUrlRequestStatus";
 
 const RESOLVABLE_STATUS_CODES = [429, 403, 401];
 
@@ -45,7 +46,7 @@ export const UserFeedHealthAlert = () => {
         feedId: userFeed.id,
       });
 
-      if (requestStatus === UserFeedArticleRequestStatus.Success) {
+      if (requestStatus === UserFeedUrlRequestStatus.Success) {
         createSuccessAlert({
           title: "Request to feed was successful.",
         });
