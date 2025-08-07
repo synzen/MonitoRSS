@@ -2,11 +2,23 @@ import { chakra, Code, Flex, IconButton } from "@chakra-ui/react";
 import { PropsWithChildren } from "react";
 import { CopyIcon } from "@chakra-ui/icons";
 import { notifyInfo } from "../../utils/notifyInfo";
+import { notifyError } from "../../utils/notifyError";
 
 interface Props {
   withBrackets?: boolean;
   withoutCopy?: boolean;
 }
+
+const unsecuredCopyToClipboard = (text: string) => {
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+
+  document.execCommand("copy");
+  document.body.removeChild(textArea);
+};
 
 const MessagePlaceholderText = ({
   children,
@@ -14,11 +26,22 @@ const MessagePlaceholderText = ({
   withoutCopy,
 }: PropsWithChildren<Props>) => {
   const onCopy = () => {
-    if (typeof children === "string") {
-      navigator.clipboard.writeText(`{{${children}}}`);
-    }
+    try {
+      if (typeof children === "string") {
+        const textToCopy = `{{${children}}}`;
 
-    notifyInfo("Successfully copied placeholder to clipboard");
+        if (window.isSecureContext && navigator.clipboard) {
+          navigator.clipboard.writeText(textToCopy);
+        } else {
+          unsecuredCopyToClipboard(textToCopy);
+        }
+      }
+
+      notifyInfo("Successfully copied placeholder to clipboard");
+    } catch (err) {
+      console.error(`Failed to copy to clipboard: ${(err as Error).message}`);
+      notifyError(`Failed to copy placeholder to clipboard`, err as Error);
+    }
   };
 
   return (
