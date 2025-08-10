@@ -19,7 +19,7 @@ import {
   Tooltip,
 } from "@chakra-ui/react";
 import { Controller, useFormContext } from "react-hook-form";
-import { Trans, useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import { FiFilter } from "react-icons/fi";
 import { DiscordMessageFormData } from "@/types/discord";
 import { useDiscordChannelForumTags } from "../../hooks";
@@ -135,11 +135,9 @@ export const DiscordMessageForumThreadForm = () => {
           <Box>
             <FormLabel>{t("components.discordMessageForumThreadForm.threadTitleLabel")}</FormLabel>
             <FormHelperText>
-              <Trans
-                t={t}
-                i18nKey="components.discordMessageForumThreadForm.threadTitleDescription"
-                components={[<MessagePlaceholderText />]}
-              />
+              The title of the thread that will be created per new article. You may use
+              placeholders. The default is{" "}
+              <MessagePlaceholderText withoutCopy>title</MessagePlaceholderText>.
             </FormHelperText>
           </Box>
           <Stack

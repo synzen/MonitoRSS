@@ -1,6 +1,6 @@
 import { Avatar, Flex, HStack, IconButton, Spinner, Stack, Tag, Text } from "@chakra-ui/react";
 import { Controller, useFormContext } from "react-hook-form";
-import { Trans, useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import { SettingsIcon } from "@chakra-ui/icons";
 import { DiscordMessageFormData } from "@/types/discord";
 import { LogicalFilterExpression } from "../../types";
@@ -98,11 +98,10 @@ export const DiscordMessageMentionForm = ({ guildId }: Props) => {
   return (
     <Stack spacing={4}>
       <Text>
-        <Trans
-          i18nKey="components.discordMessageMentionForm.description"
-          t={t}
-          components={[<MessagePlaceholderText withBrackets />]}
-        />
+        Roles and users that will be mentioned in the
+        <MessagePlaceholderText withBrackets>discord::mentions</MessagePlaceholderText>
+        placeholder. Directly copy the placeholder paste it somewhere in your message format for it
+        to show up.
       </Text>
       <Controller
         name="mentions"

@@ -276,7 +276,6 @@
       "embedSectionTitle": "Embeds",
       "embedSectionDescription": "You may also use the placeholders listed above in the fields below (for example, using an image placeholder in the image field).",
       "contentSectionTitle": "Content",
-      "contentSectionDescription": "You can use the placeholders listed above. A special placeholder, <0>empty</0>, can be used to create an empty message, but only if an embed is used. Regular formatting such as bold and etc. is also available.",
       "splitContentSectionTitle": "Split Content",
       "splitContentCheckboxDescription": "If enabled, the message will be split into multiple messages if it is too long. Otherwise, it will attempt to be sent as one message with the maximum possible number of characters.",
       "splitContentSettingsLabel": "Split Settings",
@@ -301,7 +300,6 @@
     "discordMessageForumThreadForm": {
       "title": "Forum Thread",
       "threadTitleLabel": "Thread Title",
-      "threadTitleDescription": "The title of the thread that will be created per new article. You may use placeholders. The default is <0>title</0>.",
       "threadTagsLabel": "Thread Tags",
       "threadTagsDescription": "The tags that will be attached to the the thread. You may optionally define article filters to only attach certain tags for certain articles.",
       "threadTagsNoTagsFound": "There are no tags in this channel.",
@@ -311,7 +309,6 @@
     },
     "discordMessageMentionForm": {
       "title": "Mentions",
-      "description": "Roles and users that will be mentioned in the <0>discord::mentions</0> placeholder. Directly copy the placeholder paste it somewhere in your message format for it to show up.",
       "mentionSettingsTitle": "Mention Settings",
       "mentionFiltersTitle": "Filters",
       "mentionFiltersDescription": "Filters ensure that this mention will only be added to articles that match these filters. If no filters are added, this mention will be added to all articles that have the mention placeholder.",

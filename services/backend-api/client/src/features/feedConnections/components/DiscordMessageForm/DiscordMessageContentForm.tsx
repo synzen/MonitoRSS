@@ -70,11 +70,10 @@ export const DiscordMessageContentForm = () => {
           <Box>
             <FormLabel>{t("components.discordMessageForm.contentSectionTitle")}</FormLabel>
             <FormHelperText>
-              <Trans
-                t={t}
-                i18nKey="components.discordMessageForm.contentSectionDescription"
-                components={[<MessagePlaceholderText withBrackets />]}
-              />
+              You can use the placeholders listed above. A special placeholder,{" "}
+              <MessagePlaceholderText withBrackets>empty</MessagePlaceholderText>, can be used to
+              create an empty message, but only if an embed is used. Regular formatting such as bold
+              and etc. is also available.
             </FormHelperText>
           </Box>
           <Stack
