@@ -130,7 +130,7 @@ export const NewHeader = ({ invertBackground }: Props) => {
                   alignItems="center"
                   icon={<InfoIcon />}
                   onClick={() => {
-                    window.open("https://discord.gg/kRjevzXhss", "_blank");
+                    window.open("https://discord.gg/pudv7Rx", "_blank");
                   }}
                 >
                   Discord Support Server
