@@ -383,31 +383,44 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
     setLoadingAdditionalFeedsChange(true);
 
     async function getPreview() {
-      const [preview, chargePreviewResult] = await Promise.all([
-        getPricePreview([
-          {
-            priceId: priceIdOfAdditionalFeeds as string,
-            quantity: newQuantity,
-          },
-        ]),
-        getChargePreview([
-          {
-            priceId: priceIdOfAdditionalFeeds as string,
-            quantity: newQuantity,
-          },
+      if (newQuantity > 0) {
+        const [preview, chargePreviewResult] = await Promise.all([
+          getPricePreview([
+            {
+              priceId: priceIdOfAdditionalFeeds as string,
+              quantity: newQuantity,
+            },
+          ]),
+          getChargePreview([
+            {
+              priceId: priceIdOfAdditionalFeeds as string,
+              quantity: newQuantity,
+            },
+            {
+              priceId: priceIdOfTier3 as string,
+              quantity: 1,
+            },
+          ]),
+        ]);
+
+        const additionalFeedsPreview = preview.find((p) => p.id === ProductKey.Tier3Feed);
+
+        if (additionalFeedsPreview) {
+          setAdditionalFeedPricePreview(additionalFeedsPreview);
+        }
+
+        setChargePreview(chargePreviewResult.totalFormatted);
+      } else {
+        const chargePreviewResult = await getChargePreview([
           {
             priceId: priceIdOfTier3 as string,
             quantity: 1,
           },
-        ]),
-      ]);
-      const additionalFeedsPreview = preview.find((p) => p.id === ProductKey.Tier3Feed);
+        ]);
 
-      if (additionalFeedsPreview) {
-        setAdditionalFeedPricePreview(additionalFeedsPreview);
+        setChargePreview(chargePreviewResult.totalFormatted);
       }
 
-      setChargePreview(chargePreviewResult.totalFormatted);
       setLoadingAdditionalFeedsChange(false);
     }
 
@@ -435,7 +448,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
           (a) => a.key === ProductKey.Tier3Feed
         );
 
-        if (userAdditionalFeedsAddon?.quantity) {
+        if (userAdditionalFeedsAddon?.quantity != null) {
           setAdditionalFeedsInput(userAdditionalFeedsAddon.quantity);
         }
 
@@ -782,7 +795,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                                   onClick={() => {
                                                     const newQuantity = additionalFeedsInput - 1;
 
-                                                    if (newQuantity > 0) {
+                                                    if (newQuantity >= 0) {
                                                       onChangeAdditionalFeeds(newQuantity);
                                                       setAdditionalFeedsInput(newQuantity);
                                                     }
