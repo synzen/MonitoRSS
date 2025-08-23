@@ -184,12 +184,12 @@ export class FeedsService {
   }) {
     const channel = await this.discordApiService.getChannel(channelId);
 
-    const userManagesGuild = await this.discordAuthService.userManagesGuild(
+    const { isManager } = await this.discordAuthService.userManagesGuild(
       userAccessToken,
       channel.guild_id
     );
 
-    if (!userManagesGuild) {
+    if (!isManager) {
       throw new UserMissingManageGuildException();
     }
 

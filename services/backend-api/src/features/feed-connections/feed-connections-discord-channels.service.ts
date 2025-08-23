@@ -1273,10 +1273,12 @@ export class FeedConnectionsDiscordChannelsService {
 
       if (
         !webhook.guild_id ||
-        !(await this.discordAuthService.userManagesGuild(
-          accessToken,
-          webhook.guild_id
-        ))
+        !(
+          await this.discordAuthService.userManagesGuild(
+            accessToken,
+            webhook.guild_id
+          )
+        ).isManager
       ) {
         throw new DiscordWebhookMissingUserPermException(
           `User does not manage guild of webhook webhook ${id}`

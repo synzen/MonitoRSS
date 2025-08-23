@@ -27,13 +27,15 @@ export abstract class BaseUserManagesServerGuard implements CanActivate {
     }
 
     const accessToken = this.getUserAccessToken(request);
-    const managesGuild = await this.discordAuthService.userManagesGuild(
-      accessToken,
-      serverId
-    );
+    const { isManager, permissions } =
+      await this.discordAuthService.userManagesGuild(accessToken, serverId);
 
-    if (!managesGuild) {
-      throw new ForbiddenException();
+    if (!isManager) {
+      throw new ForbiddenException(
+        !permissions
+          ? undefined
+          : `Permissions ${permissions} are insufficient.`
+      );
     }
 
     return true;

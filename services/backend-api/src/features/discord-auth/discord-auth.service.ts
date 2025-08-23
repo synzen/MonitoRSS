@@ -204,13 +204,23 @@ export class DiscordAuthService {
       PartialUserGuild[]
     >(userAccessToken, endpoint);
 
-    const guildsWithPermission = guilds.filter(
-      (guild) =>
-        guild.owner ||
-        (BigInt(guild.permissions) & MANAGE_CHANNEL) === MANAGE_CHANNEL
-    );
+    const targetGuild = guilds.find((g) => g.id === guildId);
 
-    return guildsWithPermission.some((guild) => guild.id === guildId);
+    if (!targetGuild) {
+      return {
+        isManager: false,
+        permissions: null,
+      };
+    }
+
+    const isManager =
+      targetGuild.owner ||
+      (BigInt(targetGuild.permissions) & MANAGE_CHANNEL) === MANAGE_CHANNEL;
+
+    return {
+      isManager,
+      permissions: targetGuild.permissions,
+    };
   }
 
   async getUser(accessToken: string) {

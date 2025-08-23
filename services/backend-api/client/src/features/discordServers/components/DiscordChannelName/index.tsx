@@ -1,6 +1,20 @@
 /* eslint-disable react/jsx-no-useless-fragment */
 import { useMemo } from "react";
-import { SpinnerProps, Text, TextProps, Tooltip, chakra } from "@chakra-ui/react";
+import {
+  SpinnerProps,
+  Text,
+  TextProps,
+  chakra,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Button,
+  useDisclosure,
+} from "@chakra-ui/react";
 import { Loading } from "@/components";
 import { useDiscordServerChannels } from "../../hooks";
 import { GetDiscordChannelType } from "../../constants";
@@ -30,6 +44,7 @@ export const DiscordChannelName: React.FC<Props> = ({
       GetDiscordChannelType.Text,
     ],
   });
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const channelNamesById = useMemo(() => {
     const map = new Map<string, string>();
 
@@ -55,16 +70,40 @@ export const DiscordChannelName: React.FC<Props> = ({
   }
 
   if (error) {
+    const errorMessage = `Unable to get channel name${
+      error.body?.message ? `: ${error.body.message}` : ""
+    } (${error?.message})`;
+
     return (
-      <Tooltip
-        placement="bottom-start"
-        label={`Unable to get channel name (${error?.message})`}
-        display="inline"
-      >
-        <Text color="orange.500" display="inline">
+      <>
+        <Button
+          variant="link"
+          color="orange.500"
+          display="inline"
+          p={0}
+          h="auto"
+          fontWeight="inherit"
+          fontSize="inherit"
+          onClick={onOpen}
+        >
           ID: {channelId}
-        </Text>
-      </Tooltip>
+        </Button>
+        <Modal isOpen={isOpen} onClose={onClose} size="md">
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Failed to get Discord channel name</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <Text>{errorMessage}</Text>
+            </ModalBody>
+            <ModalFooter>
+              <Button colorScheme="blue" onClick={onClose}>
+                Close
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      </>
     );
   }
 

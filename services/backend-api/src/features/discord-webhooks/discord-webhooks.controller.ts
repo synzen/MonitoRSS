@@ -68,12 +68,12 @@ export class DiscordWebhooksController {
         );
       }
 
-      const managesGuild = await this.discordAuthService.userManagesGuild(
+      const { isManager } = await this.discordAuthService.userManagesGuild(
         access_token,
         webhook.guild_id
       );
 
-      if (!managesGuild) {
+      if (!isManager) {
         throw new NotFoundException(
           `User ${discordUserId} does not manage guild ${webhook.guild_id} of webhook ${webhookId}`
         );
