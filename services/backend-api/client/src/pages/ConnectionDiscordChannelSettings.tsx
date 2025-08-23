@@ -54,6 +54,7 @@ import {
 } from "../contexts/PageAlertContext";
 import { TabContentContainer } from "../components/TabContentContainer";
 import { FeedDiscordChannelConnection } from "../types";
+import { UserFeedTabSearchParam } from "../constants/userFeedTabSearchParam";
 
 const tabIndexBySearchParam = new Map<string, number>([
   [UserFeedConnectionTabSearchParam.Message, 0],
@@ -171,6 +172,17 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                         color="blue.300"
                       >
                         {feed?.title}
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbItem>
+                      <BreadcrumbLink
+                        as={RouterLink}
+                        to={pages.userFeed(feedId as string, {
+                          tab: UserFeedTabSearchParam.Connections,
+                        })}
+                        color="blue.300"
+                      >
+                        Connections
                       </BreadcrumbLink>
                     </BreadcrumbItem>
                     <BreadcrumbItem isCurrentPage>

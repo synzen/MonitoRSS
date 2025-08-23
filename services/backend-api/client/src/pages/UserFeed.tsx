@@ -97,9 +97,17 @@ import { TabContentContainer } from "../components/TabContentContainer";
 const tabIndexBySearchParam = new Map<string, number>([
   [UserFeedTabSearchParam.Connections, 0],
   [UserFeedTabSearchParam.Comparisons, 1],
+  [UserFeedTabSearchParam.ExternalProperties, 2],
   [UserFeedTabSearchParam.Settings, 3],
   [UserFeedTabSearchParam.Logs, 4],
-  [UserFeedTabSearchParam.ExternalProperties, 2],
+]);
+
+const tabLabelsByIndex = new Map<number, string>([
+  [0, "Connections"],
+  [1, "Comparisons"],
+  [2, "External Properties"],
+  [3, "Settings"],
+  [4, "Logs"],
 ]);
 
 export const UserFeed = () => {
@@ -342,8 +350,21 @@ const UserFeedInner: React.FC = () => {
                         Feeds
                       </BreadcrumbLink>
                     </BreadcrumbItem>
+                    <BreadcrumbItem>
+                      <BreadcrumbLink
+                        as={RouterLink}
+                        to={pages.userFeed(feed.id, {
+                          tab: UserFeedTabSearchParam.Connections,
+                        })}
+                        color="blue.300"
+                      >
+                        {feed?.title}
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
                     <BreadcrumbItem isCurrentPage>
-                      <BreadcrumbLink href="#">{feed?.title}</BreadcrumbLink>
+                      <BreadcrumbLink>
+                        {tabLabelsByIndex.get(tabIndex || 0) ?? "Connections"}
+                      </BreadcrumbLink>
                     </BreadcrumbItem>
                   </Breadcrumb>
                   <Stack flex={1}>
