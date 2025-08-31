@@ -13,6 +13,12 @@ export class AppConfigService {
     );
   }
 
+  getBotClientId() {
+    return this.configService.get<string | undefined>(
+      'BOT_PRESENCE_DISCORD_BOT_CLIENT_ID',
+    );
+  }
+
   getSupporterGuildId() {
     return this.configService.get('BOT_PRESENCE_SUPPORTER_GUILD_ID');
   }
