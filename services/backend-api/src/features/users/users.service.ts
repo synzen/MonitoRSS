@@ -61,7 +61,10 @@ export interface GetUserByDiscordIdOutput {
       enabled: boolean;
     };
   };
-  externalAccounts: Array<{ type: "reddit" }>;
+  externalAccounts: Array<{
+    type: "reddit";
+    status: UserExternalCredentialStatus;
+  }>;
 }
 
 @Injectable()
@@ -172,15 +175,13 @@ export class UsersService {
       updatedAt: new Date(2020, 1, 1), // doesn't matter here
     };
 
-    const externalAccounts: GetUserByDiscordIdOutput["externalAccounts"] = [];
-
-    if (
-      user.externalCredentials?.find(
-        (c) => c.type === UserExternalCredentialType.Reddit
-      )
-    ) {
-      externalAccounts.push({ type: "reddit" });
-    }
+    const externalAccounts: GetUserByDiscordIdOutput["externalAccounts"] =
+      user.externalCredentials?.map((c) => {
+        return {
+          type: c.type,
+          status: c.status,
+        };
+      }) || [];
 
     const { maxPatreonPledge, allowExternalProperties } =
       await this.supportersService.getBenefitsOfDiscordUser(discordUserId);

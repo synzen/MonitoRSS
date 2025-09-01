@@ -15,7 +15,8 @@ export const FixFeedRequestsCTA = ({ url, onCorrected }: Props) => {
     return null;
   }
 
-  const hasRedditConnected = data?.result.externalAccounts?.find((e) => e.type === "reddit");
+  const hasRedditConnected =
+    data?.result.externalAccounts?.find((e) => e.type === "reddit")?.status === "ACTIVE";
 
   if (hasRedditConnected) {
     return null;

@@ -50,6 +50,7 @@ export const UserMeSchema = object({
   externalAccounts: array(
     object({
       type: string().required(),
+      status: string().oneOf(["REVOKED", "ACTIVE"]).required(),
     })
   ),
 });
