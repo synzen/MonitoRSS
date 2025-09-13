@@ -26,8 +26,6 @@ import {
   NumberInput,
   NumberInputField,
   NumberInputStepper,
-  Radio,
-  RadioGroup,
   Select,
   Skeleton,
   Stack,
@@ -68,7 +66,6 @@ import { SelectUserDialog } from "./SelectUserDialog";
 import DATE_LOCALES from "../../../../constants/dateLocales";
 import { useUserFeedDatePreview } from "../../../feed/hooks/useUserFeedDatePreview";
 import { useDebounce } from "../../../../hooks";
-import { formatRefreshRateSeconds } from "../../../../utils/formatRefreshRateSeconds";
 import { ManageUserFeedManagementInviteSettingsDialog } from "./ManageUserFeedManagementInviteSettingsDialog";
 import { AddFeedComanagerDialog } from "./AddFeedComanagerDialog";
 import {
@@ -77,6 +74,7 @@ import {
   usePageAlertContext,
 } from "../../../../contexts/PageAlertContext";
 import { UserFeedTabSearchParam } from "../../../../constants/userFeedTabSearchParam";
+import ApiAdapterError from "../../../../utils/ApiAdapterError";
 
 interface Props {
   feedId: string;
@@ -175,7 +173,7 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
     data: debouncedPreviewInput,
   });
 
-  const { mutateAsync, error } = useUpdateUserFeed();
+  const { mutateAsync } = useUpdateUserFeed();
   const {
     mutateAsync: createUserFeedManagementInvite,
     status: creatingInvitesStatus,
@@ -188,7 +186,7 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
     error: deleteInviteError,
     reset: resetDeleteInvite,
   } = useDeleteUserFeedManagementInvite({ feedId });
-  const { createSuccessAlert } = usePageAlertContext();
+  const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
 
   const onUpdatedFeed = async (values: FormValues) => {
     try {
@@ -202,12 +200,13 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
             dateLocale: values.dateLocale?.trim() || undefined,
           },
           dateCheckOptions:
-            values.oldArticleDateDiffMsThreshold !== undefined
+            values.oldArticleDateDiffMsThreshold !== undefined &&
+            values.oldArticleDateDiffMsThreshold !== null
               ? {
                   oldArticleDateDiffMsThreshold: values.oldArticleDateDiffMsThreshold,
                 }
               : undefined,
-          userRefreshRateSeconds: values.userRefreshRateSeconds,
+          userRefreshRateSeconds: values.userRefreshRateSeconds || undefined,
         },
       });
 
@@ -224,7 +223,23 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
       createSuccessAlert({
         title: "Successfully updated feed settings",
       });
-    } catch (e) {}
+    } catch (e) {
+      const fastestAllowedRate = Math.min(
+        ...(feed?.refreshRateOptions.map((o) => o.rateSeconds) || [])
+      );
+
+      if (e instanceof ApiAdapterError && e.errorCode === "USER_REFRESH_RATE_NOT_ALLOWED") {
+        createErrorAlert({
+          title: "Refresh rate is not allowed.",
+          description: `Your selected refresh rate must be greater than or equal to ${fastestAllowedRate} and less than or equal to 86400 seconds (1 day).`,
+        });
+      } else {
+        createErrorAlert({
+          title: t("common.errors.failedToSave"),
+          description: e instanceof Error ? e.message : undefined,
+        });
+      }
+    }
   };
 
   const onAddUser = async ({
@@ -513,40 +528,26 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                         isInvalid={!!formErrors.oldArticleDateDiffMsThreshold}
                         as="fieldset"
                       >
-                        <RadioGroup
-                          value={field.value?.toString()}
-                          onChange={(v) => field.onChange(Number(v))}
-                          onBlur={() => field.onBlur()}
-                          isDisabled={!user || field.disabled}
-                          ref={field.ref}
-                          name={field.name}
-                        >
-                          <Stack>
-                            {feed?.refreshRateOptions.map((r) => {
-                              const { disabledCode } = r;
-
-                              let reason: string = "";
-
-                              if (disabledCode === "INSUFFICIENT_SUPPORTER_TIER") {
-                                reason =
-                                  "(only available if feed owner has a higher supporter tier)";
-                              }
-
-                              const displayDuration = formatRefreshRateSeconds(r.rateSeconds);
-
-                              return (
-                                <Radio
-                                  value={r.rateSeconds.toString()}
-                                  isDisabled={!!r.disabledCode}
-                                  key={r.rateSeconds}
-                                >
-                                  {displayDuration}
-                                  {reason ? ` ${reason}` : ""}
-                                </Radio>
-                              );
-                            })}
-                          </Stack>
-                        </RadioGroup>
+                        <HStack alignItems="center" spacing={4}>
+                          <NumberInput
+                            allowMouseWheel
+                            value={field.value === null ? "" : field.value}
+                            onChange={(str, num) => {
+                              return Number.isNaN(num) ? field.onChange(null) : field.onChange(num);
+                            }}
+                            onBlur={() => field.onBlur()}
+                            isDisabled={!user || field.disabled}
+                            ref={field.ref}
+                            name={field.name}
+                          >
+                            <NumberInputField />
+                            <NumberInputStepper>
+                              <NumberIncrementStepper />
+                              <NumberDecrementStepper />
+                            </NumberInputStepper>
+                          </NumberInput>
+                          <FormLabel>seconds</FormLabel>
+                        </HStack>
                         {formErrors.userRefreshRateSeconds && (
                           <FormErrorMessage>
                             {formErrors.userRefreshRateSeconds.message}
@@ -579,9 +580,13 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                           min={0}
                           allowMouseWheel
                           {...field}
-                          onChange={(str, num) => field.onChange(num * 1000 * 60 * 60 * 24)}
+                          onChange={(str, num) =>
+                            Number.isNaN(num)
+                              ? field.onChange(null)
+                              : field.onChange(num * 1000 * 60 * 60 * 24)
+                          }
                           value={
-                            typeof field.value === "number" ? field.value / 1000 / 60 / 60 / 24 : 0
+                            typeof field.value === "number" ? field.value / 1000 / 60 / 60 / 24 : ""
                           }
                           aria-describedby={`${field.name}-label-1 ${field.name}-label-2`}
                         >
@@ -758,13 +763,6 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                 />
               </Stack>
             </Stack>
-            {error && (
-              <InlineErrorAlert
-                title={t("common.errors.failedToSave")}
-                description={error.message}
-                scrollIntoViewOnMount
-              />
-            )}
           </Stack>
           <SavedUnsavedChangesPopupBar useDirtyFormCheck />
         </form>

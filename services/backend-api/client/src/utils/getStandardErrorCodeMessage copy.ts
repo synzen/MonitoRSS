@@ -46,6 +46,7 @@ export enum ApiErrorCode {
   ADD_FEED_WITH_SOURCE_FEED_NOT_FOUND = "ADD_FEED_WITH_SOURCE_FEED_NOT_FOUND",
   TRANSACTION_BALANCE_TOO_LOW = "TRANSACTION_BALANCE_TOO_LOW",
   SUBSCRIPTION_ABOUT_TO_RENEW = "SUBSCRIPTION_ABOUT_TO_RENEW",
+  USER_REFRESH_RATE_NOT_ALLOWED = "USER_REFRESH_RATE_NOT_ALLOWED",
 }
 
 const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
@@ -103,6 +104,7 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
     "A minimum of $0.70 USD is required for a transaction whose total (including prorated credit for time remaining on the current tier) is greater than $0.00. Try again by either increasing your tier or waiting until the end of your billing period.",
   SUBSCRIPTION_ABOUT_TO_RENEW:
     "Cannot update subscription when renewal is within the next 30 minutes. Try again later.",
+  USER_REFRESH_RATE_NOT_ALLOWED: "Refresh rate is not allowed.",
 };
 
 export const getStandardErrorCodeMessage = (code: ApiErrorCode) => {

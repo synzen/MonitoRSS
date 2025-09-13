@@ -87,6 +87,7 @@ import { generateUserFeedSearchFilters } from "./utils/get-user-feed-search-filt
 import { UserFeedTargetFeedSelectionType } from "./constants/target-feed-selection-type.type";
 import { SourceFeedNotFoundException } from "./exceptions/source-feed-not-found.exception";
 import { getUserFeedTagLookupAggregateStage } from "./constants/user-feed-tag-lookup-aggregate-stage.constants";
+import { RefreshRateNotAllowedException } from "../feeds/exceptions/refresh-rate-not-allowed.exception";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual
@@ -1120,13 +1121,14 @@ export class UserFeedsService {
       ) {
         useUpdateObject.$unset!.userRefreshRateSeconds = "";
       } else if (
-        updates.userRefreshRateSeconds !==
+        updates.userRefreshRateSeconds > 86400 ||
+        (updates.userRefreshRateSeconds !==
           this.supportersService.defaultRefreshRateSeconds &&
-        updates.userRefreshRateSeconds !==
-          this.supportersService.defaultSupporterRefreshRateSeconds &&
-        updates.userRefreshRateSeconds < fastestPossibleRate
+          updates.userRefreshRateSeconds !==
+            this.supportersService.defaultSupporterRefreshRateSeconds &&
+          updates.userRefreshRateSeconds < fastestPossibleRate)
       ) {
-        throw new Error(
+        throw new RefreshRateNotAllowedException(
           `Refresh rate ${updates.userRefreshRateSeconds} is not allowed for user ${user.discordUserId}`
         );
       } else {

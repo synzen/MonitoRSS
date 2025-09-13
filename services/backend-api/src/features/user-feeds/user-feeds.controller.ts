@@ -66,6 +66,7 @@ import { createMultipleExceptionsFilter } from "../../common/filters/multiple-ex
 import { CreateUserFeedUrlValidationInputDto } from "./dto/create-user-feed-url-validation-input.dto";
 import { UserFeedTargetFeedSelectionType } from "./constants/target-feed-selection-type.type";
 import { UsersService } from "../users/users.service";
+import { UpdateUserFeedExceptionFilter } from "../feeds/filters/update-user-feed-exception.filter";
 
 @Controller("user-feeds")
 @UseGuards(DiscordOAuth2Guard)
@@ -426,7 +427,7 @@ export class UserFeedsController {
   }
 
   @Patch("/:feedId")
-  @UseFilters(FeedExceptionFilter)
+  @UseFilters(UpdateUserFeedExceptionFilter)
   async updateFeed(
     @Param("feedId", GetUserFeedsPipe())
     [{ feed }]: GetUserFeedsPipeOutput,

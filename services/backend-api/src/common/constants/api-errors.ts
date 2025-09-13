@@ -48,6 +48,7 @@ export enum ApiErrorCode {
   INVALID_FILTERS_REGEX = "INVALID_FILTERS_REGEX",
   TRANSACTION_BALANCE_TOO_LOW = "TRANSACTION_BALANCE_TOO_LOW",
   SUBSCRIPTION_ABOUT_TO_RENEW = "SUBSCRIPTION_ABOUT_TO_RENEW",
+  USER_REFRESH_RATE_NOT_ALLOWED = "USER_REFRESH_RATE_NOT_ALLOWED",
 }
 
 // Create a package for the frontend?
@@ -117,4 +118,5 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   TRANSACTION_BALANCE_TOO_LOW: "Transaction balance is too low.",
   SUBSCRIPTION_ABOUT_TO_RENEW:
     "Subscription is about to renew. Wait at least 30 minutes before trying again.",
+  USER_REFRESH_RATE_NOT_ALLOWED: "Refresh rate not allowed",
 };
