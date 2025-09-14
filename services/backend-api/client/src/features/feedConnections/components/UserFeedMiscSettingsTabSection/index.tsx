@@ -111,7 +111,7 @@ const FormSchema = object({
     .optional()
     .nullable()
     .default(null),
-  userRefreshRateSeconds: number().optional(),
+  userRefreshRateMinutes: string().optional(),
 });
 
 type FormValues = InferType<typeof FormSchema>;
@@ -142,7 +142,10 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
       dateLocale: feed?.formatOptions?.dateLocale || "",
       oldArticleDateDiffMsThreshold: feed?.dateCheckOptions?.oldArticleDateDiffMsThreshold || 0,
       shareManageOptions: feed?.shareManageOptions || null,
-      userRefreshRateSeconds: feed?.userRefreshRateSeconds || feed?.refreshRateSeconds,
+      userRefreshRateMinutes:
+        (
+          Number((feed?.userRefreshRateSeconds || feed?.refreshRateSeconds || 0).toFixed(1)) / 60
+        )?.toString() || "",
     },
   });
   const {
@@ -190,6 +193,9 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
 
   const onUpdatedFeed = async (values: FormValues) => {
     try {
+      const userRefreshRateMinutesInSeconds = !Number.isNaN(values.userRefreshRateMinutes)
+        ? Number(values.userRefreshRateMinutes) * 60
+        : undefined;
       const updatedFeed = await mutateAsync({
         feedId,
         data: {
@@ -206,7 +212,7 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                   oldArticleDateDiffMsThreshold: values.oldArticleDateDiffMsThreshold,
                 }
               : undefined,
-          userRefreshRateSeconds: values.userRefreshRateSeconds || undefined,
+          userRefreshRateSeconds: userRefreshRateMinutesInSeconds,
         },
       });
 
@@ -217,8 +223,11 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
         oldArticleDateDiffMsThreshold:
           updatedFeed.result.dateCheckOptions?.oldArticleDateDiffMsThreshold,
         shareManageOptions: updatedFeed.result.shareManageOptions || null,
-        userRefreshRateSeconds:
-          updatedFeed.result.userRefreshRateSeconds || updatedFeed.result.refreshRateSeconds,
+        userRefreshRateMinutes:
+          updatedFeed.result.userRefreshRateSeconds &&
+          !Number.isNaN(updatedFeed.result.userRefreshRateSeconds)
+            ? (updatedFeed.result.userRefreshRateSeconds / 60).toFixed(1)
+            : (updatedFeed.result.refreshRateSeconds / 60).toFixed(1),
       });
       createSuccessAlert({
         title: "Successfully updated feed settings",
@@ -231,7 +240,9 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
       if (e instanceof ApiAdapterError && e.errorCode === "USER_REFRESH_RATE_NOT_ALLOWED") {
         createErrorAlert({
           title: "Refresh rate is not allowed.",
-          description: `Your selected refresh rate must be greater than or equal to ${fastestAllowedRate} and less than or equal to 86400 seconds (1 day).`,
+          description: `Your selected refresh rate must be greater than or equal to ${(
+            fastestAllowedRate / 60
+          ).toFixed(1)} minutes and less than or equal to 1440.0 minutes (1 day).`,
         });
       } else {
         createErrorAlert({
@@ -520,7 +531,7 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
               )}
               {!!feed?.refreshRateOptions.length && (
                 <Controller
-                  name="userRefreshRateSeconds"
+                  name="userRefreshRateMinutes"
                   control={control}
                   render={({ field }) => {
                     return (
@@ -531,9 +542,11 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                         <HStack alignItems="center" spacing={4}>
                           <NumberInput
                             allowMouseWheel
-                            value={field.value === null ? "" : field.value}
+                            precision={1}
+                            step={0.1}
+                            value={field.value}
                             onChange={(str, num) => {
-                              return Number.isNaN(num) ? field.onChange(null) : field.onChange(num);
+                              return field.onChange(str);
                             }}
                             onBlur={() => field.onBlur()}
                             isDisabled={!user || field.disabled}
@@ -546,11 +559,11 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                               <NumberDecrementStepper />
                             </NumberInputStepper>
                           </NumberInput>
-                          <FormLabel>seconds</FormLabel>
+                          <FormLabel>minutes</FormLabel>
                         </HStack>
-                        {formErrors.userRefreshRateSeconds && (
+                        {formErrors.userRefreshRateMinutes && (
                           <FormErrorMessage>
-                            {formErrors.userRefreshRateSeconds.message}
+                            {formErrors.userRefreshRateMinutes.message}
                           </FormErrorMessage>
                         )}
                       </FormControl>
