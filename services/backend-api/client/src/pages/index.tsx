@@ -31,6 +31,7 @@ import { SuspenseErrorBoundary } from "../components/SuspenseErrorBoundary";
 import AddUserFeeds from "./AddUserFeeds";
 import { MultiSelectUserFeedProvider } from "../contexts/MultiSelectUserFeedContext";
 import { lazyWithRetries } from "../utils/lazyImportWithRetry";
+import { Previewer } from "./Previewer";
 
 const UserSettings = lazyWithRetries(() =>
   import("./UserSettings").then(({ UserSettings: c }) => ({
@@ -268,6 +269,16 @@ const Pages: React.FC = () => (
               <FeedClone />
             </PageContent>
           </RequireDiscordServers>
+        </RequireAuth>
+      }
+    />
+    <Route
+      path="/previewer"
+      element={
+        <RequireAuth>
+          {/* <PageContentV2> */}
+          <Previewer />
+          {/* </PageContentV2> */}
         </RequireAuth>
       }
     />

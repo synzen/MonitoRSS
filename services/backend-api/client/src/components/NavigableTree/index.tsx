@@ -1,14 +1,13 @@
 import {
   ComponentProps,
-  HTMLAttributes,
   MouseEvent,
   PropsWithChildren,
   ReactElement,
-  ReactNode,
   useEffect,
   useRef,
   useState,
 } from "react";
+import { chakra } from "@chakra-ui/react";
 import {
   NavigableTreeProvider,
   useNavigableTreeContext,
@@ -18,8 +17,6 @@ import {
   NavigableTreeItemProvider,
   useNavigableTreeItemContext,
 } from "../../contexts/NavigableTreeItemContext";
-import { chakra, SystemStyleObject } from "@chakra-ui/react";
-import getChakraColor from "../../utils/getChakraColor";
 
 interface TreeProps extends PropsWithChildren {
   accessibleLabel: string;
@@ -37,13 +34,14 @@ const NavigableTree = ({ children, accessibleLabel }: TreeProps) => {
 
 export const NavigableTreeItemGroup = (props: ComponentProps<typeof chakra.div>) => {
   const { isExpanded } = useNavigableTreeItemContext();
+
   return (
     <chakra.div
       role="group"
-      className={"navigable-tree-group"}
+      className="navigable-tree-group"
       display={isExpanded ? "block" : "none"}
       {...props}
-    ></chakra.div>
+    />
   );
 };
 
@@ -82,9 +80,9 @@ export const NavigableTreeItem = ({
       return;
     }
 
-    const hasGroup = treeItemRef.current.querySelector('.navigable-tree-group[role="group"]');
+    const thisHasGroup = treeItemRef.current.querySelector('.navigable-tree-group[role="group"]');
 
-    setHasGroup(!!hasGroup);
+    setHasGroup(!!thisHasGroup);
   }, [treeItemRef.current]);
 
   return (
@@ -160,7 +158,12 @@ export const NavigableTreeItemExpandButton = <T,>({ children }: ButtonProps<T>) 
       e.stopPropagation();
 
       onFocused();
-      isExpanded ? onCollapsed() : onExpanded();
+
+      if (isExpanded) {
+        onCollapsed();
+      } else {
+        onExpanded();
+      }
     },
   });
 };
