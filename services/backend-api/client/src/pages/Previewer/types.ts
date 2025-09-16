@@ -36,12 +36,8 @@ export type Component =
 
 export interface ComponentTreeItemProps {
   component: Component;
-  selectedId: string | null;
-  onSelect: (id: string) => void;
   onDelete: (id: string) => void;
   onAddChild: (parentId: string, childType: "TextDisplay" | "ActionRow" | "Button") => void;
-  expandedComponents: Set<string>;
-  onToggleExpanded: (id: string) => void;
   depth?: number;
 }
 
