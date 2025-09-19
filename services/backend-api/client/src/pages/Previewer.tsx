@@ -1,191 +1,208 @@
-import React, { useState } from "react";
-import { Box, Flex, VStack, Text } from "@chakra-ui/react";
+import React from "react";
+import {
+  Box,
+  Flex,
+  VStack,
+  Text,
+  HStack,
+  Button,
+  AlertDialog,
+  AlertDialogOverlay,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogBody,
+  AlertDialogFooter,
+  useDisclosure,
+} from "@chakra-ui/react";
 import { DiscordMessagePreview } from "./Previewer/DiscordMessagePreview";
 import { ComponentPropertiesPanel } from "./Previewer/ComponentPropertiesPanel";
 import { ComponentTreeItem } from "./Previewer/ComponentTreeItem";
-import { Component, MessageComponent } from "./Previewer/types";
+import { MESSAGE_ROOT_ID } from "./Previewer/types";
 import { NavigableTreeItem } from "../components/NavigableTree";
 import { NavigableTreeContext, NavigableTreeProvider } from "../contexts/NavigableTreeContext";
+import { PreviewerProvider, usePreviewerContext } from "./Previewer/PreviewerContext";
 
-export const Previewer: React.FC = () => {
-  const [messageComponent, setMessageComponent] = useState<MessageComponent>(() => ({
-    id: "message-root",
-    type: "Message",
-    name: "Discord Message",
-    children: [],
-  }));
+const findComponentById = (component: any, id: string): any | null => {
+  if (component.id === id) {
+    return component;
+  }
 
-  const updateComponent = (id: string, updates: Partial<Component>) => {
-    const updateInTree = (component: Component): Component => {
-      if (component.id === id) {
-        return { ...component, ...updates } as Component;
-      }
+  if (component.children) {
+    const found = component.children
+      .map((child: any) => findComponentById(child, id))
+      .find((result: any) => result !== null);
 
-      if (component.children) {
-        return {
-          ...component,
-          children: component.children.map(updateInTree),
-        } as Component;
-      }
+    return found || null;
+  }
 
-      return component;
-    };
+  return null;
+};
 
-    setMessageComponent(updateInTree(messageComponent) as MessageComponent);
-  };
-
-  const findComponentById = (component: Component, id: string): Component | null => {
-    if (component.id === id) {
-      return component;
-    }
-
-    if (component.children) {
-      const found = component.children
-        .map((child) => findComponentById(child, id))
-        .find((result) => result !== null);
-
-      return found || null;
-    }
-
-    return null;
-  };
+const PreviewerContent: React.FC = () => {
+  const { messageComponent, problems, resetMessage } = usePreviewerContext();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const cancelRef = React.useRef<HTMLButtonElement>(null);
 
   return (
     <NavigableTreeProvider>
       <NavigableTreeContext.Consumer>
         {({ currentSelectedId, setCurrentSelectedId }) => {
-          const addChildComponent = (
-            parentId: string,
-            childType: "TextDisplay" | "ActionRow" | "Button"
-          ) => {
-            const newComponent = (() => {
-              switch (childType) {
-                case "TextDisplay":
-                  return {
-                    id: `text-${Date.now()}`,
-                    type: "TextDisplay" as const,
-                    name: `Text Display`,
-                    content: "Hello, Discord!",
-                  };
-                case "ActionRow":
-                  return {
-                    id: `actionrow-${Date.now()}`,
-                    type: "ActionRow" as const,
-                    name: `Action Row`,
-                    children: [],
-                  };
-                case "Button":
-                  return {
-                    id: `button-${Date.now()}`,
-                    type: "Button" as const,
-                    name: `Button`,
-                    label: "New Button",
-                    style: "Primary" as const,
-                    disabled: false,
-                    href: "",
-                  };
-                default:
-                  throw new Error(`Unknown child type: ${childType}`);
-              }
-            })();
-
-            const updateComponentTree = (component: Component): Component => {
-              if (component.id === parentId) {
-                return {
-                  ...component,
-                  children: [...(component.children || []), newComponent],
-                } as Component;
-              }
-
-              if (component.children) {
-                return {
-                  ...component,
-                  children: component.children.map(updateComponentTree),
-                } as Component;
-              }
-
-              return component;
-            };
-
-            setMessageComponent(updateComponentTree(messageComponent) as MessageComponent);
-            setCurrentSelectedId(newComponent.id);
-          };
-
-          const deleteComponent = (id: string) => {
-            if (id === "message-root") return; // Can't delete root
-
-            const removeFromTree = (component: Component): Component | null => {
-              if (component.children) {
-                const filteredChildren = component.children
-                  .map(removeFromTree)
-                  .filter((child): child is Component => child !== null);
-
-                return {
-                  ...component,
-                  children: filteredChildren,
-                } as Component;
-              }
-
-              return component.id === id ? null : component;
-            };
-
-            const updatedComponent = removeFromTree(messageComponent);
-
-            if (updatedComponent) {
-              setMessageComponent(updatedComponent as MessageComponent);
-            }
-
-            if (currentSelectedId === id) {
-              setCurrentSelectedId("message-root");
-            }
-          };
-
           const selectedComponent = currentSelectedId
             ? findComponentById(messageComponent, currentSelectedId)
             : null;
 
+          const handleSave = () => {
+            // TODO: Implement save functionality
+            // eslint-disable-next-line no-console
+            console.log("Saving message component:", messageComponent);
+          };
+
+          const handleDiscard = () => {
+            onOpen();
+          };
+
+          const confirmDiscard = () => {
+            resetMessage();
+            setCurrentSelectedId(MESSAGE_ROOT_ID);
+            onClose();
+          };
+
           return (
-            <Flex h="calc(100vh - 60px)" bg="gray.900">
-              {/* Left Panel - Component Tree */}
-              <Box w="300px" bg="gray.800" borderRight="1px" borderColor="gray.600" overflow="auto">
-                <VStack align="stretch" spacing={0}>
-                  <Box p={4} borderBottom="1px" borderColor="gray.600">
-                    <Text fontSize="lg" fontWeight="bold" color="white" textAlign="center">
-                      Message Structure
-                    </Text>
-                  </Box>
-                  <div role="tree" aria-label="Message Components">
-                    <NavigableTreeItem isRootItem id="message-root" ariaLabel="Message Root">
-                      <ComponentTreeItem
-                        component={messageComponent}
-                        onDelete={deleteComponent}
-                        onAddChild={addChildComponent}
-                      />
-                    </NavigableTreeItem>
-                  </div>
-                </VStack>
-              </Box>
-              {/* Center Panel - Discord Preview */}
-              <Box flex={1} p={4} overflow="auto" bg="gray.800">
-                <VStack align="stretch" h="full">
-                  <Text fontSize="xl" fontWeight="bold" mb={4} color="white">
-                    Discord Message Preview
+            <Flex direction="column" h="calc(100vh - 60px)" bg="gray.900">
+              {/* Top Bar */}
+              <Box bg="gray.800" borderBottom="1px" borderColor="gray.600" px={4} py={3}>
+                <HStack justify="space-between" align="center">
+                  <Text fontSize="lg" fontWeight="bold" color="white">
+                    Discord Message Builder
                   </Text>
-                  <DiscordMessagePreview messageComponent={messageComponent} />
-                </VStack>
+                  <HStack spacing={3}>
+                    <Button variant="outline" colorScheme="red" size="sm" onClick={handleDiscard}>
+                      Discard Changes
+                    </Button>
+                    <Button colorScheme="blue" size="sm" onClick={handleSave}>
+                      Save Changes
+                    </Button>
+                  </HStack>
+                </HStack>
               </Box>
-              {/* Right Panel - Properties */}
-              <Box w="350px" bg="gray.800" borderLeft="1px" borderColor="gray.600" overflow="auto">
-                <ComponentPropertiesPanel
-                  selectedComponent={selectedComponent}
-                  onUpdateComponent={updateComponent}
-                  onDeleteComponent={deleteComponent}
-                />
-              </Box>
+              {/* Main Content */}
+              <Flex flex={1} bg="gray.900">
+                {/* Left Panel - Component Tree */}
+                <Box
+                  w="300px"
+                  bg="gray.800"
+                  borderRight="1px"
+                  borderColor="gray.600"
+                  overflow="auto"
+                >
+                  <VStack align="stretch" spacing={0}>
+                    <Box p={4} borderBottom="1px" borderColor="gray.600">
+                      <Text fontSize="lg" fontWeight="bold" color="white" textAlign="center">
+                        Message Structure
+                      </Text>
+                    </Box>
+                    <div role="tree" aria-label="Message Components">
+                      <NavigableTreeItem isRootItem id={MESSAGE_ROOT_ID} ariaLabel="Message Root">
+                        <ComponentTreeItem component={messageComponent} />
+                      </NavigableTreeItem>
+                    </div>
+                  </VStack>
+                </Box>
+                {/* Center Panel - Discord Preview */}
+                <Box flex={1} p={4} overflow="auto" bg="gray.800">
+                  <VStack align="stretch" h="full" spacing={4}>
+                    <Box>
+                      <Text fontSize="xl" fontWeight="bold" mb={4} color="white">
+                        Discord Message Preview
+                      </Text>
+                      <DiscordMessagePreview messageComponent={messageComponent} />
+                    </Box>
+                    {/* Problems Section */}
+                    <Box>
+                      <HStack spacing={2} align="center" mb={3}>
+                        <Text fontSize="lg" fontWeight="semibold" color="white">
+                          Problems
+                        </Text>
+                        <Text fontSize="sm" color="gray.400">
+                          ({problems.length})
+                        </Text>
+                      </HStack>
+                      <Box
+                        bg="gray.700"
+                        borderRadius="md"
+                        p={4}
+                        border="1px"
+                        borderColor="gray.600"
+                      >
+                        {problems.length === 0 ? (
+                          <Text fontSize="sm" color="gray.400" fontStyle="italic">
+                            No problems found
+                          </Text>
+                        ) : (
+                          <VStack align="stretch" spacing={2}>
+                            {problems.map((problem) => (
+                              <Text
+                                key={`${problem.message}-${problem.path}`}
+                                fontSize="sm"
+                                color="white"
+                              >
+                                • {problem.message}{" "}
+                                <Text as="span" fontSize="xs" color="gray.400" fontFamily="mono">
+                                  ({problem.path})
+                                </Text>
+                              </Text>
+                            ))}
+                          </VStack>
+                        )}
+                      </Box>
+                    </Box>
+                  </VStack>
+                </Box>
+                {/* Right Panel - Properties */}
+                <Box
+                  w="350px"
+                  bg="gray.800"
+                  borderLeft="1px"
+                  borderColor="gray.600"
+                  overflow="auto"
+                >
+                  <ComponentPropertiesPanel selectedComponent={selectedComponent} />
+                </Box>
+              </Flex>
+              {/* Discard Confirmation Modal */}
+              <AlertDialog isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose}>
+                <AlertDialogOverlay>
+                  <AlertDialogContent>
+                    <AlertDialogHeader fontSize="lg" fontWeight="bold">
+                      Discard Changes
+                    </AlertDialogHeader>
+                    <AlertDialogBody>
+                      Are you sure you want to discard all changes? This action cannot be undone and
+                      all your changes will be lost.
+                    </AlertDialogBody>
+                    <AlertDialogFooter>
+                      <Button ref={cancelRef} onClick={onClose}>
+                        Cancel
+                      </Button>
+                      <Button colorScheme="red" onClick={confirmDiscard} ml={3}>
+                        Discard Changes
+                      </Button>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialogOverlay>
+              </AlertDialog>
             </Flex>
           );
         }}
       </NavigableTreeContext.Consumer>
     </NavigableTreeProvider>
+  );
+};
+
+export const Previewer: React.FC = () => {
+  return (
+    <PreviewerProvider>
+      <PreviewerContent />
+    </PreviewerProvider>
   );
 };

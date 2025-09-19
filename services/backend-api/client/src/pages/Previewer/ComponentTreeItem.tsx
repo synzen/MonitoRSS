@@ -9,42 +9,44 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
-  chakra,
 } from "@chakra-ui/react";
-import { AddIcon, ChevronRightIcon, ChevronDownIcon } from "@chakra-ui/icons";
-import type { Component, ComponentTreeItemProps, ActionRowComponent } from "./types";
+import { FaPlus, FaEnvelope, FaFileAlt, FaClipboard, FaCircle, FaFile } from "react-icons/fa";
+import { ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import type { Component, ActionRowComponent } from "./types";
+import { ComponentType } from "./types";
 import {
   NavigableTreeItem,
   NavigableTreeItemExpandButton,
   NavigableTreeItemGroup,
 } from "../../components/NavigableTree";
 import { useNavigableTreeItemContext } from "../../contexts/NavigableTreeItemContext";
+import { usePreviewerContext } from "./PreviewerContext";
 import getChakraColor from "../../utils/getChakraColor";
 
-export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
-  component,
-  onDelete,
-  onAddChild,
-  depth = 0,
-}) => {
-  // const isSelected = selectedId === component.id;
+interface ComponentTreeItemProps {
+  component: Component;
+  depth?: number;
+}
+
+export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component, depth = 0 }) => {
+  const { addChildComponent, deleteComponent } = usePreviewerContext();
   const hasChildren = component.children && component.children.length > 0;
-  // const isExpanded = expandedComponents.has(component.id);
-  const canHaveChildren = component.type === "Message" || component.type === "ActionRow";
+  const canHaveChildren =
+    component.type === ComponentType.Message || component.type === ComponentType.ActionRow;
   const { isFocused, isExpanded, isSelected } = useNavigableTreeItemContext();
 
   const getComponentIcon = (type: Component["type"]) => {
     switch (type) {
-      case "Message":
-        return "📧";
-      case "TextDisplay":
-        return "📝";
-      case "ActionRow":
-        return "📋";
-      case "Button":
-        return "🔘";
+      case ComponentType.Message:
+        return FaEnvelope;
+      case ComponentType.TextDisplay:
+        return FaFileAlt;
+      case ComponentType.ActionRow:
+        return FaClipboard;
+      case ComponentType.Button:
+        return FaCircle;
       default:
-        return "📄";
+        return FaFile;
     }
   };
 
@@ -61,39 +63,34 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
         // outlineOffset={4}
         outline={isFocused ? `2px solid ${getChakraColor("blue.300")}` : undefined}
       >
-        {canHaveChildren && isExpanded && <ChevronDownIcon />}
-        {canHaveChildren && !isExpanded && <ChevronRightIcon />}
-        {!canHaveChildren && <Box w={4} />}
-        <Text fontSize="xs" mr={2}>
-          {getComponentIcon(component.type)}
+        {canHaveChildren && (
+          <NavigableTreeItemExpandButton>
+            {({ onClick }) => {
+              return (
+                <IconButton
+                  tabIndex={-1}
+                  icon={isExpanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
+                  size="xs"
+                  variant="ghost"
+                  aria-label={isExpanded ? "Collapse" : "Expand"}
+                  onClick={onClick}
+                />
+              );
+            }}
+          </NavigableTreeItemExpandButton>
+        )}
+        {!canHaveChildren && <Box w={6} />}
+        <Box fontSize="xs" mr={2} color="gray.400">
+          {React.createElement(getComponentIcon(component.type))}
+        </Box>
+        <Text fontSize="sm" flex={1} color="white">
+          {component.name}
         </Text>
-        <NavigableTreeItemExpandButton>
-          {({ onClick }) => {
-            return (
-              <chakra.button
-                onClick={onClick}
-                flex={1}
-                tabIndex={-1}
-                textAlign="left"
-                _before={{
-                  content: '""',
-                  position: "absolute",
-                  inset: 0,
-                  zIndex: 2,
-                }}
-              >
-                <Text fontSize="sm" flex={1} color="white">
-                  {component.name}
-                </Text>
-              </chakra.button>
-            );
-          }}
-        </NavigableTreeItemExpandButton>
         {canHaveChildren && (
           <Menu>
             <MenuButton
               as={IconButton}
-              icon={<AddIcon />}
+              icon={<FaPlus />}
               size="xs"
               variant="ghost"
               aria-label="Add Child Component"
@@ -101,13 +98,13 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
               zIndex={2}
             />
             <MenuList bg="gray.700" borderColor="gray.600" zIndex={3}>
-              {component.type === "Message" && (
+              {component.type === ComponentType.Message && (
                 <>
                   <MenuItem
                     bg="gray.700"
                     _hover={{ bg: "gray.600" }}
                     color="white"
-                    onClick={() => onAddChild(component.id, "TextDisplay")}
+                    onClick={() => addChildComponent(component.id, ComponentType.TextDisplay)}
                   >
                     Add Text Display
                   </MenuItem>
@@ -115,18 +112,18 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                     bg="gray.700"
                     _hover={{ bg: "gray.600" }}
                     color="white"
-                    onClick={() => onAddChild(component.id, "ActionRow")}
+                    onClick={() => addChildComponent(component.id, ComponentType.ActionRow)}
                   >
                     Add Action Row
                   </MenuItem>
                 </>
               )}
-              {component.type === "ActionRow" && (
+              {component.type === ComponentType.ActionRow && (
                 <MenuItem
                   bg="gray.700"
                   _hover={{ bg: "gray.600" }}
                   color="white"
-                  onClick={() => onAddChild(component.id, "Button")}
+                  onClick={() => addChildComponent(component.id, ComponentType.Button)}
                   isDisabled={(component as ActionRowComponent).children.length >= 5}
                 >
                   Add Button ({(component as ActionRowComponent).children.length}/5)
@@ -141,12 +138,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
           <NavigableTreeItemGroup>
             {component.children?.map((child) => (
               <NavigableTreeItem ariaLabel={child.name} id={child.id} key={child.id}>
-                <ComponentTreeItem
-                  component={child}
-                  onDelete={onDelete}
-                  onAddChild={onAddChild}
-                  depth={depth + 1}
-                />
+                <ComponentTreeItem component={child} depth={depth + 1} />
               </NavigableTreeItem>
             ))}
           </NavigableTreeItemGroup>

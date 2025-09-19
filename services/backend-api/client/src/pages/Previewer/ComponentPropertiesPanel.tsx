@@ -1,13 +1,16 @@
 import React from "react";
 import { Box, VStack, HStack, Text, Button, Input, Textarea, Select } from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
-import type { Component, ComponentPropertiesPanelProps, ButtonComponent } from "./types";
+import type { Component, ComponentPropertiesPanelProps } from "./types";
+import { ComponentType, ButtonStyle } from "./types";
+
+import { usePreviewerContext } from "./PreviewerContext";
 
 export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> = ({
   selectedComponent,
-  onUpdateComponent,
-  onDeleteComponent,
 }) => {
+  const { updateComponent, deleteComponent } = usePreviewerContext();
+
   if (!selectedComponent) {
     return (
       <Box p={4}>
@@ -18,7 +21,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
   const renderPropertiesForComponent = (component: Component) => {
     switch (component.type) {
-      case "TextDisplay":
+      case ComponentType.TextDisplay:
         return (
           <Box>
             <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
@@ -26,7 +29,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             </Text>
             <Textarea
               value={component.content}
-              onChange={(e) => onUpdateComponent(component.id, { content: e.target.value })}
+              onChange={(e) => updateComponent(component.id, { content: e.target.value })}
               placeholder="Enter text content"
               rows={4}
               bg="gray.700"
@@ -36,7 +39,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             />
           </Box>
         );
-      case "ActionRow":
+      case ComponentType.ActionRow:
         return (
           <Box>
             <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
@@ -48,7 +51,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             </Text>
           </Box>
         );
-      case "Button":
+      case ComponentType.Button:
         return (
           <VStack align="stretch" spacing={4}>
             <Box>
@@ -57,7 +60,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
               </Text>
               <Input
                 value={component.label}
-                onChange={(e) => onUpdateComponent(component.id, { label: e.target.value })}
+                onChange={(e) => updateComponent(component.id, { label: e.target.value })}
                 placeholder="Enter button label"
                 bg="gray.700"
                 color="white"
@@ -72,8 +75,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
               <Select
                 value={component.style}
                 onChange={(e) =>
-                  onUpdateComponent(component.id, {
-                    style: e.target.value as ButtonComponent["style"],
+                  updateComponent(component.id, {
+                    style: e.target.value as ButtonStyle,
                   })
                 }
                 bg="gray.700"
@@ -81,21 +84,21 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 borderColor="gray.600"
                 _focus={{ borderColor: "blue.400" }}
               >
-                <option value="Primary">Primary</option>
-                <option value="Secondary">Secondary</option>
-                <option value="Success">Success</option>
-                <option value="Danger">Danger</option>
-                <option value="Link">Link</option>
+                <option value={ButtonStyle.Primary}>Primary</option>
+                <option value={ButtonStyle.Secondary}>Secondary</option>
+                <option value={ButtonStyle.Success}>Success</option>
+                <option value={ButtonStyle.Danger}>Danger</option>
+                <option value={ButtonStyle.Link}>Link</option>
               </Select>
             </Box>
-            {component.style === "Link" && (
+            {component.style === ButtonStyle.Link && (
               <Box>
                 <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
                   Link URL
                 </Text>
                 <Input
                   value={component.href || ""}
-                  onChange={(e) => onUpdateComponent(component.id, { href: e.target.value })}
+                  onChange={(e) => updateComponent(component.id, { href: e.target.value })}
                   placeholder="https://example.com"
                   bg="gray.700"
                   color="white"
@@ -112,7 +115,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 size="sm"
                 variant={component.disabled ? "solid" : "outline"}
                 colorScheme={component.disabled ? "red" : "green"}
-                onClick={() => onUpdateComponent(component.id, { disabled: !component.disabled })}
+                onClick={() => updateComponent(component.id, { disabled: !component.disabled })}
               >
                 {component.disabled ? "Disabled" : "Enabled"}
               </Button>
@@ -130,13 +133,13 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         <Text fontSize="lg" fontWeight="bold" color="white">
           {selectedComponent.type} Properties
         </Text>
-        {selectedComponent.type !== "Message" && (
+        {selectedComponent.type !== ComponentType.Message && (
           <Button
             size="sm"
             colorScheme="red"
             variant="outline"
             leftIcon={<DeleteIcon />}
-            onClick={() => onDeleteComponent(selectedComponent.id)}
+            onClick={() => deleteComponent(selectedComponent.id)}
           >
             Delete
           </Button>
@@ -148,7 +151,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         </Text>
         <Input
           value={selectedComponent.name}
-          onChange={(e) => onUpdateComponent(selectedComponent.id, { name: e.target.value })}
+          onChange={(e) => updateComponent(selectedComponent.id, { name: e.target.value })}
           placeholder="Enter component name"
           bg="gray.700"
           color="white"

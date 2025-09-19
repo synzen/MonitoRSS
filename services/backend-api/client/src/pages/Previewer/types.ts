@@ -1,3 +1,21 @@
+// Enums for component types
+export const MESSAGE_ROOT_ID = "message-root" as const;
+
+export enum ComponentType {
+  Message = "Message",
+  TextDisplay = "TextDisplay",
+  ActionRow = "ActionRow",
+  Button = "Button",
+}
+
+export enum ButtonStyle {
+  Primary = "Primary",
+  Secondary = "Secondary",
+  Success = "Success",
+  Danger = "Danger",
+  Link = "Link",
+}
+
 // Types for component tree
 export interface BaseComponent {
   id: string;
@@ -6,25 +24,25 @@ export interface BaseComponent {
 }
 
 export interface MessageComponent extends BaseComponent {
-  type: "Message";
+  type: ComponentType.Message;
   children: (TextDisplayComponent | ActionRowComponent)[];
 }
 
 export interface TextDisplayComponent extends BaseComponent {
-  type: "TextDisplay";
+  type: ComponentType.TextDisplay;
   content: string;
 }
 
 export interface ButtonComponent extends BaseComponent {
-  type: "Button";
+  type: ComponentType.Button;
   label: string;
-  style: "Primary" | "Secondary" | "Success" | "Danger" | "Link";
+  style: ButtonStyle;
   disabled: boolean;
   href?: string;
 }
 
 export interface ActionRowComponent extends BaseComponent {
-  type: "ActionRow";
+  type: ComponentType.ActionRow;
   children: ButtonComponent[];
 }
 
@@ -37,8 +55,12 @@ export type Component =
 export interface ComponentTreeItemProps {
   component: Component;
   onDelete: (id: string) => void;
-  onAddChild: (parentId: string, childType: "TextDisplay" | "ActionRow" | "Button") => void;
+  onAddChild: (
+    parentId: string,
+    childType: ComponentType.TextDisplay | ComponentType.ActionRow | ComponentType.Button
+  ) => void;
   depth?: number;
+  onProblemsChange?: (problems: Array<{ message: string; path: string }>) => void;
 }
 
 export interface DiscordMessagePreviewProps {
@@ -47,6 +69,4 @@ export interface DiscordMessagePreviewProps {
 
 export interface ComponentPropertiesPanelProps {
   selectedComponent: Component | null;
-  onUpdateComponent: (id: string, updates: Partial<Component>) => void;
-  onDeleteComponent: (id: string) => void;
 }
