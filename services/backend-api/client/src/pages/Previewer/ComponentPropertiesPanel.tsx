@@ -130,7 +130,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   return (
     <VStack align="stretch" spacing={4} p={4}>
       <HStack justify="space-between" align="center">
-        <Text fontSize="lg" fontWeight="bold" color="white">
+        <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
           {selectedComponent.type} Properties
         </Text>
         {selectedComponent.type !== ComponentType.Message && (

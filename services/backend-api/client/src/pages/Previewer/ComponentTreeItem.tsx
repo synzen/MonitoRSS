@@ -28,27 +28,27 @@ interface ComponentTreeItemProps {
   depth?: number;
 }
 
+const getComponentIcon = (type: Component["type"]) => {
+  switch (type) {
+    case ComponentType.Message:
+      return FaEnvelope;
+    case ComponentType.TextDisplay:
+      return FaFileAlt;
+    case ComponentType.ActionRow:
+      return FaClipboard;
+    case ComponentType.Button:
+      return FaCircle;
+    default:
+      return FaFile;
+  }
+};
+
 export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component, depth = 0 }) => {
-  const { addChildComponent, deleteComponent } = usePreviewerContext();
+  const { addChildComponent } = usePreviewerContext();
   const hasChildren = component.children && component.children.length > 0;
   const canHaveChildren =
     component.type === ComponentType.Message || component.type === ComponentType.ActionRow;
   const { isFocused, isExpanded, isSelected } = useNavigableTreeItemContext();
-
-  const getComponentIcon = (type: Component["type"]) => {
-    switch (type) {
-      case ComponentType.Message:
-        return FaEnvelope;
-      case ComponentType.TextDisplay:
-        return FaFileAlt;
-      case ComponentType.ActionRow:
-        return FaClipboard;
-      case ComponentType.Button:
-        return FaCircle;
-      default:
-        return FaFile;
-    }
-  };
 
   return (
     <VStack align="stretch" spacing={0} position="relative">

@@ -17,6 +17,7 @@ import {
 import { DiscordMessagePreview } from "./Previewer/DiscordMessagePreview";
 import { ComponentPropertiesPanel } from "./Previewer/ComponentPropertiesPanel";
 import { ComponentTreeItem } from "./Previewer/ComponentTreeItem";
+import { ProblemsSection } from "./Previewer/ProblemsSection";
 import { MESSAGE_ROOT_ID } from "./Previewer/types";
 import { NavigableTreeItem } from "../components/NavigableTree";
 import { NavigableTreeContext, NavigableTreeProvider } from "../contexts/NavigableTreeContext";
@@ -39,7 +40,7 @@ const findComponentById = (component: any, id: string): any | null => {
 };
 
 const PreviewerContent: React.FC = () => {
-  const { messageComponent, problems, resetMessage } = usePreviewerContext();
+  const { messageComponent, resetMessage } = usePreviewerContext();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = React.useRef<HTMLButtonElement>(null);
 
@@ -72,7 +73,7 @@ const PreviewerContent: React.FC = () => {
               {/* Top Bar */}
               <Box bg="gray.800" borderBottom="1px" borderColor="gray.600" px={4} py={3}>
                 <HStack justify="space-between" align="center">
-                  <Text fontSize="lg" fontWeight="bold" color="white">
+                  <Text fontSize="lg" fontWeight="bold" color="white" as="h1">
                     Discord Message Builder
                   </Text>
                   <HStack spacing={3}>
@@ -97,7 +98,7 @@ const PreviewerContent: React.FC = () => {
                 >
                   <VStack align="stretch" spacing={0}>
                     <Box p={4} borderBottom="1px" borderColor="gray.600">
-                      <Text fontSize="lg" fontWeight="bold" color="white" textAlign="center">
+                      <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
                         Message Structure
                       </Text>
                     </Box>
@@ -108,56 +109,22 @@ const PreviewerContent: React.FC = () => {
                     </div>
                   </VStack>
                 </Box>
-                {/* Center Panel - Discord Preview */}
-                <Box flex={1} p={4} overflow="auto" bg="gray.800">
-                  <VStack align="stretch" h="full" spacing={4}>
-                    <Box>
-                      <Text fontSize="xl" fontWeight="bold" mb={4} color="white">
-                        Discord Message Preview
-                      </Text>
-                      <DiscordMessagePreview messageComponent={messageComponent} />
-                    </Box>
-                    {/* Problems Section */}
-                    <Box>
-                      <HStack spacing={2} align="center" mb={3}>
-                        <Text fontSize="lg" fontWeight="semibold" color="white">
-                          Problems
-                        </Text>
-                        <Text fontSize="sm" color="gray.400">
-                          ({problems.length})
-                        </Text>
-                      </HStack>
-                      <Box
-                        bg="gray.700"
-                        borderRadius="md"
-                        p={4}
-                        border="1px"
-                        borderColor="gray.600"
-                      >
-                        {problems.length === 0 ? (
-                          <Text fontSize="sm" color="gray.400" fontStyle="italic">
-                            No problems found
-                          </Text>
-                        ) : (
-                          <VStack align="stretch" spacing={2}>
-                            {problems.map((problem) => (
-                              <Text
-                                key={`${problem.message}-${problem.path}`}
-                                fontSize="sm"
-                                color="white"
-                              >
-                                • {problem.message}{" "}
-                                <Text as="span" fontSize="xs" color="gray.400" fontFamily="mono">
-                                  ({problem.path})
-                                </Text>
-                              </Text>
-                            ))}
-                          </VStack>
-                        )}
-                      </Box>
-                    </Box>
-                  </VStack>
-                </Box>
+                {/* Center Panel - Discord Preview and Problems */}
+                <Flex flex={1} direction="column" bg="gray.800">
+                  {/* Discord Preview Section */}
+                  <Box p={4} borderBottom="1px" borderColor="gray.600">
+                    <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
+                      Discord Message Preview
+                    </Text>
+                  </Box>
+                  <Box p={4} overflow="auto">
+                    <DiscordMessagePreview messageComponent={messageComponent} />
+                  </Box>
+                  {/* Problems Section */}
+                  <Box borderTop="1px" borderColor="gray.600">
+                    <ProblemsSection />
+                  </Box>
+                </Flex>
                 {/* Right Panel - Properties */}
                 <Box
                   w="350px"

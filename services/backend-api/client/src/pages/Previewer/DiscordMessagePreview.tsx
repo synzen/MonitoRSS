@@ -20,7 +20,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
       case "TextDisplay":
         return (
           <Box key={component.id}>
-            <Text fontSize="sm">{component.content || "Text Display Component"}</Text>
+            <Text fontSize="sm">{component.content || "[missing text]"}</Text>
           </Box>
         );
       case "ActionRow":

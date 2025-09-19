@@ -4,6 +4,7 @@ import { Component, ComponentType, MESSAGE_ROOT_ID, MessageComponent, ButtonStyl
 interface ValidationProblem {
   message: string;
   path: string;
+  componentId: string;
 }
 
 interface PreviewerContextType {
@@ -30,6 +31,22 @@ export const usePreviewerContext = () => {
   return context;
 };
 
+const countTotalComponents = (comp: Component): number => {
+  const stack = [comp];
+  let count = 0;
+
+  while (stack.length > 0) {
+    const current = stack.pop()!;
+    count += 1;
+
+    if (current.children) {
+      stack.push(...current.children);
+    }
+  }
+
+  return count;
+};
+
 export const PreviewerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [messageComponent, setMessageComponent] = useState<MessageComponent>(() => ({
     id: MESSAGE_ROOT_ID,
@@ -46,14 +63,51 @@ export const PreviewerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const validationProblems: ValidationProblem[] = [];
       const currentPath = [...path, component.name];
 
+      // Check for too many total components (only for root message)
+      if (component.type === ComponentType.Message) {
+        const totalComponents = countTotalComponents(component);
+
+        if (totalComponents > 40) {
+          validationProblems.push({
+            message: "Message has too many total components (maximum 40 allowed)",
+            path: currentPath.join(" > "),
+            componentId: component.id,
+          });
+        }
+      }
+
+      // Check for too many top-level components (only for root message)
+      if (
+        component.type === ComponentType.Message &&
+        component.children &&
+        component.children.length > 10
+      ) {
+        validationProblems.push({
+          message: `Remove ${component.children.length - 10} top-level component${
+            component.children.length - 10 === 1 ? "" : "s"
+          } (maximum 10 allowed)`,
+          path: currentPath.join(" > "),
+          componentId: component.id,
+        });
+      }
+
+      if (component.type === ComponentType.ActionRow && !component.children.length) {
+        validationProblems.push({
+          message: "Expected at least one child in Action Row",
+          path: currentPath.join(" > "),
+          componentId: component.id,
+        });
+      }
+
       // Check for empty text displays
       if (
         component.type === ComponentType.TextDisplay &&
         (!component.content || component.content.trim() === "")
       ) {
         validationProblems.push({
-          message: "Text Display component has no content",
+          message: `Content for text display is expected`,
           path: currentPath.join(" > "),
+          componentId: component.id,
         });
       }
 
@@ -63,8 +117,9 @@ export const PreviewerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         (!component.label || component.label.trim() === "")
       ) {
         validationProblems.push({
-          message: "Button has no label",
+          message: "Label for button is expected",
           path: currentPath.join(" > "),
+          componentId: component.id,
         });
       }
 
@@ -75,12 +130,12 @@ export const PreviewerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         (!component.href || component.href.trim() === "")
       ) {
         validationProblems.push({
-          message: "Link button has no URL specified",
+          message: "URL for link button is expected",
           path: currentPath.join(" > "),
+          componentId: component.id,
         });
-      }
+      } // Recursively check children
 
-      // Recursively check children
       if (component.children) {
         component.children.forEach((child) => {
           validationProblems.push(...validateComponent(child, currentPath));
