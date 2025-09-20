@@ -1,5 +1,15 @@
 import React from "react";
-import { Box, VStack, HStack, Text, Button, Input, Textarea, Select } from "@chakra-ui/react";
+import {
+  Box,
+  VStack,
+  HStack,
+  Text,
+  Button,
+  Input,
+  Textarea,
+  Select,
+  Checkbox,
+} from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
 import type { Component, ComponentPropertiesPanelProps } from "./types";
 import { ComponentType, ButtonStyle } from "./types";
@@ -119,6 +129,45 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
               >
                 {component.disabled ? "Disabled" : "Enabled"}
               </Button>
+            </Box>
+          </VStack>
+        );
+      case ComponentType.Divider:
+        return (
+          <VStack align="stretch" spacing={4}>
+            <Box>
+              <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                Spacing
+              </Text>
+              <Select
+                value={component.spacing ?? 1}
+                onChange={(e) =>
+                  updateComponent(component.id, {
+                    spacing: parseInt(e.target.value, 10) as 1 | 2,
+                  })
+                }
+                bg="gray.700"
+                color="white"
+                borderColor="gray.600"
+                _focus={{ borderColor: "blue.400" }}
+              >
+                <option value={1}>Small padding</option>
+                <option value={2}>Large padding</option>
+              </Select>
+            </Box>
+            <Box>
+              <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                Visual Divider
+              </Text>
+              <Checkbox
+                isChecked={component.visual ?? true}
+                onChange={(e) => updateComponent(component.id, { visual: e.target.checked })}
+                colorScheme="blue"
+              >
+                <Text fontSize="sm" color="gray.300">
+                  Show visual divider line
+                </Text>
+              </Checkbox>
             </Box>
           </VStack>
         );

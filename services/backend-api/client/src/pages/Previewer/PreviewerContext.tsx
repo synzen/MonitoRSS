@@ -1,5 +1,12 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from "react";
-import { Component, ComponentType, MESSAGE_ROOT_ID, MessageComponent, ButtonStyle } from "./types";
+import {
+  Component,
+  ComponentType,
+  MESSAGE_ROOT_ID,
+  MessageComponent,
+  ButtonStyle,
+  SectionComponent,
+} from "./types";
 
 interface ValidationProblem {
   message: string;
@@ -12,7 +19,13 @@ interface PreviewerContextType {
   problems: ValidationProblem[];
   addChildComponent: (
     parentId: string,
-    childType: ComponentType.TextDisplay | ComponentType.ActionRow | ComponentType.Button
+    childType:
+      | ComponentType.TextDisplay
+      | ComponentType.ActionRow
+      | ComponentType.Button
+      | ComponentType.Section
+      | ComponentType.Divider,
+    isAccessory?: boolean
   ) => void;
   updateComponent: (id: string, updates: Partial<Component>) => void;
   deleteComponent: (id: string) => void;
@@ -41,6 +54,11 @@ const countTotalComponents = (comp: Component): number => {
 
     if (current.children) {
       stack.push(...current.children);
+    }
+
+    // Count accessory component for Section types
+    if (current.type === ComponentType.Section && "accessory" in current && current.accessory) {
+      stack.push(current.accessory);
     }
   }
 
@@ -93,7 +111,7 @@ export const PreviewerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       if (component.type === ComponentType.ActionRow && !component.children.length) {
         validationProblems.push({
-          message: "Expected at least one child in Action Row",
+          message: "Action Row expects at least one child component",
           path: currentPath.join(" > "),
           componentId: component.id,
         });
@@ -105,7 +123,7 @@ export const PreviewerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         (!component.content || component.content.trim() === "")
       ) {
         validationProblems.push({
-          message: `Content for text display is expected`,
+          message: `Text Display content is expected`,
           path: currentPath.join(" > "),
           componentId: component.id,
         });
@@ -117,7 +135,7 @@ export const PreviewerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         (!component.label || component.label.trim() === "")
       ) {
         validationProblems.push({
-          message: "Label for button is expected",
+          message: "Button label is expected",
           path: currentPath.join(" > "),
           componentId: component.id,
         });
@@ -130,16 +148,48 @@ export const PreviewerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         (!component.href || component.href.trim() === "")
       ) {
         validationProblems.push({
-          message: "URL for link button is expected",
+          message: "Link Button URL is expected",
           path: currentPath.join(" > "),
           componentId: component.id,
         });
-      } // Recursively check children
+      } // Section-specific validations
 
+      if (component.type === ComponentType.Section) {
+        const sectionComponent = component as SectionComponent;
+
+        // Check if accessory is missing (required)
+        if (!sectionComponent.accessory) {
+          validationProblems.push({
+            message: "Section accessory is expected",
+            path: currentPath.join(" > "),
+            componentId: component.id,
+          });
+        }
+
+        // Check if too many children (max 3)
+        if (sectionComponent.children && sectionComponent.children.length > 3) {
+          validationProblems.push({
+            message: "Section can have maximum 3 child components",
+            path: currentPath.join(" > "),
+            componentId: component.id,
+          });
+        }
+      }
+
+      // Recursively check children
       if (component.children) {
         component.children.forEach((child) => {
           validationProblems.push(...validateComponent(child, currentPath));
         });
+      }
+
+      // Check accessory for sections
+      if (
+        component.type === ComponentType.Section &&
+        "accessory" in component &&
+        component.accessory
+      ) {
+        validationProblems.push(...validateComponent(component.accessory, currentPath));
       }
 
       return validationProblems;
@@ -163,7 +213,16 @@ export const PreviewerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         .map((child) => findComponentById(child, id))
         .find((result) => result !== null);
 
-      return found || null;
+      if (found) return found;
+    }
+
+    // Check accessory for sections
+    if (
+      component.type === ComponentType.Section &&
+      "accessory" in component &&
+      component.accessory
+    ) {
+      return findComponentById(component.accessory, id);
     }
 
     return null;
@@ -172,10 +231,16 @@ export const PreviewerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const addChildComponent = useCallback(
     (
       parentId: string,
-      childType: ComponentType.TextDisplay | ComponentType.ActionRow | ComponentType.Button
+      childType:
+        | ComponentType.TextDisplay
+        | ComponentType.ActionRow
+        | ComponentType.Button
+        | ComponentType.Section
+        | ComponentType.Divider,
+      isAccessory = false
     ) => {
-      const newComponent = (() => {
-        switch (childType) {
+      const createNewComponent = (type: typeof childType): Component => {
+        switch (type) {
           case ComponentType.TextDisplay:
             return {
               id: `text-${Date.now()}`,
@@ -200,13 +265,38 @@ export const PreviewerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               disabled: false,
               href: "",
             };
+          case ComponentType.Section:
+            return {
+              id: `section-${Date.now()}`,
+              type: ComponentType.Section,
+              name: `Section`,
+              children: [],
+            };
+          case ComponentType.Divider:
+            return {
+              id: `divider-${Date.now()}`,
+              type: ComponentType.Divider,
+              name: `Divider`,
+              visual: true,
+              spacing: 1,
+              children: [],
+            };
           default:
             throw new Error(`Unknown child type: ${childType}`);
         }
-      })();
+      };
+
+      const newComponent = createNewComponent(childType);
 
       const updateComponentTree = (component: Component): Component => {
         if (component.id === parentId) {
+          if (isAccessory && component.type === ComponentType.Section) {
+            return {
+              ...component,
+              accessory: newComponent,
+            } as SectionComponent;
+          }
+
           return {
             ...component,
             children: [...(component.children || []), newComponent],
@@ -255,6 +345,14 @@ export const PreviewerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (id === MESSAGE_ROOT_ID) return; // Can't delete root
 
       const removeFromTree = (component: Component): Component | null => {
+        // Remove from accessory if it matches
+        if (component.type === ComponentType.Section && component.accessory?.id === id) {
+          return {
+            ...component,
+            accessory: undefined,
+          } as SectionComponent;
+        }
+
         if (component.children) {
           const filteredChildren = component.children
             .map(removeFromTree)

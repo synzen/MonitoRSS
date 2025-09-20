@@ -18,22 +18,28 @@ import { DiscordMessagePreview } from "./Previewer/DiscordMessagePreview";
 import { ComponentPropertiesPanel } from "./Previewer/ComponentPropertiesPanel";
 import { ComponentTreeItem } from "./Previewer/ComponentTreeItem";
 import { ProblemsSection } from "./Previewer/ProblemsSection";
-import { MESSAGE_ROOT_ID } from "./Previewer/types";
+import { MESSAGE_ROOT_ID, ComponentType, Component, SectionComponent } from "./Previewer/types";
 import { NavigableTreeItem } from "../components/NavigableTree";
 import { NavigableTreeContext, NavigableTreeProvider } from "../contexts/NavigableTreeContext";
 import { PreviewerProvider, usePreviewerContext } from "./Previewer/PreviewerContext";
 
-const findComponentById = (component: any, id: string): any | null => {
+const findComponentById = (component: Component, id: string): Component | null => {
   if (component.id === id) {
     return component;
   }
 
   if (component.children) {
     const found = component.children
-      .map((child: any) => findComponentById(child, id))
-      .find((result: any) => result !== null);
+      .map((child: Component) => findComponentById(child, id))
+      .find((result: Component | null) => result !== null);
 
-    return found || null;
+    if (found) return found;
+  }
+
+  // Check accessory component for Section types
+  if (component.type === ComponentType.Section && (component as SectionComponent).accessory) {
+    const accessoryFound = findComponentById((component as SectionComponent).accessory!, id);
+    if (accessoryFound) return accessoryFound;
   }
 
   return null;

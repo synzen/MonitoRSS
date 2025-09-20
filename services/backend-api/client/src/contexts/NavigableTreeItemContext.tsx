@@ -20,6 +20,7 @@ type ContextProps = {
   onFocused: () => void;
   onBlurred: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
+  setIsExpanded: (expanded: boolean) => void;
   id: string | null;
 };
 
@@ -197,6 +198,7 @@ export const NavigableTreeItemContext = createContext<ContextProps>({
   onFocused: () => {},
   onBlurred: () => {},
   onKeyDown: () => {},
+  setIsExpanded: () => {},
   id: null,
 });
 
@@ -329,6 +331,7 @@ export const NavigableTreeItemProvider = ({
     onFocused,
     onBlurred,
     isExpanded,
+    setIsExpanded,
     onCollapsed,
     onExpanded,
     onKeyDown,

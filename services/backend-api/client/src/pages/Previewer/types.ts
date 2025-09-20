@@ -2,10 +2,12 @@
 export const MESSAGE_ROOT_ID = "message-root" as const;
 
 export enum ComponentType {
-  Message = "Message",
-  TextDisplay = "TextDisplay",
-  ActionRow = "ActionRow",
-  Button = "Button",
+  Message = "message",
+  TextDisplay = "text_display",
+  ActionRow = "action_row",
+  Button = "button",
+  Section = "section",
+  Divider = "divider",
 }
 
 export enum ButtonStyle {
@@ -46,11 +48,30 @@ export interface ActionRowComponent extends BaseComponent {
   children: ButtonComponent[];
 }
 
+export interface SectionComponent {
+  type: ComponentType.Section;
+  id: string;
+  name: string;
+  children: Component[]; // max 3, only TextDisplay allowed
+  accessory?: Component; // required, only Button allowed
+}
+
+export interface DividerComponent {
+  type: ComponentType.Divider;
+  id: string;
+  name: string;
+  visual?: boolean; // If a visual divider should be displayed (defaults to true)
+  spacing?: 1 | 2; // Size of separator padding—1 for small padding, 2 for large padding. Defaults to 1
+  children: [];
+}
+
 export type Component =
   | MessageComponent
   | TextDisplayComponent
+  | ActionRowComponent
   | ButtonComponent
-  | ActionRowComponent;
+  | SectionComponent
+  | DividerComponent;
 
 export interface ComponentTreeItemProps {
   component: Component;

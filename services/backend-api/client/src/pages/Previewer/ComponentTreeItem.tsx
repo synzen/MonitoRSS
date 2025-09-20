@@ -9,10 +9,20 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
+  MenuGroup,
 } from "@chakra-ui/react";
-import { FaPlus, FaEnvelope, FaFileAlt, FaClipboard, FaCircle, FaFile } from "react-icons/fa";
+import {
+  FaPlus,
+  FaEnvelope,
+  FaClipboard,
+  FaFile,
+  FaHandPointer,
+  FaFont,
+  FaLayerGroup,
+  FaMinus,
+} from "react-icons/fa";
 import { ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
-import type { Component, ActionRowComponent } from "./types";
+import type { Component, ActionRowComponent, SectionComponent } from "./types";
 import { ComponentType } from "./types";
 import {
   NavigableTreeItem,
@@ -33,11 +43,15 @@ const getComponentIcon = (type: Component["type"]) => {
     case ComponentType.Message:
       return FaEnvelope;
     case ComponentType.TextDisplay:
-      return FaFileAlt;
+      return FaFont;
     case ComponentType.ActionRow:
       return FaClipboard;
     case ComponentType.Button:
-      return FaCircle;
+      return FaHandPointer;
+    case ComponentType.Section:
+      return FaLayerGroup;
+    case ComponentType.Divider:
+      return FaMinus;
     default:
       return FaFile;
   }
@@ -46,9 +60,22 @@ const getComponentIcon = (type: Component["type"]) => {
 export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component, depth = 0 }) => {
   const { addChildComponent } = usePreviewerContext();
   const hasChildren = component.children && component.children.length > 0;
+  const hasAccessory =
+    component.type === ComponentType.Section &&
+    (component as SectionComponent).accessory !== undefined;
   const canHaveChildren =
-    component.type === ComponentType.Message || component.type === ComponentType.ActionRow;
-  const { isFocused, isExpanded, isSelected } = useNavigableTreeItemContext();
+    component.type === ComponentType.Message ||
+    component.type === ComponentType.ActionRow ||
+    component.type === ComponentType.Section;
+  const { isFocused, isExpanded, isSelected, setIsExpanded } = useNavigableTreeItemContext();
+
+  const onAddChildComponent = (...args: Parameters<typeof addChildComponent>) => {
+    addChildComponent(...args);
+
+    if (!isExpanded) {
+      setIsExpanded(true);
+    }
+  };
 
   return (
     <VStack align="stretch" spacing={0} position="relative">
@@ -59,8 +86,6 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component,
         cursor="pointer"
         bg={isSelected ? "blue.600" : "transparent"}
         _hover={{ bg: isSelected ? "blue.600" : "gray.700" }}
-        // onClick={() => onSelect(component.id)}
-        // outlineOffset={4}
         outline={isFocused ? `2px solid ${getChakraColor("blue.300")}` : undefined}
       >
         {canHaveChildren && (
@@ -99,12 +124,13 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component,
             />
             <MenuList bg="gray.700" borderColor="gray.600" zIndex={3}>
               {component.type === ComponentType.Message && (
-                <>
+                <MenuGroup title={`Components (${component.children?.length || 0}/10)`}>
                   <MenuItem
                     bg="gray.700"
                     _hover={{ bg: "gray.600" }}
                     color="white"
-                    onClick={() => addChildComponent(component.id, ComponentType.TextDisplay)}
+                    onClick={() => onAddChildComponent(component.id, ComponentType.TextDisplay)}
+                    isDisabled={(component.children.length || 0) >= 10}
                   >
                     Add Text Display
                   </MenuItem>
@@ -112,28 +138,86 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component,
                     bg="gray.700"
                     _hover={{ bg: "gray.600" }}
                     color="white"
-                    onClick={() => addChildComponent(component.id, ComponentType.ActionRow)}
+                    onClick={() => onAddChildComponent(component.id, ComponentType.ActionRow)}
+                    isDisabled={(component.children.length || 0) >= 10}
                   >
                     Add Action Row
                   </MenuItem>
-                </>
+                  <MenuItem
+                    bg="gray.700"
+                    _hover={{ bg: "gray.600" }}
+                    color="white"
+                    onClick={() => onAddChildComponent(component.id, ComponentType.Section)}
+                    isDisabled={(component.children.length || 0) >= 10}
+                  >
+                    Add Section
+                  </MenuItem>
+                  <MenuItem
+                    bg="gray.700"
+                    _hover={{ bg: "gray.600" }}
+                    color="white"
+                    onClick={() => onAddChildComponent(component.id, ComponentType.Divider)}
+                    isDisabled={(component.children.length || 0) >= 10}
+                  >
+                    Add Divider
+                  </MenuItem>
+                </MenuGroup>
               )}
               {component.type === ComponentType.ActionRow && (
-                <MenuItem
-                  bg="gray.700"
-                  _hover={{ bg: "gray.600" }}
-                  color="white"
-                  onClick={() => addChildComponent(component.id, ComponentType.Button)}
-                  isDisabled={(component as ActionRowComponent).children.length >= 5}
+                <MenuGroup
+                  title={`Components (${(component as ActionRowComponent).children.length}/5)`}
                 >
-                  Add Button ({(component as ActionRowComponent).children.length}/5)
-                </MenuItem>
+                  <MenuItem
+                    bg="gray.700"
+                    _hover={{ bg: "gray.600" }}
+                    color="white"
+                    onClick={() => onAddChildComponent(component.id, ComponentType.Button)}
+                    isDisabled={(component as ActionRowComponent).children.length >= 5}
+                  >
+                    Add Button
+                  </MenuItem>
+                </MenuGroup>
+              )}
+              {component.type === ComponentType.Section && (
+                <>
+                  <MenuGroup title={`Components (${component.children?.length || 0}/3)`}>
+                    <MenuItem
+                      bg="gray.700"
+                      _hover={{ bg: "gray.600" }}
+                      color="white"
+                      onClick={() => onAddChildComponent(component.id, ComponentType.TextDisplay)}
+                      isDisabled={(component.children?.length || 0) >= 3}
+                    >
+                      Add Text Display
+                    </MenuItem>
+                    <MenuItem
+                      bg="gray.700"
+                      _hover={{ bg: "gray.600" }}
+                      color="white"
+                      onClick={() => onAddChildComponent(component.id, ComponentType.Divider)}
+                      isDisabled={(component.children?.length || 0) >= 3}
+                    >
+                      Add Divider
+                    </MenuItem>
+                  </MenuGroup>
+                  <MenuGroup title={`Accessory (Required - ${hasAccessory ? "1" : "0"}/1)`}>
+                    <MenuItem
+                      bg="gray.700"
+                      _hover={{ bg: "gray.600" }}
+                      color="white"
+                      onClick={() => onAddChildComponent(component.id, ComponentType.Button, true)}
+                      isDisabled={hasAccessory}
+                    >
+                      Add Button
+                    </MenuItem>
+                  </MenuGroup>
+                </>
               )}
             </MenuList>
           </Menu>
         )}
       </HStack>
-      {hasChildren && isExpanded && (
+      {(hasChildren || hasAccessory) && isExpanded && (
         <VStack align="stretch" spacing={0}>
           <NavigableTreeItemGroup>
             {component.children?.map((child) => (
@@ -141,6 +225,18 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component,
                 <ComponentTreeItem component={child} depth={depth + 1} />
               </NavigableTreeItem>
             ))}
+            {hasAccessory && (
+              <NavigableTreeItem
+                ariaLabel={`${(component as SectionComponent).accessory!.name} (Accessory)`}
+                id={(component as SectionComponent).accessory!.id}
+                key={`accessory-${(component as SectionComponent).accessory!.id}`}
+              >
+                <ComponentTreeItem
+                  component={(component as SectionComponent).accessory!}
+                  depth={depth + 1}
+                />
+              </NavigableTreeItem>
+            )}
           </NavigableTreeItemGroup>
         </VStack>
       )}
