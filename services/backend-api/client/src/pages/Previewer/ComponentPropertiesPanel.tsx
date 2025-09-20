@@ -10,7 +10,7 @@ import {
   Select,
   Checkbox,
 } from "@chakra-ui/react";
-import { DeleteIcon } from "@chakra-ui/icons";
+import { DeleteIcon, ChevronUpIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import type { Component, ComponentPropertiesPanelProps } from "./types";
 import { ComponentType, ButtonStyle } from "./types";
 
@@ -19,7 +19,8 @@ import { usePreviewerContext } from "./PreviewerContext";
 export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> = ({
   selectedComponent,
 }) => {
-  const { updateComponent, deleteComponent } = usePreviewerContext();
+  const { updateComponent, deleteComponent, messageComponent, moveComponentUp, moveComponentDown } =
+    usePreviewerContext();
 
   if (!selectedComponent) {
     return (
@@ -47,18 +48,6 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
               borderColor="gray.600"
               _focus={{ borderColor: "blue.400" }}
             />
-          </Box>
-        );
-      case ComponentType.ActionRow:
-        return (
-          <Box>
-            <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-              This Action Row contains {component.children.length} button
-              {component.children.length !== 1 ? "s" : ""} (max 5).
-            </Text>
-            <Text fontSize="sm" color="gray.400">
-              Select individual buttons in the tree to edit their properties.
-            </Text>
           </Box>
         );
       case ComponentType.Button:
@@ -176,6 +165,38 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     }
   };
 
+  const getComponentPosition = (component: Component) => {
+    const findParentAndIndex = (
+      comp: Component,
+      targetId: string
+    ): { parent: Component; index: number; total: number } | null => {
+      if (comp.children) {
+        for (let i = 0; i < comp.children.length; i += 1) {
+          const child = comp.children[i];
+
+          if (child.id === targetId) {
+            return {
+              parent: comp,
+              index: i,
+              total: comp.children.length,
+            };
+          }
+
+          const result = findParentAndIndex(child, targetId);
+          if (result) return result;
+        }
+      }
+
+      return null;
+    };
+
+    return findParentAndIndex(messageComponent, component.id);
+  };
+
+  const positionInfo = selectedComponent ? getComponentPosition(selectedComponent) : null;
+  const canMoveUp = positionInfo && positionInfo.index > 0;
+  const canMoveDown = positionInfo && positionInfo.index < positionInfo.total - 1;
+
   return (
     <VStack align="stretch" spacing={4} p={4}>
       <HStack justify="space-between" align="center">
@@ -208,6 +229,52 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
           _focus={{ borderColor: "blue.400" }}
         />
       </Box>
+      {positionInfo && selectedComponent.type !== ComponentType.Message && (
+        <Box>
+          <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+            Position
+          </Text>
+          <VStack spacing={2}>
+            <Box bg="gray.700" p={3} borderRadius="md" w="full">
+              <Text fontSize="sm" color="white">
+                {positionInfo.index + 1} of {positionInfo.total} in {positionInfo.parent.name}
+              </Text>
+            </Box>
+            <HStack spacing={2} w="full">
+              <Button
+                size="sm"
+                leftIcon={<ChevronUpIcon />}
+                aria-label="Move Up"
+                aria-disabled={!canMoveUp}
+                onClick={() => {
+                  if (!canMoveUp) return;
+                  moveComponentUp(selectedComponent.id);
+                }}
+                variant="outline"
+                colorScheme="blue"
+                flex={1}
+              >
+                Move Up
+              </Button>
+              <Button
+                size="sm"
+                leftIcon={<ChevronDownIcon />}
+                aria-label="Move Down"
+                aria-disabled={!canMoveDown}
+                onClick={() => {
+                  if (!canMoveDown) return;
+                  moveComponentDown(selectedComponent.id);
+                }}
+                variant="outline"
+                colorScheme="blue"
+                flex={1}
+              >
+                Move Down
+              </Button>
+            </HStack>
+          </VStack>
+        </Box>
+      )}
       {renderPropertiesForComponent(selectedComponent)}
     </VStack>
   );

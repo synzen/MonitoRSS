@@ -30,6 +30,8 @@ interface PreviewerContextType {
   updateComponent: (id: string, updates: Partial<Component>) => void;
   deleteComponent: (id: string) => void;
   resetMessage: () => void;
+  moveComponentUp: (componentId: string) => void;
+  moveComponentDown: (componentId: string) => void;
 }
 
 const PreviewerContext = createContext<PreviewerContextType | undefined>(undefined);
@@ -385,6 +387,72 @@ export const PreviewerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
   }, []);
 
+  const moveComponentUp = useCallback(
+    (componentId: string) => {
+      const updateTree = (component: Component): Component => {
+        if (component.children) {
+          const childIndex = component.children.findIndex((child) => child.id === componentId);
+
+          if (childIndex > 0) {
+            const newChildren = [...component.children];
+            const componentToMove = newChildren[childIndex];
+            const componentAbove = newChildren[childIndex - 1];
+            newChildren[childIndex - 1] = componentToMove;
+            newChildren[childIndex] = componentAbove;
+
+            return {
+              ...component,
+              children: newChildren,
+            } as Component;
+          }
+
+          return {
+            ...component,
+            children: component.children.map(updateTree),
+          } as Component;
+        }
+
+        return component;
+      };
+
+      setMessageComponent(updateTree(messageComponent) as MessageComponent);
+    },
+    [messageComponent]
+  );
+
+  const moveComponentDown = useCallback(
+    (componentId: string) => {
+      const updateTree = (component: Component): Component => {
+        if (component.children) {
+          const childIndex = component.children.findIndex((child) => child.id === componentId);
+
+          if (childIndex >= 0 && childIndex < component.children.length - 1) {
+            const newChildren = [...component.children];
+            const componentToMove = newChildren[childIndex];
+            const componentBelow = newChildren[childIndex + 1];
+            newChildren[childIndex] = componentBelow;
+            newChildren[childIndex + 1] = componentToMove;
+
+            return {
+              ...component,
+              children: newChildren,
+            } as Component;
+          }
+
+          return {
+            ...component,
+            children: component.children.map(updateTree),
+          } as Component;
+        }
+
+        return component;
+      };
+
+      setMessageComponent(updateTree(messageComponent) as MessageComponent);
+    },
+    [messageComponent]
+  );
+
   const contextValue: PreviewerContextType = useMemo(
     () => ({
       messageComponent,
@@ -393,8 +461,19 @@ export const PreviewerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       updateComponent,
       deleteComponent,
       resetMessage,
+      moveComponentUp,
+      moveComponentDown,
     }),
-    [messageComponent, problems, addChildComponent, updateComponent, deleteComponent, resetMessage]
+    [
+      messageComponent,
+      problems,
+      addChildComponent,
+      updateComponent,
+      deleteComponent,
+      resetMessage,
+      moveComponentUp,
+      moveComponentDown,
+    ]
   );
 
   return <PreviewerContext.Provider value={contextValue}>{children}</PreviewerContext.Provider>;
