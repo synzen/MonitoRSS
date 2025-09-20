@@ -13,6 +13,8 @@ import {
   FormErrorMessage,
   Alert,
   AlertIcon,
+  FormLabel,
+  Switch,
 } from "@chakra-ui/react";
 import { DeleteIcon, ChevronUpIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import { useFormContext } from "react-hook-form";
@@ -132,9 +134,9 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
         return (
           <FormControl isInvalid={!!contentError}>
-            <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               Text Content
-            </Text>
+            </FormLabel>
             <Textarea
               value={component.content}
               onChange={(e) => onChange({ ...component, content: e.target.value })}
@@ -150,13 +152,15 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
       case ComponentType.Button: {
         const labelError = getFieldError(component.id, "label");
+        const hrefError = getFieldError(component.id, "href");
+        const styleError = getFieldError(component.id, "style");
 
         return (
           <VStack align="stretch" spacing={4}>
             <FormControl isInvalid={!!labelError}>
-              <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
                 Button Label
-              </Text>
+              </FormLabel>
               <Input
                 value={component.label}
                 onChange={(e) => onChange({ ...component, label: e.target.value })}
@@ -165,17 +169,14 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
               />
               {labelError && <FormErrorMessage>{labelError.message}</FormErrorMessage>}
             </FormControl>
-            <Box>
-              <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+            <FormControl isInvalid={!!styleError}>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
                 Button Style
-              </Text>
+              </FormLabel>
               <Select
                 value={component.style}
                 onChange={(e) => onChange({ ...component, style: e.target.value as ButtonStyle })}
                 bg="gray.700"
-                color="white"
-                borderColor="gray.600"
-                _focus={{ borderColor: "blue.400" }}
               >
                 <option value={ButtonStyle.Primary}>Primary</option>
                 <option value={ButtonStyle.Secondary}>Secondary</option>
@@ -183,65 +184,62 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 <option value={ButtonStyle.Danger}>Danger</option>
                 <option value={ButtonStyle.Link}>Link</option>
               </Select>
-            </Box>
+              {styleError && <FormErrorMessage>{styleError.message}</FormErrorMessage>}
+            </FormControl>
             {component.style === ButtonStyle.Link && (
-              <Box>
-                <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+              <FormControl isInvalid={!!hrefError}>
+                <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
                   Link URL
-                </Text>
+                </FormLabel>
                 <Input
                   value={component.href || ""}
                   onChange={(e) => onChange({ ...component, href: e.target.value })}
                   placeholder="https://example.com"
                   bg="gray.700"
-                  color="white"
-                  borderColor="gray.600"
-                  _focus={{ borderColor: "blue.400" }}
                 />
-              </Box>
+                {hrefError && <FormErrorMessage>{hrefError.message}</FormErrorMessage>}
+              </FormControl>
             )}
-            <Box>
-              <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-                Button State
-              </Text>
-              <Button
-                size="sm"
-                variant={component.disabled ? "solid" : "outline"}
-                colorScheme={component.disabled ? "red" : "green"}
-                onClick={() => onChange({ ...component, disabled: !component.disabled })}
-              >
-                {component.disabled ? "Disabled" : "Enabled"}
-              </Button>
-            </Box>
+            <FormControl>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                Is Disabled?
+              </FormLabel>
+              <Switch
+                isChecked={component.disabled}
+                onChange={(e) => onChange({ ...component, disabled: e.target.checked })}
+                colorScheme="blue"
+              />
+            </FormControl>
           </VStack>
         );
       }
 
-      case ComponentType.Divider:
+      case ComponentType.Divider: {
+        const spacingError = getFieldError(component.id, "spacing");
+        const visualError = getFieldError(component.id, "visual");
+
         return (
           <VStack align="stretch" spacing={4}>
-            <Box>
-              <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+            <FormControl isInvalid={!!spacingError}>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
                 Spacing
-              </Text>
+              </FormLabel>
               <Select
                 value={component.spacing ?? 1}
                 onChange={(e) =>
                   onChange({ ...component, spacing: parseInt(e.target.value, 10) as 1 | 2 })
                 }
                 bg="gray.700"
-                color="white"
-                borderColor="gray.600"
-                _focus={{ borderColor: "blue.400" }}
               >
                 <option value={1}>Small padding</option>
                 <option value={2}>Large padding</option>
               </Select>
-            </Box>
-            <Box>
-              <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+              {spacingError && <FormErrorMessage>{spacingError.message}</FormErrorMessage>}
+            </FormControl>
+            <FormControl>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
                 Visual Divider
-              </Text>
+              </FormLabel>
               <Checkbox
                 isChecked={component.visual ?? true}
                 onChange={(e) => onChange({ ...component, visual: e.target.checked })}
@@ -251,9 +249,12 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                   Show visual divider line
                 </Text>
               </Checkbox>
-            </Box>
+              {visualError && <FormErrorMessage>{visualError.message}</FormErrorMessage>}
+            </FormControl>
           </VStack>
         );
+      }
+
       default:
         return null;
     }
@@ -306,6 +307,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     });
   };
 
+  const nameFieldError = getFieldError(component.id, "name");
+
   return (
     <VStack align="stretch" spacing={4} p={4} minWidth={250}>
       {(!hideTitle || component.type !== ComponentType.Message) && (
@@ -334,20 +337,44 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
           At least one child component is required for Action Rows.
         </Alert>
       )}
-      <Box>
-        <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+      {component.type === ComponentType.Section && component.children.length === 0 && (
+        <Alert status="error" borderRadius="md">
+          <AlertIcon />
+          At least one child component is required for Sections.
+        </Alert>
+      )}
+      {component.type === ComponentType.Section && component.children.length > 3 && (
+        <Alert status="error" borderRadius="md">
+          <AlertIcon />
+          Sections can have at most 3 child components. {component.children.length - 3} child
+          components must be deleted.
+        </Alert>
+      )}
+      {component.type === ComponentType.Section && !component.accessory && (
+        <Alert status="error" borderRadius="md">
+          <AlertIcon />
+          An accessory component is required for Sections.
+        </Alert>
+      )}
+      {component.type === ComponentType.ActionRow && component.children.length > 5 && (
+        <Alert status="error" borderRadius="md">
+          <AlertIcon />
+          Action Rows can have at most 5 child components. {component.children.length - 5} child
+          components must be deleted.
+        </Alert>
+      )}
+      <FormControl isInvalid={!!nameFieldError}>
+        <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
           Component Name
-        </Text>
+        </FormLabel>
         <Input
           value={component.name}
           onChange={(e) => updateValue({ ...component, name: e.target.value })}
           placeholder="Enter component name"
           bg="gray.700"
-          color="white"
-          borderColor="gray.600"
-          _focus={{ borderColor: "blue.400" }}
         />
-      </Box>
+        {nameFieldError && <FormErrorMessage>{nameFieldError?.message}</FormErrorMessage>}
+      </FormControl>
       {positionInfo && component.type !== ComponentType.Message && (
         <Box>
           <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">

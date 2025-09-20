@@ -118,6 +118,7 @@ const extractProblems = (
 
   if (formStateErrors) {
     processErrors(formStateErrors, messageComponent);
+    console.log("🚀 ~ extractProblems ~ formStateErrors:", formStateErrors);
   }
 
   return problems;

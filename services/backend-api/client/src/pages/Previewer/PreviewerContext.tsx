@@ -49,6 +49,7 @@ const createComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => {
             .array()
             .of(createComponentSchema())
             .min(1, "Action Row must have at least one child component")
+            .max(5, "Action Row can have at most 5 child components")
             .required("Action Row must have at least one child component"),
         });
       case ComponentType.Message:
