@@ -10,11 +10,12 @@ import {
   Divider,
 } from "@chakra-ui/react";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
-import { ComponentType, Component, DiscordMessagePreviewProps } from "./types";
+import { useFormContext } from "react-hook-form";
+import { Component, ComponentType, MessageComponent } from "./types";
 
-export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
-  messageComponent,
-}) => {
+export const DiscordMessagePreview: React.FC = () => {
+  const { watch } = useFormContext<{ messageComponent: MessageComponent }>();
+  const messageComponent = watch("messageComponent");
   const bgColor = useColorModeValue("#36393f", "#36393f");
   const textColor = useColorModeValue("#dcddde", "#dcddde");
 
@@ -199,13 +200,15 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
             </Text>
           </HStack>
           <Box>
-            {messageComponent ? (
-              renderComponent(messageComponent)
-            ) : (
-              <Text fontSize="sm" color="#72767d" fontStyle="italic">
-                No message configured yet.
-              </Text>
-            )}
+            <VStack align="stretch" spacing={3}>
+              {messageComponent.children?.length === 0 ? (
+                <Text color="gray.400" fontSize="sm" fontStyle="italic">
+                  No components added yet
+                </Text>
+              ) : (
+                messageComponent.children?.map(renderComponent)
+              )}
+            </VStack>
           </Box>
         </VStack>
       </HStack>

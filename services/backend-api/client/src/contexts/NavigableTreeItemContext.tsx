@@ -1,4 +1,4 @@
-import { ReactNode, createContext, useCallback, useContext, useMemo, useState } from "react";
+import { ReactNode, createContext, useCallback, useContext, useEffect, useMemo } from "react";
 import { useNavigableTreeContext } from "./NavigableTreeContext";
 
 // https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values
@@ -211,11 +211,34 @@ export const NavigableTreeItemProvider = ({
   children: ReactNode;
   isExpanded?: boolean;
 }) => {
-  const { currentSelectedId, currentFocusedId, setCurrentFocusedId, setCurrentSelectedId } =
-    useNavigableTreeContext();
-  const [isExpanded, setIsExpanded] = useState<boolean>(defaultIsExpanded || false);
+  const {
+    currentSelectedId,
+    currentFocusedId,
+    setCurrentFocusedId,
+    setCurrentSelectedId,
+    expandedIds,
+    setExpandedIds,
+  } = useNavigableTreeContext();
+  const isExpanded = expandedIds.has(id);
+  // const [isExpanded, setIsExpanded] = useState<boolean>(defaultIsExpanded || false);
   const thisItemIsFocused = currentFocusedId === id;
   const thisItemIsSelected = currentSelectedId === id;
+
+  const setIsExpanded = useCallback(
+    (expanded: boolean) => {
+      if (expanded) {
+        setExpandedIds((prev) => new Set(prev).add(id));
+      } else {
+        setExpandedIds((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(id);
+
+          return newSet;
+        });
+      }
+    },
+    [id, setExpandedIds]
+  );
 
   const onFocused = useCallback(() => {
     setCurrentFocusedId(id);
@@ -311,6 +334,12 @@ export const NavigableTreeItemProvider = ({
     },
     [thisItemIsFocused, onCollapsed, onExpanded, isExpanded]
   );
+
+  useEffect(() => {
+    if (defaultIsExpanded !== undefined) {
+      setIsExpanded(defaultIsExpanded);
+    }
+  }, [defaultIsExpanded, setIsExpanded]);
 
   const contextValue = useMemo(() => {
     return {

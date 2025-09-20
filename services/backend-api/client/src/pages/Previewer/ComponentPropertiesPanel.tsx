@@ -9,9 +9,12 @@ import {
   Textarea,
   Select,
   Checkbox,
+  FormControl,
+  FormErrorMessage,
 } from "@chakra-ui/react";
 import { DeleteIcon, ChevronUpIcon, ChevronDownIcon } from "@chakra-ui/icons";
-import type { Component, ComponentPropertiesPanelProps } from "./types";
+import { useFormContext } from "react-hook-form";
+import type { Component, ComponentPropertiesPanelProps, MessageComponent } from "./types";
 import { ComponentType, ButtonStyle } from "./types";
 
 import { usePreviewerContext } from "./PreviewerContext";
@@ -19,8 +22,85 @@ import { usePreviewerContext } from "./PreviewerContext";
 export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> = ({
   selectedComponent,
 }) => {
-  const { updateComponent, deleteComponent, messageComponent, moveComponentUp, moveComponentDown } =
-    usePreviewerContext();
+  const { deleteComponent, moveComponentUp, moveComponentDown } = usePreviewerContext();
+  const { setValue, getValues, watch, formState } = useFormContext<{
+    messageComponent: MessageComponent;
+  }>();
+  const messageComponent = watch("messageComponent");
+
+  const updateComponent = (id: string, updates: Partial<Component>) => {
+    const updateInTree = (component: Component): Component => {
+      if (component.id === id) {
+        return { ...component, ...updates } as Component;
+      }
+
+      if (component.children) {
+        return {
+          ...component,
+          children: component.children.map(updateInTree),
+        } as Component;
+      }
+
+      // Handle accessory updates for sections
+      if (component.type === ComponentType.Section && component.accessory?.id === id) {
+        return {
+          ...component,
+          accessory: { ...component.accessory, ...updates } as Component,
+        };
+      }
+
+      return component;
+    };
+
+    const currentMessage = getValues("messageComponent");
+    setValue("messageComponent", updateInTree(currentMessage) as MessageComponent, {
+      shouldValidate: true,
+    });
+  };
+
+  const getFieldError = (componentId: string, fieldName: string) => {
+    const getNestedError = (obj: any, path: string) => {
+      return path.split(".").reduce((current, key) => {
+        return current && current[key];
+      }, obj);
+    };
+
+    interface StackItem {
+      component: Component;
+      path: string;
+    }
+
+    const stack: StackItem[] = [{ component: messageComponent, path: "messageComponent" }];
+
+    while (stack.length > 0) {
+      const { component, path } = stack.pop()!;
+
+      if (component.id === componentId) {
+        const errorPath = `${path}.${fieldName}`;
+        const error = getNestedError(formState.errors, errorPath);
+
+        return error;
+      }
+
+      if (component.children) {
+        for (let i = component.children.length - 1; i >= 0; i -= 1) {
+          stack.push({
+            component: component.children[i],
+            path: `${path}.children.${i}`,
+          });
+        }
+      }
+
+      if (component.type === ComponentType.Section && component.accessory) {
+        stack.push({
+          component: component.accessory,
+          path: `${path}.accessory`,
+        });
+      }
+    }
+
+    return undefined;
+  };
 
   if (!selectedComponent) {
     return (
@@ -32,9 +112,11 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
   const renderPropertiesForComponent = (component: Component) => {
     switch (component.type) {
-      case ComponentType.TextDisplay:
+      case ComponentType.TextDisplay: {
+        const contentError = getFieldError(component.id, "content");
+
         return (
-          <Box>
+          <FormControl isInvalid={!!contentError}>
             <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               Text Content
             </Text>
@@ -45,11 +127,12 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
               rows={4}
               bg="gray.700"
               color="white"
-              borderColor="gray.600"
-              _focus={{ borderColor: "blue.400" }}
             />
-          </Box>
+            {contentError && <FormErrorMessage>Text content cannot be empty</FormErrorMessage>}
+          </FormControl>
         );
+      }
+
       case ComponentType.Button:
         return (
           <VStack align="stretch" spacing={4}>

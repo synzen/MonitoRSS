@@ -1,15 +1,135 @@
 import React from "react";
 import { Box, HStack, Text, VStack, UnorderedList, ListItem, Icon } from "@chakra-ui/react";
 import { FaExclamationTriangle } from "react-icons/fa";
-import { usePreviewerContext } from "./PreviewerContext";
+import { useFormContext } from "react-hook-form";
 import { useNavigableTreeContext } from "../../contexts/NavigableTreeContext";
+import type { MessageComponent, Component } from "./types";
+import { ComponentType } from "./types";
 
 export const ProblemsSection: React.FC = () => {
-  const { problems } = usePreviewerContext();
-  const { setCurrentSelectedId } = useNavigableTreeContext();
+  const { formState, watch } = useFormContext<{ messageComponent: MessageComponent }>();
+  const messageComponent = watch("messageComponent");
+  const { setCurrentSelectedId, setExpandedIds } = useNavigableTreeContext();
+
+  const getComponentPath = (
+    component: Component,
+    targetId: string,
+    currentPath = ""
+  ): string | null => {
+    interface StackItem {
+      component: Component;
+      path: string;
+    }
+
+    const stack: StackItem[] = [{ component, path: currentPath || component.name }];
+
+    while (stack.length > 0) {
+      const { component: currentComponent, path } = stack.pop()!;
+
+      if (currentComponent.id === targetId) {
+        return path;
+      }
+
+      // Add accessory to stack (will be processed first due to stack LIFO nature)
+      if (currentComponent.type === ComponentType.Section && currentComponent.accessory) {
+        const accessoryPath = `${path} > ${currentComponent.accessory.name} (accessory)`;
+        stack.push({ component: currentComponent.accessory, path: accessoryPath });
+      }
+
+      // Add children to stack in reverse order to maintain left-to-right processing
+      if (currentComponent.children) {
+        for (let i = currentComponent.children.length - 1; i >= 0; i -= 1) {
+          const child = currentComponent.children[i];
+          const childPath = `${path} > ${child.name}`;
+          stack.push({ component: child, path: childPath });
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const extractProblems = () => {
+    const problems: Array<{ message: string; path: string; componentId: string }> = [];
+
+    const processErrors = (errors: any, component: Component, currentPath = "") => {
+      // Handle direct field errors
+      if (errors?.content) {
+        problems.push({
+          message: errors.content.message || "Validation error",
+          path: getComponentPath(messageComponent, component.id) || component.name,
+          componentId: component.id,
+        });
+      }
+
+      // Handle children array errors
+      if (errors?.children) {
+        // Check if there's an error on the children array itself (like min length)
+        if (typeof errors.children === "object" && errors.children.message) {
+          problems.push({
+            message: errors.children.message,
+            path: getComponentPath(messageComponent, component.id) || component.name,
+            componentId: component.id,
+          });
+        }
+
+        // Handle individual child errors
+        if (Array.isArray(errors.children) && component.children) {
+          errors.children.forEach((childError: any, index: number) => {
+            if (childError && component.children?.[index]) {
+              processErrors(childError, component.children[index], currentPath);
+            }
+          });
+        }
+      }
+
+      // Handle accessory errors
+      if (errors?.accessory && component.type === ComponentType.Section && component.accessory) {
+        processErrors(errors.accessory, component.accessory, currentPath);
+      }
+    };
+
+    if (formState.errors?.messageComponent) {
+      processErrors(formState.errors.messageComponent, messageComponent);
+    }
+
+    return problems;
+  };
+
+  const problems = extractProblems();
+
+  const getParentIds = (
+    component: Component,
+    targetId: string,
+    parents: string[] = []
+  ): string[] | null => {
+    if (component.id === targetId) {
+      return parents;
+    }
+
+    if (component.children) {
+      for (let i = 0; i < component.children.length; i += 1) {
+        const child = component.children[i];
+        const result = getParentIds(child, targetId, [...parents, component.id]);
+        if (result) return result;
+      }
+    }
+
+    if (component.type === ComponentType.Section && component.accessory) {
+      const result = getParentIds(component.accessory, targetId, [...parents, component.id]);
+      if (result) return result;
+    }
+
+    return null;
+  };
 
   const handlePathClick = (componentId: string) => {
     setCurrentSelectedId(componentId);
+    const parentIds = getParentIds(messageComponent, componentId);
+
+    if (parentIds) {
+      setExpandedIds((prev) => new Set([...prev, ...parentIds]));
+    }
   };
 
   return (
@@ -19,9 +139,7 @@ export const ProblemsSection: React.FC = () => {
           <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
             Problems
           </Text>
-          <Text fontSize="sm" color="gray.400">
-            ({problems.length})
-          </Text>
+          <Text color="gray.400">({problems.length})</Text>
         </HStack>
       </Box>
       <Box p={4} maxH="200px" overflow="auto">

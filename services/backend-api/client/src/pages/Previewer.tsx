@@ -14,11 +14,18 @@ import {
   AlertDialogFooter,
   useDisclosure,
 } from "@chakra-ui/react";
+import { useFormContext } from "react-hook-form";
 import { DiscordMessagePreview } from "./Previewer/DiscordMessagePreview";
 import { ComponentPropertiesPanel } from "./Previewer/ComponentPropertiesPanel";
 import { ComponentTreeItem } from "./Previewer/ComponentTreeItem";
 import { ProblemsSection } from "./Previewer/ProblemsSection";
-import { MESSAGE_ROOT_ID, ComponentType, Component, SectionComponent } from "./Previewer/types";
+import {
+  MESSAGE_ROOT_ID,
+  ComponentType,
+  Component,
+  SectionComponent,
+  MessageComponent,
+} from "./Previewer/types";
 import { NavigableTreeItem } from "../components/NavigableTree";
 import { NavigableTreeContext, NavigableTreeProvider } from "../contexts/NavigableTreeContext";
 import { PreviewerProvider, usePreviewerContext } from "./Previewer/PreviewerContext";
@@ -46,7 +53,9 @@ const findComponentById = (component: Component, id: string): Component | null =
 };
 
 const PreviewerContent: React.FC = () => {
-  const { messageComponent, resetMessage } = usePreviewerContext();
+  const { resetMessage } = usePreviewerContext();
+  const { watch, handleSubmit } = useFormContext<{ messageComponent: MessageComponent }>();
+  const messageComponent = watch("messageComponent");
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = React.useRef<HTMLButtonElement>(null);
 
@@ -58,11 +67,11 @@ const PreviewerContent: React.FC = () => {
             ? findComponentById(messageComponent, currentSelectedId)
             : null;
 
-          const handleSave = () => {
+          const handleSave = handleSubmit((data) => {
             // TODO: Implement save functionality
             // eslint-disable-next-line no-console
-            console.log("Saving message component:", messageComponent);
-          };
+            console.log("Saving message component:", data.messageComponent);
+          });
 
           const handleDiscard = () => {
             onOpen();
@@ -124,7 +133,7 @@ const PreviewerContent: React.FC = () => {
                     </Text>
                   </Box>
                   <Box p={4} overflow="auto">
-                    <DiscordMessagePreview messageComponent={messageComponent} />
+                    <DiscordMessagePreview />
                   </Box>
                   {/* Problems Section */}
                   <Box borderTop="1px" borderColor="gray.600">
