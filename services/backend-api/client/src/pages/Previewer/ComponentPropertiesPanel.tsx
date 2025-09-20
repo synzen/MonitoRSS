@@ -13,50 +13,48 @@ import {
   FormErrorMessage,
 } from "@chakra-ui/react";
 import { DeleteIcon, ChevronUpIcon, ChevronDownIcon } from "@chakra-ui/icons";
-import { useFormContext } from "react-hook-form";
+import { Controller, useFormContext } from "react-hook-form";
 import type { Component, ComponentPropertiesPanelProps, MessageComponent } from "./types";
 import { ComponentType, ButtonStyle } from "./types";
 
 import { usePreviewerContext } from "./PreviewerContext";
 
+function getComponentFormPathById(
+  root: Component,
+  id: string,
+  basePath: string = "messageComponent"
+): string | null {
+  if (root.id === id) {
+    return basePath;
+  }
+
+  if (root.children) {
+    for (let i = 0; i < root.children.length; i += 1) {
+      const child = root.children[i];
+      const childPath = getComponentFormPathById(child, id, `${basePath}.children.${i}`);
+      if (childPath) return childPath;
+    }
+  }
+
+  // Handle accessory for sections
+  if (root.type === ComponentType.Section && (root as any).accessory) {
+    const accessory = (root as any).accessory as Component;
+    const accessoryPath = getComponentFormPathById(accessory, id, `${basePath}.accessory`);
+    if (accessoryPath) return accessoryPath;
+  }
+
+  return null;
+}
+
 export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> = ({
-  selectedComponent,
+  selectedComponentId,
+  hideTitle,
 }) => {
   const { deleteComponent, moveComponentUp, moveComponentDown } = usePreviewerContext();
-  const { setValue, getValues, watch, formState } = useFormContext<{
+  const { watch, formState, control } = useFormContext<{
     messageComponent: MessageComponent;
   }>();
   const messageComponent = watch("messageComponent");
-
-  const updateComponent = (id: string, updates: Partial<Component>) => {
-    const updateInTree = (component: Component): Component => {
-      if (component.id === id) {
-        return { ...component, ...updates } as Component;
-      }
-
-      if (component.children) {
-        return {
-          ...component,
-          children: component.children.map(updateInTree),
-        } as Component;
-      }
-
-      // Handle accessory updates for sections
-      if (component.type === ComponentType.Section && component.accessory?.id === id) {
-        return {
-          ...component,
-          accessory: { ...component.accessory, ...updates } as Component,
-        };
-      }
-
-      return component;
-    };
-
-    const currentMessage = getValues("messageComponent");
-    setValue("messageComponent", updateInTree(currentMessage) as MessageComponent, {
-      shouldValidate: true,
-    });
-  };
 
   const getFieldError = (componentId: string, fieldName: string) => {
     const getNestedError = (obj: any, path: string) => {
@@ -102,15 +100,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     return undefined;
   };
 
-  if (!selectedComponent) {
-    return (
-      <Box p={4}>
-        <Text color="gray.400">Select a component to edit its properties</Text>
-      </Box>
-    );
-  }
-
-  const renderPropertiesForComponent = (component: Component) => {
+  const renderPropertiesForComponent = (component: Component, onChange: (value: any) => void) => {
     switch (component.type) {
       case ComponentType.TextDisplay: {
         const contentError = getFieldError(component.id, "content");
@@ -122,7 +112,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             </Text>
             <Textarea
               value={component.content}
-              onChange={(e) => updateComponent(component.id, { content: e.target.value })}
+              onChange={(e) => onChange({ ...component, content: e.target.value })}
               placeholder="Enter text content"
               rows={4}
               bg="gray.700"
@@ -144,7 +134,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
               </Text>
               <Input
                 value={component.label}
-                onChange={(e) => updateComponent(component.id, { label: e.target.value })}
+                onChange={(e) => onChange({ ...component, label: e.target.value })}
                 placeholder="Enter button label"
                 bg="gray.700"
               />
@@ -156,11 +146,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
               </Text>
               <Select
                 value={component.style}
-                onChange={(e) =>
-                  updateComponent(component.id, {
-                    style: e.target.value as ButtonStyle,
-                  })
-                }
+                onChange={(e) => onChange({ ...component, style: e.target.value as ButtonStyle })}
                 bg="gray.700"
                 color="white"
                 borderColor="gray.600"
@@ -180,7 +166,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 </Text>
                 <Input
                   value={component.href || ""}
-                  onChange={(e) => updateComponent(component.id, { href: e.target.value })}
+                  onChange={(e) => onChange({ ...component, href: e.target.value })}
                   placeholder="https://example.com"
                   bg="gray.700"
                   color="white"
@@ -197,7 +183,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 size="sm"
                 variant={component.disabled ? "solid" : "outline"}
                 colorScheme={component.disabled ? "red" : "green"}
-                onClick={() => updateComponent(component.id, { disabled: !component.disabled })}
+                onClick={() => onChange({ ...component, disabled: !component.disabled })}
               >
                 {component.disabled ? "Disabled" : "Enabled"}
               </Button>
@@ -216,9 +202,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
               <Select
                 value={component.spacing ?? 1}
                 onChange={(e) =>
-                  updateComponent(component.id, {
-                    spacing: parseInt(e.target.value, 10) as 1 | 2,
-                  })
+                  onChange({ ...component, spacing: parseInt(e.target.value, 10) as 1 | 2 })
                 }
                 bg="gray.700"
                 color="white"
@@ -235,7 +219,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
               </Text>
               <Checkbox
                 isChecked={component.visual ?? true}
-                onChange={(e) => updateComponent(component.id, { visual: e.target.checked })}
+                onChange={(e) => onChange({ ...component, visual: e.target.checked })}
                 colorScheme="blue"
               >
                 <Text fontSize="sm" color="gray.300">
@@ -278,89 +262,109 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     return findParentAndIndex(messageComponent, component.id);
   };
 
-  const positionInfo = selectedComponent ? getComponentPosition(selectedComponent) : null;
-  const canMoveUp = positionInfo && positionInfo.index > 0;
-  const canMoveDown = positionInfo && positionInfo.index < positionInfo.total - 1;
+  const formPath = getComponentFormPathById(messageComponent, selectedComponentId);
+
+  if (!formPath) {
+    return null;
+  }
 
   return (
-    <VStack align="stretch" spacing={4} p={4} minWidth={250}>
-      <HStack justify="space-between" align="center" flexWrap="wrap" spacing={4}>
-        <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
-          {selectedComponent.type} Properties
-        </Text>
-        {selectedComponent.type !== ComponentType.Message && (
-          <Button
-            size="sm"
-            colorScheme="red"
-            variant="outline"
-            leftIcon={<DeleteIcon />}
-            onClick={() => deleteComponent(selectedComponent.id)}
-          >
-            Delete
-          </Button>
-        )}
-      </HStack>
-      <Box>
-        <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-          Component Name
-        </Text>
-        <Input
-          value={selectedComponent.name}
-          onChange={(e) => updateComponent(selectedComponent.id, { name: e.target.value })}
-          placeholder="Enter component name"
-          bg="gray.700"
-          color="white"
-          borderColor="gray.600"
-          _focus={{ borderColor: "blue.400" }}
-        />
-      </Box>
-      {positionInfo && selectedComponent.type !== ComponentType.Message && (
-        <Box>
-          <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-            Position
-          </Text>
-          <VStack spacing={2}>
-            <Box bg="gray.700" p={3} borderRadius="md" w="full">
-              <Text fontSize="sm" color="white">
-                {positionInfo.index + 1} of {positionInfo.total} in {positionInfo.parent.name}
+    <Controller
+      name={formPath as any}
+      control={control}
+      render={({ field }) => {
+        const component = field.value as Component;
+
+        const positionInfo = component ? getComponentPosition(component) : null;
+        const canMoveUp = positionInfo && positionInfo.index > 0;
+        const canMoveDown = positionInfo && positionInfo.index < positionInfo.total - 1;
+
+        return (
+          <VStack align="stretch" spacing={4} p={4} minWidth={250}>
+            {(!hideTitle || component.type !== ComponentType.Message) && (
+              <HStack justify="space-between" align="center" flexWrap="wrap" spacing={4}>
+                {!hideTitle && (
+                  <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
+                    {component.type} Properties
+                  </Text>
+                )}
+                {component.type !== ComponentType.Message && (
+                  <Button
+                    size="sm"
+                    colorScheme="red"
+                    variant="outline"
+                    leftIcon={<DeleteIcon />}
+                    onClick={() => deleteComponent(component.id)}
+                  >
+                    Delete
+                  </Button>
+                )}
+              </HStack>
+            )}
+            <Box>
+              <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                Component Name
               </Text>
+              <Input
+                value={component.name}
+                onChange={(e) => field.onChange({ ...component, name: e.target.value })}
+                placeholder="Enter component name"
+                bg="gray.700"
+                color="white"
+                borderColor="gray.600"
+                _focus={{ borderColor: "blue.400" }}
+              />
             </Box>
-            <HStack spacing={2} w="full" flexWrap="wrap">
-              <Button
-                size="sm"
-                leftIcon={<ChevronUpIcon />}
-                aria-disabled={!canMoveUp}
-                onClick={() => {
-                  if (!canMoveUp) return;
-                  moveComponentUp(selectedComponent.id);
-                }}
-                variant="outline"
-                colorScheme="blue"
-                flex={1}
-                minWidth={125}
-              >
-                Move Up
-              </Button>
-              <Button
-                size="sm"
-                leftIcon={<ChevronDownIcon />}
-                aria-disabled={!canMoveDown}
-                onClick={() => {
-                  if (!canMoveDown) return;
-                  moveComponentDown(selectedComponent.id);
-                }}
-                variant="outline"
-                colorScheme="blue"
-                flex={1}
-                minWidth={125}
-              >
-                Move Down
-              </Button>
-            </HStack>
+            {positionInfo && component.type !== ComponentType.Message && (
+              <Box>
+                <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                  Position
+                </Text>
+                <VStack spacing={2}>
+                  <Box bg="gray.700" p={3} borderRadius="md" w="full">
+                    <Text fontSize="sm" color="white">
+                      {positionInfo.index + 1} of {positionInfo.total} in {positionInfo.parent.name}
+                    </Text>
+                  </Box>
+                  <HStack spacing={2} w="full" flexWrap="wrap">
+                    <Button
+                      size="sm"
+                      leftIcon={<ChevronUpIcon />}
+                      aria-disabled={!canMoveUp}
+                      onClick={() => {
+                        if (!canMoveUp) return;
+                        moveComponentUp(component.id);
+                      }}
+                      variant="outline"
+                      colorScheme="blue"
+                      flex={1}
+                      minWidth={125}
+                    >
+                      Move Up
+                    </Button>
+                    <Button
+                      size="sm"
+                      leftIcon={<ChevronDownIcon />}
+                      aria-disabled={!canMoveDown}
+                      onClick={() => {
+                        if (!canMoveDown) return;
+                        moveComponentDown(component.id);
+                      }}
+                      variant="outline"
+                      colorScheme="blue"
+                      flex={1}
+                      minWidth={125}
+                    >
+                      Move Down
+                    </Button>
+                  </HStack>
+                </VStack>
+              </Box>
+            )}
+            {renderPropertiesForComponent(field.value, field.onChange)}
           </VStack>
-        </Box>
-      )}
-      {renderPropertiesForComponent(selectedComponent)}
-    </VStack>
+        );
+      }}
+    />
   );
 };

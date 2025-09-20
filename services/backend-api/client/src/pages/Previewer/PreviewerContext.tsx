@@ -228,6 +228,8 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (updatedComponent) {
       setValue("messageComponent", updatedComponent as MessageComponent, {
         shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true,
       });
     }
   };

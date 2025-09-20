@@ -18,6 +18,12 @@ export enum ButtonStyle {
   Link = "Link",
 }
 
+export interface PreviewerProblem {
+  message: string;
+  path: string;
+  componentId: string;
+}
+
 // Types for component tree
 export interface BaseComponent {
   id: string;
@@ -89,5 +95,6 @@ export interface DiscordMessagePreviewProps {
 }
 
 export interface ComponentPropertiesPanelProps {
-  selectedComponent: Component | null;
+  selectedComponentId: string;
+  hideTitle?: boolean;
 }

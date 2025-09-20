@@ -10,6 +10,7 @@ import {
   MenuList,
   MenuItem,
   MenuGroup,
+  Button,
 } from "@chakra-ui/react";
 import {
   FaPlus,
@@ -20,6 +21,7 @@ import {
   FaFont,
   FaLayerGroup,
   FaMinus,
+  FaCog,
 } from "react-icons/fa";
 import { ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import type { Component, ActionRowComponent, SectionComponent } from "./types";
@@ -32,6 +34,8 @@ import {
 import { useNavigableTreeItemContext } from "../../contexts/NavigableTreeItemContext";
 import { usePreviewerContext } from "./PreviewerContext";
 import getChakraColor from "../../utils/getChakraColor";
+import { SlidingConfigPanel } from "./SlidingConfigPanel";
+import { useConfigPanel } from "../../hooks/useConfigPanel";
 
 interface ComponentTreeItemProps {
   component: Component;
@@ -59,6 +63,8 @@ const getComponentIcon = (type: Component["type"]) => {
 
 export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component, depth = 0 }) => {
   const { addChildComponent } = usePreviewerContext();
+  const { isOpen, activeComponent, openConfig, closeConfig } = useConfigPanel();
+
   const componentChildrenCount = component.children?.length || 0;
   const hasChildren = component.children && component.children.length > 0;
   const hasAccessory =
@@ -78,134 +84,85 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component,
     }
   };
 
+  const handleConfigureComponent = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    openConfig(component);
+  };
+
   return (
-    <VStack align="stretch" spacing={0} position="relative">
-      <HStack
-        pl={2 + depth * 4}
-        pr={2}
-        py={2}
-        cursor="pointer"
-        bg={isSelected ? "blue.600" : "transparent"}
-        _hover={{ bg: isSelected ? "blue.600" : "gray.700" }}
-        outline={isFocused ? `2px solid ${getChakraColor("blue.300")}` : undefined}
-      >
-        {canHaveChildren && (
-          <NavigableTreeItemExpandButton>
-            {({ onClick }) => {
-              return (
-                <IconButton
-                  tabIndex={-1}
-                  icon={isExpanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
-                  size="xs"
-                  variant="ghost"
-                  aria-label={isExpanded ? "Collapse" : "Expand"}
-                  onClick={onClick}
-                />
-              );
+    <>
+      <VStack align="stretch" spacing={0} position="relative">
+        <HStack
+          pl={2 + depth * 4}
+          pr={2}
+          py={2}
+          cursor="pointer"
+          bg={isSelected ? "blue.600" : "transparent"}
+          _hover={{ bg: isSelected ? "blue.600" : "gray.700" }}
+          outline={isFocused ? `2px solid ${getChakraColor("blue.300")}` : undefined}
+        >
+          {canHaveChildren && (
+            <NavigableTreeItemExpandButton>
+              {({ onClick }) => {
+                return (
+                  <IconButton
+                    tabIndex={-1}
+                    icon={isExpanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
+                    size="xs"
+                    variant="ghost"
+                    aria-label={isExpanded ? "Collapse" : "Expand"}
+                    onClick={onClick}
+                  />
+                );
+              }}
+            </NavigableTreeItemExpandButton>
+          )}
+          {!canHaveChildren && <Box w={6} />}
+          <Box fontSize="xs" mr={2} color="gray.400">
+            {React.createElement(getComponentIcon(component.type))}
+          </Box>
+          <Text fontSize="sm" flex={1} color="white">
+            {component.name}
+          </Text>
+          {/* Configure Button */}
+          <Button
+            display={{
+              base: "inline-flex",
+              lg: "none",
             }}
-          </NavigableTreeItemExpandButton>
-        )}
-        {!canHaveChildren && <Box w={6} />}
-        <Box fontSize="xs" mr={2} color="gray.400">
-          {React.createElement(getComponentIcon(component.type))}
-        </Box>
-        <Text fontSize="sm" flex={1} color="white">
-          {component.name}
-        </Text>
-        {canHaveChildren && (
-          <Menu>
-            <MenuButton
-              as={IconButton}
-              icon={<FaPlus />}
-              size="xs"
-              variant="ghost"
-              aria-label="Add Child Component"
-              onClick={(e) => e.stopPropagation()}
-              zIndex={2}
-            />
-            <MenuList bg="gray.700" borderColor="gray.600" zIndex={3}>
-              {component.type === ComponentType.Message && (
-                <MenuGroup title={`Components (${componentChildrenCount}/10)`}>
-                  <MenuItem
-                    bg="gray.700"
-                    _hover={{ bg: "gray.600" }}
-                    color="white"
-                    onClick={() => {
-                      if ((component.children.length || 0) >= 10) return;
-                      onAddChildComponent(component.id, ComponentType.TextDisplay);
-                    }}
-                    aria-disabled={(component.children.length || 0) >= 10}
-                  >
-                    Add Text Display
-                  </MenuItem>
-                  <MenuItem
-                    bg="gray.700"
-                    _hover={{ bg: "gray.600" }}
-                    color="white"
-                    onClick={() => {
-                      if ((component.children.length || 0) >= 10) return;
-                      onAddChildComponent(component.id, ComponentType.ActionRow);
-                    }}
-                    aria-disabled={(component.children.length || 0) >= 10}
-                  >
-                    Add Action Row
-                  </MenuItem>
-                  <MenuItem
-                    bg="gray.700"
-                    _hover={{ bg: "gray.600" }}
-                    color="white"
-                    onClick={() => {
-                      if ((component.children.length || 0) >= 10) return;
-                      onAddChildComponent(component.id, ComponentType.Section);
-                    }}
-                    aria-disabled={(component.children.length || 0) >= 10}
-                  >
-                    Add Section
-                  </MenuItem>
-                  <MenuItem
-                    bg="gray.700"
-                    _hover={{ bg: "gray.600" }}
-                    color="white"
-                    onClick={() => {
-                      if ((component.children.length || 0) >= 10) return;
-                      onAddChildComponent(component.id, ComponentType.Divider);
-                    }}
-                    aria-disabled={(component.children.length || 0) >= 10}
-                  >
-                    Add Divider
-                  </MenuItem>
-                </MenuGroup>
-              )}
-              {component.type === ComponentType.ActionRow && (
-                <MenuGroup
-                  title={`Components (${(component as ActionRowComponent).children.length}/5)`}
-                >
-                  <MenuItem
-                    bg="gray.700"
-                    _hover={{ bg: "gray.600" }}
-                    color="white"
-                    onClick={() => {
-                      if ((component as ActionRowComponent).children.length >= 5) return;
-                      onAddChildComponent(component.id, ComponentType.Button);
-                    }}
-                    aria-disabled={(component as ActionRowComponent).children.length >= 5}
-                  >
-                    Add Button
-                  </MenuItem>
-                </MenuGroup>
-              )}
-              {component.type === ComponentType.Section && (
-                <>
-                  <MenuGroup title={`Components (${componentChildrenCount}/3)`}>
+            leftIcon={<FaCog />}
+            size="xs"
+            variant="ghost"
+            onClick={handleConfigureComponent}
+            mr={1}
+            _hover={{ color: "white", bg: "gray.600" }}
+          >
+            Configure
+          </Button>
+          {canHaveChildren && (
+            <Menu>
+              <MenuButton
+                as={IconButton}
+                icon={<FaPlus />}
+                size="xs"
+                variant="ghost"
+                aria-label="Add Child Component"
+                onClick={(e) => e.stopPropagation()}
+                zIndex={2}
+                _hover={{ color: "white", bg: "gray.600" }}
+              />
+              <MenuList bg="gray.700" borderColor="gray.600" zIndex={3}>
+                {component.type === ComponentType.Message && (
+                  <MenuGroup title={`Components (${componentChildrenCount}/10)`}>
                     <MenuItem
                       bg="gray.700"
                       _hover={{ bg: "gray.600" }}
                       color="white"
                       onClick={() => {
-                        if ((component.children?.length || 0) >= 3) return;
+                        if ((component.children.length || 0) >= 10) return;
                         onAddChildComponent(component.id, ComponentType.TextDisplay);
                       }}
-                      aria-disabled={(component.children?.length || 0) >= 3}
+                      aria-disabled={(component.children.length || 0) >= 10}
                     >
                       Add Text Display
                     </MenuItem>
@@ -214,57 +171,131 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component,
                       _hover={{ bg: "gray.600" }}
                       color="white"
                       onClick={() => {
-                        if ((component.children?.length || 0) >= 3) return;
-                        onAddChildComponent(component.id, ComponentType.Divider);
+                        if ((component.children.length || 0) >= 10) return;
+                        onAddChildComponent(component.id, ComponentType.ActionRow);
                       }}
-                      aria-disabled={(component.children?.length || 0) >= 3}
+                      aria-disabled={(component.children.length || 0) >= 10}
                     >
-                      Add Divider
+                      Add Action Row
                     </MenuItem>
-                  </MenuGroup>
-                  <MenuGroup title={`Accessory (Required - ${hasAccessory ? "1" : "0"}/1)`}>
                     <MenuItem
                       bg="gray.700"
                       _hover={{ bg: "gray.600" }}
                       color="white"
                       onClick={() => {
-                        if (hasAccessory) return;
-                        onAddChildComponent(component.id, ComponentType.Button, true);
+                        if ((component.children.length || 0) >= 10) return;
+                        onAddChildComponent(component.id, ComponentType.Section);
                       }}
-                      aria-disabled={hasAccessory}
+                      aria-disabled={(component.children.length || 0) >= 10}
+                    >
+                      Add Section
+                    </MenuItem>
+                    <MenuItem
+                      bg="gray.700"
+                      _hover={{ bg: "gray.600" }}
+                      color="white"
+                      onClick={() => {
+                        if ((component.children.length || 0) >= 10) return;
+                        onAddChildComponent(component.id, ComponentType.Divider);
+                      }}
+                      aria-disabled={(component.children.length || 0) >= 10}
+                    >
+                      Add Divider
+                    </MenuItem>
+                  </MenuGroup>
+                )}
+                {component.type === ComponentType.ActionRow && (
+                  <MenuGroup
+                    title={`Components (${(component as ActionRowComponent).children.length}/5)`}
+                  >
+                    <MenuItem
+                      bg="gray.700"
+                      _hover={{ bg: "gray.600" }}
+                      color="white"
+                      onClick={() => {
+                        if ((component as ActionRowComponent).children.length >= 5) return;
+                        onAddChildComponent(component.id, ComponentType.Button);
+                      }}
+                      aria-disabled={(component as ActionRowComponent).children.length >= 5}
                     >
                       Add Button
                     </MenuItem>
                   </MenuGroup>
-                </>
+                )}
+                {component.type === ComponentType.Section && (
+                  <>
+                    <MenuGroup title={`Components (${componentChildrenCount}/3)`}>
+                      <MenuItem
+                        bg="gray.700"
+                        _hover={{ bg: "gray.600" }}
+                        color="white"
+                        onClick={() => {
+                          if ((component.children?.length || 0) >= 3) return;
+                          onAddChildComponent(component.id, ComponentType.TextDisplay);
+                        }}
+                        aria-disabled={(component.children?.length || 0) >= 3}
+                      >
+                        Add Text Display
+                      </MenuItem>
+                      <MenuItem
+                        bg="gray.700"
+                        _hover={{ bg: "gray.600" }}
+                        color="white"
+                        onClick={() => {
+                          if ((component.children?.length || 0) >= 3) return;
+                          onAddChildComponent(component.id, ComponentType.Divider);
+                        }}
+                        aria-disabled={(component.children?.length || 0) >= 3}
+                      >
+                        Add Divider
+                      </MenuItem>
+                    </MenuGroup>
+                    <MenuGroup title={`Accessory (Required - ${hasAccessory ? "1" : "0"}/1)`}>
+                      <MenuItem
+                        bg="gray.700"
+                        _hover={{ bg: "gray.600" }}
+                        color="white"
+                        onClick={() => {
+                          if (hasAccessory) return;
+                          onAddChildComponent(component.id, ComponentType.Button, true);
+                        }}
+                        aria-disabled={hasAccessory}
+                      >
+                        Add Button
+                      </MenuItem>
+                    </MenuGroup>
+                  </>
+                )}
+              </MenuList>
+            </Menu>
+          )}
+        </HStack>
+        {(hasChildren || hasAccessory) && isExpanded && (
+          <VStack align="stretch" spacing={0}>
+            <NavigableTreeItemGroup>
+              {component.children?.map((child) => (
+                <NavigableTreeItem ariaLabel={child.name} id={child.id} key={child.id}>
+                  <ComponentTreeItem component={child} depth={depth + 1} />
+                </NavigableTreeItem>
+              ))}
+              {hasAccessory && (
+                <NavigableTreeItem
+                  ariaLabel={`${(component as SectionComponent).accessory!.name} (Accessory)`}
+                  id={(component as SectionComponent).accessory!.id}
+                  key={`accessory-${(component as SectionComponent).accessory!.id}`}
+                >
+                  <ComponentTreeItem
+                    component={(component as SectionComponent).accessory!}
+                    depth={depth + 1}
+                  />
+                </NavigableTreeItem>
               )}
-            </MenuList>
-          </Menu>
+            </NavigableTreeItemGroup>
+          </VStack>
         )}
-      </HStack>
-      {(hasChildren || hasAccessory) && isExpanded && (
-        <VStack align="stretch" spacing={0}>
-          <NavigableTreeItemGroup>
-            {component.children?.map((child) => (
-              <NavigableTreeItem ariaLabel={child.name} id={child.id} key={child.id}>
-                <ComponentTreeItem component={child} depth={depth + 1} />
-              </NavigableTreeItem>
-            ))}
-            {hasAccessory && (
-              <NavigableTreeItem
-                ariaLabel={`${(component as SectionComponent).accessory!.name} (Accessory)`}
-                id={(component as SectionComponent).accessory!.id}
-                key={`accessory-${(component as SectionComponent).accessory!.id}`}
-              >
-                <ComponentTreeItem
-                  component={(component as SectionComponent).accessory!}
-                  depth={depth + 1}
-                />
-              </NavigableTreeItem>
-            )}
-          </NavigableTreeItemGroup>
-        </VStack>
-      )}
-    </VStack>
+      </VStack>
+      {/* Sliding Config Panel */}
+      <SlidingConfigPanel isOpen={isOpen} onClose={closeConfig} component={activeComponent} />
+    </>
   );
 };
