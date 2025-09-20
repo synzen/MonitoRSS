@@ -37,8 +37,8 @@ const createComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => {
           children: yup
             .array()
             .of(createComponentSchema())
-            .min(1, "Action Row must have at least one button")
-            .required("Action Row must have at least one button"),
+            .min(1, "Action Row must have at least one child component")
+            .required("Action Row must have at least one child component"),
         });
       case ComponentType.Message:
         return baseSchema.shape({
@@ -49,6 +49,14 @@ const createComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => {
         return baseSchema.shape({
           children: yup.array().of(createComponentSchema()).default([]),
           accessory: createComponentSchema().optional(),
+        });
+      case ComponentType.Button:
+        return baseSchema.shape({
+          label: yup
+            .string()
+            .required("Button label cannot be empty")
+            .min(1, "Button label cannot be empty")
+            .max(80, "Button label cannot exceed 80 characters"),
         });
       default:
         return baseSchema;

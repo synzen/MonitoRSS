@@ -52,41 +52,37 @@ export const ProblemsSection: React.FC = () => {
   const extractProblems = () => {
     const problems: Array<{ message: string; path: string; componentId: string }> = [];
 
-    const processErrors = (errors: any, component: Component, currentPath = "") => {
-      // Handle direct field errors
-      if (errors?.content) {
-        problems.push({
-          message: errors.content.message || "Validation error",
-          path: getComponentPath(messageComponent, component.id) || component.name,
-          componentId: component.id,
-        });
-      }
+    const processErrors = (errors: Record<string, any>, component: Component, currentPath = "") => {
+      if (!errors || typeof errors !== "object") return;
 
-      // Handle children array errors
-      if (errors?.children) {
-        // Check if there's an error on the children array itself (like min length)
-        if (typeof errors.children === "object" && errors.children.message) {
+      Object.keys(errors).forEach((key) => {
+        // Example key would be "content" for a text display component
+        if (typeof errors[key] === "object" && errors[key].message) {
+          // This is a direct error message for the current component
           problems.push({
-            message: errors.children.message,
+            message: errors[key].message,
             path: getComponentPath(messageComponent, component.id) || component.name,
             componentId: component.id,
           });
         }
 
-        // Handle individual child errors
-        if (Array.isArray(errors.children) && component.children) {
+        if (key === "children" && Array.isArray(errors[key])) {
           errors.children.forEach((childError: any, index: number) => {
             if (childError && component.children?.[index]) {
               processErrors(childError, component.children[index], currentPath);
             }
           });
         }
-      }
 
-      // Handle accessory errors
-      if (errors?.accessory && component.type === ComponentType.Section && component.accessory) {
-        processErrors(errors.accessory, component.accessory, currentPath);
-      }
+        if (
+          key === "accessory" &&
+          errors[key] &&
+          component.type === ComponentType.Section &&
+          component.accessory
+        ) {
+          processErrors(errors.accessory, component.accessory, currentPath);
+        }
+      });
     };
 
     if (formState.errors?.messageComponent) {

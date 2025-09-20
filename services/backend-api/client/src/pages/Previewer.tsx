@@ -111,10 +111,10 @@ const PreviewerContent: React.FC = () => {
                   borderColor="gray.600"
                   overflow="auto"
                 >
-                  <VStack align="stretch" spacing={0}>
+                  <VStack align="stretch" spacing={0} minWidth={250}>
                     <Box p={4} borderBottom="1px" borderColor="gray.600">
                       <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
-                        Message Structure
+                        Components
                       </Text>
                     </Box>
                     <div role="tree" aria-label="Message Components">
@@ -127,7 +127,7 @@ const PreviewerContent: React.FC = () => {
                 {/* Center Panel - Discord Preview and Problems */}
                 <Flex flex={1} direction="column" bg="gray.800">
                   {/* Discord Preview Section */}
-                  <Box p={4} borderBottom="1px" borderColor="gray.600">
+                  <Box p={4} borderBottom="1px" borderColor="gray.600" srOnly>
                     <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
                       Discord Message Preview
                     </Text>

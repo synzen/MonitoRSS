@@ -133,10 +133,12 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         );
       }
 
-      case ComponentType.Button:
+      case ComponentType.Button: {
+        const labelError = getFieldError(component.id, "label");
+
         return (
           <VStack align="stretch" spacing={4}>
-            <Box>
+            <FormControl isInvalid={!!labelError}>
               <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
                 Button Label
               </Text>
@@ -145,11 +147,9 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 onChange={(e) => updateComponent(component.id, { label: e.target.value })}
                 placeholder="Enter button label"
                 bg="gray.700"
-                color="white"
-                borderColor="gray.600"
-                _focus={{ borderColor: "blue.400" }}
               />
-            </Box>
+              {labelError && <FormErrorMessage>{labelError.message}</FormErrorMessage>}
+            </FormControl>
             <Box>
               <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
                 Button Style
@@ -204,6 +204,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             </Box>
           </VStack>
         );
+      }
+
       case ComponentType.Divider:
         return (
           <VStack align="stretch" spacing={4}>
@@ -281,8 +283,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   const canMoveDown = positionInfo && positionInfo.index < positionInfo.total - 1;
 
   return (
-    <VStack align="stretch" spacing={4} p={4}>
-      <HStack justify="space-between" align="center">
+    <VStack align="stretch" spacing={4} p={4} minWidth={250}>
+      <HStack justify="space-between" align="center" flexWrap="wrap" spacing={4}>
         <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
           {selectedComponent.type} Properties
         </Text>
@@ -323,7 +325,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 {positionInfo.index + 1} of {positionInfo.total} in {positionInfo.parent.name}
               </Text>
             </Box>
-            <HStack spacing={2} w="full">
+            <HStack spacing={2} w="full" flexWrap="wrap">
               <Button
                 size="sm"
                 leftIcon={<ChevronUpIcon />}
@@ -335,6 +337,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 variant="outline"
                 colorScheme="blue"
                 flex={1}
+                minWidth={125}
               >
                 Move Up
               </Button>
@@ -349,6 +352,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 variant="outline"
                 colorScheme="blue"
                 flex={1}
+                minWidth={125}
               >
                 Move Down
               </Button>
