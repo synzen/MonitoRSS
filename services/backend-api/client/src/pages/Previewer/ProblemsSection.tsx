@@ -6,7 +6,10 @@ import { useNavigableTreeContext } from "../../contexts/NavigableTreeContext";
 import type { MessageComponent, Component, PreviewerProblem } from "./types";
 import { ComponentType } from "./types";
 
-export const ProblemsSection: React.FC<{ problems: PreviewerProblem[] }> = ({ problems }) => {
+export const ProblemsSection: React.FC<{
+  problems: PreviewerProblem[];
+  onClickComponentPath: (componentIdsToExpand: string[]) => void;
+}> = ({ problems, onClickComponentPath }) => {
   const { watch } = useFormContext<{ messageComponent: MessageComponent }>();
   const messageComponent = watch("messageComponent");
   const { setCurrentSelectedId, setExpandedIds } = useNavigableTreeContext();
@@ -47,7 +50,7 @@ export const ProblemsSection: React.FC<{ problems: PreviewerProblem[] }> = ({ pr
 
   return (
     <VStack align="stretch" spacing={0}>
-      <Box p={4} maxH="200px" overflow="auto">
+      <Box p={4}>
         {problems.length === 0 ? (
           <Text fontSize="sm" color="gray.400" fontStyle="italic">
             No problems found
@@ -63,7 +66,7 @@ export const ProblemsSection: React.FC<{ problems: PreviewerProblem[] }> = ({ pr
                       color="red.400"
                       flexShrink={0}
                       size="sm"
-                      aria-label="Error"
+                      aria-hidden
                     />
                     <Text fontSize="sm" color="white">
                       {problem.message}
@@ -77,12 +80,24 @@ export const ProblemsSection: React.FC<{ problems: PreviewerProblem[] }> = ({ pr
                       ml={6}
                       cursor="pointer"
                       _hover={{ color: "blue.200", textDecoration: "underline" }}
-                      onClick={() => handlePathClick(problem.componentId)}
+                      onClick={() => {
+                        handlePathClick(problem.componentId);
+                        const parentIds = getParentIds(messageComponent, problem.componentId);
+
+                        if (parentIds) {
+                          onClickComponentPath(parentIds);
+                        }
+                      }}
                       role="button"
                       tabIndex={0}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
                           handlePathClick(problem.componentId);
+                          const parentIds = getParentIds(messageComponent, problem.componentId);
+
+                          if (parentIds) {
+                            onClickComponentPath(parentIds);
+                          }
                         }
                       }}
                     >

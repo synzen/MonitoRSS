@@ -24,14 +24,25 @@ const createComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => {
       name: yup.string().required(),
     });
 
+    const buttonSchema = baseSchema.shape({
+      label: yup
+        .string()
+        .required("Button label cannot be empty")
+        .min(1, "Button label cannot be empty")
+        .max(80, "Button label cannot exceed 80 characters"),
+    });
+
+    const textDisplaySchema = baseSchema.shape({
+      content: yup
+        .string()
+        .required("Text display content cannot be empty")
+        .min(1, "Text display content cannot be empty")
+        .max(2000, "Text display content cannot exceed 2000 characters"),
+    });
+
     switch (value.type) {
       case ComponentType.TextDisplay:
-        return baseSchema.shape({
-          content: yup
-            .string()
-            .required("Text display content cannot be empty")
-            .min(1, "Text display content cannot be empty"),
-        });
+        return textDisplaySchema;
       case ComponentType.ActionRow:
         return baseSchema.shape({
           children: yup
@@ -45,19 +56,19 @@ const createComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => {
           children: yup.array().of(createComponentSchema()).default([]),
         });
       case ComponentType.Section:
+        return baseSchema.shape({
+          children: yup
+            .array()
+            .of(createComponentSchema())
+            .default([])
+            .min(1, "Section must have at least 1 child component")
+            .max(3, "Section can have at most 3 child components"),
+          accessory: buttonSchema.required(),
+        });
       case ComponentType.Divider:
-        return baseSchema.shape({
-          children: yup.array().of(createComponentSchema()).default([]),
-          accessory: createComponentSchema().optional(),
-        });
+        return baseSchema;
       case ComponentType.Button:
-        return baseSchema.shape({
-          label: yup
-            .string()
-            .required("Button label cannot be empty")
-            .min(1, "Button label cannot be empty")
-            .max(80, "Button label cannot exceed 80 characters"),
-        });
+        return buttonSchema;
       default:
         return baseSchema;
     }

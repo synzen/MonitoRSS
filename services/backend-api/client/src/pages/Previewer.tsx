@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   Flex,
@@ -27,36 +27,17 @@ import {
   MESSAGE_ROOT_ID,
   ComponentType,
   Component,
-  SectionComponent,
   MessageComponent,
   PreviewerProblem,
 } from "./Previewer/types";
 import { NavigableTreeItem } from "../components/NavigableTree";
-import { NavigableTreeContext, NavigableTreeProvider } from "../contexts/NavigableTreeContext";
+import {
+  NavigableTreeContext,
+  NavigableTreeProvider,
+  useNavigableTreeContext,
+} from "../contexts/NavigableTreeContext";
 import { PreviewerProvider, usePreviewerContext } from "./Previewer/PreviewerContext";
 import { ProblemsSection } from "./Previewer/ProblemsSection";
-
-const findComponentById = (component: Component, id: string): Component | null => {
-  if (component.id === id) {
-    return component;
-  }
-
-  if (component.children) {
-    const found = component.children
-      .map((child: Component) => findComponentById(child, id))
-      .find((result: Component | null) => result !== null);
-
-    if (found) return found;
-  }
-
-  // Check accessory component for Section types
-  if (component.type === ComponentType.Section && (component as SectionComponent).accessory) {
-    const accessoryFound = findComponentById((component as SectionComponent).accessory!, id);
-    if (accessoryFound) return accessoryFound;
-  }
-
-  return null;
-};
 
 const getComponentPath = (
   component: Component,
@@ -147,11 +128,15 @@ const PreviewerContent: React.FC = () => {
   const { watch, handleSubmit, formState } = useFormContext<{
     messageComponent: MessageComponent;
   }>();
+  const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const messageComponent = watch("messageComponent");
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = React.useRef<HTMLButtonElement>(null);
+  const { setExpandedIds } = useNavigableTreeContext();
+  const [scrollToComponentId, setScrollToComponentId] = useState<string | null>(null);
 
   const problems = extractProblems(formState.errors.messageComponent, messageComponent);
+  const componentIdsWithProblems = new Set(problems.map((p) => p.componentId));
 
   const handleSave = handleSubmit((data) => {
     // TODO: Implement save functionality
@@ -168,15 +153,22 @@ const PreviewerContent: React.FC = () => {
     onClose();
   };
 
+  const handlePathClick = (componentIdsToExpand: string[]) => {
+    setExpandedIds((prev) => new Set([...prev, ...componentIdsToExpand]));
+    setSelectedTabIndex(0);
+
+    if (componentIdsToExpand.length > 0) {
+      setScrollToComponentId(componentIdsToExpand[componentIdsToExpand.length - 1]);
+      setTimeout(() => {
+        setScrollToComponentId(null);
+      }, 0);
+    }
+  };
+
   return (
     <NavigableTreeProvider>
       <NavigableTreeContext.Consumer>
         {({ currentSelectedId }) => {
-          const selectedComponent = findComponentById(
-            messageComponent,
-            currentSelectedId || MESSAGE_ROOT_ID
-          );
-
           return (
             <Box position="relative" height="100%" bg="gray.900">
               <Flex direction="column" height="100%">
@@ -214,7 +206,11 @@ const PreviewerContent: React.FC = () => {
                       </Box>
                       <div role="tree" aria-label="Message Components">
                         <NavigableTreeItem isRootItem id={MESSAGE_ROOT_ID} ariaLabel="Message Root">
-                          <ComponentTreeItem component={messageComponent} />
+                          <ComponentTreeItem
+                            component={messageComponent}
+                            scrollToComponentId={scrollToComponentId}
+                            componentIdsWithProblems={componentIdsWithProblems}
+                          />
                         </NavigableTreeItem>
                       </div>
                     </VStack>
@@ -243,7 +239,7 @@ const PreviewerContent: React.FC = () => {
                           <Text color="gray.400">({problems.length})</Text>
                         </HStack>
                       </Box>
-                      <ProblemsSection problems={problems} />
+                      <ProblemsSection problems={problems} onClickComponentPath={handlePathClick} />
                     </Box>
                     {/* Problems Section - Mobile Tabs */}
                     <Box
@@ -253,7 +249,12 @@ const PreviewerContent: React.FC = () => {
                       transition="padding-bottom 0.3s ease"
                       // flex={1}
                     >
-                      <Tabs colorScheme="blue" variant="line">
+                      <Tabs
+                        colorScheme="blue"
+                        variant="line"
+                        index={selectedTabIndex}
+                        onChange={setSelectedTabIndex}
+                      >
                         <TabList borderBottom="1px" borderColor="gray.600" bg="gray.700">
                           <Tab
                             color="gray.300"
@@ -276,12 +277,19 @@ const PreviewerContent: React.FC = () => {
                                 id={MESSAGE_ROOT_ID}
                                 ariaLabel="Message Components Root"
                               >
-                                <ComponentTreeItem component={messageComponent} />
+                                <ComponentTreeItem
+                                  component={messageComponent}
+                                  scrollToComponentId={scrollToComponentId}
+                                  componentIdsWithProblems={componentIdsWithProblems}
+                                />
                               </NavigableTreeItem>
                             </div>
                           </TabPanel>
                           <TabPanel p={0}>
-                            <ProblemsSection problems={problems} />
+                            <ProblemsSection
+                              problems={problems}
+                              onClickComponentPath={handlePathClick}
+                            />
                           </TabPanel>
                         </TabPanels>
                       </Tabs>
@@ -295,8 +303,8 @@ const PreviewerContent: React.FC = () => {
                     borderColor="gray.600"
                     display={{ base: "none", lg: "block" }}
                   >
-                    {selectedComponent && (
-                      <ComponentPropertiesPanel selectedComponentId={selectedComponent.id} />
+                    {currentSelectedId && (
+                      <ComponentPropertiesPanel selectedComponentId={currentSelectedId} />
                     )}
                   </Box>
                 </Flex>

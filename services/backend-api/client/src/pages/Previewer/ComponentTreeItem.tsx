@@ -11,6 +11,7 @@ import {
   MenuItem,
   MenuGroup,
   Button,
+  Icon,
 } from "@chakra-ui/react";
 import {
   FaPlus,
@@ -22,6 +23,7 @@ import {
   FaLayerGroup,
   FaMinus,
   FaCog,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 import { ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import type { Component, ActionRowComponent, SectionComponent } from "./types";
@@ -40,6 +42,8 @@ import { useConfigPanel } from "../../hooks/useConfigPanel";
 interface ComponentTreeItemProps {
   component: Component;
   depth?: number;
+  scrollToComponentId?: string | null;
+  componentIdsWithProblems: Set<string>;
 }
 
 const getComponentIcon = (type: Component["type"]) => {
@@ -61,9 +65,15 @@ const getComponentIcon = (type: Component["type"]) => {
   }
 };
 
-export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component, depth = 0 }) => {
+export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
+  component,
+  depth = 0,
+  scrollToComponentId,
+  componentIdsWithProblems,
+}) => {
   const { addChildComponent } = usePreviewerContext();
   const { isOpen, activeComponent, openConfig, closeConfig } = useConfigPanel();
+  const ref = React.useRef<HTMLDivElement>(null);
 
   const componentChildrenCount = component.children?.length || 0;
   const hasChildren = component.children && component.children.length > 0;
@@ -89,9 +99,15 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component,
     openConfig(component);
   };
 
+  React.useEffect(() => {
+    if (scrollToComponentId === component.id && ref.current) {
+      ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [scrollToComponentId]);
+
   return (
     <>
-      <VStack align="stretch" spacing={0} position="relative">
+      <VStack align="stretch" spacing={0} position="relative" ref={ref}>
         <HStack
           pl={2 + depth * 4}
           pr={2}
@@ -121,9 +137,21 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component,
           <Box fontSize="xs" mr={2} color="gray.400">
             {React.createElement(getComponentIcon(component.type))}
           </Box>
-          <Text fontSize="sm" flex={1} color="white">
-            {component.name}
-          </Text>
+          <HStack flex={1} justifyContent="flex-start">
+            <Text fontSize="sm" color="white">
+              {component.name}
+            </Text>
+            {componentIdsWithProblems.has(component.id) && (
+              <Icon
+                as={FaExclamationTriangle}
+                color={isSelected ? "white" : "red.400"}
+                flexShrink={0}
+                size="sm"
+                aria-label="Problem detected"
+                title="Problem detected"
+              />
+            )}
+          </HStack>
           {/* Configure Button */}
           <Button
             display={{
@@ -275,7 +303,12 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component,
             <NavigableTreeItemGroup>
               {component.children?.map((child) => (
                 <NavigableTreeItem ariaLabel={child.name} id={child.id} key={child.id}>
-                  <ComponentTreeItem component={child} depth={depth + 1} />
+                  <ComponentTreeItem
+                    component={child}
+                    depth={depth + 1}
+                    scrollToComponentId={scrollToComponentId}
+                    componentIdsWithProblems={componentIdsWithProblems}
+                  />
                 </NavigableTreeItem>
               ))}
               {hasAccessory && (
@@ -287,6 +320,8 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component,
                   <ComponentTreeItem
                     component={(component as SectionComponent).accessory!}
                     depth={depth + 1}
+                    scrollToComponentId={scrollToComponentId}
+                    componentIdsWithProblems={componentIdsWithProblems}
                   />
                 </NavigableTreeItem>
               )}

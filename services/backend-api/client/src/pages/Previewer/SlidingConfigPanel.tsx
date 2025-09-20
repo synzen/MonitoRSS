@@ -49,7 +49,7 @@ export const SlidingConfigPanel: React.FC<SlidingConfigPanelProps> = ({
           left={0}
           right={0}
           bottom={0}
-          bg="blackAlpha.300"
+          bg="blackAlpha.500"
           zIndex={40}
           onClick={onClose}
         />

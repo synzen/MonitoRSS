@@ -11,13 +11,38 @@ import {
   Checkbox,
   FormControl,
   FormErrorMessage,
+  Alert,
+  AlertIcon,
 } from "@chakra-ui/react";
 import { DeleteIcon, ChevronUpIcon, ChevronDownIcon } from "@chakra-ui/icons";
-import { Controller, useFormContext } from "react-hook-form";
+import { useFormContext } from "react-hook-form";
 import type { Component, ComponentPropertiesPanelProps, MessageComponent } from "./types";
 import { ComponentType, ButtonStyle } from "./types";
 
 import { usePreviewerContext } from "./PreviewerContext";
+
+function findComponentById(root: Component, id: string): Component | null {
+  if (root.id === id) {
+    return root;
+  }
+
+  if (root.children) {
+    for (let i = 0; i < root.children.length; i += 1) {
+      const child = root.children[i];
+      const result = findComponentById(child, id);
+      if (result) return result;
+    }
+  }
+
+  // Handle accessory for sections
+  if (root.type === ComponentType.Section && (root as any).accessory) {
+    const accessory = (root as any).accessory as Component;
+    const result = findComponentById(accessory, id);
+    if (result) return result;
+  }
+
+  return null;
+}
 
 function getComponentFormPathById(
   root: Component,
@@ -51,7 +76,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   hideTitle,
 }) => {
   const { deleteComponent, moveComponentUp, moveComponentDown } = usePreviewerContext();
-  const { watch, formState, control } = useFormContext<{
+  const { watch, formState, setValue } = useFormContext<{
     messageComponent: MessageComponent;
   }>();
   const messageComponent = watch("messageComponent");
@@ -263,108 +288,113 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   };
 
   const formPath = getComponentFormPathById(messageComponent, selectedComponentId);
+  const component = findComponentById(messageComponent, selectedComponentId);
 
-  if (!formPath) {
+  if (!formPath || !component) {
     return null;
   }
 
+  const positionInfo = component ? getComponentPosition(component) : null;
+  const canMoveUp = positionInfo && positionInfo.index > 0;
+  const canMoveDown = positionInfo && positionInfo.index < positionInfo.total - 1;
+
+  const updateValue = (value: Component) => {
+    setValue(formPath as any, value, {
+      shouldDirty: true,
+      shouldTouch: true,
+      shouldValidate: true,
+    });
+  };
+
   return (
-    <Controller
-      name={formPath as any}
-      control={control}
-      render={({ field }) => {
-        const component = field.value as Component;
-
-        const positionInfo = component ? getComponentPosition(component) : null;
-        const canMoveUp = positionInfo && positionInfo.index > 0;
-        const canMoveDown = positionInfo && positionInfo.index < positionInfo.total - 1;
-
-        return (
-          <VStack align="stretch" spacing={4} p={4} minWidth={250}>
-            {(!hideTitle || component.type !== ComponentType.Message) && (
-              <HStack justify="space-between" align="center" flexWrap="wrap" spacing={4}>
-                {!hideTitle && (
-                  <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
-                    {component.type} Properties
-                  </Text>
-                )}
-                {component.type !== ComponentType.Message && (
-                  <Button
-                    size="sm"
-                    colorScheme="red"
-                    variant="outline"
-                    leftIcon={<DeleteIcon />}
-                    onClick={() => deleteComponent(component.id)}
-                  >
-                    Delete
-                  </Button>
-                )}
-              </HStack>
-            )}
-            <Box>
-              <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-                Component Name
+    <VStack align="stretch" spacing={4} p={4} minWidth={250}>
+      {(!hideTitle || component.type !== ComponentType.Message) && (
+        <HStack justify="space-between" align="center" flexWrap="wrap" spacing={4}>
+          {!hideTitle && (
+            <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
+              {component.type} Properties
+            </Text>
+          )}
+          {component.type !== ComponentType.Message && (
+            <Button
+              size="sm"
+              colorScheme="red"
+              variant="outline"
+              leftIcon={<DeleteIcon />}
+              onClick={() => deleteComponent(component.id)}
+            >
+              Delete
+            </Button>
+          )}
+        </HStack>
+      )}
+      {component.type === ComponentType.ActionRow && component.children.length === 0 && (
+        <Alert status="error" borderRadius="md">
+          <AlertIcon />
+          At least one child component is required for Action Rows.
+        </Alert>
+      )}
+      <Box>
+        <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+          Component Name
+        </Text>
+        <Input
+          value={component.name}
+          onChange={(e) => updateValue({ ...component, name: e.target.value })}
+          placeholder="Enter component name"
+          bg="gray.700"
+          color="white"
+          borderColor="gray.600"
+          _focus={{ borderColor: "blue.400" }}
+        />
+      </Box>
+      {positionInfo && component.type !== ComponentType.Message && (
+        <Box>
+          <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+            Position
+          </Text>
+          <VStack spacing={2}>
+            <Box bg="gray.700" p={3} borderRadius="md" w="full">
+              <Text fontSize="sm" color="white">
+                {positionInfo.index + 1} of {positionInfo.total} in {positionInfo.parent.name}
               </Text>
-              <Input
-                value={component.name}
-                onChange={(e) => field.onChange({ ...component, name: e.target.value })}
-                placeholder="Enter component name"
-                bg="gray.700"
-                color="white"
-                borderColor="gray.600"
-                _focus={{ borderColor: "blue.400" }}
-              />
             </Box>
-            {positionInfo && component.type !== ComponentType.Message && (
-              <Box>
-                <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-                  Position
-                </Text>
-                <VStack spacing={2}>
-                  <Box bg="gray.700" p={3} borderRadius="md" w="full">
-                    <Text fontSize="sm" color="white">
-                      {positionInfo.index + 1} of {positionInfo.total} in {positionInfo.parent.name}
-                    </Text>
-                  </Box>
-                  <HStack spacing={2} w="full" flexWrap="wrap">
-                    <Button
-                      size="sm"
-                      leftIcon={<ChevronUpIcon />}
-                      aria-disabled={!canMoveUp}
-                      onClick={() => {
-                        if (!canMoveUp) return;
-                        moveComponentUp(component.id);
-                      }}
-                      variant="outline"
-                      colorScheme="blue"
-                      flex={1}
-                      minWidth={125}
-                    >
-                      Move Up
-                    </Button>
-                    <Button
-                      size="sm"
-                      leftIcon={<ChevronDownIcon />}
-                      aria-disabled={!canMoveDown}
-                      onClick={() => {
-                        if (!canMoveDown) return;
-                        moveComponentDown(component.id);
-                      }}
-                      variant="outline"
-                      colorScheme="blue"
-                      flex={1}
-                      minWidth={125}
-                    >
-                      Move Down
-                    </Button>
-                  </HStack>
-                </VStack>
-              </Box>
-            )}
-            {renderPropertiesForComponent(field.value, field.onChange)}
+            <HStack spacing={2} w="full" flexWrap="wrap">
+              <Button
+                size="sm"
+                leftIcon={<ChevronUpIcon />}
+                aria-disabled={!canMoveUp}
+                onClick={() => {
+                  if (!canMoveUp) return;
+                  moveComponentUp(component.id);
+                }}
+                variant="outline"
+                colorScheme="blue"
+                flex={1}
+                minWidth={125}
+              >
+                Move Up
+              </Button>
+              <Button
+                size="sm"
+                leftIcon={<ChevronDownIcon />}
+                aria-disabled={!canMoveDown}
+                onClick={() => {
+                  if (!canMoveDown) return;
+                  moveComponentDown(component.id);
+                }}
+                variant="outline"
+                colorScheme="blue"
+                flex={1}
+                minWidth={125}
+              >
+                Move Down
+              </Button>
+            </HStack>
           </VStack>
-        );
-      }}
-    />
+        </Box>
+      )}
+      {renderPropertiesForComponent(component, updateValue)}
+    </VStack>
   );
 };
