@@ -2,12 +2,12 @@
 export const MESSAGE_ROOT_ID = "message-root" as const;
 
 export enum ComponentType {
-  Message = "message",
-  TextDisplay = "text_display",
-  ActionRow = "action_row",
-  Button = "button",
-  Section = "section",
-  Divider = "divider",
+  Message = "Discord Message",
+  TextDisplay = "Text Display",
+  ActionRow = "Action Row",
+  Button = "Button",
+  Section = "Section",
+  Divider = "Divider",
 }
 
 export enum ButtonStyle {

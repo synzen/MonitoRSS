@@ -59,6 +59,7 @@ const getComponentIcon = (type: Component["type"]) => {
 
 export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component, depth = 0 }) => {
   const { addChildComponent } = usePreviewerContext();
+  const componentChildrenCount = component.children?.length || 0;
   const hasChildren = component.children && component.children.length > 0;
   const hasAccessory =
     component.type === ComponentType.Section &&
@@ -124,13 +125,19 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component,
             />
             <MenuList bg="gray.700" borderColor="gray.600" zIndex={3}>
               {component.type === ComponentType.Message && (
-                <MenuGroup title={`Components (${component.children?.length || 0}/10)`}>
+                <MenuGroup title={`Components (${componentChildrenCount}/10)`}>
                   <MenuItem
                     bg="gray.700"
                     _hover={{ bg: "gray.600" }}
                     color="white"
-                    onClick={() => onAddChildComponent(component.id, ComponentType.TextDisplay)}
-                    isDisabled={(component.children.length || 0) >= 10}
+                    onClick={() => {
+                      if (componentChildrenCount >= 10) {
+                        return;
+                      }
+
+                      onAddChildComponent(component.id, ComponentType.TextDisplay);
+                    }}
+                    aria-disabled={componentChildrenCount >= 10}
                   >
                     Add Text Display
                   </MenuItem>
@@ -138,8 +145,14 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component,
                     bg="gray.700"
                     _hover={{ bg: "gray.600" }}
                     color="white"
-                    onClick={() => onAddChildComponent(component.id, ComponentType.ActionRow)}
-                    isDisabled={(component.children.length || 0) >= 10}
+                    onClick={() => {
+                      if (componentChildrenCount >= 10) {
+                        return;
+                      }
+
+                      onAddChildComponent(component.id, ComponentType.ActionRow);
+                    }}
+                    aria-disabled={componentChildrenCount >= 10}
                   >
                     Add Action Row
                   </MenuItem>
@@ -147,8 +160,14 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component,
                     bg="gray.700"
                     _hover={{ bg: "gray.600" }}
                     color="white"
-                    onClick={() => onAddChildComponent(component.id, ComponentType.Section)}
-                    isDisabled={(component.children.length || 0) >= 10}
+                    onClick={() => {
+                      if (componentChildrenCount >= 10) {
+                        return;
+                      }
+
+                      onAddChildComponent(component.id, ComponentType.Section);
+                    }}
+                    aria-disabled={componentChildrenCount >= 10}
                   >
                     Add Section
                   </MenuItem>
@@ -156,8 +175,14 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component,
                     bg="gray.700"
                     _hover={{ bg: "gray.600" }}
                     color="white"
-                    onClick={() => onAddChildComponent(component.id, ComponentType.Divider)}
-                    isDisabled={(component.children.length || 0) >= 10}
+                    onClick={() => {
+                      if (componentChildrenCount >= 10) {
+                        return;
+                      }
+
+                      onAddChildComponent(component.id, ComponentType.Divider);
+                    }}
+                    aria-disabled={componentChildrenCount >= 10}
                   >
                     Add Divider
                   </MenuItem>
@@ -171,8 +196,14 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component,
                     bg="gray.700"
                     _hover={{ bg: "gray.600" }}
                     color="white"
-                    onClick={() => onAddChildComponent(component.id, ComponentType.Button)}
-                    isDisabled={(component as ActionRowComponent).children.length >= 5}
+                    onClick={() => {
+                      if ((component as ActionRowComponent).children.length >= 5) {
+                        return;
+                      }
+
+                      onAddChildComponent(component.id, ComponentType.Button);
+                    }}
+                    aria-disabled={(component as ActionRowComponent).children.length >= 5}
                   >
                     Add Button
                   </MenuItem>
@@ -180,13 +211,19 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component,
               )}
               {component.type === ComponentType.Section && (
                 <>
-                  <MenuGroup title={`Components (${component.children?.length || 0}/3)`}>
+                  <MenuGroup title={`Components (${componentChildrenCount}/3)`}>
                     <MenuItem
                       bg="gray.700"
                       _hover={{ bg: "gray.600" }}
                       color="white"
-                      onClick={() => onAddChildComponent(component.id, ComponentType.TextDisplay)}
-                      isDisabled={(component.children?.length || 0) >= 3}
+                      onClick={() => {
+                        if (componentChildrenCount >= 3) {
+                          return;
+                        }
+
+                        onAddChildComponent(component.id, ComponentType.TextDisplay);
+                      }}
+                      aria-disabled={componentChildrenCount >= 3}
                     >
                       Add Text Display
                     </MenuItem>
@@ -194,8 +231,14 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component,
                       bg="gray.700"
                       _hover={{ bg: "gray.600" }}
                       color="white"
-                      onClick={() => onAddChildComponent(component.id, ComponentType.Divider)}
-                      isDisabled={(component.children?.length || 0) >= 3}
+                      onClick={() => {
+                        if (componentChildrenCount >= 3) {
+                          return;
+                        }
+
+                        onAddChildComponent(component.id, ComponentType.Divider);
+                      }}
+                      aria-disabled={componentChildrenCount >= 3}
                     >
                       Add Divider
                     </MenuItem>
@@ -205,8 +248,11 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({ component,
                       bg="gray.700"
                       _hover={{ bg: "gray.600" }}
                       color="white"
-                      onClick={() => onAddChildComponent(component.id, ComponentType.Button, true)}
-                      isDisabled={hasAccessory}
+                      onClick={() => {
+                        if (hasAccessory) return;
+                        onAddChildComponent(component.id, ComponentType.Button, true);
+                      }}
+                      aria-disabled={hasAccessory}
                     >
                       Add Button
                     </MenuItem>

@@ -244,7 +244,6 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
               <Button
                 size="sm"
                 leftIcon={<ChevronUpIcon />}
-                aria-label="Move Up"
                 aria-disabled={!canMoveUp}
                 onClick={() => {
                   if (!canMoveUp) return;
@@ -259,7 +258,6 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
               <Button
                 size="sm"
                 leftIcon={<ChevronDownIcon />}
-                aria-label="Move Down"
                 aria-disabled={!canMoveDown}
                 onClick={() => {
                   if (!canMoveDown) return;

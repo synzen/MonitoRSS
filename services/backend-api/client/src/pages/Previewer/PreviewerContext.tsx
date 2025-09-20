@@ -8,7 +8,12 @@ import {
   SectionComponent,
 } from "./types";
 
+export enum ValidationProblemCode {
+  TooManyTotalComponents = "TooManyTotalComponents",
+}
+
 interface ValidationProblem {
+  code?: ValidationProblemCode;
   message: string;
   path: string;
   componentId: string;
@@ -92,23 +97,9 @@ export const PreviewerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             message: "Message has too many total components (maximum 40 allowed)",
             path: currentPath.join(" > "),
             componentId: component.id,
+            code: ValidationProblemCode.TooManyTotalComponents,
           });
         }
-      }
-
-      // Check for too many top-level components (only for root message)
-      if (
-        component.type === ComponentType.Message &&
-        component.children &&
-        component.children.length > 10
-      ) {
-        validationProblems.push({
-          message: `Remove ${component.children.length - 10} top-level component${
-            component.children.length - 10 === 1 ? "" : "s"
-          } (maximum 10 allowed)`,
-          path: currentPath.join(" > "),
-          componentId: component.id,
-        });
       }
 
       if (component.type === ComponentType.ActionRow && !component.children.length) {
