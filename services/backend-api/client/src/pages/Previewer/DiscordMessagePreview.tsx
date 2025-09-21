@@ -1,17 +1,9 @@
 import React from "react";
-import {
-  Box,
-  VStack,
-  HStack,
-  Text,
-  Button,
-  useColorModeValue,
-  Avatar,
-  Divider,
-} from "@chakra-ui/react";
+import { Box, VStack, HStack, Text, Button, useColorModeValue, Avatar } from "@chakra-ui/react";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
 import { useFormContext } from "react-hook-form";
 import { Component, ComponentType, MessageComponent } from "./types";
+import { ArticlePreviewBanner } from "./ArticlePreviewBanner";
 
 export const DiscordMessagePreview: React.FC = () => {
   const { watch } = useFormContext<{ messageComponent: MessageComponent }>();
@@ -145,73 +137,67 @@ export const DiscordMessagePreview: React.FC = () => {
         );
       }
 
-      case ComponentType.Divider: {
-        const paddingY = component.spacing === 2 ? 4 : 2;
-
-        return (
-          <Box key={component.id} py={paddingY}>
-            {component.visual && <Divider borderColor="gray.600" />}
-          </Box>
-        );
-      }
-
       default:
         return null;
     }
   };
 
   return (
-    <Box
-      bg={bgColor}
-      color={textColor}
-      p={4}
-      borderRadius="md"
-      minH="400px"
-      fontFamily="Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif"
-    >
-      <HStack align="flex-start" spacing={3}>
-        <Avatar
-          size="sm"
-          src="https://cdn.discordapp.com/avatars/302050872383242240/1fb101f4b0fe104b6b8c53ec5e3d5af6.png"
-          name="MonitoRSS"
-          borderRadius="50%"
-          w={10}
-          h={10}
-        />
-        <VStack align="stretch" spacing={1} flex={1}>
-          <HStack spacing={2} align="center">
-            <Text fontSize="sm" fontWeight="semibold" color="white">
-              MonitoRSS
-            </Text>
-            <Box
-              fontSize="xs"
-              bg="#5865f2"
-              color="white"
-              px={1}
-              py={0.5}
-              borderRadius="sm"
-              fontWeight="bold"
-              lineHeight="1"
-            >
-              ✓ APP
+    <VStack align="stretch" spacing={0}>
+      <ArticlePreviewBanner />
+      {/* Discord Message Preview */}
+      <Box
+        bg={bgColor}
+        color={textColor}
+        p={4}
+        borderRadius="md"
+        minH="400px"
+        fontFamily="Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+      >
+        <HStack align="flex-start" spacing={3}>
+          <Avatar
+            size="sm"
+            src="https://cdn.discordapp.com/avatars/302050872383242240/1fb101f4b0fe104b6b8c53ec5e3d5af6.png"
+            name="MonitoRSS"
+            borderRadius="50%"
+            w={10}
+            h={10}
+          />
+          <VStack align="stretch" spacing={1} flex={1}>
+            <HStack spacing={2} align="center">
+              <Text fontSize="sm" fontWeight="semibold" color="white">
+                MonitoRSS
+              </Text>
+              <Box
+                fontSize="xs"
+                bg="#5865f2"
+                color="white"
+                px={1}
+                py={0.5}
+                borderRadius="sm"
+                fontWeight="bold"
+                lineHeight="1"
+              >
+                ✓ APP
+              </Box>
+              <Text fontSize="xs" color="#a3a6aa" ml={1}>
+                Today at 12:04 PM
+              </Text>
+            </HStack>
+            <Box>
+              <VStack align="stretch" spacing={3}>
+                {messageComponent.children?.length === 0 ? (
+                  <Text color="gray.400" fontSize="sm" fontStyle="italic">
+                    No components added yet
+                  </Text>
+                ) : (
+                  messageComponent.children?.map(renderComponent)
+                )}
+              </VStack>
             </Box>
-            <Text fontSize="xs" color="#a3a6aa" ml={1}>
-              Today at 12:04 PM
-            </Text>
-          </HStack>
-          <Box>
-            <VStack align="stretch" spacing={3}>
-              {messageComponent.children?.length === 0 ? (
-                <Text color="gray.400" fontSize="sm" fontStyle="italic">
-                  No components added yet
-                </Text>
-              ) : (
-                messageComponent.children?.map(renderComponent)
-              )}
-            </VStack>
-          </Box>
-        </VStack>
-      </HStack>
-    </Box>
+          </VStack>
+        </HStack>
+      </Box>
+    </VStack>
   );
 };

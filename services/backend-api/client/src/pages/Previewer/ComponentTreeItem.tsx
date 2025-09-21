@@ -23,7 +23,7 @@ import {
   FaLayerGroup,
   FaMinus,
   FaCog,
-  FaExclamationTriangle,
+  FaExclamationCircle,
 } from "react-icons/fa";
 import { ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import type { Component, ActionRowComponent, SectionComponent } from "./types";
@@ -143,7 +143,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
             </Text>
             {componentIdsWithProblems.has(component.id) && (
               <Icon
-                as={FaExclamationTriangle}
+                as={FaExclamationCircle}
                 color={isSelected ? "white" : "red.400"}
                 flexShrink={0}
                 size="sm"

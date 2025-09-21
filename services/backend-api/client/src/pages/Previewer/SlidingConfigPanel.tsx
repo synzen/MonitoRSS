@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, HStack, Text, IconButton, Slide, useOutsideClick } from "@chakra-ui/react";
+import { Box, HStack, Text, IconButton, Slide } from "@chakra-ui/react";
 import { CloseIcon } from "@chakra-ui/icons";
 import { ComponentPropertiesPanel } from "./ComponentPropertiesPanel";
 
@@ -15,12 +15,6 @@ export const SlidingConfigPanel: React.FC<SlidingConfigPanelProps> = ({
   component,
 }) => {
   const panelRef = React.useRef<HTMLDivElement>(null);
-
-  useOutsideClick({
-    ref: panelRef,
-    handler: onClose,
-    enabled: isOpen,
-  });
 
   // Handle escape key press
   React.useEffect(() => {
@@ -51,7 +45,6 @@ export const SlidingConfigPanel: React.FC<SlidingConfigPanelProps> = ({
           bottom={0}
           bg="blackAlpha.500"
           zIndex={40}
-          onClick={onClose}
         />
       )}
       {/* Sliding Panel */}
@@ -60,6 +53,7 @@ export const SlidingConfigPanel: React.FC<SlidingConfigPanelProps> = ({
           ref={panelRef}
           bg="gray.800"
           borderTop="1px solid"
+          borderTopRadius="xl"
           borderColor="gray.600"
           height="55vh"
           onClick={(e) => e.stopPropagation()}

@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, HStack, Text, VStack, UnorderedList, ListItem, Icon } from "@chakra-ui/react";
-import { FaExclamationTriangle } from "react-icons/fa";
+import { FaExclamationCircle } from "react-icons/fa";
 import { useFormContext } from "react-hook-form";
 import { useNavigableTreeContext } from "../../contexts/NavigableTreeContext";
 import type { MessageComponent, Component, PreviewerProblem } from "./types";
@@ -62,7 +62,7 @@ export const ProblemsSection: React.FC<{
                 <VStack align="stretch" spacing={0} flex={1}>
                   <HStack spacing={2} align="center">
                     <Icon
-                      as={FaExclamationTriangle}
+                      as={FaExclamationCircle}
                       color="red.400"
                       flexShrink={0}
                       size="sm"

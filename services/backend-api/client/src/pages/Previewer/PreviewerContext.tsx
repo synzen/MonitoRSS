@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo } from "react";
+import React, { createContext, useContext, useMemo, useState, useCallback, useEffect } from "react";
 import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -10,6 +10,31 @@ import {
   ButtonStyle,
   SectionComponent,
 } from "./types";
+
+// Article type
+interface Article {
+  id: string;
+  title: string;
+}
+
+// Mock article data
+const mockArticles: Article[] = [
+  {
+    id: "1",
+    title: "Breaking: New JavaScript Framework Released",
+  },
+  {
+    id: "2",
+    title: "Climate Change: Latest Research Findings",
+  },
+  {
+    id: "3",
+    title: "Space Exploration Milestone Achieved",
+  },
+];
+
+// Simulate error state for testing
+const SIMULATE_ERROR = true; // Change to true to test error state
 
 // Recursive schema for component validation
 const createComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => {
@@ -95,6 +120,13 @@ interface PreviewerContextType {
   resetMessage: () => void;
   moveComponentUp: (componentId: string) => void;
   moveComponentDown: (componentId: string) => void;
+  // Article preview functionality
+  articles: Article[];
+  currentArticleIndex: number;
+  isLoading: boolean;
+  error: string | null;
+  fetchArticles: () => Promise<void>;
+  setCurrentArticleIndex: (index: number) => void;
 }
 
 const PreviewerContext = createContext<PreviewerContextType | undefined>(undefined);
@@ -111,6 +143,44 @@ export const usePreviewerContext = () => {
 
 const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { setValue, getValues } = useFormContext<{ messageComponent: MessageComponent }>();
+
+  // Article preview state
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [currentArticleIndex, setCurrentArticleIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Simulate fetching articles
+  const fetchArticles = useCallback(async () => {
+    setIsLoading(true);
+    setError(null); // Clear any previous errors
+
+    try {
+      // Simulate network delay
+      await new Promise((resolve) => {
+        setTimeout(resolve, 1000);
+      });
+
+      if (SIMULATE_ERROR) {
+        throw new Error(
+          "Failed to fetch articles from RSS feed. Please check your internet connection and try again."
+        );
+      }
+
+      setArticles(mockArticles);
+      setCurrentArticleIndex(0);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
+      setArticles([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Fetch articles on mount
+  useEffect(() => {
+    fetchArticles();
+  }, [fetchArticles]);
 
   const addChildComponent = (
     parentId: string,
@@ -330,8 +400,15 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       resetMessage,
       moveComponentUp,
       moveComponentDown,
+      // Article preview functionality
+      articles,
+      currentArticleIndex,
+      isLoading,
+      error,
+      fetchArticles,
+      setCurrentArticleIndex,
     }),
-    []
+    [articles, currentArticleIndex, isLoading, error, fetchArticles]
   );
 
   return <PreviewerContext.Provider value={contextValue}>{children}</PreviewerContext.Provider>;

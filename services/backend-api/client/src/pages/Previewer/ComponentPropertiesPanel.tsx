@@ -15,13 +15,31 @@ import {
   AlertIcon,
   FormLabel,
   Switch,
+  useDisclosure,
 } from "@chakra-ui/react";
-import { DeleteIcon, ChevronUpIcon, ChevronDownIcon } from "@chakra-ui/icons";
+import { DeleteIcon, ChevronUpIcon, ChevronDownIcon, AddIcon } from "@chakra-ui/icons";
 import { useFormContext } from "react-hook-form";
-import type { Component, ComponentPropertiesPanelProps, MessageComponent } from "./types";
+import type {
+  Component,
+  ComponentPropertiesPanelProps,
+  MessageComponent,
+  TextDisplayComponent,
+} from "./types";
 import { ComponentType, ButtonStyle } from "./types";
+import { InsertPlaceholderDialog } from "./InsertPlaceholderDialog";
 
 import { usePreviewerContext } from "./PreviewerContext";
+
+// Mock article data - in a real app this would come from props or context
+const getCurrentArticle = () => ({
+  title: "Breaking: New JavaScript Framework Released",
+  description:
+    "A revolutionary new framework promises to change how we build web applications forever.A revolutionary new framework promises to change how we build web applications forever.A revolutionary new framework promises to change how we build web applications forever.A revolutionary new framework promises to change how we build web applications forever.A revolutionary new framework promises to change how we build web applications forever.A revolutionary new framework promises to change how we build web applications forever.A revolutionary new framework promises to change how we build web applications forever.",
+  url: "https://example.com/article1",
+  author: "Jane Developer",
+  publishedAt: "2024-01-15T10:30:00Z",
+  feedTitle: "Tech News Daily",
+});
 
 function findComponentById(root: Component, id: string): Component | null {
   if (root.id === id) {
@@ -82,6 +100,11 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     messageComponent: MessageComponent;
   }>();
   const messageComponent = watch("messageComponent");
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [activeTextareaRef, setActiveTextareaRef] = React.useState<HTMLTextAreaElement | null>(
+    null
+  );
+  const [currentComponent, setCurrentComponent] = React.useState<Component | null>(null);
 
   const getFieldError = (componentId: string, fieldName: string) => {
     const getNestedError = (obj: any, path: string) => {
@@ -127,26 +150,62 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     return undefined;
   };
 
+  const handleInsertMergeTag = (tag: string) => {
+    if (activeTextareaRef && currentComponent) {
+      const textarea = activeTextareaRef;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const currentValue = (currentComponent as TextDisplayComponent).content || "";
+      const newValue = currentValue.substring(0, start) + tag + currentValue.substring(end);
+
+      // Update the component through the proper onChange handler
+      const updatedComponent = { ...currentComponent, content: newValue };
+      updateValue(updatedComponent);
+
+      // Set cursor position after the inserted tag
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + tag.length, start + tag.length);
+      }, 0);
+    }
+  };
+
   const renderPropertiesForComponent = (component: Component, onChange: (value: any) => void) => {
     switch (component.type) {
       case ComponentType.TextDisplay: {
         const contentError = getFieldError(component.id, "content");
 
         return (
-          <FormControl isInvalid={!!contentError}>
-            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-              Text Content
-            </FormLabel>
-            <Textarea
-              value={component.content}
-              onChange={(e) => onChange({ ...component, content: e.target.value })}
-              placeholder="Enter text content"
-              rows={4}
-              bg="gray.700"
-              color="white"
-            />
-            {contentError && <FormErrorMessage>Text content cannot be empty</FormErrorMessage>}
-          </FormControl>
+          <VStack align="stretch" spacing={4}>
+            <FormControl isInvalid={!!contentError}>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                Text Content
+              </FormLabel>
+              <Textarea
+                ref={(ref) => {
+                  setActiveTextareaRef(ref);
+                  setCurrentComponent(component);
+                }}
+                value={component.content}
+                onChange={(e) => onChange({ ...component, content: e.target.value })}
+                placeholder="Enter text content"
+                rows={4}
+                bg="gray.700"
+                color="white"
+              />
+              {contentError && <FormErrorMessage>Text content cannot be empty</FormErrorMessage>}
+            </FormControl>
+            <Button
+              leftIcon={<AddIcon />}
+              size="sm"
+              variant="outline"
+              colorScheme="blue"
+              onClick={onOpen}
+              alignSelf="flex-start"
+            >
+              Insert Placeholder
+            </Button>
+          </VStack>
         );
       }
 
@@ -310,118 +369,126 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   const nameFieldError = getFieldError(component.id, "name");
 
   return (
-    <VStack align="stretch" spacing={4} p={4} minWidth={250}>
-      {(!hideTitle || component.type !== ComponentType.Message) && (
-        <HStack justify="space-between" align="center" flexWrap="wrap" spacing={4}>
-          {!hideTitle && (
-            <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
-              {component.type} Properties
-            </Text>
-          )}
-          {component.type !== ComponentType.Message && (
-            <Button
-              size="sm"
-              colorScheme="red"
-              variant="outline"
-              leftIcon={<DeleteIcon />}
-              onClick={() => deleteComponent(component.id)}
-            >
-              Delete
-            </Button>
-          )}
-        </HStack>
-      )}
-      {component.type === ComponentType.ActionRow && component.children.length === 0 && (
-        <Alert status="error" borderRadius="md">
-          <AlertIcon />
-          At least one child component is required for Action Rows.
-        </Alert>
-      )}
-      {component.type === ComponentType.Section && component.children.length === 0 && (
-        <Alert status="error" borderRadius="md">
-          <AlertIcon />
-          At least one child component is required for Sections.
-        </Alert>
-      )}
-      {component.type === ComponentType.Section && component.children.length > 3 && (
-        <Alert status="error" borderRadius="md">
-          <AlertIcon />
-          Sections can have at most 3 child components. {component.children.length - 3} child
-          components must be deleted.
-        </Alert>
-      )}
-      {component.type === ComponentType.Section && !component.accessory && (
-        <Alert status="error" borderRadius="md">
-          <AlertIcon />
-          An accessory component is required for Sections.
-        </Alert>
-      )}
-      {component.type === ComponentType.ActionRow && component.children.length > 5 && (
-        <Alert status="error" borderRadius="md">
-          <AlertIcon />
-          Action Rows can have at most 5 child components. {component.children.length - 5} child
-          components must be deleted.
-        </Alert>
-      )}
-      <FormControl isInvalid={!!nameFieldError}>
-        <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-          Component Name
-        </FormLabel>
-        <Input
-          value={component.name}
-          onChange={(e) => updateValue({ ...component, name: e.target.value })}
-          placeholder="Enter component name"
-          bg="gray.700"
-        />
-        {nameFieldError && <FormErrorMessage>{nameFieldError?.message}</FormErrorMessage>}
-      </FormControl>
-      {positionInfo && component.type !== ComponentType.Message && (
-        <Box>
-          <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-            Position
-          </Text>
-          <VStack spacing={2}>
-            <Box bg="gray.700" p={3} borderRadius="md" w="full">
-              <Text fontSize="sm" color="white">
-                {positionInfo.index + 1} of {positionInfo.total} in {positionInfo.parent.name}
+    <>
+      <VStack align="stretch" spacing={4} p={4} minWidth={250}>
+        {(!hideTitle || component.type !== ComponentType.Message) && (
+          <HStack justify="space-between" align="center" flexWrap="wrap" spacing={4}>
+            {!hideTitle && (
+              <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
+                {component.type} Properties
               </Text>
-            </Box>
-            <HStack spacing={2} w="full" flexWrap="wrap">
+            )}
+            {component.type !== ComponentType.Message && (
               <Button
                 size="sm"
-                leftIcon={<ChevronUpIcon />}
-                aria-disabled={!canMoveUp}
-                onClick={() => {
-                  if (!canMoveUp) return;
-                  moveComponentUp(component.id);
-                }}
+                colorScheme="red"
                 variant="outline"
-                colorScheme="blue"
-                flex={1}
-                minWidth={125}
+                leftIcon={<DeleteIcon />}
+                onClick={() => deleteComponent(component.id)}
               >
-                Move Up
+                Delete
               </Button>
-              <Button
-                size="sm"
-                leftIcon={<ChevronDownIcon />}
-                aria-disabled={!canMoveDown}
-                onClick={() => {
-                  if (!canMoveDown) return;
-                  moveComponentDown(component.id);
-                }}
-                variant="outline"
-                colorScheme="blue"
-                flex={1}
-                minWidth={125}
-              >
-                Move Down
-              </Button>
-            </HStack>
-          </VStack>
-        </Box>
-      )}
-      {renderPropertiesForComponent(component, updateValue)}
-    </VStack>
+            )}
+          </HStack>
+        )}
+        {component.type === ComponentType.ActionRow && component.children.length === 0 && (
+          <Alert status="error" borderRadius="md" role={undefined}>
+            <AlertIcon />
+            At least one child component is required for Action Rows.
+          </Alert>
+        )}
+        {component.type === ComponentType.Section && component.children.length === 0 && (
+          <Alert status="error" borderRadius="md" role={undefined}>
+            <AlertIcon />
+            At least one child component is required for Sections.
+          </Alert>
+        )}
+        {component.type === ComponentType.Section && component.children.length > 3 && (
+          <Alert status="error" borderRadius="md" role={undefined}>
+            <AlertIcon />
+            Sections can have at most 3 child components. {component.children.length - 3} child
+            components must be deleted.
+          </Alert>
+        )}
+        {component.type === ComponentType.Section && !component.accessory && (
+          <Alert status="error" borderRadius="md" role={undefined}>
+            <AlertIcon />
+            An accessory component is required for Sections.
+          </Alert>
+        )}
+        {component.type === ComponentType.ActionRow && component.children.length > 5 && (
+          <Alert status="error" borderRadius="md" role={undefined}>
+            <AlertIcon />
+            Action Rows can have at most 5 child components. {component.children.length - 5} child
+            components must be deleted.
+          </Alert>
+        )}
+        <FormControl isInvalid={!!nameFieldError}>
+          <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+            Component Name
+          </FormLabel>
+          <Input
+            value={component.name}
+            onChange={(e) => updateValue({ ...component, name: e.target.value })}
+            placeholder="Enter component name"
+            bg="gray.700"
+          />
+          {nameFieldError && <FormErrorMessage>{nameFieldError?.message}</FormErrorMessage>}
+        </FormControl>
+        {positionInfo && component.type !== ComponentType.Message && (
+          <Box>
+            <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+              Position
+            </Text>
+            <VStack spacing={2}>
+              <Box bg="gray.700" p={3} borderRadius="md" w="full">
+                <Text fontSize="sm" color="white">
+                  {positionInfo.index + 1} of {positionInfo.total} in {positionInfo.parent.name}
+                </Text>
+              </Box>
+              <HStack spacing={2} w="full" flexWrap="wrap">
+                <Button
+                  size="sm"
+                  leftIcon={<ChevronUpIcon />}
+                  aria-disabled={!canMoveUp}
+                  onClick={() => {
+                    if (!canMoveUp) return;
+                    moveComponentUp(component.id);
+                  }}
+                  variant="outline"
+                  colorScheme="blue"
+                  flex={1}
+                  minWidth={125}
+                >
+                  Move Up
+                </Button>
+                <Button
+                  size="sm"
+                  leftIcon={<ChevronDownIcon />}
+                  aria-disabled={!canMoveDown}
+                  onClick={() => {
+                    if (!canMoveDown) return;
+                    moveComponentDown(component.id);
+                  }}
+                  variant="outline"
+                  colorScheme="blue"
+                  flex={1}
+                  minWidth={125}
+                >
+                  Move Down
+                </Button>
+              </HStack>
+            </VStack>
+          </Box>
+        )}
+        {renderPropertiesForComponent(component, updateValue)}
+      </VStack>
+      <InsertPlaceholderDialog
+        isOpen={isOpen}
+        onClose={onClose}
+        onSelectTag={handleInsertMergeTag}
+        currentArticle={getCurrentArticle()}
+      />
+    </>
   );
 };
