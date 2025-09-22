@@ -2,12 +2,13 @@
 export const MESSAGE_ROOT_ID = "message-root" as const;
 
 export enum ComponentType {
-  Message = "Discord Message",
-  TextDisplay = "Text Display",
-  ActionRow = "Action Row",
-  Button = "Button",
-  Section = "Section",
-  Divider = "Divider",
+  LegacyMessage = "Legacy Discord Message",
+  V2Message = "Discord Components V2",
+  V2TextDisplay = "Text Display",
+  V2ActionRow = "Action Row",
+  V2Button = "Button",
+  V2Section = "Section",
+  V2Divider = "Divider",
 }
 
 export enum ButtonStyle {
@@ -32,17 +33,17 @@ export interface BaseComponent {
 }
 
 export interface MessageComponent extends BaseComponent {
-  type: ComponentType.Message;
+  type: ComponentType.V2Message;
   children: (TextDisplayComponent | ActionRowComponent)[];
 }
 
 export interface TextDisplayComponent extends BaseComponent {
-  type: ComponentType.TextDisplay;
+  type: ComponentType.V2TextDisplay;
   content: string;
 }
 
 export interface ButtonComponent extends BaseComponent {
-  type: ComponentType.Button;
+  type: ComponentType.V2Button;
   label: string;
   style: ButtonStyle;
   disabled: boolean;
@@ -50,12 +51,12 @@ export interface ButtonComponent extends BaseComponent {
 }
 
 export interface ActionRowComponent extends BaseComponent {
-  type: ComponentType.ActionRow;
+  type: ComponentType.V2ActionRow;
   children: ButtonComponent[];
 }
 
 export interface SectionComponent {
-  type: ComponentType.Section;
+  type: ComponentType.V2Section;
   id: string;
   name: string;
   children: Component[]; // max 3, only TextDisplay allowed
@@ -63,7 +64,7 @@ export interface SectionComponent {
 }
 
 export interface DividerComponent {
-  type: ComponentType.Divider;
+  type: ComponentType.V2Divider;
   id: string;
   name: string;
   visual?: boolean; // If a visual divider should be displayed (defaults to true)
@@ -84,7 +85,7 @@ export interface ComponentTreeItemProps {
   onDelete: (id: string) => void;
   onAddChild: (
     parentId: string,
-    childType: ComponentType.TextDisplay | ComponentType.ActionRow | ComponentType.Button
+    childType: ComponentType.V2TextDisplay | ComponentType.V2ActionRow | ComponentType.V2Button
   ) => void;
   depth?: number;
   onProblemsChange?: (problems: Array<{ message: string; path: string }>) => void;

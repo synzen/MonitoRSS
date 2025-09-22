@@ -59,7 +59,7 @@ const getComponentPath = (
     }
 
     // Add accessory to stack (will be processed first due to stack LIFO nature)
-    if (currentComponent.type === ComponentType.Section && currentComponent.accessory) {
+    if (currentComponent.type === ComponentType.V2Section && currentComponent.accessory) {
       const accessoryPath = `${path} > ${currentComponent.accessory.name} (accessory)`;
       stack.push({ component: currentComponent.accessory, path: accessoryPath });
     }
@@ -82,11 +82,18 @@ const extractProblems = (
   messageComponent: MessageComponent
 ) => {
   const problems: Array<PreviewerProblem> = [];
+  let textDisplayCharacterCount = 0;
 
   const processErrors = (errors: Record<string, any>, component: Component, currentPath = "") => {
     if (!errors || typeof errors !== "object") return;
 
     Object.keys(errors).forEach((key) => {
+      if (component.type === ComponentType.V2TextDisplay && key === "content") {
+        const content = component.content || "";
+        const charCount = content.length;
+        textDisplayCharacterCount += charCount;
+      }
+
       // Example key would be "content" for a text display component
       if (typeof errors[key] === "object" && errors[key].message) {
         // This is a direct error message for the current component
@@ -108,7 +115,7 @@ const extractProblems = (
       if (
         key === "accessory" &&
         errors[key] &&
-        component.type === ComponentType.Section &&
+        component.type === ComponentType.V2Section &&
         component.accessory
       ) {
         processErrors(errors.accessory, component.accessory, currentPath);
@@ -118,6 +125,14 @@ const extractProblems = (
 
   if (formStateErrors) {
     processErrors(formStateErrors, messageComponent);
+  }
+
+  if (textDisplayCharacterCount > 4000) {
+    problems.push({
+      message: `Total character length for all Text Display components exceeds Discord limit of 4000. Current length: ${textDisplayCharacterCount}.`,
+      path: getComponentPath(messageComponent, MESSAGE_ROOT_ID) || "Message Root",
+      componentId: MESSAGE_ROOT_ID,
+    });
   }
 
   return problems;
@@ -216,14 +231,19 @@ const PreviewerContent: React.FC = () => {
                     </VStack>
                   </Box>
                   {/* Center Panel - Discord Preview and Problems */}
-                  <Flex flex={1} direction="column" bg="gray.800">
+                  <Flex
+                    flex={1}
+                    direction="column"
+                    bg="gray.800"
+                    maxW={{ base: undefined, lg: "min(100% - 600px, 100%)" }}
+                  >
                     {/* Discord Preview Section */}
                     <Box p={4} borderBottom="1px" borderColor="gray.600" srOnly>
                       <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
                         Discord Message Preview
                       </Text>
                     </Box>
-                    <Box p={4} overflow="auto">
+                    <Box p={4} overflow="hidden">
                       <DiscordMessagePreview />
                     </Box>
                     <Box

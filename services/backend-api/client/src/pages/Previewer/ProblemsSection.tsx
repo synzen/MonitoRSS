@@ -31,7 +31,7 @@ export const ProblemsSection: React.FC<{
       }
     }
 
-    if (component.type === ComponentType.Section && component.accessory) {
+    if (component.type === ComponentType.V2Section && component.accessory) {
       const result = getParentIds(component.accessory, targetId, [...parents, component.id]);
       if (result) return result;
     }

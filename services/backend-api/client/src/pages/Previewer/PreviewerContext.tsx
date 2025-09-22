@@ -60,7 +60,6 @@ const createComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => {
     const textDisplaySchema = baseSchema.shape({
       content: yup
         .string()
-        .required("Text display content cannot be empty")
         .min(1, "Text display content cannot be empty")
         .max(2000, "Text display content cannot exceed 2000 characters"),
     });
@@ -386,7 +385,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       {
         id: MESSAGE_ROOT_ID,
         type: ComponentType.Message,
-        name: "Discord Message",
+        name: ComponentType.Message,
         children: [],
       },
       { shouldValidate: true }
@@ -422,7 +421,7 @@ export const PreviewerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       messageComponent: {
         id: MESSAGE_ROOT_ID,
         type: ComponentType.Message,
-        name: "Discord Message",
+        name: ComponentType.Message,
         children: [],
       },
     },

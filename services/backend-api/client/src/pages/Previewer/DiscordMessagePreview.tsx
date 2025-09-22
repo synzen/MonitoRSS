@@ -1,5 +1,14 @@
 import React from "react";
-import { Box, VStack, HStack, Text, Button, useColorModeValue, Avatar } from "@chakra-ui/react";
+import {
+  Box,
+  VStack,
+  HStack,
+  Text,
+  Button,
+  useColorModeValue,
+  Avatar,
+  Stack,
+} from "@chakra-ui/react";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
 import { useFormContext } from "react-hook-form";
 import { Component, ComponentType, MessageComponent } from "./types";
@@ -19,7 +28,7 @@ export const DiscordMessagePreview: React.FC = () => {
             align="stretch"
             spacing={2}
             key={component.id}
-            maxWidth="min(600px,100%)"
+            maxWidth="min(600px, 100%)"
             width="fit-content"
             alignItems="stretch"
           >
@@ -143,7 +152,7 @@ export const DiscordMessagePreview: React.FC = () => {
   };
 
   return (
-    <VStack align="stretch" spacing={0}>
+    <Stack spacing={0}>
       <ArticlePreviewBanner />
       {/* Discord Message Preview */}
       <Box
@@ -151,8 +160,11 @@ export const DiscordMessagePreview: React.FC = () => {
         color={textColor}
         p={4}
         borderRadius="md"
-        minH="400px"
         fontFamily="Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+        maxW="100%"
+        maxH={450}
+        h="100%"
+        overflow="auto"
       >
         <HStack align="flex-start" spacing={3}>
           <Avatar
@@ -163,7 +175,7 @@ export const DiscordMessagePreview: React.FC = () => {
             w={10}
             h={10}
           />
-          <VStack align="stretch" spacing={1} flex={1}>
+          <Stack spacing={1} flex={1} maxW="calc(100% - 40px - 0.75rem)">
             <HStack spacing={2} align="center">
               <Text fontSize="sm" fontWeight="semibold" color="white">
                 MonitoRSS
@@ -185,7 +197,7 @@ export const DiscordMessagePreview: React.FC = () => {
               </Text>
             </HStack>
             <Box>
-              <VStack align="stretch" spacing={3}>
+              <VStack align="stretch" spacing={3} maxW="min(600px, 100%)" w="fit-content">
                 {messageComponent.children?.length === 0 ? (
                   <Text color="gray.400" fontSize="sm" fontStyle="italic">
                     No components added yet
@@ -195,9 +207,9 @@ export const DiscordMessagePreview: React.FC = () => {
                 )}
               </VStack>
             </Box>
-          </VStack>
+          </Stack>
         </HStack>
       </Box>
-    </VStack>
+    </Stack>
   );
 };

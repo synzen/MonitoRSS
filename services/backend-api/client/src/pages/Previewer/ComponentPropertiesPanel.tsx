@@ -55,7 +55,7 @@ function findComponentById(root: Component, id: string): Component | null {
   }
 
   // Handle accessory for sections
-  if (root.type === ComponentType.Section && (root as any).accessory) {
+  if (root.type === ComponentType.V2Section && (root as any).accessory) {
     const accessory = (root as any).accessory as Component;
     const result = findComponentById(accessory, id);
     if (result) return result;
@@ -82,7 +82,7 @@ function getComponentFormPathById(
   }
 
   // Handle accessory for sections
-  if (root.type === ComponentType.Section && (root as any).accessory) {
+  if (root.type === ComponentType.V2Section && (root as any).accessory) {
     const accessory = (root as any).accessory as Component;
     const accessoryPath = getComponentFormPathById(accessory, id, `${basePath}.accessory`);
     if (accessoryPath) return accessoryPath;
@@ -139,7 +139,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         }
       }
 
-      if (component.type === ComponentType.Section && component.accessory) {
+      if (component.type === ComponentType.V2Section && component.accessory) {
         stack.push({
           component: component.accessory,
           path: `${path}.accessory`,
@@ -172,7 +172,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
   const renderPropertiesForComponent = (component: Component, onChange: (value: any) => void) => {
     switch (component.type) {
-      case ComponentType.TextDisplay: {
+      case ComponentType.V2TextDisplay: {
         const contentError = getFieldError(component.id, "content");
 
         return (
@@ -209,7 +209,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         );
       }
 
-      case ComponentType.Button: {
+      case ComponentType.V2Button: {
         const labelError = getFieldError(component.id, "label");
         const hrefError = getFieldError(component.id, "href");
         const styleError = getFieldError(component.id, "style");
@@ -273,7 +273,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         );
       }
 
-      case ComponentType.Divider: {
+      case ComponentType.V2Divider: {
         const spacingError = getFieldError(component.id, "spacing");
         const visualError = getFieldError(component.id, "visual");
 
@@ -371,14 +371,14 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   return (
     <>
       <VStack align="stretch" spacing={4} p={4} minWidth={250}>
-        {(!hideTitle || component.type !== ComponentType.Message) && (
+        {(!hideTitle || component.type !== ComponentType.V2Message) && (
           <HStack justify="space-between" align="center" flexWrap="wrap" spacing={4}>
             {!hideTitle && (
               <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
                 {component.type} Properties
               </Text>
             )}
-            {component.type !== ComponentType.Message && (
+            {component.type !== ComponentType.V2Message && (
               <Button
                 size="sm"
                 colorScheme="red"
@@ -391,32 +391,32 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             )}
           </HStack>
         )}
-        {component.type === ComponentType.ActionRow && component.children.length === 0 && (
+        {component.type === ComponentType.V2ActionRow && component.children.length === 0 && (
           <Alert status="error" borderRadius="md" role={undefined}>
             <AlertIcon />
             At least one child component is required for Action Rows.
           </Alert>
         )}
-        {component.type === ComponentType.Section && component.children.length === 0 && (
+        {component.type === ComponentType.V2Section && component.children.length === 0 && (
           <Alert status="error" borderRadius="md" role={undefined}>
             <AlertIcon />
             At least one child component is required for Sections.
           </Alert>
         )}
-        {component.type === ComponentType.Section && component.children.length > 3 && (
+        {component.type === ComponentType.V2Section && component.children.length > 3 && (
           <Alert status="error" borderRadius="md" role={undefined}>
             <AlertIcon />
             Sections can have at most 3 child components. {component.children.length - 3} child
             components must be deleted.
           </Alert>
         )}
-        {component.type === ComponentType.Section && !component.accessory && (
+        {component.type === ComponentType.V2Section && !component.accessory && (
           <Alert status="error" borderRadius="md" role={undefined}>
             <AlertIcon />
             An accessory component is required for Sections.
           </Alert>
         )}
-        {component.type === ComponentType.ActionRow && component.children.length > 5 && (
+        {component.type === ComponentType.V2ActionRow && component.children.length > 5 && (
           <Alert status="error" borderRadius="md" role={undefined}>
             <AlertIcon />
             Action Rows can have at most 5 child components. {component.children.length - 5} child
@@ -435,7 +435,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
           />
           {nameFieldError && <FormErrorMessage>{nameFieldError?.message}</FormErrorMessage>}
         </FormControl>
-        {positionInfo && component.type !== ComponentType.Message && (
+        {positionInfo && component.type !== ComponentType.V2Message && (
           <Box>
             <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               Position

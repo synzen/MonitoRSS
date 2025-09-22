@@ -48,17 +48,17 @@ interface ComponentTreeItemProps {
 
 const getComponentIcon = (type: Component["type"]) => {
   switch (type) {
-    case ComponentType.Message:
+    case ComponentType.V2Message:
       return FaEnvelope;
-    case ComponentType.TextDisplay:
+    case ComponentType.V2TextDisplay:
       return FaFont;
-    case ComponentType.ActionRow:
+    case ComponentType.V2ActionRow:
       return FaClipboard;
-    case ComponentType.Button:
+    case ComponentType.V2Button:
       return FaHandPointer;
-    case ComponentType.Section:
+    case ComponentType.V2Section:
       return FaLayerGroup;
-    case ComponentType.Divider:
+    case ComponentType.V2Divider:
       return FaMinus;
     default:
       return FaFile;
@@ -78,12 +78,12 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
   const componentChildrenCount = component.children?.length || 0;
   const hasChildren = component.children && component.children.length > 0;
   const hasAccessory =
-    component.type === ComponentType.Section &&
+    component.type === ComponentType.V2Section &&
     (component as SectionComponent).accessory !== undefined;
   const canHaveChildren =
-    component.type === ComponentType.Message ||
-    component.type === ComponentType.ActionRow ||
-    component.type === ComponentType.Section;
+    component.type === ComponentType.V2Message ||
+    component.type === ComponentType.V2ActionRow ||
+    component.type === ComponentType.V2Section;
   const { isFocused, isExpanded, isSelected, setIsExpanded } = useNavigableTreeItemContext();
 
   const onAddChildComponent = (...args: Parameters<typeof addChildComponent>) => {
@@ -180,17 +180,17 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                 _hover={{ color: "white", bg: "gray.600" }}
               />
               <MenuList bg="gray.700" borderColor="gray.600" zIndex={3}>
-                {component.type === ComponentType.Message && (
+                {component.type === ComponentType.V2Message && (
                   <MenuGroup title={`Components (${componentChildrenCount}/10)`}>
                     <MenuItem
                       bg="gray.700"
                       _hover={{ bg: "gray.600" }}
                       color="white"
                       onClick={() => {
-                        if ((component.children.length || 0) >= 10) return;
-                        onAddChildComponent(component.id, ComponentType.TextDisplay);
+                        if ((component.children?.length || 0) >= 10) return;
+                        onAddChildComponent(component.id, ComponentType.V2TextDisplay);
                       }}
-                      aria-disabled={(component.children.length || 0) >= 10}
+                      aria-disabled={(component.children?.length || 0) >= 10}
                     >
                       Add Text Display
                     </MenuItem>
@@ -199,7 +199,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                       _hover={{ bg: "gray.600" }}
                       color="white"
                       onClick={() => {
-                        onAddChildComponent(component.id, ComponentType.ActionRow);
+                        onAddChildComponent(component.id, ComponentType.V2ActionRow);
                       }}
                     >
                       Add Action Row
@@ -209,7 +209,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                       _hover={{ bg: "gray.600" }}
                       color="white"
                       onClick={() => {
-                        onAddChildComponent(component.id, ComponentType.Section);
+                        onAddChildComponent(component.id, ComponentType.V2Section);
                       }}
                     >
                       Add Section
@@ -219,14 +219,14 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                       _hover={{ bg: "gray.600" }}
                       color="white"
                       onClick={() => {
-                        onAddChildComponent(component.id, ComponentType.Divider);
+                        onAddChildComponent(component.id, ComponentType.V2Divider);
                       }}
                     >
                       Add Divider
                     </MenuItem>
                   </MenuGroup>
                 )}
-                {component.type === ComponentType.ActionRow && (
+                {component.type === ComponentType.V2ActionRow && (
                   <MenuGroup
                     title={`Components (${(component as ActionRowComponent).children.length}/5)`}
                   >
@@ -235,14 +235,14 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                       _hover={{ bg: "gray.600" }}
                       color="white"
                       onClick={() => {
-                        onAddChildComponent(component.id, ComponentType.Button);
+                        onAddChildComponent(component.id, ComponentType.V2Button);
                       }}
                     >
                       Add Button
                     </MenuItem>
                   </MenuGroup>
                 )}
-                {component.type === ComponentType.Section && (
+                {component.type === ComponentType.V2Section && (
                   <>
                     <MenuGroup title={`Components (${componentChildrenCount}/3)`}>
                       <MenuItem
@@ -250,7 +250,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                         _hover={{ bg: "gray.600" }}
                         color="white"
                         onClick={() => {
-                          onAddChildComponent(component.id, ComponentType.TextDisplay);
+                          onAddChildComponent(component.id, ComponentType.V2TextDisplay);
                         }}
                       >
                         Add Text Display
@@ -260,7 +260,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                         _hover={{ bg: "gray.600" }}
                         color="white"
                         onClick={() => {
-                          onAddChildComponent(component.id, ComponentType.Divider);
+                          onAddChildComponent(component.id, ComponentType.V2Divider);
                         }}
                       >
                         Add Divider
@@ -273,7 +273,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                         color="white"
                         onClick={() => {
                           if (hasAccessory) return;
-                          onAddChildComponent(component.id, ComponentType.Button, true);
+                          onAddChildComponent(component.id, ComponentType.V2Button, true);
                         }}
                         aria-disabled={hasAccessory}
                       >
