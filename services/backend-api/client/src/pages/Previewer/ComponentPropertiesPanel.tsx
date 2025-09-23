@@ -16,16 +16,24 @@ import {
   FormLabel,
   Switch,
   useDisclosure,
+  Radio,
+  RadioGroup,
+  Stack,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  IconButton,
 } from "@chakra-ui/react";
-import { DeleteIcon, ChevronUpIcon, ChevronDownIcon, AddIcon } from "@chakra-ui/icons";
-import { useFormContext } from "react-hook-form";
+import { DeleteIcon, ChevronUpIcon, ChevronDownIcon, AddIcon, CloseIcon } from "@chakra-ui/icons";
+import { SketchPicker } from "react-color";
+import { FieldError, useFormContext } from "react-hook-form";
 import type {
   Component,
   ComponentPropertiesPanelProps,
-  MessageComponent,
+  PreviewerFormState,
   TextDisplayComponent,
 } from "./types";
-import { ComponentType, ButtonStyle } from "./types";
+import { ComponentType, ButtonStyle, ROOT_COMPONENT_TYPES } from "./types";
 import { InsertPlaceholderDialog } from "./InsertPlaceholderDialog";
 
 import { usePreviewerContext } from "./PreviewerContext";
@@ -96,9 +104,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   hideTitle,
 }) => {
   const { deleteComponent, moveComponentUp, moveComponentDown } = usePreviewerContext();
-  const { watch, formState, setValue } = useFormContext<{
-    messageComponent: MessageComponent;
-  }>();
+  const { watch, formState, setValue } = useFormContext<PreviewerFormState>();
   const messageComponent = watch("messageComponent");
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [activeTextareaRef, setActiveTextareaRef] = React.useState<HTMLTextAreaElement | null>(
@@ -106,7 +112,9 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   );
   const [currentComponent, setCurrentComponent] = React.useState<Component | null>(null);
 
-  const getFieldError = (componentId: string, fieldName: string) => {
+  const getFieldError = (componentId: string, fieldName: string): FieldError | undefined => {
+    if (!messageComponent) return undefined;
+
     const getNestedError = (obj: any, path: string) => {
       return path.split(".").reduce((current, key) => {
         return current && current[key];
@@ -172,6 +180,406 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
   const renderPropertiesForComponent = (component: Component, onChange: (value: any) => void) => {
     switch (component.type) {
+      case ComponentType.LegacyText: {
+        const contentError = getFieldError(component.id, "content");
+
+        return (
+          <VStack align="stretch" spacing={4}>
+            <FormControl isInvalid={!!contentError}>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                Text Content
+              </FormLabel>
+              <Textarea
+                ref={(ref) => {
+                  setActiveTextareaRef(ref);
+                  setCurrentComponent(component);
+                }}
+                value={component.content}
+                onChange={(e) => onChange({ ...component, content: e.target.value })}
+                placeholder="Enter text content"
+                rows={4}
+                bg="gray.700"
+                color="white"
+              />
+              {contentError?.message && <FormErrorMessage>{contentError.message}</FormErrorMessage>}
+            </FormControl>
+            <Button
+              leftIcon={<AddIcon />}
+              size="sm"
+              variant="outline"
+              colorScheme="blue"
+              onClick={onOpen}
+              alignSelf="flex-start"
+            >
+              Insert Placeholder
+            </Button>
+          </VStack>
+        );
+      }
+
+      case ComponentType.LegacyEmbed: {
+        const colorError = getFieldError(component.id, "color");
+
+        return (
+          <VStack align="stretch" spacing={4}>
+            <FormControl isInvalid={!!colorError}>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                Embed Color
+              </FormLabel>
+              <HStack>
+                <HStack width="100%">
+                  <Popover>
+                    <PopoverTrigger>
+                      <Button
+                        backgroundColor={
+                          (component as any).color
+                            ? `#${Number((component as any).color)
+                                .toString(16)
+                                .padStart(6, "0")}`
+                            : "black"
+                        }
+                        flex={1}
+                        borderStyle="solid"
+                        borderWidth="1px"
+                        borderColor="whiteAlpha.400"
+                        aria-label="Pick color"
+                        size="sm"
+                        _hover={{
+                          background: (component as any).color
+                            ? `#${Number((component as any).color)
+                                .toString(16)
+                                .padStart(6, "0")}`
+                            : "black",
+                          outline: "solid 2px #3182ce",
+                          transition: "outline 0.2s",
+                        }}
+                      />
+                    </PopoverTrigger>
+                    <PopoverContent backgroundColor="gray.700" width="min-content">
+                      <SketchPicker
+                        presetColors={[]}
+                        disableAlpha
+                        color={
+                          (component as any).color
+                            ? `#${Number((component as any).color)
+                                .toString(16)
+                                .padStart(6, "0")}`
+                            : "#000000"
+                        }
+                        onChange={(c) => {
+                          const hexColorAsNumberString = parseInt(
+                            c.hex.replace("#", ""),
+                            16
+                          ).toString();
+                          onChange({
+                            ...component,
+                            color: hexColorAsNumberString,
+                          });
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <IconButton
+                    size="sm"
+                    aria-label="Clear color"
+                    icon={<CloseIcon />}
+                    isDisabled={!(component as any).color}
+                    onClick={() =>
+                      onChange({
+                        ...component,
+                        color: undefined,
+                      })
+                    }
+                  />
+                </HStack>
+              </HStack>
+              {colorError && <FormErrorMessage>{colorError.message}</FormErrorMessage>}
+            </FormControl>
+          </VStack>
+        );
+      }
+
+      case ComponentType.LegacyEmbedAuthor: {
+        const nameError = getFieldError(component.id, "authorName");
+        const urlError = getFieldError(component.id, "authorUrl");
+        const iconUrlError = getFieldError(component.id, "authorIconUrl");
+
+        return (
+          <VStack align="stretch" spacing={4}>
+            <FormControl isInvalid={!!nameError}>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                Name
+              </FormLabel>
+              <Input
+                value={component.authorName || ""}
+                onChange={(e) => onChange({ ...component, authorName: e.target.value })}
+                placeholder="Name"
+                bg="gray.700"
+              />
+              {nameError && <FormErrorMessage>{nameError.message}</FormErrorMessage>}
+            </FormControl>
+            <FormControl isInvalid={!!urlError}>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                URL
+              </FormLabel>
+              <Input
+                value={component.authorUrl || ""}
+                onChange={(e) => onChange({ ...component, authorUrl: e.target.value })}
+                placeholder="https://example.com"
+                bg="gray.700"
+              />
+              {urlError && <FormErrorMessage>{urlError.message}</FormErrorMessage>}
+            </FormControl>
+            <FormControl isInvalid={!!iconUrlError}>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                Icon URL
+              </FormLabel>
+              <Input
+                value={component.authorIconUrl || ""}
+                onChange={(e) => onChange({ ...component, authorIconUrl: e.target.value })}
+                placeholder="https://example.com/icon.png"
+                bg="gray.700"
+              />
+              {iconUrlError && <FormErrorMessage>{iconUrlError.message}</FormErrorMessage>}
+            </FormControl>
+          </VStack>
+        );
+      }
+
+      case ComponentType.LegacyEmbedTitle: {
+        const titleError = getFieldError(component.id, "title");
+        const titleUrlError = getFieldError(component.id, "titleUrl");
+
+        return (
+          <VStack align="stretch" spacing={4}>
+            <FormControl isInvalid={!!titleError}>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                Text
+              </FormLabel>
+              <Input
+                value={component.title || ""}
+                onChange={(e) => onChange({ ...component, title: e.target.value })}
+                placeholder="Embed title"
+                bg="gray.700"
+              />
+              {titleError && <FormErrorMessage>{titleError.message}</FormErrorMessage>}
+            </FormControl>
+            <FormControl isInvalid={!!titleUrlError}>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                URL
+              </FormLabel>
+              <Input
+                value={component.titleUrl || ""}
+                onChange={(e) => onChange({ ...component, titleUrl: e.target.value })}
+                placeholder="https://example.com"
+                bg="gray.700"
+              />
+              {titleUrlError && <FormErrorMessage>{titleUrlError.message}</FormErrorMessage>}
+            </FormControl>
+          </VStack>
+        );
+      }
+
+      case ComponentType.LegacyEmbedDescription: {
+        const descriptionError = getFieldError(component.id, "description");
+
+        return (
+          <VStack align="stretch" spacing={4}>
+            <FormControl isInvalid={!!descriptionError}>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                Description
+              </FormLabel>
+              <Textarea
+                value={component.description || ""}
+                onChange={(e) => onChange({ ...component, description: e.target.value })}
+                placeholder="Embed description"
+                rows={3}
+                bg="gray.700"
+                color="white"
+              />
+              {descriptionError && <FormErrorMessage>{descriptionError.message}</FormErrorMessage>}
+            </FormControl>
+          </VStack>
+        );
+      }
+
+      case ComponentType.LegacyEmbedImage: {
+        const imageUrlError = getFieldError(component.id, "imageUrl");
+
+        return (
+          <VStack align="stretch" spacing={4}>
+            <FormControl isInvalid={!!imageUrlError}>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                URL
+              </FormLabel>
+              <Input
+                value={component.imageUrl || ""}
+                onChange={(e) => onChange({ ...component, imageUrl: e.target.value })}
+                placeholder="https://example.com/image.png"
+                bg="gray.700"
+              />
+              {imageUrlError && <FormErrorMessage>{imageUrlError.message}</FormErrorMessage>}
+            </FormControl>
+          </VStack>
+        );
+      }
+
+      case ComponentType.LegacyEmbedThumbnail: {
+        const thumbnailUrlError = getFieldError(component.id, "thumbnailUrl");
+
+        return (
+          <VStack align="stretch" spacing={4}>
+            <FormControl isInvalid={!!thumbnailUrlError}>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                URL
+              </FormLabel>
+              <Input
+                value={component.thumbnailUrl || ""}
+                onChange={(e) => onChange({ ...component, thumbnailUrl: e.target.value })}
+                placeholder="https://example.com/thumbnail.png"
+                bg="gray.700"
+              />
+              {thumbnailUrlError && (
+                <FormErrorMessage>{thumbnailUrlError.message}</FormErrorMessage>
+              )}
+            </FormControl>
+          </VStack>
+        );
+      }
+
+      case ComponentType.LegacyEmbedFooter: {
+        const footerTextError = getFieldError(component.id, "footerText");
+        const footerIconUrlError = getFieldError(component.id, "footerIconUrl");
+
+        return (
+          <VStack align="stretch" spacing={4}>
+            <FormControl isInvalid={!!footerTextError}>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                Text
+              </FormLabel>
+              <Input
+                value={component.footerText || ""}
+                onChange={(e) => onChange({ ...component, footerText: e.target.value })}
+                placeholder="Footer text"
+                bg="gray.700"
+              />
+              {footerTextError && <FormErrorMessage>{footerTextError.message}</FormErrorMessage>}
+            </FormControl>
+            <FormControl isInvalid={!!footerIconUrlError}>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                Icon URL
+              </FormLabel>
+              <Input
+                value={component.footerIconUrl || ""}
+                onChange={(e) => onChange({ ...component, footerIconUrl: e.target.value })}
+                placeholder="https://example.com/icon.png"
+                bg="gray.700"
+              />
+              {footerIconUrlError && (
+                <FormErrorMessage>{footerIconUrlError.message}</FormErrorMessage>
+              )}
+            </FormControl>
+          </VStack>
+        );
+      }
+
+      case ComponentType.LegacyEmbedField: {
+        const fieldNameError = getFieldError(component.id, "fieldName");
+        const fieldValueError = getFieldError(component.id, "fieldValue");
+
+        return (
+          <VStack align="stretch" spacing={4}>
+            <FormControl isInvalid={!!fieldNameError}>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                Field Name
+              </FormLabel>
+              <Input
+                value={component.fieldName}
+                onChange={(e) => onChange({ ...component, fieldName: e.target.value })}
+                placeholder="Field name"
+                bg="gray.700"
+              />
+              {fieldNameError && <FormErrorMessage>{fieldNameError.message}</FormErrorMessage>}
+            </FormControl>
+            <FormControl isInvalid={!!fieldValueError}>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                Field Value
+              </FormLabel>
+              <Textarea
+                value={component.fieldValue}
+                onChange={(e) => onChange({ ...component, fieldValue: e.target.value })}
+                placeholder="Field value"
+                rows={2}
+                bg="gray.700"
+                color="white"
+              />
+              {fieldValueError && <FormErrorMessage>{fieldValueError.message}</FormErrorMessage>}
+            </FormControl>
+            <FormControl>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                Inline Field
+              </FormLabel>
+              <Switch
+                isChecked={component.inline || false}
+                onChange={(e) => onChange({ ...component, inline: e.target.checked })}
+                colorScheme="blue"
+              />
+            </FormControl>
+          </VStack>
+        );
+      }
+
+      case ComponentType.LegacyEmbedTimestamp: {
+        const timestampError = getFieldError(component.id, "timestamp");
+
+        return (
+          <VStack align="stretch" spacing={4}>
+            <FormControl isInvalid={!!timestampError}>
+              <FormLabel
+                fontSize="sm"
+                fontWeight="medium"
+                mb={2}
+                color="gray.200"
+                id="timestamp-label"
+              >
+                Timestamp Value
+              </FormLabel>
+              <RadioGroup
+                value={component.timestamp || ""}
+                onChange={(value) => onChange({ ...component, timestamp: value })}
+                aria-labelledby="timestamp-label"
+              >
+                <Stack>
+                  <Radio value="">
+                    None
+                    <br />
+                    <Text fontSize="xs" color="gray.400" margin="0">
+                      No timestamp will be displayed.
+                    </Text>
+                  </Radio>
+                  <Radio value="article">
+                    Article
+                    <br />
+                    <Text fontSize="xs" color="gray.400" margin="0">
+                      Use the article&apos;s published date.
+                    </Text>
+                  </Radio>
+                  <Radio value="now">
+                    Now
+                    <br />
+                    <Text fontSize="xs" color="gray.400" margin="0">
+                      Use the current date and time of when the article is delivered. Useful if
+                      article has no published date.
+                    </Text>
+                  </Radio>
+                </Stack>
+              </RadioGroup>
+              {timestampError && <FormErrorMessage>{timestampError.message}</FormErrorMessage>}
+            </FormControl>
+          </VStack>
+        );
+      }
+
       case ComponentType.V2TextDisplay: {
         const contentError = getFieldError(component.id, "content");
 
@@ -320,6 +728,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   };
 
   const getComponentPosition = (component: Component) => {
+    if (!messageComponent) return null;
+
     const findParentAndIndex = (
       comp: Component,
       targetId: string
@@ -347,8 +757,12 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     return findParentAndIndex(messageComponent, component.id);
   };
 
-  const formPath = getComponentFormPathById(messageComponent, selectedComponentId);
-  const component = findComponentById(messageComponent, selectedComponentId);
+  const formPath = messageComponent
+    ? getComponentFormPathById(messageComponent, selectedComponentId)
+    : null;
+  const component = messageComponent
+    ? findComponentById(messageComponent, selectedComponentId)
+    : null;
 
   if (!formPath || !component) {
     return null;
@@ -367,18 +781,19 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   };
 
   const nameFieldError = getFieldError(component.id, "name");
+  const isRootComponent = ROOT_COMPONENT_TYPES.includes(component.type);
 
   return (
     <>
       <VStack align="stretch" spacing={4} p={4} minWidth={250}>
-        {(!hideTitle || component.type !== ComponentType.V2Message) && (
+        {(!hideTitle || !isRootComponent) && (
           <HStack justify="space-between" align="center" flexWrap="wrap" spacing={4}>
             {!hideTitle && (
               <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
                 {component.type} Properties
               </Text>
             )}
-            {component.type !== ComponentType.V2Message && (
+            {!isRootComponent && (
               <Button
                 size="sm"
                 colorScheme="red"
@@ -435,7 +850,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
           />
           {nameFieldError && <FormErrorMessage>{nameFieldError?.message}</FormErrorMessage>}
         </FormControl>
-        {positionInfo && component.type !== ComponentType.V2Message && (
+        {positionInfo && !isRootComponent && (
           <Box>
             <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               Position

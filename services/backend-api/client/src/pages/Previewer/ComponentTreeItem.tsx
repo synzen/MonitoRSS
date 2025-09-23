@@ -13,18 +13,7 @@ import {
   Button,
   Icon,
 } from "@chakra-ui/react";
-import {
-  FaPlus,
-  FaEnvelope,
-  FaClipboard,
-  FaFile,
-  FaHandPointer,
-  FaFont,
-  FaLayerGroup,
-  FaMinus,
-  FaCog,
-  FaExclamationCircle,
-} from "react-icons/fa";
+import { FaPlus, FaCog, FaExclamationCircle } from "react-icons/fa";
 import { ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import type { Component, ActionRowComponent, SectionComponent } from "./types";
 import { ComponentType } from "./types";
@@ -38,6 +27,8 @@ import { usePreviewerContext } from "./PreviewerContext";
 import getChakraColor from "../../utils/getChakraColor";
 import { SlidingConfigPanel } from "./SlidingConfigPanel";
 import { useConfigPanel } from "../../hooks/useConfigPanel";
+import getPreviewerComponentLabel from "./utils/getPreviewerComponentLabel";
+import getPreviewerComponentIcon from "./utils/getPreviewerComponentIcon";
 
 interface ComponentTreeItemProps {
   component: Component;
@@ -45,25 +36,6 @@ interface ComponentTreeItemProps {
   scrollToComponentId?: string | null;
   componentIdsWithProblems: Set<string>;
 }
-
-const getComponentIcon = (type: Component["type"]) => {
-  switch (type) {
-    case ComponentType.V2Message:
-      return FaEnvelope;
-    case ComponentType.V2TextDisplay:
-      return FaFont;
-    case ComponentType.V2ActionRow:
-      return FaClipboard;
-    case ComponentType.V2Button:
-      return FaHandPointer;
-    case ComponentType.V2Section:
-      return FaLayerGroup;
-    case ComponentType.V2Divider:
-      return FaMinus;
-    default:
-      return FaFile;
-  }
-};
 
 export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
   component,
@@ -81,7 +53,9 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
     component.type === ComponentType.V2Section &&
     (component as SectionComponent).accessory !== undefined;
   const canHaveChildren =
-    component.type === ComponentType.V2Message ||
+    component.type === ComponentType.LegacyRoot ||
+    component.type === ComponentType.LegacyEmbed ||
+    component.type === ComponentType.V2Root ||
     component.type === ComponentType.V2ActionRow ||
     component.type === ComponentType.V2Section;
   const { isFocused, isExpanded, isSelected, setIsExpanded } = useNavigableTreeItemContext();
@@ -135,11 +109,11 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
           )}
           {!canHaveChildren && <Box w={6} />}
           <Box fontSize="xs" mr={2} color="gray.400">
-            {React.createElement(getComponentIcon(component.type))}
+            {React.createElement(getPreviewerComponentIcon(component.type))}
           </Box>
           <HStack flex={1} justifyContent="flex-start">
             <Text fontSize="sm" color="white">
-              {component.name}
+              {getPreviewerComponentLabel(component.type)}
             </Text>
             {componentIdsWithProblems.has(component.id) && (
               <Icon
@@ -180,7 +154,184 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                 _hover={{ color: "white", bg: "gray.600" }}
               />
               <MenuList bg="gray.700" borderColor="gray.600" zIndex={3}>
-                {component.type === ComponentType.V2Message && (
+                {component.type === ComponentType.LegacyRoot && (
+                  <>
+                    <MenuGroup
+                      title={`Text (${
+                        component.children?.filter((c) => c.type === ComponentType.LegacyText)
+                          .length || 0
+                      }/1)`}
+                    >
+                      <MenuItem
+                        bg="gray.700"
+                        _hover={{ bg: "gray.600" }}
+                        color="white"
+                        onClick={() => {
+                          const hasText = component.children?.some(
+                            (c) => c.type === ComponentType.LegacyText
+                          );
+                          if (hasText) return;
+                          onAddChildComponent(component.id, ComponentType.LegacyText);
+                        }}
+                        isDisabled={component.children?.some(
+                          (c) => c.type === ComponentType.LegacyText
+                        )}
+                      >
+                        Add Text
+                      </MenuItem>
+                    </MenuGroup>
+                    <MenuGroup
+                      title={`Embeds (${
+                        component.children?.filter((c) => c.type === ComponentType.LegacyEmbed)
+                          .length || 0
+                      }/9)`}
+                    >
+                      <MenuItem
+                        bg="gray.700"
+                        _hover={{ bg: "gray.600" }}
+                        color="white"
+                        onClick={() => {
+                          const embedCount =
+                            component.children?.filter((c) => c.type === ComponentType.LegacyEmbed)
+                              .length || 0;
+                          if (embedCount >= 9) return;
+                          onAddChildComponent(component.id, ComponentType.LegacyEmbed);
+                        }}
+                        aria-disabled={
+                          (component.children?.filter((c) => c.type === ComponentType.LegacyEmbed)
+                            .length || 0) >= 9
+                        }
+                      >
+                        Add Embed
+                      </MenuItem>
+                    </MenuGroup>
+                  </>
+                )}
+                {component.type === ComponentType.LegacyEmbed && (
+                  <>
+                    <MenuGroup title="Embed Components">
+                      <MenuItem
+                        bg="gray.700"
+                        _hover={{ bg: "gray.600" }}
+                        color="white"
+                        onClick={() => {
+                          onAddChildComponent(component.id, ComponentType.LegacyEmbedAuthor);
+                        }}
+                        isDisabled={component.children?.some(
+                          (c) => c.type === ComponentType.LegacyEmbedAuthor
+                        )}
+                      >
+                        Add Author
+                      </MenuItem>
+                      <MenuItem
+                        bg="gray.700"
+                        _hover={{ bg: "gray.600" }}
+                        color="white"
+                        onClick={() => {
+                          onAddChildComponent(component.id, ComponentType.LegacyEmbedTitle);
+                        }}
+                        isDisabled={component.children?.some(
+                          (c) => c.type === ComponentType.LegacyEmbedTitle
+                        )}
+                      >
+                        Add Title
+                      </MenuItem>
+                      <MenuItem
+                        bg="gray.700"
+                        _hover={{ bg: "gray.600" }}
+                        color="white"
+                        onClick={() => {
+                          onAddChildComponent(component.id, ComponentType.LegacyEmbedDescription);
+                        }}
+                        isDisabled={component.children?.some(
+                          (c) => c.type === ComponentType.LegacyEmbedDescription
+                        )}
+                      >
+                        Add Description
+                      </MenuItem>
+                      <MenuItem
+                        bg="gray.700"
+                        _hover={{ bg: "gray.600" }}
+                        color="white"
+                        onClick={() => {
+                          onAddChildComponent(component.id, ComponentType.LegacyEmbedImage);
+                        }}
+                        isDisabled={component.children?.some(
+                          (c) => c.type === ComponentType.LegacyEmbedImage
+                        )}
+                      >
+                        Add Image
+                      </MenuItem>
+                      <MenuItem
+                        bg="gray.700"
+                        _hover={{ bg: "gray.600" }}
+                        color="white"
+                        onClick={() => {
+                          onAddChildComponent(component.id, ComponentType.LegacyEmbedThumbnail);
+                        }}
+                        isDisabled={component.children?.some(
+                          (c) => c.type === ComponentType.LegacyEmbedThumbnail
+                        )}
+                      >
+                        Add Thumbnail
+                      </MenuItem>
+                      <MenuItem
+                        bg="gray.700"
+                        _hover={{ bg: "gray.600" }}
+                        color="white"
+                        onClick={() => {
+                          onAddChildComponent(component.id, ComponentType.LegacyEmbedFooter);
+                        }}
+                        isDisabled={component.children?.some(
+                          (c) => c.type === ComponentType.LegacyEmbedFooter
+                        )}
+                      >
+                        Add Footer
+                      </MenuItem>
+                      <MenuItem
+                        bg="gray.700"
+                        _hover={{ bg: "gray.600" }}
+                        color="white"
+                        onClick={() => {
+                          onAddChildComponent(component.id, ComponentType.LegacyEmbedTimestamp);
+                        }}
+                        isDisabled={component.children?.some(
+                          (c) => c.type === ComponentType.LegacyEmbedTimestamp
+                        )}
+                      >
+                        Add Timestamp
+                      </MenuItem>
+                    </MenuGroup>
+                    <MenuGroup
+                      title={`Embed Fields (${
+                        component.children?.filter((c) => c.type === ComponentType.LegacyEmbedField)
+                          .length || 0
+                      }/25)`}
+                    >
+                      <MenuItem
+                        bg="gray.700"
+                        _hover={{ bg: "gray.600" }}
+                        color="white"
+                        onClick={() => {
+                          const fieldCount =
+                            component.children?.filter(
+                              (c) => c.type === ComponentType.LegacyEmbedField
+                            ).length || 0;
+                          if (fieldCount >= 25) return;
+                          onAddChildComponent(component.id, ComponentType.LegacyEmbedField);
+                        }}
+                        aria-disabled={
+                          (component.children?.filter(
+                            (c) => c.type === ComponentType.LegacyEmbedField
+                          ).length || 0) >= 25
+                        }
+                      >
+                        Add Field
+                      </MenuItem>
+                    </MenuGroup>
+                  </>
+                )}
+                {component.type === ComponentType.V2Root && (
                   <MenuGroup title={`Components (${componentChildrenCount}/10)`}>
                     <MenuItem
                       bg="gray.700"

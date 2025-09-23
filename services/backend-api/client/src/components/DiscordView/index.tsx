@@ -143,7 +143,9 @@ const DiscordView = ({
   avatar_url,
   error,
   messages,
+  excludeHeader,
 }: {
+  excludeHeader?: boolean;
   compactMode?: boolean;
   darkTheme?: boolean;
   webhookMode?: boolean;
@@ -171,11 +173,16 @@ const DiscordView = ({
     <div className={cls}>
       <ErrorHeader error={error} />
       <DiscordViewWrapper darkTheme={darkTheme}>
-        <div className={`message-group hide-overflow ${compactMode ? "compact" : ""}`}>
-          <Avatar url={avatar_url} compactMode={compactMode} />
+        <div
+          className={`message-group hide-overflow ${compactMode ? "compact" : ""}`}
+          style={excludeHeader ? { padding: 0, margin: 0 } : {}}
+        >
+          {!excludeHeader && <Avatar url={avatar_url} compactMode={compactMode} />}
           <div className="comment">
             <div className="message first">
-              <CozyMessageHeader username={username} compactMode={compactMode} />
+              {excludeHeader ? null : (
+                <CozyMessageHeader username={username} compactMode={compactMode} />
+              )}
               {messages.map(({ content: thisContent, embeds: thisEmbeds, components }, index) => (
                 <div className="message-text" key={index}>
                   <MessageBody

@@ -15,7 +15,7 @@ import {
   Skeleton,
 } from "@chakra-ui/react";
 import { ChevronDownIcon, RepeatIcon, WarningIcon } from "@chakra-ui/icons";
-import { FaRss } from "react-icons/fa";
+import { FaRss, FaDiscord } from "react-icons/fa";
 import { usePreviewerContext } from "./PreviewerContext";
 
 export const ArticlePreviewBanner: React.FC = () => {
@@ -24,6 +24,11 @@ export const ArticlePreviewBanner: React.FC = () => {
     usePreviewerContext();
 
   const currentArticle = articles[currentArticleIndex] || null;
+
+  const handleSendToDiscord = () => {
+    // TODO: Implement send to Discord functionality
+    console.log("Sending article to Discord:", currentArticle);
+  };
 
   if (error) {
     return (
@@ -156,6 +161,16 @@ export const ArticlePreviewBanner: React.FC = () => {
                 ))}
               </MenuList>
             </Menu>
+            <Button
+              size="sm"
+              variant="solid"
+              colorScheme="blue"
+              leftIcon={<Icon as={FaDiscord} />}
+              isDisabled={!currentArticle}
+              onClick={handleSendToDiscord}
+            >
+              Send to Discord
+            </Button>
           </HStack>
         </HStack>
       </VStack>

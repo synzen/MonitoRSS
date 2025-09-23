@@ -19,17 +19,11 @@ import {
   TabPanels,
   TabPanel,
 } from "@chakra-ui/react";
-import { FieldError, FieldErrorsImpl, Merge, useFormContext } from "react-hook-form";
+import { useFormContext } from "react-hook-form";
 import { DiscordMessagePreview } from "./Previewer/DiscordMessagePreview";
 import { ComponentPropertiesPanel } from "./Previewer/ComponentPropertiesPanel";
 import { ComponentTreeItem } from "./Previewer/ComponentTreeItem";
-import {
-  MESSAGE_ROOT_ID,
-  ComponentType,
-  Component,
-  MessageComponent,
-  PreviewerProblem,
-} from "./Previewer/types";
+import { MESSAGE_ROOT_ID, PreviewerFormState } from "./Previewer/types";
 import { NavigableTreeItem } from "../components/NavigableTree";
 import {
   NavigableTreeContext,
@@ -38,111 +32,11 @@ import {
 } from "../contexts/NavigableTreeContext";
 import { PreviewerProvider, usePreviewerContext } from "./Previewer/PreviewerContext";
 import { ProblemsSection } from "./Previewer/ProblemsSection";
-
-const getComponentPath = (
-  component: Component,
-  targetId: string,
-  currentPath = ""
-): string | null => {
-  interface StackItem {
-    component: Component;
-    path: string;
-  }
-
-  const stack: StackItem[] = [{ component, path: currentPath || component.name }];
-
-  while (stack.length > 0) {
-    const { component: currentComponent, path } = stack.pop()!;
-
-    if (currentComponent.id === targetId) {
-      return path;
-    }
-
-    // Add accessory to stack (will be processed first due to stack LIFO nature)
-    if (currentComponent.type === ComponentType.V2Section && currentComponent.accessory) {
-      const accessoryPath = `${path} > ${currentComponent.accessory.name} (accessory)`;
-      stack.push({ component: currentComponent.accessory, path: accessoryPath });
-    }
-
-    // Add children to stack in reverse order to maintain left-to-right processing
-    if (currentComponent.children) {
-      for (let i = currentComponent.children.length - 1; i >= 0; i -= 1) {
-        const child = currentComponent.children[i];
-        const childPath = `${path} > ${child.name}`;
-        stack.push({ component: child, path: childPath });
-      }
-    }
-  }
-
-  return null;
-};
-
-const extractProblems = (
-  formStateErrors: Merge<FieldError, FieldErrorsImpl<any>> | undefined,
-  messageComponent: MessageComponent
-) => {
-  const problems: Array<PreviewerProblem> = [];
-  let textDisplayCharacterCount = 0;
-
-  const processErrors = (errors: Record<string, any>, component: Component, currentPath = "") => {
-    if (!errors || typeof errors !== "object") return;
-
-    Object.keys(errors).forEach((key) => {
-      if (component.type === ComponentType.V2TextDisplay && key === "content") {
-        const content = component.content || "";
-        const charCount = content.length;
-        textDisplayCharacterCount += charCount;
-      }
-
-      // Example key would be "content" for a text display component
-      if (typeof errors[key] === "object" && errors[key].message) {
-        // This is a direct error message for the current component
-        problems.push({
-          message: errors[key].message,
-          path: getComponentPath(messageComponent, component.id) || component.name,
-          componentId: component.id,
-        });
-      }
-
-      if (key === "children" && Array.isArray(errors[key])) {
-        errors.children.forEach((childError: any, index: number) => {
-          if (childError && component.children?.[index]) {
-            processErrors(childError, component.children[index], currentPath);
-          }
-        });
-      }
-
-      if (
-        key === "accessory" &&
-        errors[key] &&
-        component.type === ComponentType.V2Section &&
-        component.accessory
-      ) {
-        processErrors(errors.accessory, component.accessory, currentPath);
-      }
-    });
-  };
-
-  if (formStateErrors) {
-    processErrors(formStateErrors, messageComponent);
-  }
-
-  if (textDisplayCharacterCount > 4000) {
-    problems.push({
-      message: `Total character length for all Text Display components exceeds Discord limit of 4000. Current length: ${textDisplayCharacterCount}.`,
-      path: getComponentPath(messageComponent, MESSAGE_ROOT_ID) || "Message Root",
-      componentId: MESSAGE_ROOT_ID,
-    });
-  }
-
-  return problems;
-};
+import extractPreviewerProblems from "./Previewer/utils/extractPreviewerProblems";
 
 const PreviewerContent: React.FC = () => {
   const { resetMessage } = usePreviewerContext();
-  const { watch, handleSubmit, formState } = useFormContext<{
-    messageComponent: MessageComponent;
-  }>();
+  const { watch, handleSubmit, formState } = useFormContext<PreviewerFormState>();
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const messageComponent = watch("messageComponent");
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -150,7 +44,7 @@ const PreviewerContent: React.FC = () => {
   const { setExpandedIds } = useNavigableTreeContext();
   const [scrollToComponentId, setScrollToComponentId] = useState<string | null>(null);
 
-  const problems = extractProblems(formState.errors.messageComponent, messageComponent);
+  const problems = extractPreviewerProblems(formState.errors.messageComponent, messageComponent);
   const componentIdsWithProblems = new Set(problems.map((p) => p.componentId));
 
   const handleSave = handleSubmit((data) => {
@@ -219,15 +113,21 @@ const PreviewerContent: React.FC = () => {
                           Components
                         </Text>
                       </Box>
-                      <div role="tree" aria-label="Message Components">
-                        <NavigableTreeItem isRootItem id={MESSAGE_ROOT_ID} ariaLabel="Message Root">
-                          <ComponentTreeItem
-                            component={messageComponent}
-                            scrollToComponentId={scrollToComponentId}
-                            componentIdsWithProblems={componentIdsWithProblems}
-                          />
-                        </NavigableTreeItem>
-                      </div>
+                      {messageComponent && (
+                        <div role="tree" aria-label="Message Components">
+                          <NavigableTreeItem
+                            isRootItem
+                            id={MESSAGE_ROOT_ID}
+                            ariaLabel="Message Root"
+                          >
+                            <ComponentTreeItem
+                              component={messageComponent}
+                              scrollToComponentId={scrollToComponentId}
+                              componentIdsWithProblems={componentIdsWithProblems}
+                            />
+                          </NavigableTreeItem>
+                        </div>
+                      )}
                     </VStack>
                   </Box>
                   {/* Center Panel - Discord Preview and Problems */}
@@ -280,7 +180,7 @@ const PreviewerContent: React.FC = () => {
                             color="gray.300"
                             _selected={{ color: "white", borderColor: "blue.400" }}
                           >
-                            Message Components ({messageComponent.children.length})
+                            Message Components ({messageComponent?.children.length || 0})
                           </Tab>
                           <Tab
                             color="gray.300"
@@ -291,19 +191,21 @@ const PreviewerContent: React.FC = () => {
                         </TabList>
                         <TabPanels>
                           <TabPanel p={0}>
-                            <div role="tree" aria-label="Message Components">
-                              <NavigableTreeItem
-                                isRootItem
-                                id={MESSAGE_ROOT_ID}
-                                ariaLabel="Message Components Root"
-                              >
-                                <ComponentTreeItem
-                                  component={messageComponent}
-                                  scrollToComponentId={scrollToComponentId}
-                                  componentIdsWithProblems={componentIdsWithProblems}
-                                />
-                              </NavigableTreeItem>
-                            </div>
+                            {messageComponent && (
+                              <div role="tree" aria-label="Message Components">
+                                <NavigableTreeItem
+                                  isRootItem
+                                  id={MESSAGE_ROOT_ID}
+                                  ariaLabel="Message Components Root"
+                                >
+                                  <ComponentTreeItem
+                                    component={messageComponent}
+                                    scrollToComponentId={scrollToComponentId}
+                                    componentIdsWithProblems={componentIdsWithProblems}
+                                  />
+                                </NavigableTreeItem>
+                              </div>
+                            )}
                           </TabPanel>
                           <TabPanel p={0}>
                             <ProblemsSection

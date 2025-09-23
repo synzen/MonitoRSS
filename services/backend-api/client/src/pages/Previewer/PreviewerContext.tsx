@@ -1,4 +1,12 @@
-import React, { createContext, useContext, useMemo, useState, useCallback, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+  useCallback,
+  useEffect,
+  ReactNode,
+} from "react";
 import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -6,15 +14,18 @@ import {
   Component,
   ComponentType,
   MESSAGE_ROOT_ID,
-  MessageComponent,
+  V2MessageComponentRoot,
   ButtonStyle,
   SectionComponent,
+  PreviewerFormState,
 } from "./types";
+import createPreviewerComponentSchema from "./utils/createPreviewerComponentSchema";
 
 // Article type
 interface Article {
   id: string;
   title: string;
+  publishedAt?: string;
 }
 
 // Mock article data
@@ -22,97 +33,46 @@ const mockArticles: Article[] = [
   {
     id: "1",
     title: "Breaking: New JavaScript Framework Released",
+    publishedAt: "2024-01-15T10:30:00Z",
   },
   {
     id: "2",
     title: "Climate Change: Latest Research Findings",
+    publishedAt: "2024-01-16T14:20:00Z",
   },
   {
     id: "3",
     title: "Space Exploration Milestone Achieved",
+    publishedAt: "2024-01-17T09:15:00Z",
   },
 ];
 
 // Simulate error state for testing
-const SIMULATE_ERROR = true; // Change to true to test error state
-
-// Recursive schema for component validation
-const createComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => {
-  return yup.lazy((value: Component | undefined) => {
-    if (!value || !value.type) {
-      return yup.object();
-    }
-
-    const baseSchema = yup.object({
-      id: yup.string().required(),
-      type: yup.string().required(),
-      name: yup.string().required(),
-    });
-
-    const buttonSchema = baseSchema.shape({
-      label: yup
-        .string()
-        .required("Button label cannot be empty")
-        .min(1, "Button label cannot be empty")
-        .max(80, "Button label cannot exceed 80 characters"),
-    });
-
-    const textDisplaySchema = baseSchema.shape({
-      content: yup
-        .string()
-        .min(1, "Text display content cannot be empty")
-        .max(2000, "Text display content cannot exceed 2000 characters"),
-    });
-
-    switch (value.type) {
-      case ComponentType.TextDisplay:
-        return textDisplaySchema;
-      case ComponentType.ActionRow:
-        return baseSchema.shape({
-          children: yup
-            .array()
-            .of(createComponentSchema())
-            .min(1, "Action Row must have at least one child component")
-            .max(5, "Action Row can have at most 5 child components")
-            .required("Action Row must have at least one child component"),
-        });
-      case ComponentType.Message:
-        return baseSchema.shape({
-          children: yup.array().of(createComponentSchema()).default([]),
-        });
-      case ComponentType.Section:
-        return baseSchema.shape({
-          children: yup
-            .array()
-            .of(createComponentSchema())
-            .default([])
-            .min(1, "Section must have at least 1 child component")
-            .max(3, "Section can have at most 3 child components"),
-          accessory: buttonSchema.required(),
-        });
-      case ComponentType.Divider:
-        return baseSchema;
-      case ComponentType.Button:
-        return buttonSchema;
-      default:
-        return baseSchema;
-    }
-  });
-};
+const SIMULATE_ERROR = false; // Change to true to test error state
 
 const validationSchema = yup.object({
-  messageComponent: createComponentSchema(),
+  messageComponent: createPreviewerComponentSchema().optional(),
 });
 
 interface PreviewerContextType {
   addChildComponent: (
     parentId: string,
     childType:
-      | ComponentType.TextDisplay
-      | ComponentType.ActionRow
-      | ComponentType.Button
-      | ComponentType.Section
-      | ComponentType.Divider,
+      | ComponentType.LegacyText
+      | ComponentType.LegacyEmbed
+      | ComponentType.LegacyEmbedAuthor
+      | ComponentType.LegacyEmbedTitle
+      | ComponentType.LegacyEmbedDescription
+      | ComponentType.LegacyEmbedImage
+      | ComponentType.LegacyEmbedThumbnail
+      | ComponentType.LegacyEmbedFooter
+      | ComponentType.LegacyEmbedField
+      | ComponentType.LegacyEmbedTimestamp
+      | ComponentType.V2TextDisplay
+      | ComponentType.V2ActionRow
+      | ComponentType.V2Button
+      | ComponentType.V2Section
+      | ComponentType.V2Divider,
     isAccessory?: boolean
   ) => void;
   deleteComponent: (componentId: string) => void;
@@ -141,7 +101,7 @@ export const usePreviewerContext = () => {
 };
 
 const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { setValue, getValues } = useFormContext<{ messageComponent: MessageComponent }>();
+  const { setValue, getValues } = useFormContext<{ messageComponent: V2MessageComponentRoot }>();
 
   // Article preview state
   const [articles, setArticles] = useState<Article[]>([]);
@@ -184,50 +144,137 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const addChildComponent = (
     parentId: string,
     childType:
-      | ComponentType.TextDisplay
-      | ComponentType.ActionRow
-      | ComponentType.Button
-      | ComponentType.Section
-      | ComponentType.Divider,
+      | ComponentType.LegacyText
+      | ComponentType.LegacyEmbed
+      | ComponentType.LegacyEmbedAuthor
+      | ComponentType.LegacyEmbedTitle
+      | ComponentType.LegacyEmbedDescription
+      | ComponentType.LegacyEmbedImage
+      | ComponentType.LegacyEmbedThumbnail
+      | ComponentType.LegacyEmbedFooter
+      | ComponentType.LegacyEmbedField
+      | ComponentType.LegacyEmbedTimestamp
+      | ComponentType.V2TextDisplay
+      | ComponentType.V2ActionRow
+      | ComponentType.V2Button
+      | ComponentType.V2Section
+      | ComponentType.V2Divider,
     isAccessory = false
   ) => {
     const createNewComponent = (type: typeof childType): Component => {
       switch (type) {
-        case ComponentType.TextDisplay:
+        case ComponentType.LegacyText:
+          return {
+            id: `legacy-text-${Date.now()}`,
+            type: ComponentType.LegacyText,
+            name: `Legacy Text`,
+            content: "Hello from legacy Discord message!",
+          };
+        case ComponentType.LegacyEmbed:
+          return {
+            id: `legacy-embed-${Date.now()}`,
+            type: ComponentType.LegacyEmbed,
+            name: `Legacy Embed`,
+            children: [],
+          };
+
+        case ComponentType.LegacyEmbedAuthor:
+          return {
+            id: `embed-author-${Date.now()}`,
+            type: ComponentType.LegacyEmbedAuthor,
+            name: `Embed Author`,
+            authorName: "",
+            authorUrl: "",
+            authorIconUrl: "",
+          };
+        case ComponentType.LegacyEmbedTitle:
+          return {
+            id: `embed-title-${Date.now()}`,
+            type: ComponentType.LegacyEmbedTitle,
+            name: `Embed Title`,
+            title: "",
+            titleUrl: "",
+          };
+        case ComponentType.LegacyEmbedDescription:
+          return {
+            id: `embed-description-${Date.now()}`,
+            type: ComponentType.LegacyEmbedDescription,
+            name: `Embed Description`,
+            description: "",
+          };
+        case ComponentType.LegacyEmbedImage:
+          return {
+            id: `embed-image-${Date.now()}`,
+            type: ComponentType.LegacyEmbedImage,
+            name: `Embed Image`,
+            imageUrl: "",
+          };
+        case ComponentType.LegacyEmbedThumbnail:
+          return {
+            id: `embed-thumbnail-${Date.now()}`,
+            type: ComponentType.LegacyEmbedThumbnail,
+            name: `Embed Thumbnail`,
+            thumbnailUrl: "",
+          };
+        case ComponentType.LegacyEmbedFooter:
+          return {
+            id: `embed-footer-${Date.now()}`,
+            type: ComponentType.LegacyEmbedFooter,
+            name: `Embed Footer`,
+            footerText: "",
+            footerIconUrl: "",
+          };
+        case ComponentType.LegacyEmbedField:
+          return {
+            id: `embed-field-${Date.now()}`,
+            type: ComponentType.LegacyEmbedField,
+            name: `Embed Field`,
+            fieldName: "",
+            fieldValue: "",
+            inline: false,
+          };
+        case ComponentType.LegacyEmbedTimestamp:
+          return {
+            id: `embed-timestamp-${Date.now()}`,
+            type: ComponentType.LegacyEmbedTimestamp,
+            name: `Embed Timestamp`,
+            timestamp: "",
+          };
+        case ComponentType.V2TextDisplay:
           return {
             id: `text-${Date.now()}`,
-            type: ComponentType.TextDisplay,
+            type: ComponentType.V2TextDisplay,
             name: `Text Display`,
             content: "Hello, Discord!",
           };
-        case ComponentType.ActionRow:
+        case ComponentType.V2ActionRow:
           return {
             id: `actionrow-${Date.now()}`,
-            type: ComponentType.ActionRow,
+            type: ComponentType.V2ActionRow,
             name: `Action Row`,
             children: [],
           };
-        case ComponentType.Button:
+        case ComponentType.V2Button:
           return {
             id: `button-${Date.now()}`,
-            type: ComponentType.Button,
+            type: ComponentType.V2Button,
             name: `Button`,
             label: "New Button",
             style: ButtonStyle.Primary,
             disabled: false,
             href: "",
           };
-        case ComponentType.Section:
+        case ComponentType.V2Section:
           return {
             id: `section-${Date.now()}`,
-            type: ComponentType.Section,
+            type: ComponentType.V2Section,
             name: `Section`,
             children: [],
           };
-        case ComponentType.Divider:
+        case ComponentType.V2Divider:
           return {
             id: `divider-${Date.now()}`,
-            type: ComponentType.Divider,
+            type: ComponentType.V2Divider,
             name: `Divider`,
             visual: true,
             spacing: 1,
@@ -243,7 +290,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     const updateComponentTree = (component: Component): Component => {
       if (component.id === parentId) {
-        if (isAccessory && component.type === ComponentType.Section) {
+        if (isAccessory && component.type === ComponentType.V2Section) {
           return {
             ...component,
             accessory: newComponent,
@@ -266,7 +313,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       return component;
     };
 
-    setValue("messageComponent", updateComponentTree(messageComponent) as MessageComponent, {
+    setValue("messageComponent", updateComponentTree(messageComponent) as V2MessageComponentRoot, {
       shouldValidate: true,
       shouldDirty: true,
       shouldTouch: true,
@@ -280,7 +327,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     const removeFromTree = (component: Component): Component | null => {
       // Handle section accessory removal
-      if (component.type === ComponentType.Section && component.accessory?.id === componentId) {
+      if (component.type === ComponentType.V2Section && component.accessory?.id === componentId) {
         return {
           ...component,
           accessory: undefined,
@@ -307,7 +354,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const updatedComponent = removeFromTree(messageComponent);
 
     if (updatedComponent) {
-      setValue("messageComponent", updatedComponent as MessageComponent, {
+      setValue("messageComponent", updatedComponent as V2MessageComponentRoot, {
         shouldValidate: true,
         shouldDirty: true,
         shouldTouch: true,
@@ -344,7 +391,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       return component;
     };
 
-    setValue("messageComponent", updateTree(messageComponent) as MessageComponent);
+    setValue("messageComponent", updateTree(messageComponent) as V2MessageComponentRoot);
   };
 
   const moveComponentDown = (componentId: string) => {
@@ -376,7 +423,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       return component;
     };
 
-    setValue("messageComponent", updateTree(messageComponent) as MessageComponent);
+    setValue("messageComponent", updateTree(messageComponent) as V2MessageComponentRoot);
   };
 
   const resetMessage = () => {
@@ -384,8 +431,8 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       "messageComponent",
       {
         id: MESSAGE_ROOT_ID,
-        type: ComponentType.Message,
-        name: ComponentType.Message,
+        type: ComponentType.V2Root,
+        name: ComponentType.V2Root,
         children: [],
       },
       { shouldValidate: true }
@@ -413,18 +460,14 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   return <PreviewerContext.Provider value={contextValue}>{children}</PreviewerContext.Provider>;
 };
 
-export const PreviewerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const formMethods = useForm<{ messageComponent: MessageComponent }>({
+export const PreviewerProvider: React.FC<{
+  defaultValues?: PreviewerFormState;
+  children: ReactNode;
+}> = ({ children, defaultValues }) => {
+  const formMethods = useForm<PreviewerFormState>({
     mode: "onChange",
     resolver: yupResolver(validationSchema),
-    defaultValues: {
-      messageComponent: {
-        id: MESSAGE_ROOT_ID,
-        type: ComponentType.Message,
-        name: ComponentType.Message,
-        children: [],
-      },
-    },
+    defaultValues,
   });
 
   return (

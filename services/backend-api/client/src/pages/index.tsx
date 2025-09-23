@@ -1,6 +1,6 @@
 import { Route, Routes, Navigate } from "react-router-dom";
 import * as Sentry from "@sentry/react";
-import { Spinner } from "@chakra-ui/react";
+import { Spinner, Stack } from "@chakra-ui/react";
 import { Suspense } from "react";
 import Feed from "./Feed";
 import FeedFilters from "./FeedFilters";
@@ -24,14 +24,19 @@ import { ConnectionDiscordChannelSettings } from "./ConnectionDiscordChannelSett
 import { pages } from "../constants";
 import { FeedConnectionType } from "../types";
 import UserFeedsFAQ from "./UserFeedsFAQ";
-import { NewHeader } from "../components";
+import { Loading, NewHeader } from "../components";
 import { UserFeedStatusFilterProvider } from "../contexts";
 import { NotFound } from "./NotFound";
 import { SuspenseErrorBoundary } from "../components/SuspenseErrorBoundary";
 import AddUserFeeds from "./AddUserFeeds";
 import { MultiSelectUserFeedProvider } from "../contexts/MultiSelectUserFeedContext";
 import { lazyWithRetries } from "../utils/lazyImportWithRetry";
-import { Previewer } from "./Previewer";
+
+const Previewer = lazyWithRetries(() =>
+  import("./Previewer").then(({ Previewer: c }) => ({
+    default: c,
+  }))
+);
 
 const UserSettings = lazyWithRetries(() =>
   import("./UserSettings").then(({ UserSettings: c }) => ({
@@ -276,9 +281,17 @@ const Pages: React.FC = () => (
       path="/previewer"
       element={
         <RequireAuth>
-          {/* <PageContentV2> */}
-          <Previewer />
-          {/* </PageContentV2> */}
+          <SuspenseErrorBoundary>
+            <Suspense
+              fallback={
+                <Stack alignItems="center" justifyContent="center" height="100%" spacing="2rem">
+                  <Loading size="xl" />
+                </Stack>
+              }
+            >
+              <Previewer />
+            </Suspense>
+          </SuspenseErrorBoundary>
         </RequireAuth>
       }
     />

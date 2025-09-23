@@ -3,22 +3,24 @@ import { Box, HStack, Text, VStack, UnorderedList, ListItem, Icon } from "@chakr
 import { FaExclamationCircle } from "react-icons/fa";
 import { useFormContext } from "react-hook-form";
 import { useNavigableTreeContext } from "../../contexts/NavigableTreeContext";
-import type { MessageComponent, Component, PreviewerProblem } from "./types";
+import type { Component, PreviewerProblem, PreviewerFormState } from "./types";
 import { ComponentType } from "./types";
 
 export const ProblemsSection: React.FC<{
   problems: PreviewerProblem[];
   onClickComponentPath: (componentIdsToExpand: string[]) => void;
 }> = ({ problems, onClickComponentPath }) => {
-  const { watch } = useFormContext<{ messageComponent: MessageComponent }>();
+  const { watch } = useFormContext<PreviewerFormState>();
   const messageComponent = watch("messageComponent");
   const { setCurrentSelectedId, setExpandedIds } = useNavigableTreeContext();
 
   const getParentIds = (
-    component: Component,
+    component: Component | undefined,
     targetId: string,
     parents: string[] = []
   ): string[] | null => {
+    if (!component) return null;
+
     if (component.id === targetId) {
       return parents;
     }
