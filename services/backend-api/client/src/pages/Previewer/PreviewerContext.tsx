@@ -1,12 +1,4 @@
-import React, {
-  createContext,
-  useContext,
-  useMemo,
-  useState,
-  useCallback,
-  useEffect,
-  ReactNode,
-} from "react";
+import React, { createContext, useContext, useMemo, useState, useCallback, ReactNode } from "react";
 import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -15,11 +7,13 @@ import {
   ComponentType,
   MESSAGE_ROOT_ID,
   V2MessageComponentRoot,
-  ButtonStyle,
   SectionComponent,
   PreviewerFormState,
 } from "./types";
 import createPreviewerComponentSchema from "./utils/createPreviewerComponentSchema";
+import { useUserFeedArticles } from "../../features/feed/hooks";
+import { useUserFeedContext } from "../../contexts/UserFeedContext";
+import createNewPreviewerComponent from "./utils/createNewPreviewComponent";
 
 // Article type
 interface Article {
@@ -27,28 +21,6 @@ interface Article {
   title: string;
   publishedAt?: string;
 }
-
-// Mock article data
-const mockArticles: Article[] = [
-  {
-    id: "1",
-    title: "Breaking: New JavaScript Framework Released",
-    publishedAt: "2024-01-15T10:30:00Z",
-  },
-  {
-    id: "2",
-    title: "Climate Change: Latest Research Findings",
-    publishedAt: "2024-01-16T14:20:00Z",
-  },
-  {
-    id: "3",
-    title: "Space Exploration Milestone Achieved",
-    publishedAt: "2024-01-17T09:15:00Z",
-  },
-];
-
-// Simulate error state for testing
-const SIMULATE_ERROR = false; // Change to true to test error state
 
 const validationSchema = yup.object({
   messageComponent: createPreviewerComponentSchema().optional(),
@@ -101,45 +73,55 @@ export const usePreviewerContext = () => {
 };
 
 const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { setValue, getValues } = useFormContext<{ messageComponent: V2MessageComponentRoot }>();
+  const { userFeed } = useUserFeedContext();
+  const { setValue, getValues } = useFormContext<PreviewerFormState>();
 
   // Article preview state
-  const [articles, setArticles] = useState<Article[]>([]);
   const [currentArticleIndex, setCurrentArticleIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const feedId = userFeed.id;
 
-  // Simulate fetching articles
+  // Use the actual hook to fetch articles
+  const {
+    data: articlesResponse,
+    status,
+    error,
+    refetch,
+  } = useUserFeedArticles({
+    feedId,
+    data: {
+      skip: 0,
+      limit: 10,
+      selectProperties: ["title", "publishedAt"],
+      formatOptions: {
+        customPlaceholders: [],
+        externalProperties: [],
+        dateFormat: "YYYY-MM-DD",
+        dateTimezone: "UTC",
+        disableImageLinkPreviews: false,
+        formatTables: false,
+        ignoreNewLines: false,
+        stripImages: false,
+      },
+    },
+  });
+
+  // Transform API response to match Article interface
+  const articles: Article[] = useMemo(() => {
+    if (!articlesResponse?.result?.articles) return [];
+
+    return articlesResponse.result.articles.map((article) => ({
+      id: article.id,
+      title: `Article ${article.id}`,
+      publishedAt: undefined,
+    }));
+  }, [articlesResponse]);
+
+  const isLoading = status === "loading";
+
+  // Fetch articles function that calls refetch
   const fetchArticles = useCallback(async () => {
-    setIsLoading(true);
-    setError(null); // Clear any previous errors
-
-    try {
-      // Simulate network delay
-      await new Promise((resolve) => {
-        setTimeout(resolve, 1000);
-      });
-
-      if (SIMULATE_ERROR) {
-        throw new Error(
-          "Failed to fetch articles from RSS feed. Please check your internet connection and try again."
-        );
-      }
-
-      setArticles(mockArticles);
-      setCurrentArticleIndex(0);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An unknown error occurred");
-      setArticles([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  // Fetch articles on mount
-  useEffect(() => {
-    fetchArticles();
-  }, [fetchArticles]);
+    await refetch();
+  }, [refetch]);
 
   const addChildComponent = (
     parentId: string,
@@ -161,134 +143,14 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       | ComponentType.V2Divider,
     isAccessory = false
   ) => {
-    const createNewComponent = (type: typeof childType): Component => {
-      switch (type) {
-        case ComponentType.LegacyText:
-          return {
-            id: `legacy-text-${Date.now()}`,
-            type: ComponentType.LegacyText,
-            name: `Legacy Text`,
-            content: "Hello from legacy Discord message!",
-          };
-        case ComponentType.LegacyEmbed:
-          return {
-            id: `legacy-embed-${Date.now()}`,
-            type: ComponentType.LegacyEmbed,
-            name: `Legacy Embed`,
-            children: [],
-          };
-
-        case ComponentType.LegacyEmbedAuthor:
-          return {
-            id: `embed-author-${Date.now()}`,
-            type: ComponentType.LegacyEmbedAuthor,
-            name: `Embed Author`,
-            authorName: "",
-            authorUrl: "",
-            authorIconUrl: "",
-          };
-        case ComponentType.LegacyEmbedTitle:
-          return {
-            id: `embed-title-${Date.now()}`,
-            type: ComponentType.LegacyEmbedTitle,
-            name: `Embed Title`,
-            title: "",
-            titleUrl: "",
-          };
-        case ComponentType.LegacyEmbedDescription:
-          return {
-            id: `embed-description-${Date.now()}`,
-            type: ComponentType.LegacyEmbedDescription,
-            name: `Embed Description`,
-            description: "",
-          };
-        case ComponentType.LegacyEmbedImage:
-          return {
-            id: `embed-image-${Date.now()}`,
-            type: ComponentType.LegacyEmbedImage,
-            name: `Embed Image`,
-            imageUrl: "",
-          };
-        case ComponentType.LegacyEmbedThumbnail:
-          return {
-            id: `embed-thumbnail-${Date.now()}`,
-            type: ComponentType.LegacyEmbedThumbnail,
-            name: `Embed Thumbnail`,
-            thumbnailUrl: "",
-          };
-        case ComponentType.LegacyEmbedFooter:
-          return {
-            id: `embed-footer-${Date.now()}`,
-            type: ComponentType.LegacyEmbedFooter,
-            name: `Embed Footer`,
-            footerText: "",
-            footerIconUrl: "",
-          };
-        case ComponentType.LegacyEmbedField:
-          return {
-            id: `embed-field-${Date.now()}`,
-            type: ComponentType.LegacyEmbedField,
-            name: `Embed Field`,
-            fieldName: "",
-            fieldValue: "",
-            inline: false,
-          };
-        case ComponentType.LegacyEmbedTimestamp:
-          return {
-            id: `embed-timestamp-${Date.now()}`,
-            type: ComponentType.LegacyEmbedTimestamp,
-            name: `Embed Timestamp`,
-            timestamp: "",
-          };
-        case ComponentType.V2TextDisplay:
-          return {
-            id: `text-${Date.now()}`,
-            type: ComponentType.V2TextDisplay,
-            name: `Text Display`,
-            content: "Hello, Discord!",
-          };
-        case ComponentType.V2ActionRow:
-          return {
-            id: `actionrow-${Date.now()}`,
-            type: ComponentType.V2ActionRow,
-            name: `Action Row`,
-            children: [],
-          };
-        case ComponentType.V2Button:
-          return {
-            id: `button-${Date.now()}`,
-            type: ComponentType.V2Button,
-            name: `Button`,
-            label: "New Button",
-            style: ButtonStyle.Primary,
-            disabled: false,
-            href: "",
-          };
-        case ComponentType.V2Section:
-          return {
-            id: `section-${Date.now()}`,
-            type: ComponentType.V2Section,
-            name: `Section`,
-            children: [],
-          };
-        case ComponentType.V2Divider:
-          return {
-            id: `divider-${Date.now()}`,
-            type: ComponentType.V2Divider,
-            name: `Divider`,
-            visual: true,
-            spacing: 1,
-            children: [],
-          };
-        default:
-          throw new Error(`Unknown child type: ${childType}`);
-      }
-    };
-
     const messageComponent = getValues("messageComponent");
-    const newComponent = createNewComponent(childType);
+    const newComponent = createNewPreviewerComponent(childType);
 
-    const updateComponentTree = (component: Component): Component => {
+    const updateComponentTree = (component?: Component): Component => {
+      if (!component) {
+        return newComponent;
+      }
+
       if (component.id === parentId) {
         if (isAccessory && component.type === ComponentType.V2Section) {
           return {
@@ -324,6 +186,8 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (componentId === MESSAGE_ROOT_ID) return;
 
     const messageComponent = getValues("messageComponent");
+
+    if (!messageComponent) return;
 
     const removeFromTree = (component: Component): Component | null => {
       // Handle section accessory removal
@@ -365,6 +229,8 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const moveComponentUp = (componentId: string) => {
     const messageComponent = getValues("messageComponent");
 
+    if (!messageComponent) return;
+
     const updateTree = (component: Component): Component => {
       if (component.children) {
         const childIndex = component.children.findIndex((child) => child.id === componentId);
@@ -396,6 +262,8 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const moveComponentDown = (componentId: string) => {
     const messageComponent = getValues("messageComponent");
+
+    if (!messageComponent) return;
 
     const updateTree = (component: Component): Component => {
       if (component.children) {
@@ -450,7 +318,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       articles,
       currentArticleIndex,
       isLoading,
-      error,
+      error: error?.message || null,
       fetchArticles,
       setCurrentArticleIndex,
     }),

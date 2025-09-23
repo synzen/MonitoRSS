@@ -1,6 +1,6 @@
 import { Route, Routes, Navigate } from "react-router-dom";
 import * as Sentry from "@sentry/react";
-import { Spinner, Stack } from "@chakra-ui/react";
+import { Heading, Spinner, Stack } from "@chakra-ui/react";
 import { Suspense } from "react";
 import Feed from "./Feed";
 import FeedFilters from "./FeedFilters";
@@ -278,7 +278,11 @@ const Pages: React.FC = () => (
       }
     />
     <Route
-      path="/previewer"
+      path={pages.messageBuilder({
+        feedId: ":feedId",
+        connectionId: ":connectionId",
+        connectionType: FeedConnectionType.DiscordChannel,
+      })}
       element={
         <RequireAuth>
           <SuspenseErrorBoundary>
@@ -286,6 +290,7 @@ const Pages: React.FC = () => (
               fallback={
                 <Stack alignItems="center" justifyContent="center" height="100%" spacing="2rem">
                   <Loading size="xl" />
+                  <Heading>Loading Message Builder...</Heading>
                 </Stack>
               }
             >

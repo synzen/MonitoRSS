@@ -938,7 +938,7 @@ const handlers = [
   }),
 
   http.get("/api/v1/feeds/:feedId", async () => {
-    await delay(500);
+    // await delay(500);
 
     return HttpResponse.json<GetFeedOutput>({
       result: mockFeeds[0],

@@ -18,8 +18,11 @@ import {
   Tab,
   TabPanels,
   TabPanel,
+  Stack,
+  Heading,
 } from "@chakra-ui/react";
 import { useFormContext } from "react-hook-form";
+import { useParams } from "react-router-dom";
 import { DiscordMessagePreview } from "./Previewer/DiscordMessagePreview";
 import { ComponentPropertiesPanel } from "./Previewer/ComponentPropertiesPanel";
 import { ComponentTreeItem } from "./Previewer/ComponentTreeItem";
@@ -33,6 +36,10 @@ import {
 import { PreviewerProvider, usePreviewerContext } from "./Previewer/PreviewerContext";
 import { ProblemsSection } from "./Previewer/ProblemsSection";
 import extractPreviewerProblems from "./Previewer/utils/extractPreviewerProblems";
+import RouteParams from "../types/RouteParams";
+import { Loading } from "../components";
+import { UserFeedProvider } from "../contexts/UserFeedContext";
+import { UserFeedConnectionProvider } from "../contexts/UserFeedConnectionContext";
 
 const PreviewerContent: React.FC = () => {
   const { resetMessage } = usePreviewerContext();
@@ -262,9 +269,23 @@ const PreviewerContent: React.FC = () => {
 };
 
 export const Previewer: React.FC = () => {
+  const { feedId, connectionId } = useParams<RouteParams>();
+
   return (
-    <PreviewerProvider>
-      <PreviewerContent />
-    </PreviewerProvider>
+    <UserFeedProvider
+      feedId={feedId}
+      loadingComponent={
+        <Stack alignItems="center" justifyContent="center" height="100%" spacing="2rem">
+          <Loading size="xl" />
+          <Heading>Loading Feed...</Heading>
+        </Stack>
+      }
+    >
+      <UserFeedConnectionProvider feedId={feedId} connectionId={connectionId}>
+        <PreviewerProvider>
+          <PreviewerContent />
+        </PreviewerProvider>
+      </UserFeedConnectionProvider>
+    </UserFeedProvider>
   );
 };
