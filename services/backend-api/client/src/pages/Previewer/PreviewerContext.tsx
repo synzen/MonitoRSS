@@ -15,13 +15,6 @@ import { useUserFeedArticles } from "../../features/feed/hooks";
 import { useUserFeedContext } from "../../contexts/UserFeedContext";
 import createNewPreviewerComponent from "./utils/createNewPreviewComponent";
 
-// Article type
-interface Article {
-  id: string;
-  title: string;
-  publishedAt?: string;
-}
-
 const validationSchema = yup.object({
   messageComponent: createPreviewerComponentSchema().optional(),
 });
@@ -52,12 +45,12 @@ interface PreviewerContextType {
   moveComponentUp: (componentId: string) => void;
   moveComponentDown: (componentId: string) => void;
   // Article preview functionality
-  articles: Article[];
-  currentArticleIndex: number;
+  articles: Record<string, string>[];
+  currentArticleId: string | undefined;
   isLoading: boolean;
   error: string | null;
   fetchArticles: () => Promise<void>;
-  setCurrentArticleIndex: (index: number) => void;
+  setCurrentArticleId: (id: string) => void;
 }
 
 const PreviewerContext = createContext<PreviewerContextType | undefined>(undefined);
@@ -77,7 +70,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const { setValue, getValues } = useFormContext<PreviewerFormState>();
 
   // Article preview state
-  const [currentArticleIndex, setCurrentArticleIndex] = useState(0);
+  const [currentArticleId, setCurrentArticleId] = useState<string>();
   const feedId = userFeed.id;
 
   // Use the actual hook to fetch articles
@@ -106,15 +99,8 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   });
 
   // Transform API response to match Article interface
-  const articles: Article[] = useMemo(() => {
-    if (!articlesResponse?.result?.articles) return [];
-
-    return articlesResponse.result.articles.map((article) => ({
-      id: article.id,
-      title: `Article ${article.id}`,
-      publishedAt: undefined,
-    }));
-  }, [articlesResponse]);
+  const articles: Record<string, string>[] =
+    (articlesResponse?.result?.articles as Record<string, string>[]) || [];
 
   const isLoading = status === "loading";
 
@@ -316,13 +302,13 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       moveComponentDown,
       // Article preview functionality
       articles,
-      currentArticleIndex,
+      currentArticleId,
       isLoading,
       error: error?.message || null,
       fetchArticles,
-      setCurrentArticleIndex,
+      setCurrentArticleId,
     }),
-    [articles, currentArticleIndex, isLoading, error, fetchArticles]
+    [articles, currentArticleId, isLoading, error, fetchArticles]
   );
 
   return <PreviewerContext.Provider value={contextValue}>{children}</PreviewerContext.Provider>;

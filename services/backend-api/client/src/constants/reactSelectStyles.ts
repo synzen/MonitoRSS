@@ -12,7 +12,7 @@ export interface SelectOption {
 
 type SelectStyles = StylesConfig<SelectOption, false, GroupBase<SelectOption>> | undefined;
 
-export const REACT_SELECT_STYLES: SelectStyles = {
+export const REACT_SELECT_STYLES: (opts?: { invertBg?: boolean }) => SelectStyles = (opts) => ({
   menu: (provided) => ({
     ...provided,
     backgroundColor: getChakraColor("gray.700"),
@@ -36,7 +36,7 @@ export const REACT_SELECT_STYLES: SelectStyles = {
   },
   control: (provided, state) => ({
     ...provided,
-    background: getChakraColor("gray.800"),
+    background: opts?.invertBg ? getChakraColor("gray.700") : getChakraColor("gray.800"),
     color: "white",
     height: "40px",
     paddingLeft: "8px",
@@ -47,6 +47,7 @@ export const REACT_SELECT_STYLES: SelectStyles = {
       borderColor: "whiteAlpha.400",
     },
     boxShadow: state.isFocused ? `0 0 0 1px ${theme.colors.blue[300]}` : "none",
+    ...(opts?.invertBg ? { border: "none" } : {}),
   }),
   input: (provided) => ({
     ...provided,
@@ -80,4 +81,4 @@ export const REACT_SELECT_STYLES: SelectStyles = {
     ...provided,
     color: getChakraColor("gray.400"),
   }),
-};
+});

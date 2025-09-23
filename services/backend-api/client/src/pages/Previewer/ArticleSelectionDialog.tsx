@@ -1,0 +1,390 @@
+import React, { useState, useMemo } from "react";
+import {
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  VStack,
+  HStack,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  Text,
+  Button,
+  Box,
+  Spinner,
+  Badge,
+  FormLabel,
+  FormControl,
+} from "@chakra-ui/react";
+import { SearchIcon } from "@chakra-ui/icons";
+import { ArticlePropertySelect } from "../../features/feedConnections/components/ArticlePropertySelect";
+import { useUserFeedConnectionContext } from "../../contexts/UserFeedConnectionContext";
+import { useUserFeedArticles } from "../../features/feed";
+import { useUserFeedContext } from "../../contexts/UserFeedContext";
+
+interface ArticleSelectionDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelectArticle: (articleId: string) => void;
+  currentArticleId?: string;
+  error?: string;
+}
+
+const ITEMS_PER_PAGE = 2;
+
+export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
+  isOpen,
+  onClose,
+  onSelectArticle,
+  currentArticleId,
+  error,
+}) => {
+  const { userFeed, articleFormatOptions } = useUserFeedContext();
+  const { connection } = useUserFeedConnectionContext();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [displayProperty, setDisplayProperty] = useState<string>();
+  const { data, fetchStatus, status } = useUserFeedArticles({
+    feedId: userFeed.id,
+    data: {
+      limit: ITEMS_PER_PAGE,
+      formatOptions: articleFormatOptions,
+      skip: (currentPage - 1) * ITEMS_PER_PAGE,
+      selectProperties: [displayProperty || "title"],
+    },
+    disabled: !displayProperty || !isOpen,
+  });
+  const isLoading = status === "loading" || fetchStatus === "fetching";
+  const articles = data?.result.articles || [];
+
+  const filteredArticles = useMemo(() => {
+    if (!searchQuery.trim()) return articles;
+
+    const query = searchQuery.toLowerCase();
+
+    return articles.filter((article, index) => {
+      // Search in the selected display property
+      const displayValue = getDisplayValue(article).toLowerCase();
+      const indexMatch = (index + 1).toString().includes(query);
+
+      return displayValue.includes(query) || indexMatch;
+    });
+  }, [articles, searchQuery, displayProperty]);
+
+  const totalPages = Math.ceil(filteredArticles.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedArticles = filteredArticles.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  const handleSelectArticle = (article: Record<string, string>) => {
+    onSelectArticle(article.id);
+    onClose();
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  const getDisplayValue = (article: Record<string, string>) => {
+    if (!displayProperty) {
+      return "[No data]";
+    }
+
+    return article[displayProperty] || "[No data]";
+  };
+
+  // Reset search and pagination when modal closes or articles change
+  React.useEffect(() => {
+    if (!isOpen) {
+      setSearchQuery("");
+      setCurrentPage(1);
+    }
+  }, [isOpen]);
+
+  // Reset to page 1 if current page exceeds available pages after filtering
+  React.useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [currentPage, totalPages]);
+
+  const handleKeyDown = (e: React.KeyboardEvent, article: Record<string, string>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleSelectArticle(article);
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
+      <ModalOverlay bg="blackAlpha.600" />
+      <ModalContent bg="gray.800" color="white" maxH="80vh" role="dialog">
+        <ModalHeader
+          borderBottom="1px solid"
+          borderColor="gray.600"
+          fontSize="lg"
+          fontWeight="semibold"
+        >
+          Select Article
+        </ModalHeader>
+        <ModalCloseButton aria-label="Close article selection dialog" size="lg" />
+        <ModalBody p={0}>
+          {/* Search and Controls Section */}
+          <Box
+            p={4}
+            borderBottom="1px solid"
+            borderColor="gray.600"
+            role="region"
+            aria-label="Search and filter controls"
+          >
+            <Text fontSize="sm" color="gray.400" mb={3} id="article-selection-description">
+              Select an article from the list below to preview. Choose a property to display and
+              search within. Use Tab to navigate between controls and Enter or Space to select
+              articles.
+            </Text>
+            <VStack spacing={4} align="stretch">
+              <FormControl w="full" mt={2}>
+                <FormLabel
+                  fontSize="sm"
+                  color="gray.400"
+                  id="display-property-label"
+                  as="label"
+                  htmlFor="display-property-select"
+                >
+                  Display Property
+                </FormLabel>
+                <ArticlePropertySelect
+                  customPlaceholders={connection.customPlaceholders || []}
+                  value={displayProperty}
+                  onChange={(v) => setDisplayProperty(v)}
+                  placeholder="Select property to display..."
+                  isInvalid={false}
+                  ariaLabelledBy="display-property-label"
+                  inputId="display-property-select"
+                  isRequired={false}
+                  invertBg
+                />
+              </FormControl>
+              <FormControl w="full">
+                <FormLabel
+                  fontSize="sm"
+                  color="gray.400"
+                  mb={2}
+                  as="label"
+                  htmlFor="search-articles-input"
+                >
+                  Search Articles
+                </FormLabel>
+                <InputGroup>
+                  <InputLeftElement pointerEvents="none">
+                    <SearchIcon color="gray.400" aria-hidden="true" />
+                  </InputLeftElement>
+                  <Input
+                    id="search-articles-input"
+                    placeholder={`Search by ${displayProperty}...`}
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    bg="gray.700"
+                    border="none"
+                    isDisabled={isLoading || !!error}
+                    aria-label={`Search articles by ${displayProperty}`}
+                    aria-describedby="search-description"
+                  />
+                </InputGroup>
+                <Text id="search-description" fontSize="xs" color="gray.500" mt={1} srOnly>
+                  Type to filter articles by the selected property. Results update automatically as
+                  you type.
+                </Text>
+              </FormControl>
+            </VStack>
+          </Box>
+          {/* Content Section */}
+          <VStack
+            spacing={0}
+            align="stretch"
+            maxH="60vh"
+            overflowY="auto"
+            role="main"
+            aria-label="Article list"
+          >
+            {/* Loading State */}
+            {isLoading && (
+              <Box
+                p={6}
+                textAlign="center"
+                role="status"
+                aria-live="polite"
+                aria-label="Loading articles"
+              >
+                <VStack spacing={4}>
+                  <Spinner color="blue.400" size="lg" thickness="4px" />
+                  <Text color="gray.300" fontWeight="medium">
+                    Loading Articles...
+                  </Text>
+                </VStack>
+              </Box>
+            )}
+            {/* Error State */}
+            {!isLoading && error && (
+              <Box p={6} textAlign="center" role="alert" aria-live="assertive" aria-atomic="true">
+                <VStack spacing={4}>
+                  <Text color="red.400" fontWeight="medium">
+                    Failed to Load Articles
+                  </Text>
+                  <Text color="gray.400" fontSize="sm" textAlign="center">
+                    {error}
+                  </Text>
+                </VStack>
+              </Box>
+            )}
+            {/* Empty State */}
+            {!isLoading && !error && filteredArticles.length === 0 && (
+              <Box p={6} textAlign="center" role="status" aria-live="polite">
+                <Text color="gray.400" fontStyle="italic">
+                  {searchQuery
+                    ? `No articles found matching '${searchQuery}'`
+                    : "No articles available."}
+                </Text>
+              </Box>
+            )}
+            {/* Articles List */}
+            {!isLoading && !error && paginatedArticles.length > 0 && (
+              <>
+                <VStack
+                  spacing={0}
+                  align="stretch"
+                  role="list"
+                  aria-label={`Articles ${startIndex + 1} to ${Math.min(
+                    startIndex + ITEMS_PER_PAGE,
+                    filteredArticles.length
+                  )} of ${filteredArticles.length}`}
+                >
+                  {paginatedArticles.map((article, index) => {
+                    const isSelected = article.id === currentArticleId;
+
+                    return (
+                      <Button
+                        key={article.id}
+                        role="listitem"
+                        variant="ghost"
+                        justifyContent="flex-start"
+                        p={4}
+                        h="auto"
+                        minH="auto"
+                        borderRadius={0}
+                        borderBottom={
+                          index < paginatedArticles.length - 1 ? "1px solid" : undefined
+                        }
+                        borderColor="gray.600"
+                        bg="transparent"
+                        _hover={{ bg: "gray.700" }}
+                        _focus={{
+                          bg: "gray.700",
+                          outline: "2px solid",
+                          outlineColor: "blue.400",
+                          outlineOffset: "-2px",
+                        }}
+                        onClick={() => handleSelectArticle(article)}
+                        onKeyDown={(e) => handleKeyDown(e, article)}
+                      >
+                        <VStack align="start" spacing={isSelected ? 2 : 0} flex={1} w="full">
+                          {isSelected && (
+                            <HStack spacing={2} aria-hidden="true">
+                              <Badge size="sm" colorScheme="blue" fontSize="xs">
+                                Currently selected
+                              </Badge>
+                            </HStack>
+                          )}
+                          <Text
+                            fontSize="sm"
+                            fontWeight="medium"
+                            textAlign="left"
+                            w="full"
+                            wordBreak="break-word"
+                            whiteSpace="pre-wrap"
+                            noOfLines={displayProperty === "content" ? 4 : 2}
+                            fontStyle={
+                              getDisplayValue(article).startsWith("[") ? "italic" : "normal"
+                            }
+                          >
+                            {getDisplayValue(article)}
+                          </Text>
+                        </VStack>
+                      </Button>
+                    );
+                  })}
+                </VStack>
+                {/* Pagination Section */}
+                {totalPages > 1 && (
+                  <Box
+                    p={4}
+                    borderTop="1px solid"
+                    borderColor="gray.600"
+                    bg="gray.750"
+                    role="navigation"
+                    aria-label="Article pagination"
+                  >
+                    <HStack justify="space-between" align="center" w="full">
+                      {/* Article Count Info - Left Side */}
+                      <Text fontSize="sm" color="gray.400" aria-live="polite">
+                        Showing {startIndex + 1}-
+                        {Math.min(startIndex + ITEMS_PER_PAGE, filteredArticles.length)} of{" "}
+                        {filteredArticles.length}
+                        {searchQuery && (
+                          <Text as="span" color="gray.500">
+                            {" "}
+                            (filtered)
+                          </Text>
+                        )}
+                      </Text>
+                      {/* Pagination Controls - Right Side */}
+                      <HStack spacing={2} role="group" aria-label="Page navigation">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          colorScheme="gray"
+                          aria-disabled={currentPage === 1}
+                          onClick={() => {
+                            if (currentPage > 1) {
+                              handlePageChange(currentPage - 1);
+                            }
+                          }}
+                          aria-label={`Go to previous page. Currently on page ${currentPage} of ${totalPages}`}
+                        >
+                          Previous
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          colorScheme="gray"
+                          aria-disabled={currentPage === totalPages}
+                          onClick={() => {
+                            if (currentPage < totalPages) {
+                              handlePageChange(currentPage + 1);
+                            }
+                          }}
+                          aria-label={`Go to next page. Currently on page ${currentPage} of ${totalPages}`}
+                        >
+                          Next
+                        </Button>
+                      </HStack>
+                    </HStack>
+                  </Box>
+                )}
+              </>
+            )}
+          </VStack>
+        </ModalBody>
+      </ModalContent>
+    </Modal>
+  );
+};

@@ -1,29 +1,28 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   VStack,
   HStack,
   Text,
   Button,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
   Icon,
   Stack,
   Spinner,
   Skeleton,
 } from "@chakra-ui/react";
-import { ChevronDownIcon, RepeatIcon, WarningIcon } from "@chakra-ui/icons";
+import { RepeatIcon, WarningIcon } from "@chakra-ui/icons";
 import { FaRss, FaDiscord } from "react-icons/fa";
 import { usePreviewerContext } from "./PreviewerContext";
+import { ArticleSelectionDialog } from "./ArticleSelectionDialog";
 
 export const ArticlePreviewBanner: React.FC = () => {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
   // Get article state from context
-  const { articles, currentArticleIndex, setCurrentArticleIndex, isLoading, error, fetchArticles } =
+  const { articles, currentArticleId, setCurrentArticleId, isLoading, error, fetchArticles } =
     usePreviewerContext();
 
-  const currentArticle = articles[currentArticleIndex] || null;
+  const currentArticle = articles.find((article) => article.id === currentArticleId) || null;
 
   const handleSendToDiscord = () => {
     // TODO: Implement send to Discord functionality
@@ -96,84 +95,71 @@ export const ArticlePreviewBanner: React.FC = () => {
   }
 
   return (
-    <Box
-      bg="gray.700"
-      borderRadius="md"
-      mb={4}
-      overflow="hidden"
-      borderTopWidth="4px"
-      borderTopColor="blue.400"
-    >
-      <Box aria-live="polite" srOnly>
-        {currentArticle
-          ? `Previewing article: ${currentArticle.title || "No title"}`
-          : "No articles available for preview"}
-      </Box>
-      <VStack spacing={0}>
-        <HStack justify="space-between" align="center" p={3} w="full" flexWrap="wrap" spacing={2}>
-          <Stack>
-            <HStack spacing={2}>
-              <Icon as={FaRss} color="blue.400" />
-              <Text fontSize="xs" color="gray.400" fontWeight="medium">
-                Previewing Article
+    <>
+      <Box
+        bg="gray.700"
+        borderRadius="md"
+        mb={4}
+        overflow="hidden"
+        borderTopWidth="4px"
+        borderTopColor="blue.400"
+      >
+        <Box aria-live="polite" srOnly>
+          {currentArticle
+            ? `Previewing article: ${currentArticle.title || "No title"}`
+            : "No articles available for preview"}
+        </Box>
+        <VStack spacing={0}>
+          <HStack justify="space-between" align="center" p={3} w="full" flexWrap="wrap" spacing={2}>
+            <Stack>
+              <HStack spacing={2}>
+                <Icon as={FaRss} color="blue.400" />
+                <Text fontSize="xs" color="gray.400" fontWeight="medium">
+                  Previewing Article
+                </Text>
+              </HStack>
+              <Text
+                fontSize="sm"
+                color="white"
+                fontWeight="medium"
+                noOfLines={2}
+                fontStyle={!currentArticle?.title ? "italic" : "normal"}
+              >
+                {currentArticle?.title || "[No title]"}
               </Text>
-            </HStack>
-            <Text
-              fontSize="sm"
-              color="white"
-              fontWeight="medium"
-              noOfLines={2}
-              fontStyle={!currentArticle?.title ? "italic" : "normal"}
-            >
-              {currentArticle?.title || "[No title]"}
-            </Text>
-          </Stack>
-          <HStack spacing={2}>
-            <Menu>
-              <MenuButton
-                as={Button}
+            </Stack>
+            <HStack spacing={2}>
+              <Button
                 size="sm"
                 variant="outline"
                 color="gray.200"
                 leftIcon={<RepeatIcon />}
-                rightIcon={<ChevronDownIcon />}
                 isDisabled={articles.length === 0}
+                onClick={() => setIsDialogOpen(true)}
               >
                 Change Article
-              </MenuButton>
-              <MenuList bg="gray.700" borderColor="gray.600">
-                {articles.map((article, index) => (
-                  <MenuItem
-                    key={article.id}
-                    bg="gray.700"
-                    _hover={{ bg: "gray.600" }}
-                    color="white"
-                    onClick={() => setCurrentArticleIndex(index)}
-                  >
-                    <Text
-                      fontSize="sm"
-                      noOfLines={1}
-                      fontStyle={!article.title ? "italic" : "normal"}
-                    >
-                      {article.title || "[No title]"}
-                    </Text>
-                  </MenuItem>
-                ))}
-              </MenuList>
-            </Menu>
-            <Button
-              size="sm"
-              variant="solid"
-              colorScheme="blue"
-              leftIcon={<Icon as={FaDiscord} />}
-              isDisabled={!currentArticle}
-              onClick={handleSendToDiscord}
-            >
-              Send to Discord
-            </Button>
+              </Button>
+              <Button
+                size="sm"
+                variant="solid"
+                colorScheme="blue"
+                leftIcon={<Icon as={FaDiscord} />}
+                isDisabled={!currentArticle}
+                onClick={handleSendToDiscord}
+              >
+                Send to Discord
+              </Button>
+            </HStack>
           </HStack>
-        </HStack>
-      </VStack>
-    </Box>
+        </VStack>
+      </Box>
+      <ArticleSelectionDialog
+        isOpen={isDialogOpen}
+        onClose={() => setIsDialogOpen(false)}
+        onSelectArticle={setCurrentArticleId}
+        currentArticleId={currentArticleId}
+        error={error || undefined}
+      />
+    </>
   );
 };

@@ -305,11 +305,11 @@ const ExternalPropertyForm = ({
                 }}
                 onChange={(val: any) => onChange(val.value)}
                 styles={{
-                  ...REACT_SELECT_STYLES,
+                  ...REACT_SELECT_STYLES(),
                   input: (provided: any, props: any) => {
                     return {
                       ...provided,
-                      ...REACT_SELECT_STYLES?.input?.(provided, props),
+                      ...REACT_SELECT_STYLES()?.input?.(provided, props),
                       fontFamily: theme.fonts.mono,
                       "& input": {
                         font: "inherit",
