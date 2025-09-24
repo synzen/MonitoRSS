@@ -26,8 +26,15 @@ import {
   IconButton,
   Code,
   chakra,
+  Center,
+  Spinner,
+  Tag,
+  Tooltip,
+  Flex,
+  Divider,
 } from "@chakra-ui/react";
 import { DeleteIcon, ChevronUpIcon, ChevronDownIcon, AddIcon, CloseIcon } from "@chakra-ui/icons";
+import { FiFilter } from "react-icons/fi";
 import { SketchPicker } from "react-color";
 import { FieldError, useFormContext } from "react-hook-form";
 import type { Component, ComponentPropertiesPanelProps, TextDisplayComponent } from "./types";
@@ -35,11 +42,84 @@ import { ComponentType, ROOT_COMPONENT_TYPES } from "./types";
 import { InsertPlaceholderDialog } from "./InsertPlaceholderDialog";
 import { HelpDialog } from "../../components";
 import { AutoResizeTextarea } from "../../components/AutoResizeTextarea";
+import { useDiscordChannelForumTags } from "../../features/feedConnections/hooks";
+import { DiscordForumTagFiltersDialog } from "../../features/feedConnections/components/DiscordMessageForm/DiscordForumTagFiltersDialog";
+import { LogicalFilterExpression } from "../../features/feedConnections/types";
 
 import { usePreviewerContext } from "./PreviewerContext";
 import { DiscordButtonStyle } from "./constants/DiscordButtonStyle";
 import PreviewerFormState from "./types/PreviewerFormState";
 import MessagePlaceholderText from "../../components/MessagePlaceholderText";
+import { useUserFeedConnectionContext } from "../../contexts/UserFeedConnectionContext";
+import { FeedDiscordChannelConnection } from "../../types";
+import { useDiscordWebhook } from "../../features/discordWebhooks";
+
+const TagCheckbox = ({
+  emojiName,
+  hasPermissionToUse,
+  id,
+  isChecked,
+  filters,
+  name,
+  onChange,
+}: {
+  id: string;
+  isChecked: boolean;
+  filters: { expression: LogicalFilterExpression } | null;
+  onChange: (e: boolean, filters: { expression: LogicalFilterExpression } | null) => void;
+  emojiName: string | null;
+  name?: string;
+  hasPermissionToUse: boolean;
+}) => {
+  return (
+    <Tooltip isDisabled={hasPermissionToUse} label="Missing permissions to use this tag">
+      <Tag
+        key={id}
+        borderRadius="full"
+        variant="solid"
+        size="lg"
+        paddingX="4"
+        paddingY="2"
+        bg="gray.700"
+      >
+        <HStack divider={<Divider orientation="vertical" height="5" />}>
+          <Checkbox
+            value={id}
+            isDisabled={!isChecked && !hasPermissionToUse}
+            isChecked={isChecked}
+            onChange={(e) => {
+              onChange(e.target.checked, filters);
+            }}
+          >
+            <HStack>
+              <Box aria-hidden>{emojiName}</Box>
+              <Text>{name || "(no tag name)"}</Text>
+            </HStack>
+          </Checkbox>
+          {isChecked && (
+            <DiscordForumTagFiltersDialog
+              tagName={`${emojiName || ""} ${name || ""}`.trim()}
+              onFiltersUpdated={async (newFilters) => {
+                onChange(isChecked, newFilters);
+              }}
+              filters={filters}
+              trigger={
+                <IconButton
+                  icon={<FiFilter />}
+                  aria-label="Tag filters"
+                  size="xs"
+                  borderRadius="full"
+                  variant="ghost"
+                  isDisabled={!hasPermissionToUse || !isChecked}
+                />
+              }
+            />
+          )}
+        </HStack>
+      </Tag>
+    </Tooltip>
+  );
+};
 
 // Mock article data - in a real app this would come from props or context
 const getCurrentArticle = () => ({
@@ -114,6 +194,23 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     null
   );
   const [currentComponent, setCurrentComponent] = React.useState<Component | null>(null);
+
+  // Get connection information for forum tags
+  const { connection } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
+  const guildId = connection?.details.channel?.guildId || connection?.details.webhook?.guildId;
+  const channelId = connection?.details.channel?.id;
+  const webhookId = connection?.details.webhook?.id;
+  const { data: discordWebhookData } = useDiscordWebhook({
+    webhookId,
+  });
+  const { status: forumTagsStatus, data: availableTags } = useDiscordChannelForumTags({
+    channelId: webhookId ? discordWebhookData?.result.channelId : channelId,
+    serverId: guildId,
+  });
+  const availableTagIds = new Set(availableTags?.map((tag) => tag.id));
+  const deletedTagIds = new Set(
+    connection?.details.forumThreadTags?.filter((v) => !availableTagIds.has(v.id)).map((v) => v.id)
+  );
 
   const getFieldError = (componentId: string, fieldName: string): FieldError | undefined => {
     if (!messageComponent) return undefined;
@@ -316,12 +413,79 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
                   Forum Thread Tags
                 </FormLabel>
-                <Text fontSize="sm" color="gray.400">
-                  Forum thread tags configuration is not available in the previewer. Configure this
-                  in the main Discord message form.
-                </Text>
+                {forumTagsStatus === "loading" && (
+                  <Center height="100%">
+                    <Spinner />
+                  </Center>
+                )}
+                {forumTagsStatus === "success" && !availableTags?.length && (
+                  <Text fontSize="sm" color="gray.400">
+                    No tags found in this channel.
+                  </Text>
+                )}
+                {forumTagsStatus === "success" && availableTags && availableTags.length > 0 && (
+                  <Flex gap={4} flexWrap="wrap">
+                    {availableTags.map(({ id, name, hasPermissionToUse, emojiName }) => {
+                      const filters =
+                        (component.forumThreadTags?.find((v) => v.id === id)?.filters as {
+                          expression: LogicalFilterExpression;
+                        } | null) || null;
+
+                      return (
+                        <TagCheckbox
+                          key={id}
+                          filters={filters || null}
+                          emojiName={emojiName}
+                          hasPermissionToUse={hasPermissionToUse}
+                          id={id}
+                          name={name}
+                          isChecked={!!component.forumThreadTags?.find((v) => v.id === id)}
+                          onChange={(isChecked, newFilters) => {
+                            const useNewFilters =
+                              Object.keys(newFilters?.expression || {}).length > 0
+                                ? newFilters
+                                : null;
+
+                            const fieldsWithoutDeletedTags =
+                              component.forumThreadTags?.filter((v) => !deletedTagIds.has(v.id)) ||
+                              [];
+
+                            if (!isChecked) {
+                              const newVal = fieldsWithoutDeletedTags.filter((v) => v.id !== id);
+                              onChange({ ...component, forumThreadTags: newVal });
+
+                              return;
+                            }
+
+                            const existingFieldIndex = fieldsWithoutDeletedTags.findIndex(
+                              (v) => v.id === id
+                            );
+
+                            if (existingFieldIndex === -1) {
+                              const newVal = fieldsWithoutDeletedTags.concat([
+                                { id, filters: useNewFilters },
+                              ]);
+                              onChange({ ...component, forumThreadTags: newVal });
+
+                              return;
+                            }
+
+                            const newVal = [...fieldsWithoutDeletedTags];
+                            newVal.splice(existingFieldIndex, 1, {
+                              id,
+                              filters: useNewFilters,
+                            });
+
+                            onChange({ ...component, forumThreadTags: newVal });
+                          }}
+                        />
+                      );
+                    })}
+                  </Flex>
+                )}
                 <FormHelperText fontSize="sm" color="gray.400">
-                  Select tags to apply to forum threads created for new articles.
+                  Select tags to apply to forum threads created for new articles. You may optionally
+                  define article filters to only attach certain tags for certain articles.
                 </FormHelperText>
               </FormControl>
             </>
