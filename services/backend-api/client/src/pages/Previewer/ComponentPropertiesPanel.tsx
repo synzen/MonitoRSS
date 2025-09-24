@@ -37,7 +37,7 @@ import { DeleteIcon, ChevronUpIcon, ChevronDownIcon, AddIcon, CloseIcon } from "
 import { FiFilter } from "react-icons/fi";
 import { SketchPicker } from "react-color";
 import { FieldError, useFormContext } from "react-hook-form";
-import type { Component, ComponentPropertiesPanelProps, TextDisplayComponent } from "./types";
+import type { Component, ComponentPropertiesPanelProps } from "./types";
 import { ComponentType, ROOT_COMPONENT_TYPES } from "./types";
 import { InsertPlaceholderDialog } from "./InsertPlaceholderDialog";
 import { HelpDialog } from "../../components";
@@ -190,10 +190,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   const { watch, formState, setValue } = useFormContext<PreviewerFormState>();
   const messageComponent = watch("messageComponent");
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [activeTextareaRef, setActiveTextareaRef] = React.useState<HTMLTextAreaElement | null>(
-    null
-  );
-  const [currentComponent, setCurrentComponent] = React.useState<Component | null>(null);
+  const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
 
   // Get connection information for forum tags
   const { connection } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
@@ -256,26 +253,6 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     }
 
     return undefined;
-  };
-
-  const handleInsertMergeTag = (tag: string) => {
-    if (activeTextareaRef && currentComponent) {
-      const textarea = activeTextareaRef;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const currentValue = (currentComponent as TextDisplayComponent).content || "";
-      const newValue = currentValue.substring(0, start) + tag + currentValue.substring(end);
-
-      // Update the component through the proper onChange handler
-      const updatedComponent = { ...currentComponent, content: newValue };
-      updateValue(updatedComponent);
-
-      // Set cursor position after the inserted tag
-      setTimeout(() => {
-        textarea.focus();
-        textarea.setSelectionRange(start + tag.length, start + tag.length);
-      }, 0);
-    }
   };
 
   const renderPropertiesForComponent = (component: Component, onChange: (value: any) => void) => {
@@ -505,8 +482,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             </FormLabel>
             <Textarea
               ref={(ref) => {
-                setActiveTextareaRef(ref);
-                setCurrentComponent(component);
+                textareaRef.current = ref;
               }}
               value={component.content}
               onChange={(e) => onChange({ ...component, content: e.target.value })}
@@ -1038,8 +1014,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             </FormLabel>
             <Textarea
               ref={(ref) => {
-                setActiveTextareaRef(ref);
-                setCurrentComponent(component);
+                textareaRef.current = ref;
               }}
               value={component.content}
               onChange={(e) => onChange({ ...component, content: e.target.value })}
@@ -1284,10 +1259,6 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     return null;
   }
 
-  const positionInfo = component ? getComponentPosition(component) : null;
-  const canMoveUp = positionInfo && positionInfo.index > 0;
-  const canMoveDown = positionInfo && positionInfo.index < positionInfo.total - 1;
-
   const updateValue = (value: Component) => {
     setValue(formPath as any, value, {
       shouldDirty: true,
@@ -1295,6 +1266,33 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
       shouldValidate: true,
     });
   };
+
+  const handleInsertMergeTag = React.useCallback(
+    (tag: string) => {
+      if (textareaRef.current && component) {
+        const textarea = textareaRef.current;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const currentValue = (component as any).content || "";
+        const newValue = currentValue.substring(0, start) + tag + currentValue.substring(end);
+
+        // Update the component through the proper onChange handler
+        const updatedComponent = { ...component, content: newValue };
+        updateValue(updatedComponent);
+
+        // Set cursor position after the inserted tag
+        setTimeout(() => {
+          textarea.focus();
+          textarea.setSelectionRange(start + tag.length, start + tag.length);
+        }, 0);
+      }
+    },
+    [component, updateValue]
+  );
+
+  const positionInfo = component ? getComponentPosition(component) : null;
+  const canMoveUp = positionInfo && positionInfo.index > 0;
+  const canMoveDown = positionInfo && positionInfo.index < positionInfo.total - 1;
 
   const nameFieldError = getFieldError(component.id, "name");
   const isRootComponent = ROOT_COMPONENT_TYPES.includes(component.type);
