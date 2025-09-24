@@ -28,14 +28,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSelectTag: (tag: string) => void;
-  currentArticle: {
-    title?: string;
-    description?: string;
-    url?: string;
-    author?: string;
-    publishedAt?: string;
-    feedTitle?: string;
-  };
+  currentArticle: Record<string, string>;
 }
 
 export const InsertPlaceholderDialog: React.FC<Props> = ({
@@ -46,35 +39,17 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
 }) => {
   const { error, isLoading } = usePreviewerContext();
   const [searchTerm, setSearchTerm] = React.useState("");
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const listRef = React.useRef<HTMLDivElement>(null);
 
-  const placeholders: MergeTag[] = [
-    {
-      tag: "{{title}}",
-      content: currentArticle.title || "[No title]",
-    },
-    {
-      tag: "{{description}}",
-      content: currentArticle.description || "[No description]",
-    },
-    {
-      tag: "{{url}}",
-      content: currentArticle.url || "[No URL]",
-    },
-    {
-      tag: "{{author}}",
-      content: currentArticle.author || "[No author]",
-    },
-    {
-      tag: "{{date}}",
-      content: currentArticle.publishedAt
-        ? new Date(currentArticle.publishedAt).toLocaleDateString()
-        : "[No date]",
-    },
-    {
-      tag: "{{feed}}",
-      content: currentArticle.feedTitle || "[No feed title]",
-    },
-  ];
+  const placeholders: MergeTag[] = React.useMemo(() => {
+    if (!currentArticle) return [];
+
+    return Object.entries(currentArticle).map(([key, value]) => ({
+      tag: `{{${key}}}`,
+      content: value || `[Empty value]`,
+    }));
+  }, [currentArticle]);
 
   const filteredPlaceholders = placeholders.filter(
     (ph) =>
@@ -87,15 +62,28 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
     onClose();
   };
 
-  // Reset search when modal closes
+  // Reset search and focus when modal closes/opens
   React.useEffect(() => {
     if (!isOpen) {
       setSearchTerm("");
+    } else {
+      // Focus search input when modal opens
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
     }
   }, [isOpen]);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="2xl"
+      scrollBehavior="inside"
+      closeOnOverlayClick
+      trapFocus
+      blockScrollOnMount
+    >
       <ModalOverlay />
       <ModalContent
         bg="gray.800"
@@ -117,26 +105,52 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
             <Text fontSize="sm" color="gray.400" mb={3} id="insert-placeholder-description">
               Select a placeholder to insert into your text content. The placeholder will be
               replaced with the actual article content when being previewed or published.
+              {filteredPlaceholders.length > 0 && (
+                <> Use arrow keys to navigate and Enter to select.</>
+              )}
             </Text>
             <InputGroup>
               <InputLeftElement pointerEvents="none">
                 <SearchIcon color="gray.400" aria-hidden="true" />
               </InputLeftElement>
               <Input
+                ref={searchInputRef}
                 placeholder="Search placeholders..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 bg="gray.700"
                 isDisabled={!!error || !!isLoading}
                 aria-label="Search placeholders"
+                aria-describedby="search-results-count"
               />
             </InputGroup>
+            {!isLoading && !error && (
+              <Text
+                id="search-results-count"
+                fontSize="xs"
+                color="gray.500"
+                mt={2}
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                {filteredPlaceholders.length} placeholder
+                {filteredPlaceholders.length !== 1 ? "s" : ""} found
+              </Text>
+            )}
           </Box>
-          <VStack spacing={0} align="stretch" maxH="60vh" overflowY="auto">
+          <VStack
+            ref={listRef}
+            spacing={0}
+            align="stretch"
+            maxH="60vh"
+            overflowY="auto"
+            role="listbox"
+            aria-label="Available placeholders"
+          >
             {isLoading && (
               <Box p={6} textAlign="center" role="status" aria-live="polite">
                 <VStack spacing={4}>
-                  <Spinner color="blue.400" size="lg" thickness="4px" />
+                  <Spinner color="blue.400" size="lg" thickness="4px" aria-hidden="true" />
                   <Text color="gray.300" fontWeight="medium">
                     Loading Placeholders...
                   </Text>
@@ -157,7 +171,7 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
               </Box>
             )}
             {!isLoading && !error && filteredPlaceholders.length === 0 && (
-              <Box p={6} textAlign="center">
+              <Box p={6} textAlign="center" role="status">
                 <Text color="gray.400" fontStyle="italic">
                   No placeholders found matching &apos;{searchTerm}&apos;
                 </Text>
@@ -178,8 +192,12 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
                   borderBottom={index < filteredPlaceholders.length - 1 ? "1px solid" : undefined}
                   borderColor="gray.600"
                   _hover={{ bg: "gray.700" }}
+                  _focus={{ bg: "gray.700", outline: "2px solid", outlineColor: "blue.400" }}
                   onClick={() => handleSelectTag(ph.tag)}
-                  aria-label={`Insert ${ph.tag} placeholder. Preview: ${ph.content}`}
+                  role="option"
+                  aria-label={`Insert ${ph.tag} placeholder. Preview: ${ph.content.slice(0, 100)}${
+                    ph.content.length > 100 ? "..." : ""
+                  }`}
                 >
                   <VStack align="start" spacing={2} flex={1} w="full">
                     <Code colorScheme="blue" fontSize="sm" fontWeight="bold">
@@ -194,6 +212,7 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
                       wordBreak="break-word"
                       whiteSpace="pre-wrap"
                       noOfLines={5}
+                      aria-hidden="true"
                     >
                       {ph.content}
                     </Text>

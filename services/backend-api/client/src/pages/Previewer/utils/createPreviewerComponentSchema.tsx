@@ -125,7 +125,9 @@ const createPreviewerComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => 
             .default([])
             .min(1, "Section must have at least 1 child component")
             .max(3, "Section can have at most 3 child components"),
-          accessory: buttonSchema.required(),
+          accessory: buttonSchema
+            .required("Section must have an accessory component")
+            .nonNullable(),
         });
       case ComponentType.V2Divider:
         return baseSchema;

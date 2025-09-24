@@ -19,10 +19,8 @@ export const ArticlePreviewBanner: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Get article state from context
-  const { articles, currentArticleId, setCurrentArticleId, isLoading, error, fetchArticles } =
+  const { currentArticleId, setCurrentArticleId, isLoading, error, currentArticle } =
     usePreviewerContext();
-
-  const currentArticle = articles.find((article) => article.id === currentArticleId) || null;
 
   const handleSendToDiscord = () => {
     // TODO: Implement send to Discord functionality
@@ -46,7 +44,7 @@ export const ArticlePreviewBanner: React.FC = () => {
               <Icon as={WarningIcon} color="white" />
               <Text fontWeight="sm">Failed to load preview articles.</Text>
             </HStack>
-            <Button
+            {/* <Button
               size="sm"
               variant="solid"
               // colorScheme="whiteAlpha"
@@ -54,7 +52,7 @@ export const ArticlePreviewBanner: React.FC = () => {
               onClick={fetchArticles}
             >
               Retry fetching preview articles
-            </Button>
+            </Button> */}
           </HStack>
           <Box px={3} pb={3} w="full">
             <HStack>
@@ -134,7 +132,6 @@ export const ArticlePreviewBanner: React.FC = () => {
                 variant="outline"
                 color="gray.200"
                 leftIcon={<RepeatIcon />}
-                isDisabled={articles.length === 0}
                 onClick={() => setIsDialogOpen(true)}
               >
                 Change Article

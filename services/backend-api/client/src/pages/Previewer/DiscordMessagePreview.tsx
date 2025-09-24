@@ -125,8 +125,7 @@ export const DiscordMessagePreview: React.FC = () => {
   const messageComponent = watch("messageComponent");
   const bgColor = useColorModeValue("#36393f", "#36393f");
   const textColor = useColorModeValue("#dcddde", "#dcddde");
-  const { articles, currentArticleIndex } = usePreviewerContext();
-  const currentArticle = articles[currentArticleIndex];
+  const { currentArticle } = usePreviewerContext();
 
   const renderComponent = (component: Component): React.ReactNode => {
     switch (component.type) {

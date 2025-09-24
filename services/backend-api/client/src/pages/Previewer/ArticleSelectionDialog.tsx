@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import {
   Modal,
   ModalOverlay,
@@ -33,7 +33,7 @@ interface ArticleSelectionDialogProps {
   error?: string;
 }
 
-const ITEMS_PER_PAGE = 2;
+const ITEMS_PER_PAGE = 10;
 
 export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
   isOpen,
@@ -54,29 +54,18 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
       formatOptions: articleFormatOptions,
       skip: (currentPage - 1) * ITEMS_PER_PAGE,
       selectProperties: [displayProperty || "title"],
+      filters: {
+        search: searchQuery.trim() ? searchQuery.trim() : undefined,
+      },
     },
     disabled: !displayProperty || !isOpen,
   });
   const isLoading = status === "loading" || fetchStatus === "fetching";
-  const articles = data?.result.articles || [];
 
-  const filteredArticles = useMemo(() => {
-    if (!searchQuery.trim()) return articles;
-
-    const query = searchQuery.toLowerCase();
-
-    return articles.filter((article, index) => {
-      // Search in the selected display property
-      const displayValue = getDisplayValue(article).toLowerCase();
-      const indexMatch = (index + 1).toString().includes(query);
-
-      return displayValue.includes(query) || indexMatch;
-    });
-  }, [articles, searchQuery, displayProperty]);
-
-  const totalPages = Math.ceil(filteredArticles.length / ITEMS_PER_PAGE);
+  const totalArticles = data?.result.totalArticles || 0;
+  const totalPages = Math.ceil(totalArticles / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedArticles = filteredArticles.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const articles = data?.result.articles || [];
 
   const handleSelectArticle = (article: Record<string, string>) => {
     onSelectArticle(article.id);
@@ -96,10 +85,10 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
 
   const getDisplayValue = (article: Record<string, string>) => {
     if (!displayProperty) {
-      return "[No data]";
+      return "[No value]";
     }
 
-    return article[displayProperty] || "[No data]";
+    return article[displayProperty] || "[No value]";
   };
 
   // Reset search and pagination when modal closes or articles change
@@ -247,7 +236,7 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
               </Box>
             )}
             {/* Empty State */}
-            {!isLoading && !error && filteredArticles.length === 0 && (
+            {!isLoading && !error && articles.length === 0 && (
               <Box p={6} textAlign="center" role="status" aria-live="polite">
                 <Text color="gray.400" fontStyle="italic">
                   {searchQuery
@@ -257,7 +246,7 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
               </Box>
             )}
             {/* Articles List */}
-            {!isLoading && !error && paginatedArticles.length > 0 && (
+            {!isLoading && !error && articles.length > 0 && (
               <>
                 <VStack
                   spacing={0}
@@ -265,10 +254,10 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
                   role="list"
                   aria-label={`Articles ${startIndex + 1} to ${Math.min(
                     startIndex + ITEMS_PER_PAGE,
-                    filteredArticles.length
-                  )} of ${filteredArticles.length}`}
+                    totalArticles
+                  )} of ${totalArticles}`}
                 >
-                  {paginatedArticles.map((article, index) => {
+                  {articles.map((article, index) => {
                     const isSelected = article.id === currentArticleId;
 
                     return (
@@ -282,11 +271,15 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
                         minH="auto"
                         borderRadius={0}
                         borderBottom={
-                          index < paginatedArticles.length - 1 ? "1px solid" : undefined
+                          index < Math.min(ITEMS_PER_PAGE - 1, articles.length - 1)
+                            ? "1px solid"
+                            : undefined
                         }
                         borderColor="gray.600"
                         bg="transparent"
-                        _hover={{ bg: "gray.700" }}
+                        _hover={{
+                          bg: "gray.700",
+                        }}
                         _focus={{
                           bg: "gray.700",
                           outline: "2px solid",
@@ -337,8 +330,7 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
                       {/* Article Count Info - Left Side */}
                       <Text fontSize="sm" color="gray.400" aria-live="polite">
                         Showing {startIndex + 1}-
-                        {Math.min(startIndex + ITEMS_PER_PAGE, filteredArticles.length)} of{" "}
-                        {filteredArticles.length}
+                        {Math.min(startIndex + ITEMS_PER_PAGE, totalArticles)} of {totalArticles}
                         {searchQuery && (
                           <Text as="span" color="gray.500">
                             {" "}

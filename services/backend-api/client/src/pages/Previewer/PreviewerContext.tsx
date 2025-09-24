@@ -44,12 +44,10 @@ interface PreviewerContextType {
   resetMessage: () => void;
   moveComponentUp: (componentId: string) => void;
   moveComponentDown: (componentId: string) => void;
-  // Article preview functionality
-  articles: Record<string, string>[];
   currentArticleId: string | undefined;
+  currentArticle?: Record<string, string>;
   isLoading: boolean;
   error: string | null;
-  fetchArticles: () => Promise<void>;
   setCurrentArticleId: (id: string) => void;
 }
 
@@ -66,7 +64,7 @@ export const usePreviewerContext = () => {
 };
 
 const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { userFeed } = useUserFeedContext();
+  const { userFeed, articleFormatOptions } = useUserFeedContext();
   const { setValue, getValues } = useFormContext<PreviewerFormState>();
 
   // Article preview state
@@ -83,18 +81,14 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     feedId,
     data: {
       skip: 0,
-      limit: 10,
-      selectProperties: ["title", "publishedAt"],
-      formatOptions: {
-        customPlaceholders: [],
-        externalProperties: [],
-        dateFormat: "YYYY-MM-DD",
-        dateTimezone: "UTC",
-        disableImageLinkPreviews: false,
-        formatTables: false,
-        ignoreNewLines: false,
-        stripImages: false,
-      },
+      limit: 1,
+      formatOptions: articleFormatOptions,
+      selectProperties: ["*"],
+      filters: currentArticleId
+        ? {
+            articleId: currentArticleId,
+          }
+        : undefined,
     },
   });
 
@@ -293,6 +287,8 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     );
   };
 
+  const currentArticle = articlesResponse?.result.articles?.[0];
+
   const contextValue: PreviewerContextType = useMemo(
     () => ({
       addChildComponent,
@@ -300,15 +296,13 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       resetMessage,
       moveComponentUp,
       moveComponentDown,
-      // Article preview functionality
-      articles,
       currentArticleId,
       isLoading,
       error: error?.message || null,
-      fetchArticles,
       setCurrentArticleId,
+      currentArticle,
     }),
-    [articles, currentArticleId, isLoading, error, fetchArticles]
+    [articles, currentArticleId, isLoading, error, fetchArticles, currentArticle]
   );
 
   return <PreviewerContext.Provider value={contextValue}>{children}</PreviewerContext.Provider>;
