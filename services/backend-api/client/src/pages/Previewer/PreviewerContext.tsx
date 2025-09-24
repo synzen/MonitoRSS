@@ -1,7 +1,16 @@
-import React, { createContext, useContext, useMemo, useState, useCallback, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+  useCallback,
+  ReactNode,
+  useEffect,
+} from "react";
 import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
+import { useTranslation } from "react-i18next";
 import {
   Component,
   ComponentType,
@@ -14,6 +23,7 @@ import createPreviewerComponentSchema from "./utils/createPreviewerComponentSche
 import { useUserFeedArticles } from "../../features/feed/hooks";
 import { useUserFeedContext } from "../../contexts/UserFeedContext";
 import createNewPreviewerComponent from "./utils/createNewPreviewComponent";
+import { useGetUserFeedArticlesError } from "../../features/feedConnections";
 
 const validationSchema = yup.object({
   messageComponent: createPreviewerComponentSchema().optional(),
@@ -49,6 +59,8 @@ interface PreviewerContextType {
   isLoading: boolean;
   error: string | null;
   setCurrentArticleId: (id: string) => void;
+  hasNoArticles?: boolean;
+  isFetchingDifferentArticle: boolean;
 }
 
 const PreviewerContext = createContext<PreviewerContextType | undefined>(undefined);
@@ -66,6 +78,7 @@ export const usePreviewerContext = () => {
 const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { userFeed, articleFormatOptions } = useUserFeedContext();
   const { setValue, getValues } = useFormContext<PreviewerFormState>();
+  const { t } = useTranslation();
 
   // Article preview state
   const [currentArticleId, setCurrentArticleId] = useState<string>();
@@ -76,6 +89,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     data: articlesResponse,
     status,
     error,
+    fetchStatus,
     refetch,
   } = useUserFeedArticles({
     feedId,
@@ -91,17 +105,31 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         : undefined,
     },
   });
+  const firstArticleId = articlesResponse?.result.articles?.[0]?.id;
+  const hasNoArticles = articlesResponse?.result.articles.length === 0;
+  const { messageRef } = useGetUserFeedArticlesError({
+    getUserFeedArticlesStatus: status,
+    getUserFeedArticlesError: error,
+    getUserFeedArticlesOutput: articlesResponse,
+  });
 
   // Transform API response to match Article interface
   const articles: Record<string, string>[] =
     (articlesResponse?.result?.articles as Record<string, string>[]) || [];
 
   const isLoading = status === "loading";
+  const isFetchingDifferentArticle = fetchStatus === "fetching";
 
   // Fetch articles function that calls refetch
   const fetchArticles = useCallback(async () => {
     await refetch();
   }, [refetch]);
+
+  useEffect(() => {
+    if (status === "success") {
+      setCurrentArticleId(firstArticleId);
+    }
+  }, [firstArticleId, status]);
 
   const addChildComponent = (
     parentId: string,
@@ -298,11 +326,23 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       moveComponentDown,
       currentArticleId,
       isLoading,
-      error: error?.message || null,
+      error: messageRef ? t(messageRef) : null,
       setCurrentArticleId,
       currentArticle,
+      hasNoArticles,
+      isFetchingDifferentArticle,
     }),
-    [articles, currentArticleId, isLoading, error, fetchArticles, currentArticle]
+    [
+      articles,
+      currentArticleId,
+      isLoading,
+      messageRef,
+      fetchArticles,
+      currentArticle,
+      t,
+      hasNoArticles,
+      isFetchingDifferentArticle,
+    ]
   );
 
   return <PreviewerContext.Provider value={contextValue}>{children}</PreviewerContext.Provider>;
