@@ -26,7 +26,7 @@ import { useParams } from "react-router-dom";
 import { DiscordMessagePreview } from "./Previewer/DiscordMessagePreview";
 import { ComponentPropertiesPanel } from "./Previewer/ComponentPropertiesPanel";
 import { ComponentTreeItem } from "./Previewer/ComponentTreeItem";
-import { MESSAGE_ROOT_ID, PreviewerFormState } from "./Previewer/types";
+import { MESSAGE_ROOT_ID } from "./Previewer/types";
 import { NavigableTreeItem } from "../components/NavigableTree";
 import {
   NavigableTreeContext,
@@ -45,6 +45,7 @@ import {
   UserFeedConnectionProvider,
 } from "../contexts/UserFeedConnectionContext";
 import { FeedDiscordChannelConnection } from "../types";
+import PreviewerFormState from "./Previewer/types/PreviewerFormState";
 
 const PreviewerContent: React.FC = () => {
   const { resetMessage } = usePreviewerContext();
@@ -192,7 +193,7 @@ const PreviewerContent: React.FC = () => {
                             color="gray.300"
                             _selected={{ color: "white", borderColor: "blue.400" }}
                           >
-                            Message Components ({messageComponent?.children.length || 0})
+                            Message Components ({messageComponent?.children?.length || 0})
                           </Tab>
                           <Tab
                             color="gray.300"

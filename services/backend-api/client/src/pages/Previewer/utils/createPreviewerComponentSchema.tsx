@@ -1,9 +1,10 @@
 import * as yup from "yup";
-import { Component, ComponentType } from "../types";
+import MessageBuilderComponent from "../components/base";
+import { DiscordComponentType } from "../constants/DiscordComponentType";
 
 // Recursive schema for component validation
 const createPreviewerComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => {
-  return yup.lazy((value: Component | undefined) => {
+  return yup.lazy((value: MessageBuilderComponent | undefined) => {
     if (!value || !value.type) {
       return yup.object();
     }
@@ -46,13 +47,13 @@ const createPreviewerComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => 
     });
 
     switch (value.type) {
-      case ComponentType.LegacyRoot:
+      case DiscordComponentType.LegacyRoot:
         return baseSchema.shape({
           children: yup.array().of(createPreviewerComponentSchema()).default([]),
         });
-      case ComponentType.LegacyText:
+      case DiscordComponentType.LegacyText:
         return legacyTextSchema;
-      case ComponentType.LegacyEmbed:
+      case DiscordComponentType.LegacyEmbed:
         return baseSchema.shape({
           children: yup
             .array()
@@ -60,7 +61,7 @@ const createPreviewerComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => 
             .test("max-embed-fields", "Expected fewer than 25 embed fields", (children) => {
               if (!children) return true;
               const fieldCount = children.filter(
-                (child) => child.type === ComponentType.LegacyEmbedField
+                (child) => child.type === DiscordComponentType.LegacyEmbedField
               ).length;
 
               return fieldCount <= 25;
@@ -68,43 +69,41 @@ const createPreviewerComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => 
             .default([]),
         });
 
-      case ComponentType.LegacyEmbedAuthor:
+      case DiscordComponentType.LegacyEmbedAuthor:
         return baseSchema.shape({
           authorName: yup.string().max(256, "Author name cannot exceed 256 characters"),
           authorUrl: yup.string(),
           authorIconUrl: yup.string(),
         });
-      case ComponentType.LegacyEmbedTitle:
+      case DiscordComponentType.LegacyEmbedTitle:
         return baseSchema.shape({
           title: yup.string().max(256, "Title cannot exceed 256 characters"),
           titleUrl: yup.string(),
         });
-      case ComponentType.LegacyEmbedDescription:
+      case DiscordComponentType.LegacyEmbedDescription:
         return baseSchema.shape({
           description: yup.string().max(4096, "Description cannot exceed 4096 characters"),
         });
-      case ComponentType.LegacyEmbedImage:
+      case DiscordComponentType.LegacyEmbedImage:
         return baseSchema.shape({
           imageUrl: yup.string(),
         });
-      case ComponentType.LegacyEmbedThumbnail:
+      case DiscordComponentType.LegacyEmbedThumbnail:
         return baseSchema.shape({
           thumbnailUrl: yup.string(),
         });
-      case ComponentType.LegacyEmbedFooter:
+      case DiscordComponentType.LegacyEmbedFooter:
         return baseSchema.shape({
           footerText: yup.string().max(2048, "Footer text cannot exceed 2048 characters"),
           footerIconUrl: yup.string(),
         });
-      case ComponentType.LegacyEmbedField:
+      case DiscordComponentType.LegacyEmbedField:
         return legacyEmbedFieldSchema;
-      case ComponentType.LegacyEmbedTimestamp:
+      case DiscordComponentType.LegacyEmbedTimestamp:
         return baseSchema.shape({
           timestamp: yup.string(), // ISO 8601 timestamp
         });
-      case ComponentType.V2TextDisplay:
-        return textDisplaySchema;
-      case ComponentType.V2ActionRow:
+      case DiscordComponentType.LegacyActionRow:
         return baseSchema.shape({
           children: yup
             .array()
@@ -113,11 +112,33 @@ const createPreviewerComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => 
             .max(5, "Action Row can have at most 5 child components")
             .required("Action Row must have at least one child component"),
         });
-      case ComponentType.V2Root:
+      case DiscordComponentType.LegacyButton:
+        return baseSchema.shape({
+          label: yup
+            .string()
+            .required("Button label cannot be empty")
+            .min(1, "Button label cannot be empty")
+            .max(80, "Button label cannot exceed 80 characters"),
+          style: yup.string().required(),
+          disabled: yup.boolean().required(),
+          url: yup.string(),
+        });
+      case DiscordComponentType.V2TextDisplay:
+        return textDisplaySchema;
+      case DiscordComponentType.V2ActionRow:
+        return baseSchema.shape({
+          children: yup
+            .array()
+            .of(createPreviewerComponentSchema())
+            .min(1, "Action Row must have at least one child component")
+            .max(5, "Action Row can have at most 5 child components")
+            .required("Action Row must have at least one child component"),
+        });
+      case DiscordComponentType.V2Root:
         return baseSchema.shape({
           children: yup.array().of(createPreviewerComponentSchema()).default([]),
         });
-      case ComponentType.V2Section:
+      case DiscordComponentType.V2Section:
         return baseSchema.shape({
           children: yup
             .array()
@@ -129,9 +150,9 @@ const createPreviewerComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => 
             .required("Section must have an accessory component")
             .nonNullable(),
         });
-      case ComponentType.V2Divider:
+      case DiscordComponentType.V2Divider:
         return baseSchema;
-      case ComponentType.V2Button:
+      case DiscordComponentType.V2Button:
         return buttonSchema;
       default:
         return baseSchema;

@@ -22,6 +22,12 @@ const getPreviewerComponentLabel = (type: ComponentType) => {
       return "Field";
     case ComponentType.LegacyEmbedTimestamp:
       return "Timestamp";
+    case ComponentType.LegacyActionRow:
+      return "Action Row";
+    case ComponentType.LegacyButton:
+      return "Button";
+    case ComponentType.LegacyRoot:
+      return "Discord Message";
     default:
       return type;
   }

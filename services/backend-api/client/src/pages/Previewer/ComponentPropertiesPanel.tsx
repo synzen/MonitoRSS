@@ -27,16 +27,28 @@ import {
 import { DeleteIcon, ChevronUpIcon, ChevronDownIcon, AddIcon, CloseIcon } from "@chakra-ui/icons";
 import { SketchPicker } from "react-color";
 import { FieldError, useFormContext } from "react-hook-form";
-import type {
-  Component,
-  ComponentPropertiesPanelProps,
-  PreviewerFormState,
-  TextDisplayComponent,
-} from "./types";
-import { ComponentType, ButtonStyle, ROOT_COMPONENT_TYPES } from "./types";
+import type { ComponentPropertiesPanelProps } from "./types";
 import { InsertPlaceholderDialog } from "./InsertPlaceholderDialog";
 
 import { usePreviewerContext } from "./PreviewerContext";
+import { DiscordButtonStyle } from "./constants/DiscordButtonStyle";
+import { DiscordComponentType } from "./constants/DiscordComponentType";
+import MessageComponentV2TextDisplay from "./components/MessageComponentV2TextDisplay";
+import PreviewerFormState from "./types/PreviewerFormState";
+import MessageBuilderComponent from "./components/base";
+import MessageComponentLegacyText from "./components/MessageComponentLegacyText";
+import MessageComponentLegacyEmbed from "./components/MessageComponentLegacyEmbed";
+import MessageComponentLegacyEmbedAuthor from "./components/MessageComponentLegacyEmbedAuthor";
+import MessageComponentLegacyEmbedTitle from "./components/MessageComponentLegacyEmbedTitle";
+import MessageComponentLegacyEmbedDescription from "./components/MessageComponentLegacyEmbedDescription";
+import MessageComponentLegacyEmbedImage from "./components/MessageComponentLegacyEmbedImage";
+import MessageComponentLegacyEmbedThumbnail from "./components/MessageComponentLegacyEmbedThumbnail";
+import MessageComponentLegacyEmbedFooter from "./components/MessageComponentLegacyEmbedFooter";
+import MessageComponentLegacyEmbedField from "./components/MessageComponentLegacyEmbedField";
+import MessageComponentLegacyEmbedTimestamp from "./components/MessageComponentLegacyEmbedTimestamp";
+import MessageComponentV2Button from "./components/MessageComponentV2Button";
+import MessageComponentV2Divider from "./components/MessageComponentV2Divider";
+import MessageComponentLegacyButton from "./components/MessageComponentLegacyButton";
 
 // Mock article data - in a real app this would come from props or context
 const getCurrentArticle = () => ({
@@ -49,7 +61,10 @@ const getCurrentArticle = () => ({
   feedTitle: "Tech News Daily",
 });
 
-function findComponentById(root: Component, id: string): Component | null {
+function findComponentById(
+  root: MessageBuilderComponent,
+  id: string
+): MessageBuilderComponent | null {
   if (root.id === id) {
     return root;
   }
@@ -62,18 +77,11 @@ function findComponentById(root: Component, id: string): Component | null {
     }
   }
 
-  // Handle accessory for sections
-  if (root.type === ComponentType.V2Section && (root as any).accessory) {
-    const accessory = (root as any).accessory as Component;
-    const result = findComponentById(accessory, id);
-    if (result) return result;
-  }
-
   return null;
 }
 
 function getComponentFormPathById(
-  root: Component,
+  root: MessageBuilderComponent,
   id: string,
   basePath: string = "messageComponent"
 ): string | null {
@@ -87,13 +95,6 @@ function getComponentFormPathById(
       const childPath = getComponentFormPathById(child, id, `${basePath}.children.${i}`);
       if (childPath) return childPath;
     }
-  }
-
-  // Handle accessory for sections
-  if (root.type === ComponentType.V2Section && (root as any).accessory) {
-    const accessory = (root as any).accessory as Component;
-    const accessoryPath = getComponentFormPathById(accessory, id, `${basePath}.accessory`);
-    if (accessoryPath) return accessoryPath;
   }
 
   return null;
@@ -110,7 +111,9 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   const [activeTextareaRef, setActiveTextareaRef] = React.useState<HTMLTextAreaElement | null>(
     null
   );
-  const [currentComponent, setCurrentComponent] = React.useState<Component | null>(null);
+  const [currentComponent, setCurrentComponent] = React.useState<MessageBuilderComponent | null>(
+    null
+  );
 
   const getFieldError = (componentId: string, fieldName: string): FieldError | undefined => {
     if (!messageComponent) return undefined;
@@ -122,7 +125,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     };
 
     interface StackItem {
-      component: Component;
+      component: MessageBuilderComponent;
       path: string;
     }
 
@@ -146,13 +149,6 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
           });
         }
       }
-
-      if (component.type === ComponentType.V2Section && component.accessory) {
-        stack.push({
-          component: component.accessory,
-          path: `${path}.accessory`,
-        });
-      }
     }
 
     return undefined;
@@ -163,12 +159,16 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
       const textarea = activeTextareaRef;
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
-      const currentValue = (currentComponent as TextDisplayComponent).content || "";
+      const currentValue = (currentComponent as MessageComponentV2TextDisplay)?.data?.content || "";
       const newValue = currentValue.substring(0, start) + tag + currentValue.substring(end);
 
       // Update the component through the proper onChange handler
-      const updatedComponent = { ...currentComponent, content: newValue };
-      updateValue(updatedComponent);
+      // const updatedComponent = { ...currentComponent, content: newValue };
+      updateValue(
+        currentComponent.clone({
+          content: newValue,
+        })
+      );
 
       // Set cursor position after the inserted tag
       setTimeout(() => {
@@ -178,9 +178,13 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     }
   };
 
-  const renderPropertiesForComponent = (component: Component, onChange: (value: any) => void) => {
+  const renderPropertiesForComponent = (
+    component: MessageBuilderComponent,
+    onChange: (value: any) => void
+  ) => {
     switch (component.type) {
-      case ComponentType.LegacyText: {
+      case DiscordComponentType.LegacyText: {
+        const casted = component as MessageComponentLegacyText;
         const contentError = getFieldError(component.id, "content");
 
         return (
@@ -194,7 +198,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                   setActiveTextareaRef(ref);
                   setCurrentComponent(component);
                 }}
-                value={component.content}
+                value={casted.data.content}
                 onChange={(e) => onChange({ ...component, content: e.target.value })}
                 placeholder="Enter text content"
                 rows={4}
@@ -217,7 +221,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         );
       }
 
-      case ComponentType.LegacyEmbed: {
+      case DiscordComponentType.LegacyEmbed: {
+        const casted = component as MessageComponentLegacyEmbed;
         const colorError = getFieldError(component.id, "color");
 
         return (
@@ -232,10 +237,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                     <PopoverTrigger>
                       <Button
                         backgroundColor={
-                          (component as any).color
-                            ? `#${Number((component as any).color)
-                                .toString(16)
-                                .padStart(6, "0")}`
+                          casted.data?.color
+                            ? `#${Number(casted.data?.color).toString(16).padStart(6, "0")}`
                             : "black"
                         }
                         flex={1}
@@ -245,10 +248,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                         aria-label="Pick color"
                         size="sm"
                         _hover={{
-                          background: (component as any).color
-                            ? `#${Number((component as any).color)
-                                .toString(16)
-                                .padStart(6, "0")}`
+                          background: casted.data?.color
+                            ? `#${Number(casted.data?.color).toString(16).padStart(6, "0")}`
                             : "black",
                           outline: "solid 2px #3182ce",
                           transition: "outline 0.2s",
@@ -260,10 +261,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                         presetColors={[]}
                         disableAlpha
                         color={
-                          (component as any).color
-                            ? `#${Number((component as any).color)
-                                .toString(16)
-                                .padStart(6, "0")}`
+                          casted.data?.color
+                            ? `#${Number(casted.data?.color).toString(16).padStart(6, "0")}`
                             : "#000000"
                         }
                         onChange={(c) => {
@@ -299,7 +298,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         );
       }
 
-      case ComponentType.LegacyEmbedAuthor: {
+      case DiscordComponentType.LegacyEmbedAuthor: {
+        const casted = component as MessageComponentLegacyEmbedAuthor;
         const nameError = getFieldError(component.id, "authorName");
         const urlError = getFieldError(component.id, "authorUrl");
         const iconUrlError = getFieldError(component.id, "authorIconUrl");
@@ -311,8 +311,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 Name
               </FormLabel>
               <Input
-                value={component.authorName || ""}
-                onChange={(e) => onChange({ ...component, authorName: e.target.value })}
+                value={casted.data?.authorName || ""}
+                onChange={(e) => onChange({ ...casted, authorName: e.target.value })}
                 placeholder="Name"
                 bg="gray.700"
               />
@@ -323,8 +323,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 URL
               </FormLabel>
               <Input
-                value={component.authorUrl || ""}
-                onChange={(e) => onChange({ ...component, authorUrl: e.target.value })}
+                value={casted.data?.authorUrl || ""}
+                onChange={(e) =>
+                  onChange(casted.clone({ ...casted.data, authorUrl: e.target.value }))
+                }
                 placeholder="https://example.com"
                 bg="gray.700"
               />
@@ -335,7 +337,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 Icon URL
               </FormLabel>
               <Input
-                value={component.authorIconUrl || ""}
+                value={casted.data?.authorIconUrl || ""}
                 onChange={(e) => onChange({ ...component, authorIconUrl: e.target.value })}
                 placeholder="https://example.com/icon.png"
                 bg="gray.700"
@@ -346,7 +348,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         );
       }
 
-      case ComponentType.LegacyEmbedTitle: {
+      case DiscordComponentType.LegacyEmbedTitle: {
+        const casted = component as MessageComponentLegacyEmbedTitle;
         const titleError = getFieldError(component.id, "title");
         const titleUrlError = getFieldError(component.id, "titleUrl");
 
@@ -357,8 +360,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 Text
               </FormLabel>
               <Input
-                value={component.title || ""}
-                onChange={(e) => onChange({ ...component, title: e.target.value })}
+                value={casted.data?.title || ""}
+                onChange={(e) => onChange(casted.clone({ ...casted.data, title: e.target.value }))}
                 placeholder="Embed title"
                 bg="gray.700"
               />
@@ -369,8 +372,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 URL
               </FormLabel>
               <Input
-                value={component.titleUrl || ""}
-                onChange={(e) => onChange({ ...component, titleUrl: e.target.value })}
+                value={casted.data?.titleUrl || ""}
+                onChange={(e) =>
+                  onChange(casted.clone({ ...casted.data, titleUrl: e.target.value }))
+                }
                 placeholder="https://example.com"
                 bg="gray.700"
               />
@@ -380,7 +385,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         );
       }
 
-      case ComponentType.LegacyEmbedDescription: {
+      case DiscordComponentType.LegacyEmbedDescription: {
+        const casted = component as MessageComponentLegacyEmbedDescription;
         const descriptionError = getFieldError(component.id, "description");
 
         return (
@@ -390,8 +396,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 Description
               </FormLabel>
               <Textarea
-                value={component.description || ""}
-                onChange={(e) => onChange({ ...component, description: e.target.value })}
+                value={casted.data?.description || ""}
+                onChange={(e) =>
+                  onChange(casted.clone({ ...casted.data, description: e.target.value }))
+                }
                 placeholder="Embed description"
                 rows={3}
                 bg="gray.700"
@@ -403,7 +411,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         );
       }
 
-      case ComponentType.LegacyEmbedImage: {
+      case DiscordComponentType.LegacyEmbedImage: {
+        const casted = component as MessageComponentLegacyEmbedImage;
         const imageUrlError = getFieldError(component.id, "imageUrl");
 
         return (
@@ -413,8 +422,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 URL
               </FormLabel>
               <Input
-                value={component.imageUrl || ""}
-                onChange={(e) => onChange({ ...component, imageUrl: e.target.value })}
+                value={casted.data?.imageUrl || ""}
+                onChange={(e) =>
+                  onChange(casted.clone({ ...casted.data, imageUrl: e.target.value }))
+                }
                 placeholder="https://example.com/image.png"
                 bg="gray.700"
               />
@@ -424,7 +435,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         );
       }
 
-      case ComponentType.LegacyEmbedThumbnail: {
+      case DiscordComponentType.LegacyEmbedThumbnail: {
+        const casted = component as MessageComponentLegacyEmbedThumbnail;
         const thumbnailUrlError = getFieldError(component.id, "thumbnailUrl");
 
         return (
@@ -434,8 +446,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 URL
               </FormLabel>
               <Input
-                value={component.thumbnailUrl || ""}
-                onChange={(e) => onChange({ ...component, thumbnailUrl: e.target.value })}
+                value={casted.data?.thumbnailUrl || ""}
+                onChange={(e) =>
+                  onChange(casted.clone({ ...casted.data, thumbnailUrl: e.target.value }))
+                }
                 placeholder="https://example.com/thumbnail.png"
                 bg="gray.700"
               />
@@ -447,7 +461,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         );
       }
 
-      case ComponentType.LegacyEmbedFooter: {
+      case DiscordComponentType.LegacyEmbedFooter: {
+        const casted = component as MessageComponentLegacyEmbedFooter;
         const footerTextError = getFieldError(component.id, "footerText");
         const footerIconUrlError = getFieldError(component.id, "footerIconUrl");
 
@@ -458,8 +473,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 Text
               </FormLabel>
               <Input
-                value={component.footerText || ""}
-                onChange={(e) => onChange({ ...component, footerText: e.target.value })}
+                value={casted.data?.footerText || ""}
+                onChange={(e) =>
+                  onChange(casted.clone({ ...casted.data, footerText: e.target.value }))
+                }
                 placeholder="Footer text"
                 bg="gray.700"
               />
@@ -470,8 +487,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 Icon URL
               </FormLabel>
               <Input
-                value={component.footerIconUrl || ""}
-                onChange={(e) => onChange({ ...component, footerIconUrl: e.target.value })}
+                value={casted.data?.footerIconUrl || ""}
+                onChange={(e) =>
+                  onChange(casted.clone({ ...casted.data, footerIconUrl: e.target.value }))
+                }
                 placeholder="https://example.com/icon.png"
                 bg="gray.700"
               />
@@ -483,7 +502,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         );
       }
 
-      case ComponentType.LegacyEmbedField: {
+      case DiscordComponentType.LegacyEmbedField: {
+        const casted = component as MessageComponentLegacyEmbedField;
         const fieldNameError = getFieldError(component.id, "fieldName");
         const fieldValueError = getFieldError(component.id, "fieldValue");
 
@@ -494,8 +514,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 Field Name
               </FormLabel>
               <Input
-                value={component.fieldName}
-                onChange={(e) => onChange({ ...component, fieldName: e.target.value })}
+                value={casted.data?.fieldName || ""}
+                onChange={(e) =>
+                  onChange(casted.clone({ ...casted.data, fieldName: e.target.value }))
+                }
                 placeholder="Field name"
                 bg="gray.700"
               />
@@ -506,8 +528,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 Field Value
               </FormLabel>
               <Textarea
-                value={component.fieldValue}
-                onChange={(e) => onChange({ ...component, fieldValue: e.target.value })}
+                value={casted.data?.fieldValue || ""}
+                onChange={(e) =>
+                  onChange(casted.clone({ ...casted.data, fieldValue: e.target.value }))
+                }
                 placeholder="Field value"
                 rows={2}
                 bg="gray.700"
@@ -520,8 +544,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 Inline Field
               </FormLabel>
               <Switch
-                isChecked={component.inline || false}
-                onChange={(e) => onChange({ ...component, inline: e.target.checked })}
+                isChecked={casted.data?.inline || false}
+                onChange={(e) =>
+                  onChange(casted.clone({ ...casted.data, inline: e.target.checked }))
+                }
                 colorScheme="blue"
               />
             </FormControl>
@@ -529,7 +555,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         );
       }
 
-      case ComponentType.LegacyEmbedTimestamp: {
+      case DiscordComponentType.LegacyEmbedTimestamp: {
+        const casted = component as MessageComponentLegacyEmbedTimestamp;
         const timestampError = getFieldError(component.id, "timestamp");
 
         return (
@@ -545,8 +572,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 Timestamp Value
               </FormLabel>
               <RadioGroup
-                value={component.timestamp || ""}
-                onChange={(value) => onChange({ ...component, timestamp: value })}
+                value={casted.data?.timestamp || ""}
+                onChange={(value) =>
+                  onChange(casted.clone({ ...casted.data, timestamp: value as never }))
+                }
                 aria-labelledby="timestamp-label"
               >
                 <Stack>
@@ -580,7 +609,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         );
       }
 
-      case ComponentType.V2TextDisplay: {
+      case DiscordComponentType.V2TextDisplay: {
+        const casted = component as MessageComponentV2TextDisplay;
         const contentError = getFieldError(component.id, "content");
 
         return (
@@ -594,8 +624,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                   setActiveTextareaRef(ref);
                   setCurrentComponent(component);
                 }}
-                value={component.content}
-                onChange={(e) => onChange({ ...component, content: e.target.value })}
+                value={casted.data?.content}
+                onChange={(e) =>
+                  onChange(casted.clone({ ...casted.data, content: e.target.value }))
+                }
                 placeholder="Enter text content"
                 rows={4}
                 bg="gray.700"
@@ -617,7 +649,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         );
       }
 
-      case ComponentType.V2Button: {
+      case DiscordComponentType.V2Button: {
+        const casted = component as MessageComponentV2Button;
         const labelError = getFieldError(component.id, "label");
         const hrefError = getFieldError(component.id, "href");
         const styleError = getFieldError(component.id, "style");
@@ -629,8 +662,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 Button Label
               </FormLabel>
               <Input
-                value={component.label}
-                onChange={(e) => onChange({ ...component, label: e.target.value })}
+                value={casted.data.buttonLabel}
+                onChange={(e) =>
+                  onChange(casted.clone({ ...casted.data, buttonLabel: e.target.value }))
+                }
                 placeholder="Enter button label"
                 bg="gray.700"
               />
@@ -641,26 +676,30 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 Button Style
               </FormLabel>
               <Select
-                value={component.style}
-                onChange={(e) => onChange({ ...component, style: e.target.value as ButtonStyle })}
+                value={casted.data.style}
+                onChange={(e) =>
+                  onChange(
+                    casted.clone({ ...casted.data, style: e.target.value as DiscordButtonStyle })
+                  )
+                }
                 bg="gray.700"
               >
-                <option value={ButtonStyle.Primary}>Primary</option>
-                <option value={ButtonStyle.Secondary}>Secondary</option>
-                <option value={ButtonStyle.Success}>Success</option>
-                <option value={ButtonStyle.Danger}>Danger</option>
-                <option value={ButtonStyle.Link}>Link</option>
+                <option value={DiscordButtonStyle.Primary}>Primary</option>
+                <option value={DiscordButtonStyle.Secondary}>Secondary</option>
+                <option value={DiscordButtonStyle.Success}>Success</option>
+                <option value={DiscordButtonStyle.Danger}>Danger</option>
+                <option value={DiscordButtonStyle.Link}>Link</option>
               </Select>
               {styleError && <FormErrorMessage>{styleError.message}</FormErrorMessage>}
             </FormControl>
-            {component.style === ButtonStyle.Link && (
+            {casted.data.style === DiscordButtonStyle.Link && (
               <FormControl isInvalid={!!hrefError}>
                 <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
                   Link URL
                 </FormLabel>
                 <Input
-                  value={component.href || ""}
-                  onChange={(e) => onChange({ ...component, href: e.target.value })}
+                  value={casted.data.href || ""}
+                  onChange={(e) => onChange(casted.clone({ ...casted.data, href: e.target.value }))}
                   placeholder="https://example.com"
                   bg="gray.700"
                 />
@@ -672,8 +711,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 Is Disabled?
               </FormLabel>
               <Switch
-                isChecked={component.disabled}
-                onChange={(e) => onChange({ ...component, disabled: e.target.checked })}
+                isChecked={casted.data.disabled}
+                onChange={(e) =>
+                  onChange(casted.clone({ ...casted.data, disabled: e.target.checked }))
+                }
                 colorScheme="blue"
               />
             </FormControl>
@@ -681,7 +722,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         );
       }
 
-      case ComponentType.V2Divider: {
+      case DiscordComponentType.V2Divider: {
+        const casted = component as MessageComponentV2Divider;
         const spacingError = getFieldError(component.id, "spacing");
         const visualError = getFieldError(component.id, "visual");
 
@@ -692,9 +734,11 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 Spacing
               </FormLabel>
               <Select
-                value={component.spacing ?? 1}
+                value={casted.data.spacing ?? 1}
                 onChange={(e) =>
-                  onChange({ ...component, spacing: parseInt(e.target.value, 10) as 1 | 2 })
+                  onChange(
+                    casted.clone({ ...casted.data, spacing: parseInt(e.target.value, 10) as 1 | 2 })
+                  )
                 }
                 bg="gray.700"
               >
@@ -708,8 +752,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 Visual Divider
               </FormLabel>
               <Checkbox
-                isChecked={component.visual ?? true}
-                onChange={(e) => onChange({ ...component, visual: e.target.checked })}
+                isChecked={casted.data.visual ?? true}
+                onChange={(e) =>
+                  onChange(casted.clone({ ...casted.data, visual: e.target.checked }))
+                }
                 colorScheme="blue"
               >
                 <Text fontSize="sm" color="gray.300">
@@ -722,18 +768,104 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         );
       }
 
+      case DiscordComponentType.LegacyActionRow: {
+        return (
+          <VStack align="stretch" spacing={4}>
+            <Alert status="info" borderRadius="md">
+              <AlertIcon />
+              <Text fontSize="sm">
+                Action Row contains buttons. Use the component tree to add or configure buttons.
+              </Text>
+            </Alert>
+          </VStack>
+        );
+      }
+
+      case DiscordComponentType.LegacyButton: {
+        const casted = component as MessageComponentLegacyButton;
+        const labelError = getFieldError(component.id, "label");
+        const styleError = getFieldError(component.id, "style");
+        const urlError = getFieldError(component.id, "url");
+
+        return (
+          <VStack align="stretch" spacing={4}>
+            <FormControl isInvalid={!!labelError}>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                Button Label
+              </FormLabel>
+              <Input
+                value={casted.data.buttonLabel}
+                onChange={(e) =>
+                  onChange(casted.clone({ ...casted.data, buttonLabel: e.target.value }))
+                }
+                placeholder="Enter button label"
+                bg="gray.700"
+              />
+              {labelError && <FormErrorMessage>{labelError.message}</FormErrorMessage>}
+            </FormControl>
+            <FormControl isInvalid={!!styleError}>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                Button Style
+              </FormLabel>
+              <Select
+                value={casted.data.style}
+                onChange={(e) =>
+                  onChange(
+                    casted.clone({ ...casted.data, style: e.target.value as DiscordButtonStyle })
+                  )
+                }
+                bg="gray.700"
+              >
+                <option value={DiscordButtonStyle.Primary}>Primary</option>
+                <option value={DiscordButtonStyle.Secondary}>Secondary</option>
+                <option value={DiscordButtonStyle.Success}>Success</option>
+                <option value={DiscordButtonStyle.Danger}>Danger</option>
+                <option value={DiscordButtonStyle.Link}>Link</option>
+              </Select>
+              {styleError && <FormErrorMessage>{styleError.message}</FormErrorMessage>}
+            </FormControl>
+            {casted.data.style === DiscordButtonStyle.Link && (
+              <FormControl isInvalid={!!urlError}>
+                <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                  Link URL
+                </FormLabel>
+                <Input
+                  value={casted.data.url || ""}
+                  onChange={(e) => onChange(casted.clone({ ...casted.data, url: e.target.value }))}
+                  placeholder="https://example.com"
+                  bg="gray.700"
+                />
+                {urlError && <FormErrorMessage>{urlError.message}</FormErrorMessage>}
+              </FormControl>
+            )}
+            <FormControl>
+              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                Is Disabled?
+              </FormLabel>
+              <Switch
+                isChecked={casted.data.disabled}
+                onChange={(e) =>
+                  onChange(casted.clone({ ...casted.data, disabled: e.target.checked }))
+                }
+                colorScheme="blue"
+              />
+            </FormControl>
+          </VStack>
+        );
+      }
+
       default:
         return null;
     }
   };
 
-  const getComponentPosition = (component: Component) => {
+  const getComponentPosition = (component: MessageBuilderComponent) => {
     if (!messageComponent) return null;
 
     const findParentAndIndex = (
-      comp: Component,
+      comp: MessageBuilderComponent,
       targetId: string
-    ): { parent: Component; index: number; total: number } | null => {
+    ): { parent: MessageBuilderComponent; index: number; total: number } | null => {
       if (comp.children) {
         for (let i = 0; i < comp.children.length; i += 1) {
           const child = comp.children[i];
@@ -772,7 +904,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   const canMoveUp = positionInfo && positionInfo.index > 0;
   const canMoveDown = positionInfo && positionInfo.index < positionInfo.total - 1;
 
-  const updateValue = (value: Component) => {
+  const updateValue = (value: MessageBuilderComponent) => {
     setValue(formPath as any, value, {
       shouldDirty: true,
       shouldTouch: true,
@@ -780,8 +912,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     });
   };
 
-  const nameFieldError = getFieldError(component.id, "name");
-  const isRootComponent = ROOT_COMPONENT_TYPES.includes(component.type);
+  const labelFieldError = getFieldError(component.id, "label");
+  const isRootComponent = component.isRoot();
 
   return (
     <>
@@ -806,49 +938,53 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             )}
           </HStack>
         )}
-        {component.type === ComponentType.V2ActionRow && component.children.length === 0 && (
+        {component.type === DiscordComponentType.V2ActionRow && !component.children?.length && (
           <Alert status="error" borderRadius="md" role={undefined}>
             <AlertIcon />
             At least one child component is required for Action Rows.
           </Alert>
         )}
-        {component.type === ComponentType.V2Section && component.children.length === 0 && (
+        {component.type === DiscordComponentType.V2Section && !component.children?.length && (
           <Alert status="error" borderRadius="md" role={undefined}>
             <AlertIcon />
             At least one child component is required for Sections.
           </Alert>
         )}
-        {component.type === ComponentType.V2Section && component.children.length > 3 && (
-          <Alert status="error" borderRadius="md" role={undefined}>
-            <AlertIcon />
-            Sections can have at most 3 child components. {component.children.length - 3} child
-            components must be deleted.
-          </Alert>
-        )}
-        {component.type === ComponentType.V2Section && !component.accessory && (
+        {component.type === DiscordComponentType.V2Section &&
+          component.children &&
+          component.children.length > 3 && (
+            <Alert status="error" borderRadius="md" role={undefined}>
+              <AlertIcon />
+              Sections can have at most 3 child components. {component.children.length - 3} child
+              components must be deleted.
+            </Alert>
+          )}
+        {/* {component.type === DiscordComponentType.V2Section && !component.children.find && (
           <Alert status="error" borderRadius="md" role={undefined}>
             <AlertIcon />
             An accessory component is required for Sections.
           </Alert>
-        )}
-        {component.type === ComponentType.V2ActionRow && component.children.length > 5 && (
-          <Alert status="error" borderRadius="md" role={undefined}>
-            <AlertIcon />
-            Action Rows can have at most 5 child components. {component.children.length - 5} child
-            components must be deleted.
-          </Alert>
-        )}
-        <FormControl isInvalid={!!nameFieldError}>
+        )} */}
+        {component.type === DiscordComponentType.V2ActionRow &&
+          component.children &&
+          component.children.length > 5 && (
+            <Alert status="error" borderRadius="md" role={undefined}>
+              <AlertIcon />
+              Action Rows can have at most 5 child components. {component.children.length - 5} child
+              components must be deleted.
+            </Alert>
+          )}
+        <FormControl isInvalid={!!labelFieldError}>
           <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-            Component Name
+            Component Label
           </FormLabel>
           <Input
-            value={component.name}
-            onChange={(e) => updateValue({ ...component, name: e.target.value })}
-            placeholder="Enter component name"
+            value={component.label}
+            onChange={(e) => updateValue(component.clone())}
+            placeholder="Enter component label"
             bg="gray.700"
           />
-          {nameFieldError && <FormErrorMessage>{nameFieldError?.message}</FormErrorMessage>}
+          {labelFieldError && <FormErrorMessage>{labelFieldError?.message}</FormErrorMessage>}
         </FormControl>
         {positionInfo && !isRootComponent && (
           <Box>
@@ -858,7 +994,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             <VStack spacing={2}>
               <Box bg="gray.700" p={3} borderRadius="md" w="full">
                 <Text fontSize="sm" color="white">
-                  {positionInfo.index + 1} of {positionInfo.total} in {positionInfo.parent.name}
+                  {positionInfo.index + 1} of {positionInfo.total} in {positionInfo.parent.label}
                 </Text>
               </Box>
               <HStack spacing={2} w="full" flexWrap="wrap">
