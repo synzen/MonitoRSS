@@ -52,8 +52,10 @@ export interface LegacyMessageComponentRoot extends BaseComponent {
     filters?: {
       expression: any;
     } | null;
-  }>;
+  }> | null;
   isForumChannel?: boolean;
+  channelNewThreadTitle?: string;
+  channelNewThreadExcludesPreview?: boolean;
 }
 
 export interface V2MessageComponentRoot extends BaseComponent {
@@ -67,6 +69,8 @@ export interface V2MessageComponentRoot extends BaseComponent {
     } | null;
   }>;
   isForumChannel?: boolean;
+  channelNewThreadTitle?: string;
+  channelNewThreadExcludesPreview?: boolean;
 }
 
 export interface TextDisplayComponent extends BaseComponent {

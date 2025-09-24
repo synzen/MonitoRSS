@@ -246,10 +246,9 @@ export const convertConnectionToPreviewerState = (
     formatTables: connection.details?.formatter?.formatTables,
     stripImages: connection.details?.formatter?.stripImages,
     ignoreNewLines: connection.details?.formatter?.ignoreNewLines,
-    enablePlaceholderFallback: connection.details?.enablePlaceholderFallback,
     forumThreadTitle: connection.details?.forumThreadTitle,
-    forumThreadTags: connection.details?.forumThreadTags || [],
     isForumChannel: connection.details?.channel?.type === "forum",
+    ...connection.details,
   };
 
   return {

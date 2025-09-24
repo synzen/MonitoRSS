@@ -47,6 +47,7 @@ const DiscordChannelConnectionDetailsSchema = object({
     .optional()
     .nullable(),
   channelNewThreadTitle: string().optional(),
+  channelNewThreadExcludesPreview: boolean().optional(),
   webhook: object({
     id: string().required(),
     name: string().optional(),

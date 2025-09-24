@@ -208,6 +208,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   const deletedTagIds = new Set(
     connection?.details.forumThreadTags?.filter((v) => !availableTagIds.has(v.id)).map((v) => v.id)
   );
+  const showChannelNewThreadOptions = connection.details.channel?.type === "new-thread";
 
   const getFieldError = (componentId: string, fieldName: string): FieldError | undefined => {
     if (!messageComponent) return undefined;
@@ -463,6 +464,47 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 <FormHelperText fontSize="sm" color="gray.400">
                   Select tags to apply to forum threads created for new articles. You may optionally
                   define article filters to only attach certain tags for certain articles.
+                </FormHelperText>
+              </FormControl>
+            </>
+          )}
+          {showChannelNewThreadOptions && (
+            <>
+              <FormControl>
+                <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                  Channel Thread Title
+                </FormLabel>
+                <Input
+                  aria-label="Channel thread title"
+                  spellCheck={false}
+                  value={component.channelNewThreadTitle || ""}
+                  onChange={(e) =>
+                    onChange({ ...component, channelNewThreadTitle: e.target.value })
+                  }
+                  bg="gray.700"
+                />
+                <FormHelperText fontSize="sm" color="gray.400">
+                  The title of the thread that will be created per new article. You may use
+                  placeholders. The default is{" "}
+                  <MessagePlaceholderText withoutCopy>title</MessagePlaceholderText>.
+                </FormHelperText>
+              </FormControl>
+              <FormControl>
+                <HStack justify="space-between" align="center" mb={2}>
+                  <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
+                    Hide Message in Channel
+                  </FormLabel>
+                  <Switch
+                    isChecked={!!component.channelNewThreadExcludesPreview}
+                    onChange={(e) =>
+                      onChange({ ...component, channelNewThreadExcludesPreview: e.target.checked })
+                    }
+                    colorScheme="blue"
+                  />
+                </HStack>
+                <FormHelperText fontSize="sm" color="gray.400">
+                  If enabled, the message contents will only be shown inside the thread. Only the
+                  thread title will be shown in the channel.
                 </FormHelperText>
               </FormControl>
             </>
