@@ -28,6 +28,8 @@ import getPreviewerComponentLabel from "./utils/getPreviewerComponentLabel";
 import PreviewerFormState from "./types/PreviewerFormState";
 import { useUserFeedConnectionContext } from "../../contexts/UserFeedConnectionContext";
 import { FeedDiscordChannelConnection } from "../../types";
+import getPreviewerComponentFormPathById from "./utils/getPreviewerComponentFormPathsById";
+import { useNavigableTreeContext } from "../../contexts/NavigableTreeContext";
 
 const validationSchema = yup.object({
   messageComponent: createPreviewerComponentSchema().optional(),
@@ -60,6 +62,7 @@ interface PreviewerContextType {
   resetMessage: () => void;
   moveComponentUp: (componentId: string) => void;
   moveComponentDown: (componentId: string) => void;
+  updateCurrentlySelectedComponent: <T extends Component>(newVal: T) => void;
   currentArticleId: string | undefined;
   currentArticle?: Record<string, string>;
   isLoading: boolean;
@@ -85,6 +88,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const { userFeed, articleFormatOptions } = useUserFeedContext();
   const { connection } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
   const { setValue, getValues } = useFormContext<PreviewerFormState>();
+  const { currentSelectedId } = useNavigableTreeContext();
   const { t } = useTranslation();
 
   // Article preview state
@@ -308,6 +312,25 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     );
   };
 
+  const updateCurrentlySelectedComponent: PreviewerContextType["updateCurrentlySelectedComponent"] =
+    (newComponent) => {
+      if (!currentSelectedId) {
+        return;
+      }
+
+      const { messageComponent } = getValues();
+
+      if (!messageComponent) {
+        return;
+      }
+
+      const formPath = getPreviewerComponentFormPathById(messageComponent, currentSelectedId);
+
+      if (formPath) {
+        setValue(formPath as any, newComponent);
+      }
+    };
+
   const currentArticle = articlesResponse?.result.articles?.[0];
 
   const contextValue: PreviewerContextType = useMemo(
@@ -324,6 +347,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       currentArticle,
       hasNoArticles,
       isFetchingDifferentArticle,
+      updateCurrentlySelectedComponent,
     }),
     [
       articles,
@@ -335,6 +359,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       t,
       hasNoArticles,
       isFetchingDifferentArticle,
+      updateCurrentlySelectedComponent,
     ]
   );
 

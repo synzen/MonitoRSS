@@ -36,6 +36,9 @@ import { DiscordButtonStyle } from "./constants/DiscordButtonStyle";
 import PreviewerFormState from "./types/PreviewerFormState";
 import { LegacyRootProperties } from "./componentProperties/LegacyRootProperties";
 import { LegacyTextProperties } from "./componentProperties/LegacyTextProperties";
+import findPreviewerComponentById from "./utils/findPreviewerComponentById";
+import getPreviewerComponentFormPathsById from "./utils/getPreviewerComponentFormPathsById";
+import getPreviewerFieldErrors from "./utils/getPreviewerFieldErrors";
 
 // Mock article data - in a real app this would come from props or context
 const getCurrentArticle = () => ({
@@ -47,56 +50,6 @@ const getCurrentArticle = () => ({
   publishedAt: "2024-01-15T10:30:00Z",
   feedTitle: "Tech News Daily",
 });
-
-function findComponentById(root: Component, id: string): Component | null {
-  if (root.id === id) {
-    return root;
-  }
-
-  if (root.children) {
-    for (let i = 0; i < root.children.length; i += 1) {
-      const child = root.children[i];
-      const result = findComponentById(child, id);
-      if (result) return result;
-    }
-  }
-
-  // Handle accessory for sections
-  if (root.type === ComponentType.V2Section && (root as any).accessory) {
-    const accessory = (root as any).accessory as Component;
-    const result = findComponentById(accessory, id);
-    if (result) return result;
-  }
-
-  return null;
-}
-
-function getComponentFormPathById(
-  root: Component,
-  id: string,
-  basePath: string = "messageComponent"
-): string | null {
-  if (root.id === id) {
-    return basePath;
-  }
-
-  if (root.children) {
-    for (let i = 0; i < root.children.length; i += 1) {
-      const child = root.children[i];
-      const childPath = getComponentFormPathById(child, id, `${basePath}.children.${i}`);
-      if (childPath) return childPath;
-    }
-  }
-
-  // Handle accessory for sections
-  if (root.type === ComponentType.V2Section && (root as any).accessory) {
-    const accessory = (root as any).accessory as Component;
-    const accessoryPath = getComponentFormPathById(accessory, id, `${basePath}.accessory`);
-    if (accessoryPath) return accessoryPath;
-  }
-
-  return null;
-}
 
 export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> = ({
   selectedComponentId,
@@ -156,11 +109,11 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
   const renderPropertiesForComponent = (component: Component, onChange: (value: any) => void) => {
     if (component.type === ComponentType.LegacyRoot) {
-      return <LegacyRootProperties component={component} onChange={onChange} />;
+      return <LegacyRootProperties />;
     }
 
     if (component.type === ComponentType.V2Root) {
-      return <LegacyRootProperties component={component} onChange={onChange} />;
+      return <LegacyRootProperties />;
     }
 
     if (component.type === ComponentType.LegacyText) {
@@ -175,7 +128,12 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     }
 
     if (component.type === ComponentType.LegacyEmbed) {
-      const colorError = getFieldError(component.id, "color");
+      const [colorError] = getPreviewerFieldErrors(
+        formState.errors,
+        messageComponent,
+        component.id,
+        ["color"]
+      );
 
       return (
         <VStack align="stretch" spacing={4}>
@@ -257,9 +215,12 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     }
 
     if (component.type === ComponentType.LegacyEmbedAuthor) {
-      const nameError = getFieldError(component.id, "authorName");
-      const urlError = getFieldError(component.id, "authorUrl");
-      const iconUrlError = getFieldError(component.id, "authorIconUrl");
+      const [nameError, urlError, iconUrlError] = getPreviewerFieldErrors(
+        formState.errors,
+        messageComponent,
+        component.id,
+        ["authorName", "authorUrl", "authorIconUrl"]
+      );
 
       return (
         <VStack align="stretch" spacing={4}>
@@ -304,8 +265,12 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     }
 
     if (component.type === ComponentType.LegacyEmbedTitle) {
-      const titleError = getFieldError(component.id, "title");
-      const titleUrlError = getFieldError(component.id, "titleUrl");
+      const [titleError, titleUrlError] = getPreviewerFieldErrors(
+        formState.errors,
+        messageComponent,
+        component.id,
+        ["title", "titleUrl"]
+      );
 
       return (
         <VStack align="stretch" spacing={4}>
@@ -338,7 +303,12 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     }
 
     if (component.type === ComponentType.LegacyEmbedDescription) {
-      const descriptionError = getFieldError(component.id, "description");
+      const [descriptionError] = getPreviewerFieldErrors(
+        formState.errors,
+        messageComponent,
+        component.id,
+        ["description"]
+      );
 
       return (
         <VStack align="stretch" spacing={4}>
@@ -361,7 +331,12 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     }
 
     if (component.type === ComponentType.LegacyEmbedImage) {
-      const imageUrlError = getFieldError(component.id, "imageUrl");
+      const [imageUrlError] = getPreviewerFieldErrors(
+        formState.errors,
+        messageComponent,
+        component.id,
+        ["imageUrl"]
+      );
 
       return (
         <VStack align="stretch" spacing={4}>
@@ -382,7 +357,12 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     }
 
     if (component.type === ComponentType.LegacyEmbedThumbnail) {
-      const thumbnailUrlError = getFieldError(component.id, "thumbnailUrl");
+      const [thumbnailUrlError] = getPreviewerFieldErrors(
+        formState.errors,
+        messageComponent,
+        component.id,
+        ["thumbnailUrl"]
+      );
 
       return (
         <VStack align="stretch" spacing={4}>
@@ -403,8 +383,12 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     }
 
     if (component.type === ComponentType.LegacyEmbedFooter) {
-      const footerTextError = getFieldError(component.id, "footerText");
-      const footerIconUrlError = getFieldError(component.id, "footerIconUrl");
+      const [footerTextError, footerIconUrlError] = getPreviewerFieldErrors(
+        formState.errors,
+        messageComponent,
+        component.id,
+        ["footerText", "footerIconUrl"]
+      );
 
       return (
         <VStack align="stretch" spacing={4}>
@@ -439,8 +423,12 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     }
 
     if (component.type === ComponentType.LegacyEmbedField) {
-      const fieldNameError = getFieldError(component.id, "fieldName");
-      const fieldValueError = getFieldError(component.id, "fieldValue");
+      const [fieldNameError, fieldValueError] = getPreviewerFieldErrors(
+        formState.errors,
+        messageComponent,
+        component.id,
+        ["fieldName", "fieldValue"]
+      );
 
       return (
         <VStack align="stretch" spacing={4}>
@@ -485,7 +473,12 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     }
 
     if (component.type === ComponentType.LegacyEmbedTimestamp) {
-      const timestampError = getFieldError(component.id, "timestamp");
+      const [timestampError] = getPreviewerFieldErrors(
+        formState.errors,
+        messageComponent,
+        component.id,
+        ["timestamp"]
+      );
 
       return (
         <VStack align="stretch" spacing={4}>
@@ -536,7 +529,12 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     }
 
     if (component.type === ComponentType.V2TextDisplay) {
-      const contentError = getFieldError(component.id, "content");
+      const [contentError] = getPreviewerFieldErrors(
+        formState.errors,
+        messageComponent,
+        component.id,
+        ["content"]
+      );
 
       return (
         <VStack align="stretch" spacing={4}>
@@ -572,9 +570,12 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     }
 
     if (component.type === ComponentType.V2Button) {
-      const labelError = getFieldError(component.id, "label");
-      const hrefError = getFieldError(component.id, "href");
-      const styleError = getFieldError(component.id, "style");
+      const [labelError, hrefError, styleError] = getPreviewerFieldErrors(
+        formState.errors,
+        messageComponent,
+        component.id,
+        ["label", "href", "style"]
+      );
 
       return (
         <VStack align="stretch" spacing={4}>
@@ -638,8 +639,12 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     }
 
     if (component.type === ComponentType.V2Divider) {
-      const spacingError = getFieldError(component.id, "spacing");
-      const visualError = getFieldError(component.id, "visual");
+      const [spacingError, visualError] = getPreviewerFieldErrors(
+        formState.errors,
+        messageComponent,
+        component.id,
+        ["spacing", "visual"]
+      );
 
       return (
         <VStack align="stretch" spacing={4}>
@@ -679,9 +684,12 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     }
 
     if (component.type === ComponentType.LegacyButton) {
-      const labelError = getFieldError(component.id, "label");
-      const styleError = getFieldError(component.id, "style");
-      const urlError = getFieldError(component.id, "url");
+      const [labelError, styleError, urlError] = getPreviewerFieldErrors(
+        formState.errors,
+        messageComponent,
+        component.id,
+        ["label", "style", "url"]
+      );
 
       return (
         <VStack align="stretch" spacing={4}>
@@ -778,13 +786,13 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   };
 
   const formPath = messageComponent
-    ? getComponentFormPathById(messageComponent, selectedComponentId)
+    ? getPreviewerComponentFormPathsById(messageComponent, selectedComponentId)
     : null;
 
   let component: Component | null = null;
 
   if (messageComponent) {
-    component = findComponentById(messageComponent, selectedComponentId);
+    component = findPreviewerComponentById(messageComponent, selectedComponentId);
   }
 
   if (!component) {
@@ -826,7 +834,12 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   const canMoveUp = positionInfo && positionInfo.index > 0;
   const canMoveDown = positionInfo && positionInfo.index < positionInfo.total - 1;
 
-  const nameFieldError = getFieldError(component.id, "name");
+  const [nameFieldError] = getPreviewerFieldErrors(
+    formState.errors,
+    messageComponent,
+    component.id,
+    ["name"]
+  );
   const isRootComponent = ROOT_COMPONENT_TYPES.includes(component.type);
 
   return (

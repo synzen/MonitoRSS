@@ -22,6 +22,7 @@ import {
   IconButton,
 } from "@chakra-ui/react";
 import { FiFilter } from "react-icons/fi";
+import { useFormContext } from "react-hook-form";
 import { HelpDialog } from "../../../components";
 import MessagePlaceholderText from "../../../components/MessagePlaceholderText";
 import { useDiscordChannelForumTags } from "../../../features/feedConnections/hooks";
@@ -30,12 +31,9 @@ import { LogicalFilterExpression } from "../../../features/feedConnections/types
 import { useUserFeedConnectionContext } from "../../../contexts/UserFeedConnectionContext";
 import { FeedDiscordChannelConnection } from "../../../types";
 import { useDiscordWebhook } from "../../../features/discordWebhooks";
+import PreviewerFormState from "../types/PreviewerFormState";
+import { usePreviewerContext } from "../PreviewerContext";
 import { MessageComponentRoot } from "../types";
-
-interface LegacyRootPropertiesProps {
-  component: MessageComponentRoot;
-  onChange: (value: any) => void;
-}
 
 const TagCheckbox = ({
   emojiName,
@@ -104,10 +102,11 @@ const TagCheckbox = ({
   );
 };
 
-export const LegacyRootProperties: React.FC<LegacyRootPropertiesProps> = ({
-  component,
-  onChange,
-}) => {
+export const LegacyRootProperties: React.FC = () => {
+  const { updateCurrentlySelectedComponent: onChange } = usePreviewerContext();
+  const { watch } = useFormContext<PreviewerFormState>();
+  const component = watch("messageComponent");
+
   // Get connection information for forum tags
   const { connection } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
   const guildId = connection?.details.channel?.guildId || connection?.details.webhook?.guildId;
@@ -126,9 +125,13 @@ export const LegacyRootProperties: React.FC<LegacyRootPropertiesProps> = ({
   );
   const showChannelNewThreadOptions = connection.details.channel?.type === "new-thread";
 
+  if (!component) {
+    return null;
+  }
+
   return (
     <VStack align="stretch" spacing={4}>
-      {component.isForumChannel && (
+      {component?.isForumChannel && (
         <>
           <FormControl>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
@@ -234,8 +237,13 @@ export const LegacyRootProperties: React.FC<LegacyRootPropertiesProps> = ({
             <Input
               aria-label="Channel thread title"
               spellCheck={false}
-              value={component.channelNewThreadTitle || ""}
-              onChange={(e) => onChange({ ...component, channelNewThreadTitle: e.target.value })}
+              value={component?.channelNewThreadTitle || ""}
+              onChange={(e) =>
+                onChange<MessageComponentRoot>({
+                  ...component,
+                  channelNewThreadTitle: e.target.value,
+                })
+              }
               bg="gray.700"
             />
             <FormHelperText fontSize="sm" color="gray.400">
@@ -250,7 +258,7 @@ export const LegacyRootProperties: React.FC<LegacyRootPropertiesProps> = ({
                 Hide Message in Channel
               </FormLabel>
               <Switch
-                isChecked={!!component.channelNewThreadExcludesPreview}
+                isChecked={!!component?.channelNewThreadExcludesPreview}
                 onChange={(e) =>
                   onChange({ ...component, channelNewThreadExcludesPreview: e.target.checked })
                 }
