@@ -1078,8 +1078,6 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     ? getComponentFormPathById(messageComponent, selectedComponentId)
     : null;
 
-  console.log("🚀 ~ selectedComponentId:", selectedComponentId);
-  console.log("🚀 ~ messageComponent:", messageComponent);
   let component: Component | null = null;
 
   if (messageComponent) {
