@@ -1,28 +1,30 @@
 import { FieldError, FieldErrorsImpl, Merge } from "react-hook-form";
-import { MESSAGE_ROOT_ID } from "../types";
-import MessageBuilderComponent from "../components/base";
-import { DiscordComponentType } from "../constants/DiscordComponentType";
-import MessageComponentV2Section from "../components/MessageComponentV2Section";
-import PreviewerProblem from "../types/PreviewerProblem";
-import MessageComponentV2TextDisplay from "../components/MessageComponentV2TextDisplay";
-import MessageComponentLegacyEmbedAuthor from "../components/MessageComponentLegacyEmbedAuthor";
-import MessageComponentLegacyEmbedTitle from "../components/MessageComponentLegacyEmbedTitle";
-import MessageComponentLegacyEmbedDescription from "../components/MessageComponentLegacyEmbedDescription";
-import MessageComponentLegacyEmbedFooter from "../components/MessageComponentLegacyEmbedFooter";
-import MessageComponentLegacyEmbedImage from "../components/MessageComponentLegacyEmbedImage";
-import MessageComponentLegacyEmbedThumbnail from "../components/MessageComponentLegacyEmbedThumbnail";
+import {
+  MESSAGE_ROOT_ID,
+  ComponentType,
+  Component,
+  PreviewerProblem,
+  MessageComponentRoot,
+  LegacyEmbedAuthorComponent,
+  LegacyEmbedTitleComponent,
+  LegacyEmbedDescriptionComponent,
+  LegacyEmbedFooterComponent,
+  LegacyEmbedImageComponent,
+  LegacyEmbedThumbnailComponent,
+} from "../types";
+import getPreviewerComponentLabel from "./getPreviewerComponentLabel";
 
 const getComponentPath = (
-  component: MessageBuilderComponent,
+  component: Component,
   targetId: string,
   currentPath = ""
 ): string | null => {
   interface StackItem {
-    component: MessageBuilderComponent;
+    component: Component;
     path: string;
   }
 
-  const stack: StackItem[] = [{ component, path: currentPath || component.label }];
+  const stack: StackItem[] = [{ component, path: currentPath || component.name }];
 
   while (stack.length > 0) {
     const { component: currentComponent, path } = stack.pop()!;
@@ -32,23 +34,18 @@ const getComponentPath = (
     }
 
     // Add accessory to stack (will be processed first due to stack LIFO nature)
-    if (
-      currentComponent.type === DiscordComponentType.V2Section &&
-      (currentComponent as MessageComponentV2Section).accessory
-    ) {
-      const accessoryPath = `${path} > ${currentComponent.label} (accessory)`;
-      stack.push({
-        component: (currentComponent as MessageComponentV2Section)
-          .accessory as MessageBuilderComponent,
-        path: accessoryPath,
-      });
+    if (currentComponent.type === ComponentType.V2Section && currentComponent.accessory) {
+      const accessoryPath = `${path} > ${getPreviewerComponentLabel(
+        currentComponent.type
+      )} (accessory)`;
+      stack.push({ component: currentComponent.accessory, path: accessoryPath });
     }
 
     // Add children to stack in reverse order to maintain left-to-right processing
     if (currentComponent.children) {
       for (let i = currentComponent.children.length - 1; i >= 0; i -= 1) {
         const child = currentComponent.children[i];
-        const childPath = `${path} > ${child.label}`;
+        const childPath = `${path} > ${getPreviewerComponentLabel(child.type)}`;
         stack.push({ component: child, path: childPath });
       }
     }
@@ -59,7 +56,7 @@ const getComponentPath = (
 
 const extractPreviewerProblems = (
   formStateErrors: Merge<FieldError, FieldErrorsImpl<any>> | undefined,
-  messageComponent?: MessageBuilderComponent
+  messageComponent?: MessageComponentRoot
 ) => {
   const problems: Array<PreviewerProblem> = [];
 
@@ -69,16 +66,12 @@ const extractPreviewerProblems = (
 
   let textDisplayCharacterCount = 0;
 
-  const processErrors = (
-    errors: Record<string, any>,
-    component: MessageBuilderComponent,
-    currentPath = ""
-  ) => {
+  const processErrors = (errors: Record<string, any>, component: Component, currentPath = "") => {
     if (!errors || typeof errors !== "object") return;
 
     Object.keys(errors).forEach((key) => {
-      if (component.type === DiscordComponentType.V2TextDisplay && key === "content") {
-        const content = (component as MessageComponentV2TextDisplay).data?.content || "";
+      if (component.type === ComponentType.V2TextDisplay && key === "content") {
+        const content = component.content || "";
         const charCount = content.length;
         textDisplayCharacterCount += charCount;
       }
@@ -88,7 +81,7 @@ const extractPreviewerProblems = (
         // This is a direct error message for the current component
         problems.push({
           message: errors[key].message,
-          path: getComponentPath(messageComponent, component.id) || component.label,
+          path: getComponentPath(messageComponent, component.id) || component.name,
           componentId: component.id,
         });
       }
@@ -104,14 +97,10 @@ const extractPreviewerProblems = (
       if (
         key === "accessory" &&
         errors[key] &&
-        component.type === DiscordComponentType.V2Section &&
-        (component as MessageComponentV2Section).accessory
+        component.type === ComponentType.V2Section &&
+        component.accessory
       ) {
-        processErrors(
-          errors.accessory,
-          (component as MessageComponentV2Section).accessory as MessageBuilderComponent,
-          currentPath
-        );
+        processErrors(errors.accessory, component.accessory, currentPath);
       }
     });
   };
@@ -128,43 +117,43 @@ const extractPreviewerProblems = (
     });
   }
 
-  if (messageComponent.type === DiscordComponentType.LegacyRoot) {
-    messageComponent.children?.forEach((component) => {
-      if (component.type !== DiscordComponentType.LegacyEmbed) {
+  if (messageComponent.type === ComponentType.LegacyRoot) {
+    messageComponent.children.forEach((component) => {
+      if (component.type !== ComponentType.LegacyEmbed) {
         return;
       }
 
       const authorComponent = component.children?.find(
-        (c) => c.type === DiscordComponentType.LegacyEmbedAuthor
-      ) as MessageComponentLegacyEmbedAuthor | undefined;
+        (c) => c.type === ComponentType.LegacyEmbedAuthor
+      ) as LegacyEmbedAuthorComponent | undefined;
       const titleComponent = component.children?.find(
-        (c) => c.type === DiscordComponentType.LegacyEmbedTitle
-      ) as MessageComponentLegacyEmbedTitle | undefined;
+        (c) => c.type === ComponentType.LegacyEmbedTitle
+      ) as LegacyEmbedTitleComponent | undefined;
       const descriptionComponent = component.children?.find(
-        (c) => c.type === DiscordComponentType.LegacyEmbedDescription
-      ) as MessageComponentLegacyEmbedDescription | undefined;
+        (c) => c.type === ComponentType.LegacyEmbedDescription
+      ) as LegacyEmbedDescriptionComponent | undefined;
       const footerComponent = component.children?.find(
-        (c) => c.type === DiscordComponentType.LegacyEmbedFooter
-      ) as MessageComponentLegacyEmbedFooter | undefined;
+        (c) => c.type === ComponentType.LegacyEmbedFooter
+      ) as LegacyEmbedFooterComponent | undefined;
       const imageComponent = component.children?.find(
-        (c) => c.type === DiscordComponentType.LegacyEmbedImage
-      ) as MessageComponentLegacyEmbedImage | undefined;
+        (c) => c.type === ComponentType.LegacyEmbedImage
+      ) as LegacyEmbedImageComponent | undefined;
       const thumbnailComponent = component.children?.find(
-        (c) => c.type === DiscordComponentType.LegacyEmbedThumbnail
-      ) as MessageComponentLegacyEmbedThumbnail | undefined;
+        (c) => c.type === ComponentType.LegacyEmbedThumbnail
+      ) as LegacyEmbedThumbnailComponent | undefined;
 
-      const authorName = authorComponent?.data?.authorName;
-      const title = titleComponent?.data?.title;
-      const description = descriptionComponent?.data?.description;
-      const footerText = footerComponent?.data?.footerText;
-      const imageUrl = imageComponent?.data?.imageUrl;
-      const thumbnailUrl = thumbnailComponent?.data?.thumbnailUrl;
+      const authorName = authorComponent?.authorName;
+      const title = titleComponent?.title;
+      const description = descriptionComponent?.description;
+      const footerText = footerComponent?.footerText;
+      const imageUrl = imageComponent?.imageUrl;
+      const thumbnailUrl = thumbnailComponent?.thumbnailUrl;
 
       if (!authorName && !title && !description && !footerText && !imageUrl && !thumbnailUrl) {
         problems.push({
           message:
             "Embed must have at least one of author name, title text, description text, footer text, image URL, or thumbnail URL defined",
-          path: getComponentPath(messageComponent, component.id) || component.label,
+          path: getComponentPath(messageComponent, component.id) || component.name,
           componentId: component.id,
         });
       }

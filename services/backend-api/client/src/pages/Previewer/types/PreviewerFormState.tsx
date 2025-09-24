@@ -1,7 +1,7 @@
-import type MessageBuilderComponent from "../components/base";
+import { MessageComponentRoot } from "../types";
 
 type PreviewerFormState = {
-  messageComponent?: MessageBuilderComponent;
+  messageComponent?: MessageComponentRoot;
 };
 
 export default PreviewerFormState;

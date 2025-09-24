@@ -15,6 +15,8 @@ import {
 } from "@chakra-ui/react";
 import { FaPlus, FaCog, FaExclamationCircle } from "react-icons/fa";
 import { ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import type { Component, ActionRowComponent, SectionComponent } from "./types";
+import { ComponentType } from "./types";
 import {
   NavigableTreeItem,
   NavigableTreeItemExpandButton,
@@ -25,12 +27,11 @@ import { usePreviewerContext } from "./PreviewerContext";
 import getChakraColor from "../../utils/getChakraColor";
 import { SlidingConfigPanel } from "./SlidingConfigPanel";
 import { useConfigPanel } from "../../hooks/useConfigPanel";
-import MessageBuilderComponent from "./components/base";
-import { DiscordComponentType } from "./constants/DiscordComponentType";
-import MessageComponentV2Section from "./components/MessageComponentV2Section";
+import getPreviewerComponentLabel from "./utils/getPreviewerComponentLabel";
+import getPreviewerComponentIcon from "./utils/getPreviewerComponentIcon";
 
 interface ComponentTreeItemProps {
-  component: MessageBuilderComponent;
+  component: Component;
   depth?: number;
   scrollToComponentId?: string | null;
   componentIdsWithProblems: Set<string>;
@@ -49,15 +50,15 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
   const componentChildrenCount = component.children?.length || 0;
   const hasChildren = component.children && component.children.length > 0;
   const hasAccessory =
-    component.type === DiscordComponentType.V2Section &&
-    (component as MessageComponentV2Section).accessory !== undefined;
+    component.type === ComponentType.V2Section &&
+    (component as SectionComponent).accessory !== undefined;
   const canHaveChildren =
-    component.type === DiscordComponentType.LegacyRoot ||
-    component.type === DiscordComponentType.LegacyEmbed ||
-    component.type === DiscordComponentType.LegacyActionRow ||
-    component.type === DiscordComponentType.V2Root ||
-    component.type === DiscordComponentType.V2ActionRow ||
-    component.type === DiscordComponentType.V2Section;
+    component.type === ComponentType.LegacyRoot ||
+    component.type === ComponentType.LegacyEmbed ||
+    component.type === ComponentType.LegacyActionRow ||
+    component.type === ComponentType.V2Root ||
+    component.type === ComponentType.V2ActionRow ||
+    component.type === ComponentType.V2Section;
   const { isFocused, isExpanded, isSelected, setIsExpanded } = useNavigableTreeItemContext();
 
   const onAddChildComponent = (...args: Parameters<typeof addChildComponent>) => {
@@ -109,11 +110,11 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
           )}
           {!canHaveChildren && <Box w={6} />}
           <Box fontSize="xs" mr={2} color="gray.400">
-            {React.createElement(component.icon)}
+            {React.createElement(getPreviewerComponentIcon(component.type))}
           </Box>
           <HStack flex={1} justifyContent="flex-start">
             <Text fontSize="sm" color="white">
-              {component.label}
+              {getPreviewerComponentLabel(component.type)}
             </Text>
             {componentIdsWithProblems.has(component.id) && (
               <Icon
@@ -154,13 +155,12 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                 _hover={{ color: "white", bg: "gray.600" }}
               />
               <MenuList bg="gray.700" borderColor="gray.600" zIndex={3}>
-                {component.type === DiscordComponentType.LegacyRoot && (
+                {component.type === ComponentType.LegacyRoot && (
                   <>
                     <MenuGroup
                       title={`Text (${
-                        component.children?.filter(
-                          (c) => c.type === DiscordComponentType.LegacyText
-                        ).length || 0
+                        component.children?.filter((c) => c.type === ComponentType.LegacyText)
+                          .length || 0
                       }/1)`}
                     >
                       <MenuItem
@@ -169,13 +169,13 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                         color="white"
                         onClick={() => {
                           const hasText = component.children?.some(
-                            (c) => c.type === DiscordComponentType.LegacyText
+                            (c) => c.type === ComponentType.LegacyText
                           );
                           if (hasText) return;
-                          onAddChildComponent(component.id, DiscordComponentType.LegacyText);
+                          onAddChildComponent(component.id, ComponentType.LegacyText);
                         }}
                         isDisabled={component.children?.some(
-                          (c) => c.type === DiscordComponentType.LegacyText
+                          (c) => c.type === ComponentType.LegacyText
                         )}
                       >
                         Add Text
@@ -183,9 +183,8 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                     </MenuGroup>
                     <MenuGroup
                       title={`Embeds (${
-                        component.children?.filter(
-                          (c) => c.type === DiscordComponentType.LegacyEmbed
-                        ).length || 0
+                        component.children?.filter((c) => c.type === ComponentType.LegacyEmbed)
+                          .length || 0
                       }/9)`}
                     >
                       <MenuItem
@@ -194,16 +193,14 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                         color="white"
                         onClick={() => {
                           const embedCount =
-                            component.children?.filter(
-                              (c) => c.type === DiscordComponentType.LegacyEmbed
-                            ).length || 0;
+                            component.children?.filter((c) => c.type === ComponentType.LegacyEmbed)
+                              .length || 0;
                           if (embedCount >= 9) return;
-                          onAddChildComponent(component.id, DiscordComponentType.LegacyEmbed);
+                          onAddChildComponent(component.id, ComponentType.LegacyEmbed);
                         }}
                         aria-disabled={
-                          (component.children?.filter(
-                            (c) => c.type === DiscordComponentType.LegacyEmbed
-                          ).length || 0) >= 9
+                          (component.children?.filter((c) => c.type === ComponentType.LegacyEmbed)
+                            .length || 0) >= 9
                         }
                       >
                         Add Embed
@@ -211,9 +208,8 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                     </MenuGroup>
                     <MenuGroup
                       title={`Action Rows (${
-                        component.children?.filter(
-                          (c) => c.type === DiscordComponentType.LegacyActionRow
-                        ).length || 0
+                        component.children?.filter((c) => c.type === ComponentType.LegacyActionRow)
+                          .length || 0
                       }/5)`}
                     >
                       <MenuItem
@@ -223,14 +219,14 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                         onClick={() => {
                           const actionRowCount =
                             component.children?.filter(
-                              (c) => c.type === DiscordComponentType.LegacyActionRow
+                              (c) => c.type === ComponentType.LegacyActionRow
                             ).length || 0;
                           if (actionRowCount >= 5) return;
-                          onAddChildComponent(component.id, DiscordComponentType.LegacyActionRow);
+                          onAddChildComponent(component.id, ComponentType.LegacyActionRow);
                         }}
                         aria-disabled={
                           (component.children?.filter(
-                            (c) => c.type === DiscordComponentType.LegacyActionRow
+                            (c) => c.type === ComponentType.LegacyActionRow
                           ).length || 0) >= 5
                         }
                       >
@@ -239,7 +235,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                     </MenuGroup>
                   </>
                 )}
-                {component.type === DiscordComponentType.LegacyEmbed && (
+                {component.type === ComponentType.LegacyEmbed && (
                   <>
                     <MenuGroup title="Embed Components">
                       <MenuItem
@@ -247,10 +243,10 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                         _hover={{ bg: "gray.600" }}
                         color="white"
                         onClick={() => {
-                          onAddChildComponent(component.id, DiscordComponentType.LegacyEmbedAuthor);
+                          onAddChildComponent(component.id, ComponentType.LegacyEmbedAuthor);
                         }}
                         isDisabled={component.children?.some(
-                          (c) => c.type === DiscordComponentType.LegacyEmbedAuthor
+                          (c) => c.type === ComponentType.LegacyEmbedAuthor
                         )}
                       >
                         Add Author
@@ -260,10 +256,10 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                         _hover={{ bg: "gray.600" }}
                         color="white"
                         onClick={() => {
-                          onAddChildComponent(component.id, DiscordComponentType.LegacyEmbedTitle);
+                          onAddChildComponent(component.id, ComponentType.LegacyEmbedTitle);
                         }}
                         isDisabled={component.children?.some(
-                          (c) => c.type === DiscordComponentType.LegacyEmbedTitle
+                          (c) => c.type === ComponentType.LegacyEmbedTitle
                         )}
                       >
                         Add Title
@@ -273,13 +269,10 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                         _hover={{ bg: "gray.600" }}
                         color="white"
                         onClick={() => {
-                          onAddChildComponent(
-                            component.id,
-                            DiscordComponentType.LegacyEmbedDescription
-                          );
+                          onAddChildComponent(component.id, ComponentType.LegacyEmbedDescription);
                         }}
                         isDisabled={component.children?.some(
-                          (c) => c.type === DiscordComponentType.LegacyEmbedDescription
+                          (c) => c.type === ComponentType.LegacyEmbedDescription
                         )}
                       >
                         Add Description
@@ -289,10 +282,10 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                         _hover={{ bg: "gray.600" }}
                         color="white"
                         onClick={() => {
-                          onAddChildComponent(component.id, DiscordComponentType.LegacyEmbedImage);
+                          onAddChildComponent(component.id, ComponentType.LegacyEmbedImage);
                         }}
                         isDisabled={component.children?.some(
-                          (c) => c.type === DiscordComponentType.LegacyEmbedImage
+                          (c) => c.type === ComponentType.LegacyEmbedImage
                         )}
                       >
                         Add Image
@@ -302,13 +295,10 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                         _hover={{ bg: "gray.600" }}
                         color="white"
                         onClick={() => {
-                          onAddChildComponent(
-                            component.id,
-                            DiscordComponentType.LegacyEmbedThumbnail
-                          );
+                          onAddChildComponent(component.id, ComponentType.LegacyEmbedThumbnail);
                         }}
                         isDisabled={component.children?.some(
-                          (c) => c.type === DiscordComponentType.LegacyEmbedThumbnail
+                          (c) => c.type === ComponentType.LegacyEmbedThumbnail
                         )}
                       >
                         Add Thumbnail
@@ -318,10 +308,10 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                         _hover={{ bg: "gray.600" }}
                         color="white"
                         onClick={() => {
-                          onAddChildComponent(component.id, DiscordComponentType.LegacyEmbedFooter);
+                          onAddChildComponent(component.id, ComponentType.LegacyEmbedFooter);
                         }}
                         isDisabled={component.children?.some(
-                          (c) => c.type === DiscordComponentType.LegacyEmbedFooter
+                          (c) => c.type === ComponentType.LegacyEmbedFooter
                         )}
                       >
                         Add Footer
@@ -331,13 +321,10 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                         _hover={{ bg: "gray.600" }}
                         color="white"
                         onClick={() => {
-                          onAddChildComponent(
-                            component.id,
-                            DiscordComponentType.LegacyEmbedTimestamp
-                          );
+                          onAddChildComponent(component.id, ComponentType.LegacyEmbedTimestamp);
                         }}
                         isDisabled={component.children?.some(
-                          (c) => c.type === DiscordComponentType.LegacyEmbedTimestamp
+                          (c) => c.type === ComponentType.LegacyEmbedTimestamp
                         )}
                       >
                         Add Timestamp
@@ -345,9 +332,8 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                     </MenuGroup>
                     <MenuGroup
                       title={`Embed Fields (${
-                        component.children?.filter(
-                          (c) => c.type === DiscordComponentType.LegacyEmbedField
-                        ).length || 0
+                        component.children?.filter((c) => c.type === ComponentType.LegacyEmbedField)
+                          .length || 0
                       }/25)`}
                     >
                       <MenuItem
@@ -357,14 +343,14 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                         onClick={() => {
                           const fieldCount =
                             component.children?.filter(
-                              (c) => c.type === DiscordComponentType.LegacyEmbedField
+                              (c) => c.type === ComponentType.LegacyEmbedField
                             ).length || 0;
                           if (fieldCount >= 25) return;
-                          onAddChildComponent(component.id, DiscordComponentType.LegacyEmbedField);
+                          onAddChildComponent(component.id, ComponentType.LegacyEmbedField);
                         }}
                         aria-disabled={
                           (component.children?.filter(
-                            (c) => c.type === DiscordComponentType.LegacyEmbedField
+                            (c) => c.type === ComponentType.LegacyEmbedField
                           ).length || 0) >= 25
                         }
                       >
@@ -373,7 +359,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                     </MenuGroup>
                   </>
                 )}
-                {component.type === DiscordComponentType.LegacyActionRow && (
+                {component.type === ComponentType.LegacyActionRow && (
                   <MenuGroup title={`Buttons (${componentChildrenCount}/5)`}>
                     <MenuItem
                       bg="gray.700"
@@ -381,7 +367,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                       color="white"
                       onClick={() => {
                         if (componentChildrenCount >= 5) return;
-                        onAddChildComponent(component.id, DiscordComponentType.LegacyButton);
+                        onAddChildComponent(component.id, ComponentType.LegacyButton);
                       }}
                       aria-disabled={componentChildrenCount >= 5}
                     >
@@ -389,7 +375,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                     </MenuItem>
                   </MenuGroup>
                 )}
-                {component.type === DiscordComponentType.V2Root && (
+                {component.type === ComponentType.V2Root && (
                   <MenuGroup title={`Components (${componentChildrenCount}/10)`}>
                     <MenuItem
                       bg="gray.700"
@@ -397,7 +383,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                       color="white"
                       onClick={() => {
                         if ((component.children?.length || 0) >= 10) return;
-                        onAddChildComponent(component.id, DiscordComponentType.V2TextDisplay);
+                        onAddChildComponent(component.id, ComponentType.V2TextDisplay);
                       }}
                       aria-disabled={(component.children?.length || 0) >= 10}
                     >
@@ -408,7 +394,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                       _hover={{ bg: "gray.600" }}
                       color="white"
                       onClick={() => {
-                        onAddChildComponent(component.id, DiscordComponentType.V2ActionRow);
+                        onAddChildComponent(component.id, ComponentType.V2ActionRow);
                       }}
                     >
                       Add Action Row
@@ -418,7 +404,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                       _hover={{ bg: "gray.600" }}
                       color="white"
                       onClick={() => {
-                        onAddChildComponent(component.id, DiscordComponentType.V2Section);
+                        onAddChildComponent(component.id, ComponentType.V2Section);
                       }}
                     >
                       Add Section
@@ -428,28 +414,30 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                       _hover={{ bg: "gray.600" }}
                       color="white"
                       onClick={() => {
-                        onAddChildComponent(component.id, DiscordComponentType.V2Divider);
+                        onAddChildComponent(component.id, ComponentType.V2Divider);
                       }}
                     >
                       Add Divider
                     </MenuItem>
                   </MenuGroup>
                 )}
-                {component.type === DiscordComponentType.V2ActionRow && (
-                  <MenuGroup title={`Components (${component.children?.length || 0}/5)`}>
+                {component.type === ComponentType.V2ActionRow && (
+                  <MenuGroup
+                    title={`Components (${(component as ActionRowComponent).children.length}/5)`}
+                  >
                     <MenuItem
                       bg="gray.700"
                       _hover={{ bg: "gray.600" }}
                       color="white"
                       onClick={() => {
-                        onAddChildComponent(component.id, DiscordComponentType.V2Button);
+                        onAddChildComponent(component.id, ComponentType.V2Button);
                       }}
                     >
                       Add Button
                     </MenuItem>
                   </MenuGroup>
                 )}
-                {component.type === DiscordComponentType.V2Section && (
+                {component.type === ComponentType.V2Section && (
                   <>
                     <MenuGroup title={`Components (${componentChildrenCount}/3)`}>
                       <MenuItem
@@ -457,7 +445,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                         _hover={{ bg: "gray.600" }}
                         color="white"
                         onClick={() => {
-                          onAddChildComponent(component.id, DiscordComponentType.V2TextDisplay);
+                          onAddChildComponent(component.id, ComponentType.V2TextDisplay);
                         }}
                       >
                         Add Text Display
@@ -467,7 +455,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                         _hover={{ bg: "gray.600" }}
                         color="white"
                         onClick={() => {
-                          onAddChildComponent(component.id, DiscordComponentType.V2Divider);
+                          onAddChildComponent(component.id, ComponentType.V2Divider);
                         }}
                       >
                         Add Divider
@@ -480,7 +468,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                         color="white"
                         onClick={() => {
                           if (hasAccessory) return;
-                          onAddChildComponent(component.id, DiscordComponentType.V2Button, true);
+                          onAddChildComponent(component.id, ComponentType.V2Button, true);
                         }}
                         aria-disabled={hasAccessory}
                       >
@@ -497,7 +485,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
           <VStack align="stretch" spacing={0}>
             <NavigableTreeItemGroup>
               {component.children?.map((child) => (
-                <NavigableTreeItem ariaLabel={child.label} id={child.id} key={child.id}>
+                <NavigableTreeItem ariaLabel={child.name} id={child.id} key={child.id}>
                   <ComponentTreeItem
                     component={child}
                     depth={depth + 1}
@@ -508,14 +496,12 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
               ))}
               {hasAccessory && (
                 <NavigableTreeItem
-                  ariaLabel={`${
-                    (component as MessageComponentV2Section).accessory!.label
-                  } (Accessory)`}
-                  id={(component as MessageComponentV2Section).accessory!.id}
-                  key={`accessory-${(component as MessageComponentV2Section).accessory!.id}`}
+                  ariaLabel={`${(component as SectionComponent).accessory!.name} (Accessory)`}
+                  id={(component as SectionComponent).accessory!.id}
+                  key={`accessory-${(component as SectionComponent).accessory!.id}`}
                 >
                   <ComponentTreeItem
-                    component={(component as MessageComponentV2Section).accessory!}
+                    component={(component as SectionComponent).accessory!}
                     depth={depth + 1}
                     scrollToComponentId={scrollToComponentId}
                     componentIdsWithProblems={componentIdsWithProblems}

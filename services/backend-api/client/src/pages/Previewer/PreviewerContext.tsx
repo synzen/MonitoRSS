@@ -11,16 +11,21 @@ import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { useTranslation } from "react-i18next";
-import { MESSAGE_ROOT_ID } from "./types";
+import {
+  Component,
+  ComponentType,
+  MESSAGE_ROOT_ID,
+  V2MessageComponentRoot,
+  SectionComponent,
+  MessageComponentRoot,
+} from "./types";
 import createPreviewerComponentSchema from "./utils/createPreviewerComponentSchema";
 import { useUserFeedArticles } from "../../features/feed/hooks";
 import { useUserFeedContext } from "../../contexts/UserFeedContext";
 import createNewPreviewerComponent from "./utils/createNewPreviewComponent";
 import { useGetUserFeedArticlesError } from "../../features/feedConnections";
-import { DiscordComponentType } from "./constants/DiscordComponentType";
+import getPreviewerComponentLabel from "./utils/getPreviewerComponentLabel";
 import PreviewerFormState from "./types/PreviewerFormState";
-import MessageComponentV2Root from "./components/MessageComponentV2Root";
-import MessageBuilderComponent from "./components/base";
 
 const validationSchema = yup.object({
   messageComponent: createPreviewerComponentSchema().optional(),
@@ -29,7 +34,24 @@ const validationSchema = yup.object({
 interface PreviewerContextType {
   addChildComponent: (
     parentId: string,
-    childType: DiscordComponentType,
+    childType:
+      | ComponentType.LegacyText
+      | ComponentType.LegacyEmbed
+      | ComponentType.LegacyEmbedAuthor
+      | ComponentType.LegacyEmbedTitle
+      | ComponentType.LegacyEmbedDescription
+      | ComponentType.LegacyEmbedImage
+      | ComponentType.LegacyEmbedThumbnail
+      | ComponentType.LegacyEmbedFooter
+      | ComponentType.LegacyEmbedField
+      | ComponentType.LegacyEmbedTimestamp
+      | ComponentType.LegacyActionRow
+      | ComponentType.LegacyButton
+      | ComponentType.V2TextDisplay
+      | ComponentType.V2ActionRow
+      | ComponentType.V2Button
+      | ComponentType.V2Section
+      | ComponentType.V2Divider,
     isAccessory?: boolean
   ) => void;
   deleteComponent: (componentId: string) => void;
@@ -111,35 +133,44 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, [firstArticleId, status]);
 
-  const addChildComponent: PreviewerContextType["addChildComponent"] = (parentId, childType) => {
+  const addChildComponent: PreviewerContextType["addChildComponent"] = (
+    parentId,
+    childType,
+    isAccessory = false
+  ) => {
     const messageComponent = getValues("messageComponent");
     const newComponent = createNewPreviewerComponent(childType);
 
-    const updateComponentTree = (component?: MessageBuilderComponent): MessageBuilderComponent => {
+    const updateComponentTree = (component?: Component): Component => {
       if (!component) {
         return newComponent;
       }
 
       if (component.id === parentId) {
-        // if (isAccessory && component.type === ComponentType.V2Section) {
-        //   return {
-        //     ...component,
-        //     accessory: newComponent,
-        //   } as SectionComponent;
-        // }
-        component.setChildren([...(component.children || []), newComponent]);
+        if (isAccessory && component.type === ComponentType.V2Section) {
+          return {
+            ...component,
+            accessory: newComponent,
+          } as SectionComponent;
+        }
 
-        return component;
+        return {
+          ...component,
+          children: [...(component.children || []), newComponent],
+        } as Component;
       }
 
       if (component.children) {
-        component.setChildren(component.children.map(updateComponentTree));
+        return {
+          ...component,
+          children: component.children.map(updateComponentTree),
+        } as Component;
       }
 
       return component;
     };
 
-    setValue("messageComponent", updateComponentTree(messageComponent?.clone()), {
+    setValue("messageComponent", updateComponentTree(messageComponent) as MessageComponentRoot, {
       shouldValidate: true,
       shouldDirty: true,
       shouldTouch: true,
@@ -153,27 +184,36 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     if (!messageComponent) return;
 
-    const removeFromTree = (component: MessageBuilderComponent): MessageBuilderComponent | null => {
+    const removeFromTree = (component: Component): Component | null => {
+      // Handle section accessory removal
+      if (component.type === ComponentType.V2Section && component.accessory?.id === componentId) {
+        return {
+          ...component,
+          accessory: undefined,
+        } as SectionComponent;
+      }
+
       // Handle children removal
       if (component.children) {
         const updatedChildren = component.children
           .filter((child) => child.id !== componentId)
           .map(removeFromTree)
-          .filter((child): child is MessageBuilderComponent => child !== null);
+          .filter((child): child is Component => child !== null);
 
-        component.setChildren(updatedChildren);
-
-        return component;
+        return {
+          ...component,
+          children: updatedChildren,
+        } as Component;
       }
 
       // If this is the component to delete and it has no children, return null
       return component.id === componentId ? null : component;
     };
 
-    const updatedComponent = removeFromTree(messageComponent.clone());
+    const updatedComponent = removeFromTree(messageComponent);
 
     if (updatedComponent) {
-      setValue("messageComponent", updatedComponent, {
+      setValue("messageComponent", updatedComponent as MessageComponentRoot, {
         shouldValidate: true,
         shouldDirty: true,
         shouldTouch: true,
@@ -186,7 +226,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     if (!messageComponent) return;
 
-    const updateTree = (component: MessageBuilderComponent): MessageBuilderComponent => {
+    const updateTree = (component: Component): Component => {
       if (component.children) {
         const childIndex = component.children.findIndex((child) => child.id === componentId);
 
@@ -197,20 +237,22 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             newChildren[childIndex - 1],
           ];
 
-          component.setChildren(newChildren);
-
-          return component;
+          return {
+            ...component,
+            children: newChildren,
+          } as Component;
         }
 
-        component.setChildren(component.children.map(updateTree));
-
-        return component;
+        return {
+          ...component,
+          children: component.children.map(updateTree),
+        } as Component;
       }
 
       return component;
     };
 
-    setValue("messageComponent", updateTree(messageComponent.clone()));
+    setValue("messageComponent", updateTree(messageComponent) as V2MessageComponentRoot);
   };
 
   const moveComponentDown: PreviewerContextType["moveComponentDown"] = (componentId) => {
@@ -218,7 +260,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     if (!messageComponent) return;
 
-    const updateTree = (component: MessageBuilderComponent): MessageBuilderComponent => {
+    const updateTree = (component: Component): Component => {
       if (component.children) {
         const childIndex = component.children.findIndex((child) => child.id === componentId);
 
@@ -232,23 +274,32 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           return {
             ...component,
             children: newChildren,
-          } as MessageBuilderComponent;
+          } as Component;
         }
 
         return {
           ...component,
           children: component.children.map(updateTree),
-        } as MessageBuilderComponent;
+        } as Component;
       }
 
       return component;
     };
 
-    setValue("messageComponent", updateTree(messageComponent));
+    setValue("messageComponent", updateTree(messageComponent) as V2MessageComponentRoot);
   };
 
   const resetMessage: PreviewerContextType["resetMessage"] = () => {
-    setValue("messageComponent", new MessageComponentV2Root(), { shouldValidate: true });
+    setValue(
+      "messageComponent",
+      {
+        id: MESSAGE_ROOT_ID,
+        type: ComponentType.V2Root,
+        name: getPreviewerComponentLabel(ComponentType.V2Root),
+        children: [],
+      },
+      { shouldValidate: true }
+    );
   };
 
   const currentArticle = articlesResponse?.result.articles?.[0];
