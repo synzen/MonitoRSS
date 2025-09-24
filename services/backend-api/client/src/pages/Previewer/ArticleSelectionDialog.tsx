@@ -19,7 +19,7 @@ import {
   FormLabel,
   FormControl,
 } from "@chakra-ui/react";
-import { SearchIcon } from "@chakra-ui/icons";
+import { SearchIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import { ArticlePropertySelect } from "../../features/feedConnections/components/ArticlePropertySelect";
 import { useUserFeedConnectionContext } from "../../contexts/UserFeedConnectionContext";
 import { useUserFeedArticles } from "../../features/feed";
@@ -251,6 +251,7 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
             {/* Articles List */}
             {!isLoading && !error && articles.length > 0 && (
               <>
+                {/* Articles List Header */}
                 <VStack
                   spacing={0}
                   align="stretch"
@@ -268,7 +269,7 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
                         key={article.id}
                         role="listitem"
                         variant="ghost"
-                        justifyContent="flex-start"
+                        justifyContent="space-between"
                         p={4}
                         h="auto"
                         minH="auto"
@@ -315,6 +316,13 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
                             {getDisplayValue(article)}
                           </Text>
                         </VStack>
+                        <ChevronRightIcon
+                          color="gray.400"
+                          fontSize="lg"
+                          ml={2}
+                          flexShrink={0}
+                          aria-hidden="true"
+                        />
                       </Button>
                     );
                   })}

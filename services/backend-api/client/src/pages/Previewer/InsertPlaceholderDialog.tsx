@@ -16,7 +16,7 @@ import {
   InputLeftElement,
   Spinner,
 } from "@chakra-ui/react";
-import { SearchIcon } from "@chakra-ui/icons";
+import { SearchIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import { usePreviewerContext } from "./PreviewerContext";
 
 interface MergeTag {
@@ -184,7 +184,7 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
                 <Button
                   key={ph.tag}
                   variant="ghost"
-                  justifyContent="flex-start"
+                  justifyContent="space-between"
                   p={4}
                   h="auto"
                   minH="auto"
@@ -217,6 +217,13 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
                       {ph.content}
                     </Text>
                   </VStack>
+                  <ChevronRightIcon
+                    color="gray.400"
+                    fontSize="lg"
+                    ml={2}
+                    flexShrink={0}
+                    aria-hidden="true"
+                  />
                 </Button>
               ))}
           </VStack>
