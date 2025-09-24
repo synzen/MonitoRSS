@@ -11,6 +11,7 @@ import {
   Checkbox,
   FormControl,
   FormErrorMessage,
+  FormHelperText,
   Alert,
   AlertIcon,
   FormLabel,
@@ -23,6 +24,8 @@ import {
   PopoverTrigger,
   PopoverContent,
   IconButton,
+  Code,
+  chakra,
 } from "@chakra-ui/react";
 import { DeleteIcon, ChevronUpIcon, ChevronDownIcon, AddIcon, CloseIcon } from "@chakra-ui/icons";
 import { SketchPicker } from "react-color";
@@ -30,6 +33,8 @@ import { FieldError, useFormContext } from "react-hook-form";
 import type { Component, ComponentPropertiesPanelProps, TextDisplayComponent } from "./types";
 import { ComponentType, ROOT_COMPONENT_TYPES } from "./types";
 import { InsertPlaceholderDialog } from "./InsertPlaceholderDialog";
+import { HelpDialog } from "../../components";
+import { AutoResizeTextarea } from "../../components/AutoResizeTextarea";
 
 import { usePreviewerContext } from "./PreviewerContext";
 import { DiscordButtonStyle } from "./constants/DiscordButtonStyle";
@@ -177,6 +182,117 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
   const renderPropertiesForComponent = (component: Component, onChange: (value: any) => void) => {
     switch (component.type) {
+      case ComponentType.LegacyRoot: {
+        return (
+          <VStack align="stretch" spacing={4}>
+            <FormControl>
+              <HStack justify="space-between" align="center" mb={2}>
+                <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
+                  Format Tables
+                </FormLabel>
+                <Switch
+                  isChecked={!!component.formatTables}
+                  onChange={(e) => onChange({ ...component, formatTables: e.target.checked })}
+                  colorScheme="blue"
+                />
+              </HStack>
+              <FormHelperText fontSize="sm" color="gray.400">
+                If enabled, tables will be formatted to ensure uniform spacing. This is done by
+                wrapping the table with triple backticks (```table here``` for example).
+              </FormHelperText>
+            </FormControl>
+            <FormControl>
+              <HStack justify="space-between" align="center" mb={2}>
+                <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
+                  Strip Images
+                </FormLabel>
+                <Switch
+                  isChecked={!!component.stripImages}
+                  onChange={(e) => onChange({ ...component, stripImages: e.target.checked })}
+                  colorScheme="blue"
+                />
+              </HStack>
+              <FormHelperText fontSize="sm" color="gray.400">
+                If enabled, all images with &quot;src&quot; attributes found in the message content
+                will be removed.
+              </FormHelperText>
+            </FormControl>
+            <FormControl>
+              <HStack justify="space-between" align="center" mb={2}>
+                <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
+                  Ignore New Lines
+                </FormLabel>
+                <Switch
+                  isChecked={!!component.ignoreNewLines}
+                  onChange={(e) => onChange({ ...component, ignoreNewLines: e.target.checked })}
+                  colorScheme="blue"
+                />
+              </HStack>
+              <FormHelperText fontSize="sm" color="gray.400">
+                Prevents excessive new lines from being added to the message if the text content
+                within placeholder content have new lines.
+              </FormHelperText>
+            </FormControl>
+            <FormControl>
+              <HStack justify="space-between" align="center" mb={2}>
+                <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
+                  Placeholder Fallback
+                </FormLabel>
+                <Switch
+                  isChecked={!!component.enablePlaceholderFallback}
+                  onChange={(e) =>
+                    onChange({ ...component, enablePlaceholderFallback: e.target.checked })
+                  }
+                  colorScheme="blue"
+                />
+              </HStack>
+              <FormHelperText fontSize="sm" color="gray.400">
+                <Stack>
+                  <Text>
+                    Support falling back on alternate values within a placeholder if there is no
+                    placeholder value for a given article.
+                  </Text>
+                  <HelpDialog
+                    trigger={
+                      <Button
+                        display="inline"
+                        fontSize="sm"
+                        // mt={4}
+                        colorScheme="blue"
+                        variant="link"
+                        whiteSpace="initial"
+                        textAlign="left"
+                        mb={2}
+                      >
+                        Click here to see how to use placeholder fallbacks.
+                      </Button>
+                    }
+                    title="Using Placeholder Fallbacks"
+                    body={
+                      <Stack spacing={6}>
+                        <Text>
+                          To use placeholder fallbacks, separate each placeholder with{" "}
+                          <Code>||</Code> within the curly braces. For example, if you use{" "}
+                          <Code>{"{{title||description}}"}</Code>, then the description will be used
+                          if the title is not available.{" "}
+                        </Text>
+                        <Text>
+                          If all placeholders have no content, then you may add text as the final
+                          fallback like so:{" "}
+                          <Code>{"{{title||description||text::my final text}}"}</Code>. In this
+                          case, <Code>my final text</Code> will appear in the final output if both
+                          title and description do not exist.
+                        </Text>
+                      </Stack>
+                    }
+                  />
+                </Stack>
+              </FormHelperText>
+            </FormControl>
+          </VStack>
+        );
+      }
+
       case ComponentType.LegacyText: {
         const contentError = getFieldError(component.id, "content");
 
@@ -210,6 +326,142 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             >
               Insert Placeholder
             </Button>
+            <FormControl>
+              <HStack justify="space-between" align="center" mb={2}>
+                <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
+                  Disable Image Link Previews
+                </FormLabel>
+                <Switch
+                  isChecked={!!component.disableImageLinkPreviews}
+                  onChange={(e) =>
+                    onChange({ ...component, disableImageLinkPreviews: e.target.checked })
+                  }
+                  colorScheme="blue"
+                />
+              </HStack>
+              <FormHelperText fontSize="sm" color="gray.400">
+                If enabled, image links will be wrapped with arrow brackets to prevent Discord from
+                creating previews for them.
+              </FormHelperText>
+            </FormControl>
+            <FormControl>
+              <HStack justify="space-between" align="center" mb={2}>
+                <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
+                  Split Content
+                </FormLabel>
+                <Switch
+                  isChecked={!!component.splitOptions?.isEnabled}
+                  onChange={(e) =>
+                    onChange({
+                      ...component,
+                      splitOptions: {
+                        ...component.splitOptions,
+                        isEnabled: e.target.checked,
+                      },
+                    })
+                  }
+                  colorScheme="blue"
+                  aria-expanded={component.splitOptions?.isEnabled ? "true" : "false"}
+                  aria-controls="split-content-options"
+                />
+              </HStack>
+              <FormHelperText fontSize="sm" color="gray.400" mb={3}>
+                If enabled, the message will be split into multiple messages if it is too long.
+                Otherwise, it will attempt to be sent as one message with the maximum possible
+                number of characters.
+              </FormHelperText>
+              <fieldset hidden={!component.splitOptions?.isEnabled} id="split-content-options">
+                <chakra.legend srOnly>Split Content Options</chakra.legend>
+                <Box borderLeft="2px solid" borderColor="gray.600" pl={4} ml={0}>
+                  <VStack spacing={4} align="stretch">
+                    <FormControl>
+                      <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                        Split text
+                      </FormLabel>
+                      <AutoResizeTextarea
+                        size="sm"
+                        value={component.splitOptions?.splitChar || ""}
+                        onChange={(e) =>
+                          onChange({
+                            ...component,
+                            splitOptions: {
+                              ...component.splitOptions,
+                              splitChar: e.target.value || undefined,
+                            },
+                          })
+                        }
+                        placeholder="."
+                        rows={1}
+                        bg="gray.700"
+                        color="white"
+                        isDisabled={!component.splitOptions?.isEnabled}
+                        aria-describedby="split-text-help"
+                      />
+                      <FormHelperText fontSize="sm" color="gray.400" id="split-text-help">
+                        The text to split the text content with. Defaults to &quot;.&quot; (a
+                        period).
+                      </FormHelperText>
+                    </FormControl>
+                    <FormControl>
+                      <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                        Append text
+                      </FormLabel>
+                      <AutoResizeTextarea
+                        size="sm"
+                        value={component.splitOptions?.appendChar || ""}
+                        onChange={(e) =>
+                          onChange({
+                            ...component,
+                            splitOptions: {
+                              ...component.splitOptions,
+                              appendChar: e.target.value || undefined,
+                            },
+                          })
+                        }
+                        placeholder=""
+                        rows={1}
+                        bg="gray.700"
+                        color="white"
+                        isDisabled={!component.splitOptions?.isEnabled}
+                        aria-describedby="append-text-help"
+                      />
+                      <FormHelperText fontSize="sm" color="gray.400" id="append-text-help">
+                        The text to append to the end of the last message after the initial message
+                        has been split. Default is nothing.
+                      </FormHelperText>
+                    </FormControl>
+                    <FormControl>
+                      <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                        Prepend text
+                      </FormLabel>
+                      <AutoResizeTextarea
+                        size="sm"
+                        value={component.splitOptions?.prependChar || ""}
+                        onChange={(e) =>
+                          onChange({
+                            ...component,
+                            splitOptions: {
+                              ...component.splitOptions,
+                              prependChar: e.target.value || undefined,
+                            },
+                          })
+                        }
+                        placeholder=""
+                        rows={1}
+                        bg="gray.700"
+                        color="white"
+                        isDisabled={!component.splitOptions?.isEnabled}
+                        aria-describedby="prepend-text-help"
+                      />
+                      <FormHelperText fontSize="sm" color="gray.400" id="prepend-text-help">
+                        The text to prepend to the beginning of the first message after the initial
+                        message has been split. Default is nothing.
+                      </FormHelperText>
+                    </FormControl>
+                  </VStack>
+                </Box>
+              </fieldset>
+            </FormControl>
           </VStack>
         );
       }
@@ -825,11 +1077,16 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   const formPath = messageComponent
     ? getComponentFormPathById(messageComponent, selectedComponentId)
     : null;
-  const component = messageComponent
-    ? findComponentById(messageComponent, selectedComponentId)
-    : null;
 
-  if (!formPath || !component) {
+  console.log("🚀 ~ selectedComponentId:", selectedComponentId);
+  console.log("🚀 ~ messageComponent:", messageComponent);
+  let component: Component | null = null;
+
+  if (messageComponent) {
+    component = findComponentById(messageComponent, selectedComponentId);
+  }
+
+  if (!component) {
     return null;
   }
 

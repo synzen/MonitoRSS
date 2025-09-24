@@ -26,7 +26,6 @@ import { useParams } from "react-router-dom";
 import { DiscordMessagePreview } from "./Previewer/DiscordMessagePreview";
 import { ComponentPropertiesPanel } from "./Previewer/ComponentPropertiesPanel";
 import { ComponentTreeItem } from "./Previewer/ComponentTreeItem";
-import { MESSAGE_ROOT_ID } from "./Previewer/types";
 import { NavigableTreeItem } from "../components/NavigableTree";
 import {
   NavigableTreeContext,
@@ -130,7 +129,7 @@ const PreviewerContent: React.FC = () => {
                         <div role="tree" aria-label="Message Components">
                           <NavigableTreeItem
                             isRootItem
-                            id={MESSAGE_ROOT_ID}
+                            id={messageComponent.id}
                             ariaLabel="Message Root"
                           >
                             <ComponentTreeItem
@@ -208,7 +207,7 @@ const PreviewerContent: React.FC = () => {
                               <div role="tree" aria-label="Message Components">
                                 <NavigableTreeItem
                                   isRootItem
-                                  id={MESSAGE_ROOT_ID}
+                                  id={messageComponent.id}
                                   ariaLabel="Message Components Root"
                                 >
                                   <ComponentTreeItem

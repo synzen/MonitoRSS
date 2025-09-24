@@ -11,10 +11,10 @@ import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { useTranslation } from "react-i18next";
+import { v4 as uuidv4 } from "uuid";
 import {
   Component,
   ComponentType,
-  MESSAGE_ROOT_ID,
   V2MessageComponentRoot,
   SectionComponent,
   MessageComponentRoot,
@@ -178,11 +178,11 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const deleteComponent: PreviewerContextType["deleteComponent"] = (componentId) => {
-    if (componentId === MESSAGE_ROOT_ID) return;
-
     const messageComponent = getValues("messageComponent");
 
     if (!messageComponent) return;
+
+    if (componentId === messageComponent.id) return;
 
     const removeFromTree = (component: Component): Component | null => {
       // Handle section accessory removal
@@ -293,7 +293,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setValue(
       "messageComponent",
       {
-        id: MESSAGE_ROOT_ID,
+        id: uuidv4(),
         type: ComponentType.V2Root,
         name: getPreviewerComponentLabel(ComponentType.V2Root),
         children: [],

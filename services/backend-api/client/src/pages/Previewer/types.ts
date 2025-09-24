@@ -1,8 +1,5 @@
 import { DiscordButtonStyle } from "./constants/DiscordButtonStyle";
 
-// Enums for component types
-export const MESSAGE_ROOT_ID = "message-root" as const;
-
 export enum ComponentType {
   LegacyRoot = "Legacy Discord Message",
   LegacyText = "Legacy Text",
@@ -45,6 +42,10 @@ export type MessageComponentRoot = LegacyMessageComponentRoot | V2MessageCompone
 export interface LegacyMessageComponentRoot extends BaseComponent {
   type: ComponentType.LegacyRoot;
   children: Component[];
+  formatTables?: boolean;
+  stripImages?: boolean;
+  ignoreNewLines?: boolean;
+  enablePlaceholderFallback?: boolean;
 }
 
 export interface V2MessageComponentRoot extends BaseComponent {
@@ -91,6 +92,13 @@ export interface DividerComponent {
 export interface LegacyTextComponent extends BaseComponent {
   type: ComponentType.LegacyText;
   content: string;
+  disableImageLinkPreviews?: boolean;
+  splitOptions?: {
+    isEnabled?: boolean;
+    splitChar?: string;
+    appendChar?: string;
+    prependChar?: string;
+  };
 }
 
 export interface LegacyEmbedComponent extends BaseComponent {

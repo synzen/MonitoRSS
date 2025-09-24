@@ -1,6 +1,5 @@
 import { FieldError, FieldErrorsImpl, Merge } from "react-hook-form";
 import {
-  MESSAGE_ROOT_ID,
   ComponentType,
   Component,
   PreviewerProblem,
@@ -114,8 +113,8 @@ const extractPreviewerProblems = (
   if (textDisplayCharacterCount > 4000) {
     problems.push({
       message: `Total character length for all Text Display components exceeds Discord limit of 4000. Current length: ${textDisplayCharacterCount}.`,
-      path: getComponentPath(messageComponent, MESSAGE_ROOT_ID) || "Message Root",
-      componentId: MESSAGE_ROOT_ID,
+      path: getComponentPath(messageComponent, messageComponent.id) || "Message Root",
+      componentId: messageComponent.id,
     });
   }
 
