@@ -243,6 +243,13 @@ export const convertConnectionToPreviewerState = (
     name: "Legacy Discord Message",
     type: ComponentType.LegacyRoot,
     children,
+    formatTables: connection.details?.formatter?.formatTables,
+    stripImages: connection.details?.formatter?.stripImages,
+    ignoreNewLines: connection.details?.formatter?.ignoreNewLines,
+    enablePlaceholderFallback: connection.details?.enablePlaceholderFallback,
+    forumThreadTitle: connection.details?.forumThreadTitle,
+    forumThreadTags: connection.details?.forumThreadTags || [],
+    isForumChannel: connection.details?.channel?.type === "forum",
   };
 
   return {

@@ -46,11 +46,27 @@ export interface LegacyMessageComponentRoot extends BaseComponent {
   stripImages?: boolean;
   ignoreNewLines?: boolean;
   enablePlaceholderFallback?: boolean;
+  forumThreadTitle?: string;
+  forumThreadTags?: Array<{
+    id: string;
+    filters?: {
+      expression: any;
+    } | null;
+  }>;
+  isForumChannel?: boolean;
 }
 
 export interface V2MessageComponentRoot extends BaseComponent {
   type: ComponentType.V2Root;
   children: Component[];
+  forumThreadTitle?: string;
+  forumThreadTags?: Array<{
+    id: string;
+    filters?: {
+      expression: any;
+    } | null;
+  }>;
+  isForumChannel?: boolean;
 }
 
 export interface TextDisplayComponent extends BaseComponent {
