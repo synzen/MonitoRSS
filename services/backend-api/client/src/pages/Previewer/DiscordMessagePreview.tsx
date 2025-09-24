@@ -1,4 +1,4 @@
-import React from "react";
+import React, { ComponentProps } from "react";
 import {
   Box,
   VStack,
@@ -11,11 +11,14 @@ import {
 } from "@chakra-ui/react";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
 import { useFormContext } from "react-hook-form";
-import { Component, ComponentType, MessageComponentRoot, PreviewerFormState } from "./types";
+import { Component, ComponentType, MessageComponentRoot } from "./types";
 import { ArticlePreviewBanner } from "./ArticlePreviewBanner";
 import DiscordView from "../../components/DiscordView";
 import { DiscordViewEmbed } from "../../types/DiscordViewEmbed";
 import { usePreviewerContext } from "./PreviewerContext";
+import { DiscordViewComponentButton } from "../../types/DiscordViewComponent";
+import { DiscordButtonStyle } from "./constants/DiscordButtonStyle";
+import PreviewerFormState from "./types/PreviewerFormState";
 
 const convertLegacyEmbedToDiscordViewEmbed = (
   embedComponent: Component,
@@ -89,7 +92,7 @@ const convertLegacyEmbedToDiscordViewEmbed = (
 const convertLegacyToDiscordView = (
   rootComponent?: MessageComponentRoot,
   currentArticle?: { publishedAt?: string }
-) => {
+): ComponentProps<typeof DiscordView>["messages"][number] | null => {
   if (!rootComponent) {
     return null;
   }
@@ -100,6 +103,7 @@ const convertLegacyToDiscordView = (
 
   let content = "";
   const embeds: DiscordViewEmbed[] = [];
+  const buttons: DiscordViewComponentButton[] = [];
 
   // Process children
   rootComponent.children?.forEach((child) => {
@@ -111,12 +115,41 @@ const convertLegacyToDiscordView = (
       if (embed) {
         embeds.push(embed);
       }
+    } else if (child.type === ComponentType.LegacyActionRow) {
+      // Process buttons in action row
+      child.children?.forEach((button) => {
+        if (button.type === ComponentType.LegacyButton) {
+          const styleMap: Record<DiscordButtonStyle, number> = {
+            [DiscordButtonStyle.Primary]: 1,
+            [DiscordButtonStyle.Secondary]: 2,
+            [DiscordButtonStyle.Success]: 3,
+            [DiscordButtonStyle.Danger]: 4,
+            [DiscordButtonStyle.Link]: 5,
+          };
+          const style = styleMap[button.style] || 1;
+
+          buttons.push({
+            type: 2, // Button type
+            style,
+            label: button.label || "Button",
+            url: button.url || undefined,
+          });
+        }
+      });
     }
   });
 
   return {
     content,
     embeds,
+    components: buttons.length
+      ? [
+          {
+            type: 1, // Action Row
+            components: buttons,
+          },
+        ]
+      : undefined,
   };
 };
 
@@ -307,7 +340,12 @@ export const DiscordMessagePreview: React.FC = () => {
               </Text>
             </HStack>
             <Box>
-              <VStack align="stretch" spacing={3} maxW="min(600px, 100%)" w="fit-content">
+              <VStack
+                align="stretch"
+                spacing={3}
+                maxW={legacyMessageData ? undefined : "min(600px, 100%)"}
+                w="fit-content"
+              >
                 {!legacyMessageData &&
                   !!messageComponent &&
                   messageComponent.children.length === 0 && (

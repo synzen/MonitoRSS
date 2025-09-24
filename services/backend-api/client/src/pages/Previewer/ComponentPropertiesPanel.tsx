@@ -721,19 +721,6 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         );
       }
 
-      case ComponentType.LegacyActionRow: {
-        return (
-          <VStack align="stretch" spacing={4}>
-            <Alert status="info" borderRadius="md">
-              <AlertIcon />
-              <Text fontSize="sm">
-                Action Row contains buttons. Use the component tree to add or configure buttons.
-              </Text>
-            </Alert>
-          </VStack>
-        );
-      }
-
       case ComponentType.LegacyButton: {
         const labelError = getFieldError(component.id, "label");
         const styleError = getFieldError(component.id, "style");
@@ -884,12 +871,14 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             )}
           </HStack>
         )}
-        {component.type === ComponentType.V2ActionRow && component.children.length === 0 && (
-          <Alert status="error" borderRadius="md" role={undefined}>
-            <AlertIcon />
-            At least one child component is required for Action Rows.
-          </Alert>
-        )}
+        {(component.type === ComponentType.LegacyActionRow ||
+          component.type === ComponentType.V2ActionRow) &&
+          component.children.length === 0 && (
+            <Alert status="error" borderRadius="md" role={undefined}>
+              <AlertIcon />
+              At least one child component is required for Action Rows.
+            </Alert>
+          )}
         {component.type === ComponentType.V2Section && component.children.length === 0 && (
           <Alert status="error" borderRadius="md" role={undefined}>
             <AlertIcon />

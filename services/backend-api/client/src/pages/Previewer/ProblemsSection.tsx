@@ -3,8 +3,9 @@ import { Box, HStack, Text, VStack, UnorderedList, ListItem, Icon } from "@chakr
 import { FaExclamationCircle } from "react-icons/fa";
 import { useFormContext } from "react-hook-form";
 import { useNavigableTreeContext } from "../../contexts/NavigableTreeContext";
-import type { Component, PreviewerProblem, PreviewerFormState } from "./types";
+import type { Component, PreviewerProblem } from "./types";
 import { ComponentType } from "./types";
+import PreviewerFormState from "./types/PreviewerFormState";
 
 export const ProblemsSection: React.FC<{
   problems: PreviewerProblem[];

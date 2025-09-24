@@ -24,7 +24,9 @@ const getComponentPath = (
     path: string;
   }
 
-  const stack: StackItem[] = [{ component, path: currentPath || component.name }];
+  const stack: StackItem[] = [
+    { component, path: currentPath || getPreviewerComponentLabel(component.type) },
+  ];
 
   while (stack.length > 0) {
     const { component: currentComponent, path } = stack.pop()!;
