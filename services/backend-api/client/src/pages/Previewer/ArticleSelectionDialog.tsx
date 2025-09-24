@@ -24,6 +24,7 @@ import { ArticlePropertySelect } from "../../features/feedConnections/components
 import { useUserFeedConnectionContext } from "../../contexts/UserFeedConnectionContext";
 import { useUserFeedArticles } from "../../features/feed";
 import { useUserFeedContext } from "../../contexts/UserFeedContext";
+import { useDebounce } from "../../hooks/useDebounce"; // Adjust import path as needed
 
 interface ArticleSelectionDialogProps {
   isOpen: boolean;
@@ -47,6 +48,8 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [displayProperty, setDisplayProperty] = useState<string>();
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
   const { data, fetchStatus, status } = useUserFeedArticles({
     feedId: userFeed.id,
     data: {
@@ -55,7 +58,7 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
       skip: (currentPage - 1) * ITEMS_PER_PAGE,
       selectProperties: [displayProperty || "title"],
       filters: {
-        search: searchQuery.trim() ? searchQuery.trim() : undefined,
+        search: debouncedSearchQuery.trim() ? debouncedSearchQuery.trim() : undefined,
       },
     },
     disabled: !displayProperty || !isOpen,
@@ -184,7 +187,7 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
                     onChange={handleSearchChange}
                     bg="gray.700"
                     border="none"
-                    isDisabled={isLoading || !!error}
+                    isDisabled={!!error}
                     aria-label={`Search articles by ${displayProperty}`}
                     aria-describedby="search-description"
                   />
@@ -239,8 +242,8 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
             {!isLoading && !error && articles.length === 0 && (
               <Box p={6} textAlign="center" role="status" aria-live="polite">
                 <Text color="gray.400" fontStyle="italic">
-                  {searchQuery
-                    ? `No articles found matching '${searchQuery}'`
+                  {debouncedSearchQuery
+                    ? `No articles found matching '${debouncedSearchQuery}'`
                     : "No articles available."}
                 </Text>
               </Box>
@@ -331,7 +334,7 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
                       <Text fontSize="sm" color="gray.400" aria-live="polite">
                         Showing {startIndex + 1}-
                         {Math.min(startIndex + ITEMS_PER_PAGE, totalArticles)} of {totalArticles}
-                        {searchQuery && (
+                        {debouncedSearchQuery && (
                           <Text as="span" color="gray.500">
                             {" "}
                             (filtered)
