@@ -5,6 +5,12 @@ import {
   Component,
   PreviewerProblem,
   MessageComponentRoot,
+  LegacyEmbedAuthorComponent,
+  LegacyEmbedTitleComponent,
+  LegacyEmbedDescriptionComponent,
+  LegacyEmbedFooterComponent,
+  LegacyEmbedImageComponent,
+  LegacyEmbedThumbnailComponent,
 } from "../types";
 
 const getComponentPath = (
@@ -114,24 +120,31 @@ const extractPreviewerProblems = (
         return;
       }
 
-      const authorName = component.children?.find(
+      const authorComponent = component.children?.find(
         (c) => c.type === ComponentType.LegacyEmbedAuthor
-      )?.authorName;
-      const title = component.children?.find(
+      ) as LegacyEmbedAuthorComponent | undefined;
+      const titleComponent = component.children?.find(
         (c) => c.type === ComponentType.LegacyEmbedTitle
-      )?.title;
-      const description = component.children?.find(
+      ) as LegacyEmbedTitleComponent | undefined;
+      const descriptionComponent = component.children?.find(
         (c) => c.type === ComponentType.LegacyEmbedDescription
-      )?.description;
-      const footerText = component.children?.find(
+      ) as LegacyEmbedDescriptionComponent | undefined;
+      const footerComponent = component.children?.find(
         (c) => c.type === ComponentType.LegacyEmbedFooter
-      )?.footerText;
-      const imageUrl = component.children?.find(
+      ) as LegacyEmbedFooterComponent | undefined;
+      const imageComponent = component.children?.find(
         (c) => c.type === ComponentType.LegacyEmbedImage
-      )?.imageUrl;
-      const thumbnailUrl = component.children?.find(
+      ) as LegacyEmbedImageComponent | undefined;
+      const thumbnailComponent = component.children?.find(
         (c) => c.type === ComponentType.LegacyEmbedThumbnail
-      )?.thumbnailUrl;
+      ) as LegacyEmbedThumbnailComponent | undefined;
+
+      const authorName = authorComponent?.authorName;
+      const title = titleComponent?.title;
+      const description = descriptionComponent?.description;
+      const footerText = footerComponent?.footerText;
+      const imageUrl = imageComponent?.imageUrl;
+      const thumbnailUrl = thumbnailComponent?.thumbnailUrl;
 
       if (!authorName && !title && !description && !footerText && !imageUrl && !thumbnailUrl) {
         problems.push({

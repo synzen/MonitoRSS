@@ -36,10 +36,15 @@ import {
 import { PreviewerProvider, usePreviewerContext } from "./Previewer/PreviewerContext";
 import { ProblemsSection } from "./Previewer/ProblemsSection";
 import extractPreviewerProblems from "./Previewer/utils/extractPreviewerProblems";
+import { convertConnectionToPreviewerState } from "./Previewer/utils/convertConnectionToPreviewerState";
 import RouteParams from "../types/RouteParams";
 import { Loading } from "../components";
 import { UserFeedProvider } from "../contexts/UserFeedContext";
-import { UserFeedConnectionProvider } from "../contexts/UserFeedConnectionContext";
+import {
+  UserFeedConnectionContext,
+  UserFeedConnectionProvider,
+} from "../contexts/UserFeedConnectionContext";
+import { FeedDiscordChannelConnection } from "../types";
 
 const PreviewerContent: React.FC = () => {
   const { resetMessage } = usePreviewerContext();
@@ -282,9 +287,20 @@ export const Previewer: React.FC = () => {
       }
     >
       <UserFeedConnectionProvider feedId={feedId} connectionId={connectionId}>
-        <PreviewerProvider>
-          <PreviewerContent />
-        </PreviewerProvider>
+        <UserFeedConnectionContext.Consumer>
+          {(data) => {
+            const connection = data?.connection as FeedDiscordChannelConnection;
+
+            const previewerFormState: PreviewerFormState =
+              convertConnectionToPreviewerState(connection);
+
+            return (
+              <PreviewerProvider defaultValues={previewerFormState}>
+                <PreviewerContent />
+              </PreviewerProvider>
+            );
+          }}
+        </UserFeedConnectionContext.Consumer>
       </UserFeedConnectionProvider>
     </UserFeedProvider>
   );

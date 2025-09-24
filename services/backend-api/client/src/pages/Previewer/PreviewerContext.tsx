@@ -113,14 +113,12 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     getUserFeedArticlesOutput: articlesResponse,
   });
 
-  // Transform API response to match Article interface
   const articles: Record<string, string>[] =
     (articlesResponse?.result?.articles as Record<string, string>[]) || [];
 
   const isLoading = status === "loading";
   const isFetchingDifferentArticle = fetchStatus === "fetching";
 
-  // Fetch articles function that calls refetch
   const fetchArticles = useCallback(async () => {
     await refetch();
   }, [refetch]);
@@ -131,24 +129,9 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, [firstArticleId, status]);
 
-  const addChildComponent = (
-    parentId: string,
-    childType:
-      | ComponentType.LegacyText
-      | ComponentType.LegacyEmbed
-      | ComponentType.LegacyEmbedAuthor
-      | ComponentType.LegacyEmbedTitle
-      | ComponentType.LegacyEmbedDescription
-      | ComponentType.LegacyEmbedImage
-      | ComponentType.LegacyEmbedThumbnail
-      | ComponentType.LegacyEmbedFooter
-      | ComponentType.LegacyEmbedField
-      | ComponentType.LegacyEmbedTimestamp
-      | ComponentType.V2TextDisplay
-      | ComponentType.V2ActionRow
-      | ComponentType.V2Button
-      | ComponentType.V2Section
-      | ComponentType.V2Divider,
+  const addChildComponent: PreviewerContextType["addChildComponent"] = (
+    parentId,
+    childType,
     isAccessory = false
   ) => {
     const messageComponent = getValues("messageComponent");
@@ -190,7 +173,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     });
   };
 
-  const deleteComponent = (componentId: string) => {
+  const deleteComponent: PreviewerContextType["deleteComponent"] = (componentId) => {
     if (componentId === MESSAGE_ROOT_ID) return;
 
     const messageComponent = getValues("messageComponent");
@@ -234,7 +217,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
-  const moveComponentUp = (componentId: string) => {
+  const moveComponentUp: PreviewerContextType["moveComponentUp"] = (componentId) => {
     const messageComponent = getValues("messageComponent");
 
     if (!messageComponent) return;
@@ -268,7 +251,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setValue("messageComponent", updateTree(messageComponent) as V2MessageComponentRoot);
   };
 
-  const moveComponentDown = (componentId: string) => {
+  const moveComponentDown: PreviewerContextType["moveComponentDown"] = (componentId) => {
     const messageComponent = getValues("messageComponent");
 
     if (!messageComponent) return;
@@ -302,7 +285,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setValue("messageComponent", updateTree(messageComponent) as V2MessageComponentRoot);
   };
 
-  const resetMessage = () => {
+  const resetMessage: PreviewerContextType["resetMessage"] = () => {
     setValue(
       "messageComponent",
       {
