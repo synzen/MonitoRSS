@@ -305,6 +305,46 @@ const mockUserFeeds: UserFeed[] = [
         key: FeedConnectionType.DiscordChannel,
         name: "Discord Thread 1",
       },
+      {
+        details: {
+          channel: {
+            id: mockDiscordChannels[4].id,
+            guildId: mockDiscordServers[0].id,
+            type: "new-thread",
+          },
+          embeds: [],
+          formatter: {
+            formatTables: false,
+            stripImages: false,
+          },
+        },
+        splitOptions: null,
+        filters: null,
+        mentions: null,
+        id: "6",
+        key: FeedConnectionType.DiscordChannel,
+        name: "Discord New Thread 1",
+      },
+      {
+        details: {
+          channel: {
+            id: mockDiscordChannels[4].id,
+            guildId: mockDiscordServers[0].id,
+            type: "forum-thread",
+          },
+          embeds: [],
+          formatter: {
+            formatTables: false,
+            stripImages: false,
+          },
+        },
+        splitOptions: null,
+        filters: null,
+        mentions: null,
+        id: "7",
+        key: FeedConnectionType.DiscordChannel,
+        name: "Discord Forum Thread 1",
+      },
     ],
     healthStatus: UserFeedHealthStatus.Ok,
     disabledCode: UserFeedDisabledCode.FailedRequests,

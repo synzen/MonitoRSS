@@ -387,9 +387,9 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 </FormHelperText>
               </FormControl>
               <FormControl>
-                <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+                <Text fontSize="sm" mb={2} color="gray.200">
                   Forum Thread Tags
-                </FormLabel>
+                </Text>
                 {forumTagsStatus === "loading" && (
                   <Center height="100%">
                     <Spinner />
