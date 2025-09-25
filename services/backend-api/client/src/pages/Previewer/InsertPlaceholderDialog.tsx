@@ -105,9 +105,6 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
             <Text fontSize="sm" color="gray.400" mb={3} id="insert-placeholder-description">
               Select a placeholder to insert into your text content. The placeholder will be
               replaced with the actual article content when being previewed or published.
-              {filteredPlaceholders.length > 0 && (
-                <> Use arrow keys to navigate and Enter to select.</>
-              )}
             </Text>
             <InputGroup>
               <InputLeftElement pointerEvents="none">
