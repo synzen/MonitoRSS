@@ -53,11 +53,14 @@ import {
 } from "../contexts/PageAlertContext";
 import { ComponentType } from "./Previewer/types";
 import convertPreviewerStateToConnectionUpdate from "./Previewer/utils/convertPreviewerStateToConnectionUpdate";
+import { ResizablePanel } from "../components/ResizablePanel";
 
 const PreviewerContent: React.FC = () => {
   const { resetMessage } = usePreviewerContext();
   const { watch, handleSubmit, formState } = useFormContext<PreviewerFormState>();
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(300);
+  const [rightPanelWidth, setRightPanelWidth] = useState(350);
   const messageComponent = watch("messageComponent");
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = React.useRef<HTMLButtonElement>(null);
@@ -181,43 +184,46 @@ const PreviewerContent: React.FC = () => {
                 {/* Main Content */}
                 <Flex flex={1} bg="gray.900" position="relative">
                   {/* Left Panel - Component Tree */}
-                  <Box
-                    w="300px"
-                    bg="gray.800"
-                    borderRight="1px"
-                    borderColor="gray.600"
+                  <ResizablePanel
+                    width={leftPanelWidth}
+                    onWidthChange={setLeftPanelWidth}
+                    side="left"
                     display={{ base: "none", lg: "block" }}
                   >
-                    <VStack align="stretch" spacing={0} minWidth={250}>
-                      <Box p={4} borderBottom="1px" borderColor="gray.600">
-                        <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
-                          Components
-                        </Text>
-                      </Box>
-                      {messageComponent && (
-                        <div role="tree" aria-label="Message Components">
-                          <NavigableTreeItem
-                            isRootItem
-                            id={messageComponent.id}
-                            ariaLabel="Message Root"
-                          >
-                            <ComponentTreeItem
-                              component={messageComponent}
-                              scrollToComponentId={scrollToComponentId}
-                              componentIdsWithProblems={componentIdsWithProblems}
-                            />
-                          </NavigableTreeItem>
-                        </div>
-                      )}
-                    </VStack>
-                  </Box>
+                    <Box
+                      bg="gray.800"
+                      borderRight="1px"
+                      borderColor="gray.600"
+                      height="100%"
+                      width="100%"
+                      overflow="hidden"
+                    >
+                      <VStack align="stretch" spacing={0} minWidth={200} height="100%">
+                        <Box p={4} borderBottom="1px" borderColor="gray.600">
+                          <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
+                            Components
+                          </Text>
+                        </Box>
+                        {messageComponent && (
+                          <div role="tree" aria-label="Message Components">
+                            <NavigableTreeItem
+                              isRootItem
+                              id={messageComponent.id}
+                              ariaLabel="Message Root"
+                            >
+                              <ComponentTreeItem
+                                component={messageComponent}
+                                scrollToComponentId={scrollToComponentId}
+                                componentIdsWithProblems={componentIdsWithProblems}
+                              />
+                            </NavigableTreeItem>
+                          </div>
+                        )}
+                      </VStack>
+                    </Box>
+                  </ResizablePanel>
                   {/* Center Panel - Discord Preview and Problems */}
-                  <Flex
-                    flex={1}
-                    direction="column"
-                    bg="gray.800"
-                    maxW={{ base: undefined, lg: "min(100% - 600px, 100%)" }}
-                  >
+                  <Flex flex={1} direction="column" bg="gray.800">
                     {/* Discord Preview Section */}
                     <Box p={4} borderBottom="1px" borderColor="gray.600" srOnly>
                       <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
@@ -299,17 +305,25 @@ const PreviewerContent: React.FC = () => {
                     </Box>
                   </Flex>
                   {/* Right Panel - Properties */}
-                  <Box
-                    w="350px"
-                    bg="gray.800"
-                    borderLeft="1px"
-                    borderColor="gray.600"
+                  <ResizablePanel
+                    width={rightPanelWidth}
+                    onWidthChange={setRightPanelWidth}
+                    side="right"
                     display={{ base: "none", lg: "block" }}
                   >
-                    {currentSelectedId && (
-                      <ComponentPropertiesPanel selectedComponentId={currentSelectedId} />
-                    )}
-                  </Box>
+                    <Box
+                      bg="gray.800"
+                      borderLeft="1px"
+                      borderColor="gray.600"
+                      height="100%"
+                      width="100%"
+                      overflow="hidden"
+                    >
+                      {currentSelectedId && (
+                        <ComponentPropertiesPanel selectedComponentId={currentSelectedId} />
+                      )}
+                    </Box>
+                  </ResizablePanel>
                 </Flex>
               </Flex>
               {/* Discard Confirmation Modal */}
