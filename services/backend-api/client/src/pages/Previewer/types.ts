@@ -65,6 +65,11 @@ export interface LegacyMessageComponentRoot extends BaseComponent {
       } | null;
     }> | null;
   } | null;
+  placeholderLimits?: Array<{
+    characterCount: number;
+    placeholder: string;
+    appendString?: string | null;
+  }> | null;
 }
 
 export interface V2MessageComponentRoot extends BaseComponent {
@@ -89,6 +94,11 @@ export interface V2MessageComponentRoot extends BaseComponent {
       } | null;
     }> | null;
   } | null;
+  placeholderLimits?: Array<{
+    characterCount: number;
+    placeholder: string;
+    appendString?: string | null;
+  }> | null;
 }
 
 export interface TextDisplayComponent extends BaseComponent {

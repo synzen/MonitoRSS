@@ -35,6 +35,7 @@ import PreviewerFormState from "../types/PreviewerFormState";
 import { usePreviewerContext } from "../PreviewerContext";
 import { MessageComponentRoot } from "../types";
 import { DiscordMessageMentionForm } from "../../../features/feedConnections/components/DiscordMessageForm/DiscordMessageMentionForm";
+import { DiscordMessagePlaceholderLimitsForm } from "../../../features/feedConnections/components/DiscordMessageForm/DiscordMessagePlaceholderLimitsForm";
 
 const TagCheckbox = ({
   emojiName,
@@ -131,7 +132,7 @@ export const LegacyRootProperties: React.FC = () => {
   }
 
   return (
-    <VStack align="stretch" spacing={4}>
+    <VStack align="stretch" spacing={6}>
       {component?.isForumChannel && (
         <>
           <FormControl>
@@ -376,7 +377,7 @@ export const LegacyRootProperties: React.FC = () => {
         </FormHelperText>
       </FormControl>
       <FormControl>
-        <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+        <FormLabel fontSize="sm" fontWeight="medium" color="gray.200">
           Mentions
         </FormLabel>
         <FormHelperText fontSize="sm" color="gray.400" mb={2}>
@@ -389,6 +390,19 @@ export const LegacyRootProperties: React.FC = () => {
           excludeDescription
           guildId={guildId}
           path="messageComponent.mentions"
+        />
+      </FormControl>
+      <FormControl>
+        <FormLabel fontSize="sm" fontWeight="medium" color="gray.200">
+          Placeholder Limits
+        </FormLabel>
+        <FormHelperText mb={2}>
+          Apply character limits to placeholders to shorten messages.
+        </FormHelperText>
+        <DiscordMessagePlaceholderLimitsForm
+          excludeDescription
+          small
+          path="messageComponent.placeholderLimits"
         />
       </FormControl>
     </VStack>

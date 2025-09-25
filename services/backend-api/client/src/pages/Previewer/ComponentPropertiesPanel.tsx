@@ -136,7 +136,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
       );
 
       return (
-        <VStack align="stretch" spacing={4}>
+        <VStack align="stretch" spacing={6}>
           <FormControl isInvalid={!!colorError}>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               Embed Color
@@ -223,7 +223,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
       );
 
       return (
-        <VStack align="stretch" spacing={4}>
+        <VStack align="stretch" spacing={6}>
           <FormControl isInvalid={!!nameError}>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               Name
@@ -273,7 +273,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
       );
 
       return (
-        <VStack align="stretch" spacing={4}>
+        <VStack align="stretch" spacing={6}>
           <FormControl isInvalid={!!titleError}>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               Text
@@ -311,7 +311,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
       );
 
       return (
-        <VStack align="stretch" spacing={4}>
+        <VStack align="stretch" spacing={6}>
           <FormControl isInvalid={!!descriptionError}>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               Description
@@ -339,7 +339,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
       );
 
       return (
-        <VStack align="stretch" spacing={4}>
+        <VStack align="stretch" spacing={6}>
           <FormControl isInvalid={!!imageUrlError}>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               URL
@@ -365,7 +365,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
       );
 
       return (
-        <VStack align="stretch" spacing={4}>
+        <VStack align="stretch" spacing={6}>
           <FormControl isInvalid={!!thumbnailUrlError}>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               URL
@@ -391,7 +391,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
       );
 
       return (
-        <VStack align="stretch" spacing={4}>
+        <VStack align="stretch" spacing={6}>
           <FormControl isInvalid={!!footerTextError}>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               Text
@@ -431,7 +431,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
       );
 
       return (
-        <VStack align="stretch" spacing={4}>
+        <VStack align="stretch" spacing={6}>
           <FormControl isInvalid={!!fieldNameError}>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               Field Name
@@ -481,7 +481,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
       );
 
       return (
-        <VStack align="stretch" spacing={4}>
+        <VStack align="stretch" spacing={6}>
           <FormControl isInvalid={!!timestampError}>
             <FormLabel
               fontSize="sm"
@@ -537,7 +537,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
       );
 
       return (
-        <VStack align="stretch" spacing={4}>
+        <VStack align="stretch" spacing={6}>
           <FormControl isInvalid={!!contentError}>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               Text Content
@@ -578,7 +578,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
       );
 
       return (
-        <VStack align="stretch" spacing={4}>
+        <VStack align="stretch" spacing={6}>
           <FormControl isInvalid={!!labelError}>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               Button Label
@@ -647,7 +647,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
       );
 
       return (
-        <VStack align="stretch" spacing={4}>
+        <VStack align="stretch" spacing={6}>
           <FormControl isInvalid={!!spacingError}>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               Spacing
@@ -692,7 +692,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
       );
 
       return (
-        <VStack align="stretch" spacing={4}>
+        <VStack align="stretch" spacing={6}>
           <FormControl isInvalid={!!labelError}>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               Button Label
@@ -844,9 +844,9 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
   return (
     <>
-      <VStack align="stretch" spacing={4} p={4} minWidth={250}>
+      <VStack align="stretch" spacing={6} p={4} minWidth={250}>
         {(!hideTitle || !isRootComponent) && (
-          <HStack justify="space-between" align="center" flexWrap="wrap" spacing={4}>
+          <HStack justify="space-between" align="center" flexWrap="wrap" spacing={6}>
             {!hideTitle && (
               <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
                 {component.type} Properties
