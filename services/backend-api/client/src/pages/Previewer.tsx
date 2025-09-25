@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Flex,
@@ -70,6 +70,21 @@ const PreviewerContent: React.FC = () => {
 
   const problems = extractPreviewerProblems(formState.errors.messageComponent, messageComponent);
   const componentIdsWithProblems = new Set(problems.map((p) => p.componentId));
+
+  // If the user attempts to close the tab with unsaved changes, ask for confirmation
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (formState.isDirty) {
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [formState.isDirty]);
 
   const handleSave = handleSubmit(async (data) => {
     if (
