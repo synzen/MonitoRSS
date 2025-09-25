@@ -19,6 +19,7 @@ import { usePreviewerContext } from "./PreviewerContext";
 import { DiscordViewComponentButton } from "../../types/DiscordViewComponent";
 import { DiscordButtonStyle } from "./constants/DiscordButtonStyle";
 import PreviewerFormState from "./types/PreviewerFormState";
+import { PageAlertContextOutlet, PageAlertProvider } from "../../contexts/PageAlertContext";
 
 const convertLegacyEmbedToDiscordViewEmbed = (
   embedComponent: Component,
@@ -300,81 +301,84 @@ export const DiscordMessagePreview: React.FC = () => {
   // Use custom rendering for V2 components
   return (
     <Stack spacing={0}>
-      <ArticlePreviewBanner />
-      {/* Discord Message Preview */}
-      <Box
-        bg={bgColor}
-        color={textColor}
-        p={4}
-        borderRadius="md"
-        fontFamily="Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif"
-        maxW="100%"
-        maxH={450}
-        h="100%"
-        overflow="auto"
-      >
-        <HStack align="flex-start" spacing={3}>
-          <Avatar
-            size="sm"
-            src="https://cdn.discordapp.com/avatars/302050872383242240/1fb101f4b0fe104b6b8c53ec5e3d5af6.png"
-            name="MonitoRSS"
-            borderRadius="50%"
-            w={10}
-            h={10}
-          />
-          <Stack spacing={1} flex={1} maxW="calc(100% - 40px - 0.75rem)">
-            <HStack spacing={2} align="center">
-              <Text fontSize="sm" fontWeight="semibold" color="white">
-                MonitoRSS
-              </Text>
-              <Box
-                fontSize="xs"
-                bg="#5865f2"
-                color="white"
-                px={1}
-                py={0.5}
-                borderRadius="sm"
-                fontWeight="bold"
-                lineHeight="1"
-              >
-                ✓ APP
-              </Box>
-              <Text fontSize="xs" color="#a3a6aa" ml={1}>
-                Today at 12:04 PM
-              </Text>
-            </HStack>
-            <Box>
-              <VStack
-                align="stretch"
-                spacing={3}
-                maxW={legacyMessageData ? undefined : "min(600px, 100%)"}
-                w="fit-content"
-              >
-                {!legacyMessageData &&
-                  !!messageComponent &&
-                  messageComponent.children.length === 0 && (
-                    <Text color="gray.400" fontSize="sm" fontStyle="italic">
-                      No components added yet
-                    </Text>
+      <PageAlertProvider>
+        <PageAlertContextOutlet />
+        <ArticlePreviewBanner />
+        {/* Discord Message Preview */}
+        <Box
+          bg={bgColor}
+          color={textColor}
+          p={4}
+          borderRadius="md"
+          fontFamily="Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+          maxW="100%"
+          maxH={450}
+          h="100%"
+          overflow="auto"
+        >
+          <HStack align="flex-start" spacing={3}>
+            <Avatar
+              size="sm"
+              src="https://cdn.discordapp.com/avatars/302050872383242240/1fb101f4b0fe104b6b8c53ec5e3d5af6.png"
+              name="MonitoRSS"
+              borderRadius="50%"
+              w={10}
+              h={10}
+            />
+            <Stack spacing={1} flex={1} maxW="calc(100% - 40px - 0.75rem)">
+              <HStack spacing={2} align="center">
+                <Text fontSize="sm" fontWeight="semibold" color="white">
+                  MonitoRSS
+                </Text>
+                <Box
+                  fontSize="xs"
+                  bg="#5865f2"
+                  color="white"
+                  px={1}
+                  py={0.5}
+                  borderRadius="sm"
+                  fontWeight="bold"
+                  lineHeight="1"
+                >
+                  ✓ APP
+                </Box>
+                <Text fontSize="xs" color="#a3a6aa" ml={1}>
+                  Today at 12:04 PM
+                </Text>
+              </HStack>
+              <Box>
+                <VStack
+                  align="stretch"
+                  spacing={3}
+                  maxW={legacyMessageData ? undefined : "min(600px, 100%)"}
+                  w="fit-content"
+                >
+                  {!legacyMessageData &&
+                    !!messageComponent &&
+                    messageComponent.children.length === 0 && (
+                      <Text color="gray.400" fontSize="sm" fontStyle="italic">
+                        No components added yet
+                      </Text>
+                    )}
+                  {!legacyMessageData &&
+                    !!messageComponent &&
+                    messageComponent.children.length > 0 &&
+                    messageComponent.children?.map(renderComponent)}
+                  {legacyMessageData && (
+                    <DiscordView
+                      darkTheme
+                      username="MonitoRSS"
+                      avatar_url="https://cdn.discordapp.com/avatars/302050872383242240/1fb101f4b0fe104b6b8c53ec5e3d5af6.png"
+                      messages={[legacyMessageData]}
+                      excludeHeader
+                    />
                   )}
-                {!legacyMessageData &&
-                  !!messageComponent &&
-                  messageComponent.children.length > 0 &&
-                  messageComponent.children?.map(renderComponent)}
-                {legacyMessageData && (
-                  <DiscordView
-                    darkTheme
-                    username="MonitoRSS"
-                    avatar_url="https://cdn.discordapp.com/avatars/302050872383242240/1fb101f4b0fe104b6b8c53ec5e3d5af6.png"
-                    messages={[legacyMessageData]}
-                    excludeHeader
-                  />
-                )}
-              </VStack>
-            </Box>
-          </Stack>
-        </HStack>
-      </Box>
+                </VStack>
+              </Box>
+            </Stack>
+          </HStack>
+        </Box>
+      </PageAlertProvider>
     </Stack>
   );
 };
