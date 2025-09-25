@@ -68,8 +68,7 @@ const createLegacyButtonComponent = (
 };
 
 const createLegacyActionRowComponent = (
-  row: Exclude<FeedDiscordChannelConnection["details"]["componentRows"], undefined>[number],
-  index: number
+  row: Exclude<FeedDiscordChannelConnection["details"]["componentRows"], undefined>[number]
 ): LegacyActionRowComponent => {
   const children: LegacyButtonComponent[] = [];
 
@@ -234,8 +233,10 @@ export const convertConnectionToPreviewerState = (
 
   // Add action row components if present
   if (componentRows && componentRows.length > 0) {
-    componentRows.forEach((row, index) => {
-      children.push(createLegacyActionRowComponent(row, index));
+    componentRows.forEach((row) => {
+      if (row.components.length) {
+        children.push(createLegacyActionRowComponent(row));
+      }
     });
   }
 
