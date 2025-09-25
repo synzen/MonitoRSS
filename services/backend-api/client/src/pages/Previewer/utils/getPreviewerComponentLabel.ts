@@ -4,6 +4,8 @@ const getPreviewerComponentLabel = (type: ComponentType) => {
   switch (type) {
     case ComponentType.LegacyText:
       return "Text";
+    case ComponentType.LegacyEmbedContainer:
+      return "Embeds";
     case ComponentType.LegacyEmbed:
       return "Embed";
     case ComponentType.LegacyEmbedAuthor:

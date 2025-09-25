@@ -52,6 +52,14 @@ const createPreviewerComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => 
         });
       case ComponentType.LegacyText:
         return legacyTextSchema;
+      case ComponentType.LegacyEmbedContainer:
+        return baseSchema.shape({
+          children: yup
+            .array()
+            .of(createPreviewerComponentSchema())
+            .max(9, "Embed Container can have at most 9 embeds")
+            .default([]),
+        });
       case ComponentType.LegacyEmbed:
         return baseSchema.shape({
           children: yup

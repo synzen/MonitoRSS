@@ -40,6 +40,7 @@ interface PreviewerContextType {
     parentId: string,
     childType:
       | ComponentType.LegacyText
+      | ComponentType.LegacyEmbedContainer
       | ComponentType.LegacyEmbed
       | ComponentType.LegacyEmbedAuthor
       | ComponentType.LegacyEmbedTitle
@@ -161,9 +162,22 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           } as SectionComponent;
         }
 
+        let indexToAddAt = component.children?.length || 0;
+
+        // The order of legacy components are fixed
+        if (newComponent.type === ComponentType.LegacyEmbedContainer) {
+          indexToAddAt = 1;
+        } else if (newComponent.type === ComponentType.LegacyText) {
+          indexToAddAt = 0;
+        }
+
+        const childrenClone = [...(component.children || [])];
+
+        childrenClone.splice(indexToAddAt, 0, newComponent);
+
         return {
           ...component,
-          children: [...(component.children || []), newComponent],
+          children: childrenClone,
         } as Component;
       }
 
@@ -299,17 +313,15 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const resetMessage: PreviewerContextType["resetMessage"] = () => {
     const isForumChannel = connection?.details?.channel?.type === "forum";
 
-    setValue(
-      "messageComponent",
-      {
-        id: uuidv4(),
-        type: ComponentType.V2Root,
-        name: getPreviewerComponentLabel(ComponentType.V2Root),
-        children: [],
-        isForumChannel,
-      },
-      { shouldValidate: true }
-    );
+    const newComponent: V2MessageComponentRoot = {
+      id: uuidv4(),
+      type: ComponentType.V2Root,
+      name: getPreviewerComponentLabel(ComponentType.V2Root),
+      children: [],
+      isForumChannel,
+    };
+
+    setValue("messageComponent", newComponent, { shouldValidate: true });
   };
 
   const updateCurrentlySelectedComponent: PreviewerContextType["updateCurrentlySelectedComponent"] =

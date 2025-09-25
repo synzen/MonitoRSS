@@ -51,6 +51,12 @@ const getCurrentArticle = () => ({
   feedTitle: "Tech News Daily",
 });
 
+const NON_REPOSITIONABLE_COMPONENTS = [
+  ComponentType.LegacyActionRow,
+  ComponentType.LegacyEmbedContainer,
+  ComponentType.LegacyText,
+];
+
 export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> = ({
   selectedComponentId,
   hideTitle,
@@ -831,6 +837,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   );
 
   const positionInfo = component ? getComponentPosition(component) : null;
+  const canBeRepositioned = !NON_REPOSITIONABLE_COMPONENTS.includes(component.type);
   const canMoveUp = positionInfo && positionInfo.index > 0;
   const canMoveDown = positionInfo && positionInfo.index < positionInfo.total - 1;
 
@@ -911,7 +918,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
           />
           {nameFieldError && <FormErrorMessage>{nameFieldError?.message}</FormErrorMessage>}
         </FormControl>
-        {positionInfo && !isRootComponent && (
+        {canBeRepositioned && positionInfo && !isRootComponent && (
           <Box>
             <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               Position

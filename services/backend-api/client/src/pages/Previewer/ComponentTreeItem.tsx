@@ -54,6 +54,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
     (component as SectionComponent).accessory !== undefined;
   const canHaveChildren =
     component.type === ComponentType.LegacyRoot ||
+    component.type === ComponentType.LegacyEmbedContainer ||
     component.type === ComponentType.LegacyEmbed ||
     component.type === ComponentType.LegacyActionRow ||
     component.type === ComponentType.V2Root ||
@@ -182,28 +183,31 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                       </MenuItem>
                     </MenuGroup>
                     <MenuGroup
-                      title={`Embeds (${
-                        component.children?.filter((c) => c.type === ComponentType.LegacyEmbed)
-                          .length || 0
-                      }/9)`}
+                      title={`Embed Container (${
+                        component.children?.filter(
+                          (c) => c.type === ComponentType.LegacyEmbedContainer
+                        ).length || 0
+                      }/1)`}
                     >
                       <MenuItem
                         bg="gray.700"
                         _hover={{ bg: "gray.600" }}
                         color="white"
                         onClick={() => {
-                          const embedCount =
-                            component.children?.filter((c) => c.type === ComponentType.LegacyEmbed)
-                              .length || 0;
-                          if (embedCount >= 9) return;
-                          onAddChildComponent(component.id, ComponentType.LegacyEmbed);
+                          const containerCount =
+                            component.children?.filter(
+                              (c) => c.type === ComponentType.LegacyEmbedContainer
+                            ).length || 0;
+                          if (containerCount >= 1) return;
+                          onAddChildComponent(component.id, ComponentType.LegacyEmbedContainer);
                         }}
                         aria-disabled={
-                          (component.children?.filter((c) => c.type === ComponentType.LegacyEmbed)
-                            .length || 0) >= 9
+                          (component.children?.filter(
+                            (c) => c.type === ComponentType.LegacyEmbedContainer
+                          ).length || 0) >= 1
                         }
                       >
-                        Add Embed
+                        Add Embed Container
                       </MenuItem>
                     </MenuGroup>
                     <MenuGroup
@@ -358,6 +362,22 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                       </MenuItem>
                     </MenuGroup>
                   </>
+                )}
+                {component.type === ComponentType.LegacyEmbedContainer && (
+                  <MenuGroup title={`Embeds (${componentChildrenCount}/9)`}>
+                    <MenuItem
+                      bg="gray.700"
+                      _hover={{ bg: "gray.600" }}
+                      color="white"
+                      onClick={() => {
+                        if (componentChildrenCount >= 9) return;
+                        onAddChildComponent(component.id, ComponentType.LegacyEmbed);
+                      }}
+                      aria-disabled={componentChildrenCount >= 9}
+                    >
+                      Add Embed
+                    </MenuItem>
+                  </MenuGroup>
                 )}
                 {component.type === ComponentType.LegacyActionRow && (
                   <MenuGroup title={`Buttons (${componentChildrenCount}/5)`}>

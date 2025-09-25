@@ -23,7 +23,7 @@ import getPreviewerComponentLabel from "./getPreviewerComponentLabel";
 
 const createLegacyTextComponent = (content: string): LegacyTextComponent => ({
   id: uuidv4(),
-  name: "Text Content",
+  name: getPreviewerComponentLabel(ComponentType.LegacyText),
   type: ComponentType.LegacyText,
   content,
 });
@@ -84,15 +84,14 @@ const createLegacyActionRowComponent = (
 
   return {
     id: uuidv4(),
-    name: `Action Row ${index + 1}`,
+    name: getPreviewerComponentLabel(ComponentType.LegacyActionRow),
     type: ComponentType.LegacyActionRow,
     children,
   };
 };
 
 const createLegacyEmbedComponent = (
-  embed: FeedDiscordChannelConnection["details"]["embeds"][number],
-  index: number
+  embed: FeedDiscordChannelConnection["details"]["embeds"][number]
 ): LegacyEmbedComponent => {
   const children: Component[] = [];
   let color: number | undefined;
@@ -106,7 +105,7 @@ const createLegacyEmbedComponent = (
   if (embed.author?.name) {
     children.push({
       id: uuidv4(),
-      name: "Embed Author",
+      name: getPreviewerComponentLabel(ComponentType.LegacyEmbedAuthor),
       type: ComponentType.LegacyEmbedAuthor,
       authorName: embed.author.name,
       authorUrl: embed.author.url,
@@ -118,7 +117,7 @@ const createLegacyEmbedComponent = (
   if (embed.title) {
     children.push({
       id: uuidv4(),
-      name: "Embed Title",
+      name: getPreviewerComponentLabel(ComponentType.LegacyEmbedTitle),
       type: ComponentType.LegacyEmbedTitle,
       title: embed.title,
       titleUrl: embed.url,
@@ -129,7 +128,7 @@ const createLegacyEmbedComponent = (
   if (embed.description) {
     children.push({
       id: uuidv4(),
-      name: "Embed Description",
+      name: getPreviewerComponentLabel(ComponentType.LegacyEmbedDescription),
       type: ComponentType.LegacyEmbedDescription,
       description: embed.description,
     } as LegacyEmbedDescriptionComponent);
@@ -140,7 +139,7 @@ const createLegacyEmbedComponent = (
     embed.fields.forEach((field: any) => {
       children.push({
         id: uuidv4(),
-        name: field.name,
+        name: getPreviewerComponentLabel(ComponentType.LegacyEmbedField),
         type: ComponentType.LegacyEmbedField,
         fieldName: field.name,
         fieldValue: field.value,
@@ -153,7 +152,7 @@ const createLegacyEmbedComponent = (
   if (embed.image?.url) {
     children.push({
       id: uuidv4(),
-      name: "Embed Image",
+      name: getPreviewerComponentLabel(ComponentType.LegacyEmbedImage),
       type: ComponentType.LegacyEmbedImage,
       imageUrl: embed.image.url,
     } as LegacyEmbedImageComponent);
@@ -163,7 +162,7 @@ const createLegacyEmbedComponent = (
   if (embed.thumbnail?.url) {
     children.push({
       id: uuidv4(),
-      name: "Embed Thumbnail",
+      name: getPreviewerComponentLabel(ComponentType.LegacyEmbedThumbnail),
       type: ComponentType.LegacyEmbedThumbnail,
       thumbnailUrl: embed.thumbnail.url,
     } as LegacyEmbedThumbnailComponent);
@@ -173,7 +172,7 @@ const createLegacyEmbedComponent = (
   if (embed.footer?.text) {
     children.push({
       id: uuidv4(),
-      name: "Embed Footer",
+      name: getPreviewerComponentLabel(ComponentType.LegacyEmbedFooter),
       type: ComponentType.LegacyEmbedFooter,
       footerText: embed.footer.text,
       footerIconUrl: embed.footer.iconUrl,
@@ -184,7 +183,7 @@ const createLegacyEmbedComponent = (
   if (embed.timestamp) {
     children.push({
       id: uuidv4(),
-      name: "Embed Timestamp",
+      name: getPreviewerComponentLabel(ComponentType.LegacyEmbedTimestamp),
       type: ComponentType.LegacyEmbedTimestamp,
       timestamp: embed.timestamp,
     } as LegacyEmbedTimestampComponent);
@@ -192,7 +191,7 @@ const createLegacyEmbedComponent = (
 
   return {
     id: uuidv4(),
-    name: `Embed ${index + 1}`,
+    name: getPreviewerComponentLabel(ComponentType.LegacyEmbed),
     type: ComponentType.LegacyEmbed,
     children,
     color,
@@ -225,8 +224,11 @@ export const convertConnectionToPreviewerState = (
 
   // Add embed components if present
   if (embeds && embeds.length > 0) {
-    embeds.forEach((embed, index) => {
-      children.push(createLegacyEmbedComponent(embed, index));
+    children.push({
+      type: ComponentType.LegacyEmbedContainer,
+      id: uuidv4(),
+      name: getPreviewerComponentLabel(ComponentType.LegacyEmbedContainer),
+      children: embeds.map((embed) => createLegacyEmbedComponent(embed)),
     });
   }
 
@@ -240,7 +242,7 @@ export const convertConnectionToPreviewerState = (
   // Create a legacy root component that contains the existing message data
   const legacyRootComponent: LegacyMessageComponentRoot = {
     id: uuidv4(),
-    name: "Legacy Discord Message",
+    name: getPreviewerComponentLabel(ComponentType.LegacyRoot),
     type: ComponentType.LegacyRoot,
     children,
     formatTables: connection.details?.formatter?.formatTables,

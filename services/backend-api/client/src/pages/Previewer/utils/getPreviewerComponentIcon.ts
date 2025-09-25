@@ -23,6 +23,8 @@ const getPreviewerComponentIcon = (type: Component["type"]) => {
       return FaEnvelope;
     case ComponentType.LegacyText:
       return FaFont;
+    case ComponentType.LegacyEmbedContainer:
+      return FaLayerGroup;
     case ComponentType.LegacyEmbed:
       return FaStickyNote;
     case ComponentType.LegacyEmbedAuthor:

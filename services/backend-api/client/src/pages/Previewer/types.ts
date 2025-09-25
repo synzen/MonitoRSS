@@ -3,6 +3,7 @@ import { DiscordButtonStyle } from "./constants/DiscordButtonStyle";
 export enum ComponentType {
   LegacyRoot = "Legacy Discord Message",
   LegacyText = "Legacy Text",
+  LegacyEmbedContainer = "Legacy Embed Container",
   LegacyEmbed = "Legacy Embed",
   LegacyEmbedAuthor = "Embed Author",
   LegacyEmbedTitle = "Embed Title",
@@ -149,6 +150,11 @@ export interface LegacyTextComponent extends BaseComponent {
   };
 }
 
+export interface LegacyEmbedContainerComponent extends BaseComponent {
+  type: ComponentType.LegacyEmbedContainer;
+  children: LegacyEmbedComponent[];
+}
+
 export interface LegacyEmbedComponent extends BaseComponent {
   type: ComponentType.LegacyEmbed;
   children: Component[];
@@ -223,6 +229,7 @@ export type Component =
   | SectionComponent
   | DividerComponent
   | LegacyTextComponent
+  | LegacyEmbedContainerComponent
   | LegacyEmbedComponent
   | LegacyEmbedAuthorComponent
   | LegacyEmbedTitleComponent
@@ -238,10 +245,7 @@ export type Component =
 export interface ComponentTreeItemProps {
   component: Component;
   onDelete: (id: string) => void;
-  onAddChild: (
-    parentId: string,
-    childType: ComponentType.V2TextDisplay | ComponentType.V2ActionRow | ComponentType.V2Button
-  ) => void;
+  onAddChild: (parentId: string, childType: ComponentType) => void;
   depth?: number;
   onProblemsChange?: (problems: Array<{ message: string; path: string }>) => void;
 }

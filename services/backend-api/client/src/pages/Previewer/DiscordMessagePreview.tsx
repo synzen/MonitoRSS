@@ -103,7 +103,7 @@ const convertLegacyToDiscordView = (
 
   let content = "";
   const embeds: DiscordViewEmbed[] = [];
-  const buttons: DiscordViewComponentButton[] = [];
+  const componentRows: Array<{ type: number; components: DiscordViewComponentButton[] }> = [];
 
   // Process children
   rootComponent.children?.forEach((child) => {
@@ -116,40 +116,44 @@ const convertLegacyToDiscordView = (
         embeds.push(embed);
       }
     } else if (child.type === ComponentType.LegacyActionRow) {
-      // Process buttons in action row
-      child.children?.forEach((button) => {
-        if (button.type === ComponentType.LegacyButton) {
-          const styleMap: Record<DiscordButtonStyle, number> = {
-            [DiscordButtonStyle.Primary]: 1,
-            [DiscordButtonStyle.Secondary]: 2,
-            [DiscordButtonStyle.Success]: 3,
-            [DiscordButtonStyle.Danger]: 4,
-            [DiscordButtonStyle.Link]: 5,
-          };
-          const style = styleMap[button.style] || 1;
+      const componentRow: {
+        type: number;
+        components: Array<DiscordViewComponentButton>;
+      } = {
+        type: 1,
+        components: child.children
+          ?.map((button) => {
+            if (button.type === ComponentType.LegacyButton) {
+              const styleMap: Record<DiscordButtonStyle, number> = {
+                [DiscordButtonStyle.Primary]: 1,
+                [DiscordButtonStyle.Secondary]: 2,
+                [DiscordButtonStyle.Success]: 3,
+                [DiscordButtonStyle.Danger]: 4,
+                [DiscordButtonStyle.Link]: 5,
+              };
+              const style = styleMap[button.style] || 1;
 
-          buttons.push({
-            type: 2, // Button type
-            style,
-            label: button.label || "Button",
-            url: button.url || undefined,
-          });
-        }
-      });
+              return {
+                type: 2, // Button type
+                style,
+                label: button.label || "Button",
+                url: button.url || undefined,
+              };
+            }
+
+            return null;
+          })
+          .filter((c): c is Exclude<typeof c, null> => !!c),
+      };
+
+      componentRows.push(componentRow);
     }
   });
 
   return {
     content,
     embeds,
-    components: buttons.length
-      ? [
-          {
-            type: 1, // Action Row
-            components: buttons,
-          },
-        ]
-      : undefined,
+    components: componentRows,
   };
 };
 
