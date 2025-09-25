@@ -11,7 +11,6 @@ import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { useTranslation } from "react-i18next";
-import { v4 as uuidv4 } from "uuid";
 import {
   Component,
   ComponentType,
@@ -24,10 +23,7 @@ import { useUserFeedArticles } from "../../features/feed/hooks";
 import { useUserFeedContext } from "../../contexts/UserFeedContext";
 import createNewPreviewerComponent from "./utils/createNewPreviewComponent";
 import { useGetUserFeedArticlesError } from "../../features/feedConnections";
-import getPreviewerComponentLabel from "./utils/getPreviewerComponentLabel";
 import PreviewerFormState from "./types/PreviewerFormState";
-import { useUserFeedConnectionContext } from "../../contexts/UserFeedConnectionContext";
-import { FeedDiscordChannelConnection } from "../../types";
 import getPreviewerComponentFormPathById from "./utils/getPreviewerComponentFormPathsById";
 import { useNavigableTreeContext } from "../../contexts/NavigableTreeContext";
 
@@ -87,8 +83,7 @@ export const usePreviewerContext = () => {
 
 const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { userFeed, articleFormatOptions } = useUserFeedContext();
-  const { connection } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
-  const { setValue, getValues } = useFormContext<PreviewerFormState>();
+  const { setValue, getValues, reset } = useFormContext<PreviewerFormState>();
   const { currentSelectedId } = useNavigableTreeContext();
   const { t } = useTranslation();
 
@@ -311,17 +306,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const resetMessage: PreviewerContextType["resetMessage"] = () => {
-    const isForumChannel = connection?.details?.channel?.type === "forum";
-
-    const newComponent: V2MessageComponentRoot = {
-      id: uuidv4(),
-      type: ComponentType.V2Root,
-      name: getPreviewerComponentLabel(ComponentType.V2Root),
-      children: [],
-      isForumChannel,
-    };
-
-    setValue("messageComponent", newComponent, { shouldValidate: true });
+    reset();
   };
 
   const updateCurrentlySelectedComponent: PreviewerContextType["updateCurrentlySelectedComponent"] =

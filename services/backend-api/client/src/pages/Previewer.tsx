@@ -104,6 +104,10 @@ const PreviewerContent: React.FC = () => {
   });
 
   const handleDiscard = () => {
+    if (!formState.isDirty) {
+      return;
+    }
+
     onOpen();
   };
 
@@ -138,7 +142,13 @@ const PreviewerContent: React.FC = () => {
                       Discord Message Builder
                     </Text>
                     <HStack spacing={3} flexWrap="wrap">
-                      <Button variant="outline" colorScheme="red" size="sm" onClick={handleDiscard}>
+                      <Button
+                        variant="outline"
+                        colorScheme="red"
+                        size="sm"
+                        onClick={handleDiscard}
+                        aria-disabled={formState.isDirty === false}
+                      >
                         Discard Changes
                       </Button>
                       <Button
