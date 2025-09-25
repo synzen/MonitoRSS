@@ -34,6 +34,7 @@ import { useDiscordWebhook } from "../../../features/discordWebhooks";
 import PreviewerFormState from "../types/PreviewerFormState";
 import { usePreviewerContext } from "../PreviewerContext";
 import { MessageComponentRoot } from "../types";
+import { DiscordMessageMentionForm } from "../../../features/feedConnections/components/DiscordMessageForm/DiscordMessageMentionForm";
 
 const TagCheckbox = ({
   emojiName,
@@ -373,6 +374,22 @@ export const LegacyRootProperties: React.FC = () => {
             />
           </Stack>
         </FormHelperText>
+      </FormControl>
+      <FormControl>
+        <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+          Mentions
+        </FormLabel>
+        <FormHelperText fontSize="sm" color="gray.400" mb={2}>
+          Roles and users that will be mentioned when articles are delivered. Use the{" "}
+          <MessagePlaceholderText>discord::mentions</MessagePlaceholderText> placeholder in your
+          message content to include these mentions.
+        </FormHelperText>
+        <DiscordMessageMentionForm
+          smallButton
+          excludeDescription
+          guildId={guildId}
+          path="messageComponent.mentions"
+        />
       </FormControl>
     </VStack>
   );

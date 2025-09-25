@@ -56,6 +56,15 @@ export interface LegacyMessageComponentRoot extends BaseComponent {
   isForumChannel?: boolean;
   channelNewThreadTitle?: string;
   channelNewThreadExcludesPreview?: boolean;
+  mentions?: {
+    targets?: Array<{
+      type: "role" | "user";
+      id: string;
+      filters?: {
+        expression: any;
+      } | null;
+    }> | null;
+  } | null;
 }
 
 export interface V2MessageComponentRoot extends BaseComponent {
@@ -71,6 +80,15 @@ export interface V2MessageComponentRoot extends BaseComponent {
   isForumChannel?: boolean;
   channelNewThreadTitle?: string;
   channelNewThreadExcludesPreview?: boolean;
+  mentions?: {
+    targets?: Array<{
+      type: "role" | "user";
+      id: string;
+      filters?: {
+        expression: any;
+      } | null;
+    }> | null;
+  } | null;
 }
 
 export interface TextDisplayComponent extends BaseComponent {
