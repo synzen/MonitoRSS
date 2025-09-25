@@ -196,7 +196,7 @@ const PreviewerContent: React.FC = () => {
                       borderColor="gray.600"
                       height="100%"
                       width="100%"
-                      overflow="hidden"
+                      overflowY="auto"
                     >
                       <VStack align="stretch" spacing={0} minWidth={200} height="100%">
                         <Box p={4} borderBottom="1px" borderColor="gray.600">
@@ -317,7 +317,7 @@ const PreviewerContent: React.FC = () => {
                       borderColor="gray.600"
                       height="100%"
                       width="100%"
-                      overflow="hidden"
+                      overflowY="auto"
                     >
                       {currentSelectedId && (
                         <ComponentPropertiesPanel selectedComponentId={currentSelectedId} />
