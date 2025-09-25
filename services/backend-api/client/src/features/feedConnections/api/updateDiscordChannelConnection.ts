@@ -35,9 +35,20 @@ export interface UpdateDiscordChannelConnectionInput {
     filters?: {
       expression: Record<string, any>;
     } | null;
+    forumThreadTags?: Array<{
+      id: string;
+      filters?: {
+        expression: Record<string, any>;
+      } | null;
+    }> | null;
     rateLimits?: Array<{
       timeWindowSeconds: number;
       limit: number;
+    }> | null;
+    placeholderLimits?: Array<{
+      placeholder: string;
+      characterCount: number;
+      appendString?: string | null;
     }> | null;
     threadCreationMethod?: "new-thread" | null;
     disabledCode?: FeedConnectionDisabledCode.Manual | null;
@@ -72,6 +83,8 @@ export interface UpdateDiscordChannelConnectionInput {
     formatter?: {
       formatTables?: boolean | null;
       stripImages?: boolean | null;
+      disabledImageLinkPreviews?: boolean | null;
+      ignoreNewLines?: boolean | null;
     } | null;
     customPlaceholders?: CustomPlaceholder[] | null;
     mentions?: {

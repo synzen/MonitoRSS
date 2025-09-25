@@ -45,6 +45,14 @@ import {
 } from "../contexts/UserFeedConnectionContext";
 import { FeedDiscordChannelConnection } from "../types";
 import PreviewerFormState from "./Previewer/types/PreviewerFormState";
+import { useUpdateDiscordChannelConnection } from "../features/feedConnections";
+import {
+  PageAlertContextOutlet,
+  PageAlertProvider,
+  usePageAlertContext,
+} from "../contexts/PageAlertContext";
+import { ComponentType } from "./Previewer/types";
+import convertPreviewerStateToConnectionUpdate from "./Previewer/utils/convertPreviewerStateToConnectionUpdate";
 
 const PreviewerContent: React.FC = () => {
   const { resetMessage } = usePreviewerContext();
@@ -55,14 +63,44 @@ const PreviewerContent: React.FC = () => {
   const cancelRef = React.useRef<HTMLButtonElement>(null);
   const { setExpandedIds } = useNavigableTreeContext();
   const [scrollToComponentId, setScrollToComponentId] = useState<string | null>(null);
+  const { feedId, connectionId } = useParams<RouteParams>();
+  const { mutateAsync: updateConnection, status: updateStatus } =
+    useUpdateDiscordChannelConnection();
+  const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
 
   const problems = extractPreviewerProblems(formState.errors.messageComponent, messageComponent);
   const componentIdsWithProblems = new Set(problems.map((p) => p.componentId));
 
-  const handleSave = handleSubmit((data) => {
-    // TODO: Implement save functionality
-    // eslint-disable-next-line no-console
-    console.log("Saving message component:", data.messageComponent);
+  const handleSave = handleSubmit(async (data) => {
+    if (
+      updateStatus === "loading" ||
+      !feedId ||
+      !connectionId ||
+      !data.messageComponent ||
+      data.messageComponent.type !== ComponentType.LegacyRoot
+    ) {
+      return;
+    }
+
+    try {
+      const connectionDetails = convertPreviewerStateToConnectionUpdate(data.messageComponent);
+
+      await updateConnection({
+        feedId,
+        connectionId,
+        details: connectionDetails,
+      });
+
+      createSuccessAlert({
+        title: "Successfully saved message format",
+        description: "Your Discord message format has been updated.",
+      });
+    } catch (error) {
+      createErrorAlert({
+        title: "Failed to save message format",
+        description: (error as Error).message,
+      });
+    }
   });
 
   const handleDiscard = () => {
@@ -94,7 +132,7 @@ const PreviewerContent: React.FC = () => {
             <Box position="relative" height="100%" bg="gray.900">
               <Flex direction="column" height="100%">
                 {/* Top Bar */}
-                <Box bg="gray.800" borderBottom="1px" borderColor="gray.600" px={4} py={3}>
+                <Stack bg="gray.800" borderBottom="1px" borderColor="gray.600" px={4} py={3}>
                   <HStack justify="space-between" align="center" flexWrap="wrap">
                     <Text fontSize="lg" fontWeight="bold" color="white" as="h1">
                       Discord Message Builder
@@ -103,12 +141,18 @@ const PreviewerContent: React.FC = () => {
                       <Button variant="outline" colorScheme="red" size="sm" onClick={handleDiscard}>
                         Discard Changes
                       </Button>
-                      <Button colorScheme="blue" size="sm" onClick={handleSave}>
-                        Save Changes
+                      <Button
+                        colorScheme="blue"
+                        size="sm"
+                        onClick={handleSave}
+                        aria-disabled={updateStatus === "loading"}
+                      >
+                        {updateStatus === "loading" ? "Saving Changes..." : "Save Changes"}
                       </Button>
                     </HStack>
                   </HStack>
-                </Box>
+                  <PageAlertContextOutlet />
+                </Stack>
                 {/* Main Content */}
                 <Flex flex={1} bg="gray.900" position="relative">
                   {/* Left Panel - Component Tree */}
@@ -295,9 +339,11 @@ export const Previewer: React.FC = () => {
               convertConnectionToPreviewerState(connection);
 
             return (
-              <PreviewerProvider defaultValues={previewerFormState}>
-                <PreviewerContent />
-              </PreviewerProvider>
+              <PageAlertProvider>
+                <PreviewerProvider defaultValues={previewerFormState}>
+                  <PreviewerContent />
+                </PreviewerProvider>
+              </PageAlertProvider>
             );
           }}
         </UserFeedConnectionContext.Consumer>

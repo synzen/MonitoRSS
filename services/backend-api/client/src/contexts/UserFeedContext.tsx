@@ -27,7 +27,7 @@ export const UserFeedProvider = ({
 }: {
   feedId?: string;
   children: ReactNode;
-  loadingComponent: ReactElement;
+  loadingComponent?: ReactElement;
   errorComponent?: ReactElement;
 }) => {
   const { feed, status, error } = useUserFeed({ feedId });
