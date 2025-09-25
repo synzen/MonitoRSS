@@ -302,7 +302,11 @@ export const DiscordMessagePreview: React.FC = () => {
   return (
     <Stack spacing={0}>
       <PageAlertProvider>
-        <PageAlertContextOutlet />
+        <PageAlertContextOutlet
+          containerProps={{
+            pb: 2,
+          }}
+        />
         <ArticlePreviewBanner />
         {/* Discord Message Preview */}
         <Box

@@ -1005,7 +1005,7 @@ const handlers = [
       {
         result: mockSendTestArticleResult,
       },
-      { status: 404 }
+      { status: 200 }
     );
   }),
 
