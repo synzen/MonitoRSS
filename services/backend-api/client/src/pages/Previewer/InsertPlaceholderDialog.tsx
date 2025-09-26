@@ -28,16 +28,10 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSelectTag: (tag: string) => void;
-  currentArticle: Record<string, string>;
 }
 
-export const InsertPlaceholderDialog: React.FC<Props> = ({
-  isOpen,
-  onClose,
-  onSelectTag,
-  currentArticle,
-}) => {
-  const { error, isLoading } = usePreviewerContext();
+export const InsertPlaceholderDialog: React.FC<Props> = ({ isOpen, onClose, onSelectTag }) => {
+  const { error, isLoading, currentArticle } = usePreviewerContext();
   const [searchTerm, setSearchTerm] = React.useState("");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const listRef = React.useRef<HTMLDivElement>(null);

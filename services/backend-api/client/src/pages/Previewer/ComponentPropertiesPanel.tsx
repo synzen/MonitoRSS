@@ -26,7 +26,7 @@ import {
 } from "@chakra-ui/react";
 import { DeleteIcon, ChevronUpIcon, ChevronDownIcon, AddIcon, CloseIcon } from "@chakra-ui/icons";
 import { SketchPicker } from "react-color";
-import { FieldError, useFormContext } from "react-hook-form";
+import { useFormContext } from "react-hook-form";
 import type { Component, ComponentPropertiesPanelProps } from "./types";
 import { ComponentType, ROOT_COMPONENT_TYPES } from "./types";
 import { InsertPlaceholderDialog } from "./InsertPlaceholderDialog";
@@ -39,17 +39,7 @@ import { LegacyTextProperties } from "./componentProperties/LegacyTextProperties
 import findPreviewerComponentById from "./utils/findPreviewerComponentById";
 import getPreviewerComponentFormPathsById from "./utils/getPreviewerComponentFormPathsById";
 import getPreviewerFieldErrors from "./utils/getPreviewerFieldErrors";
-
-// Mock article data - in a real app this would come from props or context
-const getCurrentArticle = () => ({
-  title: "Breaking: New JavaScript Framework Released",
-  description:
-    "A revolutionary new framework promises to change how we build web applications forever.A revolutionary new framework promises to change how we build web applications forever.A revolutionary new framework promises to change how we build web applications forever.A revolutionary new framework promises to change how we build web applications forever.A revolutionary new framework promises to change how we build web applications forever.A revolutionary new framework promises to change how we build web applications forever.A revolutionary new framework promises to change how we build web applications forever.",
-  url: "https://example.com/article1",
-  author: "Jane Developer",
-  publishedAt: "2024-01-15T10:30:00Z",
-  feedTitle: "Tech News Daily",
-});
+import getPreviewerComponentLabel from "./utils/getPreviewerComponentLabel";
 
 const NON_REPOSITIONABLE_COMPONENTS = [
   ComponentType.LegacyActionRow,
@@ -67,52 +57,6 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   const { isOpen, onOpen, onClose } = useDisclosure();
   const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
 
-  const getFieldError = (componentId: string, fieldName: string): FieldError | undefined => {
-    if (!messageComponent) return undefined;
-
-    const getNestedError = (obj: any, path: string) => {
-      return path.split(".").reduce((current, key) => {
-        return current && current[key];
-      }, obj);
-    };
-
-    interface StackItem {
-      component: Component;
-      path: string;
-    }
-
-    const stack: StackItem[] = [{ component: messageComponent, path: "messageComponent" }];
-
-    while (stack.length > 0) {
-      const { component, path } = stack.pop()!;
-
-      if (component.id === componentId) {
-        const errorPath = `${path}.${fieldName}`;
-        const error = getNestedError(formState.errors, errorPath);
-
-        return error;
-      }
-
-      if (component.children) {
-        for (let i = component.children.length - 1; i >= 0; i -= 1) {
-          stack.push({
-            component: component.children[i],
-            path: `${path}.children.${i}`,
-          });
-        }
-      }
-
-      if (component.type === ComponentType.V2Section && component.accessory) {
-        stack.push({
-          component: component.accessory,
-          path: `${path}.accessory`,
-        });
-      }
-    }
-
-    return undefined;
-  };
-
   const renderPropertiesForComponent = (component: Component, onChange: (value: any) => void) => {
     if (component.type === ComponentType.LegacyRoot) {
       return <LegacyRootProperties />;
@@ -125,10 +69,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     if (component.type === ComponentType.LegacyText) {
       return (
         <LegacyTextProperties
+          root={messageComponent}
           component={component}
           onChange={onChange}
           onOpenPlaceholderDialog={onOpen}
-          getFieldError={getFieldError}
         />
       );
     }
@@ -841,12 +785,6 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   const canMoveUp = positionInfo && positionInfo.index > 0;
   const canMoveDown = positionInfo && positionInfo.index < positionInfo.total - 1;
 
-  const [nameFieldError] = getPreviewerFieldErrors(
-    formState.errors,
-    messageComponent,
-    component.id,
-    ["name"]
-  );
   const isRootComponent = ROOT_COMPONENT_TYPES.includes(component.type);
 
   return (
@@ -856,7 +794,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
           <HStack justify="space-between" align="center" flexWrap="wrap" spacing={6}>
             {!hideTitle && (
               <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
-                {component.type} Properties
+                {getPreviewerComponentLabel(component.type)} Properties
               </Text>
             )}
             {!isRootComponent && (
@@ -906,18 +844,6 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             components must be deleted.
           </Alert>
         )}
-        <FormControl isInvalid={!!nameFieldError}>
-          <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-            Component Name
-          </FormLabel>
-          <Input
-            value={component.name}
-            onChange={(e) => updateValue({ ...component, name: e.target.value })}
-            placeholder="Enter component name"
-            bg="gray.700"
-          />
-          {nameFieldError && <FormErrorMessage>{nameFieldError?.message}</FormErrorMessage>}
-        </FormControl>
         {canBeRepositioned && positionInfo && !isRootComponent && (
           <Box>
             <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
@@ -970,7 +896,6 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         isOpen={isOpen}
         onClose={onClose}
         onSelectTag={handleInsertMergeTag}
-        currentArticle={getCurrentArticle()}
       />
     </>
   );

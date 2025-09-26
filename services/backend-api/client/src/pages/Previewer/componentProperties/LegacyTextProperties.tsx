@@ -12,23 +12,29 @@ import {
   chakra,
 } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
+import { useFormContext } from "react-hook-form";
 import { AutoResizeTextarea } from "../../../components/AutoResizeTextarea";
-import { LegacyTextComponent } from "../types";
+import { Component, LegacyTextComponent } from "../types";
+import PreviewerFormState from "../types/PreviewerFormState";
+import getPreviewerFieldErrors from "../utils/getPreviewerFieldErrors";
 
 interface LegacyTextPropertiesProps {
+  root?: Component;
   component: LegacyTextComponent;
   onChange: (value: any) => void;
   onOpenPlaceholderDialog: () => void;
-  getFieldError: (componentId: string, fieldName: string) => any;
 }
 
 export const LegacyTextProperties: React.FC<LegacyTextPropertiesProps> = ({
+  root,
   component,
   onChange,
   onOpenPlaceholderDialog,
-  getFieldError,
 }) => {
-  const contentError = getFieldError(component.id, "content");
+  const {
+    formState: { errors },
+  } = useFormContext<PreviewerFormState>();
+  const [contentError] = getPreviewerFieldErrors(errors, root, component.id, ["content"]);
 
   return (
     <VStack align="stretch" spacing={4}>
