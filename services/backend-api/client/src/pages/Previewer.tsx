@@ -56,7 +56,15 @@ import {
 import { ComponentType } from "./Previewer/types";
 import convertPreviewerStateToConnectionUpdate from "./Previewer/utils/convertPreviewerStateToConnectionUpdate";
 
-const SIDE_PANEL_WIDTH = 300;
+const SIDE_PANEL_WIDTH = {
+  base: "300px",
+  "2xl": "400px",
+};
+const CENTER_PANEL_WIDTH = {
+  base: "100vw",
+  lg: `calc(min(100vw - ${300 * 2}px, 100%))`,
+  "2xl": `calc(min(100vw - ${400 * 2}px, 100%))`,
+};
 
 const PreviewerContent: React.FC = () => {
   const { resetMessage } = usePreviewerContext();
@@ -202,7 +210,12 @@ const PreviewerContent: React.FC = () => {
                 {/* Main Content */}
                 <Flex flex={1} bg="gray.900" position="relative">
                   {/* Left Panel - Component Tree */}
-                  <Box minWidth={SIDE_PANEL_WIDTH} display={{ base: "none", lg: "block" }}>
+                  <Box
+                    minWidth={SIDE_PANEL_WIDTH}
+                    maxWidth={SIDE_PANEL_WIDTH}
+                    width={SIDE_PANEL_WIDTH}
+                    display={{ base: "none", lg: "block" }}
+                  >
                     <Box
                       bg="gray.800"
                       borderRight="1px"
@@ -236,15 +249,7 @@ const PreviewerContent: React.FC = () => {
                     </Box>
                   </Box>
                   {/* Center Panel - Discord Preview and Problems */}
-                  <Flex
-                    flex={1}
-                    direction="column"
-                    bg="gray.800"
-                    maxW={{
-                      base: "100vw",
-                      lg: `calc(min(100vw - ${SIDE_PANEL_WIDTH * 2}px, 100%))`,
-                    }}
-                  >
+                  <Flex flex={1} direction="column" bg="gray.800" maxW={CENTER_PANEL_WIDTH}>
                     {/* Discord Preview Section */}
                     <Box p={4} borderBottom="1px" borderColor="gray.600" srOnly>
                       <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
@@ -330,7 +335,11 @@ const PreviewerContent: React.FC = () => {
                     </Box>
                   </Flex>
                   {/* Right Panel - Properties */}
-                  <Box minWidth={SIDE_PANEL_WIDTH} display={{ base: "none", lg: "block" }}>
+                  <Box
+                    minWidth={SIDE_PANEL_WIDTH}
+                    maxWidth={SIDE_PANEL_WIDTH}
+                    display={{ base: "none", lg: "block" }}
+                  >
                     <Box
                       bg="gray.800"
                       borderLeft="1px"
