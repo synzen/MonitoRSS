@@ -4,7 +4,6 @@ import {
   HStack,
   Text,
   Button,
-  Input,
   FormControl,
   FormHelperText,
   FormLabel,
@@ -23,6 +22,7 @@ import {
 } from "@chakra-ui/react";
 import { FiFilter } from "react-icons/fi";
 import { useFormContext } from "react-hook-form";
+import { InputWithInsertPlaceholder } from "../../../components/InputWithInsertPlaceholder";
 import { HelpDialog } from "../../../components";
 import MessagePlaceholderText from "../../../components/MessagePlaceholderText";
 import { useDiscordChannelForumTags } from "../../../features/feedConnections/hooks";
@@ -135,23 +135,20 @@ export const LegacyRootProperties: React.FC = () => {
     <VStack align="stretch" spacing={6}>
       {component?.isForumChannel && (
         <>
-          <FormControl>
-            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-              Forum Thread Title
-            </FormLabel>
-            <Input
-              aria-label="Forum thread title"
-              spellCheck={false}
-              value={component.forumThreadTitle || ""}
-              onChange={(e) => onChange({ ...component, forumThreadTitle: e.target.value })}
-              bg="gray.700"
-            />
-            <FormHelperText fontSize="sm" color="gray.400">
-              The title of the thread that will be created per new article. You may use
-              placeholders. The default is{" "}
-              <MessagePlaceholderText withoutCopy>title</MessagePlaceholderText>.
-            </FormHelperText>
-          </FormControl>
+          <InputWithInsertPlaceholder
+            value={component.forumThreadTitle || ""}
+            onChange={(value) => onChange({ ...component, forumThreadTitle: value })}
+            label="Forum Thread Title"
+            placeholder="Forum thread title"
+            as="input"
+            helperText={
+              <>
+                The title of the thread that will be created per new article. You may use
+                placeholders. The default is{" "}
+                <MessagePlaceholderText withoutCopy>title</MessagePlaceholderText>.
+              </>
+            }
+          />
           <FormControl>
             <Text fontSize="sm" mb={2} color="gray.200">
               Forum Thread Tags
@@ -232,28 +229,25 @@ export const LegacyRootProperties: React.FC = () => {
       )}
       {showChannelNewThreadOptions && (
         <>
-          <FormControl>
-            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-              Channel Thread Title
-            </FormLabel>
-            <Input
-              aria-label="Channel thread title"
-              spellCheck={false}
-              value={component?.channelNewThreadTitle || ""}
-              onChange={(e) =>
-                onChange<MessageComponentRoot>({
-                  ...component,
-                  channelNewThreadTitle: e.target.value,
-                })
-              }
-              bg="gray.700"
-            />
-            <FormHelperText fontSize="sm" color="gray.400">
-              The title of the thread that will be created per new article. You may use
-              placeholders. The default is{" "}
-              <MessagePlaceholderText withoutCopy>title</MessagePlaceholderText>.
-            </FormHelperText>
-          </FormControl>
+          <InputWithInsertPlaceholder
+            value={component?.channelNewThreadTitle || ""}
+            onChange={(value) =>
+              onChange<MessageComponentRoot>({
+                ...component,
+                channelNewThreadTitle: value,
+              })
+            }
+            label="Channel Thread Title"
+            placeholder="Channel thread title"
+            as="input"
+            helperText={
+              <>
+                The title of the thread that will be created per new article. You may use
+                placeholders. The default is{" "}
+                <MessagePlaceholderText withoutCopy>title</MessagePlaceholderText>.
+              </>
+            }
+          />
           <FormControl>
             <HStack justify="space-between" align="center" mb={2}>
               <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>

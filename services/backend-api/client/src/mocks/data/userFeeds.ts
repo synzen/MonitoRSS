@@ -312,7 +312,84 @@ const mockUserFeeds: UserFeed[] = [
             guildId: mockDiscordServers[0].id,
             type: "new-thread",
           },
-          embeds: [],
+
+          componentRows: [
+            {
+              id: "r1",
+              components: [
+                {
+                  id: "b2",
+                  type: DiscordComponentType.Button,
+                  label: "Link Label",
+                  style: DiscordComponentButtonStyle.Link,
+                  url: "https://www.google.com",
+                },
+                {
+                  id: "b1",
+                  type: DiscordComponentType.Button,
+                  label: "Danger Label",
+                  style: DiscordComponentButtonStyle.Link,
+                  url: "https://www.google.com",
+                },
+                {
+                  id: "b3",
+                  type: DiscordComponentType.Button,
+                  label: "Link Label",
+                  style: DiscordComponentButtonStyle.Link,
+                  url: "https://www.google.com",
+                },
+                {
+                  id: "b4",
+                  type: DiscordComponentType.Button,
+                  label: "Danger Label",
+                  style: DiscordComponentButtonStyle.Link,
+                  url: "https://www.google.com",
+                },
+              ],
+            },
+            {
+              id: "r2",
+              components: [
+                {
+                  id: "r2b2",
+                  type: DiscordComponentType.Button,
+                  label: "Link Label",
+                  style: DiscordComponentButtonStyle.Link,
+                  url: "https://www.google.com",
+                },
+              ],
+            },
+          ],
+          embeds: [
+            {
+              title: "hello world",
+              fields: [
+                {
+                  id: "1",
+                  name: "test",
+                  value: "test",
+                  inline: true,
+                },
+                {
+                  id: "2",
+                  name: "test",
+                  value: "test",
+                  inline: true,
+                },
+                {
+                  id: "3",
+                  name: "name 2",
+                  value: "value 2",
+                  inline: false,
+                },
+                {
+                  id: "4",
+                  name: "name 3",
+                  value: "value 3",
+                },
+              ],
+            },
+          ],
           formatter: {
             formatTables: false,
             stripImages: false,

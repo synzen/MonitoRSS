@@ -10,7 +10,6 @@ import {
   chakra,
 } from "@chakra-ui/react";
 import { useFormContext } from "react-hook-form";
-import { AutoResizeTextarea } from "../../../components/AutoResizeTextarea";
 import { InputWithInsertPlaceholder } from "../../../components/InputWithInsertPlaceholder";
 import { Component, LegacyTextComponent } from "../types";
 import PreviewerFormState from "../types/PreviewerFormState";
@@ -86,89 +85,54 @@ export const LegacyTextProperties: React.FC<LegacyTextPropertiesProps> = ({
           <chakra.legend srOnly>Split Content Options</chakra.legend>
           <Box borderLeft="2px solid" borderColor="gray.600" pl={4} ml={0}>
             <VStack spacing={4} align="stretch">
-              <FormControl>
-                <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-                  Split text
-                </FormLabel>
-                <AutoResizeTextarea
-                  size="sm"
-                  value={component.splitOptions?.splitChar || ""}
-                  onChange={(e) =>
-                    onChange({
-                      ...component,
-                      splitOptions: {
-                        ...component.splitOptions,
-                        splitChar: e.target.value || undefined,
-                      },
-                    })
-                  }
-                  placeholder="."
-                  rows={1}
-                  bg="gray.700"
-                  color="white"
-                  isDisabled={!component.splitOptions?.isEnabled}
-                  aria-describedby="split-text-help"
-                />
-                <FormHelperText fontSize="sm" color="gray.400" id="split-text-help">
-                  The text to split the text content with. Defaults to &quot;.&quot; (a period).
-                </FormHelperText>
-              </FormControl>
-              <FormControl>
-                <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-                  Append text
-                </FormLabel>
-                <AutoResizeTextarea
-                  size="sm"
-                  value={component.splitOptions?.appendChar || ""}
-                  onChange={(e) =>
-                    onChange({
-                      ...component,
-                      splitOptions: {
-                        ...component.splitOptions,
-                        appendChar: e.target.value || undefined,
-                      },
-                    })
-                  }
-                  placeholder=""
-                  rows={1}
-                  bg="gray.700"
-                  color="white"
-                  isDisabled={!component.splitOptions?.isEnabled}
-                  aria-describedby="append-text-help"
-                />
-                <FormHelperText fontSize="sm" color="gray.400" id="append-text-help">
-                  The text to append to the end of the last message after the initial message has
-                  been split. Default is nothing.
-                </FormHelperText>
-              </FormControl>
-              <FormControl>
-                <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-                  Prepend text
-                </FormLabel>
-                <AutoResizeTextarea
-                  size="sm"
-                  value={component.splitOptions?.prependChar || ""}
-                  onChange={(e) =>
-                    onChange({
-                      ...component,
-                      splitOptions: {
-                        ...component.splitOptions,
-                        prependChar: e.target.value || undefined,
-                      },
-                    })
-                  }
-                  placeholder=""
-                  rows={1}
-                  bg="gray.700"
-                  color="white"
-                  isDisabled={!component.splitOptions?.isEnabled}
-                  aria-describedby="prepend-text-help"
-                />
-                <FormHelperText fontSize="sm" color="gray.400" id="prepend-text-help">
-                  The text to prepend to the beginning of the first message after the initial
-                  message has been split. Default is nothing.
-                </FormHelperText>
-              </FormControl>
+              <InputWithInsertPlaceholder
+                value={component.splitOptions?.splitChar || ""}
+                onChange={(value) =>
+                  onChange({
+                    ...component,
+                    splitOptions: {
+                      ...component.splitOptions,
+                      splitChar: value || undefined,
+                    },
+                  })
+                }
+                label="Split text"
+                placeholder="."
+                helperText='The text to split the text content with. Defaults to "." (a period).'
+                as="input"
+              />
+              <InputWithInsertPlaceholder
+                value={component.splitOptions?.appendChar || ""}
+                onChange={(value) =>
+                  onChange({
+                    ...component,
+                    splitOptions: {
+                      ...component.splitOptions,
+                      appendChar: value || undefined,
+                    },
+                  })
+                }
+                label="Append text"
+                placeholder=""
+                helperText="The text to append to the end of the last message after the initial message has been split. Default is nothing."
+                as="input"
+              />
+              <InputWithInsertPlaceholder
+                value={component.splitOptions?.prependChar || ""}
+                onChange={(value) =>
+                  onChange({
+                    ...component,
+                    splitOptions: {
+                      ...component.splitOptions,
+                      prependChar: value || undefined,
+                    },
+                  })
+                }
+                label="Prepend text"
+                placeholder=""
+                helperText="The text to prepend to the beginning of the first message after the initial message has been split. Default is nothing."
+                as="input"
+              />
             </VStack>
           </Box>
         </fieldset>

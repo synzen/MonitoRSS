@@ -5,8 +5,6 @@ import {
   HStack,
   Text,
   Button,
-  Input,
-  Textarea,
   Select,
   Checkbox,
   FormControl,
@@ -167,42 +165,33 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
       return (
         <VStack align="stretch" spacing={6}>
-          <FormControl isInvalid={!!nameError}>
-            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-              Name
-            </FormLabel>
-            <Input
-              value={component.authorName || ""}
-              onChange={(e) => onChange({ ...component, authorName: e.target.value })}
-              placeholder="Name"
-              bg="gray.700"
-            />
-            {nameError && <FormErrorMessage>{nameError.message}</FormErrorMessage>}
-          </FormControl>
-          <FormControl isInvalid={!!urlError}>
-            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-              URL
-            </FormLabel>
-            <Input
-              value={component.authorUrl || ""}
-              onChange={(e) => onChange({ ...component, authorUrl: e.target.value })}
-              placeholder="https://example.com"
-              bg="gray.700"
-            />
-            {urlError && <FormErrorMessage>{urlError.message}</FormErrorMessage>}
-          </FormControl>
-          <FormControl isInvalid={!!iconUrlError}>
-            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-              Icon URL
-            </FormLabel>
-            <Input
-              value={component.authorIconUrl || ""}
-              onChange={(e) => onChange({ ...component, authorIconUrl: e.target.value })}
-              placeholder="https://example.com/icon.png"
-              bg="gray.700"
-            />
-            {iconUrlError && <FormErrorMessage>{iconUrlError.message}</FormErrorMessage>}
-          </FormControl>
+          <InputWithInsertPlaceholder
+            value={component.authorName || ""}
+            onChange={(value) => onChange({ ...component, authorName: value })}
+            label="Name"
+            placeholder="Name"
+            error={nameError?.message}
+            isInvalid={!!nameError}
+            as="input"
+          />
+          <InputWithInsertPlaceholder
+            value={component.authorUrl || ""}
+            onChange={(value) => onChange({ ...component, authorUrl: value })}
+            label="URL"
+            placeholder="https://example.com"
+            error={urlError?.message}
+            isInvalid={!!urlError}
+            as="input"
+          />
+          <InputWithInsertPlaceholder
+            value={component.authorIconUrl || ""}
+            onChange={(value) => onChange({ ...component, authorIconUrl: value })}
+            label="Icon URL"
+            placeholder="https://example.com/icon.png"
+            error={iconUrlError?.message}
+            isInvalid={!!iconUrlError}
+            as="input"
+          />
         </VStack>
       );
     }
@@ -217,30 +206,24 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
       return (
         <VStack align="stretch" spacing={6}>
-          <FormControl isInvalid={!!titleError}>
-            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-              Text
-            </FormLabel>
-            <Input
-              value={component.title || ""}
-              onChange={(e) => onChange({ ...component, title: e.target.value })}
-              placeholder="Embed title"
-              bg="gray.700"
-            />
-            {titleError && <FormErrorMessage>{titleError.message}</FormErrorMessage>}
-          </FormControl>
-          <FormControl isInvalid={!!titleUrlError}>
-            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-              URL
-            </FormLabel>
-            <Input
-              value={component.titleUrl || ""}
-              onChange={(e) => onChange({ ...component, titleUrl: e.target.value })}
-              placeholder="https://example.com"
-              bg="gray.700"
-            />
-            {titleUrlError && <FormErrorMessage>{titleUrlError.message}</FormErrorMessage>}
-          </FormControl>
+          <InputWithInsertPlaceholder
+            value={component.title || ""}
+            onChange={(value) => onChange({ ...component, title: value })}
+            label="Text"
+            placeholder="Embed title"
+            error={titleError?.message}
+            isInvalid={!!titleError}
+            as="input"
+          />
+          <InputWithInsertPlaceholder
+            value={component.titleUrl || ""}
+            onChange={(value) => onChange({ ...component, titleUrl: value })}
+            label="URL"
+            placeholder="https://example.com"
+            error={titleUrlError?.message}
+            isInvalid={!!titleUrlError}
+            as="input"
+          />
         </VStack>
       );
     }
@@ -255,20 +238,16 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
       return (
         <VStack align="stretch" spacing={6}>
-          <FormControl isInvalid={!!descriptionError}>
-            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-              Description
-            </FormLabel>
-            <Textarea
-              value={component.description || ""}
-              onChange={(e) => onChange({ ...component, description: e.target.value })}
-              placeholder="Embed description"
-              rows={3}
-              bg="gray.700"
-              color="white"
-            />
-            {descriptionError && <FormErrorMessage>{descriptionError.message}</FormErrorMessage>}
-          </FormControl>
+          <InputWithInsertPlaceholder
+            value={component.description || ""}
+            onChange={(value) => onChange({ ...component, description: value })}
+            label="Description"
+            placeholder="Embed description"
+            error={descriptionError?.message}
+            isInvalid={!!descriptionError}
+            as="textarea"
+            rows={3}
+          />
         </VStack>
       );
     }
@@ -283,18 +262,15 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
       return (
         <VStack align="stretch" spacing={6}>
-          <FormControl isInvalid={!!imageUrlError}>
-            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-              URL
-            </FormLabel>
-            <Input
-              value={component.imageUrl || ""}
-              onChange={(e) => onChange({ ...component, imageUrl: e.target.value })}
-              placeholder="https://example.com/image.png"
-              bg="gray.700"
-            />
-            {imageUrlError && <FormErrorMessage>{imageUrlError.message}</FormErrorMessage>}
-          </FormControl>
+          <InputWithInsertPlaceholder
+            value={component.imageUrl || ""}
+            onChange={(value) => onChange({ ...component, imageUrl: value })}
+            label="URL"
+            placeholder="https://example.com/image.png"
+            error={imageUrlError?.message}
+            isInvalid={!!imageUrlError}
+            as="input"
+          />
         </VStack>
       );
     }
@@ -309,18 +285,15 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
       return (
         <VStack align="stretch" spacing={6}>
-          <FormControl isInvalid={!!thumbnailUrlError}>
-            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-              URL
-            </FormLabel>
-            <Input
-              value={component.thumbnailUrl || ""}
-              onChange={(e) => onChange({ ...component, thumbnailUrl: e.target.value })}
-              placeholder="https://example.com/thumbnail.png"
-              bg="gray.700"
-            />
-            {thumbnailUrlError && <FormErrorMessage>{thumbnailUrlError.message}</FormErrorMessage>}
-          </FormControl>
+          <InputWithInsertPlaceholder
+            value={component.thumbnailUrl || ""}
+            onChange={(value) => onChange({ ...component, thumbnailUrl: value })}
+            label="URL"
+            placeholder="https://example.com/thumbnail.png"
+            error={thumbnailUrlError?.message}
+            isInvalid={!!thumbnailUrlError}
+            as="input"
+          />
         </VStack>
       );
     }
@@ -335,32 +308,24 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
       return (
         <VStack align="stretch" spacing={6}>
-          <FormControl isInvalid={!!footerTextError}>
-            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-              Text
-            </FormLabel>
-            <Input
-              value={component.footerText || ""}
-              onChange={(e) => onChange({ ...component, footerText: e.target.value })}
-              placeholder="Footer text"
-              bg="gray.700"
-            />
-            {footerTextError && <FormErrorMessage>{footerTextError.message}</FormErrorMessage>}
-          </FormControl>
-          <FormControl isInvalid={!!footerIconUrlError}>
-            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-              Icon URL
-            </FormLabel>
-            <Input
-              value={component.footerIconUrl || ""}
-              onChange={(e) => onChange({ ...component, footerIconUrl: e.target.value })}
-              placeholder="https://example.com/icon.png"
-              bg="gray.700"
-            />
-            {footerIconUrlError && (
-              <FormErrorMessage>{footerIconUrlError.message}</FormErrorMessage>
-            )}
-          </FormControl>
+          <InputWithInsertPlaceholder
+            value={component.footerText || ""}
+            onChange={(value) => onChange({ ...component, footerText: value })}
+            label="Text"
+            placeholder="Footer text"
+            error={footerTextError?.message}
+            isInvalid={!!footerTextError}
+            as="input"
+          />
+          <InputWithInsertPlaceholder
+            value={component.footerIconUrl || ""}
+            onChange={(value) => onChange({ ...component, footerIconUrl: value })}
+            label="Icon URL"
+            placeholder="https://example.com/icon.png"
+            error={footerIconUrlError?.message}
+            isInvalid={!!footerIconUrlError}
+            as="input"
+          />
         </VStack>
       );
     }
@@ -375,32 +340,25 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
       return (
         <VStack align="stretch" spacing={6}>
-          <FormControl isInvalid={!!fieldNameError}>
-            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-              Field Name
-            </FormLabel>
-            <Input
-              value={component.fieldName}
-              onChange={(e) => onChange({ ...component, fieldName: e.target.value })}
-              placeholder="Field name"
-              bg="gray.700"
-            />
-            {fieldNameError && <FormErrorMessage>{fieldNameError.message}</FormErrorMessage>}
-          </FormControl>
-          <FormControl isInvalid={!!fieldValueError}>
-            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-              Field Value
-            </FormLabel>
-            <Textarea
-              value={component.fieldValue}
-              onChange={(e) => onChange({ ...component, fieldValue: e.target.value })}
-              placeholder="Field value"
-              rows={2}
-              bg="gray.700"
-              color="white"
-            />
-            {fieldValueError && <FormErrorMessage>{fieldValueError.message}</FormErrorMessage>}
-          </FormControl>
+          <InputWithInsertPlaceholder
+            value={component.fieldName}
+            onChange={(value) => onChange({ ...component, fieldName: value })}
+            label="Field Name"
+            placeholder="Field name"
+            error={fieldNameError?.message}
+            isInvalid={!!fieldNameError}
+            as="input"
+          />
+          <InputWithInsertPlaceholder
+            value={component.fieldValue}
+            onChange={(value) => onChange({ ...component, fieldValue: value })}
+            label="Field Value"
+            placeholder="Field value"
+            error={fieldValueError?.message}
+            isInvalid={!!fieldValueError}
+            as="textarea"
+            rows={2}
+          />
           <FormControl>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               Inline Field
@@ -500,18 +458,15 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
       return (
         <VStack align="stretch" spacing={6}>
-          <FormControl isInvalid={!!labelError}>
-            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-              Button Label
-            </FormLabel>
-            <Input
-              value={component.label}
-              onChange={(e) => onChange({ ...component, label: e.target.value })}
-              placeholder="Enter button label"
-              bg="gray.700"
-            />
-            {labelError && <FormErrorMessage>{labelError.message}</FormErrorMessage>}
-          </FormControl>
+          <InputWithInsertPlaceholder
+            value={component.label}
+            onChange={(value) => onChange({ ...component, label: value })}
+            label="Button Label"
+            placeholder="Enter button label"
+            error={labelError?.message}
+            isInvalid={!!labelError}
+            as="input"
+          />
           <FormControl isInvalid={!!styleError}>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               Button Style
@@ -532,18 +487,15 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             {styleError && <FormErrorMessage>{styleError.message}</FormErrorMessage>}
           </FormControl>
           {component.style === DiscordButtonStyle.Link && (
-            <FormControl isInvalid={!!hrefError}>
-              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-                Link URL
-              </FormLabel>
-              <Input
-                value={component.href || ""}
-                onChange={(e) => onChange({ ...component, href: e.target.value })}
-                placeholder="https://example.com"
-                bg="gray.700"
-              />
-              {hrefError && <FormErrorMessage>{hrefError.message}</FormErrorMessage>}
-            </FormControl>
+            <InputWithInsertPlaceholder
+              value={component.href || ""}
+              onChange={(value) => onChange({ ...component, href: value })}
+              label="Link URL"
+              placeholder="https://example.com"
+              error={hrefError?.message}
+              isInvalid={!!hrefError}
+              as="input"
+            />
           )}
           <FormControl>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
@@ -614,18 +566,15 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
       return (
         <VStack align="stretch" spacing={6}>
-          <FormControl isInvalid={!!labelError}>
-            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-              Button Label
-            </FormLabel>
-            <Input
-              value={component.label}
-              onChange={(e) => onChange({ ...component, label: e.target.value })}
-              placeholder="Enter button label"
-              bg="gray.700"
-            />
-            {labelError && <FormErrorMessage>{labelError.message}</FormErrorMessage>}
-          </FormControl>
+          <InputWithInsertPlaceholder
+            value={component.label}
+            onChange={(value) => onChange({ ...component, label: value })}
+            label="Button Label"
+            placeholder="Enter button label"
+            error={labelError?.message}
+            isInvalid={!!labelError}
+            as="input"
+          />
           <FormControl isInvalid={!!styleError}>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               Button Style
@@ -646,18 +595,15 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             {styleError && <FormErrorMessage>{styleError.message}</FormErrorMessage>}
           </FormControl>
           {component.style === DiscordButtonStyle.Link && (
-            <FormControl isInvalid={!!urlError}>
-              <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-                Link URL
-              </FormLabel>
-              <Input
-                value={component.url || ""}
-                onChange={(e) => onChange({ ...component, url: e.target.value })}
-                placeholder="https://example.com"
-                bg="gray.700"
-              />
-              {urlError && <FormErrorMessage>{urlError.message}</FormErrorMessage>}
-            </FormControl>
+            <InputWithInsertPlaceholder
+              value={component.url || ""}
+              onChange={(value) => onChange({ ...component, url: value })}
+              label="Link URL"
+              placeholder="https://example.com"
+              error={urlError?.message}
+              isInvalid={!!urlError}
+              as="input"
+            />
           )}
           <FormControl>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">

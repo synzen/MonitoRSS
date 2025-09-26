@@ -1,4 +1,4 @@
-import React from "react";
+import React, { ReactNode } from "react";
 import {
   VStack,
   Textarea,
@@ -7,6 +7,7 @@ import {
   FormControl,
   FormLabel,
   FormErrorMessage,
+  FormHelperText,
 } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
 import { InsertPlaceholderDialog } from "../../pages/Previewer/InsertPlaceholderDialog";
@@ -17,6 +18,7 @@ interface Props {
   label: string;
   placeholder?: string;
   error?: string;
+  helperText?: ReactNode;
   rows?: number;
   isInvalid?: boolean;
   as?: "input" | "textarea";
@@ -28,6 +30,7 @@ export const InputWithInsertPlaceholder: React.FC<Props> = ({
   label,
   placeholder = "Enter text content",
   error,
+  helperText,
   rows = 4,
   isInvalid = false,
   as = "textarea",
@@ -55,7 +58,7 @@ export const InputWithInsertPlaceholder: React.FC<Props> = ({
     <>
       <VStack align="stretch" spacing={2}>
         <FormControl isInvalid={isInvalid}>
-          <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+          <FormLabel fontSize="sm" fontWeight="medium" color="gray.200">
             {label}
           </FormLabel>
           {as === "textarea" ? (
@@ -80,18 +83,24 @@ export const InputWithInsertPlaceholder: React.FC<Props> = ({
               fontFamily="mono"
             />
           )}
+          <Button
+            mt={2}
+            leftIcon={<AddIcon />}
+            size="sm"
+            variant="outline"
+            colorScheme="blue"
+            onClick={() => setIsDialogOpen(true)}
+            alignSelf="flex-start"
+          >
+            Insert Placeholder
+          </Button>
+          {helperText && (
+            <FormHelperText fontSize="sm" color="gray.400">
+              {helperText}
+            </FormHelperText>
+          )}
           {error && <FormErrorMessage>{error}</FormErrorMessage>}
         </FormControl>
-        <Button
-          leftIcon={<AddIcon />}
-          size="sm"
-          variant="outline"
-          colorScheme="blue"
-          onClick={() => setIsDialogOpen(true)}
-          alignSelf="flex-start"
-        >
-          Insert Placeholder
-        </Button>
       </VStack>
       <InsertPlaceholderDialog
         isOpen={isDialogOpen}
