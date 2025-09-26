@@ -2,8 +2,6 @@ import React from "react";
 import {
   VStack,
   HStack,
-  Button,
-  Textarea,
   FormControl,
   FormHelperText,
   FormLabel,
@@ -11,9 +9,9 @@ import {
   Box,
   chakra,
 } from "@chakra-ui/react";
-import { AddIcon } from "@chakra-ui/icons";
 import { useFormContext } from "react-hook-form";
 import { AutoResizeTextarea } from "../../../components/AutoResizeTextarea";
+import { TextareaWithPlaceholderInsert } from "../../../components/TextareaWithPlaceholderInsert";
 import { Component, LegacyTextComponent } from "../types";
 import PreviewerFormState from "../types/PreviewerFormState";
 import getPreviewerFieldErrors from "../utils/getPreviewerFieldErrors";
@@ -22,14 +20,12 @@ interface LegacyTextPropertiesProps {
   root?: Component;
   component: LegacyTextComponent;
   onChange: (value: any) => void;
-  onOpenPlaceholderDialog: () => void;
 }
 
 export const LegacyTextProperties: React.FC<LegacyTextPropertiesProps> = ({
   root,
   component,
   onChange,
-  onOpenPlaceholderDialog,
 }) => {
   const {
     formState: { errors },
@@ -38,30 +34,13 @@ export const LegacyTextProperties: React.FC<LegacyTextPropertiesProps> = ({
 
   return (
     <VStack align="stretch" spacing={4}>
-      <FormControl isInvalid={!!contentError}>
-        <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-          Text Content
-        </FormLabel>
-        <Textarea
-          value={component.content}
-          onChange={(e) => onChange({ ...component, content: e.target.value })}
-          placeholder="Enter text content"
-          rows={4}
-          bg="gray.700"
-          color="white"
-        />
-        {contentError?.message && <FormHelperText>{contentError.message}</FormHelperText>}
-      </FormControl>
-      <Button
-        leftIcon={<AddIcon />}
-        size="sm"
-        variant="outline"
-        colorScheme="blue"
-        onClick={onOpenPlaceholderDialog}
-        alignSelf="flex-start"
-      >
-        Insert Placeholder
-      </Button>
+      <TextareaWithPlaceholderInsert
+        value={component.content}
+        onChange={(value) => onChange({ ...component, content: value })}
+        label="Text Content"
+        error={contentError?.message}
+        isInvalid={!!contentError}
+      />
       <FormControl>
         <HStack justify="space-between" align="center" mb={2}>
           <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>

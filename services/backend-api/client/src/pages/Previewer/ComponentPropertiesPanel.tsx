@@ -15,7 +15,6 @@ import {
   AlertIcon,
   FormLabel,
   Switch,
-  useDisclosure,
   Radio,
   RadioGroup,
   Stack,
@@ -24,12 +23,12 @@ import {
   PopoverContent,
   IconButton,
 } from "@chakra-ui/react";
-import { DeleteIcon, ChevronUpIcon, ChevronDownIcon, AddIcon, CloseIcon } from "@chakra-ui/icons";
+import { DeleteIcon, ChevronUpIcon, ChevronDownIcon, CloseIcon } from "@chakra-ui/icons";
 import { SketchPicker } from "react-color";
 import { useFormContext } from "react-hook-form";
 import type { Component, ComponentPropertiesPanelProps } from "./types";
 import { ComponentType, ROOT_COMPONENT_TYPES } from "./types";
-import { InsertPlaceholderDialog } from "./InsertPlaceholderDialog";
+import { TextareaWithPlaceholderInsert } from "../../components/TextareaWithPlaceholderInsert";
 
 import { usePreviewerContext } from "./PreviewerContext";
 import { DiscordButtonStyle } from "./constants/DiscordButtonStyle";
@@ -54,8 +53,6 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   const { deleteComponent, moveComponentUp, moveComponentDown } = usePreviewerContext();
   const { watch, formState, setValue } = useFormContext<PreviewerFormState>();
   const messageComponent = watch("messageComponent");
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
   const selectedComponent = findPreviewerComponentById(messageComponent, selectedComponentId);
 
   const renderPropertiesForComponent = (component: Component, onChange: (value: any) => void) => {
@@ -69,12 +66,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
     if (component.type === ComponentType.LegacyText) {
       return (
-        <LegacyTextProperties
-          root={messageComponent}
-          component={component}
-          onChange={onChange}
-          onOpenPlaceholderDialog={onOpen}
-        />
+        <LegacyTextProperties root={messageComponent} component={component} onChange={onChange} />
       );
     }
 
@@ -488,35 +480,13 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
       );
 
       return (
-        <VStack align="stretch" spacing={6}>
-          <FormControl isInvalid={!!contentError}>
-            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-              Text Content
-            </FormLabel>
-            <Textarea
-              ref={(ref) => {
-                textareaRef.current = ref;
-              }}
-              value={component.content}
-              onChange={(e) => onChange({ ...component, content: e.target.value })}
-              placeholder="Enter text content"
-              rows={4}
-              bg="gray.700"
-              color="white"
-            />
-            {contentError && <FormErrorMessage>Text content cannot be empty</FormErrorMessage>}
-          </FormControl>
-          <Button
-            leftIcon={<AddIcon />}
-            size="sm"
-            variant="outline"
-            colorScheme="blue"
-            onClick={onOpen}
-            alignSelf="flex-start"
-          >
-            Insert Placeholder
-          </Button>
-        </VStack>
+        <TextareaWithPlaceholderInsert
+          value={component.content}
+          onChange={(value) => onChange({ ...component, content: value })}
+          label="Text Content"
+          error={contentError?.message}
+          isInvalid={!!contentError}
+        />
       );
     }
 
@@ -748,29 +718,6 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     });
   };
 
-  const handleInsertMergeTag = React.useCallback(
-    (tag: string) => {
-      if (textareaRef.current && selectedComponent) {
-        const textarea = textareaRef.current;
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const currentValue = (selectedComponent as any).content || "";
-        const newValue = currentValue.substring(0, start) + tag + currentValue.substring(end);
-
-        // Update the selectedComponent through the proper onChange handler
-        const updatedComponent = { ...selectedComponent, content: newValue };
-        updateValue(updatedComponent);
-
-        // Set cursor position after the inserted tag
-        setTimeout(() => {
-          textarea.focus();
-          textarea.setSelectionRange(start + tag.length, start + tag.length);
-        }, 0);
-      }
-    },
-    [selectedComponent, updateValue]
-  );
-
   const positionInfo = selectedComponent ? getComponentPosition(selectedComponent) : null;
   const canBeRepositioned = selectedComponent
     ? !NON_REPOSITIONABLE_COMPONENTS.includes(selectedComponent.type)
@@ -787,119 +734,111 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   }
 
   return (
-    <>
-      <VStack align="stretch" spacing={6} p={4} minWidth={250}>
-        {(!hideTitle || !isRootComponent) && (
-          <HStack justify="space-between" align="center" flexWrap="wrap" spacing={6}>
-            {!hideTitle && (
-              <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
-                {getPreviewerComponentLabel(selectedComponent.type)} Properties
-              </Text>
-            )}
-            {!isRootComponent && (
-              <Button
-                size="sm"
-                colorScheme="red"
-                variant="outline"
-                leftIcon={<DeleteIcon />}
-                onClick={() => deleteComponent(selectedComponent.id)}
-              >
-                Delete
-              </Button>
-            )}
-          </HStack>
-        )}
-        {(selectedComponent.type === ComponentType.LegacyActionRow ||
-          selectedComponent.type === ComponentType.V2ActionRow) &&
-          selectedComponent.children.length === 0 && (
-            <Alert status="error" borderRadius="md" role={undefined}>
-              <AlertIcon />
-              At least one child component is required for Action Rows.
-            </Alert>
+    <VStack align="stretch" spacing={6} p={4} minWidth={250}>
+      {(!hideTitle || !isRootComponent) && (
+        <HStack justify="space-between" align="center" flexWrap="wrap" spacing={6}>
+          {!hideTitle && (
+            <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
+              {getPreviewerComponentLabel(selectedComponent.type)} Properties
+            </Text>
           )}
-        {selectedComponent.type === ComponentType.V2Section &&
-          selectedComponent.children.length === 0 && (
-            <Alert status="error" borderRadius="md" role={undefined}>
-              <AlertIcon />
-              At least one child component is required for Sections.
-            </Alert>
+          {!isRootComponent && (
+            <Button
+              size="sm"
+              colorScheme="red"
+              variant="outline"
+              leftIcon={<DeleteIcon />}
+              onClick={() => deleteComponent(selectedComponent.id)}
+            >
+              Delete
+            </Button>
           )}
-        {selectedComponent.type === ComponentType.V2Section &&
-          selectedComponent.children.length > 3 && (
-            <Alert status="error" borderRadius="md" role={undefined}>
-              <AlertIcon />
-              Sections can have at most 3 child components. {selectedComponent.children.length -
-                3}{" "}
-              child components must be deleted.
-            </Alert>
-          )}
-        {selectedComponent.type === ComponentType.V2Section && !selectedComponent.accessory && (
+        </HStack>
+      )}
+      {(selectedComponent.type === ComponentType.LegacyActionRow ||
+        selectedComponent.type === ComponentType.V2ActionRow) &&
+        selectedComponent.children.length === 0 && (
           <Alert status="error" borderRadius="md" role={undefined}>
             <AlertIcon />
-            An accessory component is required for Sections.
+            At least one child component is required for Action Rows.
           </Alert>
         )}
-        {selectedComponent.type === ComponentType.V2ActionRow &&
-          selectedComponent.children.length > 5 && (
-            <Alert status="error" borderRadius="md" role={undefined}>
-              <AlertIcon />
-              Action Rows can have at most 5 child components.{" "}
-              {selectedComponent.children.length - 5} child components must be deleted.
-            </Alert>
-          )}
-        {canBeRepositioned && positionInfo && !isRootComponent && (
-          <Box>
-            <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-              Position
-            </Text>
-            <VStack spacing={2}>
-              <Box bg="gray.700" p={3} borderRadius="md" w="full">
-                <Text fontSize="sm" color="white">
-                  {positionInfo.index + 1} of {positionInfo.total} in {positionInfo.parent.name}
-                </Text>
-              </Box>
-              <HStack spacing={2} w="full" flexWrap="wrap">
-                <Button
-                  size="sm"
-                  leftIcon={<ChevronUpIcon />}
-                  aria-disabled={!canMoveUp}
-                  onClick={() => {
-                    if (!canMoveUp) return;
-                    moveComponentUp(selectedComponent.id);
-                  }}
-                  variant="outline"
-                  colorScheme="blue"
-                  flex={1}
-                  minWidth={125}
-                >
-                  Move Up
-                </Button>
-                <Button
-                  size="sm"
-                  leftIcon={<ChevronDownIcon />}
-                  aria-disabled={!canMoveDown}
-                  onClick={() => {
-                    if (!canMoveDown) return;
-                    moveComponentDown(selectedComponent.id);
-                  }}
-                  variant="outline"
-                  colorScheme="blue"
-                  flex={1}
-                  minWidth={125}
-                >
-                  Move Down
-                </Button>
-              </HStack>
-            </VStack>
-          </Box>
+      {selectedComponent.type === ComponentType.V2Section &&
+        selectedComponent.children.length === 0 && (
+          <Alert status="error" borderRadius="md" role={undefined}>
+            <AlertIcon />
+            At least one child component is required for Sections.
+          </Alert>
         )}
-        {renderPropertiesForComponent(selectedComponent, updateValue)}
-      </VStack>
-      <InsertPlaceholderDialog
-        isOpen={isOpen}
-        onClose={onClose}
-        onSelectTag={handleInsertMergeTag}
-      />
-    </>
+      {selectedComponent.type === ComponentType.V2Section && selectedComponent.children.length > 3 && (
+        <Alert status="error" borderRadius="md" role={undefined}>
+          <AlertIcon />
+          Sections can have at most 3 child components. {selectedComponent.children.length - 3}{" "}
+          child components must be deleted.
+        </Alert>
+      )}
+      {selectedComponent.type === ComponentType.V2Section && !selectedComponent.accessory && (
+        <Alert status="error" borderRadius="md" role={undefined}>
+          <AlertIcon />
+          An accessory component is required for Sections.
+        </Alert>
+      )}
+      {selectedComponent.type === ComponentType.V2ActionRow &&
+        selectedComponent.children.length > 5 && (
+          <Alert status="error" borderRadius="md" role={undefined}>
+            <AlertIcon />
+            Action Rows can have at most 5 child components. {selectedComponent.children.length -
+              5}{" "}
+            child components must be deleted.
+          </Alert>
+        )}
+      {canBeRepositioned && positionInfo && !isRootComponent && (
+        <Box>
+          <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+            Position
+          </Text>
+          <VStack spacing={2}>
+            <Box bg="gray.700" p={3} borderRadius="md" w="full">
+              <Text fontSize="sm" color="white">
+                {positionInfo.index + 1} of {positionInfo.total} in {positionInfo.parent.name}
+              </Text>
+            </Box>
+            <HStack spacing={2} w="full" flexWrap="wrap">
+              <Button
+                size="sm"
+                leftIcon={<ChevronUpIcon />}
+                aria-disabled={!canMoveUp}
+                onClick={() => {
+                  if (!canMoveUp) return;
+                  moveComponentUp(selectedComponent.id);
+                }}
+                variant="outline"
+                colorScheme="blue"
+                flex={1}
+                minWidth={125}
+              >
+                Move Up
+              </Button>
+              <Button
+                size="sm"
+                leftIcon={<ChevronDownIcon />}
+                aria-disabled={!canMoveDown}
+                onClick={() => {
+                  if (!canMoveDown) return;
+                  moveComponentDown(selectedComponent.id);
+                }}
+                variant="outline"
+                colorScheme="blue"
+                flex={1}
+                minWidth={125}
+              >
+                Move Down
+              </Button>
+            </HStack>
+          </VStack>
+        </Box>
+      )}
+      {renderPropertiesForComponent(selectedComponent, updateValue)}
+    </VStack>
   );
 };

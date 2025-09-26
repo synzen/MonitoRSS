@@ -28,9 +28,15 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSelectTag: (tag: string) => void;
+  onCloseFocusRef?: React.RefObject<any> | undefined;
 }
 
-export const InsertPlaceholderDialog: React.FC<Props> = ({ isOpen, onClose, onSelectTag }) => {
+export const InsertPlaceholderDialog: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  onSelectTag,
+  onCloseFocusRef,
+}) => {
   const { error, isLoading, currentArticle } = usePreviewerContext();
   const [searchTerm, setSearchTerm] = React.useState("");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
@@ -74,9 +80,7 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({ isOpen, onClose, onSe
       onClose={onClose}
       size="2xl"
       scrollBehavior="inside"
-      closeOnOverlayClick
-      trapFocus
-      blockScrollOnMount
+      finalFocusRef={onCloseFocusRef}
     >
       <ModalOverlay />
       <ModalContent
@@ -86,17 +90,14 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({ isOpen, onClose, onSe
         onClick={(e) => {
           e.stopPropagation();
         }}
-        role="dialog"
-        aria-labelledby="insert-placeholder-title"
-        aria-describedby="insert-placeholder-description"
       >
-        <ModalHeader borderBottom="1px solid" borderColor="gray.600" id="insert-placeholder-title">
+        <ModalHeader borderBottom="1px solid" borderColor="gray.600">
           Insert Placeholder
         </ModalHeader>
-        <ModalCloseButton aria-label="Close placeholder dialog" />
+        <ModalCloseButton />
         <ModalBody p={0}>
           <Box p={4} borderBottom="1px solid" borderColor="gray.600">
-            <Text fontSize="sm" color="gray.400" mb={3} id="insert-placeholder-description">
+            <Text fontSize="sm" color="gray.400" mb={3}>
               Select a placeholder to insert into your text content. The placeholder will be
               replaced with the actual article content when being previewed or published.
             </Text>
