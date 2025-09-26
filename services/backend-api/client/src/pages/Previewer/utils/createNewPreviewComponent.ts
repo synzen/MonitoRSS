@@ -40,7 +40,7 @@ const createNewPreviewerComponent = (type: ComponentType): Component => {
       return {
         ...base,
         label: "New Button",
-        style: DiscordButtonStyle.Primary,
+        style: DiscordButtonStyle.Link,
         disabled: false,
       } as LegacyButtonComponent;
     case ComponentType.LegacyText:

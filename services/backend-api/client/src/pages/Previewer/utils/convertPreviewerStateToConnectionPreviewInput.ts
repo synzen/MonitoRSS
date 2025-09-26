@@ -58,6 +58,10 @@ const convertPreviewerStateToConnectionPreviewInput = (
             .filter((c): c is Exclude<typeof c, null> => !!c) || [],
       };
 
+      if (componentRow.components.length === 0) {
+        return;
+      }
+
       componentRows.push(componentRow);
     }
   });

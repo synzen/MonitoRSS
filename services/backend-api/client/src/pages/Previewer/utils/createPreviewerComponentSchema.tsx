@@ -140,13 +140,13 @@ const createPreviewerComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => 
             .string()
             .required("Expected non-empty Button label")
             .max(80, "Expected Button label to have at most 80 characters"),
-          style: yup.string().oneOf(Object.values(DiscordButtonStyle)).required(),
+          style: yup
+            .string()
+            .oneOf([DiscordButtonStyle.Link])
+            .required()
+            .default(DiscordButtonStyle.Link),
           disabled: yup.boolean().required(),
-          url: yup.string().when("style", {
-            is: DiscordButtonStyle.Link,
-            then: (schema) => schema.required("Expected non-empty URL for Link style button"),
-            otherwise: (schema) => schema,
-          }),
+          url: yup.string().required("Expected non-empty URL for button"),
         });
       case ComponentType.V2TextDisplay:
         return textDisplaySchema;

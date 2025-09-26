@@ -198,7 +198,7 @@ const PreviewerContent: React.FC = () => {
                       colorScheme="blue"
                       size="sm"
                       onClick={handleSave}
-                      aria-disabled={updateStatus === "loading"}
+                      aria-disabled={updateStatus === "loading" || !formState.isDirty}
                     >
                       {updateStatus === "loading" ? "Saving Changes..." : "Save Changes"}
                     </Button>

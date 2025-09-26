@@ -565,11 +565,11 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     }
 
     if (component.type === ComponentType.LegacyButton) {
-      const [labelError, styleError, urlError] = getPreviewerFieldErrors(
+      const [labelError, urlError] = getPreviewerFieldErrors(
         formState.errors,
         messageComponent,
         component.id,
-        ["label", "style", "url"]
+        ["label", "url"]
       );
 
       return (
@@ -584,25 +584,6 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             as="input"
             isRequired
           />
-          <FormControl isInvalid={!!styleError} isRequired>
-            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-              Button Style
-            </FormLabel>
-            <Select
-              value={component.style}
-              onChange={(e) =>
-                onChange({ ...component, style: e.target.value as DiscordButtonStyle })
-              }
-              bg="gray.700"
-            >
-              <option value={DiscordButtonStyle.Primary}>Primary</option>
-              <option value={DiscordButtonStyle.Secondary}>Secondary</option>
-              <option value={DiscordButtonStyle.Success}>Success</option>
-              <option value={DiscordButtonStyle.Danger}>Danger</option>
-              <option value={DiscordButtonStyle.Link}>Link</option>
-            </Select>
-            {styleError && <FormErrorMessage>{styleError.message}</FormErrorMessage>}
-          </FormControl>
           {component.style === DiscordButtonStyle.Link && (
             <InputWithInsertPlaceholder
               value={component.url || ""}

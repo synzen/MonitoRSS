@@ -176,14 +176,14 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
                   </InputLeftElement>
                   <Input
                     id="search-articles-input"
-                    placeholder={`Search by ${displayProperty}...`}
+                    placeholder={displayProperty ? `Search by ${displayProperty}...` : "Search..."}
                     value={searchQuery}
                     onChange={handleSearchChange}
                     bg="gray.700"
                     border="none"
-                    isDisabled={!!error}
                     aria-label={`Search articles by ${displayProperty}`}
                     aria-describedby="search-description"
+                    aria-disabled={!displayProperty || !!error}
                   />
                 </InputGroup>
                 <Text id="search-description" fontSize="xs" color="gray.500" mt={1} srOnly>

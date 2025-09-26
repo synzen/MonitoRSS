@@ -26,6 +26,9 @@ import { useGetUserFeedArticlesError } from "../../features/feedConnections";
 import PreviewerFormState from "./types/PreviewerFormState";
 import getPreviewerComponentFormPathById from "./utils/getPreviewerComponentFormPathsById";
 import { useNavigableTreeContext } from "../../contexts/NavigableTreeContext";
+import { useUserFeedConnectionContext } from "../../contexts/UserFeedConnectionContext";
+import { FeedDiscordChannelConnection } from "../../types";
+import { convertConnectionToPreviewerState } from "./utils/convertConnectionToPreviewerState";
 
 const validationSchema = yup.object({
   messageComponent: createPreviewerComponentSchema().optional(),
@@ -83,6 +86,7 @@ export const usePreviewerContext = () => {
 
 const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { userFeed, articleFormatOptions } = useUserFeedContext();
+  const { connection } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
   const { setValue, getValues, reset } = useFormContext<PreviewerFormState>();
   const { currentSelectedId } = useNavigableTreeContext();
   const { t } = useTranslation();
@@ -135,6 +139,10 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setCurrentArticleId(firstArticleId);
     }
   }, [firstArticleId, status]);
+
+  useEffect(() => {
+    reset(convertConnectionToPreviewerState(connection));
+  }, [connection, reset]);
 
   const addChildComponent: PreviewerContextType["addChildComponent"] = useCallback(
     (parentId, childType, isAccessory = false) => {
