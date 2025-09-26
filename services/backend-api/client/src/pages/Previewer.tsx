@@ -20,6 +20,7 @@ import {
   TabPanel,
   Stack,
   Heading,
+  Highlight,
 } from "@chakra-ui/react";
 import { WarningIcon } from "@chakra-ui/icons";
 import { useFormContext } from "react-hook-form";
@@ -156,9 +157,26 @@ const PreviewerContent: React.FC = () => {
                 {/* Top Bar */}
                 <Stack bg="gray.800" borderBottom="1px" borderColor="gray.600" px={4} py={3}>
                   <HStack justify="space-between" align="center" flexWrap="wrap">
-                    <Text fontSize="lg" fontWeight="bold" color="white" as="h1">
-                      Discord Message Builder
-                    </Text>
+                    <HStack>
+                      <Text fontSize="lg" fontWeight="bold" color="white" as="h1">
+                        Discord Message Builder
+                      </Text>
+                      {formState.isDirty && (
+                        <Text fontSize="sm" fontWeight={600}>
+                          <Highlight
+                            query="You are previewing unsaved changes"
+                            styles={{
+                              bg: "orange.200",
+                              rounded: "full",
+                              px: "2",
+                              py: "1",
+                            }}
+                          >
+                            You are previewing unsaved changes
+                          </Highlight>
+                        </Text>
+                      )}
+                    </HStack>
                     <HStack spacing={3} flexWrap="wrap">
                       <Button
                         variant="outline"
