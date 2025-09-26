@@ -1,5 +1,6 @@
 import * as yup from "yup";
 import { Component, ComponentType } from "../types";
+import { DiscordButtonStyle } from "../constants/DiscordButtonStyle";
 
 // Recursive schema for component validation
 const createPreviewerComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => {
@@ -17,31 +18,33 @@ const createPreviewerComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => 
     const buttonSchema = baseSchema.shape({
       label: yup
         .string()
-        .required("Button label cannot be empty")
-        .min(1, "Button label cannot be empty")
-        .max(80, "Button label cannot exceed 80 characters"),
+        .required("Expected non-empty Button label")
+        .max(80, "Expected Button label to have at most 80 characters"),
     });
 
     const textDisplaySchema = baseSchema.shape({
       content: yup
         .string()
-        .min(1, "Text display content cannot be empty")
-        .max(2000, "Text display content cannot exceed 2000 characters"),
+        .required("Expected non-empty Text Display content")
+        .max(2000, "Expected Text Display content to have at most 2000 characters"),
     });
 
     const legacyTextSchema = baseSchema.shape({
-      content: yup.string().max(2000, "Legacy text content cannot exceed 2000 characters"),
+      content: yup
+        .string()
+        .required("Expected non-empty Text content")
+        .max(2000, "Expected Text content to have at most 2000 characters"),
     });
 
     const legacyEmbedFieldSchema = baseSchema.shape({
       fieldName: yup
         .string()
-        .required("Field name cannot be empty")
-        .max(256, "Field name cannot exceed 256 characters"),
+        .required("Expected non-empty Field Name")
+        .max(256, "Expected Field Name to have at most 256 characters"),
       fieldValue: yup
         .string()
-        .required("Field value cannot be empty")
-        .max(1024, "Field value cannot exceed 1024 characters"),
+        .required("Expected non-empty Field Value")
+        .max(1024, "Expected Field Value to have at most 1024 characters"),
       inline: yup.boolean(),
     });
 
@@ -57,7 +60,7 @@ const createPreviewerComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => 
           children: yup
             .array()
             .of(createPreviewerComponentSchema())
-            .max(9, "Embed Container can have at most 9 embeds")
+            .max(9, "Expected fewer than 10 embeds")
             .default([]),
         });
       case ComponentType.LegacyEmbed:
@@ -78,30 +81,41 @@ const createPreviewerComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => 
 
       case ComponentType.LegacyEmbedAuthor:
         return baseSchema.shape({
-          authorName: yup.string().max(256, "Author name cannot exceed 256 characters"),
+          authorName: yup
+            .string()
+            .required("Expected non-empty Author Name")
+            .max(256, "Expected Author Name to have at most 256 characters"),
           authorUrl: yup.string(),
           authorIconUrl: yup.string(),
         });
       case ComponentType.LegacyEmbedTitle:
         return baseSchema.shape({
-          title: yup.string().max(256, "Title cannot exceed 256 characters"),
+          title: yup
+            .string()
+            .required("Expected non-empty Embed Title text")
+            .max(256, "Expected Embed Title to have at most 256 characters"),
           titleUrl: yup.string(),
         });
       case ComponentType.LegacyEmbedDescription:
         return baseSchema.shape({
-          description: yup.string().max(4096, "Description cannot exceed 4096 characters"),
+          description: yup
+            .string()
+            .max(4096, "Expected description to have at most 4096 characters"),
         });
       case ComponentType.LegacyEmbedImage:
         return baseSchema.shape({
-          imageUrl: yup.string(),
+          imageUrl: yup.string().required("Expected non-empty image URL"),
         });
       case ComponentType.LegacyEmbedThumbnail:
         return baseSchema.shape({
-          thumbnailUrl: yup.string(),
+          thumbnailUrl: yup.string().required("Expected non-empty thumbnail URL"),
         });
       case ComponentType.LegacyEmbedFooter:
         return baseSchema.shape({
-          footerText: yup.string().max(2048, "Footer text cannot exceed 2048 characters"),
+          footerText: yup
+            .string()
+            .required("Expected non-empty Footer Text")
+            .max(2048, "Expected Footer Fext to have at most 2048 characters"),
           footerIconUrl: yup.string(),
         });
       case ComponentType.LegacyEmbedField:
@@ -115,20 +129,23 @@ const createPreviewerComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => 
           children: yup
             .array()
             .of(createPreviewerComponentSchema())
-            .min(1, "Action Row must have at least one child component")
-            .max(5, "Action Row can have at most 5 child components")
-            .required("Action Row must have at least one child component"),
+            .min(1, "Expected Action Row to have at least one child component")
+            .max(5, "Expected Action Row to have at most 5 child components")
+            .required("Expected Action Row to have at least one child component"),
         });
       case ComponentType.LegacyButton:
         return baseSchema.shape({
           label: yup
             .string()
-            .required("Button label cannot be empty")
-            .min(1, "Button label cannot be empty")
-            .max(80, "Button label cannot exceed 80 characters"),
-          style: yup.string().required(),
+            .required("Expected non-empty Button label")
+            .max(80, "Expected Button label to have at most 80 characters"),
+          style: yup.string().oneOf(Object.values(DiscordButtonStyle)).required(),
           disabled: yup.boolean().required(),
-          url: yup.string(),
+          url: yup.string().when("style", {
+            is: DiscordButtonStyle.Link,
+            then: (schema) => schema.required("Expected non-empty URL for Link style button"),
+            otherwise: (schema) => schema,
+          }),
         });
       case ComponentType.V2TextDisplay:
         return textDisplaySchema;
@@ -137,9 +154,8 @@ const createPreviewerComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => 
           children: yup
             .array()
             .of(createPreviewerComponentSchema())
-            .min(1, "Action Row must have at least one child component")
-            .max(5, "Action Row can have at most 5 child components")
-            .required("Action Row must have at least one child component"),
+            .min(1, "Expected Action Row to have at least one child component")
+            .max(5, "Expected Action Row to have at most 5 child components"),
         });
       case ComponentType.V2Root:
         return baseSchema.shape({
@@ -151,10 +167,10 @@ const createPreviewerComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => 
             .array()
             .of(createPreviewerComponentSchema())
             .default([])
-            .min(1, "Section must have at least 1 child component")
-            .max(3, "Section can have at most 3 child components"),
+            .min(1, "Expected Section to have at least 1 child component")
+            .max(3, "Expected Section to have at fewer than 4 child components"),
           accessory: buttonSchema
-            .required("Section must have an accessory component")
+            .required("Expected Section to have an accessory component")
             .nonNullable(),
         });
       case ComponentType.V2Divider:

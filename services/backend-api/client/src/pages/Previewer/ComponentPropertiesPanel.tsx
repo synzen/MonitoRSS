@@ -173,6 +173,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             error={nameError?.message}
             isInvalid={!!nameError}
             as="input"
+            isRequired
           />
           <InputWithInsertPlaceholder
             value={component.authorUrl || ""}
@@ -214,6 +215,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             error={titleError?.message}
             isInvalid={!!titleError}
             as="input"
+            isRequired
           />
           <InputWithInsertPlaceholder
             value={component.titleUrl || ""}
@@ -247,6 +249,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             isInvalid={!!descriptionError}
             as="textarea"
             rows={3}
+            isRequired
           />
         </VStack>
       );
@@ -265,11 +268,12 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
           <InputWithInsertPlaceholder
             value={component.imageUrl || ""}
             onChange={(value) => onChange({ ...component, imageUrl: value })}
-            label="URL"
+            label="Image URL"
             placeholder="https://example.com/image.png"
             error={imageUrlError?.message}
             isInvalid={!!imageUrlError}
             as="input"
+            isRequired
           />
         </VStack>
       );
@@ -288,11 +292,12 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
           <InputWithInsertPlaceholder
             value={component.thumbnailUrl || ""}
             onChange={(value) => onChange({ ...component, thumbnailUrl: value })}
-            label="URL"
+            label="Image URL"
             placeholder="https://example.com/thumbnail.png"
             error={thumbnailUrlError?.message}
             isInvalid={!!thumbnailUrlError}
             as="input"
+            isRequired
           />
         </VStack>
       );
@@ -444,6 +449,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
           label="Text Content"
           error={contentError?.message}
           isInvalid={!!contentError}
+          isRequired
         />
       );
     }
@@ -466,8 +472,9 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             error={labelError?.message}
             isInvalid={!!labelError}
             as="input"
+            isRequired
           />
-          <FormControl isInvalid={!!styleError}>
+          <FormControl isInvalid={!!styleError} isRequired>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               Button Style
             </FormLabel>
@@ -574,8 +581,9 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             error={labelError?.message}
             isInvalid={!!labelError}
             as="input"
+            isRequired
           />
-          <FormControl isInvalid={!!styleError}>
+          <FormControl isInvalid={!!styleError} isRequired>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               Button Style
             </FormLabel>
@@ -603,6 +611,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
               error={urlError?.message}
               isInvalid={!!urlError}
               as="input"
+              isRequired
             />
           )}
           <FormControl>

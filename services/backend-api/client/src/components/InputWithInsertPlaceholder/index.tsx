@@ -22,6 +22,7 @@ interface Props {
   rows?: number;
   isInvalid?: boolean;
   as?: "input" | "textarea";
+  isRequired?: boolean;
 }
 
 export const InputWithInsertPlaceholder: React.FC<Props> = ({
@@ -34,6 +35,7 @@ export const InputWithInsertPlaceholder: React.FC<Props> = ({
   rows = 4,
   isInvalid = false,
   as = "textarea",
+  isRequired,
 }) => {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
@@ -57,7 +59,7 @@ export const InputWithInsertPlaceholder: React.FC<Props> = ({
   return (
     <>
       <VStack align="stretch" spacing={2}>
-        <FormControl isInvalid={isInvalid}>
+        <FormControl isInvalid={isInvalid} isRequired={isRequired}>
           <FormLabel fontSize="sm" fontWeight="medium" color="gray.200">
             {label}
           </FormLabel>
