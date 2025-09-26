@@ -156,232 +156,230 @@ const PreviewerContent: React.FC = () => {
   };
 
   return (
-    <NavigableTreeProvider>
-      <NavigableTreeContext.Consumer>
-        {({ currentSelectedId }) => {
-          return (
-            <Box position="relative" height="100%" bg="gray.900">
-              <Flex direction="column" height="100%">
-                {/* Top Bar */}
-                <Stack bg="gray.800" borderBottom="1px" borderColor="gray.600" px={4} py={3}>
-                  <HStack justify="space-between" align="center" flexWrap="wrap">
-                    <HStack>
-                      <Text fontSize="lg" fontWeight="bold" color="white" as="h1">
-                        Discord Message Builder
+    <NavigableTreeContext.Consumer>
+      {({ currentSelectedId }) => {
+        return (
+          <Box position="relative" height="100%" bg="gray.900">
+            <Flex direction="column" height="100%">
+              {/* Top Bar */}
+              <Stack bg="gray.800" borderBottom="1px" borderColor="gray.600" px={4} py={3}>
+                <HStack justify="space-between" align="center" flexWrap="wrap">
+                  <HStack>
+                    <Text fontSize="lg" fontWeight="bold" color="white" as="h1">
+                      Discord Message Builder
+                    </Text>
+                    {formState.isDirty && (
+                      <Text fontSize="sm" fontWeight={600}>
+                        <Highlight
+                          query="You are previewing unsaved changes"
+                          styles={{
+                            bg: "orange.200",
+                            rounded: "full",
+                            px: "2",
+                            py: "1",
+                          }}
+                        >
+                          You are previewing unsaved changes
+                        </Highlight>
                       </Text>
-                      {formState.isDirty && (
-                        <Text fontSize="sm" fontWeight={600}>
-                          <Highlight
-                            query="You are previewing unsaved changes"
-                            styles={{
-                              bg: "orange.200",
-                              rounded: "full",
-                              px: "2",
-                              py: "1",
-                            }}
-                          >
-                            You are previewing unsaved changes
-                          </Highlight>
-                        </Text>
-                      )}
-                    </HStack>
-                    <HStack spacing={3} flexWrap="wrap">
-                      <Button
-                        variant="outline"
-                        colorScheme="red"
-                        size="sm"
-                        onClick={handleDiscard}
-                        aria-disabled={formState.isDirty === false}
-                      >
-                        Discard Changes
-                      </Button>
-                      <Button
-                        colorScheme="blue"
-                        size="sm"
-                        onClick={handleSave}
-                        aria-disabled={updateStatus === "loading"}
-                      >
-                        {updateStatus === "loading" ? "Saving Changes..." : "Save Changes"}
-                      </Button>
-                    </HStack>
+                    )}
                   </HStack>
-                  <PageAlertContextOutlet />
-                </Stack>
-                {/* Main Content */}
-                <Flex flex={1} bg="gray.900" position="relative">
-                  {/* Left Panel - Component Tree */}
+                  <HStack spacing={3} flexWrap="wrap">
+                    <Button
+                      variant="outline"
+                      colorScheme="red"
+                      size="sm"
+                      onClick={handleDiscard}
+                      aria-disabled={formState.isDirty === false}
+                    >
+                      Discard Changes
+                    </Button>
+                    <Button
+                      colorScheme="blue"
+                      size="sm"
+                      onClick={handleSave}
+                      aria-disabled={updateStatus === "loading"}
+                    >
+                      {updateStatus === "loading" ? "Saving Changes..." : "Save Changes"}
+                    </Button>
+                  </HStack>
+                </HStack>
+                <PageAlertContextOutlet />
+              </Stack>
+              {/* Main Content */}
+              <Flex flex={1} bg="gray.900" position="relative">
+                {/* Left Panel - Component Tree */}
+                <Box
+                  minWidth={SIDE_PANEL_WIDTH}
+                  maxWidth={SIDE_PANEL_WIDTH}
+                  width={SIDE_PANEL_WIDTH}
+                  display={{ base: "none", lg: "block" }}
+                >
                   <Box
-                    minWidth={SIDE_PANEL_WIDTH}
-                    maxWidth={SIDE_PANEL_WIDTH}
-                    width={SIDE_PANEL_WIDTH}
-                    display={{ base: "none", lg: "block" }}
+                    bg="gray.800"
+                    borderRight="1px"
+                    borderColor="gray.600"
+                    height="100%"
+                    width="100%"
+                    overflowY="auto"
                   >
-                    <Box
-                      bg="gray.800"
-                      borderRight="1px"
-                      borderColor="gray.600"
-                      height="100%"
-                      width="100%"
-                      overflowY="auto"
-                    >
-                      <VStack align="stretch" spacing={0} minWidth={200} height="100%">
-                        <Box p={4} borderBottom="1px" borderColor="gray.600">
-                          <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
-                            Components
-                          </Text>
-                        </Box>
-                        {messageComponent && (
-                          <div role="tree" aria-label="Message Components">
-                            <NavigableTreeItem
-                              isRootItem
-                              id={messageComponent.id}
-                              ariaLabel="Message Root"
-                            >
-                              <ComponentTreeItem
-                                component={messageComponent}
-                                scrollToComponentId={scrollToComponentId}
-                                componentIdsWithProblems={componentIdsWithProblems}
-                              />
-                            </NavigableTreeItem>
-                          </div>
-                        )}
-                      </VStack>
-                    </Box>
-                  </Box>
-                  {/* Center Panel - Discord Preview and Problems */}
-                  <Flex flex={1} direction="column" bg="gray.800" maxW={CENTER_PANEL_WIDTH}>
-                    {/* Discord Preview Section */}
-                    <Box p={4} borderBottom="1px" borderColor="gray.600" srOnly>
-                      <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
-                        Discord Message Preview
-                      </Text>
-                    </Box>
-                    <Box p={4} overflow="hidden">
-                      <DiscordMessagePreview />
-                    </Box>
-                    <Box
-                      borderTop="1px"
-                      borderColor="gray.600"
-                      display={{ base: "none", lg: "block" }}
-                    >
+                    <VStack align="stretch" spacing={0} minWidth={200} height="100%">
                       <Box p={4} borderBottom="1px" borderColor="gray.600">
-                        <HStack spacing={2} align="center">
-                          {problems.length > 0 && <WarningIcon color="orange.400" />}
-                          <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
-                            Problems
-                          </Text>
-                          <Text color="gray.400">({problems.length})</Text>
-                        </HStack>
+                        <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
+                          Components
+                        </Text>
                       </Box>
-                      <ProblemsSection problems={problems} onClickComponentPath={handlePathClick} />
-                    </Box>
-                    {/* Problems Section - Mobile Tabs */}
-                    <Box
-                      borderTop="1px"
-                      borderColor="gray.600"
-                      display={{ base: "block", lg: "none" }}
-                      transition="padding-bottom 0.3s ease"
-                      // flex={1}
-                    >
-                      <Tabs
-                        colorScheme="blue"
-                        variant="line"
-                        index={selectedTabIndex}
-                        onChange={setSelectedTabIndex}
-                      >
-                        <TabList borderBottom="1px" borderColor="gray.600" bg="gray.700">
-                          <Tab
-                            color="gray.300"
-                            _selected={{ color: "white", borderColor: "blue.400" }}
+                      {messageComponent && (
+                        <div role="tree" aria-label="Message Components">
+                          <NavigableTreeItem
+                            isRootItem
+                            id={messageComponent.id}
+                            ariaLabel="Message Root"
                           >
-                            Message Components ({messageComponent?.children?.length || 0})
-                          </Tab>
-                          <Tab
-                            color="gray.300"
-                            _selected={{ color: "white", borderColor: "blue.400" }}
-                          >
-                            <HStack>
-                              {problems.length > 0 && <WarningIcon color="red.400" aria-hidden />}
-                              <Text>Problems ({problems.length})</Text>
-                            </HStack>
-                          </Tab>
-                        </TabList>
-                        <TabPanels>
-                          <TabPanel p={0}>
-                            {messageComponent && (
-                              <div role="tree" aria-label="Message Components">
-                                <NavigableTreeItem
-                                  isRootItem
-                                  id={messageComponent.id}
-                                  ariaLabel="Message Components Root"
-                                >
-                                  <ComponentTreeItem
-                                    component={messageComponent}
-                                    scrollToComponentId={scrollToComponentId}
-                                    componentIdsWithProblems={componentIdsWithProblems}
-                                  />
-                                </NavigableTreeItem>
-                              </div>
-                            )}
-                          </TabPanel>
-                          <TabPanel p={0}>
-                            <ProblemsSection
-                              problems={problems}
-                              onClickComponentPath={handlePathClick}
+                            <ComponentTreeItem
+                              component={messageComponent}
+                              scrollToComponentId={scrollToComponentId}
+                              componentIdsWithProblems={componentIdsWithProblems}
                             />
-                          </TabPanel>
-                        </TabPanels>
-                      </Tabs>
-                    </Box>
-                  </Flex>
-                  {/* Right Panel - Properties */}
+                          </NavigableTreeItem>
+                        </div>
+                      )}
+                    </VStack>
+                  </Box>
+                </Box>
+                {/* Center Panel - Discord Preview and Problems */}
+                <Flex flex={1} direction="column" bg="gray.800" maxW={CENTER_PANEL_WIDTH}>
+                  {/* Discord Preview Section */}
+                  <Box p={4} borderBottom="1px" borderColor="gray.600" srOnly>
+                    <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
+                      Discord Message Preview
+                    </Text>
+                  </Box>
+                  <Box p={4} overflow="hidden">
+                    <DiscordMessagePreview />
+                  </Box>
                   <Box
-                    minWidth={SIDE_PANEL_WIDTH}
-                    maxWidth={SIDE_PANEL_WIDTH}
+                    borderTop="1px"
+                    borderColor="gray.600"
                     display={{ base: "none", lg: "block" }}
                   >
-                    <Box
-                      bg="gray.800"
-                      borderLeft="1px"
-                      borderColor="gray.600"
-                      height="100%"
-                      width="100%"
-                      overflowY="auto"
-                    >
-                      {currentSelectedId && (
-                        <ComponentPropertiesPanel selectedComponentId={currentSelectedId} />
-                      )}
+                    <Box p={4} borderBottom="1px" borderColor="gray.600">
+                      <HStack spacing={2} align="center">
+                        {problems.length > 0 && <WarningIcon color="orange.400" />}
+                        <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
+                          Problems
+                        </Text>
+                        <Text color="gray.400">({problems.length})</Text>
+                      </HStack>
                     </Box>
+                    <ProblemsSection problems={problems} onClickComponentPath={handlePathClick} />
+                  </Box>
+                  {/* Problems Section - Mobile Tabs */}
+                  <Box
+                    borderTop="1px"
+                    borderColor="gray.600"
+                    display={{ base: "block", lg: "none" }}
+                    transition="padding-bottom 0.3s ease"
+                    // flex={1}
+                  >
+                    <Tabs
+                      colorScheme="blue"
+                      variant="line"
+                      index={selectedTabIndex}
+                      onChange={setSelectedTabIndex}
+                    >
+                      <TabList borderBottom="1px" borderColor="gray.600" bg="gray.700">
+                        <Tab
+                          color="gray.300"
+                          _selected={{ color: "white", borderColor: "blue.400" }}
+                        >
+                          Message Components ({messageComponent?.children?.length || 0})
+                        </Tab>
+                        <Tab
+                          color="gray.300"
+                          _selected={{ color: "white", borderColor: "blue.400" }}
+                        >
+                          <HStack>
+                            {problems.length > 0 && <WarningIcon color="red.400" aria-hidden />}
+                            <Text>Problems ({problems.length})</Text>
+                          </HStack>
+                        </Tab>
+                      </TabList>
+                      <TabPanels>
+                        <TabPanel p={0}>
+                          {messageComponent && (
+                            <div role="tree" aria-label="Message Components">
+                              <NavigableTreeItem
+                                isRootItem
+                                id={messageComponent.id}
+                                ariaLabel="Message Components Root"
+                              >
+                                <ComponentTreeItem
+                                  component={messageComponent}
+                                  scrollToComponentId={scrollToComponentId}
+                                  componentIdsWithProblems={componentIdsWithProblems}
+                                />
+                              </NavigableTreeItem>
+                            </div>
+                          )}
+                        </TabPanel>
+                        <TabPanel p={0}>
+                          <ProblemsSection
+                            problems={problems}
+                            onClickComponentPath={handlePathClick}
+                          />
+                        </TabPanel>
+                      </TabPanels>
+                    </Tabs>
                   </Box>
                 </Flex>
+                {/* Right Panel - Properties */}
+                <Box
+                  minWidth={SIDE_PANEL_WIDTH}
+                  maxWidth={SIDE_PANEL_WIDTH}
+                  display={{ base: "none", lg: "block" }}
+                >
+                  <Box
+                    bg="gray.800"
+                    borderLeft="1px"
+                    borderColor="gray.600"
+                    height="100%"
+                    width="100%"
+                    overflowY="auto"
+                  >
+                    {currentSelectedId && (
+                      <ComponentPropertiesPanel selectedComponentId={currentSelectedId} />
+                    )}
+                  </Box>
+                </Box>
               </Flex>
-              {/* Discard Confirmation Modal */}
-              <AlertDialog isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose}>
-                <AlertDialogOverlay>
-                  <AlertDialogContent>
-                    <AlertDialogHeader fontSize="lg" fontWeight="bold">
+            </Flex>
+            {/* Discard Confirmation Modal */}
+            <AlertDialog isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose}>
+              <AlertDialogOverlay>
+                <AlertDialogContent>
+                  <AlertDialogHeader fontSize="lg" fontWeight="bold">
+                    Discard Changes
+                  </AlertDialogHeader>
+                  <AlertDialogBody>
+                    Are you sure you want to discard all changes? This action cannot be undone and
+                    all your changes will be lost.
+                  </AlertDialogBody>
+                  <AlertDialogFooter>
+                    <Button ref={cancelRef} onClick={onClose}>
+                      Cancel
+                    </Button>
+                    <Button colorScheme="red" onClick={confirmDiscard} ml={3}>
                       Discard Changes
-                    </AlertDialogHeader>
-                    <AlertDialogBody>
-                      Are you sure you want to discard all changes? This action cannot be undone and
-                      all your changes will be lost.
-                    </AlertDialogBody>
-                    <AlertDialogFooter>
-                      <Button ref={cancelRef} onClick={onClose}>
-                        Cancel
-                      </Button>
-                      <Button colorScheme="red" onClick={confirmDiscard} ml={3}>
-                        Discard Changes
-                      </Button>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialogOverlay>
-              </AlertDialog>
-            </Box>
-          );
-        }}
-      </NavigableTreeContext.Consumer>
-    </NavigableTreeProvider>
+                    </Button>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialogOverlay>
+            </AlertDialog>
+          </Box>
+        );
+      }}
+    </NavigableTreeContext.Consumer>
   );
 };
 
@@ -389,33 +387,35 @@ export const Previewer: React.FC = () => {
   const { feedId, connectionId } = useParams<RouteParams>();
 
   return (
-    <UserFeedProvider
-      feedId={feedId}
-      loadingComponent={
-        <Stack alignItems="center" justifyContent="center" height="100%" spacing="2rem">
-          <Loading size="xl" />
-          <Heading>Loading Feed...</Heading>
-        </Stack>
-      }
-    >
-      <UserFeedConnectionProvider feedId={feedId} connectionId={connectionId}>
-        <UserFeedConnectionContext.Consumer>
-          {(data) => {
-            const connection = data?.connection as FeedDiscordChannelConnection;
+    <NavigableTreeProvider>
+      <UserFeedProvider
+        feedId={feedId}
+        loadingComponent={
+          <Stack alignItems="center" justifyContent="center" height="100%" spacing="2rem">
+            <Loading size="xl" />
+            <Heading>Loading Feed...</Heading>
+          </Stack>
+        }
+      >
+        <UserFeedConnectionProvider feedId={feedId} connectionId={connectionId}>
+          <UserFeedConnectionContext.Consumer>
+            {(data) => {
+              const connection = data?.connection as FeedDiscordChannelConnection;
 
-            const previewerFormState: PreviewerFormState =
-              convertConnectionToPreviewerState(connection);
+              const previewerFormState: PreviewerFormState =
+                convertConnectionToPreviewerState(connection);
 
-            return (
-              <PageAlertProvider>
-                <PreviewerProvider defaultValues={previewerFormState}>
-                  <PreviewerContent />
-                </PreviewerProvider>
-              </PageAlertProvider>
-            );
-          }}
-        </UserFeedConnectionContext.Consumer>
-      </UserFeedConnectionProvider>
-    </UserFeedProvider>
+              return (
+                <PageAlertProvider>
+                  <PreviewerProvider defaultValues={previewerFormState}>
+                    <PreviewerContent />
+                  </PreviewerProvider>
+                </PageAlertProvider>
+              );
+            }}
+          </UserFeedConnectionContext.Consumer>
+        </UserFeedConnectionProvider>
+      </UserFeedProvider>
+    </NavigableTreeProvider>
   );
 };
