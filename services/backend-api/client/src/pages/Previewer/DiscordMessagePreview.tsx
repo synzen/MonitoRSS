@@ -1,4 +1,4 @@
-import React, { ComponentProps } from "react";
+import React from "react";
 import {
   Box,
   VStack,
@@ -8,155 +8,22 @@ import {
   useColorModeValue,
   Avatar,
   Stack,
+  Spinner,
 } from "@chakra-ui/react";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
 import { useFormContext } from "react-hook-form";
-import { Component, ComponentType, MessageComponentRoot } from "./types";
+import { Component, ComponentType } from "./types";
 import { ArticlePreviewBanner } from "./ArticlePreviewBanner";
 import DiscordView from "../../components/DiscordView";
-import { DiscordViewEmbed } from "../../types/DiscordViewEmbed";
 import { usePreviewerContext } from "./PreviewerContext";
-import { DiscordViewComponentButton } from "../../types/DiscordViewComponent";
-import { DiscordButtonStyle } from "./constants/DiscordButtonStyle";
 import PreviewerFormState from "./types/PreviewerFormState";
 import { PageAlertContextOutlet, PageAlertProvider } from "../../contexts/PageAlertContext";
-
-const convertLegacyEmbedToDiscordViewEmbed = (
-  embedComponent: Component,
-  currentArticle?: { publishedAt?: string }
-): DiscordViewEmbed | null => {
-  if (embedComponent.type !== ComponentType.LegacyEmbed) {
-    return null;
-  }
-
-  const embed: DiscordViewEmbed = {};
-
-  // Get color from embed component itself
-  if ((embedComponent as any).color) {
-    embed.color = (embedComponent as any).color;
-  }
-
-  // Process embed subcomponents
-  embedComponent.children?.forEach((subComponent) => {
-    if (subComponent.type === ComponentType.LegacyEmbedAuthor) {
-      embed.author = {
-        name: subComponent.authorName || null,
-        url: subComponent.authorUrl || null,
-        icon_url: subComponent.authorIconUrl || null,
-      };
-    } else if (subComponent.type === ComponentType.LegacyEmbedTitle) {
-      embed.title = subComponent.title || null;
-      embed.url = subComponent.titleUrl || null;
-    } else if (subComponent.type === ComponentType.LegacyEmbedDescription) {
-      embed.description = subComponent.description || null;
-    } else if (subComponent.type === ComponentType.LegacyEmbedImage) {
-      embed.image = {
-        url: subComponent.imageUrl || null,
-      };
-    } else if (subComponent.type === ComponentType.LegacyEmbedThumbnail) {
-      embed.thumbnail = {
-        url: subComponent.thumbnailUrl || null,
-      };
-    } else if (subComponent.type === ComponentType.LegacyEmbedFooter) {
-      embed.footer = {
-        text: subComponent.footerText || null,
-        icon_url: subComponent.footerIconUrl || null,
-      };
-    } else if (subComponent.type === ComponentType.LegacyEmbedField) {
-      if (!embed.fields) {
-        embed.fields = [];
-      }
-
-      embed.fields.push({
-        name: subComponent.fieldName || null,
-        value: subComponent.fieldValue || null,
-        inline: subComponent.inline || null,
-      });
-    } else if (subComponent.type === ComponentType.LegacyEmbedTimestamp) {
-      // Handle the new timestamp radio select values
-      if (!subComponent.timestamp) {
-        embed.timestamp = null; // No timestamp
-      } else if (subComponent.timestamp === "article") {
-        embed.timestamp = currentArticle?.publishedAt || null; // Use article's published date
-      } else if (subComponent.timestamp === "now") {
-        embed.timestamp = new Date().toISOString(); // Use current time
-      } else {
-        embed.timestamp = subComponent.timestamp || null;
-      }
-    }
-  });
-
-  return embed;
-};
-
-// Convert legacy components to DiscordView format
-const convertLegacyToDiscordView = (
-  rootComponent?: MessageComponentRoot,
-  currentArticle?: { publishedAt?: string }
-): ComponentProps<typeof DiscordView>["messages"][number] | null => {
-  if (!rootComponent) {
-    return null;
-  }
-
-  if (rootComponent.type !== ComponentType.LegacyRoot) {
-    return null;
-  }
-
-  let content = "";
-  const embeds: DiscordViewEmbed[] = [];
-  const componentRows: Array<{ type: number; components: DiscordViewComponentButton[] }> = [];
-
-  // Process children
-  rootComponent.children?.forEach((child) => {
-    if (child.type === ComponentType.LegacyText) {
-      content = child.content || "";
-    } else if (child.type === ComponentType.LegacyEmbed) {
-      const embed = convertLegacyEmbedToDiscordViewEmbed(child, currentArticle);
-
-      if (embed) {
-        embeds.push(embed);
-      }
-    } else if (child.type === ComponentType.LegacyActionRow) {
-      const componentRow: {
-        type: number;
-        components: Array<DiscordViewComponentButton>;
-      } = {
-        type: 1,
-        components: child.children
-          ?.map((button) => {
-            if (button.type === ComponentType.LegacyButton) {
-              const styleMap: Record<DiscordButtonStyle, number> = {
-                [DiscordButtonStyle.Primary]: 1,
-                [DiscordButtonStyle.Secondary]: 2,
-                [DiscordButtonStyle.Success]: 3,
-                [DiscordButtonStyle.Danger]: 4,
-                [DiscordButtonStyle.Link]: 5,
-              };
-              const style = styleMap[button.style] || 1;
-
-              return {
-                type: 2, // Button type
-                style,
-                label: button.label || "Button",
-                url: button.url || undefined,
-              };
-            }
-
-            return null;
-          })
-          .filter((c): c is Exclude<typeof c, null> => !!c),
-      };
-
-      componentRows.push(componentRow);
-    }
-  });
-
-  return {
-    content,
-    embeds,
-    components: componentRows,
-  };
-};
+import { useCreateConnectionPreview } from "../../features/feedConnections/hooks";
+import { FeedConnectionType, FeedDiscordChannelConnection } from "../../types";
+import { useDebounce } from "../../hooks";
+import { InlineErrorAlert } from "../../components";
+import convertPreviewerStateToConnectionPreviewInput from "./utils/convertPreviewerStateToConnectionPreviewInput";
+import { useUserFeedConnectionContext } from "../../contexts/UserFeedConnectionContext";
 
 export const DiscordMessagePreview: React.FC = () => {
   const { watch } = useFormContext<PreviewerFormState>();
@@ -164,6 +31,35 @@ export const DiscordMessagePreview: React.FC = () => {
   const bgColor = useColorModeValue("#36393f", "#36393f");
   const textColor = useColorModeValue("#dcddde", "#dcddde");
   const { currentArticle } = usePreviewerContext();
+  const { connection, userFeed } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
+
+  const previewData = convertPreviewerStateToConnectionPreviewInput(
+    userFeed,
+    connection,
+    messageComponent,
+    currentArticle
+  );
+  const debouncedPreviewData = useDebounce(previewData, 500);
+
+  const {
+    data: connectionPreview,
+    fetchStatus,
+    error,
+  } = useCreateConnectionPreview(FeedConnectionType.DiscordChannel, {
+    enabled: !!(userFeed && currentArticle?.id && debouncedPreviewData.content !== undefined),
+    data: {
+      connectionId: "preview", // Mock connection ID for previewer
+      feedId: userFeed.id,
+      data: {
+        article: {
+          id: currentArticle?.id || "",
+        },
+        ...debouncedPreviewData,
+      },
+    },
+  });
+
+  const isFetching = fetchStatus === "fetching";
 
   const renderComponent = (component: Component): React.ReactNode => {
     switch (component.type) {
@@ -296,9 +192,26 @@ export const DiscordMessagePreview: React.FC = () => {
     }
   };
 
-  const legacyMessageData = convertLegacyToDiscordView(messageComponent, currentArticle);
+  // Handle error state
+  if (error) {
+    return (
+      <Stack spacing={0}>
+        <PageAlertProvider>
+          <PageAlertContextOutlet
+            containerProps={{
+              pb: 2,
+            }}
+          />
+          <ArticlePreviewBanner />
+          <InlineErrorAlert title="Failed to load preview" description={error.message} />
+        </PageAlertProvider>
+      </Stack>
+    );
+  }
 
-  // Use custom rendering for V2 components
+  // Use network response for legacy components, fallback to static rendering for V2
+  const legacyMessages = connectionPreview?.result.messages || [];
+
   return (
     <Stack spacing={0}>
       <PageAlertProvider>
@@ -320,6 +233,21 @@ export const DiscordMessagePreview: React.FC = () => {
           h="100%"
           overflow="auto"
         >
+          {isFetching && (
+            <Box
+              position="absolute"
+              width="100%"
+              height="100%"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              bg="rgba(0,0,0,0.75)"
+              borderRadius="md"
+              zIndex={1}
+            >
+              <Spinner />
+            </Box>
+          )}
           <HStack align="flex-start" spacing={3}>
             <Avatar
               size="sm"
@@ -354,29 +282,29 @@ export const DiscordMessagePreview: React.FC = () => {
                 <VStack
                   align="stretch"
                   spacing={3}
-                  maxW={legacyMessageData ? undefined : "min(600px, 100%)"}
+                  maxW={legacyMessages.length > 0 ? undefined : "min(600px, 100%)"}
                   w="fit-content"
                 >
-                  {!legacyMessageData &&
+                  {legacyMessages.length > 0 && (
+                    <DiscordView
+                      darkTheme
+                      username="MonitoRSS"
+                      avatar_url="https://cdn.discordapp.com/avatars/302050872383242240/1fb101f4b0fe104b6b8c53ec5e3d5af6.png"
+                      messages={legacyMessages}
+                      excludeHeader
+                    />
+                  )}
+                  {legacyMessages.length === 0 &&
                     !!messageComponent &&
                     messageComponent.children.length === 0 && (
                       <Text color="gray.400" fontSize="sm" fontStyle="italic">
                         No components added yet
                       </Text>
                     )}
-                  {!legacyMessageData &&
+                  {legacyMessages.length === 0 &&
                     !!messageComponent &&
                     messageComponent.children.length > 0 &&
                     messageComponent.children?.map(renderComponent)}
-                  {legacyMessageData && (
-                    <DiscordView
-                      darkTheme
-                      username="MonitoRSS"
-                      avatar_url="https://cdn.discordapp.com/avatars/302050872383242240/1fb101f4b0fe104b6b8c53ec5e3d5af6.png"
-                      messages={[legacyMessageData]}
-                      excludeHeader
-                    />
-                  )}
                 </VStack>
               </Box>
             </Stack>
