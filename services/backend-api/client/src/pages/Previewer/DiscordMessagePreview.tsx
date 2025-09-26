@@ -8,7 +8,7 @@ import {
   useColorModeValue,
   Avatar,
   Stack,
-  Spinner,
+  Progress,
 } from "@chakra-ui/react";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
 import { useFormContext } from "react-hook-form";
@@ -232,21 +232,20 @@ export const DiscordMessagePreview: React.FC = () => {
           maxH={450}
           h="100%"
           overflow="auto"
+          position="relative"
         >
           {isFetching && (
-            <Box
+            <Progress
               position="absolute"
-              width="100%"
-              height="100%"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              bg="rgba(0,0,0,0.75)"
-              borderRadius="md"
-              zIndex={1}
-            >
-              <Spinner />
-            </Box>
+              top={0}
+              left={0}
+              right={0}
+              size="sm"
+              colorScheme="blue"
+              isIndeterminate
+              zIndex={2}
+              aria-label="Updating message preview"
+            />
           )}
           <HStack align="flex-start" spacing={3}>
             <Avatar
