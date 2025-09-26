@@ -21,6 +21,7 @@ import {
   Stack,
   Heading,
 } from "@chakra-ui/react";
+import { WarningIcon } from "@chakra-ui/icons";
 import { useFormContext } from "react-hook-form";
 import { useParams } from "react-router-dom";
 import { DiscordMessagePreview } from "./Previewer/DiscordMessagePreview";
@@ -242,6 +243,7 @@ const PreviewerContent: React.FC = () => {
                     >
                       <Box p={4} borderBottom="1px" borderColor="gray.600">
                         <HStack spacing={2} align="center">
+                          {problems.length > 0 && <WarningIcon color="orange.400" />}
                           <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
                             Problems
                           </Text>
@@ -275,7 +277,10 @@ const PreviewerContent: React.FC = () => {
                             color="gray.300"
                             _selected={{ color: "white", borderColor: "blue.400" }}
                           >
-                            Problems ({problems.length})
+                            <HStack>
+                              {problems.length > 0 && <WarningIcon color="red.400" aria-hidden />}
+                              <Text>Problems ({problems.length})</Text>
+                            </HStack>
                           </Tab>
                         </TabList>
                         <TabPanels>
