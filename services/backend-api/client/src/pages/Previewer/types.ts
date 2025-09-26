@@ -257,4 +257,5 @@ export interface DiscordMessagePreviewProps {
 export interface ComponentPropertiesPanelProps {
   selectedComponentId: string;
   hideTitle?: boolean;
+  onDeleted?: () => void;
 }

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   VStack,
@@ -26,7 +26,6 @@ import { useNavigableTreeItemContext } from "../../contexts/NavigableTreeItemCon
 import { usePreviewerContext } from "./PreviewerContext";
 import getChakraColor from "../../utils/getChakraColor";
 import { SlidingConfigPanel } from "./SlidingConfigPanel";
-import { useConfigPanel } from "../../hooks/useConfigPanel";
 import getPreviewerComponentLabel from "./utils/getPreviewerComponentLabel";
 import getPreviewerComponentIcon from "./utils/getPreviewerComponentIcon";
 
@@ -44,7 +43,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
   componentIdsWithProblems,
 }) => {
   const { addChildComponent } = usePreviewerContext();
-  const { isOpen, activeComponent, openConfig, closeConfig } = useConfigPanel();
+  const [configuringComponent, setConfiguringComponent] = useState<Component | null>(null);
   const ref = React.useRef<HTMLDivElement>(null);
 
   const componentChildrenCount = component.children?.length || 0;
@@ -72,7 +71,11 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
 
   const handleConfigureComponent = (e: React.MouseEvent) => {
     e.stopPropagation();
-    openConfig(component);
+    setConfiguringComponent(component);
+  };
+
+  const onCloseComponentConfigure = () => {
+    setConfiguringComponent(null);
   };
 
   React.useEffect(() => {
@@ -533,7 +536,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
         )}
       </VStack>
       {/* Sliding Config Panel */}
-      <SlidingConfigPanel isOpen={isOpen} onClose={closeConfig} component={activeComponent} />
+      <SlidingConfigPanel onClose={onCloseComponentConfigure} component={configuringComponent} />
     </>
   );
 };

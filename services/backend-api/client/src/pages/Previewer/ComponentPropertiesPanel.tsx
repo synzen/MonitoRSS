@@ -47,6 +47,7 @@ const NON_REPOSITIONABLE_COMPONENTS = [
 export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> = ({
   selectedComponentId,
   hideTitle,
+  onDeleted,
 }) => {
   const { deleteComponent, moveComponentUp, moveComponentDown } = usePreviewerContext();
   const { watch, formState, setValue } = useFormContext<PreviewerFormState>();
@@ -703,7 +704,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
               colorScheme="red"
               variant="outline"
               leftIcon={<DeleteIcon />}
-              onClick={() => deleteComponent(selectedComponent.id)}
+              onClick={() => {
+                deleteComponent(selectedComponent.id);
+                onDeleted?.();
+              }}
             >
               Delete
             </Button>

@@ -4,21 +4,18 @@ import { CloseIcon } from "@chakra-ui/icons";
 import { createFocusTrap, FocusTrap } from "focus-trap";
 import { ComponentPropertiesPanel } from "./ComponentPropertiesPanel";
 import getPreviewerComponentLabel from "./utils/getPreviewerComponentLabel";
+import { Component } from "./types";
 
 interface SlidingConfigPanelProps {
-  isOpen: boolean;
   onClose: () => void;
-  component: any;
+  component: Component | null;
 }
 
-export const SlidingConfigPanel: React.FC<SlidingConfigPanelProps> = ({
-  isOpen,
-  onClose,
-  component,
-}) => {
+export const SlidingConfigPanel: React.FC<SlidingConfigPanelProps> = ({ onClose, component }) => {
   const panelRef = React.useRef<HTMLDivElement>(null);
   const closeButtonRef = React.useRef<HTMLButtonElement>(null);
   const [focusTrap, setFocusTrap] = useState<FocusTrap | null>(null);
+  const isOpen = !!component;
 
   // Initialize focus trap
   React.useEffect(() => {
@@ -49,6 +46,11 @@ export const SlidingConfigPanel: React.FC<SlidingConfigPanelProps> = ({
       }
     }
   }, [isOpen]);
+
+  const onDeleted = () => {
+    focusTrap?.deactivate();
+    onClose();
+  };
 
   // Handle escape key press
   React.useEffect(() => {
@@ -122,7 +124,13 @@ export const SlidingConfigPanel: React.FC<SlidingConfigPanelProps> = ({
             />
           </HStack>
           <Box p={4} height="calc(100% - 73px)" overflowY="auto" bg="gray.800">
-            {component && <ComponentPropertiesPanel hideTitle selectedComponentId={component.id} />}
+            {component && (
+              <ComponentPropertiesPanel
+                hideTitle
+                selectedComponentId={component.id}
+                onDeleted={onDeleted}
+              />
+            )}
           </Box>
         </Box>
       </Slide>
