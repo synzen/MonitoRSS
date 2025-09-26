@@ -222,17 +222,16 @@ export const ArticlePreviewBanner: React.FC = () => {
                 variant="solid"
                 colorScheme="blue"
                 leftIcon={<Icon as={FaDiscord} />}
-                isLoading={isSendingTestArticle}
-                aria-disabled={!currentArticle}
+                aria-disabled={!currentArticle || isSendingTestArticle}
                 onClick={() => {
-                  if (!currentArticle) {
+                  if (!currentArticle || isSendingTestArticle) {
                     return;
                   }
 
                   handleSendToDiscord();
                 }}
               >
-                Send to Discord
+                <span>{isSendingTestArticle ? "Sending to Discord..." : "Send to Discord"}</span>
               </Button>
             </HStack>
           </HStack>

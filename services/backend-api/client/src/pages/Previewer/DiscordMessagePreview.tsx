@@ -202,7 +202,8 @@ export const DiscordMessagePreview: React.FC = () => {
         <PageAlertProvider>
           <PageAlertContextOutlet
             containerProps={{
-              pb: 2,
+              mb: 2,
+              mt: -2,
             }}
           />
           <ArticlePreviewBanner />
@@ -221,7 +222,8 @@ export const DiscordMessagePreview: React.FC = () => {
         <ArticlePreviewBanner />
         <PageAlertContextOutlet
           containerProps={{
-            pt: 2,
+            mb: 2,
+            mt: -2,
           }}
         />
         {/* Discord Message Preview */}

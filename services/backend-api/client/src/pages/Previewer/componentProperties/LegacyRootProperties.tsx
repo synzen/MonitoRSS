@@ -244,7 +244,10 @@ export const LegacyRootProperties: React.FC = () => {
               <>
                 The title of the thread that will be created per new article. You may use
                 placeholders. The default is{" "}
-                <MessagePlaceholderText withoutCopy>title</MessagePlaceholderText>.
+                <MessagePlaceholderText withoutCopy withBrackets>
+                  title
+                </MessagePlaceholderText>
+                .
               </>
             }
           />
