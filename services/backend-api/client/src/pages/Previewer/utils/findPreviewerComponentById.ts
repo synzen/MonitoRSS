@@ -1,6 +1,8 @@
 import { Component, ComponentType, SectionComponent } from "../types";
 
-function findPreviewerComponentById(root: Component, id: string): Component | null {
+function findPreviewerComponentById(root: Component | undefined, id: string): Component | null {
+  if (!root) return null;
+
   if (root.id === id) {
     return root;
   }

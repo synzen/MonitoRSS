@@ -56,6 +56,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   const messageComponent = watch("messageComponent");
   const { isOpen, onOpen, onClose } = useDisclosure();
   const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
+  const selectedComponent = findPreviewerComponentById(messageComponent, selectedComponentId);
 
   const renderPropertiesForComponent = (component: Component, onChange: (value: any) => void) => {
     if (component.type === ComponentType.LegacyRoot) {
@@ -739,16 +740,6 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     ? getPreviewerComponentFormPathsById(messageComponent, selectedComponentId)
     : null;
 
-  let component: Component | null = null;
-
-  if (messageComponent) {
-    component = findPreviewerComponentById(messageComponent, selectedComponentId);
-  }
-
-  if (!component) {
-    return null;
-  }
-
   const updateValue = (value: Component) => {
     setValue(formPath as any, value, {
       shouldDirty: true,
@@ -759,15 +750,15 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
   const handleInsertMergeTag = React.useCallback(
     (tag: string) => {
-      if (textareaRef.current && component) {
+      if (textareaRef.current && selectedComponent) {
         const textarea = textareaRef.current;
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
-        const currentValue = (component as any).content || "";
+        const currentValue = (selectedComponent as any).content || "";
         const newValue = currentValue.substring(0, start) + tag + currentValue.substring(end);
 
-        // Update the component through the proper onChange handler
-        const updatedComponent = { ...component, content: newValue };
+        // Update the selectedComponent through the proper onChange handler
+        const updatedComponent = { ...selectedComponent, content: newValue };
         updateValue(updatedComponent);
 
         // Set cursor position after the inserted tag
@@ -777,15 +768,23 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         }, 0);
       }
     },
-    [component, updateValue]
+    [selectedComponent, updateValue]
   );
 
-  const positionInfo = component ? getComponentPosition(component) : null;
-  const canBeRepositioned = !NON_REPOSITIONABLE_COMPONENTS.includes(component.type);
+  const positionInfo = selectedComponent ? getComponentPosition(selectedComponent) : null;
+  const canBeRepositioned = selectedComponent
+    ? !NON_REPOSITIONABLE_COMPONENTS.includes(selectedComponent.type)
+    : false;
   const canMoveUp = positionInfo && positionInfo.index > 0;
   const canMoveDown = positionInfo && positionInfo.index < positionInfo.total - 1;
 
-  const isRootComponent = ROOT_COMPONENT_TYPES.includes(component.type);
+  const isRootComponent = selectedComponent
+    ? ROOT_COMPONENT_TYPES.includes(selectedComponent.type)
+    : false;
+
+  if (!selectedComponent) {
+    return null;
+  }
 
   return (
     <>
@@ -794,7 +793,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
           <HStack justify="space-between" align="center" flexWrap="wrap" spacing={6}>
             {!hideTitle && (
               <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
-                {getPreviewerComponentLabel(component.type)} Properties
+                {getPreviewerComponentLabel(selectedComponent.type)} Properties
               </Text>
             )}
             {!isRootComponent && (
@@ -803,47 +802,51 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 colorScheme="red"
                 variant="outline"
                 leftIcon={<DeleteIcon />}
-                onClick={() => deleteComponent(component.id)}
+                onClick={() => deleteComponent(selectedComponent.id)}
               >
                 Delete
               </Button>
             )}
           </HStack>
         )}
-        {(component.type === ComponentType.LegacyActionRow ||
-          component.type === ComponentType.V2ActionRow) &&
-          component.children.length === 0 && (
+        {(selectedComponent.type === ComponentType.LegacyActionRow ||
+          selectedComponent.type === ComponentType.V2ActionRow) &&
+          selectedComponent.children.length === 0 && (
             <Alert status="error" borderRadius="md" role={undefined}>
               <AlertIcon />
               At least one child component is required for Action Rows.
             </Alert>
           )}
-        {component.type === ComponentType.V2Section && component.children.length === 0 && (
-          <Alert status="error" borderRadius="md" role={undefined}>
-            <AlertIcon />
-            At least one child component is required for Sections.
-          </Alert>
-        )}
-        {component.type === ComponentType.V2Section && component.children.length > 3 && (
-          <Alert status="error" borderRadius="md" role={undefined}>
-            <AlertIcon />
-            Sections can have at most 3 child components. {component.children.length - 3} child
-            components must be deleted.
-          </Alert>
-        )}
-        {component.type === ComponentType.V2Section && !component.accessory && (
+        {selectedComponent.type === ComponentType.V2Section &&
+          selectedComponent.children.length === 0 && (
+            <Alert status="error" borderRadius="md" role={undefined}>
+              <AlertIcon />
+              At least one child component is required for Sections.
+            </Alert>
+          )}
+        {selectedComponent.type === ComponentType.V2Section &&
+          selectedComponent.children.length > 3 && (
+            <Alert status="error" borderRadius="md" role={undefined}>
+              <AlertIcon />
+              Sections can have at most 3 child components. {selectedComponent.children.length -
+                3}{" "}
+              child components must be deleted.
+            </Alert>
+          )}
+        {selectedComponent.type === ComponentType.V2Section && !selectedComponent.accessory && (
           <Alert status="error" borderRadius="md" role={undefined}>
             <AlertIcon />
             An accessory component is required for Sections.
           </Alert>
         )}
-        {component.type === ComponentType.V2ActionRow && component.children.length > 5 && (
-          <Alert status="error" borderRadius="md" role={undefined}>
-            <AlertIcon />
-            Action Rows can have at most 5 child components. {component.children.length - 5} child
-            components must be deleted.
-          </Alert>
-        )}
+        {selectedComponent.type === ComponentType.V2ActionRow &&
+          selectedComponent.children.length > 5 && (
+            <Alert status="error" borderRadius="md" role={undefined}>
+              <AlertIcon />
+              Action Rows can have at most 5 child components.{" "}
+              {selectedComponent.children.length - 5} child components must be deleted.
+            </Alert>
+          )}
         {canBeRepositioned && positionInfo && !isRootComponent && (
           <Box>
             <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
@@ -862,7 +865,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                   aria-disabled={!canMoveUp}
                   onClick={() => {
                     if (!canMoveUp) return;
-                    moveComponentUp(component.id);
+                    moveComponentUp(selectedComponent.id);
                   }}
                   variant="outline"
                   colorScheme="blue"
@@ -877,7 +880,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                   aria-disabled={!canMoveDown}
                   onClick={() => {
                     if (!canMoveDown) return;
-                    moveComponentDown(component.id);
+                    moveComponentDown(selectedComponent.id);
                   }}
                   variant="outline"
                   colorScheme="blue"
@@ -890,7 +893,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             </VStack>
           </Box>
         )}
-        {renderPropertiesForComponent(component, updateValue)}
+        {renderPropertiesForComponent(selectedComponent, updateValue)}
       </VStack>
       <InsertPlaceholderDialog
         isOpen={isOpen}
