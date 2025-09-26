@@ -51,7 +51,7 @@ export const DiscordMessagePreview: React.FC = () => {
   } = useCreateConnectionPreview(FeedConnectionType.DiscordChannel, {
     enabled: !!currentArticle?.id && isValid,
     data: {
-      connectionId: "preview", // Mock connection ID for previewer
+      connectionId: connection.id, // Mock connection ID for previewer
       feedId: userFeed.id,
       data: {
         article: {
@@ -218,12 +218,12 @@ export const DiscordMessagePreview: React.FC = () => {
   return (
     <Stack spacing={0}>
       <PageAlertProvider>
+        <ArticlePreviewBanner />
         <PageAlertContextOutlet
           containerProps={{
-            pb: 2,
+            pt: 2,
           }}
         />
-        <ArticlePreviewBanner />
         {/* Discord Message Preview */}
         <Box
           bg={bgColor}

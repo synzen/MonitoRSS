@@ -179,7 +179,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                           (c) => c.type === ComponentType.LegacyText
                         )}
                       >
-                        Add Text
+                        Add {getPreviewerComponentLabel(ComponentType.LegacyText)}
                       </MenuItem>
                     </MenuGroup>
                     <MenuGroup

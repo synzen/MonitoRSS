@@ -40,51 +40,31 @@ const LegacyEmbedIcon = () => (
   </svg>
 );
 
+const componentIcons: Partial<Record<ComponentType, any>> = {
+  [ComponentType.LegacyRoot]: FaEnvelope,
+  [ComponentType.LegacyText]: FaFont,
+  [ComponentType.LegacyEmbedContainer]: FaLayerGroup,
+  [ComponentType.LegacyEmbed]: LegacyEmbedIcon,
+  [ComponentType.LegacyEmbedAuthor]: FaUser,
+  [ComponentType.LegacyEmbedTitle]: FaHeading,
+  [ComponentType.LegacyEmbedDescription]: FaAlignLeft,
+  [ComponentType.LegacyEmbedImage]: FaImage,
+  [ComponentType.LegacyEmbedThumbnail]: FaTh,
+  [ComponentType.LegacyEmbedFooter]: FaMinus,
+  [ComponentType.LegacyEmbedField]: FaFile,
+  [ComponentType.LegacyEmbedTimestamp]: FaClock,
+  [ComponentType.LegacyActionRow]: FaClipboard,
+  [ComponentType.LegacyButton]: FaHandPointer,
+  [ComponentType.V2Root]: FaEnvelope,
+  [ComponentType.V2TextDisplay]: FaFont,
+  [ComponentType.V2ActionRow]: FaClipboard,
+  [ComponentType.V2Button]: FaHandPointer,
+  [ComponentType.V2Section]: FaLayerGroup,
+  [ComponentType.V2Divider]: FaMinus,
+};
+
 const getPreviewerComponentIcon = (type: Component["type"]) => {
-  switch (type) {
-    case ComponentType.LegacyRoot:
-      return FaEnvelope;
-    case ComponentType.LegacyText:
-      return FaFont;
-    case ComponentType.LegacyEmbedContainer:
-      return FaLayerGroup;
-    case ComponentType.LegacyEmbed:
-      return LegacyEmbedIcon;
-    case ComponentType.LegacyEmbedAuthor:
-      return FaUser;
-    case ComponentType.LegacyEmbedTitle:
-      return FaHeading;
-    case ComponentType.LegacyEmbedDescription:
-      return FaAlignLeft;
-    case ComponentType.LegacyEmbedImage:
-      return FaImage;
-    case ComponentType.LegacyEmbedThumbnail:
-      return FaTh;
-    case ComponentType.LegacyEmbedFooter:
-      return FaMinus;
-    case ComponentType.LegacyEmbedField:
-      return FaFile;
-    case ComponentType.LegacyEmbedTimestamp:
-      return FaClock;
-    case ComponentType.LegacyActionRow:
-      return FaClipboard;
-    case ComponentType.LegacyButton:
-      return FaHandPointer;
-    case ComponentType.V2Root:
-      return FaEnvelope;
-    case ComponentType.V2TextDisplay:
-      return FaFont;
-    case ComponentType.V2ActionRow:
-      return FaClipboard;
-    case ComponentType.V2Button:
-      return FaHandPointer;
-    case ComponentType.V2Section:
-      return FaLayerGroup;
-    case ComponentType.V2Divider:
-      return FaMinus;
-    default:
-      return FaFile;
-  }
+  return componentIcons[type] || FaFile;
 };
 
 export default getPreviewerComponentIcon;

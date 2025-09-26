@@ -2,7 +2,7 @@ import { UserFeed } from "../../../features/feed";
 import { CreateDiscordChannelConnectionPreviewInput } from "../../../features/feedConnections";
 import { FeedDiscordChannelConnection } from "../../../types";
 import { DiscordButtonStyle } from "../constants/DiscordButtonStyle";
-import { Component, ComponentType, MessageComponentRoot } from "../types";
+import { ComponentType, LegacyEmbedComponent, MessageComponentRoot } from "../types";
 
 const convertPreviewerStateToConnectionPreviewInput = (
   userFeed: UserFeed,
@@ -17,7 +17,7 @@ const convertPreviewerStateToConnectionPreviewInput = (
   let embeds: CreateDiscordChannelConnectionPreviewInput["data"]["embeds"] = [];
   const componentRows: Array<{
     id: string;
-    components: Array<{ type: number; label: string; url?: string; style: number }>;
+    components: Array<{ id: string; type: number; label: string; url?: string; style: number }>;
   }> = [];
 
   messageComponent.children?.forEach((child) => {
@@ -25,7 +25,7 @@ const convertPreviewerStateToConnectionPreviewInput = (
       content = child.content || "";
     } else if (child.type === ComponentType.LegacyEmbedContainer) {
       embeds = child.children.map((embedChild) => {
-        return convertLegacyEmbedPreviewerComponentToEmbed(embedChild);
+        return convertLegacyEmbedPreviewerComponentToEmbed(embedChild as LegacyEmbedComponent);
       });
     } else if (child.type === ComponentType.LegacyActionRow) {
       const componentRow = {
@@ -45,6 +45,7 @@ const convertPreviewerStateToConnectionPreviewInput = (
                 const style = styleMap[button.style] || 1;
 
                 return {
+                  id: button.id,
                   type: 2, // Button type
                   style,
                   label: button.label,
@@ -88,16 +89,15 @@ const convertPreviewerStateToConnectionPreviewInput = (
   };
 };
 
-const convertLegacyEmbedPreviewerComponentToEmbed = (embedComponent: Component) => {
-  if (embedComponent.type !== ComponentType.LegacyEmbed) {
-    return null;
-  }
-
-  const embed: any = {};
+const convertLegacyEmbedPreviewerComponentToEmbed = (embedComponent: LegacyEmbedComponent) => {
+  const embed: Exclude<
+    CreateDiscordChannelConnectionPreviewInput["data"]["embeds"],
+    undefined
+  >[number] = {};
 
   // Get color from embed component itself
-  if ((embedComponent as any).color) {
-    embed.color = (embedComponent as any).color;
+  if (embedComponent.color) {
+    embed.color = `${embedComponent.color}`;
   }
 
   // Process embed subcomponents
@@ -106,7 +106,7 @@ const convertLegacyEmbedPreviewerComponentToEmbed = (embedComponent: Component) 
       embed.author = {
         name: subComponent.authorName || null,
         url: subComponent.authorUrl || null,
-        iconUrl: subComponent.authorIconUrl || null,
+        icon_url: subComponent.authorIconUrl || null,
       };
     } else if (subComponent.type === ComponentType.LegacyEmbedTitle) {
       embed.title = subComponent.title || null;
@@ -124,7 +124,7 @@ const convertLegacyEmbedPreviewerComponentToEmbed = (embedComponent: Component) 
     } else if (subComponent.type === ComponentType.LegacyEmbedFooter) {
       embed.footer = {
         text: subComponent.footerText || null,
-        iconUrl: subComponent.footerIconUrl || null,
+        icon_url: subComponent.footerIconUrl || null,
       };
     } else if (subComponent.type === ComponentType.LegacyEmbedField) {
       if (!embed.fields) {

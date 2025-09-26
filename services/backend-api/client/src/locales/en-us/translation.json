@@ -19,7 +19,7 @@
       "results": "Showing {{start}}-{{end}} of {{total}} results"
     },
     "errors": {
-      "somethingWentWrong": "Something went wrong.",
+      "somethingWentWrong": "Something went wrong. Please try again later, or contact support@monitorss.xyz for assistance.",
       "tryAgainLater": "Please try again later, or contact support@monitorss.xyz for assistance.",
       "detailsTitle": "Details",
       "failedToSave": "Failed to save changes",
