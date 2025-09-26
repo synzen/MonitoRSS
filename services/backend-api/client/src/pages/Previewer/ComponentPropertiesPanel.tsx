@@ -28,7 +28,7 @@ import { SketchPicker } from "react-color";
 import { useFormContext } from "react-hook-form";
 import type { Component, ComponentPropertiesPanelProps } from "./types";
 import { ComponentType, ROOT_COMPONENT_TYPES } from "./types";
-import { TextareaWithPlaceholderInsert } from "../../components/TextareaWithPlaceholderInsert";
+import { InputWithInsertPlaceholder } from "../../components/InputWithInsertPlaceholder";
 
 import { usePreviewerContext } from "./PreviewerContext";
 import { DiscordButtonStyle } from "./constants/DiscordButtonStyle";
@@ -480,7 +480,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
       );
 
       return (
-        <TextareaWithPlaceholderInsert
+        <InputWithInsertPlaceholder
           value={component.content}
           onChange={(value) => onChange({ ...component, content: value })}
           label="Text Content"

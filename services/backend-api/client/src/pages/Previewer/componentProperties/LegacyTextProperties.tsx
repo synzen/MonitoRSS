@@ -11,7 +11,7 @@ import {
 } from "@chakra-ui/react";
 import { useFormContext } from "react-hook-form";
 import { AutoResizeTextarea } from "../../../components/AutoResizeTextarea";
-import { TextareaWithPlaceholderInsert } from "../../../components/TextareaWithPlaceholderInsert";
+import { InputWithInsertPlaceholder } from "../../../components/InputWithInsertPlaceholder";
 import { Component, LegacyTextComponent } from "../types";
 import PreviewerFormState from "../types/PreviewerFormState";
 import getPreviewerFieldErrors from "../utils/getPreviewerFieldErrors";
@@ -34,7 +34,7 @@ export const LegacyTextProperties: React.FC<LegacyTextPropertiesProps> = ({
 
   return (
     <VStack align="stretch" spacing={4}>
-      <TextareaWithPlaceholderInsert
+      <InputWithInsertPlaceholder
         value={component.content}
         onChange={(value) => onChange({ ...component, content: value })}
         label="Text Content"

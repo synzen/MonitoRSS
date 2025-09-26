@@ -11,7 +11,7 @@ import {
 import { AddIcon } from "@chakra-ui/icons";
 import { InsertPlaceholderDialog } from "../../pages/Previewer/InsertPlaceholderDialog";
 
-interface TextareaWithPlaceholderInsertProps {
+interface Props {
   value: string;
   onChange: (value: string) => void;
   label: string;
@@ -22,7 +22,7 @@ interface TextareaWithPlaceholderInsertProps {
   as?: "input" | "textarea";
 }
 
-export const TextareaWithPlaceholderInsert: React.FC<TextareaWithPlaceholderInsertProps> = ({
+export const InputWithInsertPlaceholder: React.FC<Props> = ({
   value,
   onChange,
   label,
