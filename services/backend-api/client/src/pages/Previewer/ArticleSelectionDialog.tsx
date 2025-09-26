@@ -194,7 +194,7 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
             </VStack>
           </Box>
           {/* Content Section */}
-          <VStack spacing={0} align="stretch" maxH="60vh" aria-label="Article list">
+          <VStack spacing={0} align="stretch" aria-label="Article list">
             {/* Loading State */}
             {isLoading && (
               <Box

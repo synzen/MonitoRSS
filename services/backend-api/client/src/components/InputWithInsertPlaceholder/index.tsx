@@ -46,11 +46,20 @@ export const InputWithInsertPlaceholder: React.FC<Props> = ({
         const input = inputRef.current;
         const start = input.selectionStart || 0;
         const end = input.selectionEnd || 0;
-        const currentValue = input.value;
-        const newValue = currentValue.substring(0, start) + tag + currentValue.substring(end);
 
-        onChange(newValue);
-        input.setSelectionRange(start + tag.length, start + tag.length);
+        const currentValue = input.value;
+
+        if (!start && !end) {
+          const newValue = currentValue + tag;
+          onChange(newValue);
+
+          input.setSelectionRange(newValue.length, newValue.length);
+        } else {
+          const newValue = currentValue.substring(0, start) + tag + currentValue.substring(end);
+
+          onChange(newValue);
+          input.setSelectionRange(start + tag.length, start + tag.length);
+        }
       }
     },
     [onChange]
