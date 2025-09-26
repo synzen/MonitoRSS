@@ -136,197 +136,208 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, [firstArticleId, status]);
 
-  const addChildComponent: PreviewerContextType["addChildComponent"] = (
-    parentId,
-    childType,
-    isAccessory = false
-  ) => {
-    const messageComponent = getValues("messageComponent");
-    const newComponent = createNewPreviewerComponent(childType);
+  const addChildComponent: PreviewerContextType["addChildComponent"] = useCallback(
+    (parentId, childType, isAccessory = false) => {
+      const messageComponent = getValues("messageComponent");
+      const newComponent = createNewPreviewerComponent(childType);
 
-    const updateComponentTree = (component?: Component): Component => {
-      if (!component) {
-        return newComponent;
-      }
+      const updateComponentTree = (component?: Component): Component => {
+        if (!component) {
+          return newComponent;
+        }
 
-      if (component.id === parentId) {
-        if (isAccessory && component.type === ComponentType.V2Section) {
+        if (component.id === parentId) {
+          if (isAccessory && component.type === ComponentType.V2Section) {
+            return {
+              ...component,
+              accessory: newComponent,
+            } as SectionComponent;
+          }
+
+          let indexToAddAt = component.children?.length || 0;
+
+          // The order of legacy components are fixed
+          if (newComponent.type === ComponentType.LegacyEmbedContainer) {
+            indexToAddAt = 1;
+          } else if (newComponent.type === ComponentType.LegacyText) {
+            indexToAddAt = 0;
+          }
+
+          const childrenClone = [...(component.children || [])];
+
+          childrenClone.splice(indexToAddAt, 0, newComponent);
+
           return {
             ...component,
-            accessory: newComponent,
-          } as SectionComponent;
+            children: childrenClone,
+          } as Component;
         }
 
-        let indexToAddAt = component.children?.length || 0;
-
-        // The order of legacy components are fixed
-        if (newComponent.type === ComponentType.LegacyEmbedContainer) {
-          indexToAddAt = 1;
-        } else if (newComponent.type === ComponentType.LegacyText) {
-          indexToAddAt = 0;
+        if (component.children) {
+          return {
+            ...component,
+            children: component.children.map(updateComponentTree),
+          } as Component;
         }
 
-        const childrenClone = [...(component.children || [])];
+        return component;
+      };
 
-        childrenClone.splice(indexToAddAt, 0, newComponent);
-
-        return {
-          ...component,
-          children: childrenClone,
-        } as Component;
-      }
-
-      if (component.children) {
-        return {
-          ...component,
-          children: component.children.map(updateComponentTree),
-        } as Component;
-      }
-
-      return component;
-    };
-
-    setValue("messageComponent", updateComponentTree(messageComponent) as MessageComponentRoot, {
-      shouldValidate: true,
-      shouldDirty: true,
-      shouldTouch: true,
-    });
-  };
-
-  const deleteComponent: PreviewerContextType["deleteComponent"] = (componentId) => {
-    const messageComponent = getValues("messageComponent");
-
-    if (!messageComponent) return;
-
-    if (componentId === messageComponent.id) return;
-
-    const removeFromTree = (component: Component): Component | null => {
-      // Handle section accessory removal
-      if (component.type === ComponentType.V2Section && component.accessory?.id === componentId) {
-        return {
-          ...component,
-          accessory: undefined,
-        } as SectionComponent;
-      }
-
-      // Handle children removal
-      if (component.children) {
-        const updatedChildren = component.children
-          .filter((child) => child.id !== componentId)
-          .map(removeFromTree)
-          .filter((child): child is Component => child !== null);
-
-        return {
-          ...component,
-          children: updatedChildren,
-        } as Component;
-      }
-
-      // If this is the component to delete and it has no children, return null
-      return component.id === componentId ? null : component;
-    };
-
-    const updatedComponent = removeFromTree(messageComponent);
-
-    if (updatedComponent) {
-      setValue("messageComponent", updatedComponent as MessageComponentRoot, {
+      setValue("messageComponent", updateComponentTree(messageComponent) as MessageComponentRoot, {
         shouldValidate: true,
         shouldDirty: true,
         shouldTouch: true,
       });
-    }
-  };
+    },
+    [getValues, setValue]
+  );
 
-  const moveComponentUp: PreviewerContextType["moveComponentUp"] = (componentId) => {
-    const messageComponent = getValues("messageComponent");
+  const deleteComponent: PreviewerContextType["deleteComponent"] = useCallback(
+    (componentId) => {
+      const messageComponent = getValues("messageComponent");
 
-    if (!messageComponent) return;
+      if (!messageComponent) return;
 
-    const updateTree = (component: Component): Component => {
-      if (component.children) {
-        const childIndex = component.children.findIndex((child) => child.id === componentId);
+      if (componentId === messageComponent.id) return;
 
-        if (childIndex > 0) {
-          const newChildren = [...component.children];
-          [newChildren[childIndex - 1], newChildren[childIndex]] = [
-            newChildren[childIndex],
-            newChildren[childIndex - 1],
-          ];
+      const removeFromTree = (component: Component): Component | null => {
+        // Handle section accessory removal
+        if (component.type === ComponentType.V2Section && component.accessory?.id === componentId) {
+          return {
+            ...component,
+            accessory: undefined,
+          } as SectionComponent;
+        }
+
+        // Handle children removal
+        if (component.children) {
+          const updatedChildren = component.children
+            .filter((child) => child.id !== componentId)
+            .map(removeFromTree)
+            .filter((child): child is Component => child !== null);
 
           return {
             ...component,
-            children: newChildren,
+            children: updatedChildren,
           } as Component;
         }
 
-        return {
-          ...component,
-          children: component.children.map(updateTree),
-        } as Component;
+        // If this is the component to delete and it has no children, return null
+        return component.id === componentId ? null : component;
+      };
+
+      const updatedComponent = removeFromTree(messageComponent);
+
+      if (updatedComponent) {
+        setValue("messageComponent", updatedComponent as MessageComponentRoot, {
+          shouldValidate: true,
+          shouldDirty: true,
+          shouldTouch: true,
+        });
       }
+    },
+    [getValues, setValue]
+  );
 
-      return component;
-    };
+  const moveComponentUp: PreviewerContextType["moveComponentUp"] = useCallback(
+    (componentId) => {
+      const messageComponent = getValues("messageComponent");
 
-    setValue("messageComponent", updateTree(messageComponent) as V2MessageComponentRoot);
-  };
+      if (!messageComponent) return;
 
-  const moveComponentDown: PreviewerContextType["moveComponentDown"] = (componentId) => {
-    const messageComponent = getValues("messageComponent");
+      const updateTree = (component: Component): Component => {
+        if (component.children) {
+          const childIndex = component.children.findIndex((child) => child.id === componentId);
 
-    if (!messageComponent) return;
+          if (childIndex > 0) {
+            const newChildren = [...component.children];
+            [newChildren[childIndex - 1], newChildren[childIndex]] = [
+              newChildren[childIndex],
+              newChildren[childIndex - 1],
+            ];
 
-    const updateTree = (component: Component): Component => {
-      if (component.children) {
-        const childIndex = component.children.findIndex((child) => child.id === componentId);
-
-        if (childIndex >= 0 && childIndex < component.children.length - 1) {
-          const newChildren = [...component.children];
-          [newChildren[childIndex], newChildren[childIndex + 1]] = [
-            newChildren[childIndex + 1],
-            newChildren[childIndex],
-          ];
+            return {
+              ...component,
+              children: newChildren,
+            } as Component;
+          }
 
           return {
             ...component,
-            children: newChildren,
+            children: component.children.map(updateTree),
           } as Component;
         }
 
-        return {
-          ...component,
-          children: component.children.map(updateTree),
-        } as Component;
-      }
+        return component;
+      };
 
-      return component;
-    };
+      setValue("messageComponent", updateTree(messageComponent) as V2MessageComponentRoot);
+    },
+    [getValues, setValue]
+  );
 
-    setValue("messageComponent", updateTree(messageComponent) as V2MessageComponentRoot);
-  };
+  const moveComponentDown: PreviewerContextType["moveComponentDown"] = useCallback(
+    (componentId) => {
+      const messageComponent = getValues("messageComponent");
 
-  const resetMessage: PreviewerContextType["resetMessage"] = () => {
+      if (!messageComponent) return;
+
+      const updateTree = (component: Component): Component => {
+        if (component.children) {
+          const childIndex = component.children.findIndex((child) => child.id === componentId);
+
+          if (childIndex >= 0 && childIndex < component.children.length - 1) {
+            const newChildren = [...component.children];
+            [newChildren[childIndex], newChildren[childIndex + 1]] = [
+              newChildren[childIndex + 1],
+              newChildren[childIndex],
+            ];
+
+            return {
+              ...component,
+              children: newChildren,
+            } as Component;
+          }
+
+          return {
+            ...component,
+            children: component.children.map(updateTree),
+          } as Component;
+        }
+
+        return component;
+      };
+
+      setValue("messageComponent", updateTree(messageComponent) as V2MessageComponentRoot);
+    },
+    [getValues, setValue]
+  );
+
+  const resetMessage: PreviewerContextType["resetMessage"] = useCallback(() => {
     reset();
-  };
+  }, [reset]);
 
   const updateCurrentlySelectedComponent: PreviewerContextType["updateCurrentlySelectedComponent"] =
-    (newComponent) => {
-      if (!currentSelectedId) {
-        return;
-      }
+    useCallback(
+      (newComponent) => {
+        if (!currentSelectedId) {
+          return;
+        }
 
-      const { messageComponent } = getValues();
+        const { messageComponent } = getValues();
 
-      if (!messageComponent) {
-        return;
-      }
+        if (!messageComponent) {
+          return;
+        }
 
-      const formPath = getPreviewerComponentFormPathById(messageComponent, currentSelectedId);
+        const formPath = getPreviewerComponentFormPathById(messageComponent, currentSelectedId);
 
-      if (formPath) {
-        setValue(formPath as any, newComponent);
-      }
-    };
+        if (formPath) {
+          setValue(formPath as any, newComponent);
+        }
+      },
+      [currentSelectedId, getValues, setValue]
+    );
 
   const currentArticle = articlesResponse?.result.articles?.[0];
 
