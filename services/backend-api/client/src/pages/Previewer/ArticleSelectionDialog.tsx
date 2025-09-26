@@ -117,7 +117,7 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
+    <Modal isOpen={isOpen} onClose={onClose} size="2xl">
       <ModalOverlay bg="blackAlpha.600" />
       <ModalContent bg="gray.800" color="white" maxH="80vh" role="dialog">
         <ModalHeader
@@ -131,13 +131,7 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
         <ModalCloseButton aria-label="Close article selection dialog" size="lg" />
         <ModalBody p={0}>
           {/* Search and Controls Section */}
-          <Box
-            p={4}
-            borderBottom="1px solid"
-            borderColor="gray.600"
-            role="region"
-            aria-label="Search and filter controls"
-          >
+          <Box p={4} borderBottom="1px solid" borderColor="gray.600" role="region">
             <Text fontSize="sm" color="gray.400" mb={3} id="article-selection-description">
               Select an article from the list below to preview. Choose a property to display and
               search within. Use Tab to navigate between controls and Enter or Space to select
@@ -200,14 +194,7 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
             </VStack>
           </Box>
           {/* Content Section */}
-          <VStack
-            spacing={0}
-            align="stretch"
-            maxH="60vh"
-            overflowY="auto"
-            role="main"
-            aria-label="Article list"
-          >
+          <VStack spacing={0} align="stretch" maxH="60vh" aria-label="Article list">
             {/* Loading State */}
             {isLoading && (
               <Box
@@ -216,6 +203,7 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
                 role="status"
                 aria-live="polite"
                 aria-label="Loading articles"
+                bg="gray.800"
               >
                 <VStack spacing={4}>
                   <Spinner color="blue.400" size="lg" thickness="4px" />
@@ -249,13 +237,18 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
               </Box>
             )}
             {/* Articles List */}
-            {!isLoading && !error && articles.length > 0 && (
+            {status === "success" && !error && articles.length > 0 && (
               <>
                 {/* Articles List Header */}
                 <VStack
                   spacing={0}
                   align="stretch"
                   role="list"
+                  maxHeight={400}
+                  bg="gray.800"
+                  h="100%"
+                  overflow="auto"
+                  hidden={fetchStatus === "fetching"}
                   aria-label={`Articles ${startIndex + 1} to ${Math.min(
                     startIndex + ITEMS_PER_PAGE,
                     totalArticles
@@ -329,14 +322,7 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
                 </VStack>
                 {/* Pagination Section */}
                 {totalPages > 1 && (
-                  <Box
-                    p={4}
-                    borderTop="1px solid"
-                    borderColor="gray.600"
-                    bg="gray.750"
-                    role="navigation"
-                    aria-label="Article pagination"
-                  >
+                  <Box p={4} borderTop="1px solid" borderColor="gray.600" bg="gray.800">
                     <HStack justify="space-between" align="center" w="full">
                       {/* Article Count Info - Left Side */}
                       <Text fontSize="sm" color="gray.400" aria-live="polite">
@@ -350,16 +336,18 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
                         )}
                       </Text>
                       {/* Pagination Controls - Right Side */}
-                      <HStack spacing={2} role="group" aria-label="Page navigation">
+                      <HStack spacing={2}>
                         <Button
                           size="sm"
                           variant="outline"
                           colorScheme="gray"
-                          aria-disabled={currentPage === 1}
+                          aria-disabled={currentPage === 1 || fetchStatus === "fetching"}
                           onClick={() => {
-                            if (currentPage > 1) {
-                              handlePageChange(currentPage - 1);
+                            if (currentPage === 1 || fetchStatus === "fetching") {
+                              return;
                             }
+
+                            handlePageChange(currentPage - 1);
                           }}
                           aria-label={`Go to previous page. Currently on page ${currentPage} of ${totalPages}`}
                         >
@@ -369,11 +357,13 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
                           size="sm"
                           variant="outline"
                           colorScheme="gray"
-                          aria-disabled={currentPage === totalPages}
+                          aria-disabled={currentPage === totalPages || fetchStatus === "fetching"}
                           onClick={() => {
-                            if (currentPage < totalPages) {
-                              handlePageChange(currentPage + 1);
+                            if (currentPage === totalPages || fetchStatus === "fetching") {
+                              return;
                             }
+
+                            handlePageChange(currentPage + 1);
                           }}
                           aria-label={`Go to next page. Currently on page ${currentPage} of ${totalPages}`}
                         >

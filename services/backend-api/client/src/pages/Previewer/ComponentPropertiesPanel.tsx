@@ -24,7 +24,7 @@ import {
 import { DeleteIcon, ChevronUpIcon, ChevronDownIcon, CloseIcon } from "@chakra-ui/icons";
 import { SketchPicker } from "react-color";
 import { useFormContext } from "react-hook-form";
-import type { Component, ComponentPropertiesPanelProps } from "./types";
+import type { Component, ComponentPropertiesPanelProps, LegacyEmbedComponent } from "./types";
 import { ComponentType, ROOT_COMPONENT_TYPES } from "./types";
 import { InputWithInsertPlaceholder } from "../../components/InputWithInsertPlaceholder";
 
@@ -116,8 +116,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                       presetColors={[]}
                       disableAlpha
                       color={
-                        (component as any).color
-                          ? `#${Number((component as any).color)
+                        (component as LegacyEmbedComponent).color
+                          ? `#${Number((component as LegacyEmbedComponent).color)
                               .toString(16)
                               .padStart(6, "0")}`
                           : "#000000"
