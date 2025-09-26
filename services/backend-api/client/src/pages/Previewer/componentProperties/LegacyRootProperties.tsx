@@ -19,6 +19,7 @@ import {
   Checkbox,
   Box,
   IconButton,
+  Heading,
 } from "@chakra-ui/react";
 import { FiFilter } from "react-icons/fi";
 import { useFormContext } from "react-hook-form";
@@ -135,6 +136,9 @@ export const LegacyRootProperties: React.FC = () => {
     <VStack align="stretch" spacing={6}>
       {component?.isForumChannel && (
         <>
+          <Heading as="h3" size="sm" mb={-2}>
+            Forum Thread
+          </Heading>
           <InputWithInsertPlaceholder
             value={component.forumThreadTitle || ""}
             onChange={(value) => onChange({ ...component, forumThreadTitle: value })}
@@ -229,6 +233,9 @@ export const LegacyRootProperties: React.FC = () => {
       )}
       {showChannelNewThreadOptions && (
         <>
+          <Heading as="h3" size="sm" mb={-2}>
+            Channel Thread
+          </Heading>
           <InputWithInsertPlaceholder
             value={component?.channelNewThreadTitle || ""}
             onChange={(value) =>
@@ -271,6 +278,9 @@ export const LegacyRootProperties: React.FC = () => {
           </FormControl>
         </>
       )}
+      <Heading as="h3" size="sm" mb={-2}>
+        Text Content
+      </Heading>
       <FormControl>
         <HStack justify="space-between" align="center" mb={2}>
           <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
@@ -379,8 +389,8 @@ export const LegacyRootProperties: React.FC = () => {
         </FormLabel>
         <FormHelperText fontSize="sm" color="gray.400" mb={2}>
           Roles and users that will be mentioned when articles are delivered. Use the{" "}
-          <MessagePlaceholderText>discord::mentions</MessagePlaceholderText> placeholder in your
-          message content to include these mentions.
+          <MessagePlaceholderText withBrackets>discord::mentions</MessagePlaceholderText>{" "}
+          placeholder in your message content to include these mentions.
         </FormHelperText>
         <DiscordMessageMentionForm
           smallButton
