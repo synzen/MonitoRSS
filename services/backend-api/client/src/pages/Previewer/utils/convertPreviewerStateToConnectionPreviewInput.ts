@@ -15,7 +15,7 @@ const convertPreviewerStateToConnectionPreviewInput = (
   }
 
   let content = "";
-  const embeds: any[] = [];
+  let embeds: CreateDiscordChannelConnectionPreviewInput["data"]["embeds"] = [];
   const componentRows: Array<{
     id: string;
     components: Array<{ type: number; label: string; url?: string; style: number }>;
@@ -24,12 +24,10 @@ const convertPreviewerStateToConnectionPreviewInput = (
   messageComponent.children?.forEach((child) => {
     if (child.type === ComponentType.LegacyText) {
       content = child.content || "";
-    } else if (child.type === ComponentType.LegacyEmbed) {
-      const embed = convertLegacyEmbedPreviewerComponentToEmbed(child, currentArticle);
-
-      if (embed) {
-        embeds.push(embed);
-      }
+    } else if (child.type === ComponentType.LegacyEmbedContainer) {
+      embeds = child.children.map((embedChild) => {
+        return convertLegacyEmbedPreviewerComponentToEmbed(embedChild, currentArticle);
+      });
     } else if (child.type === ComponentType.LegacyActionRow) {
       const componentRow = {
         id: child.id,
