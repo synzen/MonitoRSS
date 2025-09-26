@@ -26,7 +26,10 @@ import convertPreviewerStateToConnectionPreviewInput from "./utils/convertPrevie
 import { useUserFeedConnectionContext } from "../../contexts/UserFeedConnectionContext";
 
 export const DiscordMessagePreview: React.FC = () => {
-  const { watch } = useFormContext<PreviewerFormState>();
+  const {
+    watch,
+    formState: { isValid },
+  } = useFormContext<PreviewerFormState>();
   const messageComponent = watch("messageComponent");
   const bgColor = useColorModeValue("#36393f", "#36393f");
   const textColor = useColorModeValue("#dcddde", "#dcddde");
@@ -36,9 +39,9 @@ export const DiscordMessagePreview: React.FC = () => {
   const previewData = convertPreviewerStateToConnectionPreviewInput(
     userFeed,
     connection,
-    messageComponent,
-    currentArticle
+    messageComponent
   );
+
   const debouncedPreviewData = useDebounce(previewData, 500);
 
   const {
@@ -46,7 +49,7 @@ export const DiscordMessagePreview: React.FC = () => {
     fetchStatus,
     error,
   } = useCreateConnectionPreview(FeedConnectionType.DiscordChannel, {
-    enabled: !!(userFeed && currentArticle?.id && debouncedPreviewData.content !== undefined),
+    enabled: !!currentArticle?.id && isValid,
     data: {
       connectionId: "preview", // Mock connection ID for previewer
       feedId: userFeed.id,

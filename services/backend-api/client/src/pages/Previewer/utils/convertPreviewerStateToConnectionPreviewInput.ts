@@ -7,8 +7,7 @@ import { Component, ComponentType, MessageComponentRoot } from "../types";
 const convertPreviewerStateToConnectionPreviewInput = (
   userFeed: UserFeed,
   connection: FeedDiscordChannelConnection,
-  messageComponent?: MessageComponentRoot,
-  currentArticle?: { publishedAt?: string }
+  messageComponent?: MessageComponentRoot
 ): Omit<CreateDiscordChannelConnectionPreviewInput["data"], "article"> => {
   if (!messageComponent || messageComponent.type !== ComponentType.LegacyRoot) {
     return {};
@@ -26,7 +25,7 @@ const convertPreviewerStateToConnectionPreviewInput = (
       content = child.content || "";
     } else if (child.type === ComponentType.LegacyEmbedContainer) {
       embeds = child.children.map((embedChild) => {
-        return convertLegacyEmbedPreviewerComponentToEmbed(embedChild, currentArticle);
+        return convertLegacyEmbedPreviewerComponentToEmbed(embedChild);
       });
     } else if (child.type === ComponentType.LegacyActionRow) {
       const componentRow = {
@@ -89,10 +88,7 @@ const convertPreviewerStateToConnectionPreviewInput = (
   };
 };
 
-const convertLegacyEmbedPreviewerComponentToEmbed = (
-  embedComponent: Component,
-  currentArticle?: { publishedAt?: string }
-) => {
+const convertLegacyEmbedPreviewerComponentToEmbed = (embedComponent: Component) => {
   if (embedComponent.type !== ComponentType.LegacyEmbed) {
     return null;
   }
@@ -141,16 +137,7 @@ const convertLegacyEmbedPreviewerComponentToEmbed = (
         inline: subComponent.inline || null,
       });
     } else if (subComponent.type === ComponentType.LegacyEmbedTimestamp) {
-      // Handle the new timestamp radio select values
-      if (!subComponent.timestamp) {
-        embed.timestamp = null; // No timestamp
-      } else if (subComponent.timestamp === "article") {
-        embed.timestamp = currentArticle?.publishedAt || null; // Use article's published date
-      } else if (subComponent.timestamp === "now") {
-        embed.timestamp = new Date().toISOString(); // Use current time
-      } else {
-        embed.timestamp = subComponent.timestamp || null;
-      }
+      embed.timestamp = subComponent.timestamp || null;
     }
   });
 

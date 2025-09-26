@@ -54,8 +54,7 @@ export const ArticlePreviewBanner: React.FC = () => {
       const messageComponentData = convertPreviewerStateToConnectionPreviewInput(
         userFeed,
         connection,
-        formState.messageComponent,
-        currentArticle
+        formState.messageComponent
       );
 
       const previewInput: CreateDiscordChannelConnectionPreviewInput = {

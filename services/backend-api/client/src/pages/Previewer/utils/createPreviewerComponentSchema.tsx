@@ -108,7 +108,7 @@ const createPreviewerComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => 
         return legacyEmbedFieldSchema;
       case ComponentType.LegacyEmbedTimestamp:
         return baseSchema.shape({
-          timestamp: yup.string(), // ISO 8601 timestamp
+          timestamp: yup.string().oneOf(["", "article", "now"]).nullable(), // ISO 8601 timestamp
         });
       case ComponentType.LegacyActionRow:
         return baseSchema.shape({

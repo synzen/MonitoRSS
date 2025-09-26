@@ -6,7 +6,6 @@ import {
   FaFont,
   FaLayerGroup,
   FaMinus,
-  FaStickyNote,
   FaUser,
   FaHeading,
   FaAlignLeft,
@@ -17,6 +16,30 @@ import {
 import type { Component } from "../types";
 import { ComponentType } from "../types";
 
+const LegacyEmbedIcon = () => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 20 20"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: "1.25em", height: "1.25em" }}
+  >
+    <rect
+      x="2"
+      y="2"
+      width="12"
+      height="12"
+      rx="2"
+      ry="2"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    />
+    <rect x="2" y="2" width="3" height="12" fill="currentColor" />
+  </svg>
+);
+
 const getPreviewerComponentIcon = (type: Component["type"]) => {
   switch (type) {
     case ComponentType.LegacyRoot:
@@ -26,7 +49,7 @@ const getPreviewerComponentIcon = (type: Component["type"]) => {
     case ComponentType.LegacyEmbedContainer:
       return FaLayerGroup;
     case ComponentType.LegacyEmbed:
-      return FaStickyNote;
+      return LegacyEmbedIcon;
     case ComponentType.LegacyEmbedAuthor:
       return FaUser;
     case ComponentType.LegacyEmbedTitle:
