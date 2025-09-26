@@ -53,14 +53,13 @@ import {
 } from "../contexts/PageAlertContext";
 import { ComponentType } from "./Previewer/types";
 import convertPreviewerStateToConnectionUpdate from "./Previewer/utils/convertPreviewerStateToConnectionUpdate";
-import { ResizablePanel } from "../components/ResizablePanel";
+
+const SIDE_PANEL_WIDTH = 300;
 
 const PreviewerContent: React.FC = () => {
   const { resetMessage } = usePreviewerContext();
   const { watch, handleSubmit, formState } = useFormContext<PreviewerFormState>();
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
-  const [leftPanelWidth, setLeftPanelWidth] = useState(300);
-  const [rightPanelWidth, setRightPanelWidth] = useState(350);
   const messageComponent = watch("messageComponent");
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = React.useRef<HTMLButtonElement>(null);
@@ -184,12 +183,7 @@ const PreviewerContent: React.FC = () => {
                 {/* Main Content */}
                 <Flex flex={1} bg="gray.900" position="relative">
                   {/* Left Panel - Component Tree */}
-                  <ResizablePanel
-                    width={leftPanelWidth}
-                    onWidthChange={setLeftPanelWidth}
-                    side="left"
-                    display={{ base: "none", lg: "block" }}
-                  >
+                  <Box minWidth={SIDE_PANEL_WIDTH} display={{ base: "none", lg: "block" }}>
                     <Box
                       bg="gray.800"
                       borderRight="1px"
@@ -221,9 +215,17 @@ const PreviewerContent: React.FC = () => {
                         )}
                       </VStack>
                     </Box>
-                  </ResizablePanel>
+                  </Box>
                   {/* Center Panel - Discord Preview and Problems */}
-                  <Flex flex={1} direction="column" bg="gray.800">
+                  <Flex
+                    flex={1}
+                    direction="column"
+                    bg="gray.800"
+                    maxW={{
+                      base: "100vw",
+                      lg: `calc(min(100vw - ${SIDE_PANEL_WIDTH * 2}px, 100%))`,
+                    }}
+                  >
                     {/* Discord Preview Section */}
                     <Box p={4} borderBottom="1px" borderColor="gray.600" srOnly>
                       <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
@@ -305,12 +307,7 @@ const PreviewerContent: React.FC = () => {
                     </Box>
                   </Flex>
                   {/* Right Panel - Properties */}
-                  <ResizablePanel
-                    width={rightPanelWidth}
-                    onWidthChange={setRightPanelWidth}
-                    side="right"
-                    display={{ base: "none", lg: "block" }}
-                  >
+                  <Box minWidth={SIDE_PANEL_WIDTH} display={{ base: "none", lg: "block" }}>
                     <Box
                       bg="gray.800"
                       borderLeft="1px"
@@ -323,7 +320,7 @@ const PreviewerContent: React.FC = () => {
                         <ComponentPropertiesPanel selectedComponentId={currentSelectedId} />
                       )}
                     </Box>
-                  </ResizablePanel>
+                  </Box>
                 </Flex>
               </Flex>
               {/* Discard Confirmation Modal */}

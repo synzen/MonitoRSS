@@ -100,7 +100,8 @@ const createPreviewerComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => 
         return baseSchema.shape({
           description: yup
             .string()
-            .max(4096, "Expected description to have at most 4096 characters"),
+            .required("Expected non-empty Embed Description text")
+            .max(4096, "Expected Embed Description to have at most 4096 characters"),
         });
       case ComponentType.LegacyEmbedImage:
         return baseSchema.shape({

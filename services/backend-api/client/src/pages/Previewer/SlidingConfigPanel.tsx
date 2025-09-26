@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { Box, HStack, Text, IconButton, Slide } from "@chakra-ui/react";
 import { CloseIcon } from "@chakra-ui/icons";
+import { createFocusTrap, FocusTrap } from "focus-trap";
 import { ComponentPropertiesPanel } from "./ComponentPropertiesPanel";
+import getPreviewerComponentLabel from "./utils/getPreviewerComponentLabel";
 
 interface SlidingConfigPanelProps {
   isOpen: boolean;
@@ -15,6 +17,38 @@ export const SlidingConfigPanel: React.FC<SlidingConfigPanelProps> = ({
   component,
 }) => {
   const panelRef = React.useRef<HTMLDivElement>(null);
+  const closeButtonRef = React.useRef<HTMLButtonElement>(null);
+  const [focusTrap, setFocusTrap] = useState<FocusTrap | null>(null);
+
+  // Initialize focus trap
+  React.useEffect(() => {
+    if (panelRef.current) {
+      setFocusTrap(
+        createFocusTrap(panelRef.current, {
+          initialFocus: () => closeButtonRef.current,
+          escapeDeactivates: false, // We handle escape ourselves
+          clickOutsideDeactivates: false, // We handle backdrop clicks ourselves
+        })
+      );
+    }
+
+    return () => {
+      if (focusTrap) {
+        focusTrap.deactivate();
+      }
+    };
+  }, []);
+
+  // Activate/deactivate focus trap based on isOpen state
+  React.useEffect(() => {
+    if (focusTrap) {
+      if (isOpen) {
+        focusTrap.activate();
+      } else {
+        focusTrap.deactivate();
+      }
+    }
+  }, [isOpen]);
 
   // Handle escape key press
   React.useEffect(() => {
@@ -56,6 +90,9 @@ export const SlidingConfigPanel: React.FC<SlidingConfigPanelProps> = ({
           borderTopRadius="xl"
           borderColor="gray.600"
           height="55vh"
+          role="dialog"
+          aria-labelledby="sliding-config-panel-title"
+          aria-modal="true"
           onClick={(e) => e.stopPropagation()}
           {...(isOpen && {
             shadow: "2xl",
@@ -70,10 +107,11 @@ export const SlidingConfigPanel: React.FC<SlidingConfigPanelProps> = ({
             borderBottom="1px solid"
             borderColor="gray.600"
           >
-            <Text fontSize="md" fontWeight="semibold" color="white">
-              Configure {component?.type || "Component"}
+            <Text id="sliding-config-panel-title" fontSize="md" fontWeight="semibold" color="white">
+              Configure {component ? getPreviewerComponentLabel(component.type) : "Component"}
             </Text>
             <IconButton
+              ref={closeButtonRef}
               icon={<CloseIcon />}
               size="sm"
               variant="ghost"
