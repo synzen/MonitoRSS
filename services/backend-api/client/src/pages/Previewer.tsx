@@ -41,7 +41,8 @@ import { FaRightFromBracket } from "react-icons/fa6";
 import { DiscordMessagePreview } from "./Previewer/DiscordMessagePreview";
 import { ComponentPropertiesPanel } from "./Previewer/ComponentPropertiesPanel";
 import { ComponentTreeItem } from "./Previewer/ComponentTreeItem";
-import { NavigableTreeItem, NavigableTreeItemGroup } from "../components/NavigableTree";
+import { ComponentTreeToolbar } from "./Previewer/ComponentTreeToolbar";
+import { NavigableTreeItem } from "../components/NavigableTree";
 import {
   NavigableTreeContext,
   NavigableTreeProvider,
@@ -401,11 +402,7 @@ const PreviewerContent: React.FC = () => {
                     overflowY="auto"
                   >
                     <VStack align="stretch" spacing={0} minWidth={200} height="100%">
-                      {/* <Box p={4} borderBottom="1px" borderColor="gray.600">
-                        <Text fontSize="md" fontWeight="bold" color="white" as="h2">
-                          Components
-                        </Text>
-                      </Box> */}
+                      <ComponentTreeToolbar />
                       {messageComponent && (
                         <div role="tree" aria-label="Message Components">
                           <NavigableTreeItem
@@ -484,21 +481,20 @@ const PreviewerContent: React.FC = () => {
                       </TabList>
                       <TabPanels>
                         <TabPanel p={0}>
+                          <ComponentTreeToolbar />
                           {messageComponent && (
                             <div role="tree" aria-label="Message Components">
-                              <NavigableTreeItemGroup>
-                                <NavigableTreeItem
-                                  isRootItem
-                                  id={messageComponent.id}
-                                  ariaLabel="Message Components Root"
-                                >
-                                  <ComponentTreeItem
-                                    component={messageComponent}
-                                    scrollToComponentId={scrollToComponentId}
-                                    componentIdsWithProblems={componentIdsWithProblems}
-                                  />
-                                </NavigableTreeItem>
-                              </NavigableTreeItemGroup>
+                              <NavigableTreeItem
+                                isRootItem
+                                id={messageComponent.id}
+                                ariaLabel="Message Components Root"
+                              >
+                                <ComponentTreeItem
+                                  component={messageComponent}
+                                  scrollToComponentId={scrollToComponentId}
+                                  componentIdsWithProblems={componentIdsWithProblems}
+                                />
+                              </NavigableTreeItem>
                             </div>
                           )}
                         </TabPanel>

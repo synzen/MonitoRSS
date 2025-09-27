@@ -39,9 +39,15 @@ import getPreviewerFieldErrors from "./utils/getPreviewerFieldErrors";
 import getPreviewerComponentLabel from "./utils/getPreviewerComponentLabel";
 
 const NON_REPOSITIONABLE_COMPONENTS = [
-  ComponentType.LegacyActionRow,
   ComponentType.LegacyEmbedContainer,
   ComponentType.LegacyText,
+  ComponentType.LegacyEmbedAuthor,
+  ComponentType.LegacyEmbedDescription,
+  ComponentType.LegacyEmbedImage,
+  ComponentType.LegacyEmbedThumbnail,
+  ComponentType.LegacyEmbedTimestamp,
+  ComponentType.LegacyEmbedTitle,
+  ComponentType.LegacyEmbedFooter,
 ];
 
 export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> = ({

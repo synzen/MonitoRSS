@@ -8,12 +8,14 @@ import {
   Switch,
   Box,
   chakra,
+  Text,
 } from "@chakra-ui/react";
 import { useFormContext } from "react-hook-form";
 import { InputWithInsertPlaceholder } from "../../../components/InputWithInsertPlaceholder";
 import { Component, LegacyTextComponent } from "../types";
 import PreviewerFormState from "../types/PreviewerFormState";
 import getPreviewerFieldErrors from "../utils/getPreviewerFieldErrors";
+import MessagePlaceholderText from "../../../components/MessagePlaceholderText";
 
 interface LegacyTextPropertiesProps {
   root?: Component;
@@ -39,6 +41,14 @@ export const LegacyTextProperties: React.FC<LegacyTextPropertiesProps> = ({
         label="Text Content"
         error={contentError?.message}
         isInvalid={!!contentError}
+        helperText={
+          <Text>
+            A special placeholder,{" "}
+            <MessagePlaceholderText withBrackets>empty</MessagePlaceholderText>, can be used to
+            create an empty message, but only if at least one embed is used. Regular formatting such
+            as bold and etc. is available.
+          </Text>
+        }
       />
       <FormControl>
         <HStack justify="space-between" align="center" mb={2}>

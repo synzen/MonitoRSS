@@ -150,7 +150,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     (parentId, childType, isAccessory = false) => {
       const messageComponent = getValues("messageComponent");
       const newComponent = createNewPreviewerComponent(childType);
-      const idsToExpand: string[] = [newComponent.id];
+      const idsToExpand: string[] = [parentId, newComponent.id];
 
       const updateComponentTree = (component?: Component): Component => {
         if (!component) {
