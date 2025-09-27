@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from "uuid";
 import { DiscordButtonStyle } from "../constants/DiscordButtonStyle";
 import {
   ActionRowComponent,
@@ -25,7 +26,7 @@ import getPreviewerComponentLabel from "./getPreviewerComponentLabel";
 
 const createNewPreviewerComponent = (type: ComponentType): Component => {
   const base = {
-    id: `${type}-${Date.now()}`,
+    id: `${type}-${uuidv4()}`,
     name: getPreviewerComponentLabel(type),
     type,
   };

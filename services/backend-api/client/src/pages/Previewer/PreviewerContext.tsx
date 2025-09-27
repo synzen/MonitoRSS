@@ -143,8 +143,14 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, [firstArticleId, status]);
 
   useEffect(() => {
-    reset(convertConnectionToPreviewerState(connection));
-  }, [connection, reset]);
+    if (!connection) {
+      return;
+    }
+
+    const newFormState = convertConnectionToPreviewerState(connection);
+
+    reset(newFormState);
+  }, [connection]);
 
   const addChildComponent: PreviewerContextType["addChildComponent"] = useCallback(
     (parentId, childType, isAccessory = false) => {

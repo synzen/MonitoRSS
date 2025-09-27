@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from "uuid";
 import { FeedDiscordChannelConnection } from "../../../types";
 import {
   ComponentType,
@@ -19,15 +18,7 @@ import {
 } from "../types";
 import PreviewerFormState from "../types/PreviewerFormState";
 import { DiscordButtonStyle } from "../constants/DiscordButtonStyle";
-import getPreviewerComponentLabel from "./getPreviewerComponentLabel";
 import createNewPreviewerComponent from "./createNewPreviewComponent";
-
-const createLegacyTextComponent = (content: string): LegacyTextComponent => ({
-  id: uuidv4(),
-  name: getPreviewerComponentLabel(ComponentType.LegacyText),
-  type: ComponentType.LegacyText,
-  content,
-});
 
 const createLegacyButtonComponent = (
   button: Exclude<
@@ -58,9 +49,7 @@ const createLegacyButtonComponent = (
   }
 
   return {
-    id: uuidv4(),
-    name: getPreviewerComponentLabel(ComponentType.LegacyButton),
-    type: ComponentType.LegacyButton,
+    ...(createNewPreviewerComponent(ComponentType.LegacyButton) as LegacyButtonComponent),
     label: button.label,
     style,
     disabled: false,
@@ -83,9 +72,7 @@ const createLegacyActionRowComponent = (
   }
 
   return {
-    id: uuidv4(),
-    name: getPreviewerComponentLabel(ComponentType.LegacyActionRow),
-    type: ComponentType.LegacyActionRow,
+    ...(createNewPreviewerComponent(ComponentType.LegacyActionRow) as LegacyActionRowComponent),
     children,
   };
 };
@@ -104,9 +91,7 @@ const createLegacyEmbedComponent = (
   // Add author component if present
   if (embed.author?.name) {
     children.push({
-      id: uuidv4(),
-      name: getPreviewerComponentLabel(ComponentType.LegacyEmbedAuthor),
-      type: ComponentType.LegacyEmbedAuthor,
+      ...createNewPreviewerComponent(ComponentType.LegacyEmbedAuthor),
       authorName: embed.author.name,
       authorUrl: embed.author.url,
       authorIconUrl: embed.author.iconUrl,
@@ -116,9 +101,7 @@ const createLegacyEmbedComponent = (
   // Add title component if present
   if (embed.title) {
     children.push({
-      id: uuidv4(),
-      name: getPreviewerComponentLabel(ComponentType.LegacyEmbedTitle),
-      type: ComponentType.LegacyEmbedTitle,
+      ...createNewPreviewerComponent(ComponentType.LegacyEmbedTitle),
       title: embed.title,
       titleUrl: embed.url,
     } as LegacyEmbedTitleComponent);
@@ -127,9 +110,7 @@ const createLegacyEmbedComponent = (
   // Add description component if present
   if (embed.description) {
     children.push({
-      id: uuidv4(),
-      name: getPreviewerComponentLabel(ComponentType.LegacyEmbedDescription),
-      type: ComponentType.LegacyEmbedDescription,
+      ...createNewPreviewerComponent(ComponentType.LegacyEmbedDescription),
       description: embed.description,
     } as LegacyEmbedDescriptionComponent);
   }
@@ -138,9 +119,7 @@ const createLegacyEmbedComponent = (
   if (embed.fields && embed.fields.length > 0) {
     embed.fields.forEach((field: any) => {
       children.push({
-        id: uuidv4(),
-        name: getPreviewerComponentLabel(ComponentType.LegacyEmbedField),
-        type: ComponentType.LegacyEmbedField,
+        ...createNewPreviewerComponent(ComponentType.LegacyEmbedField),
         fieldName: field.name,
         fieldValue: field.value,
         inline: field.inline || false,
@@ -151,9 +130,7 @@ const createLegacyEmbedComponent = (
   // Add image component if present
   if (embed.image?.url) {
     children.push({
-      id: uuidv4(),
-      name: getPreviewerComponentLabel(ComponentType.LegacyEmbedImage),
-      type: ComponentType.LegacyEmbedImage,
+      ...createNewPreviewerComponent(ComponentType.LegacyEmbedImage),
       imageUrl: embed.image.url,
     } as LegacyEmbedImageComponent);
   }
@@ -161,9 +138,7 @@ const createLegacyEmbedComponent = (
   // Add thumbnail component if present
   if (embed.thumbnail?.url) {
     children.push({
-      id: uuidv4(),
-      name: getPreviewerComponentLabel(ComponentType.LegacyEmbedThumbnail),
-      type: ComponentType.LegacyEmbedThumbnail,
+      ...createNewPreviewerComponent(ComponentType.LegacyEmbedThumbnail),
       thumbnailUrl: embed.thumbnail.url,
     } as LegacyEmbedThumbnailComponent);
   }
@@ -171,9 +146,7 @@ const createLegacyEmbedComponent = (
   // Add footer component if present
   if (embed.footer?.text) {
     children.push({
-      id: uuidv4(),
-      name: getPreviewerComponentLabel(ComponentType.LegacyEmbedFooter),
-      type: ComponentType.LegacyEmbedFooter,
+      ...createNewPreviewerComponent(ComponentType.LegacyEmbedFooter),
       footerText: embed.footer.text,
       footerIconUrl: embed.footer.iconUrl,
     } as LegacyEmbedFooterComponent);
@@ -182,17 +155,13 @@ const createLegacyEmbedComponent = (
   // Add timestamp component if present
   if (embed.timestamp) {
     children.push({
-      id: uuidv4(),
-      name: getPreviewerComponentLabel(ComponentType.LegacyEmbedTimestamp),
-      type: ComponentType.LegacyEmbedTimestamp,
+      ...createNewPreviewerComponent(ComponentType.LegacyEmbedTimestamp),
       timestamp: embed.timestamp,
     } as LegacyEmbedTimestampComponent);
   }
 
   return {
-    id: uuidv4(),
-    name: getPreviewerComponentLabel(ComponentType.LegacyEmbed),
-    type: ComponentType.LegacyEmbed,
+    ...(createNewPreviewerComponent(ComponentType.LegacyEmbed) as LegacyEmbedComponent),
     children,
     color,
   };
@@ -219,17 +188,17 @@ export const convertConnectionToPreviewerState = (
 
   // Add text content if present
   if (content) {
-    children.push(createLegacyTextComponent(content));
+    children.push({
+      ...(createNewPreviewerComponent(ComponentType.LegacyText) as LegacyTextComponent),
+      content,
+    });
   }
 
   // Add embed components if present
   if (embeds && embeds.length > 0) {
-    children.push({
-      type: ComponentType.LegacyEmbedContainer,
-      id: uuidv4(),
-      name: getPreviewerComponentLabel(ComponentType.LegacyEmbedContainer),
-      children: embeds.map((embed) => createLegacyEmbedComponent(embed)),
-    });
+    const container = createNewPreviewerComponent(ComponentType.LegacyEmbedContainer);
+    container.children = embeds.map((embed) => createLegacyEmbedComponent(embed));
+    children.push(container);
   }
 
   // Add action row components if present

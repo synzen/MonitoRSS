@@ -51,7 +51,6 @@ import {
 import { PreviewerProvider, usePreviewerContext } from "./Previewer/PreviewerContext";
 import { ProblemsSection } from "./Previewer/ProblemsSection";
 import extractPreviewerProblems from "./Previewer/utils/extractPreviewerProblems";
-import { convertConnectionToPreviewerState } from "./Previewer/utils/convertConnectionToPreviewerState";
 import RouteParams from "../types/RouteParams";
 import { Loading } from "../components";
 import { SearchFeedsModal } from "../components/SearchFeedsModal";
@@ -59,11 +58,10 @@ import { LogoutButton } from "../features/auth";
 import { useDiscordBot, useDiscordUserMe } from "../features/discordUser";
 import { UserFeedProvider } from "../contexts/UserFeedContext";
 import {
-  UserFeedConnectionContext,
   UserFeedConnectionProvider,
   useUserFeedConnectionContext,
 } from "../contexts/UserFeedConnectionContext";
-import { FeedDiscordChannelConnection, FeedConnectionType } from "../types";
+import { FeedConnectionType } from "../types";
 import PreviewerFormState from "./Previewer/types/PreviewerFormState";
 import { useUpdateDiscordChannelConnection } from "../features/feedConnections";
 import {
@@ -562,35 +560,24 @@ export const Previewer: React.FC = () => {
   const { feedId, connectionId } = useParams<RouteParams>();
 
   return (
-    <NavigableTreeProvider>
-      <UserFeedProvider
-        feedId={feedId}
-        loadingComponent={
-          <Stack alignItems="center" justifyContent="center" height="100%" spacing="2rem">
-            <Loading size="xl" />
-            <Heading>Loading Feed...</Heading>
-          </Stack>
-        }
-      >
-        <UserFeedConnectionProvider feedId={feedId} connectionId={connectionId}>
-          <UserFeedConnectionContext.Consumer>
-            {(data) => {
-              const connection = data?.connection as FeedDiscordChannelConnection;
-
-              const previewerFormState: PreviewerFormState =
-                convertConnectionToPreviewerState(connection);
-
-              return (
-                <PageAlertProvider>
-                  <PreviewerProvider defaultValues={previewerFormState}>
-                    <PreviewerContent />
-                  </PreviewerProvider>
-                </PageAlertProvider>
-              );
-            }}
-          </UserFeedConnectionContext.Consumer>
-        </UserFeedConnectionProvider>
-      </UserFeedProvider>
-    </NavigableTreeProvider>
+    <UserFeedProvider
+      feedId={feedId}
+      loadingComponent={
+        <Stack alignItems="center" justifyContent="center" height="100%" spacing="2rem">
+          <Loading size="xl" />
+          <Heading>Loading Feed...</Heading>
+        </Stack>
+      }
+    >
+      <UserFeedConnectionProvider feedId={feedId} connectionId={connectionId}>
+        <NavigableTreeProvider>
+          <PageAlertProvider>
+            <PreviewerProvider>
+              <PreviewerContent />
+            </PreviewerProvider>
+          </PageAlertProvider>
+        </NavigableTreeProvider>
+      </UserFeedConnectionProvider>
+    </UserFeedProvider>
   );
 };

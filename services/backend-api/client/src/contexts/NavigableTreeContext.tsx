@@ -16,10 +16,16 @@ export const NavigableTreeContext = createContext<ContextProps>({
   expandedIds: new Set(),
 });
 
-export const NavigableTreeProvider = ({ children }: { children: ReactNode }) => {
+export const NavigableTreeProvider = ({
+  children,
+  defaultExpandedIds,
+}: {
+  children: ReactNode;
+  defaultExpandedIds?: Set<string>;
+}) => {
   const [currentFocusedId, setCurrentFocusedId] = useState<string | null>(null);
   const [currentSelectedId, setCurrentSelectedId] = useState<string | null>(null);
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(defaultExpandedIds || new Set());
 
   const contextValue = useMemo(() => {
     return {
