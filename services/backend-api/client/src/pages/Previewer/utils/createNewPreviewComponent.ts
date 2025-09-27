@@ -31,6 +31,17 @@ const createNewPreviewerComponent = (type: ComponentType): Component => {
   };
 
   switch (type) {
+    case ComponentType.LegacyRoot:
+      return {
+        ...base,
+        children: [],
+      } as Component;
+    case ComponentType.V2Root:
+      return {
+        ...base,
+        children: [],
+      } as Component;
+
     case ComponentType.LegacyActionRow:
       return {
         ...base,

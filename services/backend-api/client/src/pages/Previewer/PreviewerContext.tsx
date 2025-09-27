@@ -89,7 +89,8 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const { userFeed, articleFormatOptions } = useUserFeedContext();
   const { connection } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
   const { setValue, getValues, reset } = useFormContext<PreviewerFormState>();
-  const { currentSelectedId } = useNavigableTreeContext();
+  const { currentSelectedId, setCurrentFocusedId, setCurrentSelectedId, setExpandedIds } =
+    useNavigableTreeContext();
   const { t } = useTranslation();
 
   // Article preview state
@@ -149,6 +150,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     (parentId, childType, isAccessory = false) => {
       const messageComponent = getValues("messageComponent");
       const newComponent = createNewPreviewerComponent(childType);
+      const idsToExpand: string[] = [newComponent.id];
 
       const updateComponentTree = (component?: Component): Component => {
         if (!component) {
@@ -168,9 +170,11 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           // The order of legacy components are fixed
           if (newComponent.type === ComponentType.LegacyEmbedContainer) {
             indexToAddAt = 1;
-            newComponent.children.push(
-              createNewPreviewerComponent(ComponentType.LegacyEmbed) as LegacyEmbedComponent
-            );
+            const childEmbed = createNewPreviewerComponent(
+              ComponentType.LegacyEmbed
+            ) as LegacyEmbedComponent;
+            newComponent.children.push(childEmbed);
+            idsToExpand.push(childEmbed.id);
           } else if (newComponent.type === ComponentType.LegacyText) {
             indexToAddAt = 0;
           }
@@ -200,6 +204,13 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         shouldDirty: true,
         shouldTouch: true,
       });
+      setExpandedIds((ids) => new Set([...ids, ...idsToExpand]));
+      const lastIdToExpand = idsToExpand[idsToExpand.length - 1];
+
+      if (lastIdToExpand) {
+        setCurrentFocusedId(lastIdToExpand);
+        setCurrentSelectedId(lastIdToExpand);
+      }
     },
     [getValues, setValue]
   );

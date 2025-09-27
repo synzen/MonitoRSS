@@ -59,14 +59,10 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
     component.type === ComponentType.V2Root ||
     component.type === ComponentType.V2ActionRow ||
     component.type === ComponentType.V2Section;
-  const { isFocused, isExpanded, isSelected, setIsExpanded } = useNavigableTreeItemContext();
+  const { isFocused, isExpanded, isSelected } = useNavigableTreeItemContext();
 
   const onAddChildComponent = (...args: Parameters<typeof addChildComponent>) => {
     addChildComponent(...args);
-
-    if (!isExpanded) {
-      setIsExpanded(true);
-    }
   };
 
   const handleConfigureComponent = (e: React.MouseEvent) => {
@@ -196,13 +192,15 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                         bg="gray.700"
                         _hover={{ bg: "gray.600" }}
                         color="white"
-                        onClick={() => {
+                        onClick={(e) => {
                           const containerCount =
                             component.children?.filter(
                               (c) => c.type === ComponentType.LegacyEmbedContainer
                             ).length || 0;
                           if (containerCount >= 1) return;
                           onAddChildComponent(component.id, ComponentType.LegacyEmbedContainer);
+                          e.stopPropagation();
+                          e.preventDefault();
                         }}
                         isDisabled={
                           (component.children?.filter(
@@ -210,7 +208,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                           ).length || 0) >= 1
                         }
                       >
-                        Add Embed Container
+                        Add {getPreviewerComponentLabel(ComponentType.LegacyEmbedContainer)}
                       </MenuItem>
                     </MenuGroup>
                     <MenuGroup
@@ -237,7 +235,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                           ).length || 0) >= 5
                         }
                       >
-                        Add Action Row
+                        Add {getPreviewerComponentLabel(ComponentType.LegacyActionRow)}
                       </MenuItem>
                     </MenuGroup>
                   </>

@@ -35,13 +35,13 @@ import {
 } from "@chakra-ui/react";
 import { WarningIcon, SettingsIcon, InfoIcon } from "@chakra-ui/icons";
 import { useFormContext } from "react-hook-form";
-import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
+import { useParams, Link as RouterLink, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FaRightFromBracket } from "react-icons/fa6";
 import { DiscordMessagePreview } from "./Previewer/DiscordMessagePreview";
 import { ComponentPropertiesPanel } from "./Previewer/ComponentPropertiesPanel";
 import { ComponentTreeItem } from "./Previewer/ComponentTreeItem";
-import { NavigableTreeItem } from "../components/NavigableTree";
+import { NavigableTreeItem, NavigableTreeItemGroup } from "../components/NavigableTree";
 import {
   NavigableTreeContext,
   NavigableTreeProvider,
@@ -55,7 +55,7 @@ import RouteParams from "../types/RouteParams";
 import { Loading } from "../components";
 import { SearchFeedsModal } from "../components/SearchFeedsModal";
 import { LogoutButton } from "../features/auth";
-import { useDiscordBot, useDiscordUserMe, useUserMe } from "../features/discordUser";
+import { useDiscordBot, useDiscordUserMe } from "../features/discordUser";
 import { UserFeedProvider } from "../contexts/UserFeedContext";
 import {
   UserFeedConnectionContext,
@@ -103,10 +103,8 @@ const PreviewerContent: React.FC = () => {
   // Header hooks
   const { data: discordBotData, status: botStatus, error: botError } = useDiscordBot();
   const { data: discordUserMe } = useDiscordUserMe();
-  const { data: userMe } = useUserMe();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
 
   const problems = extractPreviewerProblems(formState.errors.messageComponent, messageComponent);
   const componentIdsWithProblems = new Set(problems.map((p) => p.componentId));
@@ -488,17 +486,19 @@ const PreviewerContent: React.FC = () => {
                         <TabPanel p={0}>
                           {messageComponent && (
                             <div role="tree" aria-label="Message Components">
-                              <NavigableTreeItem
-                                isRootItem
-                                id={messageComponent.id}
-                                ariaLabel="Message Components Root"
-                              >
-                                <ComponentTreeItem
-                                  component={messageComponent}
-                                  scrollToComponentId={scrollToComponentId}
-                                  componentIdsWithProblems={componentIdsWithProblems}
-                                />
-                              </NavigableTreeItem>
+                              <NavigableTreeItemGroup>
+                                <NavigableTreeItem
+                                  isRootItem
+                                  id={messageComponent.id}
+                                  ariaLabel="Message Components Root"
+                                >
+                                  <ComponentTreeItem
+                                    component={messageComponent}
+                                    scrollToComponentId={scrollToComponentId}
+                                    componentIdsWithProblems={componentIdsWithProblems}
+                                  />
+                                </NavigableTreeItem>
+                              </NavigableTreeItemGroup>
                             </div>
                           )}
                         </TabPanel>

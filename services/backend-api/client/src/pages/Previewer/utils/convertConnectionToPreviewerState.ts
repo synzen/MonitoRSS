@@ -20,6 +20,7 @@ import {
 import PreviewerFormState from "../types/PreviewerFormState";
 import { DiscordButtonStyle } from "../constants/DiscordButtonStyle";
 import getPreviewerComponentLabel from "./getPreviewerComponentLabel";
+import createNewPreviewerComponent from "./createNewPreviewComponent";
 
 const createLegacyTextComponent = (content: string): LegacyTextComponent => ({
   id: uuidv4(),
@@ -242,9 +243,7 @@ export const convertConnectionToPreviewerState = (
 
   // Create a legacy root component that contains the existing message data
   const legacyRootComponent: LegacyMessageComponentRoot = {
-    id: uuidv4(),
-    name: getPreviewerComponentLabel(ComponentType.LegacyRoot),
-    type: ComponentType.LegacyRoot,
+    ...(createNewPreviewerComponent(ComponentType.LegacyRoot) as LegacyMessageComponentRoot),
     children,
     formatTables: connection.details?.formatter?.formatTables,
     stripImages: connection.details?.formatter?.stripImages,

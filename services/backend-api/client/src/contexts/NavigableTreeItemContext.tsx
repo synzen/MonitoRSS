@@ -220,7 +220,6 @@ export const NavigableTreeItemProvider = ({
     setExpandedIds,
   } = useNavigableTreeContext();
   const isExpanded = expandedIds.has(id);
-  // const [isExpanded, setIsExpanded] = useState<boolean>(defaultIsExpanded || false);
   const thisItemIsFocused = currentFocusedId === id;
   const thisItemIsSelected = currentSelectedId === id;
 
