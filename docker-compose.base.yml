@@ -81,7 +81,6 @@ services:
         condition: service_started
     environment:
       - DISCORD_REST_LISTENER_RABBITMQ_URI=amqp://rabbitmq-broker:5672
-      - DISCORD_REST_LISTENER_MONGO_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
       - DISCORD_REST_LISTENER_MAX_REQ_PER_SEC=40
     networks:
       - monitorss-default
@@ -99,7 +98,6 @@ services:
     environment:
       - FEED_REQUESTS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/feedrequests
       - FEED_REQUESTS_POSTGRES_SCHEMA=feedrequests
-      - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
       - FEED_REQUESTS_API_KEY=feed-requests-api-key
       - FEED_REQUESTS_API_PORT=5000
       - FEED_REQUESTS_RABBITMQ_BROKER_URL=amqp://rabbitmq-broker:5672
@@ -131,7 +129,6 @@ services:
     environment:
       - FEED_REQUESTS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/feedrequests
       - FEED_REQUESTS_POSTGRES_SCHEMA=feedrequests
-      - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
       - FEED_REQUESTS_API_KEY=feed-requests-api-key
       - FEED_REQUESTS_API_PORT=5000
       - FEED_REQUESTS_RABBITMQ_BROKER_URL=amqp://rabbitmq-broker:5672
@@ -232,7 +229,6 @@ services:
       - mongo
     environment:
       - NODE_ENV=local
-      - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
       - BACKEND_API_USER_FEEDS_API_HOST=----IRRELEVANT----
       - BACKEND_API_USER_FEEDS_API_KEY=----IRRELEVANT----
       - BACKEND_API_FEED_REQUESTS_API_HOST=----IRRELEVANT----
@@ -268,7 +264,6 @@ services:
     environment:
       - BACKEND_API_NODE_ENV=local
       - BACKEND_API_PORT=8000
-      - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
       - BACKEND_API_USER_FEEDS_API_HOST=http://user-feeds-service:5000
       - BACKEND_API_FEED_REQUESTS_API_HOST=http://feed-requests-service:5000
       - BACKEND_API_DEFAULT_MAX_FEEDS=10
