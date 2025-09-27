@@ -696,7 +696,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 onDeleted?.();
               }}
             >
-              Delete
+              Delete Component
             </Button>
           )}
         </HStack>
