@@ -58,7 +58,7 @@ const createNewPreviewerComponent = (type: ComponentType): Component => {
     case ComponentType.LegacyText:
       return {
         ...base,
-        content: "Hello from legacy Discord message!",
+        content: "📰 | {{title}}",
       } as LegacyTextComponent;
     case ComponentType.LegacyEmbedContainer:
       return {

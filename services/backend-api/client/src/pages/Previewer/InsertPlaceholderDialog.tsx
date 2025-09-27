@@ -86,7 +86,6 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
       <ModalContent
         bg="gray.800"
         color="white"
-        maxH="80vh"
         onClick={(e) => {
           e.stopPropagation();
         }}

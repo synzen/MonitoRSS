@@ -180,15 +180,27 @@ export const convertConnectionToPreviewerState = (
   const hasContent =
     !!content || (embeds && embeds.length > 0) || (componentRows && componentRows.length > 0);
 
-  if (!hasContent) {
-    return {};
-  }
+  // Create a legacy root component that contains the existing message data
+  const legacyRootComponent: LegacyMessageComponentRoot = {
+    ...(createNewPreviewerComponent(ComponentType.LegacyRoot) as LegacyMessageComponentRoot),
+    children: [],
+    formatTables: connection.details?.formatter?.formatTables,
+    stripImages: connection.details?.formatter?.stripImages,
+    ignoreNewLines: connection.details?.formatter?.ignoreNewLines,
+    forumThreadTitle: connection.details?.forumThreadTitle,
+    isForumChannel: connection.details?.channel?.type === "forum",
+    ...connection.details,
+  };
 
-  const children: Component[] = [];
+  if (!hasContent) {
+    return {
+      messageComponent: legacyRootComponent,
+    };
+  }
 
   // Add text content if present
   if (content) {
-    children.push({
+    legacyRootComponent.children.push({
       ...(createNewPreviewerComponent(ComponentType.LegacyText) as LegacyTextComponent),
       content,
     });
@@ -198,29 +210,17 @@ export const convertConnectionToPreviewerState = (
   if (embeds && embeds.length > 0) {
     const container = createNewPreviewerComponent(ComponentType.LegacyEmbedContainer);
     container.children = embeds.map((embed) => createLegacyEmbedComponent(embed));
-    children.push(container);
+    legacyRootComponent.children.push(container);
   }
 
   // Add action row components if present
   if (componentRows && componentRows.length > 0) {
     componentRows.forEach((row) => {
       if (row.components.length) {
-        children.push(createLegacyActionRowComponent(row));
+        legacyRootComponent.children.push(createLegacyActionRowComponent(row));
       }
     });
   }
-
-  // Create a legacy root component that contains the existing message data
-  const legacyRootComponent: LegacyMessageComponentRoot = {
-    ...(createNewPreviewerComponent(ComponentType.LegacyRoot) as LegacyMessageComponentRoot),
-    children,
-    formatTables: connection.details?.formatter?.formatTables,
-    stripImages: connection.details?.formatter?.stripImages,
-    ignoreNewLines: connection.details?.formatter?.ignoreNewLines,
-    forumThreadTitle: connection.details?.forumThreadTitle,
-    isForumChannel: connection.details?.channel?.type === "forum",
-    ...connection.details,
-  };
 
   return {
     messageComponent: legacyRootComponent,
