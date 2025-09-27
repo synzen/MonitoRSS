@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { Box, VStack, HStack, Text, IconButton, Button, Icon } from "@chakra-ui/react";
-import { FaCog, FaExclamationCircle } from "react-icons/fa";
+import React from "react";
+import { Box, VStack, HStack, Text, IconButton, Icon } from "@chakra-ui/react";
+import { FaExclamationCircle } from "react-icons/fa";
 import { ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import type { Component, SectionComponent } from "./types";
 import { ComponentType } from "./types";
@@ -12,7 +12,6 @@ import {
 import { useNavigableTreeItemContext } from "../../contexts/NavigableTreeItemContext";
 
 import getChakraColor from "../../utils/getChakraColor";
-import { SlidingConfigPanel } from "./SlidingConfigPanel";
 import getPreviewerComponentLabel from "./utils/getPreviewerComponentLabel";
 import getPreviewerComponentIcon from "./utils/getPreviewerComponentIcon";
 
@@ -29,7 +28,6 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
   scrollToComponentId,
   componentIdsWithProblems,
 }) => {
-  const [configuringComponent, setConfiguringComponent] = useState<Component | null>(null);
   const ref = React.useRef<HTMLDivElement>(null);
 
   const hasChildren = component.children && component.children.length > 0;
@@ -46,15 +44,6 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
     component.type === ComponentType.V2Section;
   const { isFocused, isExpanded, isSelected } = useNavigableTreeItemContext();
 
-  const handleConfigureComponent = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setConfiguringComponent(component);
-  };
-
-  const onCloseComponentConfigure = () => {
-    setConfiguringComponent(null);
-  };
-
   React.useEffect(() => {
     if (scrollToComponentId === component.id && ref.current) {
       ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -62,101 +51,82 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
   }, [scrollToComponentId]);
 
   return (
-    <>
-      <VStack align="stretch" spacing={0} position="relative" ref={ref}>
-        <HStack
-          pl={2 + depth * 4}
-          pr={2}
-          py={2}
-          cursor="pointer"
-          bg={isSelected ? "blue.600" : "transparent"}
-          _hover={{ bg: isSelected ? "blue.600" : "gray.700" }}
-          outline={isFocused ? `2px solid ${getChakraColor("blue.300")}` : undefined}
-        >
-          {canHaveChildren && (
-            <NavigableTreeItemExpandButton>
-              {({ onClick }) => {
-                return (
-                  <IconButton
-                    tabIndex={-1}
-                    icon={isExpanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
-                    size="xs"
-                    variant="ghost"
-                    aria-label={isExpanded ? "Collapse" : "Expand"}
-                    onClick={onClick}
-                  />
-                );
-              }}
-            </NavigableTreeItemExpandButton>
-          )}
-          {!canHaveChildren && <Box w={6} />}
-          <Box fontSize="xs" mr={2} color="gray.400">
-            {React.createElement(getPreviewerComponentIcon(component.type))}
-          </Box>
-          <HStack flex={1} justifyContent="flex-start">
-            <Text fontSize="sm" color="white">
-              {getPreviewerComponentLabel(component.type)}
-            </Text>
-            {componentIdsWithProblems.has(component.id) && (
-              <Icon
-                as={FaExclamationCircle}
-                color={isSelected ? "white" : "red.400"}
-                flexShrink={0}
-                size="sm"
-                aria-label="Problem detected"
-                title="Problem detected"
-              />
-            )}
-          </HStack>
-          {/* Configure Button */}
-          <Button
-            display={{
-              base: "inline-flex",
-              lg: "none",
+    <VStack align="stretch" spacing={0} position="relative" ref={ref}>
+      <HStack
+        pl={2 + depth * 4}
+        pr={2}
+        py={2}
+        cursor="pointer"
+        bg={isSelected ? "blue.600" : "transparent"}
+        _hover={{ bg: isSelected ? "blue.600" : "gray.700" }}
+        outline={isFocused ? `2px solid ${getChakraColor("blue.300")}` : undefined}
+      >
+        {canHaveChildren && (
+          <NavigableTreeItemExpandButton>
+            {({ onClick }) => {
+              return (
+                <IconButton
+                  tabIndex={-1}
+                  icon={isExpanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
+                  size="xs"
+                  variant="ghost"
+                  aria-label={isExpanded ? "Collapse" : "Expand"}
+                  onClick={onClick}
+                />
+              );
             }}
-            leftIcon={<FaCog />}
-            size="xs"
-            variant="ghost"
-            onClick={handleConfigureComponent}
-            mr={1}
-            _hover={{ color: "white", bg: "gray.600" }}
-          >
-            Configure
-          </Button>
-        </HStack>
-        {(hasChildren || hasAccessory) && isExpanded && (
-          <VStack align="stretch" spacing={0}>
-            <NavigableTreeItemGroup>
-              {component.children?.map((child) => (
-                <NavigableTreeItem ariaLabel={child.name} id={child.id} key={child.id}>
-                  <ComponentTreeItem
-                    component={child}
-                    depth={depth + 1}
-                    scrollToComponentId={scrollToComponentId}
-                    componentIdsWithProblems={componentIdsWithProblems}
-                  />
-                </NavigableTreeItem>
-              ))}
-              {hasAccessory && (
-                <NavigableTreeItem
-                  ariaLabel={`${(component as SectionComponent).accessory!.name} (Accessory)`}
-                  id={(component as SectionComponent).accessory!.id}
-                  key={`accessory-${(component as SectionComponent).accessory!.id}`}
-                >
-                  <ComponentTreeItem
-                    component={(component as SectionComponent).accessory!}
-                    depth={depth + 1}
-                    scrollToComponentId={scrollToComponentId}
-                    componentIdsWithProblems={componentIdsWithProblems}
-                  />
-                </NavigableTreeItem>
-              )}
-            </NavigableTreeItemGroup>
-          </VStack>
+          </NavigableTreeItemExpandButton>
         )}
-      </VStack>
-      {/* Sliding Config Panel */}
-      <SlidingConfigPanel onClose={onCloseComponentConfigure} component={configuringComponent} />
-    </>
+        {!canHaveChildren && <Box w={6} />}
+        <Box fontSize="xs" mr={2} color="gray.400">
+          {React.createElement(getPreviewerComponentIcon(component.type))}
+        </Box>
+        <HStack flex={1} justifyContent="flex-start">
+          <Text fontSize="sm" color="white">
+            {getPreviewerComponentLabel(component.type)}
+          </Text>
+          {componentIdsWithProblems.has(component.id) && (
+            <Icon
+              as={FaExclamationCircle}
+              color={isSelected ? "white" : "red.400"}
+              flexShrink={0}
+              size="sm"
+              aria-label="Problem detected"
+              title="Problem detected"
+            />
+          )}
+        </HStack>
+      </HStack>
+      {(hasChildren || hasAccessory) && isExpanded && (
+        <VStack align="stretch" spacing={0}>
+          <NavigableTreeItemGroup>
+            {component.children?.map((child) => (
+              <NavigableTreeItem ariaLabel={child.name} id={child.id} key={child.id}>
+                <ComponentTreeItem
+                  component={child}
+                  depth={depth + 1}
+                  scrollToComponentId={scrollToComponentId}
+                  componentIdsWithProblems={componentIdsWithProblems}
+                />
+              </NavigableTreeItem>
+            ))}
+            {hasAccessory && (
+              <NavigableTreeItem
+                ariaLabel={`${(component as SectionComponent).accessory!.name} (Accessory)`}
+                id={(component as SectionComponent).accessory!.id}
+                key={`accessory-${(component as SectionComponent).accessory!.id}`}
+              >
+                <ComponentTreeItem
+                  component={(component as SectionComponent).accessory!}
+                  depth={depth + 1}
+                  scrollToComponentId={scrollToComponentId}
+                  componentIdsWithProblems={componentIdsWithProblems}
+                />
+              </NavigableTreeItem>
+            )}
+          </NavigableTreeItemGroup>
+        </VStack>
+      )}
+    </VStack>
   );
 };
