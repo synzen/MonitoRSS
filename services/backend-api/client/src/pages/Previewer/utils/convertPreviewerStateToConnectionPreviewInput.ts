@@ -2,7 +2,12 @@ import { UserFeed } from "../../../features/feed";
 import { CreateDiscordChannelConnectionPreviewInput } from "../../../features/feedConnections";
 import { FeedDiscordChannelConnection } from "../../../types";
 import { DiscordButtonStyle } from "../constants/DiscordButtonStyle";
-import { ComponentType, LegacyEmbedComponent, MessageComponentRoot } from "../types";
+import {
+  ComponentType,
+  LegacyEmbedComponent,
+  LegacyTextComponent,
+  MessageComponentRoot,
+} from "../types";
 
 const convertPreviewerStateToConnectionPreviewInput = (
   userFeed: UserFeed,
@@ -85,7 +90,7 @@ const convertPreviewerStateToConnectionPreviewInput = (
     forumThreadTags: messageComponent.forumThreadTags,
     forumThreadTitle: messageComponent.forumThreadTitle,
     mentions: messageComponent.mentions,
-    splitOptions: legacyTextComponent?.splitOptions,
+    splitOptions: (legacyTextComponent as LegacyTextComponent)?.splitOptions,
     placeholderLimits: messageComponent.placeholderLimits,
     customPlaceholders: connection.customPlaceholders,
     externalProperties: userFeed.externalProperties,

@@ -1,5 +1,5 @@
 import { UpdateDiscordChannelConnectionInput } from "../../../features/feedConnections";
-import { ComponentType, LegacyMessageComponentRoot } from "../types";
+import { ComponentType, LegacyMessageComponentRoot, LegacyTextComponent } from "../types";
 
 const convertPreviewerStateToConnectionUpdate = (
   component?: LegacyMessageComponentRoot
@@ -11,7 +11,7 @@ const convertPreviewerStateToConnectionUpdate = (
   const textComponent = component.children?.find((c) => c.type === ComponentType.LegacyText);
 
   if (textComponent) {
-    details.content = textComponent.content;
+    details.content = (textComponent as LegacyTextComponent).content;
   }
 
   // Handle embeds from LegacyEmbedContainerComponent
