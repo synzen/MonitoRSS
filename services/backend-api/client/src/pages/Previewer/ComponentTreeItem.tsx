@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Box, VStack, HStack, Text, IconButton, Icon } from "@chakra-ui/react";
 import { FaExclamationCircle } from "react-icons/fa";
 import { ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
@@ -29,6 +29,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
   componentIdsWithProblems,
 }) => {
   const ref = React.useRef<HTMLDivElement>(null);
+  const { onExpanded } = useNavigableTreeItemContext();
 
   const hasChildren = component.children && component.children.length > 0;
   const hasAccessory =
@@ -49,6 +50,10 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
       ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   }, [scrollToComponentId]);
+
+  useEffect(() => {
+    onExpanded();
+  }, []);
 
   return (
     <VStack align="stretch" spacing={0} position="relative" ref={ref}>

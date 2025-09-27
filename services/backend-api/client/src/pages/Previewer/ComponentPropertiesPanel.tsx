@@ -360,6 +360,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             error={fieldNameError?.message}
             isInvalid={!!fieldNameError}
             as="input"
+            isRequired
           />
           <InputWithInsertPlaceholder
             value={component.fieldValue}
@@ -370,6 +371,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             isInvalid={!!fieldValueError}
             as="textarea"
             rows={2}
+            isRequired
           />
           <FormControl>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">

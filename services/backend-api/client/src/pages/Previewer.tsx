@@ -50,6 +50,7 @@ import {
 } from "../contexts/NavigableTreeContext";
 import { PreviewerProvider, usePreviewerContext } from "./Previewer/PreviewerContext";
 import { ProblemsSection } from "./Previewer/ProblemsSection";
+import { ProblemsDialog } from "./Previewer/ProblemsDialog";
 import extractPreviewerProblems from "./Previewer/utils/extractPreviewerProblems";
 import RouteParams from "../types/RouteParams";
 import { Loading } from "../components";
@@ -90,6 +91,11 @@ const PreviewerContent: React.FC = () => {
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const messageComponent = watch("messageComponent");
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isProblemsDialogOpen,
+    onOpen: onProblemsDialogOpen,
+    onClose: onProblemsDialogClose,
+  } = useDisclosure();
   const cancelRef = React.useRef<HTMLButtonElement>(null);
   const { setExpandedIds } = useNavigableTreeContext();
   const [scrollToComponentId, setScrollToComponentId] = useState<string | null>(null);
@@ -123,37 +129,45 @@ const PreviewerContent: React.FC = () => {
     };
   }, [formState.isDirty]);
 
-  const handleSave = handleSubmit(async (data) => {
-    if (
-      updateStatus === "loading" ||
-      !feedId ||
-      !connectionId ||
-      !data.messageComponent ||
-      data.messageComponent.type !== ComponentType.LegacyRoot
-    ) {
-      return;
+  const handleSave = handleSubmit(
+    async (data) => {
+      if (
+        updateStatus === "loading" ||
+        !feedId ||
+        !connectionId ||
+        !data.messageComponent ||
+        data.messageComponent.type !== ComponentType.LegacyRoot
+      ) {
+        return;
+      }
+
+      try {
+        const connectionDetails = convertPreviewerStateToConnectionUpdate(data.messageComponent);
+
+        await updateConnection({
+          feedId,
+          connectionId,
+          details: connectionDetails,
+        });
+
+        createSuccessAlert({
+          title: "Successfully saved message format",
+          description: "Your Discord message format has been updated.",
+        });
+      } catch (error) {
+        createErrorAlert({
+          title: "Failed to save message format",
+          description: (error as Error).message,
+        });
+      }
+    },
+    (_errors) => {
+      // Show problems dialog when there are validation errors
+      if (problems.length > 0) {
+        onProblemsDialogOpen();
+      }
     }
-
-    try {
-      const connectionDetails = convertPreviewerStateToConnectionUpdate(data.messageComponent);
-
-      await updateConnection({
-        feedId,
-        connectionId,
-        details: connectionDetails,
-      });
-
-      createSuccessAlert({
-        title: "Successfully saved message format",
-        description: "Your Discord message format has been updated.",
-      });
-    } catch (error) {
-      createErrorAlert({
-        title: "Failed to save message format",
-        description: (error as Error).message,
-      });
-    }
-  });
+  );
 
   const handleDiscard = () => {
     if (!formState.isDirty) {
@@ -168,16 +182,13 @@ const PreviewerContent: React.FC = () => {
     onClose();
   };
 
-  const handlePathClick = (componentIdsToExpand: string[]) => {
-    setExpandedIds((prev) => new Set([...prev, ...componentIdsToExpand]));
+  const handlePathClick = (componentId: string) => {
     setSelectedTabIndex(0);
 
-    if (componentIdsToExpand.length > 0) {
-      setScrollToComponentId(componentIdsToExpand[componentIdsToExpand.length - 1]);
-      setTimeout(() => {
-        setScrollToComponentId(null);
-      }, 0);
-    }
+    setScrollToComponentId(componentId);
+    setTimeout(() => {
+      setScrollToComponentId(null);
+    }, 2000);
   };
 
   return (
@@ -341,7 +352,7 @@ const PreviewerContent: React.FC = () => {
               <Stack bg="gray.800" borderBottom="1px" borderColor="gray.600" px={4} pb={3}>
                 <HStack justify="space-between" align="center" flexWrap="wrap">
                   <HStack>
-                    <Text fontSize="lg" fontWeight="bold" color="white" as="h1">
+                    <Text fontSize="lg" fontWeight="bold" color="white" as="h1" tabIndex={-1}>
                       Customize Message
                     </Text>
                     {formState.isDirty && (
@@ -548,6 +559,13 @@ const PreviewerContent: React.FC = () => {
                 </AlertDialogContent>
               </AlertDialogOverlay>
             </AlertDialog>
+            {/* Problems Dialog */}
+            <ProblemsDialog
+              isOpen={isProblemsDialogOpen}
+              onClose={onProblemsDialogClose}
+              problems={problems}
+              onClickComponentPath={handlePathClick}
+            />
           </Box>
         );
       }}

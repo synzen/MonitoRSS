@@ -30,6 +30,7 @@ import { useNavigableTreeContext } from "../../contexts/NavigableTreeContext";
 import { useUserFeedConnectionContext } from "../../contexts/UserFeedConnectionContext";
 import { FeedDiscordChannelConnection } from "../../types";
 import { convertConnectionToPreviewerState } from "./utils/convertConnectionToPreviewerState";
+import getPreviewerComponentParentIds from "./utils/getPreviewerComponentParentIds";
 
 const validationSchema = yup.object({
   messageComponent: createPreviewerComponentSchema().optional(),
@@ -71,6 +72,7 @@ interface PreviewerContextType {
   setCurrentArticleId: (id: string) => void;
   hasNoArticles?: boolean;
   isFetchingDifferentArticle: boolean;
+  navigateToComponentId: (componentId: string) => void;
 }
 
 const PreviewerContext = createContext<PreviewerContextType | undefined>(undefined);
@@ -368,6 +370,17 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       [currentSelectedId, getValues, setValue]
     );
 
+  const navigateToComponentId: PreviewerContextType["navigateToComponentId"] = useCallback((id) => {
+    const { messageComponent } = getValues();
+
+    setCurrentSelectedId(id);
+    const parentIds = getPreviewerComponentParentIds(messageComponent, id);
+
+    if (parentIds) {
+      setExpandedIds((prev) => new Set([...prev, ...parentIds]));
+    }
+  }, []);
+
   const currentArticle = articlesResponse?.result.articles?.[0];
 
   const contextValue: PreviewerContextType = useMemo(
@@ -385,6 +398,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       hasNoArticles,
       isFetchingDifferentArticle,
       updateCurrentlySelectedComponent,
+      navigateToComponentId,
     }),
     [
       articles,
@@ -397,6 +411,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       hasNoArticles,
       isFetchingDifferentArticle,
       updateCurrentlySelectedComponent,
+      navigateToComponentId,
     ]
   );
 
