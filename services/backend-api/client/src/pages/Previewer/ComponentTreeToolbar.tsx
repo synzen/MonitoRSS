@@ -4,16 +4,19 @@ import {
   HStack,
   VStack,
   Button,
+  IconButton,
   Menu,
   MenuButton,
   MenuList,
   MenuItem,
   MenuGroup,
   Text,
+  Tooltip,
 } from "@chakra-ui/react";
 import { useFormContext } from "react-hook-form";
 import { AddIcon } from "@chakra-ui/icons";
 import { FaCog } from "react-icons/fa";
+import { VscCollapseAll } from "react-icons/vsc";
 import { ComponentType, Component, SectionComponent } from "./types";
 import { usePreviewerContext } from "./PreviewerContext";
 import { useNavigableTreeContext } from "../../contexts/NavigableTreeContext";
@@ -23,7 +26,7 @@ import { SlidingConfigPanel } from "./SlidingConfigPanel";
 
 export const ComponentTreeToolbar: React.FC = () => {
   const { addChildComponent } = usePreviewerContext();
-  const { currentSelectedId } = useNavigableTreeContext();
+  const { currentSelectedId, setExpandedIds } = useNavigableTreeContext();
   const { watch } = useFormContext<PreviewerFormState>();
   const messageComponent = watch("messageComponent");
   const [configuringComponent, setConfiguringComponent] = useState<Component | null>(null);
@@ -51,6 +54,10 @@ export const ComponentTreeToolbar: React.FC = () => {
     }
 
     return null;
+  };
+
+  const handleCollapseAll = () => {
+    setExpandedIds(() => new Set());
   };
 
   const selectedComponent = currentSelectedId
@@ -89,7 +96,7 @@ export const ComponentTreeToolbar: React.FC = () => {
             <Text fontSize="md" fontWeight="bold" color="white" as="h2">
               Components
             </Text>
-            <Text fontSize="xs" color="gray.400" display="inline">
+            <Text fontSize="sm" color="gray.400" display="inline">
               Selected:{" "}
               <Text
                 display="inline"
@@ -113,14 +120,23 @@ export const ComponentTreeToolbar: React.FC = () => {
             </Text>
           </VStack>
           <HStack spacing={2} flexWrap="wrap">
-            {/* Configure Button */}
+            <Tooltip label="Collapse all components" placement="top">
+              <IconButton
+                icon={<VscCollapseAll />}
+                size={{ base: "md", lg: "sm" }}
+                variant="ghost"
+                onClick={handleCollapseAll}
+                isDisabled={!messageComponent}
+                aria-label="Collapse all components"
+              />
+            </Tooltip>
             <Button
               display={{
                 base: "inline-flex",
                 lg: "none",
               }}
               leftIcon={<FaCog />}
-              size="sm"
+              size="md"
               variant="ghost"
               onClick={() => {
                 if (!selectedComponent) {
@@ -134,21 +150,24 @@ export const ComponentTreeToolbar: React.FC = () => {
               Configure
             </Button>
             <Menu>
-              <MenuButton
-                as={Button}
-                size="sm"
-                variant="ghost"
-                leftIcon={<AddIcon />}
-                aria-disabled={!canAddChildren}
-                onClick={(e) => {
-                  if (!canAddChildren) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }
-                }}
-              >
-                Add
-              </MenuButton>
+              <Tooltip label="Add component" placement="top">
+                <MenuButton
+                  as={Button}
+                  leftIcon={<AddIcon />}
+                  size={{ base: "md", lg: "sm" }}
+                  variant="ghost"
+                  aria-label="Add component"
+                  aria-disabled={!canAddChildren}
+                  onClick={(e) => {
+                    if (!canAddChildren) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }
+                  }}
+                >
+                  Add
+                </MenuButton>
+              </Tooltip>
               {canAddChildren && (
                 <MenuList bg="gray.700" borderColor="gray.600">
                   {selectedComponent.type === ComponentType.LegacyRoot && (
@@ -414,7 +433,6 @@ export const ComponentTreeToolbar: React.FC = () => {
           </HStack>
         </HStack>
       </Box>
-      {/* Sliding Config Panel */}
       <SlidingConfigPanel onClose={onCloseComponentConfigure} component={configuringComponent} />
     </>
   );

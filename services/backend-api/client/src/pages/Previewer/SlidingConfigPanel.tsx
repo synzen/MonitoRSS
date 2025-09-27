@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Box, HStack, Text, IconButton, Slide } from "@chakra-ui/react";
 import { CloseIcon } from "@chakra-ui/icons";
 import { createFocusTrap, FocusTrap } from "focus-trap";
@@ -22,7 +22,7 @@ export const SlidingConfigPanel: React.FC<SlidingConfigPanelProps> = ({ onClose,
     if (panelRef.current) {
       setFocusTrap(
         createFocusTrap(panelRef.current, {
-          initialFocus: () => closeButtonRef.current,
+          initialFocus: () => false,
           escapeDeactivates: false, // We handle escape ourselves
           clickOutsideDeactivates: false, // We handle backdrop clicks ourselves
         })
@@ -46,6 +46,12 @@ export const SlidingConfigPanel: React.FC<SlidingConfigPanelProps> = ({ onClose,
       }
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (closeButtonRef.current && isOpen) {
+      closeButtonRef.current.focus();
+    }
+  }, [isOpen, closeButtonRef.current]);
 
   const onDeleted = () => {
     focusTrap?.deactivate();
@@ -78,16 +84,19 @@ export const SlidingConfigPanel: React.FC<SlidingConfigPanelProps> = ({ onClose,
           top={0}
           left={0}
           right={0}
+          tabIndex={-1}
           bottom={0}
           bg="blackAlpha.500"
           zIndex={40}
         />
       )}
       {/* Sliding Panel */}
-      <Slide direction="bottom" in={isOpen} style={{ zIndex: 50 }}>
+      <Slide direction="bottom" in={isOpen} style={{ zIndex: 50 }} tabIndex={-1}>
         <Box
+          tabIndex={-1}
           ref={panelRef}
           bg="gray.800"
+          hidden={!isOpen}
           borderTop="1px solid"
           borderTopRadius="xl"
           borderColor="gray.600"

@@ -437,7 +437,6 @@ const PreviewerContent: React.FC = () => {
                   >
                     <Box p={4} borderBottom="1px" borderColor="gray.600">
                       <HStack spacing={2} align="center">
-                        {problems.length > 0 && <WarningIcon color="orange.400" />}
                         <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
                           Problems
                         </Text>
