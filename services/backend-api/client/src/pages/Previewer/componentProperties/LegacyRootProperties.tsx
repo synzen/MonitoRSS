@@ -22,7 +22,7 @@ import {
   Heading,
 } from "@chakra-ui/react";
 import { FiFilter } from "react-icons/fi";
-import { useFormContext } from "react-hook-form";
+import { Controller, useFormContext } from "react-hook-form";
 import { InputWithInsertPlaceholder } from "../../../components/InputWithInsertPlaceholder";
 import { HelpDialog } from "../../../components";
 import MessagePlaceholderText from "../../../components/MessagePlaceholderText";
@@ -34,7 +34,6 @@ import { FeedDiscordChannelConnection } from "../../../types";
 import { useDiscordWebhook } from "../../../features/discordWebhooks";
 import PreviewerFormState from "../types/PreviewerFormState";
 import { usePreviewerContext } from "../PreviewerContext";
-import { MessageComponentRoot } from "../types";
 import { DiscordMessageMentionForm } from "../../../features/feedConnections/components/DiscordMessageForm/DiscordMessageMentionForm";
 import { DiscordMessagePlaceholderLimitsForm } from "../../../features/feedConnections/components/DiscordMessageForm/DiscordMessagePlaceholderLimitsForm";
 
@@ -107,8 +106,9 @@ const TagCheckbox = ({
 
 export const LegacyRootProperties: React.FC = () => {
   const { updateCurrentlySelectedComponent: onChange } = usePreviewerContext();
-  const { watch } = useFormContext<PreviewerFormState>();
+  const { watch, control } = useFormContext<PreviewerFormState>();
   const component = watch("messageComponent");
+  const isForumChannel = watch("messageComponent.isForumChannel");
 
   // Get connection information for forum tags
   const { connection } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
@@ -134,24 +134,32 @@ export const LegacyRootProperties: React.FC = () => {
 
   return (
     <VStack align="stretch" spacing={6}>
-      {component?.isForumChannel && (
+      {isForumChannel && (
         <>
           <Heading as="h3" size="sm" mb={-2}>
             Forum Thread
           </Heading>
-          <InputWithInsertPlaceholder
-            value={component.forumThreadTitle || ""}
-            onChange={(value) => onChange({ ...component, forumThreadTitle: value })}
-            label="Forum Thread Title"
-            placeholder="Forum thread title"
-            as="input"
-            helperText={
-              <>
-                The title of the thread that will be created per new article. You may use
-                placeholders. The default is{" "}
-                <MessagePlaceholderText withoutCopy>title</MessagePlaceholderText>.
-              </>
-            }
+          <Controller
+            name="messageComponent.forumThreadTitle"
+            control={control}
+            render={({ field: { value, onChange: fieldOnChange } }) => {
+              return (
+                <InputWithInsertPlaceholder
+                  value={value || ""}
+                  onChange={(v) => fieldOnChange(v)}
+                  label="Forum Thread Title"
+                  placeholder="Forum thread title"
+                  as="input"
+                  helperText={
+                    <>
+                      The title of the thread that will be created per new article. You may use
+                      placeholders. The default is{" "}
+                      <MessagePlaceholderText withoutCopy>title</MessagePlaceholderText>.
+                    </>
+                  }
+                />
+              );
+            }}
           />
           <FormControl>
             <Text fontSize="sm" mb={2} color="gray.200">
@@ -236,39 +244,48 @@ export const LegacyRootProperties: React.FC = () => {
           <Heading as="h3" size="sm" mb={-2}>
             Channel Thread
           </Heading>
-          <InputWithInsertPlaceholder
-            value={component?.channelNewThreadTitle || ""}
-            onChange={(value) =>
-              onChange<MessageComponentRoot>({
-                ...component,
-                channelNewThreadTitle: value,
-              })
-            }
-            label="Channel Thread Title"
-            placeholder="Channel thread title"
-            as="input"
-            helperText={
-              <>
-                The title of the thread that will be created per new article. You may use
-                placeholders. The default is{" "}
-                <MessagePlaceholderText withoutCopy withBrackets>
-                  title
-                </MessagePlaceholderText>
-                .
-              </>
-            }
+          <Controller
+            name="messageComponent.channelNewThreadTitle"
+            control={control}
+            render={({ field: { value, onChange: fieldOnChange } }) => {
+              return (
+                <InputWithInsertPlaceholder
+                  value={value || ""}
+                  onChange={(v) => fieldOnChange(v)}
+                  label="Channel Thread Title"
+                  placeholder="Channel thread title"
+                  as="input"
+                  helperText={
+                    <>
+                      The title of the thread that will be created per new article. You may use
+                      placeholders. The default is{" "}
+                      <MessagePlaceholderText withoutCopy withBrackets>
+                        title
+                      </MessagePlaceholderText>
+                      .
+                    </>
+                  }
+                />
+              );
+            }}
           />
           <FormControl>
             <HStack justify="space-between" align="center" mb={2}>
               <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
                 Hide Message in Channel
               </FormLabel>
-              <Switch
-                isChecked={!!component?.channelNewThreadExcludesPreview}
-                onChange={(e) =>
-                  onChange({ ...component, channelNewThreadExcludesPreview: e.target.checked })
-                }
-                colorScheme="blue"
+              <Controller
+                name="messageComponent.channelNewThreadExcludesPreview"
+                control={control}
+                render={({ field: { value, onChange: fieldOnChange } }) => {
+                  return (
+                    <Switch
+                      isChecked={!!value}
+                      onChange={(e) => fieldOnChange(e.target.checked)}
+                      colorScheme="blue"
+                    />
+                  );
+                }}
               />
             </HStack>
             <FormHelperText fontSize="sm" color="gray.400">
@@ -286,10 +303,18 @@ export const LegacyRootProperties: React.FC = () => {
           <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
             Format Tables
           </FormLabel>
-          <Switch
-            isChecked={!!(component as any).formatTables}
-            onChange={(e) => onChange({ ...component, formatTables: e.target.checked })}
-            colorScheme="blue"
+          <Controller
+            name="messageComponent.formatTables"
+            control={control}
+            render={({ field: { value, onChange: fieldOnChange } }) => {
+              return (
+                <Switch
+                  isChecked={!!value}
+                  onChange={(e) => fieldOnChange(e.target.checked)}
+                  colorScheme="blue"
+                />
+              );
+            }}
           />
         </HStack>
         <FormHelperText fontSize="sm" color="gray.400">
@@ -302,10 +327,18 @@ export const LegacyRootProperties: React.FC = () => {
           <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
             Strip Images
           </FormLabel>
-          <Switch
-            isChecked={!!(component as any).stripImages}
-            onChange={(e) => onChange({ ...component, stripImages: e.target.checked })}
-            colorScheme="blue"
+          <Controller
+            name="messageComponent.stripImages"
+            control={control}
+            render={({ field: { value, onChange: fieldOnChange } }) => {
+              return (
+                <Switch
+                  isChecked={!!value}
+                  onChange={(e) => fieldOnChange(e.target.checked)}
+                  colorScheme="blue"
+                />
+              );
+            }}
           />
         </HStack>
         <FormHelperText fontSize="sm" color="gray.400">
@@ -318,10 +351,18 @@ export const LegacyRootProperties: React.FC = () => {
           <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
             Ignore New Lines
           </FormLabel>
-          <Switch
-            isChecked={!!(component as any).ignoreNewLines}
-            onChange={(e) => onChange({ ...component, ignoreNewLines: e.target.checked })}
-            colorScheme="blue"
+          <Controller
+            name="messageComponent.ignoreNewLines"
+            control={control}
+            render={({ field: { value, onChange: fieldOnChange } }) => {
+              return (
+                <Switch
+                  isChecked={!!value}
+                  onChange={(e) => fieldOnChange(e.target.checked)}
+                  colorScheme="blue"
+                />
+              );
+            }}
           />
         </HStack>
         <FormHelperText fontSize="sm" color="gray.400">
@@ -334,12 +375,18 @@ export const LegacyRootProperties: React.FC = () => {
           <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
             Placeholder Fallback
           </FormLabel>
-          <Switch
-            isChecked={!!(component as any).enablePlaceholderFallback}
-            onChange={(e) =>
-              onChange({ ...component, enablePlaceholderFallback: e.target.checked })
-            }
-            colorScheme="blue"
+          <Controller
+            name="messageComponent.enablePlaceholderFallback"
+            control={control}
+            render={({ field: { value, onChange: fieldOnChange } }) => {
+              return (
+                <Switch
+                  isChecked={!!value}
+                  onChange={(e) => fieldOnChange(e.target.checked)}
+                  colorScheme="blue"
+                />
+              );
+            }}
           />
         </HStack>
         <FormHelperText fontSize="sm" color="gray.400">

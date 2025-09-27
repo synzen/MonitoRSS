@@ -43,11 +43,7 @@ import { ComponentPropertiesPanel } from "./Previewer/ComponentPropertiesPanel";
 import { ComponentTreeItem } from "./Previewer/ComponentTreeItem";
 import { ComponentTreeToolbar } from "./Previewer/ComponentTreeToolbar";
 import { NavigableTreeItem } from "../components/NavigableTree";
-import {
-  NavigableTreeContext,
-  NavigableTreeProvider,
-  useNavigableTreeContext,
-} from "../contexts/NavigableTreeContext";
+import { NavigableTreeContext, NavigableTreeProvider } from "../contexts/NavigableTreeContext";
 import { PreviewerProvider, usePreviewerContext } from "./Previewer/PreviewerContext";
 import { ProblemsSection } from "./Previewer/ProblemsSection";
 import { ProblemsDialog } from "./Previewer/ProblemsDialog";
@@ -97,7 +93,6 @@ const PreviewerContent: React.FC = () => {
     onClose: onProblemsDialogClose,
   } = useDisclosure();
   const cancelRef = React.useRef<HTMLButtonElement>(null);
-  const { setExpandedIds } = useNavigableTreeContext();
   const [scrollToComponentId, setScrollToComponentId] = useState<string | null>(null);
   const { feedId, connectionId } = useParams<RouteParams>();
   const { mutateAsync: updateConnection, status: updateStatus } =

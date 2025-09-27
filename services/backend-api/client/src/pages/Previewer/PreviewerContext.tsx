@@ -152,6 +152,10 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const newFormState = convertConnectionToPreviewerState(connection);
 
     reset(newFormState);
+
+    if (!currentSelectedId && newFormState.messageComponent?.id) {
+      setCurrentSelectedId(newFormState.messageComponent.id);
+    }
   }, [connection]);
 
   const addChildComponent: PreviewerContextType["addChildComponent"] = useCallback(
@@ -364,7 +368,11 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         const formPath = getPreviewerComponentFormPathById(messageComponent, currentSelectedId);
 
         if (formPath) {
-          setValue(formPath as any, newComponent);
+          setValue(formPath as any, newComponent, {
+            shouldDirty: true,
+            shouldTouch: true,
+            shouldValidate: true,
+          });
         }
       },
       [currentSelectedId, getValues, setValue]
