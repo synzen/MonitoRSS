@@ -179,6 +179,7 @@ export const SearchFeedsModal = () => {
         color="whiteAlpha.700"
         fontWeight="normal"
         display={["flex", "flex", "none"]}
+        size={{ base: "sm", lg: "lg" }}
         onClick={() => setIsOpen(true)}
       />
       <Modal

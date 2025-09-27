@@ -204,7 +204,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                           if (containerCount >= 1) return;
                           onAddChildComponent(component.id, ComponentType.LegacyEmbedContainer);
                         }}
-                        aria-disabled={
+                        isDisabled={
                           (component.children?.filter(
                             (c) => c.type === ComponentType.LegacyEmbedContainer
                           ).length || 0) >= 1
@@ -231,7 +231,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                           if (actionRowCount >= 5) return;
                           onAddChildComponent(component.id, ComponentType.LegacyActionRow);
                         }}
-                        aria-disabled={
+                        isDisabled={
                           (component.children?.filter(
                             (c) => c.type === ComponentType.LegacyActionRow
                           ).length || 0) >= 5
@@ -355,7 +355,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                           if (fieldCount >= 25) return;
                           onAddChildComponent(component.id, ComponentType.LegacyEmbedField);
                         }}
-                        aria-disabled={
+                        isDisabled={
                           (component.children?.filter(
                             (c) => c.type === ComponentType.LegacyEmbedField
                           ).length || 0) >= 25
@@ -376,7 +376,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                         if (componentChildrenCount >= 9) return;
                         onAddChildComponent(component.id, ComponentType.LegacyEmbed);
                       }}
-                      aria-disabled={componentChildrenCount >= 9}
+                      isDisabled={componentChildrenCount >= 9}
                     >
                       Add Embed
                     </MenuItem>
@@ -392,7 +392,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                         if (componentChildrenCount >= 5) return;
                         onAddChildComponent(component.id, ComponentType.LegacyButton);
                       }}
-                      aria-disabled={componentChildrenCount >= 5}
+                      isDisabled={componentChildrenCount >= 5}
                     >
                       Add Button
                     </MenuItem>
@@ -408,7 +408,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                         if ((component.children?.length || 0) >= 10) return;
                         onAddChildComponent(component.id, ComponentType.V2TextDisplay);
                       }}
-                      aria-disabled={(component.children?.length || 0) >= 10}
+                      isDisabled={(component.children?.length || 0) >= 10}
                     >
                       Add Text Display
                     </MenuItem>
@@ -493,7 +493,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                           if (hasAccessory) return;
                           onAddChildComponent(component.id, ComponentType.V2Button, true);
                         }}
-                        aria-disabled={hasAccessory}
+                        isDisabled={hasAccessory}
                       >
                         Add Button
                       </MenuItem>

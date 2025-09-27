@@ -17,6 +17,7 @@ import {
   V2MessageComponentRoot,
   SectionComponent,
   MessageComponentRoot,
+  LegacyEmbedComponent,
 } from "./types";
 import createPreviewerComponentSchema from "./utils/createPreviewerComponentSchema";
 import { useUserFeedArticles } from "../../features/feed/hooks";
@@ -167,6 +168,9 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           // The order of legacy components are fixed
           if (newComponent.type === ComponentType.LegacyEmbedContainer) {
             indexToAddAt = 1;
+            newComponent.children.push(
+              createNewPreviewerComponent(ComponentType.LegacyEmbed) as LegacyEmbedComponent
+            );
           } else if (newComponent.type === ComponentType.LegacyText) {
             indexToAddAt = 0;
           }

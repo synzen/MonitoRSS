@@ -21,10 +21,23 @@ import {
   Stack,
   Heading,
   Highlight,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  Avatar,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  MenuDivider,
+  chakra,
+  Alert,
 } from "@chakra-ui/react";
-import { WarningIcon } from "@chakra-ui/icons";
+import { WarningIcon, SettingsIcon, InfoIcon } from "@chakra-ui/icons";
 import { useFormContext } from "react-hook-form";
-import { useParams } from "react-router-dom";
+import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { FaRightFromBracket } from "react-icons/fa6";
 import { DiscordMessagePreview } from "./Previewer/DiscordMessagePreview";
 import { ComponentPropertiesPanel } from "./Previewer/ComponentPropertiesPanel";
 import { ComponentTreeItem } from "./Previewer/ComponentTreeItem";
@@ -40,12 +53,16 @@ import extractPreviewerProblems from "./Previewer/utils/extractPreviewerProblems
 import { convertConnectionToPreviewerState } from "./Previewer/utils/convertConnectionToPreviewerState";
 import RouteParams from "../types/RouteParams";
 import { Loading } from "../components";
+import { SearchFeedsModal } from "../components/SearchFeedsModal";
+import { LogoutButton } from "../features/auth";
+import { useDiscordBot, useDiscordUserMe, useUserMe } from "../features/discordUser";
 import { UserFeedProvider } from "../contexts/UserFeedContext";
 import {
   UserFeedConnectionContext,
   UserFeedConnectionProvider,
+  useUserFeedConnectionContext,
 } from "../contexts/UserFeedConnectionContext";
-import { FeedDiscordChannelConnection } from "../types";
+import { FeedDiscordChannelConnection, FeedConnectionType } from "../types";
 import PreviewerFormState from "./Previewer/types/PreviewerFormState";
 import { useUpdateDiscordChannelConnection } from "../features/feedConnections";
 import {
@@ -55,6 +72,8 @@ import {
 } from "../contexts/PageAlertContext";
 import { ComponentType } from "./Previewer/types";
 import convertPreviewerStateToConnectionUpdate from "./Previewer/utils/convertPreviewerStateToConnectionUpdate";
+import { pages } from "../constants";
+import { UserFeedTabSearchParam } from "../constants/userFeedTabSearchParam";
 
 const SIDE_PANEL_WIDTH = {
   base: "300px",
@@ -79,6 +98,15 @@ const PreviewerContent: React.FC = () => {
   const { mutateAsync: updateConnection, status: updateStatus } =
     useUpdateDiscordChannelConnection();
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
+  const { userFeed, connection } = useUserFeedConnectionContext();
+
+  // Header hooks
+  const { data: discordBotData, status: botStatus, error: botError } = useDiscordBot();
+  const { data: discordUserMe } = useDiscordUserMe();
+  const { data: userMe } = useUserMe();
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   const problems = extractPreviewerProblems(formState.errors.messageComponent, messageComponent);
   const componentIdsWithProblems = new Set(problems.map((p) => p.componentId));
@@ -161,12 +189,163 @@ const PreviewerContent: React.FC = () => {
         return (
           <Box position="relative" height="100%" bg="gray.900">
             <Flex direction="column" height="100%">
+              {/* Header */}
+              <Box bg="gray.800" borderBottom="1px" borderColor="gray.700" width="full">
+                <Flex
+                  width="100%"
+                  justifyContent="space-between"
+                  paddingX={4}
+                  paddingY={{ base: 3 }}
+                  alignItems="center"
+                >
+                  <HStack gap={8}>
+                    <Flex alignItems="center" overflow="hidden">
+                      {discordBotData && (
+                        <RouterLink to={pages.userFeeds()} aria-label="MonitoRSS Home">
+                          <Flex alignItems="center" paddingBottom="1" overflow="hidden">
+                            <Avatar
+                              src={discordBotData.result.avatar || undefined}
+                              size="sm"
+                              name={discordBotData.result.username}
+                              marginRight="2"
+                              backgroundColor="transparent"
+                            />
+                            <chakra.span
+                              fontSize="xl"
+                              whiteSpace="nowrap"
+                              overflow="hidden"
+                              textOverflow="ellipsis"
+                              fontWeight="bold"
+                              title="MonitoRSS"
+                              color="white"
+                            >
+                              MonitoRSS
+                            </chakra.span>
+                          </Flex>
+                        </RouterLink>
+                      )}
+                      {botStatus === "loading" && (
+                        <Box>
+                          <Loading />
+                        </Box>
+                      )}
+                      {botError && <Alert status="error">{botError.message}</Alert>}
+                    </Flex>
+                    <Box display={{ base: "none", sm: "block" }}>
+                      <SearchFeedsModal />
+                    </Box>
+                  </HStack>
+                  <Flex alignItems="center">
+                    <Menu placement="bottom-end">
+                      <MenuButton
+                        as={Button}
+                        size="sm"
+                        variant="link"
+                        aria-label="Account settings"
+                      >
+                        <Avatar
+                          src={discordUserMe?.iconUrl}
+                          size="sm"
+                          name={discordUserMe?.username}
+                          backgroundColor="transparent"
+                          title={discordUserMe?.username}
+                          aria-hidden
+                        />
+                      </MenuButton>
+                      <MenuList>
+                        <Box overflow="hidden" paddingX={2} title={discordUserMe?.username}>
+                          <Text
+                            overflow="hidden"
+                            maxWidth={300}
+                            textOverflow="ellipsis"
+                            whiteSpace="nowrap"
+                          >
+                            {discordUserMe?.username}
+                          </Text>
+                          <Text fontSize="sm" color="whiteAlpha.600">
+                            Discord ID: {discordUserMe?.id}
+                          </Text>
+                        </Box>
+                        <MenuDivider />
+                        <MenuItem
+                          icon={<SettingsIcon />}
+                          onClick={() => navigate(pages.userSettings())}
+                        >
+                          Account Settings
+                        </MenuItem>
+                        <MenuItem
+                          alignItems="center"
+                          icon={<InfoIcon />}
+                          onClick={() => {
+                            window.open("https://discord.gg/pudv7Rx", "_blank");
+                          }}
+                        >
+                          Discord Support Server
+                        </MenuItem>
+                        <LogoutButton
+                          trigger={
+                            <MenuItem icon={<FaRightFromBracket />}>
+                              {t("components.pageContentV2.logout")}
+                            </MenuItem>
+                          }
+                        />
+                      </MenuList>
+                    </Menu>
+                  </Flex>
+                </Flex>
+              </Box>
+              {/* Navigation */}
+              <Box bg="gray.800" px={4} py={3}>
+                <Breadcrumb>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink as={RouterLink} to={pages.userFeeds()} color="blue.300">
+                      Feeds
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink
+                      as={RouterLink}
+                      to={pages.userFeed(userFeed.id)}
+                      color="blue.300"
+                    >
+                      {userFeed.title}
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink
+                      as={RouterLink}
+                      to={pages.userFeed(userFeed.id, {
+                        tab: UserFeedTabSearchParam.Connections,
+                      })}
+                      color="blue.300"
+                    >
+                      Connections
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink
+                      as={RouterLink}
+                      to={pages.userFeedConnection({
+                        feedId: userFeed.id,
+                        connectionType: FeedConnectionType.DiscordChannel,
+                        connectionId: connection.id,
+                      })}
+                      color="blue.300"
+                    >
+                      {connection.name}
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbItem isCurrentPage>
+                    <BreadcrumbLink>Customize Message</BreadcrumbLink>
+                  </BreadcrumbItem>
+                </Breadcrumb>
+              </Box>
               {/* Top Bar */}
-              <Stack bg="gray.800" borderBottom="1px" borderColor="gray.600" px={4} py={3}>
+              <Stack bg="gray.800" borderBottom="1px" borderColor="gray.600" px={4} pb={3}>
                 <HStack justify="space-between" align="center" flexWrap="wrap">
                   <HStack>
                     <Text fontSize="lg" fontWeight="bold" color="white" as="h1">
-                      Discord Message Builder
+                      Customize Message
                     </Text>
                     {formState.isDirty && (
                       <Text fontSize="sm" fontWeight={600}>
@@ -224,11 +403,11 @@ const PreviewerContent: React.FC = () => {
                     overflowY="auto"
                   >
                     <VStack align="stretch" spacing={0} minWidth={200} height="100%">
-                      <Box p={4} borderBottom="1px" borderColor="gray.600">
-                        <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
+                      {/* <Box p={4} borderBottom="1px" borderColor="gray.600">
+                        <Text fontSize="md" fontWeight="bold" color="white" as="h2">
                           Components
                         </Text>
-                      </Box>
+                      </Box> */}
                       {messageComponent && (
                         <div role="tree" aria-label="Message Components">
                           <NavigableTreeItem

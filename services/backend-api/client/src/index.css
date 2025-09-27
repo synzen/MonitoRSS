@@ -25,3 +25,8 @@ code {
 label {
   color: rgba(255, 255, 255, 0.80) !important;
 }
+
+/* Handle chakra breadcrumbs wrapping */ 
+nav > ol {
+  flex-wrap: wrap;
+}
