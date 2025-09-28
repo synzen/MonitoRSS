@@ -300,6 +300,34 @@ const mockUserFeeds: UserFeed[] = [
                 },
               ],
             },
+            {
+              title: "hello world",
+              fields: [
+                {
+                  id: "1",
+                  name: "test",
+                  value: "test",
+                  inline: true,
+                },
+                {
+                  id: "2",
+                  name: "test",
+                  value: "test",
+                  inline: true,
+                },
+                {
+                  id: "3",
+                  name: "name 2",
+                  value: "value 2",
+                  inline: false,
+                },
+                {
+                  id: "4",
+                  name: "name 3",
+                  value: "value 3",
+                },
+              ],
+            },
           ],
           formatter: {
             formatTables: false,

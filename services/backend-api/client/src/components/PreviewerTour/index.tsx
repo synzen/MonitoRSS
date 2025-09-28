@@ -568,7 +568,7 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
       setIsActive(false);
       setTourState(null);
       setIsTransitioning(false);
-      
+
       // Open the welcome modal after a short delay
       const timer = setTimeout(() => {
         onOpen();

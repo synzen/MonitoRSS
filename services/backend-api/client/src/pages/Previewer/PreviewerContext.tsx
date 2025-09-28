@@ -205,7 +205,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             newComponent = createNewPreviewerComponent(childType, parentId, 0);
             indexToAddAt = 0;
           } else {
-            newComponent = createNewPreviewerComponent(childType, parentId, 0);
+            newComponent = createNewPreviewerComponent(childType, parentId, indexToAddAt);
           }
 
           const childrenClone = [...(component.children || [])];
