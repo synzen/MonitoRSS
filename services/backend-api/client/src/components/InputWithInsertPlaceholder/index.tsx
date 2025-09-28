@@ -102,6 +102,7 @@ export const InputWithInsertPlaceholder: React.FC<Props> = ({
             colorScheme="blue"
             onClick={() => setIsDialogOpen(true)}
             alignSelf="flex-start"
+            aria-label={`Insert placeholder into ${label}`}
           >
             Insert Placeholder
           </Button>
