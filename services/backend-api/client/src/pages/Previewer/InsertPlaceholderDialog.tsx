@@ -56,7 +56,6 @@ const PlaceholderItem: React.FC<PlaceholderItemProps> = ({
       borderRadius={0}
       borderBottom={index < totalCount - 1 ? "1px solid" : undefined}
       borderColor="gray.600"
-      role="listitem"
       _hover={{ bg: "gray.700" }}
       aria-label={`Insert ${placeholder.tag} placeholder. Preview: ${placeholder.content.slice(
         0,
@@ -251,7 +250,6 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
             )}
             {!isLoading && !error && filteredPlaceholders.length > 0 && (
               <Virtuoso
-                role="list"
                 aria-label="Available placeholders"
                 style={{ height: "50vh", width: "100%" }}
                 totalCount={filteredPlaceholders.length}
