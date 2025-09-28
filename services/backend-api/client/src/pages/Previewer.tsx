@@ -342,7 +342,7 @@ const PreviewerContent: React.FC = () => {
                     </BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbItem isCurrentPage>
-                    <BreadcrumbLink>Customize Message</BreadcrumbLink>
+                    <BreadcrumbLink>Message Builder</BreadcrumbLink>
                   </BreadcrumbItem>
                 </Breadcrumb>
               </Box>
@@ -351,7 +351,7 @@ const PreviewerContent: React.FC = () => {
                 <HStack justify="space-between" align="center" flexWrap="wrap">
                   <HStack>
                     <Text fontSize="lg" fontWeight="bold" color="white" as="h1" tabIndex={-1}>
-                      Customize Message
+                      Message Builder
                     </Text>
                     {formState.isDirty && (
                       <Text fontSize="sm" fontWeight={600}>

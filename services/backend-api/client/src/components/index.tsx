@@ -17,4 +17,3 @@ export * from "./SaveUnsavedChangesPopupBar";
 export * from "./FAQ";
 export * from "./SubscriberBlockText";
 export * from "./ResizablePanel";
-export * from "./PreviewerTour";

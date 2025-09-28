@@ -20,7 +20,7 @@ import {
 import { motion } from "framer-motion";
 import { FaLightbulb, FaArrowRight, FaArrowLeft, FaTimes } from "react-icons/fa";
 
-export const TOUR_STORAGE_KEY = "previewer-tour-completed";
+export const TOUR_STORAGE_KEY = "message-builder-tour-completed";
 
 export interface TourStep {
   id: string;
@@ -31,7 +31,7 @@ export interface TourStep {
   offset?: { x: number; y: number };
 }
 
-export const PREVIEWER_TOUR_STEPS: TourStep[] = [
+export const MESSAGE_BUILDER_TOUR_STEPS: TourStep[] = [
   {
     id: "components-section",
     target: "[data-tour-target='components-section']",
@@ -46,7 +46,7 @@ export const PREVIEWER_TOUR_STEPS: TourStep[] = [
     target: "[data-tour-target='add-component-button']",
     title: "Add New Components",
     content:
-      "Click here to add new components to your message. You can add text blocks, embeds, buttons, and more to customize how your feed messages appear.",
+      "After you've selected a component, you may click here to add new components under the selected component. You can add text blocks, embeds, buttons, and more to customize how your feed messages appear.",
     placement: "bottom",
     offset: { x: 0, y: 20 },
   },
@@ -64,7 +64,7 @@ export const PREVIEWER_TOUR_STEPS: TourStep[] = [
     target: "[data-tour-target='problems-section']",
     title: "Validation Problems",
     content:
-      "Any issues with your message configuration will appear here. This helps you identify and fix problems before saving your message format.",
+      "Any issues with your customizations will appear here. This helps you identify and fix problems before saving your message format.",
     placement: "top",
     offset: { x: 0, y: -20 },
   },
@@ -73,7 +73,7 @@ export const PREVIEWER_TOUR_STEPS: TourStep[] = [
     target: "[data-tour-target='save-discard-buttons']",
     title: "Save Your Changes",
     content:
-      "Once you're happy with your message design, use these buttons to save your changes or discard them if you want to start over.",
+      "Once you're happy with your customizations, use these buttons to save your changes or discard them if you want to start over. All changes are temporary until you save them.",
     placement: "bottom",
     offset: { x: 0, y: 20 },
   },
@@ -365,7 +365,7 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
                     leftIcon={<Icon as={FaArrowLeft} />}
                     onClick={onPrevious}
                     aria-label={`Go to previous step: ${
-                      PREVIEWER_TOUR_STEPS[stepIndex - 1]?.title || "Previous"
+                      MESSAGE_BUILDER_TOUR_STEPS[stepIndex - 1]?.title || "Previous"
                     }. Currently step ${stepIndex + 1} of ${totalSteps}.`}
                   >
                     Back
@@ -384,7 +384,7 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
                   aria-label={
                     stepIndex < totalSteps - 1
                       ? `Continue to next step: ${
-                          PREVIEWER_TOUR_STEPS[stepIndex + 1]?.title || "Next"
+                          MESSAGE_BUILDER_TOUR_STEPS[stepIndex + 1]?.title || "Next"
                         }. Currently step ${stepIndex + 1} of ${totalSteps}.`
                       : `Complete tour. This is the final step, step ${
                           stepIndex + 1
@@ -441,7 +441,7 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
   const startTour = useCallback(() => {
     // Save current focus to restore later
 
-    const initialStep = PREVIEWER_TOUR_STEPS[0];
+    const initialStep = MESSAGE_BUILDER_TOUR_STEPS[0];
     setTourState({
       step: initialStep,
       stepIndex: 0,
@@ -455,10 +455,10 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
   const handleNext = useCallback(() => {
     if (!tourState) return;
 
-    if (tourState.stepIndex < PREVIEWER_TOUR_STEPS.length - 1) {
+    if (tourState.stepIndex < MESSAGE_BUILDER_TOUR_STEPS.length - 1) {
       setIsTransitioning(true);
       const nextIndex = tourState.stepIndex + 1;
-      const nextStep = PREVIEWER_TOUR_STEPS[nextIndex];
+      const nextStep = MESSAGE_BUILDER_TOUR_STEPS[nextIndex];
       setTourState({
         step: nextStep,
         stepIndex: nextIndex,
@@ -489,7 +489,7 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
 
     setIsTransitioning(true);
     const prevIndex = tourState.stepIndex - 1;
-    const prevStep = PREVIEWER_TOUR_STEPS[prevIndex];
+    const prevStep = MESSAGE_BUILDER_TOUR_STEPS[prevIndex];
     setTourState({
       step: prevStep,
       stepIndex: prevIndex,
@@ -555,7 +555,7 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
     }
 
     const updateRect = () => {
-      if (!isActive || !tourState || tourState.stepIndex >= PREVIEWER_TOUR_STEPS.length) {
+      if (!isActive || !tourState || tourState.stepIndex >= MESSAGE_BUILDER_TOUR_STEPS.length) {
         return;
       }
 
@@ -621,8 +621,8 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
       <Modal isOpen={isOpen} onClose={onClose} size="md" closeOnOverlayClick={false}>
         <ModalOverlay />
         <ModalContent
-          bg="white"
-          color="gray.800"
+          bg="gray.800"
+          color="white"
           role="dialog"
           aria-modal="true"
           aria-labelledby="tour-modal-title"
@@ -630,33 +630,33 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
         >
           <ModalHeader>
             <HStack>
-              <Icon as={FaLightbulb} color="yellow.500" aria-hidden="true" />
-              <Text id="tour-modal-title" color="gray.800">
-                Welcome to the Message Previewer!
+              <Icon as={FaLightbulb} color="yellow.400" aria-hidden="true" />
+              <Text id="tour-modal-title" color="white">
+                Welcome to your Message Builder!
               </Text>
             </HStack>
           </ModalHeader>
           <ModalCloseButton aria-label="Close welcome dialog" />
           <ModalBody>
             <VStack align="start" spacing={4} id="tour-modal-description">
-              <Text color="gray.700" lineHeight="1.6">
-                It looks like this is your first time using the message previewer. Would you like a
-                quick tour to learn about the key features?
-              </Text>
-              <Text fontSize="sm" color="gray.600" lineHeight="1.5">
-                This tour will show you how to customize your Discord messages, add components, and
-                fix any issues that might arise.
+              <Text color="gray.200" lineHeight="1.6">
+                Would you like a quick tour to learn how to customize your message?
               </Text>
             </VStack>
           </ModalBody>
           <ModalFooter>
             <HStack spacing={3}>
               <Button
-                variant="ghost"
-                onClick={onClose}
-                color="gray.600"
-                _hover={{ bg: "gray.100", color: "gray.800" }}
-                aria-label="Skip the message previewer tour and start using the feature"
+                variant="outline"
+                onClick={() => {
+                  markTourCompleted();
+                  onClose();
+                }}
+                borderColor="gray.500"
+                color="gray.300"
+                _hover={{ bg: "gray.700", borderColor: "gray.400" }}
+                _active={{ bg: "gray.600" }}
+                aria-label="Skip the message builder tour and start using the feature"
               >
                 Skip Tour
               </Button>
@@ -666,7 +666,7 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
                 _hover={{ bg: "blue.600" }}
                 _active={{ bg: "blue.700" }}
                 onClick={startTour}
-                aria-label="Start the interactive tour to learn message previewer features"
+                aria-label="Start the interactive tour to learn message builder features"
                 autoFocus
               >
                 Start Tour
@@ -679,7 +679,7 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
       {isActive && tourState && (tourState.targetRect || isTransitioning) && (
         <TourTooltip
           tourState={tourState}
-          totalSteps={PREVIEWER_TOUR_STEPS.length}
+          totalSteps={MESSAGE_BUILDER_TOUR_STEPS.length}
           onNext={handleNext}
           onPrevious={handlePrevious}
           onClose={handleClose}
