@@ -404,9 +404,10 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
 
 interface PreviewerTourProps {
   onComplete?: () => void;
+  resetTrigger?: number;
 }
 
-export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete }) => {
+export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetTrigger }) => {
   const [tourState, setTourState] = useState<TourState | null>(null);
   const [isActive, setIsActive] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -527,6 +528,25 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete }) => {
 
     return undefined;
   }, [hasCompletedTour, onOpen]);
+
+  // Handle programmatic tour reset
+  useEffect(() => {
+    if (resetTrigger && resetTrigger > 0) {
+      // Reset any active tour state
+      setIsActive(false);
+      setTourState(null);
+      setIsTransitioning(false);
+
+      // Open the welcome modal after a short delay
+      const timer = setTimeout(() => {
+        onOpen();
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+
+    return undefined;
+  }, [resetTrigger, onOpen]);
 
   // Update target position when step changes or on scroll/resize
   useEffect(() => {

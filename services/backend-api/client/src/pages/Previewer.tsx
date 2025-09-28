@@ -101,7 +101,7 @@ const PreviewerContent: React.FC = () => {
     useUpdateDiscordChannelConnection();
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
   const { userFeed, connection } = useUserFeedConnectionContext();
-  const { resetTour } = usePreviewerTour();
+  const { resetTour, resetTrigger } = usePreviewerTour();
 
   // Header hooks
   const { data: discordBotData, status: botStatus, error: botError } = useDiscordBot();
@@ -578,9 +578,8 @@ const PreviewerContent: React.FC = () => {
               problems={problems}
               onClickComponentPath={handlePathClick}
             />
-
             {/* Tour Component */}
-            <PreviewerTour />
+            <PreviewerTour resetTrigger={resetTrigger} />
           </Box>
         );
       }}

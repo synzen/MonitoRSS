@@ -1,8 +1,10 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 
 const TOUR_STORAGE_KEY = "previewer-tour-completed";
 
 export const usePreviewerTour = () => {
+  const [resetTrigger, setResetTrigger] = useState(0);
+
   const hasCompletedTour = useCallback(() => {
     try {
       return localStorage.getItem(TOUR_STORAGE_KEY) === "true";
@@ -14,8 +16,8 @@ export const usePreviewerTour = () => {
   const resetTour = useCallback(() => {
     try {
       localStorage.removeItem(TOUR_STORAGE_KEY);
-      // Reload the page to trigger the tour again
-      window.location.reload();
+      // Trigger a re-render to restart the tour programmatically
+      setResetTrigger((prev) => prev + 1);
     } catch {
       // Silently fail if localStorage is not available
     }
@@ -33,5 +35,6 @@ export const usePreviewerTour = () => {
     hasCompletedTour: hasCompletedTour(),
     resetTour,
     markTourCompleted,
+    resetTrigger,
   };
 };
