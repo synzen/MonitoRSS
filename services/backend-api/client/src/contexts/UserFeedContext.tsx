@@ -3,6 +3,7 @@ import { Spinner } from "@chakra-ui/react";
 import { UserFeed } from "../features/feed/types";
 import { FeedFormatOptions } from "../types/FeedFormatOptions";
 import { useUserFeed } from "../features/feed/hooks";
+import { ErrorAlert } from "../components/ErrorAlert";
 
 type ContextProps =
   | {
@@ -48,8 +49,8 @@ export const UserFeedProvider = ({
     [feed]
   );
 
-  if (error && errorComponent) {
-    return errorComponent;
+  if (error) {
+    return errorComponent || <ErrorAlert description={error.message} />;
   }
 
   if (status === "loading" || !feed) {

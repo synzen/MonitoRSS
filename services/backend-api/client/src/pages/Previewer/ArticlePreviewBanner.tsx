@@ -33,6 +33,7 @@ export const ArticlePreviewBanner: React.FC = () => {
     setCurrentArticleId,
     isLoading,
     error,
+    errorDescription,
     currentArticle,
     hasNoArticles,
     isFetchingDifferentArticle,
@@ -129,7 +130,7 @@ export const ArticlePreviewBanner: React.FC = () => {
           </HStack>
           <Box px={3} pb={3} w="full">
             <HStack>
-              <Text fontSize="sm">{error}</Text>
+              <Text fontSize="sm">{errorDescription || error}</Text>
             </HStack>
           </Box>
         </VStack>

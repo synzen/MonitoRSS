@@ -46,6 +46,7 @@ export const useGetUserFeedArticlesError = ({
         </Alert>
       ),
       messageRef,
+      description,
     };
   }
 

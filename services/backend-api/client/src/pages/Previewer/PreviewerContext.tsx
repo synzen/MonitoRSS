@@ -70,6 +70,7 @@ interface PreviewerContextType {
   currentArticle?: Record<string, string>;
   isLoading: boolean;
   error: string | null;
+  errorDescription?: string | null;
   setCurrentArticleId: (id: string) => void;
   hasNoArticles?: boolean;
   isFetchingDifferentArticle: boolean;
@@ -123,7 +124,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   });
   const firstArticleId = articlesResponse?.result.articles?.[0]?.id;
   const hasNoArticles = articlesResponse?.result.articles.length === 0;
-  const { messageRef } = useGetUserFeedArticlesError({
+  const { messageRef, description } = useGetUserFeedArticlesError({
     getUserFeedArticlesStatus: status,
     getUserFeedArticlesError: error,
     getUserFeedArticlesOutput: articlesResponse,
@@ -149,8 +150,6 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (!connection) {
       return;
     }
-
-    console.log("🚀 ~ PreviewerInternalProvider ~ connection:", connection);
 
     const newFormState = convertConnectionToPreviewerState(connection);
 
@@ -419,6 +418,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       currentArticleId,
       isLoading,
       error: messageRef ? t(messageRef) : null,
+      errorDescription: description,
       setCurrentArticleId,
       currentArticle,
       hasNoArticles,
@@ -431,6 +431,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       currentArticleId,
       isLoading,
       messageRef,
+      description,
       fetchArticles,
       currentArticle,
       t,

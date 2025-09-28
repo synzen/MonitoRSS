@@ -207,7 +207,7 @@ export const DiscordMessagePreview: React.FC = () => {
             }}
           />
           <ArticlePreviewBanner />
-          <InlineErrorAlert title="Failed to load preview" description={error.message} />
+          <InlineErrorAlert title="Failed to load preview." description={error.message} />
         </PageAlertProvider>
       </Stack>
     );

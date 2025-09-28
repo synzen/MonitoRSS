@@ -113,7 +113,7 @@ export const getStandardErrorCodeMessage = (code: ApiErrorCode) => {
   if (!mappedError) {
     return `${t(
       "common.errors.somethingWentWrong"
-    )} Please try again later, or contact support if the issue persists.`;
+    )} Please try again later, or contact support@monitorss.xyz if the issue persists.`;
   }
 
   return mappedError;
