@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from "uuid";
 import { DiscordButtonStyle } from "../constants/DiscordButtonStyle";
 import {
   ActionRowComponent,
@@ -24,9 +23,23 @@ import {
 } from "../types";
 import getPreviewerComponentLabel from "./getPreviewerComponentLabel";
 
-const createNewPreviewerComponent = (type: ComponentType): Component => {
+/**
+ * Creates a new previewer component.
+ *
+ * @param type The type of the new component to create.
+ * @param parentId The ID of the parent component under which this new component will be added.
+ * @param index The index of the new component under its parent, with respect to other children
+ * of the same type. For example, if the parent has 2 buttons and 1 text, and a new button is
+ * being added, its index should be 2.
+ * @returns
+ */
+const createNewPreviewerComponent = (
+  type: ComponentType,
+  parentId: string,
+  index: number
+): Component => {
   const base = {
-    id: `${type}-${uuidv4()}`,
+    id: `${parentId}-${type}-${index}`,
     name: getPreviewerComponentLabel(type),
     type,
   };

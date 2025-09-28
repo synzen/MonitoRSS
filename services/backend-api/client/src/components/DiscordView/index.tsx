@@ -42,7 +42,7 @@ const MessageBody = ({
 }: {
   compactMode?: boolean;
   username?: string;
-  content?: string;
+  content?: string | null;
   webhookMode?: boolean;
 }) => {
   if (compactMode) {
@@ -153,7 +153,7 @@ const DiscordView = ({
   avatar_url?: string;
   error?: string;
   messages: Array<{
-    content?: string;
+    content?: string | null;
     embeds?: DiscordViewEmbed[];
     components?: Array<{
       type: number;

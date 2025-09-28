@@ -1,5 +1,12 @@
 import { UpdateDiscordChannelConnectionInput } from "../../../features/feedConnections";
-import { ComponentType, LegacyMessageComponentRoot, LegacyTextComponent } from "../types";
+import { DiscordButtonStyle } from "../constants/DiscordButtonStyle";
+import {
+  ComponentType,
+  LegacyActionRowComponent,
+  LegacyButtonComponent,
+  LegacyMessageComponentRoot,
+  LegacyTextComponent,
+} from "../types";
 
 const convertPreviewerStateToConnectionUpdate = (
   component?: LegacyMessageComponentRoot
@@ -8,10 +15,14 @@ const convertPreviewerStateToConnectionUpdate = (
 
   const details: UpdateDiscordChannelConnectionInput["details"] = {};
 
-  const textComponent = component.children?.find((c) => c.type === ComponentType.LegacyText);
+  const textComponent = component.children?.find((c) => c.type === ComponentType.LegacyText) as
+    | LegacyTextComponent
+    | undefined;
 
-  if (textComponent) {
-    details.content = (textComponent as LegacyTextComponent).content;
+  if (typeof textComponent?.content === "string" && !!textComponent?.content) {
+    details.content = textComponent.content;
+  } else {
+    details.content = "";
   }
 
   // Handle embeds from LegacyEmbedContainerComponent
@@ -98,29 +109,31 @@ const convertPreviewerStateToConnectionUpdate = (
   }
 
   // Handle action rows
-  const actionRows = component.children?.filter((c: any) => c.type === "Legacy Action Row");
+  const actionRows = component.children?.filter((c) => c.type === ComponentType.LegacyActionRow) as
+    | LegacyActionRowComponent[]
+    | undefined;
 
   if (actionRows?.length) {
-    details.componentRows = actionRows.map((row: any, rowIndex: number) => ({
-      id: row.id || `row-${rowIndex}`,
+    details.componentRows = actionRows.map((row) => ({
+      id: row.id,
       components:
-        row.children?.map((button: any, buttonIndex: number) => {
+        row.children?.map((button: LegacyButtonComponent) => {
           let style = 1;
 
           switch (button.style) {
-            case "Primary":
+            case DiscordButtonStyle.Primary:
               style = 1;
               break;
-            case "Secondary":
+            case DiscordButtonStyle.Secondary:
               style = 2;
               break;
-            case "Success":
+            case DiscordButtonStyle.Success:
               style = 3;
               break;
-            case "Danger":
+            case DiscordButtonStyle.Danger:
               style = 4;
               break;
-            case "Link":
+            case DiscordButtonStyle.Link:
               style = 5;
               break;
             default:
@@ -128,7 +141,7 @@ const convertPreviewerStateToConnectionUpdate = (
           }
 
           return {
-            id: button.id || `button-${rowIndex}-${buttonIndex}`,
+            id: button.id,
             type: 2, // Button type
             label: button.label,
             style,
@@ -161,7 +174,7 @@ const convertPreviewerStateToConnectionUpdate = (
   }
 
   // Handle forum options
-  if (component.forumThreadTitle) {
+  if (component.forumThreadTitle !== undefined) {
     details.forumThreadTitle = component.forumThreadTitle;
   }
 
@@ -170,12 +183,12 @@ const convertPreviewerStateToConnectionUpdate = (
   }
 
   // Handle mentions
-  if (component.mentions) {
+  if (component.mentions !== undefined) {
     details.mentions = component.mentions;
   }
 
   // Handle placeholder limits
-  if (component.placeholderLimits) {
+  if (component.placeholderLimits !== undefined) {
     details.placeholderLimits = component.placeholderLimits;
   }
 

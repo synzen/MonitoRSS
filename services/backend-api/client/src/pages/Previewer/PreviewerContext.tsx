@@ -18,6 +18,7 @@ import {
   SectionComponent,
   MessageComponentRoot,
   LegacyEmbedComponent,
+  LegacyEmbedContainerComponent,
 } from "./types";
 import createPreviewerComponentSchema from "./utils/createPreviewerComponentSchema";
 import { useUserFeedArticles } from "../../features/feed/hooks";
@@ -149,6 +150,8 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       return;
     }
 
+    console.log("🚀 ~ PreviewerInternalProvider ~ connection:", connection);
+
     const newFormState = convertConnectionToPreviewerState(connection);
 
     reset(newFormState);
@@ -161,16 +164,19 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const addChildComponent: PreviewerContextType["addChildComponent"] = useCallback(
     (parentId, childType, isAccessory = false) => {
       const messageComponent = getValues("messageComponent");
-      const newComponent = createNewPreviewerComponent(childType);
-      const idsToExpand: string[] = [parentId, newComponent.id];
 
-      const updateComponentTree = (component?: Component): Component => {
-        if (!component) {
-          return newComponent;
-        }
+      if (!messageComponent) {
+        return;
+      }
 
+      const idsToExpand: string[] = [parentId];
+
+      const updateComponentTree = (component: Component): Component => {
         if (component.id === parentId) {
           if (isAccessory && component.type === ComponentType.V2Section) {
+            const newComponent = createNewPreviewerComponent(childType, `${parentId}-accessory`, 0);
+            idsToExpand.push(newComponent.id);
+
             return {
               ...component,
               accessory: newComponent,
@@ -178,17 +184,29 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           }
 
           let indexToAddAt = component.children?.length || 0;
+          let newComponent: Component;
 
           // The order of legacy components are fixed
-          if (newComponent.type === ComponentType.LegacyEmbedContainer) {
+          if (childType === ComponentType.LegacyEmbedContainer) {
+            newComponent = createNewPreviewerComponent(
+              childType,
+              parentId,
+              0
+            ) as LegacyEmbedContainerComponent;
+
             indexToAddAt = 1;
             const childEmbed = createNewPreviewerComponent(
-              ComponentType.LegacyEmbed
+              ComponentType.LegacyEmbed,
+              newComponent.id,
+              0
             ) as LegacyEmbedComponent;
             newComponent.children.push(childEmbed);
             idsToExpand.push(childEmbed.id);
-          } else if (newComponent.type === ComponentType.LegacyText) {
+          } else if (childType === ComponentType.LegacyText) {
+            newComponent = createNewPreviewerComponent(childType, parentId, 0);
             indexToAddAt = 0;
+          } else {
+            newComponent = createNewPreviewerComponent(childType, parentId, 0);
           }
 
           const childrenClone = [...(component.children || [])];
@@ -204,7 +222,7 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         if (component.children) {
           return {
             ...component,
-            children: component.children.map(updateComponentTree),
+            children: component.children.map((c) => updateComponentTree(c)),
           } as Component;
         }
 
