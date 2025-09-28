@@ -36,15 +36,17 @@ export const PREVIEWER_TOUR_STEPS: TourStep[] = [
     id: "components-section",
     target: "[data-tour-target='components-section']",
     title: "Message Components",
-    content: "This is where you can view and manage all the components that make up your Discord message. Each component represents a part of your message like text, embeds, or buttons.",
+    content:
+      "This is where you can view and manage all the components that make up your Discord message. Each component represents a part of your message like text, embeds, or buttons.",
     placement: "right",
     offset: { x: 20, y: 0 },
   },
   {
     id: "add-component-button",
     target: "[data-tour-target='add-component-button']",
-    title: "Add New Components", 
-    content: "Click here to add new components to your message. You can add text blocks, embeds, buttons, and more to customize how your feed messages appear.",
+    title: "Add New Components",
+    content:
+      "Click here to add new components to your message. You can add text blocks, embeds, buttons, and more to customize how your feed messages appear.",
     placement: "bottom",
     offset: { x: 0, y: 20 },
   },
@@ -52,7 +54,8 @@ export const PREVIEWER_TOUR_STEPS: TourStep[] = [
     id: "properties-panel",
     target: "[data-tour-target='properties-panel']",
     title: "Component Properties",
-    content: "When you select a component, its properties will appear here. This is where you can customize the content, styling, and behavior of each component.",
+    content:
+      "When you select a component, its properties will appear here. This is where you can customize the content, styling, and behavior of each component.",
     placement: "left",
     offset: { x: -20, y: 0 },
   },
@@ -60,7 +63,8 @@ export const PREVIEWER_TOUR_STEPS: TourStep[] = [
     id: "problems-section",
     target: "[data-tour-target='problems-section']",
     title: "Validation Problems",
-    content: "Any issues with your message configuration will appear here. This helps you identify and fix problems before saving your message format.",
+    content:
+      "Any issues with your message configuration will appear here. This helps you identify and fix problems before saving your message format.",
     placement: "top",
     offset: { x: 0, y: -20 },
   },
@@ -68,32 +72,54 @@ export const PREVIEWER_TOUR_STEPS: TourStep[] = [
     id: "save-discard-buttons",
     target: "[data-tour-target='save-discard-buttons']",
     title: "Save Your Changes",
-    content: "Once you're happy with your message design, use these buttons to save your changes or discard them if you want to start over.",
+    content:
+      "Once you're happy with your message design, use these buttons to save your changes or discard them if you want to start over.",
     placement: "bottom",
     offset: { x: 0, y: 20 },
   },
 ];
 
-interface TourTooltipProps {
+interface TourState {
   step: TourStep;
-  currentStepIndex: number;
+  stepIndex: number;
+  targetRect: DOMRect | null;
+}
+
+interface TourTooltipProps {
+  tourState: TourState;
   totalSteps: number;
   onNext: () => void;
   onPrevious: () => void;
   onClose: () => void;
-  targetRect: DOMRect | null;
 }
 
 const TourTooltip: React.FC<TourTooltipProps> = ({
-  step,
-  currentStepIndex,
+  tourState,
   totalSteps,
   onNext,
   onPrevious,
   onClose,
-  targetRect,
 }) => {
-  if (!targetRect) return null;
+  const { step, stepIndex, targetRect } = tourState;
+
+  // During transitions, we might not have targetRect yet
+  // In this case, render with opacity 0 to maintain overlay
+  if (!targetRect) {
+    return (
+      <Portal>
+        {/* Full screen overlay during transition to prevent white flash */}
+        <Box
+          position="fixed"
+          top={0}
+          left={0}
+          width="100vw"
+          height="100vh"
+          bg="blackAlpha.700"
+          zIndex={9998}
+        />
+      </Portal>
+    );
+  }
 
   const getTooltipPosition = () => {
     const tooltipWidth = 320;
@@ -137,18 +163,20 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
       {/* Dark overlay frames around the highlighted element */}
       {/* Top overlay */}
       <Box
+        data-overlay-pos="top"
         position="fixed"
         top={0}
         left={0}
         right={0}
-        height={targetRect.top - 8}
+        height={`${targetRect.top - 8}px`}
         bg="blackAlpha.700"
         zIndex={9998}
       />
       {/* Bottom overlay */}
       <Box
+        data-overlay-pos="bottom"
         position="fixed"
-        top={targetRect.bottom + 8}
+        top={`${targetRect.bottom + 8}px`}
         left={0}
         right={0}
         bottom={0}
@@ -157,30 +185,31 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
       />
       {/* Left overlay */}
       <Box
+        data-overlay-pos="left"
         position="fixed"
-        top={targetRect.top - 8}
+        top={`${targetRect.top - 8}px`}
         left={0}
-        width={targetRect.left - 8}
-        height={targetRect.height + 16}
+        width={`${targetRect.left - 8}px`}
+        height={`${targetRect.height + 16}px`}
         bg="blackAlpha.700"
         zIndex={9998}
       />
       {/* Right overlay */}
       <Box
+        data-overlay-pos="right"
         position="fixed"
-        top={targetRect.top - 8}
-        left={targetRect.right + 8}
+        top={`${targetRect.top - 8}px`}
+        left={`${targetRect.right + 8}px`}
         right={0}
-        height={targetRect.height + 16}
+        height={`${targetRect.height + 16}px`}
         bg="blackAlpha.700"
         zIndex={9998}
       />
-
       {/* Highlighted target element overlay */}
       <motion.div
         initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ 
-          opacity: 1, 
+        animate={{
+          opacity: 1,
           scale: 1,
         }}
         exit={{ opacity: 0, scale: 0.98 }}
@@ -205,13 +234,13 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
           position="relative"
         >
           <motion.div
-            animate={{ 
+            animate={{
               opacity: [0.3, 0.8, 0.3],
             }}
-            transition={{ 
-              duration: 2, 
-              repeat: Infinity, 
-              ease: "easeInOut" 
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut",
             }}
             style={{
               position: "absolute",
@@ -226,7 +255,6 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
           />
         </Box>
       </motion.div>
-
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -240,62 +268,67 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
         }}
       >
         <Box
-          bg="blue.600"
+          bg="gray.800"
           color="white"
           p={4}
           borderRadius="md"
           shadow="xl"
           maxWidth="320px"
           border="2px solid"
-          borderColor="blue.400"
+          borderColor="blue.300"
         >
           <VStack align="start" spacing={3}>
             <HStack justify="space-between" width="100%">
-              <Heading size="sm" color="blue.100">
+              <Heading size="sm" color="white">
                 {step.title}
               </Heading>
               <Button
                 size="xs"
                 variant="ghost"
-                colorScheme="whiteAlpha"
+                colorScheme="gray"
+                color="gray.300"
+                _hover={{ bg: "gray.700", color: "white" }}
                 onClick={onClose}
                 aria-label="Close tour"
               >
                 <Icon as={FaTimes} />
               </Button>
             </HStack>
-            
             <Text fontSize="sm" lineHeight="1.5">
               {step.content}
             </Text>
-
             <HStack justify="space-between" width="100%">
-              <Text fontSize="xs" color="blue.200">
-                {currentStepIndex + 1} of {totalSteps}
+              <Text fontSize="xs" color="gray.300">
+                {stepIndex + 1} of {totalSteps}
               </Text>
-              
               <HStack spacing={2}>
-                {currentStepIndex > 0 && (
+                {stepIndex > 0 && (
                   <Button
                     size="sm"
                     variant="outline"
-                    colorScheme="whiteAlpha"
+                    borderColor="gray.500"
+                    color="gray.300"
+                    _hover={{
+                      bg: "gray.700",
+                      borderColor: "gray.400",
+                      color: "white",
+                    }}
                     leftIcon={<Icon as={FaArrowLeft} />}
                     onClick={onPrevious}
                   >
                     Back
                   </Button>
                 )}
-                
                 <Button
                   size="sm"
-                  colorScheme="blue"
                   bg="blue.500"
+                  color="white"
                   _hover={{ bg: "blue.400" }}
-                  rightIcon={currentStepIndex < totalSteps - 1 ? <Icon as={FaArrowRight} /> : undefined}
+                  _active={{ bg: "blue.600" }}
+                  rightIcon={stepIndex < totalSteps - 1 ? <Icon as={FaArrowRight} /> : undefined}
                   onClick={onNext}
                 >
-                  {currentStepIndex < totalSteps - 1 ? "Next" : "Finish"}
+                  {stepIndex < totalSteps - 1 ? "Next" : "Finish"}
                 </Button>
               </HStack>
             </HStack>
@@ -311,9 +344,9 @@ interface PreviewerTourProps {
 }
 
 export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete }) => {
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const [tourState, setTourState] = useState<TourState | null>(null);
   const [isActive, setIsActive] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   // Check if user has completed the tour
@@ -336,50 +369,100 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete }) => {
 
   // Start the tour
   const startTour = useCallback(() => {
-    setCurrentStepIndex(0);
+    const initialStep = PREVIEWER_TOUR_STEPS[0];
+    setTourState({
+      step: initialStep,
+      stepIndex: 0,
+      targetRect: null,
+    });
     setIsActive(true);
     onClose();
   }, [onClose]);
 
   // Update target element position
   const updateTargetRect = useCallback(() => {
-    if (!isActive || currentStepIndex >= PREVIEWER_TOUR_STEPS.length) {
-      setTargetRect(null);
+    if (!isActive || !tourState || tourState.stepIndex >= PREVIEWER_TOUR_STEPS.length) {
+      if (tourState) {
+        setTourState((prev) => (prev ? { ...prev, targetRect: null } : null));
+      }
+
       return;
     }
 
-    const step = PREVIEWER_TOUR_STEPS[currentStepIndex];
+    const { step } = tourState;
     const element = document.querySelector(step.target);
-    
+
     if (element) {
-      setTargetRect(element.getBoundingClientRect());
+      const rect = element.getBoundingClientRect();
+
+      // Only update if we have valid dimensions
+      if (rect.width > 0 && rect.height > 0) {
+        setTourState((prev) => (prev ? { ...prev, targetRect: rect } : null));
+      }
     } else {
-      setTargetRect(null);
+      // If element not found, try again after a short delay
+      setTimeout(() => {
+        const retryElement = document.querySelector(step.target);
+
+        if (retryElement) {
+          const rect = retryElement.getBoundingClientRect();
+
+          if (rect.width > 0 && rect.height > 0) {
+            setTourState((prev) => (prev ? { ...prev, targetRect: rect } : null));
+          }
+        }
+      }, 50);
     }
-  }, [isActive, currentStepIndex]);
+  }, [isActive, tourState]);
 
   // Handle next step
   const handleNext = useCallback(() => {
-    if (currentStepIndex < PREVIEWER_TOUR_STEPS.length - 1) {
-      setCurrentStepIndex(prev => prev + 1);
+    if (!tourState) return;
+
+    if (tourState.stepIndex < PREVIEWER_TOUR_STEPS.length - 1) {
+      setIsTransitioning(true);
+      const nextIndex = tourState.stepIndex + 1;
+      const nextStep = PREVIEWER_TOUR_STEPS[nextIndex];
+      setTourState({
+        step: nextStep,
+        stepIndex: nextIndex,
+        targetRect: null, // Will be updated by updateTargetRect
+      });
+      // Reset transition state after a brief delay
+      setTimeout(() => {
+        setIsTransitioning(false);
+      }, 150);
     } else {
       // Tour complete
       setIsActive(false);
+      setTourState(null);
       markTourCompleted();
       onComplete?.();
     }
-  }, [currentStepIndex, markTourCompleted, onComplete]);
+  }, [tourState, markTourCompleted, onComplete]);
 
   // Handle previous step
   const handlePrevious = useCallback(() => {
-    if (currentStepIndex > 0) {
-      setCurrentStepIndex(prev => prev - 1);
-    }
-  }, [currentStepIndex]);
+    if (!tourState || tourState.stepIndex <= 0) return;
+
+    setIsTransitioning(true);
+    const prevIndex = tourState.stepIndex - 1;
+    const prevStep = PREVIEWER_TOUR_STEPS[prevIndex];
+    setTourState({
+      step: prevStep,
+      stepIndex: prevIndex,
+      targetRect: null, // Will be updated by updateTargetRect
+    });
+    // Reset transition state after a brief delay
+    setTimeout(() => {
+      setIsTransitioning(false);
+    }, 150);
+  }, [tourState]);
 
   // Handle close tour
   const handleClose = useCallback(() => {
     setIsActive(false);
+    setTourState(null);
     markTourCompleted();
     onComplete?.();
   }, [markTourCompleted, onComplete]);
@@ -391,8 +474,11 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete }) => {
       const timer = setTimeout(() => {
         onOpen();
       }, 1000);
+
       return () => clearTimeout(timer);
     }
+
+    return undefined;
   }, [hasCompletedTour, onOpen]);
 
   // Update target position when step changes or on scroll/resize
@@ -403,64 +489,72 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete }) => {
       const handleUpdate = () => updateTargetRect();
       window.addEventListener("scroll", handleUpdate, true);
       window.addEventListener("resize", handleUpdate);
-      
+
       return () => {
         window.removeEventListener("scroll", handleUpdate, true);
         window.removeEventListener("resize", handleUpdate);
       };
     }
-  }, [isActive, updateTargetRect]);
 
-  const currentStep = PREVIEWER_TOUR_STEPS[currentStepIndex];
+    return undefined;
+  }, [isActive, updateTargetRect]);
 
   return (
     <>
       {/* Welcome Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="md" closeOnOverlayClick={false}>
         <ModalOverlay />
-        <ModalContent>
+        <ModalContent bg="white" color="gray.800">
           <ModalHeader>
             <HStack>
-              <Icon as={FaLightbulb} color="yellow.400" />
-              <Text>Welcome to the Message Previewer!</Text>
+              <Icon as={FaLightbulb} color="yellow.500" />
+              <Text color="gray.800">Welcome to the Message Previewer!</Text>
             </HStack>
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <VStack align="start" spacing={4}>
-              <Text>
-                It looks like this is your first time using the message previewer. 
-                Would you like a quick tour to learn about the key features?
+              <Text color="gray.700" lineHeight="1.6">
+                It looks like this is your first time using the message previewer. Would you like a
+                quick tour to learn about the key features?
               </Text>
-              <Text fontSize="sm" color="gray.600">
-                This tour will show you how to customize your Discord messages, 
-                add components, and fix any issues that might arise.
+              <Text fontSize="sm" color="gray.600" lineHeight="1.5">
+                This tour will show you how to customize your Discord messages, add components, and
+                fix any issues that might arise.
               </Text>
             </VStack>
           </ModalBody>
           <ModalFooter>
             <HStack spacing={3}>
-              <Button variant="ghost" onClick={onClose}>
+              <Button
+                variant="ghost"
+                onClick={onClose}
+                color="gray.600"
+                _hover={{ bg: "gray.100", color: "gray.800" }}
+              >
                 Skip Tour
               </Button>
-              <Button colorScheme="blue" onClick={startTour}>
+              <Button
+                bg="blue.500"
+                color="white"
+                _hover={{ bg: "blue.600" }}
+                _active={{ bg: "blue.700" }}
+                onClick={startTour}
+              >
                 Start Tour
               </Button>
             </HStack>
           </ModalFooter>
         </ModalContent>
       </Modal>
-
       {/* Tour Tooltip */}
-      {isActive && currentStep && targetRect && (
+      {isActive && tourState && (tourState.targetRect || isTransitioning) && (
         <TourTooltip
-          step={currentStep}
-          currentStepIndex={currentStepIndex}
+          tourState={tourState}
           totalSteps={PREVIEWER_TOUR_STEPS.length}
           onNext={handleNext}
           onPrevious={handlePrevious}
           onClose={handleClose}
-          targetRect={targetRect}
         />
       )}
     </>
