@@ -663,7 +663,7 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
           <ModalHeader>
             <HStack>
               <Icon as={FaScrewdriverWrench} aria-hidden="true" />
-              <Text id="tour-modal-title" color="white">
+              <Text id="tour-modal-title" color="white" pl={2}>
                 Welcome to your Message Builder!
               </Text>
             </HStack>

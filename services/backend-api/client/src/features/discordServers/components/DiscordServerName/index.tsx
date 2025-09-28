@@ -1,5 +1,4 @@
-import { Text, Tooltip } from "@chakra-ui/react";
-import { Loading } from "@/components";
+import { Text, Tooltip, Skeleton } from "@chakra-ui/react";
 import { useDiscordServers } from "../../hooks";
 
 interface Props {
@@ -15,7 +14,7 @@ export const DiscordServerName = ({ serverId, textStyle }: Props) => {
   });
 
   if (status === "loading") {
-    return <Loading size="sm" />;
+    return <Skeleton height="1em" width="80px" display="inline-block" />;
   }
 
   if (error) {

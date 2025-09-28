@@ -24,6 +24,7 @@ import { useDebounce } from "../../hooks";
 import { InlineErrorAlert } from "../../components";
 import convertPreviewerStateToConnectionPreviewInput from "./utils/convertPreviewerStateToConnectionPreviewInput";
 import { useUserFeedConnectionContext } from "../../contexts/UserFeedConnectionContext";
+import { DiscordServerName, DiscordChannelName } from "../../features/discordServers";
 
 export const DiscordMessagePreview: React.FC = () => {
   const {
@@ -226,6 +227,34 @@ export const DiscordMessagePreview: React.FC = () => {
             mt: -2,
           }}
         />
+        {/* Server and Channel Info */}
+        <Box mb={2}>
+          <Text fontSize="sm" color="gray.400" fontWeight="medium">
+            Previewing in{" "}
+            <Box as="span" color="gray.300">
+              {connection.details.channel?.guildId ? (
+                <>
+                  <DiscordServerName
+                    serverId={connection.details.channel?.guildId}
+                    textStyle={{ fontSize: "sm", fontWeight: "medium" }}
+                  />
+                  {connection.details.channel?.id && (
+                    <>
+                      {" → Channel: "}
+                      <DiscordChannelName
+                        channelId={connection.details.channel?.id}
+                        serverId={connection.details.channel?.guildId}
+                        textProps={{ fontSize: "sm", fontWeight: "medium" }}
+                      />
+                    </>
+                  )}
+                </>
+              ) : (
+                "Unknown Server"
+              )}
+            </Box>
+          </Text>
+        </Box>
         {/* Discord Message Preview */}
         <Box
           bg={bgColor}
@@ -298,7 +327,8 @@ export const DiscordMessagePreview: React.FC = () => {
                       excludeHeader
                     />
                   )}
-                  {legacyMessages.length === 0 &&
+                  {currentArticle &&
+                    legacyMessages.length === 0 &&
                     !!messageComponent &&
                     messageComponent.children.length === 0 && (
                       <Text color="gray.400" fontSize="sm" fontStyle="italic">

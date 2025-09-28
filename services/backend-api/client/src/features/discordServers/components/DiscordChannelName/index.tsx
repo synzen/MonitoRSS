@@ -1,7 +1,6 @@
 /* eslint-disable react/jsx-no-useless-fragment */
 import { useMemo } from "react";
 import {
-  SpinnerProps,
   Text,
   TextProps,
   chakra,
@@ -14,15 +13,14 @@ import {
   ModalOverlay,
   Button,
   useDisclosure,
+  Skeleton,
 } from "@chakra-ui/react";
-import { Loading } from "@/components";
 import { useDiscordServerChannels } from "../../hooks";
 import { GetDiscordChannelType } from "../../constants";
 
 interface Props {
   serverId?: string;
   channelId: string;
-  spinnerSize?: SpinnerProps["size"];
   textProps?: TextProps;
   parenthesis?: boolean;
   hidden?: boolean;
@@ -31,7 +29,6 @@ interface Props {
 export const DiscordChannelName: React.FC<Props> = ({
   serverId,
   channelId,
-  spinnerSize,
   textProps,
   parenthesis,
   hidden,
@@ -64,7 +61,7 @@ export const DiscordChannelName: React.FC<Props> = ({
   if (status === "loading") {
     return (
       <span>
-        <Loading size={spinnerSize || "sm"} />
+        <Skeleton height="1em" width="100px" display="inline-block" />
       </span>
     );
   }

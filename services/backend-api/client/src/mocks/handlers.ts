@@ -278,20 +278,20 @@ const handlers = [
       })
   ),
 
-  http.get("/api/v1/discord-users/@me/servers", async () =>
-    HttpResponse.json<GetServersOutput>({
+  http.get("/api/v1/discord-users/@me/servers", async () => {
+    return HttpResponse.json<GetServersOutput>({
       total: mockDiscordServers.length,
       results: mockDiscordServers,
-    })
-  ),
+    });
+  }),
 
-  http.get("/api/v1/discord-servers/:serverId/status", async () =>
-    HttpResponse.json<GetServerStatusOutput>({
+  http.get("/api/v1/discord-servers/:serverId/status", async () => {
+    return HttpResponse.json<GetServerStatusOutput>({
       result: {
         authorized: true,
       },
-    })
-  ),
+    });
+  }),
 
   http.get("/api/v1/discord-servers/:serverId/legacy-conversion", async () => {
     await delay(500);

@@ -39,7 +39,6 @@ export const getPrettyConnectionDetail = (connection: FeedDiscordChannelConnecti
           <DiscordChannelName
             channelId={useChannelId}
             serverId={useServerId}
-            spinnerSize="xs"
             textProps={{
               fontSize: 14,
               color: getChakraColor("whiteAlpha.800"),
