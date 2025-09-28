@@ -181,6 +181,22 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
 
   return (
     <Portal>
+      {/* Screen reader announcement for step changes */}
+      <div
+        role="status"
+        aria-live="assertive"
+        aria-atomic="true"
+        style={{
+          position: "absolute",
+          left: "-10000px",
+          top: "auto",
+          width: "1px",
+          height: "1px",
+          overflow: "hidden",
+        }}
+      >
+        Tour step {stepIndex + 1} of {totalSteps}: {step.title}. {step.content}
+      </div>
       {/* Dark overlay frames around the highlighted element */}
       {/* Top overlay */}
       <Box
@@ -192,6 +208,7 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
         height={`${targetRect.top - 8}px`}
         bg="blackAlpha.700"
         zIndex={9998}
+        aria-hidden="true"
       />
       {/* Bottom overlay */}
       <Box
@@ -203,6 +220,7 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
         bottom={0}
         bg="blackAlpha.700"
         zIndex={9998}
+        aria-hidden="true"
       />
       {/* Left overlay */}
       <Box
@@ -214,6 +232,7 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
         height={`${targetRect.height + 16}px`}
         bg="blackAlpha.700"
         zIndex={9998}
+        aria-hidden="true"
       />
       {/* Right overlay */}
       <Box
@@ -225,6 +244,7 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
         height={`${targetRect.height + 16}px`}
         bg="blackAlpha.700"
         zIndex={9998}
+        aria-hidden="true"
       />
       {/* Highlighted target element overlay */}
       <motion.div
@@ -235,6 +255,7 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
         }}
         exit={{ opacity: 0, scale: 0.98 }}
         transition={{ duration: 0.3 }}
+        aria-hidden="true"
         style={{
           position: "fixed",
           left: targetRect.left - 8,
@@ -297,10 +318,16 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
           maxWidth="320px"
           border="2px solid"
           borderColor="blue.300"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tour-step-title"
+          aria-describedby="tour-step-content"
+          aria-live="polite"
+          aria-atomic="true"
         >
           <VStack align="start" spacing={3}>
             <HStack justify="space-between" width="100%">
-              <Heading size="sm" color="white">
+              <Heading id="tour-step-title" size="sm" color="white">
                 {step.title}
               </Heading>
               <Button
@@ -310,18 +337,18 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
                 color="gray.300"
                 _hover={{ bg: "gray.700", color: "white" }}
                 onClick={onClose}
-                aria-label="Close tour"
+                aria-label={`Close tour. Currently on step ${stepIndex + 1} of ${totalSteps}.`}
                 ref={closeButtonRef}
               >
                 <Icon as={FaTimes} />
               </Button>
             </HStack>
-            <Text fontSize="sm" lineHeight="1.5">
+            <Text id="tour-step-content" fontSize="sm" lineHeight="1.5">
               {step.content}
             </Text>
             <HStack justify="space-between" width="100%">
-              <Text fontSize="xs" color="gray.300">
-                {stepIndex + 1} of {totalSteps}
+              <Text fontSize="xs" color="gray.300" aria-live="polite" role="status">
+                Step {stepIndex + 1} of {totalSteps}
               </Text>
               <HStack spacing={2}>
                 {stepIndex > 0 && (
@@ -337,6 +364,9 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
                     }}
                     leftIcon={<Icon as={FaArrowLeft} />}
                     onClick={onPrevious}
+                    aria-label={`Go to previous step: ${
+                      PREVIEWER_TOUR_STEPS[stepIndex - 1]?.title || "Previous"
+                    }. Currently step ${stepIndex + 1} of ${totalSteps}.`}
                   >
                     Back
                   </Button>
@@ -351,6 +381,15 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
                   onClick={onNext}
                   tabIndex={0}
                   autoFocus
+                  aria-label={
+                    stepIndex < totalSteps - 1
+                      ? `Continue to next step: ${
+                          PREVIEWER_TOUR_STEPS[stepIndex + 1]?.title || "Next"
+                        }. Currently step ${stepIndex + 1} of ${totalSteps}.`
+                      : `Complete tour. This is the final step, step ${
+                          stepIndex + 1
+                        } of ${totalSteps}.`
+                  }
                 >
                   {stepIndex < totalSteps - 1 ? "Next" : "Finish"}
                 </Button>
@@ -561,16 +600,25 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete }) => {
       {/* Welcome Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="md" closeOnOverlayClick={false}>
         <ModalOverlay />
-        <ModalContent bg="white" color="gray.800">
+        <ModalContent
+          bg="white"
+          color="gray.800"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tour-modal-title"
+          aria-describedby="tour-modal-description"
+        >
           <ModalHeader>
             <HStack>
-              <Icon as={FaLightbulb} color="yellow.500" />
-              <Text color="gray.800">Welcome to the Message Previewer!</Text>
+              <Icon as={FaLightbulb} color="yellow.500" aria-hidden="true" />
+              <Text id="tour-modal-title" color="gray.800">
+                Welcome to the Message Previewer!
+              </Text>
             </HStack>
           </ModalHeader>
-          <ModalCloseButton />
+          <ModalCloseButton aria-label="Close welcome dialog" />
           <ModalBody>
-            <VStack align="start" spacing={4}>
+            <VStack align="start" spacing={4} id="tour-modal-description">
               <Text color="gray.700" lineHeight="1.6">
                 It looks like this is your first time using the message previewer. Would you like a
                 quick tour to learn about the key features?
@@ -588,6 +636,7 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete }) => {
                 onClick={onClose}
                 color="gray.600"
                 _hover={{ bg: "gray.100", color: "gray.800" }}
+                aria-label="Skip the message previewer tour and start using the feature"
               >
                 Skip Tour
               </Button>
@@ -597,6 +646,8 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete }) => {
                 _hover={{ bg: "blue.600" }}
                 _active={{ bg: "blue.700" }}
                 onClick={startTour}
+                aria-label="Start the interactive tour to learn message previewer features"
+                autoFocus
               >
                 Start Tour
               </Button>
