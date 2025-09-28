@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Box,
   Portal,
@@ -101,7 +101,27 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
   onClose,
 }) => {
   const { step, stepIndex, targetRect } = tourState;
-  const nextButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  // Callback ref to focus the button immediately when it's available
+  const closeButtonRef = useCallback(
+    (node: HTMLButtonElement | null) => {
+      if (node) {
+        // Multiple attempts to ensure focus is set
+        const focusButton = () => {
+          if (node.isConnected && !node.disabled) {
+            node.focus();
+          }
+        };
+
+        // Try immediately
+        focusButton();
+
+        // Try again after animation completes
+        setTimeout(focusButton, 200);
+      }
+    },
+    [stepIndex]
+  );
 
   // During transitions, we might not have targetRect yet
   // In this case, render with opacity 0 to maintain overlay
@@ -121,22 +141,6 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
       </Portal>
     );
   }
-
-  // useEffect(() => {
-  //   console.log("🚀 ~ nextButtonRef:", nextButtonRef);
-
-  //   if (nextButtonRef.current) {
-  //     nextButtonRef.current.focus();
-  //   }
-
-  //   return () => {
-  //     const h1 = document.querySelector("h1");
-
-  //     if (h1) {
-  //       h1.focus();
-  //     }
-  //   };
-  // }, [nextButtonRef.current]);
 
   const getTooltipPosition = () => {
     const tooltipWidth = 320;
@@ -307,6 +311,7 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
                 _hover={{ bg: "gray.700", color: "white" }}
                 onClick={onClose}
                 aria-label="Close tour"
+                ref={closeButtonRef}
               >
                 <Icon as={FaTimes} />
               </Button>
@@ -337,7 +342,6 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
                   </Button>
                 )}
                 <Button
-                  ref={nextButtonRef}
                   size="sm"
                   bg="blue.500"
                   color="white"
@@ -345,6 +349,8 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
                   _active={{ bg: "blue.600" }}
                   rightIcon={stepIndex < totalSteps - 1 ? <Icon as={FaArrowRight} /> : undefined}
                   onClick={onNext}
+                  tabIndex={0}
+                  autoFocus
                 >
                   {stepIndex < totalSteps - 1 ? "Next" : "Finish"}
                 </Button>
@@ -385,8 +391,16 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete }) => {
     }
   }, []);
 
+  // Focus on the "Customize Message" heading after tour completion
+  const focusOnCustomizeMessageHeading = useCallback(() => {
+    const heading = document.querySelector("h1");
+    heading?.focus();
+  }, []);
+
   // Start the tour
   const startTour = useCallback(() => {
+    // Save current focus to restore later
+
     const initialStep = PREVIEWER_TOUR_STEPS[0];
     setTourState({
       step: initialStep,
@@ -419,9 +433,15 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete }) => {
       setIsActive(false);
       setTourState(null);
       markTourCompleted();
+
+      // Focus on the "Customize Message" heading after tour completion
+      setTimeout(() => {
+        focusOnCustomizeMessageHeading();
+      }, 100);
+
       onComplete?.();
     }
-  }, [tourState, markTourCompleted, onComplete]);
+  }, [tourState, markTourCompleted, onComplete, focusOnCustomizeMessageHeading]);
 
   // Handle previous step
   const handlePrevious = useCallback(() => {
@@ -446,8 +466,14 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete }) => {
     setIsActive(false);
     setTourState(null);
     markTourCompleted();
+
+    // Focus on the "Customize Message" heading after tour closes
+    setTimeout(() => {
+      focusOnCustomizeMessageHeading();
+    }, 100);
+
     onComplete?.();
-  }, [markTourCompleted, onComplete]);
+  }, [markTourCompleted, onComplete, focusOnCustomizeMessageHeading]);
 
   // Auto-start tour if not completed
   useEffect(() => {
