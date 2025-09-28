@@ -16,7 +16,7 @@ import {
   InputLeftElement,
   Spinner,
 } from "@chakra-ui/react";
-import { SearchIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import { ChevronRightIcon, SearchIcon } from "@chakra-ui/icons";
 import { Virtuoso } from "react-virtuoso";
 import { usePreviewerContext } from "./PreviewerContext";
 
@@ -50,45 +50,61 @@ const PlaceholderItem: React.FC<PlaceholderItemProps> = ({
   };
 
   return (
-    <Button
-      variant="ghost"
-      justifyContent="space-between"
+    <Box
       p={4}
       w="100%"
-      h="auto"
-      minH="auto"
       borderRadius={0}
       borderBottom={index < totalCount - 1 ? "1px solid" : undefined}
       borderColor="gray.600"
+      role="listitem"
       _hover={{ bg: "gray.700" }}
-      _focus={{ bg: "gray.700", outline: "2px solid", outlineColor: "blue.400" }}
-      onClick={() => handleSelectTag(placeholder.tag)}
-      role="option"
       aria-label={`Insert ${placeholder.tag} placeholder. Preview: ${placeholder.content.slice(
         0,
         100
       )}${placeholder.content.length > 100 ? "..." : ""}`}
     >
-      <VStack align="start" spacing={2} flex={1} w="full">
-        <Code colorScheme="blue" fontSize="sm" fontWeight="bold">
-          {placeholder.tag}
-        </Code>
-        <Text
-          fontSize="sm"
-          color="gray.300"
-          fontStyle={placeholder.content.startsWith("[") ? "italic" : "normal"}
-          textAlign="left"
-          w="full"
-          wordBreak="break-word"
-          whiteSpace="pre-wrap"
-          noOfLines={5}
-          aria-hidden="true"
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="flex-start"
+        wordBreak="break-word"
+      >
+        <VStack align="start" spacing={2} flex={1} w="full" mr={4}>
+          <Code colorScheme="blue" fontSize="sm" fontWeight="bold" userSelect="text">
+            {placeholder.tag}
+          </Code>
+          <Text
+            fontSize="sm"
+            color="gray.300"
+            fontStyle={placeholder.content.startsWith("[") ? "italic" : "normal"}
+            textAlign="left"
+            w="full"
+            whiteSpace="normal"
+            noOfLines={5}
+            userSelect="text"
+            aria-hidden="true"
+          >
+            {placeholder.content.split("\n").map((line, idx) => (
+              // eslint-disable-next-line react/no-array-index-key
+              <span key={idx}>
+                {line} <br />
+              </span>
+            ))}
+          </Text>
+        </VStack>
+        <Button
+          size="sm"
+          colorScheme="blue"
+          variant="outline"
+          onClick={() => handleSelectTag(placeholder.tag)}
+          flexShrink={0}
+          rightIcon={<ChevronRightIcon />}
+          _focus={{ outline: "2px solid", outlineColor: "blue.400" }}
         >
-          {placeholder.content}
-        </Text>
-      </VStack>
-      <ChevronRightIcon color="gray.400" fontSize="lg" ml={2} flexShrink={0} aria-hidden="true" />
-    </Button>
+          Select
+        </Button>
+      </Box>
+    </Box>
   );
 };
 
@@ -170,8 +186,8 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
         <ModalBody p={0}>
           <Box p={4} borderBottom="1px solid" borderColor="gray.600">
             <Text fontSize="sm" color="gray.400" mb={3}>
-              Select a placeholder to insert into your text content. The placeholder will be
-              replaced with the actual article content when being previewed or published.
+              Placeholders represent article content for the currently-selected article when being
+              previewed or published. Select a placeholder to insert into your text content.
             </Text>
             <InputGroup>
               <InputLeftElement pointerEvents="none">
@@ -202,7 +218,7 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
               </Text>
             )}
           </Box>
-          <Box maxH="60vh" role="listbox" aria-label="Available placeholders">
+          <Box>
             {isLoading && (
               <Box p={6} textAlign="center" role="status" aria-live="polite">
                 <VStack spacing={4}>
@@ -235,6 +251,8 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
             )}
             {!isLoading && !error && filteredPlaceholders.length > 0 && (
               <Virtuoso
+                role="list"
+                aria-label="Available placeholders"
                 style={{ height: "50vh", width: "100%" }}
                 totalCount={filteredPlaceholders.length}
                 itemContent={renderItem}

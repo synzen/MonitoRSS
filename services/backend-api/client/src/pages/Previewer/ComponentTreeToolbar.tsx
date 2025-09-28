@@ -156,7 +156,6 @@ export const ComponentTreeToolbar: React.FC = () => {
                   leftIcon={<AddIcon />}
                   size={{ base: "md", lg: "sm" }}
                   variant="ghost"
-                  aria-label="Add component"
                   aria-disabled={!canAddChildren}
                   onClick={(e) => {
                     if (!canAddChildren) {
@@ -165,7 +164,7 @@ export const ComponentTreeToolbar: React.FC = () => {
                     }
                   }}
                 >
-                  Add
+                  New Component
                 </MenuButton>
               </Tooltip>
               {canAddChildren && (
