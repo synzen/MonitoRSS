@@ -70,6 +70,8 @@ import { ComponentType } from "./Previewer/types";
 import convertPreviewerStateToConnectionUpdate from "./Previewer/utils/convertPreviewerStateToConnectionUpdate";
 import { pages } from "../constants";
 import { UserFeedTabSearchParam } from "../constants/userFeedTabSearchParam";
+import { PreviewerTour } from "../components/PreviewerTour";
+import { usePreviewerTour } from "../hooks";
 
 const SIDE_PANEL_WIDTH = {
   base: "300px",
@@ -99,6 +101,7 @@ const PreviewerContent: React.FC = () => {
     useUpdateDiscordChannelConnection();
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
   const { userFeed, connection } = useUserFeedConnectionContext();
+  const { resetTour } = usePreviewerTour();
 
   // Header hooks
   const { data: discordBotData, status: botStatus, error: botError } = useDiscordBot();
@@ -369,21 +372,32 @@ const PreviewerContent: React.FC = () => {
                   <HStack spacing={3} flexWrap="wrap">
                     <Button
                       variant="outline"
-                      colorScheme="red"
+                      colorScheme="gray"
                       size="sm"
-                      onClick={handleDiscard}
-                      aria-disabled={formState.isDirty === false}
+                      onClick={resetTour}
+                      leftIcon={<InfoIcon />}
                     >
-                      Discard Changes
+                      Take Tour
                     </Button>
-                    <Button
-                      colorScheme="blue"
-                      size="sm"
-                      onClick={handleSave}
-                      aria-disabled={updateStatus === "loading" || !formState.isDirty}
-                    >
-                      {updateStatus === "loading" ? "Saving Changes..." : "Save Changes"}
-                    </Button>
+                    <HStack spacing={3} data-tour-target="save-discard-buttons">
+                      <Button
+                        variant="outline"
+                        colorScheme="red"
+                        size="sm"
+                        onClick={handleDiscard}
+                        aria-disabled={formState.isDirty === false}
+                      >
+                        Discard Changes
+                      </Button>
+                      <Button
+                        colorScheme="blue"
+                        size="sm"
+                        onClick={handleSave}
+                        aria-disabled={updateStatus === "loading" || !formState.isDirty}
+                      >
+                        {updateStatus === "loading" ? "Saving Changes..." : "Save Changes"}
+                      </Button>
+                    </HStack>
                   </HStack>
                 </HStack>
                 <PageAlertContextOutlet />
@@ -404,6 +418,7 @@ const PreviewerContent: React.FC = () => {
                     height="100%"
                     width="100%"
                     overflowY="auto"
+                    data-tour-target="components-section"
                   >
                     <VStack align="stretch" spacing={0} minWidth={200} height="100%">
                       <ComponentTreeToolbar />
@@ -440,6 +455,7 @@ const PreviewerContent: React.FC = () => {
                     borderTop="1px"
                     borderColor="gray.600"
                     display={{ base: "none", lg: "block" }}
+                    data-tour-target="problems-section"
                   >
                     <Box p={4} borderBottom="1px" borderColor="gray.600">
                       <HStack spacing={2} align="center">
@@ -524,6 +540,7 @@ const PreviewerContent: React.FC = () => {
                     height="100%"
                     width="100%"
                     overflowY="auto"
+                    data-tour-target="properties-panel"
                   >
                     {currentSelectedId && (
                       <ComponentPropertiesPanel selectedComponentId={currentSelectedId} />
@@ -561,6 +578,9 @@ const PreviewerContent: React.FC = () => {
               problems={problems}
               onClickComponentPath={handlePathClick}
             />
+
+            {/* Tour Component */}
+            <PreviewerTour />
           </Box>
         );
       }}

@@ -157,6 +157,7 @@ export const ComponentTreeToolbar: React.FC = () => {
                   size={{ base: "md", lg: "sm" }}
                   variant="ghost"
                   aria-disabled={!canAddChildren}
+                  data-tour-target="add-component-button"
                   onClick={(e) => {
                     if (!canAddChildren) {
                       e.preventDefault();
