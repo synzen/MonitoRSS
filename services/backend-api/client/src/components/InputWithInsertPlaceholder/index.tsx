@@ -116,7 +116,7 @@ export const InputWithInsertPlaceholder: React.FC<Props> = ({
       <InsertPlaceholderDialog
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
-        onSelectTag={handleInsertPlaceholder}
+        onSelected={handleInsertPlaceholder}
         onCloseFocusRef={inputRef}
       />
     </>

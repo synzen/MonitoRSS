@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax */
 export const mockUserFeedArticles = [
   {
     id: "1",
@@ -20,4 +21,11 @@ export const mockUserFeedArticles = [
     title: "Why is the sky blue? The science behind the color of the sky",
     description: "The sky is blue because of the way light scatters in the atmosphere",
   },
-];
+] as Array<Record<string, string> & { id: string; idHash: string }>;
+
+// Load test by adding 400 more properties to each article
+for (let i = 4; i <= 400; i += 1) {
+  for (const article of mockUserFeedArticles) {
+    article[`extraProperty${i}`] = `Extra property ${i}`;
+  }
+}

@@ -17,6 +17,7 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { SearchIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import { Virtuoso } from "react-virtuoso";
 import { usePreviewerContext } from "./PreviewerContext";
 
 interface MergeTag {
@@ -27,20 +28,79 @@ interface MergeTag {
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSelectTag: (tag: string) => void;
+  onSelected: (tag: string) => void;
   onCloseFocusRef?: React.RefObject<any> | undefined;
 }
+
+interface PlaceholderItemProps {
+  placeholder: MergeTag;
+  index: number;
+  totalCount: number;
+  onSelected: (tag: string) => void;
+}
+
+const PlaceholderItem: React.FC<PlaceholderItemProps> = ({
+  placeholder,
+  index,
+  totalCount,
+  onSelected,
+}) => {
+  const handleSelectTag = (tag: string) => {
+    onSelected(tag);
+  };
+
+  return (
+    <Button
+      variant="ghost"
+      justifyContent="space-between"
+      p={4}
+      w="100%"
+      h="auto"
+      minH="auto"
+      borderRadius={0}
+      borderBottom={index < totalCount - 1 ? "1px solid" : undefined}
+      borderColor="gray.600"
+      _hover={{ bg: "gray.700" }}
+      _focus={{ bg: "gray.700", outline: "2px solid", outlineColor: "blue.400" }}
+      onClick={() => handleSelectTag(placeholder.tag)}
+      role="option"
+      aria-label={`Insert ${placeholder.tag} placeholder. Preview: ${placeholder.content.slice(
+        0,
+        100
+      )}${placeholder.content.length > 100 ? "..." : ""}`}
+    >
+      <VStack align="start" spacing={2} flex={1} w="full">
+        <Code colorScheme="blue" fontSize="sm" fontWeight="bold">
+          {placeholder.tag}
+        </Code>
+        <Text
+          fontSize="sm"
+          color="gray.300"
+          fontStyle={placeholder.content.startsWith("[") ? "italic" : "normal"}
+          textAlign="left"
+          w="full"
+          wordBreak="break-word"
+          whiteSpace="pre-wrap"
+          noOfLines={5}
+          aria-hidden="true"
+        >
+          {placeholder.content}
+        </Text>
+      </VStack>
+      <ChevronRightIcon color="gray.400" fontSize="lg" ml={2} flexShrink={0} aria-hidden="true" />
+    </Button>
+  );
+};
 
 export const InsertPlaceholderDialog: React.FC<Props> = ({
   isOpen,
   onClose,
-  onSelectTag,
+  onSelected,
   onCloseFocusRef,
 }) => {
   const { error, isLoading, currentArticle } = usePreviewerContext();
   const [searchTerm, setSearchTerm] = React.useState("");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
-  const listRef = React.useRef<HTMLDivElement>(null);
 
   const placeholders: MergeTag[] = React.useMemo(() => {
     if (!currentArticle) return [];
@@ -58,9 +118,22 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
   );
 
   const handleSelectTag = (tag: string) => {
-    onSelectTag(tag);
+    onSelected(tag);
     onClose();
   };
+
+  const renderItem = React.useCallback(
+    (index: number) => (
+      <PlaceholderItem
+        key={filteredPlaceholders[index].tag}
+        placeholder={filteredPlaceholders[index]}
+        index={index}
+        totalCount={filteredPlaceholders.length}
+        onSelected={handleSelectTag}
+      />
+    ),
+    [filteredPlaceholders, handleSelectTag]
+  );
 
   // Reset search and focus when modal closes/opens
   React.useEffect(() => {
@@ -129,15 +202,7 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
               </Text>
             )}
           </Box>
-          <VStack
-            ref={listRef}
-            spacing={0}
-            align="stretch"
-            maxH="60vh"
-            overflowY="auto"
-            role="listbox"
-            aria-label="Available placeholders"
-          >
+          <Box maxH="60vh" role="listbox" aria-label="Available placeholders">
             {isLoading && (
               <Box p={6} textAlign="center" role="status" aria-live="polite">
                 <VStack spacing={4}>
@@ -168,56 +233,14 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
                 </Text>
               </Box>
             )}
-            {!isLoading &&
-              !error &&
-              filteredPlaceholders.length > 0 &&
-              filteredPlaceholders.map((ph, index) => (
-                <Button
-                  key={ph.tag}
-                  variant="ghost"
-                  justifyContent="space-between"
-                  p={4}
-                  h="auto"
-                  minH="auto"
-                  borderRadius={0}
-                  borderBottom={index < filteredPlaceholders.length - 1 ? "1px solid" : undefined}
-                  borderColor="gray.600"
-                  _hover={{ bg: "gray.700" }}
-                  _focus={{ bg: "gray.700", outline: "2px solid", outlineColor: "blue.400" }}
-                  onClick={() => handleSelectTag(ph.tag)}
-                  role="option"
-                  aria-label={`Insert ${ph.tag} placeholder. Preview: ${ph.content.slice(0, 100)}${
-                    ph.content.length > 100 ? "..." : ""
-                  }`}
-                >
-                  <VStack align="start" spacing={2} flex={1} w="full">
-                    <Code colorScheme="blue" fontSize="sm" fontWeight="bold">
-                      {ph.tag}
-                    </Code>
-                    <Text
-                      fontSize="sm"
-                      color="gray.300"
-                      fontStyle={ph.content.startsWith("[") ? "italic" : "normal"}
-                      textAlign="left"
-                      w="full"
-                      wordBreak="break-word"
-                      whiteSpace="pre-wrap"
-                      noOfLines={5}
-                      aria-hidden="true"
-                    >
-                      {ph.content}
-                    </Text>
-                  </VStack>
-                  <ChevronRightIcon
-                    color="gray.400"
-                    fontSize="lg"
-                    ml={2}
-                    flexShrink={0}
-                    aria-hidden="true"
-                  />
-                </Button>
-              ))}
-          </VStack>
+            {!isLoading && !error && filteredPlaceholders.length > 0 && (
+              <Virtuoso
+                style={{ height: "50vh", width: "100%" }}
+                totalCount={filteredPlaceholders.length}
+                itemContent={renderItem}
+              />
+            )}
+          </Box>
         </ModalBody>
       </ModalContent>
     </Modal>
