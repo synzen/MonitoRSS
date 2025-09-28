@@ -108,6 +108,7 @@ export const ArticlePreviewBanner: React.FC = () => {
         borderTopWidth="4px"
         borderTopColor={!hasNoArticles ? "red.400" : "blue.400"}
         aria-live={hasNoArticles ? undefined : "polite"}
+        data-tour-target="article-banner"
       >
         <VStack spacing={0} bg={!hasNoArticles ? "red.800" : "blue.800"}>
           <HStack justify="space-between" align="center" p={3} w="full" flexWrap="wrap" spacing={2}>
@@ -175,6 +176,7 @@ export const ArticlePreviewBanner: React.FC = () => {
         overflow="hidden"
         borderTopWidth="4px"
         borderTopColor="blue.400"
+        data-tour-target="article-banner"
       >
         <Box aria-live="polite" srOnly>
           <span>

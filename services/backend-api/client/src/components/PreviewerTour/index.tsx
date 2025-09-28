@@ -18,7 +18,8 @@ import {
   ModalCloseButton,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
-import { FaLightbulb, FaArrowRight, FaArrowLeft, FaTimes } from "react-icons/fa";
+import { FaArrowRight, FaArrowLeft, FaTimes } from "react-icons/fa";
+import { FaScrewdriverWrench } from "react-icons/fa6";
 
 export const TOUR_STORAGE_KEY = "message-builder-tour-completed";
 
@@ -60,9 +61,27 @@ export const MESSAGE_BUILDER_TOUR_STEPS: TourStep[] = [
     offset: { x: -20, y: 0 },
   },
   {
+    id: "discord-preview",
+    target: "[data-tour-target='discord-preview']",
+    title: "Discord Message Preview",
+    content:
+      "This shows an approximation of how your Discord message might look when posted to your channel. The preview updates in real-time as you make changes to your message components.",
+    placement: "left",
+    offset: { x: -20, y: 0 },
+  },
+  {
+    id: "article-banner",
+    target: "[data-tour-target='article-banner']",
+    title: "Article Selection",
+    content:
+      "The preview changes based on the selected article from your feed. You can change articles to see how your message format looks with different content.\n\nUse 'Send to Discord' to send the article to Discord and see how it actually looks since it may have slight differences from the preview.",
+    placement: "bottom",
+    offset: { x: 0, y: 20 },
+  },
+  {
     id: "problems-section",
     target: "[data-tour-target='problems-section']",
-    title: "Validation Problems",
+    title: "Problems",
     content:
       "Any issues with your customizations will appear here. This helps you identify and fix problems before saving your message format.",
     placement: "top",
@@ -195,7 +214,13 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
           overflow: "hidden",
         }}
       >
-        Tour step {stepIndex + 1} of {totalSteps}: {step.title}. {step.content}
+        Tour step {stepIndex + 1} of {totalSteps}: {step.title}.{" "}
+        {step.content.split("\n").map((line, idx) => (
+          // eslint-disable-next-line react/no-array-index-key
+          <span key={idx}>
+            {line} <br />
+          </span>
+        ))}
       </div>
       {/* Dark overlay frames around the highlighted element */}
       {/* Top overlay */}
@@ -344,7 +369,12 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
               </Button>
             </HStack>
             <Text id="tour-step-content" fontSize="sm" lineHeight="1.5">
-              {step.content}
+              {step.content.split("\n").map((line, idx) => (
+                // eslint-disable-next-line react/no-array-index-key
+                <span key={idx}>
+                  {line} <br />
+                </span>
+              ))}
             </Text>
             <HStack justify="space-between" width="100%">
               <Text fontSize="xs" color="gray.300" aria-live="polite" role="status">
@@ -630,7 +660,7 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
         >
           <ModalHeader>
             <HStack>
-              <Icon as={FaLightbulb} color="yellow.400" aria-hidden="true" />
+              <Icon as={FaScrewdriverWrench} aria-hidden="true" />
               <Text id="tour-modal-title" color="white">
                 Welcome to your Message Builder!
               </Text>
@@ -652,19 +682,20 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
                   markTourCompleted();
                   onClose();
                 }}
-                borderColor="gray.500"
-                color="gray.300"
-                _hover={{ bg: "gray.700", borderColor: "gray.400" }}
-                _active={{ bg: "gray.600" }}
+                // borderColor="gray.500"
+                // color="gray.300"
+                // _hover={{ bg: "gray.700", borderColor: "gray.400" }}
+                // _active={{ bg: "gray.600" }}
                 aria-label="Skip the message builder tour and start using the feature"
               >
                 Skip Tour
               </Button>
               <Button
-                bg="blue.500"
-                color="white"
-                _hover={{ bg: "blue.600" }}
-                _active={{ bg: "blue.700" }}
+                colorScheme="blue"
+                // bg="blue.500"
+                // color="white"
+                // _hover={{ bg: "blue.600" }}
+                // _active={{ bg: "blue.700" }}
                 onClick={startTour}
                 aria-label="Start the interactive tour to learn message builder features"
                 autoFocus

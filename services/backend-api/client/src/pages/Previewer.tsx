@@ -448,7 +448,7 @@ const PreviewerContent: React.FC = () => {
                       Discord Message Preview
                     </Text>
                   </Box>
-                  <Box p={4} overflow="hidden">
+                  <Box p={4} overflow="hidden" data-tour-target="discord-preview">
                     <DiscordMessagePreview />
                   </Box>
                   <Box
