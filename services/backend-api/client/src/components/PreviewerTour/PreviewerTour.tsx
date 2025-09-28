@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Box,
   Portal,
@@ -20,7 +20,7 @@ import {
 import { motion } from "framer-motion";
 import { FaLightbulb, FaArrowRight, FaArrowLeft, FaTimes } from "react-icons/fa";
 
-const TOUR_STORAGE_KEY = "previewer-tour-completed";
+export const TOUR_STORAGE_KEY = "previewer-tour-completed";
 
 export interface TourStep {
   id: string;
@@ -101,6 +101,7 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
   onClose,
 }) => {
   const { step, stepIndex, targetRect } = tourState;
+  const nextButtonRef = useRef<HTMLButtonElement | null>(null);
 
   // During transitions, we might not have targetRect yet
   // In this case, render with opacity 0 to maintain overlay
@@ -120,6 +121,22 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
       </Portal>
     );
   }
+
+  // useEffect(() => {
+  //   console.log("🚀 ~ nextButtonRef:", nextButtonRef);
+
+  //   if (nextButtonRef.current) {
+  //     nextButtonRef.current.focus();
+  //   }
+
+  //   return () => {
+  //     const h1 = document.querySelector("h1");
+
+  //     if (h1) {
+  //       h1.focus();
+  //     }
+  //   };
+  // }, [nextButtonRef.current]);
 
   const getTooltipPosition = () => {
     const tooltipWidth = 320;
@@ -320,6 +337,7 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
                   </Button>
                 )}
                 <Button
+                  ref={nextButtonRef}
                   size="sm"
                   bg="blue.500"
                   color="white"
@@ -378,42 +396,6 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete }) => {
     setIsActive(true);
     onClose();
   }, [onClose]);
-
-  // Update target element position
-  const updateTargetRect = useCallback(() => {
-    if (!isActive || !tourState || tourState.stepIndex >= PREVIEWER_TOUR_STEPS.length) {
-      if (tourState) {
-        setTourState((prev) => (prev ? { ...prev, targetRect: null } : null));
-      }
-
-      return;
-    }
-
-    const { step } = tourState;
-    const element = document.querySelector(step.target);
-
-    if (element) {
-      const rect = element.getBoundingClientRect();
-
-      // Only update if we have valid dimensions
-      if (rect.width > 0 && rect.height > 0) {
-        setTourState((prev) => (prev ? { ...prev, targetRect: rect } : null));
-      }
-    } else {
-      // If element not found, try again after a short delay
-      setTimeout(() => {
-        const retryElement = document.querySelector(step.target);
-
-        if (retryElement) {
-          const rect = retryElement.getBoundingClientRect();
-
-          if (rect.width > 0 && rect.height > 0) {
-            setTourState((prev) => (prev ? { ...prev, targetRect: rect } : null));
-          }
-        }
-      }, 50);
-    }
-  }, [isActive, tourState]);
 
   // Handle next step
   const handleNext = useCallback(() => {
@@ -483,21 +465,70 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete }) => {
 
   // Update target position when step changes or on scroll/resize
   useEffect(() => {
-    updateTargetRect();
-
-    if (isActive) {
-      const handleUpdate = () => updateTargetRect();
-      window.addEventListener("scroll", handleUpdate, true);
-      window.addEventListener("resize", handleUpdate);
-
-      return () => {
-        window.removeEventListener("scroll", handleUpdate, true);
-        window.removeEventListener("resize", handleUpdate);
-      };
+    if (!isActive || !tourState) {
+      return undefined;
     }
 
-    return undefined;
-  }, [isActive, updateTargetRect]);
+    const updateRect = () => {
+      if (!isActive || !tourState || tourState.stepIndex >= PREVIEWER_TOUR_STEPS.length) {
+        return;
+      }
+
+      const { step } = tourState;
+      const element = document.querySelector(step.target);
+
+      if (element) {
+        const rect = element.getBoundingClientRect();
+
+        // Only update if we have valid dimensions
+        if (rect.width > 0 && rect.height > 0) {
+          setTourState((prev) => {
+            if (!prev) return null;
+
+            // Check if rect has actually changed to prevent unnecessary updates
+            const currentRect = prev.targetRect;
+
+            if (
+              currentRect &&
+              currentRect.left === rect.left &&
+              currentRect.top === rect.top &&
+              currentRect.width === rect.width &&
+              currentRect.height === rect.height
+            ) {
+              return prev; // No change needed
+            }
+
+            return { ...prev, targetRect: rect };
+          });
+        }
+      } else {
+        // If element not found, try again after a short delay
+        setTimeout(() => {
+          const retryElement = document.querySelector(step.target);
+
+          if (retryElement) {
+            const rect = retryElement.getBoundingClientRect();
+
+            if (rect.width > 0 && rect.height > 0) {
+              setTourState((prev) => (prev ? { ...prev, targetRect: rect } : null));
+            }
+          }
+        }, 50);
+      }
+    };
+
+    // Initial update
+    updateRect();
+
+    // Set up scroll and resize listeners
+    window.addEventListener("scroll", updateRect, true);
+    window.addEventListener("resize", updateRect);
+
+    return () => {
+      window.removeEventListener("scroll", updateRect, true);
+      window.removeEventListener("resize", updateRect);
+    };
+  }, [isActive, tourState?.step.target, tourState?.stepIndex]);
 
   return (
     <>
