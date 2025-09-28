@@ -239,7 +239,7 @@ export const DiscordMessagePreview: React.FC = () => {
           overflow="auto"
           position="relative"
         >
-          {isFetching && (
+          {(isFetching || !currentArticle) && (
             <Progress
               position="absolute"
               top={0}
