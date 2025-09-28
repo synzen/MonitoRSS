@@ -71,7 +71,7 @@ import convertPreviewerStateToConnectionUpdate from "./Previewer/utils/convertPr
 import { pages } from "../constants";
 import { UserFeedTabSearchParam } from "../constants/userFeedTabSearchParam";
 import { PreviewerTour } from "../components/PreviewerTour";
-import { usePreviewerTour } from "../hooks";
+import { usePreviewerTour, useIsPreviewerDesktop } from "../hooks";
 
 const SIDE_PANEL_WIDTH = {
   base: "300px",
@@ -102,6 +102,7 @@ const PreviewerContent: React.FC = () => {
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
   const { userFeed, connection } = useUserFeedConnectionContext();
   const { resetTour, resetTrigger } = usePreviewerTour();
+  const isDesktop = useIsPreviewerDesktop();
 
   // Header hooks
   const { data: discordBotData, status: botStatus, error: botError } = useDiscordBot();
@@ -370,15 +371,17 @@ const PreviewerContent: React.FC = () => {
                     )}
                   </HStack>
                   <HStack spacing={3} flexWrap="wrap">
-                    <Button
-                      variant="outline"
-                      colorScheme="gray"
-                      size="sm"
-                      onClick={resetTour}
-                      leftIcon={<InfoIcon />}
-                    >
-                      Take Tour
-                    </Button>
+                    {isDesktop && (
+                      <Button
+                        variant="outline"
+                        colorScheme="gray"
+                        size="sm"
+                        onClick={resetTour}
+                        leftIcon={<InfoIcon />}
+                      >
+                        Take Tour
+                      </Button>
+                    )}
                     <HStack spacing={3} data-tour-target="save-discard-buttons">
                       <Button
                         variant="outline"

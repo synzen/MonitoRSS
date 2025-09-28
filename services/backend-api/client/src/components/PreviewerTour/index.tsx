@@ -20,6 +20,7 @@ import {
 import { motion } from "framer-motion";
 import { FaArrowRight, FaArrowLeft, FaTimes } from "react-icons/fa";
 import { FaScrewdriverWrench } from "react-icons/fa6";
+import { useIsPreviewerMobile } from "../../hooks";
 
 export const TOUR_STORAGE_KEY = "message-builder-tour-completed";
 
@@ -442,6 +443,7 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
   const [isActive, setIsActive] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const isMobile = useIsPreviewerMobile();
 
   // Check if user has completed the tour
   const hasCompletedTour = useCallback(() => {
@@ -545,9 +547,9 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
     onComplete?.();
   }, [markTourCompleted, onComplete, focusOnCustomizeMessageHeading]);
 
-  // Auto-start tour if not completed
+  // Auto-start tour if not completed (skip on mobile)
   useEffect(() => {
-    if (!hasCompletedTour()) {
+    if (!hasCompletedTour() && !isMobile) {
       // Wait a bit for the page to render
       const timer = setTimeout(() => {
         onOpen();
@@ -557,16 +559,16 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
     }
 
     return undefined;
-  }, [hasCompletedTour, onOpen]);
+  }, [hasCompletedTour, onOpen, isMobile]);
 
-  // Handle programmatic tour reset
+  // Handle programmatic tour reset (skip on mobile)
   useEffect(() => {
-    if (resetTrigger && resetTrigger > 0) {
+    if (resetTrigger && resetTrigger > 0 && !isMobile) {
       // Reset any active tour state
       setIsActive(false);
       setTourState(null);
       setIsTransitioning(false);
-
+      
       // Open the welcome modal after a short delay
       const timer = setTimeout(() => {
         onOpen();
@@ -576,7 +578,7 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
     }
 
     return undefined;
-  }, [resetTrigger, onOpen]);
+  }, [resetTrigger, onOpen, isMobile]);
 
   // Update target position when step changes or on scroll/resize
   useEffect(() => {
