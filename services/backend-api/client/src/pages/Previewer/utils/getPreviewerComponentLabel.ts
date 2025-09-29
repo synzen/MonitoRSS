@@ -2,7 +2,7 @@ import { ComponentType } from "../types";
 
 const componentLabels: Partial<Record<ComponentType, string>> = {
   [ComponentType.LegacyText]: "Custom Text",
-  [ComponentType.LegacyEmbedContainer]: "Embeds",
+  [ComponentType.LegacyEmbedContainer]: "Embeds Container",
   [ComponentType.LegacyEmbed]: "Embed",
   [ComponentType.LegacyEmbedAuthor]: "Author",
   [ComponentType.LegacyEmbedTitle]: "Title",

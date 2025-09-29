@@ -32,6 +32,7 @@ import { useUserFeedConnectionContext } from "../../contexts/UserFeedConnectionC
 import { FeedDiscordChannelConnection } from "../../types";
 import { convertConnectionToPreviewerState } from "./utils/convertConnectionToPreviewerState";
 import getPreviewerComponentParentIds from "./utils/getPreviewerComponentParentIds";
+import { notifyInfo } from "../../utils/notifyInfo";
 
 const validationSchema = yup.object({
   messageComponent: createPreviewerComponentSchema().optional(),
@@ -60,7 +61,7 @@ interface PreviewerContextType {
       | ComponentType.V2Section
       | ComponentType.V2Divider,
     isAccessory?: boolean
-  ) => void;
+  ) => Component | null;
   deleteComponent: (componentId: string) => void;
   resetMessage: () => void;
   moveComponentUp: (componentId: string) => void;
@@ -165,15 +166,16 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const messageComponent = getValues("messageComponent");
 
       if (!messageComponent) {
-        return;
+        return null;
       }
 
       const idsToExpand: string[] = [parentId];
+      let newComponent: Component | null = null;
 
       const updateComponentTree = (component: Component): Component => {
         if (component.id === parentId) {
           if (isAccessory && component.type === ComponentType.V2Section) {
-            const newComponent = createNewPreviewerComponent(childType, `${parentId}-accessory`, 0);
+            newComponent = createNewPreviewerComponent(childType, `${parentId}-accessory`, 0);
             idsToExpand.push(newComponent.id);
 
             return {
@@ -183,7 +185,6 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           }
 
           let indexToAddAt = component.children?.length || 0;
-          let newComponent: Component;
 
           // The order of legacy components are fixed
           if (childType === ComponentType.LegacyEmbedContainer) {
@@ -228,7 +229,9 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         return component;
       };
 
-      setValue("messageComponent", updateComponentTree(messageComponent) as MessageComponentRoot, {
+      const newRoot = updateComponentTree(messageComponent) as MessageComponentRoot;
+
+      setValue("messageComponent", newRoot, {
         shouldValidate: true,
         shouldDirty: true,
         shouldTouch: true,
@@ -240,6 +243,8 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setCurrentFocusedId(lastIdToExpand);
         setCurrentSelectedId(lastIdToExpand);
       }
+
+      return newComponent;
     },
     [getValues, setValue]
   );
@@ -252,9 +257,13 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
       if (componentId === messageComponent.id) return;
 
+      let newSelectedId: string | null = null;
+
       const removeFromTree = (component: Component): Component | null => {
         // Handle section accessory removal
         if (component.type === ComponentType.V2Section && component.accessory?.id === componentId) {
+          newSelectedId = component.id; // Set parent as selected
+
           return {
             ...component,
             accessory: undefined,
@@ -263,6 +272,22 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
         // Handle children removal
         if (component.children) {
+          const childIndex = component.children.findIndex((child) => child.id === componentId);
+
+          if (childIndex !== -1) {
+            // Found the component to delete in this parent's children
+            if (childIndex < component.children.length - 1) {
+              // There's a next sibling, select it
+              newSelectedId = component.children[childIndex + 1].id;
+            } else if (childIndex === component.children.length - 1 && childIndex > 0) {
+              // There's a previous sibling, select it
+              newSelectedId = component.children[childIndex - 1].id;
+            } else {
+              // No next sibling, select the parent
+              newSelectedId = component.id;
+            }
+          }
+
           const updatedChildren = component.children
             .filter((child) => child.id !== componentId)
             .map(removeFromTree)
@@ -286,9 +311,16 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           shouldDirty: true,
           shouldTouch: true,
         });
+
+        if (newSelectedId) {
+          setCurrentSelectedId(newSelectedId);
+          setCurrentFocusedId(newSelectedId);
+        }
+
+        notifyInfo(`Successfully removed component`);
       }
     },
-    [getValues, setValue]
+    [getValues, setValue, setCurrentSelectedId, setCurrentFocusedId]
   );
 
   const moveComponentUp: PreviewerContextType["moveComponentUp"] = useCallback(

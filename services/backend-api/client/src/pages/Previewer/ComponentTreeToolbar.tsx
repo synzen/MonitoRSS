@@ -12,6 +12,7 @@ import {
   MenuGroup,
   Text,
   Tooltip,
+  MenuDivider,
 } from "@chakra-ui/react";
 import { useFormContext } from "react-hook-form";
 import { AddIcon } from "@chakra-ui/icons";
@@ -26,7 +27,7 @@ import { SlidingConfigPanel } from "./SlidingConfigPanel";
 
 export const ComponentTreeToolbar: React.FC = () => {
   const { addChildComponent } = usePreviewerContext();
-  const { currentSelectedId, setExpandedIds } = useNavigableTreeContext();
+  const { currentSelectedId, setCurrentSelectedId, setExpandedIds } = useNavigableTreeContext();
   const { watch } = useFormContext<PreviewerFormState>();
   const messageComponent = watch("messageComponent");
   const [configuringComponent, setConfiguringComponent] = useState<Component | null>(null);
@@ -76,7 +77,11 @@ export const ComponentTreeToolbar: React.FC = () => {
 
   const handleAddChild = (childType: ComponentType) => {
     if (!selectedComponent) return;
-    addChildComponent(selectedComponent.id, childType as any);
+    const added = addChildComponent(selectedComponent.id, childType as any);
+
+    if (added) {
+      setCurrentSelectedId(added.id);
+    }
   };
 
   const handleConfigureComponent = () => {
@@ -150,285 +155,307 @@ export const ComponentTreeToolbar: React.FC = () => {
               Configure
             </Button>
             <Menu>
-              <Tooltip label="Add component" placement="top">
-                <MenuButton
-                  as={Button}
-                  leftIcon={<AddIcon />}
-                  size={{ base: "md", lg: "sm" }}
-                  variant="ghost"
-                  aria-disabled={!canAddChildren}
-                  data-tour-target="add-component-button"
-                  onClick={(e) => {
-                    if (!canAddChildren) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }
-                  }}
+              {/* <Tooltip label="Add component" placement="top"> */}
+              <MenuButton
+                as={Button}
+                leftIcon={<AddIcon />}
+                size={{ base: "md", lg: "sm" }}
+                variant="ghost"
+                aria-disabled={!canAddChildren}
+                data-tour-target="add-component-button"
+                onClick={(e) => {
+                  if (!canAddChildren) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
+                }}
+              >
+                New Component
+              </MenuButton>
+              {/* </Tooltip> */}
+              <MenuList bg="gray.700" borderColor="gray.600">
+                <MenuGroup
+                  hidden={selectedComponent?.type !== ComponentType.LegacyRoot}
+                  title={`Text (${
+                    selectedComponent?.children?.filter((c) => c.type === ComponentType.LegacyText)
+                      .length || 0
+                  }/1)`}
                 >
-                  New Component
-                </MenuButton>
-              </Tooltip>
-              {canAddChildren && (
-                <MenuList bg="gray.700" borderColor="gray.600">
-                  {selectedComponent.type === ComponentType.LegacyRoot && (
-                    <>
-                      <MenuGroup
-                        title={`Text (${
-                          selectedComponent.children?.filter(
-                            (c) => c.type === ComponentType.LegacyText
-                          ).length || 0
-                        }/1)`}
-                      >
-                        <MenuItem
-                          bg="gray.700"
-                          _hover={{ bg: "gray.600" }}
-                          color="white"
-                          onClick={() => handleAddChild(ComponentType.LegacyText)}
-                          isDisabled={selectedComponent.children?.some(
-                            (c) => c.type === ComponentType.LegacyText
-                          )}
-                        >
-                          Add {getPreviewerComponentLabel(ComponentType.LegacyText)}
-                        </MenuItem>
-                      </MenuGroup>
-                      <MenuGroup
-                        title={`Embed Container (${
-                          selectedComponent.children?.filter(
-                            (c) => c.type === ComponentType.LegacyEmbedContainer
-                          ).length || 0
-                        }/1)`}
-                      >
-                        <MenuItem
-                          bg="gray.700"
-                          _hover={{ bg: "gray.600" }}
-                          color="white"
-                          onClick={() => handleAddChild(ComponentType.LegacyEmbedContainer)}
-                          isDisabled={selectedComponent.children?.some(
-                            (c) => c.type === ComponentType.LegacyEmbedContainer
-                          )}
-                        >
-                          Add {getPreviewerComponentLabel(ComponentType.LegacyEmbedContainer)}
-                        </MenuItem>
-                      </MenuGroup>
-                      <MenuGroup
-                        title={`Action Rows (${
-                          selectedComponent.children?.filter(
-                            (c) => c.type === ComponentType.LegacyActionRow
-                          ).length || 0
-                        }/5)`}
-                      >
-                        <MenuItem
-                          bg="gray.700"
-                          _hover={{ bg: "gray.600" }}
-                          color="white"
-                          onClick={() => handleAddChild(ComponentType.LegacyActionRow)}
-                          isDisabled={
-                            (selectedComponent.children?.filter(
-                              (c) => c.type === ComponentType.LegacyActionRow
-                            ).length || 0) >= 5
-                          }
-                        >
-                          Add {getPreviewerComponentLabel(ComponentType.LegacyActionRow)}
-                        </MenuItem>
-                      </MenuGroup>
-                    </>
-                  )}
-                  {selectedComponent.type === ComponentType.LegacyEmbed && (
-                    <>
-                      <MenuGroup title="Embed Components">
-                        <MenuItem
-                          bg="gray.700"
-                          _hover={{ bg: "gray.600" }}
-                          color="white"
-                          onClick={() => handleAddChild(ComponentType.LegacyEmbedAuthor)}
-                          isDisabled={selectedComponent.children?.some(
-                            (c) => c.type === ComponentType.LegacyEmbedAuthor
-                          )}
-                        >
-                          Add Author
-                        </MenuItem>
-                        <MenuItem
-                          bg="gray.700"
-                          _hover={{ bg: "gray.600" }}
-                          color="white"
-                          onClick={() => handleAddChild(ComponentType.LegacyEmbedTitle)}
-                          isDisabled={selectedComponent.children?.some(
-                            (c) => c.type === ComponentType.LegacyEmbedTitle
-                          )}
-                        >
-                          Add Title
-                        </MenuItem>
-                        <MenuItem
-                          bg="gray.700"
-                          _hover={{ bg: "gray.600" }}
-                          color="white"
-                          onClick={() => handleAddChild(ComponentType.LegacyEmbedDescription)}
-                          isDisabled={selectedComponent.children?.some(
-                            (c) => c.type === ComponentType.LegacyEmbedDescription
-                          )}
-                        >
-                          Add Description
-                        </MenuItem>
-                        <MenuItem
-                          bg="gray.700"
-                          _hover={{ bg: "gray.600" }}
-                          color="white"
-                          onClick={() => handleAddChild(ComponentType.LegacyEmbedImage)}
-                          isDisabled={selectedComponent.children?.some(
-                            (c) => c.type === ComponentType.LegacyEmbedImage
-                          )}
-                        >
-                          Add Image
-                        </MenuItem>
-                        <MenuItem
-                          bg="gray.700"
-                          _hover={{ bg: "gray.600" }}
-                          color="white"
-                          onClick={() => handleAddChild(ComponentType.LegacyEmbedThumbnail)}
-                          isDisabled={selectedComponent.children?.some(
-                            (c) => c.type === ComponentType.LegacyEmbedThumbnail
-                          )}
-                        >
-                          Add Thumbnail
-                        </MenuItem>
-                        <MenuItem
-                          bg="gray.700"
-                          _hover={{ bg: "gray.600" }}
-                          color="white"
-                          onClick={() => handleAddChild(ComponentType.LegacyEmbedFooter)}
-                          isDisabled={selectedComponent.children?.some(
-                            (c) => c.type === ComponentType.LegacyEmbedFooter
-                          )}
-                        >
-                          Add Footer
-                        </MenuItem>
-                        <MenuItem
-                          bg="gray.700"
-                          _hover={{ bg: "gray.600" }}
-                          color="white"
-                          onClick={() => handleAddChild(ComponentType.LegacyEmbedTimestamp)}
-                          isDisabled={selectedComponent.children?.some(
-                            (c) => c.type === ComponentType.LegacyEmbedTimestamp
-                          )}
-                        >
-                          Add Timestamp
-                        </MenuItem>
-                      </MenuGroup>
-                      <MenuGroup
-                        title={`Embed Fields (${
-                          selectedComponent.children?.filter(
-                            (c) => c.type === ComponentType.LegacyEmbedField
-                          ).length || 0
-                        }/25)`}
-                      >
-                        <MenuItem
-                          bg="gray.700"
-                          _hover={{ bg: "gray.600" }}
-                          color="white"
-                          onClick={() => handleAddChild(ComponentType.LegacyEmbedField)}
-                          isDisabled={
-                            (selectedComponent.children?.filter(
-                              (c) => c.type === ComponentType.LegacyEmbedField
-                            ).length || 0) >= 25
-                          }
-                        >
-                          Add Field
-                        </MenuItem>
-                      </MenuGroup>
-                    </>
-                  )}
-                  {selectedComponent.type === ComponentType.LegacyEmbedContainer && (
-                    <MenuGroup title={`Embeds (${selectedComponent.children?.length || 0}/9)`}>
-                      <MenuItem
-                        bg="gray.700"
-                        _hover={{ bg: "gray.600" }}
-                        color="white"
-                        onClick={() => handleAddChild(ComponentType.LegacyEmbed)}
-                        isDisabled={(selectedComponent.children?.length || 0) >= 9}
-                      >
-                        Add Embed
-                      </MenuItem>
-                    </MenuGroup>
-                  )}
-                  {selectedComponent.type === ComponentType.LegacyActionRow && (
-                    <MenuGroup title={`Buttons (${selectedComponent.children?.length || 0}/5)`}>
-                      <MenuItem
-                        bg="gray.700"
-                        _hover={{ bg: "gray.600" }}
-                        color="white"
-                        onClick={() => handleAddChild(ComponentType.LegacyButton)}
-                        isDisabled={(selectedComponent.children?.length || 0) >= 5}
-                      >
-                        Add Button
-                      </MenuItem>
-                    </MenuGroup>
-                  )}
-                  {selectedComponent.type === ComponentType.V2Root && (
-                    <MenuGroup title={`Components (${selectedComponent.children?.length || 0}/10)`}>
-                      <MenuItem
-                        bg="gray.700"
-                        _hover={{ bg: "gray.600" }}
-                        color="white"
-                        onClick={() => handleAddChild(ComponentType.V2TextDisplay)}
-                        isDisabled={(selectedComponent.children?.length || 0) >= 10}
-                      >
-                        Add Text Display
-                      </MenuItem>
-                      <MenuItem
-                        bg="gray.700"
-                        _hover={{ bg: "gray.600" }}
-                        color="white"
-                        onClick={() => handleAddChild(ComponentType.V2ActionRow)}
-                      >
-                        Add Action Row
-                      </MenuItem>
-                      <MenuItem
-                        bg="gray.700"
-                        _hover={{ bg: "gray.600" }}
-                        color="white"
-                        onClick={() => handleAddChild(ComponentType.V2Section)}
-                      >
-                        Add Section
-                      </MenuItem>
-                    </MenuGroup>
-                  )}
-                  {selectedComponent.type === ComponentType.V2ActionRow && (
-                    <MenuGroup title={`Buttons (${selectedComponent.children?.length || 0}/5)`}>
-                      <MenuItem
-                        bg="gray.700"
-                        _hover={{ bg: "gray.600" }}
-                        color="white"
-                        onClick={() => handleAddChild(ComponentType.V2Button)}
-                        isDisabled={(selectedComponent.children?.length || 0) >= 5}
-                      >
-                        Add Button
-                      </MenuItem>
-                    </MenuGroup>
-                  )}
-                  {selectedComponent.type === ComponentType.V2Section && (
-                    <MenuGroup title={`Components (${selectedComponent.children?.length || 0}/3)`}>
-                      <MenuItem
-                        bg="gray.700"
-                        _hover={{ bg: "gray.600" }}
-                        color="white"
-                        onClick={() => handleAddChild(ComponentType.V2TextDisplay)}
-                        isDisabled={(selectedComponent.children?.length || 0) >= 3}
-                      >
-                        Add Text Display
-                      </MenuItem>
-                      <MenuItem
-                        bg="gray.700"
-                        _hover={{ bg: "gray.600" }}
-                        color="white"
-                        onClick={() => handleAddChild(ComponentType.V2Divider)}
-                        isDisabled={(selectedComponent.children?.length || 0) >= 3}
-                      >
-                        Add Divider
-                      </MenuItem>
-                    </MenuGroup>
-                  )}
-                </MenuList>
-              )}
+                  <MenuItem
+                    hidden={selectedComponent?.type !== ComponentType.LegacyRoot}
+                    bg="gray.700"
+                    _hover={{ bg: "gray.600" }}
+                    color="white"
+                    onClick={() => handleAddChild(ComponentType.LegacyText)}
+                    isDisabled={selectedComponent?.children?.some(
+                      (c) => c.type === ComponentType.LegacyText
+                    )}
+                  >
+                    Add {getPreviewerComponentLabel(ComponentType.LegacyText)}
+                  </MenuItem>
+                </MenuGroup>
+                <MenuDivider hidden={selectedComponent?.type !== ComponentType.LegacyRoot} />
+                <MenuGroup
+                  hidden={selectedComponent?.type !== ComponentType.LegacyRoot}
+                  title={`Embed Container (${
+                    selectedComponent?.children?.filter(
+                      (c) => c.type === ComponentType.LegacyEmbedContainer
+                    ).length || 0
+                  }/1)`}
+                >
+                  <MenuItem
+                    hidden={selectedComponent?.type !== ComponentType.LegacyRoot}
+                    bg="gray.700"
+                    _hover={{ bg: "gray.600" }}
+                    color="white"
+                    onClick={() => handleAddChild(ComponentType.LegacyEmbedContainer)}
+                    isDisabled={selectedComponent?.children?.some(
+                      (c) => c.type === ComponentType.LegacyEmbedContainer
+                    )}
+                  >
+                    Add {getPreviewerComponentLabel(ComponentType.LegacyEmbedContainer)}
+                  </MenuItem>
+                </MenuGroup>
+                <MenuDivider hidden={selectedComponent?.type !== ComponentType.LegacyRoot} />
+                <MenuGroup
+                  hidden={selectedComponent?.type !== ComponentType.LegacyRoot}
+                  title={`Action Rows (${
+                    selectedComponent?.children?.filter(
+                      (c) => c.type === ComponentType.LegacyActionRow
+                    ).length || 0
+                  }/5)`}
+                >
+                  <MenuItem
+                    hidden={selectedComponent?.type !== ComponentType.LegacyRoot}
+                    bg="gray.700"
+                    _hover={{ bg: "gray.600" }}
+                    color="white"
+                    onClick={() => handleAddChild(ComponentType.LegacyActionRow)}
+                    isDisabled={
+                      (selectedComponent?.children?.filter(
+                        (c) => c.type === ComponentType.LegacyActionRow
+                      ).length || 0) >= 5
+                    }
+                  >
+                    Add {getPreviewerComponentLabel(ComponentType.LegacyActionRow)}
+                  </MenuItem>
+                </MenuGroup>
+                <MenuGroup
+                  hidden={selectedComponent?.type !== ComponentType.LegacyEmbed}
+                  title="Embed Components"
+                >
+                  <MenuItem
+                    hidden={selectedComponent?.type !== ComponentType.LegacyEmbed}
+                    bg="gray.700"
+                    _hover={{ bg: "gray.600" }}
+                    color="white"
+                    onClick={() => handleAddChild(ComponentType.LegacyEmbedAuthor)}
+                    isDisabled={selectedComponent?.children?.some(
+                      (c) => c.type === ComponentType.LegacyEmbedAuthor
+                    )}
+                  >
+                    Add Author
+                  </MenuItem>
+                  <MenuItem
+                    hidden={selectedComponent?.type !== ComponentType.LegacyEmbed}
+                    bg="gray.700"
+                    _hover={{ bg: "gray.600" }}
+                    color="white"
+                    onClick={() => handleAddChild(ComponentType.LegacyEmbedTitle)}
+                    isDisabled={selectedComponent?.children?.some(
+                      (c) => c.type === ComponentType.LegacyEmbedTitle
+                    )}
+                  >
+                    Add Title
+                  </MenuItem>
+                  <MenuItem
+                    hidden={selectedComponent?.type !== ComponentType.LegacyEmbed}
+                    bg="gray.700"
+                    _hover={{ bg: "gray.600" }}
+                    color="white"
+                    onClick={() => handleAddChild(ComponentType.LegacyEmbedDescription)}
+                    isDisabled={selectedComponent?.children?.some(
+                      (c) => c.type === ComponentType.LegacyEmbedDescription
+                    )}
+                  >
+                    Add Description
+                  </MenuItem>
+                  <MenuItem
+                    hidden={selectedComponent?.type !== ComponentType.LegacyEmbed}
+                    bg="gray.700"
+                    _hover={{ bg: "gray.600" }}
+                    color="white"
+                    onClick={() => handleAddChild(ComponentType.LegacyEmbedImage)}
+                    isDisabled={selectedComponent?.children?.some(
+                      (c) => c.type === ComponentType.LegacyEmbedImage
+                    )}
+                  >
+                    Add Image
+                  </MenuItem>
+                  <MenuItem
+                    hidden={selectedComponent?.type !== ComponentType.LegacyEmbed}
+                    bg="gray.700"
+                    _hover={{ bg: "gray.600" }}
+                    color="white"
+                    onClick={() => handleAddChild(ComponentType.LegacyEmbedThumbnail)}
+                    isDisabled={selectedComponent?.children?.some(
+                      (c) => c.type === ComponentType.LegacyEmbedThumbnail
+                    )}
+                  >
+                    Add Thumbnail
+                  </MenuItem>
+                  <MenuItem
+                    hidden={selectedComponent?.type !== ComponentType.LegacyEmbed}
+                    bg="gray.700"
+                    _hover={{ bg: "gray.600" }}
+                    color="white"
+                    onClick={() => handleAddChild(ComponentType.LegacyEmbedFooter)}
+                    isDisabled={selectedComponent?.children?.some(
+                      (c) => c.type === ComponentType.LegacyEmbedFooter
+                    )}
+                  >
+                    Add Footer
+                  </MenuItem>
+                  <MenuItem
+                    hidden={selectedComponent?.type !== ComponentType.LegacyEmbed}
+                    bg="gray.700"
+                    _hover={{ bg: "gray.600" }}
+                    color="white"
+                    onClick={() => handleAddChild(ComponentType.LegacyEmbedTimestamp)}
+                    isDisabled={selectedComponent?.children?.some(
+                      (c) => c.type === ComponentType.LegacyEmbedTimestamp
+                    )}
+                  >
+                    Add Timestamp
+                  </MenuItem>
+                </MenuGroup>
+                <MenuGroup
+                  hidden={selectedComponent?.type !== ComponentType.LegacyEmbed}
+                  title={`Embed Fields (${
+                    selectedComponent?.children?.filter(
+                      (c) => c.type === ComponentType.LegacyEmbedField
+                    ).length || 0
+                  }/25)`}
+                >
+                  <MenuItem
+                    hidden={selectedComponent?.type !== ComponentType.LegacyEmbed}
+                    bg="gray.700"
+                    _hover={{ bg: "gray.600" }}
+                    color="white"
+                    onClick={() => handleAddChild(ComponentType.LegacyEmbedField)}
+                    isDisabled={
+                      (selectedComponent?.children?.filter(
+                        (c) => c.type === ComponentType.LegacyEmbedField
+                      ).length || 0) >= 25
+                    }
+                  >
+                    Add Field
+                  </MenuItem>
+                </MenuGroup>
+                <MenuGroup
+                  hidden={selectedComponent?.type !== ComponentType.LegacyEmbedContainer}
+                  title={`Embeds (${selectedComponent?.children?.length || 0}/9)`}
+                >
+                  <MenuItem
+                    hidden={selectedComponent?.type !== ComponentType.LegacyEmbedContainer}
+                    bg="gray.700"
+                    _hover={{ bg: "gray.600" }}
+                    color="white"
+                    onClick={() => handleAddChild(ComponentType.LegacyEmbed)}
+                    isDisabled={(selectedComponent?.children?.length || 0) >= 9}
+                  >
+                    Add Embed
+                  </MenuItem>
+                </MenuGroup>
+                <MenuGroup
+                  hidden={selectedComponent?.type !== ComponentType.LegacyActionRow}
+                  title={`Buttons (${selectedComponent?.children?.length || 0}/5)`}
+                >
+                  <MenuItem
+                    hidden={selectedComponent?.type !== ComponentType.LegacyActionRow}
+                    bg="gray.700"
+                    _hover={{ bg: "gray.600" }}
+                    color="white"
+                    onClick={() => handleAddChild(ComponentType.LegacyButton)}
+                    isDisabled={(selectedComponent?.children?.length || 0) >= 5}
+                  >
+                    Add Button
+                  </MenuItem>
+                </MenuGroup>
+                <MenuGroup
+                  hidden={selectedComponent?.type !== ComponentType.V2Root}
+                  title={`Components (${selectedComponent?.children?.length || 0}/10)`}
+                >
+                  <MenuItem
+                    hidden={selectedComponent?.type !== ComponentType.V2Root}
+                    bg="gray.700"
+                    _hover={{ bg: "gray.600" }}
+                    color="white"
+                    onClick={() => handleAddChild(ComponentType.V2TextDisplay)}
+                    isDisabled={(selectedComponent?.children?.length || 0) >= 10}
+                  >
+                    Add Text Display
+                  </MenuItem>
+                  <MenuItem
+                    hidden={selectedComponent?.type !== ComponentType.V2Root}
+                    bg="gray.700"
+                    _hover={{ bg: "gray.600" }}
+                    color="white"
+                    onClick={() => handleAddChild(ComponentType.V2ActionRow)}
+                  >
+                    Add Action Row
+                  </MenuItem>
+                  <MenuItem
+                    hidden={selectedComponent?.type !== ComponentType.V2Root}
+                    bg="gray.700"
+                    _hover={{ bg: "gray.600" }}
+                    color="white"
+                    onClick={() => handleAddChild(ComponentType.V2Section)}
+                  >
+                    Add Section
+                  </MenuItem>
+                </MenuGroup>
+                <MenuGroup
+                  hidden={selectedComponent?.type !== ComponentType.V2ActionRow}
+                  title={`Buttons (${selectedComponent?.children?.length || 0}/5)`}
+                >
+                  <MenuItem
+                    hidden={selectedComponent?.type !== ComponentType.V2ActionRow}
+                    bg="gray.700"
+                    _hover={{ bg: "gray.600" }}
+                    color="white"
+                    onClick={() => handleAddChild(ComponentType.V2Button)}
+                    isDisabled={(selectedComponent?.children?.length || 0) >= 5}
+                  >
+                    Add Button
+                  </MenuItem>
+                </MenuGroup>
+                <MenuGroup
+                  hidden={selectedComponent?.type !== ComponentType.V2Section}
+                  title={`Components (${selectedComponent?.children?.length || 0}/3)`}
+                >
+                  <MenuItem
+                    hidden={selectedComponent?.type !== ComponentType.V2Section}
+                    bg="gray.700"
+                    _hover={{ bg: "gray.600" }}
+                    color="white"
+                    onClick={() => handleAddChild(ComponentType.V2TextDisplay)}
+                    isDisabled={(selectedComponent?.children?.length || 0) >= 3}
+                  >
+                    Add Text Display
+                  </MenuItem>
+                  <MenuItem
+                    hidden={selectedComponent?.type !== ComponentType.V2Section}
+                    bg="gray.700"
+                    _hover={{ bg: "gray.600" }}
+                    color="white"
+                    onClick={() => handleAddChild(ComponentType.V2Divider)}
+                    isDisabled={(selectedComponent?.children?.length || 0) >= 3}
+                  >
+                    Add Divider
+                  </MenuItem>
+                </MenuGroup>
+              </MenuList>
             </Menu>
           </HStack>
         </HStack>
