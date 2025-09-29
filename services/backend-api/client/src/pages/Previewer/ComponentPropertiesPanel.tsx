@@ -38,7 +38,7 @@ import getPreviewerComponentFormPathsById from "./utils/getPreviewerComponentFor
 import getPreviewerFieldErrors from "./utils/getPreviewerFieldErrors";
 import getPreviewerComponentLabel from "./utils/getPreviewerComponentLabel";
 
-const NON_REPOSITIONABLE_COMPONENTS = [
+const NON_REPOSITIONABLE_COMPONENTS = new Set([
   ComponentType.LegacyEmbedContainer,
   ComponentType.LegacyText,
   ComponentType.LegacyEmbedAuthor,
@@ -48,7 +48,7 @@ const NON_REPOSITIONABLE_COMPONENTS = [
   ComponentType.LegacyEmbedTimestamp,
   ComponentType.LegacyEmbedTitle,
   ComponentType.LegacyEmbedFooter,
-];
+]);
 
 export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> = ({
   selectedComponentId,
@@ -58,7 +58,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   const { deleteComponent, moveComponentUp, moveComponentDown } = usePreviewerContext();
   const { watch, formState, setValue } = useFormContext<PreviewerFormState>();
   const messageComponent = watch("messageComponent");
-  const selectedComponent = findPreviewerComponentById(messageComponent, selectedComponentId);
+  const { target: selectedComponent } = findPreviewerComponentById(
+    messageComponent,
+    selectedComponentId
+  );
 
   const renderPropertiesForComponent = (component: Component, onChange: (value: any) => void) => {
     if (component.type === ComponentType.LegacyRoot) {
@@ -665,7 +668,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
   const positionInfo = selectedComponent ? getComponentPosition(selectedComponent) : null;
   const canBeRepositioned = selectedComponent
-    ? !NON_REPOSITIONABLE_COMPONENTS.includes(selectedComponent.type)
+    ? !NON_REPOSITIONABLE_COMPONENTS.has(selectedComponent.type)
     : false;
   const canMoveUp = positionInfo && positionInfo.index > 0;
   const canMoveDown = positionInfo && positionInfo.index < positionInfo.total - 1;

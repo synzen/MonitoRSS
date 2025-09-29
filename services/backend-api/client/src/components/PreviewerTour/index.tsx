@@ -411,7 +411,6 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
                   rightIcon={stepIndex < totalSteps - 1 ? <Icon as={FaArrowRight} /> : undefined}
                   onClick={onNext}
                   tabIndex={0}
-                  autoFocus
                   aria-label={
                     stepIndex < totalSteps - 1
                       ? `Continue to next step: ${
@@ -700,7 +699,6 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
                 // _active={{ bg: "blue.700" }}
                 onClick={startTour}
                 aria-label="Start the interactive tour to learn message builder features"
-                autoFocus
               >
                 Start Tour
               </Button>
