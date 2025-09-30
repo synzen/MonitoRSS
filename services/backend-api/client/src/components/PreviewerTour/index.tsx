@@ -289,7 +289,6 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
           width: targetRect.width + 16,
           height: targetRect.height + 16,
           zIndex: 9999,
-          pointerEvents: "none",
         }}
       >
         <Box

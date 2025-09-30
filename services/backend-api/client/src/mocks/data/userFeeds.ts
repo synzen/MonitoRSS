@@ -21,7 +21,7 @@ const sampleFilters = {
         op: "EQ",
         left: {
           type: "ARTICLE",
-          value: "title",
+          value: "processed::categories",
         },
         right: {
           type: "STRING",
