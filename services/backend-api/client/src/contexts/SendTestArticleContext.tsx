@@ -231,7 +231,7 @@ export const SendTestArticleProvider = ({ children }: PropsWithChildren<{}>) => 
 
   return (
     <SendTestArticleContext.Provider value={providerValue}>
-      <Modal size="xl" isOpen={isOpen} onClose={onClose}>
+      <Modal size="4xl" isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader

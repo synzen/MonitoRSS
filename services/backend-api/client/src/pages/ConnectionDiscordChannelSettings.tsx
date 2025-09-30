@@ -268,7 +268,6 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                           serverId={serverId}
                           channelId={matchingWebhook?.channelId || ""}
                           parenthesis
-                          spinnerSize="sm"
                           hidden={!matchingWebhook}
                         />
                       </HStack>
@@ -285,7 +284,6 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                         <DiscordChannelName
                           serverId={serverId}
                           channelId={matchingWebhook?.channelId || ""}
-                          spinnerSize="sm"
                           hidden={!matchingWebhook}
                         />
                       </HStack>

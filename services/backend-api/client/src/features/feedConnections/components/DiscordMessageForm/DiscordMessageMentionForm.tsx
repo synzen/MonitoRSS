@@ -1,6 +1,5 @@
 import { Avatar, Flex, HStack, IconButton, Spinner, Stack, Tag, Text } from "@chakra-ui/react";
 import { Controller, useFormContext } from "react-hook-form";
-import { useTranslation } from "react-i18next";
 import { SettingsIcon } from "@chakra-ui/icons";
 import { DiscordMessageFormData } from "@/types/discord";
 import { LogicalFilterExpression } from "../../types";
@@ -12,6 +11,9 @@ import MessagePlaceholderText from "../../../../components/MessagePlaceholderTex
 
 interface Props {
   guildId: string | undefined;
+  path?: string;
+  excludeDescription?: boolean;
+  smallButton?: boolean;
 }
 
 const MentionCheckbox = ({
@@ -21,6 +23,7 @@ const MentionCheckbox = ({
   onChangeFilters,
   onDelete,
   guildId,
+  small,
 }: {
   id: string;
   type: "role" | "user";
@@ -28,6 +31,7 @@ const MentionCheckbox = ({
   onChangeFilters: (filters: { expression: LogicalFilterExpression } | null) => void;
   onDelete: () => void;
   guildId?: string;
+  small?: boolean;
 }) => {
   const { getRolebyId, isFetching: isFetchingRoles } = useDiscordServerRoles({
     serverId: guildId,
@@ -44,7 +48,7 @@ const MentionCheckbox = ({
 
   return (
     <Flex>
-      <Tag key={id} variant="solid" size="lg" paddingRight={0} bg="gray.700">
+      <Tag key={id} variant="solid" size={small ? "md" : "lg"} paddingRight={0} bg="gray.700">
         {type === "user" && userData?.result.avatarUrl && (
           <Avatar
             src={userData.result.avatarUrl}
@@ -79,7 +83,7 @@ const MentionCheckbox = ({
               <IconButton
                 icon={<SettingsIcon fontSize="sm" />}
                 aria-label="Mention settings"
-                size="md"
+                size={small ? "sm" : "md"}
                 variant="ghost"
                 borderLeftRadius={0}
               />
@@ -91,31 +95,40 @@ const MentionCheckbox = ({
   );
 };
 
-export const DiscordMessageMentionForm = ({ guildId }: Props) => {
+export const DiscordMessageMentionForm = ({
+  guildId,
+  excludeDescription,
+  smallButton,
+  path = "mentions",
+}: Props) => {
   const { control } = useFormContext<DiscordMessageFormData>();
-  const { t } = useTranslation();
 
   return (
     <Stack spacing={4}>
-      <Text>
-        Roles and users that will be mentioned in the
-        <MessagePlaceholderText withBrackets>discord::mentions</MessagePlaceholderText>
-        placeholder. Directly copy the placeholder paste it somewhere in your message format for it
-        to show up.
-      </Text>
+      {!excludeDescription && (
+        <Text>
+          Roles and users that will be mentioned in the
+          <MessagePlaceholderText withBrackets>discord::mentions</MessagePlaceholderText>
+          placeholder. Directly copy the placeholder paste it somewhere in your message format for
+          it to show up.
+        </Text>
+      )}
       <Controller
-        name="mentions"
+        name={path as any}
         control={control}
         render={({ field }) => {
+          const mentionsValue = field.value as DiscordMessageFormData["mentions"];
+
           return (
             <Flex gap={4} flexWrap="wrap">
-              {field.value?.targets?.map((target, currentIndex) => {
+              {mentionsValue?.targets?.map((target, currentIndex) => {
                 if (!target) {
                   return null;
                 }
 
                 return (
                   <MentionCheckbox
+                    small={smallButton}
                     key={target.id}
                     filters={target.filters as any}
                     id={target.id}
@@ -148,6 +161,7 @@ export const DiscordMessageMentionForm = ({ guildId }: Props) => {
                 );
               })}
               <MentionSelectDialog
+                smallButton={smallButton}
                 guildId={guildId}
                 onAdded={(added) => {
                   field.onChange({

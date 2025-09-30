@@ -271,7 +271,64 @@ const mockUserFeeds: UserFeed[] = [
             guildId: mockDiscordServers[0].id,
             type: "forum",
           },
-          embeds: [],
+          embeds: [
+            {
+              title: "hello world",
+              fields: [
+                {
+                  id: "1",
+                  name: "test",
+                  value: "test",
+                  inline: true,
+                },
+                {
+                  id: "2",
+                  name: "test",
+                  value: "test",
+                  inline: true,
+                },
+                {
+                  id: "3",
+                  name: "name 2",
+                  value: "value 2",
+                  inline: false,
+                },
+                {
+                  id: "4",
+                  name: "name 3",
+                  value: "value 3",
+                },
+              ],
+            },
+            {
+              title: "hello world",
+              fields: [
+                {
+                  id: "1",
+                  name: "test",
+                  value: "test",
+                  inline: true,
+                },
+                {
+                  id: "2",
+                  name: "test",
+                  value: "test",
+                  inline: true,
+                },
+                {
+                  id: "3",
+                  name: "name 2",
+                  value: "value 2",
+                  inline: false,
+                },
+                {
+                  id: "4",
+                  name: "name 3",
+                  value: "value 3",
+                },
+              ],
+            },
+          ],
           formatter: {
             formatTables: false,
             stripImages: false,
@@ -280,7 +337,7 @@ const mockUserFeeds: UserFeed[] = [
         mentions: null,
         splitOptions: null,
         filters: null,
-        id: "2",
+        id: "forum",
         disabledCode: FeedConnectionDisabledCode.Manual,
         key: FeedConnectionType.DiscordChannel,
         name: "Discord Forum 1",
@@ -304,6 +361,152 @@ const mockUserFeeds: UserFeed[] = [
         id: "5",
         key: FeedConnectionType.DiscordChannel,
         name: "Discord Thread 1",
+      },
+      {
+        details: {
+          channel: {
+            id: mockDiscordChannels[4].id,
+            guildId: mockDiscordServers[0].id,
+            type: "new-thread",
+          },
+
+          componentRows: [
+            {
+              id: "r1",
+              components: [
+                {
+                  id: "b2",
+                  type: DiscordComponentType.Button,
+                  label: "Link Label",
+                  style: DiscordComponentButtonStyle.Link,
+                  url: "https://www.google.com",
+                },
+                {
+                  id: "b1",
+                  type: DiscordComponentType.Button,
+                  label: "Danger Label",
+                  style: DiscordComponentButtonStyle.Link,
+                  url: "https://www.google.com",
+                },
+                {
+                  id: "b3",
+                  type: DiscordComponentType.Button,
+                  label: "Link Label",
+                  style: DiscordComponentButtonStyle.Link,
+                  url: "https://www.google.com",
+                },
+                {
+                  id: "b4",
+                  type: DiscordComponentType.Button,
+                  label: "Danger Label",
+                  style: DiscordComponentButtonStyle.Link,
+                  url: "https://www.google.com",
+                },
+              ],
+            },
+            {
+              id: "r2",
+              components: [
+                {
+                  id: "r2b2",
+                  type: DiscordComponentType.Button,
+                  label: "Link Label",
+                  style: DiscordComponentButtonStyle.Link,
+                  url: "https://www.google.com",
+                },
+              ],
+            },
+          ],
+          embeds: [
+            {
+              title: "hello world",
+              fields: [
+                {
+                  id: "1",
+                  name: "test",
+                  value: "test",
+                  inline: true,
+                },
+                {
+                  id: "2",
+                  name: "test",
+                  value: "test",
+                  inline: true,
+                },
+                {
+                  id: "3",
+                  name: "name 2",
+                  value: "value 2",
+                  inline: false,
+                },
+                {
+                  id: "4",
+                  name: "name 3",
+                  value: "value 3",
+                },
+              ],
+            },
+          ],
+          formatter: {
+            formatTables: false,
+            stripImages: false,
+          },
+        },
+        splitOptions: null,
+        filters: null,
+        mentions: null,
+        id: "6",
+        key: FeedConnectionType.DiscordChannel,
+        name: "Discord New Thread 1",
+      },
+      {
+        details: {
+          channel: {
+            id: mockDiscordChannels[4].id,
+            guildId: mockDiscordServers[0].id,
+            type: "forum-thread",
+          },
+          embeds: [
+            {
+              title: "hello world",
+              fields: [
+                {
+                  id: "1",
+                  name: "test",
+                  value: "test",
+                  inline: true,
+                },
+                {
+                  id: "2",
+                  name: "test",
+                  value: "test",
+                  inline: true,
+                },
+                {
+                  id: "3",
+                  name: "name 2",
+                  value: "value 2",
+                  inline: false,
+                },
+                {
+                  id: "4",
+                  name: "name 3",
+                  value: "value 3",
+                },
+              ],
+            },
+          ],
+          formatter: {
+            formatTables: false,
+            stripImages: false,
+          },
+        },
+        splitOptions: null,
+        filters: null,
+        mentions: null,
+        id: "7",
+        key: FeedConnectionType.DiscordChannel,
+        name: "Discord Forum Thread 1",
       },
     ],
     healthStatus: UserFeedHealthStatus.Ok,

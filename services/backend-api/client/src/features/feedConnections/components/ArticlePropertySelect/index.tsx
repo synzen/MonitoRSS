@@ -1,6 +1,7 @@
 import { Stack } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import Select from "react-select";
+import { useEffect } from "react";
 import { useUserFeedArticleProperties } from "../../../feed/hooks";
 import { InlineErrorAlert, ThemedSelect } from "../../../../components";
 import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
@@ -17,6 +18,7 @@ interface Props {
   inputId: string;
   isRequired?: boolean;
   tabIndex?: number;
+  invertBg?: boolean;
 }
 
 export const ArticlePropertySelect = ({
@@ -30,6 +32,7 @@ export const ArticlePropertySelect = ({
   isInvalid,
   isRequired,
   tabIndex,
+  invertBg,
 }: Props) => {
   const {
     userFeed: { id: feedId },
@@ -40,8 +43,21 @@ export const ArticlePropertySelect = ({
       customPlaceholders,
     },
   };
-  const { data, error, fetchStatus } = useUserFeedArticleProperties(input);
+  const { data, error, fetchStatus, status } = useUserFeedArticleProperties(input);
   const { t } = useTranslation();
+
+  useEffect(() => {
+    if (status === "success" && data) {
+      const availableProperties = data?.result.properties || [];
+      const title = availableProperties.includes("title");
+
+      if (!title) {
+        onChange(availableProperties[0] as string);
+      } else {
+        onChange("title");
+      }
+    }
+  }, [status]);
 
   return (
     <Stack onKeyDown={(e) => e.stopPropagation()}>
@@ -66,6 +82,7 @@ export const ArticlePropertySelect = ({
           required: isRequired,
           tabIndex,
         }}
+        invertBg={invertBg}
       />
       {error && (
         <InlineErrorAlert

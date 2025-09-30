@@ -27,12 +27,22 @@ import { DiscordMessageFormData } from "@/types/discord";
 import { PlaceholderLimitDialog } from "../PlaceholderLimitDialog";
 import MessagePlaceholderText from "../../../../components/MessagePlaceholderText";
 
-export const DiscordMessagePlaceholderLimitsForm = () => {
+interface Props {
+  path?: string;
+  excludeDescription?: boolean;
+  small?: boolean;
+}
+
+export const DiscordMessagePlaceholderLimitsForm = ({
+  path = "placeholderLimits",
+  excludeDescription,
+  small,
+}: Props) => {
   const { control } = useFormContext<DiscordMessageFormData>();
   const { t } = useTranslation();
   const { fields, append, update, remove } = useFieldArray({
     control,
-    name: "placeholderLimits",
+    name: path as any,
   });
 
   const onSubmitNewLimit = (limit: {
@@ -40,7 +50,7 @@ export const DiscordMessagePlaceholderLimitsForm = () => {
     placeholder: string;
     appendString: string;
   }) => {
-    const existingIndex = fields.findIndex((f) => f.placeholder === limit.placeholder);
+    const existingIndex = fields.findIndex((f) => (f as any).placeholder === limit.placeholder);
 
     if (existingIndex === -1) {
       append(limit);
@@ -51,15 +61,19 @@ export const DiscordMessagePlaceholderLimitsForm = () => {
 
   return (
     <Stack spacing={4}>
-      <HStack justifyContent="space-between">
-        <Text>
-          {t("features.feedConnections.components.discordMessagePlaceholderLimitsForm.description")}
-        </Text>
-      </HStack>
+      {!excludeDescription && (
+        <HStack justifyContent="space-between">
+          <Text>
+            {t(
+              "features.feedConnections.components.discordMessagePlaceholderLimitsForm.description"
+            )}
+          </Text>
+        </HStack>
+      )}
       {fields.length && (
         <Box borderStyle="solid" borderWidth="1px" borderRadius="md">
           <TableContainer bg="gray.900" rounded="md">
-            <Table>
+            <Table size={small ? "sm" : undefined}>
               <Thead>
                 <Tr>
                   <Th>
@@ -82,21 +96,25 @@ export const DiscordMessagePlaceholderLimitsForm = () => {
               </Thead>
               <Tbody>
                 {fields.map((field, index) => {
+                  const fieldData = field as any;
+
                   return (
-                    <Tr key={field.placeholder}>
+                    <Tr key={fieldData.placeholder}>
                       <Td>
                         <MessagePlaceholderText withBrackets>
-                          {field.placeholder}
+                          {fieldData.placeholder}
                         </MessagePlaceholderText>
                       </Td>
-                      <Td>{field.characterCount}</Td>
+                      <Td>{fieldData.characterCount}</Td>
                       <Td>
-                        {field.appendString === "\n" && (
+                        {fieldData.appendString === "\n" && (
                           <Text color="gray.400">
                             <em>(new line)</em>
                           </Text>
                         )}
-                        {field.appendString !== "\n" && <Code>{field.appendString || ""}</Code>}
+                        {fieldData.appendString !== "\n" && (
+                          <Code>{fieldData.appendString || ""}</Code>
+                        )}
                       </Td>
                       <Td isNumeric>
                         <Menu>
@@ -115,9 +133,9 @@ export const DiscordMessagePlaceholderLimitsForm = () => {
                                 update(index, limit);
                               }}
                               defaultValues={{
-                                placeholder: field.placeholder,
-                                appendString: field.appendString || "",
-                                characterCount: field.characterCount,
+                                placeholder: fieldData.placeholder,
+                                appendString: fieldData.appendString || "",
+                                characterCount: fieldData.characterCount,
                               }}
                             />
                             <MenuItem onClick={() => remove(index)}>Delete</MenuItem>
@@ -134,7 +152,11 @@ export const DiscordMessagePlaceholderLimitsForm = () => {
       )}
       <Flex>
         <PlaceholderLimitDialog
-          trigger={<Button leftIcon={<AddIcon fontSize="sm" />}>Add placeholder limit</Button>}
+          trigger={
+            <Button size={small ? "sm" : undefined} leftIcon={<AddIcon fontSize="sm" />}>
+              Add placeholder limit
+            </Button>
+          }
           onSubmit={onSubmitNewLimit}
           mode="add"
         />

@@ -35,9 +35,10 @@ interface OptionData {
 interface Props {
   guildId?: string;
   onAdded: (data: { id: string; type: "user" | "role" }) => void;
+  smallButton?: boolean;
 }
 
-export const MentionSelectDialog = ({ guildId, onAdded }: Props) => {
+export const MentionSelectDialog = ({ guildId, onAdded, smallButton }: Props) => {
   const { t } = useTranslation();
   const [selectedType, setSelectedType] = useState<"user" | "role">("role");
   const [currentInput, setCurrentInput] = useState("");
@@ -128,7 +129,11 @@ export const MentionSelectDialog = ({ guildId, onAdded }: Props) => {
 
   return (
     <>
-      <Button onClick={onOpen} leftIcon={<AddIcon fontSize="sm" />}>
+      <Button
+        onClick={onOpen}
+        leftIcon={<AddIcon fontSize="sm" />}
+        size={smallButton ? "sm" : undefined}
+      >
         {t("components.discordMessageMentionForm.addMentionButton")}
       </Button>
       <Modal isOpen={isOpen} onClose={onClose}>

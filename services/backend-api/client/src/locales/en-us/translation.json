@@ -550,7 +550,7 @@
           "loadingArticle": "Loading article...",
           "headingSamplePlaceholders": "Article Placeholders",
           "randomButton": "Select random article",
-          "noArticles": "The feed currently does not have any articles to preview. Ensure that the feed is populated with at least one article",
+          "noArticles": "The feed currently does not have any articles to preview. Ensure that the feed is populated with at least one article to preview content.",
           "searchInputPlaceholder": "Search for a placeholder or article value...",
           "selectArticle": "Select article",
           "hideEmptyPlaceholdersLabel": "Hide placeholders with empty values"
@@ -563,7 +563,7 @@
           "headingSamplePlaceholders": "Articles",
           "headingSettings": "Settings",
           "loadingArticles": "Loading articles...",
-          "noArticles": "The feed currently does not have any articles to preview. Ensure that the feed is populated with at least one article",
+          "noArticles": "The feed currently does not have any articles to preview. Ensure that the feed is populated with at least one article to preview content.",
           "prevPage": "Previous",
           "nextPage": "Next"
         },

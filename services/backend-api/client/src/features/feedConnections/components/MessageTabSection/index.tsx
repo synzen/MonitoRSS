@@ -190,6 +190,38 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
         </Heading>
         <Text>Customize how your feed&apos;s articles are displayed in your Discord messages.</Text>
       </Stack>
+      {/* <Alert
+        role={undefined}
+        flexDirection="column"
+        alignItems="flex-start"
+        borderRadius="md"
+        overflow="visible"
+        colorScheme="blue"
+      >
+        <Stack spacing={4}>
+          <Stack spacing={2}>
+            <HStack>
+              <Badge>NEW</Badge>
+              <AlertTitle display="block">A new way to customize your messages!</AlertTitle>
+            </HStack>
+            <AlertDescription display="block">
+              Use the message builder to customize your messages.
+            </AlertDescription>
+          </Stack>
+          <Box>
+            <Button
+              as={Link}
+              to={pages.messageBuilder({
+                feedId: userFeed.id,
+                connectionId: connection.id,
+                connectionType: connection.key,
+              })}
+            >
+              Check it out
+            </Button>
+          </Box>
+        </Stack>
+      </Alert> */}
       <Stack spacing={4} as="aside" aria-labelledby="placeholders-title">
         <Stack>
           <Heading as="h3" size="sm" id="placeholders-title">

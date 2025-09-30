@@ -30,6 +30,7 @@ interface Props<T> {
   selectProps?: React.ComponentProps<typeof StateManagedSelect>;
   inputRef?: React.ComponentProps<typeof Select>["ref"];
   isInvalid: boolean;
+  invertBg?: boolean;
 }
 
 export const ThemedSelect = <T,>({
@@ -47,9 +48,13 @@ export const ThemedSelect = <T,>({
   selectProps,
   inputRef,
   isInvalid,
+  invertBg,
 }: Props<T>) => {
   // @ts-ignore
-  const styles = useColorModeValue<SelectStyles, SelectStyles>({}, REACT_SELECT_STYLES);
+  const styles = useColorModeValue<SelectStyles, SelectStyles>(
+    {},
+    REACT_SELECT_STYLES({ invertBg })
+  );
   const selectedOption = options.find((option) => option.value === value);
 
   const onFocus = ({ focused }: AriaOnFocusProps<SelectOption<T>, GroupBase<SelectOption<T>>>) => {

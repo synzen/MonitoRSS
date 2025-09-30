@@ -1,12 +1,4 @@
-import {
-  ReactNode,
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { ReactNode, createContext, useCallback, useContext, useEffect, useMemo } from "react";
 import { useNavigableTreeContext } from "./NavigableTreeContext";
 
 // https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values
@@ -28,12 +20,13 @@ type ContextProps = {
   onFocused: () => void;
   onBlurred: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
+  setIsExpanded: (expanded: boolean) => void;
   id: string | null;
 };
 
-function getTreeItemSibling(treeItem: HTMLElement, dir: "next" | "previous") {
+function getTreeItemSibling(treeItem: HTMLElement, dir: "next" | "previous"): HTMLElement | null {
   if (!treeItem) {
-    return;
+    return null;
   }
 
   const parentGroup = treeItem.parentElement?.closest(
@@ -50,14 +43,14 @@ function getTreeItemSibling(treeItem: HTMLElement, dir: "next" | "previous") {
         if (currentIndex < treeItems.length - 1) {
           return treeItems[currentIndex + 1];
         }
-      } else {
-        if (currentIndex > 0) {
-          return treeItems[currentIndex - 1];
-        }
+      }
+
+      if (currentIndex > 0) {
+        return treeItems[currentIndex - 1];
       }
     }
 
-    return;
+    return null;
   }
 
   const treeItems = Array.from(parentGroup.children) as HTMLElement[];
@@ -67,16 +60,16 @@ function getTreeItemSibling(treeItem: HTMLElement, dir: "next" | "previous") {
     if (currentIndex < treeItems.length - 1) {
       return treeItems[currentIndex + 1];
     }
-  } else {
-    if (currentIndex > 0) {
-      return treeItems[currentIndex - 1];
-    }
+  } else if (currentIndex > 0) {
+    return treeItems[currentIndex - 1];
   }
+
+  return null;
 }
 
-function getLastTreeItemFromTreeItem(currentTreeItem?: HTMLElement | null) {
+function getLastTreeItemFromTreeItem(currentTreeItem?: HTMLElement | null): HTMLElement | null {
   if (!currentTreeItem) {
-    return;
+    return null;
   }
 
   const groupChildElem = currentTreeItem.querySelector('.navigable-tree-group[role="group"]');
@@ -96,9 +89,11 @@ function getLastTreeItemFromTreeItem(currentTreeItem?: HTMLElement | null) {
   return getLastTreeItemFromTreeItem(treeItems[treeItems.length - 1]);
 }
 
-function getDeepestFirstTreeItemFromTreeItem(currentTreeItem?: HTMLElement | null) {
+function getDeepestFirstTreeItemFromTreeItem(
+  currentTreeItem?: HTMLElement | null
+): HTMLElement | null {
   if (!currentTreeItem) {
-    return;
+    return null;
   }
 
   const groupChildElem = currentTreeItem.querySelector('.navigable-tree-group[role="group"]');
@@ -112,12 +107,14 @@ function getDeepestFirstTreeItemFromTreeItem(currentTreeItem?: HTMLElement | nul
   return getDeepestFirstTreeItemFromTreeItem(treeItems[0]);
 }
 
-function getFirstChildTreeItemFromTreeItem(currentTreeItem?: HTMLElement | null) {
+function getFirstChildTreeItemFromTreeItem(
+  currentTreeItem?: HTMLElement | null
+): HTMLElement | null {
   // is this a group?
   const groupChildElem = currentTreeItem?.querySelector('.navigable-tree-group[role="group"]');
 
   if (!groupChildElem) {
-    return;
+    return null;
   }
 
   const firstChildTreeItem = groupChildElem.querySelector('[role="treeitem"]') as HTMLElement;
@@ -137,9 +134,9 @@ function getPreviousTreeItemFromTreeItem(currentTreeItem: HTMLElement) {
   return parentTreeItem;
 }
 
-function getNextTreeItemFromTreeItem(currentTreeItem?: HTMLElement | null) {
+function getNextTreeItemFromTreeItem(currentTreeItem?: HTMLElement | null): HTMLElement | null {
   if (!currentTreeItem) {
-    return;
+    return null;
   }
 
   const isExpanded = currentTreeItem.getAttribute("aria-expanded") === "true";
@@ -156,11 +153,12 @@ function getNextTreeItemFromTreeItem(currentTreeItem?: HTMLElement | null) {
       return firstChildTreeItem;
     }
 
-    return;
+    return null;
   }
 
   // Check if there is a next sibling
   const nextTreeItem = getTreeItemSibling(currentTreeItem, "next");
+
   if (nextTreeItem) {
     return nextTreeItem;
   }
@@ -200,6 +198,7 @@ export const NavigableTreeItemContext = createContext<ContextProps>({
   onFocused: () => {},
   onBlurred: () => {},
   onKeyDown: () => {},
+  setIsExpanded: () => {},
   id: null,
 });
 
@@ -212,11 +211,33 @@ export const NavigableTreeItemProvider = ({
   children: ReactNode;
   isExpanded?: boolean;
 }) => {
-  const { currentSelectedId, currentFocusedId, setCurrentFocusedId, setCurrentSelectedId } =
-    useNavigableTreeContext();
-  const [isExpanded, setIsExpanded] = useState<boolean>(defaultIsExpanded || false);
+  const {
+    currentSelectedId,
+    currentFocusedId,
+    setCurrentFocusedId,
+    setCurrentSelectedId,
+    expandedIds,
+    setExpandedIds,
+  } = useNavigableTreeContext();
+  const isExpanded = expandedIds.has(id);
   const thisItemIsFocused = currentFocusedId === id;
   const thisItemIsSelected = currentSelectedId === id;
+
+  const setIsExpanded = useCallback(
+    (expanded: boolean) => {
+      if (expanded) {
+        setExpandedIds((prev) => new Set(prev).add(id));
+      } else {
+        setExpandedIds((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(id);
+
+          return newSet;
+        });
+      }
+    },
+    [id, setExpandedIds]
+  );
 
   const onFocused = useCallback(() => {
     setCurrentFocusedId(id);
@@ -238,6 +259,7 @@ export const NavigableTreeItemProvider = ({
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       let preventKeyDefault = false;
+
       if (!thisItemIsFocused) {
         return;
       }
@@ -249,6 +271,7 @@ export const NavigableTreeItemProvider = ({
           } else {
             getFirstChildTreeItemFromTreeItem(e.currentTarget as HTMLElement)?.focus();
           }
+
           preventKeyDefault = true;
           break;
         case KeyboardNavKey.ArrowLeft:
@@ -257,24 +280,35 @@ export const NavigableTreeItemProvider = ({
           } else {
             getClosestTreeItemParent(e.currentTarget as HTMLElement)?.focus();
           }
+
           preventKeyDefault = true;
           break;
-        case KeyboardNavKey.ArrowDown:
+
+        case KeyboardNavKey.ArrowDown: {
           const next = getNextTreeItemFromTreeItem(e.currentTarget as HTMLElement);
           next?.focus();
-          next?.getAttribute("data-id") && setCurrentFocusedId(next.getAttribute("data-id"));
+
+          if (next?.getAttribute("data-id")) {
+            setCurrentFocusedId(next.getAttribute("data-id"));
+          }
 
           preventKeyDefault = true;
           break;
-        case KeyboardNavKey.ArrowUp:
+        }
+
+        case KeyboardNavKey.ArrowUp: {
           const previousSibling = getPreviousTreeItemFromTreeItem(e.currentTarget as HTMLElement);
           previousSibling?.focus();
-          previousSibling?.getAttribute("data-id") &&
+
+          if (previousSibling?.getAttribute("data-id")) {
             setCurrentFocusedId(previousSibling.getAttribute("data-id"));
+          }
 
           preventKeyDefault = true;
           break;
-        case KeyboardNavKey.Home:
+        }
+
+        case KeyboardNavKey.Home: {
           (
             e.currentTarget
               .closest('[role="tree"]')
@@ -282,6 +316,8 @@ export const NavigableTreeItemProvider = ({
           )?.focus();
           preventKeyDefault = true;
           break;
+        }
+
         case KeyboardNavKey.End:
           getLastExpandedTreeItem(e.currentTarget as HTMLElement)?.focus();
           preventKeyDefault = true;
@@ -297,6 +333,12 @@ export const NavigableTreeItemProvider = ({
     },
     [thisItemIsFocused, onCollapsed, onExpanded, isExpanded]
   );
+
+  useEffect(() => {
+    if (defaultIsExpanded !== undefined) {
+      setIsExpanded(defaultIsExpanded);
+    }
+  }, [defaultIsExpanded, setIsExpanded]);
 
   const contextValue = useMemo(() => {
     return {
@@ -317,6 +359,7 @@ export const NavigableTreeItemProvider = ({
     onFocused,
     onBlurred,
     isExpanded,
+    setIsExpanded,
     onCollapsed,
     onExpanded,
     onKeyDown,

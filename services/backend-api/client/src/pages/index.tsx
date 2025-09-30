@@ -31,6 +31,13 @@ import { SuspenseErrorBoundary } from "../components/SuspenseErrorBoundary";
 import AddUserFeeds from "./AddUserFeeds";
 import { MultiSelectUserFeedProvider } from "../contexts/MultiSelectUserFeedContext";
 import { lazyWithRetries } from "../utils/lazyImportWithRetry";
+import { Previewer } from "./Previewer";
+
+// const Previewer = lazyWithRetries(() =>
+//   import("./Previewer").then(({ Previewer: c }) => ({
+//     default: c,
+//   }))
+// );
 
 const UserSettings = lazyWithRetries(() =>
   import("./UserSettings").then(({ UserSettings: c }) => ({
@@ -268,6 +275,29 @@ const Pages: React.FC = () => (
               <FeedClone />
             </PageContent>
           </RequireDiscordServers>
+        </RequireAuth>
+      }
+    />
+    <Route
+      path={pages.messageBuilder({
+        feedId: ":feedId",
+        connectionId: ":connectionId",
+        connectionType: FeedConnectionType.DiscordChannel,
+      })}
+      element={
+        <RequireAuth>
+          {/* <SuspenseErrorBoundary>
+            <Suspense
+              fallback={
+                <Stack alignItems="center" justifyContent="center" height="100%" spacing="2rem">
+                  <Loading size="xl" />
+                  <Heading>Loading Message Builder...</Heading>
+                </Stack>
+              }
+            > */}
+          <Previewer />
+          {/* </Suspense>
+          </SuspenseErrorBoundary> */}
         </RequireAuth>
       }
     />

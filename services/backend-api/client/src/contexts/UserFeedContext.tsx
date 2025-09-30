@@ -1,8 +1,9 @@
-import { ReactNode, createContext, useContext, useMemo } from "react";
+import { ReactElement, ReactNode, createContext, useContext, useMemo } from "react";
 import { Spinner } from "@chakra-ui/react";
 import { UserFeed } from "../features/feed/types";
 import { FeedFormatOptions } from "../types/FeedFormatOptions";
 import { useUserFeed } from "../features/feed/hooks";
+import { ErrorAlert } from "../components/ErrorAlert";
 
 type ContextProps =
   | {
@@ -22,11 +23,15 @@ export const UserFeedContext = createContext<ContextProps>(undefined);
 export const UserFeedProvider = ({
   feedId,
   children,
+  loadingComponent,
+  errorComponent,
 }: {
   feedId?: string;
   children: ReactNode;
+  loadingComponent?: ReactElement;
+  errorComponent?: ReactElement;
 }) => {
-  const { feed, status } = useUserFeed({ feedId });
+  const { feed, status, error } = useUserFeed({ feedId });
 
   const value: Partial<ContextProps> = useMemo(
     () => ({
@@ -44,8 +49,12 @@ export const UserFeedProvider = ({
     [feed]
   );
 
+  if (error) {
+    return errorComponent || <ErrorAlert description={error.message} />;
+  }
+
   if (status === "loading" || !feed) {
-    return <Spinner />;
+    return loadingComponent || <Spinner />;
   }
 
   return (

@@ -545,7 +545,7 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                             precision={1}
                             step={0.1}
                             value={field.value}
-                            onChange={(str, num) => {
+                            onChange={(str) => {
                               return field.onChange(str);
                             }}
                             onBlur={() => field.onBlur()}

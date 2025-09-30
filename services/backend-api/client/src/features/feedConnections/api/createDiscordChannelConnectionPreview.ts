@@ -35,6 +35,8 @@ export interface CreateDiscordChannelConnectionPreviewInput {
     connectionFormatOptions?: {
       formatTables?: boolean | null;
       stripImages?: boolean | null;
+      disableImageLinkPreviews?: boolean | null;
+      ignoreNewLines?: boolean | null;
     } | null;
     userFeedFormatOptions?: {
       dateFormat?: string | null;
