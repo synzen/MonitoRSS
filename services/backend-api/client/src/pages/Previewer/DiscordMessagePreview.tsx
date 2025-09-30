@@ -238,7 +238,7 @@ export const DiscordMessagePreview: React.FC = () => {
                     serverId={connection.details.channel?.guildId}
                     textStyle={{ fontSize: "sm", fontWeight: "medium" }}
                   />
-                  {connection.details.channel?.id && (
+                  {!connection.details.channel.parentChannelId && connection.details.channel?.id && (
                     <>
                       {" → Channel: "}
                       <DiscordChannelName
