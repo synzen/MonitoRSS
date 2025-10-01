@@ -47,6 +47,10 @@ export const ArticlePropertySelect = ({
   const { t } = useTranslation();
 
   useEffect(() => {
+    if (value) {
+      return;
+    }
+
     if (status === "success" && data) {
       const availableProperties = data?.result.properties || [];
       const title = availableProperties.includes("title");

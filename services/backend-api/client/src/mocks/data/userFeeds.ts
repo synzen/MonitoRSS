@@ -21,11 +21,11 @@ const sampleFilters = {
         op: "EQ",
         left: {
           type: "ARTICLE",
-          value: "processed::categories",
+          value: "id",
         },
         right: {
           type: "STRING",
-          value: "test",
+          value: "IS-UPDATED",
         },
       },
     ],

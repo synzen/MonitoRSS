@@ -52,7 +52,6 @@ export const FiltersForm = ({
     reset,
   } = formMethods;
 
-  // @ts-ignore cyclical references in typescript types
   const watchedExpression = useWatch({
     control,
     name: "expression",
