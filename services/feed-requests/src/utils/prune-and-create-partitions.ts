@@ -69,9 +69,11 @@ async function pruneAndCreatePartitions(app: INestApplicationContext) {
   const thisMonthTableName = `request_partitioned_y${thisMonthDate.year()}m${
     thisMonthDate.month() + 1
   }`;
+
   const nextMonthTableName = `request_partitioned_y${nextMonthDate.year()}m${
     nextMonthDate.month() + 1
   }`;
+
   const tablesToCreate = [
     {
       from: thisMonthDate,
@@ -126,21 +128,23 @@ async function pruneAndCreatePartitions(app: INestApplicationContext) {
           partition.child !== thisMonthTableName &&
           partition.child !== nextMonthTableName,
       );
+    logger.info('Will eventually drop old partitions for request_partitioned', {
+      tablesToDrop: tablesToDrop.map((table) => table.child),
+    });
+    // if (tablesToDrop.length > 0) {
+    //   logger.info('Dropping old partitions for request_partitioned', {
+    //     tablesToDrop: tablesToDrop.map((table) => table.child),
+    //   });
 
-    if (tablesToDrop.length > 0) {
-      logger.info('Dropping old partitions for request_partitioned', {
-        tablesToDrop: tablesToDrop.map((table) => table.child),
-      });
-
-      await Promise.all(
-        tablesToDrop.map(async (table) => {
-          const tableName = `${table.parentSchema}.${table.child}`;
-          await connection.execute(`DROP TABLE IF EXISTS ${tableName};`);
-        }),
-      );
-    } else {
-      logger.debug('No old partitions to drop');
-    }
+    //   await Promise.all(
+    //     tablesToDrop.map(async (table) => {
+    //       const tableName = `${table.parentSchema}.${table.child}`;
+    //       await connection.execute(`DROP TABLE IF EXISTS ${tableName};`);
+    //     }),
+    //   );
+    // } else {
+    //   logger.debug('No old partitions to drop');
+    // }
   } catch (err) {
     logger.error('Failed to prune old partitions', {
       error: (err as Error).stack,

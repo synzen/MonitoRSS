@@ -78,9 +78,7 @@ async function bootstrap() {
 
     await schedulePruneAndCreatePartitions(app);
   } else if (process.env.FEED_REQUESTS_START_TARGET === 'service') {
-    const { app } = await startService();
-
-    await schedulePruneAndCreatePartitions(app);
+    await startService();
   } else if (process.env.FEED_REQUESTS_START_TARGET) {
     logger.error('Invalid FEED_REQUESTS_START_TARGET environment variable');
 
