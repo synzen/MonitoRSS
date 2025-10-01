@@ -93,7 +93,7 @@ export const usePreviewerContext = () => {
 const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { userFeed, articleFormatOptions } = useUserFeedContext();
   const { connection } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
-  const { setValue, getValues, reset } = useFormContext<PreviewerFormState>();
+  const { setValue, getValues, reset, trigger } = useFormContext<PreviewerFormState>();
   const { currentSelectedId, setCurrentFocusedId, setCurrentSelectedId, setExpandedIds } =
     useNavigableTreeContext();
   const { t } = useTranslation();
@@ -243,6 +243,8 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setCurrentFocusedId(lastIdToExpand);
         setCurrentSelectedId(lastIdToExpand);
       }
+
+      trigger("messageComponent");
 
       return newComponent;
     },

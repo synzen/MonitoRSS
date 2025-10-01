@@ -193,7 +193,7 @@ export const ComponentTreeToolbar: React.FC = () => {
                     </MenuGroup>
                     <MenuDivider />
                     <MenuGroup
-                      title={`Embed Container (${
+                      title={`${getPreviewerComponentLabel(ComponentType.LegacyEmbedContainer)} (${
                         selectedComponent?.children?.filter(
                           (c) => c.type === ComponentType.LegacyEmbedContainer
                         ).length || 0
@@ -298,6 +298,7 @@ export const ComponentTreeToolbar: React.FC = () => {
                     </MenuItem>
                   </MenuGroup>
                 )}
+                {selectedComponent?.type === ComponentType.LegacyEmbed && <MenuDivider />}
                 {selectedComponent?.type === ComponentType.LegacyEmbed && (
                   <MenuGroup
                     title={`Embed Fields (${

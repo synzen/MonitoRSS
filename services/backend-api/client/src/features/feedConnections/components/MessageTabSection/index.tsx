@@ -201,11 +201,12 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
         <Stack spacing={4}>
           <Stack spacing={2}>
             <HStack>
-              <Badge>NEW</Badge>
-              <AlertTitle display="block">A new way to customize your messages!</AlertTitle>
+              <Badge colorScheme="white">NEW</Badge>
+              <AlertTitle display="block">A better way to customize your messages!</AlertTitle>
             </HStack>
             <AlertDescription display="block">
-              Use the message builder to customize your messages.
+              Design and preview your Discord messages with the Message Builder that will soon
+              replace this page.
             </AlertDescription>
           </Stack>
           <Box>
@@ -216,6 +217,7 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
                 connectionId: connection.id,
                 connectionType: connection.key,
               })}
+              rightIcon={<ChevronRightIcon />}
             >
               Check it out
             </Button>
