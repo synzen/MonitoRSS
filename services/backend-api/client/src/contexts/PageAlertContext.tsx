@@ -1,5 +1,6 @@
 import { Stack, StackProps } from "@chakra-ui/react";
 import { ReactNode, createContext, useCallback, useContext, useMemo, useState } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { DismissableAlert } from "../components/DismissableAlert";
 import { notifyError } from "../utils/notifyError";
 import { notifySuccess } from "../utils/notifySuccess";
@@ -16,6 +17,7 @@ interface CreateAlertData {
 }
 
 interface AlertState extends CreateAlertData {
+  id: string;
   status: "error" | "success" | "info";
 }
 
@@ -23,6 +25,7 @@ type ContextProps = {
   createErrorAlert: (d: AlertProps) => void;
   createSuccessAlert: (d: AlertProps) => void;
   createInfoAlert: (d: AlertProps) => void;
+  removeAlert: (id: string) => void;
   alerts: AlertState[];
 };
 
@@ -43,21 +46,26 @@ export const PageAlertContext = createContext<ContextProps>({
       notifyInfo(title, description);
     }
   },
+  removeAlert: () => {},
 });
 
 export const PageAlertProvider = ({ children }: { children: ReactNode }) => {
   const [alerts, setAlerts] = useState<AlertState[]>([]);
 
   const createErrorAlert: ContextProps["createErrorAlert"] = useCallback((data) => {
-    setAlerts((prev) => [...prev, { ...data, status: "error" }]);
+    setAlerts((prev) => [...prev, { id: uuidv4(), ...data, status: "error" }]);
   }, []);
 
   const createSuccessAlert: ContextProps["createSuccessAlert"] = useCallback((data) => {
-    setAlerts((prev) => [...prev, { ...data, status: "success" }]);
+    setAlerts((prev) => [...prev, { id: uuidv4(), ...data, status: "success" }]);
   }, []);
 
   const createInfoAlert: ContextProps["createInfoAlert"] = useCallback((data) => {
-    setAlerts((prev) => [...prev, { ...data, status: "info" }]);
+    setAlerts((prev) => [...prev, { id: uuidv4(), ...data, status: "info" }]);
+  }, []);
+
+  const removeAlert: ContextProps["removeAlert"] = useCallback((id) => {
+    setAlerts((prev) => prev.filter((a) => a.id !== id));
   }, []);
 
   const contextValue = useMemo(() => {
@@ -66,6 +74,7 @@ export const PageAlertProvider = ({ children }: { children: ReactNode }) => {
       createSuccessAlert,
       createInfoAlert,
       alerts,
+      removeAlert,
     };
   }, [createErrorAlert, createSuccessAlert, createInfoAlert, alerts]);
 
@@ -83,8 +92,16 @@ interface PageAlertContextOutletProps {
 }
 
 export const PageAlertContextOutlet = ({ containerProps }: PageAlertContextOutletProps) => {
-  const { alerts } = usePageAlertContext();
+  const { alerts, removeAlert } = usePageAlertContext();
   const [closedCount, setClosedCount] = useState(0);
+
+  const onRemoved = useCallback(
+    (id: string) => {
+      setClosedCount((prev) => prev + 1);
+      removeAlert(id);
+    },
+    [removeAlert]
+  );
 
   return (
     <Stack
@@ -92,7 +109,7 @@ export const PageAlertContextOutlet = ({ containerProps }: PageAlertContextOutle
       spacing={2}
       position="sticky"
       top={0}
-      zIndex={1}
+      zIndex={containerProps?.zIndex ?? 1}
       w="100%"
       {...containerProps}
     >
@@ -104,7 +121,7 @@ export const PageAlertContextOutlet = ({ containerProps }: PageAlertContextOutle
             description={alert.description}
             title={alert.title}
             onClosed={() => {
-              setClosedCount((prev) => prev + 1);
+              onRemoved(alert.id);
             }}
           />
         );

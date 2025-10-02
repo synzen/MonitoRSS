@@ -205,6 +205,7 @@ export const DiscordMessagePreview: React.FC = () => {
             containerProps={{
               mb: 2,
               mt: -2,
+              zIndex: 0,
             }}
           />
           <ArticlePreviewBanner />
@@ -225,6 +226,7 @@ export const DiscordMessagePreview: React.FC = () => {
           containerProps={{
             mb: 2,
             mt: -2,
+            zIndex: 0,
           }}
         />
         {/* Server and Channel Info */}

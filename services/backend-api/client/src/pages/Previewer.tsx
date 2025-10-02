@@ -403,7 +403,7 @@ const PreviewerContent: React.FC = () => {
                     </HStack>
                   </HStack>
                 </HStack>
-                <PageAlertContextOutlet />
+                <PageAlertContextOutlet containerProps={{ zIndex: 0 }} />
               </Stack>
               {/* Main Content */}
               <Flex flex={1} bg="gray.900" position="relative">

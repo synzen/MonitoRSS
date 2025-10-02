@@ -607,16 +607,6 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
               isRequired
             />
           )}
-          <FormControl>
-            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
-              Is Disabled?
-            </FormLabel>
-            <Switch
-              isChecked={component.disabled}
-              onChange={(e) => onChange({ ...component, disabled: e.target.checked })}
-              colorScheme="blue"
-            />
-          </FormControl>
         </VStack>
       );
     }
