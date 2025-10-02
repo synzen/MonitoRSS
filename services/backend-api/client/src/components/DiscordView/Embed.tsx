@@ -159,11 +159,7 @@ const EmbedFooter = ({
   timestamp,
   text,
   icon_url,
-}: {
-  timestamp?: string | null;
-  text?: string | null;
-  icon_url?: string | null;
-}) => {
+}: Exclude<DiscordViewEmbed["footer"], undefined | null>) => {
   if (!text && !timestamp) {
     return null;
   }

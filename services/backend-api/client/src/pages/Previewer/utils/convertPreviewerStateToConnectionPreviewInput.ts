@@ -115,7 +115,7 @@ const convertLegacyEmbedPreviewerComponentToEmbed = (embedComponent: LegacyEmbed
       embed.author = {
         name: subComponent.authorName || null,
         url: subComponent.authorUrl || null,
-        icon_url: subComponent.authorIconUrl || null,
+        iconUrl: subComponent.authorIconUrl || null,
       };
     } else if (subComponent.type === ComponentType.LegacyEmbedTitle) {
       embed.title = subComponent.title || null;
@@ -133,7 +133,7 @@ const convertLegacyEmbedPreviewerComponentToEmbed = (embedComponent: LegacyEmbed
     } else if (subComponent.type === ComponentType.LegacyEmbedFooter) {
       embed.footer = {
         text: subComponent.footerText || null,
-        icon_url: subComponent.footerIconUrl || null,
+        iconUrl: subComponent.footerIconUrl || null,
       };
     } else if (subComponent.type === ComponentType.LegacyEmbedField) {
       if (!embed.fields) {

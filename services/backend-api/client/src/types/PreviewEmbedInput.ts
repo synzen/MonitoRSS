@@ -7,7 +7,7 @@ export interface PreviewEmbedInput {
   footer?: {
     timestamp?: string | null;
     text?: string | null;
-    icon_url?: string | null;
+    iconUrl?: string | null;
   } | null;
   thumbnail?: {
     url?: string | null;
@@ -15,7 +15,7 @@ export interface PreviewEmbedInput {
   author?: {
     name?: string | null;
     url?: string | null;
-    icon_url?: string | null;
+    iconUrl?: string | null;
   } | null;
   fields?: Array<{
     name?: string | null;
