@@ -358,9 +358,6 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
               <Button
                 size="xs"
                 variant="ghost"
-                colorScheme="gray"
-                color="gray.300"
-                _hover={{ bg: "gray.700", color: "white" }}
                 onClick={onClose}
                 aria-label={`Close tour. Currently on step ${stepIndex + 1} of ${totalSteps}.`}
                 ref={closeButtonRef}
@@ -385,13 +382,6 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
                   <Button
                     size="sm"
                     variant="outline"
-                    borderColor="gray.500"
-                    color="gray.300"
-                    _hover={{
-                      bg: "gray.700",
-                      borderColor: "gray.400",
-                      color: "white",
-                    }}
                     leftIcon={<Icon as={FaArrowLeft} />}
                     onClick={onPrevious}
                     aria-label={`Go to previous step: ${
@@ -403,13 +393,10 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
                 )}
                 <Button
                   size="sm"
-                  bg="blue.500"
-                  color="white"
-                  _hover={{ bg: "blue.400" }}
-                  _active={{ bg: "blue.600" }}
                   rightIcon={stepIndex < totalSteps - 1 ? <Icon as={FaArrowRight} /> : undefined}
                   onClick={onNext}
                   tabIndex={0}
+                  colorScheme="blue"
                   aria-label={
                     stepIndex < totalSteps - 1
                       ? `Continue to next step: ${
