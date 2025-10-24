@@ -63,6 +63,32 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     selectedComponentId
   );
 
+  const renderComponentDescription = (component: Component) => {
+    let description = "";
+
+    if (component.type === ComponentType.LegacyEmbedContainer) {
+      description =
+        "A container that holds a re-orderable list of embeds for rich message formatting.";
+    } else if (component.type === ComponentType.LegacyEmbed) {
+      description =
+        "A rich embed that can contain various elements like title, description, fields, images, and more.";
+    } else if (component.type === ComponentType.LegacyActionRow) {
+      description = "A row that holds buttons for user interactions in Discord messages.";
+    }
+
+    if (!description) {
+      return null;
+    }
+
+    return (
+      <Box>
+        <Text fontSize="sm" color="gray.300" mb={2}>
+          {description}
+        </Text>
+      </Box>
+    );
+  };
+
   const renderPropertiesForComponent = (component: Component, onChange: (value: any) => void) => {
     if (component.type === ComponentType.LegacyRoot) {
       return <LegacyRootProperties />;
@@ -674,7 +700,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   return (
     <VStack align="stretch" spacing={6} p={4} minWidth={250}>
       {(!hideTitle || !isRootComponent) && (
-        <HStack justify="space-between" align="center" flexWrap="wrap" spacing={6}>
+        <HStack justify="space-between" align="center" flexWrap="wrap" spacing={2}>
           {!hideTitle && (
             <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
               {getPreviewerComponentLabel(selectedComponent.type)} Properties
@@ -733,6 +759,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             child components must be deleted.
           </Alert>
         )}
+      {renderComponentDescription(selectedComponent)}
       {canBeRepositioned && positionInfo && !isRootComponent && (
         <Box>
           <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">

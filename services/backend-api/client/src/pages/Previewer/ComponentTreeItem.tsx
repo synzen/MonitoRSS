@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Box, VStack, HStack, Text, IconButton, Icon } from "@chakra-ui/react";
 import { FaExclamationCircle } from "react-icons/fa";
 import { ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import { AddComponentButton } from "./AddComponentButton";
 import type { Component, SectionComponent } from "./types";
 import { ComponentType } from "./types";
 import {
@@ -10,10 +11,13 @@ import {
   NavigableTreeItemGroup,
 } from "../../components/NavigableTree";
 import { useNavigableTreeItemContext } from "../../contexts/NavigableTreeItemContext";
+import { usePreviewerContext } from "./PreviewerContext";
+import { useNavigableTreeContext } from "../../contexts/NavigableTreeContext";
 
 import getChakraColor from "../../utils/getChakraColor";
 import getPreviewerComponentLabel from "./utils/getPreviewerComponentLabel";
 import getPreviewerComponentIcon from "./utils/getPreviewerComponentIcon";
+import { notifyInfo } from "../../utils/notifyInfo";
 
 interface ComponentTreeItemProps {
   component: Component;
@@ -30,6 +34,8 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
 }) => {
   const ref = React.useRef<HTMLDivElement>(null);
   const { onExpanded } = useNavigableTreeItemContext();
+  const { addChildComponent } = usePreviewerContext();
+  const { setCurrentSelectedId, setCurrentFocusedId } = useNavigableTreeContext();
 
   const hasChildren = component.children && component.children.length > 0;
   const hasAccessory =
@@ -44,6 +50,21 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
     component.type === ComponentType.V2ActionRow ||
     component.type === ComponentType.V2Section;
   const { isFocused, isExpanded, isSelected } = useNavigableTreeItemContext();
+
+  const handleAddChild = (childType: ComponentType) => {
+    const added = addChildComponent(component.id, childType as any);
+
+    // if (added) {
+    //   setCurrentSelectedId(added.id);
+    //   setCurrentFocusedId(added.id);
+    // }
+
+    notifyInfo(
+      `Successfully added ${getPreviewerComponentLabel(
+        childType
+      )} component under ${getPreviewerComponentLabel(component.type)}`
+    );
+  };
 
   React.useEffect(() => {
     if (scrollToComponentId === component.id && ref.current) {
@@ -65,6 +86,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
         bg={isSelected ? "blue.600" : "transparent"}
         _hover={{ bg: isSelected ? "blue.600" : "gray.700" }}
         outline={isFocused ? `2px solid ${getChakraColor("blue.300")}` : undefined}
+        data-tour-target={isSelected ? "selected-component" : undefined}
       >
         {canHaveChildren && (
           <NavigableTreeItemExpandButton>
@@ -86,21 +108,32 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
         <Box fontSize="xs" mr={2} color="gray.400">
           {React.createElement(getPreviewerComponentIcon(component.type))}
         </Box>
-        <HStack flex={1} justifyContent="flex-start">
-          <Text fontSize="sm" color="white">
-            {getPreviewerComponentLabel(component.type)}
-          </Text>
-          {componentIdsWithProblems.has(component.id) && (
-            <Icon
-              as={FaExclamationCircle}
-              color={isSelected ? "white" : "red.400"}
-              flexShrink={0}
-              size="sm"
-              aria-label="Problem detected"
-              title="Problem detected"
+        <HStack flex={1} justifyContent="space-between" position="relative">
+          <HStack>
+            <Text fontSize="sm" color="white">
+              {getPreviewerComponentLabel(component.type)}
+            </Text>
+            {componentIdsWithProblems.has(component.id) && (
+              <Icon
+                as={FaExclamationCircle}
+                color={isSelected ? "white" : "red.400"}
+                flexShrink={0}
+                size="sm"
+                aria-label="Problem detected"
+                title="Problem detected"
+              />
+            )}
+          </HStack>
+        </HStack>{" "}
+        {isSelected && (
+          <div style={{ position: "absolute", right: "5px", top: "5px" }}>
+            <AddComponentButton
+              component={component}
+              canHaveChildren={canHaveChildren}
+              onAddChild={handleAddChild}
             />
-          )}
-        </HStack>
+          </div>
+        )}
       </HStack>
       {(hasChildren || hasAccessory) && isExpanded && (
         <VStack align="stretch" spacing={0}>

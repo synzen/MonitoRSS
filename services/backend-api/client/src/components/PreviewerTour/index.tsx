@@ -44,11 +44,20 @@ export const MESSAGE_BUILDER_TOUR_STEPS: TourStep[] = [
     offset: { x: 20, y: 0 },
   },
   {
+    id: "selected-component",
+    target: "[data-tour-target='selected-component']",
+    title: "Selected Component",
+    content:
+      "This is your currently-selected component. You can select different components by clicking on them in the tree.\n\nThe selected component determines what you can edit in the properties panel and what add sub-component button options are available.",
+    placement: "right",
+    offset: { x: 20, y: 0 },
+  },
+  {
     id: "add-component-button",
     target: "[data-tour-target='add-component-button']",
     title: "Add New Components",
     content:
-      "After you've selected a component, you may click here to add new components under the selected component. You can add text blocks, embeds, buttons, and more to customize how your feed messages appear.",
+      "If the currently-selected component supports sub-components, you may click the add button next to the currently-selected component to add components under it.\n\nExamples may include text blocks, embeds, buttons, and more to customize how your feed messages appear.",
     placement: "bottom",
     offset: { x: 0, y: 20 },
   },
@@ -57,9 +66,9 @@ export const MESSAGE_BUILDER_TOUR_STEPS: TourStep[] = [
     target: "[data-tour-target='properties-panel']",
     title: "Component Properties",
     content:
-      "When you select a component, its properties will appear here. This is where you can customize the content, styling, and behavior of each component.",
-    placement: "left",
-    offset: { x: -20, y: 0 },
+      "The configurable properties of the currently-selected component will be visible in this Component Properties panel.",
+    placement: "right",
+    offset: { x: 20, y: 0 },
   },
   {
     id: "discord-preview",
@@ -297,7 +306,7 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
           borderRadius="lg"
           border="4px solid"
           borderColor="blue.400"
-          bg="rgba(59, 130, 246, 0.1)"
+          bg="rgba(59, 130, 246, 0.05)"
           position="relative"
         >
           <motion.div
@@ -335,7 +344,7 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
         }}
       >
         <Box
-          bg="gray.800"
+          bg="gray.700"
           color="white"
           p={4}
           borderRadius="md"

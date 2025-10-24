@@ -443,7 +443,27 @@ const PreviewerContent: React.FC = () => {
                     </VStack>
                   </Box>
                 </Box>
-                {/* Center Panel - Discord Preview and Problems */}
+                {/* Middle Panel - Properties */}
+                <Box
+                  minWidth={SIDE_PANEL_WIDTH}
+                  maxWidth={SIDE_PANEL_WIDTH}
+                  display={{ base: "none", lg: "block" }}
+                >
+                  <Box
+                    bg="gray.800"
+                    borderRight="1px"
+                    borderColor="gray.600"
+                    height="100%"
+                    width="100%"
+                    overflowY="auto"
+                    data-tour-target="properties-panel"
+                  >
+                    {currentSelectedId && (
+                      <ComponentPropertiesPanel selectedComponentId={currentSelectedId} />
+                    )}
+                  </Box>
+                </Box>
+                {/* Right Panel - Discord Preview and Problems */}
                 <Flex flex={1} direction="column" bg="gray.800" maxW={CENTER_PANEL_WIDTH}>
                   {/* Discord Preview Section */}
                   <Box p={4} borderBottom="1px" borderColor="gray.600" srOnly>
@@ -530,26 +550,6 @@ const PreviewerContent: React.FC = () => {
                     </Tabs>
                   </Box>
                 </Flex>
-                {/* Right Panel - Properties */}
-                <Box
-                  minWidth={SIDE_PANEL_WIDTH}
-                  maxWidth={SIDE_PANEL_WIDTH}
-                  display={{ base: "none", lg: "block" }}
-                >
-                  <Box
-                    bg="gray.800"
-                    borderLeft="1px"
-                    borderColor="gray.600"
-                    height="100%"
-                    width="100%"
-                    overflowY="auto"
-                    data-tour-target="properties-panel"
-                  >
-                    {currentSelectedId && (
-                      <ComponentPropertiesPanel selectedComponentId={currentSelectedId} />
-                    )}
-                  </Box>
-                </Box>
               </Flex>
             </Flex>
             {/* Discard Confirmation Modal */}

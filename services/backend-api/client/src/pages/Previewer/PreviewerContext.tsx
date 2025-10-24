@@ -237,13 +237,8 @@ const PreviewerInternalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         shouldTouch: true,
       });
       setExpandedIds((ids) => new Set([...ids, ...idsToExpand]));
-      const lastIdToExpand = idsToExpand[idsToExpand.length - 1];
 
-      if (lastIdToExpand) {
-        setCurrentFocusedId(lastIdToExpand);
-        setCurrentSelectedId(lastIdToExpand);
-      }
-
+      // Validation does not trigger automatically otherwise for some reason
       trigger("messageComponent");
 
       return newComponent;

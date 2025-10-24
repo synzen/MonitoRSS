@@ -167,6 +167,7 @@ export const SendTestArticleProvider = ({ children }: PropsWithChildren<{}>) => 
                 <Heading size="md">
                   {t("features.feedConnections.components.sendTestArticleButton.apiPayload")}
                 </Heading>
+                <Text>The configured message that was sent to Discord.</Text>
                 <pre
                   style={{
                     backgroundColor: getChakraColor("gray.800"),
@@ -183,6 +184,10 @@ export const SendTestArticleProvider = ({ children }: PropsWithChildren<{}>) => 
                 <Heading size="md">
                   {t("features.feedConnections.components.sendTestArticleButton.apiResponse")}
                 </Heading>
+                <Text>
+                  The response Discord gave. This should include details on the issues that Discord
+                  is reporting with the configured message.
+                </Text>
                 <pre
                   style={{
                     backgroundColor: getChakraColor("gray.800"),

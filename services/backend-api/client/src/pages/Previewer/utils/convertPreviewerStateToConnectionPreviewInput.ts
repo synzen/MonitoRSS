@@ -140,11 +140,13 @@ const convertLegacyEmbedPreviewerComponentToEmbed = (embedComponent: LegacyEmbed
         embed.fields = [];
       }
 
-      embed.fields.push({
-        name: subComponent.fieldName || null,
-        value: subComponent.fieldValue || null,
-        inline: subComponent.inline || null,
-      });
+      if (subComponent.fieldName || subComponent.fieldValue) {
+        embed.fields.push({
+          name: subComponent.fieldName || "",
+          value: subComponent.fieldValue || "",
+          inline: subComponent.inline || false,
+        });
+      }
     } else if (subComponent.type === ComponentType.LegacyEmbedTimestamp) {
       embed.timestamp = subComponent.timestamp || null;
     }

@@ -76,7 +76,7 @@ export const PageAlertProvider = ({ children }: { children: ReactNode }) => {
       alerts,
       removeAlert,
     };
-  }, [createErrorAlert, createSuccessAlert, createInfoAlert, alerts]);
+  }, [createErrorAlert, createSuccessAlert, createInfoAlert, removeAlert, alerts]);
 
   return <PageAlertContext.Provider value={contextValue}>{children}</PageAlertContext.Provider>;
 };
@@ -93,11 +93,9 @@ interface PageAlertContextOutletProps {
 
 export const PageAlertContextOutlet = ({ containerProps }: PageAlertContextOutletProps) => {
   const { alerts, removeAlert } = usePageAlertContext();
-  const [closedCount, setClosedCount] = useState(0);
 
   const onRemoved = useCallback(
     (id: string) => {
-      setClosedCount((prev) => prev + 1);
       removeAlert(id);
     },
     [removeAlert]
@@ -105,7 +103,7 @@ export const PageAlertContextOutlet = ({ containerProps }: PageAlertContextOutle
 
   return (
     <Stack
-      hidden={closedCount === alerts.length}
+      hidden={alerts.length === 0}
       spacing={2}
       position="sticky"
       top={0}
@@ -113,10 +111,10 @@ export const PageAlertContextOutlet = ({ containerProps }: PageAlertContextOutle
       w="100%"
       {...containerProps}
     >
-      {alerts.map((alert, index) => {
+      {alerts.map((alert) => {
         return (
           <DismissableAlert
-            key={alert.title + index.toString()}
+            key={alert.id}
             status={alert.status}
             description={alert.description}
             title={alert.title}

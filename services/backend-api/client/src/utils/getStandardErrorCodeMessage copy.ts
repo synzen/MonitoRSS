@@ -73,7 +73,8 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   FEED_LIMIT_REACHED: t("common.apiErrors.feedLimitReached"),
   FEED_MISSING_CHANNEL: t("common.apiErrors.feedMissingChannel"),
   FEED_USER_MISSING_MANAGE_GUILD: t("common.apiErrors.feedUserMissingManageGuild"),
-  INTERNAL_ERROR: t("common.errors.somethingWentWrong"),
+  INTERNAL_ERROR:
+    "Something went wrong. Please try again later, or contact support@monitorss.xyz if the issue persists.",
   FEED_NOT_FAILED: t("common.apiErrors.feedNotFailed"),
   FEED_NOT_FOUND: t("common.apiErrors.feedNotFound"),
   FEED_TOO_LARGE: "Feed is too large (larger than 3 MB) to be processed",

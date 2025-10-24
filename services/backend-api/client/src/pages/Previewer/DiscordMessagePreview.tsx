@@ -201,6 +201,7 @@ export const DiscordMessagePreview: React.FC = () => {
     return (
       <Stack spacing={0}>
         <PageAlertProvider>
+          <ArticlePreviewBanner />
           <PageAlertContextOutlet
             containerProps={{
               mb: 2,
@@ -208,7 +209,6 @@ export const DiscordMessagePreview: React.FC = () => {
               zIndex: 0,
             }}
           />
-          <ArticlePreviewBanner />
           <InlineErrorAlert title="Failed to load preview." description={error.message} />
         </PageAlertProvider>
       </Stack>

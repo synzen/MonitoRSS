@@ -51,6 +51,7 @@ interface TreeItemProps extends PropsWithChildren {
   onActivate?: () => void;
   onEscape?: () => void;
   ariaLabel?: string;
+  withoutProvider?: boolean;
 }
 
 export const NavigableTreeItem = ({
@@ -60,6 +61,7 @@ export const NavigableTreeItem = ({
   onActivate,
   onEscape,
   ariaLabel,
+  withoutProvider,
 }: TreeItemProps) => {
   const { currentSelectedId } = useNavigableTreeContext();
   const treeItemRef = useRef<HTMLDivElement>(null);
@@ -85,56 +87,64 @@ export const NavigableTreeItem = ({
     setHasGroup(!!thisHasGroup);
   }, [treeItemRef.current]);
 
+  const content = (
+    <NavigableTreeItemContext.Consumer>
+      {({ isExpanded, onFocused, onKeyDown, onBlurred }) => {
+        return (
+          <div
+            aria-label={ariaLabel}
+            ref={treeItemRef}
+            role="treeitem"
+            data-id={id}
+            onFocus={(e) => {
+              // const focusedElem = document.activeElement as HTMLElement;
+              // if (focusedElem !== treeItemRef.current) {
+              //   return;
+              // }
+              e.stopPropagation();
+              onFocused();
+            }}
+            tabIndex={tabIndex}
+            onBlur={(e) => {
+              e.stopPropagation();
+              onBlurred();
+            }}
+            onKeyDown={(e) => {
+              // if current div is not focused, do nothing
+              // const focusedElem = document.activeElement as HTMLElement;
+              // if (focusedElem !== treeItemRef.current) {
+              //   return;
+              // }
+
+              // if enter or space
+              if (e.key === "Enter" || e.key === " ") {
+                onActivate?.();
+              } else if (e.key === "Escape") {
+                onEscape?.();
+              } else {
+                onKeyDown(e);
+              }
+            }}
+            aria-selected={currentSelectedId === id}
+            aria-expanded={hasGroup ? isExpanded : undefined}
+            style={{
+              outline: "none",
+            }}
+          >
+            {children}
+          </div>
+        );
+      }}
+    </NavigableTreeItemContext.Consumer>
+  );
+
+  if (withoutProvider) {
+    return content;
+  }
+
   return (
     <NavigableTreeItemProvider id={id} isExpanded={isRootItem}>
-      <NavigableTreeItemContext.Consumer>
-        {({ isExpanded, onFocused, onKeyDown, onBlurred }) => {
-          return (
-            <div
-              aria-label={ariaLabel}
-              ref={treeItemRef}
-              role="treeitem"
-              data-id={id}
-              onFocus={(e) => {
-                // const focusedElem = document.activeElement as HTMLElement;
-                // if (focusedElem !== treeItemRef.current) {
-                //   return;
-                // }
-                e.stopPropagation();
-                onFocused();
-              }}
-              tabIndex={tabIndex}
-              onBlur={(e) => {
-                e.stopPropagation();
-                onBlurred();
-              }}
-              onKeyDown={(e) => {
-                // if current div is not focused, do nothing
-                // const focusedElem = document.activeElement as HTMLElement;
-                // if (focusedElem !== treeItemRef.current) {
-                //   return;
-                // }
-
-                // if enter or space
-                if (e.key === "Enter" || e.key === " ") {
-                  onActivate?.();
-                } else if (e.key === "Escape") {
-                  onEscape?.();
-                } else {
-                  onKeyDown(e);
-                }
-              }}
-              aria-selected={currentSelectedId === id}
-              aria-expanded={hasGroup ? isExpanded : undefined}
-              style={{
-                outline: "none",
-              }}
-            >
-              {children}
-            </div>
-          );
-        }}
-      </NavigableTreeItemContext.Consumer>
+      {content}
     </NavigableTreeItemProvider>
   );
 };
