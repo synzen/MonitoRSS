@@ -102,7 +102,7 @@ export const MESSAGE_BUILDER_TOUR_STEPS: TourStep[] = [
     target: "[data-tour-target='save-discard-buttons']",
     title: "Save Your Changes",
     content:
-      "Once you're happy with your customizations, use these buttons to save your changes or discard them if you want to start over. All changes are temporary until you save them.",
+      "Either save your changes or discard them if you want to start over. All changes are temporary until you save them.",
     placement: "bottom",
     offset: { x: 0, y: 20 },
   },

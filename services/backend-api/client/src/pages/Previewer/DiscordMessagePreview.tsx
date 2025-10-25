@@ -265,7 +265,7 @@ export const DiscordMessagePreview: React.FC = () => {
           borderRadius="md"
           fontFamily="Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif"
           maxW="100%"
-          maxH={450}
+          maxH={{ base: 300, lg: 450 }}
           h="100%"
           overflow="auto"
           position="relative"

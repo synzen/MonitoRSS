@@ -12,12 +12,12 @@ import {
 } from "../../components/NavigableTree";
 import { useNavigableTreeItemContext } from "../../contexts/NavigableTreeItemContext";
 import { usePreviewerContext } from "./PreviewerContext";
-import { useNavigableTreeContext } from "../../contexts/NavigableTreeContext";
 
 import getChakraColor from "../../utils/getChakraColor";
 import getPreviewerComponentLabel from "./utils/getPreviewerComponentLabel";
 import getPreviewerComponentIcon from "./utils/getPreviewerComponentIcon";
 import { notifyInfo } from "../../utils/notifyInfo";
+import { useIsPreviewerDesktop } from "../../hooks";
 
 interface ComponentTreeItemProps {
   component: Component;
@@ -35,7 +35,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
   const ref = React.useRef<HTMLDivElement>(null);
   const { onExpanded } = useNavigableTreeItemContext();
   const { addChildComponent } = usePreviewerContext();
-  const { setCurrentSelectedId, setCurrentFocusedId } = useNavigableTreeContext();
+  const isDesktop = useIsPreviewerDesktop();
 
   const hasChildren = component.children && component.children.length > 0;
   const hasAccessory =
@@ -54,16 +54,13 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
   const handleAddChild = (childType: ComponentType) => {
     const added = addChildComponent(component.id, childType as any);
 
-    // if (added) {
-    //   setCurrentSelectedId(added.id);
-    //   setCurrentFocusedId(added.id);
-    // }
-
-    notifyInfo(
-      `Successfully added ${getPreviewerComponentLabel(
-        childType
-      )} component under ${getPreviewerComponentLabel(component.type)}`
-    );
+    if (added) {
+      notifyInfo(
+        `Successfully added ${getPreviewerComponentLabel(
+          childType
+        )} component under ${getPreviewerComponentLabel(component.type)}`
+      );
+    }
   };
 
   React.useEffect(() => {
@@ -125,14 +122,14 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
             )}
           </HStack>
         </HStack>{" "}
-        {isSelected && (
-          <div style={{ position: "absolute", right: "5px", top: "5px" }}>
+        {isSelected && isDesktop && (
+          <Box position="absolute" right="5px" top="5px">
             <AddComponentButton
               component={component}
               canHaveChildren={canHaveChildren}
               onAddChild={handleAddChild}
             />
-          </div>
+          </Box>
         )}
       </HStack>
       {(hasChildren || hasAccessory) && isExpanded && (

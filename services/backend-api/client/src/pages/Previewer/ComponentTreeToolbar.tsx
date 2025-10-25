@@ -9,13 +9,18 @@ import { useNavigableTreeContext } from "../../contexts/NavigableTreeContext";
 import PreviewerFormState from "./types/PreviewerFormState";
 import getPreviewerComponentLabel from "./utils/getPreviewerComponentLabel";
 import { SlidingConfigPanel } from "./SlidingConfigPanel";
+import { AddComponentButton } from "./AddComponentButton";
+import { notifyInfo } from "../../utils/notifyInfo";
+import { MESSAGE_BUILDER_MOBILE_BREAKPOINT } from "./constants/MessageBuilderMobileBreakpoint";
+import { useIsPreviewerDesktop } from "../../hooks";
 
 export const ComponentTreeToolbar: React.FC = () => {
   const { addChildComponent } = usePreviewerContext();
-  const { currentSelectedId, setCurrentSelectedId, setExpandedIds } = useNavigableTreeContext();
+  const { currentSelectedId, setExpandedIds } = useNavigableTreeContext();
   const { watch } = useFormContext<PreviewerFormState>();
   const messageComponent = watch("messageComponent");
   const [configuringComponent, setConfiguringComponent] = useState<Component | null>(null);
+  const isDesktop = useIsPreviewerDesktop();
 
   // Find the selected component recursively
   const findComponentById = (component: Component | null, id: string): Component | null => {
@@ -65,7 +70,11 @@ export const ComponentTreeToolbar: React.FC = () => {
     const added = addChildComponent(selectedComponent.id, childType as any);
 
     if (added) {
-      setCurrentSelectedId(added.id);
+      notifyInfo(
+        `Successfully added ${getPreviewerComponentLabel(
+          childType
+        )} component under ${getPreviewerComponentLabel(selectedComponent.type)}`
+      );
     }
   };
 
@@ -82,52 +91,78 @@ export const ComponentTreeToolbar: React.FC = () => {
     <>
       <Box p={3} borderBottom="1px" borderColor="gray.600">
         <HStack justify="space-between" align="center" flexWrap="wrap">
-          <VStack align="start" spacing={1} display={{ base: "none", lg: "block" }}>
-            <Text fontSize="md" fontWeight="bold" color="white" as="h2">
-              Components
-            </Text>
-          </VStack>
-          <VStack align="start" spacing={1} display={{ base: "block", lg: "none" }}>
-            <Text fontSize="md" display="inline">
-              Selected:{" "}
-              <Text
-                display="inline"
-                fontWeight={selectedComponent ? "semibold" : undefined}
-                fontStyle={!selectedComponent ? "italic" : "normal"}
-              >
-                {selectedComponent ? getPreviewerComponentLabel(selectedComponent.type) : "None"}
+          {isDesktop && (
+            <VStack align="start" spacing={1}>
+              <Text fontSize="md" fontWeight="bold" color="white" as="h2">
+                Components
               </Text>
-            </Text>
-          </VStack>
+            </VStack>
+          )}
+          {!isDesktop && (
+            <VStack
+              align="start"
+              spacing={1}
+              display={{ base: "block", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "none" }}
+            >
+              <Text fontSize="md" display="inline">
+                Selected:{" "}
+                <Text
+                  display="inline"
+                  fontWeight={selectedComponent ? "semibold" : undefined}
+                  fontStyle={!selectedComponent ? "italic" : "normal"}
+                >
+                  {selectedComponent ? getPreviewerComponentLabel(selectedComponent.type) : "None"}
+                </Text>
+              </Text>
+            </VStack>
+          )}
           <HStack spacing={2} flexWrap="wrap">
-            <Button
-              leftIcon={<VscCollapseAll />}
-              size={{ base: "md", lg: "sm" }}
-              variant="ghost"
-              onClick={handleCollapseAll}
-              isDisabled={!messageComponent}
-            >
-              Collapse all
-            </Button>
-            <Button
-              display={{
-                base: "inline-flex",
-                lg: "none",
-              }}
-              leftIcon={<FaCog />}
-              size="md"
-              variant="ghost"
-              onClick={() => {
-                if (!selectedComponent) {
-                  return;
-                }
+            {isDesktop && (
+              <Button
+                leftIcon={<VscCollapseAll />}
+                size="sm"
+                variant="ghost"
+                onClick={handleCollapseAll}
+                isDisabled={!messageComponent}
+              >
+                Collapse all
+              </Button>
+            )}
+            {selectedComponent && !isDesktop && (
+              <Box>
+                <AddComponentButton
+                  component={selectedComponent}
+                  canHaveChildren={!!canAddChildren}
+                  onAddChild={handleAddChild}
+                  buttonProps={{
+                    variant: "solid",
+                    colorScheme: undefined,
+                    size: "sm",
+                  }}
+                />
+              </Box>
+            )}
+            {!isDesktop && (
+              <Button
+                display={{
+                  base: "inline-flex",
+                  [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "none",
+                }}
+                leftIcon={<FaCog />}
+                size="sm"
+                variant="solid"
+                onClick={() => {
+                  if (!selectedComponent) {
+                    return;
+                  }
 
-                handleConfigureComponent();
-              }}
-              aria-disabled={!selectedComponent}
-            >
-              Configure
-            </Button>
+                  handleConfigureComponent();
+                }}
+                aria-disabled={!selectedComponent}
+              >
+                Configure
+              </Button>
+            )}
           </HStack>
         </HStack>
       </Box>

@@ -1,0 +1,1 @@
+export const MESSAGE_BUILDER_MOBILE_BREAKPOINT = "xl";

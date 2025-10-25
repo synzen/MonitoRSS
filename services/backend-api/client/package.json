@@ -2,7 +2,7 @@
   "name": "@monitorss/control-panel",
   "version": "0.0.0",
   "scripts": {
-    "dev-mockapi": "cross-env ENV=development-mockapi vite --mode development-mockapi",
+    "dev-mockapi": "cross-env ENV=development-mockapi vite --host --mode development-mockapi",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",

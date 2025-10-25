@@ -1,4 +1,4 @@
-import React from "react";
+import React, { ComponentProps } from "react";
 import {
   Menu,
   MenuButton,
@@ -18,12 +18,14 @@ interface AddComponentButtonProps {
   component: Component;
   canHaveChildren: boolean;
   onAddChild: (childType: ComponentType) => void;
+  buttonProps?: ComponentProps<typeof Button>;
 }
 
 export const AddComponentButton: React.FC<AddComponentButtonProps> = ({
   component,
   canHaveChildren,
   onAddChild,
+  buttonProps,
 }) => {
   return (
     <Menu>
@@ -44,6 +46,7 @@ export const AddComponentButton: React.FC<AddComponentButtonProps> = ({
           colorScheme="twitter"
           aria-label={`Add new component under ${getPreviewerComponentLabel(component.type)}`}
           onClick={canHaveChildren ? undefined : (e) => e.preventDefault()}
+          {...buttonProps}
         >
           New Component
         </MenuButton>
