@@ -146,7 +146,9 @@ export class DeliveryRecordService {
       throw new Error("No context was started for DeliveryRecordService");
     }
 
-    store.toInsert.push(...partitionedInserts);
+    for (let i = 0; i < partitionedInserts.length; i++) {
+      store.toInsert.push(partitionedInserts[i]);
+    }
 
     if (flush) {
       const { affectedRows } = await this.flushPendingInserts();

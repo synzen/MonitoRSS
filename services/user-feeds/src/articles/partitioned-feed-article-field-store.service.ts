@@ -49,7 +49,9 @@ export class PartitionedFeedArticleFieldStoreService {
       );
     }
 
-    store.toInsert.push(...inserts);
+    for (let i = 0; i < inserts.length; ++i) {
+      store.toInsert.push(inserts[i]);
+    }
   }
 
   async flush(em: EntityManager<IDatabaseDriver<Connection>>) {
