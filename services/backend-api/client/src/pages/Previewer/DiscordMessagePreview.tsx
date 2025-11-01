@@ -9,6 +9,7 @@ import {
   Avatar,
   Stack,
   Progress,
+  Highlight,
 } from "@chakra-ui/react";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
 import { useFormContext } from "react-hook-form";
@@ -29,7 +30,7 @@ import { DiscordServerName, DiscordChannelName } from "../../features/discordSer
 export const DiscordMessagePreview: React.FC = () => {
   const {
     watch,
-    formState: { isValid },
+    formState: { isValid, isDirty },
   } = useFormContext<PreviewerFormState>();
   const messageComponent = watch("messageComponent");
   const bgColor = useColorModeValue("#36393f", "#36393f");
@@ -230,7 +231,7 @@ export const DiscordMessagePreview: React.FC = () => {
           }}
         />
         {/* Server and Channel Info */}
-        <Box mb={2}>
+        <HStack mb={2}>
           <Text fontSize="sm" color="gray.400" fontWeight="medium">
             Previewing in{" "}
             <Box as="span" color="gray.300">
@@ -256,7 +257,22 @@ export const DiscordMessagePreview: React.FC = () => {
               )}
             </Box>
           </Text>
-        </Box>
+          {isDirty && (
+            <Text fontSize="sm" fontWeight={600}>
+              <Highlight
+                query="You are previewing unsaved changes"
+                styles={{
+                  bg: "orange.200",
+                  rounded: "full",
+                  px: "2",
+                  py: "1",
+                }}
+              >
+                You are previewing unsaved changes
+              </Highlight>
+            </Text>
+          )}
+        </HStack>
         {/* Discord Message Preview */}
         <Box
           bg={bgColor}

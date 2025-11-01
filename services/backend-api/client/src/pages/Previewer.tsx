@@ -20,7 +20,6 @@ import {
   TabPanel,
   Stack,
   Heading,
-  Highlight,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -355,21 +354,6 @@ const PreviewerContent: React.FC = () => {
                     <Text fontSize="lg" fontWeight="bold" color="white" as="h1" tabIndex={-1}>
                       Message Builder
                     </Text>
-                    {formState.isDirty && (
-                      <Text fontSize="sm" fontWeight={600}>
-                        <Highlight
-                          query="You are previewing unsaved changes"
-                          styles={{
-                            bg: "orange.200",
-                            rounded: "full",
-                            px: "2",
-                            py: "1",
-                          }}
-                        >
-                          You are previewing unsaved changes
-                        </Highlight>
-                      </Text>
-                    )}
                   </HStack>
                   <HStack spacing={3} flexWrap="wrap">
                     {isDesktop && (
