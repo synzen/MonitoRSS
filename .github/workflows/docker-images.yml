@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "services/**"
+      - ".github/workflows/docker-images.yml"
 
 env:
   REGISTRY: ghcr.io
@@ -15,7 +18,35 @@ env:
   DISCORD_REST_LISTENER_IMAGE_NAME: ${{ github.repository }}-discord-rest-listener
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      user-feeds: ${{ steps.changes.outputs.user-feeds }}
+      feed-requests: ${{ steps.changes.outputs.feed-requests }}
+      backend-api: ${{ steps.changes.outputs.backend-api }}
+      bot-presence: ${{ steps.changes.outputs.bot-presence }}
+      discord-rest-listener: ${{ steps.changes.outputs.discord-rest-listener }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Detect changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            user-feeds:
+              - 'services/user-feeds/**'
+            feed-requests:
+              - 'services/feed-requests/**'
+            backend-api:
+              - 'services/backend-api/**'
+            bot-presence:
+              - 'services/bot-presence/**'
+            discord-rest-listener:
+              - 'services/discord-rest-listener/**'
   user-feeds:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.user-feeds == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -58,6 +89,8 @@ jobs:
           push-to-registry: true
 
   feed-requests:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.feed-requests == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -100,6 +133,8 @@ jobs:
           push-to-registry: true
 
   monolith:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.backend-api == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -143,6 +178,8 @@ jobs:
           push-to-registry: true
 
   bot-presence:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.bot-presence == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -185,6 +222,8 @@ jobs:
           push-to-registry: true
 
   discord-rest-listener:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.discord-rest-listener == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
