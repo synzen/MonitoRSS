@@ -57,7 +57,7 @@ export const MESSAGE_BUILDER_TOUR_STEPS: TourStep[] = [
     target: "[data-tour-target='add-component-button']",
     title: "Add New Components",
     content:
-      "If the currently-selected component supports sub-components, you may click the add button next to the currently-selected component to add components under it.\n\nExamples may include text blocks, embeds, buttons, and more to customize how your feed messages appear.",
+      "If the currently-selected component supports sub-components, you may click the add button next to the currently-selected component to add components under it.\n\nSub-components will show up under this component, and can be hidden or expanded via the caret icon to the left of this component.",
     placement: "bottom",
     offset: { x: 0, y: 20 },
   },
