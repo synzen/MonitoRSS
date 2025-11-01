@@ -132,17 +132,20 @@ async function pruneAndCreatePartitions(app: INestApplicationContext) {
       .filter((partition) => !tableNamesToCreate.includes(partition.child));
 
     if (tablesToDrop.length) {
-      logger.info(`Dropping partitions for feed_article_field_partitioned`, {
-        partitions: tablesToDrop.map((partition) => partition.child),
-      });
-
-      await Promise.all(
-        tablesToDrop.map(async (partition) => {
-          await connection.execute(
-            `DROP TABLE IF EXISTS ${partition.childSchema}.${partition.child};`
-          );
-        })
+      logger.info(
+        `Will eventually dorp partitions for feed_article_field_partitioned`,
+        {
+          partitions: tablesToDrop.map((partition) => partition.child),
+        }
       );
+
+      // await Promise.all(
+      //   tablesToDrop.map(async (partition) => {
+      //     await connection.execute(
+      //       `DROP TABLE IF EXISTS ${partition.childSchema}.${partition.child};`
+      //     );
+      //   })
+      // );
     }
   } catch (err) {
     logger.error(
