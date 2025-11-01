@@ -4,7 +4,11 @@ import { Client, GatewayIntentBits, GatewayOpcodes } from '@discordjs/core';
 import { AppConfigService } from '../app-config/app-config.service';
 
 import { REST } from '@discordjs/rest';
-import { WebSocketManager, CompressionMethod } from '@discordjs/ws';
+import {
+  WebSocketManager,
+  CompressionMethod,
+  WebSocketShardEvents,
+} from '@discordjs/ws';
 import { DiscordClientService } from './discord-client.service';
 import { DISCORD_PRESENCE_ACTIVITY_TYPE_IDS } from '../constants/discord-presence-activity-type.constants';
 import {
@@ -42,7 +46,15 @@ export class DiscordClientModule {
               token,
               intents,
               rest,
-              compression: CompressionMethod.ZlibStream,
+              compression: CompressionMethod.ZlibNative,
+            });
+
+            gateway.on(WebSocketShardEvents.SocketError, (error, shardId) => {
+              console.error(`WebSocket error on shard ${shardId}:`, error);
+            });
+
+            gateway.on(WebSocketShardEvents.Error, (error, shardId) => {
+              console.error(`Gateway error on shard ${shardId}:`, error);
             });
 
             const client = new Client({ rest, gateway });

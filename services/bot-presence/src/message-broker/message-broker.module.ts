@@ -15,7 +15,7 @@ export class MessageBrokerModule implements OnApplicationShutdown {
       module: MessageBrokerModule,
       providers: [MessageBrokerService],
       imports: [
-        RabbitMQModule.forRootAsync(RabbitMQModule, {
+        RabbitMQModule.forRootAsync({
           useFactory: async (appConfigService: AppConfigService) => {
             const rabbitmqUrl = appConfigService.getRabbitMqUrl();
 
@@ -30,6 +30,7 @@ export class MessageBrokerModule implements OnApplicationShutdown {
           },
           inject: [AppConfigService],
           imports: [AppConfigModule.forRoot()],
+          provideInjectionTokensFrom: [RabbitMQModule],
         }),
       ],
       exports: [RabbitMQModule, MessageBrokerService],
