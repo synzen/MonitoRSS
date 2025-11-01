@@ -539,15 +539,13 @@ const PreviewerContent: React.FC = () => {
             <AlertDialog isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose}>
               <AlertDialogOverlay>
                 <AlertDialogContent>
-                  <AlertDialogHeader fontSize="lg" fontWeight="bold">
-                    Discard Changes
-                  </AlertDialogHeader>
+                  <AlertDialogHeader>Discard Changes</AlertDialogHeader>
                   <AlertDialogBody>
                     Are you sure you want to discard all changes? This action cannot be undone and
                     all your changes will be lost.
                   </AlertDialogBody>
                   <AlertDialogFooter>
-                    <Button ref={cancelRef} onClick={onClose}>
+                    <Button ref={cancelRef} onClick={onClose} variant="outline">
                       Cancel
                     </Button>
                     <Button colorScheme="red" onClick={confirmDiscard} ml={3}>
