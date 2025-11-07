@@ -1,9 +1,10 @@
 import { useMutation } from "@tanstack/react-query";
-import { FeedConnectionType, SendTestArticleDeliveryStatus } from "../../../types";
+import { FeedConnectionType } from "../../../types";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 import {
   CreateDiscordChannelConnectionPreviewInput,
   createDiscordChannelConnectionTestArticle,
+  CreateDiscordChannelConnectionTestArticleOutput,
 } from "../api";
 
 interface CreateConnectionTestArticleInput {
@@ -11,13 +12,7 @@ interface CreateConnectionTestArticleInput {
   previewInput: CreateDiscordChannelConnectionPreviewInput;
 }
 
-interface CreateConnectionTestArticleOutput {
-  result: {
-    status: SendTestArticleDeliveryStatus;
-    apiResponse?: Record<string, unknown>;
-    apiPayload?: Record<string, unknown>;
-  };
-}
+export type CreateConnectionTestArticleOutput = CreateDiscordChannelConnectionTestArticleOutput;
 
 const methodsByType: Record<
   FeedConnectionType,

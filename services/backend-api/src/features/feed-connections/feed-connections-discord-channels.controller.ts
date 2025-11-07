@@ -144,11 +144,7 @@ export class FeedConnectionsDiscordChannelsController {
     });
 
     return {
-      result: {
-        status: result.status,
-        apiPayload: result.apiPayload,
-        apiResponse: result.apiResponse,
-      },
+      result,
     };
   }
 

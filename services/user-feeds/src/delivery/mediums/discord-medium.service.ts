@@ -29,6 +29,18 @@ import {
 } from "../../article-filters/types";
 import dayjs from "dayjs";
 import { generateDeliveryId } from "../../shared/utils/generate-delivery-id";
+import { DiscordSendArticleOperationType } from "../types/discord-send-article-operation.type";
+
+interface SendTestArticleResult {
+  operationType?: DiscordSendArticleOperationType;
+  apiPayload: Record<string, unknown>;
+  result: {
+    status: number;
+    state: "success" | "error";
+    message: string;
+    body: object;
+  };
+}
 
 @Injectable()
 export class DiscordMediumService implements DeliveryMedium {
@@ -114,15 +126,7 @@ export class DiscordMediumService implements DeliveryMedium {
   async deliverTestArticle(
     article: Article,
     details: TestDiscordDeliveryDetails
-  ): Promise<{
-    apiPayload: Record<string, unknown>;
-    result: {
-      status: number;
-      state: "success" | "error";
-      message: string;
-      body: object;
-    };
-  }> {
+  ): Promise<SendTestArticleResult> {
     const {
       mediumDetails: {
         channel,
@@ -244,6 +248,16 @@ export class DiscordMediumService implements DeliveryMedium {
               firstResponse.body
             )}`
         );
+      } else if (firstResponse.status !== 201) {
+        return {
+          apiPayload: threadBody,
+          result: {
+            status: firstResponse.status,
+            state: "success",
+            body: firstResponse.body,
+            message: firstResponse.detail || "",
+          },
+        };
       }
 
       const threadId = (firstResponse.body as Record<string, unknown>)
@@ -383,7 +397,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
           if (!firstResponse.success) {
             throw new Error(
-              `Failed to create initial thread for forum channel ${channelId}: ` +
+              `Failed to create initial post for channel ${channelId}: ` +
                 `${firstResponse.detail}. Body: ${JSON.stringify(
                   firstResponse.body
                 )}`
@@ -413,6 +427,18 @@ export class DiscordMediumService implements DeliveryMedium {
                   threadResponse.body
                 )}`
             );
+          } else if (threadResponse.status !== 201) {
+            return {
+              operationType:
+                DiscordSendArticleOperationType.CreateThreadOnMessage,
+              apiPayload: threadBody,
+              result: {
+                status: threadResponse.status,
+                state: "success",
+                body: threadResponse.body,
+                message: threadResponse.detail || "",
+              },
+            };
           }
 
           useChannelId = (threadResponse.body as Record<string, unknown>)
@@ -430,7 +456,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
           if (!firstResponse.success) {
             throw new Error(
-              `Failed to create initial thread for forum channel ${channelId}: ` +
+              `Failed to create initial thread for channel ${channelId}: ` +
                 `${firstResponse.detail}. Body: ${JSON.stringify(
                   firstResponse.body
                 )}`

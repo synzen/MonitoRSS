@@ -349,6 +349,7 @@ export class FeedsController {
         if (!article) {
           return {
             status: TestDeliveryStatus.NoArticles,
+            operationType: undefined,
           };
         }
 
@@ -363,7 +364,7 @@ export class FeedsController {
             article,
           });
 
-        const { result, apiPayload } =
+        const { result, apiPayload, operationType } =
           await this.discordMediumService.deliverTestArticle(formattedArticle, {
             mediumDetails,
             filterReferences,
@@ -382,33 +383,39 @@ export class FeedsController {
           return {
             status: TestDeliveryStatus.ThirdPartyInternalError,
             apiPayload,
+            operationType,
           };
         } else if (result.status === 401 || result.status === 403) {
           return {
             status: TestDeliveryStatus.MissingApplicationPermission,
             apiPayload,
+            operationType,
           };
         } else if (result.status === 400) {
           return {
             status: TestDeliveryStatus.BadPayload,
             apiResponse: result.body,
             apiPayload,
+            operationType,
           };
         } else if (result.status === 404) {
           return {
             status: TestDeliveryStatus.MissingChannel,
             apiResponse: result.body,
             apiPayload,
+            operationType,
           };
         } else if (result.status === 429) {
           return {
             status: TestDeliveryStatus.TooManyRequests,
             apiPayload,
+            operationType,
           };
         } else if (result.status >= 200 && result.status < 300) {
           return {
             status: TestDeliveryStatus.Success,
             apiPayload,
+            operationType,
           };
         } else {
           throw new Error(
