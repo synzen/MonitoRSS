@@ -31,8 +31,10 @@ import {
   MenuDivider,
   chakra,
   Alert,
+  Icon,
 } from "@chakra-ui/react";
 import { WarningIcon, SettingsIcon, InfoIcon } from "@chakra-ui/icons";
+import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { useFormContext } from "react-hook-form";
 import { useParams, Link as RouterLink, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -87,6 +89,7 @@ const PreviewerContent: React.FC = () => {
   const { resetMessage } = usePreviewerContext();
   const { watch, handleSubmit, formState } = useFormContext<PreviewerFormState>();
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
+  const [isProblemsCollapsed, setIsProblemsCollapsed] = useState(false);
   const messageComponent = watch("messageComponent");
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
@@ -450,26 +453,65 @@ const PreviewerContent: React.FC = () => {
                 )}
                 {/* Right Panel - Discord Preview and Problems */}
                 <Flex flex={1} direction="column" bg="gray.800" maxW={CENTER_PANEL_WIDTH}>
-                  {/* Discord Preview Section */}
-                  <Box p={4} borderBottom="1px" borderColor="gray.600" srOnly>
-                    <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
-                      Discord Message Preview
-                    </Text>
-                  </Box>
-                  <Box p={4} overflow="hidden" data-tour-target="discord-preview">
-                    <DiscordMessagePreview />
+                  <Box
+                    flex={isProblemsCollapsed ? 1 : "none"}
+                    overflow="hidden"
+                    data-tour-target="discord-preview"
+                    p={4}
+                    display="flex"
+                    flexDirection="column"
+                  >
+                    <Box srOnly>
+                      <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
+                        Discord Message Preview
+                      </Text>
+                    </Box>
+                    <Box flex={1} overflow="hidden">
+                      <DiscordMessagePreview maxHeight={isProblemsCollapsed ? "none" : undefined} />
+                    </Box>
                   </Box>
                   {isDesktop && (
                     <Box borderTop="1px" borderColor="gray.600" data-tour-target="problems-section">
-                      <Box p={4} borderBottom="1px" borderColor="gray.600">
-                        <HStack spacing={2} align="center">
-                          <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
-                            Problems
-                          </Text>
-                          <Text color="gray.400">({problems.length})</Text>
+                      <Box
+                        as="button"
+                        width="100%"
+                        p={4}
+                        borderBottom="1px"
+                        borderColor="gray.600"
+                        bg="transparent"
+                        cursor="pointer"
+                        textAlign="left"
+                        onClick={() => setIsProblemsCollapsed(!isProblemsCollapsed)}
+                        aria-expanded={!isProblemsCollapsed}
+                        aria-controls="problems-content"
+                        _hover={{ bg: "gray.700" }}
+                        _focus={{ outline: "2px solid", outlineColor: "blue.400" }}
+                        transition="background-color 0.2s"
+                      >
+                        <HStack spacing={2} align="center" justify="space-between">
+                          <HStack spacing={2} align="center">
+                            <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
+                              Problems
+                            </Text>
+                            <Text color="gray.400" aria-label={`${problems.length} found`}>
+                              ({problems.length})
+                            </Text>
+                          </HStack>
+                          <Icon
+                            as={isProblemsCollapsed ? FaChevronUp : FaChevronDown}
+                            color="gray.400"
+                            aria-hidden
+                          />
                         </HStack>
                       </Box>
-                      <ProblemsSection problems={problems} onClickComponentPath={handlePathClick} />
+                      {!isProblemsCollapsed && (
+                        <Box id="problems-content" role="region" aria-labelledby="problems-heading">
+                          <ProblemsSection
+                            problems={problems}
+                            onClickComponentPath={handlePathClick}
+                          />
+                        </Box>
+                      )}
                     </Box>
                   )}
                   {/* Problems Section - Mobile Tabs */}

@@ -27,7 +27,11 @@ import convertPreviewerStateToConnectionPreviewInput from "./utils/convertPrevie
 import { useUserFeedConnectionContext } from "../../contexts/UserFeedConnectionContext";
 import { DiscordServerName, DiscordChannelName } from "../../features/discordServers";
 
-export const DiscordMessagePreview: React.FC = () => {
+interface DiscordMessagePreviewProps {
+  maxHeight?: string | number;
+}
+
+export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ maxHeight }) => {
   const {
     watch,
     formState: { isValid, isDirty },
@@ -281,7 +285,7 @@ export const DiscordMessagePreview: React.FC = () => {
           borderRadius="md"
           fontFamily="Whitney, 'Helvetica Neue', Helvetica, Arial, sans-serif"
           maxW="100%"
-          maxH={{ base: 300, lg: 450 }}
+          maxH={maxHeight || { base: 300, lg: 450 }}
           h="100%"
           overflow="auto"
           position="relative"
