@@ -112,6 +112,7 @@ interface TourState {
   step: TourStep;
   stepIndex: number;
   targetRect: DOMRect | null;
+  hasScrolledIntoView?: boolean;
 }
 
 interface TourTooltipProps {
@@ -472,6 +473,7 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
       step: initialStep,
       stepIndex: 0,
       targetRect: null,
+      hasScrolledIntoView: false,
     });
     setIsActive(true);
     onClose();
@@ -489,6 +491,7 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
         step: nextStep,
         stepIndex: nextIndex,
         targetRect: null, // Will be updated by updateTargetRect
+        hasScrolledIntoView: false, // Reset scroll flag for new step
       });
       // Reset transition state after a brief delay
       setTimeout(() => {
@@ -520,6 +523,7 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
       step: prevStep,
       stepIndex: prevIndex,
       targetRect: null, // Will be updated by updateTargetRect
+      hasScrolledIntoView: false, // Reset scroll flag for new step
     });
     // Reset transition state after a brief delay
     setTimeout(() => {
@@ -596,6 +600,21 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
           setTourState((prev) => {
             if (!prev) return null;
 
+            // Scroll element into view if it's not fully visible and we haven't scrolled yet
+            const isElementVisible =
+              rect.top >= 0 &&
+              rect.left >= 0 &&
+              rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+              rect.right <= (window.innerWidth || document.documentElement.clientWidth);
+
+            if (!isElementVisible && !prev.hasScrolledIntoView) {
+              element.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+                inline: "center",
+              });
+            }
+
             // Check if rect has actually changed to prevent unnecessary updates
             const currentRect = prev.targetRect;
 
@@ -609,7 +628,11 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
               return prev; // No change needed
             }
 
-            return { ...prev, targetRect: rect };
+            return {
+              ...prev,
+              targetRect: rect,
+              hasScrolledIntoView: prev.hasScrolledIntoView || !isElementVisible,
+            };
           });
         }
       } else {
@@ -621,7 +644,30 @@ export const PreviewerTour: React.FC<PreviewerTourProps> = ({ onComplete, resetT
             const rect = retryElement.getBoundingClientRect();
 
             if (rect.width > 0 && rect.height > 0) {
-              setTourState((prev) => (prev ? { ...prev, targetRect: rect } : null));
+              setTourState((prev) => {
+                if (!prev) return null;
+
+                // Scroll element into view if it's not fully visible and we haven't scrolled yet
+                const isElementVisible =
+                  rect.top >= 0 &&
+                  rect.left >= 0 &&
+                  rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+                  rect.right <= (window.innerWidth || document.documentElement.clientWidth);
+
+                if (!isElementVisible && !prev.hasScrolledIntoView) {
+                  retryElement.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                    inline: "center",
+                  });
+                }
+
+                return {
+                  ...prev,
+                  targetRect: rect,
+                  hasScrolledIntoView: prev.hasScrolledIntoView || !isElementVisible,
+                };
+              });
             }
           }
         }, 50);
