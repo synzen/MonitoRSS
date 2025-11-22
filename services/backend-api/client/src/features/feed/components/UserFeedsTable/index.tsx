@@ -595,7 +595,11 @@ export const UserFeedsTable: React.FC<Props> = () => {
           </Text>
         </Center>
         <Button
-          isDisabled={!hasNextPage || isFetchingNextPage}
+          isDisabled={
+            !hasNextPage ||
+            isFetchingNextPage ||
+            (data?.pages[0].total != null && data.pages[0].total === flatData.length)
+          }
           isLoading={isFetchingNextPage}
           onClick={() => fetchNextPage()}
           mb={20}
