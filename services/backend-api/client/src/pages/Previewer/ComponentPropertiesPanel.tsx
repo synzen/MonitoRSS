@@ -9,6 +9,7 @@ import {
   Checkbox,
   FormControl,
   FormErrorMessage,
+  FormHelperText,
   Alert,
   AlertIcon,
   FormLabel,
@@ -74,6 +75,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         "A rich embed that can contain various elements like title, description, fields, images, and more.";
     } else if (component.type === ComponentType.LegacyActionRow) {
       description = "A row that holds buttons for user interactions in Discord messages.";
+    } else if (component.type === ComponentType.LegacyEmbedField) {
+      description = "A field that can display a name and value, with optional inline layout.";
     }
 
     if (!description) {
@@ -411,6 +414,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
               onChange={(e) => onChange({ ...component, inline: e.target.checked })}
               colorScheme="blue"
             />
+            <FormHelperText>
+              This will affect the layout of the fields to be either horizontal or vertical
+              depending on how many fields are set to be inline.
+            </FormHelperText>
           </FormControl>
         </VStack>
       );
