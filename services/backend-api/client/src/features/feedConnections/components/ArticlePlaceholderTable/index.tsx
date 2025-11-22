@@ -51,7 +51,7 @@ const PlaceholderRow = ({
         </HStack>
       </Td>
       <Td whiteSpace="normal">
-        <Box maxHeight={150} overflow="auto" tabIndex={0}>
+        <Box maxHeight={150} overflow="auto" tabIndex={0} minHeight="1.1rem">
           {value.split("\n").map((line, idx) => (
             // eslint-disable-next-line react/no-array-index-key
             <span key={idx}>
