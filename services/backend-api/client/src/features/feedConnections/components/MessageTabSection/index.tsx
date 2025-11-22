@@ -1,4 +1,4 @@
-import { RepeatIcon, SearchIcon } from "@chakra-ui/icons";
+import { ChevronRightIcon, RepeatIcon, SearchIcon } from "@chakra-ui/icons";
 import {
   Accordion,
   AccordionButton,
@@ -31,6 +31,10 @@ import {
   Text,
   useDisclosure,
   Link as ChakraLink,
+  Badge,
+  Alert,
+  AlertTitle,
+  AlertDescription,
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { FiMousePointer } from "react-icons/fi";
@@ -190,7 +194,7 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
         </Heading>
         <Text>Customize how your feed&apos;s articles are displayed in your Discord messages.</Text>
       </Stack>
-      {/* <Alert
+      <Alert
         role={undefined}
         flexDirection="column"
         alignItems="flex-start"
@@ -201,12 +205,12 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
         <Stack spacing={4}>
           <Stack spacing={2}>
             <HStack>
-              <Badge colorScheme="white">NEW</Badge>
+              <Badge colorScheme="white">NEW!</Badge>
               <AlertTitle display="block">A better way to customize your messages!</AlertTitle>
             </HStack>
             <AlertDescription display="block">
-              Design and preview your Discord messages with the Message Builder that will soon
-              replace this page.
+              Design and preview your Discord messages with the Message Builder for a more condensed
+              and streamlined experience.
             </AlertDescription>
           </Stack>
           <Box>
@@ -223,7 +227,7 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
             </Button>
           </Box>
         </Stack>
-      </Alert> */}
+      </Alert>
       <Stack spacing={4} as="aside" aria-labelledby="placeholders-title">
         <Stack>
           <Heading as="h3" size="sm" id="placeholders-title">
