@@ -6,6 +6,8 @@ import {
   ModalHeader,
   ModalCloseButton,
   ModalBody,
+  ModalFooter,
+  Button,
 } from "@chakra-ui/react";
 import { ComponentPropertiesPanel } from "./ComponentPropertiesPanel";
 import getPreviewerComponentLabel from "./utils/getPreviewerComponentLabel";
@@ -52,7 +54,7 @@ export const SlidingConfigPanel: React.FC<SlidingConfigPanelProps> = ({ onClose,
           Configure {component ? getPreviewerComponentLabel(component.type) : "Component"}
         </ModalHeader>
         <ModalCloseButton color="gray.400" _hover={{ color: "white", bg: "gray.700" }} />
-        <ModalBody p={4} height="calc(100% - 73px)" overflowY="auto" bg="gray.800">
+        <ModalBody p={4} height="calc(100% - 120px)" overflowY="auto" bg="gray.800">
           {component && (
             <ComponentPropertiesPanel
               hideTitle
@@ -61,6 +63,11 @@ export const SlidingConfigPanel: React.FC<SlidingConfigPanelProps> = ({ onClose,
             />
           )}
         </ModalBody>
+        <ModalFooter borderTop="1px solid" borderColor="gray.600" bg="gray.800" p={4}>
+          <Button colorScheme="gray" onClick={onClose}>
+            Close
+          </Button>
+        </ModalFooter>
       </ModalContent>
     </Modal>
   );

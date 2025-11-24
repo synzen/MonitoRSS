@@ -99,12 +99,12 @@ export const ComponentTreeToolbar: React.FC = () => {
             </VStack>
           )}
           {!isDesktop && (
-            <VStack
-              align="start"
-              spacing={1}
-              display={{ base: "block", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "none" }}
+            <HStack
+              align="center"
+              width="100%"
+              display={{ base: "flex", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "none" }}
             >
-              <Text fontSize="md" display="inline">
+              <Text fontSize="md">
                 Selected:{" "}
                 <Text
                   display="inline"
@@ -114,56 +114,51 @@ export const ComponentTreeToolbar: React.FC = () => {
                   {selectedComponent ? getPreviewerComponentLabel(selectedComponent.type) : "None"}
                 </Text>
               </Text>
-            </VStack>
+              <HStack spacing={2} flexWrap="wrap">
+                {selectedComponent && (
+                  <Box>
+                    <AddComponentButton
+                      component={selectedComponent}
+                      canHaveChildren={!!canAddChildren}
+                      onAddChild={handleAddChild}
+                      buttonProps={{
+                        variant: "solid",
+                        colorScheme: undefined,
+                        size: "sm",
+                      }}
+                    />
+                  </Box>
+                )}
+                <Button
+                  leftIcon={<FaCog />}
+                  size="sm"
+                  variant="solid"
+                  onClick={() => {
+                    if (!selectedComponent) {
+                      return;
+                    }
+
+                    handleConfigureComponent();
+                  }}
+                  aria-disabled={!selectedComponent}
+                >
+                  Configure
+                </Button>
+              </HStack>
+            </HStack>
           )}
-          <HStack spacing={2} flexWrap="wrap">
-            {isDesktop && (
+          {isDesktop && (
+            <HStack spacing={2} flexWrap="wrap">
               <Button
                 leftIcon={<VscCollapseAll />}
-                size="sm"
                 variant="ghost"
                 onClick={handleCollapseAll}
                 isDisabled={!messageComponent}
               >
                 Collapse all
               </Button>
-            )}
-            {selectedComponent && !isDesktop && (
-              <Box>
-                <AddComponentButton
-                  component={selectedComponent}
-                  canHaveChildren={!!canAddChildren}
-                  onAddChild={handleAddChild}
-                  buttonProps={{
-                    variant: "solid",
-                    colorScheme: undefined,
-                    size: "sm",
-                  }}
-                />
-              </Box>
-            )}
-            {!isDesktop && (
-              <Button
-                display={{
-                  base: "inline-flex",
-                  [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "none",
-                }}
-                leftIcon={<FaCog />}
-                size="sm"
-                variant="solid"
-                onClick={() => {
-                  if (!selectedComponent) {
-                    return;
-                  }
-
-                  handleConfigureComponent();
-                }}
-                aria-disabled={!selectedComponent}
-              >
-                Configure
-              </Button>
-            )}
-          </HStack>
+            </HStack>
+          )}
         </HStack>
       </Box>
       <SlidingConfigPanel onClose={onCloseComponentConfigure} component={configuringComponent} />
