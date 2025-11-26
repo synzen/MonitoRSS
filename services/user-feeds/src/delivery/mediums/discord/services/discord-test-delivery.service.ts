@@ -78,17 +78,19 @@ export class DiscordTestDeliveryService {
       throw new Error("No channel or webhook specified for Discord forum");
     }
 
-    const threadNameContent = forumThreadTitle || "{{title}}";
-    const threadName =
-      this.payloadBuilderService.generateApiTextPayload(article, {
-        content: threadNameContent,
-        limit: 100,
-        mentions,
-        filterReferences,
-        placeholderLimits,
-        enablePlaceholderFallback,
-        components,
-      }) || "New Article";
+    const payloadOptions = {
+      mentions,
+      filterReferences,
+      placeholderLimits,
+      enablePlaceholderFallback,
+      components,
+    };
+
+    const threadName = this.payloadBuilderService.generateThreadName(
+      article,
+      forumThreadTitle,
+      payloadOptions
+    );
 
     let bodies: DiscordMessageApiPayload[];
     let threadBody: Record<string, unknown>;
@@ -98,67 +100,46 @@ export class DiscordTestDeliveryService {
         embeds,
         content,
         splitOptions,
-        mentions,
-        filterReferences,
-        placeholderLimits,
-        enablePlaceholderFallback,
-        components,
+        ...payloadOptions,
       });
 
-      threadBody = {
-        name: threadName,
-        message: bodies[0],
-        applied_tags: this.payloadBuilderService.getForumTagsToSend(
+      threadBody = this.payloadBuilderService.buildForumThreadBody({
+        isWebhook: false,
+        threadName,
+        firstPayload: bodies[0],
+        tags: this.payloadBuilderService.getForumTagsToSend(
           forumThreadTags,
           filterReferences
         ),
-        type: 11,
-      };
+      });
     } else {
-      bodies = this.payloadBuilderService
-        .generateApiPayloads(article, {
+      const initialBodies = this.payloadBuilderService.generateApiPayloads(
+        article,
+        {
           embeds,
           content,
           splitOptions,
-          filterReferences,
-          mentions,
-          placeholderLimits,
-          enablePlaceholderFallback,
-          components,
-        })
-        .map((payload) => ({
-          ...payload,
-          username: this.payloadBuilderService.generateApiTextPayload(article, {
-            content: webhook?.name,
-            limit: 256,
-            filterReferences,
-            mentions,
-            placeholderLimits,
-            enablePlaceholderFallback,
-            components,
-          }),
-          avatar_url: this.payloadBuilderService.generateApiTextPayload(
-            article,
-            {
-              content: webhook?.iconUrl,
-              filterReferences,
-              mentions,
-              placeholderLimits,
-              enablePlaceholderFallback,
-              components,
-            }
-          ),
-        }));
+          ...payloadOptions,
+        }
+      );
 
-      threadBody = {
-        ...bodies[0],
-        thread_name: threadName,
-        applied_tags: this.payloadBuilderService.getForumTagsToSend(
+      bodies = this.payloadBuilderService.enhancePayloadsWithWebhookDetails(
+        article,
+        initialBodies,
+        webhook?.name,
+        webhook?.iconUrl,
+        payloadOptions
+      );
+
+      threadBody = this.payloadBuilderService.buildForumThreadBody({
+        isWebhook: true,
+        threadName,
+        firstPayload: bodies[0],
+        tags: this.payloadBuilderService.getForumTagsToSend(
           forumThreadTags,
           filterReferences
         ),
-        type: 11,
-      };
+      });
     }
 
     const firstResponse = await this.apiClientService.sendRequest(apiUrl, {
@@ -242,37 +223,32 @@ export class DiscordTestDeliveryService {
       { threadId: webhook.threadId }
     );
 
-    const apiPayloads = this.payloadBuilderService
-      .generateApiPayloads(article, {
+    const payloadOptions = {
+      filterReferences,
+      mentions,
+      placeholderLimits,
+      enablePlaceholderFallback,
+      components,
+    };
+
+    const initialBodies = this.payloadBuilderService.generateApiPayloads(
+      article,
+      {
         embeds,
         content,
         splitOptions,
-        filterReferences,
-        mentions,
-        placeholderLimits,
-        enablePlaceholderFallback,
-        components,
-      })
-      .map((payload) => ({
-        ...payload,
-        username: this.payloadBuilderService.generateApiTextPayload(article, {
-          content: webhook.name,
-          limit: 256,
-          filterReferences,
-          mentions,
-          placeholderLimits,
-          enablePlaceholderFallback,
-          components,
-        }),
-        avatar_url: this.payloadBuilderService.generateApiTextPayload(article, {
-          content: webhook.iconUrl,
-          filterReferences,
-          mentions,
-          placeholderLimits,
-          enablePlaceholderFallback,
-          components,
-        }),
-      }));
+        ...payloadOptions,
+      }
+    );
+
+    const apiPayloads =
+      this.payloadBuilderService.enhancePayloadsWithWebhookDetails(
+        article,
+        initialBodies,
+        webhook.name,
+        webhook.iconUrl,
+        payloadOptions
+      );
 
     const results = await Promise.all(
       apiPayloads.map((payload) =>
@@ -321,17 +297,21 @@ export class DiscordTestDeliveryService {
     const shouldCreateThread = channel.type === "new-thread";
     let useChannelId = channelId;
 
+    const payloadOptions = {
+      mentions,
+      filterReferences,
+      placeholderLimits,
+      enablePlaceholderFallback,
+      components,
+    };
+
     const apiPayloads = this.payloadBuilderService.generateApiPayloads(
       article,
       {
         embeds,
         content,
         splitOptions,
-        mentions,
-        filterReferences,
-        placeholderLimits,
-        enablePlaceholderFallback,
-        components,
+        ...payloadOptions,
       }
     );
     let currentApiPayloadIndex = 0;
@@ -347,16 +327,11 @@ export class DiscordTestDeliveryService {
       const createThreadFirst =
         details.mediumDetails.channelNewThreadExcludesPreview;
 
-      const threadName =
-        this.payloadBuilderService.generateApiTextPayload(article, {
-          content: channelNewThreadTitle || "{{title}}",
-          limit: 100,
-          mentions,
-          filterReferences,
-          placeholderLimits,
-          enablePlaceholderFallback,
-          components,
-        }) || "New Article";
+      const threadName = this.payloadBuilderService.generateThreadName(
+        article,
+        channelNewThreadTitle,
+        payloadOptions
+      );
 
       const threadBody = {
         name: threadName,

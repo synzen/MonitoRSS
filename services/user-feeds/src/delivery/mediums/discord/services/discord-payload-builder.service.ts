@@ -391,4 +391,72 @@ export class DiscordPayloadBuilderService {
 
     return value;
   }
+
+  /**
+   * Enhances payloads with webhook username and avatar_url fields.
+   */
+  enhancePayloadsWithWebhookDetails(
+    article: Article,
+    payloads: DiscordMessageApiPayload[],
+    webhookName: string | undefined,
+    webhookIconUrl: string | undefined,
+    options: Omit<GenerateApiTextPayloadOptions, "content" | "limit">
+  ): DiscordMessageApiPayload[] {
+    return payloads.map((payload) => ({
+      ...payload,
+      username: this.generateApiTextPayload(article, {
+        content: webhookName,
+        limit: 256,
+        ...options,
+      }),
+      avatar_url: this.generateApiTextPayload(article, {
+        content: webhookIconUrl,
+        ...options,
+      }),
+    }));
+  }
+
+  /**
+   * Generates a thread name from a title template, with fallback to "New Article".
+   */
+  generateThreadName(
+    article: Article,
+    titleTemplate: string | null | undefined,
+    options: Omit<GenerateApiTextPayloadOptions, "content" | "limit">
+  ): string {
+    return (
+      this.generateApiTextPayload(article, {
+        content: titleTemplate || "{{title}}",
+        limit: 100,
+        ...options,
+      }) || "New Article"
+    );
+  }
+
+  /**
+   * Builds a forum thread body for either channel or webhook forum.
+   */
+  buildForumThreadBody(options: {
+    isWebhook: boolean;
+    threadName: string;
+    firstPayload: DiscordMessageApiPayload;
+    tags: string[];
+  }): Record<string, unknown> {
+    const { isWebhook, threadName, firstPayload, tags } = options;
+
+    if (isWebhook) {
+      return {
+        ...firstPayload,
+        thread_name: threadName,
+        applied_tags: tags,
+      };
+    }
+
+    return {
+      name: threadName,
+      message: firstPayload,
+      applied_tags: tags,
+      type: 11,
+    };
+  }
 }
