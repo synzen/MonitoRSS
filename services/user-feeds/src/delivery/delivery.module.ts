@@ -14,6 +14,8 @@ import { DiscordDeliveryResultService } from "./mediums/discord/services/discord
 import { DiscordMessageEnqueueService } from "./mediums/discord/services/discord-message-enqueue.service";
 // eslint-disable-next-line max-len
 import { DiscordPayloadBuilderService } from "./mediums/discord/services/discord-payload-builder.service";
+// eslint-disable-next-line max-len
+import { DiscordTestDeliveryService } from "./mediums/discord/services/discord-test-delivery.service";
 
 @Module({
   controllers: [],
@@ -24,6 +26,7 @@ import { DiscordPayloadBuilderService } from "./mediums/discord/services/discord
     DiscordDeliveryResultService,
     DiscordMessageEnqueueService,
     DiscordPayloadBuilderService,
+    DiscordTestDeliveryService,
   ],
   imports: [
     ArticleFiltersModule,
@@ -38,6 +41,7 @@ import { DiscordPayloadBuilderService } from "./mediums/discord/services/discord
     DiscordDeliveryResultService,
     DiscordMessageEnqueueService,
     DiscordPayloadBuilderService,
+    DiscordTestDeliveryService,
   ],
 })
 export class DeliveryModule implements OnApplicationShutdown {
