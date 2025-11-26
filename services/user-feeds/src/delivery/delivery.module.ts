@@ -6,17 +6,27 @@ import { CacheStorageModule } from "../cache-storage/cache-storage.module";
 import logger from "../shared/utils/logger";
 import { DeliveryService } from "./delivery.service";
 import { DiscordMediumService } from "./mediums/discord-medium.service";
+// eslint-disable-next-line max-len
+import { DiscordPayloadBuilderService } from "./mediums/discord/services/discord-payload-builder.service";
 
 @Module({
   controllers: [],
-  providers: [DeliveryService, DiscordMediumService],
+  providers: [
+    DeliveryService,
+    DiscordMediumService,
+    DiscordPayloadBuilderService,
+  ],
   imports: [
     ArticleFiltersModule,
     ArticleRateLimitModule,
     ArticleFormatterModule,
     CacheStorageModule,
   ],
-  exports: [DeliveryService, DiscordMediumService],
+  exports: [
+    DeliveryService,
+    DiscordMediumService,
+    DiscordPayloadBuilderService,
+  ],
 })
 export class DeliveryModule implements OnApplicationShutdown {
   constructor(private readonly discordMediumService: DiscordMediumService) {}
