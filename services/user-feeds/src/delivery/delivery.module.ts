@@ -7,6 +7,8 @@ import logger from "../shared/utils/logger";
 import { DeliveryService } from "./delivery.service";
 import { DiscordMediumService } from "./mediums/discord-medium.service";
 // eslint-disable-next-line max-len
+import { DiscordApiClientService } from "./mediums/discord/services/discord-api-client.service";
+// eslint-disable-next-line max-len
 import { DiscordPayloadBuilderService } from "./mediums/discord/services/discord-payload-builder.service";
 
 @Module({
@@ -14,6 +16,7 @@ import { DiscordPayloadBuilderService } from "./mediums/discord/services/discord
   providers: [
     DeliveryService,
     DiscordMediumService,
+    DiscordApiClientService,
     DiscordPayloadBuilderService,
   ],
   imports: [
@@ -25,6 +28,7 @@ import { DiscordPayloadBuilderService } from "./mediums/discord/services/discord
   exports: [
     DeliveryService,
     DiscordMediumService,
+    DiscordApiClientService,
     DiscordPayloadBuilderService,
   ],
 })

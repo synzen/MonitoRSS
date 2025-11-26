@@ -9,7 +9,7 @@ import {
   ArticleDeliveryErrorCode,
   ArticleDiscordFormatted,
 } from "../../shared";
-import { RESTHandler, RESTProducer } from "@synzen/discord-rest";
+import { RESTProducer } from "@synzen/discord-rest";
 import {
   ArticleDeliveryState,
   ArticleDeliveryStatus,
@@ -23,6 +23,11 @@ import { FormatOptions } from "../../article-formatter/types";
 import { generateDeliveryId } from "../../shared/utils/generate-delivery-id";
 import { DiscordSendArticleOperationType } from "../types/discord-send-article-operation.type";
 import { DiscordPayloadBuilderService } from "./discord/services/discord-payload-builder.service";
+// eslint-disable-next-line max-len
+import {
+  DiscordApiClientService,
+  DiscordApiResponse,
+} from "./discord/services/discord-api-client.service";
 
 interface SendTestArticleResult {
   operationType?: DiscordSendArticleOperationType;
@@ -37,15 +42,13 @@ interface SendTestArticleResult {
 
 @Injectable()
 export class DiscordMediumService implements DeliveryMedium {
-  static BASE_API_URL = "https://discord.com/api/v10";
   producer: RESTProducer;
-  handler: RESTHandler;
-  private botToken: string;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly articleFormatterService: ArticleFormatterService,
-    private readonly payloadBuilderService: DiscordPayloadBuilderService
+    private readonly payloadBuilderService: DiscordPayloadBuilderService,
+    private readonly apiClientService: DiscordApiClientService
   ) {
     const rabbitmqUri = configService.getOrThrow(
       "USER_FEEDS_DISCORD_RABBITMQ_URI"
@@ -53,50 +56,10 @@ export class DiscordMediumService implements DeliveryMedium {
     const discordClientId = configService.getOrThrow(
       "USER_FEEDS_DISCORD_CLIENT_ID"
     );
-    this.botToken = configService.getOrThrow("USER_FEEDS_DISCORD_API_TOKEN");
 
     this.producer = new RESTProducer(rabbitmqUri, {
       clientId: discordClientId,
     });
-    this.handler = new RESTHandler();
-  }
-
-  private getChannelApiUrl(channelId: string) {
-    return `${DiscordMediumService.BASE_API_URL}/channels/${channelId}/messages`;
-  }
-
-  private getWebhookApiUrl(
-    webhookId: string,
-    webhookToken: string,
-    queries?: {
-      threadId?: string | null;
-    }
-  ) {
-    const urlQueries = new URLSearchParams();
-
-    urlQueries.append("wait", "true");
-
-    if (queries?.threadId) {
-      urlQueries.append("thread_id", queries.threadId);
-    }
-
-    return `${
-      DiscordMediumService.BASE_API_URL
-    }/webhooks/${webhookId}/${webhookToken}?${urlQueries.toString()}`;
-  }
-
-  private getCreateChannelThreadUrl(channelId: string) {
-    return `${DiscordMediumService.BASE_API_URL}/channels/${channelId}/threads`;
-  }
-
-  private getCreateChannelMessageThreadUrl(
-    channelId: string,
-    messageId: string
-  ) {
-    return (
-      `${DiscordMediumService.BASE_API_URL}` +
-      `/channels/${channelId}/messages/${messageId}/threads`
-    );
   }
 
   async close() {
@@ -142,9 +105,9 @@ export class DiscordMediumService implements DeliveryMedium {
 
     if (isForum) {
       const apiUrl = channelId
-        ? this.getCreateChannelThreadUrl(channelId)
+        ? this.apiClientService.getCreateChannelThreadUrl(channelId)
         : webhook
-        ? this.getWebhookApiUrl(webhook.id, webhook.token)
+        ? this.apiClientService.getWebhookApiUrl(webhook.id, webhook.token)
         : undefined;
 
       if (!apiUrl) {
@@ -237,7 +200,7 @@ export class DiscordMediumService implements DeliveryMedium {
         };
       }
 
-      const firstResponse = await this.sendDiscordApiRequest(apiUrl, {
+      const firstResponse = await this.apiClientService.sendRequest(apiUrl, {
         method: "POST",
         body: threadBody,
       });
@@ -265,8 +228,8 @@ export class DiscordMediumService implements DeliveryMedium {
         .id as string;
 
       const threadChannelUrl = channelId
-        ? this.getChannelApiUrl(threadId)
-        : this.getWebhookApiUrl(
+        ? this.apiClientService.getChannelApiUrl(threadId)
+        : this.apiClientService.getWebhookApiUrl(
             webhook?.id as string,
             webhook?.token as string,
             {
@@ -276,7 +239,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
       await Promise.all(
         bodies.slice(1, bodies.length).map((body) =>
-          this.sendDiscordApiRequest(threadChannelUrl, {
+          this.apiClientService.sendRequest(threadChannelUrl, {
             method: "POST",
             body,
           })
@@ -293,9 +256,13 @@ export class DiscordMediumService implements DeliveryMedium {
         },
       };
     } else if (webhook) {
-      const apiUrl = this.getWebhookApiUrl(webhook.id, webhook.token, {
-        threadId: webhook.threadId,
-      });
+      const apiUrl = this.apiClientService.getWebhookApiUrl(
+        webhook.id,
+        webhook.token,
+        {
+          threadId: webhook.threadId,
+        }
+      );
       const apiPayloads = this.payloadBuilderService
         .generateApiPayloads(article, {
           embeds,
@@ -333,7 +300,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
       const results = await Promise.all(
         apiPayloads.map((payload) =>
-          this.sendDiscordApiRequest(apiUrl, {
+          this.apiClientService.sendRequest(apiUrl, {
             method: "POST",
             body: payload,
           })
@@ -398,11 +365,14 @@ export class DiscordMediumService implements DeliveryMedium {
 
         if (!createThreadFirst) {
           // Send the post, create a thread, and then send the rest
-          const apiUrl = this.getChannelApiUrl(channelId);
-          const firstResponse = await this.sendDiscordApiRequest(apiUrl, {
-            method: "POST",
-            body: apiPayloads[0],
-          });
+          const apiUrl = this.apiClientService.getChannelApiUrl(channelId);
+          const firstResponse = await this.apiClientService.sendRequest(
+            apiUrl,
+            {
+              method: "POST",
+              body: apiPayloads[0],
+            }
+          );
 
           if (!firstResponse.success) {
             throw new Error(
@@ -416,12 +386,13 @@ export class DiscordMediumService implements DeliveryMedium {
           const messageId = (firstResponse.body as Record<string, unknown>)
             .id as string;
 
-          const messageThreadUrl = this.getCreateChannelMessageThreadUrl(
-            channelId,
-            messageId
-          );
+          const messageThreadUrl =
+            this.apiClientService.getCreateChannelMessageThreadUrl(
+              channelId,
+              messageId
+            );
 
-          const threadResponse = await this.sendDiscordApiRequest(
+          const threadResponse = await this.apiClientService.sendRequest(
             messageThreadUrl,
             {
               method: "POST",
@@ -457,11 +428,15 @@ export class DiscordMediumService implements DeliveryMedium {
           apiPayloadResults.push(firstResponse);
         } else {
           // Create a thread and then send all the posts
-          const apiUrl = this.getCreateChannelThreadUrl(channelId);
-          const firstResponse = await this.sendDiscordApiRequest(apiUrl, {
-            method: "POST",
-            body: threadBody,
-          });
+          const apiUrl =
+            this.apiClientService.getCreateChannelThreadUrl(channelId);
+          const firstResponse = await this.apiClientService.sendRequest(
+            apiUrl,
+            {
+              method: "POST",
+              body: threadBody,
+            }
+          );
 
           if (!firstResponse.success) {
             throw new Error(
@@ -487,14 +462,14 @@ export class DiscordMediumService implements DeliveryMedium {
         }
       }
 
-      const apiUrl = this.getChannelApiUrl(useChannelId);
+      const apiUrl = this.apiClientService.getChannelApiUrl(useChannelId);
       const results = [];
 
       for (const payload of apiPayloads.slice(
         currentApiPayloadIndex,
         apiPayloads.length
       )) {
-        const result = await this.sendDiscordApiRequest(apiUrl, {
+        const result = await this.apiClientService.sendRequest(apiUrl, {
           method: "POST",
           body: payload,
         });
@@ -621,7 +596,10 @@ export class DiscordMediumService implements DeliveryMedium {
       filterReferences,
     } = details;
 
-    const apiUrl = this.getWebhookApiUrl(webhookId, webhookToken);
+    const apiUrl = this.apiClientService.getWebhookApiUrl(
+      webhookId,
+      webhookToken
+    );
     const bodies = this.payloadBuilderService
       .generateApiPayloads(article, {
         embeds: details.deliverySettings.embeds,
@@ -671,7 +649,7 @@ export class DiscordMediumService implements DeliveryMedium {
       ),
     };
 
-    const res = await this.sendDiscordApiRequest(apiUrl, {
+    const res = await this.apiClientService.sendRequest(apiUrl, {
       method: "POST",
       body: threadBody,
     });
@@ -686,9 +664,13 @@ export class DiscordMediumService implements DeliveryMedium {
 
     const threadId = (res.body as Record<string, unknown>).id as string;
 
-    const channelApiUrl = this.getWebhookApiUrl(webhookId, webhookToken, {
-      threadId,
-    });
+    const channelApiUrl = this.apiClientService.getWebhookApiUrl(
+      webhookId,
+      webhookToken,
+      {
+        threadId,
+      }
+    );
 
     const parentDeliveryId = generateDeliveryId();
     const additionalDeliveryStates: ArticleDeliveryState[] = [];
@@ -756,7 +738,8 @@ export class DiscordMediumService implements DeliveryMedium {
       filterReferences,
     } = details;
 
-    const forumApiUrl = this.getCreateChannelThreadUrl(channelId);
+    const forumApiUrl =
+      this.apiClientService.getCreateChannelThreadUrl(channelId);
     const bodies = this.payloadBuilderService.generateApiPayloads(article, {
       embeds: details.deliverySettings.embeds,
       content: details.deliverySettings.content,
@@ -789,7 +772,7 @@ export class DiscordMediumService implements DeliveryMedium {
       type: 11,
     };
 
-    const res = await this.sendDiscordApiRequest(forumApiUrl, {
+    const res = await this.apiClientService.sendRequest(forumApiUrl, {
       method: "POST",
       body: threadBody,
     });
@@ -810,7 +793,7 @@ export class DiscordMediumService implements DeliveryMedium {
 
     const threadId = (res.body as Record<string, unknown>).id as string;
 
-    const channelApiUrl = this.getChannelApiUrl(threadId);
+    const channelApiUrl = this.apiClientService.getChannelApiUrl(threadId);
     const additionalDeliveryStates: ArticleDeliveryState[] = [];
 
     for (const body of bodies.slice(1, bodies.length)) {
@@ -904,8 +887,9 @@ export class DiscordMediumService implements DeliveryMedium {
 
       if (shouldCreateThreadFirst) {
         // Create the thread first and send all the posts into it
-        const apiUrl = this.getCreateChannelThreadUrl(channelId);
-        const firstResponse = await this.sendDiscordApiRequest(apiUrl, {
+        const apiUrl =
+          this.apiClientService.getCreateChannelThreadUrl(channelId);
+        const firstResponse = await this.apiClientService.sendRequest(apiUrl, {
           method: "POST",
           body: threadBody,
         });
@@ -926,11 +910,14 @@ export class DiscordMediumService implements DeliveryMedium {
           .id as string;
       } else {
         // Send the post, create a thread, and then send the rest
-        const apiUrl = this.getChannelApiUrl(channelId);
-        const firstPostResponse = await this.sendDiscordApiRequest(apiUrl, {
-          method: "POST",
-          body: bodies[0],
-        });
+        const apiUrl = this.apiClientService.getChannelApiUrl(channelId);
+        const firstPostResponse = await this.apiClientService.sendRequest(
+          apiUrl,
+          {
+            method: "POST",
+            body: bodies[0],
+          }
+        );
 
         if (!firstPostResponse.success) {
           return this.parseThreadCreateResponseToDeliveryStates(
@@ -953,12 +940,13 @@ export class DiscordMediumService implements DeliveryMedium {
         const messageId = (firstPostResponse.body as Record<string, unknown>)
           .id as string;
 
-        const messageThreadUrl = this.getCreateChannelMessageThreadUrl(
-          channelId,
-          messageId
-        );
+        const messageThreadUrl =
+          this.apiClientService.getCreateChannelMessageThreadUrl(
+            channelId,
+            messageId
+          );
 
-        const threadResponse = await this.sendDiscordApiRequest(
+        const threadResponse = await this.apiClientService.sendRequest(
           messageThreadUrl,
           {
             method: "POST",
@@ -1010,7 +998,7 @@ export class DiscordMediumService implements DeliveryMedium {
           .id;
     }
 
-    const apiUrl = this.getChannelApiUrl(useChannelId);
+    const apiUrl = this.apiClientService.getChannelApiUrl(useChannelId);
     const allRecords: ArticleDeliveryState[] = [];
 
     for (const body of bodies.slice(currentBodiesIndex, bodies.length)) {
@@ -1076,9 +1064,13 @@ export class DiscordMediumService implements DeliveryMedium {
       filterReferences,
     } = details;
 
-    const apiUrl = this.getWebhookApiUrl(webhookId, webhookToken, {
-      threadId,
-    });
+    const apiUrl = this.apiClientService.getWebhookApiUrl(
+      webhookId,
+      webhookToken,
+      {
+        threadId,
+      }
+    );
 
     const initialBodies = this.payloadBuilderService.generateApiPayloads(
       article,
@@ -1153,9 +1145,7 @@ export class DiscordMediumService implements DeliveryMedium {
   }
 
   private parseThreadCreateResponseToDeliveryStates(
-    response: Awaited<
-      ReturnType<typeof DiscordMediumService.prototype.sendDiscordApiRequest>
-    >,
+    response: DiscordApiResponse,
     article: Article,
     details: DeliverArticleDetails,
     contentType: ArticleDeliveryContentType
@@ -1234,38 +1224,6 @@ export class DiscordMediumService implements DeliveryMedium {
           article,
         },
       ];
-    }
-  }
-
-  private async sendDiscordApiRequest(
-    url: string,
-    { method, body }: { method: "POST"; body: object }
-  ) {
-    const res = await this.handler.fetch(url, {
-      method,
-      body: JSON.stringify(body),
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bot ${this.botToken}`,
-      },
-    });
-
-    const isOkStatus = res.status >= 200 && res.status < 300;
-
-    try {
-      return {
-        success: true,
-        status: res.status,
-        body: (await res.json()) as Record<string, unknown>,
-        detail: !isOkStatus ? `Bad status code: ${res.status}` : undefined,
-      };
-    } catch (err) {
-      return {
-        success: false,
-        status: res.status,
-        detail: (err as Error).message,
-        body: {},
-      };
     }
   }
 }
