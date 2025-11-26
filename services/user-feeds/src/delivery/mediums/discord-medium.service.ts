@@ -23,11 +23,9 @@ import { FormatOptions } from "../../article-formatter/types";
 import { generateDeliveryId } from "../../shared/utils/generate-delivery-id";
 import { DiscordSendArticleOperationType } from "../types/discord-send-article-operation.type";
 import { DiscordPayloadBuilderService } from "./discord/services/discord-payload-builder.service";
+import { DiscordApiClientService } from "./discord/services/discord-api-client.service";
 // eslint-disable-next-line max-len
-import {
-  DiscordApiClientService,
-  DiscordApiResponse,
-} from "./discord/services/discord-api-client.service";
+import { DiscordDeliveryResultService } from "./discord/services/discord-delivery-result.service";
 
 interface SendTestArticleResult {
   operationType?: DiscordSendArticleOperationType;
@@ -48,7 +46,8 @@ export class DiscordMediumService implements DeliveryMedium {
     private readonly configService: ConfigService,
     private readonly articleFormatterService: ArticleFormatterService,
     private readonly payloadBuilderService: DiscordPayloadBuilderService,
-    private readonly apiClientService: DiscordApiClientService
+    private readonly apiClientService: DiscordApiClientService,
+    private readonly deliveryResultService: DiscordDeliveryResultService
   ) {
     const rabbitmqUri = configService.getOrThrow(
       "USER_FEEDS_DISCORD_RABBITMQ_URI"
@@ -778,7 +777,7 @@ export class DiscordMediumService implements DeliveryMedium {
     });
 
     const threadCreationDeliveryStates =
-      this.parseThreadCreateResponseToDeliveryStates(
+      this.deliveryResultService.parseThreadCreateResponseToDeliveryStates(
         res,
         article,
         details,
@@ -895,7 +894,7 @@ export class DiscordMediumService implements DeliveryMedium {
         });
 
         threadCreationDeliveryStates =
-          this.parseThreadCreateResponseToDeliveryStates(
+          this.deliveryResultService.parseThreadCreateResponseToDeliveryStates(
             firstResponse,
             article,
             details,
@@ -920,7 +919,7 @@ export class DiscordMediumService implements DeliveryMedium {
         );
 
         if (!firstPostResponse.success) {
-          return this.parseThreadCreateResponseToDeliveryStates(
+          return this.deliveryResultService.parseThreadCreateResponseToDeliveryStates(
             firstPostResponse,
             article,
             details,
@@ -955,12 +954,13 @@ export class DiscordMediumService implements DeliveryMedium {
         );
 
         if (!threadResponse.success) {
-          const failureStates = this.parseThreadCreateResponseToDeliveryStates(
-            threadResponse,
-            article,
-            details,
-            ArticleDeliveryContentType.DiscordThreadCreation
-          );
+          const failureStates =
+            this.deliveryResultService.parseThreadCreateResponseToDeliveryStates(
+              threadResponse,
+              article,
+              details,
+              ArticleDeliveryContentType.DiscordThreadCreation
+            );
 
           failureStates.map((s) => {
             s.parent =
@@ -1142,88 +1142,5 @@ export class DiscordMediumService implements DeliveryMedium {
     );
 
     return allRecords;
-  }
-
-  private parseThreadCreateResponseToDeliveryStates(
-    response: DiscordApiResponse,
-    article: Article,
-    details: DeliverArticleDetails,
-    contentType: ArticleDeliveryContentType
-  ): ArticleDeliveryState[] {
-    if (!response.success) {
-      throw new Error(
-        `Failed to create thread for medium ${details.mediumId}: ${
-          response.detail
-        }. Body: ${JSON.stringify(response.body)}`
-      );
-    } else {
-      if (response.status === 404) {
-        return [
-          {
-            id: generateDeliveryId(),
-            status: ArticleDeliveryStatus.Rejected,
-            mediumId: details.mediumId,
-            contentType: contentType,
-            articleIdHash: article.flattened.idHash,
-            errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
-            internalMessage: `Response: ${JSON.stringify(response.body)}`,
-            externalDetail:
-              "Unknown channel. Update the connection to use a different channel.",
-            article,
-          },
-        ];
-      } else if (response.status === 403) {
-        return [
-          {
-            id: generateDeliveryId(),
-            status: ArticleDeliveryStatus.Rejected,
-            mediumId: details.mediumId,
-            contentType: contentType,
-            articleIdHash: article.flattened.idHash,
-            errorCode: ArticleDeliveryErrorCode.ThirdPartyForbidden,
-            internalMessage: `Response: ${JSON.stringify(response.body)}`,
-            externalDetail: "Missing permissions",
-            article,
-          },
-        ];
-      } else if (response.status === 400) {
-        return [
-          {
-            id: generateDeliveryId(),
-            status: ArticleDeliveryStatus.Rejected,
-            mediumId: details.mediumId,
-            contentType: contentType,
-            articleIdHash: article.flattened.idHash,
-            errorCode: ArticleDeliveryErrorCode.ThirdPartyBadRequest,
-            internalMessage: `Response: ${JSON.stringify(response.body)}`,
-            externalDetail: JSON.stringify(response.body, null, 2),
-            article,
-          },
-        ];
-      } else if (response.status > 300 || response.status < 200) {
-        return [
-          {
-            id: generateDeliveryId(),
-            status: ArticleDeliveryStatus.Failed,
-            mediumId: details.mediumId,
-            articleIdHash: article.flattened.idHash,
-            errorCode: ArticleDeliveryErrorCode.ThirdPartyBadRequest,
-            internalMessage: `Response: ${JSON.stringify(response.body)}`,
-            article,
-          },
-        ];
-      }
-
-      return [
-        {
-          id: generateDeliveryId(),
-          status: ArticleDeliveryStatus.Sent,
-          mediumId: details.mediumId,
-          contentType: contentType,
-          articleIdHash: article.flattened.idHash,
-          article,
-        },
-      ];
-    }
   }
 }
