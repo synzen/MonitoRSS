@@ -11,6 +11,8 @@ import { DiscordApiClientService } from "./mediums/discord/services/discord-api-
 // eslint-disable-next-line max-len
 import { DiscordDeliveryResultService } from "./mediums/discord/services/discord-delivery-result.service";
 // eslint-disable-next-line max-len
+import { DiscordMessageEnqueueService } from "./mediums/discord/services/discord-message-enqueue.service";
+// eslint-disable-next-line max-len
 import { DiscordPayloadBuilderService } from "./mediums/discord/services/discord-payload-builder.service";
 
 @Module({
@@ -20,6 +22,7 @@ import { DiscordPayloadBuilderService } from "./mediums/discord/services/discord
     DiscordMediumService,
     DiscordApiClientService,
     DiscordDeliveryResultService,
+    DiscordMessageEnqueueService,
     DiscordPayloadBuilderService,
   ],
   imports: [
@@ -33,6 +36,7 @@ import { DiscordPayloadBuilderService } from "./mediums/discord/services/discord
     DiscordMediumService,
     DiscordApiClientService,
     DiscordDeliveryResultService,
+    DiscordMessageEnqueueService,
     DiscordPayloadBuilderService,
   ],
 })

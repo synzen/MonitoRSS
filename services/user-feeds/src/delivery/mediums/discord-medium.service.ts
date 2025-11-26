@@ -9,7 +9,6 @@ import {
   ArticleDeliveryErrorCode,
   ArticleDiscordFormatted,
 } from "../../shared";
-import { RESTProducer } from "@synzen/discord-rest";
 import {
   ArticleDeliveryState,
   ArticleDeliveryStatus,
@@ -26,6 +25,8 @@ import { DiscordPayloadBuilderService } from "./discord/services/discord-payload
 import { DiscordApiClientService } from "./discord/services/discord-api-client.service";
 // eslint-disable-next-line max-len
 import { DiscordDeliveryResultService } from "./discord/services/discord-delivery-result.service";
+// eslint-disable-next-line max-len
+import { DiscordMessageEnqueueService } from "./discord/services/discord-message-enqueue.service";
 
 interface SendTestArticleResult {
   operationType?: DiscordSendArticleOperationType;
@@ -40,29 +41,17 @@ interface SendTestArticleResult {
 
 @Injectable()
 export class DiscordMediumService implements DeliveryMedium {
-  producer: RESTProducer;
-
   constructor(
     private readonly configService: ConfigService,
     private readonly articleFormatterService: ArticleFormatterService,
     private readonly payloadBuilderService: DiscordPayloadBuilderService,
     private readonly apiClientService: DiscordApiClientService,
-    private readonly deliveryResultService: DiscordDeliveryResultService
-  ) {
-    const rabbitmqUri = configService.getOrThrow(
-      "USER_FEEDS_DISCORD_RABBITMQ_URI"
-    );
-    const discordClientId = configService.getOrThrow(
-      "USER_FEEDS_DISCORD_CLIENT_ID"
-    );
-
-    this.producer = new RESTProducer(rabbitmqUri, {
-      clientId: discordClientId,
-    });
-  }
+    private readonly deliveryResultService: DiscordDeliveryResultService,
+    private readonly messageEnqueueService: DiscordMessageEnqueueService
+  ) {}
 
   async close() {
-    await this.producer.close();
+    await this.messageEnqueueService.close();
   }
 
   async formatArticle(
@@ -672,38 +661,19 @@ export class DiscordMediumService implements DeliveryMedium {
     );
 
     const parentDeliveryId = generateDeliveryId();
-    const additionalDeliveryStates: ArticleDeliveryState[] = [];
 
-    for (const body of bodies.slice(1, bodies.length)) {
-      const additionalDeliveryId = generateDeliveryId();
-
-      await this.producer.enqueue(
-        channelApiUrl,
-        {
-          method: "POST",
-          body: JSON.stringify(body),
-        },
-        {
-          id: additionalDeliveryId,
-          articleID: article.flattened.id,
-          feedURL: url,
-          channel: threadId,
-          feedId: id,
-          guildId,
-          emitDeliveryResult: true,
-        }
-      );
-
-      additionalDeliveryStates.push({
-        id: additionalDeliveryId,
-        status: ArticleDeliveryStatus.PendingDelivery,
-        mediumId: details.mediumId,
-        contentType: ArticleDeliveryContentType.DiscordArticleMessage,
-        parent: parentDeliveryId,
-        articleIdHash: article.flattened.idHash,
+    const additionalDeliveryStates =
+      await this.messageEnqueueService.enqueueMessages({
+        apiUrl: channelApiUrl,
+        bodies: bodies.slice(1),
         article,
+        mediumId: details.mediumId,
+        feedId: id,
+        feedUrl: url,
+        guildId,
+        channelId: threadId,
+        parentDeliveryId,
       });
-    }
 
     return [
       {
@@ -793,38 +763,19 @@ export class DiscordMediumService implements DeliveryMedium {
     const threadId = (res.body as Record<string, unknown>).id as string;
 
     const channelApiUrl = this.apiClientService.getChannelApiUrl(threadId);
-    const additionalDeliveryStates: ArticleDeliveryState[] = [];
 
-    for (const body of bodies.slice(1, bodies.length)) {
-      const additionalDeliveryId = generateDeliveryId();
-
-      await this.producer.enqueue(
-        channelApiUrl,
-        {
-          method: "POST",
-          body: JSON.stringify(body),
-        },
-        {
-          id: additionalDeliveryId,
-          articleID: article.flattened.id,
-          feedURL: url,
-          channel: threadId,
-          feedId: id,
-          guildId,
-          emitDeliveryResult: true,
-        }
-      );
-
-      additionalDeliveryStates.push({
-        id: additionalDeliveryId,
-        status: ArticleDeliveryStatus.PendingDelivery,
-        mediumId: details.mediumId,
-        contentType: ArticleDeliveryContentType.DiscordArticleMessage,
-        parent: parentDeliveryId,
-        articleIdHash: article.flattened.idHash,
+    const additionalDeliveryStates =
+      await this.messageEnqueueService.enqueueMessages({
+        apiUrl: channelApiUrl,
+        bodies: bodies.slice(1),
         article,
+        mediumId: details.mediumId,
+        feedId: id,
+        feedUrl: url,
+        guildId,
+        channelId: threadId,
+        parentDeliveryId,
       });
-    }
 
     return [...threadCreationDeliveryStates, ...additionalDeliveryStates];
   }
@@ -999,38 +950,18 @@ export class DiscordMediumService implements DeliveryMedium {
     }
 
     const apiUrl = this.apiClientService.getChannelApiUrl(useChannelId);
-    const allRecords: ArticleDeliveryState[] = [];
 
-    for (const body of bodies.slice(currentBodiesIndex, bodies.length)) {
-      const deliveryId = generateDeliveryId();
-
-      await this.producer.enqueue(
-        apiUrl,
-        {
-          method: "POST",
-          body: JSON.stringify(body),
-        },
-        {
-          id: deliveryId,
-          articleID: article.flattened.id,
-          feedURL: url,
-          channel: useChannelId,
-          feedId: id,
-          guildId,
-          emitDeliveryResult: true,
-        }
-      );
-
-      allRecords.push({
-        id: deliveryId,
-        status: ArticleDeliveryStatus.PendingDelivery,
-        mediumId: details.mediumId,
-        contentType: ArticleDeliveryContentType.DiscordArticleMessage,
-        parent: parentDeliveryId || undefined,
-        articleIdHash: article.flattened.idHash,
-        article,
-      });
-    }
+    const allRecords = await this.messageEnqueueService.enqueueMessages({
+      apiUrl,
+      bodies: bodies.slice(currentBodiesIndex),
+      article,
+      mediumId: details.mediumId,
+      feedId: id,
+      feedUrl: url,
+      guildId,
+      channelId: useChannelId,
+      parentDeliveryId: parentDeliveryId || undefined,
+    });
 
     return [...threadCreationDeliveryStates, ...allRecords];
   }
@@ -1107,40 +1038,17 @@ export class DiscordMediumService implements DeliveryMedium {
       }),
     }));
 
-    const parentDeliveryId = generateDeliveryId();
-    const allRecords: ArticleDeliveryState[] = await Promise.all(
-      bodies.map(async (body, idx) => {
-        const deliveryId = idx === 0 ? parentDeliveryId : generateDeliveryId();
+    const deliveryStates = await this.messageEnqueueService.enqueueMessages({
+      apiUrl,
+      bodies,
+      article,
+      mediumId: details.mediumId,
+      feedId: id,
+      feedUrl: url,
+      guildId,
+      webhookId,
+    });
 
-        await this.producer.enqueue(
-          apiUrl,
-          {
-            method: "POST",
-            body: JSON.stringify(body),
-          },
-          {
-            id: deliveryId,
-            articleID: article.flattened.id,
-            feedURL: url,
-            webhookId,
-            feedId: id,
-            guildId,
-            emitDeliveryResult: true,
-          }
-        );
-
-        return {
-          id: deliveryId,
-          status: ArticleDeliveryStatus.PendingDelivery,
-          mediumId: details.mediumId,
-          contentType: ArticleDeliveryContentType.DiscordArticleMessage,
-          articleIdHash: article.flattened.idHash,
-          parent: idx === 0 ? undefined : parentDeliveryId,
-          article,
-        };
-      })
-    );
-
-    return allRecords;
+    return deliveryStates;
   }
 }
