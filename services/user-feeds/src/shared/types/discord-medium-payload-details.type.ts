@@ -1,6 +1,6 @@
 /* eslint-disable max-len */
 import { z } from "zod";
-import { CustomPlaceholderStepType } from "../constants";
+import { CustomPlaceholderStepType, DiscordComponentType } from "../constants";
 
 const buttonSchema = z.object({
   type: z.number().min(2).max(2),
@@ -22,9 +22,60 @@ const actionRowSchema = z.object({
   components: z.array(buttonSchema),
 });
 
+// ============================================================================
+// V2 Components Schema
+// ============================================================================
+
+const emojiSchemaV2 = z.object({
+  id: z.string(),
+  name: z.string().nullable(),
+  animated: z.boolean().nullable(),
+});
+
+const textDisplaySchemaV2 = z.object({
+  type: z.literal(DiscordComponentType.TextDisplay),
+  content: z.string(),
+});
+
+const thumbnailSchemaV2 = z.object({
+  type: z.literal(DiscordComponentType.Thumbnail),
+  media: z.object({
+    url: z.string(),
+  }),
+  description: z.string().max(1024).optional().nullable(),
+  spoiler: z.boolean().optional().default(false),
+});
+
+const buttonSchemaV2 = z.object({
+  type: z.literal(DiscordComponentType.Button),
+  style: z.number().min(1).max(6),
+  label: z.string().max(80).optional(),
+  emoji: emojiSchemaV2.optional().nullable(),
+  url: z.string().max(512).optional().nullable(),
+  disabled: z.boolean().optional().default(false),
+});
+
+const sectionSchemaV2 = z.object({
+  type: z.literal(DiscordComponentType.Section),
+  components: z.array(textDisplaySchemaV2).min(1).max(3),
+  accessory: z.union([buttonSchemaV2, thumbnailSchemaV2]),
+});
+
+const actionRowSchemaV2 = z.object({
+  type: z.literal(DiscordComponentType.ActionRow),
+  components: z.array(buttonSchemaV2).min(1).max(5),
+});
+
+const componentV2Schema = z.union([sectionSchemaV2, actionRowSchemaV2]);
+
+// ============================================================================
+// Main Schema
+// ============================================================================
+
 export const discordMediumPayloadDetailsSchema = z.object({
   guildId: z.string(),
   components: z.array(actionRowSchema).nullable(),
+  componentsV2: z.array(componentV2Schema).optional().nullable(),
   channel: z
     .object({
       id: z.string(),
@@ -230,3 +281,9 @@ export const discordMediumPayloadDetailsSchema = z.object({
 export type DiscordMediumPayloadDetails = z.infer<
   typeof discordMediumPayloadDetailsSchema
 >;
+
+// V2 Component Types (inferred from Zod schemas)
+export type ButtonV2 = z.infer<typeof buttonSchemaV2>;
+export type SectionV2 = z.infer<typeof sectionSchemaV2>;
+export type ActionRowV2 = z.infer<typeof actionRowSchemaV2>;
+export type ComponentV2 = z.infer<typeof componentV2Schema>;

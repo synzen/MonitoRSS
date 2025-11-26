@@ -1,13 +1,26 @@
 import { Injectable } from "@nestjs/common";
 import dayjs from "dayjs";
-import { Article } from "../../../../shared";
+import {
+  Article,
+  DiscordComponentType,
+  ButtonV2,
+  SectionV2,
+  ActionRowV2,
+} from "../../../../shared";
 import { ArticleFormatterService } from "../../../../article-formatter/article-formatter.service";
 import { ArticleFiltersService } from "../../../../article-filters/article-filters.service";
 import {
   FilterExpressionReference,
   LogicalExpression,
 } from "../../../../article-filters/types";
-import { DeliveryDetails, DiscordMessageApiPayload } from "../../../types";
+import {
+  DeliveryDetails,
+  DiscordMessageApiPayload,
+  DiscordMessageComponentV2,
+  DiscordSectionV2,
+  DiscordActionRowV2,
+  DISCORD_COMPONENTS_V2_FLAG,
+} from "../../../types";
 import { replaceTemplateString } from "../../../../articles/utils/replace-template-string";
 
 export interface GenerateApiPayloadsOptions {
@@ -21,6 +34,7 @@ export interface GenerateApiPayloadsOptions {
   placeholderLimits: DeliveryDetails["deliverySettings"]["placeholderLimits"];
   enablePlaceholderFallback: boolean;
   components: DeliveryDetails["deliverySettings"]["components"];
+  componentsV2: DeliveryDetails["deliverySettings"]["componentsV2"];
 }
 
 export interface GenerateApiTextPayloadOptions {
@@ -31,6 +45,7 @@ export interface GenerateApiTextPayloadOptions {
   placeholderLimits: DeliveryDetails["deliverySettings"]["placeholderLimits"];
   enablePlaceholderFallback: boolean;
   components: DeliveryDetails["deliverySettings"]["components"];
+  componentsV2: DeliveryDetails["deliverySettings"]["componentsV2"];
 }
 
 interface ReplacePlaceholdersOptions {
@@ -84,6 +99,7 @@ export class DiscordPayloadBuilderService {
       placeholderLimits,
       enablePlaceholderFallback,
       components,
+      componentsV2,
     } = options;
 
     const payloads = this.generateApiPayloads(article, {
@@ -97,6 +113,7 @@ export class DiscordPayloadBuilderService {
       placeholderLimits,
       enablePlaceholderFallback,
       components,
+      componentsV2,
     });
 
     return (payloads[0].content || undefined) as T;
@@ -115,6 +132,7 @@ export class DiscordPayloadBuilderService {
       placeholderLimits,
       enablePlaceholderFallback,
       components,
+      componentsV2,
     } = options;
 
     const payloadContent = this.articleFormatterService.applySplit(
@@ -293,7 +311,16 @@ export class DiscordPayloadBuilderService {
       // Discord only allows 10 embeds per message
       .slice(0, 10);
 
-    if (components && payloads.length > 0) {
+    // V2 components take precedence over V1 - they cannot be mixed
+    if (componentsV2 && componentsV2.length > 0 && payloads.length > 0) {
+      const lastPayload = payloads[payloads.length - 1];
+      lastPayload.flags = DISCORD_COMPONENTS_V2_FLAG;
+      lastPayload.components = this.buildComponentsV2(
+        article,
+        componentsV2,
+        replacePlaceholderStringArgs
+      );
+    } else if (components && payloads.length > 0) {
       payloads[payloads.length - 1].components = components.map(
         ({ type, components: nestedComponents }) => ({
           type,
@@ -457,6 +484,161 @@ export class DiscordPayloadBuilderService {
       message: firstPayload,
       applied_tags: tags,
       type: 11,
+    };
+  }
+
+  /**
+   * Builds V2 components with placeholder replacement.
+   * V2 components use a different structure than V1 and require
+   * the IS_COMPONENTS_V2 flag (32768) to be set on the message.
+   */
+  private buildComponentsV2(
+    article: Article,
+    componentsV2: NonNullable<
+      DeliveryDetails["deliverySettings"]["componentsV2"]
+    >,
+    replacePlaceholderOptions: ReplacePlaceholdersOptions
+  ): DiscordMessageComponentV2[] {
+    return componentsV2.map((component) => {
+      if (component.type === DiscordComponentType.ActionRow) {
+        return this.buildActionRowV2(
+          article,
+          component,
+          replacePlaceholderOptions
+        );
+      }
+
+      // Section component
+      return this.buildSectionV2(article, component, replacePlaceholderOptions);
+    });
+  }
+
+  /**
+   * Builds a V2 Section component.
+   */
+  private buildSectionV2(
+    article: Article,
+    section: SectionV2,
+    replacePlaceholderOptions: ReplacePlaceholdersOptions
+  ): DiscordSectionV2 {
+    // Process text display components with placeholder replacement
+    const textDisplays = section.components.map((textDisplay) => ({
+      type: DiscordComponentType.TextDisplay as const,
+      content: this.replacePlaceholdersInString(
+        article,
+        textDisplay.content,
+        replacePlaceholderOptions
+      ),
+    }));
+
+    // Process accessory (button or thumbnail)
+    const accessory = this.buildAccessoryV2(
+      article,
+      section.accessory,
+      replacePlaceholderOptions
+    );
+
+    return {
+      type: DiscordComponentType.Section as const,
+      components: textDisplays,
+      accessory,
+    };
+  }
+
+  /**
+   * Builds a V2 Action Row component with buttons.
+   */
+  private buildActionRowV2(
+    article: Article,
+    actionRow: ActionRowV2,
+    replacePlaceholderOptions: ReplacePlaceholdersOptions
+  ): DiscordActionRowV2 {
+    const buttons = actionRow.components.map((button) =>
+      this.buildButtonV2(article, button, replacePlaceholderOptions)
+    );
+
+    return {
+      type: DiscordComponentType.ActionRow as const,
+      components: buttons,
+    };
+  }
+
+  /**
+   * Builds a V2 Button component.
+   */
+  private buildButtonV2(
+    article: Article,
+    button: ButtonV2,
+    replacePlaceholderOptions: ReplacePlaceholdersOptions
+  ) {
+    return {
+      type: DiscordComponentType.Button as const,
+      style: button.style,
+      label: button.label
+        ? this.replacePlaceholdersInString(
+            article,
+            button.label,
+            replacePlaceholderOptions
+          ).slice(0, 80)
+        : undefined,
+      emoji: button.emoji,
+      url: button.url
+        ? this.replacePlaceholdersInString(article, button.url, {
+            ...replacePlaceholderOptions,
+            encodeUrl: true,
+          })
+        : undefined,
+      disabled: button.disabled,
+    };
+  }
+
+  /**
+   * Builds a V2 accessory component (button or thumbnail).
+   */
+  private buildAccessoryV2(
+    article: Article,
+    accessory: SectionV2["accessory"],
+    replacePlaceholderOptions: ReplacePlaceholdersOptions
+  ): DiscordSectionV2["accessory"] {
+    if (accessory.type === DiscordComponentType.Thumbnail) {
+      return {
+        type: DiscordComponentType.Thumbnail as const,
+        media: {
+          url: this.replacePlaceholdersInString(article, accessory.media.url, {
+            ...replacePlaceholderOptions,
+            encodeUrl: true,
+          }),
+        },
+        description: accessory.description
+          ? this.replacePlaceholdersInString(
+              article,
+              accessory.description,
+              replacePlaceholderOptions
+            ).slice(0, 1024)
+          : undefined,
+        spoiler: accessory.spoiler,
+      };
+    }
+
+    // Button accessory
+    return {
+      type: DiscordComponentType.Button as const,
+      style: accessory.style,
+      label: accessory.label
+        ? this.replacePlaceholdersInString(
+            article,
+            accessory.label,
+            replacePlaceholderOptions
+          ).slice(0, 80)
+        : undefined,
+      emoji: accessory.emoji,
+      url: accessory.url
+        ? this.replacePlaceholdersInString(article, accessory.url, {
+            ...replacePlaceholderOptions,
+            encodeUrl: true,
+          })
+        : undefined,
+      disabled: accessory.disabled,
     };
   }
 }

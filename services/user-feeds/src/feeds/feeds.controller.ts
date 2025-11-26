@@ -535,6 +535,7 @@ export class FeedsController {
             placeholderLimits: mediumDetails.placeholderLimits,
             enablePlaceholderFallback: mediumDetails.enablePlaceholderFallback,
             components: mediumDetails.components,
+            componentsV2: mediumDetails.componentsV2,
           }
         );
 

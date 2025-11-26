@@ -63,6 +63,7 @@ export class DiscordTestDeliveryService {
         placeholderLimits,
         enablePlaceholderFallback,
         components,
+        componentsV2,
       },
       filterReferences,
     } = details;
@@ -84,6 +85,7 @@ export class DiscordTestDeliveryService {
       placeholderLimits,
       enablePlaceholderFallback,
       components,
+      componentsV2,
     };
 
     const threadName = this.payloadBuilderService.generateThreadName(
@@ -209,6 +211,7 @@ export class DiscordTestDeliveryService {
         placeholderLimits,
         enablePlaceholderFallback,
         components,
+        componentsV2,
       },
       filterReferences,
     } = details;
@@ -229,6 +232,7 @@ export class DiscordTestDeliveryService {
       placeholderLimits,
       enablePlaceholderFallback,
       components,
+      componentsV2,
     };
 
     const initialBodies = this.payloadBuilderService.generateApiPayloads(
@@ -284,6 +288,7 @@ export class DiscordTestDeliveryService {
         placeholderLimits,
         enablePlaceholderFallback,
         components,
+        componentsV2,
         channelNewThreadTitle,
       },
       filterReferences,
@@ -303,6 +308,7 @@ export class DiscordTestDeliveryService {
       placeholderLimits,
       enablePlaceholderFallback,
       components,
+      componentsV2,
     };
 
     const apiPayloads = this.payloadBuilderService.generateApiPayloads(

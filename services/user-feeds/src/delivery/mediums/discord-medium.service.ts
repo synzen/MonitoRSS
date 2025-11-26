@@ -164,6 +164,7 @@ export class DiscordMediumService implements DeliveryMedium {
         enablePlaceholderFallback,
         placeholderLimits,
         components,
+        componentsV2,
       },
       feedDetails: { id, url },
       filterReferences,
@@ -180,6 +181,7 @@ export class DiscordMediumService implements DeliveryMedium {
       placeholderLimits,
       enablePlaceholderFallback,
       components,
+      componentsV2,
     };
 
     const initialBodies = this.payloadBuilderService.generateApiPayloads(
@@ -281,6 +283,7 @@ export class DiscordMediumService implements DeliveryMedium {
         enablePlaceholderFallback,
         placeholderLimits,
         components,
+        componentsV2,
       },
       feedDetails: { id, url },
       filterReferences,
@@ -295,6 +298,7 @@ export class DiscordMediumService implements DeliveryMedium {
       placeholderLimits,
       enablePlaceholderFallback,
       components,
+      componentsV2,
     };
 
     const bodies = this.payloadBuilderService.generateApiPayloads(article, {
@@ -371,6 +375,7 @@ export class DiscordMediumService implements DeliveryMedium {
         placeholderLimits,
         enablePlaceholderFallback,
         components,
+        componentsV2,
         channelNewThreadTitle,
         channelNewThreadExcludesPreview,
         channel,
@@ -387,6 +392,7 @@ export class DiscordMediumService implements DeliveryMedium {
       placeholderLimits,
       enablePlaceholderFallback,
       components,
+      componentsV2,
     };
 
     const bodies = this.payloadBuilderService.generateApiPayloads(article, {
@@ -568,6 +574,7 @@ export class DiscordMediumService implements DeliveryMedium {
         placeholderLimits,
         enablePlaceholderFallback,
         components,
+        componentsV2,
       },
       feedDetails: { id, url },
       filterReferences,
@@ -587,6 +594,7 @@ export class DiscordMediumService implements DeliveryMedium {
       placeholderLimits,
       enablePlaceholderFallback,
       components,
+      componentsV2,
     };
 
     const initialBodies = this.payloadBuilderService.generateApiPayloads(
