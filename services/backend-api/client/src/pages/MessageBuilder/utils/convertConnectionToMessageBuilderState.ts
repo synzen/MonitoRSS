@@ -104,14 +104,20 @@ const createLegacyEmbedComponent = (
   };
 
   // Convert hex color to number if present
-  if (embed.color) {
+  if (embed.color && embed.color.startsWith("#")) {
     embedComponent.color = parseInt(embed.color.replace("#", ""), 16);
+  } else if (embed.color) {
+    embedComponent.color = parseInt(embed.color, 10);
   }
 
   // Add author component if present
   if (embed.author?.name) {
     children.push({
-      ...createNewMessageBuilderComponent(ComponentType.LegacyEmbedAuthor, embedComponent.id, index),
+      ...createNewMessageBuilderComponent(
+        ComponentType.LegacyEmbedAuthor,
+        embedComponent.id,
+        index
+      ),
       authorName: embed.author.name,
       authorUrl: embed.author.url,
       authorIconUrl: embed.author.iconUrl,
@@ -166,7 +172,11 @@ const createLegacyEmbedComponent = (
   // Add thumbnail component if present
   if (embed.thumbnail?.url) {
     children.push({
-      ...createNewMessageBuilderComponent(ComponentType.LegacyEmbedThumbnail, embedComponent.id, index),
+      ...createNewMessageBuilderComponent(
+        ComponentType.LegacyEmbedThumbnail,
+        embedComponent.id,
+        index
+      ),
       thumbnailUrl: embed.thumbnail.url,
     } as LegacyEmbedThumbnailComponent);
   }
@@ -174,7 +184,11 @@ const createLegacyEmbedComponent = (
   // Add footer component if present
   if (embed.footer?.text) {
     children.push({
-      ...createNewMessageBuilderComponent(ComponentType.LegacyEmbedFooter, embedComponent.id, index),
+      ...createNewMessageBuilderComponent(
+        ComponentType.LegacyEmbedFooter,
+        embedComponent.id,
+        index
+      ),
       footerText: embed.footer.text,
       footerIconUrl: embed.footer.iconUrl,
     } as LegacyEmbedFooterComponent);
@@ -183,7 +197,11 @@ const createLegacyEmbedComponent = (
   // Add timestamp component if present
   if (embed.timestamp) {
     children.push({
-      ...createNewMessageBuilderComponent(ComponentType.LegacyEmbedTimestamp, embedComponent.id, index),
+      ...createNewMessageBuilderComponent(
+        ComponentType.LegacyEmbedTimestamp,
+        embedComponent.id,
+        index
+      ),
       timestamp: embed.timestamp,
     } as LegacyEmbedTimestampComponent);
   }
@@ -206,7 +224,11 @@ export const convertConnectionToMessageBuilderState = (
 
   // Create a legacy root component that contains the existing message data
   const legacyRootComponent: LegacyMessageComponentRoot = {
-    ...(createNewMessageBuilderComponent(ComponentType.LegacyRoot, "", 0) as LegacyMessageComponentRoot),
+    ...(createNewMessageBuilderComponent(
+      ComponentType.LegacyRoot,
+      "",
+      0
+    ) as LegacyMessageComponentRoot),
     children: [],
     formatTables: connection.details?.formatter?.formatTables,
     stripImages: connection.details?.formatter?.stripImages,
