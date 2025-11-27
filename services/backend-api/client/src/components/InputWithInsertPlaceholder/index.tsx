@@ -10,7 +10,7 @@ import {
   FormHelperText,
 } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
-import { InsertPlaceholderDialog } from "../../pages/Previewer/InsertPlaceholderDialog";
+import { InsertPlaceholderDialog } from "../../pages/MessageBuilder/InsertPlaceholderDialog";
 
 interface Props {
   value: string;
