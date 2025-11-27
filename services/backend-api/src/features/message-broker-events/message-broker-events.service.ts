@@ -513,7 +513,8 @@ export class MessageBrokerEventsService {
           components: castDiscordComponentRowsForMedium(
             con.details.componentRows
           ),
-          componentsV2: con.details.componentsV2,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          componentsV2: con.details.componentsV2 as any,
           forumThreadTitle: con.details.forumThreadTitle,
           forumThreadTags: con.details.forumThreadTags,
           mentions: con.mentions,

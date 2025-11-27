@@ -28,6 +28,7 @@ export enum ApiErrorCode {
   FEED_TOO_LARGE = "FEED_TOO_LARGE",
   ADD_FEED_WITH_SOURCE_FEED_NOT_FOUND = "ADD_FEED_WITH_SOURCE_FEED_NOT_FOUND",
   FEED_INVALID_FILTER_EXPRESSION = "FEED_INVALID_FILTER_EXPRESSION",
+  FEED_INVALID_COMPONENTS_V2 = "FEED_INVALID_COMPONENTS_V2",
   BANNED_FEED = "BANNED_FEED",
   DISCORD_CHANNEL_NOT_OWNED_BY_GUILD = "DISCORD_CHANNEL_NOT_OWNED_BY_GUILD",
   DISCORD_CAHNNEL_INVALID = "DISCORD_CAHNNEL_INVALID",
@@ -91,6 +92,7 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
     "Feed does not exist or is not accessible. You may confirm by directly going to the feed link and checking that the feed is valid and publicly accessible.",
   FEED_TOO_LARGE: "Feed is too large to be processed",
   FEED_INVALID_FILTER_EXPRESSION: "Invalid filter expression",
+  FEED_INVALID_COMPONENTS_V2: "Invalid componentsV2 configuration",
   FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED:
     "Cannot enable a feed that was automatically disabled",
   FEED_ARTICLE_NOT_FOUND: "Article does not exist",

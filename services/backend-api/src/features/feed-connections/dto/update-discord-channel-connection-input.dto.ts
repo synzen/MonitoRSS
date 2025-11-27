@@ -22,9 +22,6 @@ import {
   CustomPlaceholderDto,
   CustomRateLimitDto,
   ForumThreadTagDto,
-  DiscordSectionV2Dto,
-  DiscordActionRowV2Dto,
-  DiscordComponentV2TypeOptions,
 } from "../../../common";
 import { DiscordComponentRow } from "../../../common/types/discord-component-row.type";
 import { FeedConnectionDisabledCode } from "../../feeds/constants";
@@ -178,10 +175,8 @@ export class UpdateDiscordChannelConnectionInputDto {
   threadCreationMethod?: "new-thread" | null;
 
   @IsArray()
-  @ArrayMaxSize(10)
+  @IsObject({ each: true })
   @IsOptional()
-  @ValidateNested({ each: true })
   @ValidateIf((v) => v !== null)
-  @Type(() => DiscordSectionV2Dto, DiscordComponentV2TypeOptions)
-  componentsV2?: Array<DiscordSectionV2Dto | DiscordActionRowV2Dto> | null;
+  componentsV2?: Array<Record<string, unknown>>;
 }

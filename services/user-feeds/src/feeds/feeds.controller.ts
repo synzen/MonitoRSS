@@ -61,6 +61,8 @@ import {
   GetUserFeedArticlesInputDto,
   GetUserFeedArticlesOutputDto,
   GetUserFeedDeliveryRecordsOutputDto,
+  ValidateDiscordPayloadOutputDto,
+  ValidationError,
 } from "./dto";
 import { FeedsService } from "./feeds.service";
 
@@ -92,6 +94,27 @@ export class FeedsController {
       result: {
         errors,
       },
+    };
+  }
+
+  @Post("validate-discord-payload")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(ApiGuard)
+  validateDiscordPayload(
+    @Body() payload: Record<string, unknown>
+  ): ValidateDiscordPayloadOutputDto {
+    const result = discordMediumPayloadDetailsSchema.safeParse(payload.data);
+
+    if (result.success) {
+      return { valid: true };
+    }
+
+    return {
+      valid: false,
+      errors: result.error.issues.map((issue) => ({
+        path: issue.path,
+        message: issue.message,
+      })),
     };
   }
 
@@ -430,7 +453,12 @@ export class FeedsController {
       }
     } catch (err) {
       if (err instanceof z.ZodError) {
-        throw new BadRequestException(err.errors);
+        const errors: ValidationError[] = err.errors.map((issue) => ({
+          path: issue.path,
+          message: issue.message,
+        }));
+
+        throw new BadRequestException(errors);
       }
 
       if (err instanceof FeedArticleNotFoundException) {
@@ -569,7 +597,12 @@ export class FeedsController {
       }
     } catch (err) {
       if (err instanceof z.ZodError) {
-        throw new BadRequestException(err.errors);
+        const errors: ValidationError[] = err.errors.map((issue) => ({
+          path: issue.path,
+          message: issue.message,
+        }));
+
+        throw new BadRequestException(errors);
       }
 
       if (err instanceof CustomPlaceholderRegexEvalException) {

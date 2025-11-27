@@ -6,3 +6,4 @@ export * from "./unexpected-api-response.exception";
 export * from "./invalid-filter-expression.exception";
 export * from "./cannot-enable-auto-disabled-connection.exception";
 export * from "./insufficient-supporter-level.exception";
+export * from "./invalid-components-v2.exception";

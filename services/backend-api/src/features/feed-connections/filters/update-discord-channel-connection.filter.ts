@@ -3,6 +3,7 @@ import { ApiErrorCode } from "../../../common/constants/api-errors";
 import {
   CannotEnableAutoDisabledConnection,
   InsufficientSupporterLevelException,
+  InvalidComponentsV2Exception,
   InvalidFilterExpressionException,
 } from "../../../common/exceptions";
 import { StandardException } from "../../../common/exceptions/standard-exception.exception";
@@ -41,6 +42,10 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
       status: HttpStatus.BAD_REQUEST,
       code: ApiErrorCode.FEED_INVALID_FILTER_EXPRESSION,
     },
+    [InvalidComponentsV2Exception.name]: {
+      status: HttpStatus.BAD_REQUEST,
+      code: ApiErrorCode.FEED_INVALID_COMPONENTS_V2,
+    },
     [CannotEnableAutoDisabledConnection.name]: {
       status: HttpStatus.BAD_REQUEST,
       code: ApiErrorCode.FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED,
@@ -60,6 +65,10 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
     [DiscordChannelMissingViewPermissionsException.name]: {
       status: HttpStatus.BAD_REQUEST,
       code: ApiErrorCode.FEED_MISSING_VIEW_CHANNEL_PERMISSION,
+    },
+    [InvalidComponentsV2Exception.name]: {
+      status: HttpStatus.BAD_REQUEST,
+      code: ApiErrorCode.FEED_INVALID_COMPONENTS_V2,
     },
   };
 

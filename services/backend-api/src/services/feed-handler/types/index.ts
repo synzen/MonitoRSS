@@ -12,3 +12,5 @@ export * from "./create-discord-channel-preview-input.type";
 export * from "./create-discord-webhook-preview-input.type";
 export * from "./discord-message-api-payload.type";
 export * from "./get-delivery-count-result.type copy";
+export * from "./validate-discord-payload-input.type";
+export * from "./validate-discord-payload-output.type";

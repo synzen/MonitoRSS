@@ -4,6 +4,7 @@ import { ClassConstructor, plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
 import { URLSearchParams } from "url";
 import {
+  InvalidComponentsV2Exception,
   StandardException,
   UnexpectedApiResponseException,
 } from "../../common/exceptions";
@@ -320,6 +321,38 @@ export class FeedHandlerService {
     };
   }
 
+  async validateDiscordPayload(data: Record<string, unknown>): Promise<{
+    valid: boolean;
+    errors?: Array<{ path: (string | number)[]; message: string }>;
+  }> {
+    const res = await fetch(
+      `${this.host}/v1/user-feeds/validate-discord-payload`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": this.apiKey,
+        },
+        body: JSON.stringify({ data }),
+      }
+    );
+
+    await this.validateResponseStatus(
+      res,
+      "Failed to validate discord payload",
+      {
+        requestBody: { data },
+      }
+    );
+
+    const json = (await res.json()) as {
+      valid: boolean;
+      errors?: Array<{ path: (string | number)[]; message: string }>;
+    };
+
+    return json;
+  }
+
   async getDeliveryLogs(
     feedId: string,
     { limit, skip }: { limit: number; skip: number }
@@ -365,6 +398,20 @@ export class FeedHandlerService {
           res.status
         }) from User feeds api. Meta: ${JSON.stringify(meta)}`
       );
+    }
+
+    if (res.status === HttpStatus.BAD_REQUEST) {
+      const json = (await res.json()) as {
+        message: Array<{ path: (string | number)[]; message: string }>;
+      };
+
+      if (Array.isArray(json.message)) {
+        throw new InvalidComponentsV2Exception(
+          json.message.map(
+            (e) => new InvalidComponentsV2Exception(e.message, e.path)
+          )
+        );
+      }
     }
 
     if (res.status === HttpStatus.UNPROCESSABLE_ENTITY) {

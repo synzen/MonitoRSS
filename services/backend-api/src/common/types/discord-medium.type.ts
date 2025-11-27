@@ -26,26 +26,6 @@ export interface DiscordMediumThumbnailV2 {
   spoiler?: boolean;
 }
 
-export interface DiscordMediumButtonV2 {
-  type: FeedConnectionDiscordComponentType.Button;
-  style: number;
-  label?: string;
-  emoji?: DiscordMediumEmojiV2 | null;
-  url?: string | null;
-  disabled?: boolean;
-}
-
-export interface DiscordMediumComponentV2Section {
-  type: FeedConnectionDiscordComponentType.Section;
-  components: DiscordMediumTextDisplayV2[];
-  accessory: DiscordMediumButtonV2 | DiscordMediumThumbnailV2;
-}
-
-export interface DiscordMediumComponentV2ActionRow {
-  type: FeedConnectionDiscordComponentType.ActionRow;
-  components: DiscordMediumButtonV2[];
-}
-
 export interface DiscordMediumEvent {
   key: "discord";
   filters: {
@@ -77,9 +57,7 @@ export interface DiscordMediumEvent {
         url?: string | null;
       }>;
     }> | null;
-    componentsV2?: Array<
-      DiscordMediumComponentV2Section | DiscordMediumComponentV2ActionRow
-    > | null;
+    componentsV2?: Array<Record<string, unknown>> | null;
     content?: string;
     embeds?: Array<{
       title?: string;

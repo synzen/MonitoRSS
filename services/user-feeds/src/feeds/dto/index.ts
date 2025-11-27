@@ -7,3 +7,4 @@ export * from "./create-feed-filter-validation-output.dto";
 export * from "./get-user-feed-article-properties-output.dto";
 export * from "./create-preview-output.dto";
 export * from "./get-user-feed-delivery-records-output.dto";
+export * from "./validate-discord-payload-output.dto";

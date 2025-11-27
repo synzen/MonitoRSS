@@ -14,6 +14,7 @@ import {
   DiscordWebhookMissingUserPermException,
   DiscordWebhookNonexistentException,
   InsufficientSupporterLevelException,
+  InvalidComponentsV2Exception,
   InvalidFilterExpressionException,
 } from "../../common/exceptions";
 import { DiscordPreviewEmbed } from "../../common/types/discord-preview-embed.type";
@@ -778,6 +779,19 @@ export class FeedConnectionsDiscordChannelsService {
       }
     }
 
+    if (updates.details?.componentsV2) {
+      const { valid, errors } =
+        await this.feedHandlerService.validateDiscordPayload({
+          componentsV2: updates.details.componentsV2,
+        });
+
+      if (!valid && errors?.length) {
+        throw new InvalidComponentsV2Exception(
+          errors.map((e) => new InvalidComponentsV2Exception(e.message, e.path))
+        );
+      }
+    }
+
     const findQuery = {
       _id: feedId,
       "connections.discordChannels.id": connectionId,
@@ -1077,7 +1091,9 @@ export class FeedConnectionsDiscordChannelsService {
           previewInput?.componentRows || connection.details.componentRows
         ),
         componentsV2:
-          previewInput?.componentsV2 ?? connection.details.componentsV2,
+          previewInput?.componentsV2 ??
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (connection.details.componentsV2 as any),
         channelNewThreadTitle:
           previewInput?.channelNewThreadTitle ||
           connection.details.channelNewThreadTitle,
@@ -1187,7 +1203,8 @@ export class FeedConnectionsDiscordChannelsService {
         placeholderLimits,
         enablePlaceholderFallback: enablePlaceholderFallback,
         components: castDiscordComponentRowsForMedium(componentRows),
-        componentsV2: componentsV2 ?? undefined,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        componentsV2: (componentsV2 as any) ?? undefined,
       },
     } as const;
 

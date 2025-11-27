@@ -1,5 +1,6 @@
 import { Catch, HttpStatus } from "@nestjs/common";
 import { ApiErrorCode } from "../../../common/constants/api-errors";
+import { InvalidComponentsV2Exception } from "../../../common/exceptions";
 import { StandardException } from "../../../common/exceptions/standard-exception.exception";
 import { StandardBaseExceptionFilter } from "../../../common/filters/standard-exception-filter";
 import {
@@ -26,6 +27,10 @@ const ERROR_CODES: Record<string, { status: HttpStatus; code: ApiErrorCode }> =
     [InvalidFiltersRegexException.name]: {
       status: HttpStatus.UNPROCESSABLE_ENTITY,
       code: ApiErrorCode.INVALID_FILTERS_REGEX,
+    },
+    [InvalidComponentsV2Exception.name]: {
+      status: HttpStatus.BAD_REQUEST,
+      code: ApiErrorCode.FEED_INVALID_COMPONENTS_V2,
     },
   };
 

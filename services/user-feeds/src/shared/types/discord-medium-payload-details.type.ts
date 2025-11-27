@@ -27,46 +27,85 @@ const actionRowSchema = z.object({
 // ============================================================================
 
 const emojiSchemaV2 = z.object({
-  id: z.string(),
+  id: z.string({ required_error: "Emoji ID is required" }),
   name: z.string().nullable(),
   animated: z.boolean().nullable(),
 });
 
 const textDisplaySchemaV2 = z.object({
   type: z.literal(DiscordComponentType.TextDisplay),
-  content: z.string(),
+  content: z
+    .string({
+      required_error: "Text display content is required",
+      invalid_type_error: "Text display content must be a string",
+    })
+    .min(1, "Text display content cannot be empty"),
 });
 
 const thumbnailSchemaV2 = z.object({
   type: z.literal(DiscordComponentType.Thumbnail),
   media: z.object({
-    url: z.string(),
+    url: z.string({
+      required_error: "Thumbnail URL is required",
+      invalid_type_error: "Thumbnail URL must be a string",
+    }),
   }),
-  description: z.string().max(1024).optional().nullable(),
+  description: z
+    .string()
+    .max(1024, "Thumbnail description cannot exceed 1024 characters")
+    .optional()
+    .nullable(),
   spoiler: z.boolean().optional().default(false),
 });
 
 const buttonSchemaV2 = z.object({
   type: z.literal(DiscordComponentType.Button),
-  style: z.number().min(1).max(6),
-  label: z.string().max(80).optional(),
+  style: z
+    .number({
+      required_error: "Button style is required",
+      invalid_type_error: "Button style must be a number",
+    })
+    .min(1, "Button style must be between 1 and 6")
+    .max(6, "Button style must be between 1 and 6"),
+  label: z
+    .string()
+    .max(80, "Button label cannot exceed 80 characters")
+    .optional(),
   emoji: emojiSchemaV2.optional().nullable(),
-  url: z.string().max(512).optional().nullable(),
+  url: z
+    .string()
+    .max(512, "Button URL cannot exceed 512 characters")
+    .optional()
+    .nullable(),
   disabled: z.boolean().optional().default(false),
 });
 
 const sectionSchemaV2 = z.object({
   type: z.literal(DiscordComponentType.Section),
-  components: z.array(textDisplaySchemaV2).min(1).max(3),
-  accessory: z.union([buttonSchemaV2, thumbnailSchemaV2]),
+  components: z
+    .array(textDisplaySchemaV2)
+    .min(1, "Section must have at least 1 text display")
+    .max(3, "Section cannot have more than 3 text displays"),
+  accessory: z.discriminatedUnion("type", [buttonSchemaV2, thumbnailSchemaV2], {
+    errorMap: () => ({ message: "Accessory must be a Button or Thumbnail" }),
+  }),
 });
 
 const actionRowSchemaV2 = z.object({
   type: z.literal(DiscordComponentType.ActionRow),
-  components: z.array(buttonSchemaV2).min(1).max(5),
+  components: z
+    .array(buttonSchemaV2)
+    .min(1, "Action row must have at least 1 button")
+    .max(5, "Action row cannot have more than 5 buttons"),
 });
 
-const componentV2Schema = z.union([sectionSchemaV2, actionRowSchemaV2]);
+export const componentV2Schema = z.discriminatedUnion(
+  "type",
+  [sectionSchemaV2, actionRowSchemaV2],
+  {
+    errorMap: () => ({ message: "Component must be a Section or Action Row" }),
+  }
+);
 
 // ============================================================================
 // Main Schema
