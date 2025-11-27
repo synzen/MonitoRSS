@@ -109,14 +109,20 @@ const createLegacyEmbedComponent = (
   };
 
   // Convert hex color to number if present
-  if (embed.color) {
+  if (embed.color && embed.color.startsWith("#")) {
     embedComponent.color = parseInt(embed.color.replace("#", ""), 16);
+  } else if (embed.color) {
+    embedComponent.color = parseInt(embed.color, 10);
   }
 
   // Add author component if present
   if (embed.author?.name) {
     children.push({
-      ...createNewMessageBuilderComponent(ComponentType.LegacyEmbedAuthor, embedComponent.id, index),
+      ...createNewMessageBuilderComponent(
+        ComponentType.LegacyEmbedAuthor,
+        embedComponent.id,
+        index
+      ),
       authorName: embed.author.name,
       authorUrl: embed.author.url,
       authorIconUrl: embed.author.iconUrl,
@@ -171,7 +177,11 @@ const createLegacyEmbedComponent = (
   // Add thumbnail component if present
   if (embed.thumbnail?.url) {
     children.push({
-      ...createNewMessageBuilderComponent(ComponentType.LegacyEmbedThumbnail, embedComponent.id, index),
+      ...createNewMessageBuilderComponent(
+        ComponentType.LegacyEmbedThumbnail,
+        embedComponent.id,
+        index
+      ),
       thumbnailUrl: embed.thumbnail.url,
     } as LegacyEmbedThumbnailComponent);
   }
@@ -179,7 +189,11 @@ const createLegacyEmbedComponent = (
   // Add footer component if present
   if (embed.footer?.text) {
     children.push({
-      ...createNewMessageBuilderComponent(ComponentType.LegacyEmbedFooter, embedComponent.id, index),
+      ...createNewMessageBuilderComponent(
+        ComponentType.LegacyEmbedFooter,
+        embedComponent.id,
+        index
+      ),
       footerText: embed.footer.text,
       footerIconUrl: embed.footer.iconUrl,
     } as LegacyEmbedFooterComponent);
@@ -188,7 +202,11 @@ const createLegacyEmbedComponent = (
   // Add timestamp component if present
   if (embed.timestamp) {
     children.push({
-      ...createNewMessageBuilderComponent(ComponentType.LegacyEmbedTimestamp, embedComponent.id, index),
+      ...createNewMessageBuilderComponent(
+        ComponentType.LegacyEmbedTimestamp,
+        embedComponent.id,
+        index
+      ),
       timestamp: embed.timestamp,
     } as LegacyEmbedTimestampComponent);
   }
@@ -205,7 +223,9 @@ const V2_COMPONENT_TYPE = {
   Thumbnail: 11,
 } as const;
 
-type V2ComponentFromAPI = NonNullable<FeedDiscordChannelConnection["details"]["componentsV2"]>[number];
+type V2ComponentFromAPI = NonNullable<
+  FeedDiscordChannelConnection["details"]["componentsV2"]
+>[number];
 
 const getButtonStyleFromNumber = (styleNum: number): DiscordButtonStyle => {
   switch (styleNum) {
@@ -230,7 +250,11 @@ const createV2ButtonComponent = (
   index: number
 ): ButtonComponent => {
   return {
-    ...(createNewMessageBuilderComponent(ComponentType.V2Button, parentId, index) as ButtonComponent),
+    ...(createNewMessageBuilderComponent(
+      ComponentType.V2Button,
+      parentId,
+      index
+    ) as ButtonComponent),
     label: button.label || "",
     style: getButtonStyleFromNumber(button.style || 1),
     disabled: button.disabled || false,
@@ -244,7 +268,11 @@ const createV2TextDisplayComponent = (
   index: number
 ): TextDisplayComponent => {
   return {
-    ...(createNewMessageBuilderComponent(ComponentType.V2TextDisplay, parentId, index) as TextDisplayComponent),
+    ...(createNewMessageBuilderComponent(
+      ComponentType.V2TextDisplay,
+      parentId,
+      index
+    ) as TextDisplayComponent),
     content: textDisplay.content || "",
   };
 };
@@ -255,7 +283,11 @@ const createV2SectionComponent = (
   index: number
 ): SectionComponent => {
   const sectionComponent = {
-    ...(createNewMessageBuilderComponent(ComponentType.V2Section, parentId, index) as SectionComponent),
+    ...(createNewMessageBuilderComponent(
+      ComponentType.V2Section,
+      parentId,
+      index
+    ) as SectionComponent),
     children: [] as Component[],
   };
 
@@ -284,7 +316,11 @@ const createV2ActionRowComponent = (
   index: number
 ): ActionRowComponent => {
   const actionRowComponent = {
-    ...(createNewMessageBuilderComponent(ComponentType.V2ActionRow, parentId, index) as ActionRowComponent),
+    ...(createNewMessageBuilderComponent(
+      ComponentType.V2ActionRow,
+      parentId,
+      index
+    ) as ActionRowComponent),
     children: [] as ButtonComponent[],
   };
 
@@ -293,7 +329,11 @@ const createV2ActionRowComponent = (
     row.components.forEach((comp, compIndex) => {
       if (comp.type === V2_COMPONENT_TYPE.Button) {
         actionRowComponent.children.push(
-          createV2ButtonComponent(comp as NonNullable<V2ComponentFromAPI["accessory"]>, actionRowComponent.id, compIndex)
+          createV2ButtonComponent(
+            comp as NonNullable<V2ComponentFromAPI["accessory"]>,
+            actionRowComponent.id,
+            compIndex
+          )
         );
       }
     });
@@ -333,9 +373,13 @@ export const convertConnectionToMessageBuilderState = (
     // Convert V2 components
     componentsV2.forEach((component, index) => {
       if (component.type === V2_COMPONENT_TYPE.Section) {
-        v2RootComponent.children.push(createV2SectionComponent(component, v2RootComponent.id, index));
+        v2RootComponent.children.push(
+          createV2SectionComponent(component, v2RootComponent.id, index)
+        );
       } else if (component.type === V2_COMPONENT_TYPE.ActionRow) {
-        v2RootComponent.children.push(createV2ActionRowComponent(component, v2RootComponent.id, index));
+        v2RootComponent.children.push(
+          createV2ActionRowComponent(component, v2RootComponent.id, index)
+        );
       }
     });
 
@@ -350,7 +394,11 @@ export const convertConnectionToMessageBuilderState = (
 
   // Create a legacy root component that contains the existing message data
   const legacyRootComponent: LegacyMessageComponentRoot = {
-    ...(createNewMessageBuilderComponent(ComponentType.LegacyRoot, "", 0) as LegacyMessageComponentRoot),
+    ...(createNewMessageBuilderComponent(
+      ComponentType.LegacyRoot,
+      "",
+      0
+    ) as LegacyMessageComponentRoot),
     children: [],
     formatTables: connection.details?.formatter?.formatTables,
     stripImages: connection.details?.formatter?.stripImages,
