@@ -31,10 +31,10 @@ import { SuspenseErrorBoundary } from "../components/SuspenseErrorBoundary";
 import AddUserFeeds from "./AddUserFeeds";
 import { MultiSelectUserFeedProvider } from "../contexts/MultiSelectUserFeedContext";
 import { lazyWithRetries } from "../utils/lazyImportWithRetry";
-import { Previewer } from "./Previewer";
+import { MessageBuilder } from "./MessageBuilder";
 
-// const Previewer = lazyWithRetries(() =>
-//   import("./Previewer").then(({ Previewer: c }) => ({
+// const MessageBuilder = lazyWithRetries(() =>
+//   import("./MessageBuilder").then(({ MessageBuilder: c }) => ({
 //     default: c,
 //   }))
 // );
@@ -295,7 +295,7 @@ const Pages: React.FC = () => (
                 </Stack>
               }
             >
-              <Previewer />
+              <MessageBuilder />
             </Suspense>
           </SuspenseErrorBoundary>
         </RequireAuth>
