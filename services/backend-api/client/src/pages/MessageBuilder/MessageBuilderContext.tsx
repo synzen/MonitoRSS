@@ -19,6 +19,7 @@ import {
   MessageComponentRoot,
   LegacyEmbedComponent,
   LegacyEmbedContainerComponent,
+  LegacyMessageComponentRoot,
 } from "./types";
 import createMessageBuilderComponentSchema from "./utils/createMessageBuilderComponentSchema";
 import { useUserFeedArticles } from "../../features/feed/hooks";
@@ -76,6 +77,7 @@ interface MessageBuilderContextType {
   hasNoArticles?: boolean;
   isFetchingDifferentArticle: boolean;
   navigateToComponentId: (componentId: string) => void;
+  switchRootType: (targetType: ComponentType.LegacyRoot | ComponentType.V2Root) => void;
 }
 
 const MessageBuilderContext = createContext<MessageBuilderContextType | undefined>(undefined);
@@ -417,7 +419,10 @@ const MessageBuilderInternalProvider: React.FC<{ children: React.ReactNode }> = 
           return;
         }
 
-        const formPath = getMessageBuilderComponentFormPathById(messageComponent, currentSelectedId);
+        const formPath = getMessageBuilderComponentFormPathById(
+          messageComponent,
+          currentSelectedId
+        );
 
         if (formPath) {
           setValue(formPath as any, newComponent, {
@@ -430,16 +435,88 @@ const MessageBuilderInternalProvider: React.FC<{ children: React.ReactNode }> = 
       [currentSelectedId, getValues, setValue]
     );
 
-  const navigateToComponentId: MessageBuilderContextType["navigateToComponentId"] = useCallback((id) => {
-    const { messageComponent } = getValues();
+  const navigateToComponentId: MessageBuilderContextType["navigateToComponentId"] = useCallback(
+    (id) => {
+      const { messageComponent } = getValues();
 
-    setCurrentSelectedId(id);
-    const parentIds = getMessageBuilderComponentParentIds(messageComponent, id);
+      setCurrentSelectedId(id);
+      const parentIds = getMessageBuilderComponentParentIds(messageComponent, id);
 
-    if (parentIds) {
-      setExpandedIds((prev) => new Set([...prev, ...parentIds]));
-    }
-  }, []);
+      if (parentIds) {
+        setExpandedIds((prev) => new Set([...prev, ...parentIds]));
+      }
+    },
+    []
+  );
+
+  const switchRootType: MessageBuilderContextType["switchRootType"] = useCallback(
+    (targetType) => {
+      const messageComponent = getValues("messageComponent");
+
+      if (!messageComponent || messageComponent.type === targetType) {
+        return;
+      }
+
+      // Preserve shared properties between root types
+      const sharedProperties = {
+        forumThreadTitle: messageComponent.forumThreadTitle,
+        forumThreadTags: messageComponent.forumThreadTags,
+        isForumChannel: messageComponent.isForumChannel,
+        channelNewThreadTitle: messageComponent.channelNewThreadTitle,
+        channelNewThreadExcludesPreview: messageComponent.channelNewThreadExcludesPreview,
+        mentions: messageComponent.mentions,
+        placeholderLimits: messageComponent.placeholderLimits,
+        // Text content settings
+        formatTables: (messageComponent as LegacyMessageComponentRoot).formatTables,
+        stripImages: (messageComponent as LegacyMessageComponentRoot).stripImages,
+        ignoreNewLines: (messageComponent as LegacyMessageComponentRoot).ignoreNewLines,
+        enablePlaceholderFallback: (messageComponent as LegacyMessageComponentRoot)
+          .enablePlaceholderFallback,
+      };
+
+      let newRoot: MessageComponentRoot;
+
+      if (targetType === ComponentType.LegacyRoot) {
+        newRoot = {
+          ...(createNewMessageBuilderComponent(
+            ComponentType.LegacyRoot,
+            "",
+            0
+          ) as LegacyMessageComponentRoot),
+          ...sharedProperties,
+          children: [],
+        };
+      } else {
+        newRoot = {
+          ...(createNewMessageBuilderComponent(
+            ComponentType.V2Root,
+            "",
+            0
+          ) as V2MessageComponentRoot),
+          ...sharedProperties,
+          children: [],
+        };
+      }
+
+      setValue("messageComponent", newRoot, {
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true,
+      });
+
+      // Select the new root
+      setCurrentSelectedId(newRoot.id);
+      setCurrentFocusedId(newRoot.id);
+      setExpandedIds(() => new Set([newRoot.id]));
+
+      notifyInfo(
+        `Switched to ${
+          targetType === ComponentType.LegacyRoot ? "Legacy Message" : "Components V2"
+        } format`
+      );
+    },
+    [getValues, setValue, setCurrentSelectedId, setCurrentFocusedId, setExpandedIds]
+  );
 
   const currentArticle = articlesResponse?.result.articles?.[0];
 
@@ -460,6 +537,7 @@ const MessageBuilderInternalProvider: React.FC<{ children: React.ReactNode }> = 
       isFetchingDifferentArticle,
       updateCurrentlySelectedComponent,
       navigateToComponentId,
+      switchRootType,
     }),
     [
       articles,
@@ -474,10 +552,13 @@ const MessageBuilderInternalProvider: React.FC<{ children: React.ReactNode }> = 
       isFetchingDifferentArticle,
       updateCurrentlySelectedComponent,
       navigateToComponentId,
+      switchRootType,
     ]
   );
 
-  return <MessageBuilderContext.Provider value={contextValue}>{children}</MessageBuilderContext.Provider>;
+  return (
+    <MessageBuilderContext.Provider value={contextValue}>{children}</MessageBuilderContext.Provider>
+  );
 };
 
 export const MessageBuilderProvider: React.FC<{

@@ -3,18 +3,138 @@ import { CreateDiscordChannelConnectionPreviewInput } from "../../../features/fe
 import { FeedDiscordChannelConnection } from "../../../types";
 import { DiscordButtonStyle } from "../constants/DiscordButtonStyle";
 import {
+  ActionRowComponent,
+  ButtonComponent,
   ComponentType,
   LegacyEmbedComponent,
   LegacyTextComponent,
   MessageComponentRoot,
+  SectionComponent,
+  TextDisplayComponent,
+  V2MessageComponentRoot,
 } from "../types";
+
+// V2 Component Type Constants (matching backend Discord API values)
+const V2_COMPONENT_TYPE = {
+  ActionRow: 1,
+  Button: 2,
+  Section: 9,
+  TextDisplay: 10,
+  Thumbnail: 11,
+} as const;
+
+const getButtonStyleNumber = (style: DiscordButtonStyle): number => {
+  switch (style) {
+    case DiscordButtonStyle.Primary:
+      return 1;
+    case DiscordButtonStyle.Secondary:
+      return 2;
+    case DiscordButtonStyle.Success:
+      return 3;
+    case DiscordButtonStyle.Danger:
+      return 4;
+    case DiscordButtonStyle.Link:
+      return 5;
+    default:
+      return 1;
+  }
+};
+
+const convertV2ButtonToAPI = (button: ButtonComponent) => ({
+  type: V2_COMPONENT_TYPE.Button,
+  style: getButtonStyleNumber(button.style),
+  label: button.label || undefined,
+  url: button.href || undefined,
+  disabled: button.disabled || false,
+});
+
+const convertV2TextDisplayToAPI = (textDisplay: TextDisplayComponent) => ({
+  type: V2_COMPONENT_TYPE.TextDisplay,
+  content: textDisplay.content,
+});
+
+const convertV2SectionToAPI = (section: SectionComponent) => {
+  const result: {
+    type: number;
+    components: Array<{ type: number; content: string }>;
+    accessory?: {
+      type: number;
+      style?: number;
+      label?: string;
+      url?: string | null;
+      disabled?: boolean;
+    };
+  } = {
+    type: V2_COMPONENT_TYPE.Section,
+    components: section.children
+      .filter((c): c is TextDisplayComponent => c.type === ComponentType.V2TextDisplay)
+      .map(convertV2TextDisplayToAPI),
+  };
+
+  if (section.accessory && section.accessory.type === ComponentType.V2Button) {
+    result.accessory = convertV2ButtonToAPI(section.accessory as ButtonComponent);
+  }
+
+  return result;
+};
+
+const convertV2ActionRowToAPI = (actionRow: ActionRowComponent) => ({
+  type: V2_COMPONENT_TYPE.ActionRow,
+  components: actionRow.children.map(convertV2ButtonToAPI),
+});
+
+const convertV2RootToPreviewInput = (
+  userFeed: UserFeed,
+  connection: FeedDiscordChannelConnection,
+  messageComponent: V2MessageComponentRoot
+): Omit<CreateDiscordChannelConnectionPreviewInput["data"], "article"> => {
+  const componentsV2: CreateDiscordChannelConnectionPreviewInput["data"]["componentsV2"] = [];
+
+  messageComponent.children.forEach((child) => {
+    if (child.type === ComponentType.V2Section) {
+      componentsV2.push(convertV2SectionToAPI(child as SectionComponent));
+    } else if (child.type === ComponentType.V2ActionRow) {
+      componentsV2.push(convertV2ActionRowToAPI(child as ActionRowComponent));
+    }
+  });
+
+  return {
+    content: null,
+    embeds: undefined,
+    componentRows: null,
+    componentsV2: componentsV2.length > 0 ? componentsV2 : null,
+    channelNewThreadExcludesPreview: messageComponent.channelNewThreadExcludesPreview,
+    channelNewThreadTitle: messageComponent.channelNewThreadTitle,
+    connectionFormatOptions: {
+      formatTables: messageComponent.formatTables,
+      stripImages: messageComponent.stripImages,
+      ignoreNewLines: messageComponent.ignoreNewLines,
+    },
+    enablePlaceholderFallback: messageComponent.enablePlaceholderFallback,
+    forumThreadTags: messageComponent.forumThreadTags,
+    forumThreadTitle: messageComponent.forumThreadTitle,
+    mentions: messageComponent.mentions,
+    placeholderLimits: messageComponent.placeholderLimits,
+    customPlaceholders: connection.customPlaceholders,
+    externalProperties: userFeed.externalProperties,
+    userFeedFormatOptions: userFeed.formatOptions,
+  };
+};
 
 const convertMessageBuilderStateToConnectionPreviewInput = (
   userFeed: UserFeed,
   connection: FeedDiscordChannelConnection,
   messageComponent?: MessageComponentRoot
 ): Omit<CreateDiscordChannelConnectionPreviewInput["data"], "article"> => {
-  if (!messageComponent || messageComponent.type !== ComponentType.LegacyRoot) {
+  if (!messageComponent) {
+    return {};
+  }
+
+  if (messageComponent.type === ComponentType.V2Root) {
+    return convertV2RootToPreviewInput(userFeed, connection, messageComponent);
+  }
+
+  if (messageComponent.type !== ComponentType.LegacyRoot) {
     return {};
   }
 

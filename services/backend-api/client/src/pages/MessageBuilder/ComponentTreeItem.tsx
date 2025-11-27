@@ -51,8 +51,8 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
     component.type === ComponentType.V2Section;
   const { isFocused, isExpanded, isSelected } = useNavigableTreeItemContext();
 
-  const handleAddChild = (childType: ComponentType) => {
-    const added = addChildComponent(component.id, childType as any);
+  const handleAddChild = (childType: ComponentType, isAccessory?: boolean) => {
+    const added = addChildComponent(component.id, childType as any, isAccessory);
 
     if (added) {
       notifyInfo(

@@ -15,6 +15,11 @@ import {
   LegacyActionRowComponent,
   LegacyButtonComponent,
   Component,
+  V2MessageComponentRoot,
+  TextDisplayComponent,
+  SectionComponent,
+  ActionRowComponent,
+  ButtonComponent,
 } from "../types";
 import MessageBuilderFormState from "../types/MessageBuilderFormState";
 import { DiscordButtonStyle } from "../constants/DiscordButtonStyle";
@@ -191,6 +196,112 @@ const createLegacyEmbedComponent = (
   return embedComponent;
 };
 
+// V2 Component Type Constants (matching backend Discord API values)
+const V2_COMPONENT_TYPE = {
+  ActionRow: 1,
+  Button: 2,
+  Section: 9,
+  TextDisplay: 10,
+  Thumbnail: 11,
+} as const;
+
+type V2ComponentFromAPI = NonNullable<FeedDiscordChannelConnection["details"]["componentsV2"]>[number];
+
+const getButtonStyleFromNumber = (styleNum: number): DiscordButtonStyle => {
+  switch (styleNum) {
+    case 1:
+      return DiscordButtonStyle.Primary;
+    case 2:
+      return DiscordButtonStyle.Secondary;
+    case 3:
+      return DiscordButtonStyle.Success;
+    case 4:
+      return DiscordButtonStyle.Danger;
+    case 5:
+      return DiscordButtonStyle.Link;
+    default:
+      return DiscordButtonStyle.Primary;
+  }
+};
+
+const createV2ButtonComponent = (
+  button: NonNullable<V2ComponentFromAPI["accessory"]>,
+  parentId: string,
+  index: number
+): ButtonComponent => {
+  return {
+    ...(createNewMessageBuilderComponent(ComponentType.V2Button, parentId, index) as ButtonComponent),
+    label: button.label || "",
+    style: getButtonStyleFromNumber(button.style || 1),
+    disabled: button.disabled || false,
+    href: button.url || undefined,
+  };
+};
+
+const createV2TextDisplayComponent = (
+  textDisplay: { type: number; content?: string },
+  parentId: string,
+  index: number
+): TextDisplayComponent => {
+  return {
+    ...(createNewMessageBuilderComponent(ComponentType.V2TextDisplay, parentId, index) as TextDisplayComponent),
+    content: textDisplay.content || "",
+  };
+};
+
+const createV2SectionComponent = (
+  section: V2ComponentFromAPI,
+  parentId: string,
+  index: number
+): SectionComponent => {
+  const sectionComponent = {
+    ...(createNewMessageBuilderComponent(ComponentType.V2Section, parentId, index) as SectionComponent),
+    children: [] as Component[],
+  };
+
+  // Add text display components
+  if (section.components && section.components.length > 0) {
+    section.components.forEach((comp, compIndex) => {
+      if (comp.type === V2_COMPONENT_TYPE.TextDisplay) {
+        sectionComponent.children.push(
+          createV2TextDisplayComponent(comp, sectionComponent.id, compIndex)
+        );
+      }
+    });
+  }
+
+  // Add accessory (button or thumbnail)
+  if (section.accessory && section.accessory.type === V2_COMPONENT_TYPE.Button) {
+    sectionComponent.accessory = createV2ButtonComponent(section.accessory, sectionComponent.id, 0);
+  }
+
+  return sectionComponent;
+};
+
+const createV2ActionRowComponent = (
+  row: V2ComponentFromAPI,
+  parentId: string,
+  index: number
+): ActionRowComponent => {
+  const actionRowComponent = {
+    ...(createNewMessageBuilderComponent(ComponentType.V2ActionRow, parentId, index) as ActionRowComponent),
+    children: [] as ButtonComponent[],
+  };
+
+  // Add button components
+  if (row.components && row.components.length > 0) {
+    row.components.forEach((comp, compIndex) => {
+      if (comp.type === V2_COMPONENT_TYPE.Button) {
+        actionRowComponent.children.push(
+          createV2ButtonComponent(comp as NonNullable<V2ComponentFromAPI["accessory"]>, actionRowComponent.id, compIndex)
+        );
+      }
+    });
+  }
+
+  return actionRowComponent;
+};
+
 export const convertConnectionToMessageBuilderState = (
   connection: FeedDiscordChannelConnection | null | undefined
 ): MessageBuilderFormState => {
@@ -198,9 +309,42 @@ export const convertConnectionToMessageBuilderState = (
     return {};
   }
 
-  const { content, embeds, componentRows } = connection.details;
+  const { content, embeds, componentRows, componentsV2 } = connection.details;
 
-  // Check if there's any message content to convert
+  // Shared properties for both root types
+  const sharedRootProperties = {
+    forumThreadTitle: connection.details?.forumThreadTitle,
+    isForumChannel: connection.details?.channel?.type === "forum",
+    placeholderLimits: connection.details?.placeholderLimits,
+    mentions: connection.mentions,
+    channelNewThreadExcludesPreview: connection.details?.channelNewThreadExcludesPreview,
+    channelNewThreadTitle: connection.details?.channelNewThreadTitle,
+    forumThreadTags: connection.details?.forumThreadTags,
+  };
+
+  // Check if this is a V2 connection (has componentsV2 data)
+  if (componentsV2 && componentsV2.length > 0) {
+    const v2RootComponent: V2MessageComponentRoot = {
+      ...(createNewMessageBuilderComponent(ComponentType.V2Root, "", 0) as V2MessageComponentRoot),
+      children: [],
+      ...sharedRootProperties,
+    };
+
+    // Convert V2 components
+    componentsV2.forEach((component, index) => {
+      if (component.type === V2_COMPONENT_TYPE.Section) {
+        v2RootComponent.children.push(createV2SectionComponent(component, v2RootComponent.id, index));
+      } else if (component.type === V2_COMPONENT_TYPE.ActionRow) {
+        v2RootComponent.children.push(createV2ActionRowComponent(component, v2RootComponent.id, index));
+      }
+    });
+
+    return {
+      messageComponent: v2RootComponent,
+    };
+  }
+
+  // Check if there's any legacy message content to convert
   const hasContent =
     !!content || (embeds && embeds.length > 0) || (componentRows && componentRows.length > 0);
 
@@ -211,14 +355,8 @@ export const convertConnectionToMessageBuilderState = (
     formatTables: connection.details?.formatter?.formatTables,
     stripImages: connection.details?.formatter?.stripImages,
     ignoreNewLines: connection.details?.formatter?.ignoreNewLines,
-    forumThreadTitle: connection.details?.forumThreadTitle,
-    isForumChannel: connection.details?.channel?.type === "forum",
-    placeholderLimits: connection.details?.placeholderLimits,
-    mentions: connection.mentions,
-    channelNewThreadExcludesPreview: connection.details?.channelNewThreadExcludesPreview,
-    channelNewThreadTitle: connection.details?.channelNewThreadTitle,
     enablePlaceholderFallback: connection.details.enablePlaceholderFallback,
-    forumThreadTags: connection.details?.forumThreadTags,
+    ...sharedRootProperties,
   };
 
   if (!hasContent) {

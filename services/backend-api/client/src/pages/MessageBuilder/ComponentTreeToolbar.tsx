@@ -65,9 +65,9 @@ export const ComponentTreeToolbar: React.FC = () => {
       selectedComponent.type === ComponentType.V2ActionRow ||
       selectedComponent.type === ComponentType.V2Section);
 
-  const handleAddChild = (childType: ComponentType) => {
+  const handleAddChild = (childType: ComponentType, isAccessory?: boolean) => {
     if (!selectedComponent) return;
-    const added = addChildComponent(selectedComponent.id, childType as any);
+    const added = addChildComponent(selectedComponent.id, childType as any, isAccessory);
 
     if (added) {
       notifyInfo(

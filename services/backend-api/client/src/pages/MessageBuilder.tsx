@@ -45,7 +45,10 @@ import { ComponentTreeItem } from "./MessageBuilder/ComponentTreeItem";
 import { ComponentTreeToolbar } from "./MessageBuilder/ComponentTreeToolbar";
 import { NavigableTreeItem } from "../components/NavigableTree";
 import { NavigableTreeContext, NavigableTreeProvider } from "../contexts/NavigableTreeContext";
-import { MessageBuilderProvider, useMessageBuilderContext } from "./MessageBuilder/MessageBuilderContext";
+import {
+  MessageBuilderProvider,
+  useMessageBuilderContext,
+} from "./MessageBuilder/MessageBuilderContext";
 import { ProblemsSection } from "./MessageBuilder/ProblemsSection";
 import { ProblemsDialog } from "./MessageBuilder/ProblemsDialog";
 import extractMessageBuilderProblems from "./MessageBuilder/utils/extractMessageBuilderProblems";
@@ -67,7 +70,6 @@ import {
   PageAlertProvider,
   usePageAlertContext,
 } from "../contexts/PageAlertContext";
-import { ComponentType } from "./MessageBuilder/types";
 import convertMessageBuilderStateToConnectionUpdate from "./MessageBuilder/utils/convertMessageBuilderStateToConnectionUpdate";
 import { pages } from "../constants";
 import { UserFeedTabSearchParam } from "../constants/userFeedTabSearchParam";
@@ -113,7 +115,10 @@ const MessageBuilderContent: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  const problems = extractMessageBuilderProblems(formState.errors.messageComponent, messageComponent);
+  const problems = extractMessageBuilderProblems(
+    formState.errors.messageComponent,
+    messageComponent
+  );
   const componentIdsWithProblems = new Set(problems.map((p) => p.componentId));
 
   // If the user attempts to close the tab with unsaved changes, ask for confirmation
@@ -133,18 +138,14 @@ const MessageBuilderContent: React.FC = () => {
 
   const handleSave = handleSubmit(
     async (data) => {
-      if (
-        updateStatus === "loading" ||
-        !feedId ||
-        !connectionId ||
-        !data.messageComponent ||
-        data.messageComponent.type !== ComponentType.LegacyRoot
-      ) {
+      if (updateStatus === "loading" || !feedId || !connectionId || !data.messageComponent) {
         return;
       }
 
       try {
-        const connectionDetails = convertMessageBuilderStateToConnectionUpdate(data.messageComponent);
+        const connectionDetails = convertMessageBuilderStateToConnectionUpdate(
+          data.messageComponent
+        );
 
         await updateConnection({
           feedId,

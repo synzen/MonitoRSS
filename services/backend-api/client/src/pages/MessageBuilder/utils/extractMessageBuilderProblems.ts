@@ -77,6 +77,47 @@ const extractMessageBuilderProblems = (
         textDisplayCharacterCount += charCount;
       }
 
+      // Handle children and accessory separately since they have special handling
+      if (key === "children") {
+        // Handle array-level errors (e.g., min/max validation)
+        if (errors[key]?.message) {
+          problems.push({
+            message: errors[key].message,
+            path: getComponentPath(messageComponent, component.id) || component.name,
+            componentId: component.id,
+          });
+        }
+
+        // Handle individual child errors
+        if (Array.isArray(errors[key])) {
+          errors.children.forEach((childError: any, index: number) => {
+            if (childError && component.children?.[index]) {
+              processErrors(childError, component.children[index], currentPath);
+            }
+          });
+        }
+
+        return;
+      }
+
+      if (key === "accessory" && component.type === ComponentType.V2Section) {
+        // Handle accessory-level errors (e.g., required validation when accessory is missing)
+        if (errors[key]?.id) {
+          problems.push({
+            message: "Accessory component is required.",
+            path: getComponentPath(messageComponent, component.id) || component.name,
+            componentId: component.id,
+          });
+        }
+
+        // Handle errors on the accessory component itself (nested field errors)
+        if (component.accessory && typeof errors[key] === "object") {
+          processErrors(errors.accessory, component.accessory, currentPath);
+        }
+
+        return;
+      }
+
       // Example key would be "content" for a text display component
       if (typeof errors[key] === "object" && errors[key].message) {
         // This is a direct error message for the current component
@@ -85,23 +126,6 @@ const extractMessageBuilderProblems = (
           path: getComponentPath(messageComponent, component.id) || component.name,
           componentId: component.id,
         });
-      }
-
-      if (key === "children" && Array.isArray(errors[key])) {
-        errors.children.forEach((childError: any, index: number) => {
-          if (childError && component.children?.[index]) {
-            processErrors(childError, component.children[index], currentPath);
-          }
-        });
-      }
-
-      if (
-        key === "accessory" &&
-        errors[key] &&
-        component.type === ComponentType.V2Section &&
-        component.accessory
-      ) {
-        processErrors(errors.accessory, component.accessory, currentPath);
       }
     });
   };

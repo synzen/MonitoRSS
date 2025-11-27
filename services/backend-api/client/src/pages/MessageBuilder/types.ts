@@ -76,13 +76,17 @@ export interface LegacyMessageComponentRoot extends BaseComponent {
 export interface V2MessageComponentRoot extends BaseComponent {
   type: ComponentType.V2Root;
   children: Component[];
+  formatTables?: boolean;
+  stripImages?: boolean;
+  ignoreNewLines?: boolean;
+  enablePlaceholderFallback?: boolean;
   forumThreadTitle?: string;
   forumThreadTags?: Array<{
     id: string;
     filters?: {
       expression: any;
     } | null;
-  }>;
+  }> | null;
   isForumChannel?: boolean;
   channelNewThreadTitle?: string;
   channelNewThreadExcludesPreview?: boolean;

@@ -6,13 +6,176 @@ import {
   LegacyButtonComponent,
   LegacyMessageComponentRoot,
   LegacyTextComponent,
+  MessageComponentRoot,
+  V2MessageComponentRoot,
+  ActionRowComponent,
+  ButtonComponent,
+  SectionComponent,
+  TextDisplayComponent,
 } from "../types";
 
-const convertMessageBuilderStateToConnectionUpdate = (
-  component?: LegacyMessageComponentRoot
-): UpdateDiscordChannelConnectionInput["details"] => {
-  if (!component) return {};
+// V2 Component Type Constants (matching backend Discord API values)
+const V2_COMPONENT_TYPE = {
+  ActionRow: 1,
+  Button: 2,
+  Section: 9,
+  TextDisplay: 10,
+  Thumbnail: 11,
+} as const;
 
+const getButtonStyleNumber = (style: DiscordButtonStyle): number => {
+  switch (style) {
+    case DiscordButtonStyle.Primary:
+      return 1;
+    case DiscordButtonStyle.Secondary:
+      return 2;
+    case DiscordButtonStyle.Success:
+      return 3;
+    case DiscordButtonStyle.Danger:
+      return 4;
+    case DiscordButtonStyle.Link:
+      return 5;
+    default:
+      return 1;
+  }
+};
+
+const convertV2ButtonToAPI = (button: ButtonComponent) => ({
+  type: V2_COMPONENT_TYPE.Button,
+  style: getButtonStyleNumber(button.style),
+  label: button.label || undefined,
+  url: button.href || undefined,
+  disabled: button.disabled || false,
+});
+
+const convertV2TextDisplayToAPI = (textDisplay: TextDisplayComponent) => ({
+  type: V2_COMPONENT_TYPE.TextDisplay,
+  content: textDisplay.content,
+});
+
+const convertV2SectionToAPI = (section: SectionComponent) => {
+  const result: {
+    type: number;
+    components: Array<{ type: number; content: string }>;
+    accessory?: {
+      type: number;
+      style?: number;
+      label?: string;
+      url?: string | null;
+      disabled?: boolean;
+    };
+  } = {
+    type: V2_COMPONENT_TYPE.Section,
+    components: section.children
+      .filter((c): c is TextDisplayComponent => c.type === ComponentType.V2TextDisplay)
+      .map(convertV2TextDisplayToAPI),
+  };
+
+  if (section.accessory && section.accessory.type === ComponentType.V2Button) {
+    result.accessory = convertV2ButtonToAPI(section.accessory as ButtonComponent);
+  }
+
+  return result;
+};
+
+const convertV2ActionRowToAPI = (actionRow: ActionRowComponent) => ({
+  type: V2_COMPONENT_TYPE.ActionRow,
+  components: actionRow.children.map(convertV2ButtonToAPI),
+});
+
+const convertV2RootToConnectionUpdate = (
+  component: V2MessageComponentRoot
+): UpdateDiscordChannelConnectionInput["details"] => {
+  const details: UpdateDiscordChannelConnectionInput["details"] = {};
+
+  // Convert V2 components
+  const componentsV2: Array<{
+    type: number;
+    content?: string;
+    components?: Array<{
+      type: number;
+      content?: string;
+      style?: number;
+      label?: string;
+      url?: string | null;
+      disabled?: boolean;
+    }>;
+    accessory?: {
+      type: number;
+      style?: number;
+      label?: string;
+      url?: string | null;
+      disabled?: boolean;
+    } | null;
+  }> = [];
+
+  component.children.forEach((child) => {
+    if (child.type === ComponentType.V2Section) {
+      componentsV2.push(convertV2SectionToAPI(child as SectionComponent));
+    } else if (child.type === ComponentType.V2ActionRow) {
+      componentsV2.push(convertV2ActionRowToAPI(child as ActionRowComponent));
+    }
+  });
+
+  if (componentsV2.length > 0) {
+    details.componentsV2 = componentsV2;
+  }
+
+  // Clear legacy content when using V2
+  details.content = "";
+  details.embeds = [];
+  details.componentRows = null;
+
+  // Handle formatter options
+  if (
+    component.formatTables !== undefined ||
+    component.stripImages !== undefined ||
+    component.ignoreNewLines !== undefined
+  ) {
+    details.formatter = {
+      formatTables: component.formatTables,
+      stripImages: component.stripImages,
+      ignoreNewLines: component.ignoreNewLines,
+    };
+  }
+
+  // Handle placeholder fallback
+  if (component.enablePlaceholderFallback !== undefined) {
+    details.enablePlaceholderFallback = component.enablePlaceholderFallback;
+  }
+
+  // Handle shared options
+  if (component.forumThreadTitle !== undefined) {
+    details.forumThreadTitle = component.forumThreadTitle;
+  }
+
+  if (component.forumThreadTags) {
+    details.forumThreadTags = component.forumThreadTags;
+  }
+
+  if (component.mentions !== undefined) {
+    details.mentions = component.mentions;
+  }
+
+  if (component.placeholderLimits !== undefined) {
+    details.placeholderLimits = component.placeholderLimits;
+  }
+
+  // Handle channel thread settings
+  if (component.channelNewThreadTitle !== undefined) {
+    details.channelNewThreadTitle = component.channelNewThreadTitle;
+  }
+
+  if (component.channelNewThreadExcludesPreview !== undefined) {
+    details.channelNewThreadExcludesPreview = component.channelNewThreadExcludesPreview;
+  }
+
+  return details;
+};
+
+const convertLegacyRootToConnectionUpdate = (
+  component: LegacyMessageComponentRoot
+): UpdateDiscordChannelConnectionInput["details"] => {
   const details: UpdateDiscordChannelConnectionInput["details"] = {};
 
   const textComponent = component.children?.find((c) => c.type === ComponentType.LegacyText) as
@@ -117,39 +280,18 @@ const convertMessageBuilderStateToConnectionUpdate = (
     details.componentRows = actionRows.map((row) => ({
       id: row.id,
       components:
-        row.children?.map((button: LegacyButtonComponent) => {
-          let style = 1;
-
-          switch (button.style) {
-            case DiscordButtonStyle.Primary:
-              style = 1;
-              break;
-            case DiscordButtonStyle.Secondary:
-              style = 2;
-              break;
-            case DiscordButtonStyle.Success:
-              style = 3;
-              break;
-            case DiscordButtonStyle.Danger:
-              style = 4;
-              break;
-            case DiscordButtonStyle.Link:
-              style = 5;
-              break;
-            default:
-              style = 1;
-          }
-
-          return {
-            id: button.id,
-            type: 2, // Button type
-            label: button.label,
-            style,
-            url: button.url,
-          };
-        }) || [],
+        row.children?.map((button: LegacyButtonComponent) => ({
+          id: button.id,
+          type: 2, // Button type
+          label: button.label,
+          style: getButtonStyleNumber(button.style),
+          url: button.url,
+        })) || [],
     }));
   }
+
+  // Clear V2 components when using legacy
+  details.componentsV2 = null;
 
   // Handle formatter options
   if (component.formatTables !== undefined) {
@@ -173,7 +315,7 @@ const convertMessageBuilderStateToConnectionUpdate = (
     };
   }
 
-  // Handle forum options
+  // Handle shared options
   if (component.forumThreadTitle !== undefined) {
     details.forumThreadTitle = component.forumThreadTitle;
   }
@@ -182,17 +324,27 @@ const convertMessageBuilderStateToConnectionUpdate = (
     details.forumThreadTags = component.forumThreadTags;
   }
 
-  // Handle mentions
   if (component.mentions !== undefined) {
     details.mentions = component.mentions;
   }
 
-  // Handle placeholder limits
   if (component.placeholderLimits !== undefined) {
     details.placeholderLimits = component.placeholderLimits;
   }
 
   return details;
+};
+
+const convertMessageBuilderStateToConnectionUpdate = (
+  component?: MessageComponentRoot
+): UpdateDiscordChannelConnectionInput["details"] => {
+  if (!component) return {};
+
+  if (component.type === ComponentType.V2Root) {
+    return convertV2RootToConnectionUpdate(component);
+  }
+
+  return convertLegacyRootToConnectionUpdate(component);
 };
 
 export default convertMessageBuilderStateToConnectionUpdate;

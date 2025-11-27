@@ -17,7 +17,7 @@ import getMessageBuilderComponentLabel from "./utils/getMessageBuilderComponentL
 interface AddComponentButtonProps {
   component: Component;
   canHaveChildren: boolean;
-  onAddChild: (childType: ComponentType) => void;
+  onAddChild: (childType: ComponentType, isAccessory?: boolean) => void;
   buttonProps?: ComponentProps<typeof Button>;
 }
 
@@ -217,15 +217,16 @@ export const AddComponentButton: React.FC<AddComponentButtonProps> = ({
           <MenuGroup title={`Components (${component.children?.length || 0}/10)`}>
             <MenuItem
               color="white"
-              onClick={() => onAddChild(ComponentType.V2TextDisplay)}
+              onClick={() => onAddChild(ComponentType.V2ActionRow)}
               isDisabled={(component.children?.length || 0) >= 10}
             >
-              Add Text Display
-            </MenuItem>
-            <MenuItem color="white" onClick={() => onAddChild(ComponentType.V2ActionRow)}>
               Add Action Row
             </MenuItem>
-            <MenuItem color="white" onClick={() => onAddChild(ComponentType.V2Section)}>
+            <MenuItem
+              color="white"
+              onClick={() => onAddChild(ComponentType.V2Section)}
+              isDisabled={(component.children?.length || 0) >= 10}
+            >
               Add Section
             </MenuItem>
           </MenuGroup>
@@ -258,6 +259,20 @@ export const AddComponentButton: React.FC<AddComponentButtonProps> = ({
               Add Divider
             </MenuItem>
           </MenuGroup>
+        )}
+        {component.type === ComponentType.V2Section && (
+          <>
+            <MenuDivider />
+            <MenuGroup title={`Accessory (${(component as any).accessory ? 1 : 0}/1)`}>
+              <MenuItem
+                color="white"
+                onClick={() => onAddChild(ComponentType.V2Button, true)}
+                isDisabled={!!(component as any).accessory}
+              >
+                Add Button Accessory
+              </MenuItem>
+            </MenuGroup>
+          </>
         )}
       </MenuList>
     </Menu>
