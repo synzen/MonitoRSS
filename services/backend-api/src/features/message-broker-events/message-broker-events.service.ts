@@ -513,6 +513,7 @@ export class MessageBrokerEventsService {
           components: castDiscordComponentRowsForMedium(
             con.details.componentRows
           ),
+          componentsV2: con.details.componentsV2,
           forumThreadTitle: con.details.forumThreadTitle,
           forumThreadTags: con.details.forumThreadTags,
           mentions: con.mentions,

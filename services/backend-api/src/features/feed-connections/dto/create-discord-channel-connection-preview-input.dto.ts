@@ -1,5 +1,6 @@
 import { Type } from "class-transformer";
 import {
+  ArrayMaxSize,
   IsArray,
   IsBoolean,
   IsNotEmpty,
@@ -19,6 +20,9 @@ import {
   CustomPlaceholderDto,
   ForumThreadTagDto,
   ExternalPropertyDto,
+  DiscordSectionV2Dto,
+  DiscordActionRowV2Dto,
+  DiscordComponentV2TypeOptions,
 } from "../../../common";
 import { DiscordComponentRow } from "../../../common/types/discord-component-row.type";
 import { DiscordPreviewEmbed } from "../../../common/types/discord-preview-embed.type";
@@ -126,4 +130,12 @@ export class CreateDiscordChannelConnectionPreviewInputDto {
   @IsOptional()
   @IsBoolean()
   includeCustomPlaceholderPreviews?: boolean;
+
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @ValidateIf((v) => v !== null)
+  @Type(() => DiscordSectionV2Dto, DiscordComponentV2TypeOptions)
+  componentsV2?: Array<DiscordSectionV2Dto | DiscordActionRowV2Dto> | null;
 }

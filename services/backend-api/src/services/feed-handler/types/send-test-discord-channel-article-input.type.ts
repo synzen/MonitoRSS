@@ -60,6 +60,7 @@ export interface SendTestDiscordChannelArticleInput {
       enablePlaceholderFallback?: DiscordChannelConnection["details"]["enablePlaceholderFallback"];
       customPlaceholders?: CustomPlaceholderDto[];
       components?: DiscordMediumEvent["details"]["components"];
+      componentsV2?: DiscordMediumEvent["details"]["componentsV2"];
     };
   };
 }

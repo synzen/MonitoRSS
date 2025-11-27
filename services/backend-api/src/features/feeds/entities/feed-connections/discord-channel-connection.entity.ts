@@ -3,6 +3,7 @@ import { Types, Schema as MongooseSchema } from "mongoose";
 import {
   FeedConnectionDisabledCode,
   FeedConnectionDiscordChannelType,
+  FeedConnectionDiscordComponentType,
   FeedConnectionMentionType,
 } from "../../constants";
 import { FeedEmbed, FeedEmbedSchema } from "../feed-embed.entity";
@@ -28,6 +29,13 @@ import {
   ForumThreadTag,
   ForumThreadTagSchema,
 } from "./forum-thread-tag.entity";
+import {
+  DiscordActionRowV2,
+  DiscordActionRowV2Schema,
+  DiscordComponentV2BaseSchema,
+  DiscordSectionV2,
+  DiscordSectionV2Schema,
+} from "./discord-components-v2.entity";
 
 @Schema({
   _id: false,
@@ -247,6 +255,17 @@ class Details {
     type: Boolean,
   })
   enablePlaceholderFallback?: boolean;
+
+  @Prop({
+    type: [DiscordComponentV2BaseSchema],
+    default: null,
+    validate: [
+      (arr: Array<DiscordSectionV2 | DiscordActionRowV2>) =>
+        !arr || arr.length <= 10,
+      "Cannot have more than 10 top-level V2 components",
+    ],
+  })
+  componentsV2?: Array<DiscordSectionV2 | DiscordActionRowV2> | null;
 }
 
 const DetailsSchema = SchemaFactory.createForClass(Details);
@@ -322,4 +341,18 @@ export class DiscordChannelConnection {
 
 export const DiscordChannelConnectionSchema = SchemaFactory.createForClass(
   DiscordChannelConnection
+);
+
+// In the module or after DetailsSchema is created
+DetailsSchema.path<MongooseSchema.Types.DocumentArray>(
+  "componentsV2"
+).discriminator(
+  FeedConnectionDiscordComponentType.Section,
+  DiscordSectionV2Schema
+);
+DetailsSchema.path<MongooseSchema.Types.DocumentArray>(
+  "componentsV2"
+).discriminator(
+  FeedConnectionDiscordComponentType.ActionRow,
+  DiscordActionRowV2Schema
 );

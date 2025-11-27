@@ -55,6 +55,7 @@ export interface CreateDiscordChannelPreviewInput {
         | null;
       enablePlaceholderFallback?: boolean;
       components?: DiscordMediumEvent["details"]["components"];
+      componentsV2?: DiscordMediumEvent["details"]["componentsV2"];
     };
   };
 }

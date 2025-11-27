@@ -19,3 +19,4 @@ export * from "./custom-rate-limit.type";
 export * from "./forum-thread-tag.type";
 export * from "./user-auth-details.type";
 export * from "./external-property.type";
+export * from "./discord-component-v2.type";

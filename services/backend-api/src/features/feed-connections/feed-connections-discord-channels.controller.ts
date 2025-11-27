@@ -240,6 +240,7 @@ export class FeedConnectionsDiscordChannelsController {
       includeCustomPlaceholderPreviews,
       channelNewThreadTitle,
       channelNewThreadExcludesPreview,
+      componentsV2,
     }: CreateDiscordChannelConnectionPreviewInputDto
   ): Promise<CreateDiscordChannelConnectionPreviewOutputDto> {
     const result = await this.service.createPreview({
@@ -260,6 +261,7 @@ export class FeedConnectionsDiscordChannelsController {
       externalProperties,
       channelNewThreadTitle,
       channelNewThreadExcludesPreview,
+      componentsV2,
     });
 
     return {
@@ -295,6 +297,7 @@ export class FeedConnectionsDiscordChannelsController {
       customPlaceholders,
       rateLimits,
       componentRows,
+      componentsV2,
       applicationWebhook,
       channelNewThreadTitle,
       threadCreationMethod,
@@ -378,6 +381,7 @@ export class FeedConnectionsDiscordChannelsController {
             channelNewThreadTitle,
             channelNewThreadExcludesPreview,
             componentRows,
+            componentsV2,
             channel:
               !useApplicationWebhook && useChannelId
                 ? {

@@ -87,6 +87,7 @@ export interface UpdateDiscordChannelConnectionInput {
       componentRows?:
         | DiscordChannelConnection["details"]["componentRows"]
         | null;
+      componentsV2?: DiscordChannelConnection["details"]["componentsV2"] | null;
       placeholderLimits?:
         | DiscordChannelConnection["details"]["placeholderLimits"]
         | null;
@@ -145,6 +146,7 @@ interface CreatePreviewInput {
   forumThreadTags?: DiscordChannelConnection["details"]["forumThreadTags"];
   enablePlaceholderFallback?: boolean;
   componentRows?: DiscordChannelConnection["details"]["componentRows"] | null;
+  componentsV2?: DiscordChannelConnection["details"]["componentsV2"] | null;
   includeCustomPlaceholderPreviews?: boolean;
   channelNewThreadTitle?: DiscordChannelConnection["details"]["channelNewThreadTitle"];
   channelNewThreadExcludesPreview?:
@@ -1074,6 +1076,8 @@ export class FeedConnectionsDiscordChannelsService {
         components: castDiscordComponentRowsForMedium(
           previewInput?.componentRows || connection.details.componentRows
         ),
+        componentsV2:
+          previewInput?.componentsV2 ?? connection.details.componentsV2,
         channelNewThreadTitle:
           previewInput?.channelNewThreadTitle ||
           connection.details.channelNewThreadTitle,
@@ -1102,6 +1106,7 @@ export class FeedConnectionsDiscordChannelsService {
     enablePlaceholderFallback,
     customPlaceholders,
     componentRows,
+    componentsV2,
     includeCustomPlaceholderPreviews,
     externalProperties,
     channelNewThreadTitle,
@@ -1182,6 +1187,7 @@ export class FeedConnectionsDiscordChannelsService {
         placeholderLimits,
         enablePlaceholderFallback: enablePlaceholderFallback,
         components: castDiscordComponentRowsForMedium(componentRows),
+        componentsV2: componentsV2 ?? undefined,
       },
     } as const;
 

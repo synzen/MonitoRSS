@@ -3,7 +3,7 @@ import { z } from "zod";
 import { CustomPlaceholderStepType, DiscordComponentType } from "../constants";
 
 const buttonSchema = z.object({
-  type: z.number().min(2).max(2),
+  type: z.literal(DiscordComponentType.Button),
   style: z.number().min(1).max(5),
   label: z.string().max(80),
   emoji: z
@@ -18,7 +18,7 @@ const buttonSchema = z.object({
 });
 
 const actionRowSchema = z.object({
-  type: z.literal(1),
+  type: z.literal(DiscordComponentType.ActionRow),
   components: z.array(buttonSchema),
 });
 
