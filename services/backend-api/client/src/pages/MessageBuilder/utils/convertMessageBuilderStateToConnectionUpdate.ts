@@ -2,6 +2,7 @@ import { UpdateDiscordChannelConnectionInput } from "../../../features/feedConne
 import { DiscordButtonStyle } from "../constants/DiscordButtonStyle";
 import {
   ComponentType,
+  DividerComponent,
   LegacyActionRowComponent,
   LegacyButtonComponent,
   LegacyMessageComponentRoot,
@@ -21,6 +22,7 @@ const V2_COMPONENT_TYPE = {
   Section: "SECTION",
   TextDisplay: "TEXT_DISPLAY",
   Thumbnail: "THUMBNAIL",
+  Separator: "SEPARATOR",
 } as const;
 
 const getButtonStyleNumber = (style: DiscordButtonStyle): number => {
@@ -83,6 +85,12 @@ const convertV2ActionRowToAPI = (actionRow: ActionRowComponent) => ({
   components: actionRow.children.map(convertV2ButtonToAPI),
 });
 
+const convertV2DividerToAPI = (divider: DividerComponent) => ({
+  type: V2_COMPONENT_TYPE.Separator,
+  divider: divider.visual !== false,
+  spacing: divider.spacing || 1,
+});
+
 const convertV2RootToConnectionUpdate = (
   component: V2MessageComponentRoot
 ): UpdateDiscordChannelConnectionInput["details"] => {
@@ -114,6 +122,8 @@ const convertV2RootToConnectionUpdate = (
       componentsV2.push(convertV2SectionToAPI(child as SectionComponent));
     } else if (child.type === ComponentType.V2ActionRow) {
       componentsV2.push(convertV2ActionRowToAPI(child as ActionRowComponent));
+    } else if (child.type === ComponentType.V2Divider) {
+      componentsV2.push(convertV2DividerToAPI(child as DividerComponent));
     }
   });
 

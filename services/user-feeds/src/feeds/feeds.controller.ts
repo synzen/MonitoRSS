@@ -103,10 +103,14 @@ export class FeedsController {
   validateDiscordPayload(
     @Body() payload: Record<string, unknown>
   ): ValidateDiscordPayloadOutputDto {
-    const result = discordMediumPayloadDetailsSchema.safeParse(payload.data);
+    const result = discordMediumPayloadDetailsSchema
+      .pick({
+        componentsV2: true,
+      })
+      .safeParse(payload.data);
 
     if (result.success) {
-      return { valid: true };
+      return { valid: true, data: result.data };
     }
 
     return {

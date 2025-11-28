@@ -20,6 +20,7 @@ import {
   SectionComponent,
   ActionRowComponent,
   ButtonComponent,
+  DividerComponent,
 } from "../types";
 import MessageBuilderFormState from "../types/MessageBuilderFormState";
 import { DiscordButtonStyle } from "../constants/DiscordButtonStyle";
@@ -221,6 +222,7 @@ const V2_COMPONENT_TYPE = {
   Section: "SECTION",
   TextDisplay: "TEXT_DISPLAY",
   Thumbnail: "THUMBNAIL",
+  Separator: "SEPARATOR",
 } as const;
 
 type V2ComponentFromAPI = NonNullable<
@@ -342,6 +344,22 @@ const createV2ActionRowComponent = (
   return actionRowComponent;
 };
 
+const createV2DividerComponent = (
+  divider: V2ComponentFromAPI,
+  parentId: string,
+  index: number
+): DividerComponent => {
+  return {
+    ...(createNewMessageBuilderComponent(
+      ComponentType.V2Divider,
+      parentId,
+      index
+    ) as DividerComponent),
+    visual: divider.divider !== false,
+    spacing: divider.spacing === 1 || divider.spacing === 2 ? divider.spacing : 1,
+  };
+};
+
 export const convertConnectionToMessageBuilderState = (
   connection: FeedDiscordChannelConnection | null | undefined
 ): MessageBuilderFormState => {
@@ -379,6 +397,10 @@ export const convertConnectionToMessageBuilderState = (
       } else if (component.type === V2_COMPONENT_TYPE.ActionRow) {
         v2RootComponent.children.push(
           createV2ActionRowComponent(component, v2RootComponent.id, index)
+        );
+      } else if (component.type === V2_COMPONENT_TYPE.Separator) {
+        v2RootComponent.children.push(
+          createV2DividerComponent(component, v2RootComponent.id, index)
         );
       }
     });

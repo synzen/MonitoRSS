@@ -74,6 +74,8 @@ const DiscordChannelConnectionDetailsSchema = object({
     object({
       type: string().required(),
       content: string().optional(),
+      divider: boolean().optional(),
+      spacing: number().optional(),
       components: array(
         object({
           type: string().required(),

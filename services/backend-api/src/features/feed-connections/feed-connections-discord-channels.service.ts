@@ -780,15 +780,24 @@ export class FeedConnectionsDiscordChannelsService {
     }
 
     if (updates.details?.componentsV2) {
-      const { valid, errors } =
+      const validationResult =
         await this.feedHandlerService.validateDiscordPayload({
           componentsV2: updates.details.componentsV2,
         });
 
-      if (!valid && errors?.length) {
+      if (!validationResult.valid) {
         throw new InvalidComponentsV2Exception(
-          errors.map((e) => new InvalidComponentsV2Exception(e.message, e.path))
+          validationResult.errors.map(
+            (e) => new InvalidComponentsV2Exception(e.message, e.path)
+          )
         );
+      }
+
+      // Use the parsed payload which strips unknown fields
+      if (validationResult.data.componentsV2) {
+        // @ts-ignore
+        setRecordDetails["connections.discordChannels.$.details.componentsV2"] =
+          validationResult.data.componentsV2;
       }
     }
 

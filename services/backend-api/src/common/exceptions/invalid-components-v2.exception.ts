@@ -8,7 +8,7 @@ export class InvalidComponentsV2Exception extends StandardException {
     path?: (string | number)[]
   ) {
     if (typeof messageOrSubErrors === "string") {
-      super(messageOrSubErrors);
+      super(`${path?.join(".")}: ${messageOrSubErrors}`.trim());
     } else if (Array.isArray(messageOrSubErrors)) {
       super("Invalid componentsV2 configuration", {
         subErrors: messageOrSubErrors,

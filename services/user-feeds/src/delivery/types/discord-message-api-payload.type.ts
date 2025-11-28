@@ -43,6 +43,7 @@ export interface DiscordThumbnailV2 {
 
 export interface DiscordButtonV2 {
   type: number;
+  custom_id: string;
   style: number;
   label?: string;
   emoji?: {
@@ -65,7 +66,16 @@ export interface DiscordActionRowV2 {
   components: DiscordButtonV2[];
 }
 
-export type DiscordMessageComponentV2 = DiscordSectionV2 | DiscordActionRowV2;
+export interface DiscordSeparatorV2 {
+  type: number;
+  divider?: boolean;
+  spacing?: number;
+}
+
+export type DiscordMessageComponentV2 =
+  | DiscordSectionV2
+  | DiscordActionRowV2
+  | DiscordSeparatorV2;
 
 // ============================================================================
 // Embed Types

@@ -158,6 +158,11 @@ export class UserFeedsService {
                 channelId: con.details.webhook.channelId,
               }
             : undefined,
+          componentRows:
+            con.details.componentRows?.map((r) => ({
+              ...r,
+              components: r.components || [],
+            })) || [],
         },
         filters: con.filters,
         rateLimits: con.rateLimits,

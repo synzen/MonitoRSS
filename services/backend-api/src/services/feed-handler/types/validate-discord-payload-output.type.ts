@@ -1,7 +1,12 @@
-export interface ValidateDiscordPayloadOutput {
-  valid: boolean;
-  errors?: Array<{
-    path: (string | number)[];
-    message: string;
-  }>;
-}
+export type ValidateDiscordPayloadOutput =
+  | {
+      valid: true;
+      data: Record<string, unknown>;
+    }
+  | {
+      valid: false;
+      errors: Array<{
+        path: (string | number)[];
+        message: string;
+      }>;
+    };

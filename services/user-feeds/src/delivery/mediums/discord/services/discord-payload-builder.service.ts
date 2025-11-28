@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { randomUUID } from "crypto";
 import dayjs from "dayjs";
 import {
   Article,
@@ -7,6 +8,7 @@ import {
   ButtonV2,
   SectionV2,
   ActionRowV2,
+  SeparatorV2,
 } from "../../../../shared";
 import { ArticleFormatterService } from "../../../../article-formatter/article-formatter.service";
 import { ArticleFiltersService } from "../../../../article-filters/article-filters.service";
@@ -20,6 +22,7 @@ import {
   DiscordMessageComponentV2,
   DiscordSectionV2,
   DiscordActionRowV2,
+  DiscordSeparatorV2,
   DISCORD_COMPONENTS_V2_FLAG,
 } from "../../../types";
 import { replaceTemplateString } from "../../../../articles/utils/replace-template-string";
@@ -313,6 +316,7 @@ export class DiscordPayloadBuilderService {
       .slice(0, 10);
 
     // V2 components take precedence over V1 - they cannot be mixed
+    // V2 components also cannot have content field set
     if (componentsV2 && componentsV2.length > 0 && payloads.length > 0) {
       const lastPayload = payloads[payloads.length - 1];
       lastPayload.flags = DISCORD_COMPONENTS_V2_FLAG;
@@ -321,6 +325,7 @@ export class DiscordPayloadBuilderService {
         componentsV2,
         replacePlaceholderStringArgs
       );
+      delete lastPayload.content;
     } else if (components && payloads.length > 0) {
       payloads[payloads.length - 1].components = components.map(
         ({ type, components: nestedComponents }) => ({
@@ -509,6 +514,10 @@ export class DiscordPayloadBuilderService {
         );
       }
 
+      if (component.type === DiscordComponentType.SeparatorV2) {
+        return this.buildSeparatorV2(component);
+      }
+
       // Section component
       return this.buildSectionV2(article, component, replacePlaceholderOptions);
     });
@@ -565,6 +574,17 @@ export class DiscordPayloadBuilderService {
   }
 
   /**
+   * Builds a V2 Separator component.
+   */
+  private buildSeparatorV2(separator: SeparatorV2): DiscordSeparatorV2 {
+    return {
+      type: DISCORD_COMPONENT_TYPE_TO_NUMBER[DiscordComponentType.SeparatorV2],
+      divider: separator.divider,
+      spacing: separator.spacing,
+    };
+  }
+
+  /**
    * Builds a V2 Button component.
    */
   private buildButtonV2(
@@ -574,6 +594,7 @@ export class DiscordPayloadBuilderService {
   ) {
     return {
       type: DISCORD_COMPONENT_TYPE_TO_NUMBER[DiscordComponentType.ButtonV2],
+      custom_id: randomUUID(),
       style: button.style,
       label: button.label
         ? this.replacePlaceholdersInString(
@@ -624,6 +645,7 @@ export class DiscordPayloadBuilderService {
     // Button accessory
     return {
       type: DISCORD_COMPONENT_TYPE_TO_NUMBER[DiscordComponentType.ButtonV2],
+      custom_id: randomUUID(),
       style: accessory.style,
       label: accessory.label
         ? this.replacePlaceholdersInString(

@@ -99,11 +99,22 @@ const actionRowSchemaV2 = z.object({
     .max(5, "Action row cannot have more than 5 buttons"),
 });
 
+const separatorSchemaV2 = z.object({
+  type: z.literal("SEPARATOR"),
+  divider: z.boolean().optional().default(true),
+  spacing: z
+    .number()
+    .min(1, "Spacing must be 1 or 2")
+    .max(2, "Spacing must be 1 or 2")
+    .optional()
+    .default(1),
+});
+
 export const componentV2Schema = z.discriminatedUnion(
   "type",
-  [sectionSchemaV2, actionRowSchemaV2],
+  [sectionSchemaV2, actionRowSchemaV2, separatorSchemaV2],
   {
-    errorMap: () => ({ message: "Component must be a Section or Action Row" }),
+    errorMap: () => ({ message: "Component must be a Section, Action Row, or Separator" }),
   }
 );
 
@@ -325,4 +336,5 @@ export type DiscordMediumPayloadDetails = z.infer<
 export type ButtonV2 = z.infer<typeof buttonSchemaV2>;
 export type SectionV2 = z.infer<typeof sectionSchemaV2>;
 export type ActionRowV2 = z.infer<typeof actionRowSchemaV2>;
+export type SeparatorV2 = z.infer<typeof separatorSchemaV2>;
 export type ComponentV2 = z.infer<typeof componentV2Schema>;

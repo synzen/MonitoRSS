@@ -9,6 +9,7 @@ export enum DiscordComponentType {
   Thumbnail = "THUMBNAIL",
   ActionRowV2 = "ACTION_ROW",
   ButtonV2 = "BUTTON",
+  SeparatorV2 = "SEPARATOR",
 }
 
 // Mapping from string enum values to Discord API numeric values
@@ -18,4 +19,5 @@ export const DISCORD_COMPONENT_TYPE_TO_NUMBER: Record<string, number> = {
   [DiscordComponentType.Thumbnail]: 11,
   [DiscordComponentType.ActionRowV2]: 1,
   [DiscordComponentType.ButtonV2]: 2,
+  [DiscordComponentType.SeparatorV2]: 14,
 };

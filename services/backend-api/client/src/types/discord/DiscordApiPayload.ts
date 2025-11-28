@@ -1,4 +1,4 @@
-import { array, boolean, number, object, string } from "yup";
+import { array, boolean, InferType, number, object, string } from "yup";
 
 const DiscordEmbedFooterSchema = object({
   text: string().required(),
@@ -38,22 +38,43 @@ const DiscordEmbedSchema = object({
   timestamp: string().optional().nullable().default(undefined),
 });
 
-const DiscordButtonSchema = object({
+const DiscordComponentSchema = object({
   type: number().required(),
-  label: string().required("This is a required field"),
-  style: number().required(),
-  url: string(),
+  components: array(
+    object({
+      type: number().required(),
+      style: number().optional(),
+      label: string().optional(),
+      url: string().optional().nullable(),
+      disabled: boolean().optional(),
+      content: string().optional(),
+    })
+  ).optional(),
+  accessory: object({
+    type: number().required(),
+    style: number().optional(),
+    label: string().optional(),
+    url: string().optional().nullable(),
+    disabled: boolean().optional(),
+    media: object({
+      url: string().required(),
+    }).optional(),
+  })
+    .optional()
+    .nullable(),
+  // Separator/Divider properties
+  divider: boolean().optional(),
+  spacing: number().optional(),
 });
 
 export const DiscordMessageApiPayloadSchema = object({
   content: string().optional().default(undefined),
   embeds: array(DiscordEmbedSchema).optional().default(undefined),
-  components: array(
-    object({
-      type: number().required(),
-      components: array(DiscordButtonSchema.required()).required().max(5),
-    }).required()
-  )
-    .max(5)
-    .nullable(),
+  components: array(DiscordComponentSchema).max(5).nullable().optional(),
+  flags: number().optional().nullable(),
 });
+
+export type DiscordMessageApiPayload = InferType<typeof DiscordMessageApiPayloadSchema>;
+export type DiscordApiComponent = InferType<typeof DiscordComponentSchema>;
+export type DiscordApiComponentChild = NonNullable<DiscordApiComponent["components"]>[number];
+export type DiscordApiAccessory = NonNullable<DiscordApiComponent["accessory"]>;

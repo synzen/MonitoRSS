@@ -4,5 +4,5 @@ export interface ValidationError {
 }
 
 export type ValidateDiscordPayloadOutputDto =
-  | { valid: true }
+  | { valid: true; data: Record<string, unknown> }
   | { valid: false; errors: ValidationError[] };
