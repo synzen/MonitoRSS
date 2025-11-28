@@ -214,13 +214,13 @@ const createLegacyEmbedComponent = (
   return embedComponent;
 };
 
-// V2 Component Type Constants (matching backend Discord API values)
+// V2 Component Type Constants (string enums matching backend)
 const V2_COMPONENT_TYPE = {
-  ActionRow: 1,
-  Button: 2,
-  Section: 9,
-  TextDisplay: 10,
-  Thumbnail: 11,
+  ActionRow: "ACTION_ROW",
+  Button: "BUTTON",
+  Section: "SECTION",
+  TextDisplay: "TEXT_DISPLAY",
+  Thumbnail: "THUMBNAIL",
 } as const;
 
 type V2ComponentFromAPI = NonNullable<
@@ -263,7 +263,7 @@ const createV2ButtonComponent = (
 };
 
 const createV2TextDisplayComponent = (
-  textDisplay: { type: number; content?: string },
+  textDisplay: { type: string; content?: string },
   parentId: string,
   index: number
 ): TextDisplayComponent => {

@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import {
   Article,
   DiscordComponentType,
+  DISCORD_COMPONENT_TYPE_TO_NUMBER,
   ButtonV2,
   SectionV2,
   ActionRowV2,
@@ -500,7 +501,7 @@ export class DiscordPayloadBuilderService {
     replacePlaceholderOptions: ReplacePlaceholdersOptions
   ): DiscordMessageComponentV2[] {
     return componentsV2.map((component) => {
-      if (component.type === DiscordComponentType.ActionRow) {
+      if (component.type === DiscordComponentType.ActionRowV2) {
         return this.buildActionRowV2(
           article,
           component,
@@ -523,7 +524,7 @@ export class DiscordPayloadBuilderService {
   ): DiscordSectionV2 {
     // Process text display components with placeholder replacement
     const textDisplays = section.components.map((textDisplay) => ({
-      type: DiscordComponentType.TextDisplay as const,
+      type: DISCORD_COMPONENT_TYPE_TO_NUMBER[DiscordComponentType.TextDisplay],
       content: this.replacePlaceholdersInString(
         article,
         textDisplay.content,
@@ -539,7 +540,7 @@ export class DiscordPayloadBuilderService {
     );
 
     return {
-      type: DiscordComponentType.Section as const,
+      type: DISCORD_COMPONENT_TYPE_TO_NUMBER[DiscordComponentType.Section],
       components: textDisplays,
       accessory,
     };
@@ -558,7 +559,7 @@ export class DiscordPayloadBuilderService {
     );
 
     return {
-      type: DiscordComponentType.ActionRow as const,
+      type: DISCORD_COMPONENT_TYPE_TO_NUMBER[DiscordComponentType.ActionRowV2],
       components: buttons,
     };
   }
@@ -572,7 +573,7 @@ export class DiscordPayloadBuilderService {
     replacePlaceholderOptions: ReplacePlaceholdersOptions
   ) {
     return {
-      type: DiscordComponentType.Button as const,
+      type: DISCORD_COMPONENT_TYPE_TO_NUMBER[DiscordComponentType.ButtonV2],
       style: button.style,
       label: button.label
         ? this.replacePlaceholdersInString(
@@ -602,7 +603,7 @@ export class DiscordPayloadBuilderService {
   ): DiscordSectionV2["accessory"] {
     if (accessory.type === DiscordComponentType.Thumbnail) {
       return {
-        type: DiscordComponentType.Thumbnail as const,
+        type: DISCORD_COMPONENT_TYPE_TO_NUMBER[DiscordComponentType.Thumbnail],
         media: {
           url: this.replacePlaceholdersInString(article, accessory.media.url, {
             ...replacePlaceholderOptions,
@@ -622,7 +623,7 @@ export class DiscordPayloadBuilderService {
 
     // Button accessory
     return {
-      type: DiscordComponentType.Button as const,
+      type: DISCORD_COMPONENT_TYPE_TO_NUMBER[DiscordComponentType.ButtonV2],
       style: accessory.style,
       label: accessory.label
         ? this.replacePlaceholdersInString(

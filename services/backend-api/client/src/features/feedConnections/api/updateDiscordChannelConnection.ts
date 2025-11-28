@@ -19,10 +19,10 @@ export interface UpdateDiscordChannelConnectionInput {
       }>;
     }> | null;
     componentsV2?: Array<{
-      type: number;
+      type: string;
       content?: string;
       components?: Array<{
-        type: number;
+        type: string;
         content?: string;
         style?: number;
         label?: string;
@@ -30,7 +30,7 @@ export interface UpdateDiscordChannelConnectionInput {
         disabled?: boolean;
       }>;
       accessory?: {
-        type: number;
+        type: string;
         style?: number;
         label?: string;
         url?: string | null;

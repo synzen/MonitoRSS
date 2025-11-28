@@ -72,11 +72,11 @@ const DiscordChannelConnectionDetailsSchema = object({
   ).max(5),
   componentsV2: array(
     object({
-      type: number().required(),
+      type: string().required(),
       content: string().optional(),
       components: array(
         object({
-          type: number().required(),
+          type: string().required(),
           content: string().optional(),
           style: number().optional(),
           label: string().optional(),
@@ -85,7 +85,7 @@ const DiscordChannelConnectionDetailsSchema = object({
         })
       ).optional(),
       accessory: object({
-        type: number().required(),
+        type: string().required(),
         style: number().optional(),
         label: string().optional(),
         url: string().optional().nullable(),

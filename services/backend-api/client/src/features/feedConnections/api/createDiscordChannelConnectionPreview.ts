@@ -67,10 +67,10 @@ export interface CreateDiscordChannelConnectionPreviewInput {
     channelNewThreadExcludesPreview?: boolean | null;
     channelNewThreadTitle?: string | null;
     componentsV2?: Array<{
-      type: number;
+      type: string;
       content?: string;
       components?: Array<{
-        type: number;
+        type: string;
         content?: string;
         style?: number;
         label?: string;
@@ -78,7 +78,7 @@ export interface CreateDiscordChannelConnectionPreviewInput {
         disabled?: boolean;
       }>;
       accessory?: {
-        type: number;
+        type: string;
         style?: number;
         label?: string;
         url?: string | null;

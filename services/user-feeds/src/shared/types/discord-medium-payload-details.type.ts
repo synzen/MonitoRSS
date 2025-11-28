@@ -33,7 +33,7 @@ const emojiSchemaV2 = z.object({
 });
 
 const textDisplaySchemaV2 = z.object({
-  type: z.literal(DiscordComponentType.TextDisplay),
+  type: z.literal("TEXT_DISPLAY"),
   content: z
     .string({
       required_error: "Text display content is required",
@@ -43,7 +43,7 @@ const textDisplaySchemaV2 = z.object({
 });
 
 const thumbnailSchemaV2 = z.object({
-  type: z.literal(DiscordComponentType.Thumbnail),
+  type: z.literal("THUMBNAIL"),
   media: z.object({
     url: z.string({
       required_error: "Thumbnail URL is required",
@@ -59,7 +59,7 @@ const thumbnailSchemaV2 = z.object({
 });
 
 const buttonSchemaV2 = z.object({
-  type: z.literal(DiscordComponentType.Button),
+  type: z.literal("BUTTON"),
   style: z
     .number({
       required_error: "Button style is required",
@@ -81,7 +81,7 @@ const buttonSchemaV2 = z.object({
 });
 
 const sectionSchemaV2 = z.object({
-  type: z.literal(DiscordComponentType.Section),
+  type: z.literal("SECTION"),
   components: z
     .array(textDisplaySchemaV2)
     .min(1, "Section must have at least 1 text display")
@@ -92,7 +92,7 @@ const sectionSchemaV2 = z.object({
 });
 
 const actionRowSchemaV2 = z.object({
-  type: z.literal(DiscordComponentType.ActionRow),
+  type: z.literal("ACTION_ROW"),
   components: z
     .array(buttonSchemaV2)
     .min(1, "Action row must have at least 1 button")

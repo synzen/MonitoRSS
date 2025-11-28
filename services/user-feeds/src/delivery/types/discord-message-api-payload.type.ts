@@ -1,5 +1,3 @@
-import { DiscordComponentType } from "../../shared/constants";
-
 // V2 Components Flag
 export const DISCORD_COMPONENTS_V2_FLAG = 1 << 15; // 32768
 
@@ -30,12 +28,12 @@ export interface DiscordMessageComponent {
 // ============================================================================
 
 export interface DiscordTextDisplayV2 {
-  type: DiscordComponentType.TextDisplay;
+  type: number;
   content: string;
 }
 
 export interface DiscordThumbnailV2 {
-  type: DiscordComponentType.Thumbnail;
+  type: number;
   media: {
     url: string;
   };
@@ -44,7 +42,7 @@ export interface DiscordThumbnailV2 {
 }
 
 export interface DiscordButtonV2 {
-  type: DiscordComponentType.Button;
+  type: number;
   style: number;
   label?: string;
   emoji?: {
@@ -57,13 +55,13 @@ export interface DiscordButtonV2 {
 }
 
 export interface DiscordSectionV2 {
-  type: DiscordComponentType.Section;
+  type: number;
   components: DiscordTextDisplayV2[];
   accessory: DiscordButtonV2 | DiscordThumbnailV2;
 }
 
 export interface DiscordActionRowV2 {
-  type: DiscordComponentType.ActionRow;
+  type: number;
   components: DiscordButtonV2[];
 }
 

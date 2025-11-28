@@ -14,13 +14,13 @@ import {
   V2MessageComponentRoot,
 } from "../types";
 
-// V2 Component Type Constants (matching backend Discord API values)
+// V2 Component Type Constants (string enums matching backend)
 const V2_COMPONENT_TYPE = {
-  ActionRow: 1,
-  Button: 2,
-  Section: 9,
-  TextDisplay: 10,
-  Thumbnail: 11,
+  ActionRow: "ACTION_ROW",
+  Button: "BUTTON",
+  Section: "SECTION",
+  TextDisplay: "TEXT_DISPLAY",
+  Thumbnail: "THUMBNAIL",
 } as const;
 
 const getButtonStyleNumber = (style: DiscordButtonStyle): number => {
@@ -55,10 +55,10 @@ const convertV2TextDisplayToAPI = (textDisplay: TextDisplayComponent) => ({
 
 const convertV2SectionToAPI = (section: SectionComponent) => {
   const result: {
-    type: number;
-    components: Array<{ type: number; content: string }>;
+    type: string;
+    components: Array<{ type: string; content: string }>;
     accessory?: {
-      type: number;
+      type: string;
       style?: number;
       label?: string;
       url?: string | null;
