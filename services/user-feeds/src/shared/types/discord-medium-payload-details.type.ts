@@ -91,6 +91,29 @@ const separatorSchemaV2 = z.object({
     .default(1),
 });
 
+const mediaGalleryItemSchemaV2 = z.object({
+  media: z.object({
+    url: z.string({
+      required_error: "Media Gallery item URL is required",
+      invalid_type_error: "Media Gallery item URL must be a string",
+    }),
+  }),
+  description: z
+    .string()
+    .max(1024, "Media Gallery item description cannot exceed 1024 characters")
+    .optional()
+    .nullable(),
+  spoiler: z.boolean().optional().default(false),
+});
+
+const mediaGallerySchemaV2 = z.object({
+  type: z.literal("MEDIA_GALLERY"),
+  items: z
+    .array(mediaGalleryItemSchemaV2)
+    .min(1, "Media Gallery must have at least 1 item")
+    .max(10, "Media Gallery cannot have more than 10 items"),
+});
+
 const sectionSchemaV2 = z.object({
   type: z.literal("SECTION"),
   components: z
@@ -113,11 +136,17 @@ const actionRowSchemaV2 = z.object({
 // Container child components schema
 const containerChildSchemaV2 = z.discriminatedUnion(
   "type",
-  [separatorSchemaV2, actionRowSchemaV2, sectionSchemaV2, textDisplaySchemaV2],
+  [
+    separatorSchemaV2,
+    actionRowSchemaV2,
+    sectionSchemaV2,
+    textDisplaySchemaV2,
+    mediaGallerySchemaV2,
+  ],
   {
     errorMap: () => ({
       message:
-        "Container child must be a Separator, Action Row, Section, or Text Display",
+        "Container child must be a Separator, Action Row, Section, Text Display, or Media Gallery",
     }),
   }
 );
@@ -366,5 +395,7 @@ export type TextDisplayV2 = z.infer<typeof textDisplaySchemaV2>;
 export type SectionV2 = z.infer<typeof sectionSchemaV2>;
 export type ActionRowV2 = z.infer<typeof actionRowSchemaV2>;
 export type SeparatorV2 = z.infer<typeof separatorSchemaV2>;
+export type MediaGalleryV2 = z.infer<typeof mediaGallerySchemaV2>;
+export type MediaGalleryItemV2 = z.infer<typeof mediaGalleryItemSchemaV2>;
 export type ContainerV2 = z.infer<typeof containerSchemaV2>;
 export type ComponentV2 = z.infer<typeof componentV2Schema>;

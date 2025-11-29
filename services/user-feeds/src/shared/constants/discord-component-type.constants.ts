@@ -11,6 +11,7 @@ export enum DiscordComponentType {
   ButtonV2 = "BUTTON",
   SeparatorV2 = "SEPARATOR",
   ContainerV2 = "CONTAINER",
+  MediaGalleryV2 = "MEDIA_GALLERY",
 }
 
 // Mapping from string enum values to Discord API numeric values
@@ -22,4 +23,5 @@ export const DISCORD_COMPONENT_TYPE_TO_NUMBER: Record<string, number> = {
   [DiscordComponentType.ButtonV2]: 2,
   [DiscordComponentType.SeparatorV2]: 14,
   [DiscordComponentType.ContainerV2]: 17,
+  [DiscordComponentType.MediaGalleryV2]: 12,
 };

@@ -6,6 +6,8 @@ import {
   ComponentType,
   ContainerComponent,
   DividerComponent,
+  MediaGalleryComponent,
+  MediaGalleryItemComponent,
   LegacyActionRowComponent,
   LegacyButtonComponent,
   LegacyEmbedAuthorComponent,
@@ -176,6 +178,19 @@ const createNewMessageBuilderComponent = (
         spoiler: false,
         children: [],
       } as ContainerComponent;
+    case ComponentType.V2MediaGallery:
+      return {
+        ...base,
+        children: [],
+      } as MediaGalleryComponent;
+    case ComponentType.V2MediaGalleryItem:
+      return {
+        ...base,
+        mediaUrl: "",
+        description: "",
+        spoiler: false,
+        children: [],
+      } as MediaGalleryItemComponent;
     default:
       throw new Error(`Unknown child type: ${type}`);
   }

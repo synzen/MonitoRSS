@@ -51,11 +51,12 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
     component.type === ComponentType.V2Root ||
     component.type === ComponentType.V2ActionRow ||
     component.type === ComponentType.V2Section ||
-    component.type === ComponentType.V2Container;
+    component.type === ComponentType.V2Container ||
+    component.type === ComponentType.V2MediaGallery;
   const { isFocused, isExpanded, isSelected } = useNavigableTreeItemContext();
 
-  const handleAddChild = (childType: ComponentType, isAccessory?: boolean) => {
-    const added = addChildComponent(component.id, childType as any, isAccessory);
+  const handleAddChild = (childType: ComponentType, asAccessory?: boolean) => {
+    const added = addChildComponent(component.id, childType as any, asAccessory);
 
     if (added) {
       notifyInfo(

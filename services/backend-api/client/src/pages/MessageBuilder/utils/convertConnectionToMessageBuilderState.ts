@@ -23,6 +23,8 @@ import {
   DividerComponent,
   ThumbnailComponent,
   ContainerComponent,
+  MediaGalleryComponent,
+  MediaGalleryItemComponent,
 } from "../types";
 import MessageBuilderFormState from "../types/MessageBuilderFormState";
 import { DiscordButtonStyle } from "../constants/DiscordButtonStyle";
@@ -226,6 +228,7 @@ const V2_COMPONENT_TYPE = {
   Thumbnail: "THUMBNAIL",
   Separator: "SEPARATOR",
   Container: "CONTAINER",
+  MediaGallery: "MEDIA_GALLERY",
 } as const;
 
 type V2ComponentFromAPI = NonNullable<
@@ -386,6 +389,40 @@ const createV2DividerComponent = (
   };
 };
 
+const createV2MediaGalleryComponent = (
+  mediaGallery: V2ComponentFromAPI,
+  parentId: string,
+  index: number
+): MediaGalleryComponent => {
+  const galleryId = `${parentId}-${ComponentType.V2MediaGallery}-${index}`;
+
+  const children: MediaGalleryItemComponent[] =
+    (mediaGallery as any).items?.map(
+      (
+        item: { media: { url: string }; description?: string; spoiler?: boolean },
+        itemIndex: number
+      ): MediaGalleryItemComponent => ({
+        ...(createNewMessageBuilderComponent(
+          ComponentType.V2MediaGalleryItem,
+          galleryId,
+          itemIndex
+        ) as MediaGalleryItemComponent),
+        mediaUrl: item.media?.url || "",
+        description: item.description || undefined,
+        spoiler: item.spoiler || false,
+      })
+    ) || [];
+
+  return {
+    ...(createNewMessageBuilderComponent(
+      ComponentType.V2MediaGallery,
+      parentId,
+      index
+    ) as MediaGalleryComponent),
+    children,
+  };
+};
+
 const createV2ContainerComponent = (
   container: V2ComponentFromAPI,
   parentId: string,
@@ -402,7 +439,7 @@ const createV2ContainerComponent = (
     children: [],
   };
 
-  // Add child components (separators, action rows, sections, text displays)
+  // Add child components (separators, action rows, sections, text displays, media galleries)
   if (container.components && container.components.length > 0) {
     container.components.forEach((comp: V2ComponentFromAPI, compIndex: number) => {
       if (comp.type === V2_COMPONENT_TYPE.Separator) {
@@ -420,6 +457,10 @@ const createV2ContainerComponent = (
       } else if (comp.type === V2_COMPONENT_TYPE.TextDisplay) {
         containerComponent.children.push(
           createV2TextDisplayComponent(comp, containerComponent.id, compIndex)
+        );
+      } else if (comp.type === V2_COMPONENT_TYPE.MediaGallery) {
+        containerComponent.children.push(
+          createV2MediaGalleryComponent(comp, containerComponent.id, compIndex)
         );
       }
     });

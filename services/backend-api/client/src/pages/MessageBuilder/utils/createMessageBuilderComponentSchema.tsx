@@ -242,6 +242,24 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
           accentColor: yup.number().nullable(),
           spoiler: yup.boolean(),
         });
+      case ComponentType.V2MediaGallery:
+        return baseSchema.shape({
+          children: yup
+            .array()
+            .of(createMessageBuilderComponentSchema())
+            .min(1, "Expected Media Gallery to have at least 1 item")
+            .max(10, "Expected Media Gallery to have at most 10 items")
+            .required("Expected Media Gallery to have at least 1 item"),
+        });
+      case ComponentType.V2MediaGalleryItem:
+        return baseSchema.shape({
+          mediaUrl: yup
+            .string()
+            .required("Expected non-empty media URL")
+            .max(2048, "Expected media URL to have at most 2048 characters"),
+          description: yup.string().max(256, "Expected description to have at most 256 characters"),
+          spoiler: yup.boolean(),
+        });
       default:
         return baseSchema;
     }

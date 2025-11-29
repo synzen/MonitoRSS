@@ -12,6 +12,7 @@ import {
   Highlight,
   Divider,
   Image,
+  SimpleGrid,
 } from "@chakra-ui/react";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
 import { useFormContext } from "react-hook-form";
@@ -38,6 +39,7 @@ const DISCORD_V2_COMPONENT_TYPE = {
   Section: 9,
   TextDisplay: 10,
   Thumbnail: 11,
+  MediaGallery: 12,
   Separator: 14,
   Container: 17,
 } as const;
@@ -301,6 +303,75 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
         <Text key={`textdisplay-${index}`} fontSize="sm">
           {(comp as any).content || "[missing text]"}
         </Text>
+      );
+    }
+
+    if (type === DISCORD_V2_COMPONENT_TYPE.MediaGallery) {
+      const items = (comp as any).items || [];
+      const itemCount = items.length;
+
+      // Calculate columns: 1 for 1 item, 2 for 2-4 items, 3 for 5+ items
+      const getColumns = () => {
+        if (itemCount === 1) return 1;
+        if (itemCount <= 4) return 2;
+
+        return 3;
+      };
+
+      return (
+        <SimpleGrid key={`mediagallery-${index}`} columns={getColumns()} spacing={2}>
+          {items.map((item: any, i: number) => (
+            <Box
+              key={`gallery-item-${item.media?.url || i}`}
+              position="relative"
+              borderRadius="md"
+              overflow="hidden"
+              bg="gray.800"
+            >
+              {item.spoiler && (
+                <Box
+                  position="absolute"
+                  top={0}
+                  left={0}
+                  right={0}
+                  bottom={0}
+                  bg="blackAlpha.800"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  fontSize="xs"
+                  color="gray.300"
+                  zIndex={1}
+                >
+                  SPOILER
+                </Box>
+              )}
+              <Image
+                src={item.media?.url || ""}
+                alt={item.description || "Gallery image"}
+                objectFit="cover"
+                width="100%"
+                height="auto"
+                minHeight="60px"
+                maxHeight="200px"
+                fallback={
+                  <Box
+                    width="100%"
+                    height="80px"
+                    bg="gray.700"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    fontSize="xs"
+                    color="gray.500"
+                  >
+                    {item.media?.url ? "Loading..." : "No image"}
+                  </Box>
+                }
+              />
+            </Box>
+          ))}
+        </SimpleGrid>
       );
     }
 

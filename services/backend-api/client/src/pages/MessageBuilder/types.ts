@@ -23,6 +23,8 @@ export enum ComponentType {
   V2Divider = "Divider",
   V2Thumbnail = "Thumbnail",
   V2Container = "Container",
+  V2MediaGallery = "Media Gallery",
+  V2MediaGalleryItem = "Media Gallery Item",
 }
 
 export const ROOT_COMPONENT_TYPES = [ComponentType.LegacyRoot, ComponentType.V2Root];
@@ -150,11 +152,29 @@ export interface DividerComponent {
   children: [];
 }
 
+export interface MediaGalleryItemComponent {
+  type: ComponentType.V2MediaGalleryItem;
+  id: string;
+  name: string;
+  mediaUrl: string;
+  description?: string;
+  spoiler?: boolean;
+  children: [];
+}
+
+export interface MediaGalleryComponent {
+  type: ComponentType.V2MediaGallery;
+  id: string;
+  name: string;
+  children: MediaGalleryItemComponent[];
+}
+
 export type ContainerChildComponent =
   | DividerComponent
   | ActionRowComponent
   | SectionComponent
-  | TextDisplayComponent;
+  | TextDisplayComponent
+  | MediaGalleryComponent;
 
 export interface ContainerComponent {
   type: ComponentType.V2Container;
@@ -258,6 +278,8 @@ export type Component =
   | SectionComponent
   | DividerComponent
   | ContainerComponent
+  | MediaGalleryComponent
+  | MediaGalleryItemComponent
   | LegacyTextComponent
   | LegacyEmbedContainerComponent
   | LegacyEmbedComponent

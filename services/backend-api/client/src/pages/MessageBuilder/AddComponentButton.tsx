@@ -270,6 +270,13 @@ export const AddComponentButton: React.FC<AddComponentButtonProps> = ({
             </MenuItem>
             <MenuItem
               color="white"
+              onClick={() => onAddChild(ComponentType.V2MediaGallery)}
+              isDisabled={(component.children?.length || 0) >= 10}
+            >
+              Add Media Gallery
+            </MenuItem>
+            <MenuItem
+              color="white"
               onClick={() => onAddChild(ComponentType.V2Divider)}
               isDisabled={(component.children?.length || 0) >= 10}
             >
@@ -285,6 +292,17 @@ export const AddComponentButton: React.FC<AddComponentButtonProps> = ({
               isDisabled={(component.children?.length || 0) >= 5}
             >
               Add Button
+            </MenuItem>
+          </MenuGroup>
+        )}
+        {component.type === ComponentType.V2MediaGallery && (
+          <MenuGroup title={`Gallery Items (${component.children?.length || 0}/10)`}>
+            <MenuItem
+              color="white"
+              onClick={() => onAddChild(ComponentType.V2MediaGalleryItem)}
+              isDisabled={(component.children?.length || 0) >= 10}
+            >
+              Add Gallery Item
             </MenuItem>
           </MenuGroup>
         )}

@@ -763,6 +763,65 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
       );
     }
 
+    if (component.type === ComponentType.V2MediaGallery) {
+      // Media Gallery has no properties - items are added as children
+      return (
+        <VStack align="stretch" spacing={6}>
+          <Text fontSize="sm" color="gray.400">
+            Add gallery items as children using the + button in the component tree. Each item can
+            display an image with an optional description.
+          </Text>
+        </VStack>
+      );
+    }
+
+    if (component.type === ComponentType.V2MediaGalleryItem) {
+      const [mediaUrlError, descriptionError] = getMessageBuilderFieldErrors(
+        formState.errors,
+        messageComponent,
+        component.id,
+        ["mediaUrl", "description"]
+      );
+
+      return (
+        <VStack align="stretch" spacing={6}>
+          <InputWithInsertPlaceholder
+            value={(component as any).mediaUrl || ""}
+            onChange={(value) => onChange({ ...component, mediaUrl: value })}
+            label="Media URL"
+            placeholder="https://example.com/image.png"
+            error={mediaUrlError?.message}
+            isInvalid={!!mediaUrlError}
+            as="input"
+            isRequired
+          />
+          <InputWithInsertPlaceholder
+            value={(component as any).description || ""}
+            onChange={(value) => onChange({ ...component, description: value })}
+            label="Description"
+            placeholder="Optional image description"
+            error={descriptionError?.message}
+            isInvalid={!!descriptionError}
+            as="input"
+          />
+          <FormControl>
+            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+              Spoiler
+            </FormLabel>
+            <Checkbox
+              isChecked={(component as any).spoiler ?? false}
+              onChange={(e) => onChange({ ...component, spoiler: e.target.checked })}
+              colorScheme="blue"
+            >
+              <Text fontSize="sm" color="gray.300">
+                Blur image until clicked
+              </Text>
+            </Checkbox>
+          </FormControl>
+        </VStack>
+      );
+    }
+
     if (component.type === ComponentType.LegacyButton) {
       const [labelError, urlError] = getMessageBuilderFieldErrors(
         formState.errors,

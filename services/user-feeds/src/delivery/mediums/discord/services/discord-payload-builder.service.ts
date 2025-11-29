@@ -11,6 +11,7 @@ import {
   ActionRowV2,
   SeparatorV2,
   ContainerV2,
+  MediaGalleryV2,
 } from "../../../../shared";
 import { ArticleFormatterService } from "../../../../article-formatter/article-formatter.service";
 import { ArticleFiltersService } from "../../../../article-filters/article-filters.service";
@@ -26,6 +27,7 @@ import {
   DiscordSectionV2,
   DiscordActionRowV2,
   DiscordSeparatorV2,
+  DiscordMediaGalleryV2,
   DiscordContainerV2,
   DISCORD_COMPONENTS_V2_FLAG,
 } from "../../../types";
@@ -646,9 +648,15 @@ export class DiscordPayloadBuilderService {
             child as TextDisplayV2,
             replacePlaceholderOptions
           );
+        case "MEDIA_GALLERY":
+          return this.buildMediaGalleryV2(
+            article,
+            child as MediaGalleryV2,
+            replacePlaceholderOptions
+          );
         default:
           throw new Error(
-            `Unknown container child type: ${(child as any).type}`
+            `Unknown container child type: ${(child as { type: string }).type}`
           );
       }
     });
@@ -658,6 +666,39 @@ export class DiscordPayloadBuilderService {
       accent_color: container.accent_color ?? undefined,
       spoiler: container.spoiler,
       components,
+    };
+  }
+
+  /**
+   * Builds a V2 Media Gallery component.
+   */
+  private buildMediaGalleryV2(
+    article: Article,
+    mediaGallery: MediaGalleryV2,
+    replacePlaceholderOptions: ReplacePlaceholdersOptions
+  ): DiscordMediaGalleryV2 {
+    const items = mediaGallery.items.map((item) => ({
+      media: {
+        url: this.replacePlaceholdersInString(article, item.media.url, {
+          ...replacePlaceholderOptions,
+          encodeUrl: true,
+        }),
+      },
+      description: item.description
+        ? this.replacePlaceholdersInString(
+            article,
+            item.description,
+            replacePlaceholderOptions
+          ).slice(0, 1024)
+        : undefined,
+      spoiler: item.spoiler,
+    }));
+
+    return {
+      type: DISCORD_COMPONENT_TYPE_TO_NUMBER[
+        DiscordComponentType.MediaGalleryV2
+      ],
+      items,
     };
   }
 

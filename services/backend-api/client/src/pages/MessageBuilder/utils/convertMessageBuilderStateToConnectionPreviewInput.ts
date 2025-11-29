@@ -8,6 +8,8 @@ import {
   ComponentType,
   ContainerComponent,
   DividerComponent,
+  MediaGalleryComponent,
+  MediaGalleryItemComponent,
   LegacyEmbedComponent,
   LegacyTextComponent,
   MessageComponentRoot,
@@ -26,6 +28,7 @@ const V2_COMPONENT_TYPE = {
   Thumbnail: "THUMBNAIL",
   Separator: "SEPARATOR",
   Container: "CONTAINER",
+  MediaGallery: "MEDIA_GALLERY",
 } as const;
 
 const getButtonStyleNumber = (style: DiscordButtonStyle): number => {
@@ -68,7 +71,6 @@ const convertV2ThumbnailToAPI = (thumbnail: ThumbnailComponent) => ({
 });
 
 const convertV2SectionToAPI = (section: SectionComponent) => {
-  console.log("🚀 ~ convertV2SectionToAPI ~ section:", section);
   const result: {
     type: string;
     components: Array<{ type: string; content: string }>;
@@ -93,7 +95,6 @@ const convertV2SectionToAPI = (section: SectionComponent) => {
     result.accessory = convertV2ButtonToAPI(section.accessory as ButtonComponent);
   } else if (section.accessory && section.accessory.type === ComponentType.V2Thumbnail) {
     result.accessory = convertV2ThumbnailToAPI(section.accessory as ThumbnailComponent);
-    console.log("🚀 ~ convertV2SectionToAPI ~ result.accessory:", result.accessory);
   }
 
   return result;
@@ -110,6 +111,17 @@ const convertV2DividerToAPI = (divider: DividerComponent) => ({
   spacing: divider.spacing || 1,
 });
 
+const convertV2MediaGalleryToAPI = (mediaGallery: MediaGalleryComponent) => ({
+  type: V2_COMPONENT_TYPE.MediaGallery,
+  items: mediaGallery.children.map((item: MediaGalleryItemComponent) => ({
+    media: {
+      url: item.mediaUrl,
+    },
+    description: item.description || undefined,
+    spoiler: item.spoiler || false,
+  })),
+});
+
 const convertV2ContainerToAPI = (container: ContainerComponent) => ({
   type: V2_COMPONENT_TYPE.Container,
   accent_color: container.accentColor ?? undefined,
@@ -124,8 +136,10 @@ const convertV2ContainerToAPI = (container: ContainerComponent) => ({
         return convertV2SectionToAPI(child as SectionComponent);
       case ComponentType.V2TextDisplay:
         return convertV2TextDisplayToAPI(child as TextDisplayComponent);
+      case ComponentType.V2MediaGallery:
+        return convertV2MediaGalleryToAPI(child as MediaGalleryComponent);
       default:
-        return convertV2DividerToAPI(child as DividerComponent);
+        return convertV2DividerToAPI(child as unknown as DividerComponent);
     }
   }),
 });

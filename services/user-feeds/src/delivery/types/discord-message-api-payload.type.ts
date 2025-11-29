@@ -72,6 +72,19 @@ export interface DiscordSeparatorV2 {
   spacing?: number;
 }
 
+export interface DiscordMediaGalleryItemV2 {
+  media: {
+    url: string;
+  };
+  description?: string | null;
+  spoiler?: boolean;
+}
+
+export interface DiscordMediaGalleryV2 {
+  type: number;
+  items: DiscordMediaGalleryItemV2[];
+}
+
 export interface DiscordContainerV2 {
   type: number;
   accent_color?: number | null;
@@ -83,6 +96,7 @@ export type DiscordMessageComponentV2 =
   | DiscordSectionV2
   | DiscordActionRowV2
   | DiscordSeparatorV2
+  | DiscordMediaGalleryV2
   | DiscordContainerV2;
 
 // ============================================================================

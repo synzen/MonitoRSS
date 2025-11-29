@@ -14,6 +14,7 @@ import {
   FaClock,
   FaBars,
   FaBox,
+  FaImages,
 } from "react-icons/fa";
 import type { Component } from "../types";
 import { ComponentType } from "../types";
@@ -65,6 +66,8 @@ const componentIcons: Partial<Record<ComponentType, any>> = {
   [ComponentType.V2Divider]: FaMinus,
   [ComponentType.V2Thumbnail]: FaImage,
   [ComponentType.V2Container]: FaBox,
+  [ComponentType.V2MediaGallery]: FaImages,
+  [ComponentType.V2MediaGalleryItem]: FaImage,
 };
 
 const getMessageBuilderComponentIcon = (type: Component["type"]) => {

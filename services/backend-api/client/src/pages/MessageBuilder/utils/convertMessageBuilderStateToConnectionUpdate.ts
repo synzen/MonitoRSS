@@ -4,6 +4,8 @@ import {
   ComponentType,
   DividerComponent,
   ContainerComponent,
+  MediaGalleryComponent,
+  MediaGalleryItemComponent,
   LegacyActionRowComponent,
   LegacyButtonComponent,
   LegacyMessageComponentRoot,
@@ -26,6 +28,7 @@ const V2_COMPONENT_TYPE = {
   Thumbnail: "THUMBNAIL",
   Separator: "SEPARATOR",
   Container: "CONTAINER",
+  MediaGallery: "MEDIA_GALLERY",
 } as const;
 
 const getButtonStyleNumber = (style: DiscordButtonStyle): number => {
@@ -108,6 +111,17 @@ const convertV2DividerToAPI = (divider: DividerComponent) => ({
   spacing: divider.spacing || 1,
 });
 
+const convertV2MediaGalleryToAPI = (mediaGallery: MediaGalleryComponent) => ({
+  type: V2_COMPONENT_TYPE.MediaGallery,
+  items: mediaGallery.children.map((item: MediaGalleryItemComponent) => ({
+    media: {
+      url: item.mediaUrl,
+    },
+    description: item.description || undefined,
+    spoiler: item.spoiler || false,
+  })),
+});
+
 const convertV2ContainerToAPI = (container: ContainerComponent) => ({
   type: V2_COMPONENT_TYPE.Container,
   accent_color: container.accentColor ?? undefined,
@@ -122,8 +136,10 @@ const convertV2ContainerToAPI = (container: ContainerComponent) => ({
         return convertV2SectionToAPI(child as SectionComponent);
       case ComponentType.V2TextDisplay:
         return convertV2TextDisplayToAPI(child as TextDisplayComponent);
+      case ComponentType.V2MediaGallery:
+        return convertV2MediaGalleryToAPI(child as MediaGalleryComponent);
       default:
-        return convertV2DividerToAPI(child as DividerComponent);
+        return convertV2DividerToAPI(child as unknown as DividerComponent);
     }
   }),
 });
