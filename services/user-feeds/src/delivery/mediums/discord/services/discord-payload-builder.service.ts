@@ -6,6 +6,7 @@ import {
   DiscordComponentType,
   DISCORD_COMPONENT_TYPE_TO_NUMBER,
   ButtonV2,
+  TextDisplayV2,
   SectionV2,
   ActionRowV2,
   SeparatorV2,
@@ -21,6 +22,7 @@ import {
   DeliveryDetails,
   DiscordMessageApiPayload,
   DiscordMessageComponentV2,
+  DiscordTextDisplayV2,
   DiscordSectionV2,
   DiscordActionRowV2,
   DiscordSeparatorV2,
@@ -595,19 +597,60 @@ export class DiscordPayloadBuilderService {
   }
 
   /**
+   * Builds a V2 Text Display component.
+   */
+  private buildTextDisplayV2(
+    article: Article,
+    textDisplay: TextDisplayV2,
+    replacePlaceholderOptions: ReplacePlaceholdersOptions
+  ): DiscordTextDisplayV2 {
+    return {
+      type: DISCORD_COMPONENT_TYPE_TO_NUMBER[DiscordComponentType.TextDisplay],
+      content: this.replacePlaceholdersInString(
+        article,
+        textDisplay.content,
+        replacePlaceholderOptions
+      ),
+    };
+  }
+
+  /**
    * Builds a V2 Container component.
    * Containers group components visually with an optional accent color bar.
    */
   private buildContainerV2(
-    _article: Article,
+    article: Article,
     container: ContainerV2,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _replacePlaceholderOptions: ReplacePlaceholdersOptions
+    replacePlaceholderOptions: ReplacePlaceholdersOptions
   ): DiscordContainerV2 {
-    // Build child components (currently only separators are supported)
+    // Build child components
     const components = container.components.map((child) => {
-      // Currently only separators are supported in containers
-      return this.buildSeparatorV2(child as SeparatorV2);
+      switch (child.type) {
+        case "SEPARATOR":
+          return this.buildSeparatorV2(child as SeparatorV2);
+        case "ACTION_ROW":
+          return this.buildActionRowV2(
+            article,
+            child as ActionRowV2,
+            replacePlaceholderOptions
+          );
+        case "SECTION":
+          return this.buildSectionV2(
+            article,
+            child as SectionV2,
+            replacePlaceholderOptions
+          );
+        case "TEXT_DISPLAY":
+          return this.buildTextDisplayV2(
+            article,
+            child as TextDisplayV2,
+            replacePlaceholderOptions
+          );
+        default:
+          throw new Error(
+            `Unknown container child type: ${(child as any).type}`
+          );
+      }
     });
 
     return {

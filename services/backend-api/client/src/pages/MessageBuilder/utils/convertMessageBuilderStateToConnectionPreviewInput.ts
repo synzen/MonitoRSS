@@ -114,7 +114,20 @@ const convertV2ContainerToAPI = (container: ContainerComponent) => ({
   type: V2_COMPONENT_TYPE.Container,
   accent_color: container.accentColor ?? undefined,
   spoiler: container.spoiler ?? false,
-  components: container.children.map((child) => convertV2DividerToAPI(child)),
+  components: container.children.map((child) => {
+    switch (child.type) {
+      case ComponentType.V2Divider:
+        return convertV2DividerToAPI(child as DividerComponent);
+      case ComponentType.V2ActionRow:
+        return convertV2ActionRowToAPI(child as ActionRowComponent);
+      case ComponentType.V2Section:
+        return convertV2SectionToAPI(child as SectionComponent);
+      case ComponentType.V2TextDisplay:
+        return convertV2TextDisplayToAPI(child as TextDisplayComponent);
+      default:
+        return convertV2DividerToAPI(child as DividerComponent);
+    }
+  }),
 });
 
 const convertV2RootToPreviewInput = (

@@ -150,13 +150,19 @@ export interface DividerComponent {
   children: [];
 }
 
+export type ContainerChildComponent =
+  | DividerComponent
+  | ActionRowComponent
+  | SectionComponent
+  | TextDisplayComponent;
+
 export interface ContainerComponent {
   type: ComponentType.V2Container;
   id: string;
   name: string;
   accentColor?: number | null; // RGB color from 0x000000 to 0xFFFFFF
   spoiler?: boolean; // Whether container content should be blurred
-  children: DividerComponent[]; // Currently only Divider/Separator components allowed
+  children: ContainerChildComponent[];
 }
 
 // Legacy Components

@@ -246,7 +246,28 @@ export const AddComponentButton: React.FC<AddComponentButtonProps> = ({
           </MenuGroup>
         )}
         {component.type === ComponentType.V2Container && (
-          <MenuGroup title={`Dividers (${component.children?.length || 0}/10)`}>
+          <MenuGroup title={`Components (${component.children?.length || 0}/10)`}>
+            <MenuItem
+              color="white"
+              onClick={() => onAddChild(ComponentType.V2Section)}
+              isDisabled={(component.children?.length || 0) >= 10}
+            >
+              Add Section
+            </MenuItem>
+            <MenuItem
+              color="white"
+              onClick={() => onAddChild(ComponentType.V2ActionRow)}
+              isDisabled={(component.children?.length || 0) >= 10}
+            >
+              Add Action Row
+            </MenuItem>
+            <MenuItem
+              color="white"
+              onClick={() => onAddChild(ComponentType.V2TextDisplay)}
+              isDisabled={(component.children?.length || 0) >= 10}
+            >
+              Add Text Display
+            </MenuItem>
             <MenuItem
               color="white"
               onClick={() => onAddChild(ComponentType.V2Divider)}

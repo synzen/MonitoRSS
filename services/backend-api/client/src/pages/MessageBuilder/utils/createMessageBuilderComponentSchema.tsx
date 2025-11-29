@@ -53,9 +53,7 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
         .string()
         .required("Expected non-empty Image URL for thumbnail")
         .max(2048, "Expected Image URL to have at most 2048 characters"),
-      description: yup
-        .string()
-        .max(1024, "Expected description to have at most 1024 characters"),
+      description: yup.string().max(1024, "Expected description to have at most 1024 characters"),
       spoiler: yup.boolean(),
     });
 

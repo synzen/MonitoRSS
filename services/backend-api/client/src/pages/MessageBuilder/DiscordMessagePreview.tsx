@@ -296,6 +296,14 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
       );
     }
 
+    if (type === DISCORD_V2_COMPONENT_TYPE.TextDisplay) {
+      return (
+        <Text key={`textdisplay-${index}`} fontSize="sm">
+          {(comp as any).content || "[missing text]"}
+        </Text>
+      );
+    }
+
     if (type === DISCORD_V2_COMPONENT_TYPE.Container) {
       const containerComp = comp as any;
       const accentColor = containerComp.accent_color
@@ -312,14 +320,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
           p={3}
         >
           {accentColor && (
-            <Box
-              position="absolute"
-              left={0}
-              top={0}
-              bottom={0}
-              width="4px"
-              bg={accentColor}
-            />
+            <Box position="absolute" left={0} top={0} bottom={0} width="4px" bg={accentColor} />
           )}
           {containerComp.spoiler && (
             <Box

@@ -110,13 +110,14 @@ const actionRowSchemaV2 = z.object({
     .max(5, "Action row cannot have more than 5 buttons"),
 });
 
-// Container child components schema (initially only separators allowed)
+// Container child components schema
 const containerChildSchemaV2 = z.discriminatedUnion(
   "type",
-  [separatorSchemaV2],
+  [separatorSchemaV2, actionRowSchemaV2, sectionSchemaV2, textDisplaySchemaV2],
   {
     errorMap: () => ({
-      message: "Container child must be a Separator",
+      message:
+        "Container child must be a Separator, Action Row, Section, or Text Display",
     }),
   }
 );
@@ -361,6 +362,7 @@ export type DiscordMediumPayloadDetails = z.infer<
 
 // V2 Component Types (inferred from Zod schemas)
 export type ButtonV2 = z.infer<typeof buttonSchemaV2>;
+export type TextDisplayV2 = z.infer<typeof textDisplaySchemaV2>;
 export type SectionV2 = z.infer<typeof sectionSchemaV2>;
 export type ActionRowV2 = z.infer<typeof actionRowSchemaV2>;
 export type SeparatorV2 = z.infer<typeof separatorSchemaV2>;

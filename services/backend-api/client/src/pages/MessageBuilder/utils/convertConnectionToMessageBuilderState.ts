@@ -402,12 +402,24 @@ const createV2ContainerComponent = (
     children: [],
   };
 
-  // Add child components (currently only separators)
+  // Add child components (separators, action rows, sections, text displays)
   if (container.components && container.components.length > 0) {
     container.components.forEach((comp: V2ComponentFromAPI, compIndex: number) => {
       if (comp.type === V2_COMPONENT_TYPE.Separator) {
         containerComponent.children.push(
           createV2DividerComponent(comp, containerComponent.id, compIndex)
+        );
+      } else if (comp.type === V2_COMPONENT_TYPE.ActionRow) {
+        containerComponent.children.push(
+          createV2ActionRowComponent(comp, containerComponent.id, compIndex)
+        );
+      } else if (comp.type === V2_COMPONENT_TYPE.Section) {
+        containerComponent.children.push(
+          createV2SectionComponent(comp, containerComponent.id, compIndex)
+        );
+      } else if (comp.type === V2_COMPONENT_TYPE.TextDisplay) {
+        containerComponent.children.push(
+          createV2TextDisplayComponent(comp, containerComponent.id, compIndex)
         );
       }
     });
