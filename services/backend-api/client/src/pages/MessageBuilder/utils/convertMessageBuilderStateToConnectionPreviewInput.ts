@@ -12,6 +12,7 @@ import {
   MessageComponentRoot,
   SectionComponent,
   TextDisplayComponent,
+  ThumbnailComponent,
   V2MessageComponentRoot,
 } from "../types";
 
@@ -55,7 +56,17 @@ const convertV2TextDisplayToAPI = (textDisplay: TextDisplayComponent) => ({
   content: textDisplay.content,
 });
 
+const convertV2ThumbnailToAPI = (thumbnail: ThumbnailComponent) => ({
+  type: V2_COMPONENT_TYPE.Thumbnail,
+  media: {
+    url: thumbnail.mediaUrl,
+  },
+  description: thumbnail.description || undefined,
+  spoiler: thumbnail.spoiler || false,
+});
+
 const convertV2SectionToAPI = (section: SectionComponent) => {
+  console.log("🚀 ~ convertV2SectionToAPI ~ section:", section);
   const result: {
     type: string;
     components: Array<{ type: string; content: string }>;
@@ -65,6 +76,9 @@ const convertV2SectionToAPI = (section: SectionComponent) => {
       label?: string;
       url?: string | null;
       disabled?: boolean;
+      media?: { url: string };
+      description?: string;
+      spoiler?: boolean;
     };
   } = {
     type: V2_COMPONENT_TYPE.Section,
@@ -75,6 +89,9 @@ const convertV2SectionToAPI = (section: SectionComponent) => {
 
   if (section.accessory && section.accessory.type === ComponentType.V2Button) {
     result.accessory = convertV2ButtonToAPI(section.accessory as ButtonComponent);
+  } else if (section.accessory && section.accessory.type === ComponentType.V2Thumbnail) {
+    result.accessory = convertV2ThumbnailToAPI(section.accessory as ThumbnailComponent);
+    console.log("🚀 ~ convertV2SectionToAPI ~ result.accessory:", result.accessory);
   }
 
   return result;

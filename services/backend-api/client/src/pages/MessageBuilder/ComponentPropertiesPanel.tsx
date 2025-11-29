@@ -608,6 +608,57 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
       );
     }
 
+    if (component.type === ComponentType.V2Thumbnail) {
+      const [mediaUrlError, descriptionError] = getMessageBuilderFieldErrors(
+        formState.errors,
+        messageComponent,
+        component.id,
+        ["mediaUrl", "description"]
+      );
+
+      return (
+        <VStack align="stretch" spacing={6}>
+          <InputWithInsertPlaceholder
+            value={component.mediaUrl || ""}
+            onChange={(value) => onChange({ ...component, mediaUrl: value })}
+            label="Image URL"
+            placeholder="https://example.com/image.png"
+            error={mediaUrlError?.message}
+            isInvalid={!!mediaUrlError}
+            as="input"
+            isRequired
+          />
+          <InputWithInsertPlaceholder
+            value={component.description || ""}
+            onChange={(value) => onChange({ ...component, description: value })}
+            label="Description (Alt Text)"
+            placeholder="Description for the thumbnail"
+            error={descriptionError?.message}
+            isInvalid={!!descriptionError}
+            as="input"
+          />
+          <FormControl>
+            <FormHelperText color="gray.400" fontSize="xs">
+              Description is used for accessibility and is displayed when the image cannot be
+              loaded.
+            </FormHelperText>
+            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+              Spoiler
+            </FormLabel>
+            <Checkbox
+              isChecked={component.spoiler ?? false}
+              onChange={(e) => onChange({ ...component, spoiler: e.target.checked })}
+              colorScheme="blue"
+            >
+              <Text fontSize="sm" color="gray.300">
+                Blur image until clicked
+              </Text>
+            </Checkbox>
+          </FormControl>
+        </VStack>
+      );
+    }
+
     if (component.type === ComponentType.LegacyButton) {
       const [labelError, urlError] = getMessageBuilderFieldErrors(
         formState.errors,

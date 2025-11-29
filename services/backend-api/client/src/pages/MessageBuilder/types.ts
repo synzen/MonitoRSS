@@ -21,6 +21,7 @@ export enum ComponentType {
   V2Button = "Button",
   V2Section = "Section",
   V2Divider = "Divider",
+  V2Thumbnail = "Thumbnail",
 }
 
 export const ROOT_COMPONENT_TYPES = [ComponentType.LegacyRoot, ComponentType.V2Root];
@@ -124,12 +125,19 @@ export interface ActionRowComponent extends BaseComponent {
   children: ButtonComponent[];
 }
 
+export interface ThumbnailComponent extends BaseComponent {
+  type: ComponentType.V2Thumbnail;
+  mediaUrl: string;
+  description?: string;
+  spoiler?: boolean;
+}
+
 export interface SectionComponent {
   type: ComponentType.V2Section;
   id: string;
   name: string;
   children: TextDisplayComponent[]; // max 3, only TextDisplay allowed
-  accessory?: Component; // required, only Button allowed
+  accessory?: ButtonComponent | ThumbnailComponent; // required, only Button or Thumbnail allowed
 }
 
 export interface DividerComponent {
@@ -229,6 +237,7 @@ export type Component =
   | V2MessageComponentRoot
   | TextDisplayComponent
   | ButtonComponent
+  | ThumbnailComponent
   | ActionRowComponent
   | SectionComponent
   | DividerComponent

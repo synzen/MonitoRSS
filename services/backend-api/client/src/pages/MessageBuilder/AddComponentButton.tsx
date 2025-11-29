@@ -271,6 +271,13 @@ export const AddComponentButton: React.FC<AddComponentButtonProps> = ({
               >
                 Add Button Accessory
               </MenuItem>
+              <MenuItem
+                color="white"
+                onClick={() => onAddChild(ComponentType.V2Thumbnail, true)}
+                isDisabled={!!(component as any).accessory}
+              >
+                Add Thumbnail Accessory
+              </MenuItem>
             </MenuGroup>
           </>
         )}

@@ -11,6 +11,7 @@ import {
   Progress,
   Highlight,
   Divider,
+  Image,
 } from "@chakra-ui/react";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
 import { useFormContext } from "react-hook-form";
@@ -121,6 +122,103 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
     5: "Link",
   };
 
+  const renderApiAccessory = (
+    accessory: DiscordApiComponent["accessory"],
+    key: string
+  ): React.ReactNode => {
+    if (!accessory) return null;
+
+    // Thumbnail accessory
+    if (accessory.type === DISCORD_V2_COMPONENT_TYPE.Thumbnail) {
+      return (
+        <Box
+          key={key}
+          borderRadius="md"
+          overflow="hidden"
+          maxW="80px"
+          maxH="80px"
+          flexShrink={0}
+          position="relative"
+        >
+          {accessory.spoiler && (
+            <Box
+              position="absolute"
+              top={0}
+              left={0}
+              right={0}
+              bottom={0}
+              bg="blackAlpha.800"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              fontSize="xs"
+              color="gray.300"
+              zIndex={1}
+            >
+              SPOILER
+            </Box>
+          )}
+          <Image
+            src={accessory.media?.url || ""}
+            alt={accessory.description || "Thumbnail"}
+            objectFit="cover"
+            w="80px"
+            h="80px"
+            fallback={
+              <Box
+                w="80px"
+                h="80px"
+                bg="gray.700"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                fontSize="xs"
+                color="gray.400"
+              >
+                No Image
+              </Box>
+            }
+          />
+        </Box>
+      );
+    }
+
+    // Button accessory
+    const styleName = styleNumToName[accessory.style || 2] || "Secondary";
+    const colors = buttonColors[styleName];
+    const isLinkButton = styleName === "Link" && accessory.url;
+
+    return (
+      <Button
+        key={key}
+        as={isLinkButton ? "a" : undefined}
+        href={isLinkButton ? accessory.url ?? undefined : undefined}
+        target={isLinkButton ? "_blank" : undefined}
+        rel={isLinkButton ? "noopener noreferrer" : undefined}
+        size="sm"
+        borderColor={colors.border}
+        borderWidth="1px"
+        bg={colors.bg}
+        color={colors.color}
+        isDisabled={accessory.disabled}
+        borderRadius="6px"
+        fontWeight="medium"
+        fontSize="14px"
+        px={3}
+        py={1.5}
+        minH="32px"
+        _hover={{ opacity: accessory.disabled ? 0.6 : 0.9 }}
+        _disabled={{ opacity: 0.6 }}
+        _active={{ transform: "translateY(0px)" }}
+        rightIcon={styleName === "Link" ? <ExternalLinkIcon boxSize={4} /> : undefined}
+        textDecoration="none"
+        _focus={{ textDecoration: "none" }}
+      >
+        {accessory.label || "Button"}
+      </Button>
+    );
+  };
+
   const renderApiButton = (btn: DiscordApiComponent["accessory"], key: string): React.ReactNode => {
     if (!btn) return null;
     const styleName = styleNumToName[btn.style || 2] || "Secondary";
@@ -171,7 +269,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
               </Text>
             ))}
           </VStack>
-          {comp.accessory && renderApiButton(comp.accessory, `acc-${index}`)}
+          {comp.accessory && renderApiAccessory(comp.accessory, `acc-${index}`)}
         </HStack>
       );
     }

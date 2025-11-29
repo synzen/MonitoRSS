@@ -21,6 +21,7 @@ import {
   ActionRowComponent,
   ButtonComponent,
   DividerComponent,
+  ThumbnailComponent,
 } from "../types";
 import MessageBuilderFormState from "../types/MessageBuilderFormState";
 import { DiscordButtonStyle } from "../constants/DiscordButtonStyle";
@@ -279,6 +280,23 @@ const createV2TextDisplayComponent = (
   };
 };
 
+const createV2ThumbnailComponent = (
+  thumbnail: NonNullable<V2ComponentFromAPI["accessory"]>,
+  parentId: string,
+  index: number
+): ThumbnailComponent => {
+  return {
+    ...(createNewMessageBuilderComponent(
+      ComponentType.V2Thumbnail,
+      parentId,
+      index
+    ) as ThumbnailComponent),
+    mediaUrl: thumbnail.media?.url || "",
+    description: thumbnail.description || "",
+    spoiler: thumbnail.spoiler || false,
+  };
+};
+
 const createV2SectionComponent = (
   section: V2ComponentFromAPI,
   parentId: string,
@@ -290,7 +308,7 @@ const createV2SectionComponent = (
       parentId,
       index
     ) as SectionComponent),
-    children: [] as Component[],
+    children: [] as TextDisplayComponent[],
   };
 
   // Add text display components only (separators are handled at root level)
@@ -307,6 +325,12 @@ const createV2SectionComponent = (
   // Add accessory (button or thumbnail)
   if (section.accessory && section.accessory.type === V2_COMPONENT_TYPE.Button) {
     sectionComponent.accessory = createV2ButtonComponent(section.accessory, sectionComponent.id, 0);
+  } else if (section.accessory && section.accessory.type === V2_COMPONENT_TYPE.Thumbnail) {
+    sectionComponent.accessory = createV2ThumbnailComponent(
+      section.accessory,
+      sectionComponent.id,
+      0
+    );
   }
 
   return sectionComponent;

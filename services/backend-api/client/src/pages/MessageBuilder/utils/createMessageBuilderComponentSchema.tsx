@@ -48,6 +48,17 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
       inline: yup.boolean(),
     });
 
+    const thumbnailSchema = baseSchema.shape({
+      mediaUrl: yup
+        .string()
+        .required("Expected non-empty Image URL for thumbnail")
+        .max(2048, "Expected Image URL to have at most 2048 characters"),
+      description: yup
+        .string()
+        .max(1024, "Expected description to have at most 1024 characters"),
+      spoiler: yup.boolean(),
+    });
+
     switch (value.type) {
       case ComponentType.LegacyRoot:
         return baseSchema.shape({
@@ -170,10 +181,55 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
             .default([])
             .min(1, "Expected Section to have at least 1 child component")
             .max(3, "Expected Section to have at fewer than 4 child components"),
-          accessory: buttonSchema
-            .required("Expected Section to have an accessory component")
-            .nonNullable(),
+          accessory: yup
+            .mixed()
+            .test(
+              "is-button-or-thumbnail",
+              "Expected Section to have an accessory component (Button or Thumbnail)",
+              (val) => {
+                if (!val) return false;
+                const accessory = val as { type?: string };
+
+                return (
+                  accessory.type === ComponentType.V2Button ||
+                  accessory.type === ComponentType.V2Thumbnail
+                );
+              }
+            )
+            .test(
+              "validate-accessory-fields",
+              "Accessory component has validation errors",
+              function validateAccessoryFields(val) {
+                if (!val) return true; // Let the required test handle missing accessory
+                const accessory = val as { type?: string; mediaUrl?: string; label?: string };
+
+                // Validate thumbnail mediaUrl
+                if (accessory.type === ComponentType.V2Thumbnail) {
+                  if (!accessory.mediaUrl || accessory.mediaUrl.trim() === "") {
+                    return this.createError({
+                      message: "Expected non-empty Image URL for thumbnail",
+                      path: `${this.path}.mediaUrl`,
+                    });
+                  }
+                }
+
+                // Validate button label
+                if (accessory.type === ComponentType.V2Button) {
+                  if (!accessory.label || accessory.label.trim() === "") {
+                    return this.createError({
+                      message: "Expected non-empty Button label",
+                      path: `${this.path}.label`,
+                    });
+                  }
+                }
+
+                return true;
+              }
+            )
+            .required("Expected Section to have an accessory component"),
         });
+      case ComponentType.V2Thumbnail:
+        return thumbnailSchema;
       case ComponentType.V2Divider:
         return baseSchema;
       case ComponentType.V2Button:

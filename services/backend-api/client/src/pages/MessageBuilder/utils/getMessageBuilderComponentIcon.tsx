@@ -62,6 +62,7 @@ const componentIcons: Partial<Record<ComponentType, any>> = {
   [ComponentType.V2Button]: FaHandPointer,
   [ComponentType.V2Section]: FaLayerGroup,
   [ComponentType.V2Divider]: FaMinus,
+  [ComponentType.V2Thumbnail]: FaImage,
 };
 
 const getMessageBuilderComponentIcon = (type: Component["type"]) => {

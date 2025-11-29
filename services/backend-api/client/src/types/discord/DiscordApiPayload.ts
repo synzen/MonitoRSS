@@ -59,6 +59,8 @@ const DiscordComponentSchema = object({
     media: object({
       url: string().required(),
     }).optional(),
+    description: string().optional().nullable(),
+    spoiler: boolean().optional(),
   })
     .optional()
     .nullable(),

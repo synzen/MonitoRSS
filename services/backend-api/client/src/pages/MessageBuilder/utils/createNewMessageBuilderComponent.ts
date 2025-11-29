@@ -20,6 +20,7 @@ import {
   LegacyTextComponent,
   SectionComponent,
   TextDisplayComponent,
+  ThumbnailComponent,
 } from "../types";
 import getMessageBuilderComponentLabel from "./getMessageBuilderComponentLabel";
 
@@ -153,6 +154,13 @@ const createNewMessageBuilderComponent = (
         ...base,
         children: [],
       } as SectionComponent;
+    case ComponentType.V2Thumbnail:
+      return {
+        ...base,
+        mediaUrl: "",
+        description: "",
+        spoiler: false,
+      } as ThumbnailComponent;
     case ComponentType.V2Divider:
       return {
         ...base,
