@@ -67,6 +67,9 @@ const DiscordComponentSchema = object({
   // Separator/Divider properties
   divider: boolean().optional(),
   spacing: number().optional(),
+  // Container properties
+  accent_color: number().optional().nullable(),
+  spoiler: boolean().optional(),
 });
 
 export const DiscordMessageApiPayloadSchema = object({

@@ -50,7 +50,8 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
     component.type === ComponentType.LegacyActionRow ||
     component.type === ComponentType.V2Root ||
     component.type === ComponentType.V2ActionRow ||
-    component.type === ComponentType.V2Section;
+    component.type === ComponentType.V2Section ||
+    component.type === ComponentType.V2Container;
   const { isFocused, isExpanded, isSelected } = useNavigableTreeItemContext();
 
   const handleAddChild = (childType: ComponentType, isAccessory?: boolean) => {

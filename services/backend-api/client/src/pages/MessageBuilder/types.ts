@@ -22,6 +22,7 @@ export enum ComponentType {
   V2Section = "Section",
   V2Divider = "Divider",
   V2Thumbnail = "Thumbnail",
+  V2Container = "Container",
 }
 
 export const ROOT_COMPONENT_TYPES = [ComponentType.LegacyRoot, ComponentType.V2Root];
@@ -149,6 +150,15 @@ export interface DividerComponent {
   children: [];
 }
 
+export interface ContainerComponent {
+  type: ComponentType.V2Container;
+  id: string;
+  name: string;
+  accentColor?: number | null; // RGB color from 0x000000 to 0xFFFFFF
+  spoiler?: boolean; // Whether container content should be blurred
+  children: DividerComponent[]; // Currently only Divider/Separator components allowed
+}
+
 // Legacy Components
 export interface LegacyTextComponent extends BaseComponent {
   type: ComponentType.LegacyText;
@@ -241,6 +251,7 @@ export type Component =
   | ActionRowComponent
   | SectionComponent
   | DividerComponent
+  | ContainerComponent
   | LegacyTextComponent
   | LegacyEmbedContainerComponent
   | LegacyEmbedComponent

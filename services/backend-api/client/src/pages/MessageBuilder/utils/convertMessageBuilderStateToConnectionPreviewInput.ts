@@ -6,6 +6,7 @@ import {
   ActionRowComponent,
   ButtonComponent,
   ComponentType,
+  ContainerComponent,
   DividerComponent,
   LegacyEmbedComponent,
   LegacyTextComponent,
@@ -24,6 +25,7 @@ const V2_COMPONENT_TYPE = {
   TextDisplay: "TEXT_DISPLAY",
   Thumbnail: "THUMBNAIL",
   Separator: "SEPARATOR",
+  Container: "CONTAINER",
 } as const;
 
 const getButtonStyleNumber = (style: DiscordButtonStyle): number => {
@@ -108,6 +110,13 @@ const convertV2DividerToAPI = (divider: DividerComponent) => ({
   spacing: divider.spacing || 1,
 });
 
+const convertV2ContainerToAPI = (container: ContainerComponent) => ({
+  type: V2_COMPONENT_TYPE.Container,
+  accent_color: container.accentColor ?? undefined,
+  spoiler: container.spoiler ?? false,
+  components: container.children.map((child) => convertV2DividerToAPI(child)),
+});
+
 const convertV2RootToPreviewInput = (
   userFeed: UserFeed,
   connection: FeedDiscordChannelConnection,
@@ -122,6 +131,8 @@ const convertV2RootToPreviewInput = (
       componentsV2.push(convertV2ActionRowToAPI(child as ActionRowComponent));
     } else if (child.type === ComponentType.V2Divider) {
       componentsV2.push(convertV2DividerToAPI(child as DividerComponent));
+    } else if (child.type === ComponentType.V2Container) {
+      componentsV2.push(convertV2ContainerToAPI(child as ContainerComponent));
     }
   });
 

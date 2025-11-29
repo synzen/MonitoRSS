@@ -4,6 +4,7 @@ import {
   ButtonComponent,
   Component,
   ComponentType,
+  ContainerComponent,
   DividerComponent,
   LegacyActionRowComponent,
   LegacyButtonComponent,
@@ -168,6 +169,13 @@ const createNewMessageBuilderComponent = (
         spacing: 1,
         children: [],
       } as DividerComponent;
+    case ComponentType.V2Container:
+      return {
+        ...base,
+        accentColor: undefined,
+        spoiler: false,
+        children: [],
+      } as ContainerComponent;
     default:
       throw new Error(`Unknown child type: ${type}`);
   }

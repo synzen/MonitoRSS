@@ -39,6 +39,7 @@ const DISCORD_V2_COMPONENT_TYPE = {
   TextDisplay: 10,
   Thumbnail: 11,
   Separator: 14,
+  Container: 17,
 } as const;
 
 interface DiscordMessagePreviewProps {
@@ -291,6 +292,56 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
       return (
         <Box key={`separator-${index}`} py={!showDivider ? `${spacing}px` : undefined}>
           {showDivider && <Divider borderColor="hsl(240 calc(1*4%) 60.784%/0.2)" />}
+        </Box>
+      );
+    }
+
+    if (type === DISCORD_V2_COMPONENT_TYPE.Container) {
+      const containerComp = comp as any;
+      const accentColor = containerComp.accent_color
+        ? `#${Number(containerComp.accent_color).toString(16).padStart(6, "0")}`
+        : undefined;
+
+      return (
+        <Box
+          key={`container-${index}`}
+          position="relative"
+          bg="hsl(240 calc(1*4.762%) 92.157%/0.06)"
+          borderRadius="md"
+          overflow="hidden"
+          p={3}
+        >
+          {accentColor && (
+            <Box
+              position="absolute"
+              left={0}
+              top={0}
+              bottom={0}
+              width="4px"
+              bg={accentColor}
+            />
+          )}
+          {containerComp.spoiler && (
+            <Box
+              position="absolute"
+              top={0}
+              left={0}
+              right={0}
+              bottom={0}
+              bg="blackAlpha.800"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              fontSize="xs"
+              color="gray.300"
+              zIndex={1}
+            >
+              SPOILER
+            </Box>
+          )}
+          <VStack align="stretch" spacing={2} pl={accentColor ? 2 : 0}>
+            {containerComp.components?.map((child: any, i: number) => renderApiComponent(child, i))}
+          </VStack>
         </Box>
       );
     }

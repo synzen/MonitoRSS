@@ -110,9 +110,34 @@ const actionRowSchemaV2 = z.object({
     .max(5, "Action row cannot have more than 5 buttons"),
 });
 
+// Container child components schema (initially only separators allowed)
+const containerChildSchemaV2 = z.discriminatedUnion(
+  "type",
+  [separatorSchemaV2],
+  {
+    errorMap: () => ({
+      message: "Container child must be a Separator",
+    }),
+  }
+);
+
+const containerSchemaV2 = z.object({
+  type: z.literal("CONTAINER"),
+  accent_color: z
+    .number()
+    .min(0, "Accent color must be between 0x000000 and 0xFFFFFF")
+    .max(0xffffff, "Accent color must be between 0x000000 and 0xFFFFFF")
+    .optional()
+    .nullable(),
+  spoiler: z.boolean().optional().default(false),
+  components: z
+    .array(containerChildSchemaV2)
+    .min(1, "Container must have at least 1 component"),
+});
+
 export const componentV2Schema = z.discriminatedUnion(
   "type",
-  [sectionSchemaV2, actionRowSchemaV2, separatorSchemaV2],
+  [sectionSchemaV2, actionRowSchemaV2, separatorSchemaV2, containerSchemaV2],
   {
     errorMap: () => ({
       message: "Component must be a Section, Action Row, or Separator",
@@ -339,4 +364,5 @@ export type ButtonV2 = z.infer<typeof buttonSchemaV2>;
 export type SectionV2 = z.infer<typeof sectionSchemaV2>;
 export type ActionRowV2 = z.infer<typeof actionRowSchemaV2>;
 export type SeparatorV2 = z.infer<typeof separatorSchemaV2>;
+export type ContainerV2 = z.infer<typeof containerSchemaV2>;
 export type ComponentV2 = z.infer<typeof componentV2Schema>;

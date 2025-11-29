@@ -76,6 +76,8 @@ const DiscordChannelConnectionDetailsSchema = object({
       content: string().optional(),
       divider: boolean().optional(),
       spacing: number().optional(),
+      accent_color: number().optional().nullable(),
+      spoiler: boolean().optional(),
       components: array(
         object({
           type: string().required(),
@@ -84,6 +86,8 @@ const DiscordChannelConnectionDetailsSchema = object({
           label: string().optional(),
           url: string().optional().nullable(),
           disabled: boolean().optional(),
+          divider: boolean().optional(),
+          spacing: number().optional(),
         })
       ).optional(),
       accessory: object({

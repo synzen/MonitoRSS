@@ -72,10 +72,18 @@ export interface DiscordSeparatorV2 {
   spacing?: number;
 }
 
+export interface DiscordContainerV2 {
+  type: number;
+  accent_color?: number | null;
+  spoiler?: boolean;
+  components: DiscordMessageComponentV2[];
+}
+
 export type DiscordMessageComponentV2 =
   | DiscordSectionV2
   | DiscordActionRowV2
-  | DiscordSeparatorV2;
+  | DiscordSeparatorV2
+  | DiscordContainerV2;
 
 // ============================================================================
 // Embed Types

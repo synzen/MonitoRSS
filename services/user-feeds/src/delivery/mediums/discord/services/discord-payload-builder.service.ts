@@ -9,6 +9,7 @@ import {
   SectionV2,
   ActionRowV2,
   SeparatorV2,
+  ContainerV2,
 } from "../../../../shared";
 import { ArticleFormatterService } from "../../../../article-formatter/article-formatter.service";
 import { ArticleFiltersService } from "../../../../article-filters/article-filters.service";
@@ -23,6 +24,7 @@ import {
   DiscordSectionV2,
   DiscordActionRowV2,
   DiscordSeparatorV2,
+  DiscordContainerV2,
   DISCORD_COMPONENTS_V2_FLAG,
 } from "../../../types";
 import { replaceTemplateString } from "../../../../articles/utils/replace-template-string";
@@ -518,6 +520,14 @@ export class DiscordPayloadBuilderService {
         return this.buildSeparatorV2(component);
       }
 
+      if (component.type === DiscordComponentType.ContainerV2) {
+        return this.buildContainerV2(
+          article,
+          component,
+          replacePlaceholderOptions
+        );
+      }
+
       // Section component
       return this.buildSectionV2(article, component, replacePlaceholderOptions);
     });
@@ -581,6 +591,30 @@ export class DiscordPayloadBuilderService {
       type: DISCORD_COMPONENT_TYPE_TO_NUMBER[DiscordComponentType.SeparatorV2],
       divider: separator.divider,
       spacing: separator.spacing,
+    };
+  }
+
+  /**
+   * Builds a V2 Container component.
+   * Containers group components visually with an optional accent color bar.
+   */
+  private buildContainerV2(
+    _article: Article,
+    container: ContainerV2,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _replacePlaceholderOptions: ReplacePlaceholdersOptions
+  ): DiscordContainerV2 {
+    // Build child components (currently only separators are supported)
+    const components = container.components.map((child) => {
+      // Currently only separators are supported in containers
+      return this.buildSeparatorV2(child as SeparatorV2);
+    });
+
+    return {
+      type: DISCORD_COMPONENT_TYPE_TO_NUMBER[DiscordComponentType.ContainerV2],
+      accent_color: container.accent_color ?? undefined,
+      spoiler: container.spoiler,
+      components,
     };
   }
 

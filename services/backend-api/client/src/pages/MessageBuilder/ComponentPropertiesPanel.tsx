@@ -659,6 +659,110 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
       );
     }
 
+    if (component.type === ComponentType.V2Container) {
+      const [accentColorError] = getMessageBuilderFieldErrors(
+        formState.errors,
+        messageComponent,
+        component.id,
+        ["accentColor"]
+      );
+
+      return (
+        <VStack align="stretch" spacing={6}>
+          <FormControl isInvalid={!!accentColorError}>
+            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+              Accent Color
+            </FormLabel>
+            <HStack>
+              <HStack width="100%">
+                <Popover>
+                  <PopoverTrigger>
+                    <Button
+                      backgroundColor={
+                        (component as any).accentColor
+                          ? `#${Number((component as any).accentColor)
+                              .toString(16)
+                              .padStart(6, "0")}`
+                          : "black"
+                      }
+                      flex={1}
+                      borderStyle="solid"
+                      borderWidth="1px"
+                      borderColor="whiteAlpha.400"
+                      aria-label="Pick accent color"
+                      size="sm"
+                      _hover={{
+                        background: (component as any).accentColor
+                          ? `#${Number((component as any).accentColor)
+                              .toString(16)
+                              .padStart(6, "0")}`
+                          : "black",
+                        outline: "solid 2px #3182ce",
+                        transition: "outline 0.2s",
+                      }}
+                    />
+                  </PopoverTrigger>
+                  <PopoverContent backgroundColor="gray.700" width="min-content">
+                    <SketchPicker
+                      presetColors={[]}
+                      disableAlpha
+                      color={
+                        (component as any).accentColor
+                          ? `#${Number((component as any).accentColor)
+                              .toString(16)
+                              .padStart(6, "0")}`
+                          : "#000000"
+                      }
+                      onChange={(c) => {
+                        const hexColorAsNumberString = parseInt(
+                          c.hex.replace("#", ""),
+                          16
+                        ).toString();
+                        onChange({
+                          ...component,
+                          accentColor: hexColorAsNumberString,
+                        });
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <IconButton
+                  size="sm"
+                  aria-label="Clear accent color"
+                  icon={<CloseIcon />}
+                  isDisabled={!(component as any).accentColor}
+                  onClick={() =>
+                    onChange({
+                      ...component,
+                      accentColor: undefined,
+                    })
+                  }
+                />
+              </HStack>
+            </HStack>
+            <FormHelperText color="gray.400" fontSize="xs">
+              A colored bar on the left side of the container.
+            </FormHelperText>
+            {accentColorError && <FormErrorMessage>{accentColorError.message}</FormErrorMessage>}
+          </FormControl>
+          <FormControl>
+            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+              Spoiler
+            </FormLabel>
+            <Checkbox
+              isChecked={component.spoiler ?? false}
+              onChange={(e) => onChange({ ...component, spoiler: e.target.checked })}
+              colorScheme="blue"
+            >
+              <Text fontSize="sm" color="gray.300">
+                Blur container content until clicked
+              </Text>
+            </Checkbox>
+          </FormControl>
+        </VStack>
+      );
+    }
+
     if (component.type === ComponentType.LegacyButton) {
       const [labelError, urlError] = getMessageBuilderFieldErrors(
         formState.errors,

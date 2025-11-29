@@ -22,6 +22,7 @@ import {
   ButtonComponent,
   DividerComponent,
   ThumbnailComponent,
+  ContainerComponent,
 } from "../types";
 import MessageBuilderFormState from "../types/MessageBuilderFormState";
 import { DiscordButtonStyle } from "../constants/DiscordButtonStyle";
@@ -224,6 +225,7 @@ const V2_COMPONENT_TYPE = {
   TextDisplay: "TEXT_DISPLAY",
   Thumbnail: "THUMBNAIL",
   Separator: "SEPARATOR",
+  Container: "CONTAINER",
 } as const;
 
 type V2ComponentFromAPI = NonNullable<
@@ -384,6 +386,36 @@ const createV2DividerComponent = (
   };
 };
 
+const createV2ContainerComponent = (
+  container: V2ComponentFromAPI,
+  parentId: string,
+  index: number
+): ContainerComponent => {
+  const containerComponent: ContainerComponent = {
+    ...(createNewMessageBuilderComponent(
+      ComponentType.V2Container,
+      parentId,
+      index
+    ) as ContainerComponent),
+    accentColor: container.accent_color ?? undefined,
+    spoiler: container.spoiler ?? false,
+    children: [],
+  };
+
+  // Add child components (currently only separators)
+  if (container.components && container.components.length > 0) {
+    container.components.forEach((comp: V2ComponentFromAPI, compIndex: number) => {
+      if (comp.type === V2_COMPONENT_TYPE.Separator) {
+        containerComponent.children.push(
+          createV2DividerComponent(comp, containerComponent.id, compIndex)
+        );
+      }
+    });
+  }
+
+  return containerComponent;
+};
+
 export const convertConnectionToMessageBuilderState = (
   connection: FeedDiscordChannelConnection | null | undefined
 ): MessageBuilderFormState => {
@@ -425,6 +457,10 @@ export const convertConnectionToMessageBuilderState = (
       } else if (component.type === V2_COMPONENT_TYPE.Separator) {
         v2RootComponent.children.push(
           createV2DividerComponent(component, v2RootComponent.id, index)
+        );
+      } else if (component.type === V2_COMPONENT_TYPE.Container) {
+        v2RootComponent.children.push(
+          createV2ContainerComponent(component, v2RootComponent.id, index)
         );
       }
     });

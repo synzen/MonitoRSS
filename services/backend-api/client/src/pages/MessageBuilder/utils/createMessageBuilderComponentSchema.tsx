@@ -234,6 +234,16 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
         return baseSchema;
       case ComponentType.V2Button:
         return buttonSchema;
+      case ComponentType.V2Container:
+        return baseSchema.shape({
+          children: yup
+            .array()
+            .of(createMessageBuilderComponentSchema())
+            .min(1, "Expected Container to have at least 1 child component")
+            .required("Expected Container to have at least 1 child component"),
+          accentColor: yup.number().nullable(),
+          spoiler: yup.boolean(),
+        });
       default:
         return baseSchema;
     }

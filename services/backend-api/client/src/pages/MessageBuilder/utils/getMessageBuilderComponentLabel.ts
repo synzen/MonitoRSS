@@ -16,6 +16,7 @@ const componentLabels: Partial<Record<ComponentType, string>> = {
   [ComponentType.LegacyButton]: "Button",
   [ComponentType.LegacyRoot]: "Discord Message",
   [ComponentType.V2Thumbnail]: "Thumbnail",
+  [ComponentType.V2Container]: "Container",
 };
 
 const getMessageBuilderComponentLabel = (type: ComponentType) => {
