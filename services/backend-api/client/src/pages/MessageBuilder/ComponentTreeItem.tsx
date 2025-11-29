@@ -24,6 +24,7 @@ interface ComponentTreeItemProps {
   depth?: number;
   scrollToComponentId?: string | null;
   componentIdsWithProblems: Set<string>;
+  isAccessory?: boolean;
 }
 
 export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
@@ -31,6 +32,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
   depth = 0,
   scrollToComponentId,
   componentIdsWithProblems,
+  isAccessory = false,
 }) => {
   const ref = React.useRef<HTMLDivElement>(null);
   const { onExpanded } = useNavigableTreeItemContext();
@@ -108,6 +110,11 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
         <HStack flex={1} justifyContent="space-between" position="relative">
           <HStack>
             <Text fontSize="sm" color="white">
+              {isAccessory && (
+                <Text as="span" color={isSelected ? "white" : "gray.400"} fontWeight="normal">
+                  [Accessory]{" "}
+                </Text>
+              )}
               {getMessageBuilderComponentLabel(component.type)}
             </Text>
             {componentIdsWithProblems.has(component.id) && (
@@ -156,6 +163,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                   depth={depth + 1}
                   scrollToComponentId={scrollToComponentId}
                   componentIdsWithProblems={componentIdsWithProblems}
+                  isAccessory
                 />
               </NavigableTreeItem>
             )}

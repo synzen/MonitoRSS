@@ -191,8 +191,8 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
       const spacing = comp.spacing === 2 ? 4 : 2;
 
       return (
-        <Box key={`separator-${index}`} py={spacing}>
-          {showDivider && <Divider borderColor="whiteAlpha.200" />}
+        <Box key={`separator-${index}`} py={!showDivider ? `${spacing}px` : undefined}>
+          {showDivider && <Divider borderColor="hsl(240 calc(1*4%) 60.784%/0.2)" />}
         </Box>
       );
     }
