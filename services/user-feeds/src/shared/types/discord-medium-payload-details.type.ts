@@ -80,11 +80,22 @@ const buttonSchemaV2 = z.object({
   disabled: z.boolean().optional().default(false),
 });
 
+const separatorSchemaV2 = z.object({
+  type: z.literal("SEPARATOR"),
+  divider: z.boolean().optional().default(true),
+  spacing: z
+    .number()
+    .min(1, "Spacing must be 1 or 2")
+    .max(2, "Spacing must be 1 or 2")
+    .optional()
+    .default(1),
+});
+
 const sectionSchemaV2 = z.object({
   type: z.literal("SECTION"),
   components: z
     .array(textDisplaySchemaV2)
-    .min(1, "Section must have at least 1 text display")
+    .min(1, "Section must have at least 1 component")
     .max(3, "Section cannot have more than 3 text displays"),
   accessory: z.discriminatedUnion("type", [buttonSchemaV2, thumbnailSchemaV2], {
     errorMap: () => ({ message: "Accessory must be a Button or Thumbnail" }),
@@ -99,22 +110,13 @@ const actionRowSchemaV2 = z.object({
     .max(5, "Action row cannot have more than 5 buttons"),
 });
 
-const separatorSchemaV2 = z.object({
-  type: z.literal("SEPARATOR"),
-  divider: z.boolean().optional().default(true),
-  spacing: z
-    .number()
-    .min(1, "Spacing must be 1 or 2")
-    .max(2, "Spacing must be 1 or 2")
-    .optional()
-    .default(1),
-});
-
 export const componentV2Schema = z.discriminatedUnion(
   "type",
   [sectionSchemaV2, actionRowSchemaV2, separatorSchemaV2],
   {
-    errorMap: () => ({ message: "Component must be a Section, Action Row, or Separator" }),
+    errorMap: () => ({
+      message: "Component must be a Section, Action Row, or Separator",
+    }),
   }
 );
 

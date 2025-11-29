@@ -293,7 +293,7 @@ const createV2SectionComponent = (
     children: [] as Component[],
   };
 
-  // Add text display components
+  // Add text display components only (separators are handled at root level)
   if (section.components && section.components.length > 0) {
     section.components.forEach((comp, compIndex) => {
       if (comp.type === V2_COMPONENT_TYPE.TextDisplay) {

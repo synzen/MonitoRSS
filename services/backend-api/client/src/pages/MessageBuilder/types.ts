@@ -128,7 +128,7 @@ export interface SectionComponent {
   type: ComponentType.V2Section;
   id: string;
   name: string;
-  children: Component[]; // max 3, only TextDisplay allowed
+  children: TextDisplayComponent[]; // max 3, only TextDisplay allowed
   accessory?: Component; // required, only Button allowed
 }
 

@@ -69,8 +69,8 @@ const convertV2SectionToAPI = (section: SectionComponent) => {
   } = {
     type: V2_COMPONENT_TYPE.Section,
     components: section.children
-      .filter((c): c is TextDisplayComponent => c.type === ComponentType.V2TextDisplay)
-      .map(convertV2TextDisplayToAPI),
+      .filter((c) => c.type === ComponentType.V2TextDisplay)
+      .map((c) => convertV2TextDisplayToAPI(c as TextDisplayComponent)),
   };
 
   if (section.accessory && section.accessory.type === ComponentType.V2Button) {

@@ -531,12 +531,12 @@ export class DiscordPayloadBuilderService {
     section: SectionV2,
     replacePlaceholderOptions: ReplacePlaceholdersOptions
   ): DiscordSectionV2 {
-    // Process text display components with placeholder replacement
-    const textDisplays = section.components.map((textDisplay) => ({
+    // Process section child components (text displays only)
+    const components = section.components.map((child) => ({
       type: DISCORD_COMPONENT_TYPE_TO_NUMBER[DiscordComponentType.TextDisplay],
       content: this.replacePlaceholdersInString(
         article,
-        textDisplay.content,
+        child.content,
         replacePlaceholderOptions
       ),
     }));
@@ -550,7 +550,7 @@ export class DiscordPayloadBuilderService {
 
     return {
       type: DISCORD_COMPONENT_TYPE_TO_NUMBER[DiscordComponentType.Section],
-      components: textDisplays,
+      components,
       accessory,
     };
   }

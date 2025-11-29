@@ -229,6 +229,13 @@ export const AddComponentButton: React.FC<AddComponentButtonProps> = ({
             >
               Add Section
             </MenuItem>
+            <MenuItem
+              color="white"
+              onClick={() => onAddChild(ComponentType.V2Divider)}
+              isDisabled={(component.children?.length || 0) >= 10}
+            >
+              Add Divider
+            </MenuItem>
           </MenuGroup>
         )}
         {component.type === ComponentType.V2ActionRow && (
@@ -243,20 +250,13 @@ export const AddComponentButton: React.FC<AddComponentButtonProps> = ({
           </MenuGroup>
         )}
         {component.type === ComponentType.V2Section && (
-          <MenuGroup title={`Components (${component.children?.length || 0}/3)`}>
+          <MenuGroup title={`Text Displays (${component.children?.length || 0}/3)`}>
             <MenuItem
               color="white"
               onClick={() => onAddChild(ComponentType.V2TextDisplay)}
               isDisabled={(component.children?.length || 0) >= 3}
             >
               Add Text Display
-            </MenuItem>
-            <MenuItem
-              color="white"
-              onClick={() => onAddChild(ComponentType.V2Divider)}
-              isDisabled={(component.children?.length || 0) >= 3}
-            >
-              Add Divider
             </MenuItem>
           </MenuGroup>
         )}
