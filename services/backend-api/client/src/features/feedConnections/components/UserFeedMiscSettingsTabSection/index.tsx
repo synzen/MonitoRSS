@@ -236,13 +236,33 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
       const fastestAllowedRate = Math.min(
         ...(feed?.refreshRateOptions.filter((r) => !r.disabledCode).map((o) => o.rateSeconds) || [])
       );
+      const canHaveLowerRate = feed?.refreshRateOptions.filter(
+        (r) => r.disabledCode === "INSUFFICIENT_SUPPORTER_TIER"
+      );
 
       if (e instanceof ApiAdapterError && e.errorCode === "USER_REFRESH_RATE_NOT_ALLOWED") {
         createErrorAlert({
           title: "Refresh rate is not allowed.",
-          description: `Your selected refresh rate must be greater than or equal to ${(
-            fastestAllowedRate / 60
-          ).toFixed(1)} minutes and less than or equal to 1440.0 minutes (1 day).`,
+          description: (
+            <Text>
+              Your selected refresh rate must be greater than or equal to
+              {(fastestAllowedRate / 60).toFixed(1)} minutes and less than or equal to 1440.0
+              minutes (1 day).
+              {canHaveLowerRate && (
+                <>
+                  {" "}
+                  <Link
+                    color="blue.200"
+                    href="https://monitorss.xyz/pricing"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Get lower rates by being a paid supporter.
+                  </Link>
+                </>
+              )}
+            </Text>
+          ),
         });
       } else {
         createErrorAlert({
