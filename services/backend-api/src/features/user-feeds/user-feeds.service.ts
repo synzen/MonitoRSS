@@ -1125,16 +1125,13 @@ export class UserFeedsService {
         updates.userRefreshRateSeconds === fastestPossibleRate
       ) {
         useUpdateObject.$unset!.userRefreshRateSeconds = "";
-      } else if (
-        updates.userRefreshRateSeconds > 86400 ||
-        (updates.userRefreshRateSeconds !==
-          this.supportersService.defaultRefreshRateSeconds &&
-          updates.userRefreshRateSeconds !==
-            this.supportersService.defaultSupporterRefreshRateSeconds &&
-          updates.userRefreshRateSeconds < fastestPossibleRate)
-      ) {
+      } else if (updates.userRefreshRateSeconds > 86400) {
         throw new RefreshRateNotAllowedException(
-          `Refresh rate ${updates.userRefreshRateSeconds} is not allowed for user ${user.discordUserId}`
+          `Refresh rate is too high. Maximum is 86400 seconds (24 hours).`
+        );
+      } else if (updates.userRefreshRateSeconds < fastestPossibleRate) {
+        throw new RefreshRateNotAllowedException(
+          `Refresh rate is too low. Must be at least ${fastestPossibleRate} seconds.`
         );
       } else {
         useUpdateObject.$set!.userRefreshRateSeconds =
