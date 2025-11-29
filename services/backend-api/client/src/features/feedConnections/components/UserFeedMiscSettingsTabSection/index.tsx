@@ -234,7 +234,7 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
       });
     } catch (e) {
       const fastestAllowedRate = Math.min(
-        ...(feed?.refreshRateOptions.map((o) => o.rateSeconds) || [])
+        ...(feed?.refreshRateOptions.filter((r) => !r.disabledCode).map((o) => o.rateSeconds) || [])
       );
 
       if (e instanceof ApiAdapterError && e.errorCode === "USER_REFRESH_RATE_NOT_ALLOWED") {
