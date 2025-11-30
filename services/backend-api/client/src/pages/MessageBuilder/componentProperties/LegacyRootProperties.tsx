@@ -120,10 +120,11 @@ interface FormatRadioCardProps extends UseRadioProps {
   title: string;
   description: string;
   badge?: string;
+  badgeColor?: string;
 }
 
 const FormatRadioCard: React.FC<FormatRadioCardProps> = (props) => {
-  const { title, description, badge, ...radioProps } = props;
+  const { title, description, badge, badgeColor = "green", ...radioProps } = props;
   const { getInputProps, getRadioProps, state } = useRadio(radioProps);
 
   return (
@@ -170,7 +171,7 @@ const FormatRadioCard: React.FC<FormatRadioCardProps> = (props) => {
                 {title}
               </Text>
               {badge && (
-                <Tag size="sm" colorScheme="green" variant="solid">
+                <Tag size="sm" colorScheme={badgeColor} variant="solid">
                   {badge}
                 </Tag>
               )}
@@ -266,6 +267,8 @@ export const LegacyRootProperties: React.FC = () => {
             {...getRadioProps({ value: ComponentType.LegacyRoot })}
             title="Components V1"
             description="Simpler and text-focused. Allows text content to be split across multiple messages."
+            badge="Classic"
+            badgeColor="gray"
           />
           <FormatRadioCard
             {...getRadioProps({ value: ComponentType.V2Root })}
