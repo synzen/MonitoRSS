@@ -554,6 +554,8 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
           borderColor="hsl(240 calc(1*4%) 60.784%/0.2)"
           overflow="hidden"
           p="16px"
+          width="fit-content"
+          maxWidth="100%"
         >
           {accentColor && (
             <Box position="absolute" left={0} top={0} bottom={0} width="4px" bg={accentColor} />
@@ -576,7 +578,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
               SPOILER
             </Box>
           )}
-          <VStack align="stretch" spacing={2} pl={accentColor ? 2 : 0}>
+          <VStack align="flex-start" spacing={2} pl={accentColor ? 2 : 0}>
             {containerComp.components?.map((child: any, i: number) => renderApiComponent(child, i))}
           </VStack>
         </Box>
