@@ -20,6 +20,15 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
         .string()
         .required("Expected non-empty Button label")
         .max(80, "Expected Button label to have at most 80 characters"),
+      style: yup.string(),
+      href: yup.string().when("style", {
+        is: DiscordButtonStyle.Link,
+        then: (schema) =>
+          schema
+            .required("Expected non-empty Link URL for Link-style button")
+            .max(512, "Expected Link URL to have at most 512 characters"),
+        otherwise: (schema) => schema.nullable(),
+      }),
     });
 
     const textDisplaySchema = baseSchema.shape({
