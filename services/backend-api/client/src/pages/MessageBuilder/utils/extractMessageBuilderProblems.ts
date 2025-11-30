@@ -102,9 +102,9 @@ const extractMessageBuilderProblems = (
 
       if (key === "accessory" && component.type === ComponentType.V2Section) {
         // Handle accessory-level errors (e.g., required validation when accessory is missing)
-        if (errors[key]?.id) {
+        if (errors[key]?.message) {
           problems.push({
-            message: "Accessory component is required.",
+            message: errors[key].message,
             path: getComponentPath(messageComponent, component.id) || component.name,
             componentId: component.id,
           });
