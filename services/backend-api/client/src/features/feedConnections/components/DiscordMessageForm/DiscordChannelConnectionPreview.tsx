@@ -116,7 +116,26 @@ export const DiscordChannelConnectionPreview = ({
         darkTheme
         username={bot?.result.username || "MonitoRSS"}
         avatar_url={bot?.result.avatar || "https://cdn.discordapp.com/embed/avatars/0.png"}
-        messages={connectionPreview?.result.messages || []}
+        messages={
+          (connectionPreview?.result.messages || []) as Array<{
+            content?: string | null;
+            embeds?: Array<{
+              title?: string;
+              description?: string;
+              url?: string;
+              color?: number;
+            }>;
+            components?: Array<{
+              type: number;
+              components: Array<{
+                type: number;
+                style: number;
+                label: string;
+                url?: string;
+              }>;
+            }> | null;
+          }>
+        }
       />
     </Box>
   );

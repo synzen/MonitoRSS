@@ -323,7 +323,10 @@ export class FeedHandlerService {
 
   async validateDiscordPayload(data: Record<string, unknown>): Promise<
     | { valid: true; data: Record<string, unknown> }
-    | { valid: false; errors: Array<{ path: (string | number)[]; message: string }> }
+    | {
+        valid: false;
+        errors: Array<{ path: (string | number)[]; message: string }>;
+      }
   > {
     const res = await fetch(
       `${this.host}/v1/user-feeds/validate-discord-payload`,
@@ -347,7 +350,10 @@ export class FeedHandlerService {
 
     const json = (await res.json()) as
       | { valid: true; data: Record<string, unknown> }
-      | { valid: false; errors: Array<{ path: (string | number)[]; message: string }> };
+      | {
+          valid: false;
+          errors: Array<{ path: (string | number)[]; message: string }>;
+        };
 
     return json;
   }
