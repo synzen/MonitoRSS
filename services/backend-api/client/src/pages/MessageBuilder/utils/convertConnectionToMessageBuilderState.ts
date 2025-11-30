@@ -487,6 +487,10 @@ export const convertConnectionToMessageBuilderState = (
     channelNewThreadExcludesPreview: connection.details?.channelNewThreadExcludesPreview,
     channelNewThreadTitle: connection.details?.channelNewThreadTitle,
     forumThreadTags: connection.details?.forumThreadTags,
+    formatTables: connection.details?.formatter?.formatTables,
+    stripImages: connection.details?.formatter?.stripImages,
+    ignoreNewLines: connection.details?.formatter?.ignoreNewLines,
+    enablePlaceholderFallback: connection.details?.enablePlaceholderFallback,
   };
 
   // Check if this is a V2 connection (has componentsV2 data)
@@ -535,10 +539,6 @@ export const convertConnectionToMessageBuilderState = (
       0
     ) as LegacyMessageComponentRoot),
     children: [],
-    formatTables: connection.details?.formatter?.formatTables,
-    stripImages: connection.details?.formatter?.stripImages,
-    ignoreNewLines: connection.details?.formatter?.ignoreNewLines,
-    enablePlaceholderFallback: connection.details.enablePlaceholderFallback,
     ...sharedRootProperties,
   };
 
