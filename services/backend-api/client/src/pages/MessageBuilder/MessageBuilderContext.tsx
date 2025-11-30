@@ -508,12 +508,6 @@ const MessageBuilderInternalProvider: React.FC<{ children: React.ReactNode }> = 
       setCurrentSelectedId(newRoot.id);
       setCurrentFocusedId(newRoot.id);
       setExpandedIds(() => new Set([newRoot.id]));
-
-      notifyInfo(
-        `Switched to ${
-          targetType === ComponentType.LegacyRoot ? "Legacy Message" : "Components V2"
-        } format`
-      );
     },
     [getValues, setValue, setCurrentSelectedId, setCurrentFocusedId, setExpandedIds]
   );

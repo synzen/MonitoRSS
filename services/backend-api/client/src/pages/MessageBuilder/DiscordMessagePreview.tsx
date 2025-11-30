@@ -289,10 +289,10 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
 
     if (type === DISCORD_V2_COMPONENT_TYPE.Separator) {
       const showDivider = comp.divider !== false;
-      const spacing = comp.spacing === 2 ? 4 : 2;
+      const spacing = (comp.spacing || 1) * 4;
 
       return (
-        <Box key={`separator-${index}`} py={!showDivider ? `${spacing}px` : undefined}>
+        <Box key={`separator-${index}`} my={`${spacing}px`}>
           {showDivider && <Divider borderColor="hsl(240 calc(1*4%) 60.784%/0.2)" />}
         </Box>
       );
@@ -310,7 +310,208 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
       const items = (comp as any).items || [];
       const itemCount = items.length;
 
-      // Calculate columns: 1 for 1 item, 2 for 2-4 items, 3 for 5+ items
+      const renderGalleryItem = (item: any, i: number, height?: string) => (
+        <Box
+          key={`gallery-item-${item.media?.url || i}`}
+          position="relative"
+          borderRadius="md"
+          overflow="hidden"
+          bg="gray.800"
+          height={height}
+          width="100%"
+        >
+          {item.spoiler && (
+            <Box
+              position="absolute"
+              top={0}
+              left={0}
+              right={0}
+              bottom={0}
+              bg="blackAlpha.800"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              fontSize="xs"
+              color="gray.300"
+              zIndex={1}
+            >
+              SPOILER
+            </Box>
+          )}
+          <Image
+            src={item.media?.url || ""}
+            alt={item.description || "Gallery image"}
+            objectFit="cover"
+            width="100%"
+            height={height || "auto"}
+            minHeight="60px"
+            maxHeight={height ? undefined : "200px"}
+            fallback={
+              <Box
+                width="100%"
+                height={height || "80px"}
+                bg="gray.700"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                fontSize="xs"
+                color="gray.500"
+              >
+                {item.media?.url ? "Loading..." : "No image"}
+              </Box>
+            }
+          />
+        </Box>
+      );
+
+      // Special layout for 3 images: 1 large square on left, 2 smaller squares stacked on right
+      if (itemCount === 3) {
+        return (
+          <Box
+            key={`mediagallery-${index}`}
+            display="grid"
+            gridTemplateColumns="2fr 1fr"
+            gridTemplateRows="1fr 1fr"
+            gap="4px"
+            width="100%"
+            maxWidth="600px"
+            sx={{
+              // Make the grid height match the width of the first column to create a square
+              aspectRatio: "3/2",
+            }}
+          >
+            <Box gridRow="1 / 3" overflow="hidden" borderRadius="md">
+              {renderGalleryItem(items[0], 0, "100%")}
+            </Box>
+            <Box overflow="hidden" borderRadius="md">
+              {renderGalleryItem(items[1], 1, "100%")}
+            </Box>
+            <Box overflow="hidden" borderRadius="md">
+              {renderGalleryItem(items[2], 2, "100%")}
+            </Box>
+          </Box>
+        );
+      }
+
+      // Special layout for 5 images: 2 squares on top, 3 squares on bottom
+      if (itemCount === 5) {
+        return (
+          <Box
+            key={`mediagallery-${index}`}
+            display="grid"
+            gridTemplateColumns="1fr 1fr"
+            gap={1}
+            width="600px"
+            maxWidth="100%"
+          >
+            <Box aspectRatio="1/1">{renderGalleryItem(items[0], 0, "100%")}</Box>
+            <Box aspectRatio="1/1">{renderGalleryItem(items[1], 1, "100%")}</Box>
+            <Box gridColumn="1 / -1" display="grid" gridTemplateColumns="1fr 1fr 1fr" gap={1}>
+              <Box aspectRatio="1/1">{renderGalleryItem(items[2], 2, "100%")}</Box>
+              <Box aspectRatio="1/1">{renderGalleryItem(items[3], 3, "100%")}</Box>
+              <Box aspectRatio="1/1">{renderGalleryItem(items[4], 4, "100%")}</Box>
+            </Box>
+          </Box>
+        );
+      }
+
+      // Special layout for 7 images: 1 large on top, 2 rows of 3 squares below
+      if (itemCount === 7) {
+        return (
+          <Box
+            key={`mediagallery-${index}`}
+            display="grid"
+            gridTemplateColumns="1fr 1fr 1fr"
+            gap={1}
+            width="600px"
+            maxWidth="100%"
+          >
+            <Box gridColumn="1 / -1" height="250px">
+              {renderGalleryItem(items[0], 0, "250px")}
+            </Box>
+            <Box aspectRatio="1/1">{renderGalleryItem(items[1], 1, "100%")}</Box>
+            <Box aspectRatio="1/1">{renderGalleryItem(items[2], 2, "100%")}</Box>
+            <Box aspectRatio="1/1">{renderGalleryItem(items[3], 3, "100%")}</Box>
+            <Box aspectRatio="1/1">{renderGalleryItem(items[4], 4, "100%")}</Box>
+            <Box aspectRatio="1/1">{renderGalleryItem(items[5], 5, "100%")}</Box>
+            <Box aspectRatio="1/1">{renderGalleryItem(items[6], 6, "100%")}</Box>
+          </Box>
+        );
+      }
+
+      // Special layout for 8 images: 2 large squares on top, 2 rows of 3 squares below
+      if (itemCount === 8) {
+        return (
+          <Box
+            key={`mediagallery-${index}`}
+            display="grid"
+            gridTemplateColumns="1fr 1fr"
+            gap={1}
+            width="600px"
+            maxWidth="100%"
+          >
+            <Box aspectRatio="1/1">{renderGalleryItem(items[0], 0, "100%")}</Box>
+            <Box aspectRatio="1/1">{renderGalleryItem(items[1], 1, "100%")}</Box>
+            <Box gridColumn="1 / -1" display="grid" gridTemplateColumns="1fr 1fr 1fr" gap={1}>
+              <Box aspectRatio="1/1">{renderGalleryItem(items[2], 2, "100%")}</Box>
+              <Box aspectRatio="1/1">{renderGalleryItem(items[3], 3, "100%")}</Box>
+              <Box aspectRatio="1/1">{renderGalleryItem(items[4], 4, "100%")}</Box>
+            </Box>
+            <Box gridColumn="1 / -1" display="grid" gridTemplateColumns="1fr 1fr 1fr" gap={1}>
+              <Box aspectRatio="1/1">{renderGalleryItem(items[5], 5, "100%")}</Box>
+              <Box aspectRatio="1/1">{renderGalleryItem(items[6], 6, "100%")}</Box>
+              <Box aspectRatio="1/1">{renderGalleryItem(items[7], 7, "100%")}</Box>
+            </Box>
+          </Box>
+        );
+      }
+
+      // Special layout for 10 images: 1 large on top, 3 rows of 3 below
+      if (itemCount === 10) {
+        return (
+          <Box
+            key={`mediagallery-${index}`}
+            display="grid"
+            gridTemplateColumns="1fr 1fr 1fr"
+            gridTemplateRows="300px 150px 150px 150px"
+            gap={1}
+            width="600px"
+            maxWidth="100%"
+          >
+            <Box gridColumn="1 / -1" height="300px">
+              {renderGalleryItem(items[0], 0, "300px")}
+            </Box>
+            <Box height="150px">{renderGalleryItem(items[1], 1, "150px")}</Box>
+            <Box height="150px">{renderGalleryItem(items[2], 2, "150px")}</Box>
+            <Box height="150px">{renderGalleryItem(items[3], 3, "150px")}</Box>
+            <Box height="150px">{renderGalleryItem(items[4], 4, "150px")}</Box>
+            <Box height="150px">{renderGalleryItem(items[5], 5, "150px")}</Box>
+            <Box height="150px">{renderGalleryItem(items[6], 6, "150px")}</Box>
+            <Box height="150px">{renderGalleryItem(items[7], 7, "150px")}</Box>
+            <Box height="150px">{renderGalleryItem(items[8], 8, "150px")}</Box>
+            <Box height="150px">{renderGalleryItem(items[9], 9, "150px")}</Box>
+          </Box>
+        );
+      }
+
+      // Special layout for 2 images: 2 squares side by side
+      if (itemCount === 2) {
+        return (
+          <Box
+            key={`mediagallery-${index}`}
+            display="grid"
+            gridTemplateColumns="1fr 1fr"
+            gap="4px"
+            width="100%"
+            maxWidth="600px"
+          >
+            <Box aspectRatio="1/1">{renderGalleryItem(items[0], 0, "100%")}</Box>
+            <Box aspectRatio="1/1">{renderGalleryItem(items[1], 1, "100%")}</Box>
+          </Box>
+        );
+      }
+
+      // Calculate columns: 1 for 1 item, 2 for 4 items, 3 for 6+ items
       const getColumns = () => {
         if (itemCount === 1) return 1;
         if (itemCount <= 4) return 2;
@@ -318,59 +519,21 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
         return 3;
       };
 
+      // Fixed width of 600px only for galleries with more than 3 images
+      const width = itemCount > 3 ? "600px" : undefined;
+      const maxWidth = itemCount > 3 ? "100%" : undefined;
+      // Fixed height for grid items when more than 3 images
+      const gridItemHeight = itemCount > 3 ? "180px" : undefined;
+
       return (
-        <SimpleGrid key={`mediagallery-${index}`} columns={getColumns()} spacing={2}>
-          {items.map((item: any, i: number) => (
-            <Box
-              key={`gallery-item-${item.media?.url || i}`}
-              position="relative"
-              borderRadius="md"
-              overflow="hidden"
-              bg="gray.800"
-            >
-              {item.spoiler && (
-                <Box
-                  position="absolute"
-                  top={0}
-                  left={0}
-                  right={0}
-                  bottom={0}
-                  bg="blackAlpha.800"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  fontSize="xs"
-                  color="gray.300"
-                  zIndex={1}
-                >
-                  SPOILER
-                </Box>
-              )}
-              <Image
-                src={item.media?.url || ""}
-                alt={item.description || "Gallery image"}
-                objectFit="cover"
-                width="100%"
-                height="auto"
-                minHeight="60px"
-                maxHeight="200px"
-                fallback={
-                  <Box
-                    width="100%"
-                    height="80px"
-                    bg="gray.700"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    fontSize="xs"
-                    color="gray.500"
-                  >
-                    {item.media?.url ? "Loading..." : "No image"}
-                  </Box>
-                }
-              />
-            </Box>
-          ))}
+        <SimpleGrid
+          key={`mediagallery-${index}`}
+          columns={getColumns()}
+          spacing={1}
+          width={width}
+          maxWidth={maxWidth}
+        >
+          {items.map((item: any, i: number) => renderGalleryItem(item, i, gridItemHeight))}
         </SimpleGrid>
       );
     }
@@ -387,8 +550,10 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
           position="relative"
           bg="hsl(240 calc(1*4.762%) 92.157%/0.06)"
           borderRadius="md"
+          borderWidth="1px"
+          borderColor="hsl(240 calc(1*4%) 60.784%/0.2)"
           overflow="hidden"
-          p={3}
+          p="16px"
         >
           {accentColor && (
             <Box position="absolute" left={0} top={0} bottom={0} width="4px" bg={accentColor} />
@@ -578,12 +743,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
                 </Text>
               </HStack>
               <Box>
-                <VStack
-                  align="stretch"
-                  spacing={3}
-                  maxW={legacyMessages.length > 0 ? undefined : "min(600px, 100%)"}
-                  w="fit-content"
-                >
+                <VStack align="stretch" spacing={3} maxW="min(600px, 100%)" width="100%">
                   {legacyMessages.length > 0 && (
                     <DiscordView
                       darkTheme
@@ -594,7 +754,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
                     />
                   )}
                   {isV2Components && v2Components && v2Components.length > 0 && (
-                    <VStack align="stretch" spacing={2} maxWidth="min(600px, 100%)" w="fit-content">
+                    <VStack align="stretch" spacing={2} width="100%">
                       {v2Components.map((comp, i) => renderApiComponent(comp, i))}
                     </VStack>
                   )}
@@ -611,6 +771,9 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
             </Stack>
           </HStack>
         </Box>
+        <Text fontSize="sm" color="gray.400" mt={2} textAlign="left">
+          This is an approximate preview. Send to Discord to see the actual representation.
+        </Text>
       </PageAlertProvider>
     </Stack>
   );

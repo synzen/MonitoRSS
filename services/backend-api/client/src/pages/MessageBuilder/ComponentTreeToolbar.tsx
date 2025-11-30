@@ -19,7 +19,7 @@ export const ComponentTreeToolbar: React.FC = () => {
   const { currentSelectedId, setExpandedIds } = useNavigableTreeContext();
   const { watch } = useFormContext<MessageBuilderFormState>();
   const messageComponent = watch("messageComponent");
-  const [configuringComponent, setConfiguringComponent] = useState<Component | null>(null);
+  const [isConfiguringComponent, setIsConfiguringComponent] = useState<boolean>(false);
   const isDesktop = useIsMessageBuilderDesktop();
 
   // Find the selected component recursively
@@ -80,11 +80,11 @@ export const ComponentTreeToolbar: React.FC = () => {
 
   const handleConfigureComponent = () => {
     if (!selectedComponent) return;
-    setConfiguringComponent(selectedComponent);
+    setIsConfiguringComponent(true);
   };
 
   const onCloseComponentConfigure = () => {
-    setConfiguringComponent(null);
+    setIsConfiguringComponent(false);
   };
 
   return (
@@ -111,7 +111,9 @@ export const ComponentTreeToolbar: React.FC = () => {
                   fontWeight={selectedComponent ? "semibold" : undefined}
                   fontStyle={!selectedComponent ? "italic" : "normal"}
                 >
-                  {selectedComponent ? getMessageBuilderComponentLabel(selectedComponent.type) : "None"}
+                  {selectedComponent
+                    ? getMessageBuilderComponentLabel(selectedComponent.type)
+                    : "None"}
                 </Text>
               </Text>
               <HStack spacing={2} flexWrap="wrap">
@@ -161,7 +163,7 @@ export const ComponentTreeToolbar: React.FC = () => {
           )}
         </HStack>
       </Box>
-      <SlidingConfigPanel onClose={onCloseComponentConfigure} component={configuringComponent} />
+      <SlidingConfigPanel onClose={onCloseComponentConfigure} isOpen={!!isConfiguringComponent} />
     </>
   );
 };

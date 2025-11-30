@@ -20,8 +20,6 @@ import {
   Box,
   IconButton,
   Heading,
-  Radio,
-  RadioGroup,
   AlertDialog,
   AlertDialogOverlay,
   AlertDialogContent,
@@ -29,7 +27,14 @@ import {
   AlertDialogBody,
   AlertDialogFooter,
   useDisclosure,
+  List,
+  ListItem,
+  ListIcon,
+  useRadioGroup,
+  useRadio,
+  UseRadioProps,
 } from "@chakra-ui/react";
+import { CheckIcon, InfoIcon } from "@chakra-ui/icons";
 import { FiFilter } from "react-icons/fi";
 import { Controller, useFormContext } from "react-hook-form";
 import { InputWithInsertPlaceholder } from "../../../components/InputWithInsertPlaceholder";
@@ -114,21 +119,92 @@ const TagCheckbox = ({
   );
 };
 
+interface FormatRadioCardProps extends UseRadioProps {
+  title: string;
+  description: string;
+  badge?: string;
+}
+
+const FormatRadioCard: React.FC<FormatRadioCardProps> = (props) => {
+  const { title, description, badge, ...radioProps } = props;
+  const { getInputProps, getRadioProps, state } = useRadio(radioProps);
+
+  return (
+    <Box as="label" width="100%" cursor="pointer">
+      <input {...getInputProps()} />
+      <Box
+        {...getRadioProps()}
+        p={4}
+        borderRadius="md"
+        borderWidth="2px"
+        borderColor={state.isChecked ? "blue.400" : "gray.600"}
+        bg={state.isChecked ? "blue.900" : "gray.800"}
+        _hover={{
+          borderColor: state.isChecked ? "blue.400" : "gray.500",
+          bg: state.isChecked ? "blue.900" : "gray.700",
+        }}
+        _focusVisible={{
+          outline: "2px solid",
+          outlineColor: "blue.400",
+          outlineOffset: "2px",
+        }}
+        transition="all 0.2s"
+      >
+        <HStack spacing={3} align="flex-start">
+          <Box
+            bg={state.isChecked ? "blue.400" : "transparent"}
+            borderWidth="2px"
+            borderColor={state.isChecked ? "blue.400" : "gray.500"}
+            borderRadius="full"
+            p={1}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            flexShrink={0}
+            width="22px"
+            height="22px"
+            mt={0.5}
+          >
+            {state.isChecked && <CheckIcon boxSize={2.5} color="white" />}
+          </Box>
+          <Box flex={1}>
+            <HStack mb={2} spacing={2}>
+              <Text fontWeight="bold" color="white" fontSize="md">
+                {title}
+              </Text>
+              {badge && (
+                <Tag size="sm" colorScheme="green" variant="solid">
+                  {badge}
+                </Tag>
+              )}
+            </HStack>
+            <Text fontSize="sm" color="gray.300">
+              {description}
+            </Text>
+          </Box>
+        </HStack>
+      </Box>
+    </Box>
+  );
+};
+
 export const LegacyRootProperties: React.FC = () => {
   const { updateCurrentlySelectedComponent: onChange, switchRootType } = useMessageBuilderContext();
   const { watch, control } = useFormContext<MessageBuilderFormState>();
   const component = watch("messageComponent");
   const isForumChannel = watch("messageComponent.isForumChannel");
-  
+
   // Root type switching confirmation dialog
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = useRef<HTMLButtonElement>(null);
-  const [pendingRootType, setPendingRootType] = useState<ComponentType.LegacyRoot | ComponentType.V2Root | null>(null);
-  
+  const [pendingRootType, setPendingRootType] = useState<
+    ComponentType.LegacyRoot | ComponentType.V2Root | null
+  >(null);
+
   const handleRootTypeChange = (value: string) => {
     const targetType = value as ComponentType.LegacyRoot | ComponentType.V2Root;
     if (component?.type === targetType) return;
-    
+
     // Check if there are children that would be lost
     if (component?.children && component.children.length > 0) {
       setPendingRootType(targetType);
@@ -137,12 +213,13 @@ export const LegacyRootProperties: React.FC = () => {
       switchRootType(targetType);
     }
   };
-  
+
   const confirmSwitch = () => {
     if (pendingRootType) {
       switchRootType(pendingRootType);
       setPendingRootType(null);
     }
+
     onClose();
   };
 
@@ -164,57 +241,95 @@ export const LegacyRootProperties: React.FC = () => {
   );
   const showChannelNewThreadOptions = connection.details.channel?.type === "new-thread";
 
+  const { getRootProps, getRadioProps } = useRadioGroup({
+    name: "messageFormat",
+    value: component?.type || ComponentType.LegacyRoot,
+    onChange: handleRootTypeChange,
+  });
+
+  const rootProps = getRootProps();
+
   if (!component) {
     return null;
   }
 
-  const isLegacyRoot = component?.type === ComponentType.LegacyRoot;
-
   return (
     <VStack align="stretch" spacing={6}>
       {/* Root Type Selector */}
-      <FormControl>
-        <FormLabel fontSize="sm" fontWeight="medium" color="gray.200">
+      <FormControl as="fieldset">
+        <FormLabel as="legend" fontSize="sm" fontWeight="medium" color="gray.200" mb={1}>
           Message Format
         </FormLabel>
-        <RadioGroup
-          value={component?.type || ComponentType.LegacyRoot}
-          onChange={handleRootTypeChange}
-        >
-          <Stack direction="row" spacing={4}>
-            <Radio value={ComponentType.LegacyRoot}>Legacy Message</Radio>
-            <Radio value={ComponentType.V2Root}>Components V2</Radio>
-          </Stack>
-        </RadioGroup>
-        <FormHelperText fontSize="sm" color="gray.400">
-          {isLegacyRoot
-            ? "Legacy format supports text content, embeds, and buttons."
-            : "Components V2 format supports text displays, sections, dividers, and action rows."}
+        <FormHelperText color="gray.400" mb={3} mt={0}>
+          The message format affects the types of components available when customizing your
+          message.
         </FormHelperText>
+        <VStack spacing={3} align="stretch" {...rootProps}>
+          <FormatRadioCard
+            {...getRadioProps({ value: ComponentType.LegacyRoot })}
+            title="Components V1"
+            description="Simpler and text-focused. Allows text content to be split across multiple messages."
+          />
+          <FormatRadioCard
+            {...getRadioProps({ value: ComponentType.V2Root })}
+            title="Components V2"
+            description="More focused on visuals with greater customization of message layout. Does not allow text content to be split across multiple messages."
+            badge="New"
+          />
+        </VStack>
       </FormControl>
-
       {/* Confirmation Dialog */}
       <AlertDialog isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose}>
         <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader>Switch Message Format</AlertDialogHeader>
+          <AlertDialogContent bg="gray.800">
+            <AlertDialogHeader color="white" fontSize="lg">
+              Switch to{" "}
+              {pendingRootType === ComponentType.V2Root ? "Components V2" : "Components V1"}?
+            </AlertDialogHeader>
             <AlertDialogBody>
-              Switching message format will clear your current message content. Settings like thread
-              title, mentions, and placeholder limits will be preserved. You can use the Discard
-              Changes button to undo this action before saving.
+              <VStack align="stretch" spacing={4}>
+                <HStack bg="orange.900" p={3} borderRadius="md" spacing={3}>
+                  <InfoIcon color="orange.300" />
+                  <Text fontSize="sm" color="orange.100">
+                    Your current message content will be cleared. This cannot be undone after
+                    saving.
+                  </Text>
+                </HStack>
+                <Box>
+                  <Text fontSize="sm" color="gray.300" fontWeight="medium" mb={2}>
+                    What will be preserved:
+                  </Text>
+                  <List spacing={1} fontSize="sm" color="gray.400">
+                    <ListItem display="flex" alignItems="center">
+                      <ListIcon as={CheckIcon} color="green.400" boxSize={3} />
+                      Thread title and forum settings
+                    </ListItem>
+                    <ListItem display="flex" alignItems="center">
+                      <ListIcon as={CheckIcon} color="green.400" boxSize={3} />
+                      Mentions configuration
+                    </ListItem>
+                    <ListItem display="flex" alignItems="center">
+                      <ListIcon as={CheckIcon} color="green.400" boxSize={3} />
+                      Placeholder limits and text settings
+                    </ListItem>
+                  </List>
+                </Box>
+                <Text fontSize="sm" color="gray.400">
+                  You can use the Discard Changes button to undo this action before saving.
+                </Text>
+              </VStack>
             </AlertDialogBody>
             <AlertDialogFooter>
-              <Button ref={cancelRef} onClick={onClose}>
+              <Button ref={cancelRef} onClick={onClose} variant="ghost">
                 Cancel
               </Button>
-              <Button colorScheme="red" onClick={confirmSwitch} ml={3}>
+              <Button colorScheme="blue" onClick={confirmSwitch} ml={3}>
                 Switch Format
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialogOverlay>
       </AlertDialog>
-
       {isForumChannel && (
         <>
           <Heading as="h3" size="sm" mb={-2}>
@@ -381,139 +496,139 @@ export const LegacyRootProperties: React.FC = () => {
         <Heading as="h3" size="sm" mb={-2}>
           Text Content
         </Heading>
-          <FormControl>
-            <HStack justify="space-between" align="center" mb={2}>
-              <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
-                Format Tables
-              </FormLabel>
-              <Controller
-                name="messageComponent.formatTables"
-                control={control}
-                render={({ field: { value, onChange: fieldOnChange } }) => {
-                  return (
-                    <Switch
-                      isChecked={!!value}
-                      onChange={(e) => fieldOnChange(e.target.checked)}
-                      colorScheme="blue"
-                    />
-                  );
-                }}
+        <FormControl>
+          <HStack justify="space-between" align="center" mb={2}>
+            <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
+              Format Tables
+            </FormLabel>
+            <Controller
+              name="messageComponent.formatTables"
+              control={control}
+              render={({ field: { value, onChange: fieldOnChange } }) => {
+                return (
+                  <Switch
+                    isChecked={!!value}
+                    onChange={(e) => fieldOnChange(e.target.checked)}
+                    colorScheme="blue"
+                  />
+                );
+              }}
+            />
+          </HStack>
+          <FormHelperText fontSize="sm" color="gray.400">
+            If enabled, tables will be formatted to ensure uniform spacing. This is done by wrapping
+            the table with triple backticks (```table here``` for example).
+          </FormHelperText>
+        </FormControl>
+        <FormControl>
+          <HStack justify="space-between" align="center" mb={2}>
+            <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
+              Strip Images
+            </FormLabel>
+            <Controller
+              name="messageComponent.stripImages"
+              control={control}
+              render={({ field: { value, onChange: fieldOnChange } }) => {
+                return (
+                  <Switch
+                    isChecked={!!value}
+                    onChange={(e) => fieldOnChange(e.target.checked)}
+                    colorScheme="blue"
+                  />
+                );
+              }}
+            />
+          </HStack>
+          <FormHelperText fontSize="sm" color="gray.400">
+            If enabled, all images with &quot;src&quot; attributes found in the message content will
+            be removed.
+          </FormHelperText>
+        </FormControl>
+        <FormControl>
+          <HStack justify="space-between" align="center" mb={2}>
+            <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
+              Ignore New Lines
+            </FormLabel>
+            <Controller
+              name="messageComponent.ignoreNewLines"
+              control={control}
+              render={({ field: { value, onChange: fieldOnChange } }) => {
+                return (
+                  <Switch
+                    isChecked={!!value}
+                    onChange={(e) => fieldOnChange(e.target.checked)}
+                    colorScheme="blue"
+                  />
+                );
+              }}
+            />
+          </HStack>
+          <FormHelperText fontSize="sm" color="gray.400">
+            Prevents excessive new lines from being added to the message if the text content within
+            placeholder content have new lines.
+          </FormHelperText>
+        </FormControl>
+        <FormControl>
+          <HStack justify="space-between" align="center" mb={2}>
+            <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
+              Placeholder Fallback
+            </FormLabel>
+            <Controller
+              name="messageComponent.enablePlaceholderFallback"
+              control={control}
+              render={({ field: { value, onChange: fieldOnChange } }) => {
+                return (
+                  <Switch
+                    isChecked={!!value}
+                    onChange={(e) => fieldOnChange(e.target.checked)}
+                    colorScheme="blue"
+                  />
+                );
+              }}
+            />
+          </HStack>
+          <FormHelperText fontSize="sm" color="gray.400">
+            <Stack>
+              <Text>
+                Support falling back on alternate values within a placeholder if there is no
+                placeholder value for a given article.
+              </Text>
+              <HelpDialog
+                trigger={
+                  <Button
+                    display="inline"
+                    fontSize="sm"
+                    colorScheme="blue"
+                    variant="link"
+                    whiteSpace="initial"
+                    textAlign="left"
+                    mb={2}
+                  >
+                    Click here to see how to use placeholder fallbacks.
+                  </Button>
+                }
+                title="Using Placeholder Fallbacks"
+                body={
+                  <Stack spacing={6}>
+                    <Text>
+                      To use placeholder fallbacks, separate each placeholder with <Code>||</Code>{" "}
+                      within the curly braces. For example, if you use{" "}
+                      <Code>{"{{title||description}}"}</Code>, then the description will be used if
+                      the title is not available.{" "}
+                    </Text>
+                    <Text>
+                      If all placeholders have no content, then you may add text as the final
+                      fallback like so: <Code>{"{{title||description||text::my final text}}"}</Code>
+                      . In this case, <Code>my final text</Code> will appear in the final output if
+                      both title and description do not exist.
+                    </Text>
+                  </Stack>
+                }
               />
-            </HStack>
-            <FormHelperText fontSize="sm" color="gray.400">
-              If enabled, tables will be formatted to ensure uniform spacing. This is done by wrapping
-              the table with triple backticks (```table here``` for example).
-            </FormHelperText>
-          </FormControl>
-          <FormControl>
-            <HStack justify="space-between" align="center" mb={2}>
-              <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
-                Strip Images
-              </FormLabel>
-              <Controller
-                name="messageComponent.stripImages"
-                control={control}
-                render={({ field: { value, onChange: fieldOnChange } }) => {
-                  return (
-                    <Switch
-                      isChecked={!!value}
-                      onChange={(e) => fieldOnChange(e.target.checked)}
-                      colorScheme="blue"
-                    />
-                  );
-                }}
-              />
-            </HStack>
-            <FormHelperText fontSize="sm" color="gray.400">
-              If enabled, all images with &quot;src&quot; attributes found in the message content will
-              be removed.
-            </FormHelperText>
-          </FormControl>
-          <FormControl>
-            <HStack justify="space-between" align="center" mb={2}>
-              <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
-                Ignore New Lines
-              </FormLabel>
-              <Controller
-                name="messageComponent.ignoreNewLines"
-                control={control}
-                render={({ field: { value, onChange: fieldOnChange } }) => {
-                  return (
-                    <Switch
-                      isChecked={!!value}
-                      onChange={(e) => fieldOnChange(e.target.checked)}
-                      colorScheme="blue"
-                    />
-                  );
-                }}
-              />
-            </HStack>
-            <FormHelperText fontSize="sm" color="gray.400">
-              Prevents excessive new lines from being added to the message if the text content within
-              placeholder content have new lines.
-            </FormHelperText>
-          </FormControl>
-          <FormControl>
-            <HStack justify="space-between" align="center" mb={2}>
-              <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
-                Placeholder Fallback
-              </FormLabel>
-              <Controller
-                name="messageComponent.enablePlaceholderFallback"
-                control={control}
-                render={({ field: { value, onChange: fieldOnChange } }) => {
-                  return (
-                    <Switch
-                      isChecked={!!value}
-                      onChange={(e) => fieldOnChange(e.target.checked)}
-                      colorScheme="blue"
-                    />
-                  );
-                }}
-              />
-            </HStack>
-            <FormHelperText fontSize="sm" color="gray.400">
-              <Stack>
-                <Text>
-                  Support falling back on alternate values within a placeholder if there is no
-                  placeholder value for a given article.
-                </Text>
-                <HelpDialog
-                  trigger={
-                    <Button
-                      display="inline"
-                      fontSize="sm"
-                      colorScheme="blue"
-                      variant="link"
-                      whiteSpace="initial"
-                      textAlign="left"
-                      mb={2}
-                    >
-                      Click here to see how to use placeholder fallbacks.
-                    </Button>
-                  }
-                  title="Using Placeholder Fallbacks"
-                  body={
-                    <Stack spacing={6}>
-                      <Text>
-                        To use placeholder fallbacks, separate each placeholder with <Code>||</Code>{" "}
-                        within the curly braces. For example, if you use{" "}
-                        <Code>{"{{title||description}}"}</Code>, then the description will be used if
-                        the title is not available.{" "}
-                      </Text>
-                      <Text>
-                        If all placeholders have no content, then you may add text as the final fallback
-                        like so: <Code>{"{{title||description||text::my final text}}"}</Code>. In this
-                        case, <Code>my final text</Code> will appear in the final output if both title
-                        and description do not exist.
-                      </Text>
-                    </Stack>
-                  }
-                />
-              </Stack>
-            </FormHelperText>
-          </FormControl>
-        </>
+            </Stack>
+          </FormHelperText>
+        </FormControl>
+      </>
 
       {/* Shared options for both root types */}
       <Heading as="h3" size="sm" mb={-2}>

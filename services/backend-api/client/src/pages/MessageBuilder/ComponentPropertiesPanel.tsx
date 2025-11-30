@@ -67,6 +67,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   const renderComponentDescription = (component: Component) => {
     let description = "";
 
+    // Legacy component descriptions
     if (component.type === ComponentType.LegacyEmbedContainer) {
       description =
         "A container that holds a re-orderable list of embeds for rich message formatting.";
@@ -77,6 +78,33 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
       description = "A row that holds buttons for user interactions in Discord messages.";
     } else if (component.type === ComponentType.LegacyEmbedField) {
       description = "A field that can display a name and value, with optional inline layout.";
+    } else if (component.type === ComponentType.LegacyText) {
+      description = "Plain text content that appears above embeds in your message.";
+    } else if (component.type === ComponentType.LegacyButton) {
+      description = "A clickable button that links to an external URL.";
+    }
+    // V2 component descriptions
+    else if (component.type === ComponentType.V2Container) {
+      description =
+        "A styled container that groups components together with an optional accent color and spoiler effect.";
+    } else if (component.type === ComponentType.V2Section) {
+      description =
+        "A layout component that displays text content alongside an accessory (thumbnail or button).";
+    } else if (component.type === ComponentType.V2ActionRow) {
+      description = "A horizontal row that holds up to 5 interactive buttons.";
+    } else if (component.type === ComponentType.V2TextDisplay) {
+      description = "A text block that supports markdown formatting for rich text content.";
+    } else if (component.type === ComponentType.V2Divider) {
+      description =
+        "A visual separator that creates space between components with an optional line.";
+    } else if (component.type === ComponentType.V2Thumbnail) {
+      description = "A small image displayed as an accessory within a section.";
+    } else if (component.type === ComponentType.V2Button) {
+      description = "An interactive button that can link to URLs or trigger actions.";
+    } else if (component.type === ComponentType.V2MediaGallery) {
+      description = "A gallery component that displays multiple images in a grid layout.";
+    } else if (component.type === ComponentType.V2MediaGalleryItem) {
+      description = "An individual image item within a media gallery.";
     }
 
     if (!description) {
@@ -978,6 +1006,28 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             Action Rows can have at most 5 child components. {selectedComponent.children.length -
               5}{" "}
             child components must be deleted.
+          </Alert>
+        )}
+      {selectedComponent.type === ComponentType.V2Container &&
+        selectedComponent.children.length === 0 && (
+          <Alert status="error" borderRadius="md" role={undefined}>
+            <AlertIcon />
+            At least one child component is required for Containers.
+          </Alert>
+        )}
+      {selectedComponent.type === ComponentType.V2MediaGallery &&
+        selectedComponent.children.length === 0 && (
+          <Alert status="error" borderRadius="md" role={undefined}>
+            <AlertIcon />
+            At least one item is required for Media Galleries.
+          </Alert>
+        )}
+      {selectedComponent.type === ComponentType.V2MediaGallery &&
+        selectedComponent.children.length > 10 && (
+          <Alert status="error" borderRadius="md" role={undefined}>
+            <AlertIcon />
+            Media Galleries can have at most 10 items. {selectedComponent.children.length - 10}{" "}
+            items must be deleted.
           </Alert>
         )}
       {renderComponentDescription(selectedComponent)}

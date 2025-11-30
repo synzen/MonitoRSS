@@ -15,6 +15,7 @@ import {
   FaBars,
   FaBox,
   FaImages,
+  FaCubes,
 } from "react-icons/fa";
 import type { Component } from "../types";
 import { ComponentType } from "../types";
@@ -58,7 +59,7 @@ const componentIcons: Partial<Record<ComponentType, any>> = {
   [ComponentType.LegacyEmbedTimestamp]: FaClock,
   [ComponentType.LegacyActionRow]: FaClipboard,
   [ComponentType.LegacyButton]: FaHandPointer,
-  [ComponentType.V2Root]: FaEnvelope,
+  [ComponentType.V2Root]: FaCubes,
   [ComponentType.V2TextDisplay]: FaFont,
   [ComponentType.V2ActionRow]: FaClipboard,
   [ComponentType.V2Button]: FaHandPointer,

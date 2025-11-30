@@ -29,13 +29,7 @@ export const AddComponentButton: React.FC<AddComponentButtonProps> = ({
 }) => {
   return (
     <Menu>
-      <Tooltip
-        label={
-          canHaveChildren
-            ? `Add new component under ${getMessageBuilderComponentLabel(component.type)}`
-            : "This component can't have any subcomponents."
-        }
-      >
+      <Tooltip isDisabled={canHaveChildren} label={"This component can't have any subcomponents."}>
         <MenuButton
           aria-disabled={!canHaveChildren}
           as={Button}
