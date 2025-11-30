@@ -43,7 +43,7 @@ export interface DiscordThumbnailV2 {
 
 export interface DiscordButtonV2 {
   type: number;
-  custom_id: string;
+  custom_id?: string;
   style: number;
   label?: string;
   emoji?: {

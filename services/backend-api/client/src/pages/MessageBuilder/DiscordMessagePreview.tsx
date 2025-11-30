@@ -18,6 +18,8 @@ import { ExternalLinkIcon } from "@chakra-ui/icons";
 import { useFormContext } from "react-hook-form";
 import { ArticlePreviewBanner } from "./ArticlePreviewBanner";
 import DiscordView from "../../components/DiscordView";
+// @ts-ignore
+import { parseAllowLinks, jumboify } from "../../components/DiscordView/utils/markdown";
 import { useMessageBuilderContext } from "./MessageBuilderContext";
 import MessageBuilderFormState from "./types/MessageBuilderFormState";
 import { PageAlertContextOutlet, PageAlertProvider } from "../../contexts/PageAlertContext";
@@ -273,9 +275,9 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
         >
           <VStack align="start" spacing={1} flex={1}>
             {comp.components?.map((td, i) => (
-              <Text key={td.content || `text-${index}-${i}`} fontSize="sm" whiteSpace="pre-wrap">
-                {td.content || "[missing text]"}
-              </Text>
+              <Box key={td.content || `text-${index}-${i}`} fontSize="sm" className="markup">
+                {td.content ? parseAllowLinks(td.content, true, {}, jumboify) : "[missing text]"}
+              </Box>
             ))}
           </VStack>
           {comp.accessory && renderApiAccessory(comp.accessory, `acc-${index}`)}
@@ -305,10 +307,12 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
     }
 
     if (type === DISCORD_V2_COMPONENT_TYPE.TextDisplay) {
+      const { content } = comp as any;
+
       return (
-        <Text key={`textdisplay-${index}`} fontSize="sm" whiteSpace="pre-wrap">
-          {(comp as any).content || "[missing text]"}
-        </Text>
+        <Box key={`textdisplay-${index}`} fontSize="sm" className="markup">
+          {content ? parseAllowLinks(content, true, {}, jumboify) : "[missing text]"}
+        </Box>
       );
     }
 

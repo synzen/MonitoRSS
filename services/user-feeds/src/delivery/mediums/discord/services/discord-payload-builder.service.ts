@@ -710,9 +710,11 @@ export class DiscordPayloadBuilderService {
     button: ButtonV2,
     replacePlaceholderOptions: ReplacePlaceholdersOptions
   ) {
+    const isLinkButton = button.style === 5 && button.url;
+
     return {
       type: DISCORD_COMPONENT_TYPE_TO_NUMBER[DiscordComponentType.ButtonV2],
-      custom_id: randomUUID(),
+      ...(isLinkButton ? {} : { custom_id: randomUUID() }),
       style: button.style,
       label: button.label
         ? this.replacePlaceholdersInString(
