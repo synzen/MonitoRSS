@@ -53,6 +53,7 @@ import { UserFeedTabSearchParam } from "../../../../constants/userFeedTabSearchP
 import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
 import { useGetUserFeedArticlesError } from "../../hooks";
 import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
+import { FeedDiscordChannelConnection } from "../../../../types";
 
 interface Props {
   onMessageUpdated: (data: DiscordMessageFormData) => Promise<void>;
@@ -60,9 +61,14 @@ interface Props {
 }
 
 export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
-  const { userFeed, connection, articleFormatOptions } = useUserFeedConnectionContext();
+  const { userFeed, connection, articleFormatOptions } =
+    useUserFeedConnectionContext<FeedDiscordChannelConnection>();
   const { isOpen, onClose, onOpen } = useDisclosure();
   const [selectedArticleId, setSelectedArticleId] = useState<string | undefined>();
+
+  // Check if V2 components are configured
+  const hasComponentsV2 =
+    connection.details?.componentsV2 && connection.details.componentsV2.length > 0;
   const [placeholderTableSearch, setPlaceholderTableSearch] = useState<string>("");
   const [hideEmptyPlaceholders, setHideEmptyPlaceholders] = useState<boolean>(false);
   const {
@@ -213,6 +219,13 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
               V2 support for richer layouts including containers, media galleries, sections with
               thumbnails, and more.
             </AlertDescription>
+            {hasComponentsV2 && (
+              <Text fontSize="sm" color="blue.200" mt={2}>
+                This connection has been configured using Components V2 in the Message Builder
+                already. The legacy message form has been hidden because it is only compatible with
+                Components V1.
+              </Text>
+            )}
           </Stack>
           <Box>
             <Button
@@ -224,172 +237,178 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
               })}
               rightIcon={<ChevronRightIcon />}
             >
-              Check it out
+              {hasComponentsV2 ? "Open Message Builder" : "Check it out"}
             </Button>
           </Box>
         </Stack>
       </Alert>
-      <Stack spacing={4} as="aside" aria-labelledby="placeholders-title">
-        <Stack>
-          <Heading as="h3" size="sm" id="placeholders-title">
-            Article Placeholders Reference
-          </Heading>
-          <Text>
-            Customize your message format with the use of placeholders by copying their names and
-            pasting them into any part of your message format for them to be replaced with the their
-            corresponding article content.
-          </Text>
-        </Stack>
-        {alertComponent}
-        {userFeedArticlesStatus === "loading" && (
-          <Center mt={6}>
-            <Spinner />
-          </Center>
-        )}
-        {!alertComponent && firstArticle && (
-          <Card size="md" overflow="auto">
-            <CardHeader padding={0} margin={5}>
-              <Heading size="xs" as="h4" textTransform="uppercase">
-                Selected Article
+      {!hasComponentsV2 && (
+        <>
+          <Stack spacing={4} as="aside" aria-labelledby="placeholders-title">
+            <Stack>
+              <Heading as="h3" size="sm" id="placeholders-title">
+                Article Placeholders Reference
               </Heading>
-            </CardHeader>
-            <CardBody padding={0} margin={5} mt={0}>
-              <Stack spacing={4}>
-                <HStack justifyContent="space-between" flexWrap="wrap">
-                  <Box>
-                    {firstArticleDate && <Text color="gray.400">{firstArticleDate}</Text>}
-                    <Text size="md" fontWeight="semibold">
-                      {firstArticleTitle || (
-                        <span
-                          style={{
-                            color: `${getChakraColor("gray.400")}`,
-                          }}
-                        >
-                          (no title available)
-                        </span>
-                      )}
-                    </Text>
-                  </Box>
-                  <HStack alignItems="center" flexWrap="wrap">
-                    <ArticleSelectDialog
-                      articleFormatOptions={articleFormatOptions}
-                      trigger={
+              <Text>
+                Customize your message format with the use of placeholders by copying their names
+                and pasting them into any part of your message format for them to be replaced with
+                the their corresponding article content.
+              </Text>
+            </Stack>
+            {alertComponent}
+            {userFeedArticlesStatus === "loading" && (
+              <Center mt={6}>
+                <Spinner />
+              </Center>
+            )}
+            {!alertComponent && firstArticle && (
+              <Card size="md" overflow="auto">
+                <CardHeader padding={0} margin={5}>
+                  <Heading size="xs" as="h4" textTransform="uppercase">
+                    Selected Article
+                  </Heading>
+                </CardHeader>
+                <CardBody padding={0} margin={5} mt={0}>
+                  <Stack spacing={4}>
+                    <HStack justifyContent="space-between" flexWrap="wrap">
+                      <Box>
+                        {firstArticleDate && <Text color="gray.400">{firstArticleDate}</Text>}
+                        <Text size="md" fontWeight="semibold">
+                          {firstArticleTitle || (
+                            <span
+                              style={{
+                                color: `${getChakraColor("gray.400")}`,
+                              }}
+                            >
+                              (no title available)
+                            </span>
+                          )}
+                        </Text>
+                      </Box>
+                      <HStack alignItems="center" flexWrap="wrap">
+                        <ArticleSelectDialog
+                          articleFormatOptions={articleFormatOptions}
+                          trigger={
+                            <Button
+                              leftIcon={<FiMousePointer />}
+                              isLoading={
+                                !!selectedArticleId && userFeedArticlesFetchStatus === "fetching"
+                              }
+                              aria-disabled={userFeedArticlesFetchStatus === "fetching"}
+                            >
+                              <span>
+                                {t(
+                                  "features.feedConnections.components.articlePlaceholderTable.selectArticle"
+                                )}
+                              </span>
+                            </Button>
+                          }
+                          feedId={userFeed.id}
+                          onArticleSelected={onSelectedArticle}
+                          onClickRandomArticle={onClickRandomFeedArticle}
+                        />
                         <Button
-                          leftIcon={<FiMousePointer />}
+                          leftIcon={<RepeatIcon />}
                           isLoading={
-                            !!selectedArticleId && userFeedArticlesFetchStatus === "fetching"
+                            !selectedArticleId && userFeedArticlesFetchStatus === "fetching"
                           }
                           aria-disabled={userFeedArticlesFetchStatus === "fetching"}
+                          onClick={() => {
+                            if (userFeedArticlesFetchStatus === "fetching") {
+                              return;
+                            }
+
+                            onClickRandomFeedArticle();
+                          }}
                         >
                           <span>
                             {t(
-                              "features.feedConnections.components.articlePlaceholderTable.selectArticle"
+                              "features.feedConnections.components.articlePlaceholderTable.randomButton"
                             )}
                           </span>
                         </Button>
-                      }
-                      feedId={userFeed.id}
-                      onArticleSelected={onSelectedArticle}
-                      onClickRandomArticle={onClickRandomFeedArticle}
-                    />
-                    <Button
-                      leftIcon={<RepeatIcon />}
-                      isLoading={!selectedArticleId && userFeedArticlesFetchStatus === "fetching"}
-                      aria-disabled={userFeedArticlesFetchStatus === "fetching"}
-                      onClick={() => {
-                        if (userFeedArticlesFetchStatus === "fetching") {
-                          return;
-                        }
-
-                        onClickRandomFeedArticle();
-                      }}
-                    >
-                      <span>
-                        {t(
-                          "features.feedConnections.components.articlePlaceholderTable.randomButton"
-                        )}
-                      </span>
-                    </Button>
-                  </HStack>
-                </HStack>
-                <Accordion allowToggle borderRadius="md">
-                  <AccordionItem bg="gray.800" borderRadius="md" alignItems="center">
-                    <AccordionButton
-                      fontSize="sm"
-                      fontWeight={600}
-                      minHeight="50px"
-                      color="blue.300"
-                    >
-                      <HStack justifyContent="space-between" width="100%">
-                        <HStack spacing={2}>
-                          <Text>View Placeholders</Text>
-                          <AccordionIcon />
-                        </HStack>
-                        <IconButton
-                          icon={<FaExpandAlt />}
-                          aria-label="Open dialog listing all placeholders" // adding just to satisfy lint
-                          variant="ghost"
-                          size="sm"
-                          color="blue.300"
-                          onClick={onClickExpand}
-                        />
                       </HStack>
-                    </AccordionButton>
-                    <AccordionPanel
-                      bg="gray.800"
-                      borderRadius="md"
-                      maxHeight="sm"
-                      overflow="auto"
-                      paddingTop={0}
-                      mt={-4}
-                    >
-                      {accordionPanelContent}
-                      <Center mt={4}>
-                        <Text fontSize="sm" color="whiteAlpha.600">
-                          Don&apos;t see the content that you need? You can transform placeholder
-                          content through{" "}
-                          <ChakraLink
-                            as={Link}
-                            color="blue.400"
-                            to={pages.userFeedConnection(
-                              {
-                                feedId: userFeed.id,
-                                connectionId: connection.id,
-                                connectionType: connection.key,
-                              },
-                              {
-                                tab: UserFeedConnectionTabSearchParam.CustomPlaceholders,
-                              }
-                            )}
-                          >
-                            Custom Placeholders
-                          </ChakraLink>
-                          , or get additional ones with{" "}
-                          <ChakraLink
-                            color="blue.400"
-                            as={Link}
-                            to={pages.userFeed(userFeed.id, {
-                              tab: UserFeedTabSearchParam.ExternalProperties,
-                            })}
-                          >
-                            External Properties
-                          </ChakraLink>
-                          .
-                        </Text>
-                      </Center>
-                    </AccordionPanel>
-                  </AccordionItem>
-                </Accordion>
-              </Stack>
-            </CardBody>
-          </Card>
-        )}
-      </Stack>
-      <DiscordMessageForm
-        onClickSave={onMessageUpdated}
-        articleIdToPreview={firstArticle?.id}
-        guildId={guildId}
-      />
+                    </HStack>
+                    <Accordion allowToggle borderRadius="md">
+                      <AccordionItem bg="gray.800" borderRadius="md" alignItems="center">
+                        <AccordionButton
+                          fontSize="sm"
+                          fontWeight={600}
+                          minHeight="50px"
+                          color="blue.300"
+                        >
+                          <HStack justifyContent="space-between" width="100%">
+                            <HStack spacing={2}>
+                              <Text>View Placeholders</Text>
+                              <AccordionIcon />
+                            </HStack>
+                            <IconButton
+                              icon={<FaExpandAlt />}
+                              aria-label="Open dialog listing all placeholders" // adding just to satisfy lint
+                              variant="ghost"
+                              size="sm"
+                              color="blue.300"
+                              onClick={onClickExpand}
+                            />
+                          </HStack>
+                        </AccordionButton>
+                        <AccordionPanel
+                          bg="gray.800"
+                          borderRadius="md"
+                          maxHeight="sm"
+                          overflow="auto"
+                          paddingTop={0}
+                          mt={-4}
+                        >
+                          {accordionPanelContent}
+                          <Center mt={4}>
+                            <Text fontSize="sm" color="whiteAlpha.600">
+                              Don&apos;t see the content that you need? You can transform
+                              placeholder content through{" "}
+                              <ChakraLink
+                                as={Link}
+                                color="blue.400"
+                                to={pages.userFeedConnection(
+                                  {
+                                    feedId: userFeed.id,
+                                    connectionId: connection.id,
+                                    connectionType: connection.key,
+                                  },
+                                  {
+                                    tab: UserFeedConnectionTabSearchParam.CustomPlaceholders,
+                                  }
+                                )}
+                              >
+                                Custom Placeholders
+                              </ChakraLink>
+                              , or get additional ones with{" "}
+                              <ChakraLink
+                                color="blue.400"
+                                as={Link}
+                                to={pages.userFeed(userFeed.id, {
+                                  tab: UserFeedTabSearchParam.ExternalProperties,
+                                })}
+                              >
+                                External Properties
+                              </ChakraLink>
+                              .
+                            </Text>
+                          </Center>
+                        </AccordionPanel>
+                      </AccordionItem>
+                    </Accordion>
+                  </Stack>
+                </CardBody>
+              </Card>
+            )}
+          </Stack>
+          <DiscordMessageForm
+            onClickSave={onMessageUpdated}
+            articleIdToPreview={firstArticle?.id}
+            guildId={guildId}
+          />
+        </>
+      )}
     </Stack>
   );
 };
