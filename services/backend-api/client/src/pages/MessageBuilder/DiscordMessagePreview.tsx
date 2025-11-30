@@ -264,8 +264,14 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
 
     if (type === DISCORD_V2_COMPONENT_TYPE.Section) {
       return (
-        <HStack spacing={2} align="center" key={`section-${index}`}>
-          <VStack align="stretch" spacing={1}>
+        <HStack
+          spacing={2}
+          align="center"
+          justify="space-between"
+          width="100%"
+          key={`section-${index}`}
+        >
+          <VStack align="start" spacing={1} flex={1}>
             {comp.components?.map((td, i) => (
               <Text key={td.content || `text-${index}-${i}`} fontSize="sm" whiteSpace="pre-wrap">
                 {td.content || "[missing text]"}
@@ -554,8 +560,6 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
           borderColor="hsl(240 calc(1*4%) 60.784%/0.2)"
           overflow="hidden"
           p="16px"
-          width="fit-content"
-          maxWidth="100%"
         >
           {accentColor && (
             <Box position="absolute" left={0} top={0} bottom={0} width="4px" bg={accentColor} />
@@ -578,7 +582,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
               SPOILER
             </Box>
           )}
-          <VStack align="flex-start" spacing={2} pl={accentColor ? 2 : 0}>
+          <VStack align="stretch" spacing={2} pl={accentColor ? 2 : 0}>
             {containerComp.components?.map((child: any, i: number) => renderApiComponent(child, i))}
           </VStack>
         </Box>
@@ -745,7 +749,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
                 </Text>
               </HStack>
               <Box>
-                <VStack align="stretch" spacing={3} maxW="min(600px, 100%)" width="100%">
+                <VStack align="start" spacing={3} maxW="min(600px, 100%)">
                   {legacyMessages.length > 0 && (
                     <DiscordView
                       darkTheme
@@ -756,9 +760,11 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
                     />
                   )}
                   {isV2Components && v2Components && v2Components.length > 0 && (
-                    <VStack align="stretch" spacing={2} width="100%">
-                      {v2Components.map((comp, i) => renderApiComponent(comp, i))}
-                    </VStack>
+                    <Box width="fit-content" maxW="100%">
+                      <VStack align="stretch" spacing={2}>
+                        {v2Components.map((comp, i) => renderApiComponent(comp, i))}
+                      </VStack>
+                    </Box>
                   )}
                   {currentArticle &&
                     messages.length === 0 &&

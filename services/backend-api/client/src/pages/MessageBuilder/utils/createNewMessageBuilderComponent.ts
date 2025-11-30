@@ -137,7 +137,7 @@ const createNewMessageBuilderComponent = (
     case ComponentType.V2TextDisplay:
       return {
         ...base,
-        content: "Hello, Discord!",
+        content: "",
       } as TextDisplayComponent;
     case ComponentType.V2ActionRow:
       return {
