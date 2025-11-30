@@ -15,10 +15,16 @@ import {
   InputGroup,
   InputLeftElement,
   Spinner,
+  Link as ChakraLink,
+  HStack,
 } from "@chakra-ui/react";
-import { ChevronRightIcon, SearchIcon } from "@chakra-ui/icons";
+import { ChevronRightIcon, ExternalLinkIcon, SearchIcon } from "@chakra-ui/icons";
 import { Virtuoso } from "react-virtuoso";
+import { Link } from "react-router-dom";
 import { useMessageBuilderContext } from "./MessageBuilderContext";
+import { useUserFeedConnectionContext } from "../../contexts/UserFeedConnectionContext";
+import { pages } from "../../constants";
+import { UserFeedConnectionTabSearchParam } from "../../constants/userFeedConnectionTabSearchParam";
 
 interface MergeTag {
   tag: string;
@@ -114,6 +120,7 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
   onCloseFocusRef,
 }) => {
   const { error, isLoading, currentArticle } = useMessageBuilderContext();
+  const { connection, userFeed } = useUserFeedConnectionContext();
   const [searchTerm, setSearchTerm] = React.useState("");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -256,6 +263,35 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
                 itemContent={renderItem}
               />
             )}
+          </Box>
+          <Box p={4} borderTop="1px solid" borderColor="gray.600" bg="gray.750">
+            <HStack spacing={2} justify="center" flexWrap="wrap">
+              <Text fontSize="sm" color="gray.400">
+                Need to customize placeholder content?
+              </Text>
+              <ChakraLink
+                as={Link}
+                to={pages.userFeedConnection(
+                  {
+                    feedId: userFeed.id,
+                    connectionId: connection.id,
+                    connectionType: connection.key,
+                  },
+                  {
+                    tab: UserFeedConnectionTabSearchParam.CustomPlaceholders,
+                  }
+                )}
+                color="blue.300"
+                fontSize="sm"
+                fontWeight="medium"
+                display="inline-flex"
+                alignItems="center"
+                _hover={{ color: "blue.200" }}
+              >
+                Use Custom Placeholders
+                <ExternalLinkIcon ml={1} boxSize={3} />
+              </ChakraLink>
+            </HStack>
           </Box>
         </ModalBody>
       </ModalContent>
