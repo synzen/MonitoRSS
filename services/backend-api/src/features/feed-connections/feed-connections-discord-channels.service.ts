@@ -1097,12 +1097,9 @@ export class FeedConnectionsDiscordChannelsService {
           previewInput?.enablePlaceholderFallback ??
           connection.details.enablePlaceholderFallback,
         components: castDiscordComponentRowsForMedium(
-          previewInput?.componentRows || connection.details.componentRows
+          previewInput?.componentRows
         ),
-        componentsV2:
-          previewInput?.componentsV2 ??
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (connection.details.componentsV2 as any),
+        componentsV2: previewInput?.componentsV2,
         channelNewThreadTitle:
           previewInput?.channelNewThreadTitle ||
           connection.details.channelNewThreadTitle,
