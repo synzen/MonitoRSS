@@ -182,7 +182,7 @@ export const componentV2Schema = z.discriminatedUnion(
 export const discordMediumPayloadDetailsSchema = z.object({
   guildId: z.string(),
   components: z.array(actionRowSchema).nullable(),
-  componentsV2: z.array(componentV2Schema).optional().nullable(),
+  componentsV2: z.array(componentV2Schema).min(1).optional().nullable(),
   channel: z
     .object({
       id: z.string(),
