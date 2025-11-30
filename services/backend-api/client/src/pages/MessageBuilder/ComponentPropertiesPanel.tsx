@@ -742,13 +742,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                           : "#000000"
                       }
                       onChange={(c) => {
-                        const hexColorAsNumberString = parseInt(
-                          c.hex.replace("#", ""),
-                          16
-                        ).toString();
+                        const hexColorAsNumber = parseInt(c.hex.replace("#", ""), 16);
                         onChange({
                           ...component,
-                          accentColor: hexColorAsNumberString,
+                          accentColor: hexColorAsNumber,
                         });
                       }}
                     />
