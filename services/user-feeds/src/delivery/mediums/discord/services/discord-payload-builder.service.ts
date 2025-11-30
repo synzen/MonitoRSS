@@ -763,25 +763,6 @@ export class DiscordPayloadBuilderService {
     }
 
     // Button accessory
-    return {
-      type: DISCORD_COMPONENT_TYPE_TO_NUMBER[DiscordComponentType.ButtonV2],
-      custom_id: randomUUID(),
-      style: accessory.style,
-      label: accessory.label
-        ? this.replacePlaceholdersInString(
-            article,
-            accessory.label,
-            replacePlaceholderOptions
-          ).slice(0, 80)
-        : undefined,
-      emoji: accessory.emoji,
-      url: accessory.url
-        ? this.replacePlaceholdersInString(article, accessory.url, {
-            ...replacePlaceholderOptions,
-            encodeUrl: true,
-          })
-        : undefined,
-      disabled: accessory.disabled,
-    };
+    return this.buildButtonV2(article, accessory, replacePlaceholderOptions);
   }
 }
