@@ -450,7 +450,7 @@ const MessageBuilderInternalProvider: React.FC<{ children: React.ReactNode }> = 
   );
 
   const switchRootType: MessageBuilderContextType["switchRootType"] = useCallback(
-    (targetType) => {
+    (targetType: ComponentType.LegacyRoot | ComponentType.V2Root) => {
       const messageComponent = getValues("messageComponent");
 
       if (!messageComponent || messageComponent.type === targetType) {
@@ -504,12 +504,15 @@ const MessageBuilderInternalProvider: React.FC<{ children: React.ReactNode }> = 
         shouldTouch: true,
       });
 
+      // Validation does not trigger automatically otherwise for some reason
+      trigger("messageComponent");
+
       // Select the new root
       setCurrentSelectedId(newRoot.id);
       setCurrentFocusedId(newRoot.id);
       setExpandedIds(() => new Set([newRoot.id]));
     },
-    [getValues, setValue, setCurrentSelectedId, setCurrentFocusedId, setExpandedIds]
+    [] as const
   );
 
   const currentArticle = articlesResponse?.result.articles?.[0];

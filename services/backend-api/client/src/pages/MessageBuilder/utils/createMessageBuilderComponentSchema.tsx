@@ -169,7 +169,11 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
         });
       case ComponentType.V2Root:
         return baseSchema.shape({
-          children: yup.array().of(createMessageBuilderComponentSchema()).default([]),
+          children: yup
+            .array()
+            .of(createMessageBuilderComponentSchema())
+            .default([])
+            .min(1, "Add at least one component to your message"),
         });
       case ComponentType.V2Section:
         return baseSchema.shape({

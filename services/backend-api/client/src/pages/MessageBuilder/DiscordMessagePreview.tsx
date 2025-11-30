@@ -264,8 +264,8 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
 
     if (type === DISCORD_V2_COMPONENT_TYPE.Section) {
       return (
-        <HStack spacing={2} align="flex-start" key={`section-${index}`}>
-          <VStack align="stretch" spacing={1} flex={1}>
+        <HStack spacing={2} align="center" key={`section-${index}`}>
+          <VStack align="stretch" spacing={1}>
             {comp.components?.map((td, i) => (
               <Text key={td.content || `text-${index}-${i}`} fontSize="sm" whiteSpace="pre-wrap">
                 {td.content || "[missing text]"}
