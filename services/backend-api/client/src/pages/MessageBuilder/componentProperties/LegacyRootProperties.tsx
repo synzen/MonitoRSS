@@ -27,9 +27,6 @@ import {
   AlertDialogBody,
   AlertDialogFooter,
   useDisclosure,
-  List,
-  ListItem,
-  ListIcon,
   useRadioGroup,
   useRadio,
   UseRadioProps,
@@ -291,31 +288,16 @@ export const LegacyRootProperties: React.FC = () => {
                 <HStack bg="orange.900" p={3} borderRadius="md" spacing={3}>
                   <InfoIcon color="orange.300" />
                   <Text fontSize="sm" color="orange.100">
-                    Your current message content will be cleared. This cannot be undone after
-                    saving.
+                    All your{" "}
+                    {pendingRootType === ComponentType.V2Root ? "Components V1" : "Components V2"}{" "}
+                    components will be removed because each format uses different component types.
+                    Your{" "}
+                    {pendingRootType === ComponentType.V2Root ? "Components V1" : "Components V2"}{" "}
+                    properties will be kept.
                   </Text>
                 </HStack>
-                <Box>
-                  <Text fontSize="sm" color="gray.300" fontWeight="medium" mb={2}>
-                    What will be preserved:
-                  </Text>
-                  <List spacing={1} fontSize="sm" color="gray.400">
-                    <ListItem display="flex" alignItems="center">
-                      <ListIcon as={CheckIcon} color="green.400" boxSize={3} />
-                      Thread title and forum settings
-                    </ListItem>
-                    <ListItem display="flex" alignItems="center">
-                      <ListIcon as={CheckIcon} color="green.400" boxSize={3} />
-                      Mentions configuration
-                    </ListItem>
-                    <ListItem display="flex" alignItems="center">
-                      <ListIcon as={CheckIcon} color="green.400" boxSize={3} />
-                      Placeholder limits and text settings
-                    </ListItem>
-                  </List>
-                </Box>
                 <Text fontSize="sm" color="gray.400">
-                  You can use the Discard Changes button to undo this action before saving.
+                  You can use the Discard Changes button to undo this before saving.
                 </Text>
               </VStack>
             </AlertDialogBody>
