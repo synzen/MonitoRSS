@@ -28,9 +28,12 @@ import { FeedConnectionType, FeedDiscordChannelConnection } from "../../types";
 import { DiscordApiComponent } from "../../types/discord/DiscordApiPayload";
 import { useDebounce } from "../../hooks";
 import { InlineErrorAlert } from "../../components";
-import convertMessageBuilderStateToConnectionPreviewInput from "./utils/convertMessageBuilderStateToConnectionPreviewInput";
+import convertMessageBuilderStateToConnectionPreviewInput, {
+  V2_COMPONENT_TYPE,
+} from "./utils/convertMessageBuilderStateToConnectionPreviewInput";
 import { useUserFeedConnectionContext } from "../../contexts/UserFeedConnectionContext";
 import { DiscordServerName, DiscordChannelName } from "../../features/discordServers";
+import { CreateDiscordChannelConnectionPreviewInput } from "../../features/feedConnections/api";
 
 // eslint-disable-next-line no-bitwise
 const DISCORD_COMPONENTS_V2_FLAG = 1 << 15;
@@ -69,12 +72,48 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
 
   const debouncedPreviewData = useDebounce(previewData, 500);
 
+  /**
+   * Check if debounced preview data has any empty text content that would cause API errors
+   * This is necessary since "isValid" doesn't seem to be tracking empty text display content correctly
+   * Without this, when clearing text display and then re-populating, it will immediately send out 2 requests:
+   * - Request with empty text display content
+   * - Request with the repopulated text display content
+   *
+   * The first one will result in a 400, causing an error to show up in the previewer for a split second.
+   */
+  const hasEmptyTextContent = React.useMemo(() => {
+    type V2Component = NonNullable<
+      CreateDiscordChannelConnectionPreviewInput["data"]["componentsV2"]
+    >[number];
+
+    const checkComponents = (components: V2Component[] | null | undefined): boolean => {
+      if (!components || !Array.isArray(components)) return false;
+
+      return components.some((comp) => {
+        if (comp.type === V2_COMPONENT_TYPE.TextDisplay && !comp.content) return true;
+
+        if (
+          comp.type === V2_COMPONENT_TYPE.Section &&
+          comp.components?.some((c) => c.type === V2_COMPONENT_TYPE.TextDisplay && !c.content)
+        ) {
+          return true;
+        }
+
+        if (comp.components) return checkComponents(comp.components as V2Component[]);
+
+        return false;
+      });
+    };
+
+    return checkComponents(debouncedPreviewData.componentsV2);
+  }, [debouncedPreviewData]);
+
   const {
     data: connectionPreview,
     fetchStatus,
     error,
   } = useCreateConnectionPreview(FeedConnectionType.DiscordChannel, {
-    enabled: !!currentArticle?.id && isValid,
+    enabled: !!currentArticle?.id && isValid && !hasEmptyTextContent,
     data: {
       connectionId: connection.id, // Mock connection ID for message builder
       feedId: userFeed.id,

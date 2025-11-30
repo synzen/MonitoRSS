@@ -20,7 +20,7 @@ import {
 } from "../types";
 
 // V2 Component Type Constants (string enums matching backend)
-const V2_COMPONENT_TYPE = {
+export const V2_COMPONENT_TYPE = {
   ActionRow: "ACTION_ROW",
   Button: "BUTTON",
   Section: "SECTION",
