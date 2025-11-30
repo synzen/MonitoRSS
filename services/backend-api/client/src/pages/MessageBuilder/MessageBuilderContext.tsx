@@ -316,6 +316,8 @@ const MessageBuilderInternalProvider: React.FC<{ children: React.ReactNode }> = 
           setCurrentFocusedId(newSelectedId);
         }
 
+        trigger("messageComponent");
+
         notifyInfo(`Successfully removed component`);
       }
     },
