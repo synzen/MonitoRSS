@@ -75,7 +75,7 @@ const DiscordComponentSchema = object({
 export const DiscordMessageApiPayloadSchema = object({
   content: string().optional().default(undefined),
   embeds: array(DiscordEmbedSchema).optional().default(undefined),
-  components: array(DiscordComponentSchema).max(5).nullable().optional(),
+  components: array(DiscordComponentSchema).nullable().optional(),
   flags: number().optional().nullable(),
 });
 

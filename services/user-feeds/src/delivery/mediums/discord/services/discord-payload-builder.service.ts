@@ -612,7 +612,7 @@ export class DiscordPayloadBuilderService {
         article,
         textDisplay.content,
         replacePlaceholderOptions
-      ),
+      ).trim(),
     };
   }
 

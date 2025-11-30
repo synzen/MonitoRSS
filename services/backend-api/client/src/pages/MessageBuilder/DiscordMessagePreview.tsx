@@ -295,7 +295,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
 
     if (type === DISCORD_V2_COMPONENT_TYPE.Separator) {
       const showDivider = comp.divider !== false;
-      const spacing = (comp.spacing || 1) * 4;
+      const spacing = (comp.spacing || 1) * 2;
 
       return (
         <Box key={`separator-${index}`} my={`${spacing}px`}>
