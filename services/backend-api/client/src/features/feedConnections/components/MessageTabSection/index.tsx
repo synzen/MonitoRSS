@@ -205,12 +205,13 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
         <Stack spacing={4}>
           <Stack spacing={2}>
             <HStack>
-              <Badge colorScheme="white">NEW!</Badge>
-              <AlertTitle display="block">A better way to customize your messages!</AlertTitle>
+              <Badge colorScheme="green">NEW!</Badge>
+              <AlertTitle display="block">Try the Message Builder with Components V2!</AlertTitle>
             </HStack>
             <AlertDescription display="block">
-              Design and preview your Discord messages with the Message Builder for a more condensed
-              and streamlined experience.
+              Design and preview your Discord messages with the Message Builder. Now with Components
+              V2 support for richer layouts including containers, media galleries, sections with
+              thumbnails, and more.
             </AlertDescription>
           </Stack>
           <Box>
