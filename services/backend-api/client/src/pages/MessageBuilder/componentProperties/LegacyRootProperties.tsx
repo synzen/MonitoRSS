@@ -525,8 +525,11 @@ export const LegacyRootProperties: React.FC = () => {
             />
           </HStack>
           <FormHelperText fontSize="sm" color="gray.400">
-            If enabled, all images with &quot;src&quot; attributes found in the message content will
-            be removed.
+            If enabled, all images with &quot;src&quot; attributes found in{" "}
+            {component?.type === ComponentType.V2Root
+              ? "Text Display components"
+              : "the message content"}{" "}
+            will be removed.
           </FormHelperText>
         </FormControl>
         <FormControl>
@@ -549,8 +552,9 @@ export const LegacyRootProperties: React.FC = () => {
             />
           </HStack>
           <FormHelperText fontSize="sm" color="gray.400">
-            Prevents excessive new lines from being added to the message if the text content within
-            placeholder content have new lines.
+            Prevents excessive new lines from being added to{" "}
+            {component?.type === ComponentType.V2Root ? "Text Display components" : "the message"}{" "}
+            if the text content within placeholder content have new lines.
           </FormHelperText>
         </FormControl>
         <FormControl>
