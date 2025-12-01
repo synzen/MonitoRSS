@@ -586,6 +586,11 @@ export class FeedConnectionsDiscordChannelsService {
           sourceConnection.details.componentRows;
       }
 
+      if (properties.includes(CopyableSetting.ComponentsV2)) {
+        currentConnection.details.componentsV2 =
+          sourceConnection.details.componentsV2;
+      }
+
       if (properties.includes(CopyableSetting.ForumThreadTitle)) {
         currentConnection.details.forumThreadTitle =
           sourceConnection.details.forumThreadTitle;

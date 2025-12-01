@@ -55,6 +55,10 @@ const CopyableSettingDescriptions: Record<
   [CopyableConnectionDiscordChannelSettings.Filters]: {
     description: "Filters",
   },
+  [CopyableConnectionDiscordChannelSettings.ComponentsV2]: {
+    description: "Components",
+    category: CopyCategory.Message,
+  },
   [CopyableConnectionDiscordChannelSettings.Embeds]: {
     description: "Embeds",
     category: CopyCategory.Message,
@@ -128,6 +132,14 @@ const FORUM_RELATED_SETTINGS = [
   CopyableConnectionDiscordChannelSettings.ForumThreadTitle,
 ];
 
+// Settings that are irrelevant when V2 components are used
+const V2_INCOMPATIBLE_SETTINGS = [
+  CopyableConnectionDiscordChannelSettings.Embeds,
+  CopyableConnectionDiscordChannelSettings.Content,
+  CopyableConnectionDiscordChannelSettings.SplitOptions,
+  CopyableConnectionDiscordChannelSettings.Components, // legacy buttons
+];
+
 const formSchema = object().shape({
   properties: array()
     .of(string().required())
@@ -184,6 +196,9 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
   const connection = uncastedConnection as FeedDiscordChannelConnection;
   const connectionIsInForum =
     connection?.details.channel?.type === "forum" || connection?.details.webhook?.type === "forum";
+  // Check if V2 components are configured on the source connection
+  const hasComponentsV2 =
+    connection?.details?.componentsV2 && connection.details.componentsV2.length > 0;
   const { t } = useTranslation();
   const { feed } = useUserFeed({ feedId });
 
@@ -255,9 +270,37 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
 
     const allCategorySettings = Object.values(CopyableConnectionDiscordChannelSettings).filter(
       (setting) => {
-        return CopyableSettingDescriptions[setting].category === category;
+        if (CopyableSettingDescriptions[setting].category !== category) {
+          return false;
+        }
+
+        // Filter out forum-related settings if not in forum
+        const isForumRelated = FORUM_RELATED_SETTINGS.includes(setting);
+
+        if (isForumRelated && !connectionIsInForum) {
+          return false;
+        }
+
+        // Filter out V2-incompatible settings when V2 components exist
+        const isV2Incompatible = V2_INCOMPATIBLE_SETTINGS.includes(setting);
+
+        if (isV2Incompatible && hasComponentsV2) {
+          return false;
+        }
+
+        // Filter out ComponentsV2 if no V2 components exist
+        if (setting === CopyableConnectionDiscordChannelSettings.ComponentsV2 && !hasComponentsV2) {
+          return false;
+        }
+
+        return true;
       }
     );
+
+    // If no settings are visible in this category, don't render it
+    if (allCategorySettings.length === 0) {
+      return null;
+    }
 
     return (
       <Controller
@@ -265,22 +308,10 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
         control={control}
         render={({ field }) => {
           const allCategorySettingsAreChecked = allCategorySettings.every((setting) => {
-            const settingDescription = CopyableSettingDescriptions[setting];
-
-            if (settingDescription.category !== category) {
-              return true;
-            }
-
             return field.value.includes(setting);
           });
 
           const noCategorySettingsAreChecked = allCategorySettings.every((setting) => {
-            const settingDescription = CopyableSettingDescriptions[setting];
-
-            if (settingDescription.category !== category) {
-              return true;
-            }
-
             return !field.value.includes(setting);
           });
 
@@ -327,6 +358,23 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
                     );
 
                     if (isForumRelated && !connectionIsInForum) {
+                      return null;
+                    }
+
+                    // Hide V2-incompatible settings when V2 components exist
+                    const isV2Incompatible = V2_INCOMPATIBLE_SETTINGS.includes(
+                      setting as CopyableConnectionDiscordChannelSettings
+                    );
+
+                    if (isV2Incompatible && hasComponentsV2) {
+                      return null;
+                    }
+
+                    // Hide ComponentsV2 option if no V2 components exist
+                    if (
+                      setting === CopyableConnectionDiscordChannelSettings.ComponentsV2 &&
+                      !hasComponentsV2
+                    ) {
                       return null;
                     }
 

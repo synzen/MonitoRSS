@@ -12,6 +12,7 @@ export enum CopyableSetting {
   IgnoreNewLines = "ignoreNewLines",
   ContentDisableImageLinkPreviews = "contentDisableImageLinkPreviews",
   Components = "components",
+  ComponentsV2 = "componentsV2",
   ForumThreadTitle = "forumThreadTitle",
   ForumThreadTags = "forumThreadTags",
   placeholderFallbackSetting = "placeholderFallbackSetting",

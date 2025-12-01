@@ -10,6 +10,7 @@ export enum CopyableConnectionDiscordChannelSettings {
   ContentStripImages = "contentStripImages",
   ContentDisableImageLinkPreviews = "contentDisableImageLinkPreviews",
   Components = "components",
+  ComponentsV2 = "componentsV2",
   ForumThreadTitle = "forumThreadTitle",
   ForumThreadTags = "forumThreadTags",
   placeholderFallbackSetting = "placeholderFallbackSetting",
