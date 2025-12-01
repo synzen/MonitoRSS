@@ -309,7 +309,7 @@ export class DiscordPayloadBuilderService {
           title: embedTitle,
           description: embedDescription,
           author: embedAuthor,
-          color: embed.color,
+          color: embed.color || undefined,
           footer: embedFooter,
           image: embedImage,
           thumbnail: embedThumbnail,

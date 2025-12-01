@@ -307,7 +307,7 @@ export const discordMediumPayloadDetailsSchema = z.object({
       title: z.string().nullable().optional(),
       description: z.string().nullable().optional(),
       url: z.string().nullable().optional(),
-      color: z.number().optional(),
+      color: z.number().optional().nullable(),
       footer: z
         .object({
           text: z.string(),
