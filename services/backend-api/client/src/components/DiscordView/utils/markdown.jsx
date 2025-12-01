@@ -177,21 +177,8 @@ const baseRules = {
       };
     },
     react(node, recurseOutput, state) {
-      const sizes = {
-        1: "1.5rem",
-        2: "1.25rem",
-        3: "1rem",
-      };
-      const style = {
-        fontWeight: "bold",
-        fontSize: sizes[node.level] || "1rem",
-        lineHeight: "1.375",
-        marginTop: "1rem",
-        marginBottom: "0.5rem",
-      };
-
       return (
-        <div key={state.key} style={style}>
+        <div key={state.key} className={`markdown-heading markdown-heading-${node.level}`}>
           {recurseOutput(node.content, state)}
         </div>
       );
@@ -346,7 +333,11 @@ function createRules(r) {
     paragraph: {
       ...paragraph,
       react(node, recurseOutput, state) {
-        return <p key={state.key}>{recurseOutput(node.content, state)}</p>;
+        return (
+          <p key={state.key} style={{ margin: 0 }}>
+            {recurseOutput(node.content, state)}
+          </p>
+        );
       },
     },
     url: {

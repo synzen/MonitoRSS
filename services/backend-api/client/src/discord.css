@@ -1118,3 +1118,28 @@
   color: #00b0f4;
   text-decoration: none
 }
+
+/* Markdown Headings */
+.markdown-heading {
+  font-weight: bold;
+  line-height: 1.375;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: white;
+}
+
+.markdown-heading:first-child {
+  margin-top: 0;
+}
+
+.markdown-heading-1 {
+  font-size: 1.5rem;
+}
+
+.markdown-heading-2 {
+  font-size: 1.25rem;
+}
+
+.markdown-heading-3 {
+  font-size: 1rem;
+}
