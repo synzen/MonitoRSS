@@ -116,7 +116,10 @@ const MessageBuilderInternalProvider: React.FC<{ children: React.ReactNode }> = 
     data: {
       skip: 0,
       limit: 1,
-      formatOptions: articleFormatOptions,
+      formatOptions: {
+        ...articleFormatOptions,
+        customPlaceholders: connection.customPlaceholders,
+      },
       selectProperties: ["*"],
       filters: currentArticleId
         ? {
