@@ -167,6 +167,36 @@ function translateSurrogatesToInlineEmoji(surrogates) {
 
 const baseRules = {
   newline: SimpleMarkdown.defaultRules.newline,
+  heading: {
+    order: SimpleMarkdown.defaultRules.heading.order,
+    match: SimpleMarkdown.blockRegex(/^(#{1,3})\s+([^\n]+?)(?:\n|$)/),
+    parse(capture, parse, state) {
+      return {
+        level: capture[1].length,
+        content: parse(capture[2].trim(), state),
+      };
+    },
+    react(node, recurseOutput, state) {
+      const sizes = {
+        1: "1.5rem",
+        2: "1.25rem",
+        3: "1rem",
+      };
+      const style = {
+        fontWeight: "bold",
+        fontSize: sizes[node.level] || "1rem",
+        lineHeight: "1.375",
+        marginTop: "1rem",
+        marginBottom: "0.5rem",
+      };
+
+      return (
+        <div key={state.key} style={style}>
+          {recurseOutput(node.content, state)}
+        </div>
+      );
+    },
+  },
   paragraph: SimpleMarkdown.defaultRules.paragraph,
   escape: SimpleMarkdown.defaultRules.escape,
   link: SimpleMarkdown.defaultRules.link,

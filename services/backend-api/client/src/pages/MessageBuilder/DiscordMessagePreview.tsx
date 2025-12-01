@@ -315,7 +315,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
           <VStack align="start" spacing={1} flex={1}>
             {comp.components?.map((td, i) => (
               <Box key={td.content || `text-${index}-${i}`} fontSize="sm" className="markup">
-                {td.content ? parseAllowLinks(td.content, true, {}, jumboify) : "[missing text]"}
+                {td.content ? parseAllowLinks(td.content, false, {}, jumboify) : "[missing text]"}
               </Box>
             ))}
           </VStack>
@@ -350,7 +350,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
 
       return (
         <Box key={`textdisplay-${index}`} fontSize="sm" className="markup">
-          {content ? parseAllowLinks(content, true, {}, jumboify) : "[missing text]"}
+          {content ? parseAllowLinks(content, false, {}, jumboify) : "[missing text]"}
         </Box>
       );
     }
