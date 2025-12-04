@@ -145,6 +145,26 @@ export class DiscordPayloadBuilderService {
       componentsV2,
     } = options;
 
+    const replacePlaceholderStringArgs: ReplacePlaceholdersOptions = {
+      mentions,
+      filterReferences,
+      placeholderLimits,
+      enablePlaceholderFallback,
+    };
+
+    if (!!componentsV2?.length) {
+      return [
+        {
+          flags: DISCORD_COMPONENTS_V2_FLAG,
+          components: this.buildComponentsV2(
+            article,
+            componentsV2,
+            replacePlaceholderStringArgs
+          ),
+        },
+      ];
+    }
+
     const payloadContent = this.articleFormatterService.applySplit(
       this.replacePlaceholdersInString(article, content, {
         mentions,
@@ -157,13 +177,6 @@ export class DiscordPayloadBuilderService {
         isEnabled: !!splitOptions,
       }
     );
-
-    const replacePlaceholderStringArgs: ReplacePlaceholdersOptions = {
-      mentions,
-      filterReferences,
-      placeholderLimits,
-      enablePlaceholderFallback,
-    };
 
     const payloads: DiscordMessageApiPayload[] = payloadContent.map(
       (contentPart) => ({
@@ -323,16 +336,7 @@ export class DiscordPayloadBuilderService {
 
     // V2 components take precedence over V1 - they cannot be mixed
     // V2 components also cannot have content field set
-    if (componentsV2 && componentsV2.length > 0 && payloads.length > 0) {
-      const lastPayload = payloads[payloads.length - 1];
-      lastPayload.flags = DISCORD_COMPONENTS_V2_FLAG;
-      lastPayload.components = this.buildComponentsV2(
-        article,
-        componentsV2,
-        replacePlaceholderStringArgs
-      );
-      delete lastPayload.content;
-    } else if (components && payloads.length > 0) {
+    if (components && payloads.length > 0) {
       payloads[payloads.length - 1].components = components.map(
         ({ type, components: nestedComponents }) => ({
           type,

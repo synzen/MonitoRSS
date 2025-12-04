@@ -750,9 +750,11 @@ export class ArticlesService {
     );
 
     if (articleIdsPossibleForDelivery.length === 0) {
+      // All articles were found to have been stored within the past month. No need to check any more.
       return [];
     }
 
+    // We now have our first set of potentially new articles
     // Do a second pass to see if any of the articles have been stored older than one month
     const idsStoredOlderThanOneMonth = (
       await this.partitionedFieldStoreService.findIdFieldsForFeed(
