@@ -1,0 +1,13 @@
+FROM oven/bun:1
+
+WORKDIR /usr/src/app
+
+# Install dependencies first (cached layer)
+COPY package.json bun.lock ./
+RUN bun install
+
+# Copy source code
+COPY . .
+
+# Use --watch for hot reloading during development
+CMD ["bun", "run", "--watch", "index.ts"]

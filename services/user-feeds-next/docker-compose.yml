@@ -17,6 +17,7 @@ services:
     container_name: user-feeds-next-service
     build:
       context: .
+      dockerfile: Dockerfile.dev
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -24,6 +25,9 @@ services:
       - .env
     environment:
       - USER_FEEDS_NEXT_RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
 
 volumes:
   rabbitmq-data:
