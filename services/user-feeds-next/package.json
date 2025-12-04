@@ -22,6 +22,9 @@
     "workerpool": "^10.0.1",
     "zod": "^4.1.13"
   },
+  "scripts": {
+    "start": "bun index.ts"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "prettier": "3.7.4"

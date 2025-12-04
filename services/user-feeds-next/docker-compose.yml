@@ -1,0 +1,30 @@
+version: "3.8"
+services:
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: "user-feeds-next-rabbitmq"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      retries: 5
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
+  user-feeds-next:
+    container_name: user-feeds-next-service
+    build:
+      context: .
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - USER_FEEDS_NEXT_RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+
+volumes:
+  rabbitmq-data:
+    driver: local
