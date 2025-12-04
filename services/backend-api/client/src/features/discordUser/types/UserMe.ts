@@ -23,7 +23,9 @@ export const UserMeSchema = object({
     )
       .optional()
       .nullable(),
-    status: string().oneOf(["ACTIVE", "CANCELLED", "PAST_DUE", "PAUSED"]).required(),
+    status: string()
+      .oneOf(["ACTIVE", "CANCELLED", "PAST_DUE", "PAUSED"])
+      .required(),
     nextBillDate: string().nullable(),
     cancellationDate: string().nullable(),
     billingInterval: string().oneOf(["month", "year"]).nullable(),
@@ -32,6 +34,7 @@ export const UserMeSchema = object({
       end: string().required(),
     }).nullable(),
     updatedAt: string().required(),
+    pastDueGracePeriodEndDate: string().nullable(),
   }).required(),
   creditBalance: object({
     availableFormatted: string().required(),

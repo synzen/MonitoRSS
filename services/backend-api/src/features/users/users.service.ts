@@ -274,6 +274,7 @@ export class UsersService {
           end: subscription.billingPeriod.end,
         },
         updatedAt: subscription.updatedAt,
+        pastDueGracePeriodEndDate: subscription.pastDueGracePeriodEndDate,
       },
       isOnPatreon,
       migratedToPersonalFeeds: true,
