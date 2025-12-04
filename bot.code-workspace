@@ -1,23 +1,26 @@
 {
-	"folders": [
-		{
-			"path": "."
-		},
-		{
-			"path": "services/backend-api"
-		},
-		{
-			"path": "services/backend-api/client"
-		},
-		{
-			"path": "services/feed-requests"
-		},
-		{
-			"path": "services/bot-presence"
-		},
-		{
-			"path": "services/discord-rest-listener"
-		}
-	],
-	"settings": {}
+  "folders": [
+    {
+      "path": "."
+    },
+    {
+      "path": "services/backend-api"
+    },
+    {
+      "path": "services/backend-api/client"
+    },
+    {
+      "path": "services/feed-requests"
+    },
+    {
+      "path": "services/bot-presence"
+    },
+    {
+      "path": "services/discord-rest-listener"
+    },
+    {
+      "path": "services/user-feeds-next"
+    }
+  ],
+  "settings": {}
 }
