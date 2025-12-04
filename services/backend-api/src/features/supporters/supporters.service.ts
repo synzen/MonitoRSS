@@ -163,6 +163,14 @@ export class SupportersService {
     ];
   }
 
+  static PAST_DUE_GRACE_PERIOD_DAYS = 10;
+
+  static calculateGracePeriodEndDate(billingPeriodStart: Date): Date {
+    return dayjs(billingPeriodStart)
+      .add(SupportersService.PAST_DUE_GRACE_PERIOD_DAYS, "day")
+      .toDate();
+  }
+
   static SUPPORTER_PATRON_PIPELINE: PipelineStage[] = [
     {
       $lookup: {
@@ -344,6 +352,15 @@ export class SupportersService {
       };
     }
 
+    const subscription = supporter.paddleCustomer.subscription;
+
+    const pastDueGracePeriodEndDate =
+      subscription.status === SubscriptionStatus.PastDue
+        ? SupportersService.calculateGracePeriodEndDate(
+            subscription.billingPeriodStart
+          )
+        : undefined;
+
     return {
       discordUserId: supporter._id,
       customer: {
@@ -351,22 +368,22 @@ export class SupportersService {
         currencyCode: supporter.paddleCustomer.lastCurrencyCodeUsed,
       },
       subscription: {
-        id: supporter.paddleCustomer.subscription.id,
+        id: subscription.id,
         product: {
-          key: supporter.paddleCustomer.subscription.productKey,
+          key: subscription.productKey,
         },
-        currencyCode: supporter.paddleCustomer.subscription.currencyCode,
-        status: supporter.paddleCustomer.subscription.status,
-        nextBillDate: supporter.paddleCustomer.subscription.nextBillDate,
-        cancellationDate:
-          supporter.paddleCustomer.subscription.cancellationDate,
-        billingInterval: supporter.paddleCustomer.subscription.billingInterval,
+        currencyCode: subscription.currencyCode,
+        status: subscription.status,
+        nextBillDate: subscription.nextBillDate,
+        cancellationDate: subscription.cancellationDate,
+        billingInterval: subscription.billingInterval,
         billingPeriod: {
-          start: supporter.paddleCustomer.subscription.billingPeriodStart,
-          end: supporter.paddleCustomer.subscription.billingPeriodEnd,
+          start: subscription.billingPeriodStart,
+          end: subscription.billingPeriodEnd,
         },
-        updatedAt: supporter.paddleCustomer.subscription.updatedAt,
-        addons: supporter.paddleCustomer.subscription.addons,
+        updatedAt: subscription.updatedAt,
+        addons: subscription.addons,
+        pastDueGracePeriodEndDate: pastDueGracePeriodEndDate,
       },
     };
   }
@@ -873,6 +890,16 @@ export class SupportersService {
 
     if (paddleCustomer?.subscription?.status === SubscriptionStatus.Active) {
       return true;
+    }
+
+    if (paddleCustomer?.subscription?.status === SubscriptionStatus.PastDue) {
+      const gracePeriodEndDate = SupportersService.calculateGracePeriodEndDate(
+        paddleCustomer.subscription.billingPeriodStart
+      );
+
+      if (dayjs().isBefore(dayjs(gracePeriodEndDate))) {
+        return true;
+      }
     }
 
     if (expireAt) {

@@ -20,4 +20,5 @@ export interface SubscriptionDetails {
   billingInterval?: "month" | "year";
   updatedAt: Date;
   updatePaymentMethodUrl?: string;
+  pastDueGracePeriodEndDate?: Date;
 }

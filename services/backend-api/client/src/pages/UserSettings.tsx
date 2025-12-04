@@ -6,6 +6,7 @@ import {
   AccordionPanel,
   Alert,
   AlertDescription,
+  AlertIcon,
   AlertTitle,
   Badge,
   Box,
@@ -348,6 +349,8 @@ const UserSettingsInner = () => {
     );
   }
 
+  const isPastDue = subscription?.status === "PAST_DUE";
+
   const redditConnected = data?.result.externalAccounts?.some((a) => a.type === "reddit");
 
   return (
@@ -559,6 +562,36 @@ const UserSettingsInner = () => {
                       </Text>
                       <Stack spacing={3}>
                         {subscriptionText}
+                        {isPastDue && subscription?.pastDueGracePeriodEndDate && (
+                          <Alert status="warning" borderRadius="md">
+                            <AlertIcon />
+                            <Stack width="100%">
+                              <AlertTitle>Your payment is past due</AlertTitle>
+                              <AlertDescription>
+                                <Text>
+                                  Benefits will be suspended on{" "}
+                                  <chakra.span fontWeight={600}>
+                                    {new Date(
+                                      subscription.pastDueGracePeriodEndDate
+                                    ).toLocaleDateString(undefined, {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })}
+                                  </chakra.span>{" "}
+                                  unless payment is updated. Please check your email for further
+                                  instructions.
+                                </Text>
+                                <Box mt={3}>
+                                  <PageAlertProvider>
+                                    <ChangePaymentMethodUrlButton />
+                                    <PageAlertContextOutlet />
+                                  </PageAlertProvider>
+                                </Box>
+                              </AlertDescription>
+                            </Stack>
+                          </Alert>
+                        )}
                         <HStack flexWrap="wrap">
                           {subscriptionPendingCancellation && (
                             <Box>
