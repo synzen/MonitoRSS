@@ -23,7 +23,8 @@
     "zod": "^4.1.13"
   },
   "scripts": {
-    "start": "bun index.ts"
+    "start": "bun index.ts",
+    "test:e2e": "bun test ./test/app.e2e-spec.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",

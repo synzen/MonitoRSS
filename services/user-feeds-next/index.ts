@@ -1,5 +1,6 @@
 import { config } from "dotenv";
 import { Connection } from "rabbitmq-client";
+import { parseFeedV2Event, handleFeedV2Event } from "./src/feed-event-handler";
 
 // Load environment variables
 config();
@@ -30,8 +31,14 @@ async function main() {
       qos: { prefetchCount: PREFETCH_COUNT },
     },
     async (msg) => {
-      console.log("Received message:", msg.body);
-      // TODO: Process the message
+      const event = parseFeedV2Event(msg.body);
+
+      if (!event) {
+        console.error("Failed to parse message, skipping");
+        return;
+      }
+
+      await handleFeedV2Event(event);
     }
   );
 
