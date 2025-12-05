@@ -8,6 +8,12 @@ import {
   FeedRequestParseException,
   FeedRequestTimedOutException,
 } from "./feed-fetcher/exceptions";
+import {
+  parseArticlesFromXml,
+  FeedParseTimeoutException,
+  InvalidFeedException,
+  getParserRules,
+} from "./article-parser";
 
 export function parseFeedV2Event(event: unknown): FeedV2Event | null {
   try {
@@ -68,7 +74,38 @@ export async function handleFeedV2Event(event: FeedV2Event): Promise<boolean> {
     `Fetched feed body (${response.body.length} chars), hash: ${response.bodyHash}`
   );
 
-  // TODO: Parse articles from XML
+  // Parse articles from XML
+  let parseResult: Awaited<ReturnType<typeof parseArticlesFromXml>> | null =
+    null;
+
+  try {
+    const parserRules = getParserRules({ url: event.data.feed.url });
+
+    parseResult = await parseArticlesFromXml(response.body, {
+      timeout: 10000,
+      formatOptions: {
+        dateFormat: event.data.feed.formatOptions?.dateFormat,
+        dateTimezone: event.data.feed.formatOptions?.dateTimezone,
+        dateLocale: event.data.feed.formatOptions?.dateLocale,
+      },
+      useParserRules: parserRules,
+    });
+  } catch (err) {
+    if (err instanceof FeedParseTimeoutException) {
+      console.error(`Feed parse timed out for ${feed.url}`);
+      return false;
+    }
+    if (err instanceof InvalidFeedException) {
+      console.error(`Invalid feed for ${feed.url}: ${err.message}`);
+      return false;
+    }
+    throw err;
+  }
+
+  console.log(
+    `Parsed ${parseResult.articles.length} articles from feed "${parseResult.feed.title || "Unknown"}"`
+  );
+
   // TODO: Deliver articles
 
   return true;
