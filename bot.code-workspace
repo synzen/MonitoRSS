@@ -20,6 +20,9 @@
     },
     {
       "path": "services/user-feeds-next"
+    },
+    {
+      "path": "services/user-feeds"
     }
   ],
   "settings": {}

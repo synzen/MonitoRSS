@@ -1,0 +1,10 @@
+services:
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    volumes:
+      - ./src:/app/src
+      - ./test:/app/test
+      - ./index.ts:/app/index.ts
+    command: sh -c "${TEST_COMMAND}"
