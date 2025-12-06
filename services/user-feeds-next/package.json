@@ -8,7 +8,7 @@
     "@mikro-orm/core": "^6.6.1",
     "@mikro-orm/postgresql": "^6.6.1",
     "@monitorss/logger": "^1.1.2",
-    "@synzen/discord-rest": "^0.7.0-beta.16",
+    "@synzen/discord-rest": "0.7.0-beta.16",
     "@types/feedparser": "^2.2.8",
     "dayjs": "^1.11.19",
     "dotenv": "^17.2.3",
@@ -17,6 +17,7 @@
     "flat": "^6.0.1",
     "html-to-text": "^9.0.5",
     "node-html-parser": "^6.1.13",
+    "object-path": "^0.11.8",
     "p-retry": "^4.6.2",
     "qs": "^6.14.0",
     "rabbitmq-client": "^5.0.8",
@@ -31,6 +32,8 @@
   "devDependencies": {
     "@types/bun": "latest",
     "@types/flat": "^5.0.5",
+    "@types/html-to-text": "^9.0.4",
+    "@types/object-path": "^0.11.4",
     "prettier": "3.7.4"
   },
   "peerDependencies": {

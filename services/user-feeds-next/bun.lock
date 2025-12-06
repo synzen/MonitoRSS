@@ -9,7 +9,7 @@
         "@mikro-orm/core": "^6.6.1",
         "@mikro-orm/postgresql": "^6.6.1",
         "@monitorss/logger": "^1.1.2",
-        "@synzen/discord-rest": "^0.7.0-beta.16",
+        "@synzen/discord-rest": "0.7.0-beta.16",
         "@types/feedparser": "^2.2.8",
         "dayjs": "^1.11.19",
         "dotenv": "^17.2.3",
@@ -18,6 +18,7 @@
         "flat": "^6.0.1",
         "html-to-text": "^9.0.5",
         "node-html-parser": "^6.1.13",
+        "object-path": "^0.11.8",
         "p-retry": "^4.6.2",
         "qs": "^6.14.0",
         "rabbitmq-client": "^5.0.8",
@@ -28,6 +29,8 @@
       "devDependencies": {
         "@types/bun": "latest",
         "@types/flat": "^5.0.5",
+        "@types/html-to-text": "^9.0.4",
+        "@types/object-path": "^0.11.4",
         "prettier": "3.7.4",
       },
       "peerDependencies": {
@@ -86,7 +89,11 @@
 
     "@types/flat": ["@types/flat@5.0.5", "", {}, "sha512-nPLljZQKSnac53KDUDzuzdRfGI0TDb5qPrb+SrQyN3MtdQrOnGsKniHN1iYZsJEBIVQve94Y6gNz22sgISZq+Q=="],
 
+    "@types/html-to-text": ["@types/html-to-text@9.0.4", "", {}, "sha512-pUY3cKH/Nm2yYrEmDlPR1mR7yszjGx4DrwPjQ702C4/D5CwHuZTgZdIdwPkRbcuhs7BAh2L5rg3CL5cbRiGTCQ=="],
+
     "@types/node": ["@types/node@24.10.1", "", { "dependencies": { "undici-types": "~7.16.0" } }, "sha512-GNWcUTRBgIRJD5zj+Tq0fKOJ5XZajIiBroOF0yvj2bSU1WvNdYS/dn9UxwsujGW4JX06dnHyjV2y9rRaybH0iQ=="],
+
+    "@types/object-path": ["@types/object-path@0.11.4", "", {}, "sha512-4tgJ1Z3elF/tOMpA8JLVuR9spt9Ynsf7+JjqsQ2IqtiPJtcLoHoXcT6qU4E10cPFqyXX5HDm9QwIzZhBSkLxsw=="],
 
     "@types/retry": ["@types/retry@0.12.0", "", {}, "sha512-wWKOClTTiizcZhXnPY4wikVAwmdYHp8q6DmC+EJUzAMsycb7HB32Kh9RN4+0gExjmPmZSAQjgURXIGATPegAvA=="],
 
@@ -393,6 +400,8 @@
     "nth-check": ["nth-check@2.1.1", "", { "dependencies": { "boolbase": "^1.0.0" } }, "sha512-lqjrjmaOoAnWfMmBPL+XNnynZh2+swxiX3WUE0s4yEHI6m+AwrK2UZOimIRl3X/4QctVqS8AiZjFqyOGrMXb/w=="],
 
     "object-inspect": ["object-inspect@1.13.4", "", {}, "sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew=="],
+
+    "object-path": ["object-path@0.11.8", "", {}, "sha512-YJjNZrlXJFM42wTBn6zgOJVar9KFJvzx6sTWDte8sWZF//cnjl0BxHNpfZx+ZffXX63A9q0b1zsFiBX4g4X5KA=="],
 
     "on-exit-leak-free": ["on-exit-leak-free@2.1.2", "", {}, "sha512-0eJJY6hXLGf1udHwfNftBqH+g73EU4B504nZeKpz1sYRKafAghwxEJunB2O7rDZkL4PGfsMVnTXZ2EjibbqcsA=="],
 

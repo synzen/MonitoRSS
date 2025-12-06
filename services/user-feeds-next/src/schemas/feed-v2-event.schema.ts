@@ -348,6 +348,7 @@ const feedV2EventSchemaFormatOptions = z.object({
 
 const feedV2EventSchemaDateChecks = z.object({
   oldArticleDateDiffMsThreshold: z.number().optional(),
+  datePlaceholderReferences: z.array(z.string()).optional(),
 });
 
 const feedV2EventRequestLookupDetails = z.object({

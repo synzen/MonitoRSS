@@ -14,6 +14,16 @@ import {
   InvalidFeedException,
   getParserRules,
 } from "./article-parser";
+import {
+  getArticlesToDeliver,
+  inMemoryArticleFieldStore,
+} from "./article-comparison";
+import {
+  deliverArticles,
+  ArticleDeliveryStatus,
+  type DeliveryMedium,
+} from "./delivery";
+import type { LogicalExpression } from "./article-filters";
 
 export function parseFeedV2Event(event: unknown): FeedV2Event | null {
   try {
@@ -106,7 +116,106 @@ export async function handleFeedV2Event(event: FeedV2Event): Promise<boolean> {
     `Parsed ${parseResult.articles.length} articles from feed "${parseResult.feed.title || "Unknown"}"`
   );
 
-  // TODO: Deliver articles
+  // Determine which articles to deliver (comparison logic)
+  const comparisonResult = await getArticlesToDeliver(
+    inMemoryArticleFieldStore,
+    feed.id,
+    parseResult.articles,
+    {
+      blockingComparisons: feed.blockingComparisons || [],
+      passingComparisons: feed.passingComparisons || [],
+      dateChecks: feed.dateChecks
+        ? {
+            oldArticleDateDiffMsThreshold:
+              feed.dateChecks.oldArticleDateDiffMsThreshold ?? undefined,
+            datePlaceholderReferences:
+              feed.dateChecks.datePlaceholderReferences ?? undefined,
+          }
+        : undefined,
+    }
+  );
+
+  console.log(
+    `Articles to deliver: ${comparisonResult.articlesToDeliver.length}, ` +
+      `blocked: ${comparisonResult.articlesBlocked.length}, ` +
+      `passed comparisons: ${comparisonResult.articlesPassed.length}`
+  );
+
+  if (comparisonResult.articlesToDeliver.length === 0) {
+    console.log("No new articles to deliver");
+    return true;
+  }
+
+  // Deliver articles to all mediums
+  const mediums = event.data.mediums.map((m) => ({
+    id: m.id,
+    filters: m.filters
+      ? { expression: m.filters.expression as unknown as LogicalExpression }
+      : undefined,
+    rateLimits: m.rateLimits ?? undefined,
+    details: {
+      guildId: m.details.guildId,
+      channel: m.details.channel
+        ? {
+            id: m.details.channel.id,
+            type: m.details.channel.type ?? undefined,
+          }
+        : undefined,
+      webhook: m.details.webhook
+        ? {
+            id: m.details.webhook.id,
+            token: m.details.webhook.token,
+            name: m.details.webhook.name ?? undefined,
+            iconUrl: m.details.webhook.iconUrl ?? undefined,
+            threadId: m.details.webhook.threadId ?? undefined,
+          }
+        : undefined,
+      content: m.details.content ?? undefined,
+      embeds: m.details.embeds ?? undefined,
+      splitOptions: m.details.splitOptions
+        ? {
+            splitChar: m.details.splitOptions.splitChar ?? undefined,
+            appendChar: m.details.splitOptions.appendChar ?? undefined,
+            prependChar: m.details.splitOptions.prependChar ?? undefined,
+          }
+        : undefined,
+      placeholderLimits: m.details.placeholderLimits ?? undefined,
+      enablePlaceholderFallback:
+        m.details.enablePlaceholderFallback ?? undefined,
+      mentions: m.details.mentions ?? undefined,
+      customPlaceholders: m.details.customPlaceholders ?? undefined,
+      forumThreadTitle: m.details.forumThreadTitle ?? undefined,
+      forumThreadTags: m.details.forumThreadTags ?? undefined,
+      formatter: m.details.formatter ?? undefined,
+    },
+  })) as DeliveryMedium[];
+
+  const deliveryResults = await deliverArticles(
+    comparisonResult.articlesToDeliver,
+    mediums,
+    {
+      feedId: feed.id,
+      articleDayLimit: event.data.articleDayLimit,
+    }
+  );
+
+  // Log delivery results
+  const sent = deliveryResults.filter(
+    (r) => r.status === ArticleDeliveryStatus.Sent
+  ).length;
+  const filtered = deliveryResults.filter(
+    (r) => r.status === ArticleDeliveryStatus.FilteredOut
+  ).length;
+  const rateLimited = deliveryResults.filter(
+    (r) => r.status === ArticleDeliveryStatus.RateLimited
+  ).length;
+  const failed = deliveryResults.filter(
+    (r) => r.status === ArticleDeliveryStatus.Failed
+  ).length;
+
+  console.log(
+    `Delivery complete: ${sent} sent, ${filtered} filtered, ${rateLimited} rate-limited, ${failed} failed`
+  );
 
   return true;
 }
