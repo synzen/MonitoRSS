@@ -15,6 +15,18 @@ import {
   closeDiscordApiClient,
   type DiscordDeliveryResult,
 } from "./src/delivery";
+import {
+  initializeRedisClient,
+  closeRedisClient,
+  createRedisParsedArticlesCacheStore,
+  createRedisProcessingLock,
+  inMemoryProcessingLock,
+  type ProcessingLock,
+} from "./src/redis";
+import {
+  inMemoryParsedArticlesCacheStore,
+  type ParsedArticlesCacheStore,
+} from "./src/parsed-articles-cache";
 
 // Load environment variables
 config();
@@ -24,6 +36,9 @@ const RABBITMQ_URL =
   "amqp://guest:guest@rabbitmq-broker:5672";
 const DISCORD_CLIENT_ID = process.env.USER_FEEDS_NEXT_DISCORD_CLIENT_ID || "";
 const DISCORD_BOT_TOKEN = process.env.USER_FEEDS_NEXT_DISCORD_BOT_TOKEN || "";
+const REDIS_URI = process.env.USER_FEEDS_NEXT_REDIS_URI;
+const REDIS_DISABLE_CLUSTER =
+  process.env.USER_FEEDS_NEXT_REDIS_DISABLE_CLUSTER === "true";
 const PREFETCH_COUNT = 100;
 
 async function main() {
@@ -33,6 +48,24 @@ async function main() {
   }
   if (!DISCORD_BOT_TOKEN) {
     throw new Error("USER_FEEDS_NEXT_DISCORD_BOT_TOKEN is required");
+  }
+
+  // Initialize Redis if configured, otherwise fall back to in-memory stores
+  let parsedArticlesCacheStore: ParsedArticlesCacheStore =
+    inMemoryParsedArticlesCacheStore;
+  let processingLock: ProcessingLock = inMemoryProcessingLock;
+
+  if (REDIS_URI) {
+    const redisClient = await initializeRedisClient({
+      uri: REDIS_URI,
+      disableCluster: REDIS_DISABLE_CLUSTER,
+    });
+    parsedArticlesCacheStore =
+      createRedisParsedArticlesCacheStore(redisClient);
+    processingLock = createRedisProcessingLock(redisClient);
+    console.log("Using Redis-backed cache store and processing lock");
+  } else {
+    console.log("No Redis URI configured, using in-memory stores");
   }
 
   // Initialize Discord REST producer (for async message enqueue)
@@ -81,7 +114,22 @@ async function main() {
         return;
       }
 
-      await handleFeedV2Event(event);
+      const feedId = event.data.feed.id;
+
+      // Acquire processing lock to prevent concurrent processing of same feed
+      const lockAcquired = await processingLock.acquire(feedId);
+      if (!lockAcquired) {
+        console.log(`Feed ${feedId} is already being processed, skipping`);
+        return;
+      }
+
+      try {
+        await handleFeedV2Event(event, {
+          parsedArticlesCacheStore,
+        });
+      } finally {
+        await processingLock.release(feedId);
+      }
     }
   );
 
@@ -163,27 +211,20 @@ async function main() {
   );
 
   // Graceful shutdown
-  process.on("SIGINT", async () => {
-    console.log("Received SIGINT, closing connections...");
+  const shutdown = async (signal: string) => {
+    console.log(`Received ${signal}, closing connections...`);
     await feedEventConsumer.close();
     await deliveryResultConsumer.close();
     await feedDeletedConsumer.close();
     await connection.close();
     await closeDiscordProducer();
     closeDiscordApiClient();
+    await closeRedisClient();
     process.exit(0);
-  });
+  };
 
-  process.on("SIGTERM", async () => {
-    console.log("Received SIGTERM, closing connections...");
-    await feedEventConsumer.close();
-    await deliveryResultConsumer.close();
-    await feedDeletedConsumer.close();
-    await connection.close();
-    await closeDiscordProducer();
-    closeDiscordApiClient();
-    process.exit(0);
-  });
+  process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
 }
 
 main().catch((err) => {
