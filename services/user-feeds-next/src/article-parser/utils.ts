@@ -1,5 +1,4 @@
 import { parse, valid } from "node-html-parser";
-// @ts-expect-error - no types available
 import { convert } from "html-to-text";
 import { type FlattenedArticleWithoutId, PostProcessParserRule } from "./types";
 
@@ -9,7 +8,7 @@ interface SelectorDefinition {
 }
 
 interface HtmlElement {
-  attribs: Record<string, string>;
+  attribs?: Record<string, string>;
 }
 
 /**
@@ -47,7 +46,7 @@ export function extractExtraInfo(inputString: string): {
           }
         },
         anchors: (elem: HtmlElement) => {
-          const href = elem.attribs.href;
+          const href = elem.attribs?.href;
 
           if (href) {
             anchors.push(href);

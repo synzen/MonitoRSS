@@ -25,3 +25,13 @@ export enum DiscordComponentType {
 export enum MediumKey {
   Discord = "discord",
 }
+
+/**
+ * Message broker queue names for RabbitMQ.
+ */
+export enum MessageBrokerQueue {
+  FeedDeliverArticles = "feed.deliver-articles",
+  FeedArticleDeliveryResult = "feed.article-delivery-result",
+  FeedRejectedArticleDisableConnection = "feed.rejected-article.disable-connection",
+  FeedDeleted = "feed.deleted",
+}

@@ -1,4 +1,8 @@
 import { RESTProducer, type JobResponse } from "@synzen/discord-rest";
+import type {
+  JobData,
+  JobResponseError,
+} from "@synzen/discord-rest/dist/RESTConsumer";
 import type { Article } from "../article-parser";
 import type { DiscordMessageApiPayload } from "../article-formatter";
 import {
@@ -20,6 +24,94 @@ export enum ArticleDeliveryStatus {
   Failed = "failed",
   Rejected = "rejected",
 }
+
+/**
+ * Error codes for article delivery failures.
+ * These indicate why an article failed to be delivered.
+ */
+export enum ArticleDeliveryErrorCode {
+  Internal = "user-feeds/internal-error",
+  NoChannelOrWebhook = "user-feeds/no-channel-or-webhook",
+  ThirdPartyInternal = "user-feeds/third-party-internal",
+  ThirdPartyBadRequest = "user-feeds/third-party-bad-request",
+  ThirdPartyForbidden = "user-feeds/third-party-forbidden",
+  ThirdPartyNotFound = "user-feeds/third-party-not-found",
+  ArticleProcessingError = "user-feeds/article-processing-error",
+}
+
+/**
+ * Rejection codes for article delivery rejections.
+ * These indicate why an article was rejected and the medium should be disabled.
+ */
+export enum ArticleDeliveryRejectedCode {
+  BadRequest = "user-feeds/bad-request",
+  Forbidden = "user-feeds/forbidden",
+  MediumNotFound = "user-feeds/medium-not-found",
+}
+
+/**
+ * Result from Discord REST producer callback.
+ */
+export interface DiscordDeliveryResult {
+  job: JobData;
+  result: JobResponse<never> | JobResponseError;
+}
+
+/**
+ * Metadata for a delivery job.
+ */
+export interface DeliveryJobMeta {
+  feedId: string;
+  articleIdHash: string;
+  mediumId: string;
+  articleId?: string;
+}
+
+/**
+ * Processed delivery result with error classification.
+ */
+export interface ProcessedDeliveryResult {
+  status: ArticleDeliveryStatus;
+  errorCode?: ArticleDeliveryErrorCode;
+  rejectedCode?: ArticleDeliveryRejectedCode;
+  internalMessage?: string;
+  externalDetail?: string;
+  meta: DeliveryJobMeta;
+}
+
+/**
+ * Event emitted when a medium should be disabled due to a bad request.
+ */
+export interface MediumBadFormatEvent {
+  feedId: string;
+  mediumId: string;
+  articleId?: string;
+  responseBody: string;
+}
+
+/**
+ * Event emitted when a medium should be disabled due to missing permissions.
+ */
+export interface MediumMissingPermissionsEvent {
+  feedId: string;
+  mediumId: string;
+}
+
+/**
+ * Event emitted when a medium should be disabled because it was not found.
+ */
+export interface MediumNotFoundEvent {
+  feedId: string;
+  mediumId: string;
+}
+
+/**
+ * Combined type for medium rejection events.
+ */
+export type MediumRejectionEvent =
+  | { type: "badFormat"; data: MediumBadFormatEvent }
+  | { type: "missingPermissions"; data: MediumMissingPermissionsEvent }
+  | { type: "notFound"; data: MediumNotFoundEvent };
 
 export interface ArticleDeliveryResult {
   status: ArticleDeliveryStatus;
@@ -374,6 +466,7 @@ async function sendToDiscord(
           feedId: metadata.feedId,
           articleIdHash: metadata.articleIdHash,
           mediumId: medium.id,
+          emitDeliveryResult: true,
         },
       }
     );
@@ -393,6 +486,7 @@ async function sendToDiscord(
           feedId: metadata.feedId,
           articleIdHash: metadata.articleIdHash,
           mediumId: medium.id,
+          emitDeliveryResult: true,
         },
       }
     );
@@ -441,4 +535,141 @@ export async function deliverArticles(
 export function clearRateLimitStores(): void {
   rateLimitCounters.clear();
   dailyDeliveryCounters.clear();
+}
+
+/**
+ * Process a delivery result from the Discord REST producer callback.
+ * This handles error classification and generates appropriate events for medium rejection.
+ *
+ * @param deliveryResult - The result from Discord REST producer
+ * @returns Processed result with error classification and optional rejection event
+ */
+export function processDeliveryResult(deliveryResult: DiscordDeliveryResult): {
+  processed: ProcessedDeliveryResult;
+  rejectionEvent?: MediumRejectionEvent;
+} {
+  const { job, result } = deliveryResult;
+
+  const meta: DeliveryJobMeta = {
+    feedId: job.meta?.feedId ?? "",
+    articleIdHash: job.meta?.articleIdHash ?? "",
+    mediumId: job.meta?.mediumId ?? "",
+    articleId: job.meta?.articleId,
+  };
+
+  // Check for error state (producer-level error)
+  if (result.state === "error") {
+    return {
+      processed: {
+        status: ArticleDeliveryStatus.Failed,
+        errorCode: ArticleDeliveryErrorCode.Internal,
+        internalMessage: result.message,
+        meta,
+      },
+    };
+  }
+
+  // Handle HTTP status codes from Discord API response
+  const { status, body } = result;
+
+  // 400 Bad Request - malformed request, likely bad embed/content format
+  if (status === 400) {
+    const responseBody = JSON.stringify(body);
+    const requestBody = job.options?.body;
+
+    return {
+      processed: {
+        status: ArticleDeliveryStatus.Rejected,
+        errorCode: ArticleDeliveryErrorCode.ThirdPartyBadRequest,
+        internalMessage: `Body: ${responseBody}, Request Body: ${requestBody}`,
+        externalDetail: JSON.stringify({
+          type: "DISCORD_RESPONSE",
+          data: {
+            responseBody: body,
+            requestBody: requestBody ? JSON.parse(requestBody) : undefined,
+          },
+        }),
+        meta,
+      },
+      rejectionEvent: {
+        type: "badFormat",
+        data: {
+          feedId: meta.feedId,
+          mediumId: meta.mediumId,
+          articleId: meta.articleId,
+          responseBody,
+        },
+      },
+    };
+  }
+
+  // 403 Forbidden - missing permissions
+  if (status === 403) {
+    return {
+      processed: {
+        status: ArticleDeliveryStatus.Rejected,
+        errorCode: ArticleDeliveryErrorCode.ThirdPartyForbidden,
+        internalMessage: `Body: ${JSON.stringify(body)}`,
+        meta,
+      },
+      rejectionEvent: {
+        type: "missingPermissions",
+        data: {
+          feedId: meta.feedId,
+          mediumId: meta.mediumId,
+        },
+      },
+    };
+  }
+
+  // 404 Not Found - channel/webhook deleted
+  if (status === 404) {
+    return {
+      processed: {
+        status: ArticleDeliveryStatus.Rejected,
+        errorCode: ArticleDeliveryErrorCode.ThirdPartyNotFound,
+        internalMessage: `Body: ${JSON.stringify(body)}`,
+        meta,
+      },
+      rejectionEvent: {
+        type: "notFound",
+        data: {
+          feedId: meta.feedId,
+          mediumId: meta.mediumId,
+        },
+      },
+    };
+  }
+
+  // 5xx Internal Server Error - Discord API error
+  if (status >= 500) {
+    return {
+      processed: {
+        status: ArticleDeliveryStatus.Failed,
+        errorCode: ArticleDeliveryErrorCode.ThirdPartyInternal,
+        internalMessage: `Body: ${JSON.stringify(body)}`,
+        meta,
+      },
+    };
+  }
+
+  // Unhandled status codes (outside 200-400 range)
+  if (status < 200 || status > 400) {
+    return {
+      processed: {
+        status: ArticleDeliveryStatus.Failed,
+        errorCode: ArticleDeliveryErrorCode.Internal,
+        internalMessage: `Unhandled status code from Discord ${status} received. Body: ${JSON.stringify(body)}`,
+        meta,
+      },
+    };
+  }
+
+  // Success (2xx status codes)
+  return {
+    processed: {
+      status: ArticleDeliveryStatus.Sent,
+      meta,
+    },
+  };
 }

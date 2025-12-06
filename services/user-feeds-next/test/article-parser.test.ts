@@ -205,10 +205,10 @@ describe("article-parser", () => {
 
       expect(flattenedArticle.id).toBe(article.id);
       expect(flattenedArticle[`tags${DL}0${DL}name`]).toBe(
-        article.tags[0].name
+        article.tags[0]!.name
       );
       expect(flattenedArticle[`tags${DL}1${DL}name`]).toBe(
-        article.tags[1].name
+        article.tags[1]!.name
       );
     });
 
@@ -233,22 +233,22 @@ describe("article-parser", () => {
 
       expect(flattenedArticle.id).toBe(article.id);
       expect(flattenedArticle[`tags${DL}0${DL}name`]).toBe(
-        article.tags[0].name
+        article.tags[0]!.name
       );
       expect(flattenedArticle[`tags${DL}0${DL}aliases${DL}0`]).toBe(
-        article.tags[0].aliases[0]
+        article.tags[0]!.aliases[0]
       );
       expect(flattenedArticle[`tags${DL}0${DL}aliases${DL}1`]).toBe(
-        article.tags[0].aliases[1]
+        article.tags[0]!.aliases[1]
       );
       expect(flattenedArticle[`tags${DL}1${DL}name`]).toBe(
-        article.tags[1].name
+        article.tags[1]!.name
       );
       expect(flattenedArticle[`tags${DL}1${DL}aliases${DL}0`]).toBe(
-        article.tags[1].aliases[0]
+        article.tags[1]!.aliases[0]
       );
       expect(flattenedArticle[`tags${DL}1${DL}aliases${DL}1`]).toBe(
-        article.tags[1].aliases[1]
+        article.tags[1]!.aliases[1]
       );
     });
 

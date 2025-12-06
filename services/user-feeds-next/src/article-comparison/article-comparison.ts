@@ -50,6 +50,11 @@ export interface ArticleFieldStore {
     articles: Article[],
     comparisonFields: string[]
   ): Promise<void>;
+
+  /**
+   * Clear all stored data for a feed.
+   */
+  clear(feedId: string): Promise<void>;
 }
 
 // ============================================================================
@@ -134,6 +139,16 @@ export const inMemoryArticleFieldStore: ArticleFieldStore = {
             createdAt: now,
           });
         }
+      }
+    }
+  },
+
+  async clear(feedId: string): Promise<void> {
+    // Remove all entries for this feed
+    let i = inMemoryStore.length;
+    while (i--) {
+      if (inMemoryStore[i]!.feedId === feedId) {
+        inMemoryStore.splice(i, 1);
       }
     }
   },

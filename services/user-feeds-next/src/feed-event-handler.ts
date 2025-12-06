@@ -17,13 +17,241 @@ import {
 import {
   getArticlesToDeliver,
   inMemoryArticleFieldStore,
+  type ArticleFieldStore,
 } from "./article-comparison";
 import {
   deliverArticles,
   ArticleDeliveryStatus,
+  ArticleDeliveryRejectedCode,
+  processDeliveryResult,
   type DeliveryMedium,
+  type DiscordDeliveryResult,
+  type MediumRejectionEvent,
 } from "./delivery";
 import type { LogicalExpression } from "./article-filters";
+import { MessageBrokerQueue } from "./constants";
+
+// ============================================================================
+// Response Hash Store Interface
+// ============================================================================
+
+/**
+ * Interface for response hash storage.
+ * Stores feed response hashes to skip processing when content hasn't changed.
+ */
+export interface ResponseHashStore {
+  /**
+   * Get the stored hash for a feed.
+   */
+  get(feedId: string): Promise<string | null>;
+
+  /**
+   * Set the hash for a feed. Requires hash to be non-empty.
+   */
+  set(feedId: string, hash: string): Promise<void>;
+
+  /**
+   * Remove the hash for a feed.
+   */
+  remove(feedId: string): Promise<void>;
+}
+
+// ============================================================================
+// In-Memory Response Hash Store
+// ============================================================================
+
+const responseHashMap = new Map<string, string>();
+
+/**
+ * In-memory response hash store.
+ * Suitable for development and single-instance deployments.
+ */
+export const inMemoryResponseHashStore: ResponseHashStore = {
+  async get(feedId: string): Promise<string | null> {
+    return responseHashMap.get(feedId) ?? null;
+  },
+
+  async set(feedId: string, hash: string): Promise<void> {
+    if (!hash) {
+      throw new Error("Hash is required");
+    }
+    responseHashMap.set(feedId, hash);
+  },
+
+  async remove(feedId: string): Promise<void> {
+    responseHashMap.delete(feedId);
+  },
+};
+
+/**
+ * Clear the in-memory response hash store (for testing).
+ */
+export function clearResponseHashStore(): void {
+  responseHashMap.clear();
+}
+
+// ============================================================================
+// Feed Deleted Event
+// ============================================================================
+
+/**
+ * Schema for feed deleted events.
+ */
+export const feedDeletedEventSchema = z.object({
+  data: z.object({
+    feed: z.object({
+      id: z.string(),
+    }),
+  }),
+});
+
+export type FeedDeletedEvent = z.infer<typeof feedDeletedEventSchema>;
+
+/**
+ * Parse and validate a feed deleted event.
+ */
+export function parseFeedDeletedEvent(event: unknown): FeedDeletedEvent | null {
+  try {
+    return feedDeletedEventSchema.parse(event);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      console.error("Validation failed on incoming Feed Deleted event", {
+        errors: err.issues,
+      });
+    } else {
+      console.error("Failed to parse Feed Deleted event", {
+        error: (err as Error).stack,
+      });
+    }
+    return null;
+  }
+}
+
+/**
+ * Handle a feed deleted event - clean up stored data.
+ */
+export async function handleFeedDeletedEvent(
+  event: FeedDeletedEvent,
+  options: {
+    responseHashStore?: ResponseHashStore;
+    articleFieldStore?: ArticleFieldStore;
+  } = {}
+): Promise<void> {
+  const {
+    responseHashStore = inMemoryResponseHashStore,
+    articleFieldStore = inMemoryArticleFieldStore,
+  } = options;
+  const feedId = event.data.feed.id;
+
+  console.log(`Handling feed deleted event for feed ${feedId}`);
+
+  // Remove the response hash
+  await responseHashStore.remove(feedId);
+
+  // Clear article field store for this feed
+  await articleFieldStore.clear(feedId);
+
+  console.log(`Cleaned up data for deleted feed ${feedId}`);
+}
+
+// ============================================================================
+// Queue Publisher Type
+// ============================================================================
+
+/**
+ * Publisher function type for sending messages to a queue.
+ */
+export type QueuePublisher = (queue: string, message: unknown) => Promise<void>;
+
+/**
+ * Handle an article delivery result callback from the Discord REST listener.
+ * This processes the result, classifies errors, and emits rejection events.
+ */
+export async function handleArticleDeliveryResult(
+  deliveryResult: DiscordDeliveryResult,
+  publisher: QueuePublisher
+): Promise<void> {
+  const { processed, rejectionEvent } = processDeliveryResult(deliveryResult);
+
+  console.log(
+    `Delivery result for medium ${processed.meta.mediumId}: status=${processed.status}`,
+    {
+      feedId: processed.meta.feedId,
+      errorCode: processed.errorCode,
+    }
+  );
+
+  // Emit rejection event if the medium should be disabled
+  if (rejectionEvent) {
+    await emitRejectionEvent(rejectionEvent, publisher);
+  }
+}
+
+/**
+ * Emit a rejection event to disable a medium connection.
+ */
+async function emitRejectionEvent(
+  event: MediumRejectionEvent,
+  publisher: QueuePublisher
+): Promise<void> {
+  let rejectedCode: ArticleDeliveryRejectedCode;
+  let feedId: string;
+  let mediumId: string;
+  let payload: Record<string, unknown>;
+
+  switch (event.type) {
+    case "badFormat":
+      rejectedCode = ArticleDeliveryRejectedCode.BadRequest;
+      feedId = event.data.feedId;
+      mediumId = event.data.mediumId;
+      payload = {
+        data: {
+          rejectedCode,
+          articleId: event.data.articleId,
+          rejectedMessage: event.data.responseBody,
+          medium: { id: mediumId },
+          feed: { id: feedId },
+        },
+      };
+      break;
+
+    case "missingPermissions":
+      rejectedCode = ArticleDeliveryRejectedCode.Forbidden;
+      feedId = event.data.feedId;
+      mediumId = event.data.mediumId;
+      payload = {
+        data: {
+          rejectedCode,
+          medium: { id: mediumId },
+          feed: { id: feedId },
+        },
+      };
+      break;
+
+    case "notFound":
+      rejectedCode = ArticleDeliveryRejectedCode.MediumNotFound;
+      feedId = event.data.feedId;
+      mediumId = event.data.mediumId;
+      payload = {
+        data: {
+          rejectedCode,
+          medium: { id: mediumId },
+          feed: { id: feedId },
+        },
+      };
+      break;
+  }
+
+  console.log(`Emitting rejection event: ${rejectedCode}`, {
+    feedId,
+    mediumId,
+  });
+
+  await publisher(
+    MessageBrokerQueue.FeedRejectedArticleDisableConnection,
+    payload
+  );
+}
 
 export function parseFeedV2Event(event: unknown): FeedV2Event | null {
   try {
@@ -42,17 +270,36 @@ export function parseFeedV2Event(event: unknown): FeedV2Event | null {
   }
 }
 
-export async function handleFeedV2Event(event: FeedV2Event): Promise<boolean> {
+export async function handleFeedV2Event(
+  event: FeedV2Event,
+  options: {
+    responseHashStore?: ResponseHashStore;
+    articleFieldStore?: ArticleFieldStore;
+  } = {}
+): Promise<boolean> {
+  const {
+    responseHashStore = inMemoryResponseHashStore,
+    articleFieldStore = inMemoryArticleFieldStore,
+  } = options;
   const { feed } = event.data;
 
   console.log(`Handling event for feed ${feed.id} with url ${feed.url}`);
+
+  // Get the stored hash if we have prior articles stored
+  let hashToCompare: string | undefined;
+  if (await articleFieldStore.hasPriorArticlesStored(feed.id)) {
+    const storedHash = await responseHashStore.get(feed.id);
+    if (storedHash) {
+      hashToCompare = storedHash;
+    }
+  }
 
   // Fetch the feed
   let response: Awaited<ReturnType<typeof fetchFeed>> | null = null;
 
   try {
     response = await fetchFeed(feed.requestLookupDetails?.url || feed.url, {
-      hashToCompare: undefined, // TODO: Implement hash caching
+      hashToCompare,
       lookupDetails: feed.requestLookupDetails,
     });
   } catch (err) {
@@ -118,7 +365,7 @@ export async function handleFeedV2Event(event: FeedV2Event): Promise<boolean> {
 
   // Determine which articles to deliver (comparison logic)
   const comparisonResult = await getArticlesToDeliver(
-    inMemoryArticleFieldStore,
+    articleFieldStore,
     feed.id,
     parseResult.articles,
     {
@@ -143,6 +390,12 @@ export async function handleFeedV2Event(event: FeedV2Event): Promise<boolean> {
 
   if (comparisonResult.articlesToDeliver.length === 0) {
     console.log("No new articles to deliver");
+
+    // Save the response hash since we successfully processed the feed
+    if (response.bodyHash) {
+      await responseHashStore.set(feed.id, response.bodyHash);
+    }
+
     return true;
   }
 
@@ -216,6 +469,11 @@ export async function handleFeedV2Event(event: FeedV2Event): Promise<boolean> {
   console.log(
     `Delivery complete: ${sent} sent, ${filtered} filtered, ${rateLimited} rate-limited, ${failed} failed`
   );
+
+  // Save the response hash after successful delivery
+  if (response.bodyHash) {
+    await responseHashStore.set(feed.id, response.bodyHash);
+  }
 
   return true;
 }
