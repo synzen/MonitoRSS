@@ -75,134 +75,159 @@ describe("article-comparison", () => {
         }
       },
       clear: async () => {},
+      startContext: async <T>(cb: () => Promise<T>) => cb(),
+      flushPendingInserts: async () => ({ affectedRows: 0 }),
     };
   }
 
   describe("getArticlesToDeliver", () => {
     it("delivers nothing on first run (stores articles)", async () => {
-      const articles = [
-        createArticle("1", { title: "Article 1" }),
-        createArticle("2", { title: "Article 2" }),
-      ];
+      await inMemoryArticleFieldStore.startContext(async () => {
+        const articles = [
+          createArticle("1", { title: "Article 1" }),
+          createArticle("2", { title: "Article 2" }),
+        ];
 
-      const result = await getArticlesToDeliver(
-        inMemoryArticleFieldStore,
-        "feed-1",
-        articles,
-        { blockingComparisons: [], passingComparisons: [] }
-      );
+        const result = await getArticlesToDeliver(
+          inMemoryArticleFieldStore,
+          "feed-1",
+          articles,
+          { blockingComparisons: [], passingComparisons: [] }
+        );
 
-      expect(result.articlesToDeliver.length).toBe(0);
+        expect(result.articlesToDeliver.length).toBe(0);
+        await inMemoryArticleFieldStore.flushPendingInserts();
+      });
     });
 
     it("delivers new articles on subsequent runs", async () => {
-      // First run - stores articles
-      await getArticlesToDeliver(
-        inMemoryArticleFieldStore,
-        "feed-1",
-        [createArticle("1", { title: "Article 1" })],
-        { blockingComparisons: [], passingComparisons: [] }
-      );
+      await inMemoryArticleFieldStore.startContext(async () => {
+        // First run - stores articles
+        await getArticlesToDeliver(
+          inMemoryArticleFieldStore,
+          "feed-1",
+          [createArticle("1", { title: "Article 1" })],
+          { blockingComparisons: [], passingComparisons: [] }
+        );
+        await inMemoryArticleFieldStore.flushPendingInserts();
 
-      // Second run - new article should be delivered
-      const result = await getArticlesToDeliver(
-        inMemoryArticleFieldStore,
-        "feed-1",
-        [
-          createArticle("1", { title: "Article 1" }),
-          createArticle("2", { title: "Article 2" }),
-        ],
-        { blockingComparisons: [], passingComparisons: [] }
-      );
+        // Second run - new article should be delivered
+        const result = await getArticlesToDeliver(
+          inMemoryArticleFieldStore,
+          "feed-1",
+          [
+            createArticle("1", { title: "Article 1" }),
+            createArticle("2", { title: "Article 2" }),
+          ],
+          { blockingComparisons: [], passingComparisons: [] }
+        );
+        await inMemoryArticleFieldStore.flushPendingInserts();
 
-      expect(result.articlesToDeliver.length).toBe(1);
-      expect(result.articlesToDeliver[0]!.flattened.id).toBe("2");
+        expect(result.articlesToDeliver.length).toBe(1);
+        expect(result.articlesToDeliver[0]!.flattened.id).toBe("2");
+      });
     });
 
     it("blocks articles with seen blocking comparison fields", async () => {
-      // First run
-      await getArticlesToDeliver(
-        inMemoryArticleFieldStore,
-        "feed-1",
-        [createArticle("1", { title: "Same Title" })],
-        { blockingComparisons: ["title"], passingComparisons: [] }
-      );
+      await inMemoryArticleFieldStore.startContext(async () => {
+        // First run
+        await getArticlesToDeliver(
+          inMemoryArticleFieldStore,
+          "feed-1",
+          [createArticle("1", { title: "Same Title" })],
+          { blockingComparisons: ["title"], passingComparisons: [] }
+        );
+        await inMemoryArticleFieldStore.flushPendingInserts();
 
-      // Second run - new ID but same title should be blocked
-      const result = await getArticlesToDeliver(
-        inMemoryArticleFieldStore,
-        "feed-1",
-        [
-          createArticle("1", { title: "Same Title" }),
-          createArticle("2", { title: "Same Title" }), // Same title as article 1
-        ],
-        { blockingComparisons: ["title"], passingComparisons: [] }
-      );
+        // Second run - new ID but same title should be blocked
+        const result = await getArticlesToDeliver(
+          inMemoryArticleFieldStore,
+          "feed-1",
+          [
+            createArticle("1", { title: "Same Title" }),
+            createArticle("2", { title: "Same Title" }), // Same title as article 1
+          ],
+          { blockingComparisons: ["title"], passingComparisons: [] }
+        );
+        await inMemoryArticleFieldStore.flushPendingInserts();
 
-      expect(result.articlesToDeliver.length).toBe(0);
-      expect(result.articlesBlocked.length).toBe(1);
+        expect(result.articlesToDeliver.length).toBe(0);
+        expect(result.articlesBlocked.length).toBe(1);
+      });
     });
 
     it("passes articles with changed passing comparison fields", async () => {
-      // First run
-      await getArticlesToDeliver(
-        inMemoryArticleFieldStore,
-        "feed-1",
-        [createArticle("1", { title: "Original Title" })],
-        { blockingComparisons: [], passingComparisons: ["title"] }
-      );
+      await inMemoryArticleFieldStore.startContext(async () => {
+        // First run
+        await getArticlesToDeliver(
+          inMemoryArticleFieldStore,
+          "feed-1",
+          [createArticle("1", { title: "Original Title" })],
+          { blockingComparisons: [], passingComparisons: ["title"] }
+        );
+        await inMemoryArticleFieldStore.flushPendingInserts();
 
-      // Second run - same ID but different title should pass
-      const result = await getArticlesToDeliver(
-        inMemoryArticleFieldStore,
-        "feed-1",
-        [createArticle("1", { title: "Updated Title" })],
-        { blockingComparisons: [], passingComparisons: ["title"] }
-      );
+        // Second run - same ID but different title should pass
+        const result = await getArticlesToDeliver(
+          inMemoryArticleFieldStore,
+          "feed-1",
+          [createArticle("1", { title: "Updated Title" })],
+          { blockingComparisons: [], passingComparisons: ["title"] }
+        );
+        await inMemoryArticleFieldStore.flushPendingInserts();
 
-      expect(result.articlesToDeliver.length).toBe(1);
-      expect(result.articlesPassed.length).toBe(1);
+        expect(result.articlesToDeliver.length).toBe(1);
+        expect(result.articlesPassed.length).toBe(1);
+      });
     });
 
     it("does not deliver seen articles with unchanged passing comparisons", async () => {
-      // First run
-      await getArticlesToDeliver(
-        inMemoryArticleFieldStore,
-        "feed-1",
-        [createArticle("1", { title: "Same Title" })],
-        { blockingComparisons: [], passingComparisons: ["title"] }
-      );
+      await inMemoryArticleFieldStore.startContext(async () => {
+        // First run
+        await getArticlesToDeliver(
+          inMemoryArticleFieldStore,
+          "feed-1",
+          [createArticle("1", { title: "Same Title" })],
+          { blockingComparisons: [], passingComparisons: ["title"] }
+        );
+        await inMemoryArticleFieldStore.flushPendingInserts();
 
-      // Second run - same ID and same title should not deliver
-      const result = await getArticlesToDeliver(
-        inMemoryArticleFieldStore,
-        "feed-1",
-        [createArticle("1", { title: "Same Title" })],
-        { blockingComparisons: [], passingComparisons: ["title"] }
-      );
+        // Second run - same ID and same title should not deliver
+        const result = await getArticlesToDeliver(
+          inMemoryArticleFieldStore,
+          "feed-1",
+          [createArticle("1", { title: "Same Title" })],
+          { blockingComparisons: [], passingComparisons: ["title"] }
+        );
+        await inMemoryArticleFieldStore.flushPendingInserts();
 
-      expect(result.articlesToDeliver.length).toBe(0);
+        expect(result.articlesToDeliver.length).toBe(0);
+      });
     });
 
     it("isolates articles by feed ID", async () => {
-      // Store article for feed-1
-      await getArticlesToDeliver(
-        inMemoryArticleFieldStore,
-        "feed-1",
-        [createArticle("1", { title: "Article 1" })],
-        { blockingComparisons: [], passingComparisons: [] }
-      );
+      await inMemoryArticleFieldStore.startContext(async () => {
+        // Store article for feed-1
+        await getArticlesToDeliver(
+          inMemoryArticleFieldStore,
+          "feed-1",
+          [createArticle("1", { title: "Article 1" })],
+          { blockingComparisons: [], passingComparisons: [] }
+        );
+        await inMemoryArticleFieldStore.flushPendingInserts();
 
-      // Same article ID for feed-2 should be new
-      const result = await getArticlesToDeliver(
-        inMemoryArticleFieldStore,
-        "feed-2",
-        [createArticle("1", { title: "Article 1" })],
-        { blockingComparisons: [], passingComparisons: [] }
-      );
+        // Same article ID for feed-2 should be new
+        const result = await getArticlesToDeliver(
+          inMemoryArticleFieldStore,
+          "feed-2",
+          [createArticle("1", { title: "Article 1" })],
+          { blockingComparisons: [], passingComparisons: [] }
+        );
+        await inMemoryArticleFieldStore.flushPendingInserts();
 
-      // First run for feed-2, so nothing delivered
-      expect(result.articlesToDeliver.length).toBe(0);
+        // First run for feed-2, so nothing delivered
+        expect(result.articlesToDeliver.length).toBe(0);
+      });
     });
   });
 
@@ -363,51 +388,62 @@ describe("article-comparison", () => {
      */
 
     it("does not use a new blocking comparison until it has been stored", async () => {
-      // First run - no prior articles, store articles with "author" comparison
-      await getArticlesToDeliver(
-        inMemoryArticleFieldStore,
-        "comparison-feed-1",
-        [createArticle("1", { author: "John" })],
-        { blockingComparisons: ["author"], passingComparisons: [] }
-      );
+      await inMemoryArticleFieldStore.startContext(async () => {
+        // First run - no prior articles, store articles with "author" comparison
+        await getArticlesToDeliver(
+          inMemoryArticleFieldStore,
+          "comparison-feed-1",
+          [createArticle("1", { author: "John" })],
+          { blockingComparisons: ["author"], passingComparisons: [] }
+        );
+        await inMemoryArticleFieldStore.flushPendingInserts();
 
-      // Second run - add a NEW blocking comparison "category" that wasn't stored yet
-      // The article has a matching "author" but matching should be blocked since author was stored
-      // The article also has a matching "category" but it won't be used because it's new
-      const result = await getArticlesToDeliver(
-        inMemoryArticleFieldStore,
-        "comparison-feed-1",
-        [
-          createArticle("2", { author: "John", category: "Tech" }), // new article with matching author
-        ],
-        { blockingComparisons: ["author", "category"], passingComparisons: [] }
-      );
+        // Second run - add a NEW blocking comparison "category" that wasn't stored yet
+        // The article has a matching "author" but matching should be blocked since author was stored
+        // The article also has a matching "category" but it won't be used because it's new
+        const result = await getArticlesToDeliver(
+          inMemoryArticleFieldStore,
+          "comparison-feed-1",
+          [
+            createArticle("2", { author: "John", category: "Tech" }), // new article with matching author
+          ],
+          {
+            blockingComparisons: ["author", "category"],
+            passingComparisons: [],
+          }
+        );
+        await inMemoryArticleFieldStore.flushPendingInserts();
 
-      // Article 2 should be blocked because author matches (author was stored)
-      // Even though category is a new comparison, it's now stored, so it won't affect this run
-      expect(result.articlesBlocked.length).toBe(1);
-      expect(result.articlesToDeliver.length).toBe(0);
+        // Article 2 should be blocked because author matches (author was stored)
+        // Even though category is a new comparison, it's now stored, so it won't affect this run
+        expect(result.articlesBlocked.length).toBe(1);
+        expect(result.articlesToDeliver.length).toBe(0);
+      });
     });
 
     it("uses blocking comparison after it has been stored", async () => {
-      // First run - store articles with "author" comparison
-      await getArticlesToDeliver(
-        inMemoryArticleFieldStore,
-        "comparison-feed-2",
-        [createArticle("1", { author: "John" })],
-        { blockingComparisons: ["author"], passingComparisons: [] }
-      );
+      await inMemoryArticleFieldStore.startContext(async () => {
+        // First run - store articles with "author" comparison
+        await getArticlesToDeliver(
+          inMemoryArticleFieldStore,
+          "comparison-feed-2",
+          [createArticle("1", { author: "John" })],
+          { blockingComparisons: ["author"], passingComparisons: [] }
+        );
+        await inMemoryArticleFieldStore.flushPendingInserts();
 
-      // Second run - new article with different author should pass
-      const result = await getArticlesToDeliver(
-        inMemoryArticleFieldStore,
-        "comparison-feed-2",
-        [createArticle("2", { author: "Jane" })],
-        { blockingComparisons: ["author"], passingComparisons: [] }
-      );
+        // Second run - new article with different author should pass
+        const result = await getArticlesToDeliver(
+          inMemoryArticleFieldStore,
+          "comparison-feed-2",
+          [createArticle("2", { author: "Jane" })],
+          { blockingComparisons: ["author"], passingComparisons: [] }
+        );
+        await inMemoryArticleFieldStore.flushPendingInserts();
 
-      expect(result.articlesToDeliver.length).toBe(1);
-      expect(result.articlesBlocked.length).toBe(0);
+        expect(result.articlesToDeliver.length).toBe(1);
+        expect(result.articlesBlocked.length).toBe(0);
+      });
     });
 
     it("does not use a new passing comparison until it has been stored", async () => {
@@ -459,6 +495,121 @@ describe("article-comparison", () => {
       // Both comparison names should be stored
       expect(mockStore.comparisonNames.has("field1")).toBe(true);
       expect(mockStore.comparisonNames.has("field2")).toBe(true);
+    });
+  });
+
+  describe("AsyncLocalStorage context", () => {
+    it("batches inserts within startContext and flushes them", async () => {
+      const articles = [
+        createArticle("ctx-1", { title: "Context Article 1" }),
+        createArticle("ctx-2", { title: "Context Article 2" }),
+      ];
+
+      await inMemoryArticleFieldStore.startContext(async () => {
+        // Store articles within context (should be pending)
+        await inMemoryArticleFieldStore.storeArticles("feed-ctx", articles, []);
+
+        // Before flush, articles should NOT be visible (in pending state)
+        // Note: The in-memory store accumulates in pendingInserts within context
+        // and only moves to the actual store on flush
+
+        // Flush pending inserts
+        const result = await inMemoryArticleFieldStore.flushPendingInserts();
+        expect(result.affectedRows).toBe(2); // 2 article IDs
+
+        // After flush, articles should be visible
+        const hasPrior =
+          await inMemoryArticleFieldStore.hasPriorArticlesStored("feed-ctx");
+        expect(hasPrior).toBe(true);
+      });
+    });
+
+    it("throws when flushPendingInserts called without context", async () => {
+      await expect(
+        inMemoryArticleFieldStore.flushPendingInserts()
+      ).rejects.toThrow("No context was started for ArticleFieldStore");
+    });
+
+    it("clears pending inserts after flush", async () => {
+      const articles = [createArticle("flush-1")];
+
+      await inMemoryArticleFieldStore.startContext(async () => {
+        await inMemoryArticleFieldStore.storeArticles(
+          "feed-flush",
+          articles,
+          []
+        );
+
+        // First flush should have affected rows
+        const result1 = await inMemoryArticleFieldStore.flushPendingInserts();
+        expect(result1.affectedRows).toBe(1);
+
+        // Second flush should have no affected rows (buffer cleared)
+        const result2 = await inMemoryArticleFieldStore.flushPendingInserts();
+        expect(result2.affectedRows).toBe(0);
+      });
+    });
+
+    it("throws when storeArticles called without context", async () => {
+      const articles = [createArticle("no-ctx-1")];
+
+      await expect(
+        inMemoryArticleFieldStore.storeArticles("feed-no-ctx", articles, [])
+      ).rejects.toThrow("No context was started for ArticleFieldStore");
+    });
+
+    it("includes comparison field inserts in affected rows count", async () => {
+      const articles = [
+        createArticle("fields-1", { title: "Title 1", author: "Author 1" }),
+      ];
+
+      await inMemoryArticleFieldStore.startContext(async () => {
+        await inMemoryArticleFieldStore.storeArticles("feed-fields", articles, [
+          "title",
+          "author",
+        ]);
+
+        // Should flush: 1 article ID + 2 comparison fields = 3 inserts
+        const result = await inMemoryArticleFieldStore.flushPendingInserts();
+        expect(result.affectedRows).toBe(3);
+      });
+    });
+
+    it("isolates contexts between concurrent operations", async () => {
+      const articles1 = [createArticle("iso-1")];
+      const articles2 = [createArticle("iso-2")];
+
+      // Run two contexts concurrently
+      const [result1, result2] = await Promise.all([
+        inMemoryArticleFieldStore.startContext(async () => {
+          await inMemoryArticleFieldStore.storeArticles(
+            "feed-iso-1",
+            articles1,
+            []
+          );
+          return inMemoryArticleFieldStore.flushPendingInserts();
+        }),
+        inMemoryArticleFieldStore.startContext(async () => {
+          await inMemoryArticleFieldStore.storeArticles(
+            "feed-iso-2",
+            articles2,
+            []
+          );
+          return inMemoryArticleFieldStore.flushPendingInserts();
+        }),
+      ]);
+
+      // Each context should have its own affected rows
+      expect(result1.affectedRows).toBe(1);
+      expect(result2.affectedRows).toBe(1);
+
+      // Both feeds should have articles stored
+      const hasPrior1 =
+        await inMemoryArticleFieldStore.hasPriorArticlesStored("feed-iso-1");
+      const hasPrior2 =
+        await inMemoryArticleFieldStore.hasPriorArticlesStored("feed-iso-2");
+      expect(hasPrior1).toBe(true);
+      expect(hasPrior2).toBe(true);
     });
   });
 });

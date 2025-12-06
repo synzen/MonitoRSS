@@ -1,8 +1,30 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { createHash } from "crypto";
 import dayjs from "dayjs";
 import type { Article } from "../article-parser";
 
 const sha1 = createHash("sha1");
+
+/**
+ * Pending insert for article field storage.
+ * Used for batching inserts within a request context.
+ */
+export interface PendingArticleFieldInsert {
+  feedId: string;
+  fieldName: string;
+  hashedValue: string;
+  createdAt: Date;
+}
+
+/**
+ * AsyncLocalStorage store for batching article field inserts.
+ */
+interface ArticleFieldAsyncStore {
+  pendingInserts: PendingArticleFieldInsert[];
+}
+
+const articleFieldAsyncStorage =
+  new AsyncLocalStorage<ArticleFieldAsyncStore>();
 
 export interface DateCheckOptions {
   oldArticleDateDiffMsThreshold?: number;
@@ -85,6 +107,20 @@ export interface ArticleFieldStore {
    * Clear all stored data for a feed.
    */
   clear(feedId: string): Promise<void>;
+
+  /**
+   * Start a context for batching inserts.
+   * All storeArticles calls within the callback will be batched
+   * and not persisted until flushPendingInserts is called.
+   */
+  startContext<T>(cb: () => Promise<T>): Promise<T>;
+
+  /**
+   * Flush all pending inserts accumulated within the current context.
+   * Must be called within a startContext callback.
+   * @returns The number of rows affected.
+   */
+  flushPendingInserts(): Promise<{ affectedRows: number }>;
 }
 
 // ============================================================================
@@ -179,9 +215,20 @@ export const inMemoryArticleFieldStore: ArticleFieldStore = {
     comparisonFields: string[]
   ): Promise<void> {
     const now = new Date();
+    const asyncStore = articleFieldAsyncStorage.getStore();
+
+    if (!asyncStore) {
+      throw new Error(
+        "No context was started for ArticleFieldStore. " +
+          "Call storeArticles within a startContext callback."
+      );
+    }
+
+    const { pendingInserts } = asyncStore;
+
     for (const article of articles) {
       // Store article ID
-      inMemoryStore.push({
+      pendingInserts.push({
         feedId,
         fieldName: "id",
         hashedValue: article.flattened.idHash,
@@ -193,7 +240,7 @@ export const inMemoryArticleFieldStore: ArticleFieldStore = {
         const value = article.flattened[fieldName];
         if (value) {
           const hashedValue = sha1.copy().update(value).digest("hex");
-          inMemoryStore.push({
+          pendingInserts.push({
             feedId,
             fieldName,
             hashedValue,
@@ -232,6 +279,34 @@ export const inMemoryArticleFieldStore: ArticleFieldStore = {
     for (const field of comparisonFields) {
       stored.add(field);
     }
+  },
+
+  async startContext<T>(cb: () => Promise<T>): Promise<T> {
+    return articleFieldAsyncStorage.run({ pendingInserts: [] }, cb);
+  },
+
+  async flushPendingInserts(): Promise<{ affectedRows: number }> {
+    const asyncStore = articleFieldAsyncStorage.getStore();
+
+    if (!asyncStore) {
+      throw new Error("No context was started for ArticleFieldStore");
+    }
+
+    const { pendingInserts } = asyncStore;
+
+    if (pendingInserts.length === 0) {
+      return { affectedRows: 0 };
+    }
+
+    // Move all pending inserts to the actual store
+    for (const insert of pendingInserts) {
+      inMemoryStore.push(insert);
+    }
+
+    const affectedRows = pendingInserts.length;
+    asyncStore.pendingInserts = []; // Clear the buffer
+
+    return { affectedRows };
   },
 };
 

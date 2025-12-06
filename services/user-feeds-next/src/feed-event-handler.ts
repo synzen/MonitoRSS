@@ -311,6 +311,51 @@ export async function handleFeedV2Event(
 
   console.log(`Handling event for feed ${feed.id} with url ${feed.url}`);
 
+  // Wrap processing in article field store context for batched inserts
+  return articleFieldStore.startContext(async () => {
+    try {
+      return await handleFeedV2EventInternal({
+        event,
+        feed,
+        responseHashStore,
+        articleFieldStore,
+        parsedArticlesCacheStore,
+        feedRetryStore,
+        publisher,
+      });
+    } finally {
+      // Flush pending article field inserts at the end
+      try {
+        const { affectedRows } = await articleFieldStore.flushPendingInserts();
+        if (affectedRows > 0) {
+          console.log(`Flushed ${affectedRows} article field inserts`);
+        }
+      } catch (err) {
+        console.error("Failed to flush article field inserts", {
+          error: (err as Error).stack,
+        });
+      }
+    }
+  });
+}
+
+async function handleFeedV2EventInternal({
+  event,
+  feed,
+  responseHashStore,
+  articleFieldStore,
+  parsedArticlesCacheStore,
+  feedRetryStore,
+  publisher,
+}: {
+  event: FeedV2Event;
+  feed: FeedV2Event["data"]["feed"];
+  responseHashStore: ResponseHashStore;
+  articleFieldStore: ArticleFieldStore;
+  parsedArticlesCacheStore: ParsedArticlesCacheStore;
+  feedRetryStore: FeedRetryStore;
+  publisher?: FeedRetryPublisher;
+}): Promise<boolean> {
   // Get the stored hash if we have prior articles stored
   let hashToCompare: string | undefined;
   if (await articleFieldStore.hasPriorArticlesStored(feed.id)) {
