@@ -32,6 +32,12 @@ import {
 } from "./delivery";
 import type { LogicalExpression } from "./article-filters";
 import { MessageBrokerQueue } from "./constants";
+import {
+  updateFeedArticlesInCache,
+  inMemoryParsedArticlesCacheStore,
+  type ParsedArticlesCacheStore,
+  type CacheKeyOptions,
+} from "./parsed-articles-cache";
 
 // ============================================================================
 // Response Hash Store Interface
@@ -277,11 +283,13 @@ export async function handleFeedV2Event(
   options: {
     responseHashStore?: ResponseHashStore;
     articleFieldStore?: ArticleFieldStore;
+    parsedArticlesCacheStore?: ParsedArticlesCacheStore;
   } = {}
 ): Promise<boolean> {
   const {
     responseHashStore = inMemoryResponseHashStore,
     articleFieldStore = inMemoryArticleFieldStore,
+    parsedArticlesCacheStore = inMemoryParsedArticlesCacheStore,
   } = options;
   const { feed } = event.data;
 
@@ -396,6 +404,26 @@ export async function handleFeedV2Event(
   console.log(
     `Parsed ${parseResult.articles.length} articles from feed "${parseResult.feed.title || "Unknown"}"`
   );
+
+  // Update parsed articles cache if they already exist in cache
+  // This keeps cached article data fresh while preserving TTL
+  const cacheKeyOptions: CacheKeyOptions = {
+    formatOptions: {
+      dateFormat: event.data.feed.formatOptions?.dateFormat,
+      dateTimezone: event.data.feed.formatOptions?.dateTimezone,
+      dateLocale: event.data.feed.formatOptions?.dateLocale,
+    },
+    externalFeedProperties: event.data.feed.externalProperties as
+      | ExternalFeedProperty[]
+      | undefined,
+    requestLookupDetails: event.data.feed.requestLookupDetails,
+  };
+
+  await updateFeedArticlesInCache(parsedArticlesCacheStore, {
+    url: event.data.feed.url,
+    options: cacheKeyOptions,
+    articles: parseResult.articles,
+  });
 
   // Determine which articles to deliver (comparison logic)
   const comparisonResult = await getArticlesToDeliver(
