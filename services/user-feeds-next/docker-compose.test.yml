@@ -1,8 +1,36 @@
 services:
+  postgres:
+    image: postgres:16.3-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: userfeeds_test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.0.7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   tests:
     build:
       context: .
       dockerfile: Dockerfile.test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      USER_FEEDS_NEXT_POSTGRES_URI: postgres://postgres:postgres@postgres:5432/userfeeds_test
+      USER_FEEDS_NEXT_REDIS_URI: redis://redis:6379
     volumes:
       - ./src:/app/src
       - ./test:/app/test

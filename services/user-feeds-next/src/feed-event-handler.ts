@@ -306,7 +306,7 @@ export async function handleFeedV2Event(
     deliveryRecordStore?: DeliveryRecordStore;
     publisher?: FeedRetryPublisher;
   } = {}
-): Promise<boolean> {
+): Promise<ArticleDeliveryState[] | null> {
   const {
     responseHashStore = inMemoryResponseHashStore,
     articleFieldStore = inMemoryArticleFieldStore,
@@ -381,7 +381,7 @@ async function handleFeedV2EventInternal({
   feedRetryStore: FeedRetryStore;
   deliveryRecordStore: DeliveryRecordStore;
   publisher?: FeedRetryPublisher;
-}): Promise<boolean> {
+}): Promise<ArticleDeliveryState[] | null> {
   // Get the stored hash if we have prior articles stored
   let hashToCompare: string | undefined;
   if (await articleFieldStore.hasPriorArticlesStored(feed.id)) {
@@ -410,7 +410,7 @@ async function handleFeedV2EventInternal({
       console.log(
         `Ignoring feed event due to expected exception: ${(err as Error).name}`
       );
-      return false;
+      return null;
     }
     throw err;
   }
@@ -421,7 +421,7 @@ async function handleFeedV2EventInternal({
     response.requestStatus === FeedResponseRequestStatus.MatchedHash
   ) {
     console.log(`No response body - pending request or matched hash`);
-    return false;
+    return null;
   }
 
   console.log(
@@ -479,7 +479,7 @@ async function handleFeedV2EventInternal({
   } catch (err) {
     if (err instanceof FeedParseTimeoutException) {
       console.error(`Feed parse timed out for ${feed.url}`);
-      return false;
+      return null;
     }
     if (err instanceof InvalidFeedException) {
       console.error(`Invalid feed for ${feed.url}: ${err.message}`);
@@ -499,7 +499,7 @@ async function handleFeedV2EventInternal({
         }
       }
 
-      return false;
+      return null;
     }
     throw err;
   }
@@ -567,7 +567,7 @@ async function handleFeedV2EventInternal({
       await responseHashStore.set(feed.id, response.bodyHash);
     }
 
-    return true;
+    return [];
   }
 
   // Deliver articles to all mediums
@@ -650,5 +650,5 @@ async function handleFeedV2EventInternal({
     await responseHashStore.set(feed.id, response.bodyHash);
   }
 
-  return true;
+  return deliveryResults;
 }

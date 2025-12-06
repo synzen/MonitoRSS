@@ -573,6 +573,12 @@ export async function getArticlesToDeliver(
     storedComparisonNames.has(name)
   );
 
+  // Find comparisons that are NOT yet stored (newly added by user)
+  const allComparisons = [...blockingComparisons, ...passingComparisons];
+  const unstoredComparisons = allComparisons.filter(
+    (name) => !storedComparisonNames.has(name)
+  );
+
   // Filter for new articles by ID (two-pass partitioned lookup)
   const { newArticles, articlesToRestore } = await filterForNewArticles(
     store,
@@ -641,6 +647,15 @@ export async function getArticlesToDeliver(
       articlesPassedComparisons,
       passingComparisons
     );
+  }
+
+  // Store comparison field values for ALL articles when there are new (unstored) comparisons.
+  // This ensures that when a user adds a new comparison field, ALL current articles get
+  // their field values stored so blocking/passing can work on the next run.
+  // Skip ID storage since IDs are already stored.
+  if (unstoredComparisons.length > 0) {
+    await store.storeArticles(feedId, articles, unstoredComparisons);
+    await store.storeComparisonNames(feedId, unstoredComparisons);
   }
 
   return {
