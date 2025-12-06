@@ -38,6 +38,13 @@ import {
   type ParsedArticlesCacheStore,
   type CacheKeyOptions,
 } from "./parsed-articles-cache";
+import {
+  handleFeedParseFailure,
+  handleFeedParseSuccess,
+  inMemoryFeedRetryStore,
+  type FeedRetryStore,
+  type FeedRetryPublisher,
+} from "./feed-retry-store";
 
 // ============================================================================
 // Response Hash Store Interface
@@ -143,11 +150,13 @@ export async function handleFeedDeletedEvent(
   options: {
     responseHashStore?: ResponseHashStore;
     articleFieldStore?: ArticleFieldStore;
+    feedRetryStore?: FeedRetryStore;
   } = {}
 ): Promise<void> {
   const {
     responseHashStore = inMemoryResponseHashStore,
     articleFieldStore = inMemoryArticleFieldStore,
+    feedRetryStore = inMemoryFeedRetryStore,
   } = options;
   const feedId = event.data.feed.id;
 
@@ -158,6 +167,9 @@ export async function handleFeedDeletedEvent(
 
   // Clear article field store for this feed
   await articleFieldStore.clear(feedId);
+
+  // Clear any retry records for this feed
+  await feedRetryStore.remove(feedId);
 
   console.log(`Cleaned up data for deleted feed ${feedId}`);
 }
@@ -284,12 +296,16 @@ export async function handleFeedV2Event(
     responseHashStore?: ResponseHashStore;
     articleFieldStore?: ArticleFieldStore;
     parsedArticlesCacheStore?: ParsedArticlesCacheStore;
+    feedRetryStore?: FeedRetryStore;
+    publisher?: FeedRetryPublisher;
   } = {}
 ): Promise<boolean> {
   const {
     responseHashStore = inMemoryResponseHashStore,
     articleFieldStore = inMemoryArticleFieldStore,
     parsedArticlesCacheStore = inMemoryParsedArticlesCacheStore,
+    feedRetryStore = inMemoryFeedRetryStore,
+    publisher,
   } = options;
   const { feed } = event.data;
 
@@ -396,6 +412,22 @@ export async function handleFeedV2Event(
     }
     if (err instanceof InvalidFeedException) {
       console.error(`Invalid feed for ${feed.url}: ${err.message}`);
+
+      // Handle retry logic for invalid feeds
+      if (publisher) {
+        const { disabled } = await handleFeedParseFailure({
+          feedId: feed.id,
+          store: feedRetryStore,
+          publisher,
+        });
+
+        if (disabled) {
+          console.log(
+            `Feed ${feed.id} has been disabled after too many failures`
+          );
+        }
+      }
+
       return false;
     }
     throw err;
@@ -404,6 +436,12 @@ export async function handleFeedV2Event(
   console.log(
     `Parsed ${parseResult.articles.length} articles from feed "${parseResult.feed.title || "Unknown"}"`
   );
+
+  // Clear any retry records on successful parse
+  await handleFeedParseSuccess({
+    feedId: feed.id,
+    store: feedRetryStore,
+  });
 
   // Update parsed articles cache if they already exist in cache
   // This keeps cached article data fresh while preserving TTL

@@ -45,4 +45,12 @@ export enum MessageBrokerQueue {
   FeedArticleDeliveryResult = "feed.article-delivery-result",
   FeedRejectedArticleDisableConnection = "feed.rejected-article.disable-connection",
   FeedDeleted = "feed.deleted",
+  FeedRejectedDisableFeed = "feed.rejected.disable-feed",
+}
+
+/**
+ * Codes indicating why a feed was disabled.
+ */
+export enum FeedRejectedDisabledCode {
+  InvalidFeed = "user-feeds/invalid-feed",
 }
