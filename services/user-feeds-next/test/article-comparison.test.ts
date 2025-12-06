@@ -26,6 +26,58 @@ describe("article-comparison", () => {
     clearInMemoryStore();
   });
 
+  /**
+   * Helper to create a mock store with configurable behavior.
+   */
+  function createMockStore(config: {
+    hasPriorArticles: boolean;
+    hotPartitionIds: Set<string>;
+    coldPartitionIds: Set<string>;
+    storedComparisonNames?: Set<string>;
+  }): ArticleFieldStore & {
+    storedArticles: Article[][];
+    comparisonNames: Set<string>;
+  } {
+    const storedArticles: Article[][] = [];
+    const comparisonNames: Set<string> =
+      config.storedComparisonNames ?? new Set();
+
+    return {
+      storedArticles,
+      comparisonNames,
+      hasPriorArticlesStored: async () => config.hasPriorArticles,
+      findStoredArticleIds: async (_feedId, idHashes) => {
+        // Return all IDs that are in either partition
+        const allIds = new Set([
+          ...config.hotPartitionIds,
+          ...config.coldPartitionIds,
+        ]);
+        return new Set(idHashes.filter((id) => allIds.has(id)));
+      },
+      findStoredArticleIdsPartitioned: async (
+        _feedId,
+        idHashes,
+        olderThanOneMonth
+      ) => {
+        const partition = olderThanOneMonth
+          ? config.coldPartitionIds
+          : config.hotPartitionIds;
+        return new Set(idHashes.filter((id) => partition.has(id)));
+      },
+      someFieldsExist: async () => false,
+      storeArticles: async (_feedId, articles, _comparisonFields) => {
+        storedArticles.push(articles);
+      },
+      getStoredComparisonNames: async () => comparisonNames,
+      storeComparisonNames: async (_feedId, names) => {
+        for (const name of names) {
+          comparisonNames.add(name);
+        }
+      },
+      clear: async () => {},
+    };
+  }
+
   describe("getArticlesToDeliver", () => {
     it("delivers nothing on first run (stores articles)", async () => {
       const articles = [
@@ -161,42 +213,6 @@ describe("article-comparison", () => {
      * - Second pass checks "cold" partition (articles stored older than 1 month)
      * - Articles in cold partition are re-stored with fresh timestamps
      */
-
-    function createMockStore(config: {
-      hasPriorArticles: boolean;
-      hotPartitionIds: Set<string>;
-      coldPartitionIds: Set<string>;
-    }): ArticleFieldStore & { storedArticles: Article[][] } {
-      const storedArticles: Article[][] = [];
-
-      return {
-        storedArticles,
-        hasPriorArticlesStored: async () => config.hasPriorArticles,
-        findStoredArticleIds: async (_feedId, idHashes) => {
-          // Return all IDs that are in either partition
-          const allIds = new Set([
-            ...config.hotPartitionIds,
-            ...config.coldPartitionIds,
-          ]);
-          return new Set(idHashes.filter((id) => allIds.has(id)));
-        },
-        findStoredArticleIdsPartitioned: async (
-          _feedId,
-          idHashes,
-          olderThanOneMonth
-        ) => {
-          const partition = olderThanOneMonth
-            ? config.coldPartitionIds
-            : config.hotPartitionIds;
-          return new Set(idHashes.filter((id) => partition.has(id)));
-        },
-        someFieldsExist: async () => false,
-        storeArticles: async (_feedId, articles, _comparisonFields) => {
-          storedArticles.push(articles);
-        },
-        clear: async () => {},
-      };
-    }
 
     it("returns new articles not in any partition", async () => {
       const mockStore = createMockStore({
@@ -335,6 +351,114 @@ describe("article-comparison", () => {
 
       // Only first pass needed since all in hot partition
       expect(partitionedCalls).toBe(1);
+    });
+  });
+
+  describe("stored comparisons behavior", () => {
+    /**
+     * These tests verify that comparison fields are only used for blocking/passing
+     * if they have been previously stored. This matches the behavior in user-feeds
+     * where comparison fields are only "active" after they've been stored in the
+     * FeedArticleCustomComparison table.
+     */
+
+    it("does not use a new blocking comparison until it has been stored", async () => {
+      // First run - no prior articles, store articles with "author" comparison
+      await getArticlesToDeliver(
+        inMemoryArticleFieldStore,
+        "comparison-feed-1",
+        [createArticle("1", { author: "John" })],
+        { blockingComparisons: ["author"], passingComparisons: [] }
+      );
+
+      // Second run - add a NEW blocking comparison "category" that wasn't stored yet
+      // The article has a matching "author" but matching should be blocked since author was stored
+      // The article also has a matching "category" but it won't be used because it's new
+      const result = await getArticlesToDeliver(
+        inMemoryArticleFieldStore,
+        "comparison-feed-1",
+        [
+          createArticle("2", { author: "John", category: "Tech" }), // new article with matching author
+        ],
+        { blockingComparisons: ["author", "category"], passingComparisons: [] }
+      );
+
+      // Article 2 should be blocked because author matches (author was stored)
+      // Even though category is a new comparison, it's now stored, so it won't affect this run
+      expect(result.articlesBlocked.length).toBe(1);
+      expect(result.articlesToDeliver.length).toBe(0);
+    });
+
+    it("uses blocking comparison after it has been stored", async () => {
+      // First run - store articles with "author" comparison
+      await getArticlesToDeliver(
+        inMemoryArticleFieldStore,
+        "comparison-feed-2",
+        [createArticle("1", { author: "John" })],
+        { blockingComparisons: ["author"], passingComparisons: [] }
+      );
+
+      // Second run - new article with different author should pass
+      const result = await getArticlesToDeliver(
+        inMemoryArticleFieldStore,
+        "comparison-feed-2",
+        [createArticle("2", { author: "Jane" })],
+        { blockingComparisons: ["author"], passingComparisons: [] }
+      );
+
+      expect(result.articlesToDeliver.length).toBe(1);
+      expect(result.articlesBlocked.length).toBe(0);
+    });
+
+    it("does not use a new passing comparison until it has been stored", async () => {
+      const mockStore = createMockStore({
+        hasPriorArticles: true,
+        hotPartitionIds: new Set(["hash-1"]),
+        coldPartitionIds: new Set(),
+        storedComparisonNames: new Set(["title"]), // Only "title" is stored
+      });
+
+      // Override someFieldsExist to check if fields are different
+      mockStore.someFieldsExist = async (_feedId, fields) => {
+        // Simulate that "title" field value was NOT seen (so it should pass)
+        // But "description" is a new comparison, shouldn't be checked
+        for (const field of fields) {
+          if (field.name === "title") {
+            return false; // Title changed - should pass
+          }
+        }
+        return false;
+      };
+
+      const articles = [
+        createArticle("1", { title: "Updated Title", description: "New Desc" }),
+      ];
+
+      const result = await getArticlesToDeliver(mockStore, "feed-1", articles, {
+        blockingComparisons: [],
+        passingComparisons: ["title", "description"], // description is new
+      });
+
+      // Article should pass based on title alone (description is new, not used)
+      expect(result.articlesPassed.length).toBe(1);
+      expect(result.articlesToDeliver.length).toBe(1);
+    });
+
+    it("stores comparison names when articles are stored", async () => {
+      const mockStore = createMockStore({
+        hasPriorArticles: false,
+        hotPartitionIds: new Set(),
+        coldPartitionIds: new Set(),
+      });
+
+      await getArticlesToDeliver(mockStore, "feed-1", [createArticle("1")], {
+        blockingComparisons: ["field1"],
+        passingComparisons: ["field2"],
+      });
+
+      // Both comparison names should be stored
+      expect(mockStore.comparisonNames.has("field1")).toBe(true);
+      expect(mockStore.comparisonNames.has("field2")).toBe(true);
     });
   });
 });

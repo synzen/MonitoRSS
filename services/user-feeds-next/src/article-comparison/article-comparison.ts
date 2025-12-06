@@ -66,6 +66,22 @@ export interface ArticleFieldStore {
   ): Promise<void>;
 
   /**
+   * Get which comparison field names have been stored for a feed.
+   * This tracks which fields have ever had values stored, not the values themselves.
+   * Used to determine if a comparison field is "active" for blocking/passing checks.
+   */
+  getStoredComparisonNames(feedId: string): Promise<Set<string>>;
+
+  /**
+   * Store comparison field names as "active" for a feed.
+   * Called when new comparison fields are first used.
+   */
+  storeComparisonNames(
+    feedId: string,
+    comparisonFields: string[]
+  ): Promise<void>;
+
+  /**
    * Clear all stored data for a feed.
    */
   clear(feedId: string): Promise<void>;
@@ -83,6 +99,12 @@ interface StoredField {
 }
 
 const inMemoryStore: StoredField[] = [];
+
+/**
+ * Tracks which comparison field names have been stored per feed.
+ * Separate from inMemoryStore since this tracks field names, not field values.
+ */
+const inMemoryComparisonNames: Map<string, Set<string>> = new Map();
 
 export const inMemoryArticleFieldStore: ArticleFieldStore = {
   async hasPriorArticlesStored(feedId: string): Promise<boolean> {
@@ -189,6 +211,26 @@ export const inMemoryArticleFieldStore: ArticleFieldStore = {
       if (inMemoryStore[i]!.feedId === feedId) {
         inMemoryStore.splice(i, 1);
       }
+    }
+    // Also clear comparison names
+    inMemoryComparisonNames.delete(feedId);
+  },
+
+  async getStoredComparisonNames(feedId: string): Promise<Set<string>> {
+    return inMemoryComparisonNames.get(feedId) ?? new Set();
+  },
+
+  async storeComparisonNames(
+    feedId: string,
+    comparisonFields: string[]
+  ): Promise<void> {
+    let stored = inMemoryComparisonNames.get(feedId);
+    if (!stored) {
+      stored = new Set();
+      inMemoryComparisonNames.set(feedId, stored);
+    }
+    for (const field of comparisonFields) {
+      stored.add(field);
     }
   },
 };
@@ -434,12 +476,27 @@ export async function getArticlesToDeliver(
       ...blockingComparisons,
       ...passingComparisons,
     ]);
+    // Store comparison field names as "active"
+    await store.storeComparisonNames(feedId, [
+      ...blockingComparisons,
+      ...passingComparisons,
+    ]);
     return {
       articlesToDeliver: [],
       articlesBlocked: [],
       articlesPassed: [],
     };
   }
+
+  // Get which comparison field names are "active" (already stored)
+  // Only comparisons that have been stored before will be used for blocking/passing
+  const storedComparisonNames = await store.getStoredComparisonNames(feedId);
+  const activeBlockingComparisons = blockingComparisons.filter((name) =>
+    storedComparisonNames.has(name)
+  );
+  const activePassingComparisons = passingComparisons.filter((name) =>
+    storedComparisonNames.has(name)
+  );
 
   // Filter for new articles by ID (two-pass partitioned lookup)
   const { newArticles, articlesToRestore } = await filterForNewArticles(
@@ -454,19 +511,19 @@ export async function getArticlesToDeliver(
     (a) => !newArticleHashes.has(a.flattened.idHash)
   );
 
-  // Check blocking comparisons on NEW articles
+  // Check blocking comparisons on NEW articles (only using active comparisons)
   const articlesPastBlocks = await checkBlockingComparisons(
     store,
     feedId,
-    blockingComparisons,
+    activeBlockingComparisons,
     newArticles
   );
 
-  // Check passing comparisons on SEEN articles
+  // Check passing comparisons on SEEN articles (only using active comparisons)
   const articlesPassedComparisons = await checkPassingComparisons(
     store,
     feedId,
-    passingComparisons,
+    activePassingComparisons,
     seenArticles
   );
 
@@ -485,6 +542,11 @@ export async function getArticlesToDeliver(
   // Store new articles
   if (newArticles.length > 0) {
     await store.storeArticles(feedId, newArticles, [
+      ...blockingComparisons,
+      ...passingComparisons,
+    ]);
+    // Also store new comparison field names as "active"
+    await store.storeComparisonNames(feedId, [
       ...blockingComparisons,
       ...passingComparisons,
     ]);
@@ -518,4 +580,5 @@ export async function getArticlesToDeliver(
  */
 export function clearInMemoryStore(): void {
   inMemoryStore.length = 0;
+  inMemoryComparisonNames.clear();
 }

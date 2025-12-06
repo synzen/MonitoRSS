@@ -135,6 +135,8 @@ describe("response-hash", () => {
         findStoredArticleIdsPartitioned: async () => new Set(),
         someFieldsExist: async () => false,
         storeArticles: async () => {},
+        getStoredComparisonNames: async () => new Set(),
+        storeComparisonNames: async () => {},
         clear: async (feedId: string) => {
           clearedFeedIds.push(feedId);
         },
