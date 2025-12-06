@@ -35,6 +35,20 @@ export interface ArticleFieldStore {
   ): Promise<Set<string>>;
 
   /**
+   * Find which article ID hashes are stored, partitioned by age.
+   * Used for two-pass filtering optimization:
+   * - olderThanOneMonth=false: returns IDs stored within the past month ("hot" partition)
+   * - olderThanOneMonth=true: returns IDs stored older than one month ("cold" partition)
+   *
+   * This allows efficient lookups when backed by a partitioned PostgreSQL table.
+   */
+  findStoredArticleIdsPartitioned(
+    feedId: string,
+    idHashes: string[],
+    olderThanOneMonth: boolean
+  ): Promise<Set<string>>;
+
+  /**
    * Check if any of the given field+value combinations exist for a feed.
    */
   someFieldsExist(
@@ -91,6 +105,31 @@ export const inMemoryArticleFieldStore: ArticleFieldStore = {
         found.add(hash);
       }
     }
+    return found;
+  },
+
+  async findStoredArticleIdsPartitioned(
+    feedId: string,
+    idHashes: string[],
+    olderThanOneMonth: boolean
+  ): Promise<Set<string>> {
+    const oneMonthAgo = dayjs().subtract(1, "month").toDate();
+    const found = new Set<string>();
+
+    for (const hash of idHashes) {
+      const entry = inMemoryStore.find(
+        (f) =>
+          f.feedId === feedId && f.fieldName === "id" && f.hashedValue === hash
+      );
+
+      if (entry) {
+        const isOlderThanOneMonth = entry.createdAt <= oneMonthAgo;
+        if (olderThanOneMonth === isOlderThanOneMonth) {
+          found.add(hash);
+        }
+      }
+    }
+
     return found;
   },
 
@@ -191,23 +230,87 @@ async function articleFieldsSeenBefore(
 }
 
 /**
+ * Result of two-pass filtering for new articles.
+ */
+interface FilterForNewArticlesResult {
+  /** Articles that have never been stored (truly new) */
+  newArticles: Article[];
+  /**
+   * Articles that were stored older than one month ago.
+   * These should be re-stored with current timestamp for efficient future lookups.
+   */
+  articlesToRestore: Article[];
+}
+
+/**
  * Filter articles that have not been seen before (by ID).
+ *
+ * Uses two-pass partitioned lookup for efficiency:
+ * 1. First pass: Check "hot" partition (stored within past month)
+ * 2. Second pass: For candidates, check "cold" partition (older than 1 month)
+ *
+ * Articles found in cold partition are returned for re-storing with fresh timestamp.
+ *
+ * Example:
+ *   Feed has articles a, b, c where:
+ *   - a: stored 5 months ago (cold partition)
+ *   - b: stored 10 days ago (hot partition)
+ *   - c: never stored
+ *
+ *   First pass returns b → candidates are a, c
+ *   Second pass returns a → articlesToRestore = [a]
+ *   Final result: newArticles = [c], articlesToRestore = [a]
  */
 async function filterForNewArticles(
   store: ArticleFieldStore,
   feedId: string,
   articles: Article[]
-): Promise<Article[]> {
+): Promise<FilterForNewArticlesResult> {
   const articleMap = new Map(
     articles.map((article) => [article.flattened.idHash, article])
   );
   const idHashes = Array.from(articleMap.keys());
 
-  const storedIds = await store.findStoredArticleIds(feedId, idHashes);
+  // FIRST PASS: Find articles stored within the past month (hot partition)
+  const idsStoredInPastMonth = await store.findStoredArticleIdsPartitioned(
+    feedId,
+    idHashes,
+    false // NOT older than one month = stored within past month
+  );
 
-  return idHashes
-    .filter((hash) => !storedIds.has(hash))
-    .map((hash) => articleMap.get(hash)!);
+  // Filter to get candidates (articles NOT in past month)
+  const candidateIds = idHashes.filter((id) => !idsStoredInPastMonth.has(id));
+
+  if (candidateIds.length === 0) {
+    // All articles were stored within past month - nothing new
+    return { newArticles: [], articlesToRestore: [] };
+  }
+
+  // SECOND PASS: From candidates, find any stored older than one month (cold partition)
+  const idsStoredOlderThanOneMonth =
+    await store.findStoredArticleIdsPartitioned(
+      feedId,
+      candidateIds,
+      true // older than one month
+    );
+
+  // These old articles need to be re-stored with current timestamp
+  const articlesToRestore = Array.from(idsStoredOlderThanOneMonth)
+    .map((id) => articleMap.get(id))
+    .filter((a): a is Article => a !== undefined);
+
+  // Combine both sets to get all stored IDs
+  const allStoredIds = new Set([
+    ...idsStoredInPastMonth,
+    ...idsStoredOlderThanOneMonth,
+  ]);
+
+  // New articles are those not in either set
+  const newArticles = idHashes
+    .filter((id) => !allStoredIds.has(id))
+    .map((id) => articleMap.get(id)!);
+
+  return { newArticles, articlesToRestore };
 }
 
 /**
@@ -338,8 +441,12 @@ export async function getArticlesToDeliver(
     };
   }
 
-  // Filter for new articles by ID
-  const newArticles = await filterForNewArticles(store, feedId, articles);
+  // Filter for new articles by ID (two-pass partitioned lookup)
+  const { newArticles, articlesToRestore } = await filterForNewArticles(
+    store,
+    feedId,
+    articles
+  );
 
   // Get seen articles (existing IDs)
   const newArticleHashes = new Set(newArticles.map((a) => a.flattened.idHash));
@@ -381,6 +488,13 @@ export async function getArticlesToDeliver(
       ...blockingComparisons,
       ...passingComparisons,
     ]);
+  }
+
+  // Re-store articles from cold partition with fresh timestamp.
+  // This moves them to the hot partition for efficient future lookups.
+  // Only IDs are re-stored, not comparison fields (matching user-feeds behavior).
+  if (articlesToRestore.length > 0) {
+    await store.storeArticles(feedId, articlesToRestore, []);
   }
 
   // Store passed comparison fields for seen articles

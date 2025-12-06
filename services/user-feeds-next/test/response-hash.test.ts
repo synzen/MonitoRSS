@@ -132,6 +132,7 @@ describe("response-hash", () => {
       mockArticleFieldStore = {
         hasPriorArticlesStored: async () => false,
         findStoredArticleIds: async () => new Set(),
+        findStoredArticleIdsPartitioned: async () => new Set(),
         someFieldsExist: async () => false,
         storeArticles: async () => {},
         clear: async (feedId: string) => {
