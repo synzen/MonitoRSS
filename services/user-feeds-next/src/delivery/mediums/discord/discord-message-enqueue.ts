@@ -55,6 +55,7 @@ export interface EnqueueMessagesOptions {
   article: Article;
   mediumId: string;
   feedId: string;
+  feedUrl: string;
   guildId: string;
   channelId?: string;
   webhookId?: string;
@@ -83,6 +84,7 @@ export async function enqueueMessages(
     article,
     mediumId,
     feedId,
+    feedUrl,
     guildId,
     channelId,
     webhookId,
@@ -106,6 +108,7 @@ export async function enqueueMessages(
       {
         id: deliveryId,
         articleID: article.flattened.id,
+        feedURL: feedUrl,
         ...(channelId ? { channel: channelId } : {}),
         ...(webhookId ? { webhookId } : {}),
         feedId,

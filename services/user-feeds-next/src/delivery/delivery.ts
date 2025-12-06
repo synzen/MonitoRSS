@@ -387,6 +387,7 @@ export interface EnqueueMessagesOptions {
   article: Article;
   mediumId: string;
   feedId: string;
+  feedUrl: string;
   guildId: string;
   channelId?: string;
   webhookId?: string;
@@ -411,6 +412,7 @@ async function enqueueMessages(
     article,
     mediumId,
     feedId,
+    feedUrl,
     guildId,
     channelId,
     webhookId,
@@ -434,6 +436,7 @@ async function enqueueMessages(
       {
         id: deliveryId,
         articleID: article.flattened.id,
+        feedURL: feedUrl,
         ...(channelId ? { channel: channelId } : {}),
         ...(webhookId ? { webhookId } : {}),
         feedId,
@@ -560,6 +563,7 @@ function parseThreadCreateResponseToDeliveryStates(
 interface DeliverArticleContext {
   mediumId: string;
   feedId: string;
+  feedUrl: string;
   guildId: string;
   filterReferences: Map<string, string>;
   deliverySettings: {
@@ -704,6 +708,7 @@ async function deliverToWebhookForum(
     article,
     mediumId: context.mediumId,
     feedId: context.feedId,
+    feedUrl: context.feedUrl,
     guildId: context.guildId,
     channelId: threadId,
     parentDeliveryId,
@@ -800,6 +805,7 @@ async function deliverToChannelForum(
     article,
     mediumId: context.mediumId,
     feedId: context.feedId,
+    feedUrl: context.feedUrl,
     guildId: context.guildId,
     channelId: threadId,
     parentDeliveryId,
@@ -977,6 +983,7 @@ async function deliverToChannel(
     article,
     mediumId: context.mediumId,
     feedId: context.feedId,
+    feedUrl: context.feedUrl,
     guildId: context.guildId,
     channelId: useChannelId,
     parentDeliveryId: parentDeliveryId || undefined,
@@ -1027,6 +1034,7 @@ async function deliverToWebhook(
     article,
     mediumId: context.mediumId,
     feedId: context.feedId,
+    feedUrl: context.feedUrl,
     guildId: context.guildId,
     webhookId: webhook.id,
   });
@@ -1060,6 +1068,7 @@ async function sendArticleToMedium(
   medium: DeliveryMedium,
   limitState: LimitState,
   feedId: string,
+  feedUrl: string,
   filterReferences?: Map<string, string>
 ): Promise<ArticleDeliveryState[]> {
   try {
@@ -1122,6 +1131,7 @@ async function sendArticleToMedium(
     const context: DeliverArticleContext = {
       mediumId: medium.id,
       feedId,
+      feedUrl,
       guildId: medium.details.guildId,
       filterReferences: collectedFilterReferences,
       deliverySettings: {
@@ -1222,6 +1232,7 @@ export async function deliverArticles(
   mediums: DeliveryMedium[],
   options: {
     feedId: string;
+    feedUrl: string;
     articleDayLimit: number;
     deliveryRecordStore?: DeliveryRecordStore;
   }
@@ -1269,7 +1280,8 @@ export async function deliverArticles(
         article,
         medium,
         limitState,
-        options.feedId
+        options.feedId,
+        options.feedUrl
       );
       articleStates = articleStates.concat(states);
     }

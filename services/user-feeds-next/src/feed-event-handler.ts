@@ -619,6 +619,7 @@ async function handleFeedV2EventInternal({
     mediums,
     {
       feedId: feed.id,
+      feedUrl: feed.url,
       articleDayLimit: event.data.articleDayLimit,
     }
   );

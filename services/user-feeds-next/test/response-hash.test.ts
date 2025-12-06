@@ -130,6 +130,7 @@ describe("response-hash", () => {
       };
 
       mockArticleFieldStore = {
+        startContext: async <T>(cb: () => Promise<T>) => cb(),
         hasPriorArticlesStored: async () => false,
         findStoredArticleIds: async () => new Set(),
         findStoredArticleIdsPartitioned: async () => new Set(),
@@ -139,6 +140,9 @@ describe("response-hash", () => {
         storeComparisonNames: async () => {},
         clear: async (feedId: string) => {
           clearedFeedIds.push(feedId);
+        },
+        flushPendingInserts: async () => {
+          return { affectedRows: 0 };
         },
       };
     });

@@ -165,6 +165,7 @@ export type MediumRejectionEvent =
 export interface DeliverArticleContext {
   mediumId: string;
   feedId: string;
+  feedUrl: string;
   guildId: string;
   filterReferences?: Map<string, string>;
 }
