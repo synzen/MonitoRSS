@@ -10,6 +10,7 @@ import {
   type LogicalExpression,
 } from "../article-filters";
 import { generateDiscordPayloads } from "../article-formatter";
+import { RegexEvalException } from "../article-formatter/exceptions";
 import type { FeedV2Event } from "../schemas";
 import {
   ArticleDeliveryStatus,
@@ -374,6 +375,24 @@ async function sendArticleToMedium(
       },
     ];
   } catch (err) {
+    // Handle regex evaluation errors specially (matching user-feeds)
+    if (err instanceof RegexEvalException) {
+      return [
+        {
+          id: generateDeliveryId(),
+          mediumId: medium.id,
+          status: ArticleDeliveryStatus.Rejected,
+          articleIdHash: article.flattened.idHash,
+          errorCode: ArticleDeliveryErrorCode.ArticleProcessingError,
+          internalMessage: (err as Error).message,
+          externalDetail: JSON.stringify({
+            message: (err as Error).message,
+          }),
+          article,
+        },
+      ];
+    }
+
     return [
       {
         id: generateDeliveryId(),

@@ -13,6 +13,7 @@ import {
   getArticleFilterResults,
   type LogicalExpression,
 } from "../article-filters";
+import { CustomPlaceholderRegexEvalException } from "./exceptions";
 
 dayjs.extend(timezone);
 dayjs.extend(utc);
@@ -933,8 +934,17 @@ export function processCustomPlaceholders(
           try {
             script.runInNewContext(context, { timeout: REGEX_TIMEOUT_MS });
             lastOutput = context.finalVal;
-          } catch {
-            // Keep previous value on error
+          } catch (err) {
+            throw new CustomPlaceholderRegexEvalException(
+              `Custom placeholder with regex "${step.regexSearch}" with flags ` +
+                `"${step.regexSearchFlags || "gmi"}" evaluation` +
+                ` on text "${lastOutput}"` +
+                ` with replacement string "${step.replacementString || ""}" errored: ` +
+                `${(err as Error).message}`,
+              {
+                regexErrors: [err as Error],
+              }
+            );
           }
           break;
         }
