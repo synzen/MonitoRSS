@@ -6,7 +6,6 @@ import {
   ArticleDeliveryContentType,
   type ArticleDeliveryState,
   generateDeliveryId,
-  resultToState,
 } from "../src/delivery-record-store";
 
 describe("Delivery Record Store", () => {
@@ -521,81 +520,6 @@ describe("Delivery Record Store", () => {
       expect(id1).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
       );
-    });
-  });
-
-  describe("resultToState", () => {
-    const mockArticle = {
-      flattened: { id: "article-1", idHash: "hash-1", title: "Test" },
-      raw: {},
-    };
-
-    it("should convert Sent result to state", () => {
-      const state = resultToState({
-        status: ArticleDeliveryStatus.Sent,
-        article: mockArticle,
-        mediumId: "medium-1",
-      });
-
-      expect(state.status).toBe(ArticleDeliveryStatus.Sent);
-      expect(state.articleIdHash).toBe("hash-1");
-      expect(state.mediumId).toBe("medium-1");
-      expect(state.id).toBeDefined();
-    });
-
-    it("should convert Failed result to state", () => {
-      const state = resultToState({
-        status: ArticleDeliveryStatus.Failed,
-        article: mockArticle,
-        mediumId: "medium-1",
-        message: "Connection failed",
-        errorCode: ArticleDeliveryErrorCode.ThirdPartyInternal,
-      });
-
-      expect(state.status).toBe(ArticleDeliveryStatus.Failed);
-      if (state.status === ArticleDeliveryStatus.Failed) {
-        expect(state.errorCode).toBe(
-          ArticleDeliveryErrorCode.ThirdPartyInternal
-        );
-        expect(state.internalMessage).toBe("Connection failed");
-      }
-    });
-
-    it("should convert FilteredOut result to state", () => {
-      const state = resultToState({
-        status: ArticleDeliveryStatus.FilteredOut,
-        article: mockArticle,
-        mediumId: "medium-1",
-        externalDetail: '{"blocked": true}',
-      });
-
-      expect(state.status).toBe(ArticleDeliveryStatus.FilteredOut);
-      if (state.status === ArticleDeliveryStatus.FilteredOut) {
-        expect(state.externalDetail).toBe('{"blocked": true}');
-      }
-    });
-
-    it("should convert RateLimited result to state", () => {
-      const state = resultToState({
-        status: ArticleDeliveryStatus.RateLimited,
-        article: mockArticle,
-        mediumId: "medium-1",
-      });
-
-      expect(state.status).toBe(ArticleDeliveryStatus.RateLimited);
-    });
-
-    it("should use provided id if given", () => {
-      const state = resultToState(
-        {
-          status: ArticleDeliveryStatus.Sent,
-          article: mockArticle,
-          mediumId: "medium-1",
-        },
-        "custom-id-123"
-      );
-
-      expect(state.id).toBe("custom-id-123");
     });
   });
 });

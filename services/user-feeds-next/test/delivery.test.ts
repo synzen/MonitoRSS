@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, beforeEach } from "bun:test";
 import type { JobResponse } from "@synzen/discord-rest";
 import type {
   JobData,
@@ -9,7 +9,15 @@ import {
   ArticleDeliveryStatus,
   ArticleDeliveryErrorCode,
   type DiscordDeliveryResult,
+  getUnderLimitCheck,
+  deliverArticles,
+  type LimitState,
 } from "../src/delivery";
+import {
+  createInMemoryDeliveryRecordStore,
+  type ArticleDeliveryState,
+} from "../src/delivery-record-store";
+import type { Article } from "../src/article-parser";
 
 function createJobData(overrides?: Partial<JobData>): JobData {
   return {
@@ -382,4 +390,156 @@ describe("delivery", () => {
       });
     });
   });
+
+  describe("getUnderLimitCheck", () => {
+    it("returns MAX_SAFE_INTEGER remaining when no limits provided", async () => {
+      const store = createInMemoryDeliveryRecordStore();
+
+      const result = await getUnderLimitCheck(store, { feedId: "feed-1" }, []);
+
+      expect(result.underLimit).toBe(true);
+      expect(result.remaining).toBe(Number.MAX_SAFE_INTEGER);
+    });
+
+    it("returns full limit when no deliveries exist", async () => {
+      const store = createInMemoryDeliveryRecordStore();
+
+      const result = await getUnderLimitCheck(store, { feedId: "feed-1" }, [
+        { limit: 100, timeWindowSeconds: 86400 },
+      ]);
+
+      expect(result.underLimit).toBe(true);
+      expect(result.remaining).toBe(100);
+    });
+
+    it("returns remaining based on delivery count", async () => {
+      const store = createInMemoryDeliveryRecordStore();
+
+      // Store some deliveries
+      await store.startContext(async () => {
+        await store.store("feed-1", [
+          createDeliveryState("1", "medium-1", ArticleDeliveryStatus.Sent),
+          createDeliveryState("2", "medium-1", ArticleDeliveryStatus.Sent),
+          createDeliveryState("3", "medium-1", ArticleDeliveryStatus.Sent),
+        ]);
+      });
+
+      const result = await getUnderLimitCheck(store, { feedId: "feed-1" }, [
+        { limit: 100, timeWindowSeconds: 86400 },
+      ]);
+
+      expect(result.underLimit).toBe(true);
+      expect(result.remaining).toBe(97);
+    });
+
+    it("returns 0 remaining when at limit", async () => {
+      const store = createInMemoryDeliveryRecordStore();
+
+      // Store deliveries up to limit
+      await store.startContext(async () => {
+        const states = Array.from({ length: 5 }, (_, i) =>
+          createDeliveryState(`${i}`, "medium-1", ArticleDeliveryStatus.Sent)
+        );
+        await store.store("feed-1", states);
+      });
+
+      const result = await getUnderLimitCheck(store, { feedId: "feed-1" }, [
+        { limit: 5, timeWindowSeconds: 86400 },
+      ]);
+
+      expect(result.underLimit).toBe(false);
+      expect(result.remaining).toBe(0);
+    });
+
+    it("returns minimum remaining across multiple limits", async () => {
+      const store = createInMemoryDeliveryRecordStore();
+
+      await store.startContext(async () => {
+        await store.store("feed-1", [
+          createDeliveryState("1", "medium-1", ArticleDeliveryStatus.Sent),
+          createDeliveryState("2", "medium-1", ArticleDeliveryStatus.Sent),
+        ]);
+      });
+
+      const result = await getUnderLimitCheck(store, { feedId: "feed-1" }, [
+        { limit: 100, timeWindowSeconds: 86400 }, // 98 remaining
+        { limit: 5, timeWindowSeconds: 3600 }, // 3 remaining
+      ]);
+
+      expect(result.underLimit).toBe(true);
+      expect(result.remaining).toBe(3); // Minimum
+    });
+
+    it("filters by mediumId when provided", async () => {
+      const store = createInMemoryDeliveryRecordStore();
+
+      await store.startContext(async () => {
+        await store.store("feed-1", [
+          createDeliveryState("1", "medium-1", ArticleDeliveryStatus.Sent),
+          createDeliveryState("2", "medium-1", ArticleDeliveryStatus.Sent),
+          createDeliveryState("3", "medium-2", ArticleDeliveryStatus.Sent),
+        ]);
+      });
+
+      const result = await getUnderLimitCheck(store, { mediumId: "medium-1" }, [
+        { limit: 10, timeWindowSeconds: 86400 },
+      ]);
+
+      expect(result.remaining).toBe(8); // Only 2 deliveries to medium-1
+    });
+  });
 });
+
+// Helper to create a delivery state for testing
+function createDeliveryState(
+  id: string,
+  mediumId: string,
+  status: ArticleDeliveryStatus
+): ArticleDeliveryState {
+  const article: Article = {
+    flattened: {
+      id: `article-${id}`,
+      idHash: `hash-${id}`,
+      title: `Title ${id}`,
+    },
+    raw: {},
+  };
+
+  if (status === ArticleDeliveryStatus.Sent) {
+    return {
+      id,
+      mediumId,
+      status: ArticleDeliveryStatus.Sent,
+      articleIdHash: article.flattened.idHash,
+      article,
+    };
+  }
+
+  if (status === ArticleDeliveryStatus.RateLimited) {
+    return {
+      id,
+      mediumId,
+      status: ArticleDeliveryStatus.RateLimited,
+      articleIdHash: article.flattened.idHash,
+      article,
+    };
+  }
+
+  if (status === ArticleDeliveryStatus.MediumRateLimitedByUser) {
+    return {
+      id,
+      mediumId,
+      status: ArticleDeliveryStatus.MediumRateLimitedByUser,
+      articleIdHash: article.flattened.idHash,
+      article,
+    };
+  }
+
+  return {
+    id,
+    mediumId,
+    status: ArticleDeliveryStatus.Sent,
+    articleIdHash: article.flattened.idHash,
+    article,
+  };
+}

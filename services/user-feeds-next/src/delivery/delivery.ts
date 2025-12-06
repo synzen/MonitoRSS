@@ -14,7 +14,14 @@ import type { FeedV2Event } from "../schemas";
 import {
   ArticleDeliveryStatus,
   ArticleDeliveryErrorCode,
+  type DeliveryRecordStore,
+  type ArticleDeliveryState,
+  inMemoryDeliveryRecordStore,
+  generateDeliveryId,
 } from "../delivery-record-store";
+
+// Re-export ArticleDeliveryState for convenience
+export type { ArticleDeliveryState };
 
 // Re-export for convenience
 export { ArticleDeliveryStatus, ArticleDeliveryErrorCode };
@@ -93,13 +100,6 @@ export type MediumRejectionEvent =
   | { type: "missingPermissions"; data: MediumMissingPermissionsEvent }
   | { type: "notFound"; data: MediumNotFoundEvent };
 
-export interface ArticleDeliveryResult {
-  status: ArticleDeliveryStatus;
-  article: Article;
-  mediumId: string;
-  message?: string;
-}
-
 export interface MediumRateLimit {
   limit: number;
   timeWindowSeconds: number;
@@ -170,91 +170,58 @@ export interface DeliveryMedium {
 }
 
 // ============================================================================
-// Rate Limiting (Stubbed)
+// Rate Limiting (Matching user-feeds behavior)
 // ============================================================================
 
-export interface RateLimitStore {
-  /**
-   * Check if delivery is allowed and increment the counter if so.
-   * Returns true if allowed, false if rate limited.
-   */
-  checkAndIncrement(
-    key: string,
-    limit: number,
-    windowSeconds: number
-  ): Promise<boolean>;
-
-  /**
-   * Get remaining deliveries for a feed's daily limit.
-   */
-  getRemainingDailyDeliveries(
-    feedId: string,
-    dailyLimit: number
-  ): Promise<number>;
-
-  /**
-   * Increment the daily delivery count.
-   */
-  incrementDailyDeliveries(feedId: string): Promise<void>;
+/**
+ * LimitState tracks remaining deliveries for rate limiting.
+ * Matches the interface used in user-feeds DeliveryService.
+ */
+export interface LimitState {
+  remaining: number;
+  remainingInMedium: number;
 }
 
-// In-memory rate limit store (stub)
-const rateLimitCounters: Map<string, { count: number; expiresAt: number }> =
-  new Map();
-const dailyDeliveryCounters: Map<string, { count: number; resetAt: number }> =
-  new Map();
+/**
+ * Get remaining deliveries before hitting rate limits.
+ * Matches the behavior of user-feeds ArticleRateLimitService.getUnderLimitCheckFromInputLimits.
+ *
+ * Uses a sliding window approach by querying actual delivery records.
+ */
+export async function getUnderLimitCheck(
+  deliveryRecordStore: DeliveryRecordStore,
+  filter: { feedId?: string; mediumId?: string },
+  limits: MediumRateLimit[]
+): Promise<{ underLimit: boolean; remaining: number }> {
+  if (limits.length === 0) {
+    return {
+      underLimit: true,
+      remaining: Number.MAX_SAFE_INTEGER,
+    };
+  }
 
-export const inMemoryRateLimitStore: RateLimitStore = {
-  async checkAndIncrement(
-    key: string,
-    limit: number,
-    windowSeconds: number
-  ): Promise<boolean> {
-    const now = Date.now();
-    const entry = rateLimitCounters.get(key);
+  const limitResults = await Promise.all(
+    limits.map(async ({ limit, timeWindowSeconds }) => {
+      const deliveriesInTimeframe =
+        await deliveryRecordStore.countDeliveriesInPastTimeframe(
+          filter,
+          timeWindowSeconds
+        );
 
-    if (!entry || entry.expiresAt < now) {
-      rateLimitCounters.set(key, {
-        count: 1,
-        expiresAt: now + windowSeconds * 1000,
-      });
-      return true;
-    }
+      return {
+        progress: deliveriesInTimeframe,
+        max: limit,
+        remaining: Math.max(limit - deliveriesInTimeframe, 0),
+        windowSeconds: timeWindowSeconds,
+      };
+    })
+  );
 
-    if (entry.count >= limit) {
-      return false;
-    }
-
-    entry.count++;
-    return true;
-  },
-
-  async getRemainingDailyDeliveries(
-    feedId: string,
-    dailyLimit: number
-  ): Promise<number> {
-    const now = Date.now();
-    const entry = dailyDeliveryCounters.get(feedId);
-
-    if (!entry || entry.resetAt < now) {
-      return dailyLimit;
-    }
-
-    return Math.max(0, dailyLimit - entry.count);
-  },
-
-  async incrementDailyDeliveries(feedId: string): Promise<void> {
-    const now = Date.now();
-    const entry = dailyDeliveryCounters.get(feedId);
-    const resetAt = now + 24 * 60 * 60 * 1000; // 24 hours from now
-
-    if (!entry || entry.resetAt < now) {
-      dailyDeliveryCounters.set(feedId, { count: 1, resetAt });
-    } else {
-      entry.count++;
-    }
-  },
-};
+  return {
+    underLimit: limitResults.every(({ remaining }) => remaining > 0),
+    remaining: Math.min(...limitResults.map(({ remaining }) => remaining)),
+  };
+}
 
 // ============================================================================
 // Discord REST Producer
@@ -283,113 +250,109 @@ export async function closeDiscordProducer(): Promise<void> {
 // ============================================================================
 
 /**
- * Deliver an article to a Discord medium.
+ * Send an article to a Discord medium.
+ * Matches the behavior of user-feeds DeliveryService.sendArticleToMedium.
+ *
+ * @param article - The article to deliver
+ * @param medium - The medium to deliver to
+ * @param limitState - The current rate limit state (will be decremented on success)
+ * @param feedId - The feed ID
+ * @returns Array of delivery states (matching user-feeds pattern)
  */
-export async function deliverArticleToMedium(
+async function sendArticleToMedium(
   article: Article,
   medium: DeliveryMedium,
-  options: {
-    feedId: string;
-    articleDayLimit: number;
-    rateLimitStore: RateLimitStore;
-  }
-): Promise<ArticleDeliveryResult> {
-  const { feedId, articleDayLimit, rateLimitStore } = options;
-
-  // Check medium filters
-  if (medium.filters?.expression) {
-    const filterResult = getArticleFilterResults(
-      medium.filters.expression,
-      article
-    );
-    if (!filterResult.result) {
-      return {
-        status: ArticleDeliveryStatus.FilteredOut,
-        article,
-        mediumId: medium.id,
-        message: "Article filtered out by medium filters",
-      };
-    }
-  }
-
-  // Check daily rate limit
-  const remaining = await rateLimitStore.getRemainingDailyDeliveries(
-    feedId,
-    articleDayLimit
-  );
-  if (remaining <= 0) {
-    return {
-      status: ArticleDeliveryStatus.RateLimited,
-      article,
-      mediumId: medium.id,
-      message: "Daily article limit reached",
-    };
-  }
-
-  // Check medium-specific rate limits
-  if (medium.rateLimits?.length) {
-    for (const rateLimit of medium.rateLimits) {
-      const key = `medium:${medium.id}:${rateLimit.timeWindowSeconds}`;
-      const allowed = await rateLimitStore.checkAndIncrement(
-        key,
-        rateLimit.limit,
-        rateLimit.timeWindowSeconds
-      );
-      if (!allowed) {
-        return {
-          status: ArticleDeliveryStatus.RateLimited,
-          article,
+  limitState: LimitState,
+  feedId: string
+): Promise<ArticleDeliveryState[]> {
+  try {
+    // Check rate limits first (matching user-feeds order)
+    if (limitState.remaining <= 0 || limitState.remainingInMedium <= 0) {
+      return [
+        {
+          id: generateDeliveryId(),
           mediumId: medium.id,
-          message: `Medium rate limit reached (${rateLimit.limit}/${rateLimit.timeWindowSeconds}s)`,
-        };
+          status:
+            limitState.remaining <= 0
+              ? ArticleDeliveryStatus.RateLimited
+              : ArticleDeliveryStatus.MediumRateLimitedByUser,
+          articleIdHash: article.flattened.idHash,
+          article,
+        },
+      ];
+    }
+
+    // Check medium filters
+    if (medium.filters?.expression) {
+      const filterResult = getArticleFilterResults(
+        medium.filters.expression,
+        article
+      );
+      if (!filterResult.result) {
+        return [
+          {
+            id: generateDeliveryId(),
+            mediumId: medium.id,
+            status: ArticleDeliveryStatus.FilteredOut,
+            articleIdHash: article.flattened.idHash,
+            externalDetail: filterResult.explainBlocked.length
+              ? JSON.stringify({ explainBlocked: filterResult.explainBlocked })
+              : null,
+            article,
+          },
+        ];
       }
     }
-  }
 
-  // Generate Discord payloads
-  const payloads = generateDiscordPayloads(article, {
-    content: medium.details.content,
-    embeds: medium.details.embeds?.map((e) => ({
-      ...e,
-      title: e.title ?? undefined,
-      description: e.description ?? undefined,
-      url: e.url ?? undefined,
-      color: e.color ?? undefined,
-      footer: e.footer
-        ? { text: e.footer.text, iconUrl: e.footer.iconUrl ?? undefined }
-        : undefined,
-      image: e.image ? { url: e.image.url } : undefined,
-      thumbnail: e.thumbnail ? { url: e.thumbnail.url } : undefined,
-      author: e.author
-        ? {
-            name: e.author.name,
-            url: e.author.url ?? undefined,
-            iconUrl: e.author.iconUrl ?? undefined,
-          }
-        : undefined,
-      timestamp: e.timestamp ?? undefined,
-    })),
-    splitOptions: medium.details.splitOptions,
-    placeholderLimits: medium.details.placeholderLimits,
-    enablePlaceholderFallback: medium.details.enablePlaceholderFallback,
-    mentions: medium.details.mentions,
-    customPlaceholders: medium.details.customPlaceholders?.map((cp) => ({
-      ...cp,
-      steps: cp.steps.map((s) => ({ ...s, type: s.type as never })),
-    })),
-  });
+    // Generate Discord payloads
+    const payloads = generateDiscordPayloads(article, {
+      content: medium.details.content,
+      embeds: medium.details.embeds?.map((e) => ({
+        ...e,
+        title: e.title ?? undefined,
+        description: e.description ?? undefined,
+        url: e.url ?? undefined,
+        color: e.color ?? undefined,
+        footer: e.footer
+          ? { text: e.footer.text, iconUrl: e.footer.iconUrl ?? undefined }
+          : undefined,
+        image: e.image ? { url: e.image.url } : undefined,
+        thumbnail: e.thumbnail ? { url: e.thumbnail.url } : undefined,
+        author: e.author
+          ? {
+              name: e.author.name,
+              url: e.author.url ?? undefined,
+              iconUrl: e.author.iconUrl ?? undefined,
+            }
+          : undefined,
+        timestamp: e.timestamp ?? undefined,
+      })),
+      splitOptions: medium.details.splitOptions,
+      placeholderLimits: medium.details.placeholderLimits,
+      enablePlaceholderFallback: medium.details.enablePlaceholderFallback,
+      mentions: medium.details.mentions,
+      customPlaceholders: medium.details.customPlaceholders?.map((cp) => ({
+        ...cp,
+        steps: cp.steps.map((s) => ({ ...s, type: s.type as never })),
+      })),
+    });
 
-  if (payloads.length === 0) {
-    return {
-      status: ArticleDeliveryStatus.Rejected,
-      article,
-      mediumId: medium.id,
-      message: "No payloads generated (empty message)",
-    };
-  }
+    if (payloads.length === 0) {
+      return [
+        {
+          id: generateDeliveryId(),
+          mediumId: medium.id,
+          status: ArticleDeliveryStatus.Rejected,
+          articleIdHash: article.flattened.idHash,
+          errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
+          internalMessage: "No payloads generated (empty message)",
+          externalDetail: "",
+          article,
+        },
+      ];
+    }
 
-  // Send to Discord
-  try {
+    // Send to Discord
     for (const payload of payloads) {
       await sendToDiscord(medium, payload, {
         feedId,
@@ -397,21 +360,31 @@ export async function deliverArticleToMedium(
       });
     }
 
-    // Increment daily delivery count
-    await rateLimitStore.incrementDailyDeliveries(feedId);
+    // Decrement rate limit counters after successful delivery
+    limitState.remaining--;
+    limitState.remainingInMedium--;
 
-    return {
-      status: ArticleDeliveryStatus.Sent,
-      article,
-      mediumId: medium.id,
-    };
+    return [
+      {
+        id: generateDeliveryId(),
+        mediumId: medium.id,
+        status: ArticleDeliveryStatus.Sent,
+        articleIdHash: article.flattened.idHash,
+        article,
+      },
+    ];
   } catch (err) {
-    return {
-      status: ArticleDeliveryStatus.Failed,
-      article,
-      mediumId: medium.id,
-      message: (err as Error).message,
-    };
+    return [
+      {
+        id: generateDeliveryId(),
+        mediumId: medium.id,
+        status: ArticleDeliveryStatus.Failed,
+        errorCode: ArticleDeliveryErrorCode.Internal,
+        internalMessage: (err as Error).message,
+        articleIdHash: article.flattened.idHash,
+        article,
+      },
+    ];
   }
 }
 
@@ -477,6 +450,10 @@ async function sendToDiscord(
 
 /**
  * Deliver multiple articles to all mediums.
+ * Matches the loop order and rate limiting behavior of user-feeds DeliveryService.deliver.
+ *
+ * Loop order: mediums → articles (matching user-feeds)
+ * Rate limiting: Pre-query remaining counts, then decrement in-memory after each successful delivery
  */
 export async function deliverArticles(
   articles: Article[],
@@ -484,37 +461,59 @@ export async function deliverArticles(
   options: {
     feedId: string;
     articleDayLimit: number;
-    rateLimitStore?: RateLimitStore;
+    deliveryRecordStore?: DeliveryRecordStore;
   }
-): Promise<ArticleDeliveryResult[]> {
-  const rateLimitStore = options.rateLimitStore ?? inMemoryRateLimitStore;
-  const results: ArticleDeliveryResult[] = [];
+): Promise<ArticleDeliveryState[]> {
+  const deliveryRecordStore =
+    options.deliveryRecordStore ?? inMemoryDeliveryRecordStore;
+  let articleStates: ArticleDeliveryState[] = [];
 
-  for (const article of articles) {
-    for (const medium of mediums) {
-      const result = await deliverArticleToMedium(article, medium, {
-        feedId: options.feedId,
-        articleDayLimit: options.articleDayLimit,
-        rateLimitStore,
-      });
-      results.push(result);
+  // Pre-query feed-level rate limit (matching user-feeds pattern)
+  const feedLimitInfo = await getUnderLimitCheck(
+    deliveryRecordStore,
+    { feedId: options.feedId },
+    [
+      {
+        limit: options.articleDayLimit,
+        timeWindowSeconds: 86400, // 24 hours
+      },
+    ]
+  );
 
-      // Stop if we hit the daily limit
-      if (result.status === ArticleDeliveryStatus.RateLimited) {
-        break;
-      }
+  /**
+   * Rate limit handling in memory is not the best, especially since articles get dropped and
+   * concurrency is not handled well, but it should be good enough for now.
+   * (Comment from user-feeds DeliveryService)
+   */
+  const limitState: LimitState = {
+    remaining: feedLimitInfo.remaining,
+    remainingInMedium: Number.MAX_SAFE_INTEGER,
+  };
+
+  // Loop: mediums → articles (matching user-feeds order)
+  for (const medium of mediums) {
+    // Pre-query medium-level rate limits
+    const mediumLimitInfo = await getUnderLimitCheck(
+      deliveryRecordStore,
+      { mediumId: medium.id },
+      medium.rateLimits ?? []
+    );
+
+    limitState.remainingInMedium = mediumLimitInfo.remaining;
+
+    // Deliver articles to this medium
+    for (const article of articles) {
+      const states = await sendArticleToMedium(
+        article,
+        medium,
+        limitState,
+        options.feedId
+      );
+      articleStates = articleStates.concat(states);
     }
   }
 
-  return results;
-}
-
-/**
- * Clear in-memory rate limit stores (for testing).
- */
-export function clearRateLimitStores(): void {
-  rateLimitCounters.clear();
-  dailyDeliveryCounters.clear();
+  return articleStates;
 }
 
 /**

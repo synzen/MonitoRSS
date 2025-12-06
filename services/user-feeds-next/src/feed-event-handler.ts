@@ -47,7 +47,6 @@ import {
 } from "./feed-retry-store";
 import {
   inMemoryDeliveryRecordStore,
-  resultToState,
   type DeliveryRecordStore,
   type ArticleDeliveryState,
   ArticleDeliveryErrorCode,
@@ -624,13 +623,8 @@ async function handleFeedV2EventInternal({
     }
   );
 
-  // Convert delivery results to delivery states for storage (matching user-feeds behavior)
-  const deliveryStates: ArticleDeliveryState[] = deliveryResults.map((result) =>
-    resultToState(result)
-  );
-
   // Store delivery records (flush=false, will be flushed in finally block)
-  await deliveryRecordStore.store(feed.id, deliveryStates, false);
+  await deliveryRecordStore.store(feed.id, deliveryResults, false);
 
   // Log delivery results
   const sent = deliveryResults.filter(
