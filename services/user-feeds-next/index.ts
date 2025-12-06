@@ -8,7 +8,13 @@ import {
   handleFeedDeletedEvent,
 } from "./src/feed-event-handler";
 import { MessageBrokerQueue } from "./src/constants";
-import type { DiscordDeliveryResult } from "./src/delivery";
+import {
+  initializeDiscordProducer,
+  initializeDiscordApiClient,
+  closeDiscordProducer,
+  closeDiscordApiClient,
+  type DiscordDeliveryResult,
+} from "./src/delivery";
 
 // Load environment variables
 config();
@@ -16,9 +22,28 @@ config();
 const RABBITMQ_URL =
   process.env.USER_FEEDS_NEXT_RABBITMQ_URL ||
   "amqp://guest:guest@rabbitmq-broker:5672";
+const DISCORD_CLIENT_ID = process.env.USER_FEEDS_NEXT_DISCORD_CLIENT_ID || "";
+const DISCORD_BOT_TOKEN = process.env.USER_FEEDS_NEXT_DISCORD_BOT_TOKEN || "";
 const PREFETCH_COUNT = 100;
 
 async function main() {
+  // Validate required environment variables
+  if (!DISCORD_CLIENT_ID) {
+    throw new Error("USER_FEEDS_NEXT_DISCORD_CLIENT_ID is required");
+  }
+  if (!DISCORD_BOT_TOKEN) {
+    throw new Error("USER_FEEDS_NEXT_DISCORD_BOT_TOKEN is required");
+  }
+
+  // Initialize Discord REST producer (for async message enqueue)
+  await initializeDiscordProducer({
+    rabbitmqUri: RABBITMQ_URL,
+    clientId: DISCORD_CLIENT_ID,
+  });
+
+  // Initialize Discord API client (for synchronous calls like forum thread creation)
+  initializeDiscordApiClient(DISCORD_BOT_TOKEN);
+
   console.log("Connecting to RabbitMQ...");
 
   // Create RabbitMQ connection
@@ -139,20 +164,24 @@ async function main() {
 
   // Graceful shutdown
   process.on("SIGINT", async () => {
-    console.log("Received SIGINT, closing RabbitMQ connection...");
+    console.log("Received SIGINT, closing connections...");
     await feedEventConsumer.close();
     await deliveryResultConsumer.close();
     await feedDeletedConsumer.close();
     await connection.close();
+    await closeDiscordProducer();
+    closeDiscordApiClient();
     process.exit(0);
   });
 
   process.on("SIGTERM", async () => {
-    console.log("Received SIGTERM, closing RabbitMQ connection...");
+    console.log("Received SIGTERM, closing connections...");
     await feedEventConsumer.close();
     await deliveryResultConsumer.close();
     await feedDeletedConsumer.close();
     await connection.close();
+    await closeDiscordProducer();
+    closeDiscordApiClient();
     process.exit(0);
   });
 }
