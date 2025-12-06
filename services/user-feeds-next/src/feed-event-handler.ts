@@ -13,6 +13,8 @@ import {
   FeedParseTimeoutException,
   InvalidFeedException,
   getParserRules,
+  type ExternalFetchFn,
+  type ExternalFeedProperty,
 } from "./article-parser";
 import {
   getArticlesToDeliver,
@@ -335,6 +337,36 @@ export async function handleFeedV2Event(
   let parseResult: Awaited<ReturnType<typeof parseArticlesFromXml>> | null =
     null;
 
+  // Create fetch function for external content if configured
+  const externalFeedProperties = event.data.feed.externalProperties as
+    | ExternalFeedProperty[]
+    | undefined;
+
+  const externalFetchFn: ExternalFetchFn | undefined =
+    externalFeedProperties?.length
+      ? async (url: string): Promise<string | null> => {
+          try {
+            const res = await fetchFeed(url, {
+              executeFetchIfNotInCache: true,
+              retries: 3,
+              lookupDetails: undefined,
+            });
+
+            if (res.requestStatus !== FeedResponseRequestStatus.Success) {
+              console.error(`Failed to fetch external content from ${url}`, {
+                status: res.requestStatus,
+              });
+
+              return null;
+            }
+
+            return res.body;
+          } catch {
+            return null;
+          }
+        }
+      : undefined;
+
   try {
     const parserRules = getParserRules({ url: event.data.feed.url });
 
@@ -346,6 +378,8 @@ export async function handleFeedV2Event(
         dateLocale: event.data.feed.formatOptions?.dateLocale,
       },
       useParserRules: parserRules,
+      externalFeedProperties,
+      externalFetchFn,
     });
   } catch (err) {
     if (err instanceof FeedParseTimeoutException) {

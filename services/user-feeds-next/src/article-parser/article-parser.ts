@@ -19,6 +19,13 @@ import {
   type PostProcessParserRule,
   ARTICLE_FIELD_DELIMITER,
 } from "./types";
+import {
+  injectExternalContent,
+  type ExternalFeedProperty,
+  type ExternalFetchFn,
+} from "./inject-external-content";
+import { MAX_ARTICLE_INJECTION_ARTICLE_COUNT } from "../constants";
+import { chunkArray } from "../utils";
 
 // Setup dayjs plugins
 dayjs.extend(timezone);
@@ -155,6 +162,8 @@ export async function parseArticlesFromXml(
     timeout?: number;
     formatOptions?: UserFeedFormatOptions;
     useParserRules?: PostProcessParserRule[];
+    externalFeedProperties?: ExternalFeedProperty[];
+    externalFetchFn?: ExternalFetchFn;
   } = {}
 ): Promise<ParseArticlesResult> {
   const feedparser = new FeedParser({});
@@ -260,6 +269,31 @@ export async function parseArticlesFromXml(
           }
 
           idHashes.add(idHash);
+        }
+
+        // Inject external content if configured
+        if (
+          options.externalFeedProperties?.length &&
+          options.externalFetchFn &&
+          mappedArticles.length <= MAX_ARTICLE_INJECTION_ARTICLE_COUNT
+        ) {
+          console.log(
+            `Injecting external content for ${mappedArticles.length} articles with ${options.externalFeedProperties.length} properties`
+          );
+
+          // Process in chunks of 25 with 1s delay between chunks
+          const chunkedArticles = chunkArray(mappedArticles, 25);
+
+          for (const chunk of chunkedArticles) {
+            await injectExternalContent(
+              chunk,
+              options.externalFeedProperties,
+              options.externalFetchFn
+            );
+            await new Promise((res) => setTimeout(res, 1000));
+          }
+
+          console.log(`External content injection complete`);
         }
 
         resolve({

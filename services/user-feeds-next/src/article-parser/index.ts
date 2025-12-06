@@ -12,6 +12,11 @@ export {
   getParserRules,
 } from "./utils";
 export {
+  injectExternalContent,
+  type ExternalFeedProperty,
+  type ExternalFetchFn,
+} from "./inject-external-content";
+export {
   type Article,
   type FlattenedArticle,
   type FlattenedArticleWithoutId,

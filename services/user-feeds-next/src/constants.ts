@@ -27,6 +27,17 @@ export enum MediumKey {
 }
 
 /**
+ * Prefix for injected article content placeholders from external feed properties.
+ */
+export const INJECTED_ARTICLE_PLACEHOLDER_PREFIX = "external::";
+
+/**
+ * Maximum number of articles to process with external content injection.
+ * This limit exists for performance reasons.
+ */
+export const MAX_ARTICLE_INJECTION_ARTICLE_COUNT = 50;
+
+/**
  * Message broker queue names for RabbitMQ.
  */
 export enum MessageBrokerQueue {
