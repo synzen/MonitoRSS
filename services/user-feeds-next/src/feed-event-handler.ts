@@ -45,6 +45,13 @@ import {
   type FeedRetryStore,
   type FeedRetryPublisher,
 } from "./feed-retry-store";
+import {
+  inMemoryDeliveryRecordStore,
+  resultToState,
+  type DeliveryRecordStore,
+  type ArticleDeliveryState,
+  ArticleDeliveryErrorCode,
+} from "./delivery-record-store";
 
 // ============================================================================
 // Response Hash Store Interface
@@ -297,6 +304,7 @@ export async function handleFeedV2Event(
     articleFieldStore?: ArticleFieldStore;
     parsedArticlesCacheStore?: ParsedArticlesCacheStore;
     feedRetryStore?: FeedRetryStore;
+    deliveryRecordStore?: DeliveryRecordStore;
     publisher?: FeedRetryPublisher;
   } = {}
 ): Promise<boolean> {
@@ -305,38 +313,55 @@ export async function handleFeedV2Event(
     articleFieldStore = inMemoryArticleFieldStore,
     parsedArticlesCacheStore = inMemoryParsedArticlesCacheStore,
     feedRetryStore = inMemoryFeedRetryStore,
+    deliveryRecordStore = inMemoryDeliveryRecordStore,
     publisher,
   } = options;
   const { feed } = event.data;
 
   console.log(`Handling event for feed ${feed.id} with url ${feed.url}`);
 
-  // Wrap processing in article field store context for batched inserts
-  return articleFieldStore.startContext(async () => {
-    try {
-      return await handleFeedV2EventInternal({
-        event,
-        feed,
-        responseHashStore,
-        articleFieldStore,
-        parsedArticlesCacheStore,
-        feedRetryStore,
-        publisher,
-      });
-    } finally {
-      // Flush pending article field inserts at the end
+  // Wrap processing in nested contexts for batched inserts (matching user-feeds pattern)
+  return deliveryRecordStore.startContext(async () =>
+    articleFieldStore.startContext(async () => {
       try {
-        const { affectedRows } = await articleFieldStore.flushPendingInserts();
-        if (affectedRows > 0) {
-          console.log(`Flushed ${affectedRows} article field inserts`);
-        }
-      } catch (err) {
-        console.error("Failed to flush article field inserts", {
-          error: (err as Error).stack,
+        return await handleFeedV2EventInternal({
+          event,
+          feed,
+          responseHashStore,
+          articleFieldStore,
+          parsedArticlesCacheStore,
+          feedRetryStore,
+          deliveryRecordStore,
+          publisher,
         });
+      } finally {
+        // Flush pending inserts at the end (matching user-feeds order)
+        try {
+          const { affectedRows: articleRows } =
+            await articleFieldStore.flushPendingInserts();
+          if (articleRows > 0) {
+            console.log(`Flushed ${articleRows} article field inserts`);
+          }
+        } catch (err) {
+          console.error("Failed to flush article field inserts", {
+            error: (err as Error).stack,
+          });
+        }
+
+        try {
+          const { affectedRows: deliveryRows } =
+            await deliveryRecordStore.flushPendingInserts();
+          if (deliveryRows > 0) {
+            console.log(`Flushed ${deliveryRows} delivery record inserts`);
+          }
+        } catch (err) {
+          console.error("Failed to flush delivery record inserts", {
+            error: (err as Error).stack,
+          });
+        }
       }
-    }
-  });
+    })
+  );
 }
 
 async function handleFeedV2EventInternal({
@@ -346,6 +371,7 @@ async function handleFeedV2EventInternal({
   articleFieldStore,
   parsedArticlesCacheStore,
   feedRetryStore,
+  deliveryRecordStore,
   publisher,
 }: {
   event: FeedV2Event;
@@ -354,6 +380,7 @@ async function handleFeedV2EventInternal({
   articleFieldStore: ArticleFieldStore;
   parsedArticlesCacheStore: ParsedArticlesCacheStore;
   feedRetryStore: FeedRetryStore;
+  deliveryRecordStore: DeliveryRecordStore;
   publisher?: FeedRetryPublisher;
 }): Promise<boolean> {
   // Get the stored hash if we have prior articles stored
@@ -596,6 +623,14 @@ async function handleFeedV2EventInternal({
       articleDayLimit: event.data.articleDayLimit,
     }
   );
+
+  // Convert delivery results to delivery states for storage (matching user-feeds behavior)
+  const deliveryStates: ArticleDeliveryState[] = deliveryResults.map((result) =>
+    resultToState(result)
+  );
+
+  // Store delivery records (flush=false, will be flushed in finally block)
+  await deliveryRecordStore.store(feed.id, deliveryStates, false);
 
   // Log delivery results
   const sent = deliveryResults.filter(

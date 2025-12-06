@@ -11,33 +11,13 @@ import {
 } from "../article-filters";
 import { generateDiscordPayloads } from "../article-formatter";
 import type { FeedV2Event } from "../schemas";
+import {
+  ArticleDeliveryStatus,
+  ArticleDeliveryErrorCode,
+} from "../delivery-record-store";
 
-// ============================================================================
-// Types
-// ============================================================================
-
-export enum ArticleDeliveryStatus {
-  Pending = "pending",
-  Sent = "sent",
-  FilteredOut = "filtered-out",
-  RateLimited = "rate-limited",
-  Failed = "failed",
-  Rejected = "rejected",
-}
-
-/**
- * Error codes for article delivery failures.
- * These indicate why an article failed to be delivered.
- */
-export enum ArticleDeliveryErrorCode {
-  Internal = "user-feeds/internal-error",
-  NoChannelOrWebhook = "user-feeds/no-channel-or-webhook",
-  ThirdPartyInternal = "user-feeds/third-party-internal",
-  ThirdPartyBadRequest = "user-feeds/third-party-bad-request",
-  ThirdPartyForbidden = "user-feeds/third-party-forbidden",
-  ThirdPartyNotFound = "user-feeds/third-party-not-found",
-  ArticleProcessingError = "user-feeds/article-processing-error",
-}
+// Re-export for convenience
+export { ArticleDeliveryStatus, ArticleDeliveryErrorCode };
 
 /**
  * Rejection codes for article delivery rejections.
