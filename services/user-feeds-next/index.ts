@@ -1,11 +1,14 @@
 import { config } from "dotenv";
 import { Connection } from "rabbitmq-client";
+import { SQL } from "bun";
 import {
   parseFeedV2Event,
   handleFeedV2Event,
   handleArticleDeliveryResult,
   parseFeedDeletedEvent,
   handleFeedDeletedEvent,
+  inMemoryResponseHashStore,
+  type ResponseHashStore,
 } from "./src/feed-event-handler";
 import { MessageBrokerQueue } from "./src/constants";
 import {
@@ -27,6 +30,24 @@ import {
   inMemoryParsedArticlesCacheStore,
   type ParsedArticlesCacheStore,
 } from "./src/parsed-articles-cache";
+import {
+  inMemoryArticleFieldStore,
+  type ArticleFieldStore,
+} from "./src/article-comparison";
+import {
+  inMemoryDeliveryRecordStore,
+  type DeliveryRecordStore,
+} from "./src/delivery-record-store";
+import {
+  inMemoryFeedRetryStore,
+  type FeedRetryStore,
+} from "./src/feed-retry-store";
+import {
+  createPostgresDeliveryRecordStore,
+  createPostgresArticleFieldStore,
+  createPostgresResponseHashStore,
+  createPostgresFeedRetryStore,
+} from "./src/postgres";
 
 // Load environment variables
 config();
@@ -39,7 +60,11 @@ const DISCORD_BOT_TOKEN = process.env.USER_FEEDS_NEXT_DISCORD_BOT_TOKEN || "";
 const REDIS_URI = process.env.USER_FEEDS_NEXT_REDIS_URI;
 const REDIS_DISABLE_CLUSTER =
   process.env.USER_FEEDS_NEXT_REDIS_DISABLE_CLUSTER === "true";
+const POSTGRES_URI = process.env.USER_FEEDS_NEXT_POSTGRES_URI;
 const PREFETCH_COUNT = 100;
+
+// Global SQL client for shutdown
+let sqlClient: SQL | null = null;
 
 async function main() {
   // Validate required environment variables
@@ -66,6 +91,25 @@ async function main() {
     console.log("Using Redis-backed cache store and processing lock");
   } else {
     console.log("No Redis URI configured, using in-memory stores");
+  }
+
+  // Initialize PostgreSQL stores if configured, otherwise fall back to in-memory
+  let deliveryRecordStore: DeliveryRecordStore = inMemoryDeliveryRecordStore;
+  let articleFieldStore: ArticleFieldStore = inMemoryArticleFieldStore;
+  let responseHashStore: ResponseHashStore = inMemoryResponseHashStore;
+  let feedRetryStore: FeedRetryStore = inMemoryFeedRetryStore;
+
+  if (POSTGRES_URI) {
+    sqlClient = new SQL(POSTGRES_URI);
+    console.log("Successfully connected to PostgreSQL");
+
+    deliveryRecordStore = createPostgresDeliveryRecordStore(sqlClient);
+    articleFieldStore = createPostgresArticleFieldStore(sqlClient);
+    responseHashStore = createPostgresResponseHashStore(sqlClient);
+    feedRetryStore = createPostgresFeedRetryStore(sqlClient);
+    console.log("Using PostgreSQL-backed stores");
+  } else {
+    console.log("No PostgreSQL URI configured, using in-memory stores");
   }
 
   // Initialize Discord REST producer (for async message enqueue)
@@ -126,6 +170,10 @@ async function main() {
       try {
         await handleFeedV2Event(event, {
           parsedArticlesCacheStore,
+          articleFieldStore,
+          deliveryRecordStore,
+          responseHashStore,
+          feedRetryStore,
         });
       } finally {
         await processingLock.release(feedId);
@@ -193,7 +241,11 @@ async function main() {
       }
 
       try {
-        await handleFeedDeletedEvent(event);
+        await handleFeedDeletedEvent(event, {
+          responseHashStore,
+          articleFieldStore,
+          feedRetryStore,
+        });
       } catch (err) {
         console.error("Failed to handle feed deleted event", {
           error: (err as Error).stack,
@@ -220,6 +272,10 @@ async function main() {
     await closeDiscordProducer();
     closeDiscordApiClient();
     await closeRedisClient();
+    if (sqlClient) {
+      await sqlClient.close();
+      console.log("Successfully closed PostgreSQL connection");
+    }
     process.exit(0);
   };
 
