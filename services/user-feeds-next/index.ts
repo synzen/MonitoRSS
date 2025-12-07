@@ -56,6 +56,18 @@ import { createHttpServer } from "./src/http";
 // Load environment variables
 config();
 
+/**
+ * Parse RabbitMQ message body, handling Buffer/string when contentType isn't set.
+ * The publisher (@golevelup/nestjs-rabbitmq) may not set contentType: application/json,
+ * so rabbitmq-client may not auto-parse the JSON body.
+ */
+function parseMessageBody<T>(body: unknown): T {
+  if (Buffer.isBuffer(body)) {
+    return JSON.parse(body.toString()) as T;
+  }
+  return body as T;
+}
+
 const RABBITMQ_URL =
   process.env.USER_FEEDS_RABBITMQ_BROKER_URL ||
   "amqp://guest:guest@rabbitmq-broker:5672";
@@ -260,7 +272,8 @@ async function startServiceMode(
       qos: { prefetchCount: PREFETCH_COUNT },
     },
     async (msg) => {
-      const event = parseFeedV2Event(msg.body);
+      const body = parseMessageBody(msg.body);
+      const event = parseFeedV2Event(body);
 
       if (!event) {
         logger.error("Failed to parse message, skipping");
@@ -308,7 +321,7 @@ async function startServiceMode(
       qos: { prefetchCount: PREFETCH_COUNT },
     },
     async (msg) => {
-      const deliveryResult = msg.body as DiscordDeliveryResult;
+      const deliveryResult = parseMessageBody<DiscordDeliveryResult>(msg.body);
 
       if (!deliveryResult?.job || !deliveryResult?.result) {
         logger.error("Invalid delivery result message, skipping", {
@@ -347,7 +360,8 @@ async function startServiceMode(
       qos: { prefetchCount: PREFETCH_COUNT },
     },
     async (msg) => {
-      const event = parseFeedDeletedEvent(msg.body);
+      const body = parseMessageBody(msg.body);
+      const event = parseFeedDeletedEvent(body);
 
       if (!event) {
         logger.error("Failed to parse feed deleted message, skipping");
