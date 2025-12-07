@@ -13,11 +13,9 @@ import {
 } from "./src/feed-event-handler";
 import { MessageBrokerQueue } from "./src/constants";
 import {
-  initializeDiscordProducer,
-  initializeDiscordApiClient,
-  closeDiscordProducer,
-  closeDiscordApiClient,
+  createSynzenDiscordRestClient,
   type DiscordDeliveryResult,
+  type DiscordRestClient,
 } from "./src/delivery";
 import {
   initializeRedisClient,
@@ -103,6 +101,7 @@ interface SharedInfrastructure {
   feedRetryStore: FeedRetryStore;
   parsedArticlesCacheStore: ParsedArticlesCacheStore;
   processingLock: ProcessingLock;
+  discordClient: DiscordRestClient & { initialize(): Promise<void>; close(): void } | null;
 }
 
 /**
@@ -174,6 +173,16 @@ async function initializeSharedInfrastructure(): Promise<SharedInfrastructure> {
     logger.info("No PostgreSQL URI configured, using in-memory stores");
   }
 
+  // Create Discord REST client if credentials are available
+  let discordClient: SharedInfrastructure["discordClient"] = null;
+  if (DISCORD_CLIENT_ID && DISCORD_BOT_TOKEN) {
+    discordClient = createSynzenDiscordRestClient({
+      rabbitmqUri: RABBITMQ_URL,
+      clientId: DISCORD_CLIENT_ID,
+      botToken: DISCORD_BOT_TOKEN,
+    });
+  }
+
   return {
     deliveryRecordStore,
     articleFieldStore,
@@ -181,6 +190,7 @@ async function initializeSharedInfrastructure(): Promise<SharedInfrastructure> {
     feedRetryStore,
     parsedArticlesCacheStore,
     processingLock,
+    discordClient,
   };
 }
 
@@ -209,16 +219,19 @@ async function closeSharedInfrastructure(): Promise<void> {
 async function startApiMode(
   infrastructure: SharedInfrastructure
 ): Promise<() => Promise<void>> {
-  // Initialize Discord API client for test endpoint
-  if (!DISCORD_BOT_TOKEN) {
+  // Initialize Discord client for test endpoint
+  if (!infrastructure.discordClient) {
     throw new Error(
-      "USER_FEEDS_DISCORD_API_TOKEN is required for API mode (test endpoint)"
+      "Discord client is required for API mode (test endpoint). Check DISCORD_CLIENT_ID and DISCORD_API_TOKEN."
     );
   }
-  initializeDiscordApiClient(DISCORD_BOT_TOKEN);
+  await infrastructure.discordClient.initialize();
 
   const httpServer = createHttpServer(
-    { deliveryRecordStore: infrastructure.deliveryRecordStore },
+    {
+      deliveryRecordStore: infrastructure.deliveryRecordStore,
+      discordClient: infrastructure.discordClient,
+    },
     HTTP_PORT
   );
 
@@ -227,7 +240,7 @@ async function startApiMode(
   return async () => {
     httpServer.stop();
     logger.info("HTTP server stopped");
-    closeDiscordApiClient();
+    infrastructure.discordClient?.close();
   };
 }
 
@@ -238,20 +251,15 @@ async function startApiMode(
 async function startServiceMode(
   infrastructure: SharedInfrastructure
 ): Promise<() => Promise<void>> {
-  // Validate required environment variables
-  if (!DISCORD_CLIENT_ID) {
-    throw new Error("USER_FEEDS_DISCORD_CLIENT_ID is required");
-  }
-  if (!DISCORD_BOT_TOKEN) {
-    throw new Error("USER_FEEDS_DISCORD_API_TOKEN is required");
+  // Validate Discord client is available
+  if (!infrastructure.discordClient) {
+    throw new Error(
+      "Discord client is required for service mode. Check USER_FEEDS_DISCORD_CLIENT_ID and USER_FEEDS_DISCORD_API_TOKEN."
+    );
   }
 
-  // Initialize Discord REST producer and API client
-  await initializeDiscordProducer({
-    rabbitmqUri: RABBITMQ_URL,
-    clientId: DISCORD_CLIENT_ID,
-  });
-  initializeDiscordApiClient(DISCORD_BOT_TOKEN);
+  // Initialize Discord REST client
+  await infrastructure.discordClient.initialize();
 
   logger.info("Connecting to RabbitMQ...");
 
@@ -308,6 +316,7 @@ async function startServiceMode(
           deliveryRecordStore: infrastructure.deliveryRecordStore,
           responseHashStore: infrastructure.responseHashStore,
           feedRetryStore: infrastructure.feedRetryStore,
+          discordClient: infrastructure.discordClient!,
         });
       } finally {
         await infrastructure.processingLock.release(feedId);
@@ -417,8 +426,7 @@ async function startServiceMode(
       });
     }
 
-    await closeDiscordProducer();
-    closeDiscordApiClient();
+    infrastructure.discordClient?.close();
   };
 }
 

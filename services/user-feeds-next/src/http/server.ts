@@ -4,6 +4,7 @@
 
 import type { Server } from "bun";
 import type { DeliveryRecordStore } from "../delivery-record-store";
+import type { DiscordRestClient } from "../discord-rest";
 import {
   handleFilterValidation,
   handleValidateDiscordPayload,
@@ -20,6 +21,7 @@ import { jsonResponse, handleError } from "./utils";
  */
 export interface HttpServerContext {
   deliveryRecordStore: DeliveryRecordStore;
+  discordClient: DiscordRestClient;
 }
 
 /**
@@ -67,7 +69,7 @@ export function createHttpServer(
       },
 
       "/v1/user-feeds/test": {
-        POST: (req) => handleTest(req),
+        POST: (req) => handleTest(req, context.discordClient),
       },
     },
     fetch() {

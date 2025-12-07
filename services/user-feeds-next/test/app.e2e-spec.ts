@@ -10,11 +10,11 @@ import {
 import { randomUUID } from "crypto";
 import { handleFeedV2Event } from "../src/feed-event-handler";
 import { FeedResponseRequestStatus } from "../src/feed-fetcher";
+import { ArticleDeliveryStatus } from "../src/delivery";
 import {
-  ArticleDeliveryStatus,
-  initializeDiscordProducer,
-  initializeDiscordApiClient,
-} from "../src/delivery";
+  createTestDiscordRestClient,
+  type TestDiscordRestClient,
+} from "../src/discord-rest";
 import {
   setupIntegrationTests,
   cleanupTestData,
@@ -32,52 +32,17 @@ let mockFetchFeed = mock(async () => ({
   bodyHash: "bodyhash",
 }));
 
-// Capture Discord API payloads for assertion
-interface CapturedPayload {
-  url: string;
-  options: { method: string; body: string };
-  meta: Record<string, unknown>;
-}
-let capturedPayloads: CapturedPayload[] = [];
-
 // Apply mocks before import
 mock.module("../src/feed-fetcher/feed-fetcher", () => ({
   fetchFeed: () => mockFetchFeed(),
   FeedResponseRequestStatus,
 }));
 
-// Mock @synzen/discord-rest to capture Discord API payloads
-mock.module("@synzen/discord-rest", () => ({
-  RESTProducer: class MockRESTProducer {
-    async initialize() {}
-    async enqueue(
-      url: string,
-      options: { method: string; body: string },
-      meta: Record<string, unknown>
-    ) {
-      capturedPayloads.push({ url, options, meta });
-      // Return a mock job response that indicates success
-      return {
-        state: "success",
-        status: 200,
-        body: { id: randomUUID() },
-      };
-    }
-  },
-  RESTHandler: class MockRESTHandler {
-    async fetch(_url: string, _options: unknown) {
-      const responseBody = { id: randomUUID() };
-      // Return a Response-like object with json() method
-      return {
-        status: 200,
-        json: async () => responseBody,
-      };
-    }
-  },
-}));
-
 describe("App (e2e)", () => {
-  const setupTestCase = async (overrideEvent?: FeedV2Event) => {
+  const setupTestCase = async (
+    discordClient: TestDiscordRestClient,
+    overrideEvent?: FeedV2Event
+  ) => {
     // Get the stores from setup
     const stores = getStores();
 
@@ -89,8 +54,10 @@ describe("App (e2e)", () => {
       deliveryRecordStore: stores.deliveryRecordStore,
       responseHashStore: stores.responseHashStore,
       feedRetryStore: stores.feedRetryStore,
+      discordClient,
     });
-    capturedPayloads = [];
+    // Clear captured payloads from initialization
+    discordClient.clear();
 
     return {
       testFeedV2Event,
@@ -99,13 +66,6 @@ describe("App (e2e)", () => {
 
   beforeAll(async () => {
     await setupIntegrationTests();
-    // Initialize Discord producer with mock RabbitMQ URI (won't actually connect due to mock)
-    await initializeDiscordProducer({
-      rabbitmqUri: "amqp://localhost",
-      clientId: "test-client",
-    });
-    // Initialize Discord API client with mock token
-    initializeDiscordApiClient("test-token");
   });
 
   afterAll(async () => {
@@ -113,12 +73,6 @@ describe("App (e2e)", () => {
   });
 
   beforeEach(async () => {
-    // Clean up database tables
-    await cleanupTestData();
-
-    // Clear captured payloads
-    capturedPayloads = [];
-
     // Reset mocks to default behavior
     mockFetchFeed = mock(async () => ({
       requestStatus: FeedResponseRequestStatus.Success,
@@ -129,11 +83,9 @@ describe("App (e2e)", () => {
 
   it("sends new articles based on guid", async () => {
     const stores = getStores();
+    const discordClient: TestDiscordRestClient = createTestDiscordRestClient();
 
-    // Clear captured payloads from initialization
-    capturedPayloads = [];
-
-    const { testFeedV2Event } = await setupTestCase();
+    const { testFeedV2Event } = await setupTestCase(discordClient);
 
     // Override fetch to return ONLY a new article (replace: true)
     // This simulates a feed where a new article appeared and old one dropped off
@@ -151,16 +103,20 @@ describe("App (e2e)", () => {
       deliveryRecordStore: stores.deliveryRecordStore,
       responseHashStore: stores.responseHashStore,
       feedRetryStore: stores.feedRetryStore,
+      discordClient,
     });
 
     expect(results).not.toBeNull();
     expect(results!.length).toBe(1);
     // Channel delivery is asynchronous, so status is PendingDelivery
     expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+    // Verify Discord API was called
+    expect(discordClient.capturedPayloads.length).toBe(1);
   });
 
   it("does not send new articles if blocked by comparisons", async () => {
     const stores = getStores();
+    const discordClient: TestDiscordRestClient = createTestDiscordRestClient();
 
     const baseEvent = generateTestFeedV2Event();
     const baseEventWithBlockingComparisons = {
@@ -175,6 +131,7 @@ describe("App (e2e)", () => {
     };
 
     const { testFeedV2Event } = await setupTestCase(
+      discordClient,
       baseEventWithBlockingComparisons
     );
 
@@ -184,6 +141,7 @@ describe("App (e2e)", () => {
       deliveryRecordStore: stores.deliveryRecordStore,
       responseHashStore: stores.responseHashStore,
       feedRetryStore: stores.feedRetryStore,
+      discordClient,
     });
 
     // Fetch returns article with different guid but same title as existing article
@@ -203,6 +161,7 @@ describe("App (e2e)", () => {
       deliveryRecordStore: stores.deliveryRecordStore,
       responseHashStore: stores.responseHashStore,
       feedRetryStore: stores.feedRetryStore,
+      discordClient,
     });
 
     expect(results).not.toBeNull();
@@ -211,6 +170,7 @@ describe("App (e2e)", () => {
 
   it("sends new articles based on passing comparisons", async () => {
     const stores = getStores();
+    const discordClient: TestDiscordRestClient = createTestDiscordRestClient();
 
     const baseEvent = generateTestFeedV2Event();
     const baseEventWithPassingComparisons = {
@@ -225,6 +185,7 @@ describe("App (e2e)", () => {
     };
 
     const { testFeedV2Event } = await setupTestCase(
+      discordClient,
       baseEventWithPassingComparisons
     );
 
@@ -234,6 +195,7 @@ describe("App (e2e)", () => {
       deliveryRecordStore: stores.deliveryRecordStore,
       responseHashStore: stores.responseHashStore,
       feedRetryStore: stores.feedRetryStore,
+      discordClient,
     });
 
     // Fetch returns article with same guid but different title
@@ -256,6 +218,7 @@ describe("App (e2e)", () => {
       deliveryRecordStore: stores.deliveryRecordStore,
       responseHashStore: stores.responseHashStore,
       feedRetryStore: stores.feedRetryStore,
+      discordClient,
     });
 
     expect(results).not.toBeNull();
@@ -283,6 +246,7 @@ describe("App (e2e)", () => {
       deliveryRecordStore: stores.deliveryRecordStore,
       responseHashStore: stores.responseHashStore,
       feedRetryStore: stores.feedRetryStore,
+      discordClient,
     });
 
     expect(results2).not.toBeNull();
@@ -293,6 +257,7 @@ describe("App (e2e)", () => {
 
   it("does not send new articles based on passing comparisons if there are no new articles", async () => {
     const stores = getStores();
+    const discordClient: TestDiscordRestClient = createTestDiscordRestClient();
 
     const baseEvent = generateTestFeedV2Event();
     const baseEventWithPassingComparisons = {
@@ -307,6 +272,7 @@ describe("App (e2e)", () => {
     };
 
     const { testFeedV2Event } = await setupTestCase(
+      discordClient,
       baseEventWithPassingComparisons
     );
 
@@ -316,6 +282,7 @@ describe("App (e2e)", () => {
       deliveryRecordStore: stores.deliveryRecordStore,
       responseHashStore: stores.responseHashStore,
       feedRetryStore: stores.feedRetryStore,
+      discordClient,
     });
 
     // Fetch returns the same articles (no new articles, no title change)
@@ -330,6 +297,7 @@ describe("App (e2e)", () => {
       deliveryRecordStore: stores.deliveryRecordStore,
       responseHashStore: stores.responseHashStore,
       feedRetryStore: stores.feedRetryStore,
+      discordClient,
     });
 
     expect(results).not.toBeNull();
@@ -338,11 +306,10 @@ describe("App (e2e)", () => {
 
   it("formats HTML to Discord markdown in delivered payloads", async () => {
     const stores = getStores();
+    const discordClient: TestDiscordRestClient = createTestDiscordRestClient();
 
     const testFeedV2Event = generateTestFeedV2Event();
 
-    // Override the test event to use rss:title__# (raw title with HTML)
-    // because feedparser strips HTML from the "title" field automatically
     const baseMedium = testFeedV2Event.data.mediums[0]!;
     const feedEventWithRawTitle = {
       ...testFeedV2Event,
@@ -360,7 +327,7 @@ describe("App (e2e)", () => {
       },
     };
 
-    await setupTestCase(feedEventWithRawTitle);
+    await setupTestCase(discordClient, feedEventWithRawTitle);
 
     // Feed returns article with HTML content
     mockFetchFeed = mock(async () => ({
@@ -374,12 +341,12 @@ describe("App (e2e)", () => {
       bodyHash: randomUUID(),
     }));
 
-    console.log("Starting test case");
     const results = await handleFeedV2Event(feedEventWithRawTitle, {
       articleFieldStore: stores.articleFieldStore,
       deliveryRecordStore: stores.deliveryRecordStore,
       responseHashStore: stores.responseHashStore,
       feedRetryStore: stores.feedRetryStore,
+      discordClient,
     });
 
     expect(results).not.toBeNull();
@@ -388,13 +355,15 @@ describe("App (e2e)", () => {
     expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
 
     // Check the payload that was sent to Discord
-    expect(capturedPayloads.length).toBeGreaterThan(0);
-    const payload = JSON.parse(capturedPayloads[0]!.options.body);
+    expect(discordClient.capturedPayloads.length).toBeGreaterThan(0);
+    const payload = JSON.parse(
+      discordClient.capturedPayloads[0]!.options.body as string
+    );
 
     // Verify HTML was converted to Discord markdown
     expect(payload.content).toContain("**Bold**");
     expect(payload.content).toContain("*italic*");
-    expect(payload.content).not.toContain("<b>");
-    expect(payload.content).not.toContain("<i>");
+    expect(payload.content).not.toContain("<strong>");
+    expect(payload.content).not.toContain("<em>");
   });
 });

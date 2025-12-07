@@ -4,38 +4,23 @@
  * Exports all Discord-specific delivery functionality.
  */
 
-// API Client functions are exported from ../../delivery (single source of truth)
-// Re-export them here for convenience
+// URL builders are exported from synzen-discord-rest
 export {
-  initializeDiscordApiClient,
-  closeDiscordApiClient,
-  sendDiscordApiRequest,
   getChannelApiUrl,
   getWebhookApiUrl,
   getCreateChannelThreadUrl,
   getCreateChannelMessageThreadUrl,
+  createSynzenDiscordRestClient,
+  type SynzenDiscordRestConfig,
+} from "./synzen-discord-rest";
+
+// Re-export Discord REST client types
+export {
+  type DiscordRestClient,
   type DiscordApiResponse,
-} from "../../delivery";
-
-// Message Enqueue
-export {
-  initializeDiscordProducer,
-  closeDiscordProducer,
-  enqueueMessages,
-  type EnqueueMessagesOptions,
-} from "./discord-message-enqueue";
-
-// Delivery Result Parsing
-export { parseThreadCreateResponseToDeliveryStates } from "./discord-delivery-result";
-
-// Discord Medium (main delivery facade)
-export {
-  deliverToWebhookForum,
-  deliverToChannelForum,
-  deliverToChannel,
-  deliverToWebhook,
-  deliverToDiscord,
-} from "./discord-medium";
-
-// Re-export context type
-export type { DeliverArticleContext } from "./discord-medium";
+  type DiscordEnqueueOptions,
+  type DiscordEnqueueMeta,
+  type DiscordEnqueueResult,
+  type DiscordApiRequestOptions,
+  createTestDiscordRestClient,
+} from "../../../discord-rest";

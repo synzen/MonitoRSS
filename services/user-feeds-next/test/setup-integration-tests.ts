@@ -14,6 +14,10 @@ import type { ArticleFieldStore } from "../src/article-comparison";
 import type { DeliveryRecordStore } from "../src/delivery-record-store";
 import type { ResponseHashStore } from "../src/feed-event-handler";
 import type { FeedRetryStore } from "../src/feed-retry-store";
+import {
+  createTestDiscordRestClient,
+  type DiscordRestClient,
+} from "../src/discord-rest";
 
 // ============================================================================
 // Test Infrastructure State
@@ -24,6 +28,7 @@ let articleFieldStore: ArticleFieldStore | null = null;
 let deliveryRecordStore: DeliveryRecordStore | null = null;
 let responseHashStore: ResponseHashStore | null = null;
 let feedRetryStore: FeedRetryStore | null = null;
+let discordClient: DiscordRestClient | null = null;
 
 // ============================================================================
 // Setup Functions
@@ -39,6 +44,7 @@ export async function setupIntegrationTests(): Promise<{
   deliveryRecordStore: DeliveryRecordStore;
   responseHashStore: ResponseHashStore;
   feedRetryStore: FeedRetryStore;
+  discordClient: DiscordRestClient;
 }> {
   // Get connection string from environment
   const postgresUri =
@@ -61,6 +67,7 @@ export async function setupIntegrationTests(): Promise<{
   deliveryRecordStore = createPostgresDeliveryRecordStore(sql);
   responseHashStore = createPostgresResponseHashStore(sql);
   feedRetryStore = createPostgresFeedRetryStore(sql);
+  discordClient = createTestDiscordRestClient();
 
   return {
     sql,
@@ -68,6 +75,7 @@ export async function setupIntegrationTests(): Promise<{
     deliveryRecordStore,
     responseHashStore,
     feedRetryStore,
+    discordClient,
   };
 }
 
@@ -109,13 +117,15 @@ export function getStores(): {
   deliveryRecordStore: DeliveryRecordStore;
   responseHashStore: ResponseHashStore;
   feedRetryStore: FeedRetryStore;
+  discordClient: DiscordRestClient;
 } {
   if (
     !sql ||
     !articleFieldStore ||
     !deliveryRecordStore ||
     !responseHashStore ||
-    !feedRetryStore
+    !feedRetryStore ||
+    !discordClient
   ) {
     throw new Error(
       "Stores not initialized. Call setupIntegrationTests first."
@@ -128,5 +138,6 @@ export function getStores(): {
     deliveryRecordStore,
     responseHashStore,
     feedRetryStore,
+    discordClient: discordClient!,
   };
 }

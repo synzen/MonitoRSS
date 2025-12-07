@@ -13,7 +13,7 @@ import {
   generateDeliveryId,
   type ArticleDeliveryState,
 } from "../../../delivery-record-store";
-import type { DiscordApiResponse } from "../../delivery";
+import type { DiscordApiResponse } from "../../../discord-rest";
 
 /**
  * Parse a thread creation API response into delivery states.

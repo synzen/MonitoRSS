@@ -28,14 +28,13 @@ import {
   type MentionTarget,
   type ForumThreadTag,
 } from "../../../article-formatter";
+import type { DiscordRestClient, DiscordApiResponse } from "../../../discord-rest";
 import {
-  sendDiscordApiRequest,
   getChannelApiUrl,
   getWebhookApiUrl,
   getCreateChannelThreadUrl,
   getCreateChannelMessageThreadUrl,
-  type DiscordApiResponse,
-} from "../../delivery";
+} from "./synzen-discord-rest";
 import { DiscordSendArticleOperationType } from "../../../constants";
 
 // ============================================================================
@@ -134,7 +133,8 @@ function generatePayloads(
 
 async function deliverTestToForum(
   article: Article,
-  details: TestDiscordDeliveryDetails
+  details: TestDiscordDeliveryDetails,
+  discordClient: DiscordRestClient
 ): Promise<SendTestArticleResult> {
   const { mediumDetails, filterReferences } = details;
   const { channel, webhook, forumThreadTitle, forumThreadTags } = mediumDetails;
@@ -189,7 +189,7 @@ async function deliverTestToForum(
     });
   }
 
-  const firstResponse = await sendDiscordApiRequest(apiUrl, {
+  const firstResponse = await discordClient.sendApiRequest(apiUrl, {
     method: "POST",
     body: threadBody,
   });
@@ -219,7 +219,7 @@ async function deliverTestToForum(
 
   await Promise.all(
     bodies.slice(1).map((body) =>
-      sendDiscordApiRequest(threadChannelUrl, {
+      discordClient.sendApiRequest(threadChannelUrl, {
         method: "POST",
         body,
       })
@@ -243,7 +243,8 @@ async function deliverTestToForum(
 
 async function deliverTestToWebhook(
   article: Article,
-  details: TestDiscordDeliveryDetails
+  details: TestDiscordDeliveryDetails,
+  discordClient: DiscordRestClient
 ): Promise<SendTestArticleResult> {
   const { mediumDetails } = details;
   const { webhook } = mediumDetails;
@@ -270,7 +271,7 @@ async function deliverTestToWebhook(
 
   const results = await Promise.all(
     apiPayloads.map((payload) =>
-      sendDiscordApiRequest(apiUrl, {
+      discordClient.sendApiRequest(apiUrl, {
         method: "POST",
         body: payload,
       })
@@ -294,7 +295,8 @@ async function deliverTestToWebhook(
 
 async function deliverTestToChannel(
   article: Article,
-  details: TestDiscordDeliveryDetails
+  details: TestDiscordDeliveryDetails,
+  discordClient: DiscordRestClient
 ): Promise<SendTestArticleResult> {
   const { mediumDetails } = details;
   const { channel, channelNewThreadTitle } = mediumDetails;
@@ -331,7 +333,7 @@ async function deliverTestToChannel(
     if (!createThreadFirst) {
       // Send the post, create a thread, and then send the rest
       const apiUrl = getChannelApiUrl(channelId);
-      const firstResponse = await sendDiscordApiRequest(apiUrl, {
+      const firstResponse = await discordClient.sendApiRequest(apiUrl, {
         method: "POST",
         body: apiPayloads[0]!,
       });
@@ -351,7 +353,7 @@ async function deliverTestToChannel(
         messageId
       );
 
-      const threadResponse = await sendDiscordApiRequest(messageThreadUrl, {
+      const threadResponse = await discordClient.sendApiRequest(messageThreadUrl, {
         method: "POST",
         body: threadBody,
       });
@@ -382,7 +384,7 @@ async function deliverTestToChannel(
     } else {
       // Create a thread and then send all the posts
       const apiUrl = getCreateChannelThreadUrl(channelId);
-      const firstResponse = await sendDiscordApiRequest(apiUrl, {
+      const firstResponse = await discordClient.sendApiRequest(apiUrl, {
         method: "POST",
         body: threadBody,
       });
@@ -412,7 +414,7 @@ async function deliverTestToChannel(
   const apiUrl = getChannelApiUrl(useChannelId);
 
   for (const payload of apiPayloads.slice(currentApiPayloadIndex)) {
-    const result = await sendDiscordApiRequest(apiUrl, {
+    const result = await discordClient.sendApiRequest(apiUrl, {
       method: "POST",
       body: payload,
     });
@@ -440,18 +442,19 @@ async function deliverTestToChannel(
  */
 export async function deliverTestArticle(
   article: Article,
-  details: TestDiscordDeliveryDetails
+  details: TestDiscordDeliveryDetails,
+  discordClient: DiscordRestClient
 ): Promise<SendTestArticleResult> {
   const { channel, webhook } = details.mediumDetails;
   const channelId = channel?.id;
   const isForum = channel?.type === "forum" || webhook?.type === "forum";
 
   if (isForum) {
-    return deliverTestToForum(article, details);
+    return deliverTestToForum(article, details, discordClient);
   } else if (webhook) {
-    return deliverTestToWebhook(article, details);
+    return deliverTestToWebhook(article, details, discordClient);
   } else if (channelId) {
-    return deliverTestToChannel(article, details);
+    return deliverTestToChannel(article, details, discordClient);
   } else {
     throw new Error("No channel or webhook specified for Discord medium");
   }

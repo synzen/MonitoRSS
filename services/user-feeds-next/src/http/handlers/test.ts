@@ -35,6 +35,7 @@ import {
   deliverTestArticle,
   type TestDiscordMediumDetails,
 } from "../../delivery/mediums/discord/discord-test-delivery";
+import type { DiscordRestClient } from "../../discord-rest";
 import { TestDeliveryMedium, TestDeliveryStatus } from "../../constants";
 
 /**
@@ -90,7 +91,10 @@ function convertCustomPlaceholders(
   }));
 }
 
-export async function handleTest(req: Request): Promise<Response> {
+export async function handleTest(
+  req: Request,
+  discordClient: DiscordRestClient
+): Promise<Response> {
   return withAuth(req, async () => {
     try {
       const payload = await parseJsonBody<Record<string, unknown>>(req);
@@ -296,7 +300,8 @@ export async function handleTest(req: Request): Promise<Response> {
           {
             mediumDetails: deliveryMediumDetails,
             filterReferences,
-          }
+          },
+          discordClient
         );
 
         // Handle delivery result

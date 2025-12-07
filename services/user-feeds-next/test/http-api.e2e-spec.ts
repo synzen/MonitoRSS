@@ -3,6 +3,7 @@ import type { Server } from "bun";
 import { createHttpServer } from "../src/http";
 import { inMemoryDeliveryRecordStore } from "../src/delivery-record-store";
 import { FeedResponseRequestStatus } from "../src/feed-fetcher";
+import { createTestDiscordRestClient } from "../src/delivery";
 
 // Must match USER_FEEDS_API_KEY in docker-compose.test.yml
 const TEST_API_KEY = "test-api-key";
@@ -38,9 +39,12 @@ let baseUrl: string;
 
 describe("HTTP API (e2e)", () => {
   beforeAll(() => {
-    // Start the HTTP server
+    // Start the HTTP server with a test Discord client
     server = createHttpServer(
-      { deliveryRecordStore: inMemoryDeliveryRecordStore },
+      {
+        deliveryRecordStore: inMemoryDeliveryRecordStore,
+        discordClient: createTestDiscordRestClient(),
+      },
       TEST_PORT
     );
     baseUrl = `http://localhost:${TEST_PORT}`;

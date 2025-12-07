@@ -30,6 +30,8 @@ import {
   type DeliveryMedium,
   type DiscordDeliveryResult,
   type MediumRejectionEvent,
+  type DiscordRestClient,
+  inMemoryDiscordRestClient,
 } from "./delivery";
 import type { LogicalExpression } from "./article-filters";
 import { MessageBrokerQueue } from "./constants";
@@ -309,6 +311,7 @@ export async function handleFeedV2Event(
     parsedArticlesCacheStore?: ParsedArticlesCacheStore;
     feedRetryStore?: FeedRetryStore;
     deliveryRecordStore?: DeliveryRecordStore;
+    discordClient?: DiscordRestClient;
     publisher?: FeedRetryPublisher;
   } = {}
 ): Promise<ArticleDeliveryState[] | null> {
@@ -318,6 +321,7 @@ export async function handleFeedV2Event(
     parsedArticlesCacheStore = inMemoryParsedArticlesCacheStore,
     feedRetryStore = inMemoryFeedRetryStore,
     deliveryRecordStore = inMemoryDeliveryRecordStore,
+    discordClient = inMemoryDiscordRestClient,
     publisher,
   } = options;
   const { feed } = event.data;
@@ -347,6 +351,7 @@ export async function handleFeedV2Event(
           parsedArticlesCacheStore,
           feedRetryStore,
           deliveryRecordStore,
+          discordClient,
           publisher,
           debugLog,
         });
@@ -414,6 +419,7 @@ async function handleFeedV2EventInternal({
   parsedArticlesCacheStore,
   feedRetryStore,
   deliveryRecordStore,
+  discordClient,
   publisher,
   debugLog,
 }: {
@@ -424,6 +430,7 @@ async function handleFeedV2EventInternal({
   parsedArticlesCacheStore: ParsedArticlesCacheStore;
   feedRetryStore: FeedRetryStore;
   deliveryRecordStore: DeliveryRecordStore;
+  discordClient: DiscordRestClient;
   publisher?: FeedRetryPublisher;
   debugLog: (message: string, data?: Record<string, unknown>) => void;
 }): Promise<ArticleDeliveryState[] | null> {
@@ -731,6 +738,7 @@ async function handleFeedV2EventInternal({
       feedId: feed.id,
       feedUrl: feed.url,
       articleDayLimit: event.data.articleDayLimit,
+      discordClient,
     }
   );
 

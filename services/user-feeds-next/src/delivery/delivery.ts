@@ -1,8 +1,4 @@
-import {
-  RESTProducer,
-  RESTHandler,
-  type JobResponse,
-} from "@synzen/discord-rest";
+import type { JobResponse } from "@synzen/discord-rest";
 import type {
   JobData,
   JobResponseError,
@@ -12,6 +8,16 @@ import type {
   DiscordMessageApiPayload,
   WebhookPayload,
 } from "../article-formatter";
+import type {
+  DiscordRestClient,
+  DiscordApiResponse,
+} from "../discord-rest";
+import {
+  getChannelApiUrl,
+  getWebhookApiUrl,
+  getCreateChannelThreadUrl,
+  getCreateChannelMessageThreadUrl,
+} from "./mediums/discord/synzen-discord-rest";
 import {
   getArticleFilterResults,
   type LogicalExpression,
@@ -251,140 +257,20 @@ export async function getUnderLimitCheck(
   };
 }
 
-// ============================================================================
-// Discord REST Producer
-// ============================================================================
-
-let discordProducer: RESTProducer | null = null;
-
-export async function initializeDiscordProducer(options: {
-  rabbitmqUri: string;
-  clientId: string;
-}): Promise<void> {
-  discordProducer = new RESTProducer(options.rabbitmqUri, {
-    clientId: options.clientId,
-  });
-  await discordProducer.initialize();
-  logger.info("Discord REST producer initialized");
-}
-
-export async function closeDiscordProducer(): Promise<void> {
-  // RESTProducer doesn't have a close method, but we can null it out
-  discordProducer = null;
-}
-
-// ============================================================================
-// Discord REST Handler (for synchronous API calls)
-// ============================================================================
-
-let discordHandler: RESTHandler | null = null;
-let discordBotToken: string | null = null;
-
-const DISCORD_API_BASE_URL = "https://discord.com/api/v10";
-
-export interface DiscordApiResponse {
-  success: boolean;
-  status: number;
-  body: Record<string, unknown>;
-  detail?: string;
-}
-
-/**
- * Initialize the Discord REST handler for synchronous API calls.
- * This is needed for forum thread creation where we must wait for the response.
- */
-export function initializeDiscordApiClient(botToken: string): void {
-  discordBotToken = botToken;
-  discordHandler = new RESTHandler();
-  logger.info("Discord REST handler initialized");
-}
-
-export function closeDiscordApiClient(): void {
-  discordHandler = null;
-  discordBotToken = null;
-}
-
-// ============================================================================
-// Discord API URL Builders (matching discord-api-client.service.ts)
-// ============================================================================
-
-export function getChannelApiUrl(channelId: string): string {
-  return `${DISCORD_API_BASE_URL}/channels/${channelId}/messages`;
-}
-
-export function getWebhookApiUrl(
-  webhookId: string,
-  webhookToken: string,
-  queries?: { threadId?: string | null }
-): string {
-  const urlQueries = new URLSearchParams();
-  urlQueries.append("wait", "true");
-  if (queries?.threadId) {
-    urlQueries.append("thread_id", queries.threadId);
-  }
-  return `${DISCORD_API_BASE_URL}/webhooks/${webhookId}/${webhookToken}?${urlQueries.toString()}`;
-}
-
-export function getCreateChannelThreadUrl(channelId: string): string {
-  return `${DISCORD_API_BASE_URL}/channels/${channelId}/threads`;
-}
-
-export function getCreateChannelMessageThreadUrl(
-  channelId: string,
-  messageId: string
-): string {
-  return `${DISCORD_API_BASE_URL}/channels/${channelId}/messages/${messageId}/threads`;
-}
-
-// ============================================================================
-// Discord API Request (synchronous - for thread creation)
-// ============================================================================
-
-/**
- * Send a synchronous request to the Discord API.
- * Used for forum thread creation where we need the response before continuing.
- */
-export async function sendDiscordApiRequest(
-  url: string,
-  { method, body }: { method: "POST"; body: object }
-): Promise<DiscordApiResponse> {
-  if (!discordHandler || !discordBotToken) {
-    throw new Error("Discord API client not initialized");
-  }
-
-  const res = await discordHandler.fetch(url, {
-    method,
-    body: JSON.stringify(body),
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bot ${discordBotToken}`,
-    },
-  });
-
-  const isOkStatus = res.status >= 200 && res.status < 300;
-
-  try {
-    return {
-      success: true,
-      status: res.status,
-      body: (await res.json()) as Record<string, unknown>,
-      detail: !isOkStatus ? `Bad status code: ${res.status}` : undefined,
-    };
-  } catch (err) {
-    return {
-      success: false,
-      status: res.status,
-      detail: (err as Error).message,
-      body: {},
-    };
-  }
-}
+// Re-export URL builders for convenience
+export {
+  getChannelApiUrl,
+  getWebhookApiUrl,
+  getCreateChannelThreadUrl,
+  getCreateChannelMessageThreadUrl,
+};
 
 // ============================================================================
 // Message Enqueuing (matching discord-message-enqueue.service.ts)
 // ============================================================================
 
 export interface EnqueueMessagesOptions {
+  discordClient: DiscordRestClient;
   apiUrl: string;
   bodies: DiscordMessageApiPayload[];
   article: Article;
@@ -405,11 +291,8 @@ export interface EnqueueMessagesOptions {
 async function enqueueMessages(
   options: EnqueueMessagesOptions
 ): Promise<ArticleDeliveryState[]> {
-  if (!discordProducer) {
-    throw new Error("Discord producer not initialized");
-  }
-
   const {
+    discordClient,
     apiUrl,
     bodies,
     article,
@@ -430,7 +313,7 @@ async function enqueueMessages(
     const isFirst = idx === 0 && !existingParentId;
     const deliveryId = isFirst ? parentDeliveryId : generateDeliveryId();
 
-    await discordProducer.enqueue(
+    await discordClient.enqueue(
       apiUrl,
       {
         method: "POST",
@@ -564,6 +447,7 @@ function parseThreadCreateResponseToDeliveryStates(
 // ============================================================================
 
 interface DeliverArticleContext {
+  discordClient: DiscordRestClient;
   mediumId: string;
   feedId: string;
   feedUrl: string;
@@ -696,7 +580,7 @@ async function deliverToWebhookForum(
     tags: getForumTagsToSend(medium.details.forumThreadTags, article),
   });
 
-  const res = await sendDiscordApiRequest(apiUrl, {
+  const res = await context.discordClient.sendApiRequest(apiUrl, {
     method: "POST",
     body: threadBody,
   });
@@ -718,6 +602,7 @@ async function deliverToWebhookForum(
   const parentDeliveryId = generateDeliveryId();
 
   const additionalDeliveryStates = await enqueueMessages({
+    discordClient: context.discordClient,
     apiUrl: channelApiUrl,
     bodies: bodies.slice(1),
     article,
@@ -787,7 +672,7 @@ async function deliverToChannelForum(
     tags: getForumTagsToSend(medium.details.forumThreadTags, article),
   });
 
-  const res = await sendDiscordApiRequest(forumApiUrl, {
+  const res = await context.discordClient.sendApiRequest(forumApiUrl, {
     method: "POST",
     body: threadBody,
   });
@@ -815,6 +700,7 @@ async function deliverToChannelForum(
   const channelApiUrl = getChannelApiUrl(threadId);
 
   const additionalDeliveryStates = await enqueueMessages({
+    discordClient: context.discordClient,
     apiUrl: channelApiUrl,
     bodies: bodies.slice(1),
     article,
@@ -882,7 +768,7 @@ async function deliverToChannel(
     if (shouldCreateThreadFirst) {
       // Create the thread first and send all posts into it
       const apiUrl = getCreateChannelThreadUrl(channel.id);
-      const firstResponse = await sendDiscordApiRequest(apiUrl, {
+      const firstResponse = await context.discordClient.sendApiRequest(apiUrl, {
         method: "POST",
         body: threadBody,
       });
@@ -910,10 +796,13 @@ async function deliverToChannel(
       }
 
       const apiUrl = getChannelApiUrl(channel.id);
-      const firstPostResponse = await sendDiscordApiRequest(apiUrl, {
-        method: "POST",
-        body: firstBody,
-      });
+      const firstPostResponse = await context.discordClient.sendApiRequest(
+        apiUrl,
+        {
+          method: "POST",
+          body: firstBody,
+        }
+      );
 
       if (!firstPostResponse.success) {
         return parseThreadCreateResponseToDeliveryStates(
@@ -941,10 +830,13 @@ async function deliverToChannel(
         messageId
       );
 
-      const threadResponse = await sendDiscordApiRequest(messageThreadUrl, {
-        method: "POST",
-        body: threadBody,
-      });
+      const threadResponse = await context.discordClient.sendApiRequest(
+        messageThreadUrl,
+        {
+          method: "POST",
+          body: threadBody,
+        }
+      );
 
       if (!threadResponse.success) {
         const failureStates = parseThreadCreateResponseToDeliveryStates(
@@ -993,6 +885,7 @@ async function deliverToChannel(
   const apiUrl = getChannelApiUrl(useChannelId);
 
   const allRecords = await enqueueMessages({
+    discordClient: context.discordClient,
     apiUrl,
     bodies: bodies.slice(currentBodiesIndex),
     article,
@@ -1044,6 +937,7 @@ async function deliverToWebhook(
   );
 
   const deliveryStates = await enqueueMessages({
+    discordClient: context.discordClient,
     apiUrl,
     bodies,
     article,
@@ -1084,6 +978,7 @@ async function sendArticleToMedium(
   limitState: LimitState,
   feedId: string,
   feedUrl: string,
+  discordClient: DiscordRestClient,
   filterReferences?: Map<string, string>
 ): Promise<ArticleDeliveryState[]> {
   try {
@@ -1144,6 +1039,7 @@ async function sendArticleToMedium(
     }
 
     const context: DeliverArticleContext = {
+      discordClient,
       mediumId: medium.id,
       feedId,
       feedUrl,
@@ -1249,6 +1145,7 @@ export async function deliverArticles(
     feedUrl: string;
     articleDayLimit: number;
     deliveryRecordStore?: DeliveryRecordStore;
+    discordClient: DiscordRestClient;
   }
 ): Promise<ArticleDeliveryState[]> {
   const deliveryRecordStore =
@@ -1295,7 +1192,8 @@ export async function deliverArticles(
         medium,
         limitState,
         options.feedId,
-        options.feedUrl
+        options.feedUrl,
+        options.discordClient
       );
       articleStates = articleStates.concat(states);
     }

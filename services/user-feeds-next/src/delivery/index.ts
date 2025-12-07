@@ -1,12 +1,7 @@
 export {
   deliverArticles,
   getUnderLimitCheck,
-  initializeDiscordProducer,
-  closeDiscordProducer,
-  initializeDiscordApiClient,
-  closeDiscordApiClient,
   processDeliveryResult,
-  sendDiscordApiRequest,
   getChannelApiUrl,
   getWebhookApiUrl,
   getCreateChannelThreadUrl,
@@ -17,7 +12,6 @@ export {
   ArticleDeliveryRejectedCode,
   type LimitState,
   type DiscordDeliveryResult,
-  type DiscordApiResponse,
   type ProcessedDeliveryResult,
   type DeliveryJobMeta,
   type MediumRateLimit,
@@ -28,6 +22,27 @@ export {
   type MediumRejectionEvent,
   type EnqueueMessagesOptions,
 } from "./delivery";
+
+// Re-export Discord REST client types and factories
+export {
+  type DiscordRestClient,
+  type DiscordApiResponse,
+  type DiscordEnqueueOptions,
+  type DiscordEnqueueMeta,
+  type DiscordEnqueueResult,
+  type DiscordApiRequestOptions,
+  type TestDiscordRestClient,
+  type CapturedDiscordPayload,
+  createTestDiscordRestClient,
+  createInMemoryDiscordRestClient,
+  inMemoryDiscordRestClient,
+} from "../discord-rest";
+
+// Re-export production Discord REST client factory
+export {
+  createSynzenDiscordRestClient,
+  type SynzenDiscordRestConfig,
+} from "./mediums/discord/synzen-discord-rest";
 
 // Re-export organized discord module for future use
 export * as discordMedium from "./mediums/discord";
