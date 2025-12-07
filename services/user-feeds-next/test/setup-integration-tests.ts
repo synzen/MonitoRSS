@@ -62,8 +62,6 @@ export async function setupIntegrationTests(): Promise<{
   responseHashStore = createPostgresResponseHashStore(sql);
   feedRetryStore = createPostgresFeedRetryStore(sql);
 
-  console.log("Integration test setup complete");
-
   return {
     sql,
     articleFieldStore,

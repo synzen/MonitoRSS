@@ -4,6 +4,7 @@ import {
   applySplit,
   generateDiscordPayloads,
   formatValueForDiscord,
+  formatArticleForDiscord,
   getNestedPrimitiveValue,
   processCustomPlaceholders,
   CustomPlaceholderStepType,

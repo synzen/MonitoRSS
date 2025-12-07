@@ -1,11 +1,34 @@
-import { describe, it, expect, beforeAll, afterAll } from "bun:test";
+import { describe, it, expect, beforeAll, afterAll, mock } from "bun:test";
 import type { Server } from "bun";
 import { createHttpServer } from "../src/http";
 import { inMemoryDeliveryRecordStore } from "../src/delivery-record-store";
+import { FeedResponseRequestStatus } from "../src/feed-fetcher";
 
 // Must match USER_FEEDS_API_KEY in docker-compose.test.yml
 const TEST_API_KEY = "test-api-key";
 const TEST_PORT = 5555;
+
+// Mock feed-fetcher to return articles with HTML content for testing
+const TEST_ARTICLE_ID = "test-article-1";
+
+mock.module("../src/feed-fetcher/feed-fetcher", () => ({
+  fetchFeed: async () => ({
+    requestStatus: FeedResponseRequestStatus.Success,
+    body: `<?xml version="1.0" encoding="UTF-8"?>
+      <rss version="2.0">
+        <channel>
+          <title>Test Feed</title>
+          <item>
+            <guid>${TEST_ARTICLE_ID}</guid>
+            <title>&lt;b&gt;Bold Title&lt;/b&gt; and &lt;i&gt;italic&lt;/i&gt;</title>
+            <description>&lt;strong&gt;Strong text&lt;/strong&gt;</description>
+          </item>
+        </channel>
+      </rss>`,
+    bodyHash: "test-hash",
+  }),
+  FeedResponseRequestStatus,
+}));
 
 // Type for JSON response bodies
 type JsonBody = Record<string, unknown>;
@@ -298,9 +321,9 @@ describe("HTTP API (e2e)", () => {
     });
   });
 
-  describe("GET /health", () => {
+  describe("GET /v1/user-feeds/health", () => {
     it("returns health status", async () => {
-      const response = await fetch(`${baseUrl}/health`);
+      const response = await fetch(`${baseUrl}/v1/user-feeds/health`);
 
       expect(response.status).toBe(200);
       const body = (await response.json()) as JsonBody;
@@ -464,6 +487,48 @@ describe("HTTP API (e2e)", () => {
       expect(response.status).toBe(400);
       const body = (await response.json()) as JsonBody[];
       expect(Array.isArray(body)).toBe(true);
+    });
+  });
+
+  describe("POST /v1/user-feeds/preview", () => {
+    const endpoint = "/v1/user-feeds/preview";
+
+    it("formats HTML to Discord markdown in preview response", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          type: "discord",
+          feed: { url: "https://example.com/feed.xml" },
+          article: { id: TEST_ARTICLE_ID },
+          mediumDetails: {
+            guildId: "test-guild-id",
+            // Use rss:title__# instead of title because feedparser strips HTML from title
+            content: "{{rss:title__#}}",
+            embeds: [],
+            components: null,
+          },
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const messages = body.messages as JsonBody[];
+
+      expect(messages).toBeDefined();
+      expect(messages.length).toBeGreaterThan(0);
+
+      const content = messages[0]?.content as string;
+
+      // Verify HTML was converted to Discord markdown
+      expect(content).toContain("**Bold Title**");
+      expect(content).toContain("*italic*");
+      expect(content).not.toContain("<b>");
+      expect(content).not.toContain("<i>");
+      expect(content).not.toContain("&lt;");
     });
   });
 });
