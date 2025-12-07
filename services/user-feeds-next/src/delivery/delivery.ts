@@ -306,11 +306,11 @@ export function closeDiscordApiClient(): void {
 // Discord API URL Builders (matching discord-api-client.service.ts)
 // ============================================================================
 
-function getChannelApiUrl(channelId: string): string {
+export function getChannelApiUrl(channelId: string): string {
   return `${DISCORD_API_BASE_URL}/channels/${channelId}/messages`;
 }
 
-function getWebhookApiUrl(
+export function getWebhookApiUrl(
   webhookId: string,
   webhookToken: string,
   queries?: { threadId?: string | null }
@@ -323,11 +323,11 @@ function getWebhookApiUrl(
   return `${DISCORD_API_BASE_URL}/webhooks/${webhookId}/${webhookToken}?${urlQueries.toString()}`;
 }
 
-function getCreateChannelThreadUrl(channelId: string): string {
+export function getCreateChannelThreadUrl(channelId: string): string {
   return `${DISCORD_API_BASE_URL}/channels/${channelId}/threads`;
 }
 
-function getCreateChannelMessageThreadUrl(
+export function getCreateChannelMessageThreadUrl(
   channelId: string,
   messageId: string
 ): string {
@@ -342,7 +342,7 @@ function getCreateChannelMessageThreadUrl(
  * Send a synchronous request to the Discord API.
  * Used for forum thread creation where we need the response before continuing.
  */
-async function sendDiscordApiRequest(
+export async function sendDiscordApiRequest(
   url: string,
   { method, body }: { method: "POST"; body: object }
 ): Promise<DiscordApiResponse> {

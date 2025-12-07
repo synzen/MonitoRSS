@@ -11,6 +11,7 @@ import {
   handleDeliveryLogs,
   handleGetArticles,
   handlePreview,
+  handleTest,
 } from "./handlers";
 import { jsonResponse, handleError } from "./utils";
 
@@ -63,6 +64,10 @@ export function createHttpServer(
 
       "/v1/user-feeds/preview": {
         POST: (req) => handlePreview(req),
+      },
+
+      "/v1/user-feeds/test": {
+        POST: (req) => handleTest(req),
       },
     },
     fetch() {

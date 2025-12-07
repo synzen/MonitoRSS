@@ -6,6 +6,11 @@ export {
   initializeDiscordApiClient,
   closeDiscordApiClient,
   processDeliveryResult,
+  sendDiscordApiRequest,
+  getChannelApiUrl,
+  getWebhookApiUrl,
+  getCreateChannelThreadUrl,
+  getCreateChannelMessageThreadUrl,
   ArticleDeliveryStatus,
   ArticleDeliveryErrorCode,
   ArticleDeliveryContentType,
@@ -28,6 +33,4 @@ export {
 export * as discordMedium from "./mediums/discord";
 
 // Re-export shared types
-export type {
-  DeliverArticleContext,
-} from "./types";
+export type { DeliverArticleContext } from "./types";

@@ -35,7 +35,7 @@ import {
   getWebhookApiUrl,
   getCreateChannelThreadUrl,
   getCreateChannelMessageThreadUrl,
-} from "./discord-api-client";
+} from "../../delivery";
 import { enqueueMessages } from "./discord-message-enqueue";
 import { parseThreadCreateResponseToDeliveryStates } from "./discord-delivery-result";
 

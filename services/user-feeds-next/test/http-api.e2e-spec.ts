@@ -317,4 +317,153 @@ describe("HTTP API (e2e)", () => {
       expect(body.error).toBe("Not Found");
     });
   });
+
+  describe("POST /v1/user-feeds/test", () => {
+    const endpoint = "/v1/user-feeds/test";
+
+    it("returns 401 without API key", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+
+      expect(response.status).toBe(401);
+      const body = (await response.json()) as JsonBody;
+      expect(body.message).toBe("Unauthorized");
+    });
+
+    it("returns 401 with invalid API key", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": "wrong-key",
+        },
+        body: JSON.stringify({}),
+      });
+
+      expect(response.status).toBe(401);
+      const body = (await response.json()) as JsonBody;
+      expect(body.message).toBe("Unauthorized");
+    });
+
+    it("returns 400 for missing required fields", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({}),
+      });
+
+      expect(response.status).toBe(400);
+      const body = (await response.json()) as JsonBody[];
+      expect(Array.isArray(body)).toBe(true);
+      // Should have validation errors for missing type and feed
+      expect(body.length).toBeGreaterThan(0);
+    });
+
+    it("returns 400 for invalid type", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          type: "invalid",
+          feed: { url: "https://example.com/feed.xml" },
+          mediumDetails: {},
+        }),
+      });
+
+      expect(response.status).toBe(400);
+      const body = (await response.json()) as JsonBody[];
+      expect(Array.isArray(body)).toBe(true);
+    });
+
+    it("returns 400 for missing feed url", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          type: "discord",
+          feed: {},
+          mediumDetails: {
+            content: "test",
+            embeds: [],
+          },
+        }),
+      });
+
+      expect(response.status).toBe(400);
+      const body = (await response.json()) as JsonBody[];
+      expect(Array.isArray(body)).toBe(true);
+    });
+
+    it("returns 400 for missing mediumDetails", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          type: "discord",
+          feed: { url: "https://example.com/feed.xml" },
+        }),
+      });
+
+      expect(response.status).toBe(400);
+      const body = (await response.json()) as JsonBody[];
+      expect(Array.isArray(body)).toBe(true);
+    });
+
+    it("returns 400 for missing content in mediumDetails", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          type: "discord",
+          feed: { url: "https://example.com/feed.xml" },
+          mediumDetails: {
+            embeds: [],
+          },
+        }),
+      });
+
+      expect(response.status).toBe(400);
+      const body = (await response.json()) as JsonBody[];
+      expect(Array.isArray(body)).toBe(true);
+    });
+
+    it("returns 400 for missing embeds in mediumDetails", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          type: "discord",
+          feed: { url: "https://example.com/feed.xml" },
+          mediumDetails: {
+            content: "test",
+          },
+        }),
+      });
+
+      expect(response.status).toBe(400);
+      const body = (await response.json()) as JsonBody[];
+      expect(Array.isArray(body)).toBe(true);
+    });
+  });
 });

@@ -54,3 +54,24 @@ export enum MessageBrokerQueue {
 export enum FeedRejectedDisabledCode {
   InvalidFeed = "user-feeds/invalid-feed",
 }
+
+/**
+ * Test delivery constants matching user-feeds.
+ */
+export enum TestDeliveryMedium {
+  Discord = "discord",
+}
+
+export enum TestDeliveryStatus {
+  Success = "SUCCESS",
+  ThirdPartyInternalError = "THIRD_PARTY_INTERNAL_ERROR",
+  BadPayload = "BAD_PAYLOAD",
+  MissingApplicationPermission = "MISSING_APPLICATION_PERMISSION",
+  MissingChannel = "MISSING_CHANNEL",
+  TooManyRequests = "TOO_MANY_REQUESTS",
+  NoArticles = "NO_ARTICLES",
+}
+
+export enum DiscordSendArticleOperationType {
+  CreateThreadOnMessage = "CREATE_THREAD_ON_MESSAGE",
+}

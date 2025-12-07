@@ -209,15 +209,25 @@ async function closeSharedInfrastructure(): Promise<void> {
 async function startApiMode(
   infrastructure: SharedInfrastructure
 ): Promise<() => Promise<void>> {
+  // Initialize Discord API client for test endpoint
+  if (!DISCORD_BOT_TOKEN) {
+    throw new Error(
+      "USER_FEEDS_DISCORD_API_TOKEN is required for API mode (test endpoint)"
+    );
+  }
+  initializeDiscordApiClient(DISCORD_BOT_TOKEN);
+
   const httpServer = createHttpServer(
     { deliveryRecordStore: infrastructure.deliveryRecordStore },
     HTTP_PORT
   );
+
   logger.info(`HTTP server listening on port ${HTTP_PORT}`);
 
   return async () => {
     httpServer.stop();
     logger.info("HTTP server stopped");
+    closeDiscordApiClient();
   };
 }
 

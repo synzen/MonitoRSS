@@ -357,8 +357,15 @@ const feedV2EventRequestLookupDetails = z.object({
   headers: z.record(z.string(), z.string()).optional(),
 });
 
+// Test endpoint schema variant (guildId is optional for test)
+const discordMediumTestPayloadDetailsSchema =
+  discordMediumPayloadDetailsSchema.extend({
+    guildId: z.string().optional(),
+  });
+
 // Export individual schemas for API use
 export { discordMediumPayloadDetailsSchema };
+export { discordMediumTestPayloadDetailsSchema };
 export { feedV2EventSchemaFormatOptions };
 export { feedV2EventSchemaDateChecks };
 export { feedV2EventRequestLookupDetails };

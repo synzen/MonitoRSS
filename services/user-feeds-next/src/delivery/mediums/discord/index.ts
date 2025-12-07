@@ -4,7 +4,8 @@
  * Exports all Discord-specific delivery functionality.
  */
 
-// API Client
+// API Client functions are exported from ../../delivery (single source of truth)
+// Re-export them here for convenience
 export {
   initializeDiscordApiClient,
   closeDiscordApiClient,
@@ -14,7 +15,7 @@ export {
   getCreateChannelThreadUrl,
   getCreateChannelMessageThreadUrl,
   type DiscordApiResponse,
-} from "./discord-api-client";
+} from "../../delivery";
 
 // Message Enqueue
 export {
