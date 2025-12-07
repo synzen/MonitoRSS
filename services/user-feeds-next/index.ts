@@ -76,19 +76,24 @@ const DELIVERY_RECORD_PERSISTENCE_MONTHS = parseInt(
 );
 const PREFETCH_COUNT = 100;
 const PARTITION_MANAGEMENT_INTERVAL_MS = 60000 * 24; // 24 minutes (matches user-feeds)
+const START_TARGET = process.env.USER_FEEDS_START_TARGET; // "service" | "api" | undefined
 
 // Global SQL client for shutdown
 let sqlClient: SQL | null = null;
 
-async function main() {
-  // Validate required environment variables
-  if (!DISCORD_CLIENT_ID) {
-    throw new Error("USER_FEEDS_DISCORD_CLIENT_ID is required");
-  }
-  if (!DISCORD_BOT_TOKEN) {
-    throw new Error("USER_FEEDS_DISCORD_BOT_TOKEN is required");
-  }
+interface SharedInfrastructure {
+  deliveryRecordStore: DeliveryRecordStore;
+  articleFieldStore: ArticleFieldStore;
+  responseHashStore: ResponseHashStore;
+  feedRetryStore: FeedRetryStore;
+  parsedArticlesCacheStore: ParsedArticlesCacheStore;
+  processingLock: ProcessingLock;
+}
 
+/**
+ * Initialize shared infrastructure (Redis, PostgreSQL, stores) used by all modes.
+ */
+async function initializeSharedInfrastructure(): Promise<SharedInfrastructure> {
   // Initialize Redis if configured, otherwise fall back to in-memory stores
   let parsedArticlesCacheStore: ParsedArticlesCacheStore =
     inMemoryParsedArticlesCacheStore;
@@ -154,25 +159,80 @@ async function main() {
     logger.info("No PostgreSQL URI configured, using in-memory stores");
   }
 
-  // Initialize Discord REST producer (for async message enqueue)
+  return {
+    deliveryRecordStore,
+    articleFieldStore,
+    responseHashStore,
+    feedRetryStore,
+    parsedArticlesCacheStore,
+    processingLock,
+  };
+}
+
+/**
+ * Close shared infrastructure (Redis, PostgreSQL).
+ */
+async function closeSharedInfrastructure(): Promise<void> {
+  await closeRedisClient();
+
+  if (sqlClient) {
+    try {
+      await sqlClient.close();
+      logger.info("Successfully closed PostgreSQL connection");
+    } catch (err) {
+      logger.error("Failed to close PostgreSQL connection", {
+        error: (err as Error).stack,
+      });
+    }
+  }
+}
+
+/**
+ * Start API mode (HTTP server only).
+ * Returns a cleanup function.
+ */
+async function startApiMode(
+  infrastructure: SharedInfrastructure
+): Promise<() => Promise<void>> {
+  const httpServer = createHttpServer(
+    { deliveryRecordStore: infrastructure.deliveryRecordStore },
+    HTTP_PORT
+  );
+  logger.info(`HTTP server listening on port ${HTTP_PORT}`);
+
+  return async () => {
+    httpServer.stop();
+    logger.info("HTTP server stopped");
+  };
+}
+
+/**
+ * Start service mode (RabbitMQ consumers only).
+ * Returns a cleanup function.
+ */
+async function startServiceMode(
+  infrastructure: SharedInfrastructure
+): Promise<() => Promise<void>> {
+  // Validate required environment variables
+  if (!DISCORD_CLIENT_ID) {
+    throw new Error("USER_FEEDS_DISCORD_CLIENT_ID is required");
+  }
+  if (!DISCORD_BOT_TOKEN) {
+    throw new Error("USER_FEEDS_DISCORD_BOT_TOKEN is required");
+  }
+
+  // Initialize Discord REST producer and API client
   await initializeDiscordProducer({
     rabbitmqUri: RABBITMQ_URL,
     clientId: DISCORD_CLIENT_ID,
   });
-
-  // Initialize Discord API client (for synchronous calls like forum thread creation)
   initializeDiscordApiClient(DISCORD_BOT_TOKEN);
-
-  // Start HTTP server
-  const httpServer = createHttpServer({ deliveryRecordStore }, HTTP_PORT);
-  logger.info(`HTTP server listening on port ${HTTP_PORT}`);
 
   logger.info("Connecting to RabbitMQ...");
 
   // Create RabbitMQ connection
   const connection = new Connection(RABBITMQ_URL);
 
-  // Set up event handlers
   connection.on("error", (err) => {
     logger.error("RabbitMQ connection error", { error: (err as Error).stack });
   });
@@ -207,7 +267,7 @@ async function main() {
       const feedId = event.data.feed.id;
 
       // Acquire processing lock to prevent concurrent processing of same feed
-      const lockAcquired = await processingLock.acquire(feedId);
+      const lockAcquired = await infrastructure.processingLock.acquire(feedId);
       if (!lockAcquired) {
         logger.debug(
           `User feed event for feed ${feedId} is already being processed, ignoring`
@@ -217,14 +277,14 @@ async function main() {
 
       try {
         await handleFeedV2Event(event, {
-          parsedArticlesCacheStore,
-          articleFieldStore,
-          deliveryRecordStore,
-          responseHashStore,
-          feedRetryStore,
+          parsedArticlesCacheStore: infrastructure.parsedArticlesCacheStore,
+          articleFieldStore: infrastructure.articleFieldStore,
+          deliveryRecordStore: infrastructure.deliveryRecordStore,
+          responseHashStore: infrastructure.responseHashStore,
+          feedRetryStore: infrastructure.feedRetryStore,
         });
       } finally {
-        await processingLock.release(feedId);
+        await infrastructure.processingLock.release(feedId);
       }
     }
   );
@@ -293,9 +353,9 @@ async function main() {
 
       try {
         await handleFeedDeletedEvent(event, {
-          responseHashStore,
-          articleFieldStore,
-          feedRetryStore,
+          responseHashStore: infrastructure.responseHashStore,
+          articleFieldStore: infrastructure.articleFieldStore,
+          feedRetryStore: infrastructure.feedRetryStore,
         });
       } catch (err) {
         logger.error("Failed to handle feed deleted event", {
@@ -316,13 +376,7 @@ async function main() {
     `Feed deleted consumer created with prefetch count: ${PREFETCH_COUNT}`
   );
 
-  // Graceful shutdown
-  const shutdown = async (signal: string) => {
-    logger.info(`Received signal ${signal}. Shutting down...`);
-
-    httpServer.stop();
-    logger.info("HTTP server stopped");
-
+  return async () => {
     await feedEventConsumer.close();
     await deliveryResultConsumer.close();
     await feedDeletedConsumer.close();
@@ -338,19 +392,35 @@ async function main() {
 
     await closeDiscordProducer();
     closeDiscordApiClient();
-    await closeRedisClient();
+  };
+}
 
-    if (sqlClient) {
-      try {
-        await sqlClient.close();
-        logger.info("Successfully closed PostgreSQL connection");
-      } catch (err) {
-        logger.error("Failed to close PostgreSQL connection", {
-          error: (err as Error).stack,
-        });
-      }
-    }
+async function main() {
+  const infrastructure = await initializeSharedInfrastructure();
 
+  let cleanup: () => Promise<void>;
+
+  if (START_TARGET === "api") {
+    logger.info("Starting in API mode (HTTP server only)");
+    cleanup = await startApiMode(infrastructure);
+  } else if (START_TARGET === "service") {
+    logger.info("Starting in SERVICE mode (RabbitMQ consumers only)");
+    cleanup = await startServiceMode(infrastructure);
+  } else {
+    logger.info("Starting in FULL mode (HTTP server + RabbitMQ consumers)");
+    const apiCleanup = await startApiMode(infrastructure);
+    const serviceCleanup = await startServiceMode(infrastructure);
+    cleanup = async () => {
+      await apiCleanup();
+      await serviceCleanup();
+    };
+  }
+
+  // Graceful shutdown
+  const shutdown = async (signal: string) => {
+    logger.info(`Received signal ${signal}. Shutting down...`);
+    await cleanup();
+    await closeSharedInfrastructure();
     process.exit(0);
   };
 
