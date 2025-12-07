@@ -99,7 +99,6 @@ export async function cleanupTestData(): Promise<void> {
   }
 
   await truncateAllTables(sql);
-  console.log("Truncated all tables");
 }
 
 /**
@@ -118,7 +117,6 @@ export async function teardownIntegrationTests(): Promise<void> {
   deliveryRecordStore = null;
   responseHashStore = null;
   feedRetryStore = null;
-  console.log("Integration test teardown complete");
 }
 
 /**

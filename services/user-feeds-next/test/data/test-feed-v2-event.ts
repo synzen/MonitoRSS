@@ -2,22 +2,28 @@ import type { FeedV2Event } from "../../src/schemas";
 import { MediumKey } from "../../src/constants";
 import { randomUUID } from "crypto";
 
+interface GenerateTestFeedV2EventOptions {
+  feedUrl?: string;
+  feedId?: string;
+  mediumId?: string;
+}
+
 // Use type assertion to avoid needing to provide all optional fields
-const generateTestFeedV2Event = () =>
+const generateTestFeedV2Event = (options?: GenerateTestFeedV2EventOptions) =>
   ({
     timestamp: Date.now(),
     debug: true,
     data: {
       articleDayLimit: 100,
       feed: {
-        id: `feed-${randomUUID()}`,
+        id: options?.feedId ?? `feed-${randomUUID()}`,
         blockingComparisons: [],
         passingComparisons: [],
-        url: "https://www.some-feed.com/rss",
+        url: options?.feedUrl ?? "https://www.some-feed.com/rss",
       },
       mediums: [
         {
-          id: `medium-${randomUUID()}`,
+          id: options?.mediumId ?? `medium-${randomUUID()}`,
           key: MediumKey.Discord,
           filters: null,
           details: {

@@ -1,5 +1,5 @@
 import type { Server } from "bun";
-import { createHash } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import { FeedResponseRequestStatus } from "../src/feed-fetcher";
 
 interface FeedRequestBody {
@@ -15,19 +15,39 @@ interface FeedRequestBody {
   };
 }
 
+type ResponseProvider = () => { body: string; hash?: string };
+
 export interface TestFeedRequestsServer {
   server: Server<undefined>;
   port: number;
-  setResponse(fn: () => { body: string; hash?: string }): void;
+  /** Register a response provider for a specific URL */
+  registerUrl(url: string, provider: ResponseProvider): void;
+  /** Unregister a URL */
+  unregisterUrl(url: string): void;
+  /** Generate a unique test URL */
+  generateTestUrl(testId?: string): string;
+  /** Set default response for unregistered URLs (backward compatibility) */
+  setResponse(fn: ResponseProvider): void;
+  /** Get all requests */
   getRequests(): Array<{ url: string; body: FeedRequestBody }>;
+  /** Get requests for a specific URL */
+  getRequestsForUrl(url: string): Array<{ url: string; body: FeedRequestBody }>;
+  /** Clear all state */
   clear(): void;
+  /** Clear state for a specific URL only */
+  clearUrl(url: string): void;
 }
 
 export function createTestFeedRequestsServer(
   port = 5556
 ): TestFeedRequestsServer {
   const requests: Array<{ url: string; body: FeedRequestBody }> = [];
-  let responseProvider: () => { body: string; hash?: string } = () => ({
+
+  // URL -> ResponseProvider map
+  const urlRegistry = new Map<string, ResponseProvider>();
+
+  // Default fallback for unregistered URLs (backward compatibility)
+  let defaultResponseProvider: ResponseProvider = () => ({
     body: "",
     hash: "",
   });
@@ -38,7 +58,10 @@ export function createTestFeedRequestsServer(
       const body = (await req.json()) as FeedRequestBody;
       requests.push({ url: body.url, body });
 
-      const { body: rssBody, hash } = responseProvider();
+      // Look up URL-specific provider, fall back to default
+      const provider = urlRegistry.get(body.url) ?? defaultResponseProvider;
+      const { body: rssBody, hash } = provider();
+
       const computedHash =
         hash || createHash("sha256").update(rssBody).digest("hex");
 
@@ -56,12 +79,41 @@ export function createTestFeedRequestsServer(
   return {
     server,
     port,
-    setResponse: (fn) => {
-      responseProvider = fn;
+
+    registerUrl: (url, provider) => {
+      urlRegistry.set(url, provider);
     },
+
+    unregisterUrl: (url) => {
+      urlRegistry.delete(url);
+    },
+
+    generateTestUrl: (testId?: string) => {
+      const id = testId ?? randomUUID();
+      return `https://test-feed.example.com/${id}/rss`;
+    },
+
+    setResponse: (fn) => {
+      defaultResponseProvider = fn;
+    },
+
     getRequests: () => [...requests],
+
+    getRequestsForUrl: (url) => requests.filter((r) => r.url === url),
+
     clear: () => {
       requests.length = 0;
+      urlRegistry.clear();
+    },
+
+    clearUrl: (url) => {
+      urlRegistry.delete(url);
+      // Remove requests for this URL
+      for (let i = requests.length - 1; i >= 0; i--) {
+        if (requests[i]!.url === url) {
+          requests.splice(i, 1);
+        }
+      }
     },
   };
 }

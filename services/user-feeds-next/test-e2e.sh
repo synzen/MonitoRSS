@@ -3,7 +3,7 @@ cleanup () {
   docker compose -f docker-compose.test.yml -p user-feeds-next-test rm -f -s -v
 }
 
-export TEST_COMMAND="bun test ./test/*.e2e-spec.ts"
+export TEST_COMMAND="bun test --concurrent ./test/*.e2e-spec.ts"
 
 docker compose -f docker-compose.test.yml -p user-feeds-next-test up \
   --build \
