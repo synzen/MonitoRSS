@@ -39,12 +39,15 @@ export enum GetFeedArticlesRequestStatus {
  */
 export function handleError(err: unknown): Response {
   // Zod validation errors -> 400 BAD_REQUEST
+  // Wrap in { message: [...] } to match backend-api expectations
   if (err instanceof z.ZodError) {
     return jsonResponse(
-      err.issues.map((issue: z.core.$ZodIssue) => ({
-        path: issue.path,
-        message: issue.message,
-      })),
+      {
+        message: err.issues.map((issue: z.core.$ZodIssue) => ({
+          path: issue.path,
+          message: issue.message,
+        })),
+      },
       400
     );
   }

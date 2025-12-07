@@ -397,6 +397,13 @@ export class FeedHandlerService {
       requestBody: Record<string, unknown>;
     }
   ) {
+    if (res.ok) {
+      return;
+    }
+
+    // Read body once and reuse for all error handling
+    const bodyText = await res.text().catch(() => null);
+
     if (res.status >= 500) {
       throw new FeedFetcherStatusException(
         `${contextMessage}: >= 500 status code (${
@@ -406,38 +413,60 @@ export class FeedHandlerService {
     }
 
     if (res.status === HttpStatus.BAD_REQUEST) {
-      const json = (await res.json()) as {
-        message: Array<{ path: (string | number)[]; message: string }>;
-      };
+      try {
+        const json = JSON.parse(bodyText || "{}") as {
+          message: Array<{ path: (string | number)[]; message: string }>;
+        };
 
-      if (Array.isArray(json.message)) {
-        throw new InvalidComponentsV2Exception(
-          json.message.map(
-            (e) => new InvalidComponentsV2Exception(e.message, e.path)
-          )
-        );
+        if (Array.isArray(json.message)) {
+          throw new InvalidComponentsV2Exception(
+            json.message.map(
+              (e) => new InvalidComponentsV2Exception(e.message, e.path)
+            )
+          );
+        }
+      } catch (err) {
+        if (err instanceof InvalidComponentsV2Exception) {
+          throw err;
+        }
+        // Fall through to generic error if JSON parsing fails
       }
     }
 
     if (res.status === HttpStatus.UNPROCESSABLE_ENTITY) {
-      const json = (await res.json()) as {
-        code: string;
-        errors: StandardException[];
-      };
-      const code = json.code;
+      try {
+        const json = JSON.parse(bodyText || "{}") as {
+          code: string;
+          errors: StandardException[];
+        };
+        const code = json.code;
 
-      if (code === "CUSTOM_PLACEHOLDER_REGEX_EVAL") {
-        throw new InvalidPreviewCustomPlaceholdersRegexException(
-          "Invalid preview input",
-          {
+        if (code === "CUSTOM_PLACEHOLDER_REGEX_EVAL") {
+          throw new InvalidPreviewCustomPlaceholdersRegexException(
+            "Invalid preview input",
+            {
+              subErrors: json.errors,
+            }
+          );
+        } else if (code === "FILTERS_REGEX_EVAL") {
+          throw new InvalidFiltersRegexException("Invalid preview input", {
             subErrors: json.errors,
-          }
-        );
-      } else if (code === "FILTERS_REGEX_EVAL") {
-        throw new InvalidFiltersRegexException("Invalid preview input", {
-          subErrors: json.errors,
-        });
-      } else {
+          });
+        } else {
+          throw new Error(
+            `${contextMessage}: Unprocessable entity status code from User feeds api. Meta: ${JSON.stringify(
+              meta
+            )}`
+          );
+        }
+      } catch (err) {
+        if (
+          err instanceof InvalidPreviewCustomPlaceholdersRegexException ||
+          err instanceof InvalidFiltersRegexException
+        ) {
+          throw err;
+        }
+
         throw new Error(
           `${contextMessage}: Unprocessable entity status code from User feeds api. Meta: ${JSON.stringify(
             meta
@@ -446,19 +475,11 @@ export class FeedHandlerService {
       }
     }
 
-    if (!res.ok) {
-      let body: Record<string, unknown> | null = null;
-
-      try {
-        body = (await res.json()) as Record<string, unknown>;
-      } catch (err) {}
-
-      throw new FeedFetcherStatusException(
-        `${contextMessage}: non-ok status code (${
-          res.status
-        }) from User feeds api, response: ${JSON.stringify(body)}`
-      );
-    }
+    throw new FeedFetcherStatusException(
+      `${contextMessage}: non-ok status code (${
+        res.status
+      }) from User feeds api, response text: ${JSON.stringify(bodyText)}`
+    );
   }
 
   private async validateResponseJson<T>(

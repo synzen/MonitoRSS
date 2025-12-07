@@ -25,7 +25,7 @@ export interface QueryForArticlesInput {
   selectProperties?: string[];
   selectPropertyTypes?: SelectPropertyType[];
   filters?: {
-    returnType: GetUserFeedArticlesFilterReturnType;
+    returnType?: GetUserFeedArticlesFilterReturnType;
     expression?: Record<string, unknown>;
     articleId?: string;
     articleIdHashes?: string[];

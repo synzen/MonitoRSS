@@ -79,7 +79,10 @@ async function formatArticleForDiscord(
       })),
     }));
 
-    const withCustom = processCustomPlaceholders(flattened, customPlaceholderSteps);
+    const withCustom = processCustomPlaceholders(
+      flattened,
+      customPlaceholderSteps
+    );
 
     return { flattened: withCustom, raw: article.raw };
   }
@@ -109,11 +112,15 @@ export async function handleGetArticles(req: Request): Promise<Response> {
         findRssFromHtml: input.findRssFromHtml,
         executeFetch: input.executeFetch,
         executeFetchIfStale: input.executeFetchIfStale,
-        requestLookupDetails: input.requestLookupDetails ? {
-          key: input.requestLookupDetails.key,
-          url: input.requestLookupDetails.url ?? undefined,
-          headers: input.requestLookupDetails.headers as Record<string, string> | undefined,
-        } : null,
+        requestLookupDetails: input.requestLookupDetails
+          ? {
+              key: input.requestLookupDetails.key,
+              url: input.requestLookupDetails.url ?? undefined,
+              headers: input.requestLookupDetails.headers as
+                | Record<string, string>
+                | undefined,
+            }
+          : null,
       });
 
       if (fetchResult.articles.length === 0) {

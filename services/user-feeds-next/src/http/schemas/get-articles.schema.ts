@@ -16,8 +16,8 @@ export enum GetUserFeedArticlesFilterReturnType {
  * Select property type enum.
  */
 export enum SelectPropertyType {
-  Url = "Url",
-  ExternalInjections = "ExternalInjections",
+  Url = "url",
+  ExternalInjections = "externalInjections",
 }
 
 /**
@@ -74,17 +74,14 @@ const formatterOptionsSchema = z.object({
 const formatterSchema = z.object({
   options: formatterOptionsSchema,
   customPlaceholders: z.array(customPlaceholderSchema).optional().nullable(),
-  externalProperties: z
-    .array(externalFeedPropertySchema)
-    .optional()
-    .nullable(),
+  externalProperties: z.array(externalFeedPropertySchema).optional().nullable(),
 });
 
 /**
  * Filters schema.
  */
 const filtersSchema = z.object({
-  returnType: z.nativeEnum(GetUserFeedArticlesFilterReturnType),
+  returnType: z.enum(GetUserFeedArticlesFilterReturnType).optional(),
   expression: z.record(z.string(), z.unknown()).optional(),
   articleId: z.string().optional(),
   articleIdHashes: z.array(z.string()).optional(),
@@ -109,9 +106,7 @@ export const getArticlesInputSchema = z.object({
   skip: z.number().int().min(0).max(1000).default(0),
   random: z.boolean().optional(),
   selectProperties: z.array(z.string()).optional(),
-  selectPropertyTypes: z
-    .array(z.nativeEnum(SelectPropertyType))
-    .optional(),
+  selectPropertyTypes: z.array(z.nativeEnum(SelectPropertyType)).optional(),
   filters: filtersSchema.optional(),
   formatter: formatterSchema,
   findRssFromHtml: z.boolean().optional(),
