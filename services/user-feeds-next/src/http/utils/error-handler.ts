@@ -19,6 +19,7 @@ import {
   InvalidFeedException,
 } from "../../article-parser";
 import { jsonResponse } from "./response";
+import { logger } from "../../utils";
 
 /**
  * Request status for get-articles endpoint.
@@ -98,7 +99,13 @@ export function handleError(err: unknown): Response {
   }
 
   // Unexpected errors -> 500 INTERNAL_SERVER_ERROR
-  console.error("Unhandled error:", err);
+  const exception = err as Error;
+  logger.error(
+    `Unhandled error - ${exception.message || String(err)}`,
+    {
+      exception: exception.stack || exception,
+    }
+  );
   return jsonResponse({ message: "Internal Server Error" }, 500);
 }
 

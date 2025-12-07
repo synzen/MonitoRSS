@@ -1,5 +1,6 @@
 import type { SQL } from "bun";
 import type { ResponseHashStore } from "../feed-event-handler";
+import { logger } from "../utils";
 
 /**
  * Create a PostgreSQL-backed implementation of ResponseHashStore.
@@ -31,8 +32,9 @@ export function createPostgresResponseHashStore(sql: SQL): ResponseHashStore {
             updated_at = ${new Date()}
         `;
       } catch (err) {
-        console.error(`Failed to set response hash for feed ${feedId}`, {
+        logger.error(`Failed to set in cache storage`, {
           err: (err as Error).stack,
+          feedId,
         });
       }
     },

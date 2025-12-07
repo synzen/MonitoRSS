@@ -25,6 +25,7 @@ import {
 } from "../article-formatter";
 import { RegexEvalException } from "../article-formatter/exceptions";
 import type { FeedV2Event } from "../schemas";
+import { logger } from "../utils";
 import {
   ArticleDeliveryStatus,
   ArticleDeliveryErrorCode,
@@ -262,7 +263,7 @@ export async function initializeDiscordProducer(options: {
     clientId: options.clientId,
   });
   await discordProducer.initialize();
-  console.log("Discord REST producer initialized");
+  logger.info("Discord REST producer initialized");
 }
 
 export async function closeDiscordProducer(): Promise<void> {
@@ -293,7 +294,7 @@ export interface DiscordApiResponse {
 export function initializeDiscordApiClient(botToken: string): void {
   discordBotToken = botToken;
   discordHandler = new RESTHandler();
-  console.log("Discord REST handler initialized");
+  logger.info("Discord REST handler initialized");
 }
 
 export function closeDiscordApiClient(): void {
@@ -1195,14 +1196,13 @@ async function sendArticleToMedium(
       ];
     }
 
-    console.error(
-      `Failed to deliver article ${
-        article.flattened.id
-      } to Discord. Webhook: ${JSON.stringify(
-        medium.details.webhook
-      )}, channel: ${JSON.stringify(medium.details.channel)}`,
+    logger.error(
+      `Failed to deliver article ${article.flattened.id} to Discord webhook/channel`,
       {
-        err: (err as Error).stack,
+        webhook: medium.details.webhook,
+        channel: medium.details.channel,
+        mediumId: medium.id,
+        error: (err as Error).stack,
       }
     );
 

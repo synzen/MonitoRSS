@@ -1,5 +1,6 @@
 import type { ParsedArticlesCacheStore } from "../parsed-articles-cache";
 import type { RedisClient } from "./redis-client";
+import { logger } from "../utils";
 
 const KEY_PREFIX = "user-feeds:";
 const DEFAULT_EXPIRE_SECONDS = 60 * 5; // 5 minutes
@@ -28,7 +29,7 @@ export function createRedisParsedArticlesCacheStore(
         const result = await redisClient.exists(generateKey(key));
         return result === 1;
       } catch (err) {
-        console.error(
+        logger.error(
           `Failed to check existence of key ${key} in cache storage`,
           {
             err: (err as Error).stack,
@@ -42,7 +43,7 @@ export function createRedisParsedArticlesCacheStore(
       try {
         return await redisClient.get(generateKey(key));
       } catch (err) {
-        console.error(
+        logger.error(
           `Failed to get content with key ${key} from cache storage`,
           {
             err: (err as Error).stack,
@@ -67,7 +68,7 @@ export function createRedisParsedArticlesCacheStore(
             ex = ttl;
           }
         } catch (err) {
-          console.error(
+          logger.error(
             `Failed to get TTL of key ${key} from cache storage`,
             {
               err: (err as Error).stack,
@@ -79,7 +80,7 @@ export function createRedisParsedArticlesCacheStore(
       try {
         await redisClient.set(generateKey(key), value, { EX: ex });
       } catch (err) {
-        console.error(`Failed to set content in cache storage`, {
+        logger.error(`Failed to set content in cache storage`, {
           err: (err as Error).stack,
         });
       }
@@ -89,7 +90,7 @@ export function createRedisParsedArticlesCacheStore(
       try {
         await redisClient.del(generateKey(key));
       } catch (err) {
-        console.error(`Failed to delete content from cache storage`, {
+        logger.error(`Failed to delete content from cache storage`, {
           err: (err as Error).stack,
         });
       }
@@ -99,7 +100,7 @@ export function createRedisParsedArticlesCacheStore(
       try {
         return await redisClient.ttl(generateKey(key));
       } catch (err) {
-        console.error(`Failed to get TTL of key ${key} from cache storage`, {
+        logger.error(`Failed to get TTL of key ${key} from cache storage`, {
           err: (err as Error).stack,
         });
         return -1;
@@ -110,7 +111,7 @@ export function createRedisParsedArticlesCacheStore(
       try {
         await redisClient.expire(generateKey(key), seconds);
       } catch (err) {
-        console.error(`Failed to set expire for key ${key} in cache storage`, {
+        logger.error(`Failed to set expire for key ${key} in cache storage`, {
           err: (err as Error).stack,
         });
       }

@@ -1,5 +1,6 @@
 import { createClient, createCluster } from "redis";
 import type { RedisClientType, RedisClusterType } from "redis";
+import { logger } from "../utils";
 
 export type RedisClient = RedisClientType | RedisClusterType;
 
@@ -31,13 +32,13 @@ export async function initializeRedisClient(
   }
 
   client.on("error", (err) => {
-    console.error(`Redis client error: ${(err as Error).message}`, {
+    logger.error(`Redis client error: ${(err as Error).message}`, {
       stack: (err as Error).stack,
     });
   });
 
   await client.connect();
-  console.log("Successfully connected to Redis");
+  logger.info("Successfully connected to Redis");
 
   return client;
 }
@@ -61,9 +62,15 @@ export function getRedisClient(): RedisClient {
  */
 export async function closeRedisClient(): Promise<void> {
   if (client) {
-    client.removeAllListeners();
-    await client.disconnect();
-    client = null;
-    console.log("Successfully closed Redis client");
+    try {
+      client.removeAllListeners();
+      await client.disconnect();
+      client = null;
+      logger.info("Successfully closed Redis client");
+    } catch (err) {
+      logger.error("Failed to close Redis client", {
+        error: (err as Error).stack,
+      });
+    }
   }
 }

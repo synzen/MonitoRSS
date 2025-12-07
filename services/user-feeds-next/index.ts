@@ -1,6 +1,7 @@
 import { config } from "dotenv";
 import { Connection } from "rabbitmq-client";
 import { SQL } from "bun";
+import { logger } from "./src/utils";
 import {
   parseFeedV2Event,
   handleFeedV2Event,
@@ -90,9 +91,9 @@ async function main() {
     parsedArticlesCacheStore =
       createRedisParsedArticlesCacheStore(redisClient);
     processingLock = createRedisProcessingLock(redisClient);
-    console.log("Using Redis-backed cache store and processing lock");
+    logger.info("Using Redis-backed cache store and processing lock");
   } else {
-    console.log("No Redis URI configured, using in-memory stores");
+    logger.info("No Redis URI configured, using in-memory stores");
   }
 
   // Initialize PostgreSQL stores if configured, otherwise fall back to in-memory
@@ -103,15 +104,15 @@ async function main() {
 
   if (POSTGRES_URI) {
     sqlClient = new SQL(POSTGRES_URI);
-    console.log("Successfully connected to PostgreSQL");
+    logger.info("Successfully connected to PostgreSQL");
 
     deliveryRecordStore = createPostgresDeliveryRecordStore(sqlClient);
     articleFieldStore = createPostgresArticleFieldStore(sqlClient);
     responseHashStore = createPostgresResponseHashStore(sqlClient);
     feedRetryStore = createPostgresFeedRetryStore(sqlClient);
-    console.log("Using PostgreSQL-backed stores");
+    logger.info("Using PostgreSQL-backed stores");
   } else {
-    console.log("No PostgreSQL URI configured, using in-memory stores");
+    logger.info("No PostgreSQL URI configured, using in-memory stores");
   }
 
   // Initialize Discord REST producer (for async message enqueue)
@@ -125,19 +126,19 @@ async function main() {
 
   // Start HTTP server
   const httpServer = createHttpServer({ deliveryRecordStore }, HTTP_PORT);
-  console.log(`HTTP server listening on port ${HTTP_PORT}`);
+  logger.info(`HTTP server listening on port ${HTTP_PORT}`);
 
-  console.log("Connecting to RabbitMQ...");
+  logger.info("Connecting to RabbitMQ...");
 
   // Create RabbitMQ connection
   const connection = new Connection(RABBITMQ_URL);
 
   // Set up event handlers
   connection.on("error", (err) => {
-    console.error("RabbitMQ connection error:", err);
+    logger.error("RabbitMQ connection error", { error: (err as Error).stack });
   });
 
-  console.log("RabbitMQ connection initiated");
+  logger.info("RabbitMQ connection initiated");
 
   // Create a publisher function for sending messages to queues
   const publisher = async (queue: string, message: unknown): Promise<void> => {
@@ -160,7 +161,7 @@ async function main() {
       const event = parseFeedV2Event(msg.body);
 
       if (!event) {
-        console.error("Failed to parse message, skipping");
+        logger.error("Failed to parse message, skipping");
         return;
       }
 
@@ -169,7 +170,9 @@ async function main() {
       // Acquire processing lock to prevent concurrent processing of same feed
       const lockAcquired = await processingLock.acquire(feedId);
       if (!lockAcquired) {
-        console.log(`Feed ${feedId} is already being processed, skipping`);
+        logger.debug(
+          `User feed event for feed ${feedId} is already being processed, ignoring`
+        );
         return;
       }
 
@@ -188,10 +191,10 @@ async function main() {
   );
 
   feedEventConsumer.on("error", (err) => {
-    console.error("Feed event consumer error:", err);
+    logger.error("Feed event consumer error", { error: (err as Error).stack });
   });
 
-  console.log(
+  logger.debug(
     `Feed event consumer created with prefetch count: ${PREFETCH_COUNT}`
   );
 
@@ -206,7 +209,7 @@ async function main() {
       const deliveryResult = msg.body as DiscordDeliveryResult;
 
       if (!deliveryResult?.job || !deliveryResult?.result) {
-        console.error("Invalid delivery result message, skipping", {
+        logger.error("Invalid delivery result message, skipping", {
           hasJob: !!deliveryResult?.job,
           hasResult: !!deliveryResult?.result,
         });
@@ -216,18 +219,21 @@ async function main() {
       try {
         await handleArticleDeliveryResult(deliveryResult, publisher);
       } catch (err) {
-        console.error("Failed to handle delivery result", {
+        logger.warn("Failed to handle article delivery result", {
           error: (err as Error).stack,
+          result: deliveryResult,
         });
       }
     }
   );
 
   deliveryResultConsumer.on("error", (err) => {
-    console.error("Delivery result consumer error:", err);
+    logger.error("Delivery result consumer error", {
+      error: (err as Error).stack,
+    });
   });
 
-  console.log(
+  logger.debug(
     `Delivery result consumer created with prefetch count: ${PREFETCH_COUNT}`
   );
 
@@ -242,7 +248,7 @@ async function main() {
       const event = parseFeedDeletedEvent(msg.body);
 
       if (!event) {
-        console.error("Failed to parse feed deleted message, skipping");
+        logger.error("Failed to parse feed deleted message, skipping");
         return;
       }
 
@@ -253,7 +259,8 @@ async function main() {
           feedRetryStore,
         });
       } catch (err) {
-        console.error("Failed to handle feed deleted event", {
+        logger.error("Failed to handle feed deleted event", {
+          event,
           error: (err as Error).stack,
         });
       }
@@ -261,29 +268,50 @@ async function main() {
   );
 
   feedDeletedConsumer.on("error", (err) => {
-    console.error("Feed deleted consumer error:", err);
+    logger.error("Feed deleted consumer error", {
+      error: (err as Error).stack,
+    });
   });
 
-  console.log(
+  logger.debug(
     `Feed deleted consumer created with prefetch count: ${PREFETCH_COUNT}`
   );
 
   // Graceful shutdown
   const shutdown = async (signal: string) => {
-    console.log(`Received ${signal}, closing connections...`);
+    logger.info(`Received signal ${signal}. Shutting down...`);
+
     httpServer.stop();
-    console.log("HTTP server stopped");
+    logger.info("HTTP server stopped");
+
     await feedEventConsumer.close();
     await deliveryResultConsumer.close();
     await feedDeletedConsumer.close();
-    await connection.close();
+
+    try {
+      await connection.close();
+      logger.info("Successfully closed AMQP connection");
+    } catch (err) {
+      logger.error("Failed to close AMQP connection", {
+        error: (err as Error).stack,
+      });
+    }
+
     await closeDiscordProducer();
     closeDiscordApiClient();
     await closeRedisClient();
+
     if (sqlClient) {
-      await sqlClient.close();
-      console.log("Successfully closed PostgreSQL connection");
+      try {
+        await sqlClient.close();
+        logger.info("Successfully closed PostgreSQL connection");
+      } catch (err) {
+        logger.error("Failed to close PostgreSQL connection", {
+          error: (err as Error).stack,
+        });
+      }
     }
+
     process.exit(0);
   };
 
@@ -292,6 +320,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error("Failed to start:", err);
+  logger.error("Failed to start service", { error: (err as Error).stack });
   process.exit(1);
 });

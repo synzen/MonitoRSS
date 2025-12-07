@@ -3,6 +3,7 @@
  */
 
 import { jsonResponse } from "../utils/response";
+import { logger } from "../../utils";
 
 const API_KEY = process.env.USER_FEEDS_NEXT_API_KEY || "";
 
@@ -18,7 +19,7 @@ export function checkApiKey(req: Request): AuthResult {
   const apiKey = req.headers.get("api-key");
 
   if (!API_KEY) {
-    console.warn("USER_FEEDS_NEXT_API_KEY is not configured");
+    logger.warn("USER_FEEDS_NEXT_API_KEY is not configured");
     return {
       authorized: false,
       response: jsonResponse({ message: "Unauthorized" }, 401),

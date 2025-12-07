@@ -33,7 +33,6 @@ export async function initializeDiscordProducer(options: {
     clientId: options.clientId,
   });
   await discordProducer.initialize();
-  console.log("Discord REST producer initialized");
 }
 
 export async function closeDiscordProducer(): Promise<void> {

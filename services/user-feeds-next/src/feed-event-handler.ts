@@ -1,5 +1,6 @@
 import { feedV2EventSchema, type FeedV2Event } from "./schemas";
 import { z } from "zod";
+import { logger } from "./utils";
 import { fetchFeed, FeedResponseRequestStatus } from "./feed-fetcher";
 import {
   FeedRequestBadStatusCodeException,
@@ -136,11 +137,11 @@ export function parseFeedDeletedEvent(event: unknown): FeedDeletedEvent | null {
     return feedDeletedEventSchema.parse(event);
   } catch (err) {
     if (err instanceof z.ZodError) {
-      console.error("Validation failed on incoming Feed Deleted event", {
+      logger.error("Validation failed on incoming Feed Deleted event", {
         errors: err.issues,
       });
     } else {
-      console.error("Failed to parse Feed Deleted event", {
+      logger.error("Failed to parse Feed Deleted event", {
         error: (err as Error).stack,
       });
     }
@@ -166,7 +167,7 @@ export async function handleFeedDeletedEvent(
   } = options;
   const feedId = event.data.feed.id;
 
-  console.log(`Handling feed deleted event for feed ${feedId}`);
+  logger.debug("Received feed deleted event", { event });
 
   // Remove the response hash
   await responseHashStore.remove(feedId);
@@ -177,7 +178,7 @@ export async function handleFeedDeletedEvent(
   // Clear any retry records for this feed
   await feedRetryStore.remove(feedId);
 
-  console.log(`Cleaned up data for deleted feed ${feedId}`);
+  logger.debug(`Deleted feed info for feed ${feedId}`);
 }
 
 // ============================================================================
@@ -199,7 +200,7 @@ export async function handleArticleDeliveryResult(
 ): Promise<void> {
   const { processed, rejectionEvent } = processDeliveryResult(deliveryResult);
 
-  console.log(
+  logger.debug(
     `Delivery result for medium ${processed.meta.mediumId}: status=${processed.status}`,
     {
       feedId: processed.meta.feedId,
@@ -268,7 +269,7 @@ async function emitRejectionEvent(
       break;
   }
 
-  console.log(`Emitting rejection event: ${rejectedCode}`, {
+  logger.debug(`Emitting rejection event: ${rejectedCode}`, {
     feedId,
     mediumId,
   });
@@ -284,11 +285,15 @@ export function parseFeedV2Event(event: unknown): FeedV2Event | null {
     return feedV2EventSchema.parse(event);
   } catch (err) {
     if (err instanceof z.ZodError) {
-      console.error("Validation failed on incoming Feed V2 event", {
+      logger.error("Validation failed on incoming Feed V2 event", {
+        feedId: (event as { data?: { feed?: { id?: string } } })?.data?.feed
+          ?.id,
         errors: err.issues,
       });
     } else {
-      console.error("Failed to parse Feed V2 event", {
+      logger.error("Failed to parse Feed V2 event", {
+        feedId: (event as { data?: { feed?: { id?: string } } })?.data?.feed
+          ?.id,
         error: (err as Error).stack,
       });
     }
@@ -316,14 +321,25 @@ export async function handleFeedV2Event(
     publisher,
   } = options;
   const { feed } = event.data;
+  const isDebugFeed = event.debug === true;
+  const startTime = Date.now();
 
-  console.log(`Handling event for feed ${feed.id} with url ${feed.url}`);
+  // Helper function for debug logging
+  const debugLog = (message: string, data?: Record<string, unknown>) => {
+    if (isDebugFeed) {
+      logger.datadog(message, data);
+    }
+    logger.debug(message, data);
+  };
 
   // Wrap processing in nested contexts for batched inserts (matching user-feeds pattern)
+  let numberOfArticles = 0;
+  let eventError: string | undefined;
+
   return deliveryRecordStore.startContext(async () =>
     articleFieldStore.startContext(async () => {
       try {
-        return await handleFeedV2EventInternal({
+        const result = await handleFeedV2EventInternal({
           event,
           feed,
           responseHashStore,
@@ -332,17 +348,28 @@ export async function handleFeedV2Event(
           feedRetryStore,
           deliveryRecordStore,
           publisher,
+          debugLog,
         });
+        numberOfArticles = result?.length ?? 0;
+        return result;
+      } catch (err) {
+        eventError = (err as Error).stack;
+        logger.error("Failed to handle feed event", {
+          feedId: event.data.feed.id,
+          error: eventError,
+        });
+        throw err;
       } finally {
         // Flush pending inserts at the end (matching user-feeds order)
         try {
           const { affectedRows: articleRows } =
             await articleFieldStore.flushPendingInserts();
           if (articleRows > 0) {
-            console.log(`Flushed ${articleRows} article field inserts`);
+            logger.debug(`Flushed ${articleRows} article field inserts`);
           }
         } catch (err) {
-          console.error("Failed to flush article field inserts", {
+          logger.error("Failed to flush ORM while handling feed event", {
+            event,
             error: (err as Error).stack,
           });
         }
@@ -351,13 +378,29 @@ export async function handleFeedV2Event(
           const { affectedRows: deliveryRows } =
             await deliveryRecordStore.flushPendingInserts();
           if (deliveryRows > 0) {
-            console.log(`Flushed ${deliveryRows} delivery record inserts`);
+            logger.debug(`Flushed ${deliveryRows} delivery record inserts`);
           }
         } catch (err) {
-          console.error("Failed to flush delivery record inserts", {
+          logger.error("Failed to flush ORM while handling feed event", {
+            event,
             error: (err as Error).stack,
           });
         }
+
+        // Log timing information
+        const finishedTs = Date.now() - startTime;
+        logger.datadog(
+          !eventError
+            ? `Finished handling user feed event in ${finishedTs}ms`
+            : `Error while handling user event feed`,
+          {
+            duration: finishedTs,
+            feedId: event.data.feed.id,
+            feedURL: event.data.feed.url,
+            error: eventError,
+            numberOfArticles,
+          }
+        );
       }
     })
   );
@@ -372,6 +415,7 @@ async function handleFeedV2EventInternal({
   feedRetryStore,
   deliveryRecordStore,
   publisher,
+  debugLog,
 }: {
   event: FeedV2Event;
   feed: FeedV2Event["data"]["feed"];
@@ -381,14 +425,20 @@ async function handleFeedV2EventInternal({
   feedRetryStore: FeedRetryStore;
   deliveryRecordStore: DeliveryRecordStore;
   publisher?: FeedRetryPublisher;
+  debugLog: (message: string, data?: Record<string, unknown>) => void;
 }): Promise<ArticleDeliveryState[] | null> {
   // Get the stored hash if we have prior articles stored
   let hashToCompare: string | undefined;
-  if (await articleFieldStore.hasPriorArticlesStored(feed.id)) {
+  const hasPriorArticles = await articleFieldStore.hasPriorArticlesStored(
+    feed.id
+  );
+  if (hasPriorArticles) {
     const storedHash = await responseHashStore.get(feed.id);
     if (storedHash) {
       hashToCompare = storedHash;
     }
+  } else {
+    logger.debug(`No prior articles stored for feed ${feed.id}`);
   }
 
   // Fetch the feed
@@ -407,8 +457,12 @@ async function handleFeedV2EventInternal({
       err instanceof FeedRequestFetchException ||
       err instanceof FeedRequestTimedOutException
     ) {
-      console.log(
-        `Ignoring feed event due to expected exception: ${(err as Error).name}`
+      logger.info(
+        `Ignoring feed event due to expected exception: ${(err as Error).name}`,
+        {
+          feedId: feed.id,
+          feedUrl: feed.url,
+        }
       );
       return null;
     }
@@ -420,12 +474,16 @@ async function handleFeedV2EventInternal({
     response.requestStatus === FeedResponseRequestStatus.Pending ||
     response.requestStatus === FeedResponseRequestStatus.MatchedHash
   ) {
-    console.log(`No response body - pending request or matched hash`);
+    logger.debug(`No response body - pending request or matched hash`, {
+      feedId: feed.id,
+      requestStatus: response?.requestStatus,
+    });
     return null;
   }
 
-  console.log(
-    `Fetched feed body (${response.body.length} chars), hash: ${response.bodyHash}`
+  logger.debug(
+    `Fetched feed body (${response.body.length} chars), hash: ${response.bodyHash}`,
+    { feedId: feed.id }
   );
 
   // Parse articles from XML
@@ -448,7 +506,8 @@ async function handleFeedV2EventInternal({
             });
 
             if (res.requestStatus !== FeedResponseRequestStatus.Success) {
-              console.error(`Failed to fetch external content from ${url}`, {
+              logger.error(`Failed to fetch article injection`, {
+                sourceField: url,
                 status: res.requestStatus,
               });
 
@@ -478,11 +537,17 @@ async function handleFeedV2EventInternal({
     });
   } catch (err) {
     if (err instanceof FeedParseTimeoutException) {
-      console.error(`Feed parse timed out for ${feed.url}`);
+      logger.error(`Feed parse timed out for ${feed.url}`, {
+        feedId: feed.id,
+      });
       return null;
     }
     if (err instanceof InvalidFeedException) {
-      console.error(`Invalid feed for ${feed.url}: ${err.message}`);
+      logger.info(`Ignoring feed event due to invalid feed`, {
+        feedId: feed.id,
+        feedUrl: feed.url,
+        error: (err as Error).stack,
+      });
 
       // Handle retry logic for invalid feeds
       if (publisher) {
@@ -493,8 +558,8 @@ async function handleFeedV2EventInternal({
         });
 
         if (disabled) {
-          console.log(
-            `Feed ${feed.id} has been disabled after too many failures`
+          logger.info(
+            `Feed ${feed.id} exceeded retry limit for invalid feed, sending disable event`
           );
         }
       }
@@ -504,9 +569,18 @@ async function handleFeedV2EventInternal({
     throw err;
   }
 
-  console.log(
-    `Parsed ${parseResult.articles.length} articles from feed "${parseResult.feed.title || "Unknown"}"`
-  );
+  logger.debug(`Found articles`, {
+    feedId: feed.id,
+    titles: parseResult.articles.map((a) => a.flattened.title),
+  });
+
+  debugLog(`Debug feed ${feed.id}: found articles`, {
+    articles: parseResult.articles.map((a) => ({
+      id: a.flattened.id,
+      title: a.flattened.title,
+    })),
+    level: "debug",
+  });
 
   // Clear any retry records on successful parse
   await handleFeedParseSuccess({
@@ -553,14 +627,50 @@ async function handleFeedV2EventInternal({
     }
   );
 
-  console.log(
+  // Log detailed comparison results for debug feeds
+  debugLog(
+    `Debug feed ${feed.id}: ${comparisonResult.articlesToDeliver.length} new articles determined from ID checks`,
+    {
+      articles: comparisonResult.articlesToDeliver.map((a) => ({
+        id: a.flattened.id,
+        title: a.flattened.title,
+      })),
+    }
+  );
+
+  if (comparisonResult.articlesBlocked.length > 0) {
+    debugLog(
+      `Debug feed ${feed.id}: ${comparisonResult.articlesBlocked.length} articles blocked by comparisons`,
+      {
+        articles: comparisonResult.articlesBlocked.map((a) => ({
+          id: a.flattened.id,
+          title: a.flattened.title,
+        })),
+      }
+    );
+  }
+
+  if (comparisonResult.articlesPassed.length > 0) {
+    debugLog(
+      `Debug feed ${feed.id}: ${comparisonResult.articlesPassed.length} articles past passing comparisons`,
+      {
+        articles: comparisonResult.articlesPassed.map((a) => ({
+          id: a.flattened.id,
+          title: a.flattened.title,
+        })),
+      }
+    );
+  }
+
+  logger.debug(
     `Articles to deliver: ${comparisonResult.articlesToDeliver.length}, ` +
       `blocked: ${comparisonResult.articlesBlocked.length}, ` +
-      `passed comparisons: ${comparisonResult.articlesPassed.length}`
+      `passed comparisons: ${comparisonResult.articlesPassed.length}`,
+    { feedId: feed.id }
   );
 
   if (comparisonResult.articlesToDeliver.length === 0) {
-    console.log("No new articles to deliver");
+    logger.debug("No new articles to deliver", { feedId: feed.id });
 
     // Save the response hash since we successfully processed the feed
     if (response.bodyHash) {
@@ -641,8 +751,9 @@ async function handleFeedV2EventInternal({
     (r) => r.status === ArticleDeliveryStatus.Failed
   ).length;
 
-  console.log(
-    `Delivery complete: ${sent} sent, ${filtered} filtered, ${rateLimited} rate-limited, ${failed} failed`
+  logger.debug(
+    `Delivery complete: ${sent} sent, ${filtered} filtered, ${rateLimited} rate-limited, ${failed} failed`,
+    { feedId: feed.id }
   );
 
   // Save the response hash after successful delivery

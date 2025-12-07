@@ -38,7 +38,6 @@ export interface DiscordApiResponse {
 export function initializeDiscordApiClient(botToken: string): void {
   discordBotToken = botToken;
   discordHandler = new RESTHandler();
-  console.log("Discord REST handler initialized");
 }
 
 export function closeDiscordApiClient(): void {

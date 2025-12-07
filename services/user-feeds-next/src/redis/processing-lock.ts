@@ -1,4 +1,5 @@
 import type { RedisClient } from "./redis-client";
+import { logger } from "../utils";
 
 const KEY_PREFIX = "user-feeds:";
 const DEFAULT_LOCK_EXPIRE_SECONDS = 60 * 5; // 5 minutes
@@ -71,7 +72,7 @@ export function createRedisProcessingLock(
         // If oldValue is not null, someone else has the lock
         return oldValue === null;
       } catch (err) {
-        console.error(`Failed to acquire processing lock for feed ${feedId}`, {
+        logger.error(`Failed to acquire processing lock for feed ${feedId}`, {
           err: (err as Error).stack,
         });
         // On error, assume we didn't get the lock to be safe
@@ -85,7 +86,7 @@ export function createRedisProcessingLock(
       try {
         await redisClient.del(key);
       } catch (err) {
-        console.error(`Failed to release processing lock for feed ${feedId}`, {
+        logger.error(`Failed to release processing lock for feed ${feedId}`, {
           err: (err as Error).stack,
         });
       }

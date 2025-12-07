@@ -7,6 +7,7 @@ import type {
   PendingArticleFieldInsert,
 } from "../article-comparison";
 import type { Article } from "../article-parser";
+import { logger } from "../utils";
 
 const TABLE_NAME = "feed_article_field_partitioned";
 
@@ -262,7 +263,7 @@ export function createPostgresArticleFieldStore(sql: SQL): ArticleFieldStore {
 
         return { affectedRows };
       } catch (err) {
-        console.error("Error inserting into feed_article_field_partitioned", {
+        logger.error("Error inserting into feed_article_field_partitioned", {
           stack: (err as Error).stack,
         });
         throw err;

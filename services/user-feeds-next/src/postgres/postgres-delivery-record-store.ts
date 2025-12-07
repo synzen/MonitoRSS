@@ -12,6 +12,7 @@ import {
   ArticleDeliveryErrorCode,
   ArticleDeliveryStatus as DeliveryStatus,
 } from "../delivery-record-store";
+import { logger } from "../utils";
 
 const { Sent, Failed, Rejected, PendingDelivery, FilteredOut } = {
   Sent: "sent" as ArticleDeliveryStatus,
@@ -195,7 +196,7 @@ export function createPostgresDeliveryRecordStore(sql: SQL): DeliveryRecordStore
 
         return { affectedRows };
       } catch (err) {
-        console.error("Error inserting delivery records", {
+        logger.error("Error inserting delivery records", {
           stack: (err as Error).stack,
         });
         throw err;

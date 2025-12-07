@@ -1,6 +1,7 @@
 import type { SQL } from "bun";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import { logger } from "../utils";
 
 dayjs.extend(utc);
 
@@ -246,16 +247,16 @@ export async function runMigrations(sql: SQL): Promise<void> {
       continue;
     }
 
-    console.log(`Running migration ${migration.version}: ${migration.name}`);
+    logger.info(`Running migration ${migration.version}: ${migration.name}`);
     await migration.up(sql);
     await recordMigration(sql, migration);
     ranCount++;
   }
 
   if (ranCount === 0) {
-    console.log("Migrations: schema up to date");
+    logger.info("Migrations: schema up to date");
   } else {
-    console.log(`Migrations: ran ${ranCount} migration(s)`);
+    logger.info(`Migrations: ran ${ranCount} migration(s)`);
   }
 }
 
@@ -311,7 +312,9 @@ export async function ensurePartitionsExist(sql: SQL): Promise<void> {
   }
 
   if (created > 0) {
-    console.log(`Partitions: created ${created} partition(s)`);
+    logger.debug(`Partition tables created`, {
+      count: created,
+    });
   }
 }
 

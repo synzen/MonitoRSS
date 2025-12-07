@@ -1,6 +1,7 @@
 import { parse, valid } from "node-html-parser";
 import { INJECTED_ARTICLE_PLACEHOLDER_PREFIX } from "../constants";
 import { extractExtraInfo } from "./utils";
+import { logger } from "../utils";
 import type { Article } from "./types";
 
 /**
@@ -85,7 +86,7 @@ async function injectContentForArticle(
         const body = await fetchFn(sourceFieldValue);
 
         if (!body) {
-          console.error(`Failed to fetch external content`, {
+          logger.error(`Failed to fetch article injection`, {
             sourceField,
             sourceFieldValue,
           });

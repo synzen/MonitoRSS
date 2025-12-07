@@ -25,7 +25,7 @@ import {
   type ExternalFetchFn,
 } from "./inject-external-content";
 import { MAX_ARTICLE_INJECTION_ARTICLE_COUNT } from "../constants";
-import { chunkArray } from "../utils";
+import { chunkArray, logger } from "../utils";
 
 // Setup dayjs plugins
 dayjs.extend(timezone);
@@ -263,9 +263,13 @@ export async function parseArticlesFromXml(
           }
 
           if (idHashes.has(idHash)) {
-            console.warn(`Feed has duplicate article id hash: ${idHash}`, {
-              id: article.flattened.id,
-            });
+            logger.warn(
+              `Feed has duplicate article id hash: ${article.flattened.idHash}`,
+              {
+                id: article.flattened.id,
+                idHash,
+              }
+            );
           }
 
           idHashes.add(idHash);
@@ -277,7 +281,7 @@ export async function parseArticlesFromXml(
           options.externalFetchFn &&
           mappedArticles.length <= MAX_ARTICLE_INJECTION_ARTICLE_COUNT
         ) {
-          console.log(
+          logger.debug(
             `Injecting external content for ${mappedArticles.length} articles with ${options.externalFeedProperties.length} properties`
           );
 
@@ -293,7 +297,7 @@ export async function parseArticlesFromXml(
             await new Promise((res) => setTimeout(res, 1000));
           }
 
-          console.log(`External content injection complete`);
+          logger.debug(`External content injection complete`);
         }
 
         resolve({
