@@ -196,6 +196,46 @@ services:
     networks:
       - monitorss-default
 
+  # user-feeds-next services (Bun-based replacement for user-feeds)
+  user-feeds-next-service:
+    restart: on-failure:5
+    build:
+      context: services/user-feeds-next
+      dockerfile: Dockerfile
+    depends_on:
+      - feed-requests-postgres-db
+      - feed-requests-service
+      - rabbitmq-broker
+    healthcheck:
+      test: "wget --no-verbose --tries=1 --spider http://127.0.0.1:5000/v1/user-feeds/health || exit 1"
+      interval: 5s
+      timeout: 5s
+      retries: 3
+    environment:
+      - USER_FEEDS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/userfeeds
+      - USER_FEEDS_API_PORT=5000
+      - USER_FEEDS_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672
+      - USER_FEEDS_FEED_REQUESTS_API_URL=http://feed-requests-service:5000/v1/feed-requests
+      - USER_FEEDS_FEED_REQUESTS_API_KEY=feed-requests-api-key
+      - USER_FEEDS_API_KEY=user-feeds-api-key
+      - USER_FEEDS_REDIS_URI=redis://feed-requests-redis-cache:6379
+      - USER_FEEDS_REDIS_DISABLE_CLUSTER=true
+    networks:
+      - monitorss-default
+
+  user-feeds-next-postgres-migration:
+    restart: on-failure:5
+    build:
+      context: services/user-feeds-next
+      dockerfile: Dockerfile
+    command: bun run scripts/run-migrations.ts
+    depends_on:
+      - feed-requests-postgres-db
+    environment:
+      - USER_FEEDS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/userfeeds
+    networks:
+      - monitorss-default
+
   # Schedule emitter
   schedule-emitter-service:
     build:

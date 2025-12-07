@@ -31,7 +31,7 @@ export function createHttpServer(
   return Bun.serve({
     port,
     routes: {
-      "/health": () => jsonResponse({ status: "ok" }),
+      "/v1/user-feeds/health": () => jsonResponse({ status: "ok" }),
 
       "/v1/user-feeds/filter-validation": {
         POST: (req) => handleFilterValidation(req),

@@ -57,24 +57,27 @@ import { createHttpServer } from "./src/http";
 config();
 
 const RABBITMQ_URL =
-  process.env.USER_FEEDS_RABBITMQ_URL ||
+  process.env.USER_FEEDS_RABBITMQ_BROKER_URL ||
   "amqp://guest:guest@rabbitmq-broker:5672";
 const DISCORD_CLIENT_ID = process.env.USER_FEEDS_DISCORD_CLIENT_ID || "";
-const DISCORD_BOT_TOKEN = process.env.USER_FEEDS_DISCORD_BOT_TOKEN || "";
+const DISCORD_BOT_TOKEN = process.env.USER_FEEDS_DISCORD_API_TOKEN || "";
 const REDIS_URI = process.env.USER_FEEDS_REDIS_URI;
 const REDIS_DISABLE_CLUSTER =
   process.env.USER_FEEDS_REDIS_DISABLE_CLUSTER === "true";
 const POSTGRES_URI = process.env.USER_FEEDS_POSTGRES_URI;
-const HTTP_PORT = parseInt(process.env.USER_FEEDS_HTTP_PORT || "5000", 10);
+const HTTP_PORT = parseInt(process.env.USER_FEEDS_API_PORT || "5000", 10);
 const ARTICLE_PERSISTENCE_MONTHS = parseInt(
-  process.env.USER_FEEDS_ARTICLE_PERSISTENCE_MONTHS || "2",
+  process.env.USER_FEEDS_ARTICLE_PERSISTENCE_MONTHS || "12",
   10
 );
 const DELIVERY_RECORD_PERSISTENCE_MONTHS = parseInt(
-  process.env.USER_FEEDS_DELIVERY_RECORD_PERSISTENCE_MONTHS || "1",
+  process.env.USER_FEEDS_DELIVERY_RECORD_PERSISTENCE_MONTHS || "2",
   10
 );
-const PREFETCH_COUNT = 100;
+const PREFETCH_COUNT = parseInt(
+  process.env.USER_FEEDS_PREFETCH_COUNT || "100",
+  10
+);
 const PARTITION_MANAGEMENT_INTERVAL_MS = 60000 * 24; // 24 minutes (matches user-feeds)
 const START_TARGET = process.env.USER_FEEDS_START_TARGET; // "service" | "api" | undefined
 
@@ -218,7 +221,7 @@ async function startServiceMode(
     throw new Error("USER_FEEDS_DISCORD_CLIENT_ID is required");
   }
   if (!DISCORD_BOT_TOKEN) {
-    throw new Error("USER_FEEDS_DISCORD_BOT_TOKEN is required");
+    throw new Error("USER_FEEDS_DISCORD_API_TOKEN is required");
   }
 
   // Initialize Discord REST producer and API client

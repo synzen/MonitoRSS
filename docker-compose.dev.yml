@@ -133,14 +133,74 @@ services:
       - LOG_LEVEL=debug
       - NODE_ENV=local
 
+  # user-feeds-service:
+  #   extends:
+  #     file: docker-compose.base.yml
+  #     service: user-feeds-service
+  #   volumes:
+  #     - ./services/user-feeds:/usr/src/app
+  #     - /usr/src/app/node_modules/
+  #   command: npm run start:watch
+  #   env_file:
+  #     - ./.env.local
+  #   environment:
+  #     - LOG_LEVEL=debug
+  #     - USER_FEEDS_START_TARGET=service
+  #     - NODE_ENV=local
+  #     - USER_FEEDS_FEED_REQUESTS_API_URL=http://feed-requests-api:5000/v1/feed-requests
+  #     - USER_FEEDS_FEED_REQUESTS_GRPC_URL=dns:///feed-requests-service:4999
+
+  # user-feeds-api:
+  #   extends:
+  #     file: docker-compose.base.yml
+  #     service: user-feeds-service
+  #   volumes:
+  #     - ./services/user-feeds:/usr/src/app
+  #     - /usr/src/app/node_modules/
+  #   ports:
+  #     - "5001:5000"
+  #   command: npm run start:watch
+  #   env_file:
+  #     - ./.env.local
+  #   environment:
+  #     - LOG_LEVEL=debug
+  #     - USER_FEEDS_START_TARGET=api
+  #     - NODE_ENV=local
+  #     - USER_FEEDS_FEED_REQUESTS_API_URL=http://feed-requests-api:5000/v1/feed-requests
+  #     - USER_FEEDS_FEED_REQUESTS_GRPC_URL=dns:///feed-requests-service:4999
+  #   networks:
+  #     - monitorss-default
+
+  # user-feeds-postgres-migration:
+  #   extends:
+  #     file: docker-compose.base.yml
+  #     service: user-feeds-postgres-migration
+  #   command: npm run migration:up
+  #   env_file:
+  #     - ./.env.local
+  #   environment:
+  #     - NODE_ENV=local
+
+  # user-feeds-next replaces user-feeds
+  user-feeds-postgres-migration:
+    extends:
+      file: docker-compose.base.yml
+      service: user-feeds-next-postgres-migration
+    build:
+      context: services/user-feeds-next
+      dockerfile: Dockerfile.dev
+    env_file:
+      - ./.env.local
+    environment:
+      - NODE_ENV=local
+
   user-feeds-service:
     extends:
       file: docker-compose.base.yml
-      service: user-feeds-service
-    volumes:
-      - ./services/user-feeds:/usr/src/app
-      - /usr/src/app/node_modules/
-    command: npm run start:watch
+      service: user-feeds-next-service
+    build:
+      context: services/user-feeds-next
+      dockerfile: Dockerfile.dev
     env_file:
       - ./.env.local
     environment:
@@ -148,18 +208,25 @@ services:
       - USER_FEEDS_START_TARGET=service
       - NODE_ENV=local
       - USER_FEEDS_FEED_REQUESTS_API_URL=http://feed-requests-api:5000/v1/feed-requests
-      - USER_FEEDS_FEED_REQUESTS_GRPC_URL=dns:///feed-requests-service:4999
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./services/user-feeds-next
+          target: /usr/src/app
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: ./services/user-feeds-next/package.json
 
   user-feeds-api:
     extends:
       file: docker-compose.base.yml
-      service: user-feeds-service
-    volumes:
-      - ./services/user-feeds:/usr/src/app
-      - /usr/src/app/node_modules/
+      service: user-feeds-next-service
+    build:
+      context: services/user-feeds-next
+      dockerfile: Dockerfile.dev
     ports:
       - "5001:5000"
-    command: npm run start:watch
     env_file:
       - ./.env.local
     environment:
@@ -167,19 +234,15 @@ services:
       - USER_FEEDS_START_TARGET=api
       - NODE_ENV=local
       - USER_FEEDS_FEED_REQUESTS_API_URL=http://feed-requests-api:5000/v1/feed-requests
-      - USER_FEEDS_FEED_REQUESTS_GRPC_URL=dns:///feed-requests-service:4999
-    networks:
-      - monitorss-default
-
-  user-feeds-postgres-migration:
-    extends:
-      file: docker-compose.base.yml
-      service: user-feeds-postgres-migration
-    command: npm run migration:up
-    env_file:
-      - ./.env.local
-    environment:
-      - NODE_ENV=local
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./services/user-feeds-next
+          target: /usr/src/app
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: ./services/user-feeds-next/package.json
 
   # Schedule emitter
   schedule-emitter-service:
