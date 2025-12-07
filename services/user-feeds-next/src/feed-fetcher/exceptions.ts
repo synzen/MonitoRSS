@@ -49,3 +49,10 @@ export class FeedRequestTimedOutException extends Error {
     this.name = "FeedRequestTimedOutException";
   }
 }
+
+export class FeedArticleNotFoundException extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "FeedArticleNotFoundException";
+  }
+}

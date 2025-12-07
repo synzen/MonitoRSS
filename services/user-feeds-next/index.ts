@@ -48,6 +48,7 @@ import {
   createPostgresResponseHashStore,
   createPostgresFeedRetryStore,
 } from "./src/postgres";
+import { createHttpServer } from "./src/http";
 
 // Load environment variables
 config();
@@ -61,6 +62,7 @@ const REDIS_URI = process.env.USER_FEEDS_NEXT_REDIS_URI;
 const REDIS_DISABLE_CLUSTER =
   process.env.USER_FEEDS_NEXT_REDIS_DISABLE_CLUSTER === "true";
 const POSTGRES_URI = process.env.USER_FEEDS_NEXT_POSTGRES_URI;
+const HTTP_PORT = parseInt(process.env.USER_FEEDS_NEXT_HTTP_PORT || "5000", 10);
 const PREFETCH_COUNT = 100;
 
 // Global SQL client for shutdown
@@ -120,6 +122,10 @@ async function main() {
 
   // Initialize Discord API client (for synchronous calls like forum thread creation)
   initializeDiscordApiClient(DISCORD_BOT_TOKEN);
+
+  // Start HTTP server
+  const httpServer = createHttpServer({ deliveryRecordStore }, HTTP_PORT);
+  console.log(`HTTP server listening on port ${HTTP_PORT}`);
 
   console.log("Connecting to RabbitMQ...");
 
@@ -265,6 +271,8 @@ async function main() {
   // Graceful shutdown
   const shutdown = async (signal: string) => {
     console.log(`Received ${signal}, closing connections...`);
+    httpServer.stop();
+    console.log("HTTP server stopped");
     await feedEventConsumer.close();
     await deliveryResultConsumer.close();
     await feedDeletedConsumer.close();

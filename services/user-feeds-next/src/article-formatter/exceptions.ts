@@ -32,3 +32,19 @@ export class CustomPlaceholderRegexEvalException extends RegexEvalException {
     this.name = "CustomPlaceholderRegexEvalException";
   }
 }
+
+/**
+ * Exception thrown specifically for filter regex evaluation failures.
+ * Extends RegexEvalException for type discrimination in catch blocks.
+ */
+export class FiltersRegexEvalException extends RegexEvalException {
+  constructor(
+    message: string,
+    options?: {
+      regexErrors: Error[];
+    }
+  ) {
+    super(message, options);
+    this.name = "FiltersRegexEvalException";
+  }
+}

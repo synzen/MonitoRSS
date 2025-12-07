@@ -1,0 +1,320 @@
+import { describe, it, expect, beforeAll, afterAll } from "bun:test";
+import type { Server } from "bun";
+import { createHttpServer } from "../src/http";
+import { inMemoryDeliveryRecordStore } from "../src/delivery-record-store";
+
+// Must match USER_FEEDS_NEXT_API_KEY in docker-compose.test.yml
+const TEST_API_KEY = "test-api-key";
+const TEST_PORT = 5555;
+
+// Type for JSON response bodies
+type JsonBody = Record<string, unknown>;
+
+let server: Server<undefined>;
+let baseUrl: string;
+
+describe("HTTP API (e2e)", () => {
+  beforeAll(() => {
+    // Start the HTTP server
+    server = createHttpServer(
+      { deliveryRecordStore: inMemoryDeliveryRecordStore },
+      TEST_PORT
+    );
+    baseUrl = `http://localhost:${TEST_PORT}`;
+  });
+
+  afterAll(() => {
+    server.stop();
+  });
+
+  describe("POST /v1/user-feeds/filter-validation", () => {
+    const endpoint = "/v1/user-feeds/filter-validation";
+
+    it("returns 401 without API key", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ expression: {} }),
+      });
+
+      expect(response.status).toBe(401);
+      const body = (await response.json()) as JsonBody;
+      expect(body.message).toBe("Unauthorized");
+    });
+
+    it("returns 401 with invalid API key", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": "wrong-key",
+        },
+        body: JSON.stringify({ expression: {} }),
+      });
+
+      expect(response.status).toBe(401);
+      const body = (await response.json()) as JsonBody;
+      expect(body.message).toBe("Unauthorized");
+    });
+
+    it("validates a valid logical expression with no errors", async () => {
+      const validExpression = {
+        type: "LOGICAL",
+        op: "AND",
+        children: [
+          {
+            type: "RELATIONAL",
+            op: "EQ",
+            left: { type: "ARTICLE", value: "title" },
+            right: { type: "STRING", value: "test" },
+          },
+        ],
+      };
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({ expression: validExpression }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const result = body.result as JsonBody;
+      expect(result).toBeDefined();
+      expect(result.errors).toEqual([]);
+    });
+
+    it("validates expression with OR operator", async () => {
+      const validExpression = {
+        type: "LOGICAL",
+        op: "OR",
+        children: [
+          {
+            type: "RELATIONAL",
+            op: "CONTAINS",
+            left: { type: "ARTICLE", value: "description" },
+            right: { type: "STRING", value: "keyword" },
+          },
+          {
+            type: "RELATIONAL",
+            op: "MATCHES",
+            left: { type: "ARTICLE", value: "title" },
+            right: { type: "STRING", value: "^test.*" },
+          },
+        ],
+      };
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({ expression: validExpression }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const result = body.result as JsonBody;
+      expect(result.errors).toEqual([]);
+    });
+
+    it("returns errors for invalid expression type", async () => {
+      const invalidExpression = {
+        type: "INVALID",
+        op: "AND",
+        children: [],
+      };
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({ expression: invalidExpression }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const result = body.result as JsonBody;
+      const errors = result.errors as string[];
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors[0]).toContain("type");
+      expect(errors[0]).toContain("LOGICAL");
+    });
+
+    it("returns errors for invalid operator", async () => {
+      const invalidExpression = {
+        type: "LOGICAL",
+        op: "INVALID_OP",
+        children: [],
+      };
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({ expression: invalidExpression }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const result = body.result as JsonBody;
+      const errors = result.errors as string[];
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors[0]).toContain("op");
+    });
+
+    it("returns errors for missing children", async () => {
+      const invalidExpression = {
+        type: "LOGICAL",
+        op: "AND",
+        // missing children
+      };
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({ expression: invalidExpression }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const result = body.result as JsonBody;
+      const errors = result.errors as string[];
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors[0]).toContain("children");
+    });
+
+    it("returns errors for invalid child expression type", async () => {
+      const invalidExpression = {
+        type: "LOGICAL",
+        op: "AND",
+        children: [
+          {
+            type: "UNKNOWN_TYPE",
+            op: "EQ",
+          },
+        ],
+      };
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({ expression: invalidExpression }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const result = body.result as JsonBody;
+      const errors = result.errors as string[];
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors[0]).toContain("type");
+    });
+
+    it("validates nested logical expressions", async () => {
+      const nestedExpression = {
+        type: "LOGICAL",
+        op: "AND",
+        children: [
+          {
+            type: "LOGICAL",
+            op: "OR",
+            children: [
+              {
+                type: "RELATIONAL",
+                op: "EQ",
+                left: { type: "ARTICLE", value: "title" },
+                right: { type: "STRING", value: "test1" },
+              },
+              {
+                type: "RELATIONAL",
+                op: "EQ",
+                left: { type: "ARTICLE", value: "title" },
+                right: { type: "STRING", value: "test2" },
+              },
+            ],
+          },
+          {
+            type: "RELATIONAL",
+            op: "CONTAINS",
+            left: { type: "ARTICLE", value: "description" },
+            right: { type: "STRING", value: "keyword" },
+          },
+        ],
+      };
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({ expression: nestedExpression }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const result = body.result as JsonBody;
+      expect(result.errors).toEqual([]);
+    });
+
+    it("returns 400 for invalid JSON body", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: "not valid json",
+      });
+
+      expect(response.status).toBe(400);
+    });
+
+    it("returns 400 for missing expression field", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({}),
+      });
+
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe("GET /health", () => {
+    it("returns health status", async () => {
+      const response = await fetch(`${baseUrl}/health`);
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      expect(body.status).toBe("ok");
+    });
+  });
+
+  describe("404 handling", () => {
+    it("returns 404 for unknown routes", async () => {
+      const response = await fetch(`${baseUrl}/unknown-route`);
+
+      expect(response.status).toBe(404);
+      const body = (await response.json()) as JsonBody;
+      expect(body.error).toBe("Not Found");
+    });
+  });
+});

@@ -31,6 +31,7 @@ services:
     environment:
       USER_FEEDS_NEXT_POSTGRES_URI: postgres://postgres:postgres@postgres:5432/userfeeds_test
       USER_FEEDS_NEXT_REDIS_URI: redis://redis:6379
+      USER_FEEDS_NEXT_API_KEY: test-api-key
     volumes:
       - ./src:/app/src
       - ./test:/app/test

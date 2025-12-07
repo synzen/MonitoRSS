@@ -2,6 +2,37 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import type { Article } from "./article-parser";
 
 // ============================================================================
+// Delivery Log Status (matches user-feeds DeliveryLogStatus)
+// ============================================================================
+
+export enum DeliveryLogStatus {
+  DELIVERED = "DELIVERED",
+  PENDING_DELIVERY = "PENDING_DELIVERY",
+  FAILED = "FAILED",
+  REJECTED = "REJECTED",
+  FILTERED_OUT = "FILTERED_OUT",
+  MEDIUM_RATE_LIMITED = "MEDIUM_RATE_LIMITED",
+  ARTICLE_RATE_LIMITED = "ARTICLE_RATE_LIMITED",
+  PARTIALLY_DELIVERED = "PARTIALLY_DELIVERED",
+}
+
+/**
+ * Delivery log entry for API response.
+ */
+export interface DeliveryLog {
+  id: string;
+  mediumId: string;
+  createdAt: string;
+  status: DeliveryLogStatus;
+  articleIdHash?: string | null;
+  details?: {
+    message?: string;
+    data?: Record<string, unknown>;
+  };
+  articleData: Record<string, string> | null;
+}
+
+// ============================================================================
 // Types (matching user-feeds exactly)
 // ============================================================================
 
@@ -192,6 +223,16 @@ export interface DeliveryRecordStore {
     filter: { mediumId?: string; feedId?: string },
     secondsInPast: number
   ): Promise<number>;
+
+  /**
+   * Get delivery logs for a feed.
+   * Used by the HTTP API.
+   */
+  getDeliveryLogs(options: {
+    feedId: string;
+    skip: number;
+    limit: number;
+  }): Promise<DeliveryLog[]>;
 }
 
 // ============================================================================
@@ -431,6 +472,123 @@ export function createInMemoryDeliveryRecordStore(): DeliveryRecordStore & {
       }
 
       return count;
+    },
+
+    async getDeliveryLogs(options: {
+      feedId: string;
+      skip: number;
+      limit: number;
+    }): Promise<DeliveryLog[]> {
+      const { feedId, skip, limit } = options;
+
+      // Get all parent records (no parent_id) for this feed
+      const parentRecords = Array.from(records.values())
+        .filter((r) => r.feedId === feedId && r.parentId === null)
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(skip, skip + limit);
+
+      // Get child records for these parents
+      const parentIds = new Set(parentRecords.map((r) => r.id));
+      const childRecords = Array.from(records.values()).filter(
+        (r) => r.feedId === feedId && r.parentId && parentIds.has(r.parentId)
+      );
+
+      return parentRecords.map((record) => {
+        const children = childRecords.filter(
+          (child) => child.parentId === record.id
+        );
+
+        let status: DeliveryLogStatus;
+        const details: { message?: string; data?: Record<string, unknown> } = {
+          message: undefined,
+          data: undefined,
+        };
+
+        if (record.status === ArticleDeliveryStatus.Sent) {
+          if (children.some((c) => c.status !== ArticleDeliveryStatus.Sent)) {
+            status = DeliveryLogStatus.PARTIALLY_DELIVERED;
+          } else {
+            status = DeliveryLogStatus.DELIVERED;
+          }
+        } else if (record.status === ArticleDeliveryStatus.Rejected) {
+          status = DeliveryLogStatus.REJECTED;
+
+          try {
+            if (record.externalDetail) {
+              details.data = JSON.parse(record.externalDetail)?.data;
+            }
+          } catch {}
+
+          if (
+            record.errorCode === ArticleDeliveryErrorCode.NoChannelOrWebhook ||
+            record.errorCode === ArticleDeliveryErrorCode.ThirdPartyNotFound
+          ) {
+            details.message = "Connection destination does not exist";
+          } else if (
+            record.errorCode === ArticleDeliveryErrorCode.ThirdPartyBadRequest
+          ) {
+            details.message = "Invalid message format";
+            try {
+              if (record.externalDetail) {
+                details.data = JSON.parse(record.externalDetail);
+              }
+            } catch {}
+          } else if (
+            record.errorCode === ArticleDeliveryErrorCode.ThirdPartyForbidden
+          ) {
+            details.message =
+              "Missing permissions to send to connection destination";
+          } else if (
+            record.errorCode === ArticleDeliveryErrorCode.ThirdPartyInternal
+          ) {
+            details.message =
+              "Connection target service was experiencing internal errors";
+          } else if (record.errorCode === ArticleDeliveryErrorCode.Internal) {
+            details.message = "Internal error";
+          } else if (
+            record.errorCode === ArticleDeliveryErrorCode.ArticleProcessingError
+          ) {
+            details.message =
+              "Failed to parse article content with current configuration";
+            try {
+              if (record.externalDetail) {
+                details.data = JSON.parse(record.externalDetail)?.message;
+              }
+            } catch {}
+          }
+        } else if (record.status === ArticleDeliveryStatus.Failed) {
+          status = DeliveryLogStatus.FAILED;
+        } else if (record.status === ArticleDeliveryStatus.PendingDelivery) {
+          status = DeliveryLogStatus.PENDING_DELIVERY;
+        } else if (record.status === ArticleDeliveryStatus.RateLimited) {
+          status = DeliveryLogStatus.ARTICLE_RATE_LIMITED;
+        } else if (
+          record.status === ArticleDeliveryStatus.MediumRateLimitedByUser
+        ) {
+          status = DeliveryLogStatus.MEDIUM_RATE_LIMITED;
+        } else if (record.status === ArticleDeliveryStatus.FilteredOut) {
+          status = DeliveryLogStatus.FILTERED_OUT;
+          try {
+            if (record.externalDetail) {
+              details.data = JSON.parse(record.externalDetail);
+            }
+          } catch {}
+        } else {
+          throw new Error(
+            `Unhandled article delivery status: ${record.status} for record: ${record.id}`
+          );
+        }
+
+        return {
+          id: record.id,
+          mediumId: record.mediumId,
+          createdAt: record.createdAt.toISOString(),
+          details,
+          articleIdHash: record.articleIdHash,
+          status,
+          articleData: record.articleData,
+        };
+      });
     },
   };
 

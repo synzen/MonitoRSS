@@ -357,6 +357,14 @@ const feedV2EventRequestLookupDetails = z.object({
   headers: z.record(z.string(), z.string()).optional(),
 });
 
+// Export individual schemas for API use
+export { discordMediumPayloadDetailsSchema };
+export { feedV2EventSchemaFormatOptions };
+export { feedV2EventSchemaDateChecks };
+export { feedV2EventRequestLookupDetails };
+export { externalFeedPropertySchema };
+export { componentV2Schema };
+
 export const feedV2EventSchema = z.object({
   timestamp: z.number().optional(),
   debug: z.boolean().optional(),
