@@ -375,6 +375,40 @@ export function formatValueForDiscord(
   };
 }
 
+/**
+ * Format an article for Discord output.
+ * Converts HTML in all article fields to Discord markdown and processes custom placeholders.
+ * This matches the behavior of user-feeds DiscordMediumService.formatArticle.
+ */
+export function formatArticleForDiscord(
+  article: Article,
+  options?: FormatOptions
+): Article {
+  const flattened: FlattenedArticle = {
+    id: article.flattened.id,
+    idHash: article.flattened.idHash,
+  };
+
+  // Format each property for Discord
+  for (const [key, value] of Object.entries(article.flattened)) {
+    if (key === "id" || key === "idHash") continue;
+
+    const { value: formatted } = formatValueForDiscord(value, options);
+    flattened[key] = formatted;
+  }
+
+  // Process custom placeholders
+  if (options?.customPlaceholders?.length) {
+    const withCustom = processCustomPlaceholders(
+      flattened,
+      options.customPlaceholders
+    );
+    return { flattened: withCustom, raw: article.raw };
+  }
+
+  return { flattened, raw: article.raw };
+}
+
 // ============================================================================
 // Discord Component Types
 // ============================================================================

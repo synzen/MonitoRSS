@@ -22,6 +22,8 @@ import {
   generateThreadName,
   buildForumThreadBody,
   getForumTagsToSend,
+  formatArticleForDiscord,
+  CustomPlaceholderStepType,
 } from "../article-formatter";
 import { RegexEvalException } from "../article-formatter/exceptions";
 import type { FeedV2Event } from "../schemas";
@@ -592,7 +594,22 @@ function generatePayloadsForMedium(
   article: Article,
   medium: DeliveryMedium
 ): DiscordMessageApiPayload[] {
-  return generateDiscordPayloads(article, {
+  // Convert custom placeholders to the proper format
+  const customPlaceholders = medium.details.customPlaceholders?.map((cp) => ({
+    ...cp,
+    steps: cp.steps.map((s) => ({
+      ...s,
+      type: s.type as CustomPlaceholderStepType,
+    })),
+  }));
+
+  // Format article for Discord (HTML to markdown conversion, custom placeholders)
+  const formattedArticle = formatArticleForDiscord(article, {
+    ...medium.details.formatter,
+    customPlaceholders,
+  });
+
+  return generateDiscordPayloads(formattedArticle, {
     content: medium.details.content,
     embeds: medium.details.embeds?.map((e) => ({
       ...e,
@@ -618,10 +635,7 @@ function generatePayloadsForMedium(
     placeholderLimits: medium.details.placeholderLimits,
     enablePlaceholderFallback: medium.details.enablePlaceholderFallback,
     mentions: medium.details.mentions,
-    customPlaceholders: medium.details.customPlaceholders?.map((cp) => ({
-      ...cp,
-      steps: cp.steps.map((s) => ({ ...s, type: s.type as never })),
-    })),
+    customPlaceholders,
   });
 }
 

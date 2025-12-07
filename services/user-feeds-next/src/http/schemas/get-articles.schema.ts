@@ -4,6 +4,7 @@
  */
 
 import { z } from "zod";
+import { CustomPlaceholderStepType } from "../../article-formatter";
 
 /**
  * Filter return type enum.
@@ -22,11 +23,27 @@ export enum SelectPropertyType {
 
 /**
  * Custom placeholder step schema.
+ * Matches user-feeds CustomPlaceholderStep discriminated union.
  */
-const customPlaceholderStepSchema = z.object({
-  regexSearch: z.string().min(1),
-  replacementString: z.string().optional().nullable(),
-});
+const customPlaceholderStepSchema = z.union([
+  z.object({
+    type: z
+      .literal(CustomPlaceholderStepType.Regex)
+      .default(CustomPlaceholderStepType.Regex),
+    regexSearch: z.string().min(1),
+    regexSearchFlags: z.string().optional().nullable(),
+    replacementString: z.string().optional().nullable(),
+  }),
+  z.object({ type: z.literal(CustomPlaceholderStepType.UrlEncode) }),
+  z.object({
+    type: z.literal(CustomPlaceholderStepType.DateFormat),
+    format: z.string(),
+    timezone: z.string().optional().nullable(),
+    locale: z.string().optional().nullable(),
+  }),
+  z.object({ type: z.literal(CustomPlaceholderStepType.Uppercase) }),
+  z.object({ type: z.literal(CustomPlaceholderStepType.Lowercase) }),
+]);
 
 /**
  * Custom placeholder schema.

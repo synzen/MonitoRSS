@@ -5,6 +5,7 @@ export {
   processCustomPlaceholders,
   generateDiscordPayloads,
   formatValueForDiscord,
+  formatArticleForDiscord,
   getNestedPrimitiveValue,
   CustomPlaceholderStepType,
   DiscordComponentType,

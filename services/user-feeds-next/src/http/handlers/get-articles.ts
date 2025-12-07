@@ -14,8 +14,7 @@ import { getArticlesInputSchema } from "../schemas";
 import { findOrFetchFeedArticles } from "../../services/articles.service";
 import { queryForArticles } from "../../services/feeds.service";
 import {
-  formatValueForDiscord,
-  processCustomPlaceholders,
+  formatArticleForDiscord,
   CustomPlaceholderStepType,
 } from "../../article-formatter";
 import type { Article } from "../../article-parser";
@@ -25,69 +24,46 @@ import {
 } from "../../article-formatter/exceptions";
 
 /**
- * Format an article for Discord output.
- * Matches DiscordMediumService.formatArticle behavior.
+ * Convert schema custom placeholders to the format expected by formatArticleForDiscord.
+ * Supports all step types: Regex, UrlEncode, DateFormat, Uppercase, Lowercase.
  */
-async function formatArticleForDiscord(
-  article: Article,
-  options: {
-    stripImages?: boolean;
-    formatTables?: boolean;
-    disableImageLinkPreviews?: boolean;
-    ignoreNewLines?: boolean;
-    customPlaceholders?: Array<{
-      id: string;
-      referenceName: string;
-      sourcePlaceholder: string;
-      steps: Array<{
-        regexSearch?: string;
-        regexSearchFlags?: string;
-        replacementString?: string | null;
-      }>;
-    }> | null;
-  }
-): Promise<Article> {
-  const flattened: Article["flattened"] = {
-    id: article.flattened.id,
-    idHash: article.flattened.idHash,
-  };
-
-  // Format each property for Discord
-  for (const [key, value] of Object.entries(article.flattened)) {
-    if (key === "id" || key === "idHash") continue;
-
-    const { value: formatted } = formatValueForDiscord(value, {
-      stripImages: options.stripImages,
-      formatTables: options.formatTables,
-      disableImageLinkPreviews: options.disableImageLinkPreviews,
-      ignoreNewLines: options.ignoreNewLines,
-    });
-    flattened[key] = formatted;
+function convertCustomPlaceholders(
+  schemaPlaceholders:
+    | Array<{
+        id: string;
+        referenceName: string;
+        sourcePlaceholder: string;
+        steps: Array<{
+          type: CustomPlaceholderStepType;
+          regexSearch?: string;
+          regexSearchFlags?: string | null;
+          replacementString?: string | null;
+          format?: string;
+          timezone?: string | null;
+          locale?: string | null;
+        }>;
+      }>
+    | null
+    | undefined
+) {
+  if (!schemaPlaceholders?.length) {
+    return undefined;
   }
 
-  // Process custom placeholders
-  if (options.customPlaceholders?.length) {
-    const customPlaceholderSteps = options.customPlaceholders.map((cp) => ({
-      id: cp.id,
-      referenceName: cp.referenceName,
-      sourcePlaceholder: cp.sourcePlaceholder,
-      steps: cp.steps.map((step) => ({
-        type: CustomPlaceholderStepType.Regex,
-        regexSearch: step.regexSearch,
-        regexSearchFlags: step.regexSearchFlags ?? undefined,
-        replacementString: step.replacementString ?? undefined,
-      })),
-    }));
-
-    const withCustom = processCustomPlaceholders(
-      flattened,
-      customPlaceholderSteps
-    );
-
-    return { flattened: withCustom, raw: article.raw };
-  }
-
-  return { flattened, raw: article.raw };
+  return schemaPlaceholders.map((cp) => ({
+    id: cp.id,
+    referenceName: cp.referenceName,
+    sourcePlaceholder: cp.sourcePlaceholder,
+    steps: cp.steps.map((step) => ({
+      type: step.type,
+      regexSearch: step.regexSearch,
+      regexSearchFlags: step.regexSearchFlags ?? undefined,
+      replacementString: step.replacementString ?? undefined,
+      format: step.format,
+      timezone: step.timezone ?? undefined,
+      locale: step.locale ?? undefined,
+    })),
+  }));
 }
 
 export async function handleGetArticles(req: Request): Promise<Response> {
@@ -138,13 +114,13 @@ export async function handleGetArticles(req: Request): Promise<Response> {
       }
 
       // Format articles for Discord
-      const formattedArticles = await Promise.all(
-        fetchResult.articles.map((article) =>
-          formatArticleForDiscord(article, {
-            ...input.formatter.options,
-            customPlaceholders: input.formatter.customPlaceholders,
-          })
-        )
+      const formattedArticles = fetchResult.articles.map((article) =>
+        formatArticleForDiscord(article, {
+          ...input.formatter.options,
+          customPlaceholders: convertCustomPlaceholders(
+            input.formatter.customPlaceholders
+          ),
+        })
       );
 
       const {

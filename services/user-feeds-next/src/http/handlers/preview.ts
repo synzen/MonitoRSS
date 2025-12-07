@@ -14,12 +14,11 @@ import {
 } from "../../schemas/feed-v2-event.schema";
 import {
   generateDiscordPayloads,
-  processCustomPlaceholders,
-  formatValueForDiscord,
+  formatArticleForDiscord,
   CustomPlaceholderStepType,
   type CustomPlaceholder,
 } from "../../article-formatter";
-import type { Article, FlattenedArticle } from "../../article-parser";
+import type { Article } from "../../article-parser";
 import {
   CustomPlaceholderRegexEvalException,
   FiltersRegexEvalException,
@@ -33,46 +32,6 @@ enum TestDeliveryMedium {
 enum TestDeliveryStatus {
   Success = "SUCCESS",
   NoArticles = "NO_ARTICLES",
-}
-
-/**
- * Format article for Discord with custom placeholders.
- */
-function formatArticleForDiscord(
-  article: Article,
-  options: {
-    stripImages?: boolean;
-    formatTables?: boolean;
-    disableImageLinkPreviews?: boolean;
-    ignoreNewLines?: boolean;
-    customPlaceholders?: CustomPlaceholder[];
-  }
-): Article {
-  const flattened: FlattenedArticle = {
-    id: article.flattened.id,
-    idHash: article.flattened.idHash,
-  };
-
-  // Format each property for Discord
-  for (const [key, value] of Object.entries(article.flattened)) {
-    if (key === "id" || key === "idHash") continue;
-
-    const { value: formatted } = formatValueForDiscord(value, {
-      stripImages: options.stripImages,
-      formatTables: options.formatTables,
-      disableImageLinkPreviews: options.disableImageLinkPreviews,
-      ignoreNewLines: options.ignoreNewLines,
-    });
-    flattened[key] = formatted;
-  }
-
-  // Process custom placeholders
-  if (options.customPlaceholders?.length) {
-    const withCustom = processCustomPlaceholders(flattened, options.customPlaceholders);
-    return { flattened: withCustom, raw: article.raw };
-  }
-
-  return { flattened, raw: article.raw };
 }
 
 export async function handlePreview(req: Request): Promise<Response> {
