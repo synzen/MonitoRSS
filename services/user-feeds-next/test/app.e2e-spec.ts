@@ -1,21 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll } from "bun:test";
+import { describe, it, expect } from "bun:test";
 import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../src/delivery";
-import {
-  setupIntegrationTests,
-  teardownIntegrationTests,
-} from "./setup-integration-tests";
 import getTestRssFeed, { DEFAULT_TEST_ARTICLES } from "./data/test-rss-feed";
 import { createTestContext } from "./helpers/test-context";
 
-describe("App (e2e)", () => {
-  beforeAll(async () => {
-    await setupIntegrationTests();
-  });
+// Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
 
-  afterAll(async () => {
-    await teardownIntegrationTests();
-  });
+describe("App (e2e)", () => {
 
   it("sends new articles based on guid", async () => {
     const ctx = createTestContext();
