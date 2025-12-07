@@ -57,21 +57,21 @@ import { createHttpServer } from "./src/http";
 config();
 
 const RABBITMQ_URL =
-  process.env.USER_FEEDS_NEXT_RABBITMQ_URL ||
+  process.env.USER_FEEDS_RABBITMQ_URL ||
   "amqp://guest:guest@rabbitmq-broker:5672";
-const DISCORD_CLIENT_ID = process.env.USER_FEEDS_NEXT_DISCORD_CLIENT_ID || "";
-const DISCORD_BOT_TOKEN = process.env.USER_FEEDS_NEXT_DISCORD_BOT_TOKEN || "";
-const REDIS_URI = process.env.USER_FEEDS_NEXT_REDIS_URI;
+const DISCORD_CLIENT_ID = process.env.USER_FEEDS_DISCORD_CLIENT_ID || "";
+const DISCORD_BOT_TOKEN = process.env.USER_FEEDS_DISCORD_BOT_TOKEN || "";
+const REDIS_URI = process.env.USER_FEEDS_REDIS_URI;
 const REDIS_DISABLE_CLUSTER =
-  process.env.USER_FEEDS_NEXT_REDIS_DISABLE_CLUSTER === "true";
-const POSTGRES_URI = process.env.USER_FEEDS_NEXT_POSTGRES_URI;
-const HTTP_PORT = parseInt(process.env.USER_FEEDS_NEXT_HTTP_PORT || "5000", 10);
+  process.env.USER_FEEDS_REDIS_DISABLE_CLUSTER === "true";
+const POSTGRES_URI = process.env.USER_FEEDS_POSTGRES_URI;
+const HTTP_PORT = parseInt(process.env.USER_FEEDS_HTTP_PORT || "5000", 10);
 const ARTICLE_PERSISTENCE_MONTHS = parseInt(
-  process.env.USER_FEEDS_NEXT_ARTICLE_PERSISTENCE_MONTHS || "2",
+  process.env.USER_FEEDS_ARTICLE_PERSISTENCE_MONTHS || "2",
   10
 );
 const DELIVERY_RECORD_PERSISTENCE_MONTHS = parseInt(
-  process.env.USER_FEEDS_NEXT_DELIVERY_RECORD_PERSISTENCE_MONTHS || "1",
+  process.env.USER_FEEDS_DELIVERY_RECORD_PERSISTENCE_MONTHS || "1",
   10
 );
 const PREFETCH_COUNT = 100;
@@ -83,10 +83,10 @@ let sqlClient: SQL | null = null;
 async function main() {
   // Validate required environment variables
   if (!DISCORD_CLIENT_ID) {
-    throw new Error("USER_FEEDS_NEXT_DISCORD_CLIENT_ID is required");
+    throw new Error("USER_FEEDS_DISCORD_CLIENT_ID is required");
   }
   if (!DISCORD_BOT_TOKEN) {
-    throw new Error("USER_FEEDS_NEXT_DISCORD_BOT_TOKEN is required");
+    throw new Error("USER_FEEDS_DISCORD_BOT_TOKEN is required");
   }
 
   // Initialize Redis if configured, otherwise fall back to in-memory stores
@@ -99,8 +99,7 @@ async function main() {
       uri: REDIS_URI,
       disableCluster: REDIS_DISABLE_CLUSTER,
     });
-    parsedArticlesCacheStore =
-      createRedisParsedArticlesCacheStore(redisClient);
+    parsedArticlesCacheStore = createRedisParsedArticlesCacheStore(redisClient);
     processingLock = createRedisProcessingLock(redisClient);
     logger.info("Using Redis-backed cache store and processing lock");
   } else {

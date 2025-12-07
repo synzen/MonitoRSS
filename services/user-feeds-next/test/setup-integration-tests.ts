@@ -42,7 +42,7 @@ export async function setupIntegrationTests(): Promise<{
 }> {
   // Get connection string from environment
   const postgresUri =
-    process.env.USER_FEEDS_NEXT_POSTGRES_URI ||
+    process.env.USER_FEEDS_POSTGRES_URI ||
     "postgres://postgres:postgres@localhost:5433/userfeeds_test";
 
   console.log(`Connecting to PostgreSQL at ${postgresUri}`);
@@ -79,7 +79,9 @@ export async function setupIntegrationTests(): Promise<{
  */
 export async function cleanupTestData(): Promise<void> {
   if (!sql) {
-    throw new Error("SQL client not initialized. Call setupIntegrationTests first.");
+    throw new Error(
+      "SQL client not initialized. Call setupIntegrationTests first."
+    );
   }
 
   await truncateAllTables(sql);
@@ -117,7 +119,9 @@ export function getStores(): {
     !responseHashStore ||
     !feedRetryStore
   ) {
-    throw new Error("Stores not initialized. Call setupIntegrationTests first.");
+    throw new Error(
+      "Stores not initialized. Call setupIntegrationTests first."
+    );
   }
 
   return {

@@ -24,7 +24,7 @@ services:
     env_file:
       - .env
     environment:
-      - USER_FEEDS_NEXT_RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - USER_FEEDS_RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules

@@ -1,6 +1,6 @@
 import setupLogger from "@monitorss/logger";
 
-const datadogApiKey = process.env.USER_FEEDS_NEXT_DATADOG_API_KEY;
+const datadogApiKey = process.env.USER_FEEDS_DATADOG_API_KEY;
 
 const logger = setupLogger({
   env: process.env.NODE_ENV as string,

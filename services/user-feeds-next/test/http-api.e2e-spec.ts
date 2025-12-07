@@ -3,7 +3,7 @@ import type { Server } from "bun";
 import { createHttpServer } from "../src/http";
 import { inMemoryDeliveryRecordStore } from "../src/delivery-record-store";
 
-// Must match USER_FEEDS_NEXT_API_KEY in docker-compose.test.yml
+// Must match USER_FEEDS_API_KEY in docker-compose.test.yml
 const TEST_API_KEY = "test-api-key";
 const TEST_PORT = 5555;
 
