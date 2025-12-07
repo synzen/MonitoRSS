@@ -48,6 +48,8 @@ import {
   createPostgresArticleFieldStore,
   createPostgresResponseHashStore,
   createPostgresFeedRetryStore,
+  ensurePartitionsExist,
+  pruneOldPartitions,
 } from "./src/postgres";
 import { createHttpServer } from "./src/http";
 
@@ -64,7 +66,16 @@ const REDIS_DISABLE_CLUSTER =
   process.env.USER_FEEDS_NEXT_REDIS_DISABLE_CLUSTER === "true";
 const POSTGRES_URI = process.env.USER_FEEDS_NEXT_POSTGRES_URI;
 const HTTP_PORT = parseInt(process.env.USER_FEEDS_NEXT_HTTP_PORT || "5000", 10);
+const ARTICLE_PERSISTENCE_MONTHS = parseInt(
+  process.env.USER_FEEDS_NEXT_ARTICLE_PERSISTENCE_MONTHS || "2",
+  10
+);
+const DELIVERY_RECORD_PERSISTENCE_MONTHS = parseInt(
+  process.env.USER_FEEDS_NEXT_DELIVERY_RECORD_PERSISTENCE_MONTHS || "1",
+  10
+);
 const PREFETCH_COUNT = 100;
+const PARTITION_MANAGEMENT_INTERVAL_MS = 60000 * 24; // 24 minutes (matches user-feeds)
 
 // Global SQL client for shutdown
 let sqlClient: SQL | null = null;
@@ -111,6 +122,35 @@ async function main() {
     responseHashStore = createPostgresResponseHashStore(sqlClient);
     feedRetryStore = createPostgresFeedRetryStore(sqlClient);
     logger.info("Using PostgreSQL-backed stores");
+
+    // Run partition management on startup
+    await ensurePartitionsExist(sqlClient);
+    await pruneOldPartitions(sqlClient, {
+      articlePersistenceMonths: ARTICLE_PERSISTENCE_MONTHS,
+      deliveryRecordPersistenceMonths: DELIVERY_RECORD_PERSISTENCE_MONTHS,
+    });
+
+    // Schedule recurring partition management
+    setInterval(async () => {
+      logger.info("Running recurring task to prune and create partitions...");
+      try {
+        await ensurePartitionsExist(sqlClient!);
+        await pruneOldPartitions(sqlClient!, {
+          articlePersistenceMonths: ARTICLE_PERSISTENCE_MONTHS,
+          deliveryRecordPersistenceMonths: DELIVERY_RECORD_PERSISTENCE_MONTHS,
+        });
+        logger.info(
+          "Recurring task to prune and create partitions ran successfully"
+        );
+      } catch (err) {
+        logger.error(
+          "Failed to run recurring task to prune and create partitions",
+          {
+            error: (err as Error).stack,
+          }
+        );
+      }
+    }, PARTITION_MANAGEMENT_INTERVAL_MS);
   } else {
     logger.info("No PostgreSQL URI configured, using in-memory stores");
   }

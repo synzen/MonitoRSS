@@ -318,6 +318,185 @@ export async function ensurePartitionsExist(sql: SQL): Promise<void> {
   }
 }
 
+// ============================================================================
+// Partition Management
+// ============================================================================
+
+interface PartitionInfo {
+  parentSchema: string;
+  parent: string;
+  childSchema: string;
+  child: string;
+}
+
+/**
+ * Extract year and month from partition name like "feed_article_field_partitioned_y2025m12"
+ */
+function parsePartitionDate(partitionName: string): { year: number; month: number } | null {
+  const match = partitionName.match(/_y(\d+)m(\d+)$/);
+  if (!match || !match[1] || !match[2]) return null;
+  return { year: parseInt(match[1], 10), month: parseInt(match[2], 10) };
+}
+
+/**
+ * Get all current partitions for a given parent table, sorted chronologically (oldest first).
+ */
+async function getCurrentPartitions(
+  sql: SQL,
+  tableName: string
+): Promise<PartitionInfo[]> {
+  const result = await sql.unsafe(`
+    SELECT
+      nmsp_parent.nspname AS parent_schema,
+      parent.relname      AS parent,
+      nmsp_child.nspname  AS child_schema,
+      child.relname       AS child
+    FROM pg_inherits
+      JOIN pg_class parent            ON pg_inherits.inhparent = parent.oid
+      JOIN pg_class child             ON pg_inherits.inhrelid   = child.oid
+      JOIN pg_namespace nmsp_parent   ON nmsp_parent.oid  = parent.relnamespace
+      JOIN pg_namespace nmsp_child    ON nmsp_child.oid   = child.relnamespace
+    WHERE parent.relname='${tableName}';
+  `);
+
+  const partitions = result.map(
+    (row: {
+      parent_schema: string;
+      parent: string;
+      child_schema: string;
+      child: string;
+    }) => ({
+      parentSchema: row.parent_schema,
+      parent: row.parent,
+      childSchema: row.child_schema,
+      child: row.child,
+    })
+  );
+
+  // Sort chronologically by year and month (oldest first)
+  partitions.sort((a: PartitionInfo, b: PartitionInfo) => {
+    const dateA = parsePartitionDate(a.child);
+    const dateB = parsePartitionDate(b.child);
+    if (!dateA || !dateB) return 0;
+    if (dateA.year !== dateB.year) return dateA.year - dateB.year;
+    return dateA.month - dateB.month;
+  });
+
+  return partitions;
+}
+
+/**
+ * Prune old partitions based on persistence configuration.
+ * Currently just logs which partitions would be dropped (matching user-feeds behavior).
+ */
+export async function pruneOldPartitions(
+  sql: SQL,
+  options: {
+    articlePersistenceMonths: number;
+    deliveryRecordPersistenceMonths: number;
+  }
+): Promise<void> {
+  const startOfMonth = dayjs().utc().startOf("month");
+  const thisMonthDate = startOfMonth;
+  const nextMonthDate = startOfMonth.add(1, "month");
+
+  // Names of partitions that should never be dropped (current/next month)
+  const protectedPartitions = [
+    `feed_article_field_partitioned_y${thisMonthDate.year()}m${thisMonthDate.month() + 1}`,
+    `feed_article_field_partitioned_y${nextMonthDate.year()}m${nextMonthDate.month() + 1}`,
+    `delivery_record_partitioned_y${thisMonthDate.year()}m${thisMonthDate.month() + 1}`,
+    `delivery_record_partitioned_y${nextMonthDate.year()}m${nextMonthDate.month() + 1}`,
+  ];
+
+  // Prune feed_article_field_partitioned
+  try {
+    const articlePartitions = await getCurrentPartitions(
+      sql,
+      "feed_article_field_partitioned"
+    );
+
+    const numberOfArticlePartitionsToDrop =
+      articlePartitions.length - options.articlePersistenceMonths;
+
+    if (numberOfArticlePartitionsToDrop > 0) {
+      const articleTablesToDrop = articlePartitions
+        .slice(0, numberOfArticlePartitionsToDrop)
+        .filter((partition) => !protectedPartitions.includes(partition.child));
+
+      if (articleTablesToDrop.length) {
+        logger.info(
+          `Will eventually drop partitions for feed_article_field_partitioned`,
+          {
+            partitions: articleTablesToDrop.map((partition) => partition.child),
+          }
+        );
+
+        // Uncomment below to actually drop partitions:
+        // await Promise.all(
+        //   articleTablesToDrop.map(async (partition) => {
+        //     await sql.unsafe(
+        //       `DROP TABLE IF EXISTS ${partition.childSchema}.${partition.child};`
+        //     );
+        //   })
+        // );
+      }
+    }
+  } catch (err) {
+    logger.error(
+      "Failed to prune old partitions for feed_article_field_partitioned",
+      {
+        error: (err as Error).stack,
+      }
+    );
+  }
+
+  // Prune delivery_record_partitioned
+  try {
+    const deliveryPartitions = await getCurrentPartitions(
+      sql,
+      "delivery_record_partitioned"
+    );
+
+    if (deliveryPartitions.length > 1) {
+      const numberOfDeliveryPartitionsToDrop =
+        deliveryPartitions.length - options.deliveryRecordPersistenceMonths;
+
+      if (numberOfDeliveryPartitionsToDrop > 0) {
+        const deliveryTablesToDrop = deliveryPartitions
+          .slice(0, numberOfDeliveryPartitionsToDrop)
+          .filter((partition) => !protectedPartitions.includes(partition.child));
+
+        if (deliveryTablesToDrop.length) {
+          logger.info(
+            `Will eventually drop partitions for delivery_record_partitioned`,
+            {
+              partitions: deliveryTablesToDrop.map(
+                (partition) => partition.child
+              ),
+            }
+          );
+
+          // Uncomment below to actually drop partitions:
+          // await Promise.all(
+          //   deliveryTablesToDrop.map(async (partition) => {
+          //     await sql.unsafe(
+          //       `DROP TABLE IF EXISTS ${partition.childSchema}.${partition.child};`
+          //     );
+          //   })
+          // );
+        }
+      }
+    }
+  } catch (err) {
+    logger.error(
+      "Failed to prune old partitions for delivery_record_partitioned",
+      {
+        error: (err as Error).stack,
+      }
+    );
+  }
+}
+
 /**
  * Truncate all tables (for testing).
  * Does not drop tables or types.
