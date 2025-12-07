@@ -16,7 +16,7 @@ import {
   type FetchFeedResult,
 } from "./types";
 
-const SERVICE_HOST =
+const DEFAULT_SERVICE_HOST =
   process.env.USER_FEEDS_FEED_REQUESTS_API_URL || "http://feed-requests:5000";
 const API_KEY = process.env.USER_FEEDS_FEED_REQUESTS_API_KEY || "";
 
@@ -29,15 +29,17 @@ export async function fetchFeed(
     retries?: number;
     hashToCompare?: string;
     lookupDetails?: FeedRequestLookupDetails | null;
+    serviceHost?: string;
   }
 ): Promise<FetchFeedResult> {
+  const serviceHost = options?.serviceHost ?? DEFAULT_SERVICE_HOST;
   let statusCode: number;
   let body: { json: () => Promise<unknown> };
 
   try {
     const response = await pRetry(
       async () =>
-        request(SERVICE_HOST, {
+        request(serviceHost, {
           method: "POST",
           body: JSON.stringify({
             url,
@@ -90,7 +92,7 @@ async function handleFetchResponse({
     }
 
     throw new FeedRequestServerStatusException(
-      `Bad status code for ${SERVICE_HOST} (${statusCode}) (${JSON.stringify(bodyJson)}).`
+      `Bad status code for feed requests API (${statusCode}) (${JSON.stringify(bodyJson)}).`
     );
   }
 

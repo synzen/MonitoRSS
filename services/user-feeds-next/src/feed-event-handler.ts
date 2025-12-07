@@ -313,6 +313,7 @@ export async function handleFeedV2Event(
     deliveryRecordStore?: DeliveryRecordStore;
     discordClient?: DiscordRestClient;
     publisher?: FeedRetryPublisher;
+    feedRequestsServiceHost?: string;
   } = {}
 ): Promise<ArticleDeliveryState[] | null> {
   const {
@@ -323,6 +324,7 @@ export async function handleFeedV2Event(
     deliveryRecordStore = inMemoryDeliveryRecordStore,
     discordClient = inMemoryDiscordRestClient,
     publisher,
+    feedRequestsServiceHost,
   } = options;
   const { feed } = event.data;
   const isDebugFeed = event.debug === true;
@@ -354,6 +356,7 @@ export async function handleFeedV2Event(
           discordClient,
           publisher,
           debugLog,
+          feedRequestsServiceHost,
         });
         numberOfArticles = result?.length ?? 0;
         return result;
@@ -422,6 +425,7 @@ async function handleFeedV2EventInternal({
   discordClient,
   publisher,
   debugLog,
+  feedRequestsServiceHost,
 }: {
   event: FeedV2Event;
   feed: FeedV2Event["data"]["feed"];
@@ -433,6 +437,7 @@ async function handleFeedV2EventInternal({
   discordClient: DiscordRestClient;
   publisher?: FeedRetryPublisher;
   debugLog: (message: string, data?: Record<string, unknown>) => void;
+  feedRequestsServiceHost?: string;
 }): Promise<ArticleDeliveryState[] | null> {
   // Get the stored hash if we have prior articles stored
   let hashToCompare: string | undefined;
@@ -455,6 +460,7 @@ async function handleFeedV2EventInternal({
     response = await fetchFeed(feed.requestLookupDetails?.url || feed.url, {
       hashToCompare,
       lookupDetails: feed.requestLookupDetails,
+      serviceHost: feedRequestsServiceHost,
     });
   } catch (err) {
     if (
@@ -510,6 +516,7 @@ async function handleFeedV2EventInternal({
               executeFetchIfNotInCache: true,
               retries: 3,
               lookupDetails: undefined,
+              serviceHost: feedRequestsServiceHost,
             });
 
             if (res.requestStatus !== FeedResponseRequestStatus.Success) {

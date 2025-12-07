@@ -5,11 +5,9 @@ import {
   beforeAll,
   afterAll,
   beforeEach,
-  mock,
 } from "bun:test";
 import { randomUUID } from "crypto";
 import { handleFeedV2Event } from "../src/feed-event-handler";
-import { FeedResponseRequestStatus } from "../src/feed-fetcher";
 import { ArticleDeliveryStatus } from "../src/delivery";
 import {
   createTestDiscordRestClient,
@@ -17,26 +15,13 @@ import {
 } from "../src/discord-rest";
 import {
   setupIntegrationTests,
-  cleanupTestData,
   teardownIntegrationTests,
   getStores,
+  getTestFeedRequestsServer,
 } from "./setup-integration-tests";
 import getTestRssFeed, { DEFAULT_TEST_ARTICLES } from "./data/test-rss-feed";
 import generateTestFeedV2Event from "./data/test-feed-v2-event";
 import type { FeedV2Event } from "../src/schemas";
-
-// Mock the fetchFeed function
-let mockFetchFeed = mock(async () => ({
-  requestStatus: FeedResponseRequestStatus.Success,
-  body: getTestRssFeed(),
-  bodyHash: "bodyhash",
-}));
-
-// Apply mocks before import
-mock.module("../src/feed-fetcher/feed-fetcher", () => ({
-  fetchFeed: () => mockFetchFeed(),
-  FeedResponseRequestStatus,
-}));
 
 describe("App (e2e)", () => {
   const setupTestCase = async (
@@ -54,6 +39,7 @@ describe("App (e2e)", () => {
       deliveryRecordStore: stores.deliveryRecordStore,
       responseHashStore: stores.responseHashStore,
       feedRetryStore: stores.feedRetryStore,
+      feedRequestsServiceHost: stores.feedRequestsServiceHost,
       discordClient,
     });
     // Clear captured payloads from initialization
@@ -73,29 +59,29 @@ describe("App (e2e)", () => {
   });
 
   beforeEach(async () => {
-    // Reset mocks to default behavior
-    mockFetchFeed = mock(async () => ({
-      requestStatus: FeedResponseRequestStatus.Success,
+    // Reset server to default behavior
+    const testServer = getTestFeedRequestsServer();
+    testServer.setResponse(() => ({
       body: getTestRssFeed(),
-      bodyHash: "bodyhash",
     }));
+    testServer.clear();
   });
 
   it("sends new articles based on guid", async () => {
     const stores = getStores();
+    const testServer = getTestFeedRequestsServer();
     const discordClient: TestDiscordRestClient = createTestDiscordRestClient();
 
     const { testFeedV2Event } = await setupTestCase(discordClient);
 
     // Override fetch to return ONLY a new article (replace: true)
     // This simulates a feed where a new article appeared and old one dropped off
-    mockFetchFeed = mock(async () => ({
-      requestStatus: FeedResponseRequestStatus.Success,
+    testServer.setResponse(() => ({
       body: getTestRssFeed(
         [{ guid: "new-article", title: "New Article Title" }],
         true
       ),
-      bodyHash: randomUUID(),
+      hash: randomUUID(),
     }));
 
     const results = await handleFeedV2Event(testFeedV2Event, {
@@ -103,6 +89,7 @@ describe("App (e2e)", () => {
       deliveryRecordStore: stores.deliveryRecordStore,
       responseHashStore: stores.responseHashStore,
       feedRetryStore: stores.feedRetryStore,
+      feedRequestsServiceHost: stores.feedRequestsServiceHost,
       discordClient,
     });
 
@@ -116,6 +103,7 @@ describe("App (e2e)", () => {
 
   it("does not send new articles if blocked by comparisons", async () => {
     const stores = getStores();
+    const testServer = getTestFeedRequestsServer();
     const discordClient: TestDiscordRestClient = createTestDiscordRestClient();
 
     const baseEvent = generateTestFeedV2Event();
@@ -141,19 +129,19 @@ describe("App (e2e)", () => {
       deliveryRecordStore: stores.deliveryRecordStore,
       responseHashStore: stores.responseHashStore,
       feedRetryStore: stores.feedRetryStore,
+      feedRequestsServiceHost: stores.feedRequestsServiceHost,
       discordClient,
     });
 
     // Fetch returns article with different guid but same title as existing article
-    mockFetchFeed = mock(async () => ({
-      requestStatus: FeedResponseRequestStatus.Success,
+    testServer.setResponse(() => ({
       body: getTestRssFeed([
         {
           guid: randomUUID(),
           title: DEFAULT_TEST_ARTICLES[0]!.title,
         },
       ]),
-      bodyHash: randomUUID(),
+      hash: randomUUID(),
     }));
 
     const results = await handleFeedV2Event(testFeedV2Event, {
@@ -161,6 +149,7 @@ describe("App (e2e)", () => {
       deliveryRecordStore: stores.deliveryRecordStore,
       responseHashStore: stores.responseHashStore,
       feedRetryStore: stores.feedRetryStore,
+      feedRequestsServiceHost: stores.feedRequestsServiceHost,
       discordClient,
     });
 
@@ -170,6 +159,7 @@ describe("App (e2e)", () => {
 
   it("sends new articles based on passing comparisons", async () => {
     const stores = getStores();
+    const testServer = getTestFeedRequestsServer();
     const discordClient: TestDiscordRestClient = createTestDiscordRestClient();
 
     const baseEvent = generateTestFeedV2Event();
@@ -195,12 +185,12 @@ describe("App (e2e)", () => {
       deliveryRecordStore: stores.deliveryRecordStore,
       responseHashStore: stores.responseHashStore,
       feedRetryStore: stores.feedRetryStore,
+      feedRequestsServiceHost: stores.feedRequestsServiceHost,
       discordClient,
     });
 
     // Fetch returns article with same guid but different title
-    mockFetchFeed = mock(async () => ({
-      requestStatus: FeedResponseRequestStatus.Success,
+    testServer.setResponse(() => ({
       body: getTestRssFeed(
         [
           {
@@ -210,7 +200,7 @@ describe("App (e2e)", () => {
         ],
         true
       ),
-      bodyHash: randomUUID(),
+      hash: randomUUID(),
     }));
 
     const results = await handleFeedV2Event(testFeedV2Event, {
@@ -218,6 +208,7 @@ describe("App (e2e)", () => {
       deliveryRecordStore: stores.deliveryRecordStore,
       responseHashStore: stores.responseHashStore,
       feedRetryStore: stores.feedRetryStore,
+      feedRequestsServiceHost: stores.feedRequestsServiceHost,
       discordClient,
     });
 
@@ -227,8 +218,7 @@ describe("App (e2e)", () => {
     expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
 
     // Test again with another different title
-    mockFetchFeed = mock(async () => ({
-      requestStatus: FeedResponseRequestStatus.Success,
+    testServer.setResponse(() => ({
       body: getTestRssFeed(
         [
           {
@@ -238,7 +228,7 @@ describe("App (e2e)", () => {
         ],
         true
       ),
-      bodyHash: randomUUID(),
+      hash: randomUUID(),
     }));
 
     const results2 = await handleFeedV2Event(testFeedV2Event, {
@@ -246,6 +236,7 @@ describe("App (e2e)", () => {
       deliveryRecordStore: stores.deliveryRecordStore,
       responseHashStore: stores.responseHashStore,
       feedRetryStore: stores.feedRetryStore,
+      feedRequestsServiceHost: stores.feedRequestsServiceHost,
       discordClient,
     });
 
@@ -257,6 +248,7 @@ describe("App (e2e)", () => {
 
   it("does not send new articles based on passing comparisons if there are no new articles", async () => {
     const stores = getStores();
+    const testServer = getTestFeedRequestsServer();
     const discordClient: TestDiscordRestClient = createTestDiscordRestClient();
 
     const baseEvent = generateTestFeedV2Event();
@@ -282,14 +274,14 @@ describe("App (e2e)", () => {
       deliveryRecordStore: stores.deliveryRecordStore,
       responseHashStore: stores.responseHashStore,
       feedRetryStore: stores.feedRetryStore,
+      feedRequestsServiceHost: stores.feedRequestsServiceHost,
       discordClient,
     });
 
     // Fetch returns the same articles (no new articles, no title change)
-    mockFetchFeed = mock(async () => ({
-      requestStatus: FeedResponseRequestStatus.Success,
+    testServer.setResponse(() => ({
       body: getTestRssFeed(),
-      bodyHash: randomUUID(),
+      hash: randomUUID(),
     }));
 
     const results = await handleFeedV2Event(testFeedV2Event, {
@@ -297,6 +289,7 @@ describe("App (e2e)", () => {
       deliveryRecordStore: stores.deliveryRecordStore,
       responseHashStore: stores.responseHashStore,
       feedRetryStore: stores.feedRetryStore,
+      feedRequestsServiceHost: stores.feedRequestsServiceHost,
       discordClient,
     });
 
@@ -306,6 +299,7 @@ describe("App (e2e)", () => {
 
   it("formats HTML to Discord markdown in delivered payloads", async () => {
     const stores = getStores();
+    const testServer = getTestFeedRequestsServer();
     const discordClient: TestDiscordRestClient = createTestDiscordRestClient();
 
     const testFeedV2Event = generateTestFeedV2Event();
@@ -330,15 +324,14 @@ describe("App (e2e)", () => {
     await setupTestCase(discordClient, feedEventWithRawTitle);
 
     // Feed returns article with HTML content
-    mockFetchFeed = mock(async () => ({
-      requestStatus: FeedResponseRequestStatus.Success,
+    testServer.setResponse(() => ({
       body: getTestRssFeed([
         {
           guid: "html-article",
           description: "<strong>Bold</strong> and <em>italic</em>",
         },
       ]),
-      bodyHash: randomUUID(),
+      hash: randomUUID(),
     }));
 
     const results = await handleFeedV2Event(feedEventWithRawTitle, {
@@ -346,6 +339,7 @@ describe("App (e2e)", () => {
       deliveryRecordStore: stores.deliveryRecordStore,
       responseHashStore: stores.responseHashStore,
       feedRetryStore: stores.feedRetryStore,
+      feedRequestsServiceHost: stores.feedRequestsServiceHost,
       discordClient,
     });
 

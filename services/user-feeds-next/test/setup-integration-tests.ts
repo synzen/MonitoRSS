@@ -18,6 +18,10 @@ import {
   createTestDiscordRestClient,
   type DiscordRestClient,
 } from "../src/discord-rest";
+import {
+  createTestFeedRequestsServer,
+  type TestFeedRequestsServer,
+} from "./test-feed-requests-server";
 
 // ============================================================================
 // Test Infrastructure State
@@ -29,6 +33,7 @@ let deliveryRecordStore: DeliveryRecordStore | null = null;
 let responseHashStore: ResponseHashStore | null = null;
 let feedRetryStore: FeedRetryStore | null = null;
 let discordClient: DiscordRestClient | null = null;
+let testFeedRequestsServer: TestFeedRequestsServer | null = null;
 
 // ============================================================================
 // Setup Functions
@@ -45,13 +50,15 @@ export async function setupIntegrationTests(): Promise<{
   responseHashStore: ResponseHashStore;
   feedRetryStore: FeedRetryStore;
   discordClient: DiscordRestClient;
+  testFeedRequestsServer: TestFeedRequestsServer;
 }> {
+  // Start the test feed-requests server
+  testFeedRequestsServer = createTestFeedRequestsServer(5556);
+
   // Get connection string from environment
   const postgresUri =
     process.env.USER_FEEDS_POSTGRES_URI ||
     "postgres://postgres:postgres@localhost:5433/userfeeds_test";
-
-  console.log(`Connecting to PostgreSQL at ${postgresUri}`);
 
   // Initialize the SQL client
   sql = initSqlClient(postgresUri);
@@ -76,6 +83,7 @@ export async function setupIntegrationTests(): Promise<{
     responseHashStore,
     feedRetryStore,
     discordClient,
+    testFeedRequestsServer,
   };
 }
 
@@ -99,6 +107,11 @@ export async function cleanupTestData(): Promise<void> {
  * Call this in afterAll.
  */
 export async function teardownIntegrationTests(): Promise<void> {
+  if (testFeedRequestsServer) {
+    testFeedRequestsServer.server.stop();
+    testFeedRequestsServer = null;
+  }
+
   await closeSqlClient();
   sql = null;
   articleFieldStore = null;
@@ -118,6 +131,7 @@ export function getStores(): {
   responseHashStore: ResponseHashStore;
   feedRetryStore: FeedRetryStore;
   discordClient: DiscordRestClient;
+  feedRequestsServiceHost: string;
 } {
   if (
     !sql ||
@@ -125,7 +139,8 @@ export function getStores(): {
     !deliveryRecordStore ||
     !responseHashStore ||
     !feedRetryStore ||
-    !discordClient
+    !discordClient ||
+    !testFeedRequestsServer
   ) {
     throw new Error(
       "Stores not initialized. Call setupIntegrationTests first."
@@ -139,5 +154,19 @@ export function getStores(): {
     responseHashStore,
     feedRetryStore,
     discordClient: discordClient!,
+    feedRequestsServiceHost: `http://localhost:${testFeedRequestsServer.port}`,
   };
+}
+
+/**
+ * Get the test feed-requests server (throws if not initialized).
+ */
+export function getTestFeedRequestsServer(): TestFeedRequestsServer {
+  if (!testFeedRequestsServer) {
+    throw new Error(
+      "Test feed-requests server not initialized. Call setupIntegrationTests first."
+    );
+  }
+
+  return testFeedRequestsServer;
 }
