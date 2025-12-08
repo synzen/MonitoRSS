@@ -508,13 +508,14 @@ export class ArticleParserService {
 
                 const body = res.body;
 
-                if (!valid(body)) {
+                try {
+                  parsedBody = parse(body);
+                  parsedBodiesBySourceField[sourceField] = parsedBody;
+                } catch (err) {
                   parsedBodiesBySourceField[sourceField] = null;
 
                   return;
                 }
-
-                parsedBody = parse(body);
               }
 
               parsedBody
@@ -529,6 +530,14 @@ export class ArticleParserService {
 
                   targetRecord[key] = outerHtmlOfElement;
 
+                  Object.keys(e.attributes).forEach((attrName) => {
+                    const attrKey = `${key}::attr::${attrName}`;
+                    const attrValue = e.attributes[attrName];
+
+                    if (attrValue) {
+                      targetRecord[attrKey] = attrValue;
+                    }
+                  });
                   const { images: imageList, anchors: anchorList } =
                     this.extractExtraInfo(outerHtmlOfElement);
 
