@@ -35,10 +35,16 @@ function createEventWithEmbeds(
 }
 
 /**
- * Helper to extract the Discord payload from captured requests
+ * Helper to extract the Discord payload from captured requests.
+ * Throws a descriptive error if no payloads were captured.
  */
 function getDiscordPayload(ctx: ReturnType<typeof createTestContext>) {
-  expect(ctx.discordClient.capturedPayloads.length).toBeGreaterThan(0);
+  if (ctx.discordClient.capturedPayloads.length === 0) {
+    throw new Error(
+      `No Discord payloads captured. This usually means the article was not detected as new ` +
+        `or was filtered out. Check that seedArticles() used different article GUIDs than the test.`
+    );
+  }
   return JSON.parse(
     ctx.discordClient.capturedPayloads[0]!.options.body as string
   );
@@ -160,6 +166,7 @@ describe("Discord Payload Embeds (e2e)", () => {
 
         expect(results).not.toBeNull();
         expect(results!.length).toBe(1);
+        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
 
         const payload = getDiscordPayload(ctx);
         expect(payload.embeds[0].color).toBe(0xff5733);
@@ -623,6 +630,7 @@ describe("Discord Payload Embeds (e2e)", () => {
 
         expect(results).not.toBeNull();
         expect(results!.length).toBe(1);
+        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
 
         const payload = getDiscordPayload(ctx);
         // Timestamp should be undefined or not present

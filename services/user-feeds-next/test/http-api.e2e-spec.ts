@@ -1,9 +1,16 @@
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import type { Server } from "bun";
+import { randomUUID } from "crypto";
 import { createHttpServer } from "../src/http";
-import { inMemoryDeliveryRecordStore } from "../src/stores/in-memory/delivery-record-store";
 import { createTestDiscordRestClient } from "../src/delivery";
-import { getTestFeedRequestsServer } from "./helpers/setup-integration-tests";
+import {
+  getStores,
+  getTestFeedRequestsServer,
+} from "./helpers/setup-integration-tests";
+import {
+  ArticleDeliveryStatus,
+  ArticleDeliveryContentType,
+} from "../src/stores/interfaces/delivery-record-store";
 
 // Must match USER_FEEDS_API_KEY in docker-compose.test.yml
 const TEST_API_KEY = "test-api-key";
@@ -41,12 +48,15 @@ describe("HTTP API (e2e)", () => {
       hash: "test-hash",
     }));
 
-    // Start the HTTP server with a test Discord client
+    // Get postgres-backed stores
+    const stores = getStores();
+
+    // Start the HTTP server with postgres delivery record store
     server = createHttpServer(
       {
-        deliveryRecordStore: inMemoryDeliveryRecordStore,
+        deliveryRecordStore: stores.deliveryRecordStore,
         discordClient: createTestDiscordRestClient(),
-        feedRequestsServiceHost: `http://localhost:${testServer.port}`,
+        feedRequestsServiceHost: stores.feedRequestsServiceHost,
       },
       TEST_PORT
     );
@@ -59,6 +69,7 @@ describe("HTTP API (e2e)", () => {
     const testServer = getTestFeedRequestsServer();
     testServer.unregisterUrl(TEST_FEED_URL);
   });
+
 
   describe("POST /v1/user-feeds/filter-validation", () => {
     const endpoint = "/v1/user-feeds/filter-validation";
@@ -539,6 +550,347 @@ describe("HTTP API (e2e)", () => {
       expect(content).not.toContain("<b>");
       expect(content).not.toContain("<i>");
       expect(content).not.toContain("&lt;");
+    });
+  });
+
+  describe("POST /v1/user-feeds/validate-discord-payload", () => {
+    const endpoint = "/v1/user-feeds/validate-discord-payload";
+
+    it("returns 401 without API key", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: {} }),
+      });
+
+      expect(response.status).toBe(401);
+      const body = (await response.json()) as JsonBody;
+      expect(body.message).toBe("Unauthorized");
+    });
+
+    it("returns 401 with invalid API key", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": "wrong-key",
+        },
+        body: JSON.stringify({ data: {} }),
+      });
+
+      expect(response.status).toBe(401);
+      const body = (await response.json()) as JsonBody;
+      expect(body.message).toBe("Unauthorized");
+    });
+
+    it("returns valid=true for empty componentsV2", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({ data: { componentsV2: null } }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      expect(body.valid).toBe(true);
+    });
+
+    it("returns valid=false with errors for invalid componentsV2", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          data: {
+            componentsV2: [{ type: "INVALID_TYPE" }],
+          },
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      expect(body.valid).toBe(false);
+      expect(Array.isArray(body.errors)).toBe(true);
+      expect((body.errors as unknown[]).length).toBeGreaterThan(0);
+    });
+
+    it("returns valid=true for valid componentsV2 with multiple component types", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          data: {
+            componentsV2: [
+              {
+                type: "SECTION",
+                components: [{ type: "TEXT_DISPLAY", content: "Hello World" }],
+                accessory: {
+                  type: "BUTTON",
+                  style: 5,
+                  label: "Click me",
+                  url: "https://example.com",
+                },
+              },
+              {
+                type: "ACTION_ROW",
+                components: [
+                  {
+                    type: "BUTTON",
+                    style: 1,
+                    label: "Primary Button",
+                  },
+                ],
+              },
+              {
+                type: "SEPARATOR",
+                divider: true,
+                spacing: 1,
+              },
+            ],
+          },
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      expect(body.valid).toBe(true);
+    });
+  });
+
+  describe("GET /v1/user-feeds/:feedId/delivery-count", () => {
+    it("returns 400 without required timeWindowSec param", async () => {
+      const feedId = randomUUID();
+      const response = await fetch(
+        `${baseUrl}/v1/user-feeds/${feedId}/delivery-count`,
+        {
+          headers: { "api-key": TEST_API_KEY },
+        }
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it("returns count=0 for feed with no deliveries", async () => {
+      const feedId = randomUUID();
+      const response = await fetch(
+        `${baseUrl}/v1/user-feeds/${feedId}/delivery-count?timeWindowSec=3600`,
+        {
+          headers: { "api-key": TEST_API_KEY },
+        }
+      );
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const result = body.result as JsonBody;
+      expect(result.count).toBe(0);
+    });
+
+    it("returns correct count for feed with deliveries in time window", async () => {
+      const stores = getStores();
+      const { deliveryRecordStore } = stores;
+      const feedId = randomUUID();
+      const mediumId = randomUUID();
+
+      // Insert delivery records using the internal method that the delivery-logs test uses
+      let insertResult: { inserted: number } | undefined;
+      await deliveryRecordStore.startContext(async () => {
+        insertResult = await deliveryRecordStore.store(feedId, [
+          {
+            id: randomUUID(),
+            mediumId,
+            articleIdHash: "count-hash1",
+            article: null,
+            status: ArticleDeliveryStatus.Sent,
+          },
+          {
+            id: randomUUID(),
+            mediumId,
+            articleIdHash: "count-hash2",
+            article: null,
+            status: ArticleDeliveryStatus.Sent,
+          },
+        ]);
+      });
+
+      // Verify records were inserted
+      expect(insertResult?.inserted).toBe(2);
+
+      const response = await fetch(
+        `${baseUrl}/v1/user-feeds/${feedId}/delivery-count?timeWindowSec=3600`,
+        {
+          headers: { "api-key": TEST_API_KEY },
+        }
+      );
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const result = body.result as JsonBody;
+      expect(result.count).toBe(2);
+    });
+  });
+
+  describe("GET /v1/user-feeds/:feedId/delivery-logs", () => {
+    it("returns delivery logs with parent and child records", async () => {
+      const stores = getStores();
+      const { deliveryRecordStore } = stores;
+      const feedId = randomUUID();
+      const mediumId = randomUUID();
+
+      // Create parent records (no parent_id) and child records (with parent_id)
+      const parentId1 = randomUUID();
+      const parentId2 = randomUUID();
+      const childId1 = randomUUID();
+      const childId2 = randomUUID();
+
+      await deliveryRecordStore.startContext(async () => {
+        // Insert parent records
+        await deliveryRecordStore.store(feedId, [
+          {
+            id: parentId1,
+            mediumId,
+            articleIdHash: "hash1",
+            article: null,
+            status: ArticleDeliveryStatus.PendingDelivery,
+            contentType: ArticleDeliveryContentType.DiscordArticleMessage,
+          },
+          {
+            id: parentId2,
+            mediumId,
+            articleIdHash: "hash2",
+            article: null,
+            status: ArticleDeliveryStatus.PendingDelivery,
+            contentType: ArticleDeliveryContentType.DiscordArticleMessage,
+          },
+        ]);
+
+        // Insert child records with parent_id set
+        await deliveryRecordStore.store(feedId, [
+          {
+            id: childId1,
+            mediumId,
+            articleIdHash: "hash1",
+            article: null,
+            status: ArticleDeliveryStatus.Sent,
+            contentType: ArticleDeliveryContentType.DiscordArticleMessage,
+            parent: parentId1,
+          },
+          {
+            id: childId2,
+            mediumId,
+            articleIdHash: "hash2",
+            article: null,
+            status: ArticleDeliveryStatus.Sent,
+            contentType: ArticleDeliveryContentType.DiscordArticleMessage,
+            parent: parentId2,
+          },
+        ]);
+      });
+
+      // Call the delivery logs endpoint
+      const response = await fetch(
+        `${baseUrl}/v1/user-feeds/${feedId}/delivery-logs?skip=0&limit=25`,
+        {
+          headers: { "api-key": TEST_API_KEY },
+        }
+      );
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const result = body.result as JsonBody;
+      const logs = result.logs as JsonBody[];
+
+      expect(logs).toBeDefined();
+      expect(logs.length).toBe(2);
+    });
+
+    it("returns 400 without required skip param", async () => {
+      const feedId = randomUUID();
+      const response = await fetch(
+        `${baseUrl}/v1/user-feeds/${feedId}/delivery-logs`,
+        {
+          headers: { "api-key": TEST_API_KEY },
+        }
+      );
+
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe("POST /v1/user-feeds/get-articles", () => {
+    const endpoint = "/v1/user-feeds/get-articles";
+
+    it("returns 401 without API key", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+
+      expect(response.status).toBe(401);
+      const body = (await response.json()) as JsonBody;
+      expect(body.message).toBe("Unauthorized");
+    });
+
+    it("returns 401 with invalid API key", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": "wrong-key",
+        },
+        body: JSON.stringify({}),
+      });
+
+      expect(response.status).toBe(401);
+      const body = (await response.json()) as JsonBody;
+      expect(body.message).toBe("Unauthorized");
+    });
+
+    it("returns articles for valid feed URL", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          url: TEST_FEED_URL,
+          limit: 10,
+          skip: 0,
+          selectProperties: ["id", "title"],
+          formatter: {
+            options: {},
+          },
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const result = body.result as JsonBody;
+      expect(result.requestStatus).toBe("SUCCESS");
+      expect(Array.isArray(result.articles)).toBe(true);
+      expect((result.articles as unknown[]).length).toBeGreaterThan(0);
+    });
+
+    it("returns 400 for missing required fields", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({}),
+      });
+
+      expect(response.status).toBe(400);
     });
   });
 });
