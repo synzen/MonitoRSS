@@ -612,11 +612,16 @@ export class DiscordPayloadBuilderService {
   ): DiscordTextDisplayV2 {
     return {
       type: DISCORD_COMPONENT_TYPE_TO_NUMBER[DiscordComponentType.TextDisplay],
-      content: this.replacePlaceholdersInString(
-        article,
-        textDisplay.content,
-        replacePlaceholderOptions
-      ).trim(),
+      content:
+        this.replacePlaceholdersInString(
+          article,
+          textDisplay.content,
+          replacePlaceholderOptions
+          /**
+           * this is a zero-width space, not an empty string!
+           * (avoids Discord rejecting empty pplaceholders)
+           */
+        ).trim() || "​",
     };
   }
 
