@@ -318,7 +318,7 @@ export function createPostgresDeliveryRecordStore(sql: SQL): DeliveryRecordStore
           content_type, external_detail, article_id_hash, created_at, parent_id, article_data
         FROM delivery_record_partitioned
         WHERE feed_id = ${feedId}
-        AND parent_id = ANY(${parentIds})
+        AND parent_id IN ${sql(parentIds)}
       `;
 
       return parentRecords.map(
