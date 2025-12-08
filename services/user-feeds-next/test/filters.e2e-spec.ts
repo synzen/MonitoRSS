@@ -134,8 +134,7 @@ describe("Filters (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFilter);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFilter);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -165,8 +164,7 @@ describe("Filters (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFilter);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFilter);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -196,8 +194,7 @@ describe("Filters (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFilter);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFilter);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -227,8 +224,7 @@ describe("Filters (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFilter);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFilter);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed([{ guid: "exact", title: "Exact Title" }], true),
@@ -258,8 +254,7 @@ describe("Filters (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFilter);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFilter);
 
         // This should pass - starts with "Breaking:"
         ctx.setFeedResponse(() => ({
@@ -290,8 +285,7 @@ describe("Filters (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFilter);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFilter);
 
         // This should be blocked - doesn't start with "Breaking:"
         ctx.setFeedResponse(() => ({
@@ -322,8 +316,7 @@ describe("Filters (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFilter);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFilter);
 
         // This should pass - doesn't contain "spam"
         ctx.setFeedResponse(() => ({
@@ -375,8 +368,7 @@ describe("Filters (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFilter);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFilter);
 
         // Only title matches - should be blocked
         ctx.setFeedResponse(() => ({
@@ -440,8 +432,7 @@ describe("Filters (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFilter);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFilter);
 
         // Neither matches - should be blocked
         ctx.setFeedResponse(() => ({
@@ -499,8 +490,7 @@ describe("Filters (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFilter);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFilter);
 
         // Has "update" in title and "important" in description - should pass
         ctx.setFeedResponse(() => ({
@@ -564,8 +554,7 @@ describe("Filters (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFilter);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFilter);
 
         // Both conditions match
         ctx.setFeedResponse(() => ({
@@ -601,8 +590,7 @@ describe("Filters (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFilter);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFilter);
 
         // Lowercase "javascript" should match uppercase filter
         ctx.setFeedResponse(() => ({
@@ -635,8 +623,7 @@ describe("Filters (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFilter);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFilter);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -667,8 +654,7 @@ describe("Filters (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFilter);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFilter);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -698,8 +684,7 @@ describe("Filters (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFilter);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFilter);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -728,8 +713,7 @@ describe("Filters (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFilter);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFilter);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(

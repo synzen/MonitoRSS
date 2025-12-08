@@ -200,6 +200,8 @@ export interface DeliveryMedium {
       disableImageLinkPreviews?: boolean;
       ignoreNewLines?: boolean;
     };
+    components?: FeedV2Event["data"]["mediums"][number]["details"]["components"];
+    componentsV2?: FeedV2Event["data"]["mediums"][number]["details"]["componentsV2"];
   };
 }
 
@@ -520,6 +522,17 @@ function generatePayloadsForMedium(
     enablePlaceholderFallback: medium.details.enablePlaceholderFallback,
     mentions: medium.details.mentions,
     customPlaceholders,
+    components: medium.details.components?.map((row) => ({
+      type: row.type,
+      components: row.components.map((btn) => ({
+        type: btn.type,
+        style: btn.style,
+        label: btn.label,
+        url: btn.url ?? undefined,
+        emoji: btn.emoji ?? undefined,
+      })),
+    })),
+    componentsV2: medium.details.componentsV2 ?? undefined,
   });
 }
 

@@ -85,8 +85,7 @@ describe("External Properties (e2e)", () => {
         }));
 
         // Seed initial articles
-        await ctx.handleEvent(eventWithExternal);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithExternal);
 
         // Update feed to return new article with the link
         ctx.setFeedResponse(() => ({
@@ -137,8 +136,7 @@ describe("External Properties (e2e)", () => {
           </body></html>`,
         }));
 
-        await ctx.handleEvent(eventWithExternal);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithExternal);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -188,8 +186,7 @@ describe("External Properties (e2e)", () => {
           </body></html>`,
         }));
 
-        await ctx.handleEvent(eventWithExternal);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithExternal);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -238,8 +235,7 @@ describe("External Properties (e2e)", () => {
           </body></html>`,
         }));
 
-        await ctx.handleEvent(eventWithExternal);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithExternal);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -291,8 +287,7 @@ describe("External Properties (e2e)", () => {
           </body></html>`,
         }));
 
-        await ctx.handleEvent(eventWithExternal);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithExternal);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -348,8 +343,7 @@ describe("External Properties (e2e)", () => {
           body: `<html><body><div class="comments-info">Discussion Thread</div></body></html>`,
         }));
 
-        await ctx.handleEvent(eventWithExternal);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithExternal);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -408,8 +402,7 @@ describe("External Properties (e2e)", () => {
           </body></html>`,
         }));
 
-        await ctx.handleEvent(eventWithExternal);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithExternal);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -462,8 +455,7 @@ describe("External Properties (e2e)", () => {
           </body></html>`,
         }));
 
-        await ctx.handleEvent(eventWithExternal);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithExternal);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -512,8 +504,7 @@ describe("External Properties (e2e)", () => {
           </body></html>`,
         }));
 
-        await ctx.handleEvent(eventWithExternal);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithExternal);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -564,8 +555,7 @@ describe("External Properties (e2e)", () => {
           </body></html>`,
         }));
 
-        await ctx.handleEvent(eventWithExternal);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithExternal);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -614,8 +604,7 @@ describe("External Properties (e2e)", () => {
           </body></html>`,
         }));
 
-        await ctx.handleEvent(eventWithExternal);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithExternal);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -654,8 +643,7 @@ describe("External Properties (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithExternal);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithExternal);
 
         // Article without a link field
         ctx.setFeedResponse(() => ({
@@ -698,8 +686,7 @@ describe("External Properties (e2e)", () => {
       try {
         // Don't register the URL, so fetch will return default empty response
 
-        await ctx.handleEvent(eventWithExternal);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithExternal);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -746,8 +733,7 @@ describe("External Properties (e2e)", () => {
           body: `<html><body><div class="article">Real Content</div></body></html>`,
         }));
 
-        await ctx.handleEvent(eventWithExternal);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithExternal);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -798,8 +784,7 @@ describe("External Properties (e2e)", () => {
           body: `<html><body>${items.join("")}</body></html>`,
         }));
 
-        await ctx.handleEvent(eventWithExternal);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithExternal);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -852,8 +837,7 @@ describe("External Properties (e2e)", () => {
           body: `<html><body><div class="title">lowercase title</div></body></html>`,
         }));
 
-        await ctx.handleEvent(eventWithExternal);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithExternal);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -910,8 +894,7 @@ describe("External Properties (e2e)", () => {
           body: `<html><body><span class="price">Price: $19.99</span></body></html>`,
         }));
 
-        await ctx.handleEvent(eventWithExternal);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithExternal);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -957,8 +940,7 @@ describe("External Properties (e2e)", () => {
           </body></html>`,
         }));
 
-        await ctx.handleEvent(eventWithExternal);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithExternal);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(

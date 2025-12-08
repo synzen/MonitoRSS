@@ -112,8 +112,7 @@ describe("Split Options (e2e)", () => {
       });
 
       try {
-        await ctx.handleEvent(eventWithSplit);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithSplit);
 
         // Create content with pipe characters that will trigger split
         // Each segment is short but total exceeds limit
@@ -165,8 +164,7 @@ describe("Split Options (e2e)", () => {
       });
 
       try {
-        await ctx.handleEvent(eventWithSplit);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithSplit);
 
         // Generate content that will split
         const longText = Array(100)
@@ -217,8 +215,7 @@ describe("Split Options (e2e)", () => {
       });
 
       try {
-        await ctx.handleEvent(eventWithSplit);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithSplit);
 
         // Generate content that will split
         const longText = Array(100)
@@ -270,8 +267,7 @@ describe("Split Options (e2e)", () => {
       });
 
       try {
-        await ctx.handleEvent(eventWithSplit);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithSplit);
 
         // Generate content that will split
         const longText = Array(100)

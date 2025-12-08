@@ -716,6 +716,7 @@ async function handleFeedV2EventInternal({
             name: m.details.webhook.name ?? undefined,
             iconUrl: m.details.webhook.iconUrl ?? undefined,
             threadId: m.details.webhook.threadId ?? undefined,
+            type: m.details.webhook.type ?? undefined,
           }
         : undefined,
       content: m.details.content ?? undefined,
@@ -735,6 +736,8 @@ async function handleFeedV2EventInternal({
       forumThreadTitle: m.details.forumThreadTitle ?? undefined,
       forumThreadTags: m.details.forumThreadTags ?? undefined,
       formatter: m.details.formatter ?? undefined,
+      components: m.details.components ?? undefined,
+      componentsV2: m.details.componentsV2 ?? undefined,
     },
   })) as DeliveryMedium[];
 

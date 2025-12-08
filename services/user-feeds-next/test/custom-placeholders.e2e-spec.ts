@@ -97,8 +97,7 @@ describe("Custom Placeholders (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithCustom);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithCustom);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -146,8 +145,7 @@ describe("Custom Placeholders (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithCustom);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithCustom);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -194,8 +192,7 @@ describe("Custom Placeholders (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithCustom);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithCustom);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -247,8 +244,7 @@ describe("Custom Placeholders (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithCustom);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithCustom);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -294,8 +290,7 @@ describe("Custom Placeholders (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithCustom);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithCustom);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -344,8 +339,7 @@ describe("Custom Placeholders (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithCustom);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithCustom);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -395,8 +389,7 @@ describe("Custom Placeholders (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithCustom);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithCustom);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -444,8 +437,7 @@ describe("Custom Placeholders (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithCustom);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithCustom);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -490,8 +482,7 @@ describe("Custom Placeholders (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithCustom);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithCustom);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -549,8 +540,7 @@ describe("Custom Placeholders (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithCustom);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithCustom);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -603,8 +593,7 @@ describe("Custom Placeholders (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithCustom);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithCustom);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(

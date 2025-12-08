@@ -15,7 +15,7 @@ describe("App (e2e)", () => {
     try {
       const seedResult = await ctx.handleEvent();
       console.log("APP DEBUG: seed result=", seedResult?.length);
-      ctx.discordClient.clear();
+      ctx.discordClient.clear(); // keep clear separate here for debugging
 
       // Override fetch to return ONLY a new article (replace: true)
       // This simulates a feed where a new article appeared and old one dropped off
@@ -183,8 +183,7 @@ describe("App (e2e)", () => {
 
     try {
       // Seed with modified event
-      await ctx.handleEvent(eventWithDescription);
-      ctx.discordClient.clear();
+      await ctx.seedArticles(eventWithDescription);
 
       // Feed returns article with HTML content
       ctx.setFeedResponse(() => ({

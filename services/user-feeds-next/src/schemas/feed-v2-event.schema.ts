@@ -132,6 +132,70 @@ const componentV2Schema = z.discriminatedUnion("type", [
 // Discord Medium Payload Details Schema
 // ============================================================================
 
+// Extract schemas that tests need to reference
+const forumTagSchema = z.object({
+  id: z.string(),
+  filters: z
+    .object({ expression: z.looseObject({}) })
+    .optional()
+    .nullable()
+    .default(null),
+});
+
+const mentionTargetSchema = z.object({
+  id: z.string(),
+  type: z.union([z.literal("user"), z.literal("role")]),
+  filters: z
+    .object({ expression: z.object({}).passthrough() })
+    .optional()
+    .nullable()
+    .default(null),
+});
+
+const embedSchema = z.object({
+  title: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  url: z.string().nullable().optional(),
+  color: z.number().optional().nullable(),
+  footer: z
+    .object({
+      text: z.string(),
+      iconUrl: z.string().optional().nullable().default(null),
+    })
+    .optional()
+    .nullable()
+    .default(null),
+  image: z.object({ url: z.string() }).optional().nullable().default(null),
+  thumbnail: z
+    .object({ url: z.string() })
+    .optional()
+    .nullable()
+    .default(null),
+  author: z
+    .object({
+      name: z.string(),
+      url: z.string().optional().nullable(),
+      iconUrl: z.string().optional().nullable(),
+    })
+    .optional()
+    .nullable()
+    .default(null),
+  fields: z
+    .array(
+      z.object({
+        name: z.string(),
+        value: z.string(),
+        inline: z.boolean().optional(),
+      })
+    )
+    .optional(),
+  timestamp: z
+    .union([z.literal("now"), z.literal("article"), z.literal("")])
+    .optional()
+    .nullable()
+    .default(null),
+});
+
 const discordMediumPayloadDetailsSchema = z.object({
   guildId: z.string(),
   components: z.array(actionRowSchema).nullable(),
@@ -179,20 +243,7 @@ const discordMediumPayloadDetailsSchema = z.object({
     .nullable()
     .default(null),
   forumThreadTitle: z.string().optional().nullable(),
-  forumThreadTags: z
-    .array(
-      z.object({
-        id: z.string(),
-        filters: z
-          .object({ expression: z.looseObject({}) })
-          .optional()
-          .nullable()
-          .default(null),
-      })
-    )
-    .optional()
-    .nullable()
-    .default(null),
+  forumThreadTags: z.array(forumTagSchema).optional().nullable().default(null),
   customPlaceholders: z
     .array(
       z.object({
@@ -227,69 +278,13 @@ const discordMediumPayloadDetailsSchema = z.object({
     .default([]),
   mentions: z
     .object({
-      targets: z
-        .array(
-          z.object({
-            id: z.string(),
-            type: z.union([z.literal("user"), z.literal("role")]),
-            filters: z
-              .object({ expression: z.object({}).passthrough() })
-              .optional()
-              .nullable()
-              .default(null),
-          })
-        )
-        .optional(),
+      targets: z.array(mentionTargetSchema).optional(),
     })
     .optional()
     .nullable()
     .default(null),
   content: z.string(),
-  embeds: z.array(
-    z.object({
-      title: z.string().nullable().optional(),
-      description: z.string().nullable().optional(),
-      url: z.string().nullable().optional(),
-      color: z.number().optional().nullable(),
-      footer: z
-        .object({
-          text: z.string(),
-          iconUrl: z.string().optional().nullable().default(null),
-        })
-        .optional()
-        .nullable()
-        .default(null),
-      image: z.object({ url: z.string() }).optional().nullable().default(null),
-      thumbnail: z
-        .object({ url: z.string() })
-        .optional()
-        .nullable()
-        .default(null),
-      author: z
-        .object({
-          name: z.string(),
-          url: z.string().optional().nullable(),
-          iconUrl: z.string().optional().nullable(),
-        })
-        .optional()
-        .nullable()
-        .default(null),
-      fields: z
-        .array(
-          z.object({
-            name: z.string(),
-            value: z.string(),
-            inline: z.boolean().optional(),
-          })
-        )
-        .optional(),
-      timestamp: z
-        .union([z.literal("now"), z.literal("article"), z.literal("")])
-        .optional()
-        .nullable()
-        .default(null),
-    })
-  ),
+  embeds: z.array(embedSchema),
   formatter: z
     .object({
       stripImages: z.boolean().optional().default(false),
@@ -394,3 +389,9 @@ export const feedV2EventSchema = z.object({
 });
 
 export type FeedV2Event = z.infer<typeof feedV2EventSchema>;
+
+// Input types for tests (before parsing, fields with defaults are optional)
+export type EmbedInput = z.input<typeof embedSchema>;
+export type ComponentV2Input = z.input<typeof componentV2Schema>;
+export type MentionTargetInput = z.input<typeof mentionTargetSchema>;
+export type ForumTagInput = z.input<typeof forumTagSchema>;

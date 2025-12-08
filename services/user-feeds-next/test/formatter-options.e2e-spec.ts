@@ -78,8 +78,7 @@ describe("Formatter Options (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFormatter);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFormatter);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -126,8 +125,7 @@ describe("Formatter Options (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFormatter);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFormatter);
 
         const htmlTable = `
           <table>
@@ -183,8 +181,7 @@ describe("Formatter Options (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFormatter);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFormatter);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -228,8 +225,7 @@ describe("Formatter Options (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFormatter);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFormatter);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -276,8 +272,7 @@ describe("Formatter Options (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFormatter);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFormatter);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(

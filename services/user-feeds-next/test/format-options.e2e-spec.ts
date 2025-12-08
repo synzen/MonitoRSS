@@ -72,8 +72,7 @@ describe("Format Options (e2e)", () => {
       });
 
       try {
-        await ctx.handleEvent(eventWithFormat);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFormat);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -114,8 +113,7 @@ describe("Format Options (e2e)", () => {
       });
 
       try {
-        await ctx.handleEvent(eventWithFormat);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFormat);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -157,8 +155,7 @@ describe("Format Options (e2e)", () => {
       });
 
       try {
-        await ctx.handleEvent(eventWithFormat);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFormat);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -201,8 +198,7 @@ describe("Format Options (e2e)", () => {
       });
 
       try {
-        await ctx.handleEvent(eventWithFormat);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFormat);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -247,8 +243,7 @@ describe("Format Options (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithDateCheck);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithDateCheck);
 
         // Create an article from 2 days ago
         const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toISOString();
@@ -293,8 +288,7 @@ describe("Format Options (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithDateCheck);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithDateCheck);
 
         // Create an article from 1 hour ago
         const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
@@ -341,8 +335,7 @@ describe("Format Options (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithDateCheck);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithDateCheck);
 
         // Create an article with a future date
         const tomorrow = new Date(Date.now() + 86400000).toISOString();
@@ -391,8 +384,7 @@ describe("Format Options (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithDateCheck);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithDateCheck);
 
         // Article has old pubDate but recent customDate
         const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toISOString();

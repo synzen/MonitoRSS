@@ -113,8 +113,7 @@ describe("Placeholder Options (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithLimits);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithLimits);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -165,8 +164,7 @@ describe("Placeholder Options (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithLimits);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithLimits);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -219,8 +217,7 @@ describe("Placeholder Options (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithLimits);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithLimits);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -270,8 +267,7 @@ describe("Placeholder Options (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithLimits);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithLimits);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -314,8 +310,7 @@ describe("Placeholder Options (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFallback);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFallback);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -355,8 +350,7 @@ describe("Placeholder Options (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFallback);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFallback);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -396,8 +390,7 @@ describe("Placeholder Options (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFallback);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFallback);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -442,8 +435,7 @@ describe("Placeholder Options (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithFallback);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithFallback);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -497,8 +489,7 @@ describe("Placeholder Options (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithIntegration);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithIntegration);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -548,8 +539,7 @@ describe("Placeholder Options (e2e)", () => {
       );
 
       try {
-        await ctx.handleEvent(eventWithIntegration);
-        ctx.discordClient.clear();
+        await ctx.seedArticles(eventWithIntegration);
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(

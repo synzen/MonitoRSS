@@ -34,7 +34,7 @@ export interface TestContext {
   ): ReturnType<typeof handleFeedV2Event>;
 
   /** Seed initial articles and clear Discord captures */
-  seedArticles(): Promise<void>;
+  seedArticles(event?: FeedV2Event): Promise<void>;
 
   /** Cleanup this test's state */
   cleanup(): void;
@@ -99,8 +99,8 @@ export function createTestContext(
       });
     },
 
-    async seedArticles() {
-      await this.handleEvent();
+    async seedArticles(event?: FeedV2Event) {
+      await this.handleEvent(event);
       discordClient.clear();
     },
 
