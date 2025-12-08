@@ -117,6 +117,15 @@ async function injectContentForArticle(
 
         targetRecord[key] = outerHtmlOfElement;
 
+        Object.keys(element.attributes).forEach((attrName) => {
+          const attrKey = `${key}::attr::${attrName}`;
+          const attrValue = element.attributes[attrName];
+
+          if (attrValue) {
+            targetRecord[attrKey] = attrValue;
+          }
+        });
+
         // Extract images and anchors from the injected content
         const { images: imageList, anchors: anchorList } =
           extractExtraInfo(outerHtmlOfElement);
