@@ -25,6 +25,8 @@
   },
   "scripts": {
     "start": "bun index.ts",
+    "test": "bun test src/**/*.test.ts",
+    "test:unit": "bun test src/**/*.test.ts",
     "test:e2e": "./test-e2e.sh"
   },
   "devDependencies": {

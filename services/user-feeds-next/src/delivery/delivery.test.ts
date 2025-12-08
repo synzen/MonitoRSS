@@ -12,10 +12,10 @@ import {
   getUnderLimitCheck,
   deliverArticles,
   type LimitState,
-} from "../src/delivery";
-import { createInMemoryDeliveryRecordStore } from "../src/stores/in-memory/delivery-record-store";
-import type { ArticleDeliveryState } from "../src/stores/interfaces/delivery-record-store";
-import type { Article } from "../src/articles/parser";
+} from ".";
+import { createInMemoryDeliveryRecordStore } from "../stores/in-memory/delivery-record-store";
+import type { ArticleDeliveryState } from "../stores/interfaces/delivery-record-store";
+import type { Article } from "../articles/parser";
 
 function createJobData(overrides?: Partial<JobData>): JobData {
   return {

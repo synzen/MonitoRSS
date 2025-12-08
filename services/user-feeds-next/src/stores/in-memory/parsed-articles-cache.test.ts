@@ -9,12 +9,12 @@ import {
   refreshFeedArticlesCacheExpiration,
   clearInMemoryParsedArticlesCache,
   inMemoryParsedArticlesCacheStore,
-} from "../src/stores/in-memory/parsed-articles-cache";
+} from "./parsed-articles-cache";
 import type {
   CacheKeyOptions,
   CachedArticles,
-} from "../src/stores/interfaces/parsed-articles-cache";
-import type { Article } from "../src/articles/parser";
+} from "../interfaces/parsed-articles-cache";
+import type { Article } from "../../articles/parser";
 
 function createArticle(
   id: string,

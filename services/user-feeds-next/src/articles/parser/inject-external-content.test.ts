@@ -1,11 +1,11 @@
 import { describe, it, expect } from "bun:test";
-import { chunkArray } from "../src/shared/utils";
+import { chunkArray } from "../../shared/utils";
 import {
   injectExternalContent,
   type ExternalFeedProperty,
   type ExternalFetchFn,
-} from "../src/articles/parser";
-import type { Article } from "../src/articles/parser";
+  type Article,
+} from ".";
 
 describe("chunkArray", () => {
   it("splits array into chunks of specified size", () => {

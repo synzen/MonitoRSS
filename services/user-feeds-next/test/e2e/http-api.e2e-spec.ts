@@ -1,16 +1,16 @@
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import type { Server } from "bun";
 import { randomUUID } from "crypto";
-import { createHttpServer } from "../src/http";
-import { createTestDiscordRestClient } from "../src/delivery";
+import { createHttpServer } from "../../src/http";
+import { createTestDiscordRestClient } from "../../src/delivery";
 import {
   getStores,
   getTestFeedRequestsServer,
-} from "./helpers/setup-integration-tests";
+} from "../helpers/setup-integration-tests";
 import {
   ArticleDeliveryStatus,
   ArticleDeliveryContentType,
-} from "../src/stores/interfaces/delivery-record-store";
+} from "../../src/stores/interfaces/delivery-record-store";
 
 // Must match USER_FEEDS_API_KEY in docker-compose.test.yml
 const TEST_API_KEY = "test-api-key";

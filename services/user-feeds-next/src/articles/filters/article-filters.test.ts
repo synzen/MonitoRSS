@@ -14,8 +14,8 @@ import {
   type LogicalExpression,
   type RelationalExpression,
   type FilterExpressionReference,
-} from "../src/articles/filters";
-import type { Article } from "../src/articles/parser";
+} from ".";
+import type { Article } from "../parser";
 
 function createArticle(flattened: Record<string, string>): Article {
   return {

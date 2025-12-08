@@ -4,8 +4,8 @@ import {
   inMemoryArticleFieldStore,
   clearInMemoryStore,
   type ArticleFieldStore,
-} from "../src/articles/comparison";
-import type { Article } from "../src/articles/parser";
+} from ".";
+import type { Article } from "../parser";
 
 function createArticle(
   id: string,

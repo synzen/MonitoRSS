@@ -14,15 +14,15 @@ import {
   buildForumThreadBody,
   getForumTagsToSend,
   enhancePayloadsWithWebhookDetails,
-} from "../src/articles/formatter";
+} from ".";
 import {
   ExpressionType,
   LogicalExpressionOperator,
   RelationalExpressionOperator,
   RelationalExpressionLeft,
   RelationalExpressionRight,
-} from "../src/articles/filters";
-import type { Article, FlattenedArticle } from "../src/articles/parser";
+} from "../filters";
+import type { Article, FlattenedArticle } from "../parser";
 
 function createArticle(flattened: Record<string, string>): Article {
   return {

@@ -7,7 +7,7 @@ import {
   flattenArticle,
   InvalidFeedException,
   ARTICLE_FIELD_DELIMITER,
-} from "../src/articles/parser";
+} from ".";
 
 dayjs.extend(timezone);
 dayjs.extend(utc);
