@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import type { Server } from "bun";
 import { createHttpServer } from "../src/http";
-import { inMemoryDeliveryRecordStore } from "../src/delivery-record-store";
+import { inMemoryDeliveryRecordStore } from "../src/stores/in-memory/delivery-record-store";
 import { createTestDiscordRestClient } from "../src/delivery";
-import { getTestFeedRequestsServer } from "./setup-integration-tests";
+import { getTestFeedRequestsServer } from "./helpers/setup-integration-tests";
 
 // Must match USER_FEEDS_API_KEY in docker-compose.test.yml
 const TEST_API_KEY = "test-api-key";

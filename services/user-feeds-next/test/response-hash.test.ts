@@ -5,12 +5,11 @@ import {
   parseFeedDeletedEvent,
   handleFeedDeletedEvent,
   type ResponseHashStore,
-} from "../src/feed-event-handler";
+} from "../src/feeds/feed-event-handler";
 import {
-  inMemoryArticleFieldStore,
   clearArticleFieldStore,
   type ArticleFieldStore,
-} from "../src/article-comparison";
+} from "../src/articles/comparison";
 
 describe("response-hash", () => {
   describe("inMemoryResponseHashStore", () => {

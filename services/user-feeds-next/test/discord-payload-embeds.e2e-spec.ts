@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../src/delivery";
 import getTestRssFeed from "./data/test-rss-feed";
 import { createTestContext } from "./helpers/test-context";
-import type { FeedV2Event, EmbedInput } from "../src/schemas";
+import type { FeedV2Event, EmbedInput } from "../src/shared/schemas";
 
 // Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
 
@@ -25,7 +25,8 @@ function createEventWithEmbeds(
           details: {
             ...baseEvent.data.mediums[0]!.details,
             content: "", // Clear content to focus on embeds
-            embeds: embeds as FeedV2Event["data"]["mediums"][0]["details"]["embeds"],
+            embeds:
+              embeds as FeedV2Event["data"]["mediums"][0]["details"]["embeds"],
           },
         },
       ],
@@ -422,9 +423,7 @@ describe("Discord Payload Embeds (e2e)", () => {
         expect(results!.length).toBe(1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.embeds[0].author.url).toBe(
-          "https://example.com/author"
-        );
+        expect(payload.embeds[0].author.url).toBe("https://example.com/author");
         expect(payload.embeds[0].author.icon_url).toBe(
           "https://example.com/author-icon.png"
         );
@@ -493,11 +492,15 @@ describe("Discord Payload Embeds (e2e)", () => {
         expect(payload.embeds[0].fields[0].inline).toBe(true);
 
         expect(payload.embeds[0].fields[1].name).toBe("Link Field");
-        expect(payload.embeds[0].fields[1].value).toBe("https://example.com/article");
+        expect(payload.embeds[0].fields[1].value).toBe(
+          "https://example.com/article"
+        );
         expect(payload.embeds[0].fields[1].inline).toBe(true);
 
         expect(payload.embeds[0].fields[2].name).toBe("Description Field");
-        expect(payload.embeds[0].fields[2].value).toBe("A detailed description");
+        expect(payload.embeds[0].fields[2].value).toBe(
+          "A detailed description"
+        );
         expect(payload.embeds[0].fields[2].inline).toBe(false);
       } finally {
         ctx.cleanup();
@@ -677,7 +680,9 @@ describe("Discord Payload Embeds (e2e)", () => {
         expect(payload.embeds).toBeArray();
         expect(payload.embeds.length).toBe(3);
 
-        expect(payload.embeds[0].title).toBe("First Embed: Multi-Embed Article");
+        expect(payload.embeds[0].title).toBe(
+          "First Embed: Multi-Embed Article"
+        );
         expect(payload.embeds[0].color).toBe(0xff0000);
 
         expect(payload.embeds[1].title).toBe("Second Embed");
@@ -720,9 +725,7 @@ describe("Discord Payload Embeds (e2e)", () => {
             text: "Via RSS Feed",
             iconUrl: "https://example.com/footer-icon.png",
           },
-          fields: [
-            { name: "Source", value: "{{link}}", inline: true },
-          ],
+          fields: [{ name: "Source", value: "{{link}}", inline: true }],
           timestamp: "article",
         },
       ]);

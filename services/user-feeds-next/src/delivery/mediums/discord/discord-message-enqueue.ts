@@ -6,14 +6,14 @@
  */
 
 import { RESTProducer } from "@synzen/discord-rest";
-import type { Article } from "../../../article-parser";
-import type { DiscordMessageApiPayload } from "../../../article-formatter";
+import type { Article } from "../../../articles/parser";
+import type { DiscordMessageApiPayload } from "../../../articles/formatter";
 import {
   ArticleDeliveryStatus,
   ArticleDeliveryContentType,
   type ArticleDeliveryState,
   generateDeliveryId,
-} from "../../../delivery-record-store";
+} from "../../../stores/interfaces/delivery-record-store";
 
 // ============================================================================
 // State

@@ -3,15 +3,15 @@ import type {
   JobData,
   JobResponseError,
 } from "@synzen/discord-rest/dist/RESTConsumer";
-import type { Article } from "../article-parser";
+import type { Article } from "../articles/parser";
 import type {
   DiscordMessageApiPayload,
   WebhookPayload,
-} from "../article-formatter";
+} from "../articles/formatter";
 import type {
   DiscordRestClient,
   DiscordApiResponse,
-} from "../discord-rest";
+} from "./mediums/discord/discord-rest-client";
 import {
   getChannelApiUrl,
   getWebhookApiUrl,
@@ -21,7 +21,7 @@ import {
 import {
   getArticleFilterResults,
   type LogicalExpression,
-} from "../article-filters";
+} from "../articles/filters";
 import {
   generateDiscordPayloads,
   enhancePayloadsWithWebhookDetails,
@@ -30,19 +30,21 @@ import {
   getForumTagsToSend,
   formatArticleForDiscord,
   CustomPlaceholderStepType,
-} from "../article-formatter";
-import { RegexEvalException } from "../article-formatter/exceptions";
-import type { FeedV2Event } from "../schemas";
-import { logger } from "../utils";
+} from "../articles/formatter";
+import { RegexEvalException } from "../articles/formatter/exceptions";
+import type { FeedV2Event } from "../shared/schemas";
+import { logger } from "../shared/utils";
 import {
   ArticleDeliveryStatus,
   ArticleDeliveryErrorCode,
   ArticleDeliveryContentType,
   type DeliveryRecordStore,
   type ArticleDeliveryState,
-  inMemoryDeliveryRecordStore,
   generateDeliveryId,
-} from "../delivery-record-store";
+} from "../stores/interfaces/delivery-record-store";
+import {
+  inMemoryDeliveryRecordStore,
+} from "../stores/in-memory/delivery-record-store";
 
 // Re-export ArticleDeliveryState for convenience
 export type { ArticleDeliveryState };

@@ -4,12 +4,14 @@ import {
   createInMemoryFeedRetryStore,
   handleFeedParseFailure,
   handleFeedParseSuccess,
+} from "../src/stores/in-memory/feed-retry-store";
+import {
   MAX_RETRY_ATTEMPTS,
   RETRY_CUTOFF_DAYS,
   type FeedRetryStore,
   type FeedRetryPublisher,
-} from "../src/feed-retry-store";
-import { MessageBrokerQueue, FeedRejectedDisabledCode } from "../src/constants";
+} from "../src/stores/interfaces/feed-retry-store";
+import { MessageBrokerQueue, FeedRejectedDisabledCode } from "../src/shared/constants";
 
 describe("Feed Retry Store", () => {
   describe("createInMemoryFeedRetryStore", () => {

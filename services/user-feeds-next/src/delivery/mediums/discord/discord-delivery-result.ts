@@ -5,15 +5,15 @@
  * Matches user-feeds discord-delivery-result.service.ts patterns.
  */
 
-import type { Article } from "../../../article-parser";
+import type { Article } from "../../../articles/parser";
 import {
   ArticleDeliveryContentType,
   ArticleDeliveryErrorCode,
   ArticleDeliveryStatus,
   generateDeliveryId,
   type ArticleDeliveryState,
-} from "../../../delivery-record-store";
-import type { DiscordApiResponse } from "../../../discord-rest";
+} from "../../../stores/interfaces/delivery-record-store";
+import type { DiscordApiResponse } from "./discord-rest-client";
 
 /**
  * Parse a thread creation API response into delivery states.

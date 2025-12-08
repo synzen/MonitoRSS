@@ -23,4 +23,4 @@ export {
   type DiscordEnqueueResult,
   type DiscordApiRequestOptions,
   createTestDiscordRestClient,
-} from "../../../discord-rest";
+} from "./discord-rest-client";

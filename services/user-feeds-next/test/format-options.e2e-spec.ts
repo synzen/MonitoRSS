@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../src/delivery";
 import getTestRssFeed from "./data/test-rss-feed";
 import { createTestContext } from "./helpers/test-context";
-import type { FeedV2Event } from "../src/schemas";
+import type { FeedV2Event } from "../src/shared/schemas";
 
 // Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
 
@@ -63,13 +63,16 @@ describe("Format Options (e2e)", () => {
     it("formats dates with custom dateFormat", async () => {
       const ctx = createTestContext();
 
-      const eventWithFormat = createEventWithFormatOptions(ctx.testFeedV2Event, {
-        formatOptions: {
-          dateFormat: "YYYY-MM-DD",
-          dateTimezone: "UTC",
-        },
-        content: "Published: {{pubdate}}",
-      });
+      const eventWithFormat = createEventWithFormatOptions(
+        ctx.testFeedV2Event,
+        {
+          formatOptions: {
+            dateFormat: "YYYY-MM-DD",
+            dateTimezone: "UTC",
+          },
+          content: "Published: {{pubdate}}",
+        }
+      );
 
       try {
         await ctx.seedArticles(eventWithFormat);
@@ -104,13 +107,16 @@ describe("Format Options (e2e)", () => {
     it("converts dates to specified timezone", async () => {
       const ctx = createTestContext();
 
-      const eventWithFormat = createEventWithFormatOptions(ctx.testFeedV2Event, {
-        formatOptions: {
-          dateFormat: "YYYY-MM-DD HH:mm",
-          dateTimezone: "America/New_York",
-        },
-        content: "Published: {{pubdate}}",
-      });
+      const eventWithFormat = createEventWithFormatOptions(
+        ctx.testFeedV2Event,
+        {
+          formatOptions: {
+            dateFormat: "YYYY-MM-DD HH:mm",
+            dateTimezone: "America/New_York",
+          },
+          content: "Published: {{pubdate}}",
+        }
+      );
 
       try {
         await ctx.seedArticles(eventWithFormat);
@@ -145,14 +151,17 @@ describe("Format Options (e2e)", () => {
     it("applies dateLocale to date formatting", async () => {
       const ctx = createTestContext();
 
-      const eventWithFormat = createEventWithFormatOptions(ctx.testFeedV2Event, {
-        formatOptions: {
-          dateFormat: "MMMM D, YYYY",
-          dateTimezone: "UTC",
-          dateLocale: "fr",
-        },
-        content: "Published: {{pubdate}}",
-      });
+      const eventWithFormat = createEventWithFormatOptions(
+        ctx.testFeedV2Event,
+        {
+          formatOptions: {
+            dateFormat: "MMMM D, YYYY",
+            dateTimezone: "UTC",
+            dateLocale: "fr",
+          },
+          content: "Published: {{pubdate}}",
+        }
+      );
 
       try {
         await ctx.seedArticles(eventWithFormat);
@@ -188,14 +197,17 @@ describe("Format Options (e2e)", () => {
     it("combines dateFormat, dateTimezone, and dateLocale", async () => {
       const ctx = createTestContext();
 
-      const eventWithFormat = createEventWithFormatOptions(ctx.testFeedV2Event, {
-        formatOptions: {
-          dateFormat: "dddd, MMMM D, YYYY [at] HH:mm",
-          dateTimezone: "Europe/London",
-          dateLocale: "en",
-        },
-        content: "{{pubdate}}",
-      });
+      const eventWithFormat = createEventWithFormatOptions(
+        ctx.testFeedV2Event,
+        {
+          formatOptions: {
+            dateFormat: "dddd, MMMM D, YYYY [at] HH:mm",
+            dateTimezone: "Europe/London",
+            dateLocale: "en",
+          },
+          content: "{{pubdate}}",
+        }
+      );
 
       try {
         await ctx.seedArticles(eventWithFormat);

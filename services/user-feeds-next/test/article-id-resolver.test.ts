@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, spyOn, mock } from "bun:test";
-import { ArticleIDResolver } from "../src/article-parser";
+import { ArticleIDResolver } from "../src/articles/parser";
 
 describe("ArticleIDResolver", () => {
   const idTypeNames = ["guid", "pubdate", "title"];

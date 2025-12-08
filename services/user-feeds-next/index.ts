@@ -1,7 +1,7 @@
 import { config } from "dotenv";
 import { Connection } from "rabbitmq-client";
 import { SQL } from "bun";
-import { logger } from "./src/utils";
+import { logger } from "./src/shared/utils";
 import {
   parseFeedV2Event,
   handleFeedV2Event,
@@ -10,8 +10,8 @@ import {
   handleFeedDeletedEvent,
   inMemoryResponseHashStore,
   type ResponseHashStore,
-} from "./src/feed-event-handler";
-import { MessageBrokerQueue } from "./src/constants";
+} from "./src/feeds/feed-event-handler";
+import { MessageBrokerQueue } from "./src/shared/constants";
 import {
   createSynzenDiscordRestClient,
   type DiscordDeliveryResult,
@@ -24,23 +24,23 @@ import {
   createRedisProcessingLock,
   inMemoryProcessingLock,
   type ProcessingLock,
-} from "./src/redis";
+} from "./src/stores/redis";
 import {
   inMemoryParsedArticlesCacheStore,
-  type ParsedArticlesCacheStore,
-} from "./src/parsed-articles-cache";
+} from "./src/stores/in-memory/parsed-articles-cache";
+import type { ParsedArticlesCacheStore } from "./src/stores/interfaces/parsed-articles-cache";
 import {
   inMemoryArticleFieldStore,
   type ArticleFieldStore,
-} from "./src/article-comparison";
+} from "./src/articles/comparison";
 import {
   inMemoryDeliveryRecordStore,
-  type DeliveryRecordStore,
-} from "./src/delivery-record-store";
+} from "./src/stores/in-memory/delivery-record-store";
+import type { DeliveryRecordStore } from "./src/stores/interfaces/delivery-record-store";
 import {
   inMemoryFeedRetryStore,
-  type FeedRetryStore,
-} from "./src/feed-retry-store";
+} from "./src/stores/in-memory/feed-retry-store";
+import type { FeedRetryStore } from "./src/stores/interfaces/feed-retry-store";
 import {
   createPostgresDeliveryRecordStore,
   createPostgresArticleFieldStore,
@@ -48,7 +48,7 @@ import {
   createPostgresFeedRetryStore,
   ensurePartitionsExist,
   pruneOldPartitions,
-} from "./src/postgres";
+} from "./src/stores/postgres";
 import { createHttpServer } from "./src/http";
 
 // Load environment variables

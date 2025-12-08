@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../src/delivery";
 import getTestRssFeed from "./data/test-rss-feed";
 import { createTestContext } from "./helpers/test-context";
-import type { FeedV2Event, MentionTargetInput } from "../src/schemas";
+import type { FeedV2Event, MentionTargetInput } from "../src/shared/schemas";
 
 // Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
 

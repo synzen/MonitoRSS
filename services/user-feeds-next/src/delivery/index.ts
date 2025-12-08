@@ -36,7 +36,7 @@ export {
   createTestDiscordRestClient,
   createInMemoryDiscordRestClient,
   inMemoryDiscordRestClient,
-} from "../discord-rest";
+} from "./mediums/discord/discord-rest-client";
 
 // Re-export production Discord REST client factory
 export {

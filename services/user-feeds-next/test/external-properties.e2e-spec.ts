@@ -1,11 +1,11 @@
 import { describe, it, expect } from "bun:test";
 import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../src/delivery";
-import { CustomPlaceholderStepType } from "../src/constants";
+import { CustomPlaceholderStepType } from "../src/shared/constants";
 import getTestRssFeed from "./data/test-rss-feed";
 import { createTestContext } from "./helpers/test-context";
-import { getTestFeedRequestsServer } from "./setup-integration-tests";
-import type { FeedV2Event } from "../src/schemas";
+import { getTestFeedRequestsServer } from "./helpers/setup-integration-tests";
+import type { FeedV2Event } from "../src/shared/schemas";
 
 // Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
 

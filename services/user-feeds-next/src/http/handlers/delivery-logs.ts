@@ -3,7 +3,7 @@
  * Returns delivery logs for a feed.
  */
 
-import type { DeliveryRecordStore } from "../../delivery-record-store";
+import type { DeliveryRecordStore } from "../../stores/interfaces/delivery-record-store";
 import {
   jsonResponse,
   parseIntQueryParam,

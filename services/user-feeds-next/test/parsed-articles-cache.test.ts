@@ -9,10 +9,12 @@ import {
   refreshFeedArticlesCacheExpiration,
   clearInMemoryParsedArticlesCache,
   inMemoryParsedArticlesCacheStore,
-  type CacheKeyOptions,
-  type CachedArticles,
-} from "../src/parsed-articles-cache";
-import type { Article } from "../src/article-parser";
+} from "../src/stores/in-memory/parsed-articles-cache";
+import type {
+  CacheKeyOptions,
+  CachedArticles,
+} from "../src/stores/interfaces/parsed-articles-cache";
+import type { Article } from "../src/articles/parser";
 
 function createArticle(
   id: string,
@@ -342,9 +344,7 @@ describe("parsed-articles-cache", () => {
       });
 
       const ttlBefore = await store.ttl(
-        require("../src/parsed-articles-cache").calculateCacheKeyForArticles(
-          testParams
-        )
+        calculateCacheKeyForArticles(testParams)
       );
 
       // Wait a moment
@@ -357,9 +357,7 @@ describe("parsed-articles-cache", () => {
       });
 
       const ttlAfter = await store.ttl(
-        require("../src/parsed-articles-cache").calculateCacheKeyForArticles(
-          testParams
-        )
+        calculateCacheKeyForArticles(testParams)
       );
 
       // TTL should be close to before (within a few seconds)

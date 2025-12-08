@@ -4,9 +4,9 @@ import type { JobResponseError } from "@synzen/discord-rest/dist/RESTConsumer";
 import {
   handleArticleDeliveryResult,
   type QueuePublisher,
-} from "../src/feed-event-handler";
+} from "../src/feeds/feed-event-handler";
 import type { DiscordDeliveryResult } from "../src/delivery";
-import { MessageBrokerQueue } from "../src/constants";
+import { MessageBrokerQueue } from "../src/shared/constants";
 
 function createJobData(meta?: Record<string, unknown>) {
   return {

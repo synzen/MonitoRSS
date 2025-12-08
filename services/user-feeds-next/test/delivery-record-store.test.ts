@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach } from "bun:test";
+import { createInMemoryDeliveryRecordStore } from "../src/stores/in-memory/delivery-record-store";
 import {
-  createInMemoryDeliveryRecordStore,
   ArticleDeliveryStatus,
   ArticleDeliveryErrorCode,
   ArticleDeliveryContentType,
   type ArticleDeliveryState,
   generateDeliveryId,
-} from "../src/delivery-record-store";
+} from "../src/stores/interfaces/delivery-record-store";
 
 describe("Delivery Record Store", () => {
   describe("createInMemoryDeliveryRecordStore", () => {

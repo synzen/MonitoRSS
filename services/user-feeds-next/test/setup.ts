@@ -7,7 +7,7 @@ import { beforeAll, afterAll } from "bun:test";
 import {
   setupIntegrationTests,
   teardownIntegrationTests,
-} from "./setup-integration-tests";
+} from "./helpers/setup-integration-tests";
 
 // Global setup - runs once before all test files
 beforeAll(async () => {

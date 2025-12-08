@@ -3,7 +3,11 @@ import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../src/delivery";
 import getTestRssFeed from "./data/test-rss-feed";
 import { createTestContext } from "./helpers/test-context";
-import type { FeedV2Event, ForumTagInput, EmbedInput } from "../src/schemas";
+import type {
+  FeedV2Event,
+  ForumTagInput,
+  EmbedInput,
+} from "../src/shared/schemas";
 
 // Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
 
@@ -35,8 +39,10 @@ function createEventWithForumChannel(
               type: "forum",
             },
             forumThreadTitle: options.forumThreadTitle ?? null,
-            forumThreadTags: (options.forumThreadTags ?? null) as MediumDetails["forumThreadTags"],
-            content: options.content ?? baseEvent.data.mediums[0]!.details.content,
+            forumThreadTags: (options.forumThreadTags ??
+              null) as MediumDetails["forumThreadTags"],
+            content:
+              options.content ?? baseEvent.data.mediums[0]!.details.content,
           },
         },
       ],
@@ -77,8 +83,10 @@ function createEventWithForumWebhook(
               iconUrl: options.webhookIconUrl,
             },
             forumThreadTitle: options.forumThreadTitle ?? null,
-            forumThreadTags: (options.forumThreadTags ?? null) as MediumDetails["forumThreadTags"],
-            content: options.content ?? baseEvent.data.mediums[0]!.details.content,
+            forumThreadTags: (options.forumThreadTags ??
+              null) as MediumDetails["forumThreadTags"],
+            content:
+              options.content ?? baseEvent.data.mediums[0]!.details.content,
             embeds: (options.embeds ?? []) as MediumDetails["embeds"],
           },
         },
@@ -100,8 +108,8 @@ function getDiscordPayload(
 
   // Find the payload of the requested type, or use the first one
   const captured = type
-    ? ctx.discordClient.capturedPayloads.find((p) => p.type === type) ??
-      ctx.discordClient.capturedPayloads[0]!
+    ? (ctx.discordClient.capturedPayloads.find((p) => p.type === type) ??
+      ctx.discordClient.capturedPayloads[0]!)
     : ctx.discordClient.capturedPayloads[0]!;
 
   if (captured.type === "api-request") {
@@ -241,10 +249,7 @@ describe("Discord Payload Forum Channels (e2e)", () => {
 
       const eventWithForum = createEventWithForumChannel(ctx.testFeedV2Event, {
         forumThreadTitle: "{{title}}",
-        forumThreadTags: [
-          { id: "tag-1" },
-          { id: "tag-2" },
-        ],
+        forumThreadTags: [{ id: "tag-1" }, { id: "tag-2" }],
       });
 
       try {

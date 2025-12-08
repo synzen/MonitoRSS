@@ -11,17 +11,17 @@ import {
   GetFeedArticlesRequestStatus,
 } from "../utils";
 import { getArticlesInputSchema } from "../schemas";
-import { findOrFetchFeedArticles } from "../../services/articles.service";
-import { queryForArticles } from "../../services/feeds.service";
+import { findOrFetchFeedArticles } from "../../feeds/services/articles.service";
+import { queryForArticles } from "../../feeds/services/feeds.service";
 import {
   formatArticleForDiscord,
   CustomPlaceholderStepType,
-} from "../../article-formatter";
-import type { Article } from "../../article-parser";
+} from "../../articles/formatter";
+import type { Article } from "../../articles/parser";
 import {
   CustomPlaceholderRegexEvalException,
   FiltersRegexEvalException,
-} from "../../article-formatter/exceptions";
+} from "../../articles/formatter/exceptions";
 
 /**
  * Convert schema custom placeholders to the format expected by formatArticleForDiscord.

@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../src/delivery";
 import getTestRssFeed from "./data/test-rss-feed";
 import { createTestContext } from "./helpers/test-context";
-import type { FeedV2Event, EmbedInput } from "../src/schemas";
+import type { FeedV2Event, EmbedInput } from "../src/shared/schemas";
 
 // Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
 
@@ -42,7 +42,8 @@ function createEventWithWebhook(
               ...webhook,
               type: webhook.type ?? null,
             },
-            content: options?.content ?? baseEvent.data.mediums[0]!.details.content,
+            content:
+              options?.content ?? baseEvent.data.mediums[0]!.details.content,
             embeds: (options?.embeds ?? []) as MediumDetails["embeds"],
           },
         },
@@ -220,7 +221,9 @@ describe("Discord Payload Webhooks (e2e)", () => {
         expect(results!.length).toBe(1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.avatar_url).toBe("https://example.com/dynamic-avatar.png");
+        expect(payload.avatar_url).toBe(
+          "https://example.com/dynamic-avatar.png"
+        );
       } finally {
         ctx.cleanup();
       }

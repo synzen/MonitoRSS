@@ -13,11 +13,9 @@ import {
   deliverArticles,
   type LimitState,
 } from "../src/delivery";
-import {
-  createInMemoryDeliveryRecordStore,
-  type ArticleDeliveryState,
-} from "../src/delivery-record-store";
-import type { Article } from "../src/article-parser";
+import { createInMemoryDeliveryRecordStore } from "../src/stores/in-memory/delivery-record-store";
+import type { ArticleDeliveryState } from "../src/stores/interfaces/delivery-record-store";
+import type { Article } from "../src/articles/parser";
 
 function createJobData(overrides?: Partial<JobData>): JobData {
   return {

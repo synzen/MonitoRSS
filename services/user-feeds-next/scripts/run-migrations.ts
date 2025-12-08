@@ -1,7 +1,7 @@
 import { SQL } from "bun";
 import { config } from "dotenv";
-import { runMigrations } from "../src/postgres";
-import { logger } from "../src/utils";
+import { runMigrations } from "../src/stores/postgres";
+import { logger } from "../src/shared/utils";
 
 config();
 

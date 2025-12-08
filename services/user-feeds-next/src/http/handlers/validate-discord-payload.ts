@@ -3,7 +3,7 @@
  * Validates Discord payload using Zod schema.
  */
 
-import { discordMediumPayloadDetailsSchema } from "../../schemas/feed-v2-event.schema";
+import { discordMediumPayloadDetailsSchema } from "../../shared/schemas/feed-v2-event.schema";
 import { withAuth } from "../middleware";
 import { jsonResponse, parseJsonBody } from "../utils";
 

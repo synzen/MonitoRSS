@@ -3,7 +3,7 @@
  */
 
 import { jsonResponse } from "../utils/response";
-import { logger } from "../../utils";
+import { logger } from "../../shared/utils";
 
 const API_KEY = process.env.USER_FEEDS_API_KEY || "";
 

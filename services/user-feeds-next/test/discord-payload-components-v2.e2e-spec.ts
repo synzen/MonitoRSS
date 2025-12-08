@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../src/delivery";
 import getTestRssFeed from "./data/test-rss-feed";
 import { createTestContext } from "./helpers/test-context";
-import type { FeedV2Event, ComponentV2Input } from "../src/schemas";
+import type { FeedV2Event, ComponentV2Input } from "../src/shared/schemas";
 
 // Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
 
@@ -727,9 +727,7 @@ describe("Discord Payload Components V2 (e2e)", () => {
         // Action row
         const actionRow = container.components[3];
         expect(actionRow.type).toBe(1);
-        expect(actionRow.components[0].url).toBe(
-          "https://example.com/complex"
-        );
+        expect(actionRow.components[0].url).toBe("https://example.com/complex");
       } finally {
         ctx.cleanup();
       }

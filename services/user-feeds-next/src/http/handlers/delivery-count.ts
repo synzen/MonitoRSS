@@ -3,7 +3,7 @@
  * Returns delivery count for a feed within a time window.
  */
 
-import type { DeliveryRecordStore } from "../../delivery-record-store";
+import type { DeliveryRecordStore } from "../../stores/interfaces/delivery-record-store";
 import { jsonResponse, parseIntQueryParam } from "../utils";
 
 export async function handleDeliveryCount(

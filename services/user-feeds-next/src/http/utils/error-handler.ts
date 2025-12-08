@@ -13,13 +13,13 @@ import {
 import {
   CustomPlaceholderRegexEvalException,
   FiltersRegexEvalException,
-} from "../../article-formatter/exceptions";
+} from "../../articles/formatter/exceptions";
 import {
   FeedParseTimeoutException,
   InvalidFeedException,
-} from "../../article-parser";
+} from "../../articles/parser";
 import { jsonResponse } from "./response";
-import { logger } from "../../utils";
+import { logger } from "../../shared/utils";
 
 /**
  * Request status for get-articles endpoint.

@@ -9,34 +9,34 @@ import { jsonResponse, parseJsonBody, handleError } from "../utils";
 import {
   fetchFeedArticle,
   fetchRandomFeedArticle,
-} from "../../services/articles.service";
+} from "../../feeds/services/articles.service";
 import {
   discordMediumTestPayloadDetailsSchema,
   externalFeedPropertySchema,
   feedV2EventRequestLookupDetails,
   feedV2EventSchemaFormatOptions,
   feedV2EventSchemaDateChecks,
-} from "../../schemas/feed-v2-event.schema";
+} from "../../shared/schemas/feed-v2-event.schema";
 import {
   formatArticleForDiscord,
   CustomPlaceholderStepType,
   type CustomPlaceholder,
   type MentionTarget,
   type ForumThreadTag,
-} from "../../article-formatter";
-import type { Article } from "../../article-parser";
-import { buildFilterReferences } from "../../article-filters";
+} from "../../articles/formatter";
+import type { Article } from "../../articles/parser";
+import { buildFilterReferences } from "../../articles/filters";
 import {
   CustomPlaceholderRegexEvalException,
   FiltersRegexEvalException,
-} from "../../article-formatter/exceptions";
+} from "../../articles/formatter/exceptions";
 import { FeedArticleNotFoundException } from "../../feed-fetcher/exceptions";
 import {
   deliverTestArticle,
   type TestDiscordMediumDetails,
 } from "../../delivery/mediums/discord/discord-test-delivery";
-import type { DiscordRestClient } from "../../discord-rest";
-import { TestDeliveryMedium, TestDeliveryStatus } from "../../constants";
+import type { DiscordRestClient } from "../../delivery/mediums/discord/discord-rest-client";
+import { TestDeliveryMedium, TestDeliveryStatus } from "../../shared/constants";
 
 /**
  * Convert schema custom placeholders to the CustomPlaceholder[] format.

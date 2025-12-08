@@ -4,8 +4,8 @@
  * Contains interfaces used across the delivery module to avoid circular dependencies.
  */
 
-import type { LogicalExpression } from "../article-filters";
-import type { FeedV2Event } from "../schemas";
+import type { LogicalExpression } from "../articles/filters";
+import type { FeedV2Event } from "../shared/schemas";
 
 // ============================================================================
 // Rate Limiting Types

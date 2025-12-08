@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { CustomPlaceholderStepType } from "../../article-formatter";
+import { CustomPlaceholderStepType } from "../../articles/formatter";
 
 /**
  * Filter return type enum.

@@ -10,8 +10,8 @@
  * - Does not use message enqueue
  */
 
-import type { Article } from "../../../article-parser";
-import type { FilterExpressionReference } from "../../../article-filters";
+import type { Article } from "../../../articles/parser";
+import type { FilterExpressionReference } from "../../../articles/filters";
 import {
   generateDiscordPayloads,
   enhancePayloadsWithWebhookDetails,
@@ -27,15 +27,15 @@ import {
   type ComponentV2Input,
   type MentionTarget,
   type ForumThreadTag,
-} from "../../../article-formatter";
-import type { DiscordRestClient, DiscordApiResponse } from "../../../discord-rest";
+} from "../../../articles/formatter";
+import type { DiscordRestClient, DiscordApiResponse } from "./discord-rest-client";
 import {
   getChannelApiUrl,
   getWebhookApiUrl,
   getCreateChannelThreadUrl,
   getCreateChannelMessageThreadUrl,
 } from "./synzen-discord-rest";
-import { DiscordSendArticleOperationType } from "../../../constants";
+import { DiscordSendArticleOperationType } from "../../../shared/constants";
 
 // ============================================================================
 // Types

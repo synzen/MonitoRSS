@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../src/delivery";
 import getTestRssFeed from "./data/test-rss-feed";
 import { createTestContext } from "./helpers/test-context";
-import type { FeedV2Event } from "../src/schemas";
+import type { FeedV2Event } from "../src/shared/schemas";
 
 // Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
 
@@ -58,9 +58,7 @@ describe("Split Options (e2e)", () => {
         await ctx.seedArticles();
 
         // Generate a very long description (3000+ chars)
-        const longText = Array(100)
-          .fill("This is a test sentence. ")
-          .join("");
+        const longText = Array(100).fill("This is a test sentence. ").join("");
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -77,10 +75,13 @@ describe("Split Options (e2e)", () => {
         }));
 
         // Create event with splitOptions
-        const eventWithSplit = createEventWithSplitOptions(ctx.testFeedV2Event, {
-          content: "{{description}}",
-          splitOptions: {},
-        });
+        const eventWithSplit = createEventWithSplitOptions(
+          ctx.testFeedV2Event,
+          {
+            content: "{{description}}",
+            splitOptions: {},
+          }
+        );
 
         const results = await ctx.handleEvent(eventWithSplit);
 
@@ -116,9 +117,7 @@ describe("Split Options (e2e)", () => {
 
         // Create content with pipe characters that will trigger split
         // Each segment is short but total exceeds limit
-        const segments = Array(150)
-          .fill("This is segment number X|")
-          .join("");
+        const segments = Array(150).fill("This is segment number X|").join("");
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -167,9 +166,7 @@ describe("Split Options (e2e)", () => {
         await ctx.seedArticles(eventWithSplit);
 
         // Generate content that will split
-        const longText = Array(100)
-          .fill("This is a test sentence. ")
-          .join("");
+        const longText = Array(100).fill("This is a test sentence. ").join("");
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -218,9 +215,7 @@ describe("Split Options (e2e)", () => {
         await ctx.seedArticles(eventWithSplit);
 
         // Generate content that will split
-        const longText = Array(100)
-          .fill("This is a test sentence. ")
-          .join("");
+        const longText = Array(100).fill("This is a test sentence. ").join("");
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(
@@ -270,9 +265,7 @@ describe("Split Options (e2e)", () => {
         await ctx.seedArticles(eventWithSplit);
 
         // Generate content that will split
-        const longText = Array(100)
-          .fill("This is a test sentence. ")
-          .join("");
+        const longText = Array(100).fill("This is a test sentence. ").join("");
 
         ctx.setFeedResponse(() => ({
           body: getTestRssFeed(

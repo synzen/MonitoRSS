@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { validateLogicalExpression } from "../../article-filters";
+import { validateLogicalExpression } from "../../articles/filters";
 import { withAuth } from "../middleware";
 import { jsonResponse, parseJsonBody } from "../utils";
 

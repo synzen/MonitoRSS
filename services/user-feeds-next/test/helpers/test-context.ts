@@ -1,15 +1,15 @@
 import {
   getStores,
   getTestFeedRequestsServer,
-} from "../setup-integration-tests";
+} from "./setup-integration-tests";
 import {
   createTestDiscordRestClient,
   type TestDiscordRestClient,
-} from "../../src/discord-rest";
-import { handleFeedV2Event } from "../../src/feed-event-handler";
+} from "../../src/delivery/mediums/discord/discord-rest-client";
+import { handleFeedV2Event } from "../../src/feeds/feed-event-handler";
 import generateTestFeedV2Event from "../data/test-feed-v2-event";
 import getTestRssFeed from "../data/test-rss-feed";
-import type { FeedV2Event } from "../../src/schemas";
+import type { FeedV2Event } from "../../src/shared/schemas";
 
 interface TestArticle {
   guid: string;

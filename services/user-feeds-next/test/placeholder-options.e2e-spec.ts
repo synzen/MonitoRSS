@@ -1,10 +1,10 @@
 import { describe, it, expect } from "bun:test";
 import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../src/delivery";
-import { CustomPlaceholderStepType } from "../src/constants";
+import { CustomPlaceholderStepType } from "../src/shared/constants";
 import getTestRssFeed from "./data/test-rss-feed";
 import { createTestContext } from "./helpers/test-context";
-import type { FeedV2Event } from "../src/schemas";
+import type { FeedV2Event } from "../src/shared/schemas";
 
 // Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
 
@@ -172,8 +172,7 @@ describe("Placeholder Options (e2e)", () => {
               {
                 guid: "append-string-test",
                 title: "Test",
-                description:
-                  "This is a long description that needs truncation",
+                description: "This is a long description that needs truncation",
               },
             ],
             true
@@ -275,7 +274,8 @@ describe("Placeholder Options (e2e)", () => {
               {
                 guid: "nested-placeholder",
                 title: "MORE",
-                description: "This is a long description that will be truncated",
+                description:
+                  "This is a long description that will be truncated",
               },
             ],
             true

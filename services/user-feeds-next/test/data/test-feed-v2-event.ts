@@ -1,5 +1,5 @@
-import type { FeedV2Event } from "../../src/schemas";
-import { MediumKey } from "../../src/constants";
+import type { FeedV2Event } from "../../src/shared/schemas";
+import { MediumKey } from "../../src/shared/constants";
 import { randomUUID } from "crypto";
 
 interface GenerateTestFeedV2EventOptions {

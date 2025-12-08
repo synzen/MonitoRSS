@@ -14,8 +14,8 @@ import type {
   DiscordEnqueueResult,
   DiscordApiRequestOptions,
   DiscordApiResponse,
-} from "../../../discord-rest";
-import { logger } from "../../../utils";
+} from "./discord-rest-client";
+import { logger } from "../../../shared/utils";
 
 // ============================================================================
 // Configuration

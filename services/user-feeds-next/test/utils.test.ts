@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { replaceTemplateString } from "../src/article-formatter";
+import { replaceTemplateString } from "../src/articles/formatter";
 
 describe("replaceTemplateString", () => {
   it("returns the input if the string is falsy", () => {
