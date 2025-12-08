@@ -94,48 +94,49 @@ async function injectContentForArticle(
           return;
         }
 
-        if (!valid(body)) {
+        try {
+          parsedBody = parse(body);
+          parsedBodiesBySourceField[sourceField] = parsedBody;
+        } catch (err) {
           parsedBodiesBySourceField[sourceField] = null;
           return;
         }
-
-        parsedBody = parse(body);
-        parsedBodiesBySourceField[sourceField] = parsedBody;
       }
 
       // Query the CSS selector and extract content (max 10 matches)
-      parsedBody
+      const queriedContent = parsedBody
         .querySelectorAll(cssSelector)
-        .slice(0, 10)
-        .forEach((element, index) => {
-          const outerHtmlOfElement = element?.outerHTML || "";
+        .slice(0, 10);
 
-          const key =
-            `${INJECTED_ARTICLE_PLACEHOLDER_PREFIX}${sourceField}::${label}` +
-            `${index}`;
+      queriedContent.forEach((element, index) => {
+        const outerHtmlOfElement = element?.outerHTML || "";
 
-          targetRecord[key] = outerHtmlOfElement;
+        const key =
+          `${INJECTED_ARTICLE_PLACEHOLDER_PREFIX}${sourceField}::${label}` +
+          `${index}`;
 
-          // Extract images and anchors from the injected content
-          const { images: imageList, anchors: anchorList } =
-            extractExtraInfo(outerHtmlOfElement);
+        targetRecord[key] = outerHtmlOfElement;
 
-          if (imageList.length) {
-            for (let i = 0; i < imageList.length; i++) {
-              const image = imageList[i];
-              const imageKey = `${key}::image${i}`;
-              targetRecord[imageKey] = image!;
-            }
+        // Extract images and anchors from the injected content
+        const { images: imageList, anchors: anchorList } =
+          extractExtraInfo(outerHtmlOfElement);
+
+        if (imageList.length) {
+          for (let i = 0; i < imageList.length; i++) {
+            const image = imageList[i];
+            const imageKey = `${key}::image${i}`;
+            targetRecord[imageKey] = image!;
           }
+        }
 
-          if (anchorList.length) {
-            for (let i = 0; i < anchorList.length; i++) {
-              const anchor = anchorList[i];
-              const anchorKey = `${key}::anchor${i}`;
-              targetRecord[anchorKey] = anchor!;
-            }
+        if (anchorList.length) {
+          for (let i = 0; i < anchorList.length; i++) {
+            const anchor = anchorList[i];
+            const anchorKey = `${key}::anchor${i}`;
+            targetRecord[anchorKey] = anchor!;
           }
-        });
+        }
+      });
     })
   );
 }

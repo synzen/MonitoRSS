@@ -10,9 +10,12 @@ describe("App (e2e)", () => {
 
   it("sends new articles based on guid", async () => {
     const ctx = createTestContext();
+    console.log("APP DEBUG: feedUrl=", ctx.feedUrl, "feedId=", ctx.testFeedV2Event.data.feed.id);
 
     try {
-      await ctx.seedArticles();
+      const seedResult = await ctx.handleEvent();
+      console.log("APP DEBUG: seed result=", seedResult?.length);
+      ctx.discordClient.clear();
 
       // Override fetch to return ONLY a new article (replace: true)
       // This simulates a feed where a new article appeared and old one dropped off
@@ -25,6 +28,7 @@ describe("App (e2e)", () => {
       }));
 
       const results = await ctx.handleEvent();
+      console.log("APP DEBUG: delivery result=", results?.length);
 
       expect(results).not.toBeNull();
       expect(results!.length).toBe(1);

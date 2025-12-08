@@ -16,9 +16,14 @@ import {
   type FetchFeedResult,
 } from "./types";
 
-const DEFAULT_SERVICE_HOST =
-  process.env.USER_FEEDS_FEED_REQUESTS_API_URL || "http://feed-requests:5000";
-const API_KEY = process.env.USER_FEEDS_FEED_REQUESTS_API_KEY || "";
+// Use getter functions to read env vars dynamically (for test mocking)
+function getDefaultServiceHost() {
+  return process.env.USER_FEEDS_FEED_REQUESTS_API_URL || "http://feed-requests:5000";
+}
+
+function getApiKey() {
+  return process.env.USER_FEEDS_FEED_REQUESTS_API_KEY || "";
+}
 
 export async function fetchFeed(
   url: string,
@@ -32,7 +37,7 @@ export async function fetchFeed(
     serviceHost?: string;
   }
 ): Promise<FetchFeedResult> {
-  const serviceHost = options?.serviceHost ?? DEFAULT_SERVICE_HOST;
+  const serviceHost = options?.serviceHost ?? getDefaultServiceHost();
   let statusCode: number;
   let body: { json: () => Promise<unknown> };
 
@@ -52,7 +57,7 @@ export async function fetchFeed(
           headers: {
             "content-type": "application/json",
             accept: "application/json",
-            "api-key": API_KEY,
+            "api-key": getApiKey(),
           },
         }),
       {

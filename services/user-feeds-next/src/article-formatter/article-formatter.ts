@@ -1355,7 +1355,14 @@ export function generateDiscordPayloads(
           func: (
             str: string,
             opts: { appendString?: string | null; limit: number }
-          ) => truncateText(str, opts.limit),
+          ) =>
+            // Use applySplit exactly as user-feeds does for placeholder limits
+            applySplit(str, {
+              appendChar: opts.appendString ?? undefined,
+              limit: opts.limit,
+              isEnabled: true,
+              includeAppendInFirstPart: true,
+            })[0] || "",
           limits: options.placeholderLimits,
         }
       : undefined,

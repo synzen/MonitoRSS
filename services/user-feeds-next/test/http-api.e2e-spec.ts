@@ -1,35 +1,30 @@
-import { describe, it, expect, beforeAll, afterAll, mock } from "bun:test";
+import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import type { Server } from "bun";
 import { createHttpServer } from "../src/http";
 import { inMemoryDeliveryRecordStore } from "../src/delivery-record-store";
-import { FeedResponseRequestStatus } from "../src/feed-fetcher";
 import { createTestDiscordRestClient } from "../src/delivery";
+import { getTestFeedRequestsServer } from "./setup-integration-tests";
 
 // Must match USER_FEEDS_API_KEY in docker-compose.test.yml
 const TEST_API_KEY = "test-api-key";
 const TEST_PORT = 5555;
 
-// Mock feed-fetcher to return articles with HTML content for testing
+// Test feed URL - must be registered with the test feed requests server
+const TEST_FEED_URL = "https://example.com/http-api-test-feed.xml";
 const TEST_ARTICLE_ID = "test-article-1";
 
-mock.module("../src/feed-fetcher/feed-fetcher", () => ({
-  fetchFeed: async () => ({
-    requestStatus: FeedResponseRequestStatus.Success,
-    body: `<?xml version="1.0" encoding="UTF-8"?>
-      <rss version="2.0">
-        <channel>
-          <title>Test Feed</title>
-          <item>
-            <guid>${TEST_ARTICLE_ID}</guid>
-            <title>&lt;b&gt;Bold Title&lt;/b&gt; and &lt;i&gt;italic&lt;/i&gt;</title>
-            <description>&lt;strong&gt;Strong text&lt;/strong&gt;</description>
-          </item>
-        </channel>
-      </rss>`,
-    bodyHash: "test-hash",
-  }),
-  FeedResponseRequestStatus,
-}));
+// RSS feed content with HTML for testing markdown conversion
+const TEST_RSS_CONTENT = `<?xml version="1.0" encoding="UTF-8"?>
+  <rss version="2.0">
+    <channel>
+      <title>Test Feed</title>
+      <item>
+        <guid>${TEST_ARTICLE_ID}</guid>
+        <title>&lt;b&gt;Bold Title&lt;/b&gt; and &lt;i&gt;italic&lt;/i&gt;</title>
+        <description>&lt;strong&gt;Strong text&lt;/strong&gt;</description>
+      </item>
+    </channel>
+  </rss>`;
 
 // Type for JSON response bodies
 type JsonBody = Record<string, unknown>;
@@ -39,6 +34,13 @@ let baseUrl: string;
 
 describe("HTTP API (e2e)", () => {
   beforeAll(() => {
+    // Register the test feed URL with the shared test feed requests server
+    const testServer = getTestFeedRequestsServer();
+    testServer.registerUrl(TEST_FEED_URL, () => ({
+      body: TEST_RSS_CONTENT,
+      hash: "test-hash",
+    }));
+
     // Start the HTTP server with a test Discord client
     server = createHttpServer(
       {
@@ -52,6 +54,9 @@ describe("HTTP API (e2e)", () => {
 
   afterAll(() => {
     server.stop();
+    // Clean up the registered URL
+    const testServer = getTestFeedRequestsServer();
+    testServer.unregisterUrl(TEST_FEED_URL);
   });
 
   describe("POST /v1/user-feeds/filter-validation", () => {
@@ -506,7 +511,7 @@ describe("HTTP API (e2e)", () => {
         },
         body: JSON.stringify({
           type: "discord",
-          feed: { url: "https://example.com/feed.xml" },
+          feed: { url: TEST_FEED_URL },
           article: { id: TEST_ARTICLE_ID },
           mediumDetails: {
             guildId: "test-guild-id",
