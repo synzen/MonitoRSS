@@ -12,6 +12,16 @@ import {
   type ExternalFeedProperty,
 } from "../../articles/parser";
 import { FeedArticleNotFoundException } from "../../feed-fetcher/exceptions";
+import {
+  getFeedArticlesFromCache,
+  setFeedArticlesInCache,
+  refreshFeedArticlesCacheExpiration,
+  inMemoryParsedArticlesCacheStore,
+} from "../../stores/in-memory/parsed-articles-cache";
+import type {
+  ParsedArticlesCacheStore,
+  CacheKeyOptions,
+} from "../../stores/interfaces/parsed-articles-cache";
 
 export interface FetchFeedArticleOptions {
   formatOptions?: UserFeedFormatOptions;
@@ -28,6 +38,7 @@ export interface FindOrFetchFeedArticlesOptions extends FetchFeedArticleOptions 
   findRssFromHtml?: boolean;
   executeFetch?: boolean;
   executeFetchIfStale?: boolean;
+  parsedArticlesCacheStore?: ParsedArticlesCacheStore;
 }
 
 export interface FetchFeedArticlesResult {
@@ -48,6 +59,42 @@ export async function findOrFetchFeedArticles(
   url: string,
   options: FindOrFetchFeedArticlesOptions
 ): Promise<FetchFeedArticlesResult> {
+  const {
+    parsedArticlesCacheStore = inMemoryParsedArticlesCacheStore,
+  } = options;
+
+  const cacheKeyOptions: CacheKeyOptions = {
+    formatOptions: {
+      dateFormat: options.formatOptions?.dateFormat,
+      dateTimezone: options.formatOptions?.dateTimezone,
+      dateLocale: options.formatOptions?.dateLocale,
+    },
+    externalFeedProperties: options.externalFeedProperties,
+    requestLookupDetails: options.requestLookupDetails ?? undefined,
+  };
+
+  // Check cache first
+  const cachedArticles = await getFeedArticlesFromCache(parsedArticlesCacheStore, {
+    url,
+    options: cacheKeyOptions,
+  });
+
+  if (cachedArticles) {
+    await refreshFeedArticlesCacheExpiration(parsedArticlesCacheStore, {
+      url,
+      options: cacheKeyOptions,
+    });
+
+    return {
+      output: {
+        articles: cachedArticles.articles,
+        feed: {},
+      },
+      url,
+      attemptedToResolveFromHtml: false,
+    };
+  }
+
   const result = await fetchFeed(url, {
     executeFetch: options.executeFetch,
     executeFetchIfStale: options.executeFetchIfStale,
@@ -82,6 +129,13 @@ export async function findOrFetchFeedArticles(
       }
     );
   }
+
+  // Store in cache for future requests
+  await setFeedArticlesInCache(parsedArticlesCacheStore, {
+    url,
+    options: cacheKeyOptions,
+    data: { articles },
+  });
 
   return {
     output: {
