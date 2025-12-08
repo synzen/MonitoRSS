@@ -22,6 +22,8 @@ import { jsonResponse, handleError } from "./utils";
 export interface HttpServerContext {
   deliveryRecordStore: DeliveryRecordStore;
   discordClient: DiscordRestClient;
+  /** Override the feed requests service host (for testing) */
+  feedRequestsServiceHost: string;
 }
 
 /**
@@ -48,7 +50,12 @@ export function createHttpServer(
         GET: (req) => {
           const url = new URL(req.url);
           const feedId = req.params.feedId;
-          return handleDeliveryCount(req, url, feedId, context.deliveryRecordStore);
+          return handleDeliveryCount(
+            req,
+            url,
+            feedId,
+            context.deliveryRecordStore
+          );
         },
       },
 
@@ -56,20 +63,30 @@ export function createHttpServer(
         GET: (req) => {
           const url = new URL(req.url);
           const feedId = req.params.feedId;
-          return handleDeliveryLogs(req, url, feedId, context.deliveryRecordStore);
+          return handleDeliveryLogs(
+            req,
+            url,
+            feedId,
+            context.deliveryRecordStore
+          );
         },
       },
 
       "/v1/user-feeds/get-articles": {
-        POST: (req) => handleGetArticles(req),
+        POST: (req) => handleGetArticles(req, context.feedRequestsServiceHost),
       },
 
       "/v1/user-feeds/preview": {
-        POST: (req) => handlePreview(req),
+        POST: (req) => handlePreview(req, context.feedRequestsServiceHost),
       },
 
       "/v1/user-feeds/test": {
-        POST: (req) => handleTest(req, context.discordClient),
+        POST: (req) =>
+          handleTest(
+            req,
+            context.discordClient,
+            context.feedRequestsServiceHost
+          ),
       },
     },
     fetch() {

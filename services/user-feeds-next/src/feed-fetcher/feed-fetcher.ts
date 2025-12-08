@@ -16,28 +16,21 @@ import {
   type FetchFeedResult,
 } from "./types";
 
-// Use getter functions to read env vars dynamically (for test mocking)
-function getDefaultServiceHost() {
-  return process.env.USER_FEEDS_FEED_REQUESTS_API_URL || "http://feed-requests:5000";
-}
-
-function getApiKey() {
-  return process.env.USER_FEEDS_FEED_REQUESTS_API_KEY || "";
-}
+const API_KEY = process.env.USER_FEEDS_FEED_REQUESTS_API_KEY || "";
 
 export async function fetchFeed(
   url: string,
-  options?: {
+  options: {
     executeFetch?: boolean;
     executeFetchIfNotInCache?: boolean;
     executeFetchIfStale?: boolean;
     retries?: number;
     hashToCompare?: string;
     lookupDetails?: FeedRequestLookupDetails | null;
-    serviceHost?: string;
+    serviceHost: string;
   }
 ): Promise<FetchFeedResult> {
-  const serviceHost = options?.serviceHost ?? getDefaultServiceHost();
+  const serviceHost = options.serviceHost;
   let statusCode: number;
   let body: { json: () => Promise<unknown> };
 
@@ -57,7 +50,7 @@ export async function fetchFeed(
           headers: {
             "content-type": "application/json",
             accept: "application/json",
-            "api-key": getApiKey(),
+            "api-key": API_KEY,
           },
         }),
       {

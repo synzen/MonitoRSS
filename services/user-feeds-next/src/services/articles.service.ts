@@ -21,6 +21,7 @@ export interface FetchFeedArticleOptions {
     url?: string;
     headers?: Record<string, string>;
   } | null;
+  feedRequestsServiceHost: string;
 }
 
 export interface FindOrFetchFeedArticlesOptions extends FetchFeedArticleOptions {
@@ -51,6 +52,7 @@ export async function findOrFetchFeedArticles(
     executeFetch: options.executeFetch,
     executeFetchIfStale: options.executeFetchIfStale,
     lookupDetails: options.requestLookupDetails,
+    serviceHost: options.feedRequestsServiceHost,
   });
 
   if (result.requestStatus !== FeedResponseRequestStatus.Success) {

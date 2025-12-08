@@ -38,9 +38,7 @@ export interface TestFeedRequestsServer {
   clearUrl(url: string): void;
 }
 
-export function createTestFeedRequestsServer(
-  port = 5556
-): TestFeedRequestsServer {
+export function createTestFeedRequestsServer(): TestFeedRequestsServer {
   const requests: Array<{ url: string; body: FeedRequestBody }> = [];
 
   // URL -> ResponseProvider map
@@ -53,7 +51,7 @@ export function createTestFeedRequestsServer(
   });
 
   const server = Bun.serve({
-    port,
+    port: 0, // Random available port
     fetch: async (req) => {
       const body = (await req.json()) as FeedRequestBody;
       requests.push({ url: body.url, body });
@@ -76,9 +74,15 @@ export function createTestFeedRequestsServer(
     },
   });
 
+  // When using port 0, Bun assigns an available port
+  const assignedPort = server.port;
+  if (assignedPort === undefined) {
+    throw new Error("Failed to get assigned port from Bun.serve()");
+  }
+
   return {
     server,
-    port,
+    port: assignedPort,
 
     registerUrl: (url, provider) => {
       urlRegistry.set(url, provider);

@@ -66,7 +66,10 @@ function convertCustomPlaceholders(
   }));
 }
 
-export async function handleGetArticles(req: Request): Promise<Response> {
+export async function handleGetArticles(
+  req: Request,
+  feedRequestsServiceHost: string
+): Promise<Response> {
   return withAuth(req, async () => {
     const body = await parseJsonBody<unknown>(req);
     const input = getArticlesInputSchema.parse(body);
@@ -97,6 +100,7 @@ export async function handleGetArticles(req: Request): Promise<Response> {
                 | undefined,
             }
           : null,
+        feedRequestsServiceHost,
       });
 
       if (fetchResult.articles.length === 0) {

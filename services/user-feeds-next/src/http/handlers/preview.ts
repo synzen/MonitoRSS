@@ -34,7 +34,10 @@ enum TestDeliveryStatus {
   NoArticles = "NO_ARTICLES",
 }
 
-export async function handlePreview(req: Request): Promise<Response> {
+export async function handlePreview(
+  req: Request,
+  feedRequestsServiceHost: string
+): Promise<Response> {
   return withAuth(req, async () => {
     try {
       const payload = await parseJsonBody<Record<string, unknown>>(req);
@@ -96,11 +99,16 @@ export async function handlePreview(req: Request): Promise<Response> {
               dateLocale: withType.feed.formatOptions?.dateLocale,
             },
             externalFeedProperties: feed.externalProperties || [],
-            requestLookupDetails: feed.requestLookupDetails ? {
-              key: feed.requestLookupDetails.key,
-              url: feed.requestLookupDetails.url ?? undefined,
-              headers: feed.requestLookupDetails.headers as Record<string, string> | undefined,
-            } : null,
+            requestLookupDetails: feed.requestLookupDetails
+              ? {
+                  key: feed.requestLookupDetails.key,
+                  url: feed.requestLookupDetails.url ?? undefined,
+                  headers: feed.requestLookupDetails.headers as
+                    | Record<string, string>
+                    | undefined,
+                }
+              : null,
+            feedRequestsServiceHost,
           }
         );
 
@@ -154,31 +162,51 @@ export async function handlePreview(req: Request): Promise<Response> {
             url: e.url ?? undefined,
             color: e.color ?? undefined,
             timestamp: e.timestamp ?? undefined,
-            footer: e.footer ? { text: e.footer.text, iconUrl: e.footer.iconUrl ?? undefined } : undefined,
-            author: e.author ? { name: e.author.name, url: e.author.url ?? undefined, iconUrl: e.author.iconUrl ?? undefined } : undefined,
+            footer: e.footer
+              ? { text: e.footer.text, iconUrl: e.footer.iconUrl ?? undefined }
+              : undefined,
+            author: e.author
+              ? {
+                  name: e.author.name,
+                  url: e.author.url ?? undefined,
+                  iconUrl: e.author.iconUrl ?? undefined,
+                }
+              : undefined,
             thumbnail: e.thumbnail ? { url: e.thumbnail.url } : undefined,
             image: e.image ? { url: e.image.url } : undefined,
-            fields: e.fields?.map((f) => ({ name: f.name, value: f.value, inline: f.inline ?? undefined })),
+            fields: e.fields?.map((f) => ({
+              name: f.name,
+              value: f.value,
+              inline: f.inline ?? undefined,
+            })),
           })),
-          splitOptions: mediumDetails.splitOptions ? {
-            splitChar: mediumDetails.splitOptions.splitChar ?? undefined,
-            appendChar: mediumDetails.splitOptions.appendChar ?? undefined,
-            prependChar: mediumDetails.splitOptions.prependChar ?? undefined,
-          } : undefined,
+          splitOptions: mediumDetails.splitOptions
+            ? {
+                splitChar: mediumDetails.splitOptions.splitChar ?? undefined,
+                appendChar: mediumDetails.splitOptions.appendChar ?? undefined,
+                prependChar:
+                  mediumDetails.splitOptions.prependChar ?? undefined,
+              }
+            : undefined,
           content: mediumDetails.content ?? undefined,
-          mentions: mediumDetails.mentions ? {
-            targets: mediumDetails.mentions.targets?.map((t) => ({
-              id: t.id,
-              type: t.type,
-              filters: t.filters ? { expression: t.filters.expression } : undefined,
-            })) as any,
-          } : undefined,
+          mentions: mediumDetails.mentions
+            ? {
+                targets: mediumDetails.mentions.targets?.map((t) => ({
+                  id: t.id,
+                  type: t.type,
+                  filters: t.filters
+                    ? { expression: t.filters.expression }
+                    : undefined,
+                })) as any,
+              }
+            : undefined,
           placeholderLimits: mediumDetails.placeholderLimits?.map((pl) => ({
             placeholder: pl.placeholder,
             characterCount: pl.characterCount,
             appendString: pl.appendString ?? undefined,
           })),
-          enablePlaceholderFallback: mediumDetails.enablePlaceholderFallback ?? undefined,
+          enablePlaceholderFallback:
+            mediumDetails.enablePlaceholderFallback ?? undefined,
           components: mediumDetails.components?.map((row) => ({
             type: row.type,
             components: row.components.map((btn) => ({
@@ -186,12 +214,22 @@ export async function handlePreview(req: Request): Promise<Response> {
               style: btn.style,
               label: btn.label,
               url: btn.url ?? undefined,
-              emoji: btn.emoji ? { id: btn.emoji.id, name: btn.emoji.name ?? undefined, animated: btn.emoji.animated ?? undefined } : undefined,
+              emoji: btn.emoji
+                ? {
+                    id: btn.emoji.id,
+                    name: btn.emoji.name ?? undefined,
+                    animated: btn.emoji.animated ?? undefined,
+                  }
+                : undefined,
             })),
           })),
           componentsV2: mediumDetails.componentsV2?.map((c) => {
             if (c.type === "SEPARATOR") {
-              return { type: "SEPARATOR" as const, divider: c.divider, spacing: c.spacing };
+              return {
+                type: "SEPARATOR" as const,
+                divider: c.divider,
+                spacing: c.spacing,
+              };
             }
             if (c.type === "ACTION_ROW") {
               return {
@@ -201,7 +239,13 @@ export async function handlePreview(req: Request): Promise<Response> {
                   style: btn.style,
                   disabled: btn.disabled,
                   label: btn.label ?? undefined,
-                  emoji: btn.emoji ? { id: btn.emoji.id, name: btn.emoji.name ?? undefined, animated: btn.emoji.animated ?? undefined } : undefined,
+                  emoji: btn.emoji
+                    ? {
+                        id: btn.emoji.id,
+                        name: btn.emoji.name ?? undefined,
+                        animated: btn.emoji.animated ?? undefined,
+                      }
+                    : undefined,
                   url: btn.url ?? undefined,
                 })),
               };

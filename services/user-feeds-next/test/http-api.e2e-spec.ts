@@ -46,6 +46,7 @@ describe("HTTP API (e2e)", () => {
       {
         deliveryRecordStore: inMemoryDeliveryRecordStore,
         discordClient: createTestDiscordRestClient(),
+        feedRequestsServiceHost: `http://localhost:${testServer.port}`,
       },
       TEST_PORT
     );

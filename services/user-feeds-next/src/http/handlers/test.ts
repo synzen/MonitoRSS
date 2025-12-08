@@ -93,7 +93,8 @@ function convertCustomPlaceholders(
 
 export async function handleTest(
   req: Request,
-  discordClient: DiscordRestClient
+  discordClient: DiscordRestClient,
+  feedRequestsServiceHost: string
 ): Promise<Response> {
   return withAuth(req, async () => {
     try {
@@ -169,6 +170,7 @@ export async function handleTest(
                     | undefined,
                 }
               : null,
+            feedRequestsServiceHost,
           });
         } else {
           article = await fetchFeedArticle(feed.url, dtoArticle.id, {
@@ -183,6 +185,7 @@ export async function handleTest(
                     | undefined,
                 }
               : null,
+            feedRequestsServiceHost,
           });
         }
 

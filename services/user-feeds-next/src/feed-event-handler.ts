@@ -313,8 +313,8 @@ export async function handleFeedV2Event(
     deliveryRecordStore?: DeliveryRecordStore;
     discordClient?: DiscordRestClient;
     publisher?: FeedRetryPublisher;
-    feedRequestsServiceHost?: string;
-  } = {}
+    feedRequestsServiceHost: string;
+  }
 ): Promise<ArticleDeliveryState[] | null> {
   const {
     responseHashStore = inMemoryResponseHashStore,
@@ -437,7 +437,7 @@ async function handleFeedV2EventInternal({
   discordClient: DiscordRestClient;
   publisher?: FeedRetryPublisher;
   debugLog: (message: string, data?: Record<string, unknown>) => void;
-  feedRequestsServiceHost?: string;
+  feedRequestsServiceHost: string;
 }): Promise<ArticleDeliveryState[] | null> {
   // Get the stored hash if we have prior articles stored
   let hashToCompare: string | undefined;

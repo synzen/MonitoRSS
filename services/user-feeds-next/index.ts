@@ -101,7 +101,10 @@ interface SharedInfrastructure {
   feedRetryStore: FeedRetryStore;
   parsedArticlesCacheStore: ParsedArticlesCacheStore;
   processingLock: ProcessingLock;
-  discordClient: DiscordRestClient & { initialize(): Promise<void>; close(): void } | null;
+  discordClient:
+    | (DiscordRestClient & { initialize(): Promise<void>; close(): void })
+    | null;
+  feedRequestsServiceHost: string;
 }
 
 /**
@@ -183,6 +186,14 @@ async function initializeSharedInfrastructure(): Promise<SharedInfrastructure> {
     });
   }
 
+  const feedRequestsServiceHost = process.env.USER_FEEDS_FEED_REQUESTS_API_URL;
+
+  if (!feedRequestsServiceHost) {
+    throw new Error(
+      "Feed Requests service host is required for API mode. Check USER_FEEDS_FEED_REQUESTS_API_URL."
+    );
+  }
+
   return {
     deliveryRecordStore,
     articleFieldStore,
@@ -191,6 +202,7 @@ async function initializeSharedInfrastructure(): Promise<SharedInfrastructure> {
     parsedArticlesCacheStore,
     processingLock,
     discordClient,
+    feedRequestsServiceHost,
   };
 }
 
@@ -231,6 +243,7 @@ async function startApiMode(
     {
       deliveryRecordStore: infrastructure.deliveryRecordStore,
       discordClient: infrastructure.discordClient,
+      feedRequestsServiceHost: infrastructure.feedRequestsServiceHost,
     },
     HTTP_PORT
   );
@@ -317,6 +330,7 @@ async function startServiceMode(
           responseHashStore: infrastructure.responseHashStore,
           feedRetryStore: infrastructure.feedRetryStore,
           discordClient: infrastructure.discordClient!,
+          feedRequestsServiceHost: infrastructure.feedRequestsServiceHost,
         });
       } finally {
         await infrastructure.processingLock.release(feedId);

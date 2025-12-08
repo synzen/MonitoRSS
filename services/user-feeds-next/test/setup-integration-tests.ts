@@ -52,12 +52,8 @@ export async function setupIntegrationTests(): Promise<{
   discordClient: DiscordRestClient;
   testFeedRequestsServer: TestFeedRequestsServer;
 }> {
-  // Start the test feed-requests server
-  testFeedRequestsServer = createTestFeedRequestsServer(5556);
-
-  // Set environment variable so that fetchFeed uses our test server
-  // (used by articles.service.ts and other code that doesn't take serviceHost as param)
-  process.env.USER_FEEDS_FEED_REQUESTS_API_URL = `http://localhost:${testFeedRequestsServer.port}`;
+  // Start the test feed-requests server with random available port
+  testFeedRequestsServer = createTestFeedRequestsServer();
 
   // Get connection string from environment
   const postgresUri =
