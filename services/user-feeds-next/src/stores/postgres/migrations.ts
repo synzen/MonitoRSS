@@ -303,6 +303,8 @@ export async function ensurePartitionsExist(sql: SQL): Promise<void> {
       continue;
     }
 
+    // Note: PostgreSQL does not support parameterized queries in DDL statements.
+    // These values are safe as they come from dayjs() date calculations, not user input.
     await sql.unsafe(`
       CREATE TABLE ${partition.tableName}
       PARTITION OF ${partition.parentTable}
@@ -345,8 +347,8 @@ async function getCurrentPartitions(
   sql: SQL,
   tableName: string
 ): Promise<PartitionInfo[]> {
-  const result = await sql.unsafe(`
-    SELECT
+  const result = await sql.unsafe(
+    `SELECT
       nmsp_parent.nspname AS parent_schema,
       parent.relname      AS parent,
       nmsp_child.nspname  AS child_schema,
@@ -356,8 +358,9 @@ async function getCurrentPartitions(
       JOIN pg_class child             ON pg_inherits.inhrelid   = child.oid
       JOIN pg_namespace nmsp_parent   ON nmsp_parent.oid  = parent.relnamespace
       JOIN pg_namespace nmsp_child    ON nmsp_child.oid   = child.relnamespace
-    WHERE parent.relname='${tableName}';
-  `);
+    WHERE parent.relname = $1`,
+    [tableName]
+  );
 
   const partitions = result.map(
     (row: {

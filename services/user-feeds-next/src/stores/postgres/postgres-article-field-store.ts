@@ -89,11 +89,11 @@ export function createPostgresArticleFieldStore(sql: SQL): ArticleFieldStore {
         const temporaryTableName = `current_article_ids_${feedId.replace(/-/g, "_")}`;
 
         results = await sql.begin(async (tx) => {
-          // Create temp table with VALUES
+          // Create temp table with VALUES using parameterized query
+          const placeholders = idHashes.map((_, i) => `($${i + 1})`).join(", ");
           await tx.unsafe(
-            `CREATE TEMP TABLE ${temporaryTableName} AS SELECT * FROM (VALUES ${idHashes
-              .map((h) => `('${h}')`)
-              .join(", ")}) AS t(id)`
+            `CREATE TEMP TABLE ${temporaryTableName} AS SELECT * FROM (VALUES ${placeholders}) AS t(id)`,
+            idHashes
           );
 
           let result: Array<{ field_hashed_value: string }>;
