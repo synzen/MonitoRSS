@@ -263,6 +263,7 @@ const convertMessageBuilderStateToConnectionPreviewInput = (
   return {
     content: content || null,
     embeds: embeds.length > 0 ? embeds : undefined,
+    componentsV2: null,
     componentRows: componentRows.length > 0 ? componentRows : null,
     channelNewThreadExcludesPreview: messageComponent.channelNewThreadExcludesPreview,
     channelNewThreadTitle: messageComponent.channelNewThreadTitle,

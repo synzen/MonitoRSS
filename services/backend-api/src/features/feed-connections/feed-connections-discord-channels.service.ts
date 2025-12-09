@@ -1104,7 +1104,12 @@ export class FeedConnectionsDiscordChannelsService {
         components: castDiscordComponentRowsForMedium(
           previewInput?.componentRows
         ),
-        componentsV2: previewInput?.componentsV2,
+        componentsV2:
+          previewInput?.content ||
+          previewInput?.embeds?.length ||
+          previewInput?.componentsV2 === null
+            ? undefined
+            : previewInput?.componentsV2 || connection.details.componentsV2,
         channelNewThreadTitle:
           previewInput?.channelNewThreadTitle ||
           connection.details.channelNewThreadTitle,

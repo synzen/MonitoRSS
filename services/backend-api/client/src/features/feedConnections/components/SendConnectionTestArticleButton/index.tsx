@@ -1,6 +1,5 @@
 import { Button } from "@chakra-ui/react";
 import { useContext } from "react";
-import { useTranslation } from "react-i18next";
 import { FaDiscord } from "react-icons/fa";
 import { ArticleSelectDialog } from "../../../feed/components";
 import { SendTestArticleContext } from "../../../../contexts";
@@ -10,7 +9,6 @@ import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 
 export const SendConnectionTestArticleButton = () => {
   const { userFeed, connection, articleFormatOptions } = useUserFeedConnectionContext();
-  const { t } = useTranslation();
   const { sendTestArticle, isFetching } = useContext(SendTestArticleContext);
   const { createErrorAlert, createSuccessAlert, createInfoAlert } = usePageAlertContext();
 
