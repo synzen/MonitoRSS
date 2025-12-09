@@ -8,8 +8,9 @@ FROM base AS install
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production
 
-# Final production image
-FROM base AS release
+# Final production image using Alpine
+FROM oven/bun:1-alpine AS release
+WORKDIR /usr/src/app
 COPY --from=install /usr/src/app/node_modules ./node_modules
 COPY . .
 
