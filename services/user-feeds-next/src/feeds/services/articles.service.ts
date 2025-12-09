@@ -97,6 +97,7 @@ export async function findOrFetchFeedArticles(
 
   const result = await fetchFeed(url, {
     executeFetch: options.executeFetch,
+    executeFetchIfNotInCache: true,
     executeFetchIfStale: options.executeFetchIfStale,
     lookupDetails: options.requestLookupDetails,
     serviceHost: options.feedRequestsServiceHost,
