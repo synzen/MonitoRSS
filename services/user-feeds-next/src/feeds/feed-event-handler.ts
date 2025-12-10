@@ -10,13 +10,13 @@ import {
   FeedRequestTimedOutException,
 } from "../feed-fetcher/exceptions";
 import {
-  parseArticlesFromXml,
   FeedParseTimeoutException,
   InvalidFeedException,
   getParserRules,
   type ExternalFetchFn,
   type ExternalFeedProperty,
 } from "../articles/parser";
+import { parseArticlesFromXmlWithWorkers as parseArticlesFromXml } from "../articles/parser/worker";
 import {
   getArticlesToDeliver,
   inMemoryArticleFieldStore,
@@ -52,9 +52,7 @@ import type {
   FeedRetryStore,
   FeedRetryPublisher,
 } from "../stores/interfaces/feed-retry-store";
-import {
-  inMemoryDeliveryRecordStore,
-} from "../stores/in-memory/delivery-record-store";
+import { inMemoryDeliveryRecordStore } from "../stores/in-memory/delivery-record-store";
 import {
   type DeliveryRecordStore,
   type ArticleDeliveryState,
@@ -368,10 +366,6 @@ export async function handleFeedV2Event(
         return result;
       } catch (err) {
         eventError = (err as Error).stack;
-        logger.error("Failed to handle feed event", {
-          feedId: event.data.feed.id,
-          error: eventError,
-        });
         throw err;
       } finally {
         // Flush pending inserts at the end (matching user-feeds order)

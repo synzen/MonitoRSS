@@ -25,21 +25,15 @@ import {
   inMemoryProcessingLock,
   type ProcessingLock,
 } from "./src/stores/redis";
-import {
-  inMemoryParsedArticlesCacheStore,
-} from "./src/stores/in-memory/parsed-articles-cache";
+import { inMemoryParsedArticlesCacheStore } from "./src/stores/in-memory/parsed-articles-cache";
 import type { ParsedArticlesCacheStore } from "./src/stores/interfaces/parsed-articles-cache";
 import {
   inMemoryArticleFieldStore,
   type ArticleFieldStore,
 } from "./src/articles/comparison";
-import {
-  inMemoryDeliveryRecordStore,
-} from "./src/stores/in-memory/delivery-record-store";
+import { inMemoryDeliveryRecordStore } from "./src/stores/in-memory/delivery-record-store";
 import type { DeliveryRecordStore } from "./src/stores/interfaces/delivery-record-store";
-import {
-  inMemoryFeedRetryStore,
-} from "./src/stores/in-memory/feed-retry-store";
+import { inMemoryFeedRetryStore } from "./src/stores/in-memory/feed-retry-store";
 import type { FeedRetryStore } from "./src/stores/interfaces/feed-retry-store";
 import {
   createPostgresDeliveryRecordStore,
@@ -50,6 +44,7 @@ import {
   pruneOldPartitions,
 } from "./src/stores/postgres";
 import { createHttpServer } from "./src/http";
+import { terminateFeedParserPool } from "./src/articles/parser/worker";
 
 // Load environment variables
 config();
@@ -207,9 +202,12 @@ async function initializeSharedInfrastructure(): Promise<SharedInfrastructure> {
 }
 
 /**
- * Close shared infrastructure (Redis, PostgreSQL).
+ * Close shared infrastructure (Redis, PostgreSQL, worker pool).
  */
 async function closeSharedInfrastructure(): Promise<void> {
+  // Terminate worker pool
+  await terminateFeedParserPool();
+
   await closeRedisClient();
 
   if (sqlClient) {
@@ -331,6 +329,11 @@ async function startServiceMode(
           feedRetryStore: infrastructure.feedRetryStore,
           discordClient: infrastructure.discordClient!,
           feedRequestsServiceHost: infrastructure.feedRequestsServiceHost,
+        });
+      } catch (err) {
+        logger.error("Failed to handle user feed event", {
+          feedId,
+          error: (err as Error).stack,
         });
       } finally {
         await infrastructure.processingLock.release(feedId);

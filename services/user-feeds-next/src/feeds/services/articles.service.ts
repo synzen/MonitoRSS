@@ -5,12 +5,12 @@
 
 import { fetchFeed, FeedResponseRequestStatus } from "../../feed-fetcher";
 import {
-  parseArticlesFromXml,
   injectExternalContent,
   type Article,
   type UserFeedFormatOptions,
   type ExternalFeedProperty,
 } from "../../articles/parser";
+import { parseArticlesFromXmlWithWorkers as parseArticlesFromXml } from "../../articles/parser/worker";
 import { FeedArticleNotFoundException } from "../../feed-fetcher/exceptions";
 import {
   getFeedArticlesFromCache,
