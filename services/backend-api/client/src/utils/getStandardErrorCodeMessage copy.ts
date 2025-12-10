@@ -47,6 +47,7 @@ export enum ApiErrorCode {
   TRANSACTION_BALANCE_TOO_LOW = "TRANSACTION_BALANCE_TOO_LOW",
   SUBSCRIPTION_ABOUT_TO_RENEW = "SUBSCRIPTION_ABOUT_TO_RENEW",
   USER_REFRESH_RATE_NOT_ALLOWED = "USER_REFRESH_RATE_NOT_ALLOWED",
+  ADDRESS_LOCATION_NOT_ALLOWED = "ADDRESS_LOCATION_NOT_ALLOWED",
 }
 
 const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
@@ -106,6 +107,8 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   SUBSCRIPTION_ABOUT_TO_RENEW:
     "Cannot update subscription when renewal is within the next 30 minutes. Try again later.",
   USER_REFRESH_RATE_NOT_ALLOWED: "Refresh rate is not allowed.",
+  ADDRESS_LOCATION_NOT_ALLOWED:
+    "Your location is not supported for billing. This may be due to regional restrictions. If you believe this is an error, please contact support@monitorss.xyz.",
 };
 
 export const getStandardErrorCodeMessage = (code: ApiErrorCode) => {

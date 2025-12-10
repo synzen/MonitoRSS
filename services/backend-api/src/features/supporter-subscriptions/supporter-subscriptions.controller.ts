@@ -32,6 +32,7 @@ import logger from "../../utils/logger";
 import { FastifyRequest } from "fastify";
 import { CacheInterceptor, CacheTTL } from "@nestjs/cache-manager";
 import { PreviewSubscriptionUpdateExceptionFilters } from "./filters/preview-subscription-update-exception.filters";
+import { SubscriptionProductsExceptionFilter } from "./filters/subscription-products-exception.filter";
 
 type ProductId = string;
 
@@ -162,6 +163,7 @@ export class SupporterSubscriptionsController {
   @Get()
   @UseInterceptors(CacheInterceptor)
   @CacheTTL(60 * 5)
+  @UseFilters(SubscriptionProductsExceptionFilter)
   async getProducts(
     @Req() request: FastifyRequest,
     @Query("currency") currency?: string

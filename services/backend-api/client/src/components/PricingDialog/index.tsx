@@ -622,7 +622,10 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                       <Stack mb={4}>
                         <InlineErrorAlert
                           title="Something went wrong while loading prices."
-                          description="This issue has been automatically sent for diagnostics. Please try again later, refreshing the page, or contacting us at support@monitorss.xyz"
+                          description={
+                            subProductsError?.message ||
+                            "This issue has been automatically sent for diagnostics. Please try again later, refreshing the page, or contacting us at support@monitorss.xyz"
+                          }
                         />
                       </Stack>
                     )}

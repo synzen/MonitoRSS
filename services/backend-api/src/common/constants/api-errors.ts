@@ -50,6 +50,7 @@ export enum ApiErrorCode {
   TRANSACTION_BALANCE_TOO_LOW = "TRANSACTION_BALANCE_TOO_LOW",
   SUBSCRIPTION_ABOUT_TO_RENEW = "SUBSCRIPTION_ABOUT_TO_RENEW",
   USER_REFRESH_RATE_NOT_ALLOWED = "USER_REFRESH_RATE_NOT_ALLOWED",
+  ADDRESS_LOCATION_NOT_ALLOWED = "ADDRESS_LOCATION_NOT_ALLOWED",
 }
 
 // Create a package for the frontend?
@@ -121,4 +122,6 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   SUBSCRIPTION_ABOUT_TO_RENEW:
     "Subscription is about to renew. Wait at least 30 minutes before trying again.",
   USER_REFRESH_RATE_NOT_ALLOWED: "Refresh rate not allowed",
+  ADDRESS_LOCATION_NOT_ALLOWED:
+    "Your location is not supported for billing. This may be due to regional restrictions. If you believe this is an error, please contact support@monitorss.xyz.",
 };

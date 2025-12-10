@@ -37,7 +37,7 @@ export const formatCurrency = (input: string, currencyCode: string) => {
   if (!formatter) {
     logger.error(`No formatter for currency code ${currencyCode}`);
 
-    return input;
+    return `${input} ${currencyCode}`;
   }
 
   if (ZERO_DECIMAL_CURRENCIES.includes(currencyCode)) {

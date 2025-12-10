@@ -11,6 +11,7 @@ import {
 import { PaddleSubscriptionResponse } from "../supporter-subscriptions/types/paddle-subscription-response.type";
 import { TransactionBalanceTooLowException } from "./exceptions/transaction-balance-too-low.exception";
 import { CannotRenewSubscriptionBeforeRenewal } from "./exceptions/cannot-renew-subscription-before-renewal.exception";
+import { AddressLocationNotAllowedException } from "./exceptions/address-location-not-allowed.exception";
 
 @Injectable()
 export class PaddleService {
@@ -136,6 +137,10 @@ export class PaddleService {
 
       if (responseJson?.error?.code === "subscription_locked_renewal") {
         throw new CannotRenewSubscriptionBeforeRenewal();
+      }
+
+      if (responseJson?.error?.code === "address_location_not_allowed") {
+        throw new AddressLocationNotAllowedException();
       }
 
       throw new Error(
