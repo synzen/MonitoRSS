@@ -7,6 +7,21 @@ import { UserExternalCredentialStatus } from "../../../common/constants/user-ext
   timestamps: false,
   _id: false,
 })
+export class UserFeedListSort {
+  @Prop({ required: true })
+  key: string;
+
+  @Prop({ required: true })
+  direction: "asc" | "desc";
+}
+
+export const UserFeedListSortSchema =
+  SchemaFactory.createForClass(UserFeedListSort);
+
+@Schema({
+  timestamps: false,
+  _id: false,
+})
 export class UserPreferences {
   @Prop()
   alertOnDisabledFeeds?: boolean;
@@ -19,6 +34,9 @@ export class UserPreferences {
 
   @Prop()
   dateLocale?: string;
+
+  @Prop({ type: UserFeedListSortSchema })
+  feedListSort?: UserFeedListSort;
 }
 
 export const UserPreferencesSchema =

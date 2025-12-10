@@ -52,6 +52,7 @@ import { DATE_FORMAT, pages } from "../../../../constants";
 import { useUserFeedsInfinite } from "../../hooks/useUserFeedsInfinite";
 import { UserFeedStatusFilterContext } from "../../../../contexts";
 import { useMultiSelectUserFeedContext } from "../../../../contexts/MultiSelectUserFeedContext";
+import { useUserMe, useUpdateUserMe } from "../../../discordUser/hooks";
 
 interface Props {}
 
@@ -100,7 +101,16 @@ export const UserFeedsTable: React.FC<Props> = () => {
   const searchParamsSearch = searchParams.get("search") || "";
   const [searchInput, setSearchInput] = useState(searchParamsSearch);
   // const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const { data: userMe } = useUserMe();
+  const { mutateAsync: updateUser } = useUpdateUserMe();
+  const savedSortPreference = userMe?.result?.preferences?.feedListSort;
+  const [sorting, setSorting] = useState<SortingState>(() => {
+    if (savedSortPreference) {
+      return [{ id: savedSortPreference.key, desc: savedSortPreference.direction === "desc" }];
+    }
+
+    return [];
+  });
   const { statusFilters, setStatusFilters } = useContext(UserFeedStatusFilterContext);
   const { selectedFeeds, setSelectedFeeds } = useMultiSelectUserFeedContext();
   const {
@@ -381,6 +391,40 @@ export const UserFeedsTable: React.FC<Props> = () => {
   useEffect(() => {
     setSearch(searchParamsSearch);
   }, [searchParamsSearch, setSearch]);
+
+  // Sync sorting when saved preference loads/changes
+  useEffect(() => {
+    if (savedSortPreference) {
+      setSorting([{ id: savedSortPreference.key, desc: savedSortPreference.direction === "desc" }]);
+    }
+  }, [savedSortPreference?.key, savedSortPreference?.direction]);
+
+  // Save sorting preference when it changes (debounced)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      const newPreference = sorting[0]
+        ? { key: sorting[0].id, direction: (sorting[0].desc ? "desc" : "asc") as "asc" | "desc" }
+        : null;
+
+      // Only save if different from current saved value
+      const currentKey = savedSortPreference?.key;
+      const currentDirection = savedSortPreference?.direction;
+      const newKey = newPreference?.key;
+      const newDirection = newPreference?.direction;
+
+      if (currentKey !== newKey || currentDirection !== newDirection) {
+        updateUser({
+          details: {
+            preferences: {
+              feedListSort: newPreference,
+            },
+          },
+        });
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [sorting, savedSortPreference, updateUser]);
 
   const selectedFeedIds = selectedRows.map((row) => row.original.id);
 

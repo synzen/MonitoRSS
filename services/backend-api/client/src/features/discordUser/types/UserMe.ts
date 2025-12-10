@@ -9,6 +9,12 @@ export const UserMeSchema = object({
     dateFormat: string().nullable(),
     dateLocale: string().nullable(),
     dateTimezone: string().nullable(),
+    feedListSort: object({
+      key: string().required(),
+      direction: string().oneOf(["asc", "desc"]).required(),
+    })
+      .nullable()
+      .optional(),
   }).default({}),
   subscription: object({
     product: object({

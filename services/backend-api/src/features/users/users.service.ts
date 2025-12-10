@@ -302,7 +302,14 @@ export class UsersService {
     return users;
   }
 
-  async updateUserByDiscordId(discordUserId: string, data: Partial<User>) {
+  async updateUserByDiscordId(
+    discordUserId: string,
+    data: {
+      preferences?: Partial<{
+        [K in keyof UserPreferences]: UserPreferences[K] | null;
+      }>;
+    }
+  ) {
     const updateQuery: UpdateQuery<UserDocument> = {
       $set: {},
     };
@@ -311,8 +318,18 @@ export class UsersService {
 
     if (hasPreferencesUpdate) {
       for (const key in data.preferences) {
-        updateQuery.$set![`preferences.${key}`] =
-          data.preferences[key as keyof UserPreferences];
+        const value = data.preferences[key as keyof UserPreferences];
+
+        if (value === null) {
+          // Use $unset to remove the field when null is passed
+          if (!updateQuery.$unset) {
+            updateQuery.$unset = {};
+          }
+
+          updateQuery.$unset[`preferences.${key}`] = "";
+        } else {
+          updateQuery.$set![`preferences.${key}`] = value;
+        }
       }
     }
 

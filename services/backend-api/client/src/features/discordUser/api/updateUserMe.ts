@@ -9,6 +9,10 @@ export interface UpdateUserMeInput {
       dateFormat?: string;
       dateTimezone?: string;
       dateLocale?: string;
+      feedListSort?: {
+        key: string;
+        direction: "asc" | "desc";
+      } | null;
     };
   };
 }
