@@ -31,11 +31,12 @@ import {
   Link,
   chakra,
 } from "@chakra-ui/react";
-import React, { CSSProperties, useContext, useEffect, useMemo, useState } from "react";
+import React, { CSSProperties, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   OnChangeFn,
   RowSelectionState,
   SortingState,
+  VisibilityState,
   createColumnHelper,
   flexRender,
   getCoreRowModel,
@@ -53,6 +54,7 @@ import { useUserFeedsInfinite } from "../../hooks/useUserFeedsInfinite";
 import { UserFeedStatusFilterContext } from "../../../../contexts";
 import { useMultiSelectUserFeedContext } from "../../../../contexts/MultiSelectUserFeedContext";
 import { useUserMe, useUpdateUserMe } from "../../../discordUser/hooks";
+import { formatRefreshRateSeconds } from "../../../../utils/formatRefreshRateSeconds";
 
 interface Props {}
 
@@ -95,6 +97,24 @@ const STATUS_FILTERS = [
   },
 ];
 
+const TOGGLEABLE_COLUMNS = [
+  { id: "computedStatus", label: "Status" },
+  { id: "title", label: "Title" },
+  { id: "url", label: "URL" },
+  { id: "createdAt", label: "Added On" },
+  { id: "ownedByUser", label: "Shared with Me" },
+  { id: "refreshRate", label: "Refresh Rate" },
+] as const;
+
+const DEFAULT_COLUMN_VISIBILITY: VisibilityState = {
+  computedStatus: true,
+  title: true,
+  url: true,
+  createdAt: true,
+  ownedByUser: true,
+  refreshRate: false,
+};
+
 export const UserFeedsTable: React.FC<Props> = () => {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -104,6 +124,7 @@ export const UserFeedsTable: React.FC<Props> = () => {
   const { data: userMe } = useUserMe();
   const { mutateAsync: updateUser } = useUpdateUserMe();
   const savedSortPreference = userMe?.result?.preferences?.feedListSort;
+  const savedColumnVisibility = userMe?.result?.preferences?.feedListColumnVisibility;
   const [sorting, setSorting] = useState<SortingState>(() => {
     if (savedSortPreference) {
       return [{ id: savedSortPreference.key, desc: savedSortPreference.direction === "desc" }];
@@ -111,6 +132,9 @@ export const UserFeedsTable: React.FC<Props> = () => {
 
     return [];
   });
+  const [columnVisibility, setColumnVisibility] =
+    useState<VisibilityState>(DEFAULT_COLUMN_VISIBILITY);
+  const hasInitializedColumnVisibility = useRef(false);
   const { statusFilters, setStatusFilters } = useContext(UserFeedStatusFilterContext);
   const { selectedFeeds, setSelectedFeeds } = useMultiSelectUserFeedContext();
   const {
@@ -325,6 +349,19 @@ export const UserFeedsTable: React.FC<Props> = () => {
           return isOwnedByCurrentUser ? null : <CheckIcon />;
         },
       }),
+      columnHelper.accessor((row) => row.refreshRateSeconds, {
+        id: "refreshRate",
+        header: () => <span>Refresh Rate</span>,
+        cell: (info) => {
+          const value = info.getValue();
+
+          if (!value) {
+            return <span>-</span>;
+          }
+
+          return <span>{formatRefreshRateSeconds(value)}</span>;
+        },
+      }),
     ],
     [search]
   );
@@ -356,8 +393,10 @@ export const UserFeedsTable: React.FC<Props> = () => {
     state: {
       rowSelection,
       sorting,
+      columnVisibility,
     },
     onSortingChange: setSorting,
+    onColumnVisibilityChange: setColumnVisibility,
   });
 
   const { getHeaderGroups, getRowModel, getSelectedRowModel } = tableInstance;
@@ -425,6 +464,54 @@ export const UserFeedsTable: React.FC<Props> = () => {
 
     return () => clearTimeout(timeoutId);
   }, [sorting, savedSortPreference, updateUser]);
+
+  // Sync column visibility only on initial load
+  useEffect(() => {
+    if (savedColumnVisibility && !hasInitializedColumnVisibility.current) {
+      hasInitializedColumnVisibility.current = true;
+      setColumnVisibility({
+        ...DEFAULT_COLUMN_VISIBILITY,
+        ...savedColumnVisibility,
+      });
+    }
+  }, [savedColumnVisibility]);
+
+  // Save column visibility preference when it changes (debounced)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      // Check if at least one column is visible
+      const visibleCount = TOGGLEABLE_COLUMNS.filter(({ id }) => columnVisibility[id]).length;
+
+      if (visibleCount === 0) {
+        return; // Don't save if no columns visible
+      }
+
+      // Only save if different from current saved value
+      const hasChanges = TOGGLEABLE_COLUMNS.some(
+        ({ id }) =>
+          columnVisibility[id] !== (savedColumnVisibility?.[id] ?? DEFAULT_COLUMN_VISIBILITY[id])
+      );
+
+      if (hasChanges) {
+        updateUser({
+          details: {
+            preferences: {
+              feedListColumnVisibility: {
+                computedStatus: columnVisibility.computedStatus,
+                title: columnVisibility.title,
+                url: columnVisibility.url,
+                createdAt: columnVisibility.createdAt,
+                ownedByUser: columnVisibility.ownedByUser,
+                refreshRate: columnVisibility.refreshRate,
+              },
+            },
+          },
+        });
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [columnVisibility, savedColumnVisibility, updateUser]);
 
   const selectedFeedIds = selectedRows.map((row) => row.original.id);
 
@@ -507,9 +594,9 @@ export const UserFeedsTable: React.FC<Props> = () => {
                   textOverflow="ellipsis"
                   whiteSpace="nowrap"
                 >
-                  {statusFilters?.length
-                    ? `Status: ${statusFilters.length} selected`
-                    : "Filter by Status"}
+  {statusFilters?.length
+                    ? `Status: ${statusFilters.length} of ${STATUS_FILTERS.length}`
+                    : "Status"}
                 </Text>
               </MenuButton>
               <MenuList maxW="300px">
@@ -531,6 +618,54 @@ export const UserFeedsTable: React.FC<Props> = () => {
                       </Stack>
                     </MenuItemOption>
                   ))}
+                </MenuOptionGroup>
+              </MenuList>
+            </Menu>
+          </Flex>
+          <Flex>
+            <Menu closeOnSelect={false}>
+              <MenuButton as={Button} rightIcon={<ChevronDownIcon />} maxWidth={200} width="100%">
+                <Text
+                  overflow="hidden"
+                  textAlign="left"
+                  textOverflow="ellipsis"
+                  whiteSpace="nowrap"
+                >
+                  {`Columns: ${TOGGLEABLE_COLUMNS.filter(({ id }) => columnVisibility[id]).length} of ${TOGGLEABLE_COLUMNS.length}`}
+                </Text>
+              </MenuButton>
+              <MenuList maxW="250px">
+                <MenuOptionGroup
+                  type="checkbox"
+                  value={TOGGLEABLE_COLUMNS.filter(({ id }) => columnVisibility[id]).map(
+                    ({ id }) => id
+                  )}
+                  onChange={(values) => {
+                    if (Array.isArray(values) && values.length === 0) {
+                      return; // Prevent deselecting all columns
+                    }
+
+                    const newVisibility: VisibilityState = {};
+
+                    TOGGLEABLE_COLUMNS.forEach(({ id }) => {
+                      newVisibility[id] = Array.isArray(values) ? values.includes(id) : false;
+                    });
+                    setColumnVisibility(newVisibility);
+                  }}
+                >
+                  {TOGGLEABLE_COLUMNS.map(({ id, label }) => {
+                    const isVisible = columnVisibility[id];
+                    const visibleCount = TOGGLEABLE_COLUMNS.filter(
+                      ({ id: colId }) => columnVisibility[colId]
+                    ).length;
+                    const isLastVisible = isVisible && visibleCount === 1;
+
+                    return (
+                      <MenuItemOption key={id} value={id} isDisabled={isLastVisible}>
+                        {label}
+                      </MenuItemOption>
+                    );
+                  })}
                 </MenuOptionGroup>
               </MenuList>
             </Menu>

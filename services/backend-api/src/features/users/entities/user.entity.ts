@@ -22,6 +22,34 @@ export const UserFeedListSortSchema =
   timestamps: false,
   _id: false,
 })
+export class UserFeedListColumnVisibility {
+  @Prop()
+  computedStatus?: boolean;
+
+  @Prop()
+  title?: boolean;
+
+  @Prop()
+  url?: boolean;
+
+  @Prop()
+  createdAt?: boolean;
+
+  @Prop()
+  ownedByUser?: boolean;
+
+  @Prop()
+  refreshRate?: boolean;
+}
+
+export const UserFeedListColumnVisibilitySchema = SchemaFactory.createForClass(
+  UserFeedListColumnVisibility
+);
+
+@Schema({
+  timestamps: false,
+  _id: false,
+})
 export class UserPreferences {
   @Prop()
   alertOnDisabledFeeds?: boolean;
@@ -37,6 +65,9 @@ export class UserPreferences {
 
   @Prop({ type: UserFeedListSortSchema })
   feedListSort?: UserFeedListSort;
+
+  @Prop({ type: UserFeedListColumnVisibilitySchema })
+  feedListColumnVisibility?: UserFeedListColumnVisibility;
 }
 
 export const UserPreferencesSchema =

@@ -540,6 +540,7 @@ export class UserFeedsController {
         computedStatus: feed.computedStatus,
         isLegacyFeed: !!feed.legacyFeedId,
         ownedByUser: feed.ownedByUser,
+        refreshRateSeconds: feed.refreshRateSeconds,
       })),
       total: count,
     };

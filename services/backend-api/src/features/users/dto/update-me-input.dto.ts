@@ -8,18 +8,74 @@ import {
   Validate,
   ValidateIf,
   ValidateNested,
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
 } from "class-validator";
 import { IsValidDateLocale } from "../../../common/validations/is-valid-date-locale";
 import { IsValidTimezone } from "../../../common/validations/is-valid-timezone";
 
 class FeedListSortDto {
   @IsString()
-  @IsIn(["title", "url", "createdAt", "ownedByUser", "computedStatus"])
+  @IsIn([
+    "title",
+    "url",
+    "createdAt",
+    "ownedByUser",
+    "computedStatus",
+    "refreshRate",
+  ])
   key: string;
 
   @IsString()
   @IsIn(["asc", "desc"])
   direction: "asc" | "desc";
+}
+
+@ValidatorConstraint({ name: "HasAtLeastOneVisibleColumn", async: false })
+class HasAtLeastOneVisibleColumn implements ValidatorConstraintInterface {
+  validate(value: FeedListColumnVisibilityDto) {
+    if (!value || typeof value !== "object") {
+      return true;
+    }
+
+    const values = Object.values(value);
+
+    if (values.every((v) => v === undefined)) {
+      return true;
+    }
+
+    return values.some((v) => v === true);
+  }
+
+  defaultMessage() {
+    return "At least one column must be visible";
+  }
+}
+
+class FeedListColumnVisibilityDto {
+  @IsBoolean()
+  @IsOptional()
+  computedStatus?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  title?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  url?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  createdAt?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  ownedByUser?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  refreshRate?: boolean;
 }
 
 class UpdateMeDtoPreferencesDto {
@@ -48,6 +104,12 @@ class UpdateMeDtoPreferencesDto {
   @ValidateIf((o) => o.feedListSort !== null)
   @Type(() => FeedListSortDto)
   feedListSort?: FeedListSortDto | null;
+
+  @IsOptional()
+  @ValidateNested()
+  @Validate(HasAtLeastOneVisibleColumn)
+  @Type(() => FeedListColumnVisibilityDto)
+  feedListColumnVisibility?: FeedListColumnVisibilityDto;
 }
 
 export class UpdateMeDto {

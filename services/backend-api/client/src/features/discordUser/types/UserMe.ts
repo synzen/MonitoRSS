@@ -15,6 +15,14 @@ export const UserMeSchema = object({
     })
       .nullable()
       .optional(),
+    feedListColumnVisibility: object({
+      computedStatus: bool().optional(),
+      title: bool().optional(),
+      url: bool().optional(),
+      createdAt: bool().optional(),
+      ownedByUser: bool().optional(),
+      refreshRate: bool().optional(),
+    }).optional(),
   }).default({}),
   subscription: object({
     product: object({
@@ -29,9 +37,7 @@ export const UserMeSchema = object({
     )
       .optional()
       .nullable(),
-    status: string()
-      .oneOf(["ACTIVE", "CANCELLED", "PAST_DUE", "PAUSED"])
-      .required(),
+    status: string().oneOf(["ACTIVE", "CANCELLED", "PAST_DUE", "PAUSED"]).required(),
     nextBillDate: string().nullable(),
     cancellationDate: string().nullable(),
     billingInterval: string().oneOf(["month", "year"]).nullable(),
