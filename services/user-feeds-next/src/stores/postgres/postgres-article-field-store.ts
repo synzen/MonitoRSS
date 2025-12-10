@@ -134,10 +134,16 @@ export function createPostgresArticleFieldStore(sql: SQL): ArticleFieldStore {
 
       // Build OR conditions dynamically
       const conditions = fields
-        .map((_, i) => `(field_name = $${i * 2 + 2} AND field_hashed_value = $${i * 2 + 3})`)
+        .map(
+          (_, i) =>
+            `(field_name = $${i * 2 + 2} AND field_hashed_value = $${i * 2 + 3})`
+        )
         .join(" OR ");
 
-      const params = [feedId, ...fields.flatMap((f) => [f.name, f.hashedValue])];
+      const params = [
+        feedId,
+        ...fields.flatMap((f) => [f.name, f.hashedValue]),
+      ];
 
       const results = await sql.unsafe(
         `SELECT 1 FROM ${TABLE_NAME} WHERE feed_id = $1 AND (${conditions}) LIMIT 1`,
@@ -238,30 +244,28 @@ export function createPostgresArticleFieldStore(sql: SQL): ArticleFieldStore {
       }
 
       try {
-        // Use transaction with parallel inserts for efficiency
-        // This matches user-feeds behavior and allows PostgreSQL to pipeline statements
-        let affectedRows = 0;
+        const allValues = inserts.flatMap((r) => [
+          r.feedId,
+          r.fieldName,
+          r.hashedValue,
+          r.createdAt,
+        ]);
 
-        await sql.begin(async (tx) => {
-          const results = await Promise.all(
-            inserts.map((record) =>
-              tx`
-                INSERT INTO feed_article_field_partitioned
-                  (feed_id, field_name, field_hashed_value, created_at)
-                VALUES (
-                  ${record.feedId},
-                  ${record.fieldName},
-                  ${record.hashedValue},
-                  ${record.createdAt}
-                )
-              `
-            )
-          );
+        const placeholders = inserts
+          .map((_, i) => {
+            const base = i * 4;
+            return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4})`;
+          })
+          .join(", ");
 
-          affectedRows = results.reduce((sum, r) => sum + r.count, 0);
-        });
+        const result = await sql.unsafe(
+          `INSERT INTO feed_article_field_partitioned ` +
+            `(feed_id, field_name, field_hashed_value, created_at) ` +
+            `VALUES ${placeholders}`,
+          allValues
+        );
 
-        return { affectedRows };
+        return { affectedRows: result.count };
       } catch (err) {
         logger.error("Error inserting into feed_article_field_partitioned", {
           stack: (err as Error).stack,
