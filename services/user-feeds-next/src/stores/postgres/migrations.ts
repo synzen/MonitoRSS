@@ -210,7 +210,8 @@ const migrations: Migration[] = [
       if (!(await tableExists(sql, "response_hash"))) {
         await sql.unsafe(`
           CREATE TABLE response_hash (
-            feed_id TEXT PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
+            feed_id TEXT NOT NULL UNIQUE,
             hash TEXT NOT NULL,
             updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
           )
