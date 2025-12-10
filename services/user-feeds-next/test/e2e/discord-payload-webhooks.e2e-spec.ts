@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../../src/delivery";
 import getTestRssFeed from "../data/test-rss-feed";
 import { createTestContext } from "../helpers/test-context";
-import type { FeedV2Event, EmbedInput } from "../../src/shared/schemas";
+import type { FeedV2Event, EmbedInput, ComponentV2Input } from "../../src/shared/schemas";
 
 // Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
 
@@ -394,6 +394,91 @@ describe("Discord Payload Webhooks (e2e)", () => {
         // Username should be undefined or empty when not specified
         expect(payload.username).toBeFalsy();
         expect(payload.avatar_url).toBeFalsy();
+      } finally {
+        ctx.cleanup();
+      }
+    });
+  });
+
+  describe("Webhook with Components V2", () => {
+    it("delivers webhook message with componentsV2 and username/avatar_url", async () => {
+      const ctx = createTestContext();
+
+      const componentsV2: ComponentV2Input[] = [
+        {
+          type: "SECTION",
+          components: [
+            {
+              type: "TEXT_DISPLAY",
+              content: "Article: {{title}}",
+            },
+          ],
+          accessory: {
+            type: "BUTTON",
+            style: 5,
+            label: "Read",
+            url: "{{link}}",
+          },
+        },
+      ];
+
+      // Create event with webhook AND componentsV2
+      const baseEventWithWebhook = createEventWithWebhook(ctx.testFeedV2Event, {
+        id: "webhook-v2",
+        token: "v2-token",
+        name: "V2 Bot",
+        iconUrl: "https://example.com/v2-avatar.png",
+      });
+
+      // Add componentsV2 to the event
+      const eventWithV2: FeedV2Event = {
+        ...baseEventWithWebhook,
+        data: {
+          ...baseEventWithWebhook.data,
+          mediums: [
+            {
+              ...baseEventWithWebhook.data.mediums[0]!,
+              details: {
+                ...baseEventWithWebhook.data.mediums[0]!.details,
+                componentsV2: componentsV2 as MediumDetails["componentsV2"],
+              },
+            },
+          ],
+        },
+      };
+
+      try {
+        await ctx.seedArticles(eventWithV2);
+
+        ctx.setFeedResponse(() => ({
+          body: getTestRssFeed(
+            [
+              {
+                guid: "webhook-v2-components-test",
+                title: "V2 Components Article",
+                link: "https://example.com/v2",
+              },
+            ],
+            true
+          ),
+          hash: randomUUID(),
+        }));
+
+        const results = await ctx.handleEvent(eventWithV2);
+
+        expect(results).not.toBeNull();
+        expect(results!.length).toBe(1);
+        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+
+        const payload = getDiscordPayload(ctx);
+
+        // Verify username and avatar_url are set correctly
+        expect(payload.username).toBe("V2 Bot");
+        expect(payload.avatar_url).toBe("https://example.com/v2-avatar.png");
+
+        // Verify componentsV2 are also present
+        expect(payload.components).toBeArray();
+        expect(payload.components.length).toBeGreaterThan(0);
       } finally {
         ctx.cleanup();
       }
