@@ -65,9 +65,7 @@ services:
   user-feeds-service:
     extends:
       file: ./docker-compose.base.yml
-      service: user-feeds-service
-    image: ghcr.io/synzen/monitorss-user-feeds:main
-    command: ["node", "dist/main.js"]
+      service: user-feeds-next-service
     env_file:
       - ./.env.prod
     environment:
@@ -76,9 +74,8 @@ services:
   user-feeds-postgres-migration:
     extends:
       file: ./docker-compose.base.yml
-      service: user-feeds-postgres-migration
-    image: ghcr.io/synzen/monitorss-user-feeds:main
-    command: "npm run migration:up"
+      service: user-feeds-next-postgres-migration
+    command: "bun run scripts/run-migrations.ts"
     env_file:
       - ./.env.prod
     environment:

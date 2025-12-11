@@ -2,3 +2,34 @@ node_modules
 npm-debug.log
 .env*
 dist
+
+# Test files and directories
+test/
+*.test.ts
+*.e2e-spec.ts
+test-e2e.sh
+docker-compose.test.yml
+Dockerfile.test
+Dockerfile.dev
+
+# Git
+.git
+.gitignore
+
+# IDE/Editor
+.vscode
+.idea
+*.swp
+*.swo
+
+# Documentation
+README.md
+
+# Deployment scripts
+deploy.sh
+deploy-api.sh
+
+# Misc
+.DS_Store
+*.log
+coverage/
