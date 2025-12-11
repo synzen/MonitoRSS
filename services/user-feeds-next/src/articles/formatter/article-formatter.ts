@@ -9,10 +9,7 @@ import {
   type SelectorDefinition,
 } from "html-to-text";
 import type { Article, FlattenedArticle } from "../parser";
-import {
-  getArticleFilterResults,
-  type LogicalExpression,
-} from "../filters";
+import { getArticleFilterResults, type LogicalExpression } from "../filters";
 import { CustomPlaceholderRegexEvalException } from "./exceptions";
 
 dayjs.extend(timezone);
@@ -393,6 +390,11 @@ export function formatValueForDiscord(
   };
 }
 
+export interface FormatArticleForDiscordResult {
+  article: Article;
+  customPlaceholderPreviews: string[][];
+}
+
 /**
  * Format an article for Discord output.
  * Converts HTML in all article fields to Discord markdown and processes custom placeholders.
@@ -401,7 +403,7 @@ export function formatValueForDiscord(
 export function formatArticleForDiscord(
   article: Article,
   options?: FormatOptions
-): Article {
+): FormatArticleForDiscordResult {
   const flattened: FlattenedArticle = {
     id: article.flattened.id,
     idHash: article.flattened.idHash,
@@ -417,14 +419,20 @@ export function formatArticleForDiscord(
 
   // Process custom placeholders
   if (options?.customPlaceholders?.length) {
-    const withCustom = processCustomPlaceholders(
+    const { flattened: withCustom, previews } = processCustomPlaceholders(
       flattened,
       options.customPlaceholders
     );
-    return { flattened: withCustom, raw: article.raw };
+    return {
+      article: { flattened: withCustom, raw: article.raw },
+      customPlaceholderPreviews: previews,
+    };
   }
 
-  return { flattened, raw: article.raw };
+  return {
+    article: { flattened, raw: article.raw },
+    customPlaceholderPreviews: [],
+  };
 }
 
 // ============================================================================
@@ -944,14 +952,22 @@ export function truncateText(text: string | undefined, limit: number): string {
 
 const REGEX_TIMEOUT_MS = 5000;
 
+export interface ProcessCustomPlaceholdersResult {
+  flattened: FlattenedArticle;
+  previews: string[][];
+}
+
 /**
  * Process custom placeholders (regex, URL encode, date format, etc.)
+ * Returns the modified flattened article and an array of previews showing
+ * the output at each step for each custom placeholder.
  */
 export function processCustomPlaceholders(
   flattened: FlattenedArticle,
   customPlaceholders: CustomPlaceholder[]
-): FlattenedArticle {
+): ProcessCustomPlaceholdersResult {
   const result = { ...flattened };
+  const allPreviews: string[][] = [];
 
   for (const {
     sourcePlaceholder,
@@ -967,6 +983,7 @@ export function processCustomPlaceholders(
     }
 
     let lastOutput = sourceValue;
+    const stepOutputs: string[] = [lastOutput];
 
     for (const step of steps) {
       switch (step.type) {
@@ -1011,6 +1028,7 @@ export function processCustomPlaceholders(
 
           if (!date.isValid()) {
             lastOutput = "";
+            stepOutputs.push(lastOutput);
             continue;
           }
 
@@ -1019,6 +1037,7 @@ export function processCustomPlaceholders(
               date = date.tz(step.timezone);
             } catch {
               lastOutput = "";
+              stepOutputs.push(lastOutput);
               continue;
             }
           }
@@ -1043,12 +1062,15 @@ export function processCustomPlaceholders(
           break;
         }
       }
+
+      stepOutputs.push(lastOutput);
     }
 
+    allPreviews.push(stepOutputs);
     result[placeholderKey] = lastOutput;
   }
 
-  return result;
+  return { flattened: result, previews: allPreviews };
 }
 
 // ============================================================================
@@ -1062,7 +1084,6 @@ export interface GeneratePayloadsOptions {
   placeholderLimits?: PlaceholderLimit[];
   enablePlaceholderFallback?: boolean;
   mentions?: { targets?: MentionTarget[] };
-  customPlaceholders?: CustomPlaceholder[];
   components?: ActionRowInput[];
   componentsV2?: ComponentV2Input[];
 }
@@ -1327,14 +1348,8 @@ export function generateDiscordPayloads(
   article: Article,
   options: GeneratePayloadsOptions
 ): DiscordMessageApiPayload[] {
-  // Process custom placeholders first
-  let flattened = { ...article.flattened };
-  if (options.customPlaceholders?.length) {
-    flattened = processCustomPlaceholders(
-      flattened,
-      options.customPlaceholders
-    );
-  }
+  // Custom placeholders are already processed by formatArticleForDiscord()
+  const flattened = { ...article.flattened };
 
   // Build mentions
   if (options.mentions?.targets?.length) {
@@ -1631,10 +1646,11 @@ export function generateThreadName(
   let flattened = { ...article.flattened };
 
   if (options.customPlaceholders?.length) {
-    flattened = processCustomPlaceholders(
+    const result = processCustomPlaceholders(
       flattened,
       options.customPlaceholders
     );
+    flattened = result.flattened;
   }
 
   return (
@@ -1695,10 +1711,11 @@ export function enhancePayloadsWithWebhookDetails(
   let flattened = { ...article.flattened };
 
   if (options.customPlaceholders?.length) {
-    flattened = processCustomPlaceholders(
+    const result = processCustomPlaceholders(
       flattened,
       options.customPlaceholders
     );
+    flattened = result.flattened;
   }
 
   return payloads.map((payload) => ({

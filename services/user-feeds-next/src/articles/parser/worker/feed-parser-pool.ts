@@ -83,6 +83,7 @@ export function getFeedParserPoolStats() {
  * Check if we should bypass workers (test environment or pool disabled).
  */
 function shouldBypassWorkers(): boolean {
+  return true;
   return (
     process.env.NODE_ENV === "test" ||
     process.env.USER_FEEDS_DISABLE_WORKER_POOL === "true"

@@ -922,7 +922,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
     describe("Regex step", () => {
       it("replaces matches with replacement string", () => {
         const flattened = createFlattened({ title: "Hello World" });
-        const result = processCustomPlaceholders(flattened, [
+        const { flattened: result } = processCustomPlaceholders(flattened, [
           {
             id: "test",
             referenceName: "test",
@@ -941,7 +941,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
 
       it("does not modify source placeholder", () => {
         const flattened = createFlattened({ title: "Hello World" });
-        const result = processCustomPlaceholders(flattened, [
+        const { flattened: result } = processCustomPlaceholders(flattened, [
           {
             id: "test",
             referenceName: "test",
@@ -960,7 +960,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
 
       it("replaces with empty string if no replacement specified", () => {
         const flattened = createFlattened({ title: "Hello World" });
-        const result = processCustomPlaceholders(flattened, [
+        const { flattened: result } = processCustomPlaceholders(flattened, [
           {
             id: "test",
             referenceName: "test",
@@ -978,7 +978,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
 
       it("replaces globally", () => {
         const flattened = createFlattened({ title: "Hello Hello World" });
-        const result = processCustomPlaceholders(flattened, [
+        const { flattened: result } = processCustomPlaceholders(flattened, [
           {
             id: "test",
             referenceName: "test",
@@ -997,7 +997,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
 
       it("replaces case-insensitively by default", () => {
         const flattened = createFlattened({ title: "hello HELLO world" });
-        const result = processCustomPlaceholders(flattened, [
+        const { flattened: result } = processCustomPlaceholders(flattened, [
           {
             id: "test",
             referenceName: "test",
@@ -1016,7 +1016,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
 
       it("chains multiple steps", () => {
         const flattened = createFlattened({ title: "hello world" });
-        const result = processCustomPlaceholders(flattened, [
+        const { flattened: result } = processCustomPlaceholders(flattened, [
           {
             id: "test",
             referenceName: "test",
@@ -1037,12 +1037,36 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         ]);
         expect(result["custom::test"]).toBe("farewell world");
       });
+
+      it("returns previews with intermediate step outputs", () => {
+        const flattened = createFlattened({ title: "hello world" });
+        const { previews } = processCustomPlaceholders(flattened, [
+          {
+            id: "test",
+            referenceName: "test",
+            sourcePlaceholder: "title",
+            steps: [
+              {
+                type: CustomPlaceholderStepType.Regex,
+                regexSearch: "hello",
+                replacementString: "goodbye",
+              },
+              {
+                type: CustomPlaceholderStepType.Uppercase,
+              },
+            ],
+          },
+        ]);
+        expect(previews).toEqual([
+          ["hello world", "goodbye world", "GOODBYE WORLD"],
+        ]);
+      });
     });
 
     describe("UrlEncode step", () => {
       it("URL encodes the value", () => {
         const flattened = createFlattened({ title: "Hello World!" });
-        const result = processCustomPlaceholders(flattened, [
+        const { flattened: result } = processCustomPlaceholders(flattened, [
           {
             id: "test",
             referenceName: "test",
@@ -1057,7 +1081,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         const flattened = createFlattened({
           title: "foo=bar&baz=qux?test#hash",
         });
-        const result = processCustomPlaceholders(flattened, [
+        const { flattened: result } = processCustomPlaceholders(flattened, [
           {
             id: "test",
             referenceName: "test",
@@ -1074,7 +1098,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
     describe("DateFormat step", () => {
       it("formats a valid date", () => {
         const flattened = createFlattened({ date: "2023-06-15T10:30:00Z" });
-        const result = processCustomPlaceholders(flattened, [
+        const { flattened: result } = processCustomPlaceholders(flattened, [
           {
             id: "test",
             referenceName: "test",
@@ -1092,7 +1116,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
 
       it("applies timezone", () => {
         const flattened = createFlattened({ date: "2023-06-15T10:30:00Z" });
-        const result = processCustomPlaceholders(flattened, [
+        const { flattened: result } = processCustomPlaceholders(flattened, [
           {
             id: "test",
             referenceName: "test",
@@ -1112,7 +1136,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
 
       it("returns empty string for invalid date", () => {
         const flattened = createFlattened({ date: "not-a-date" });
-        const result = processCustomPlaceholders(flattened, [
+        const { flattened: result } = processCustomPlaceholders(flattened, [
           {
             id: "test",
             referenceName: "test",
@@ -1130,7 +1154,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
 
       it("returns empty string for invalid timezone", () => {
         const flattened = createFlattened({ date: "2023-06-15T10:30:00Z" });
-        const result = processCustomPlaceholders(flattened, [
+        const { flattened: result } = processCustomPlaceholders(flattened, [
           {
             id: "test",
             referenceName: "test",
@@ -1151,7 +1175,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
     describe("Uppercase step", () => {
       it("converts to uppercase", () => {
         const flattened = createFlattened({ title: "Hello World" });
-        const result = processCustomPlaceholders(flattened, [
+        const { flattened: result } = processCustomPlaceholders(flattened, [
           {
             id: "test",
             referenceName: "test",
@@ -1166,7 +1190,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
     describe("Lowercase step", () => {
       it("converts to lowercase", () => {
         const flattened = createFlattened({ title: "Hello World" });
-        const result = processCustomPlaceholders(flattened, [
+        const { flattened: result } = processCustomPlaceholders(flattened, [
           {
             id: "test",
             referenceName: "test",
@@ -1181,7 +1205,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
     describe("missing source placeholder", () => {
       it("returns empty string if source does not exist", () => {
         const flattened = createFlattened({});
-        const result = processCustomPlaceholders(flattened, [
+        const { flattened: result } = processCustomPlaceholders(flattened, [
           {
             id: "test",
             referenceName: "test",

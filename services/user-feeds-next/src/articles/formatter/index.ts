@@ -41,4 +41,5 @@ export {
   type ForumThreadTag,
   type GenerateTextOptions,
   type WebhookPayload,
+  type FormatArticleForDiscordResult,
 } from "./article-formatter";

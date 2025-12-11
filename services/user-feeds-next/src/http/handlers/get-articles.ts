@@ -118,13 +118,14 @@ export async function handleGetArticles(
       }
 
       // Format articles for Discord
-      const formattedArticles = fetchResult.articles.map((article) =>
-        formatArticleForDiscord(article, {
-          ...input.formatter.options,
-          customPlaceholders: convertCustomPlaceholders(
-            input.formatter.customPlaceholders
-          ),
-        })
+      const formattedArticles = fetchResult.articles.map(
+        (article) =>
+          formatArticleForDiscord(article, {
+            ...input.formatter.options,
+            customPlaceholders: convertCustomPlaceholders(
+              input.formatter.customPlaceholders
+            ),
+          }).article
       );
 
       const {

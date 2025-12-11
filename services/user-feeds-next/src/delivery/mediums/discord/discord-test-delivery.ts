@@ -123,7 +123,6 @@ function generatePayloads(
     enablePlaceholderFallback: mediumDetails.enablePlaceholderFallback,
     components: mediumDetails.components ?? undefined,
     componentsV2: mediumDetails.componentsV2 ?? undefined,
-    customPlaceholders: mediumDetails.customPlaceholders,
   });
 }
 

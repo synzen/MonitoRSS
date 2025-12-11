@@ -148,10 +148,11 @@ export async function handlePreview(
           }));
 
         // Format article for Discord
-        const formattedArticle = formatArticleForDiscord(article, {
-          ...mediumDetails.formatter,
-          customPlaceholders,
-        });
+        const { article: formattedArticle, customPlaceholderPreviews } =
+          formatArticleForDiscord(article, {
+            ...mediumDetails.formatter,
+            customPlaceholders,
+          });
 
         // Generate Discord API payloads
         const payloads = generateDiscordPayloads(formattedArticle, {
@@ -253,7 +254,6 @@ export async function handlePreview(
             // Handle other component types as-is
             return c as any;
           }),
-          customPlaceholders,
         });
 
         // Clean up empty embed fields
@@ -276,6 +276,9 @@ export async function handlePreview(
         return jsonResponse({
           status: TestDeliveryStatus.Success,
           messages: cleanedPayloads,
+          customPlaceholderPreviews: includeCustomPlaceholderPreviews
+            ? customPlaceholderPreviews
+            : undefined,
         });
       } else {
         throw new Error(`Unhandled medium type: ${type}`);

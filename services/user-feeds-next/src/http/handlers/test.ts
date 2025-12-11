@@ -202,7 +202,7 @@ export async function handleTest(
         );
 
         // Format article for Discord
-        const formattedArticle = formatArticleForDiscord(article, {
+        const { article: formattedArticle } = formatArticleForDiscord(article, {
           ...mediumDetails.formatter,
           customPlaceholders,
         });

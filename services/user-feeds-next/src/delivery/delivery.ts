@@ -492,7 +492,7 @@ function generatePayloadsForMedium(
   }));
 
   // Format article for Discord (HTML to markdown conversion, custom placeholders)
-  const formattedArticle = formatArticleForDiscord(article, {
+  const { article: formattedArticle } = formatArticleForDiscord(article, {
     ...medium.details.formatter,
     customPlaceholders,
   });
@@ -523,7 +523,6 @@ function generatePayloadsForMedium(
     placeholderLimits: medium.details.placeholderLimits,
     enablePlaceholderFallback: medium.details.enablePlaceholderFallback,
     mentions: medium.details.mentions,
-    customPlaceholders,
     components: medium.details.components?.map((row) => ({
       type: row.type,
       components: row.components.map((btn) => ({

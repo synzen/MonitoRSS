@@ -551,6 +551,298 @@ describe("HTTP API (e2e)", () => {
       expect(content).not.toContain("<i>");
       expect(content).not.toContain("&lt;");
     });
+
+    it("applies regex custom placeholder in preview response", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          type: "discord",
+          feed: { url: TEST_FEED_URL },
+          article: { id: TEST_ARTICLE_ID },
+          mediumDetails: {
+            guildId: "test-guild-id",
+            content: "{{custom::extracted}}",
+            embeds: [],
+            components: null,
+            customPlaceholders: [
+              {
+                id: "cp-1",
+                referenceName: "extracted",
+                sourcePlaceholder: "rss:title__#",
+                steps: [
+                  {
+                    type: "REGEX",
+                    regexSearch: "\\*\\*(.+?)\\*\\*",
+                    replacementString: "$1",
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const messages = body.messages as JsonBody[];
+
+      expect(messages).toBeDefined();
+      expect(messages.length).toBeGreaterThan(0);
+
+      const content = messages[0]?.content as string;
+      // Regex extracts "Bold Title" from "**Bold Title** and\n*italic*"
+      expect(content).toBe("Bold Title and\n*italic*");
+    });
+
+    it("applies uppercase custom placeholder in preview response", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          type: "discord",
+          feed: { url: TEST_FEED_URL },
+          article: { id: TEST_ARTICLE_ID },
+          mediumDetails: {
+            guildId: "test-guild-id",
+            content: "{{custom::upper}}",
+            embeds: [],
+            components: null,
+            customPlaceholders: [
+              {
+                id: "cp-1",
+                referenceName: "upper",
+                sourcePlaceholder: "rss:title__#",
+                steps: [{ type: "UPPERCASE" }],
+              },
+            ],
+          },
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const messages = body.messages as JsonBody[];
+
+      const content = messages[0]?.content as string;
+      expect(content).toBe("**BOLD TITLE** AND\n*ITALIC*");
+    });
+
+    it("applies lowercase custom placeholder in preview response", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          type: "discord",
+          feed: { url: TEST_FEED_URL },
+          article: { id: TEST_ARTICLE_ID },
+          mediumDetails: {
+            guildId: "test-guild-id",
+            content: "{{custom::lower}}",
+            embeds: [],
+            components: null,
+            customPlaceholders: [
+              {
+                id: "cp-1",
+                referenceName: "lower",
+                sourcePlaceholder: "rss:title__#",
+                steps: [{ type: "LOWERCASE" }],
+              },
+            ],
+          },
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const messages = body.messages as JsonBody[];
+
+      const content = messages[0]?.content as string;
+      expect(content).toBe("**bold title** and\n*italic*");
+    });
+
+    it("applies url encode custom placeholder in preview response", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          type: "discord",
+          feed: { url: TEST_FEED_URL },
+          article: { id: TEST_ARTICLE_ID },
+          mediumDetails: {
+            guildId: "test-guild-id",
+            content: "{{custom::encoded}}",
+            embeds: [],
+            components: null,
+            customPlaceholders: [
+              {
+                id: "cp-1",
+                referenceName: "encoded",
+                sourcePlaceholder: "rss:title__#",
+                steps: [{ type: "URL_ENCODE" }],
+              },
+            ],
+          },
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const messages = body.messages as JsonBody[];
+
+      const content = messages[0]?.content as string;
+      // Spaces and newlines should be encoded (asterisks are not encoded by encodeURIComponent)
+      expect(content).toContain("%20");
+      expect(content).toContain("%0A");
+    });
+
+    it("applies chained custom placeholder steps in preview response", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          type: "discord",
+          feed: { url: TEST_FEED_URL },
+          article: { id: TEST_ARTICLE_ID },
+          mediumDetails: {
+            guildId: "test-guild-id",
+            content: "{{custom::chained}}",
+            embeds: [],
+            components: null,
+            customPlaceholders: [
+              {
+                id: "cp-1",
+                referenceName: "chained",
+                sourcePlaceholder: "rss:title__#",
+                steps: [
+                  {
+                    type: "REGEX",
+                    regexSearch: "\\*\\*(.+?)\\*\\*",
+                    replacementString: "$1",
+                  },
+                  { type: "UPPERCASE" },
+                ],
+              },
+            ],
+          },
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const messages = body.messages as JsonBody[];
+
+      const content = messages[0]?.content as string;
+      // First regex extracts "Bold Title", then uppercase makes it "BOLD TITLE"
+      expect(content).toBe("BOLD TITLE AND\n*ITALIC*");
+    });
+
+    it("returns customPlaceholderPreviews when includeCustomPlaceholderPreviews is true", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          type: "discord",
+          feed: { url: TEST_FEED_URL },
+          article: { id: TEST_ARTICLE_ID },
+          includeCustomPlaceholderPreviews: true,
+          mediumDetails: {
+            guildId: "test-guild-id",
+            content: "{{custom::preview}}",
+            embeds: [],
+            components: null,
+            customPlaceholders: [
+              {
+                id: "cp-1",
+                referenceName: "preview",
+                sourcePlaceholder: "rss:title__#",
+                steps: [
+                  {
+                    type: "REGEX",
+                    regexSearch: "\\*\\*(.+?)\\*\\*",
+                    replacementString: "$1",
+                  },
+                  { type: "UPPERCASE" },
+                ],
+              },
+            ],
+          },
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+
+      // customPlaceholderPreviews should be present
+      const previews = body.customPlaceholderPreviews as string[][];
+      expect(previews).toBeDefined();
+      expect(Array.isArray(previews)).toBe(true);
+      expect(previews.length).toBe(1);
+
+      // Each preview array shows: [original, after step 1, after step 2, ...]
+      const placeholderPreview = previews[0] as string[];
+      expect(placeholderPreview.length).toBe(3);
+      expect(placeholderPreview[0]).toBe("**Bold Title** and\n*italic*"); // original
+      expect(placeholderPreview[1]).toBe("Bold Title and\n*italic*"); // after regex
+      expect(placeholderPreview[2]).toBe("BOLD TITLE AND\n*ITALIC*"); // after uppercase
+    });
+
+    it("returns 422 for invalid regex in custom placeholder", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          type: "discord",
+          feed: { url: TEST_FEED_URL },
+          article: { id: TEST_ARTICLE_ID },
+          mediumDetails: {
+            guildId: "test-guild-id",
+            content: "{{custom::invalid}}",
+            embeds: [],
+            components: null,
+            customPlaceholders: [
+              {
+                id: "cp-1",
+                referenceName: "invalid",
+                sourcePlaceholder: "rss:title__#",
+                steps: [
+                  {
+                    type: "REGEX",
+                    regexSearch: "[",
+                    replacementString: "",
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+      });
+
+      expect(response.status).toBe(422);
+      const body = (await response.json()) as JsonBody;
+      expect(body.code).toBe("CUSTOM_PLACEHOLDER_REGEX_EVAL");
+    });
   });
 
   describe("POST /v1/user-feeds/validate-discord-payload", () => {
