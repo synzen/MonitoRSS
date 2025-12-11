@@ -139,7 +139,6 @@ async function initializeSharedInfrastructure(): Promise<SharedInfrastructure> {
     articleFieldStore = createPostgresArticleFieldStore(pool);
     responseHashStore = createPostgresResponseHashStore(pool);
     feedRetryStore = createPostgresFeedRetryStore(pool);
-    logger.info("Using PostgreSQL-backed stores");
 
     // Run partition management on startup
     await ensurePartitionsExist(pool);
