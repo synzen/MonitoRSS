@@ -134,6 +134,7 @@ export const UserFeedsTable: React.FC<Props> = () => {
   const [columnVisibility, setColumnVisibility] =
     useState<VisibilityState>(DEFAULT_COLUMN_VISIBILITY);
   const hasInitializedColumnVisibility = useRef(false);
+  const hasInitializedSorting = useRef(false);
   const { statusFilters, setStatusFilters } = useContext(UserFeedStatusFilterContext);
   const { selectedFeeds, setSelectedFeeds } = useMultiSelectUserFeedContext();
   const {
@@ -430,9 +431,10 @@ export const UserFeedsTable: React.FC<Props> = () => {
     setSearch(searchParamsSearch);
   }, [searchParamsSearch, setSearch]);
 
-  // Sync sorting when saved preference loads/changes
+  // Sync sorting only on initial load
   useEffect(() => {
-    if (savedSortPreference) {
+    if (savedSortPreference && !hasInitializedSorting.current) {
+      hasInitializedSorting.current = true;
       setSorting([{ id: savedSortPreference.key, desc: savedSortPreference.direction === "desc" }]);
     }
   }, [savedSortPreference?.key, savedSortPreference?.direction]);
