@@ -39,7 +39,7 @@ export class UserFeedListColumnVisibility {
   ownedByUser?: boolean;
 
   @Prop()
-  refreshRate?: boolean;
+  refreshRateSeconds?: boolean;
 }
 
 export const UserFeedListColumnVisibilitySchema = SchemaFactory.createForClass(

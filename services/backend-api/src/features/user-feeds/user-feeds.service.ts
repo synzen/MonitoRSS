@@ -926,6 +926,13 @@ export class UserFeedsService {
         filters,
       }),
       {
+        $addFields: {
+          refreshRateSeconds: {
+            $ifNull: ["$userRefreshRateSeconds", "$refreshRateSeconds"],
+          },
+        },
+      },
+      {
         $sort: {
           [sortKey]: sortDirection,
         },

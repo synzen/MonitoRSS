@@ -21,7 +21,7 @@ export const UserMeSchema = object({
       url: bool().optional(),
       createdAt: bool().optional(),
       ownedByUser: bool().optional(),
-      refreshRate: bool().optional(),
+      refreshRateSeconds: bool().optional(),
     }).optional(),
   }).default({}),
   subscription: object({

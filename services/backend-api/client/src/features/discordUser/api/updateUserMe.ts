@@ -19,7 +19,7 @@ export interface UpdateUserMeInput {
         url?: boolean;
         createdAt?: boolean;
         ownedByUser?: boolean;
-        refreshRate?: boolean;
+        refreshRateSeconds?: boolean;
       };
     };
   };

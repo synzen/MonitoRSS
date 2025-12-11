@@ -100,20 +100,18 @@ const STATUS_FILTERS = [
 
 const TOGGLEABLE_COLUMNS = [
   { id: "computedStatus", label: "Status" },
-  { id: "title", label: "Title" },
   { id: "url", label: "URL" },
   { id: "createdAt", label: "Added On" },
+  { id: "refreshRateSeconds", label: "Refresh Rate" },
   { id: "ownedByUser", label: "Shared with Me" },
-  { id: "refreshRate", label: "Refresh Rate" },
 ] as const;
 
 const DEFAULT_COLUMN_VISIBILITY: VisibilityState = {
   computedStatus: true,
-  title: true,
   url: true,
   createdAt: true,
+  refreshRateSeconds: false,
   ownedByUser: true,
-  refreshRate: false,
 };
 
 export const UserFeedsTable: React.FC<Props> = () => {
@@ -341,17 +339,8 @@ export const UserFeedsTable: React.FC<Props> = () => {
           return <span>{dayjs(value).format(DATE_FORMAT)}</span>;
         },
       }),
-      columnHelper.accessor("ownedByUser", {
-        id: "ownedByUser",
-        header: () => <span>Shared with Me</span>,
-        cell: (info) => {
-          const isOwnedByCurrentUser = info.getValue();
-
-          return isOwnedByCurrentUser ? null : <CheckIcon />;
-        },
-      }),
       columnHelper.accessor((row) => row.refreshRateSeconds, {
-        id: "refreshRate",
+        id: "refreshRateSeconds",
         header: () => <span>Refresh Rate</span>,
         cell: (info) => {
           const value = info.getValue();
@@ -361,6 +350,15 @@ export const UserFeedsTable: React.FC<Props> = () => {
           }
 
           return <span>{formatRefreshRateSeconds(value)}</span>;
+        },
+      }),
+      columnHelper.accessor("ownedByUser", {
+        id: "ownedByUser",
+        header: () => <span>Shared with Me</span>,
+        cell: (info) => {
+          const isOwnedByCurrentUser = info.getValue();
+
+          return isOwnedByCurrentUser ? null : <CheckIcon />;
         },
       }),
     ],
@@ -499,11 +497,10 @@ export const UserFeedsTable: React.FC<Props> = () => {
             preferences: {
               feedListColumnVisibility: {
                 computedStatus: columnVisibility.computedStatus,
-                title: columnVisibility.title,
                 url: columnVisibility.url,
                 createdAt: columnVisibility.createdAt,
+                refreshRateSeconds: columnVisibility.refreshRateSeconds,
                 ownedByUser: columnVisibility.ownedByUser,
-                refreshRate: columnVisibility.refreshRate,
               },
             },
           },

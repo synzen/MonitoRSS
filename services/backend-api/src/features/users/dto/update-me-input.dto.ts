@@ -22,7 +22,7 @@ class FeedListSortDto {
     "createdAt",
     "ownedByUser",
     "computedStatus",
-    "refreshRate",
+    "refreshRateSeconds",
   ])
   key: string;
 
@@ -75,7 +75,7 @@ class FeedListColumnVisibilityDto {
 
   @IsBoolean()
   @IsOptional()
-  refreshRate?: boolean;
+  refreshRateSeconds?: boolean;
 }
 
 class UpdateMeDtoPreferencesDto {

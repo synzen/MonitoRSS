@@ -27,8 +27,8 @@ export enum GetUserFeedsInputSortKey {
   ComputedStatusDescending = "-computedStatus",
   OwnedByUserAscending = "ownedByUser",
   OwnedByUserDescending = "-ownedByUser",
-  RefreshRateAscending = "refreshRate",
-  RefreshRateDescending = "-refreshRate",
+  RefreshRateAscending = "refreshRateSeconds",
+  RefreshRateDescending = "-refreshRateSeconds",
 }
 
 export class GetUserFeedsInputFiltersDto {
