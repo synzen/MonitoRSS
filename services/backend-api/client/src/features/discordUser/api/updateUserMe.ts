@@ -21,6 +21,9 @@ export interface UpdateUserMeInput {
         ownedByUser?: boolean;
         refreshRateSeconds?: boolean;
       };
+      feedListColumnOrder?: {
+        columns: string[];
+      };
     };
   };
 }

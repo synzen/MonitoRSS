@@ -1,5 +1,6 @@
 import { Type } from "class-transformer";
 import {
+  IsArray,
   IsBoolean,
   IsIn,
   IsObject,
@@ -78,6 +79,23 @@ class FeedListColumnVisibilityDto {
   refreshRateSeconds?: boolean;
 }
 
+class FeedListColumnOrderDto {
+  @IsArray()
+  @IsString({ each: true })
+  @IsIn(
+    [
+      "title",
+      "computedStatus",
+      "url",
+      "createdAt",
+      "refreshRateSeconds",
+      "ownedByUser",
+    ],
+    { each: true }
+  )
+  columns: string[];
+}
+
 class UpdateMeDtoPreferencesDto {
   @IsBoolean()
   @IsOptional()
@@ -110,6 +128,11 @@ class UpdateMeDtoPreferencesDto {
   @Validate(HasAtLeastOneVisibleColumn)
   @Type(() => FeedListColumnVisibilityDto)
   feedListColumnVisibility?: FeedListColumnVisibilityDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => FeedListColumnOrderDto)
+  feedListColumnOrder?: FeedListColumnOrderDto;
 }
 
 export class UpdateMeDto {

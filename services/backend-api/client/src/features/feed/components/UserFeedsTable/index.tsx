@@ -41,7 +41,25 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
+  Header,
 } from "@tanstack/react-table";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  horizontalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { restrictToHorizontalAxis, restrictToParentElement } from "@dnd-kit/modifiers";
 import { useTranslation } from "react-i18next";
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon, CloseIcon, SearchIcon } from "@chakra-ui/icons";
 import { FaFilter, FaTableColumns } from "react-icons/fa6";
@@ -114,6 +132,81 @@ const DEFAULT_COLUMN_VISIBILITY: VisibilityState = {
   ownedByUser: true,
 };
 
+const DEFAULT_COLUMN_ORDER = [
+  "select",
+  "computedStatus",
+  "title",
+  "url",
+  "createdAt",
+  "refreshRateSeconds",
+  "ownedByUser",
+];
+
+interface SortableHeaderProps {
+  header: Header<RowData, unknown>;
+  isFetching: boolean;
+}
+
+const SortableTableHeader: React.FC<SortableHeaderProps> = ({ header, isFetching }) => {
+  const isSelectColumn = header.id === "select";
+
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: header.id,
+    disabled: isSelectColumn,
+  });
+
+  const style: CSSProperties = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    position: "relative",
+    zIndex: isDragging ? 1 : 0,
+  };
+
+  const isSorted = header.column.getIsSorted();
+  const canSort = header.column.getCanSort();
+
+  let cursor: CSSProperties["cursor"] = isSelectColumn ? "default" : "grab";
+
+  if (isFetching) {
+    cursor = "not-allowed";
+  } else if (canSort && !isDragging) {
+    cursor = "pointer";
+  }
+
+  return (
+    <Th
+      ref={setNodeRef}
+      style={style}
+      {...(isSelectColumn ? {} : attributes)}
+      {...(isSelectColumn ? {} : listeners)}
+      cursor={cursor}
+      onClick={!isDragging ? header.column.getToggleSortingHandler() : undefined}
+      userSelect="none"
+    >
+      <HStack alignItems="center">
+        {header.isPlaceholder
+          ? null
+          : flexRender(header.column.columnDef.header, header.getContext())}
+        {isSorted === "desc" && (
+          <ChevronDownIcon
+            aria-label={isSorted ? "sorted descending" : undefined}
+            aria-hidden={!isSorted}
+            fontSize={16}
+          />
+        )}
+        {isSorted === "asc" && (
+          <ChevronUpIcon
+            aria-label={isSorted ? "sorted ascending" : undefined}
+            aria-hidden={!isSorted}
+            fontSize={16}
+          />
+        )}
+      </HStack>
+    </Th>
+  );
+};
+
 export const UserFeedsTable: React.FC<Props> = () => {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -135,6 +228,24 @@ export const UserFeedsTable: React.FC<Props> = () => {
     useState<VisibilityState>(DEFAULT_COLUMN_VISIBILITY);
   const hasInitializedColumnVisibility = useRef(false);
   const hasInitializedSorting = useRef(false);
+  const savedColumnOrder = userMe?.result?.preferences?.feedListColumnOrder?.columns;
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+    if (savedColumnOrder && savedColumnOrder.length > 0) {
+      return ["select", ...savedColumnOrder.filter((col) => col !== "select")];
+    }
+
+    return DEFAULT_COLUMN_ORDER;
+  });
+  const hasInitializedColumnOrder = useRef(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor)
+  );
   const { statusFilters, setStatusFilters } = useContext(UserFeedStatusFilterContext);
   const { selectedFeeds, setSelectedFeeds } = useMultiSelectUserFeedContext();
   const {
@@ -382,6 +493,19 @@ export const UserFeedsTable: React.FC<Props> = () => {
     }
   };
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id && active.id !== "select" && over.id !== "select") {
+      setColumnOrder((currentOrder) => {
+        const oldIndex = currentOrder.indexOf(active.id as string);
+        const newIndex = currentOrder.indexOf(over.id as string);
+
+        return arrayMove(currentOrder, oldIndex, newIndex);
+      });
+    }
+  };
+
   const tableInstance = useReactTable({
     columns,
     data: flatData,
@@ -394,9 +518,11 @@ export const UserFeedsTable: React.FC<Props> = () => {
       rowSelection,
       sorting,
       columnVisibility,
+      columnOrder,
     },
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
+    onColumnOrderChange: setColumnOrder,
   });
 
   const { getHeaderGroups, getRowModel, getSelectedRowModel } = tableInstance;
@@ -512,6 +638,42 @@ export const UserFeedsTable: React.FC<Props> = () => {
 
     return () => clearTimeout(timeoutId);
   }, [columnVisibility, savedColumnVisibility, updateUser]);
+
+  // Sync column order only on initial load
+  useEffect(() => {
+    if (savedColumnOrder && savedColumnOrder.length > 0 && !hasInitializedColumnOrder.current) {
+      hasInitializedColumnOrder.current = true;
+      setColumnOrder(["select", ...savedColumnOrder.filter((col) => col !== "select")]);
+    }
+  }, [savedColumnOrder]);
+
+  // Save column order preference when it changes (debounced)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      // Remove "select" from the saved order (it's always pinned first)
+      const orderToSave = columnOrder.filter((col) => col !== "select");
+
+      // Only save if different from current saved value
+      const currentOrder = savedColumnOrder || [];
+      const hasChanges =
+        orderToSave.length !== currentOrder.length ||
+        orderToSave.some((col, idx) => col !== currentOrder[idx]);
+
+      if (hasChanges && orderToSave.length > 0) {
+        updateUser({
+          details: {
+            preferences: {
+              feedListColumnOrder: {
+                columns: orderToSave,
+              },
+            },
+          },
+        });
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [columnOrder, savedColumnOrder, updateUser]);
 
   const selectedFeedIds = selectedRows.map((row) => row.original.id);
 
@@ -716,47 +878,25 @@ export const UserFeedsTable: React.FC<Props> = () => {
               {/** z-index is required because some icons have a higher priority */}
               {getHeaderGroups().map((headerGroup) => (
                 <Tr key={headerGroup.id} zIndex={1}>
-                  {headerGroup.headers.map((header) => {
-                    const isSorted = header.column.getIsSorted();
-                    const canSort = header.column.getCanSort();
-
-                    let cursor: CSSProperties["cursor"] = "initial";
-
-                    if (isFetching) {
-                      cursor = "not-allowed";
-                    } else if (canSort) {
-                      cursor = "pointer";
-                    }
-
-                    return (
-                      <Th
-                        key={header.id}
-                        cursor={cursor}
-                        onClick={header.column.getToggleSortingHandler()}
-                        userSelect="none"
-                      >
-                        <HStack alignItems="center">
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(header.column.columnDef.header, header.getContext())}
-                          {isSorted === "desc" && (
-                            <ChevronDownIcon
-                              aria-label={isSorted ? "sorted descending" : undefined}
-                              aria-hidden={!isSorted}
-                              fontSize={16}
-                            />
-                          )}
-                          {isSorted === "asc" && (
-                            <ChevronUpIcon
-                              aria-label={isSorted ? "sorted ascending" : undefined}
-                              aria-hidden={!isSorted}
-                              fontSize={16}
-                            />
-                          )}
-                        </HStack>
-                      </Th>
-                    );
-                  })}
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                    modifiers={[restrictToHorizontalAxis, restrictToParentElement]}
+                  >
+                    <SortableContext
+                      items={headerGroup.headers.map((h) => h.id)}
+                      strategy={horizontalListSortingStrategy}
+                    >
+                      {headerGroup.headers.map((header) => (
+                        <SortableTableHeader
+                          key={header.id}
+                          header={header}
+                          isFetching={isFetching}
+                        />
+                      ))}
+                    </SortableContext>
+                  </DndContext>
                 </Tr>
               ))}
             </Thead>

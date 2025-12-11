@@ -50,6 +50,19 @@ export const UserFeedListColumnVisibilitySchema = SchemaFactory.createForClass(
   timestamps: false,
   _id: false,
 })
+export class UserFeedListColumnOrder {
+  @Prop({ type: [String] })
+  columns: string[];
+}
+
+export const UserFeedListColumnOrderSchema = SchemaFactory.createForClass(
+  UserFeedListColumnOrder
+);
+
+@Schema({
+  timestamps: false,
+  _id: false,
+})
 export class UserPreferences {
   @Prop()
   alertOnDisabledFeeds?: boolean;
@@ -68,6 +81,9 @@ export class UserPreferences {
 
   @Prop({ type: UserFeedListColumnVisibilitySchema })
   feedListColumnVisibility?: UserFeedListColumnVisibility;
+
+  @Prop({ type: UserFeedListColumnOrderSchema })
+  feedListColumnOrder?: UserFeedListColumnOrder;
 }
 
 export const UserPreferencesSchema =

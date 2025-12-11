@@ -23,6 +23,9 @@ export const UserMeSchema = object({
       ownedByUser: bool().optional(),
       refreshRateSeconds: bool().optional(),
     }).optional(),
+    feedListColumnOrder: object({
+      columns: array(string().required()).required(),
+    }).optional(),
   }).default({}),
   subscription: object({
     product: object({
