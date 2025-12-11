@@ -35,7 +35,7 @@ jobs:
         with:
           filters: |
             user-feeds:
-              - 'services/user-feeds/**'
+              - 'services/user-feeds-next/**'
             feed-requests:
               - 'services/feed-requests/**'
             backend-api:
@@ -76,8 +76,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           platforms: linux/amd64,linux/arm64
-          context: services/user-feeds
-          target: build
+          context: services/user-feeds-next
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
