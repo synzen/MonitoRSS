@@ -1,4 +1,4 @@
-import type { SQL } from "bun";
+import type { Pool } from "pg";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { logger } from "../../shared/utils";
@@ -12,68 +12,71 @@ dayjs.extend(utc);
 interface Migration {
   version: string;
   name: string;
-  up: (sql: SQL) => Promise<void>;
+  up: (pool: Pool) => Promise<void>;
 }
 
 // ============================================================================
 // Migration Tracking
 // ============================================================================
 
-async function ensureMigrationsTableExists(sql: SQL): Promise<void> {
-  await sql`
+async function ensureMigrationsTableExists(pool: Pool): Promise<void> {
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       version TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       executed_at TIMESTAMPTZ DEFAULT now() NOT NULL
     )
-  `;
+  `);
 }
 
-async function getExecutedMigrations(sql: SQL): Promise<Set<string>> {
-  const rows = await sql`SELECT version FROM schema_migrations`;
+async function getExecutedMigrations(pool: Pool): Promise<Set<string>> {
+  const { rows } = await pool.query(`SELECT version FROM schema_migrations`);
   return new Set(rows.map((r: { version: string }) => r.version));
 }
 
-async function recordMigration(sql: SQL, migration: Migration): Promise<void> {
-  await sql`
-    INSERT INTO schema_migrations (version, name)
-    VALUES (${migration.version}, ${migration.name})
-  `;
+async function recordMigration(pool: Pool, migration: Migration): Promise<void> {
+  await pool.query(
+    `INSERT INTO schema_migrations (version, name) VALUES ($1, $2)`,
+    [migration.version, migration.name]
+  );
 }
 
 // ============================================================================
 // Helper Functions
 // ============================================================================
 
-async function tableExists(sql: SQL, tableName: string): Promise<boolean> {
-  const [result] = await sql`
-    SELECT EXISTS (
+async function tableExists(pool: Pool, tableName: string): Promise<boolean> {
+  const { rows } = await pool.query(
+    `SELECT EXISTS (
       SELECT FROM pg_tables
       WHERE schemaname = 'public'
-      AND tablename = ${tableName}
-    ) as exists
-  `;
-  return result?.exists === true;
+      AND tablename = $1
+    ) as exists`,
+    [tableName]
+  );
+  return rows[0]?.exists === true;
 }
 
-async function typeExists(sql: SQL, typeName: string): Promise<boolean> {
-  const [result] = await sql`
-    SELECT EXISTS (
+async function typeExists(pool: Pool, typeName: string): Promise<boolean> {
+  const { rows } = await pool.query(
+    `SELECT EXISTS (
       SELECT FROM pg_type
-      WHERE typname = ${typeName}
-    ) as exists
-  `;
-  return result?.exists === true;
+      WHERE typname = $1
+    ) as exists`,
+    [typeName]
+  );
+  return rows[0]?.exists === true;
 }
 
-async function indexExists(sql: SQL, indexName: string): Promise<boolean> {
-  const [result] = await sql`
-    SELECT EXISTS (
+async function indexExists(pool: Pool, indexName: string): Promise<boolean> {
+  const { rows } = await pool.query(
+    `SELECT EXISTS (
       SELECT FROM pg_indexes
-      WHERE indexname = ${indexName}
-    ) as exists
-  `;
-  return result?.exists === true;
+      WHERE indexname = $1
+    ) as exists`,
+    [indexName]
+  );
+  return rows[0]?.exists === true;
 }
 
 // ============================================================================
@@ -84,10 +87,10 @@ const migrations: Migration[] = [
   {
     version: "20251206_001",
     name: "initial_schema",
-    up: async (sql) => {
+    up: async (pool) => {
       // Create ENUMs
-      if (!(await typeExists(sql, "delivery_record_partitioned_status"))) {
-        await sql.unsafe(`
+      if (!(await typeExists(pool, "delivery_record_partitioned_status"))) {
+        await pool.query(`
           CREATE TYPE delivery_record_partitioned_status AS ENUM (
             'pending-delivery', 'sent', 'failed', 'rejected',
             'filtered-out', 'rate-limited', 'medium-rate-limited-by-user'
@@ -95,8 +98,8 @@ const migrations: Migration[] = [
         `);
       }
 
-      if (!(await typeExists(sql, "delivery_record_partitioned_content_type"))) {
-        await sql.unsafe(`
+      if (!(await typeExists(pool, "delivery_record_partitioned_content_type"))) {
+        await pool.query(`
           CREATE TYPE delivery_record_partitioned_content_type AS ENUM (
             'discord-article-message', 'discord-thread-creation'
           )
@@ -104,8 +107,8 @@ const migrations: Migration[] = [
       }
 
       // Create feed_article_field_partitioned table
-      if (!(await tableExists(sql, "feed_article_field_partitioned"))) {
-        await sql.unsafe(`
+      if (!(await tableExists(pool, "feed_article_field_partitioned"))) {
+        await pool.query(`
           CREATE TABLE feed_article_field_partitioned (
             id SERIAL NOT NULL,
             feed_id TEXT NOT NULL,
@@ -118,16 +121,16 @@ const migrations: Migration[] = [
 
       const feedArticleFieldIndex =
         "feed_article_field_partitioned_id_name_value_created";
-      if (!(await indexExists(sql, feedArticleFieldIndex))) {
-        await sql.unsafe(`
+      if (!(await indexExists(pool, feedArticleFieldIndex))) {
+        await pool.query(`
           CREATE INDEX ${feedArticleFieldIndex}
           ON feed_article_field_partitioned (feed_id, field_name, field_hashed_value, created_at)
         `);
       }
 
       // Create delivery_record_partitioned table
-      if (!(await tableExists(sql, "delivery_record_partitioned"))) {
-        await sql.unsafe(`
+      if (!(await tableExists(pool, "delivery_record_partitioned"))) {
+        await pool.query(`
           CREATE TABLE delivery_record_partitioned (
             id TEXT NOT NULL,
             feed_id TEXT NOT NULL,
@@ -171,14 +174,14 @@ const migrations: Migration[] = [
       ];
 
       for (const index of deliveryRecordIndexes) {
-        if (!(await indexExists(sql, index.name))) {
-          await sql.unsafe(index.sql);
+        if (!(await indexExists(pool, index.name))) {
+          await pool.query(index.sql);
         }
       }
 
       // Create feed_article_custom_comparison table
-      if (!(await tableExists(sql, "feed_article_custom_comparison"))) {
-        await sql.unsafe(`
+      if (!(await tableExists(pool, "feed_article_custom_comparison"))) {
+        await pool.query(`
           CREATE TABLE feed_article_custom_comparison (
             id SERIAL PRIMARY KEY,
             feed_id VARCHAR(255) NOT NULL,
@@ -186,29 +189,29 @@ const migrations: Migration[] = [
             created_at TIMESTAMPTZ NOT NULL
           )
         `);
-        await sql.unsafe(`
+        await pool.query(`
           ALTER TABLE feed_article_custom_comparison
           ADD CONSTRAINT unique_feed_field UNIQUE (feed_id, field_name)
         `);
       }
 
       // Create feed_retry_record table
-      if (!(await tableExists(sql, "feed_retry_record"))) {
-        await sql.unsafe(`
+      if (!(await tableExists(pool, "feed_retry_record"))) {
+        await pool.query(`
           CREATE TABLE feed_retry_record (
             id SERIAL PRIMARY KEY,
             feed_id VARCHAR(255) NOT NULL UNIQUE,
             attempts_so_far INT NOT NULL
           )
         `);
-        await sql.unsafe(`
+        await pool.query(`
           CREATE INDEX feed_retry_record_feed_id ON feed_retry_record (feed_id)
         `);
       }
 
       // Create response_hash table
-      if (!(await tableExists(sql, "response_hash"))) {
-        await sql.unsafe(`
+      if (!(await tableExists(pool, "response_hash"))) {
+        await pool.query(`
           CREATE TABLE response_hash (
             id SERIAL PRIMARY KEY,
             feed_id TEXT NOT NULL UNIQUE,
@@ -219,12 +222,30 @@ const migrations: Migration[] = [
       }
     },
   },
+  {
+    version: "20251210_001",
+    name: "add_feed_retry_record_created_at",
+    up: async (pool) => {
+      // Check if column already exists
+      const { rows } = await pool.query(
+        `SELECT column_name FROM information_schema.columns
+         WHERE table_name = 'feed_retry_record' AND column_name = 'created_at'`
+      );
+
+      if (rows.length === 0) {
+        await pool.query(`
+          ALTER TABLE feed_retry_record
+          ADD COLUMN created_at TIMESTAMPTZ DEFAULT now() NOT NULL
+        `);
+      }
+    },
+  },
   // Future migrations go here:
   // {
   //   version: "20251207_001",
   //   name: "add_new_column",
-  //   up: async (sql) => {
-  //     await sql`ALTER TABLE some_table ADD COLUMN new_col TEXT`;
+  //   up: async (pool) => {
+  //     await pool.query(`ALTER TABLE some_table ADD COLUMN new_col TEXT`);
   //   },
   // },
 ];
@@ -237,10 +258,10 @@ const migrations: Migration[] = [
  * Run all pending migrations.
  * Tracks executed migrations in schema_migrations table.
  */
-export async function runMigrations(sql: SQL): Promise<void> {
-  await ensureMigrationsTableExists(sql);
+export async function runMigrations(pool: Pool): Promise<void> {
+  await ensureMigrationsTableExists(pool);
 
-  const executed = await getExecutedMigrations(sql);
+  const executed = await getExecutedMigrations(pool);
   let ranCount = 0;
 
   for (const migration of migrations) {
@@ -249,8 +270,8 @@ export async function runMigrations(sql: SQL): Promise<void> {
     }
 
     logger.info(`Running migration ${migration.version}: ${migration.name}`);
-    await migration.up(sql);
-    await recordMigration(sql, migration);
+    await migration.up(pool);
+    await recordMigration(pool, migration);
     ranCount++;
   }
 
@@ -265,7 +286,7 @@ export async function runMigrations(sql: SQL): Promise<void> {
  * Ensure partitions exist for current and next month.
  * This runs on every startup (not versioned) since partitions depend on current date.
  */
-export async function ensurePartitionsExist(sql: SQL): Promise<void> {
+export async function ensurePartitionsExist(pool: Pool): Promise<void> {
   const startOfMonth = dayjs().utc().startOf("month");
   const thisMonthDate = startOfMonth;
   const nextMonthDate = startOfMonth.add(1, "month");
@@ -300,13 +321,13 @@ export async function ensurePartitionsExist(sql: SQL): Promise<void> {
 
   let created = 0;
   for (const partition of partitions) {
-    if (await tableExists(sql, partition.tableName)) {
+    if (await tableExists(pool, partition.tableName)) {
       continue;
     }
 
     // Note: PostgreSQL does not support parameterized queries in DDL statements.
     // These values are safe as they come from dayjs() date calculations, not user input.
-    await sql.unsafe(`
+    await pool.query(`
       CREATE TABLE ${partition.tableName}
       PARTITION OF ${partition.parentTable}
       FOR VALUES FROM ('${partition.from}') TO ('${partition.to}')
@@ -345,10 +366,10 @@ function parsePartitionDate(partitionName: string): { year: number; month: numbe
  * Get all current partitions for a given parent table, sorted chronologically (oldest first).
  */
 async function getCurrentPartitions(
-  sql: SQL,
+  pool: Pool,
   tableName: string
 ): Promise<PartitionInfo[]> {
-  const result = await sql.unsafe(
+  const { rows } = await pool.query(
     `SELECT
       nmsp_parent.nspname AS parent_schema,
       parent.relname      AS parent,
@@ -363,7 +384,7 @@ async function getCurrentPartitions(
     [tableName]
   );
 
-  const partitions = result.map(
+  const partitions = rows.map(
     (row: {
       parent_schema: string;
       parent: string;
@@ -394,7 +415,7 @@ async function getCurrentPartitions(
  * Currently just logs which partitions would be dropped (matching user-feeds behavior).
  */
 export async function pruneOldPartitions(
-  sql: SQL,
+  pool: Pool,
   options: {
     articlePersistenceMonths: number;
     deliveryRecordPersistenceMonths: number;
@@ -415,7 +436,7 @@ export async function pruneOldPartitions(
   // Prune feed_article_field_partitioned
   try {
     const articlePartitions = await getCurrentPartitions(
-      sql,
+      pool,
       "feed_article_field_partitioned"
     );
 
@@ -438,7 +459,7 @@ export async function pruneOldPartitions(
         // Uncomment below to actually drop partitions:
         // await Promise.all(
         //   articleTablesToDrop.map(async (partition) => {
-        //     await sql.unsafe(
+        //     await pool.query(
         //       `DROP TABLE IF EXISTS ${partition.childSchema}.${partition.child};`
         //     );
         //   })
@@ -457,7 +478,7 @@ export async function pruneOldPartitions(
   // Prune delivery_record_partitioned
   try {
     const deliveryPartitions = await getCurrentPartitions(
-      sql,
+      pool,
       "delivery_record_partitioned"
     );
 
@@ -483,7 +504,7 @@ export async function pruneOldPartitions(
           // Uncomment below to actually drop partitions:
           // await Promise.all(
           //   deliveryTablesToDrop.map(async (partition) => {
-          //     await sql.unsafe(
+          //     await pool.query(
           //       `DROP TABLE IF EXISTS ${partition.childSchema}.${partition.child};`
           //     );
           //   })
@@ -505,10 +526,10 @@ export async function pruneOldPartitions(
  * Truncate all tables (for testing).
  * Does not drop tables or types.
  */
-export async function truncateAllTables(sql: SQL): Promise<void> {
-  await sql`TRUNCATE TABLE feed_article_field_partitioned CASCADE`;
-  await sql`TRUNCATE TABLE delivery_record_partitioned CASCADE`;
-  await sql`TRUNCATE TABLE feed_article_custom_comparison CASCADE`;
-  await sql`TRUNCATE TABLE feed_retry_record CASCADE`;
-  await sql`TRUNCATE TABLE response_hash CASCADE`;
+export async function truncateAllTables(pool: Pool): Promise<void> {
+  await pool.query(`TRUNCATE TABLE feed_article_field_partitioned CASCADE`);
+  await pool.query(`TRUNCATE TABLE delivery_record_partitioned CASCADE`);
+  await pool.query(`TRUNCATE TABLE feed_article_custom_comparison CASCADE`);
+  await pool.query(`TRUNCATE TABLE feed_retry_record CASCADE`);
+  await pool.query(`TRUNCATE TABLE response_hash CASCADE`);
 }

@@ -1,21 +1,15 @@
-import type { SQL } from "bun";
+import type { Pool } from "pg";
 import type { ResponseHashStore } from "../../feeds/feed-event-handler";
 import { logger } from "../../shared/utils";
 
-/**
- * Create a PostgreSQL-backed implementation of ResponseHashStore.
- * Uses Bun's native SQL module.
- */
-export function createPostgresResponseHashStore(sql: SQL): ResponseHashStore {
+export function createPostgresResponseHashStore(pool: Pool): ResponseHashStore {
   return {
     async get(feedId: string): Promise<string | null> {
-      const [result] = await sql`
-        SELECT hash
-        FROM response_hash
-        WHERE feed_id = ${feedId}
-        LIMIT 1
-      `;
-      return (result?.hash as string) ?? null;
+      const { rows } = await pool.query(
+        `SELECT hash FROM response_hash WHERE feed_id = $1 LIMIT 1`,
+        [feedId]
+      );
+      return (rows[0]?.hash as string) ?? null;
     },
 
     async set(feedId: string, hash: string): Promise<void> {
@@ -24,13 +18,13 @@ export function createPostgresResponseHashStore(sql: SQL): ResponseHashStore {
       }
 
       try {
-        await sql`
-          INSERT INTO response_hash (feed_id, hash, updated_at)
-          VALUES (${feedId}, ${hash}, ${new Date()})
-          ON CONFLICT (feed_id) DO UPDATE SET
-            hash = ${hash},
-            updated_at = ${new Date()}
-        `;
+        const now = new Date();
+        await pool.query(
+          `INSERT INTO response_hash (feed_id, hash, updated_at)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (feed_id) DO UPDATE SET hash = $2, updated_at = $3`,
+          [feedId, hash, now]
+        );
       } catch (err) {
         logger.error(`Failed to set in cache storage`, {
           err: (err as Error).stack,
@@ -40,10 +34,9 @@ export function createPostgresResponseHashStore(sql: SQL): ResponseHashStore {
     },
 
     async remove(feedId: string): Promise<void> {
-      await sql`
-        DELETE FROM response_hash
-        WHERE feed_id = ${feedId}
-      `;
+      await pool.query(`DELETE FROM response_hash WHERE feed_id = $1`, [
+        feedId,
+      ]);
     },
   };
 }

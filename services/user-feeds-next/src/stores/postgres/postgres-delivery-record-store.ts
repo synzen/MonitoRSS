@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { SQL } from "bun";
+import type { Pool } from "pg";
 import type {
   DeliveryRecordStore,
   ArticleDeliveryState,
@@ -28,9 +28,6 @@ interface AsyncStore {
 
 const asyncLocalStorage = new AsyncLocalStorage<AsyncStore>();
 
-/**
- * Convert an ArticleDeliveryState to a PartitionedDeliveryRecordInsert.
- */
 function stateToInsert(
   feedId: string,
   state: ArticleDeliveryState
@@ -101,11 +98,9 @@ function stateToInsert(
   }
 }
 
-/**
- * Create a PostgreSQL-backed implementation of DeliveryRecordStore.
- * Uses Bun's native SQL module for partitioned table queries.
- */
-export function createPostgresDeliveryRecordStore(sql: SQL): DeliveryRecordStore {
+export function createPostgresDeliveryRecordStore(
+  pool: Pool
+): DeliveryRecordStore {
   return {
     async startContext<T>(cb: () => Promise<T>): Promise<T> {
       return asyncLocalStorage.run({ toInsert: [] }, cb);
@@ -150,49 +145,45 @@ export function createPostgresDeliveryRecordStore(sql: SQL): DeliveryRecordStore
       }
 
       try {
-        // Use transaction with parallel inserts for efficiency
-        // This matches user-feeds behavior and allows PostgreSQL to pipeline statements
+        const client = await pool.connect();
         let affectedRows = 0;
 
-        await sql.begin(async (tx) => {
-          const results = await Promise.all(
-            inserts.map((record) =>
-              tx`
-                INSERT INTO delivery_record_partitioned (
-                  id,
-                  feed_id,
-                  medium_id,
-                  created_at,
-                  status,
-                  content_type,
-                  parent_id,
-                  internal_message,
-                  error_code,
-                  external_detail,
-                  article_id,
-                  article_id_hash,
-                  article_data
-                ) VALUES (
-                  ${record.id},
-                  ${record.feedId},
-                  ${record.mediumId},
-                  ${record.createdAt},
-                  ${record.status},
-                  ${record.contentType},
-                  ${record.parentId},
-                  ${record.internalMessage},
-                  ${record.errorCode},
-                  ${record.externalDetail},
-                  ${record.articleId},
-                  ${record.articleIdHash},
-                  ${record.articleData ? JSON.stringify(record.articleData) : null}::jsonb
-                )
-              `
-            )
-          );
+        try {
+          await client.query("BEGIN");
 
-          affectedRows = results.reduce((sum, r) => sum + r.count, 0);
-        });
+          for (const record of inserts) {
+            const result = await client.query(
+              `INSERT INTO delivery_record_partitioned (
+                id, feed_id, medium_id, created_at, status, content_type,
+                parent_id, internal_message, error_code, external_detail,
+                article_id, article_id_hash, article_data
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+              [
+                record.id,
+                record.feedId,
+                record.mediumId,
+                record.createdAt,
+                record.status,
+                record.contentType,
+                record.parentId,
+                record.internalMessage,
+                record.errorCode,
+                record.externalDetail,
+                record.articleId,
+                record.articleIdHash,
+                record.articleData ? JSON.stringify(record.articleData) : null,
+              ]
+            );
+            affectedRows += result.rowCount ?? 0;
+          }
+
+          await client.query("COMMIT");
+        } catch (err) {
+          await client.query("ROLLBACK");
+          throw err;
+        } finally {
+          client.release();
+        }
 
         return { affectedRows };
       } catch (err) {
@@ -223,23 +214,21 @@ export function createPostgresDeliveryRecordStore(sql: SQL): DeliveryRecordStore
     }> {
       const { status, errorCode, internalMessage, externalDetail } = details;
 
-      const [res] = await sql`
-        UPDATE delivery_record_partitioned
-        SET status = ${status},
-            error_code = ${errorCode ?? null},
-            internal_message = ${internalMessage ?? null},
-            external_detail = ${externalDetail ?? null}
-        WHERE id = ${id}
-        RETURNING status, error_code, feed_id, medium_id, internal_message
-      `;
+      const { rows } = await pool.query(
+        `UPDATE delivery_record_partitioned
+         SET status = $1, error_code = $2, internal_message = $3, external_detail = $4
+         WHERE id = $5
+         RETURNING status, error_code, feed_id, medium_id, internal_message`,
+        [status, errorCode ?? null, internalMessage ?? null, externalDetail ?? null, id]
+      );
 
-      if (!res) {
+      if (!rows[0]) {
         throw new Error(
           `Failed to update status of delivery record for ${id}: Record not found`
         );
       }
 
-      return res as {
+      return rows[0] as {
         feed_id: string;
         medium_id: string;
         status: ArticleDeliveryStatus;
@@ -252,40 +241,23 @@ export function createPostgresDeliveryRecordStore(sql: SQL): DeliveryRecordStore
       { mediumId, feedId }: { mediumId?: string; feedId?: string },
       secondsInPast: number
     ): Promise<number> {
-      // Build dynamic query based on provided filters
-      let result: Array<{ count: string }>;
+      let query = `SELECT COUNT(*) as count FROM delivery_record_partitioned
+                   WHERE created_at >= NOW() - INTERVAL '1 second' * $1 AND status = $2`;
+      const params: (string | number)[] = [secondsInPast, Sent];
 
       if (mediumId && feedId) {
-        result = await sql`
-          SELECT COUNT(*) as count FROM delivery_record_partitioned
-          WHERE created_at >= NOW() - INTERVAL '1 second' * ${secondsInPast}
-            AND status = ${Sent}
-            AND medium_id = ${mediumId}
-            AND feed_id = ${feedId}
-        `;
+        query += ` AND medium_id = $3 AND feed_id = $4`;
+        params.push(mediumId, feedId);
       } else if (mediumId) {
-        result = await sql`
-          SELECT COUNT(*) as count FROM delivery_record_partitioned
-          WHERE created_at >= NOW() - INTERVAL '1 second' * ${secondsInPast}
-            AND status = ${Sent}
-            AND medium_id = ${mediumId}
-        `;
+        query += ` AND medium_id = $3`;
+        params.push(mediumId);
       } else if (feedId) {
-        result = await sql`
-          SELECT COUNT(*) as count FROM delivery_record_partitioned
-          WHERE created_at >= NOW() - INTERVAL '1 second' * ${secondsInPast}
-            AND status = ${Sent}
-            AND feed_id = ${feedId}
-        `;
-      } else {
-        result = await sql`
-          SELECT COUNT(*) as count FROM delivery_record_partitioned
-          WHERE created_at >= NOW() - INTERVAL '1 second' * ${secondsInPast}
-            AND status = ${Sent}
-        `;
+        query += ` AND feed_id = $3`;
+        params.push(feedId);
       }
 
-      return Number(result[0]?.count ?? 0);
+      const { rows } = await pool.query(query, params);
+      return Number(rows[0]?.count ?? 0);
     },
 
     async getDeliveryLogs(options: {
@@ -295,31 +267,29 @@ export function createPostgresDeliveryRecordStore(sql: SQL): DeliveryRecordStore
     }): Promise<DeliveryLog[]> {
       const { feedId, skip, limit } = options;
 
-      // Get parent records (no parent_id)
-      const parentRecords = await sql`
-        SELECT id, status, error_code, medium_id,
-          content_type, external_detail, article_id_hash, created_at, article_data
-        FROM delivery_record_partitioned
-        WHERE feed_id = ${feedId}
-        AND parent_id IS NULL
-        ORDER BY created_at DESC
-        LIMIT ${limit}
-        OFFSET ${skip}
-      `;
+      const { rows: parentRecords } = await pool.query(
+        `SELECT id, status, error_code, medium_id, content_type, external_detail,
+                article_id_hash, created_at, article_data
+         FROM delivery_record_partitioned
+         WHERE feed_id = $1 AND parent_id IS NULL
+         ORDER BY created_at DESC
+         LIMIT $2 OFFSET $3`,
+        [feedId, limit, skip]
+      );
 
       if (parentRecords.length === 0) {
         return [];
       }
 
-      // Get child records for these parents
-      const parentIds = parentRecords.map((r: { id: string }) => r.id);
-      const childRecords = await sql`
-        SELECT id, status, error_code, medium_id,
-          content_type, external_detail, article_id_hash, created_at, parent_id, article_data
-        FROM delivery_record_partitioned
-        WHERE feed_id = ${feedId}
-        AND parent_id IN ${sql(parentIds)}
-      `;
+      const parentIds = parentRecords.map((r) => r.id as string);
+      const placeholders = parentIds.map((_, i) => `$${i + 2}`).join(", ");
+      const { rows: childRecords } = await pool.query(
+        `SELECT id, status, error_code, medium_id, content_type, external_detail,
+                article_id_hash, created_at, parent_id, article_data
+         FROM delivery_record_partitioned
+         WHERE feed_id = $1 AND parent_id IN (${placeholders})`,
+        [feedId, ...parentIds]
+      );
 
       return parentRecords.map(
         (record: {

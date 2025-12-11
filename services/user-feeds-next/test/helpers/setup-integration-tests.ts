@@ -1,7 +1,7 @@
-import { SQL } from "bun";
+import type { Pool } from "pg";
 import {
-  initSqlClient,
-  closeSqlClient,
+  initPool,
+  closePool,
   runMigrations,
   ensurePartitionsExist,
   truncateAllTables,
@@ -27,7 +27,7 @@ import {
 // Test Infrastructure State
 // ============================================================================
 
-let sql: SQL | null = null;
+let pool: Pool | null = null;
 let articleFieldStore: ArticleFieldStore | null = null;
 let deliveryRecordStore: DeliveryRecordStore | null = null;
 let responseHashStore: ResponseHashStore | null = null;
@@ -44,7 +44,7 @@ let testFeedRequestsServer: TestFeedRequestsServer | null = null;
  * Call this in beforeAll.
  */
 export async function setupIntegrationTests(): Promise<{
-  sql: SQL;
+  pool: Pool;
   articleFieldStore: ArticleFieldStore;
   deliveryRecordStore: DeliveryRecordStore;
   responseHashStore: ResponseHashStore;
@@ -60,24 +60,24 @@ export async function setupIntegrationTests(): Promise<{
     process.env.USER_FEEDS_POSTGRES_URI ||
     "postgres://postgres:postgres@localhost:5433/userfeeds_test";
 
-  // Initialize the SQL client
-  sql = initSqlClient(postgresUri);
+  // Initialize the pool
+  pool = initPool(postgresUri);
 
   // Run migrations (creates tables if they don't exist)
-  await runMigrations(sql);
+  await runMigrations(pool);
 
   // Ensure partitions exist for current/next month
-  await ensurePartitionsExist(sql);
+  await ensurePartitionsExist(pool);
 
   // Create stores
-  articleFieldStore = createPostgresArticleFieldStore(sql);
-  deliveryRecordStore = createPostgresDeliveryRecordStore(sql);
-  responseHashStore = createPostgresResponseHashStore(sql);
-  feedRetryStore = createPostgresFeedRetryStore(sql);
+  articleFieldStore = createPostgresArticleFieldStore(pool);
+  deliveryRecordStore = createPostgresDeliveryRecordStore(pool);
+  responseHashStore = createPostgresResponseHashStore(pool);
+  feedRetryStore = createPostgresFeedRetryStore(pool);
   discordClient = createTestDiscordRestClient();
 
   return {
-    sql,
+    pool,
     articleFieldStore,
     deliveryRecordStore,
     responseHashStore,
@@ -92,13 +92,13 @@ export async function setupIntegrationTests(): Promise<{
  * Call this in beforeEach.
  */
 export async function cleanupTestData(): Promise<void> {
-  if (!sql) {
+  if (!pool) {
     throw new Error(
-      "SQL client not initialized. Call setupIntegrationTests first."
+      "Pool not initialized. Call setupIntegrationTests first."
     );
   }
 
-  await truncateAllTables(sql);
+  await truncateAllTables(pool);
 }
 
 /**
@@ -111,8 +111,8 @@ export async function teardownIntegrationTests(): Promise<void> {
     testFeedRequestsServer = null;
   }
 
-  await closeSqlClient();
-  sql = null;
+  await closePool();
+  pool = null;
   articleFieldStore = null;
   deliveryRecordStore = null;
   responseHashStore = null;
@@ -123,7 +123,7 @@ export async function teardownIntegrationTests(): Promise<void> {
  * Get the current stores (throws if not initialized).
  */
 export function getStores(): {
-  sql: SQL;
+  pool: Pool;
   articleFieldStore: ArticleFieldStore;
   deliveryRecordStore: DeliveryRecordStore;
   responseHashStore: ResponseHashStore;
@@ -132,7 +132,7 @@ export function getStores(): {
   feedRequestsServiceHost: string;
 } {
   if (
-    !sql ||
+    !pool ||
     !articleFieldStore ||
     !deliveryRecordStore ||
     !responseHashStore ||
@@ -146,7 +146,7 @@ export function getStores(): {
   }
 
   return {
-    sql,
+    pool,
     articleFieldStore,
     deliveryRecordStore,
     responseHashStore,

@@ -1,6 +1,5 @@
 import { config } from "dotenv";
 import { Connection } from "rabbitmq-client";
-import { SQL } from "bun";
 import { logger } from "./src/shared/utils";
 import {
   parseFeedV2Event,
@@ -35,7 +34,10 @@ import { inMemoryDeliveryRecordStore } from "./src/stores/in-memory/delivery-rec
 import type { DeliveryRecordStore } from "./src/stores/interfaces/delivery-record-store";
 import { inMemoryFeedRetryStore } from "./src/stores/in-memory/feed-retry-store";
 import type { FeedRetryStore } from "./src/stores/interfaces/feed-retry-store";
+import type { Pool } from "pg";
 import {
+  initPool,
+  closePool,
   createPostgresDeliveryRecordStore,
   createPostgresArticleFieldStore,
   createPostgresResponseHashStore,
@@ -86,8 +88,8 @@ const PREFETCH_COUNT = parseInt(
 const PARTITION_MANAGEMENT_INTERVAL_MS = 60000 * 24; // 24 minutes (matches user-feeds)
 const START_TARGET = process.env.USER_FEEDS_START_TARGET; // "service" | "api" | undefined
 
-// Global SQL client for shutdown
-let sqlClient: SQL | null = null;
+// Global pool for shutdown
+let pool: Pool | null = null;
 
 interface SharedInfrastructure {
   deliveryRecordStore: DeliveryRecordStore;
@@ -130,18 +132,18 @@ async function initializeSharedInfrastructure(): Promise<SharedInfrastructure> {
   let feedRetryStore: FeedRetryStore = inMemoryFeedRetryStore;
 
   if (POSTGRES_URI) {
-    sqlClient = new SQL(POSTGRES_URI);
+    pool = initPool(POSTGRES_URI);
     logger.info("Successfully connected to PostgreSQL");
 
-    deliveryRecordStore = createPostgresDeliveryRecordStore(sqlClient);
-    articleFieldStore = createPostgresArticleFieldStore(sqlClient);
-    responseHashStore = createPostgresResponseHashStore(sqlClient);
-    feedRetryStore = createPostgresFeedRetryStore(sqlClient);
+    deliveryRecordStore = createPostgresDeliveryRecordStore(pool);
+    articleFieldStore = createPostgresArticleFieldStore(pool);
+    responseHashStore = createPostgresResponseHashStore(pool);
+    feedRetryStore = createPostgresFeedRetryStore(pool);
     logger.info("Using PostgreSQL-backed stores");
 
     // Run partition management on startup
-    await ensurePartitionsExist(sqlClient);
-    await pruneOldPartitions(sqlClient, {
+    await ensurePartitionsExist(pool);
+    await pruneOldPartitions(pool, {
       articlePersistenceMonths: ARTICLE_PERSISTENCE_MONTHS,
       deliveryRecordPersistenceMonths: DELIVERY_RECORD_PERSISTENCE_MONTHS,
     });
@@ -150,8 +152,8 @@ async function initializeSharedInfrastructure(): Promise<SharedInfrastructure> {
     setInterval(async () => {
       logger.info("Running recurring task to prune and create partitions...");
       try {
-        await ensurePartitionsExist(sqlClient!);
-        await pruneOldPartitions(sqlClient!, {
+        await ensurePartitionsExist(pool!);
+        await pruneOldPartitions(pool!, {
           articlePersistenceMonths: ARTICLE_PERSISTENCE_MONTHS,
           deliveryRecordPersistenceMonths: DELIVERY_RECORD_PERSISTENCE_MONTHS,
         });
@@ -210,9 +212,9 @@ async function closeSharedInfrastructure(): Promise<void> {
 
   await closeRedisClient();
 
-  if (sqlClient) {
+  if (pool) {
     try {
-      await sqlClient.close();
+      await closePool();
       logger.info("Successfully closed PostgreSQL connection");
     } catch (err) {
       logger.error("Failed to close PostgreSQL connection", {

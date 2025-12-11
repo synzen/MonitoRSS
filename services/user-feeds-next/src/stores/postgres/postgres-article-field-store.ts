@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { createHash } from "crypto";
 import dayjs from "dayjs";
-import type { SQL } from "bun";
+import type { Pool } from "pg";
 import type {
   ArticleFieldStore,
   PendingArticleFieldInsert,
@@ -17,19 +17,14 @@ interface AsyncStore {
 
 const asyncLocalStorage = new AsyncLocalStorage<AsyncStore>();
 
-/**
- * Create a PostgreSQL-backed implementation of ArticleFieldStore.
- * Uses Bun's native SQL module for partitioned table queries.
- */
-export function createPostgresArticleFieldStore(sql: SQL): ArticleFieldStore {
+export function createPostgresArticleFieldStore(pool: Pool): ArticleFieldStore {
   return {
     async hasPriorArticlesStored(feedId: string): Promise<boolean> {
-      const [result] = await sql`
-        SELECT 1 AS result FROM feed_article_field_partitioned
-        WHERE feed_id = ${feedId}
-        LIMIT 1
-      `;
-      return !!result;
+      const { rows } = await pool.query(
+        `SELECT 1 AS result FROM feed_article_field_partitioned WHERE feed_id = $1 LIMIT 1`,
+        [feedId]
+      );
+      return !!rows[0];
     },
 
     async findStoredArticleIds(
@@ -40,16 +35,14 @@ export function createPostgresArticleFieldStore(sql: SQL): ArticleFieldStore {
         return new Set();
       }
 
-      const results = await sql`
-        SELECT field_hashed_value FROM feed_article_field_partitioned
-        WHERE feed_id = ${feedId}
-          AND field_name = 'id'
-          AND field_hashed_value IN ${sql(idHashes)}
-      `;
-
-      return new Set(
-        results.map((r: { field_hashed_value: string }) => r.field_hashed_value)
+      const placeholders = idHashes.map((_, i) => `$${i + 2}`).join(", ");
+      const { rows } = await pool.query(
+        `SELECT field_hashed_value FROM feed_article_field_partitioned
+         WHERE feed_id = $1 AND field_name = 'id' AND field_hashed_value IN (${placeholders})`,
+        [feedId, ...idHashes]
       );
+
+      return new Set(rows.map((r) => r.field_hashed_value as string));
     },
 
     async findStoredArticleIdsPartitioned(
@@ -62,66 +55,54 @@ export function createPostgresArticleFieldStore(sql: SQL): ArticleFieldStore {
       }
 
       const oneMonthAgo = dayjs().subtract(1, "month").toDate();
+      const dateCondition = olderThanOneMonth
+        ? "created_at <= $2"
+        : "created_at > $2";
 
-      let results: Array<{ field_hashed_value: string }>;
+      let rows: Array<{ field_hashed_value: string }>;
 
       if (idHashes.length < 15) {
-        // Simple query for small ID sets
-        if (olderThanOneMonth) {
-          results = await sql`
-            SELECT field_hashed_value FROM feed_article_field_partitioned
-            WHERE created_at <= ${oneMonthAgo}
-              AND feed_id = ${feedId}
-              AND field_name = 'id'
-              AND field_hashed_value IN ${sql(idHashes)}
-          `;
-        } else {
-          results = await sql`
-            SELECT field_hashed_value FROM feed_article_field_partitioned
-            WHERE created_at > ${oneMonthAgo}
-              AND feed_id = ${feedId}
-              AND field_name = 'id'
-              AND field_hashed_value IN ${sql(idHashes)}
-          `;
-        }
+        const placeholders = idHashes.map((_, i) => `$${i + 3}`).join(", ");
+        const result = await pool.query(
+          `SELECT field_hashed_value FROM feed_article_field_partitioned
+           WHERE ${dateCondition} AND feed_id = $1 AND field_name = 'id'
+             AND field_hashed_value IN (${placeholders})`,
+          [feedId, oneMonthAgo, ...idHashes]
+        );
+        rows = result.rows;
       } else {
         // Use transaction with temporary table for large ID sets
         const temporaryTableName = `current_article_ids_${feedId.replace(/-/g, "_")}`;
+        const client = await pool.connect();
 
-        results = await sql.begin(async (tx) => {
-          // Create temp table with VALUES using parameterized query
+        try {
+          await client.query("BEGIN");
+
           const placeholders = idHashes.map((_, i) => `($${i + 1})`).join(", ");
-          await tx.unsafe(
+          await client.query(
             `CREATE TEMP TABLE ${temporaryTableName} AS SELECT * FROM (VALUES ${placeholders}) AS t(id)`,
             idHashes
           );
 
-          let result: Array<{ field_hashed_value: string }>;
-          if (olderThanOneMonth) {
-            result = await tx`
-              SELECT field_hashed_value FROM feed_article_field_partitioned
-              INNER JOIN ${sql.unsafe(temporaryTableName)} t ON (field_hashed_value = t.id)
-              WHERE created_at <= ${oneMonthAgo}
-                AND feed_id = ${feedId}
-                AND field_name = 'id'
-            `;
-          } else {
-            result = await tx`
-              SELECT field_hashed_value FROM feed_article_field_partitioned
-              INNER JOIN ${sql.unsafe(temporaryTableName)} t ON (field_hashed_value = t.id)
-              WHERE created_at > ${oneMonthAgo}
-                AND feed_id = ${feedId}
-                AND field_name = 'id'
-            `;
-          }
+          const result = await client.query(
+            `SELECT field_hashed_value FROM feed_article_field_partitioned
+             INNER JOIN ${temporaryTableName} t ON (field_hashed_value = t.id)
+             WHERE ${dateCondition} AND feed_id = $1 AND field_name = 'id'`,
+            [feedId, oneMonthAgo]
+          );
+          rows = result.rows;
 
-          await tx.unsafe(`DROP TABLE ${temporaryTableName}`);
-
-          return result;
-        });
+          await client.query(`DROP TABLE ${temporaryTableName}`);
+          await client.query("COMMIT");
+        } catch (err) {
+          await client.query("ROLLBACK");
+          throw err;
+        } finally {
+          client.release();
+        }
       }
 
-      return new Set(results.map((r) => r.field_hashed_value));
+      return new Set(rows.map((r) => r.field_hashed_value));
     },
 
     async someFieldsExist(
@@ -132,7 +113,6 @@ export function createPostgresArticleFieldStore(sql: SQL): ArticleFieldStore {
         return false;
       }
 
-      // Build OR conditions dynamically
       const conditions = fields
         .map(
           (_, i) =>
@@ -145,12 +125,12 @@ export function createPostgresArticleFieldStore(sql: SQL): ArticleFieldStore {
         ...fields.flatMap((f) => [f.name, f.hashedValue]),
       ];
 
-      const results = await sql.unsafe(
+      const { rows } = await pool.query(
         `SELECT 1 FROM ${TABLE_NAME} WHERE feed_id = $1 AND (${conditions}) LIMIT 1`,
         params
       );
 
-      return results.length > 0;
+      return rows.length > 0;
     },
 
     async storeArticles(
@@ -171,7 +151,6 @@ export function createPostgresArticleFieldStore(sql: SQL): ArticleFieldStore {
       const { pendingInserts } = store;
 
       for (const article of articles) {
-        // Store article ID hash
         pendingInserts.push({
           feedId,
           fieldName: "id",
@@ -179,7 +158,6 @@ export function createPostgresArticleFieldStore(sql: SQL): ArticleFieldStore {
           createdAt: now,
         });
 
-        // Store comparison fields
         for (const fieldName of comparisonFields) {
           const value = article.flattened[fieldName];
           if (value) {
@@ -196,12 +174,12 @@ export function createPostgresArticleFieldStore(sql: SQL): ArticleFieldStore {
     },
 
     async getStoredComparisonNames(feedId: string): Promise<Set<string>> {
-      const results = await sql`
-        SELECT field_name FROM feed_article_custom_comparison
-        WHERE feed_id = ${feedId}
-      `;
+      const { rows } = await pool.query(
+        `SELECT field_name FROM feed_article_custom_comparison WHERE feed_id = $1`,
+        [feedId]
+      );
 
-      return new Set(results.map((r: { field_name: string }) => r.field_name));
+      return new Set(rows.map((r) => r.field_name as string));
     },
 
     async storeComparisonNames(
@@ -210,11 +188,12 @@ export function createPostgresArticleFieldStore(sql: SQL): ArticleFieldStore {
     ): Promise<void> {
       for (const fieldName of comparisonFields) {
         try {
-          await sql`
-            INSERT INTO feed_article_custom_comparison (feed_id, field_name, created_at)
-            VALUES (${feedId}, ${fieldName}, ${new Date()})
-            ON CONFLICT (feed_id, field_name) DO NOTHING
-          `;
+          await pool.query(
+            `INSERT INTO feed_article_custom_comparison (feed_id, field_name, created_at)
+             VALUES ($1, $2, $3)
+             ON CONFLICT (feed_id, field_name) DO NOTHING`,
+            [feedId, fieldName, new Date()]
+          );
         } catch {
           // Ignore unique constraint violations
         }
@@ -222,8 +201,14 @@ export function createPostgresArticleFieldStore(sql: SQL): ArticleFieldStore {
     },
 
     async clear(feedId: string): Promise<void> {
-      await sql`DELETE FROM feed_article_field_partitioned WHERE feed_id = ${feedId}`;
-      await sql`DELETE FROM feed_article_custom_comparison WHERE feed_id = ${feedId}`;
+      await pool.query(
+        `DELETE FROM feed_article_field_partitioned WHERE feed_id = $1`,
+        [feedId]
+      );
+      await pool.query(
+        `DELETE FROM feed_article_custom_comparison WHERE feed_id = $1`,
+        [feedId]
+      );
     },
 
     async startContext<T>(cb: () => Promise<T>): Promise<T> {
@@ -258,14 +243,14 @@ export function createPostgresArticleFieldStore(sql: SQL): ArticleFieldStore {
           })
           .join(", ");
 
-        const result = await sql.unsafe(
-          `INSERT INTO feed_article_field_partitioned ` +
-            `(feed_id, field_name, field_hashed_value, created_at) ` +
-            `VALUES ${placeholders}`,
+        const result = await pool.query(
+          `INSERT INTO feed_article_field_partitioned
+           (feed_id, field_name, field_hashed_value, created_at)
+           VALUES ${placeholders}`,
           allValues
         );
 
-        return { affectedRows: result.count };
+        return { affectedRows: result.rowCount ?? 0 };
       } catch (err) {
         logger.error("Error inserting into feed_article_field_partitioned", {
           stack: (err as Error).stack,

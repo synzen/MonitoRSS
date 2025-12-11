@@ -1,22 +1,28 @@
-import { SQL } from "bun";
+import { Pool } from "pg";
+import { logger } from "../../shared/utils";
 
-let sqlClient: SQL | null = null;
+let pool: Pool | null = null;
 
-export function initSqlClient(connectionUri: string): SQL {
-  sqlClient = new SQL(connectionUri);
-  return sqlClient;
+export function initPool(uri: string): Pool {
+  pool = new Pool({
+    connectionString: uri,
+    max: 75,
+    idleTimeoutMillis: 30000,
+  });
+  pool.on("error", (err) =>
+    logger.error("PostgreSQL pool error", { error: err.stack })
+  );
+  return pool;
 }
 
-export function getSqlClient(): SQL {
-  if (!sqlClient) {
-    throw new Error("SQL client not initialized");
-  }
-  return sqlClient;
+export function getPool(): Pool {
+  if (!pool) throw new Error("Pool not initialized");
+  return pool;
 }
 
-export async function closeSqlClient(): Promise<void> {
-  if (sqlClient) {
-    await sqlClient.close();
-    sqlClient = null;
+export async function closePool(): Promise<void> {
+  if (pool) {
+    await pool.end();
+    pool = null;
   }
 }

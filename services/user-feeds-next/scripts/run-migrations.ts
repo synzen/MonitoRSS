@@ -1,6 +1,5 @@
-import { SQL } from "bun";
 import { config } from "dotenv";
-import { runMigrations } from "../src/stores/postgres";
+import { initPool, closePool, runMigrations } from "../src/stores/postgres";
 import { logger } from "../src/shared/utils";
 
 config();
@@ -12,12 +11,12 @@ async function main() {
     throw new Error("USER_FEEDS_POSTGRES_URI is required");
   }
 
-  const sql = new SQL(POSTGRES_URI);
+  const pool = initPool(POSTGRES_URI);
   logger.info("Connected to PostgreSQL, running migrations...");
 
-  await runMigrations(sql);
+  await runMigrations(pool);
 
-  await sql.close();
+  await closePool();
   logger.info("Migrations complete");
 }
 
