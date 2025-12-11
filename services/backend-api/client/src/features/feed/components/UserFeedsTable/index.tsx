@@ -44,6 +44,7 @@ import {
 } from "@tanstack/react-table";
 import { useTranslation } from "react-i18next";
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon, CloseIcon, SearchIcon } from "@chakra-ui/icons";
+import { FaFilter, FaTableColumns } from "react-icons/fa6";
 import dayjs from "dayjs";
 import { Link as RouterLink, useSearchParams } from "react-router-dom";
 import { Loading } from "@/components";
@@ -529,6 +530,9 @@ export const UserFeedsTable: React.FC<Props> = () => {
   }
 
   const isInitiallyLoading = status === "loading" && !data;
+  const selectedTableColumnCountLabel = `${
+    TOGGLEABLE_COLUMNS.filter(({ id }) => columnVisibility[id]).length
+  } of ${TOGGLEABLE_COLUMNS.length}`;
 
   return (
     <Stack spacing={4}>
@@ -559,7 +563,7 @@ export const UserFeedsTable: React.FC<Props> = () => {
                   onSearchChange(value);
                 }}
                 value={searchInput || ""}
-                minWidth="150px"
+                minWidth="275px"
                 placeholder={t("pages.feeds.tableSearch")}
               />
               {search && !isFetching && (
@@ -587,14 +591,20 @@ export const UserFeedsTable: React.FC<Props> = () => {
           </Flex>
           <Flex>
             <Menu closeOnSelect={false}>
-              <MenuButton as={Button} rightIcon={<ChevronDownIcon />} maxWidth={200} width="100%">
+              <MenuButton
+                as={Button}
+                leftIcon={<FaFilter />}
+                rightIcon={<ChevronDownIcon />}
+                maxWidth={200}
+                width="100%"
+              >
                 <Text
                   overflow="hidden"
                   textAlign="left"
                   textOverflow="ellipsis"
                   whiteSpace="nowrap"
                 >
-  {statusFilters?.length
+                  {statusFilters?.length
                     ? `Status: ${statusFilters.length} of ${STATUS_FILTERS.length}`
                     : "Status"}
                 </Text>
@@ -609,7 +619,7 @@ export const UserFeedsTable: React.FC<Props> = () => {
                     <MenuItemOption key={val.value} value={val.value}>
                       <Stack>
                         <HStack alignItems="center">
-                          <UserFeedStatusTag status={val.value} />
+                          <UserFeedStatusTag ariaHidden status={val.value} />
                           <chakra.span>{val.label}</chakra.span>
                         </HStack>
                         <chakra.span display="block" color="whiteAlpha.600">
@@ -624,14 +634,21 @@ export const UserFeedsTable: React.FC<Props> = () => {
           </Flex>
           <Flex>
             <Menu closeOnSelect={false}>
-              <MenuButton as={Button} rightIcon={<ChevronDownIcon />} maxWidth={200} width="100%">
+              <MenuButton
+                as={Button}
+                leftIcon={<FaTableColumns />}
+                rightIcon={<ChevronDownIcon />}
+                maxWidth={200}
+                width="100%"
+                aria-label={`Display table columns: ${selectedTableColumnCountLabel}`}
+              >
                 <Text
                   overflow="hidden"
                   textAlign="left"
                   textOverflow="ellipsis"
                   whiteSpace="nowrap"
                 >
-                  {`Columns: ${TOGGLEABLE_COLUMNS.filter(({ id }) => columnVisibility[id]).length} of ${TOGGLEABLE_COLUMNS.length}`}
+                  {`Columns: ${selectedTableColumnCountLabel}`}
                 </Text>
               </MenuButton>
               <MenuList maxW="250px">

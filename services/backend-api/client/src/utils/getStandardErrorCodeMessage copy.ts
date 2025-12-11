@@ -28,6 +28,7 @@ export enum ApiErrorCode {
   FEED_NOT_FOUND = "FEED_NOT_FOUND",
   FEED_TOO_LARGE = "FEED_TOO_LARGE",
   FEED_INVALID_FILTER_EXPRESSION = "FEED_INVALID_FILTER_EXPRESSION",
+  FEED_INVALID_COMPONENTS_V2 = "FEED_INVALID_COMPONENTS_V2",
   FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED = "FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED",
   FEED_ARTICLE_NOT_FOUND = "FEED_ARTICLE_NOT_FOUND",
   DISCORD_SERVER_NOT_FOUND = "DISCORD_SERVER_NOT_FOUND",
@@ -80,6 +81,8 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   FEED_NOT_FOUND: t("common.apiErrors.feedNotFound"),
   FEED_TOO_LARGE: "Feed is too large (larger than 3 MB) to be processed",
   FEED_INVALID_FILTER_EXPRESSION: t("common.apiErrors.feedFilterInvalidExpression"),
+  FEED_INVALID_COMPONENTS_V2:
+    "Your message configuration is invalid. Please check your V2 component settings and ensure all required fields are filled in.",
   FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED: t(
     "common.apiErrors.feedConnectionCannotEnableAutoDisabled"
   ),

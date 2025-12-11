@@ -5,15 +5,17 @@ import getChakraColor from "../../../../utils/getChakraColor";
 
 interface Props {
   status: UserFeedComputedStatus;
+  ariaHidden?: boolean;
 }
 
-export const UserFeedStatusTag: React.FC<Props> = ({ status }) => {
+export const UserFeedStatusTag: React.FC<Props> = ({ status, ariaHidden }) => {
   if (status === UserFeedComputedStatus.RequiresAttention) {
     return (
       <FaCircleExclamation
         aria-label="Requires attention"
         fontSize={18}
         color={getChakraColor("red.300")}
+        aria-hidden={ariaHidden}
       />
     );
   }
@@ -24,6 +26,7 @@ export const UserFeedStatusTag: React.FC<Props> = ({ status }) => {
         aria-label="Currently retrying after failed requests"
         fontSize={18}
         color={getChakraColor("orange.200")}
+        aria-hidden={ariaHidden}
       />
     );
   }
@@ -34,6 +37,7 @@ export const UserFeedStatusTag: React.FC<Props> = ({ status }) => {
         aria-label="Manually disabled"
         color={getChakraColor("whiteAlpha.800")}
         fontSize={18}
+        aria-hidden
       />
     );
   }
