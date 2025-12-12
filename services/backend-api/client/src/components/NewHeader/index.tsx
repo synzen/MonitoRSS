@@ -103,7 +103,7 @@ export const NewHeader = ({ invertBackground }: Props) => {
                   src={discordUserMe?.iconUrl}
                   size="sm"
                   name={discordUserMe?.username}
-                  backgroundColor="transparent"
+                  backgroundColor="gray.600"
                   title={discordUserMe?.username}
                   aria-hidden
                 />
