@@ -211,6 +211,32 @@ const baseRules = {
       );
     },
   },
+  blockQuote: {
+    order: SimpleMarkdown.defaultRules.blockQuote.order,
+    match(source) {
+      // Match >>> for multi-line quotes (everything after)
+      const multiLineMatch = /^>>>(?:[ \t]*)([^]*?)(?:\n\n|\n?$)/.exec(source);
+
+      if (multiLineMatch) {
+        return multiLineMatch;
+      }
+
+      // Match > for single-line quotes
+      return /^>(?:[ \t]*)([^\n]*?)(?:\n|$)/.exec(source);
+    },
+    parse(capture, parse, state) {
+      return {
+        content: parse(capture[1].trim(), state),
+      };
+    },
+    react(node, recurseOutput, state) {
+      return (
+        <div key={state.key} className="markdown-blockquote">
+          {recurseOutput(node.content, state)}
+        </div>
+      );
+    },
+  },
   paragraph: SimpleMarkdown.defaultRules.paragraph,
   escape: SimpleMarkdown.defaultRules.escape,
   link: SimpleMarkdown.defaultRules.link,
@@ -461,6 +487,7 @@ const parseEmbedTitle = parserFor(
     "roleMention",
     "heading",
     "subtext",
+    "blockQuote",
   ])
 );
 
