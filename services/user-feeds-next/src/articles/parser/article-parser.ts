@@ -84,9 +84,18 @@ export function flattenArticle(
 
     if (value instanceof Date) {
       const useTimezone = options.formatOptions?.dateTimezone || "UTC";
-      const dateVal = dayjs(value)
-        .tz(useTimezone)
-        .locale(options.formatOptions?.dateLocale || "en");
+      let dateVal;
+
+      try {
+        dateVal = dayjs(value).tz(useTimezone);
+      } catch {
+        // Invalid timezone (e.g., Unicode minus character instead of ASCII hyphen)
+        // Fall back to UTC
+        logger.debug(`Invalid timezone "${useTimezone}", falling back to UTC`);
+        dateVal = dayjs(value).utc();
+      }
+
+      dateVal = dateVal.locale(options.formatOptions?.dateLocale || "en");
       let stringDate = dateVal.format();
 
       try {
