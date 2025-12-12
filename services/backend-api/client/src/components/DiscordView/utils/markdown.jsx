@@ -56,6 +56,14 @@ function parserFor(rules, returnAst) {
   const renderer = SimpleMarkdown.reactFor(SimpleMarkdown.ruleOutput(rules, "react"));
 
   return function (input = "", inline = true, state = {}, transform = null) {
+    // Preserve multiple consecutive newlines (2+) by adding zero-width spaces
+    // This prevents SimpleMarkdown from collapsing them into a single paragraph break
+    // N newlines should produce N-1 visible line breaks
+    input = input.replace(/\n{2,}/g, (match) => {
+      // Paragraph break alone creates 0 visible spacing (margin:0), so add explicit breaks
+      return `\n\n${"\u200B\n".repeat(match.length - 1)}`;
+    });
+
     if (!inline) {
       input += "\n\n";
     }
@@ -179,6 +187,25 @@ const baseRules = {
     react(node, recurseOutput, state) {
       return (
         <div key={state.key} className={`markdown-heading markdown-heading-${node.level}`}>
+          {recurseOutput(node.content, state)}
+        </div>
+      );
+    },
+  },
+  subtext: {
+    order: SimpleMarkdown.defaultRules.heading.order,
+    match(source) {
+      // Match -# at start of source or after newlines
+      return /^(?:\n)*-#\s+([^\n]+?)(?:\n|$)/.exec(source);
+    },
+    parse(capture, parse, state) {
+      return {
+        content: parse(capture[1].trim(), state),
+      };
+    },
+    react(node, recurseOutput, state) {
+      return (
+        <div key={state.key} className="markdown-subtext">
           {recurseOutput(node.content, state)}
         </div>
       );
@@ -426,7 +453,15 @@ const parseAllowLinks = parserFor(createRules(baseRules));
 //  embed title (obviously)
 //  embed field names
 const parseEmbedTitle = parserFor(
-  omit(rulesWithoutMaskedLinks, ["codeBlock", "br", "mention", "channel", "roleMention"])
+  omit(rulesWithoutMaskedLinks, [
+    "codeBlock",
+    "br",
+    "mention",
+    "channel",
+    "roleMention",
+    "heading",
+    "subtext",
+  ])
 );
 
 // used in:

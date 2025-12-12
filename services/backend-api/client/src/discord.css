@@ -1143,3 +1143,31 @@
 .markdown-heading-3 {
   font-size: 1rem;
 }
+
+.markdown-subtext {
+  font-size: 0.75rem;
+  line-height: 1.375;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.markup .markdown-subtext {
+  font-size: 0.75rem;
+  line-height: 1.375;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* V2 Component Preview - TextDisplay and Section */
+.markup {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.markup a {
+  color: #00b0f4;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.markup a:hover {
+  text-decoration: underline;
+}
