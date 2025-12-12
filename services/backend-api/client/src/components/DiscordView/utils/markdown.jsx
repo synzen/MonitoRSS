@@ -348,10 +348,12 @@ const baseRules = {
   codeBlock: {
     order: SimpleMarkdown.defaultRules.codeBlock.order,
     match(source) {
-      return /^```(([A-z0-9\-]+?)\n+)?\n*([^]+?)\n*```/.exec(source);
+      // Match code blocks: ```lang\ncontent``` or ```content```
+      // Handle optional newline after opening ``` and before closing ```
+      return /^```(?:([a-zA-Z0-9-]+)?\n)?([\s\S]*?)\n?```(?=\s|$|[^`])/.exec(source);
     },
     parse(capture) {
-      return { lang: (capture[2] || "").trim(), content: capture[3] || "" };
+      return { lang: (capture[1] || "").trim(), content: capture[2] || "" };
     },
   },
   emoji: {

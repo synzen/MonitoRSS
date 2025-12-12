@@ -580,8 +580,8 @@
 .message-group .comment .markup code.inline {
   width: auto;
   height: auto;
-  padding: 0.2em;
-  border-radius: 3px;
+  padding: 0.15em 0.3em;
+  border-radius: 4px;
   font-size: 85%;
   text-indent: 0;
 }
@@ -667,13 +667,20 @@
 }
 
 .theme-dark .message-group .comment .markup pre {
-  background: #2e3136;
-  border-color: #282b30;
+  background: #353747;
+  border: 1px solid oklab(0.678928 0.00322348 -0.0111784 / 0.2);
+  font-size: 14px;
+  padding: 0.5em;
 }
 
-.theme-dark .message-group .comment .markup code.inline,
+.theme-dark .message-group .comment .markup code.inline {
+  background: #353747;
+  border: 1px solid oklab(0.678928 0.00322348 -0.0111784 / 0.2);
+}
+
 .theme-dark .message-group .comment .markup pre code {
-  background: #2e3136;
+  background: transparent;
+  color: hsla(0, 0%, 100%, 0.7);
 }
 
 .theme-dark .message-group.compact .message .markup .user-name {
@@ -1203,4 +1210,40 @@
 
 .markup a:hover {
   text-decoration: underline;
+}
+
+/* Code styling for v2 components (without .message-group .comment parent) */
+.markup code.inline,
+.markup pre {
+  font-family: Consolas, Liberation Mono, Menlo, Courier, monospace;
+  background: #353747;
+}
+
+.markup code.inline {
+  width: auto;
+  height: auto;
+  padding: 0.15em 0.3em;
+  border: 1px solid oklab(0.678928 0.00322348 -0.0111784 / 0.2);
+  border-radius: 4px;
+  font-size: 85%;
+  text-indent: 0;
+}
+
+.markup pre {
+  border: 1px solid oklab(0.678928 0.00322348 -0.0111784 / 0.2);
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 14px;
+  white-space: pre-wrap;
+  margin-top: 6px;
+  padding: 0.5em 0.7em;
+  overflow-x: auto;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.markup pre code {
+  background: transparent;
+  text-indent: 0;
+  white-space: pre;
 }
