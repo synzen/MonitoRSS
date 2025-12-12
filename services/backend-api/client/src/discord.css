@@ -1166,6 +1166,29 @@
   border-left-color: #4e5058;
 }
 
+.markdown-list {
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.markdown-list-item {
+  position: relative;
+  padding-left: 1em;
+  margin: 8px 0;
+}
+
+.markdown-list-item::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: inherit;
+}
+
+.markdown-list .markdown-list {
+  margin: 4px 0 4px 0.5em;
+}
+
 /* V2 Component Preview - TextDisplay and Section */
 .markup {
   white-space: pre-wrap;

@@ -6,6 +6,7 @@
 import SimpleMarkdown from "simple-markdown";
 import Twemoji from "twemoji";
 import hljs from "highlight.js";
+import { uniqueId } from "lodash";
 import Emoji from "../../../constants/emojis";
 
 // this is mostly translated from discord's client,
@@ -235,6 +236,90 @@ const baseRules = {
           {recurseOutput(node.content, state)}
         </div>
       );
+    },
+  },
+  list: {
+    order: SimpleMarkdown.defaultRules.list.order,
+    match(source) {
+      // Match list items starting with - or * (but not -# which is subtext)
+      // Captures multiple consecutive list items including nested ones
+      return /^((?:[ \t]*[-*](?!#)[ \t]+[^\n]*(?:\n|$))+)/.exec(source);
+    },
+    parse(capture, parse, state) {
+      const content = capture[1];
+      const lines = content.split("\n").filter((line) => /^[ \t]*[-*](?!#)[ \t]+/.test(line));
+
+      // Get indentation level for a line
+      const getIndent = (line) => {
+        const match = /^([ \t]*)/.exec(line);
+
+        return match ? match[1].length : 0;
+      };
+
+      // Parse lines into a nested structure based on indentation
+      const parseItems = (linesList, minIndent = 0) => {
+        const items = [];
+        let i = 0;
+
+        while (i < linesList.length) {
+          const line = linesList[i];
+          const indent = getIndent(line);
+
+          // Skip lines with less indentation than expected
+          if (indent < minIndent) {
+            break;
+          }
+
+          const itemMatch = /^[ \t]*[-*][ \t]+(.*)$/.exec(line);
+
+          if (!itemMatch) {
+            i += 1;
+          } else {
+            const text = itemMatch[1].trim();
+
+            // Collect nested items (any lines with greater indentation)
+            const nestedLines = [];
+            let j = i + 1;
+
+            while (j < linesList.length) {
+              const nextIndent = getIndent(linesList[j]);
+
+              if (nextIndent <= indent) {
+                break;
+              }
+
+              nestedLines.push(linesList[j]);
+              j += 1;
+            }
+
+            const item = {
+              content: parse(text, state),
+              children: nestedLines.length > 0 ? parseItems(nestedLines, indent + 1) : [],
+            };
+
+            items.push(item);
+            i = j;
+          }
+        }
+
+        return items;
+      };
+
+      return { items: parseItems(lines, 0) };
+    },
+    react(node, recurseOutput, state) {
+      const renderItems = (items) => (
+        <ul className="markdown-list">
+          {items.map((item) => (
+            <li key={uniqueId()} className="markdown-list-item">
+              {recurseOutput(item.content, state)}
+              {item.children && item.children.length > 0 && renderItems(item.children)}
+            </li>
+          ))}
+        </ul>
+      );
+
+      return <div key={state.key}>{renderItems(node.items)}</div>;
     },
   },
   paragraph: SimpleMarkdown.defaultRules.paragraph,
@@ -488,6 +573,7 @@ const parseEmbedTitle = parserFor(
     "heading",
     "subtext",
     "blockQuote",
+    "list",
   ])
 );
 
