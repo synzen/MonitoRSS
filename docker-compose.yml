@@ -66,6 +66,7 @@ services:
     extends:
       file: ./docker-compose.base.yml
       service: user-feeds-next-service
+    image: ghcr.io/synzen/monitorss-user-feeds:main
     env_file:
       - ./.env.prod
     environment:
