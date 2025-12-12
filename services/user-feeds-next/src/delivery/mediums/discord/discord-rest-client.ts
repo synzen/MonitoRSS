@@ -30,6 +30,7 @@ export interface DiscordEnqueueMeta {
   feedURL: string;
   feedId: string;
   guildId: string;
+  mediumId: string;
   channel?: string;
   webhookId?: string;
   emitDeliveryResult: boolean;

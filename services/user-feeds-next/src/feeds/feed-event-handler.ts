@@ -198,11 +198,12 @@ export type QueuePublisher = (queue: string, message: unknown) => Promise<void>;
 
 /**
  * Handle an article delivery result callback from the Discord REST listener.
- * This processes the result, classifies errors, and emits rejection events.
+ * This processes the result, classifies errors, updates delivery records, and emits rejection events.
  */
 export async function handleArticleDeliveryResult(
   deliveryResult: DiscordDeliveryResult,
-  publisher: QueuePublisher
+  publisher: QueuePublisher,
+  deliveryRecordStore: DeliveryRecordStore
 ): Promise<void> {
   const { processed, rejectionEvent } = processDeliveryResult(deliveryResult);
 
@@ -213,6 +214,24 @@ export async function handleArticleDeliveryResult(
       errorCode: processed.errorCode,
     }
   );
+
+  // Update the delivery record status in the database
+  const deliveryId = deliveryResult.job.meta?.id;
+  if (deliveryId) {
+    try {
+      await deliveryRecordStore.updateDeliveryStatus(deliveryId, {
+        status: processed.status,
+        errorCode: processed.errorCode,
+        internalMessage: processed.internalMessage,
+        externalDetail: processed.externalDetail,
+      });
+    } catch (err) {
+      logger.warn("Failed to update delivery record status", {
+        deliveryId,
+        error: (err as Error).message,
+      });
+    }
+  }
 
   // Emit rejection event if the medium should be disabled
   if (rejectionEvent) {

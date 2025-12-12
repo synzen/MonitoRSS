@@ -542,5 +542,28 @@ describe("article-parser", () => {
         dayjs(article.b.c.d.e).tz(dateTimezone).format()
       );
     });
+
+    it("falls back to UTC for invalid timezones", () => {
+      const date = new Date("2024-01-15T12:00:00Z");
+      const article = {
+        id: "hello world",
+        a: date,
+      };
+
+      // Unicode minus character (U+2212) instead of ASCII hyphen
+      const invalidTimezone = "−04:00";
+
+      const flattenedArticle = flattenArticle(article, {
+        formatOptions: {
+          dateFormat: undefined,
+          dateTimezone: invalidTimezone,
+          dateLocale: undefined,
+        },
+        useParserRules: [],
+      });
+
+      // Should fall back to UTC instead of throwing
+      expect(flattenedArticle.a).toBe(dayjs(date).utc().locale("en").format());
+    });
   });
 });

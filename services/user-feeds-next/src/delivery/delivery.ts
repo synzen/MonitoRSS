@@ -331,6 +331,7 @@ async function enqueueMessages(
         ...(webhookId ? { webhookId } : {}),
         feedId,
         guildId,
+        mediumId,
         emitDeliveryResult: true,
       }
     );

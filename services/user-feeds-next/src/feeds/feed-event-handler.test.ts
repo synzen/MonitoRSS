@@ -7,6 +7,7 @@ import {
 } from "./feed-event-handler";
 import type { DiscordDeliveryResult } from "../delivery";
 import { MessageBrokerQueue } from "../shared/constants";
+import { inMemoryDeliveryRecordStore } from "../stores/in-memory/delivery-record-store";
 
 function createJobData(meta?: Record<string, unknown>) {
   return {
@@ -72,7 +73,11 @@ describe("feed-event-handler", () => {
         result: createSuccessResult(200, { id: "msg-123" }),
       };
 
-      await handleArticleDeliveryResult(deliveryResult, publisher);
+      await handleArticleDeliveryResult(
+        deliveryResult,
+        publisher,
+        inMemoryDeliveryRecordStore
+      );
 
       expect(messages).toHaveLength(0);
     });
@@ -90,7 +95,11 @@ describe("feed-event-handler", () => {
         result: createSuccessResult(400, { code: 50035, message: "Bad embed" }),
       };
 
-      await handleArticleDeliveryResult(deliveryResult, publisher);
+      await handleArticleDeliveryResult(
+        deliveryResult,
+        publisher,
+        inMemoryDeliveryRecordStore
+      );
 
       expect(messages).toHaveLength(1);
       const { queue, payload } = messages[0]!;
@@ -116,7 +125,11 @@ describe("feed-event-handler", () => {
         result: createSuccessResult(403, { message: "Missing Access" }),
       };
 
-      await handleArticleDeliveryResult(deliveryResult, publisher);
+      await handleArticleDeliveryResult(
+        deliveryResult,
+        publisher,
+        inMemoryDeliveryRecordStore
+      );
 
       expect(messages).toHaveLength(1);
       const { queue, payload } = messages[0]!;
@@ -140,7 +153,11 @@ describe("feed-event-handler", () => {
         result: createSuccessResult(404, { message: "Unknown Channel" }),
       };
 
-      await handleArticleDeliveryResult(deliveryResult, publisher);
+      await handleArticleDeliveryResult(
+        deliveryResult,
+        publisher,
+        inMemoryDeliveryRecordStore
+      );
 
       expect(messages).toHaveLength(1);
       const { queue, payload } = messages[0]!;
@@ -160,7 +177,11 @@ describe("feed-event-handler", () => {
         result: createSuccessResult(500, { message: "Internal Server Error" }),
       };
 
-      await handleArticleDeliveryResult(deliveryResult, publisher);
+      await handleArticleDeliveryResult(
+        deliveryResult,
+        publisher,
+        inMemoryDeliveryRecordStore
+      );
 
       expect(messages).toHaveLength(0);
     });
@@ -173,7 +194,11 @@ describe("feed-event-handler", () => {
         result: createErrorResult("Connection timeout"),
       };
 
-      await handleArticleDeliveryResult(deliveryResult, publisher);
+      await handleArticleDeliveryResult(
+        deliveryResult,
+        publisher,
+        inMemoryDeliveryRecordStore
+      );
 
       expect(messages).toHaveLength(0);
     });
