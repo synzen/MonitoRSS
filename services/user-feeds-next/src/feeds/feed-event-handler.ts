@@ -768,6 +768,7 @@ async function handleFeedV2EventInternal({
       feedUrl: feed.url,
       articleDayLimit: event.data.articleDayLimit,
       discordClient,
+      deliveryRecordStore,
     }
   );
 
