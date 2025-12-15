@@ -1,0 +1,33 @@
+{
+  "workflow_version": "1.2.0",
+  "timestamps": {
+    "started": "2025-12-13T14:00:00Z",
+    "completed": "2025-12-13T14:30:00Z"
+  },
+  "mode": "initial_scan",
+  "scan_level": "quick",
+  "status": "completed",
+  "project_root": "C:/projects/MonitoRSS-templates",
+  "output_folder": "C:/projects/MonitoRSS-templates/docs",
+  "findings": {
+    "project_classification": "Monorepo, 8 parts, microservices architecture with RabbitMQ message bus"
+  },
+  "project_types": [
+    {"part_id": "backend-api", "project_type_id": "backend", "display_name": "Backend API"},
+    {"part_id": "control-panel", "project_type_id": "web", "display_name": "Control Panel (React)"},
+    {"part_id": "user-feeds", "project_type_id": "backend", "display_name": "User Feeds Service"},
+    {"part_id": "feed-requests", "project_type_id": "backend", "display_name": "Feed Requests Service"},
+    {"part_id": "bot-presence", "project_type_id": "backend", "display_name": "Bot Presence Service"},
+    {"part_id": "discord-rest-listener", "project_type_id": "backend", "display_name": "Discord REST Listener"},
+    {"part_id": "user-feeds-next", "project_type_id": "backend", "display_name": "User Feeds Next"},
+    {"part_id": "logger", "project_type_id": "library", "display_name": "Logger Package"}
+  ],
+  "outputs_generated": [
+    "project-scan-report.json",
+    "index.md",
+    "architecture-overview.md",
+    "source-tree-analysis.md",
+    "development-guide.md",
+    "technology-stack.md"
+  ]
+}
