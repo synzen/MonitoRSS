@@ -13,6 +13,7 @@ import {
   FormHelperText,
   FormLabel,
   HStack,
+  IconButton,
   Input,
   Link,
   Menu,
@@ -31,7 +32,7 @@ import { motion } from "framer-motion";
 import { v4 as uuidv4 } from "uuid";
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
-import { FiMousePointer } from "react-icons/fi";
+import { FiMousePointer, FiChevronUp, FiChevronDown } from "react-icons/fi";
 import { CustomPlaceholdersFormData } from "./constants/CustomPlaceholderFormSchema";
 import { AnimatedComponent, ConfirmModal } from "../../../../components";
 import { CustomPlaceholderPreview } from "./CustomPlaceholderPreview";
@@ -389,6 +390,26 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
     }
   };
 
+  const moveStepUp = (stepIndex: number) => {
+    if (stepIndex === 0) return;
+    const newSteps = [...steps];
+    [newSteps[stepIndex - 1], newSteps[stepIndex]] = [newSteps[stepIndex], newSteps[stepIndex - 1]];
+    setValue(`customPlaceholders.${index}.steps`, newSteps, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  };
+
+  const moveStepDown = (stepIndex: number) => {
+    if (stepIndex === steps.length - 1) return;
+    const newSteps = [...steps];
+    [newSteps[stepIndex], newSteps[stepIndex + 1]] = [newSteps[stepIndex + 1], newSteps[stepIndex]];
+    setValue(`customPlaceholders.${index}.steps`, newSteps, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  };
+
   const referenceNameError = errors?.customPlaceholders?.[index]?.referenceName;
   const sourcePlaceholderError = errors?.customPlaceholders?.[index]?.sourcePlaceholder;
   const hasStepsError = errors?.customPlaceholders?.[index]?.steps;
@@ -574,31 +595,49 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                                 </Text>
                               )}
                             </Box>
-                            <Button
-                              colorScheme="red"
-                              size="sm"
-                              variant="ghost"
-                              aria-disabled={steps.length === 1}
-                              onClick={() => {
-                                if (steps.length === 1) {
-                                  notifyInfo("At least one transformation step is required");
+                            <HStack>
+                              <IconButton
+                                icon={<FiChevronUp />}
+                                aria-label="Move step up"
+                                size="sm"
+                                variant="ghost"
+                                isDisabled={stepIndex === 0}
+                                onClick={() => moveStepUp(stepIndex)}
+                              />
+                              <IconButton
+                                icon={<FiChevronDown />}
+                                aria-label="Move step down"
+                                size="sm"
+                                variant="ghost"
+                                isDisabled={stepIndex === steps.length - 1}
+                                onClick={() => moveStepDown(stepIndex)}
+                              />
+                              <Button
+                                colorScheme="red"
+                                size="sm"
+                                variant="ghost"
+                                aria-disabled={steps.length === 1}
+                                onClick={() => {
+                                  if (steps.length === 1) {
+                                    notifyInfo("At least one transformation step is required");
 
-                                  return;
-                                }
-
-                                setValue(
-                                  `customPlaceholders.${index}.steps`,
-                                  steps.filter((_, i) => i !== stepIndex),
-                                  {
-                                    shouldDirty: true,
-                                    shouldTouch: true,
-                                    shouldValidate: true,
+                                    return;
                                   }
-                                );
-                              }}
-                            >
-                              Delete Step
-                            </Button>
+
+                                  setValue(
+                                    `customPlaceholders.${index}.steps`,
+                                    steps.filter((_, i) => i !== stepIndex),
+                                    {
+                                      shouldDirty: true,
+                                      shouldTouch: true,
+                                      shouldValidate: true,
+                                    }
+                                  );
+                                }}
+                              >
+                                Delete Step
+                              </Button>
+                            </HStack>
                           </HStack>
                           <Divider mb={2} />
                           {!step.type ||
