@@ -84,10 +84,7 @@ import { legacyFeedBulkConversion } from "./data/legacyFeedBulkConversion";
 import { UserFeedManagerStatus } from "../constants";
 import mockUserFeedManagementInvites from "./data/userFeedManagementInvites";
 import mockUserMe from "./data/userMe";
-import {
-  GetSubscriptionChangePreviewOutput,
-  GetSubscriptionProductsOutput,
-} from "../features/subscriptionProducts";
+import { GetSubscriptionChangePreviewOutput } from "../features/subscriptionProducts";
 import { mockUserFeedDeliveryLogs } from "./data/userFeedDeliveryLogs";
 import {
   CreateUserFeedUrlValidationInput,
@@ -133,98 +130,6 @@ const handlers = [
 
     return new HttpResponse(null, {
       status: 204,
-    });
-  }),
-  http.get("/api/v1/subscription-products", async ({ request }) => {
-    const url = new URL(request.url);
-    const currencyCode = url.searchParams.get("currency") || "USD";
-
-    await delay(500);
-
-    return HttpResponse.json<GetSubscriptionProductsOutput>({
-      data: {
-        products: [
-          {
-            id: "free",
-            name: "Free",
-            prices: [
-              {
-                interval: "month",
-                formattedPrice: "$0",
-                currencyCode,
-                id: "f0",
-              },
-              {
-                interval: "year",
-                formattedPrice: "$0",
-                currencyCode,
-                id: "f1",
-              },
-            ],
-          },
-          {
-            id: "tier1",
-            name: "Tier 1",
-            prices: [
-              {
-                interval: "month",
-                formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
-                currencyCode,
-                id: "p1",
-              },
-              {
-                interval: "year",
-                formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
-                currencyCode,
-                id: "p2",
-              },
-            ],
-          },
-          {
-            id: "tier2",
-            name: "Tier 2",
-            prices: [
-              {
-                interval: "month",
-                formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
-                currencyCode,
-                id: "p3",
-              },
-              {
-                interval: "year",
-                formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
-                currencyCode,
-                id: "p4",
-              },
-            ],
-          },
-          {
-            id: "tier3",
-            name: "Tier 3",
-            prices: [
-              {
-                interval: "month",
-                formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
-                currencyCode,
-                id: "p5",
-              },
-              {
-                interval: "year",
-                formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
-                currencyCode,
-                id: "p6",
-              },
-            ],
-          },
-        ],
-        currencies: [
-          { code: "USD", symbol: "$" },
-          {
-            code: "EUR",
-            symbol: "€",
-          },
-        ],
-      },
     });
   }),
   http.post("/api/v1/error-reports", async () => {
