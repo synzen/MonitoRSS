@@ -564,8 +564,8 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                           // mb={1}
                           alignItems="flex-start"
                         >
-                          <HStack justifyContent="space-between" width="100%">
-                            <Box>
+                          <Flex justifyContent="space-between" width="100%" flexWrap="wrap" gap={2}>
+                            <Box flex="1" minW="200px">
                               <Text fontWeight={600}>
                                 Transformation Step:{" "}
                                 {!step.type ||
@@ -595,7 +595,7 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                                 </Text>
                               )}
                             </Box>
-                            <HStack>
+                            <HStack flexShrink={0}>
                               <IconButton
                                 icon={<FiChevronUp />}
                                 aria-label="Move step up"
@@ -638,7 +638,7 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                                 Delete Step
                               </Button>
                             </HStack>
-                          </HStack>
+                          </Flex>
                           <Divider mb={2} />
                           {!step.type ||
                             (step.type === CustomPlaceholderStepType.Regex && (
