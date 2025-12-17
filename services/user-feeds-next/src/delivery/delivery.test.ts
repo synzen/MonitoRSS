@@ -12,10 +12,19 @@ import {
   getUnderLimitCheck,
   deliverArticles,
   type LimitState,
+  createTestDiscordRestClient,
 } from ".";
 import { createInMemoryDeliveryRecordStore } from "../stores/in-memory/delivery-record-store";
 import type { ArticleDeliveryState } from "../stores/interfaces/delivery-record-store";
 import type { Article } from "../articles/parser";
+import {
+  ExpressionType,
+  LogicalExpressionOperator,
+  RelationalExpressionOperator,
+  RelationalExpressionLeft,
+  RelationalExpressionRight,
+  type LogicalExpression,
+} from "../articles/filters";
 
 function createJobData(overrides?: Partial<JobData>): JobData {
   return {
@@ -485,6 +494,324 @@ describe("delivery", () => {
 
       expect(result.remaining).toBe(8); // Only 2 deliveries to medium-1
     });
+  });
+});
+
+import type { DiagnosticStageResult } from "../diagnostics";
+
+describe("diagnostic recording in delivery", () => {
+  it("records FeedRateLimit diagnostic when feed rate limit is checked", async () => {
+    const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
+      await import("../diagnostics");
+    const { recordRateLimitDiagnostic } = await import(".");
+
+    let diagnostics: DiagnosticStageResult[] = [];
+
+    await startDiagnosticContext("test-hash", async () => {
+      recordRateLimitDiagnostic({
+        articleIdHash: "test-hash",
+        isFeedLevel: true,
+        currentCount: 15,
+        limit: 20,
+        timeWindowSeconds: 86400,
+        remaining: 5,
+      });
+      diagnostics = getDiagnosticResultsForArticle("test-hash");
+    });
+
+    const rateLimitDiagnostic = diagnostics.find(
+      (d) => d.stage === DiagnosticStage.FeedRateLimit
+    );
+    expect(rateLimitDiagnostic).toBeDefined();
+    expect(rateLimitDiagnostic!.passed).toBe(true);
+    expect(
+      (rateLimitDiagnostic as { details: { remaining: number } }).details
+        .remaining
+    ).toBe(5);
+  });
+
+  it("records MediumRateLimit diagnostic when medium rate limit is checked", async () => {
+    const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
+      await import("../diagnostics");
+    const { recordRateLimitDiagnostic } = await import(".");
+
+    let diagnostics: DiagnosticStageResult[] = [];
+
+    await startDiagnosticContext("test-hash", async () => {
+      recordRateLimitDiagnostic({
+        articleIdHash: "test-hash",
+        isFeedLevel: false,
+        mediumId: "medium-123",
+        currentCount: 8,
+        limit: 10,
+        timeWindowSeconds: 3600,
+        remaining: 2,
+      });
+      diagnostics = getDiagnosticResultsForArticle("test-hash");
+    });
+
+    const rateLimitDiagnostic = diagnostics.find(
+      (d) => d.stage === DiagnosticStage.MediumRateLimit
+    );
+    expect(rateLimitDiagnostic).toBeDefined();
+    expect(rateLimitDiagnostic!.passed).toBe(true);
+    expect(
+      (rateLimitDiagnostic as { details: { mediumId: string } }).details.mediumId
+    ).toBe("medium-123");
+  });
+
+  it("records failed rate limit diagnostic when limit exceeded", async () => {
+    const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
+      await import("../diagnostics");
+    const { recordRateLimitDiagnostic } = await import(".");
+
+    let diagnostics: DiagnosticStageResult[] = [];
+
+    await startDiagnosticContext("test-hash", async () => {
+      recordRateLimitDiagnostic({
+        articleIdHash: "test-hash",
+        isFeedLevel: true,
+        currentCount: 20,
+        limit: 20,
+        timeWindowSeconds: 86400,
+        remaining: 0,
+      });
+      diagnostics = getDiagnosticResultsForArticle("test-hash");
+    });
+
+    const rateLimitDiagnostic = diagnostics.find(
+      (d) => d.stage === DiagnosticStage.FeedRateLimit
+    );
+    expect(rateLimitDiagnostic).toBeDefined();
+    expect(rateLimitDiagnostic!.passed).toBe(false);
+    expect(
+      (rateLimitDiagnostic as { details: { wouldExceed: boolean } }).details
+        .wouldExceed
+    ).toBe(true);
+  });
+
+  it("records MediumFilter diagnostic when filter is evaluated", async () => {
+    const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
+      await import("../diagnostics");
+    const { recordMediumFilterDiagnostic } = await import(".");
+
+    let diagnostics: DiagnosticStageResult[] = [];
+
+    await startDiagnosticContext("test-hash", async () => {
+      recordMediumFilterDiagnostic({
+        articleIdHash: "test-hash",
+        mediumId: "medium-123",
+        filterExpression: { type: "LOGICAL", op: "AND", children: [] },
+        filterResult: true,
+        explainBlocked: [],
+      });
+      diagnostics = getDiagnosticResultsForArticle("test-hash");
+    });
+
+    const filterDiagnostic = diagnostics.find(
+      (d) => d.stage === DiagnosticStage.MediumFilter
+    );
+    expect(filterDiagnostic).toBeDefined();
+    expect(filterDiagnostic!.passed).toBe(true);
+  });
+
+  it("records failed MediumFilter diagnostic when filter blocks article", async () => {
+    const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
+      await import("../diagnostics");
+    const { recordMediumFilterDiagnostic } = await import(".");
+
+    let diagnostics: DiagnosticStageResult[] = [];
+
+    await startDiagnosticContext("test-hash", async () => {
+      recordMediumFilterDiagnostic({
+        articleIdHash: "test-hash",
+        mediumId: "medium-123",
+        filterExpression: { type: "LOGICAL", op: "AND", children: [] },
+        filterResult: false,
+        explainBlocked: ["Title does not contain 'keyword'"],
+      });
+      diagnostics = getDiagnosticResultsForArticle("test-hash");
+    });
+
+    const filterDiagnostic = diagnostics.find(
+      (d) => d.stage === DiagnosticStage.MediumFilter
+    );
+    expect(filterDiagnostic).toBeDefined();
+    expect(filterDiagnostic!.passed).toBe(false);
+    expect(
+      (filterDiagnostic as { details: { explainBlocked: string[] } }).details
+        .explainBlocked
+    ).toContain("Title does not contain 'keyword'");
+  });
+
+  it("does not record diagnostics outside diagnostic context", async () => {
+    const { getDiagnosticResultsForArticle } = await import("../diagnostics");
+    const { recordRateLimitDiagnostic, recordMediumFilterDiagnostic } =
+      await import(".");
+
+    // Call outside diagnostic context - should not throw
+    recordRateLimitDiagnostic({
+      articleIdHash: "test-hash",
+      isFeedLevel: true,
+      currentCount: 0,
+      limit: 20,
+      timeWindowSeconds: 86400,
+      remaining: 20,
+    });
+
+    recordMediumFilterDiagnostic({
+      articleIdHash: "test-hash",
+      mediumId: "medium-123",
+      filterExpression: null,
+      filterResult: true,
+      explainBlocked: [],
+    });
+
+    const diagnostics = getDiagnosticResultsForArticle("test-hash");
+    expect(diagnostics).toEqual([]);
+  });
+});
+
+describe("diagnostic recording during deliverArticles execution", () => {
+  it("records MediumFilter diagnostic when medium filter is evaluated during delivery", async () => {
+    const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
+      await import("../diagnostics");
+    const { deliverArticles } = await import(".");
+
+    const store = createInMemoryDeliveryRecordStore();
+    const article: Article = {
+      flattened: {
+        id: "article-1",
+        idHash: "hash-1",
+        title: "Test Article",
+      },
+      raw: {},
+    };
+
+    // Create a medium with a filter that will pass
+    const filterExpression: LogicalExpression = {
+      type: ExpressionType.Logical,
+      op: LogicalExpressionOperator.And,
+      children: [
+        {
+          type: ExpressionType.Relational,
+          op: RelationalExpressionOperator.Contains,
+          left: { type: RelationalExpressionLeft.Article, value: "title" },
+          right: { type: RelationalExpressionRight.String, value: "Test" },
+        },
+      ],
+    };
+    const mediumWithFilter = {
+      id: "medium-filter-test",
+      filters: {
+        expression: filterExpression,
+      },
+      details: {
+        guildId: "guild-123",
+        channel: {
+          id: "channel-123",
+        },
+      },
+    };
+
+    let diagnostics: DiagnosticStageResult[] = [];
+
+    await startDiagnosticContext("hash-1", async () => {
+      await store.startContext(async () => {
+        await deliverArticles(
+          [article],
+          [mediumWithFilter],
+          {
+            feedId: "feed-1",
+            feedUrl: "https://example.com/feed.xml",
+            articleDayLimit: 100,
+            discordClient: createTestDiscordRestClient(),
+            deliveryRecordStore: store,
+          }
+        );
+      });
+      diagnostics = getDiagnosticResultsForArticle("hash-1");
+    });
+
+    const filterDiagnostic = diagnostics.find(
+      (d) => d.stage === DiagnosticStage.MediumFilter
+    );
+    expect(filterDiagnostic).toBeDefined();
+    expect(filterDiagnostic!.passed).toBe(true);
+    expect(
+      (filterDiagnostic as { details: { mediumId: string } }).details.mediumId
+    ).toBe("medium-filter-test");
+  });
+
+  it("records failed MediumFilter diagnostic when filter blocks article during delivery", async () => {
+    const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
+      await import("../diagnostics");
+    const { deliverArticles } = await import(".");
+
+    const store = createInMemoryDeliveryRecordStore();
+    const article: Article = {
+      flattened: {
+        id: "article-1",
+        idHash: "hash-1",
+        title: "No Match Here",
+      },
+      raw: {},
+    };
+
+    // Create a medium with a filter that will NOT pass
+    const blockingFilterExpression: LogicalExpression = {
+      type: ExpressionType.Logical,
+      op: LogicalExpressionOperator.And,
+      children: [
+        {
+          type: ExpressionType.Relational,
+          op: RelationalExpressionOperator.Contains,
+          left: { type: RelationalExpressionLeft.Article, value: "title" },
+          right: { type: RelationalExpressionRight.String, value: "REQUIRED_KEYWORD" },
+        },
+      ],
+    };
+    const mediumWithBlockingFilter = {
+      id: "medium-blocking-test",
+      filters: {
+        expression: blockingFilterExpression,
+      },
+      details: {
+        guildId: "guild-123",
+        channel: {
+          id: "channel-123",
+        },
+      },
+    };
+
+    let diagnostics: DiagnosticStageResult[] = [];
+
+    await startDiagnosticContext("hash-1", async () => {
+      await store.startContext(async () => {
+        await deliverArticles(
+          [article],
+          [mediumWithBlockingFilter],
+          {
+            feedId: "feed-1",
+            feedUrl: "https://example.com/feed.xml",
+            articleDayLimit: 100,
+            discordClient: createTestDiscordRestClient(),
+            deliveryRecordStore: store,
+          }
+        );
+      });
+      diagnostics = getDiagnosticResultsForArticle("hash-1");
+    });
+
+    const filterDiagnostic = diagnostics.find(
+      (d) => d.stage === DiagnosticStage.MediumFilter
+    );
+    expect(filterDiagnostic).toBeDefined();
+    expect(filterDiagnostic!.passed).toBe(false);
+    expect(
+      (filterDiagnostic as { details: { explainBlocked: string[] } }).details
+        .explainBlocked.length
+    ).toBeGreaterThan(0);
   });
 });
 

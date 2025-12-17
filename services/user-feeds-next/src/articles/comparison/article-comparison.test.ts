@@ -6,6 +6,7 @@ import {
   type ArticleFieldStore,
 } from ".";
 import type { Article } from "../parser";
+import type { DiagnosticStageResult } from "../../diagnostics";
 
 function createArticle(
   id: string,
@@ -610,6 +611,420 @@ describe("article-comparison", () => {
         await inMemoryArticleFieldStore.hasPriorArticlesStored("feed-iso-2");
       expect(hasPrior1).toBe(true);
       expect(hasPrior2).toBe(true);
+    });
+  });
+
+  describe("diagnostic recording", () => {
+    it("records FeedState diagnostic on first run", async () => {
+      const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
+        await import("../../diagnostics");
+
+      await inMemoryArticleFieldStore.startContext(async () => {
+        let diagnostics: DiagnosticStageResult[] = [];
+
+        await startDiagnosticContext("hash-1", async () => {
+          await getArticlesToDeliver(
+            inMemoryArticleFieldStore,
+            "diag-feed-1",
+            [createArticle("1", { title: "Test" })],
+            { blockingComparisons: [], passingComparisons: [] }
+          );
+          diagnostics = getDiagnosticResultsForArticle("hash-1");
+        });
+
+        expect(diagnostics.length).toBeGreaterThan(0);
+        const feedState = diagnostics.find(
+          (d) => d.stage === DiagnosticStage.FeedState
+        );
+        expect(feedState).toBeDefined();
+        expect(
+          (feedState as { details: { isFirstRun: boolean } }).details.isFirstRun
+        ).toBe(true);
+        expect(feedState!.passed).toBe(true);
+      });
+    });
+
+    it("records IdComparison diagnostic for new articles", async () => {
+      const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
+        await import("../../diagnostics");
+
+      await inMemoryArticleFieldStore.startContext(async () => {
+        // First run to establish baseline
+        await getArticlesToDeliver(
+          inMemoryArticleFieldStore,
+          "diag-feed-2",
+          [createArticle("1", { title: "Article 1" })],
+          { blockingComparisons: [], passingComparisons: [] }
+        );
+        await inMemoryArticleFieldStore.flushPendingInserts();
+
+        let diagnostics: DiagnosticStageResult[] = [];
+
+        // Second run with diagnostic context for a new article
+        await startDiagnosticContext("hash-2", async () => {
+          await getArticlesToDeliver(
+            inMemoryArticleFieldStore,
+            "diag-feed-2",
+            [
+              createArticle("1", { title: "Article 1" }),
+              createArticle("2", { title: "Article 2" }),
+            ],
+            { blockingComparisons: [], passingComparisons: [] }
+          );
+          diagnostics = getDiagnosticResultsForArticle("hash-2");
+        });
+
+        const idComparison = diagnostics.find(
+          (d) => d.stage === DiagnosticStage.IdComparison
+        );
+        expect(idComparison).toBeDefined();
+        expect(
+          (idComparison as { details: { isNew: boolean } }).details.isNew
+        ).toBe(true);
+      });
+    });
+
+    it("records BlockingComparison diagnostic when article is blocked", async () => {
+      const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
+        await import("../../diagnostics");
+
+      await inMemoryArticleFieldStore.startContext(async () => {
+        // First run
+        await getArticlesToDeliver(
+          inMemoryArticleFieldStore,
+          "diag-feed-3",
+          [createArticle("1", { title: "Same Title" })],
+          { blockingComparisons: ["title"], passingComparisons: [] }
+        );
+        await inMemoryArticleFieldStore.flushPendingInserts();
+
+        let diagnostics: DiagnosticStageResult[] = [];
+
+        // Second run with same title (should be blocked)
+        await startDiagnosticContext("hash-2", async () => {
+          await getArticlesToDeliver(
+            inMemoryArticleFieldStore,
+            "diag-feed-3",
+            [createArticle("2", { title: "Same Title" })],
+            { blockingComparisons: ["title"], passingComparisons: [] }
+          );
+          diagnostics = getDiagnosticResultsForArticle("hash-2");
+        });
+
+        const blockingComparison = diagnostics.find(
+          (d) => d.stage === DiagnosticStage.BlockingComparison
+        );
+        expect(blockingComparison).toBeDefined();
+        expect(blockingComparison!.passed).toBe(false);
+        expect(
+          (
+            blockingComparison as {
+              details: { blockedByFields: string[] };
+            }
+          ).details.blockedByFields
+        ).toContain("title");
+      });
+    });
+
+    it("records PassingComparison diagnostic when article passes", async () => {
+      const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
+        await import("../../diagnostics");
+
+      await inMemoryArticleFieldStore.startContext(async () => {
+        // First run
+        await getArticlesToDeliver(
+          inMemoryArticleFieldStore,
+          "diag-feed-4",
+          [createArticle("1", { title: "Original Title" })],
+          { blockingComparisons: [], passingComparisons: ["title"] }
+        );
+        await inMemoryArticleFieldStore.flushPendingInserts();
+
+        let diagnostics: DiagnosticStageResult[] = [];
+
+        // Second run with changed title (should pass)
+        await startDiagnosticContext("hash-1", async () => {
+          await getArticlesToDeliver(
+            inMemoryArticleFieldStore,
+            "diag-feed-4",
+            [createArticle("1", { title: "Updated Title" })],
+            { blockingComparisons: [], passingComparisons: ["title"] }
+          );
+          diagnostics = getDiagnosticResultsForArticle("hash-1");
+        });
+
+        const passingComparison = diagnostics.find(
+          (d) => d.stage === DiagnosticStage.PassingComparison
+        );
+        expect(passingComparison).toBeDefined();
+        expect(passingComparison!.passed).toBe(true);
+        expect(
+          (
+            passingComparison as {
+              details: { changedFields: string[] };
+            }
+          ).details.changedFields
+        ).toContain("title");
+      });
+    });
+
+    it("records DateCheck diagnostic when article is filtered by date", async () => {
+      const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
+        await import("../../diagnostics");
+
+      await inMemoryArticleFieldStore.startContext(async () => {
+        // First run to establish baseline
+        await getArticlesToDeliver(
+          inMemoryArticleFieldStore,
+          "diag-feed-5",
+          [createArticle("1")],
+          { blockingComparisons: [], passingComparisons: [] }
+        );
+        await inMemoryArticleFieldStore.flushPendingInserts();
+
+        let diagnostics: DiagnosticStageResult[] = [];
+
+        // Second run with old article date
+        const oldDate = new Date(
+          Date.now() - 1000 * 60 * 60 * 24 * 30
+        ).toISOString(); // 30 days ago
+        const articleWithOldDate: Article = {
+          flattened: { id: "2", idHash: "hash-2", title: "Old Article" },
+          raw: { date: oldDate },
+        };
+
+        await startDiagnosticContext("hash-2", async () => {
+          await getArticlesToDeliver(
+            inMemoryArticleFieldStore,
+            "diag-feed-5",
+            [articleWithOldDate],
+            {
+              blockingComparisons: [],
+              passingComparisons: [],
+              dateChecks: {
+                oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24, // 1 day
+              },
+            }
+          );
+          diagnostics = getDiagnosticResultsForArticle("hash-2");
+        });
+
+        const dateCheck = diagnostics.find(
+          (d) => d.stage === DiagnosticStage.DateCheck
+        );
+        expect(dateCheck).toBeDefined();
+        expect(dateCheck!.passed).toBe(false);
+      });
+    });
+
+    it("does not record diagnostics outside diagnostic context", async () => {
+      const { getAllDiagnosticResults } = await import("../../diagnostics");
+
+      await inMemoryArticleFieldStore.startContext(async () => {
+        await getArticlesToDeliver(
+          inMemoryArticleFieldStore,
+          "diag-feed-6",
+          [createArticle("1")],
+          { blockingComparisons: [], passingComparisons: [] }
+        );
+
+        // Outside diagnostic context, should return empty Map
+        const diagnostics = getAllDiagnosticResults();
+        expect(diagnostics.size).toBe(0);
+      });
+    });
+  });
+
+  describe("multi-target diagnostic recording", () => {
+    it("records FeedState diagnostic for all target articles", async () => {
+      const {
+        startDiagnosticContext,
+        getDiagnosticResultsForArticle,
+        DiagnosticStage,
+      } = await import("../../diagnostics");
+
+      await inMemoryArticleFieldStore.startContext(async () => {
+        const targetHashes = new Set(["hash-1", "hash-2"]);
+
+        await startDiagnosticContext(targetHashes, async () => {
+          await getArticlesToDeliver(
+            inMemoryArticleFieldStore,
+            "multi-diag-feed-1",
+            [
+              createArticle("1", { title: "Article 1" }),
+              createArticle("2", { title: "Article 2" }),
+            ],
+            { blockingComparisons: [], passingComparisons: [] }
+          );
+
+          // Both targets should have FeedState diagnostic
+          const diag1 = getDiagnosticResultsForArticle("hash-1");
+          const diag2 = getDiagnosticResultsForArticle("hash-2");
+
+          const feedState1 = diag1.find(
+            (d) => d.stage === DiagnosticStage.FeedState
+          );
+          const feedState2 = diag2.find(
+            (d) => d.stage === DiagnosticStage.FeedState
+          );
+
+          expect(feedState1).toBeDefined();
+          expect(feedState2).toBeDefined();
+          expect(
+            (feedState1 as { details: { isFirstRun: boolean } }).details
+              .isFirstRun
+          ).toBe(true);
+          expect(
+            (feedState2 as { details: { isFirstRun: boolean } }).details
+              .isFirstRun
+          ).toBe(true);
+        });
+      });
+    });
+
+    it("records IdComparison diagnostic for each target article", async () => {
+      const {
+        startDiagnosticContext,
+        getDiagnosticResultsForArticle,
+        DiagnosticStage,
+      } = await import("../../diagnostics");
+
+      await inMemoryArticleFieldStore.startContext(async () => {
+        // First run to establish baseline
+        await getArticlesToDeliver(
+          inMemoryArticleFieldStore,
+          "multi-diag-feed-2",
+          [createArticle("1", { title: "Article 1" })],
+          { blockingComparisons: [], passingComparisons: [] }
+        );
+        await inMemoryArticleFieldStore.flushPendingInserts();
+
+        const targetHashes = new Set(["hash-1", "hash-2"]);
+
+        // Second run - hash-1 is seen, hash-2 is new
+        await startDiagnosticContext(targetHashes, async () => {
+          await getArticlesToDeliver(
+            inMemoryArticleFieldStore,
+            "multi-diag-feed-2",
+            [
+              createArticle("1", { title: "Article 1" }),
+              createArticle("2", { title: "Article 2" }),
+            ],
+            { blockingComparisons: [], passingComparisons: [] }
+          );
+
+          const diag1 = getDiagnosticResultsForArticle("hash-1");
+          const diag2 = getDiagnosticResultsForArticle("hash-2");
+
+          const idComp1 = diag1.find(
+            (d) => d.stage === DiagnosticStage.IdComparison
+          );
+          const idComp2 = diag2.find(
+            (d) => d.stage === DiagnosticStage.IdComparison
+          );
+
+          expect(idComp1).toBeDefined();
+          expect(idComp2).toBeDefined();
+          expect(
+            (idComp1 as { details: { isNew: boolean } }).details.isNew
+          ).toBe(false); // hash-1 was seen before
+          expect(
+            (idComp2 as { details: { isNew: boolean } }).details.isNew
+          ).toBe(true); // hash-2 is new
+        });
+      });
+    });
+
+    it("records BlockingComparison for each new target article", async () => {
+      const {
+        startDiagnosticContext,
+        getDiagnosticResultsForArticle,
+        DiagnosticStage,
+      } = await import("../../diagnostics");
+
+      await inMemoryArticleFieldStore.startContext(async () => {
+        // First run
+        await getArticlesToDeliver(
+          inMemoryArticleFieldStore,
+          "multi-diag-feed-3",
+          [createArticle("1", { title: "Same Title" })],
+          { blockingComparisons: ["title"], passingComparisons: [] }
+        );
+        await inMemoryArticleFieldStore.flushPendingInserts();
+
+        const targetHashes = new Set(["hash-2", "hash-3"]);
+
+        // Second run - both new articles with same title should be blocked
+        await startDiagnosticContext(targetHashes, async () => {
+          await getArticlesToDeliver(
+            inMemoryArticleFieldStore,
+            "multi-diag-feed-3",
+            [
+              createArticle("2", { title: "Same Title" }),
+              createArticle("3", { title: "Same Title" }),
+            ],
+            { blockingComparisons: ["title"], passingComparisons: [] }
+          );
+
+          const diag2 = getDiagnosticResultsForArticle("hash-2");
+          const diag3 = getDiagnosticResultsForArticle("hash-3");
+
+          const blocking2 = diag2.find(
+            (d) => d.stage === DiagnosticStage.BlockingComparison
+          );
+          const blocking3 = diag3.find(
+            (d) => d.stage === DiagnosticStage.BlockingComparison
+          );
+
+          expect(blocking2).toBeDefined();
+          expect(blocking3).toBeDefined();
+          expect(blocking2!.passed).toBe(false);
+          expect(blocking3!.passed).toBe(false);
+        });
+      });
+    });
+
+    it("only records for articles that are in the target set", async () => {
+      const {
+        startDiagnosticContext,
+        getDiagnosticResultsForArticle,
+        getAllDiagnosticResults,
+      } = await import("../../diagnostics");
+
+      await inMemoryArticleFieldStore.startContext(async () => {
+        // Only target hash-1, but process multiple articles
+        const targetHashes = new Set(["hash-1"]);
+
+        await startDiagnosticContext(targetHashes, async () => {
+          await getArticlesToDeliver(
+            inMemoryArticleFieldStore,
+            "multi-diag-feed-4",
+            [
+              createArticle("1", { title: "Article 1" }),
+              createArticle("2", { title: "Article 2" }),
+              createArticle("3", { title: "Article 3" }),
+            ],
+            { blockingComparisons: [], passingComparisons: [] }
+          );
+
+          const allResults = getAllDiagnosticResults();
+
+          // Only hash-1 should have diagnostics recorded
+          expect(allResults.has("hash-1")).toBe(true);
+          expect(allResults.has("hash-2")).toBe(false);
+          expect(allResults.has("hash-3")).toBe(false);
+
+          // hash-1 should have diagnostics
+          const diag1 = getDiagnosticResultsForArticle("hash-1");
+          expect(diag1.length).toBeGreaterThan(0);
+
+          // hash-2 and hash-3 should not have diagnostics
+          const diag2 = getDiagnosticResultsForArticle("hash-2");
+          const diag3 = getDiagnosticResultsForArticle("hash-3");
+          expect(diag2).toEqual([]);
+          expect(diag3).toEqual([]);
+        });
+      });
     });
   });
 });

@@ -11,6 +11,11 @@ import {
   ArticleDeliveryStatus,
   ArticleDeliveryContentType,
 } from "../../src/stores/interfaces/delivery-record-store";
+import {
+  ArticleDiagnosisOutcome,
+  DiagnosticStage,
+} from "../../src/diagnostics";
+import { createHash } from "crypto";
 
 // Must match USER_FEEDS_API_KEY in docker-compose.test.yml
 const TEST_API_KEY = "test-api-key";
@@ -57,6 +62,7 @@ describe("HTTP API (e2e)", () => {
         deliveryRecordStore: stores.deliveryRecordStore,
         discordClient: createTestDiscordRestClient(),
         feedRequestsServiceHost: stores.feedRequestsServiceHost,
+        articleFieldStore: stores.articleFieldStore,
       },
       TEST_PORT
     );
@@ -1183,6 +1189,817 @@ describe("HTTP API (e2e)", () => {
       });
 
       expect(response.status).toBe(400);
+    });
+  });
+
+  describe("POST /v1/user-feeds/diagnose-articles", () => {
+    const endpoint = "/v1/user-feeds/diagnose-articles";
+
+    // Test feed with multiple articles for diagnosis testing
+    const DIAGNOSE_FEED_URL = "https://example.com/diagnose-test-feed.xml";
+    const DIAGNOSE_ARTICLE_ID_1 = "diagnose-article-1";
+    const DIAGNOSE_ARTICLE_ID_2 = "diagnose-article-2";
+    const DIAGNOSE_RSS_CONTENT = `<?xml version="1.0" encoding="UTF-8"?>
+      <rss version="2.0">
+        <channel>
+          <title>Diagnose Test Feed</title>
+          <item>
+            <guid>${DIAGNOSE_ARTICLE_ID_1}</guid>
+            <title>First Article Title</title>
+            <description>First article description</description>
+            <pubDate>${new Date().toUTCString()}</pubDate>
+          </item>
+          <item>
+            <guid>${DIAGNOSE_ARTICLE_ID_2}</guid>
+            <title>Second Article Title</title>
+            <description>Second article description</description>
+            <pubDate>${new Date().toUTCString()}</pubDate>
+          </item>
+        </channel>
+      </rss>`;
+
+    // Feed with an old article (7 days old) for date check testing
+    const OLD_DATE_FEED_URL = "https://example.com/old-date-feed.xml";
+    const OLD_DATE_ARTICLE_ID = "old-date-article";
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const OLD_DATE_RSS_CONTENT = `<?xml version="1.0" encoding="UTF-8"?>
+      <rss version="2.0">
+        <channel>
+          <title>Old Date Feed</title>
+          <item>
+            <guid>${OLD_DATE_ARTICLE_ID}</guid>
+            <title>Old Article Title</title>
+            <description>Old article description</description>
+            <pubDate>${sevenDaysAgo.toUTCString()}</pubDate>
+          </item>
+        </channel>
+      </rss>`;
+
+    beforeAll(() => {
+      const testServer = getTestFeedRequestsServer();
+      testServer.registerUrl(DIAGNOSE_FEED_URL, () => ({
+        body: DIAGNOSE_RSS_CONTENT,
+        hash: "diagnose-test-hash",
+      }));
+      testServer.registerUrl(OLD_DATE_FEED_URL, () => ({
+        body: OLD_DATE_RSS_CONTENT,
+        hash: "old-date-test-hash",
+      }));
+    });
+
+    afterAll(() => {
+      const testServer = getTestFeedRequestsServer();
+      testServer.unregisterUrl(DIAGNOSE_FEED_URL);
+      testServer.unregisterUrl(OLD_DATE_FEED_URL);
+    });
+
+    it("returns 401 without API key", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+
+      expect(response.status).toBe(401);
+      const body = (await response.json()) as JsonBody;
+      expect(body.message).toBe("Unauthorized");
+    });
+
+    it("returns 401 with invalid API key", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": "wrong-key",
+        },
+        body: JSON.stringify({}),
+      });
+
+      expect(response.status).toBe(401);
+      const body = (await response.json()) as JsonBody;
+      expect(body.message).toBe("Unauthorized");
+    });
+
+    it("returns 400 for missing required fields", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({}),
+      });
+
+      expect(response.status).toBe(400);
+      const body = (await response.json()) as JsonBody[];
+      expect(Array.isArray(body)).toBe(true);
+      expect(body.length).toBeGreaterThan(0);
+    });
+
+    it("returns 400 for missing feed.id", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          feed: {
+            url: DIAGNOSE_FEED_URL,
+            blockingComparisons: [],
+            passingComparisons: [],
+          },
+          mediums: [],
+          articleDayLimit: 10,
+          articleIds: [DIAGNOSE_ARTICLE_ID_1],
+        }),
+      });
+
+      expect(response.status).toBe(400);
+    });
+
+    it("returns 400 for missing feed.url", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          feed: {
+            id: randomUUID(),
+            blockingComparisons: [],
+            passingComparisons: [],
+          },
+          mediums: [],
+          articleDayLimit: 10,
+          articleIds: [DIAGNOSE_ARTICLE_ID_1],
+        }),
+      });
+
+      expect(response.status).toBe(400);
+    });
+
+    it("returns 400 for empty articleIds array", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          feed: {
+            id: randomUUID(),
+            url: DIAGNOSE_FEED_URL,
+            blockingComparisons: [],
+            passingComparisons: [],
+          },
+          mediums: [],
+          articleDayLimit: 10,
+          articleIds: [],
+        }),
+      });
+
+      expect(response.status).toBe(400);
+    });
+
+    it("returns errors array when some articles not found", async () => {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          feed: {
+            id: randomUUID(),
+            url: DIAGNOSE_FEED_URL,
+            blockingComparisons: [],
+            passingComparisons: [],
+          },
+          mediums: [],
+          articleDayLimit: 10,
+          articleIds: ["non-existent-article-id"],
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      expect(Array.isArray(body.results)).toBe(true);
+      expect(Array.isArray(body.errors)).toBe(true);
+      const errors = body.errors as JsonBody[];
+      expect(errors.length).toBe(1);
+      expect(errors[0]!.message).toContain("not found");
+    });
+
+    it("returns FirstRunBaseline outcome for feed with no prior articles", async () => {
+      const feedId = randomUUID();
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          feed: {
+            id: feedId,
+            url: DIAGNOSE_FEED_URL,
+            blockingComparisons: [],
+            passingComparisons: [],
+          },
+          mediums: [],
+          articleDayLimit: 10,
+          articleIds: [DIAGNOSE_ARTICLE_ID_1],
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const results = body.results as JsonBody[];
+      expect(results.length).toBe(1);
+      const result = results[0]!;
+
+      expect(result.articleId).toBe(DIAGNOSE_ARTICLE_ID_1);
+      expect(result.outcome).toBe(ArticleDiagnosisOutcome.FirstRunBaseline);
+      expect(result.outcomeReason).toBeDefined();
+      expect(Array.isArray(result.stages)).toBe(true);
+
+      // Should have FeedState stage showing first run
+      const stages = result.stages as JsonBody[];
+      const feedStateStage = stages.find(
+        (s) => s.stage === DiagnosticStage.FeedState
+      );
+      expect(feedStateStage).toBeDefined();
+      expect(feedStateStage?.details).toBeDefined();
+      const feedStateDetails = feedStateStage?.details as JsonBody;
+      expect(feedStateDetails.isFirstRun).toBe(true);
+    });
+
+    it("returns DuplicateId outcome for previously seen article", async () => {
+      const stores = getStores();
+      const { articleFieldStore } = stores;
+      const feedId = randomUUID();
+
+      // Calculate the idHash the same way the parser does (SHA1 of article ID)
+      const articleIdHash = createHash("sha1")
+        .update(DIAGNOSE_ARTICLE_ID_1)
+        .digest("hex");
+
+      // Create a proper Article object to store
+      const articleToStore = {
+        flattened: {
+          id: DIAGNOSE_ARTICLE_ID_1,
+          idHash: articleIdHash,
+        },
+        raw: {},
+      };
+
+      // First, store the article as if it was already processed
+      await articleFieldStore.startContext(async () => {
+        await articleFieldStore.storeArticles(feedId, [articleToStore], []);
+        await articleFieldStore.flushPendingInserts();
+      });
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          feed: {
+            id: feedId,
+            url: DIAGNOSE_FEED_URL,
+            blockingComparisons: [],
+            passingComparisons: [],
+          },
+          mediums: [],
+          articleDayLimit: 10,
+          articleIds: [DIAGNOSE_ARTICLE_ID_1],
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const results = body.results as JsonBody[];
+      const result = results[0]!;
+
+      expect(result.outcome).toBe(ArticleDiagnosisOutcome.DuplicateId);
+      expect(result.outcomeReason).toContain("already been seen");
+
+      // Should have IdComparison stage showing not new
+      const stages = result.stages as JsonBody[];
+      const idComparisonStage = stages.find(
+        (s) => s.stage === DiagnosticStage.IdComparison
+      );
+      expect(idComparisonStage).toBeDefined();
+      expect(idComparisonStage?.passed).toBe(false);
+    });
+
+    it("returns WouldDeliver outcome for new article that passes all checks", async () => {
+      const stores = getStores();
+      const { articleFieldStore } = stores;
+      const feedId = randomUUID();
+
+      // Create a proper Article object for a different article so it's not a first run
+      const otherArticle = {
+        flattened: {
+          id: "some-other-article",
+          idHash: "some-other-article-hash",
+        },
+        raw: {},
+      };
+
+      // Store a different article so it's not a first run
+      await articleFieldStore.startContext(async () => {
+        await articleFieldStore.storeArticles(feedId, [otherArticle], []);
+        await articleFieldStore.flushPendingInserts();
+      });
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          feed: {
+            id: feedId,
+            url: DIAGNOSE_FEED_URL,
+            blockingComparisons: [],
+            passingComparisons: [],
+          },
+          mediums: [],
+          articleDayLimit: 10,
+          articleIds: [DIAGNOSE_ARTICLE_ID_1],
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const results = body.results as JsonBody[];
+      const result = results[0]!;
+
+      expect(result.outcome).toBe(ArticleDiagnosisOutcome.WouldDeliver);
+      expect(result.outcomeReason).toContain("passes all checks");
+    });
+
+    it("returns RateLimitedFeed outcome when feed daily limit exceeded", async () => {
+      const stores = getStores();
+      const { articleFieldStore, deliveryRecordStore } = stores;
+      const feedId = randomUUID();
+      const mediumId = randomUUID();
+
+      // Store an article so it's not a first run
+      const otherArticle = {
+        flattened: { id: "other-article", idHash: "other-article-hash" },
+        raw: {},
+      };
+      await articleFieldStore.startContext(async () => {
+        await articleFieldStore.storeArticles(feedId, [otherArticle], []);
+        await articleFieldStore.flushPendingInserts();
+      });
+
+      // Pre-fill delivery records to exceed the articleDayLimit (set to 2)
+      await deliveryRecordStore.startContext(async () => {
+        await deliveryRecordStore.store(feedId, [
+          {
+            id: randomUUID(),
+            mediumId,
+            articleIdHash: "rate-limit-hash-1",
+            article: null,
+            status: ArticleDeliveryStatus.Sent,
+          },
+          {
+            id: randomUUID(),
+            mediumId,
+            articleIdHash: "rate-limit-hash-2",
+            article: null,
+            status: ArticleDeliveryStatus.Sent,
+          },
+        ]);
+      });
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          feed: {
+            id: feedId,
+            url: DIAGNOSE_FEED_URL,
+            blockingComparisons: [],
+            passingComparisons: [],
+          },
+          mediums: [{ id: mediumId }],
+          articleDayLimit: 2, // Already at limit
+          articleIds: [DIAGNOSE_ARTICLE_ID_1],
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const results = body.results as JsonBody[];
+      const result = results[0]!;
+
+      expect(result.outcome).toBe(ArticleDiagnosisOutcome.RateLimitedFeed);
+      expect(result.outcomeReason).toContain("daily article delivery limit");
+    });
+
+    it("returns RateLimitedMedium outcome when medium rate limit exceeded", async () => {
+      const stores = getStores();
+      const { articleFieldStore, deliveryRecordStore } = stores;
+      const feedId = randomUUID();
+      const mediumId = randomUUID();
+
+      // Store an article so it's not a first run
+      const otherArticle = {
+        flattened: { id: "other-article-2", idHash: "other-article-hash-2" },
+        raw: {},
+      };
+      await articleFieldStore.startContext(async () => {
+        await articleFieldStore.storeArticles(feedId, [otherArticle], []);
+        await articleFieldStore.flushPendingInserts();
+      });
+
+      // Pre-fill delivery records for medium to exceed medium rate limit (set to 1)
+      await deliveryRecordStore.startContext(async () => {
+        await deliveryRecordStore.store(feedId, [
+          {
+            id: randomUUID(),
+            mediumId,
+            articleIdHash: "medium-rate-limit-hash",
+            article: null,
+            status: ArticleDeliveryStatus.Sent,
+          },
+        ]);
+      });
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          feed: {
+            id: feedId,
+            url: DIAGNOSE_FEED_URL,
+            blockingComparisons: [],
+            passingComparisons: [],
+          },
+          mediums: [
+            {
+              id: mediumId,
+              rateLimits: [{ limit: 1, timeWindowSeconds: 3600 }], // Already at limit
+            },
+          ],
+          articleDayLimit: 100, // High enough to not hit feed limit
+          articleIds: [DIAGNOSE_ARTICLE_ID_1],
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const results = body.results as JsonBody[];
+      const result = results[0]!;
+
+      expect(result.outcome).toBe(ArticleDiagnosisOutcome.RateLimitedMedium);
+      expect(result.outcomeReason).toContain("rate limit");
+    });
+
+    it("returns FilteredByMediumFilter outcome when medium filter blocks article", async () => {
+      const stores = getStores();
+      const { articleFieldStore } = stores;
+      const feedId = randomUUID();
+      const mediumId = randomUUID();
+
+      // Store an article so it's not a first run
+      const otherArticle = {
+        flattened: { id: "other-article-3", idHash: "other-article-hash-3" },
+        raw: {},
+      };
+      await articleFieldStore.startContext(async () => {
+        await articleFieldStore.storeArticles(feedId, [otherArticle], []);
+        await articleFieldStore.flushPendingInserts();
+      });
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          feed: {
+            id: feedId,
+            url: DIAGNOSE_FEED_URL,
+            blockingComparisons: [],
+            passingComparisons: [],
+          },
+          mediums: [
+            {
+              id: mediumId,
+              filters: {
+                expression: {
+                  type: "LOGICAL",
+                  op: "AND",
+                  children: [
+                    {
+                      type: "RELATIONAL",
+                      op: "EQ",
+                      left: { type: "ARTICLE", value: "title" },
+                      right: { type: "STRING", value: "NonExistentTitle" }, // Won't match
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+          articleDayLimit: 100,
+          articleIds: [DIAGNOSE_ARTICLE_ID_1],
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const results = body.results as JsonBody[];
+      const result = results[0]!;
+
+      expect(result.outcome).toBe(ArticleDiagnosisOutcome.FilteredByMediumFilter);
+      expect(result.outcomeReason).toContain("filtered out by medium");
+    });
+
+    it("returns BlockedByComparison outcome when blocking comparison field was seen", async () => {
+      const stores = getStores();
+      const { articleFieldStore } = stores;
+      const feedId = randomUUID();
+
+      // Hash of "First Article Title" - this is what the test article has
+      const titleHash = createHash("sha1")
+        .update("First Article Title")
+        .digest("hex");
+
+      // Store a prior article with a different ID but same title hash
+      // This simulates a previous article that had the same title
+      const priorArticle = {
+        flattened: {
+          id: "prior-article-with-same-title",
+          idHash: "prior-article-hash",
+          title: "First Article Title",
+        },
+        raw: {},
+      };
+
+      await articleFieldStore.startContext(async () => {
+        // Store the prior article with title as comparison field
+        await articleFieldStore.storeArticles(feedId, [priorArticle], ["title"]);
+        // Mark "title" comparison as active
+        await articleFieldStore.storeComparisonNames(feedId, ["title"]);
+        await articleFieldStore.flushPendingInserts();
+      });
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          feed: {
+            id: feedId,
+            url: DIAGNOSE_FEED_URL,
+            blockingComparisons: ["title"], // Block on title
+            passingComparisons: [],
+          },
+          mediums: [],
+          articleDayLimit: 100,
+          articleIds: [DIAGNOSE_ARTICLE_ID_1], // New article ID, but same title
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const results = body.results as JsonBody[];
+      const result = results[0]!;
+
+      expect(result.outcome).toBe(ArticleDiagnosisOutcome.BlockedByComparison);
+      expect(result.outcomeReason).toContain("blocked by comparison");
+    });
+
+    it("returns WouldDeliverPassingComparison outcome when passing comparison field changed", async () => {
+      const stores = getStores();
+      const { articleFieldStore } = stores;
+      const feedId = randomUUID();
+
+      // Calculate the idHash the same way the parser does (SHA1 of article ID)
+      const articleIdHash = createHash("sha1")
+        .update(DIAGNOSE_ARTICLE_ID_1)
+        .digest("hex");
+
+      // Store the article ID (so it's seen) but with a different description hash
+      const priorArticle = {
+        flattened: {
+          id: DIAGNOSE_ARTICLE_ID_1,
+          idHash: articleIdHash,
+          description: "Old description that will change",
+        },
+        raw: {},
+      };
+
+      await articleFieldStore.startContext(async () => {
+        // Store article with description as passing comparison
+        await articleFieldStore.storeArticles(feedId, [priorArticle], [
+          "description",
+        ]);
+        // Mark "description" comparison as active
+        await articleFieldStore.storeComparisonNames(feedId, ["description"]);
+        await articleFieldStore.flushPendingInserts();
+      });
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          feed: {
+            id: feedId,
+            url: DIAGNOSE_FEED_URL,
+            blockingComparisons: [],
+            passingComparisons: ["description"], // Pass if description changed
+          },
+          mediums: [],
+          articleDayLimit: 100,
+          articleIds: [DIAGNOSE_ARTICLE_ID_1], // Same ID, but description changed
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const results = body.results as JsonBody[];
+      const result = results[0]!;
+
+      expect(result.outcome).toBe(
+        ArticleDiagnosisOutcome.WouldDeliverPassingComparison
+      );
+      expect(result.outcomeReason).toContain("comparison field has changed");
+    });
+
+    it("returns FilteredByDateCheck outcome when article is too old", async () => {
+      const stores = getStores();
+      const { articleFieldStore } = stores;
+      const feedId = randomUUID();
+
+      // Store a prior article so it's not first run
+      const priorArticle = {
+        flattened: { id: "prior-article", idHash: "prior-article-hash" },
+        raw: {},
+      };
+      await articleFieldStore.startContext(async () => {
+        await articleFieldStore.storeArticles(feedId, [priorArticle], []);
+        await articleFieldStore.flushPendingInserts();
+      });
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          feed: {
+            id: feedId,
+            url: OLD_DATE_FEED_URL, // Feed with 7-day-old article
+            blockingComparisons: [],
+            passingComparisons: [],
+            dateChecks: {
+              // 1 day threshold - article is 7 days old, should be filtered
+              oldArticleDateDiffMsThreshold: 24 * 60 * 60 * 1000,
+            },
+          },
+          mediums: [],
+          articleDayLimit: 100,
+          articleIds: [OLD_DATE_ARTICLE_ID],
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const results = body.results as JsonBody[];
+      const result = results[0]!;
+
+      expect(result.outcome).toBe(ArticleDiagnosisOutcome.FilteredByDateCheck);
+      expect(result.outcomeReason).toContain("older than");
+    });
+
+    it("returns results for multiple articleIds", async () => {
+      const feedId = randomUUID();
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          feed: {
+            id: feedId,
+            url: DIAGNOSE_FEED_URL,
+            blockingComparisons: [],
+            passingComparisons: [],
+          },
+          mediums: [],
+          articleDayLimit: 10,
+          articleIds: [DIAGNOSE_ARTICLE_ID_1, DIAGNOSE_ARTICLE_ID_2],
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const results = body.results as JsonBody[];
+      const errors = body.errors as JsonBody[];
+
+      expect(results.length).toBe(2);
+      expect(errors.length).toBe(0);
+
+      // Both should be FirstRunBaseline since it's a new feed
+      expect(results[0]!.articleId).toBe(DIAGNOSE_ARTICLE_ID_1);
+      expect(results[0]!.outcome).toBe(ArticleDiagnosisOutcome.FirstRunBaseline);
+      expect(results[1]!.articleId).toBe(DIAGNOSE_ARTICLE_ID_2);
+      expect(results[1]!.outcome).toBe(ArticleDiagnosisOutcome.FirstRunBaseline);
+    });
+
+    it("returns partial results with errors when some articles not found", async () => {
+      const feedId = randomUUID();
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          feed: {
+            id: feedId,
+            url: DIAGNOSE_FEED_URL,
+            blockingComparisons: [],
+            passingComparisons: [],
+          },
+          mediums: [],
+          articleDayLimit: 10,
+          articleIds: [DIAGNOSE_ARTICLE_ID_1, "non-existent-id"],
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const results = body.results as JsonBody[];
+      const errors = body.errors as JsonBody[];
+
+      expect(results.length).toBe(1);
+      expect(errors.length).toBe(1);
+
+      expect(results[0]!.articleId).toBe(DIAGNOSE_ARTICLE_ID_1);
+      expect(errors[0]!.articleId).toBe("non-existent-id");
+      expect(errors[0]!.message).toContain("not found");
+    });
+
+    it("returns results without stages when summaryOnly is true", async () => {
+      const feedId = randomUUID();
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          feed: {
+            id: feedId,
+            url: DIAGNOSE_FEED_URL,
+            blockingComparisons: [],
+            passingComparisons: [],
+          },
+          mediums: [],
+          articleDayLimit: 10,
+          articleIds: [DIAGNOSE_ARTICLE_ID_1],
+          summaryOnly: true,
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const results = body.results as JsonBody[];
+
+      expect(results.length).toBe(1);
+      expect(results[0]!.articleId).toBe(DIAGNOSE_ARTICLE_ID_1);
+      expect(results[0]!.outcome).toBeDefined();
+      expect(results[0]!.stages).toBeUndefined();
     });
   });
 });

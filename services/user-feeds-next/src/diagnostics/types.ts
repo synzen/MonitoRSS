@@ -1,0 +1,174 @@
+/**
+ * Primary diagnosis outcome - why the article would or would not be delivered
+ */
+export enum ArticleDiagnosisOutcome {
+  /** Article would be delivered successfully */
+  WouldDeliver = "would-deliver",
+  /** Feed is in first-run mode - article would be stored but not delivered */
+  FirstRunBaseline = "first-run-baseline",
+  /** Article ID already seen (duplicate) */
+  DuplicateId = "duplicate-id",
+  /** Article blocked by blocking comparison fields */
+  BlockedByComparison = "blocked-by-comparison",
+  /** Article filtered out by date checks (too old) */
+  FilteredByDateCheck = "filtered-by-date-check",
+  /** Article filtered out by medium filters */
+  FilteredByMediumFilter = "filtered-by-medium-filter",
+  /** Would be rate limited by feed daily limit */
+  RateLimitedFeed = "rate-limited-feed",
+  /** Would be rate limited by medium rate limits */
+  RateLimitedMedium = "rate-limited-medium",
+  /** Article passes comparisons (already seen, but field changed) */
+  WouldDeliverPassingComparison = "would-deliver-passing-comparison",
+}
+
+/**
+ * Stages in the article processing pipeline
+ */
+export enum DiagnosticStage {
+  FeedState = "feed-state",
+  IdComparison = "id-comparison",
+  BlockingComparison = "blocking-comparison",
+  PassingComparison = "passing-comparison",
+  DateCheck = "date-check",
+  MediumFilter = "medium-filter",
+  FeedRateLimit = "feed-rate-limit",
+  MediumRateLimit = "medium-rate-limit",
+}
+
+export interface FeedStateDiagnosticDetails {
+  hasPriorArticles: boolean;
+  isFirstRun: boolean;
+  storedComparisonNames: string[];
+}
+
+export interface IdComparisonDiagnosticDetails {
+  articleIdHash: string;
+  foundInHotPartition: boolean;
+  foundInColdPartition: boolean;
+  isNew: boolean;
+}
+
+export interface BlockingComparisonDiagnosticDetails {
+  comparisonFields: string[];
+  activeFields: string[];
+  blockedByFields: string[];
+}
+
+export interface PassingComparisonDiagnosticDetails {
+  comparisonFields: string[];
+  activeFields: string[];
+  changedFields: string[];
+}
+
+export interface DateCheckDiagnosticDetails {
+  articleDate: string | null;
+  threshold: number | null;
+  datePlaceholders: string[];
+  ageMs: number | null;
+  withinThreshold: boolean;
+}
+
+export interface MediumFilterDiagnosticDetails {
+  mediumId: string;
+  filterExpression: unknown | null;
+  filterResult: boolean;
+  explainBlocked: string[];
+}
+
+export interface RateLimitDiagnosticDetails {
+  currentCount: number;
+  limit: number;
+  timeWindowSeconds: number;
+  remaining: number;
+  wouldExceed: boolean;
+}
+
+export interface FeedStateDiagnosticResult {
+  stage: DiagnosticStage.FeedState;
+  passed: boolean;
+  details: FeedStateDiagnosticDetails;
+}
+
+export interface IdComparisonDiagnosticResult {
+  stage: DiagnosticStage.IdComparison;
+  passed: boolean;
+  details: IdComparisonDiagnosticDetails;
+}
+
+export interface BlockingComparisonDiagnosticResult {
+  stage: DiagnosticStage.BlockingComparison;
+  passed: boolean;
+  details: BlockingComparisonDiagnosticDetails;
+}
+
+export interface PassingComparisonDiagnosticResult {
+  stage: DiagnosticStage.PassingComparison;
+  passed: boolean;
+  details: PassingComparisonDiagnosticDetails;
+}
+
+export interface DateCheckDiagnosticResult {
+  stage: DiagnosticStage.DateCheck;
+  passed: boolean;
+  details: DateCheckDiagnosticDetails;
+}
+
+export interface MediumFilterDiagnosticResult {
+  stage: DiagnosticStage.MediumFilter;
+  passed: boolean;
+  details: MediumFilterDiagnosticDetails;
+}
+
+export interface FeedRateLimitDiagnosticResult {
+  stage: DiagnosticStage.FeedRateLimit;
+  passed: boolean;
+  details: RateLimitDiagnosticDetails;
+}
+
+export interface MediumRateLimitDiagnosticResult {
+  stage: DiagnosticStage.MediumRateLimit;
+  passed: boolean;
+  details: RateLimitDiagnosticDetails & { mediumId: string };
+}
+
+export type DiagnosticStageResult =
+  | FeedStateDiagnosticResult
+  | IdComparisonDiagnosticResult
+  | BlockingComparisonDiagnosticResult
+  | PassingComparisonDiagnosticResult
+  | DateCheckDiagnosticResult
+  | MediumFilterDiagnosticResult
+  | FeedRateLimitDiagnosticResult
+  | MediumRateLimitDiagnosticResult;
+
+/**
+ * Complete diagnostic result for a single article
+ */
+export interface ArticleDiagnosticResult {
+  articleId: string;
+  articleIdHash: string;
+  articleTitle: string | null;
+  outcome: ArticleDiagnosisOutcome;
+  outcomeReason: string;
+  stages: DiagnosticStageResult[];
+}
+
+/**
+ * Summary version of diagnostic result (without stages array)
+ */
+export interface ArticleDiagnosisSummary {
+  articleId: string;
+  articleIdHash: string;
+  articleTitle: string | null;
+  outcome: ArticleDiagnosisOutcome;
+  outcomeReason: string;
+}
+
+/**
+ * Response for batch article diagnosis
+ */
+export interface DiagnoseArticlesResponse {
+  results: ArticleDiagnosticResult[] | ArticleDiagnosisSummary[];
+  errors: Array<{ articleId: string; message: string }>;
+}
