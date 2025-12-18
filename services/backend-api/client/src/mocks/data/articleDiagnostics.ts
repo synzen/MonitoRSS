@@ -14,6 +14,11 @@ import {
  * - 'all-learning': All articles show "Learning Feed" (triggers pattern alert)
  * - 'all-rate-limited': All articles show "Daily Limit Reached" (triggers pattern alert)
  * - 'all-duplicate': All articles show "Previously Seen" (triggers pattern alert)
+ * - 'all-feed-unchanged': All articles show "No Changes" (triggers pattern alert for unchanged feed)
+ * - 'all-feed-error': All articles show "Feed Error" (triggers pattern alert for feed errors)
+ * - 'feed-error-403': Feed fetch error with HTTP 403 status code (access denied)
+ * - 'feed-error-404': Feed fetch error with HTTP 404 status code (not found)
+ * - 'feed-error-503': Feed fetch error with HTTP 503 status code (service unavailable)
  */
 type MockDiagnosticsState =
   | "normal"
@@ -21,8 +26,51 @@ type MockDiagnosticsState =
   | "no-connections"
   | "all-learning"
   | "all-rate-limited"
-  | "all-duplicate";
-export const MOCK_DIAGNOSTICS_STATE: MockDiagnosticsState = "normal";
+  | "all-duplicate"
+  | "all-feed-unchanged"
+  | "all-feed-error"
+  | "feed-error-403"
+  | "feed-error-404"
+  | "feed-error-503";
+export const MOCK_DIAGNOSTICS_STATE: MockDiagnosticsState = "all-feed-unchanged";
+
+export interface MockFeedState {
+  state: string;
+  errorType?: string;
+  httpStatusCode?: number;
+}
+
+export const getMockFeedState = (): MockFeedState | undefined => {
+  switch (MOCK_DIAGNOSTICS_STATE as MockDiagnosticsState) {
+    case "feed-error-403":
+      return {
+        state: "fetch-error",
+        errorType: "bad-status-code",
+        httpStatusCode: 403,
+      };
+    case "feed-error-404":
+      return {
+        state: "fetch-error",
+        errorType: "bad-status-code",
+        httpStatusCode: 404,
+      };
+    case "feed-error-503":
+      return {
+        state: "fetch-error",
+        errorType: "bad-status-code",
+        httpStatusCode: 503,
+      };
+    case "all-feed-error":
+      return {
+        state: "fetch-error",
+        errorType: "timeout",
+      };
+    // Note: "all-feed-unchanged" no longer returns a feed-level state.
+    // When the feed is unchanged, the backend returns articles with FeedUnchanged outcome.
+    default:
+      return undefined;
+  }
+};
 
 const createPassedStages = (mediumId: string) => [
   {
@@ -821,6 +869,25 @@ const createNoConnectionsMockData = (): ArticleDiagnosticResult[] =>
     mediumResults: [],
   }));
 
+const createAllFeedUnchangedMockData = (): ArticleDiagnosticResult[] =>
+  mockArticleDiagnostics.map((article) => ({
+    ...article,
+    outcome: ArticleDiagnosisOutcome.FeedUnchanged,
+    outcomeReason:
+      "Feed content unchanged since last check. Articles will be processed when new content is detected.",
+    // No stages for unchanged feed - diagnostics are skipped
+    stages: [],
+    mediumResults: [],
+  }));
+
+const createAllFeedErrorMockData = (): ArticleDiagnosticResult[] =>
+  mockArticleDiagnostics.map((article) => ({
+    ...article,
+    outcome: ArticleDiagnosisOutcome.FeedError,
+    outcomeReason: "Feed fetch error (timeout): Request timed out after 30 seconds",
+    mediumResults: [],
+  }));
+
 export const getMockDiagnostics = (): ArticleDiagnosticResult[] => {
   switch (MOCK_DIAGNOSTICS_STATE as MockDiagnosticsState) {
     case "empty":
@@ -833,6 +900,10 @@ export const getMockDiagnostics = (): ArticleDiagnosticResult[] => {
       return createAllRateLimitedMockData();
     case "all-duplicate":
       return createAllDuplicateMockData();
+    case "all-feed-unchanged":
+      return createAllFeedUnchangedMockData();
+    case "all-feed-error":
+      return createAllFeedErrorMockData();
     default:
       return mockArticleDiagnostics;
   }

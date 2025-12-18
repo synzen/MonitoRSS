@@ -51,6 +51,10 @@ const getOutcomeLabel = (outcome: ArticleDiagnosisOutcome): string => {
       return "Limit reached";
     case ArticleDiagnosisOutcome.WouldDeliverPassingComparison:
       return "Will re-deliver";
+    case ArticleDiagnosisOutcome.FeedUnchanged:
+      return "No changes detected";
+    case ArticleDiagnosisOutcome.FeedError:
+      return "Feed error";
     default:
       return "Unknown";
   }
@@ -76,6 +80,10 @@ const getExplanationText = (outcome: ArticleDiagnosisOutcome): string => {
       return "This connection has reached its delivery limit. The article will be delivered automatically once the limit resets.";
     case ArticleDiagnosisOutcome.WouldDeliverPassingComparison:
       return "This article was seen before, but one of your Passing Comparison fields changed, so it will be re-delivered as an update.";
+    case ArticleDiagnosisOutcome.FeedUnchanged:
+      return "The feed's content hasn't changed since it was last checked. MonitoRSS skips unchanged feeds to save resources. New articles will be detected automatically once the publisher has indicated that there are new changes.";
+    case ArticleDiagnosisOutcome.FeedError:
+      return "MonitoRSS couldn't fetch or parse this feed. This may be temporary (server issues) or indicate a problem with the feed URL.";
     default:
       return "";
   }

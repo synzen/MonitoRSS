@@ -1,7 +1,6 @@
 export enum FeedResponseRequestStatus {
   InternalError = "INTERNAL_ERROR",
   ParseError = "PARSE_ERROR",
-  Pending = "PENDING",
   Success = "SUCCESS",
   BadStatusCode = "BAD_STATUS_CODE",
   FetchError = "FETCH_ERROR",
@@ -35,10 +34,6 @@ interface FeedResponseParseError {
   };
 }
 
-interface FeedResponsePending {
-  requestStatus: FeedResponseRequestStatus.Pending;
-}
-
 interface FeedResponseSuccess {
   requestStatus: FeedResponseRequestStatus.Success;
   response: {
@@ -51,7 +46,6 @@ interface FeedResponseSuccess {
 export type FeedResponse =
   | FeedResponseInternalError
   | FeedResponseParseError
-  | FeedResponsePending
   | FeedResponseSuccess
   | FeedResponseFetchError
   | FeedResponseBadStatusCodeError
@@ -64,7 +58,6 @@ export interface FeedRequestLookupDetails {
 }
 
 export type FetchFeedResult =
-  | { requestStatus: FeedResponseRequestStatus.Pending }
   | { requestStatus: FeedResponseRequestStatus.MatchedHash }
   | {
       requestStatus: FeedResponseRequestStatus.Success;

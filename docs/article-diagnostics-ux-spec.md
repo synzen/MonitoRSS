@@ -8,7 +8,39 @@ Users complain that articles visible in their RSS feed aren't being delivered to
 
 A diagnostic API exists in `user-feeds-next` at `POST /v1/user-feeds/diagnose-articles` that analyzes why articles would or would not be delivered.
 
-### Diagnostic Outcomes
+### Feed-Level States
+
+When the feed cannot be processed for articles due to an error, the API returns a `feedState` object instead of article-level results:
+
+```typescript
+// Response structure for feed-level states (errors only)
+{
+  results: [],
+  total: 0,
+  feedState: {
+    state: "fetch-error" | "parse-error",
+    errorType?: string,      // Present for error states
+    httpStatusCode?: number, // Present when errorType is "bad-status-code"
+  }
+}
+```
+
+| `feedState.state` Value | User-Facing Label | Description |
+|-------------------------|-------------------|-------------|
+| `fetch-error` | Fetch Error | Failed to fetch the feed (network, timeout, bad status code) |
+| `parse-error` | Parse Error | Failed to parse the feed (invalid XML, parse timeout) |
+
+**Note:** When the feed content is unchanged (hash matches), the API returns articles with `feed-unchanged` outcome instead of a feed-level state. This allows users to still view articles even when the feed hasn't changed.
+
+For error states, an additional `errorType` field provides specifics:
+- Fetch errors: `timeout`, `bad-status-code`, `fetch`, `internal`
+- Parse errors: `timeout`, `invalid`
+
+When `errorType` is `bad-status-code`, the response also includes `httpStatusCode` with the actual HTTP status code (e.g., 403, 404, 503). Use this to display specific, actionable user messages.
+
+### Article-Level Outcomes
+
+When the feed is successfully fetched and parsed, each article receives an `outcome`:
 
 | API Outcome | User-Facing Label | Description |
 |-------------|-------------------|-------------|
@@ -21,6 +53,7 @@ A diagnostic API exists in `user-feeds-next` at `POST /v1/user-feeds/diagnose-ar
 | `rate-limited-feed` | Daily Limit Reached | Would exceed feed's daily article limit |
 | `rate-limited-medium` | Limit Reached | Would exceed connection's rate limits |
 | `would-deliver-passing-comparison` | Would Deliver | Already seen but tracked field changed, will be delivered |
+| `feed-unchanged` | No Changes | Feed content unchanged since last check (all articles get this outcome) |
 
 ### Diagnostic Stages (for delivery checks view)
 
@@ -72,11 +105,16 @@ Preview how articles will be handled when your feed is next processed.
 
 Pattern Alert (shown when dominant outcome detected):
 "This feed is in its learning phase. MonitoRSS is identifying
-existing articles so it only delivers new ones. This typically
-completes within **10 minutes**."
+existing articles so it only delivers new ones.
+
+Expected completion: Within **10 minutes**
+Based on your feed's refresh interval
+
+No action needed - this will complete automatically."
 
 Note: The time shown is the feed's `refreshRateSeconds` formatted in human-readable
 form (e.g., "10 minutes", "1 hour", "6 hours"). This tells users how long to wait.
+See the "Learning Phase (Transitional State)" section below for more details.
 ```
 
 ### Page Size
@@ -195,7 +233,33 @@ Delivery Preview                                         [Refresh]
 - Some outcomes are feed-level (first run applies to all articles)
 - Provides plain-language explanation without expanding every row
 
-**Threshold:** For feed-level states like "Learning", threshold is effectively 1 (if one article has it, all do). For "Previously Seen" (duplicate-id), threshold is 100% (all articles must have this outcome). For other per-article outcomes, show when pattern is dominant.
+**Threshold:** For feed-level states like "Learning" or "No Changes", threshold is effectively 1 (if one article has it, all do). For "Previously Seen" (duplicate-id), threshold is 100% (all articles must have this outcome). For other per-article outcomes, show when pattern is dominant.
+
+**Important:** Pattern alerts only apply to article-level outcomes. Feed-level error states (`fetch-error`, `parse-error`) are returned with an empty `results` array and have their own dedicated full-section displays (see "Handling Feed-Level States" in Implementation Notes). The pattern alert component is NOT used for feed-level error states, but IS used for `feed-unchanged` since that now returns articles.
+
+### Learning Phase (Transitional State)
+
+The `first-run-baseline`/Learning outcome is a **transitional state** that resolves automatically when the feed is next processed.
+
+**Messaging Pattern:**
+
+| Element | Purpose |
+|---------|---------|
+| Headline | "Learning Phase" |
+| Primary message | Explains that existing articles are being identified |
+| Temporal promise | "Expected completion: Within {refreshInterval}" |
+| Reassurance | "No action needed - this will complete automatically." |
+
+**Visual Treatment:**
+- Uses **blue/info color scheme** (signals "in-progress, everything is fine")
+- Shows the feed's refresh interval as the expected completion time
+- Includes the "no action needed" reassurance
+- Displays as pattern alert above article table (articles available with `first-run-baseline` outcome)
+
+This approach:
+1. Reduces user anxiety by explicitly stating no action is needed
+2. Builds correct mental model that transitional states auto-resolve
+3. Provides actionable timing (refresh interval) instead of vague "wait a moment"
 
 ### No Connections State
 
@@ -250,6 +314,17 @@ Delivery Preview                 Preview generated: just now  [Refresh]
 
 ## User-Friendly Copy
 
+### Feed-Level State Messages
+
+| `feedState` | Explanation Text |
+|-------------|------------------|
+| `fetch-error` | MonitoRSS couldn't fetch this feed. This may be temporary (server issues) or indicate a problem with the feed URL. Check Request History for details. |
+| `parse-error` | MonitoRSS couldn't parse this feed. The feed may have invalid XML or formatting issues. Check Request History for details. |
+
+**Note:** The `unchanged` state is no longer a feed-level state. When the feed content hasn't changed, the API returns articles with `feed-unchanged` outcome instead.
+
+### Article-Level Outcome Messages
+
 | API Outcome | Explanation Text |
 |-------------|------------------|
 | `would-deliver` | This article will be delivered to Discord when your feed is next processed. |
@@ -261,6 +336,7 @@ Delivery Preview                 Preview generated: just now  [Refresh]
 | `rate-limited-feed` | Your feed has delivered the maximum articles allowed in a 24-hour period. Delivery resumes automatically as older deliveries fall outside this window. Upgrade your plan for higher limits. |
 | `rate-limited-medium` | This connection has reached its delivery limit. The article will be delivered automatically once the limit resets. |
 | `would-deliver-passing-comparison` | This article was seen before, but one of your Passing Comparison fields changed, so it will be delivered. |
+| `feed-unchanged` | Feed content unchanged since last check. Articles will be processed when new content is detected. |
 
 ## Delivery Checks View (Level 3)
 
@@ -694,6 +770,81 @@ delivered to all 2 connections once learning completes (within
 - Expand/collapse works with tap
 - No hover-dependent interactions
 
+### Touch Target Specifications
+
+| Element | Minimum Size | Recommendation |
+|---------|--------------|----------------|
+| Refresh button | 44x44px | Use `size="md"` on mobile (not `sm`) |
+| View Request History | 44x44px | Add `minH="44px"` and full width on mobile |
+| Load More button | 44x44px | Use `size="md"` on mobile |
+| Article rows | 44px height | Already met with current padding |
+
+### Mobile Mockups for Feed-Level States
+
+**Note:** The "Unchanged State on Mobile" mockup has been removed. When the feed is unchanged, articles are displayed in the normal table/card layout with a pattern alert. The unchanged state is now handled as an article-level outcome (`feed-unchanged`).
+
+### Mobile Mockups for HTTP Errors
+
+**HTTP Error on Mobile (Stacked Layout):**
+
+Below 480px, the title and HTTP badge stack vertically instead of inline:
+
+```
++-----------------------------------+
+| Delivery Preview           [Ref] |
+| Preview generated: just now      |
++-----------------------------------+
+|                                   |
+|  [Ban] Access Blocked by Publisher|
+|        [HTTP 403]                 |
+|                                   |
+|  The feed's server is refusing    |
+|  access to MonitoRSS.             |
+|                                   |
+|  Many publishers block automated  |
+|  readers. Try finding an official |
+|  public RSS feed.                 |
+|                                   |
+|  [  View Request History  ]       |
+|       (full-width button)         |
+|                                   |
++-----------------------------------+
+```
+
+**Layout Breakpoint Rules:**
+
+```tsx
+<Flex
+  direction={{ base: "column", sm: "row" }}
+  justifyContent={{ base: "flex-start", sm: "space-between" }}
+  alignItems={{ base: "flex-start", sm: "center" }}
+  gap={2}
+>
+  <HStack spacing={2}>
+    <Icon as={getHttpStatusIcon(code)} />
+    <AlertTitle>{title}</AlertTitle>
+  </HStack>
+  <Badge {...badgeProps}>HTTP {code}</Badge>
+</Flex>
+
+<Button
+  as={Link}
+  to={requestHistoryUrl}
+  size={{ base: "md", md: "sm" }}
+  width={{ base: "100%", md: "auto" }}
+>
+  View Request History
+</Button>
+```
+
+**Mobile Layout Notes:**
+
+1. **Title + Badge stacking:** Below 480px (`sm` breakpoint), badge moves to new line below title
+2. **Badge positioning:** When stacked, left-align the badge (do not center)
+3. **Button width:** Full-width on mobile (`width: "100%"`) for easier touch targeting
+4. **Button size:** Use `md` on mobile, `sm` on desktop
+5. **Max-width constraint:** Add `maxW="320px"` to centered content to prevent overly wide text on tablets
+
 ## API Types
 
 ### Request Schema
@@ -720,7 +871,8 @@ interface DiagnoseArticleInput {
     };
   }>;
   articleDayLimit: number;
-  articleIds: string[];      // min: 1, max: 50
+  skip: number;              // default: 0, pagination offset
+  limit: number;             // default: 10, max: 50, page size
   summaryOnly: boolean;      // default: false
 }
 ```
@@ -728,9 +880,20 @@ interface DiagnoseArticleInput {
 ### Response Schema
 
 ```typescript
+// Success response (feed fetched and parsed)
 interface DiagnoseArticlesResponse {
   results: ArticleDiagnosticResult[] | ArticleDiagnosisSummary[];
   errors: Array<{ articleId: string; message: string }>;
+  total: number;             // Total articles in feed (for pagination)
+}
+
+// Feed-level state response (cannot process articles)
+interface DiagnoseArticlesFeedStateResponse {
+  results: [];
+  errors: Array<{ message: string }>;
+  total: 0;
+  feedState: "unchanged" | "fetch-error" | "parse-error";
+  errorType?: string;        // For error states: timeout, bad-status-code, fetch, internal, invalid
 }
 
 // Full result (when summaryOnly: false)
@@ -812,9 +975,17 @@ interface RateLimitDiagnosticDetails {
 }
 ```
 
-### Outcome Enum Values
+### Enum Values
 
 ```typescript
+// Feed-level states (returned in feedState field when feed cannot be processed due to errors)
+enum FeedState {
+  FetchError = "fetch-error",
+  ParseError = "parse-error",
+  // Note: "unchanged" is no longer a feed-level state - see FeedUnchanged article outcome instead
+}
+
+// Article-level outcomes (returned in outcome field for each article)
 enum ArticleDiagnosisOutcome {
   WouldDeliver = "would-deliver",
   FirstRunBaseline = "first-run-baseline",
@@ -825,6 +996,7 @@ enum ArticleDiagnosisOutcome {
   RateLimitedFeed = "rate-limited-feed",
   RateLimitedMedium = "rate-limited-medium",
   WouldDeliverPassingComparison = "would-deliver-passing-comparison",
+  FeedUnchanged = "feed-unchanged",  // Feed content hash matched - articles returned but not processed
 }
 ```
 
@@ -859,4 +1031,346 @@ The frontend will need to call the diagnostic API with:
 - Feed settings (blocking/passing comparisons, date checks)
 - Connection (medium) IDs and their filters/rate limits
 - Article day limit
-- Pagination (skip/limit for articles)
+- Pagination: `skip` (offset, default 0) and `limit` (page size, default 10, max 50)
+
+The API fetches articles from the feed URL directly and applies pagination to the results. The response includes a `total` count for building pagination UI.
+
+### Handling Feed-Level States
+
+When `feedState` is present in the response, the UI should display a **dedicated full-section state view** instead of the article table. The `results` array will be empty and `total` will be 0.
+
+**Important:** Feed-level states replace the article table entirely. Do NOT show articles alongside feed-level state messages. This avoids user confusion about whether the feed is working.
+
+| State | Display | Show Articles? |
+|-------|---------|----------------|
+| `fetch-error` | Error alert with details | No - feed wasn't fetched |
+| `parse-error` | Error alert with details | No - feed couldn't be parsed |
+
+**Note:** When the feed is unchanged, the API returns articles with `feed-unchanged` outcome. These are displayed in the normal article table with a pattern alert explaining that the feed content hasn't changed.
+
+#### Response Type Detection
+
+```typescript
+// Response type union
+type DiagnoseArticlesApiResponse =
+  | DiagnoseArticlesResponse
+  | DiagnoseArticlesFeedStateResponse;
+
+// Type guard for frontend use
+function isFeedStateResponse(
+  response: DiagnoseArticlesApiResponse
+): response is DiagnoseArticlesFeedStateResponse {
+  return 'feedState' in response && response.feedState !== undefined;
+}
+
+// Usage in component
+if (isFeedStateResponse(response)) {
+  // Show feed-level state UI (unchanged/error)
+  return <FeedLevelStateDisplay feedState={response.feedState} errorType={response.errorType} />;
+} else if (response.total === 0) {
+  // Show "Feed is empty" message (feed parsed but contains no articles)
+  return <EmptyFeedDisplay />;
+} else {
+  // Show article table
+  return <ArticleTable results={response.results} total={response.total} />;
+}
+```
+
+#### Empty Results Distinction
+
+Two scenarios result in an empty article list - they must be displayed differently:
+
+| Scenario | Response Shape | What to Show |
+|----------|----------------|--------------|
+| Feed-level error state | `feedState` present (fetch-error/parse-error), `results: []`, `total: 0` | Feed state error UI |
+| Empty feed | No `feedState`, `results: []`, `total: 0` | "No articles found in feed" message |
+
+**Note:** When the feed is unchanged, the response now includes articles with `feed-unchanged` outcome (not empty results).
+
+#### Feed-Level State Displays
+
+| `feedState` | Display |
+|-------------|---------|
+| `fetch-error` | Error alert with details and "View Request History" button |
+| `parse-error` | Error alert with details and "View Request History" button |
+
+**Note:** The `unchanged` state is now handled as an article-level outcome (`feed-unchanged`). When the feed hasn't changed, articles are displayed in the normal table with a pattern alert.
+
+#### Feed-Level State Mockups
+
+**Note:** The "Unchanged State" mockup has been removed. When the feed is unchanged, articles are now displayed in the normal table with a pattern alert. The unchanged state is handled as an article-level outcome (`feed-unchanged`).
+
+**Error State (fetch-error or parse-error):**
+
+```
+Delivery Preview                 Preview generated: just now  [Refresh]
+-----------------------------------------------------------------
+|  ⚠ Failed to Fetch Feed                                        |
+|                                                                 |
+|  MonitoRSS couldn't fetch this feed. This may be temporary      |
+|  (server issues) or indicate a problem with the feed URL.       |
+|                                                                 |
+|  Error: Request timed out after 30 seconds                      |
+|                                                                 |
+|  [View Request History]                                         |
+-----------------------------------------------------------------
+```
+
+#### Error Type Messages
+
+Display specific messages based on `errorType`:
+
+| `feedState` | `errorType` | User Message |
+|-------------|-------------|--------------|
+| `fetch-error` | `timeout` | The feed server took too long to respond. This is usually temporary. |
+| `fetch-error` | `bad-status-code` | See HTTP Status Code Messages below for specific guidance. |
+| `fetch-error` | `fetch` | Could not connect to the feed server. The server may be down or blocking requests. |
+| `fetch-error` | `internal` | An unexpected error occurred. Try refreshing in a few minutes. |
+| `parse-error` | `timeout` | The feed took too long to parse. It may be unusually large or complex. |
+| `parse-error` | `invalid` | The feed contains invalid XML. Contact the feed provider if this persists. |
+
+#### HTTP Status Code Messages
+
+When `errorType` is `bad-status-code`, the API also returns `httpStatusCode` with the actual HTTP status. Display a structured message with title, explanation, and action:
+
+| HTTP Status | Title | Explanation | Action |
+|-------------|-------|-------------|--------|
+| 401 | Authentication Required | This feed requires authentication to access. | MonitoRSS can only read public feeds. You'll need to find a public alternative. |
+| 403 | Access Blocked by Publisher | The feed's server is refusing access to MonitoRSS. | Many publishers block automated readers. Try finding an official public RSS feed. |
+| 404 | Feed Not Found | The feed doesn't exist at this URL. | Check that the feed URL is correct. The feed may have been moved or removed. |
+| 410 | Feed Permanently Removed | This feed has been permanently deleted by the publisher. | This feed will not recover. Consider removing it and finding an alternative source. |
+| 429 | Rate Limited | The feed server is temporarily blocking requests because too many were made. | This usually resolves automatically. Try increasing your feed's refresh interval. |
+| 500 | Feed Server Error | The feed's server encountered an internal error. | This is usually temporary. The feed should recover once the publisher fixes their server. |
+| 502 | Feed Server Unavailable | The feed server's infrastructure is having issues. | This is usually temporary. Try refreshing in a few minutes. |
+| 503 | Feed Temporarily Unavailable | The feed server is temporarily offline or overloaded. | This is usually temporary. The feed should recover automatically. |
+| 504 | Feed Server Timed Out | The feed server took too long to respond. | This is usually temporary. If it persists, the feed server may have performance issues. |
+| Other | Unexpected Server Response | The feed server returned an unexpected status (HTTP {code}). | Check the feed URL in your browser. This may be a compatibility issue. |
+
+#### HTTP Status Code Visual Design
+
+**Severity Categorization:**
+
+Different HTTP status codes have different implications for user action. Use visual cues to help users understand whether they can fix the issue or should wait.
+
+| Category | Status Codes | Color Scheme | Badge Style | Icon | User Perception |
+|----------|--------------|--------------|-------------|------|-----------------|
+| Auth/Access | 401, 403 | `orange` | Solid (filled) | Lock | "I may need to do something" |
+| Not Found | 404, 410 | `red` | Solid (filled) | Warning | "Something is wrong with my URL" |
+| Rate Limit | 429 | `yellow` | Outline | Clock | "This will fix itself" |
+| Server Error | 500, 502, 503, 504 | `blue` | Outline | Cloud/Server | "Not my problem, wait it out" |
+| Unknown | Others | `gray` | Outline | Question | "Unusual situation" |
+
+**Badge Styling:**
+
+- **4xx Client Errors (user action may help):** Solid/filled background with white text
+- **5xx Server Errors (wait it out):** Outlined badge with colored border/text
+
+This visual distinction helps users quickly understand: "Is this something I can fix, or should I wait?"
+
+**Icon Mapping:**
+
+| Category | Icon | React Icon | Rationale |
+|----------|------|------------|-----------|
+| Auth (401, 403) | Prohibited | `FaBan` (react-icons/fa) | "No entry" symbol - clearly indicates external denial without implying app-level restriction |
+| Not Found (404, 410) | Warning | `WarningTwoIcon` | "The URL doesn't lead anywhere" |
+| Rate Limit (429) | Clock | `TimeIcon` | "Wait a moment" |
+| Server (5xx) | Cloud | `WarningIcon` | "Server-side issue" |
+| Unknown | Question | `QuestionIcon` | "We don't know what happened" |
+
+**Display Format - Desktop:**
+
+```
++------------------------------------------------------------------+
+|  [Ban Icon] Access Blocked by Publisher       [HTTP 403 badge]   |
+|                                                 (orange filled)   |
+|                                                                   |
+|  The feed's server is refusing access to MonitoRSS.              |
+|                                                                   |
+|  Many publishers block automated readers. Try finding an          |
+|  official public RSS feed.                                        |
+|                                                                   |
+|  [View Request History]                                           |
++------------------------------------------------------------------+
+Background: subtle orange tint (orange.900 at 10% opacity)
+Left border: orange.400, 4px
+```
+
+**Layout Design:**
+
+Feed-level error states use a flat layout with a left border accent applied directly to the content container. This avoids "box-in-box" visual nesting where an inner card would appear inside the outer section border.
+
+**Display Format - Server Error (5xx):**
+
+```
++------------------------------------------------------------------+
+|  [Cloud Icon] Feed Server Unavailable         [HTTP 503 badge]   |
+|                                                 (blue outlined)   |
+|                                                                   |
+|  The feed server is temporarily offline or overloaded.            |
+|                                                                   |
+|  This is usually temporary. The feed should recover               |
+|  automatically.                                                   |
+|                                                                   |
+|  [View Request History]                                           |
++------------------------------------------------------------------+
+Background: default (no tint - this is not the user's problem)
+Left border: blue.400, 4px
+```
+
+**Layout Rules:**
+
+- Title and HTTP badge on same line, badge right-aligned
+- Explanation as main text
+- Action as secondary text (slightly muted, `whiteAlpha.800`)
+- "View Request History" button at bottom
+- Left border indicates severity category color
+
+#### Request History Button
+
+For error states, include a prominent action button:
+
+```tsx
+<Button
+  as={Link}
+  to={pages.userFeed(feedId, { tab: UserFeedTabSearchParam.Logs })}
+  size="sm"
+  variant="outline"
+>
+  View Request History
+</Button>
+```
+
+- Opens Request History section in same tab (not new tab)
+- Uses Chakra's `Button` with `variant="outline"`
+- This is the primary recovery action for users encountering feed errors
+
+## Accessibility
+
+### ARIA Attributes by State
+
+All feed-level error states use `role="status"` and `aria-live="polite"` since the Delivery Preview section is not a critical page region that requires assertive announcements.
+
+| State | Role | aria-live | Additional |
+|-------|------|-----------|------------|
+| `fetch-error` | `status` | `polite` | — |
+| `parse-error` | `status` | `polite` | — |
+
+**Note:** When the feed is unchanged, articles are displayed in the normal table with a pattern alert. The pattern alert uses the standard article table accessibility attributes.
+
+### Screen Reader Announcements
+
+Add a visually hidden live region (`srOnly`) that announces state changes:
+
+```tsx
+<Box srOnly aria-live="polite" aria-atomic="true">
+  {feedState === "fetch-error" && (
+    <span>
+      Feed error: Failed to fetch feed. Check Request History for details.
+    </span>
+  )}
+  {feedState === "parse-error" && (
+    <span>
+      Feed error: Failed to parse feed. The feed may have invalid formatting.
+      Check Request History for details.
+    </span>
+  )}
+  {!feedState && results.length > 0 && (
+    <span>Loaded {results.length} of {total} articles in delivery preview.</span>
+  )}
+  {!feedState && total === 0 && (
+    <span>Feed is empty. No articles found in the feed.</span>
+  )}
+</Box>
+```
+
+**Note:** When the feed is unchanged, articles are returned with `feed-unchanged` outcome and announced as normal article results.
+
+### Focus Management
+
+**After clicking Refresh:** Keep focus on the Refresh button. The live region announces the state change without requiring focus movement. Moving focus could be disorienting, especially if the state doesn't change.
+
+**For error states:** Do NOT auto-move focus to the "View Request History" button. Users should first hear/read the error message before being directed to an action.
+
+```tsx
+<Button
+  ref={refreshButtonRef}
+  size="sm"
+  leftIcon={<RepeatIcon aria-hidden="true" />}
+  onClick={refresh}
+  isLoading={isFetching}
+  variant="outline"
+  aria-label={isFetching ? "Refreshing preview..." : "Refresh preview"}
+>
+  Refresh
+</Button>
+```
+
+### Icon Accessibility
+
+All decorative icons should have `aria-hidden="true"` since the text labels convey meaning:
+
+```tsx
+<Icon as={RepeatIcon} boxSize={8} color="gray.400" aria-hidden="true" />
+```
+
+### Color Contrast
+
+Use sufficient contrast for text on dark backgrounds:
+- Body text: `whiteAlpha.800` (not `.700`) for readability
+- Don't rely on color alone - each state has icon + text label as redundant cues
+
+| State | Icon Color | Text Color | Background |
+|-------|------------|------------|------------|
+| Unchanged | `gray.400` | `white` / `whiteAlpha.800` | Default dark |
+| Errors | `red.400` | Default white | `red.900` subtle |
+
+### Keyboard Navigation
+
+- Ensure logical tab order: Refresh button → (for errors) View Request History button
+- Verify focus indicators are visible against dark theme:
+
+```tsx
+<Button
+  _focus={{ boxShadow: "0 0 0 3px rgba(66, 153, 225, 0.6)", outline: "none" }}
+  _focusVisible={{ boxShadow: "0 0 0 3px rgba(66, 153, 225, 0.6)", outline: "none" }}
+>
+```
+
+### Implementation Example
+
+```tsx
+const FeedLevelState = ({ feedState, errorType, feedId, refreshRateSeconds, onRefresh, isFetching }) => {
+  const formattedRefreshInterval = formatRefreshInterval(refreshRateSeconds); // e.g., "10 minutes"
+
+  return (
+    <>
+      {/* Hidden live region for screen reader announcements */}
+      <Box srOnly aria-live="polite" aria-atomic="true">
+        <span>{getAnnouncementText(feedState, errorType)}</span>
+      </Box>
+
+      {/* Note: "unchanged" is no longer a feed-level state. When unchanged,
+          articles are returned with `feed-unchanged` outcome and displayed
+          in the normal article table with a pattern alert. */}
+
+      {/* Error states - use role="status" since this is not a critical page region */}
+      {(feedState === "fetch-error" || feedState === "parse-error") && (
+        <Box role="status" borderRadius="md" borderLeftWidth="4px" borderLeftColor="red.400" p={4}>
+          <HStack spacing={2} mb={2}>
+            <WarningIcon aria-hidden="true" color="red.400" />
+            <Text fontWeight="semibold">
+              {feedState === "fetch-error" ? "Failed to Fetch Feed" : "Failed to Parse Feed"}
+            </Text>
+          </HStack>
+          <Text color="whiteAlpha.900">
+            {getErrorMessage(feedState, errorType)}
+          </Text>
+          <Button as={Link} to={...} size="sm" variant="outline" mt={3}>
+            View Request History
+          </Button>
+        </Box>
+      )}
+    </>
+  );
+};
+```

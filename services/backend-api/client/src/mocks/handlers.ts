@@ -86,7 +86,7 @@ import mockUserFeedManagementInvites from "./data/userFeedManagementInvites";
 import mockUserMe from "./data/userMe";
 import { GetSubscriptionChangePreviewOutput } from "../features/subscriptionProducts";
 import { mockUserFeedDeliveryLogs } from "./data/userFeedDeliveryLogs";
-import { getMockDiagnostics } from "./data/articleDiagnostics";
+import { getMockDiagnostics, getMockFeedState } from "./data/articleDiagnostics";
 import {
   CreateUserFeedUrlValidationInput,
   CreateUserFeedUrlValidationOutput,
@@ -800,10 +800,24 @@ const handlers = [
     const skip = body.skip || 0;
     const limit = body.limit || 10;
 
-    const mockData = getMockDiagnostics();
-    const paginatedResults = mockData.slice(skip, skip + limit);
+    const feedState = getMockFeedState();
 
     await delay(500);
+
+    // When feedState is present, return empty results (feed-level state)
+    if (feedState) {
+      return HttpResponse.json({
+        result: {
+          results: [],
+          total: 0,
+          feedState,
+        },
+      });
+    }
+
+    // Normal case: return article diagnostics
+    const mockData = getMockDiagnostics();
+    const paginatedResults = mockData.slice(skip, skip + limit);
 
     return HttpResponse.json({
       result: {

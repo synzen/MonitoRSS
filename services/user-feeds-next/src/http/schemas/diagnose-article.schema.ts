@@ -64,7 +64,8 @@ export const diagnoseArticleInputSchema = z.object({
   feed: feedSchema,
   mediums: z.array(mediumSchema).default([]),
   articleDayLimit: z.number().positive(),
-  articleIds: z.array(z.string().min(1)).min(1).max(50),
+  skip: z.number().nonnegative().default(0),
+  limit: z.number().positive().max(50).default(10),
   summaryOnly: z.boolean().default(false),
 });
 

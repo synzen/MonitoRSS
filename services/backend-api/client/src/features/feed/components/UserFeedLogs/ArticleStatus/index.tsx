@@ -37,6 +37,7 @@ import {
   ArticleDiagnosticResult,
 } from "../../../types/ArticleDiagnostics";
 import { formatRefreshRateSeconds } from "../../../../../utils/formatRefreshRateSeconds";
+import { FeedLevelStateDisplay } from "./FeedLevelStateDisplay";
 
 dayjs.extend(relativeTime);
 
@@ -87,19 +88,39 @@ const getPatternAlert = (
     };
   }
 
+  // FeedUnchanged is a feed-level state - if any article has it, all do
+  if (outcome === ArticleDiagnosisOutcome.FeedUnchanged && count >= 1) {
+    return {
+      type: "info",
+      message:
+        "The feed's content hasn't changed since it was last checked. MonitoRSS skips unchanged feeds to save resources. Articles will be delivered automatically when new content is detected.",
+    };
+  }
+
   return null;
 };
 
 export const ArticleStatus = () => {
   const { userFeed } = useUserFeedContext();
-  const { results, status, error, fetchStatus, loadMore, refresh, hasMore, total, lastChecked } =
-    useArticleDiagnosticsWithPagination({
-      feedId: userFeed.id,
-    });
+  const {
+    results,
+    status,
+    error,
+    fetchStatus,
+    loadMore,
+    refresh,
+    hasMore,
+    total,
+    lastChecked,
+    feedState,
+  } = useArticleDiagnosticsWithPagination({
+    feedId: userFeed.id,
+  });
 
   const activeConnections = userFeed.connections.filter((c) => !c.disabledCode);
   const hasNoConnections = activeConnections.length === 0;
-  const hasNoData = results.length === 0 && status === "success";
+  const hasFeedLevelState = !!feedState;
+  const hasNoData = results.length === 0 && status === "success" && !hasFeedLevelState;
   const isLoading = status === "loading";
   const isFetching = fetchStatus === "fetching";
 
@@ -128,7 +149,7 @@ export const ArticleStatus = () => {
               Preview generated: {formatLastChecked()}
             </Text>
             <Button
-              size="sm"
+              size={{ base: "md", md: "sm" }}
               leftIcon={<RepeatIcon />}
               onClick={refresh}
               isLoading={isFetching}
@@ -221,7 +242,10 @@ export const ArticleStatus = () => {
             </Text>
           </Box>
         )}
-        {!isLoading && !error && !hasNoConnections && !hasNoData && (
+        {!isLoading && !error && !hasNoConnections && hasFeedLevelState && feedState && (
+          <FeedLevelStateDisplay feedState={feedState} feedId={userFeed.id} />
+        )}
+        {!isLoading && !error && !hasNoConnections && !hasNoData && !hasFeedLevelState && (
           <Stack spacing={4}>
             {patternAlert && (
               <Alert status={patternAlert.type} borderRadius="md">
@@ -231,8 +255,14 @@ export const ArticleStatus = () => {
             )}
             {/* Desktop: Table layout */}
             <Show above="md">
-              <TableContainer border="1px solid" borderColor="gray.700" borderRadius="md">
-                <Table size="sm" variant="simple" aria-labelledby="article-status-table-title">
+              <Box border="1px solid" borderColor="gray.700" borderRadius="md" overflowX="hidden">
+                <Table
+                  size="sm"
+                  variant="simple"
+                  aria-labelledby="article-status-table-title"
+                  tableLayout="fixed"
+                  width="100%"
+                >
                   <Thead>
                     <Tr>
                       <Th width="150px">Status</Th>
@@ -256,7 +286,7 @@ export const ArticleStatus = () => {
                         ))}
                   </Tbody>
                 </Table>
-              </TableContainer>
+              </Box>
             </Show>
             {/* Mobile: Card layout */}
             <Hide above="md">
@@ -286,7 +316,12 @@ export const ArticleStatus = () => {
                 Showing {results.length} of {total} articles
               </Text>
               {hasMore && (
-                <Button size="sm" onClick={loadMore} isLoading={isFetching} variant="outline">
+                <Button
+                  size={{ base: "md", md: "sm" }}
+                  onClick={loadMore}
+                  isLoading={isFetching}
+                  variant="outline"
+                >
                   Load More
                 </Button>
               )}

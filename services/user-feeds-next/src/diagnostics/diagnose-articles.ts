@@ -30,7 +30,6 @@ import {
 export interface DiagnoseArticleDependencies {
   articleFieldStore: ArticleFieldStore;
   deliveryRecordStore: DeliveryRecordStore;
-  fetchArticles: () => Promise<Article[]>;
 }
 
 /**
@@ -174,7 +173,10 @@ export interface DiagnoseArticlesInput {
     };
   }>;
   articleDayLimit: number;
-  articleIds: string[];
+  /** All articles from the feed (needed for comparison logic) */
+  allArticles: Article[];
+  /** Target articles to diagnose (paginated subset) */
+  targetArticles: Article[];
   summaryOnly?: boolean;
 }
 
@@ -182,52 +184,34 @@ export interface DiagnoseArticlesInput {
  * Diagnose what would happen to multiple articles when processed.
  * This is an optimized batch version that runs getArticlesToDeliver ONCE
  * and captures diagnostics for all target articles in a single pass.
+ *
+ * @param input.allArticles - All articles from the feed (needed for comparison logic)
+ * @param input.targetArticles - The paginated subset of articles to diagnose
  */
 export async function diagnoseArticles(
   input: DiagnoseArticlesInput,
   deps: DiagnoseArticleDependencies
 ): Promise<DiagnoseArticlesResponse> {
-  // Handle empty articleIds
-  if (input.articleIds.length === 0) {
+  // Handle empty target articles
+  if (input.targetArticles.length === 0) {
     return { results: [], errors: [] };
   }
 
-  // 1. Fetch all articles once
-  const articles = await deps.fetchArticles();
+  // Build set of target ID hashes for diagnostic context
+  const targetIdHashes = new Set<string>(
+    input.targetArticles.map((a) => a.flattened.idHash)
+  );
 
-  // 2. Find all target articles, collect errors for not found
-  const errors: Array<{ articleId: string; message: string }> = [];
-  const targetArticles: Article[] = [];
-  const targetIdHashes = new Set<string>();
-
-  for (const articleId of input.articleIds) {
-    const article = articles.find((a) => a.flattened.id === articleId);
-    if (!article) {
-      errors.push({
-        articleId,
-        message: `Article with ID "${articleId}" not found in feed`,
-      });
-    } else {
-      targetArticles.push(article);
-      targetIdHashes.add(article.flattened.idHash);
-    }
-  }
-
-  // If no target articles found, return early with just errors
-  if (targetArticles.length === 0) {
-    return { results: [], errors };
-  }
-
-  // 3. Run diagnostic context with ALL target hashes - ONE call to getArticlesToDeliver
+  // Run diagnostic context with ALL target hashes - ONE call to getArticlesToDeliver
   const readOnlyStore = createReadOnlyArticleFieldStore(deps.articleFieldStore);
 
   // Build results inside the context so we can access diagnostic results
   const results = await startDiagnosticContext(targetIdHashes, async () => {
-    // Run comparison logic (will record diagnostics for all targets)
+    // Run comparison logic on ALL articles (will record diagnostics for targets)
     const comparisonResult = await getArticlesToDeliver(
       readOnlyStore,
       input.feed.id,
-      articles,
+      input.allArticles,
       {
         blockingComparisons: input.feed.blockingComparisons,
         passingComparisons: input.feed.passingComparisons,
@@ -247,7 +231,7 @@ export async function diagnoseArticles(
     }));
 
     // For each target in deliverable, run delivery simulation
-    for (const target of targetArticles) {
+    for (const target of input.targetArticles) {
       const targetInDeliverable = comparisonResult.articlesToDeliver.find(
         (a) => a.flattened.idHash === target.flattened.idHash
       );
@@ -265,7 +249,7 @@ export async function diagnoseArticles(
     // Build results inside context to access diagnostic data
     const builtResults: (ArticleDiagnosticResult | ArticleDiagnosisSummary)[] = [];
 
-    for (const article of targetArticles) {
+    for (const article of input.targetArticles) {
       const stages = getDiagnosticResultsForArticle(article.flattened.idHash);
       const { outcome, outcomeReason } = determineOutcome(stages);
 
@@ -292,5 +276,5 @@ export async function diagnoseArticles(
     return builtResults;
   });
 
-  return { results, errors };
+  return { results, errors: [] };
 }

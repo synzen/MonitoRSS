@@ -59,6 +59,7 @@ export const useArticleDiagnosticsWithPagination = ({ feedId, limit, disabled }:
 
   const hasMore = data?.result ? allResults.length < data.result.total : false;
   const total = data?.result?.total ?? 0;
+  const feedState = data?.result?.feedState;
 
   return {
     results: allResults,
@@ -71,5 +72,6 @@ export const useArticleDiagnosticsWithPagination = ({ feedId, limit, disabled }:
     total,
     lastChecked,
     limit: useLimit,
+    feedState,
   };
 };

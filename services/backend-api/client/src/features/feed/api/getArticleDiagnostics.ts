@@ -1,4 +1,4 @@
-import { array, InferType, number, object } from "yup";
+import { array, InferType, mixed, number, object, string } from "yup";
 import fetchRest from "../../../utils/fetchRest";
 import { ArticleDiagnosticResultSchema } from "../types/ArticleDiagnostics";
 
@@ -10,11 +10,18 @@ export interface GetArticleDiagnosticsInput {
   };
 }
 
+const FeedStateSchema = object({
+  state: string().required(),
+  errorType: string(),
+  httpStatusCode: number(),
+});
+
 const GetArticleDiagnosticsOutputSchema = object({
   result: object()
     .shape({
       results: array(ArticleDiagnosticResultSchema).required(),
       total: number().required(),
+      feedState: mixed<{ state: string; errorType?: string; httpStatusCode?: number }>(),
     })
     .required(),
 }).required();

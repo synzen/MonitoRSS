@@ -1313,7 +1313,6 @@ describe("HTTP API (e2e)", () => {
           },
           mediums: [],
           articleDayLimit: 10,
-          articleIds: [DIAGNOSE_ARTICLE_ID_1],
         }),
       });
 
@@ -1335,14 +1334,13 @@ describe("HTTP API (e2e)", () => {
           },
           mediums: [],
           articleDayLimit: 10,
-          articleIds: [DIAGNOSE_ARTICLE_ID_1],
         }),
       });
 
       expect(response.status).toBe(400);
     });
 
-    it("returns 400 for empty articleIds array", async () => {
+    it("returns 400 for invalid limit", async () => {
       const response = await fetch(`${baseUrl}${endpoint}`, {
         method: "POST",
         headers: {
@@ -1358,40 +1356,11 @@ describe("HTTP API (e2e)", () => {
           },
           mediums: [],
           articleDayLimit: 10,
-          articleIds: [],
+          limit: 100, // Max is 50
         }),
       });
 
       expect(response.status).toBe(400);
-    });
-
-    it("returns errors array when some articles not found", async () => {
-      const response = await fetch(`${baseUrl}${endpoint}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "api-key": TEST_API_KEY,
-        },
-        body: JSON.stringify({
-          feed: {
-            id: randomUUID(),
-            url: DIAGNOSE_FEED_URL,
-            blockingComparisons: [],
-            passingComparisons: [],
-          },
-          mediums: [],
-          articleDayLimit: 10,
-          articleIds: ["non-existent-article-id"],
-        }),
-      });
-
-      expect(response.status).toBe(200);
-      const body = (await response.json()) as JsonBody;
-      expect(Array.isArray(body.results)).toBe(true);
-      expect(Array.isArray(body.errors)).toBe(true);
-      const errors = body.errors as JsonBody[];
-      expect(errors.length).toBe(1);
-      expect(errors[0]!.message).toContain("not found");
     });
 
     it("returns FirstRunBaseline outcome for feed with no prior articles", async () => {
@@ -1412,16 +1381,18 @@ describe("HTTP API (e2e)", () => {
           },
           mediums: [],
           articleDayLimit: 10,
-          articleIds: [DIAGNOSE_ARTICLE_ID_1],
+          skip: 0,
+          limit: 10,
         }),
       });
 
       expect(response.status).toBe(200);
       const body = (await response.json()) as JsonBody;
+      expect(body.total).toBe(2); // Feed has 2 articles
       const results = body.results as JsonBody[];
-      expect(results.length).toBe(1);
-      const result = results[0]!;
+      expect(results.length).toBe(2); // Should return both articles
 
+      const result = results[0]!;
       expect(result.articleId).toBe(DIAGNOSE_ARTICLE_ID_1);
       expect(result.outcome).toBe(ArticleDiagnosisOutcome.FirstRunBaseline);
       expect(result.outcomeReason).toBeDefined();
@@ -1478,12 +1449,14 @@ describe("HTTP API (e2e)", () => {
           },
           mediums: [],
           articleDayLimit: 10,
-          articleIds: [DIAGNOSE_ARTICLE_ID_1],
+          skip: 0,
+          limit: 1, // Only get the first article
         }),
       });
 
       expect(response.status).toBe(200);
       const body = (await response.json()) as JsonBody;
+      expect(body.total).toBe(2);
       const results = body.results as JsonBody[];
       const result = results[0]!;
 
@@ -1534,12 +1507,14 @@ describe("HTTP API (e2e)", () => {
           },
           mediums: [],
           articleDayLimit: 10,
-          articleIds: [DIAGNOSE_ARTICLE_ID_1],
+          skip: 0,
+          limit: 1,
         }),
       });
 
       expect(response.status).toBe(200);
       const body = (await response.json()) as JsonBody;
+      expect(body.total).toBe(2);
       const results = body.results as JsonBody[];
       const result = results[0]!;
 
@@ -1598,12 +1573,14 @@ describe("HTTP API (e2e)", () => {
           },
           mediums: [{ id: mediumId }],
           articleDayLimit: 2, // Already at limit
-          articleIds: [DIAGNOSE_ARTICLE_ID_1],
+          skip: 0,
+          limit: 1,
         }),
       });
 
       expect(response.status).toBe(200);
       const body = (await response.json()) as JsonBody;
+      expect(body.total).toBe(2);
       const results = body.results as JsonBody[];
       const result = results[0]!;
 
@@ -1660,12 +1637,14 @@ describe("HTTP API (e2e)", () => {
             },
           ],
           articleDayLimit: 100, // High enough to not hit feed limit
-          articleIds: [DIAGNOSE_ARTICLE_ID_1],
+          skip: 0,
+          limit: 1,
         }),
       });
 
       expect(response.status).toBe(200);
       const body = (await response.json()) as JsonBody;
+      expect(body.total).toBe(2);
       const results = body.results as JsonBody[];
       const result = results[0]!;
 
@@ -1722,12 +1701,14 @@ describe("HTTP API (e2e)", () => {
             },
           ],
           articleDayLimit: 100,
-          articleIds: [DIAGNOSE_ARTICLE_ID_1],
+          skip: 0,
+          limit: 1,
         }),
       });
 
       expect(response.status).toBe(200);
       const body = (await response.json()) as JsonBody;
+      expect(body.total).toBe(2);
       const results = body.results as JsonBody[];
       const result = results[0]!;
 
@@ -1779,12 +1760,14 @@ describe("HTTP API (e2e)", () => {
           },
           mediums: [],
           articleDayLimit: 100,
-          articleIds: [DIAGNOSE_ARTICLE_ID_1], // New article ID, but same title
+          skip: 0,
+          limit: 1, // New article ID, but same title
         }),
       });
 
       expect(response.status).toBe(200);
       const body = (await response.json()) as JsonBody;
+      expect(body.total).toBe(2);
       const results = body.results as JsonBody[];
       const result = results[0]!;
 
@@ -1837,12 +1820,14 @@ describe("HTTP API (e2e)", () => {
           },
           mediums: [],
           articleDayLimit: 100,
-          articleIds: [DIAGNOSE_ARTICLE_ID_1], // Same ID, but description changed
+          skip: 0,
+          limit: 1, // Same ID, but description changed
         }),
       });
 
       expect(response.status).toBe(200);
       const body = (await response.json()) as JsonBody;
+      expect(body.total).toBe(2);
       const results = body.results as JsonBody[];
       const result = results[0]!;
 
@@ -1886,12 +1871,14 @@ describe("HTTP API (e2e)", () => {
           },
           mediums: [],
           articleDayLimit: 100,
-          articleIds: [OLD_DATE_ARTICLE_ID],
+          skip: 0,
+          limit: 10,
         }),
       });
 
       expect(response.status).toBe(200);
       const body = (await response.json()) as JsonBody;
+      expect(body.total).toBe(1);
       const results = body.results as JsonBody[];
       const result = results[0]!;
 
@@ -1899,10 +1886,11 @@ describe("HTTP API (e2e)", () => {
       expect(result.outcomeReason).toContain("older than");
     });
 
-    it("returns results for multiple articleIds", async () => {
+    it("returns paginated results with correct total", async () => {
       const feedId = randomUUID();
 
-      const response = await fetch(`${baseUrl}${endpoint}`, {
+      // First request - get first article only
+      const response1 = await fetch(`${baseUrl}${endpoint}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1917,29 +1905,20 @@ describe("HTTP API (e2e)", () => {
           },
           mediums: [],
           articleDayLimit: 10,
-          articleIds: [DIAGNOSE_ARTICLE_ID_1, DIAGNOSE_ARTICLE_ID_2],
+          skip: 0,
+          limit: 1,
         }),
       });
 
-      expect(response.status).toBe(200);
-      const body = (await response.json()) as JsonBody;
-      const results = body.results as JsonBody[];
-      const errors = body.errors as JsonBody[];
+      expect(response1.status).toBe(200);
+      const body1 = (await response1.json()) as JsonBody;
+      expect(body1.total).toBe(2); // Total articles in feed
+      const results1 = body1.results as JsonBody[];
+      expect(results1.length).toBe(1); // Only 1 returned due to limit
+      expect(results1[0]!.articleId).toBe(DIAGNOSE_ARTICLE_ID_1);
 
-      expect(results.length).toBe(2);
-      expect(errors.length).toBe(0);
-
-      // Both should be FirstRunBaseline since it's a new feed
-      expect(results[0]!.articleId).toBe(DIAGNOSE_ARTICLE_ID_1);
-      expect(results[0]!.outcome).toBe(ArticleDiagnosisOutcome.FirstRunBaseline);
-      expect(results[1]!.articleId).toBe(DIAGNOSE_ARTICLE_ID_2);
-      expect(results[1]!.outcome).toBe(ArticleDiagnosisOutcome.FirstRunBaseline);
-    });
-
-    it("returns partial results with errors when some articles not found", async () => {
-      const feedId = randomUUID();
-
-      const response = await fetch(`${baseUrl}${endpoint}`, {
+      // Second request - get second article
+      const response2 = await fetch(`${baseUrl}${endpoint}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1954,21 +1933,17 @@ describe("HTTP API (e2e)", () => {
           },
           mediums: [],
           articleDayLimit: 10,
-          articleIds: [DIAGNOSE_ARTICLE_ID_1, "non-existent-id"],
+          skip: 1,
+          limit: 1,
         }),
       });
 
-      expect(response.status).toBe(200);
-      const body = (await response.json()) as JsonBody;
-      const results = body.results as JsonBody[];
-      const errors = body.errors as JsonBody[];
-
-      expect(results.length).toBe(1);
-      expect(errors.length).toBe(1);
-
-      expect(results[0]!.articleId).toBe(DIAGNOSE_ARTICLE_ID_1);
-      expect(errors[0]!.articleId).toBe("non-existent-id");
-      expect(errors[0]!.message).toContain("not found");
+      expect(response2.status).toBe(200);
+      const body2 = (await response2.json()) as JsonBody;
+      expect(body2.total).toBe(2);
+      const results2 = body2.results as JsonBody[];
+      expect(results2.length).toBe(1);
+      expect(results2[0]!.articleId).toBe(DIAGNOSE_ARTICLE_ID_2);
     });
 
     it("returns results without stages when summaryOnly is true", async () => {
@@ -1989,13 +1964,15 @@ describe("HTTP API (e2e)", () => {
           },
           mediums: [],
           articleDayLimit: 10,
-          articleIds: [DIAGNOSE_ARTICLE_ID_1],
+          skip: 0,
+          limit: 1,
           summaryOnly: true,
         }),
       });
 
       expect(response.status).toBe(200);
       const body = (await response.json()) as JsonBody;
+      expect(body.total).toBe(2);
       const results = body.results as JsonBody[];
 
       expect(results.length).toBe(1);
@@ -2009,7 +1986,7 @@ describe("HTTP API (e2e)", () => {
       const { articleFieldStore, responseHashStore } = stores;
       const feedId = randomUUID();
 
-      // Store a prior article so it's not a first run
+      // Store a prior article so it's not a first run (enables hash comparison)
       const priorArticle = {
         flattened: { id: "prior-for-hash-test", idHash: "prior-hash-test" },
         raw: {},
@@ -2037,7 +2014,8 @@ describe("HTTP API (e2e)", () => {
           },
           mediums: [],
           articleDayLimit: 10,
-          articleIds: [DIAGNOSE_ARTICLE_ID_1],
+          skip: 0,
+          limit: 10,
         }),
       });
 
@@ -2045,12 +2023,20 @@ describe("HTTP API (e2e)", () => {
       const body = (await response.json()) as JsonBody;
       const results = body.results as JsonBody[];
 
-      expect(results.length).toBe(1);
+      // Should return articles with FeedUnchanged outcome, not empty results
+      expect(body.total).toBe(2); // Feed has 2 articles
+      expect(results.length).toBe(2);
+
+      // All articles should have FeedUnchanged outcome
       expect(results[0]!.outcome).toBe(ArticleDiagnosisOutcome.FeedUnchanged);
-      expect(results[0]!.outcomeReason).toContain("not changed");
+      expect(results[0]!.outcomeReason).toBeDefined();
+      expect(results[0]!.stages).toEqual([]); // No diagnostic stages
+
+      // Should NOT have feedState in response (removed "unchanged" as feed-level state)
+      expect(body.feedState).toBeUndefined();
     });
 
-    it("returns FeedError outcome when feed XML is invalid", async () => {
+    it("returns feedState error when feed XML is invalid", async () => {
       const testServer = getTestFeedRequestsServer();
       const INVALID_XML_FEED_URL = "https://example.com/invalid-xml-feed.xml";
 
@@ -2090,23 +2076,29 @@ describe("HTTP API (e2e)", () => {
             },
             mediums: [],
             articleDayLimit: 10,
-            articleIds: ["some-article-id"],
+            skip: 0,
+            limit: 10,
           }),
         });
 
         expect(response.status).toBe(200);
         const body = (await response.json()) as JsonBody;
         const results = body.results as JsonBody[];
+        const errors = body.errors as JsonBody[];
 
-        expect(results.length).toBe(1);
-        expect(results[0]!.outcome).toBe(ArticleDiagnosisOutcome.FeedError);
-        expect(results[0]!.outcomeReason).toContain("parse error");
+        expect(results.length).toBe(0);
+        expect(body.total).toBe(0);
+        const feedState = body.feedState as JsonBody;
+        expect(feedState.state).toBe("parse-error");
+        expect(feedState.errorType).toBe("invalid");
+        expect(errors.length).toBe(1);
+        expect(errors[0]!.message).toContain("parse error");
       } finally {
         testServer.unregisterUrl(INVALID_XML_FEED_URL);
       }
     });
 
-    it("returns FeedError with errorType 'timeout' when feed request times out", async () => {
+    it("returns feedState fetch-error with timeout when feed request times out", async () => {
       const testServer = getTestFeedRequestsServer();
       const TIMEOUT_FEED_URL = "https://example.com/timeout-feed.xml";
 
@@ -2132,23 +2124,29 @@ describe("HTTP API (e2e)", () => {
             },
             mediums: [],
             articleDayLimit: 10,
-            articleIds: ["some-article-id"],
+            skip: 0,
+            limit: 10,
           }),
         });
 
         expect(response.status).toBe(200);
         const body = (await response.json()) as JsonBody;
         const results = body.results as JsonBody[];
+        const errors = body.errors as JsonBody[];
 
-        expect(results.length).toBe(1);
-        expect(results[0]!.outcome).toBe(ArticleDiagnosisOutcome.FeedError);
-        expect(results[0]!.outcomeReason).toContain("timeout");
+        expect(results.length).toBe(0);
+        expect(body.total).toBe(0);
+        const feedState = body.feedState as JsonBody;
+        expect(feedState.state).toBe("fetch-error");
+        expect(feedState.errorType).toBe("timeout");
+        expect(errors.length).toBe(1);
+        expect(errors[0]!.message).toContain("timeout");
       } finally {
         testServer.unregisterUrl(TIMEOUT_FEED_URL);
       }
     });
 
-    it("returns FeedError with errorType 'bad-status-code' when feed returns non-200", async () => {
+    it("returns feedState fetch-error with bad-status-code and httpStatusCode when feed returns non-200", async () => {
       const testServer = getTestFeedRequestsServer();
       const BAD_STATUS_FEED_URL = "https://example.com/bad-status-feed.xml";
 
@@ -2175,23 +2173,30 @@ describe("HTTP API (e2e)", () => {
             },
             mediums: [],
             articleDayLimit: 10,
-            articleIds: ["some-article-id"],
+            skip: 0,
+            limit: 10,
           }),
         });
 
         expect(response.status).toBe(200);
         const body = (await response.json()) as JsonBody;
         const results = body.results as JsonBody[];
+        const errors = body.errors as JsonBody[];
 
-        expect(results.length).toBe(1);
-        expect(results[0]!.outcome).toBe(ArticleDiagnosisOutcome.FeedError);
-        expect(results[0]!.outcomeReason).toContain("bad-status-code");
+        expect(results.length).toBe(0);
+        expect(body.total).toBe(0);
+        const feedState = body.feedState as JsonBody;
+        expect(feedState.state).toBe("fetch-error");
+        expect(feedState.errorType).toBe("bad-status-code");
+        expect(feedState.httpStatusCode).toBe(503);
+        expect(errors.length).toBe(1);
+        expect(errors[0]!.message).toContain("bad-status-code");
       } finally {
         testServer.unregisterUrl(BAD_STATUS_FEED_URL);
       }
     });
 
-    it("returns FeedError with errorType 'fetch' when network error occurs", async () => {
+    it("returns feedState fetch-error with fetch when network error occurs", async () => {
       const testServer = getTestFeedRequestsServer();
       const FETCH_ERROR_FEED_URL = "https://example.com/fetch-error-feed.xml";
 
@@ -2217,23 +2222,29 @@ describe("HTTP API (e2e)", () => {
             },
             mediums: [],
             articleDayLimit: 10,
-            articleIds: ["some-article-id"],
+            skip: 0,
+            limit: 10,
           }),
         });
 
         expect(response.status).toBe(200);
         const body = (await response.json()) as JsonBody;
         const results = body.results as JsonBody[];
+        const errors = body.errors as JsonBody[];
 
-        expect(results.length).toBe(1);
-        expect(results[0]!.outcome).toBe(ArticleDiagnosisOutcome.FeedError);
-        expect(results[0]!.outcomeReason).toContain("fetch");
+        expect(results.length).toBe(0);
+        expect(body.total).toBe(0);
+        const feedState = body.feedState as JsonBody;
+        expect(feedState.state).toBe("fetch-error");
+        expect(feedState.errorType).toBe("fetch");
+        expect(errors.length).toBe(1);
+        expect(errors[0]!.message).toContain("fetch");
       } finally {
         testServer.unregisterUrl(FETCH_ERROR_FEED_URL);
       }
     });
 
-    it("returns FeedError with errorType 'internal' when service has internal error", async () => {
+    it("returns feedState fetch-error with internal when service has internal error", async () => {
       const testServer = getTestFeedRequestsServer();
       const INTERNAL_ERROR_FEED_URL =
         "https://example.com/internal-error-feed.xml";
@@ -2260,23 +2271,29 @@ describe("HTTP API (e2e)", () => {
             },
             mediums: [],
             articleDayLimit: 10,
-            articleIds: ["some-article-id"],
+            skip: 0,
+            limit: 10,
           }),
         });
 
         expect(response.status).toBe(200);
         const body = (await response.json()) as JsonBody;
         const results = body.results as JsonBody[];
+        const errors = body.errors as JsonBody[];
 
-        expect(results.length).toBe(1);
-        expect(results[0]!.outcome).toBe(ArticleDiagnosisOutcome.FeedError);
-        expect(results[0]!.outcomeReason).toContain("internal");
+        expect(results.length).toBe(0);
+        expect(body.total).toBe(0);
+        const feedState = body.feedState as JsonBody;
+        expect(feedState.state).toBe("fetch-error");
+        expect(feedState.errorType).toBe("internal");
+        expect(errors.length).toBe(1);
+        expect(errors[0]!.message).toContain("internal");
       } finally {
         testServer.unregisterUrl(INTERNAL_ERROR_FEED_URL);
       }
     });
 
-    it("returns FeedError with errorType 'parse' when feed-requests cannot parse response", async () => {
+    it("returns feedState fetch-error with parse when feed-requests cannot parse response", async () => {
       const testServer = getTestFeedRequestsServer();
       const PARSE_ERROR_FEED_URL = "https://example.com/parse-error-feed.xml";
 
@@ -2302,17 +2319,23 @@ describe("HTTP API (e2e)", () => {
             },
             mediums: [],
             articleDayLimit: 10,
-            articleIds: ["some-article-id"],
+            skip: 0,
+            limit: 10,
           }),
         });
 
         expect(response.status).toBe(200);
         const body = (await response.json()) as JsonBody;
         const results = body.results as JsonBody[];
+        const errors = body.errors as JsonBody[];
 
-        expect(results.length).toBe(1);
-        expect(results[0]!.outcome).toBe(ArticleDiagnosisOutcome.FeedError);
-        expect(results[0]!.outcomeReason).toContain("parse");
+        expect(results.length).toBe(0);
+        expect(body.total).toBe(0);
+        const feedState = body.feedState as JsonBody;
+        expect(feedState.state).toBe("fetch-error");
+        expect(feedState.errorType).toBe("parse");
+        expect(errors.length).toBe(1);
+        expect(errors[0]!.message).toContain("parse");
       } finally {
         testServer.unregisterUrl(PARSE_ERROR_FEED_URL);
       }

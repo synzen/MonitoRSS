@@ -41,17 +41,18 @@ describe("diagnoseArticle", () => {
     clearInMemoryStore();
   });
 
-  function createMockDependencies(
-    articles: Article[]
-  ): DiagnoseArticleDependencies {
+  function createMockDependencies(): DiagnoseArticleDependencies {
     return {
       articleFieldStore: inMemoryArticleFieldStore,
       deliveryRecordStore: createInMemoryDeliveryRecordStore(),
-      fetchArticles: async () => articles,
     };
   }
 
-  function createInput(overrides: Partial<DiagnoseArticlesInput> = {}): DiagnoseArticlesInput {
+  function createInput(
+    articles: Article[],
+    targetArticles?: Article[],
+    overrides: Partial<DiagnoseArticlesInput> = {}
+  ): DiagnoseArticlesInput {
     return {
       feed: {
         id: "feed-1",
@@ -60,7 +61,8 @@ describe("diagnoseArticle", () => {
       },
       mediums: [],
       articleDayLimit: 20,
-      articleIds: ["article-1"],
+      allArticles: articles,
+      targetArticles: targetArticles ?? articles,
       ...overrides,
     };
   }
@@ -68,8 +70,8 @@ describe("diagnoseArticle", () => {
   describe("FirstRunBaseline outcome", () => {
     it("returns FirstRunBaseline when no prior articles stored", async () => {
       const articles = [createArticle("article-1", { title: "Test Article" })];
-      const deps = createMockDependencies(articles);
-      const input = createInput();
+      const deps = createMockDependencies();
+      const input = createInput(articles);
 
       const { results } = await diagnoseArticles(input, deps);
 
@@ -81,8 +83,8 @@ describe("diagnoseArticle", () => {
   describe("DuplicateId outcome", () => {
     it("returns DuplicateId when article ID already seen", async () => {
       const articles = [createArticle("article-1", { title: "Test Article" })];
-      const deps = createMockDependencies(articles);
-      const input = createInput();
+      const deps = createMockDependencies();
+      const input = createInput(articles);
 
       // First run to store the article
       await inMemoryArticleFieldStore.startContext(async () => {
@@ -104,14 +106,14 @@ describe("diagnoseArticle", () => {
       // New article with same title but different ID
       const newArticle = createArticle("article-new", { title: "Same Title" });
 
-      const deps = createMockDependencies([existingArticle, newArticle]);
-      const input = createInput({
+      const deps = createMockDependencies();
+      const allArticles = [existingArticle, newArticle];
+      const input = createInput(allArticles, [newArticle], {
         feed: {
           id: "feed-1",
           blockingComparisons: ["title"],
           passingComparisons: [],
         },
-        articleIds: ["article-new"],
       });
 
       // Store the first article with blocking comparison
@@ -135,14 +137,13 @@ describe("diagnoseArticle", () => {
   describe("WouldDeliverPassingComparison outcome", () => {
     it("returns WouldDeliverPassingComparison when seen article has changed field", async () => {
       const article = createArticle("article-1", { title: "Updated Title" });
-      const deps = createMockDependencies([article]);
-      const input = createInput({
+      const deps = createMockDependencies();
+      const input = createInput([article], [article], {
         feed: {
           id: "feed-1",
           blockingComparisons: [],
           passingComparisons: ["title"],
         },
-        articleIds: ["article-1"],
       });
 
       // Store the article with original title
@@ -172,8 +173,8 @@ describe("diagnoseArticle", () => {
         { title: "Old Article" },
         { date: oldDate }
       );
-      const deps = createMockDependencies([oldArticle]);
-      const input = createInput({
+      const deps = createMockDependencies();
+      const input = createInput([oldArticle], [oldArticle], {
         feed: {
           id: "feed-1",
           blockingComparisons: [],
@@ -182,7 +183,6 @@ describe("diagnoseArticle", () => {
             oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24, // 1 day
           },
         },
-        articleIds: ["article-old"],
       });
 
       // Store a baseline article first
@@ -206,7 +206,6 @@ describe("diagnoseArticle", () => {
       const deps: DiagnoseArticleDependencies = {
         articleFieldStore: inMemoryArticleFieldStore,
         deliveryRecordStore,
-        fetchArticles: async () => [article],
       };
 
       // Store baseline to make it not first run
@@ -231,8 +230,7 @@ describe("diagnoseArticle", () => {
         await deliveryRecordStore.store("feed-1", deliveries);
       });
 
-      const input = createInput({
-        articleIds: ["article-new"],
+      const input = createInput([article], [article], {
         articleDayLimit: 5, // Already at limit
       });
 
@@ -246,10 +244,8 @@ describe("diagnoseArticle", () => {
   describe("WouldDeliver outcome", () => {
     it("returns WouldDeliver when article passes all checks", async () => {
       const article = createArticle("article-new", { title: "New Article" });
-      const deps = createMockDependencies([article]);
-      const input = createInput({
-        articleIds: ["article-new"],
-      });
+      const deps = createMockDependencies();
+      const input = createInput([article]);
 
       // Store baseline to make it not first run
       const baselineArticle = createArticle("baseline", { title: "Baseline" });
@@ -265,27 +261,11 @@ describe("diagnoseArticle", () => {
     });
   });
 
-  describe("article not found", () => {
-    it("returns error when article ID not found in feed", async () => {
-      const articles = [createArticle("other-article", { title: "Other" })];
-      const deps = createMockDependencies(articles);
-      const input = createInput({
-        articleIds: ["nonexistent-article"],
-      });
-
-      const { results, errors } = await diagnoseArticles(input, deps);
-
-      expect(results).toHaveLength(0);
-      expect(errors).toHaveLength(1);
-      expect(errors[0]?.message).toContain("not found");
-    });
-  });
-
   describe("stages recorded", () => {
     it("includes FeedState stage in result", async () => {
       const article = createArticle("article-1", { title: "Test" });
-      const deps = createMockDependencies([article]);
-      const input = createInput();
+      const deps = createMockDependencies();
+      const input = createInput([article]);
 
       const { results } = await diagnoseArticles(input, deps);
       const result = results[0] as { stages: Array<{ stage: DiagnosticStage }> };
@@ -300,7 +280,7 @@ describe("diagnoseArticle", () => {
   describe("FilteredByMediumFilter outcome", () => {
     it("returns FilteredByMediumFilter when medium filter blocks article", async () => {
       const article = createArticle("article-new", { title: "No Match Here" });
-      const deps = createMockDependencies([article]);
+      const deps = createMockDependencies();
 
       // Create a filter that requires "REQUIRED_KEYWORD" in title
       const blockingFilter: LogicalExpression = {
@@ -316,8 +296,7 @@ describe("diagnoseArticle", () => {
         ],
       };
 
-      const input = createInput({
-        articleIds: ["article-new"],
+      const input = createInput([article], [article], {
         mediums: [
           {
             id: "medium-1",
@@ -343,7 +322,7 @@ describe("diagnoseArticle", () => {
 
     it("records MediumFilter stage when filter is evaluated", async () => {
       const article = createArticle("article-new", { title: "Test Article" });
-      const deps = createMockDependencies([article]);
+      const deps = createMockDependencies();
 
       // Create a filter that will pass
       const passingFilter: LogicalExpression = {
@@ -359,8 +338,7 @@ describe("diagnoseArticle", () => {
         ],
       };
 
-      const input = createInput({
-        articleIds: ["article-new"],
+      const input = createInput([article], [article], {
         mediums: [
           {
             id: "medium-1",
@@ -396,7 +374,6 @@ describe("diagnoseArticle", () => {
       const deps: DiagnoseArticleDependencies = {
         articleFieldStore: inMemoryArticleFieldStore,
         deliveryRecordStore,
-        fetchArticles: async () => [article],
       };
 
       // Store baseline to make it not first run
@@ -421,8 +398,7 @@ describe("diagnoseArticle", () => {
         await deliveryRecordStore.store("feed-1", deliveries);
       });
 
-      const input = createInput({
-        articleIds: ["article-new"],
+      const input = createInput([article], [article], {
         articleDayLimit: 100, // High feed limit so it doesn't trigger
         mediums: [
           {
@@ -447,17 +423,16 @@ describe("diagnoseArticles (batch)", () => {
     clearInMemoryStore();
   });
 
-  function createMockDependencies(
-    articles: Article[]
-  ): DiagnoseArticleDependencies {
+  function createMockDependencies(): DiagnoseArticleDependencies {
     return {
       articleFieldStore: inMemoryArticleFieldStore,
       deliveryRecordStore: createInMemoryDeliveryRecordStore(),
-      fetchArticles: async () => articles,
     };
   }
 
   function createBatchInput(
+    allArticles: Article[],
+    targetArticles?: Article[],
     overrides: Partial<DiagnoseArticlesInput> = {}
   ): DiagnoseArticlesInput {
     return {
@@ -468,22 +443,21 @@ describe("diagnoseArticles (batch)", () => {
       },
       mediums: [],
       articleDayLimit: 20,
-      articleIds: ["article-1"],
+      allArticles,
+      targetArticles: targetArticles ?? allArticles,
       ...overrides,
     };
   }
 
-  describe("returns results for all found articles", () => {
-    it("returns results for multiple articleIds", async () => {
+  describe("returns results for all target articles", () => {
+    it("returns results for multiple target articles", async () => {
       const articles = [
         createArticle("article-1", { title: "Article 1" }),
         createArticle("article-2", { title: "Article 2" }),
         createArticle("article-3", { title: "Article 3" }),
       ];
-      const deps = createMockDependencies(articles);
-      const input = createBatchInput({
-        articleIds: ["article-1", "article-2", "article-3"],
-      });
+      const deps = createMockDependencies();
+      const input = createBatchInput(articles);
 
       const response = await diagnoseArticles(input, deps);
 
@@ -497,38 +471,21 @@ describe("diagnoseArticles (batch)", () => {
     });
   });
 
-  describe("returns partial results when some articles not found", () => {
-    it("returns results for found articles and errors for not found", async () => {
-      const articles = [
+  describe("diagnoses only target articles from all articles", () => {
+    it("diagnoses subset of articles when targetArticles differs from allArticles", async () => {
+      const allArticles = [
         createArticle("article-1", { title: "Article 1" }),
+        createArticle("article-2", { title: "Article 2" }),
         createArticle("article-3", { title: "Article 3" }),
       ];
-      const deps = createMockDependencies(articles);
-      const input = createBatchInput({
-        articleIds: ["article-1", "article-2", "article-3"],
-      });
+      const targetArticles = [allArticles[1]!]; // Only diagnose article-2
+      const deps = createMockDependencies();
+      const input = createBatchInput(allArticles, targetArticles);
 
       const response = await diagnoseArticles(input, deps);
 
-      expect(response.results).toHaveLength(2);
-      expect(response.errors).toHaveLength(1);
-      expect(response.errors[0]?.articleId).toBe("article-2");
-      expect(response.errors[0]?.message).toContain("not found");
-    });
-  });
-
-  describe("handles all articles not found", () => {
-    it("returns only errors when no articles found", async () => {
-      const articles: Article[] = [];
-      const deps = createMockDependencies(articles);
-      const input = createBatchInput({
-        articleIds: ["article-1", "article-2"],
-      });
-
-      const response = await diagnoseArticles(input, deps);
-
-      expect(response.results).toHaveLength(0);
-      expect(response.errors).toHaveLength(2);
+      expect(response.results).toHaveLength(1);
+      expect(response.results[0]?.articleId).toBe("article-2");
     });
   });
 
@@ -538,10 +495,8 @@ describe("diagnoseArticles (batch)", () => {
         createArticle("article-1", { title: "Article 1" }),
         createArticle("article-2", { title: "Article 2" }),
       ];
-      const deps = createMockDependencies(articles);
-      const input = createBatchInput({
-        articleIds: ["article-1", "article-2"],
-      });
+      const deps = createMockDependencies();
+      const input = createBatchInput(articles);
 
       const response = await diagnoseArticles(input, deps);
 
@@ -558,9 +513,8 @@ describe("diagnoseArticles (batch)", () => {
   describe("summaryOnly option", () => {
     it("summaryOnly=true omits stages from results", async () => {
       const articles = [createArticle("article-1", { title: "Article 1" })];
-      const deps = createMockDependencies(articles);
-      const input = createBatchInput({
-        articleIds: ["article-1"],
+      const deps = createMockDependencies();
+      const input = createBatchInput(articles, articles, {
         summaryOnly: true,
       });
 
@@ -574,9 +528,8 @@ describe("diagnoseArticles (batch)", () => {
 
     it("summaryOnly=false includes stages in results", async () => {
       const articles = [createArticle("article-1", { title: "Article 1" })];
-      const deps = createMockDependencies(articles);
-      const input = createBatchInput({
-        articleIds: ["article-1"],
+      const deps = createMockDependencies();
+      const input = createBatchInput(articles, articles, {
         summaryOnly: false,
       });
 
@@ -590,13 +543,11 @@ describe("diagnoseArticles (batch)", () => {
     });
   });
 
-  describe("empty articleIds", () => {
-    it("returns empty results and no errors for empty articleIds", async () => {
-      const articles = [createArticle("article-1", { title: "Article 1" })];
-      const deps = createMockDependencies(articles);
-      const input = createBatchInput({
-        articleIds: [],
-      });
+  describe("empty targetArticles", () => {
+    it("returns empty results and no errors for empty targetArticles", async () => {
+      const allArticles = [createArticle("article-1", { title: "Article 1" })];
+      const deps = createMockDependencies();
+      const input = createBatchInput(allArticles, []);
 
       const response = await diagnoseArticles(input, deps);
 

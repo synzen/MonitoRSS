@@ -9,8 +9,9 @@ import { jsonResponse, parseJsonBody } from "../utils";
 import { diagnoseArticleInputSchema } from "../schemas";
 import {
   diagnoseArticles,
-  type DiagnoseArticlesInput,
+  FeedState,
   ArticleDiagnosisOutcome,
+  type DiagnoseArticlesInput,
 } from "../../diagnostics";
 import type { ArticleFieldStore } from "../../articles/comparison";
 import type { DeliveryRecordStore } from "../../stores/interfaces/delivery-record-store";
@@ -19,7 +20,46 @@ import type { LogicalExpression } from "../../articles/filters";
 import {
   fetchAndParseFeed,
   getHashToCompare,
+  type FeedProcessingResult,
 } from "../../feeds/shared-processing";
+
+type FeedErrorResult = Extract<
+  FeedProcessingResult,
+  { status: "fetch-error" } | { status: "parse-error" }
+>;
+
+function createErrorResponse(feedResult: FeedErrorResult): Response {
+  if (feedResult.status === "fetch-error") {
+    return jsonResponse({
+      results: [],
+      errors: [
+        {
+          message: `Feed fetch error (${feedResult.errorType}): ${feedResult.message}`,
+        },
+      ],
+      total: 0,
+      feedState: {
+        state: FeedState.FetchError,
+        errorType: feedResult.errorType,
+        httpStatusCode: feedResult.statusCode,
+      },
+    });
+  }
+
+  return jsonResponse({
+    results: [],
+    errors: [
+      {
+        message: `Feed parse error (${feedResult.errorType}): ${feedResult.message}`,
+      },
+    ],
+    total: 0,
+    feedState: {
+      state: FeedState.ParseError,
+      errorType: feedResult.errorType,
+    },
+  });
+}
 
 export async function handleDiagnoseArticle(
   req: Request,
@@ -52,53 +92,72 @@ export async function handleDiagnoseArticle(
         hashToCompare,
       });
 
-      // Handle non-success results
+      // Handle matched-hash by re-fetching without hash comparison to get articles
       if (feedResult.status === "matched-hash") {
-        return jsonResponse({
-          results: input.articleIds.map((articleId) => ({
-            articleId,
-            articleIdHash: null,
-            articleTitle: null,
-            outcome: ArticleDiagnosisOutcome.FeedUnchanged,
-            outcomeReason:
-              "Feed content has not changed since last processing.",
-          })),
-          errors: [],
+        // Re-fetch without hash comparison to get the actual articles
+        const feedResultWithArticles = await fetchAndParseFeed({
+          feed: {
+            url: input.feed.url,
+            formatOptions: input.feed.formatOptions,
+            externalProperties: input.feed.externalProperties,
+            requestLookupDetails: input.feed.requestLookupDetails,
+          },
+          feedRequestsServiceHost,
+          // No hashToCompare - force full fetch
         });
-      }
 
-      if (feedResult.status === "pending") {
-        return jsonResponse({
-          results: [],
-          errors: [
-            {
-              articleId: "*",
-              message: "Feed request is pending. Try again later.",
-            },
-          ],
-        });
+        // If re-fetch fails, treat as error (shouldn't happen normally)
+        if (
+          feedResultWithArticles.status === "fetch-error" ||
+          feedResultWithArticles.status === "parse-error"
+        ) {
+          return createErrorResponse(feedResultWithArticles);
+        }
+
+        // matched-hash on re-fetch shouldn't happen since we didn't pass hashToCompare
+        if (feedResultWithArticles.status === "matched-hash") {
+          return jsonResponse({
+            results: [],
+            errors: [{ message: "Unexpected matched-hash on re-fetch" }],
+            total: 0,
+          });
+        }
+
+        // Return articles with FeedUnchanged outcome
+        const allArticles = feedResultWithArticles.articles;
+        const total = allArticles.length;
+        const targetArticles = allArticles.slice(
+          input.skip,
+          input.skip + input.limit
+        );
+
+        const results = targetArticles.map((article) => ({
+          articleId: article.flattened.id,
+          articleIdHash: article.flattened.idHash,
+          articleTitle: article.flattened.title || null,
+          outcome: ArticleDiagnosisOutcome.FeedUnchanged,
+          outcomeReason:
+            "Feed content unchanged since last check. Articles will be processed when new content is detected.",
+          stages: [],
+        }));
+
+        return jsonResponse({ results, errors: [], total });
       }
 
       if (
         feedResult.status === "fetch-error" ||
         feedResult.status === "parse-error"
       ) {
-        const errorDesc =
-          feedResult.status === "fetch-error" ? "fetch" : "parse";
-        return jsonResponse({
-          results: input.articleIds.map((articleId) => ({
-            articleId,
-            articleIdHash: null,
-            articleTitle: null,
-            outcome: ArticleDiagnosisOutcome.FeedError,
-            outcomeReason: `Feed ${errorDesc} error (${feedResult.errorType}): ${feedResult.message}`,
-          })),
-          errors: [],
-        });
+        return createErrorResponse(feedResult);
       }
 
-      // Success - continue with diagnosis
-      const fetchArticles = async () => feedResult.articles;
+      // Success - apply pagination and continue with diagnosis
+      const allArticles = feedResult.articles;
+      const total = allArticles.length;
+      const targetArticles = allArticles.slice(
+        input.skip,
+        input.skip + input.limit
+      );
 
       // Map mediums to properly type the filter expressions
       const mediums: DiagnoseArticlesInput["mediums"] = input.mediums.map(
@@ -121,17 +180,17 @@ export async function handleDiagnoseArticle(
           },
           mediums,
           articleDayLimit: input.articleDayLimit,
-          articleIds: input.articleIds,
+          allArticles,
+          targetArticles,
           summaryOnly: input.summaryOnly,
         },
         {
           articleFieldStore,
           deliveryRecordStore,
-          fetchArticles,
         }
       );
 
-      return jsonResponse({ results, errors });
+      return jsonResponse({ results, errors, total });
     } catch (err) {
       // Handle Zod validation errors
       if (err instanceof z.ZodError) {

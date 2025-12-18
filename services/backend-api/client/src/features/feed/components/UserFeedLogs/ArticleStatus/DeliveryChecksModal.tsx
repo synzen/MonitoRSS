@@ -16,7 +16,15 @@ import {
   Stack,
   Text,
 } from "@chakra-ui/react";
-import { CheckIcon, MinusIcon, CloseIcon, ChevronRightIcon, InfoIcon } from "@chakra-ui/icons";
+import {
+  CheckIcon,
+  MinusIcon,
+  CloseIcon,
+  ChevronRightIcon,
+  InfoIcon,
+  RepeatIcon,
+  WarningIcon,
+} from "@chakra-ui/icons";
 import { formatRefreshRateSeconds } from "../../../../../utils/formatRefreshRateSeconds";
 import {
   ArticleDiagnosisOutcome,
@@ -336,6 +344,68 @@ const LearningPhaseContent = ({ refreshRateSeconds }: LearningPhaseContentProps)
   );
 };
 
+const FeedUnchangedContent = () => (
+  <Box textAlign="center" py={8}>
+    <Box
+      display="inline-flex"
+      alignItems="center"
+      justifyContent="center"
+      bg="gray.700"
+      borderRadius="full"
+      p={3}
+      mb={4}
+    >
+      <RepeatIcon boxSize={6} color="gray.400" />
+    </Box>
+    <Text fontSize="lg" fontWeight="semibold" mb={2}>
+      Feed Content Unchanged
+    </Text>
+    <Text color="whiteAlpha.800" maxW="md" mx="auto">
+      The feed content has not changed since it was last checked. MonitoRSS skips processing when
+      the feed is identical to avoid unnecessary work.
+    </Text>
+    <Text color="whiteAlpha.600" mt={4} fontSize="sm">
+      Delivery checks run when new or updated content is detected.
+    </Text>
+  </Box>
+);
+
+interface FeedErrorContentProps {
+  outcomeReason: string;
+}
+
+const FeedErrorContent = ({ outcomeReason }: FeedErrorContentProps) => (
+  <Box textAlign="center" py={8}>
+    <Box
+      display="inline-flex"
+      alignItems="center"
+      justifyContent="center"
+      bg="red.900"
+      borderRadius="full"
+      p={3}
+      mb={4}
+    >
+      <WarningIcon boxSize={6} color="red.300" />
+    </Box>
+    <Text fontSize="lg" fontWeight="semibold" mb={2}>
+      Feed Error
+    </Text>
+    <Text color="whiteAlpha.800" maxW="md" mx="auto">
+      MonitoRSS could not fetch or process this feed. Article-level checks were not performed.
+    </Text>
+    {outcomeReason && (
+      <Box bg="red.900" p={3} borderRadius="md" mt={4} maxW="md" mx="auto">
+        <Text fontSize="sm" color="red.200" fontFamily="mono">
+          {outcomeReason}
+        </Text>
+      </Box>
+    )}
+    <Text color="whiteAlpha.600" mt={4} fontSize="sm">
+      Request History shows the full details for this fetch attempt.
+    </Text>
+  </Box>
+);
+
 export const DeliveryChecksModal = ({ isOpen, onClose, result, initialMediumId }: Props) => {
   const { userFeed } = useUserFeedContext();
   const [selectedMediumId, setSelectedMediumId] = useState(
@@ -343,6 +413,9 @@ export const DeliveryChecksModal = ({ isOpen, onClose, result, initialMediumId }
   );
 
   const isLearningPhase = result.outcome === ArticleDiagnosisOutcome.FirstRunBaseline;
+  const isFeedUnchanged = result.outcome === ArticleDiagnosisOutcome.FeedUnchanged;
+  const isFeedError = result.outcome === ArticleDiagnosisOutcome.FeedError;
+  const hasNoStages = isLearningPhase || isFeedUnchanged || isFeedError;
 
   useEffect(() => {
     if (isOpen && initialMediumId) {
@@ -375,9 +448,12 @@ export const DeliveryChecksModal = ({ isOpen, onClose, result, initialMediumId }
         </ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          {isLearningPhase ? (
+          {isLearningPhase && (
             <LearningPhaseContent refreshRateSeconds={userFeed.refreshRateSeconds} />
-          ) : (
+          )}
+          {isFeedUnchanged && <FeedUnchangedContent />}
+          {isFeedError && <FeedErrorContent outcomeReason={result.outcomeReason} />}
+          {!hasNoStages && (
             <Stack spacing={4}>
               {result.mediumResults.length > 1 && (
                 <Box>

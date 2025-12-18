@@ -47,8 +47,12 @@ export interface HashStore {
 export type FeedProcessingResult =
   | { status: "success"; articles: Article[]; bodyHash?: string }
   | { status: "matched-hash" }
-  | { status: "pending" }
-  | { status: "fetch-error"; errorType: string; message: string }
+  | {
+      status: "fetch-error";
+      errorType: string;
+      message: string;
+      statusCode?: number;
+    }
   | { status: "parse-error"; errorType: string; message: string };
 
 export interface FeedProcessingOptions {
@@ -128,6 +132,7 @@ export async function fetchAndParseFeed(
         status: "fetch-error",
         errorType: "bad-status-code",
         message: err.message,
+        statusCode: err.statusCode,
       };
     }
     if (err instanceof FeedRequestFetchException) {
@@ -148,12 +153,6 @@ export async function fetchAndParseFeed(
   }
 
   // 2. Check response status
-  if (
-    !response ||
-    response.requestStatus === FeedResponseRequestStatus.Pending
-  ) {
-    return { status: "pending" };
-  }
   if (response.requestStatus === FeedResponseRequestStatus.MatchedHash) {
     return { status: "matched-hash" };
   }

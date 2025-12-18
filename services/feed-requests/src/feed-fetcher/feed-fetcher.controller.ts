@@ -169,30 +169,24 @@ export class FeedFetcherController {
 
     // If there's no text, response must be fetched to be cached
     if (!latestRequest) {
-      if (data.executeFetchIfNotExists) {
-        const savedData = await this.feedFetcherService.fetchAndSaveResponse(
-          data.url,
-          {
-            saveResponseToObjectStorage: data.debug,
-            lookupDetails: data.lookupDetails,
-            source: undefined,
-            headers: data.lookupDetails?.headers,
-          },
-        );
+      const savedData = await this.feedFetcherService.fetchAndSaveResponse(
+        data.url,
+        {
+          saveResponseToObjectStorage: data.debug,
+          lookupDetails: data.lookupDetails,
+          source: undefined,
+          headers: data.lookupDetails?.headers,
+        },
+      );
 
-        await this.partitionedRequestsStoreService.flushInserts([
-          savedData.request,
-        ]);
+      await this.partitionedRequestsStoreService.flushInserts([
+        savedData.request,
+      ]);
 
-        latestRequest = {
-          request: { ...savedData.request },
-          decodedResponseText: savedData.responseText,
-        };
-      } else {
-        return {
-          requestStatus: 'PENDING' as const,
-        };
-      }
+      latestRequest = {
+        request: { ...savedData.request },
+        decodedResponseText: savedData.responseText,
+      };
     }
 
     const latestRequestStatus = latestRequest.request.status;

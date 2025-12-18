@@ -1,4 +1,19 @@
 /**
+ * Feed-level state returned when articles cannot be diagnosed
+ * (feed is unchanged, pending, or has errors)
+ */
+export enum FeedState {
+  /** Feed content is unchanged (hash matches stored hash) */
+  Unchanged = "unchanged",
+  /** Feed request is pending */
+  Pending = "pending",
+  /** Feed fetch failed (network, timeout, bad status code, etc.) */
+  FetchError = "fetch-error",
+  /** Feed parse failed (invalid XML, timeout, etc.) */
+  ParseError = "parse-error",
+}
+
+/**
  * Primary diagnosis outcome - why the article would or would not be delivered
  */
 export enum ArticleDiagnosisOutcome {

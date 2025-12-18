@@ -31,7 +31,6 @@ export enum GetFeedArticlesRequestStatus {
   FetchError = "FETCH_ERROR",
   BadStatusCode = "BAD_STATUS_CODE",
   TimedOut = "TIMED_OUT",
-  Pending = "PENDING",
 }
 
 /**
