@@ -1,22 +1,8 @@
 import { feedV2EventSchema, type FeedV2Event } from "../shared/schemas";
 import { z } from "zod";
 import { logger } from "../shared/utils";
-import { fetchFeed, FeedResponseRequestStatus } from "../feed-fetcher";
-import {
-  FeedRequestBadStatusCodeException,
-  FeedRequestFetchException,
-  FeedRequestInternalException,
-  FeedRequestParseException,
-  FeedRequestTimedOutException,
-} from "../feed-fetcher/exceptions";
-import {
-  FeedParseTimeoutException,
-  InvalidFeedException,
-  getParserRules,
-  type ExternalFetchFn,
-  type ExternalFeedProperty,
-} from "../articles/parser";
-import { parseArticlesFromXmlWithWorkers as parseArticlesFromXml } from "../articles/parser/worker";
+import type { ExternalFeedProperty } from "../articles/parser";
+import { fetchAndParseFeed, getHashToCompare } from "./shared-processing";
 import {
   getArticlesToDeliver,
   inMemoryArticleFieldStore,
@@ -459,156 +445,95 @@ async function handleFeedV2EventInternal({
   feedRequestsServiceHost: string;
 }): Promise<ArticleDeliveryState[] | null> {
   // Get the stored hash if we have prior articles stored
-  let hashToCompare: string | undefined;
-  const hasPriorArticles = await articleFieldStore.hasPriorArticlesStored(
-    feed.id
+  const hashToCompare = await getHashToCompare(
+    feed.id,
+    articleFieldStore,
+    responseHashStore
   );
-  if (hasPriorArticles) {
-    const storedHash = await responseHashStore.get(feed.id);
-    if (storedHash) {
-      hashToCompare = storedHash;
-    }
-  } else {
+  if (!hashToCompare) {
     logger.debug(`No prior articles stored for feed ${feed.id}`);
   }
 
-  // Fetch the feed
-  let response: Awaited<ReturnType<typeof fetchFeed>> | null = null;
-
-  try {
-    response = await fetchFeed(feed.requestLookupDetails?.url || feed.url, {
-      hashToCompare,
-      lookupDetails: feed.requestLookupDetails,
-      serviceHost: feedRequestsServiceHost,
-    });
-  } catch (err) {
-    if (
-      err instanceof FeedRequestInternalException ||
-      err instanceof FeedRequestParseException ||
-      err instanceof FeedRequestBadStatusCodeException ||
-      err instanceof FeedRequestFetchException ||
-      err instanceof FeedRequestTimedOutException
-    ) {
-      logger.info(
-        `Ignoring feed event due to expected exception: ${(err as Error).name}`,
-        {
-          feedId: feed.id,
-          feedUrl: feed.url,
-        }
-      );
-      return null;
-    }
-    throw err;
-  }
-
-  if (
-    !response ||
-    response.requestStatus === FeedResponseRequestStatus.Pending ||
-    response.requestStatus === FeedResponseRequestStatus.MatchedHash
-  ) {
-    logger.debug(`No response body - pending request or matched hash`, {
-      feedId: feed.id,
-      requestStatus: response?.requestStatus,
-    });
-    return null;
-  }
-
-  logger.debug(
-    `Fetched feed body (${response.body.length} chars), hash: ${response.bodyHash}`,
-    { feedId: feed.id }
-  );
-
-  // Parse articles from XML
-  let parseResult: Awaited<ReturnType<typeof parseArticlesFromXml>> | null =
-    null;
-
-  // Create fetch function for external content if configured
+  // Get external properties for parsing
   const externalFeedProperties = event.data.feed.externalProperties as
     | ExternalFeedProperty[]
     | undefined;
 
-  const externalFetchFn: ExternalFetchFn | undefined =
-    externalFeedProperties?.length
-      ? async (url: string): Promise<string | null> => {
-          try {
-            const res = await fetchFeed(url, {
-              executeFetchIfNotInCache: true,
-              retries: 3,
-              lookupDetails: undefined,
-              serviceHost: feedRequestsServiceHost,
-            });
+  // Use shared processing to fetch and parse feed
+  const feedResult = await fetchAndParseFeed({
+    feed: {
+      url: feed.url,
+      formatOptions: feed.formatOptions,
+      externalProperties: externalFeedProperties,
+      requestLookupDetails: feed.requestLookupDetails,
+    },
+    feedRequestsServiceHost,
+    hashToCompare,
+  });
 
-            if (res.requestStatus !== FeedResponseRequestStatus.Success) {
-              logger.error(`Failed to fetch article injection`, {
-                sourceField: url,
-                status: res.requestStatus,
-              });
-
-              return null;
-            }
-
-            return res.body;
-          } catch {
-            return null;
-          }
-        }
-      : undefined;
-
-  try {
-    const parserRules = getParserRules({ url: event.data.feed.url });
-
-    parseResult = await parseArticlesFromXml(response.body, {
-      timeout: 10000,
-      formatOptions: {
-        dateFormat: event.data.feed.formatOptions?.dateFormat,
-        dateTimezone: event.data.feed.formatOptions?.dateTimezone,
-        dateLocale: event.data.feed.formatOptions?.dateLocale,
-      },
-      useParserRules: parserRules,
-      externalFeedProperties,
-      externalFetchFn,
+  // Handle non-success results
+  if (feedResult.status === "pending" || feedResult.status === "matched-hash") {
+    logger.debug(`No response body - pending request or matched hash`, {
+      feedId: feed.id,
+      requestStatus: feedResult.status,
     });
-  } catch (err) {
-    if (err instanceof FeedParseTimeoutException) {
+    return null;
+  }
+
+  if (feedResult.status === "fetch-error") {
+    logger.info(
+      `Ignoring feed event due to fetch error: ${feedResult.errorType}`,
+      {
+        feedId: feed.id,
+        feedUrl: feed.url,
+        message: feedResult.message,
+      }
+    );
+    return null;
+  }
+
+  if (feedResult.status === "parse-error") {
+    if (feedResult.errorType === "timeout") {
       logger.error(`Feed parse timed out for ${feed.url}`, {
         feedId: feed.id,
       });
       return null;
     }
-    if (err instanceof InvalidFeedException) {
-      logger.info(`Ignoring feed event due to invalid feed`, {
+
+    // Handle invalid feed (retry logic)
+    logger.info(`Ignoring feed event due to invalid feed`, {
+      feedId: feed.id,
+      feedUrl: feed.url,
+      message: feedResult.message,
+    });
+
+    if (publisher) {
+      const { disabled } = await handleFeedParseFailure({
         feedId: feed.id,
-        feedUrl: feed.url,
-        error: (err as Error).stack,
+        store: feedRetryStore,
+        publisher,
       });
 
-      // Handle retry logic for invalid feeds
-      if (publisher) {
-        const { disabled } = await handleFeedParseFailure({
-          feedId: feed.id,
-          store: feedRetryStore,
-          publisher,
-        });
-
-        if (disabled) {
-          logger.info(
-            `Feed ${feed.id} exceeded retry limit for invalid feed, sending disable event`
-          );
-        }
+      if (disabled) {
+        logger.info(
+          `Feed ${feed.id} exceeded retry limit for invalid feed, sending disable event`
+        );
       }
-
-      return null;
     }
-    throw err;
+
+    return null;
   }
+
+  // Success - extract articles
+  const articles = feedResult.articles;
 
   logger.debug(`Found articles`, {
     feedId: feed.id,
-    titles: parseResult.articles.map((a) => a.flattened.title),
+    titles: articles.map((a) => a.flattened.title),
   });
 
   debugLog(`Debug feed ${feed.id}: found articles`, {
-    articles: parseResult.articles.map((a) => ({
+    articles: articles.map((a) => ({
       id: a.flattened.id,
       title: a.flattened.title,
     })),
@@ -638,14 +563,14 @@ async function handleFeedV2EventInternal({
   await updateFeedArticlesInCache(parsedArticlesCacheStore, {
     url: event.data.feed.url,
     options: cacheKeyOptions,
-    articles: parseResult.articles,
+    articles,
   });
 
   // Determine which articles to deliver (comparison logic)
   const comparisonResult = await getArticlesToDeliver(
     articleFieldStore,
     feed.id,
-    parseResult.articles,
+    articles,
     {
       blockingComparisons: feed.blockingComparisons || [],
       passingComparisons: feed.passingComparisons || [],
@@ -706,8 +631,8 @@ async function handleFeedV2EventInternal({
     logger.debug("No new articles to deliver", { feedId: feed.id });
 
     // Save the response hash since we successfully processed the feed
-    if (response.bodyHash) {
-      await responseHashStore.set(feed.id, response.bodyHash);
+    if (feedResult.bodyHash) {
+      await responseHashStore.set(feed.id, feedResult.bodyHash);
     }
 
     return [];
@@ -795,8 +720,8 @@ async function handleFeedV2EventInternal({
   );
 
   // Save the response hash after successful delivery
-  if (response.bodyHash) {
-    await responseHashStore.set(feed.id, response.bodyHash);
+  if (feedResult.bodyHash) {
+    await responseHashStore.set(feed.id, feedResult.bodyHash);
   }
 
   return deliveryResults;

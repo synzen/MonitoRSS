@@ -7,46 +7,109 @@ import { z } from "zod";
 import { withAuth } from "../middleware";
 import { jsonResponse, parseJsonBody } from "../utils";
 import { diagnoseArticleInputSchema } from "../schemas";
-import { findOrFetchFeedArticles } from "../../feeds/services/articles.service";
-import { diagnoseArticles, type DiagnoseArticlesInput } from "../../diagnostics";
+import {
+  diagnoseArticles,
+  type DiagnoseArticlesInput,
+  ArticleDiagnosisOutcome,
+} from "../../diagnostics";
 import type { ArticleFieldStore } from "../../articles/comparison";
 import type { DeliveryRecordStore } from "../../stores/interfaces/delivery-record-store";
+import type { ResponseHashStore } from "../../feeds/feed-event-handler";
 import type { LogicalExpression } from "../../articles/filters";
+import {
+  fetchAndParseFeed,
+  getHashToCompare,
+} from "../../feeds/shared-processing";
 
 export async function handleDiagnoseArticle(
   req: Request,
   feedRequestsServiceHost: string,
   articleFieldStore: ArticleFieldStore,
-  deliveryRecordStore: DeliveryRecordStore
+  deliveryRecordStore: DeliveryRecordStore,
+  responseHashStore: ResponseHashStore
 ): Promise<Response> {
   return withAuth(req, async () => {
     try {
       const body = await parseJsonBody<unknown>(req);
       const input = diagnoseArticleInputSchema.parse(body);
 
-      // Fetch articles from the feed
-      const { output: fetchResult } = await findOrFetchFeedArticles(
-        input.feed.url,
-        {
-          formatOptions: {},
-          externalFeedProperties: [],
-          findRssFromHtml: false,
-          executeFetchIfStale: true,
-          feedRequestsServiceHost,
-        }
+      // Get stored hash for comparison (only if prior articles exist)
+      const hashToCompare = await getHashToCompare(
+        input.feed.id,
+        articleFieldStore,
+        responseHashStore
       );
 
-      // Create fetchArticles function that returns the already-fetched articles
-      const fetchArticles = async () => fetchResult.articles;
+      // Use shared processing to fetch and parse feed
+      const feedResult = await fetchAndParseFeed({
+        feed: {
+          url: input.feed.url,
+          formatOptions: input.feed.formatOptions,
+          externalProperties: input.feed.externalProperties,
+          requestLookupDetails: input.feed.requestLookupDetails,
+        },
+        feedRequestsServiceHost,
+        hashToCompare,
+      });
+
+      // Handle non-success results
+      if (feedResult.status === "matched-hash") {
+        return jsonResponse({
+          results: input.articleIds.map((articleId) => ({
+            articleId,
+            articleIdHash: null,
+            articleTitle: null,
+            outcome: ArticleDiagnosisOutcome.FeedUnchanged,
+            outcomeReason:
+              "Feed content has not changed since last processing.",
+          })),
+          errors: [],
+        });
+      }
+
+      if (feedResult.status === "pending") {
+        return jsonResponse({
+          results: [],
+          errors: [
+            {
+              articleId: "*",
+              message: "Feed request is pending. Try again later.",
+            },
+          ],
+        });
+      }
+
+      if (
+        feedResult.status === "fetch-error" ||
+        feedResult.status === "parse-error"
+      ) {
+        const errorDesc =
+          feedResult.status === "fetch-error" ? "fetch" : "parse";
+        return jsonResponse({
+          results: input.articleIds.map((articleId) => ({
+            articleId,
+            articleIdHash: null,
+            articleTitle: null,
+            outcome: ArticleDiagnosisOutcome.FeedError,
+            outcomeReason: `Feed ${errorDesc} error (${feedResult.errorType}): ${feedResult.message}`,
+          })),
+          errors: [],
+        });
+      }
+
+      // Success - continue with diagnosis
+      const fetchArticles = async () => feedResult.articles;
 
       // Map mediums to properly type the filter expressions
-      const mediums: DiagnoseArticlesInput["mediums"] = input.mediums.map((m) => ({
-        id: m.id,
-        rateLimits: m.rateLimits,
-        filters: m.filters
-          ? { expression: m.filters.expression as LogicalExpression }
-          : undefined,
-      }));
+      const mediums: DiagnoseArticlesInput["mediums"] = input.mediums.map(
+        (m) => ({
+          id: m.id,
+          rateLimits: m.rateLimits,
+          filters: m.filters
+            ? { expression: m.filters.expression as LogicalExpression }
+            : undefined,
+        })
+      );
 
       const { results, errors } = await diagnoseArticles(
         {

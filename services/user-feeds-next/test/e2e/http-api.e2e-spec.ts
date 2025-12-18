@@ -15,6 +15,7 @@ import {
   ArticleDiagnosisOutcome,
   DiagnosticStage,
 } from "../../src/diagnostics";
+import { FeedResponseRequestStatus } from "../../src/feed-fetcher";
 import { createHash } from "crypto";
 
 // Must match USER_FEEDS_API_KEY in docker-compose.test.yml
@@ -63,6 +64,7 @@ describe("HTTP API (e2e)", () => {
         discordClient: createTestDiscordRestClient(),
         feedRequestsServiceHost: stores.feedRequestsServiceHost,
         articleFieldStore: stores.articleFieldStore,
+        responseHashStore: stores.responseHashStore,
       },
       TEST_PORT
     );
@@ -2000,6 +2002,320 @@ describe("HTTP API (e2e)", () => {
       expect(results[0]!.articleId).toBe(DIAGNOSE_ARTICLE_ID_1);
       expect(results[0]!.outcome).toBeDefined();
       expect(results[0]!.stages).toBeUndefined();
+    });
+
+    it("returns FeedUnchanged outcome when feed hash matches stored hash", async () => {
+      const stores = getStores();
+      const { articleFieldStore, responseHashStore } = stores;
+      const feedId = randomUUID();
+
+      // Store a prior article so it's not a first run
+      const priorArticle = {
+        flattened: { id: "prior-for-hash-test", idHash: "prior-hash-test" },
+        raw: {},
+      };
+      await articleFieldStore.startContext(async () => {
+        await articleFieldStore.storeArticles(feedId, [priorArticle], []);
+        await articleFieldStore.flushPendingInserts();
+      });
+
+      // Store the feed's hash in responseHashStore (matching the test server's hash)
+      await responseHashStore.set(feedId, "diagnose-test-hash");
+
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": TEST_API_KEY,
+        },
+        body: JSON.stringify({
+          feed: {
+            id: feedId,
+            url: DIAGNOSE_FEED_URL,
+            blockingComparisons: [],
+            passingComparisons: [],
+          },
+          mediums: [],
+          articleDayLimit: 10,
+          articleIds: [DIAGNOSE_ARTICLE_ID_1],
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as JsonBody;
+      const results = body.results as JsonBody[];
+
+      expect(results.length).toBe(1);
+      expect(results[0]!.outcome).toBe(ArticleDiagnosisOutcome.FeedUnchanged);
+      expect(results[0]!.outcomeReason).toContain("not changed");
+    });
+
+    it("returns FeedError outcome when feed XML is invalid", async () => {
+      const testServer = getTestFeedRequestsServer();
+      const INVALID_XML_FEED_URL = "https://example.com/invalid-xml-feed.xml";
+
+      // Register a feed that returns invalid XML
+      testServer.registerUrl(INVALID_XML_FEED_URL, () => ({
+        body: "this is not valid XML at all <broken>",
+        hash: "invalid-xml-hash",
+      }));
+
+      try {
+        const stores = getStores();
+        const { articleFieldStore } = stores;
+        const feedId = randomUUID();
+
+        // Store a prior article so it's not a first run
+        const priorArticle = {
+          flattened: { id: "prior-for-invalid-test", idHash: "prior-invalid-hash" },
+          raw: {},
+        };
+        await articleFieldStore.startContext(async () => {
+          await articleFieldStore.storeArticles(feedId, [priorArticle], []);
+          await articleFieldStore.flushPendingInserts();
+        });
+
+        const response = await fetch(`${baseUrl}${endpoint}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": TEST_API_KEY,
+          },
+          body: JSON.stringify({
+            feed: {
+              id: feedId,
+              url: INVALID_XML_FEED_URL,
+              blockingComparisons: [],
+              passingComparisons: [],
+            },
+            mediums: [],
+            articleDayLimit: 10,
+            articleIds: ["some-article-id"],
+          }),
+        });
+
+        expect(response.status).toBe(200);
+        const body = (await response.json()) as JsonBody;
+        const results = body.results as JsonBody[];
+
+        expect(results.length).toBe(1);
+        expect(results[0]!.outcome).toBe(ArticleDiagnosisOutcome.FeedError);
+        expect(results[0]!.outcomeReason).toContain("parse error");
+      } finally {
+        testServer.unregisterUrl(INVALID_XML_FEED_URL);
+      }
+    });
+
+    it("returns FeedError with errorType 'timeout' when feed request times out", async () => {
+      const testServer = getTestFeedRequestsServer();
+      const TIMEOUT_FEED_URL = "https://example.com/timeout-feed.xml";
+
+      testServer.registerUrl(TIMEOUT_FEED_URL, () => ({
+        requestStatus: FeedResponseRequestStatus.FetchTimeout,
+      }));
+
+      try {
+        const feedId = randomUUID();
+
+        const response = await fetch(`${baseUrl}${endpoint}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": TEST_API_KEY,
+          },
+          body: JSON.stringify({
+            feed: {
+              id: feedId,
+              url: TIMEOUT_FEED_URL,
+              blockingComparisons: [],
+              passingComparisons: [],
+            },
+            mediums: [],
+            articleDayLimit: 10,
+            articleIds: ["some-article-id"],
+          }),
+        });
+
+        expect(response.status).toBe(200);
+        const body = (await response.json()) as JsonBody;
+        const results = body.results as JsonBody[];
+
+        expect(results.length).toBe(1);
+        expect(results[0]!.outcome).toBe(ArticleDiagnosisOutcome.FeedError);
+        expect(results[0]!.outcomeReason).toContain("timeout");
+      } finally {
+        testServer.unregisterUrl(TIMEOUT_FEED_URL);
+      }
+    });
+
+    it("returns FeedError with errorType 'bad-status-code' when feed returns non-200", async () => {
+      const testServer = getTestFeedRequestsServer();
+      const BAD_STATUS_FEED_URL = "https://example.com/bad-status-feed.xml";
+
+      testServer.registerUrl(BAD_STATUS_FEED_URL, () => ({
+        requestStatus: FeedResponseRequestStatus.BadStatusCode,
+        statusCode: 503,
+      }));
+
+      try {
+        const feedId = randomUUID();
+
+        const response = await fetch(`${baseUrl}${endpoint}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": TEST_API_KEY,
+          },
+          body: JSON.stringify({
+            feed: {
+              id: feedId,
+              url: BAD_STATUS_FEED_URL,
+              blockingComparisons: [],
+              passingComparisons: [],
+            },
+            mediums: [],
+            articleDayLimit: 10,
+            articleIds: ["some-article-id"],
+          }),
+        });
+
+        expect(response.status).toBe(200);
+        const body = (await response.json()) as JsonBody;
+        const results = body.results as JsonBody[];
+
+        expect(results.length).toBe(1);
+        expect(results[0]!.outcome).toBe(ArticleDiagnosisOutcome.FeedError);
+        expect(results[0]!.outcomeReason).toContain("bad-status-code");
+      } finally {
+        testServer.unregisterUrl(BAD_STATUS_FEED_URL);
+      }
+    });
+
+    it("returns FeedError with errorType 'fetch' when network error occurs", async () => {
+      const testServer = getTestFeedRequestsServer();
+      const FETCH_ERROR_FEED_URL = "https://example.com/fetch-error-feed.xml";
+
+      testServer.registerUrl(FETCH_ERROR_FEED_URL, () => ({
+        requestStatus: FeedResponseRequestStatus.FetchError,
+      }));
+
+      try {
+        const feedId = randomUUID();
+
+        const response = await fetch(`${baseUrl}${endpoint}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": TEST_API_KEY,
+          },
+          body: JSON.stringify({
+            feed: {
+              id: feedId,
+              url: FETCH_ERROR_FEED_URL,
+              blockingComparisons: [],
+              passingComparisons: [],
+            },
+            mediums: [],
+            articleDayLimit: 10,
+            articleIds: ["some-article-id"],
+          }),
+        });
+
+        expect(response.status).toBe(200);
+        const body = (await response.json()) as JsonBody;
+        const results = body.results as JsonBody[];
+
+        expect(results.length).toBe(1);
+        expect(results[0]!.outcome).toBe(ArticleDiagnosisOutcome.FeedError);
+        expect(results[0]!.outcomeReason).toContain("fetch");
+      } finally {
+        testServer.unregisterUrl(FETCH_ERROR_FEED_URL);
+      }
+    });
+
+    it("returns FeedError with errorType 'internal' when service has internal error", async () => {
+      const testServer = getTestFeedRequestsServer();
+      const INTERNAL_ERROR_FEED_URL =
+        "https://example.com/internal-error-feed.xml";
+
+      testServer.registerUrl(INTERNAL_ERROR_FEED_URL, () => ({
+        requestStatus: FeedResponseRequestStatus.InternalError,
+      }));
+
+      try {
+        const feedId = randomUUID();
+
+        const response = await fetch(`${baseUrl}${endpoint}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": TEST_API_KEY,
+          },
+          body: JSON.stringify({
+            feed: {
+              id: feedId,
+              url: INTERNAL_ERROR_FEED_URL,
+              blockingComparisons: [],
+              passingComparisons: [],
+            },
+            mediums: [],
+            articleDayLimit: 10,
+            articleIds: ["some-article-id"],
+          }),
+        });
+
+        expect(response.status).toBe(200);
+        const body = (await response.json()) as JsonBody;
+        const results = body.results as JsonBody[];
+
+        expect(results.length).toBe(1);
+        expect(results[0]!.outcome).toBe(ArticleDiagnosisOutcome.FeedError);
+        expect(results[0]!.outcomeReason).toContain("internal");
+      } finally {
+        testServer.unregisterUrl(INTERNAL_ERROR_FEED_URL);
+      }
+    });
+
+    it("returns FeedError with errorType 'parse' when feed-requests cannot parse response", async () => {
+      const testServer = getTestFeedRequestsServer();
+      const PARSE_ERROR_FEED_URL = "https://example.com/parse-error-feed.xml";
+
+      testServer.registerUrl(PARSE_ERROR_FEED_URL, () => ({
+        requestStatus: FeedResponseRequestStatus.ParseError,
+      }));
+
+      try {
+        const feedId = randomUUID();
+
+        const response = await fetch(`${baseUrl}${endpoint}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": TEST_API_KEY,
+          },
+          body: JSON.stringify({
+            feed: {
+              id: feedId,
+              url: PARSE_ERROR_FEED_URL,
+              blockingComparisons: [],
+              passingComparisons: [],
+            },
+            mediums: [],
+            articleDayLimit: 10,
+            articleIds: ["some-article-id"],
+          }),
+        });
+
+        expect(response.status).toBe(200);
+        const body = (await response.json()) as JsonBody;
+        const results = body.results as JsonBody[];
+
+        expect(results.length).toBe(1);
+        expect(results[0]!.outcome).toBe(ArticleDiagnosisOutcome.FeedError);
+        expect(results[0]!.outcomeReason).toContain("parse");
+      } finally {
+        testServer.unregisterUrl(PARSE_ERROR_FEED_URL);
+      }
     });
   });
 });

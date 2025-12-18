@@ -1,17 +1,15 @@
 /**
  * Zod schema for POST /v1/user-feeds/diagnose-articles request
+ * Reuses schemas from feed-v2-event.schema.ts for consistency.
  */
 
 import { z } from "zod";
-
-/**
- * Date check options schema.
- */
-const dateCheckOptionsSchema = z
-  .object({
-    oldArticleDateDiffMsThreshold: z.number().optional(),
-  })
-  .optional();
+import {
+  feedV2EventSchemaFormatOptions,
+  feedV2EventSchemaDateChecks,
+  feedV2EventRequestLookupDetails,
+  externalFeedPropertySchema,
+} from "../../shared/schemas";
 
 /**
  * Medium rate limit schema.
@@ -42,13 +40,21 @@ const mediumSchema = z.object({
 
 /**
  * Feed schema for diagnosis.
+ * Now includes all feed properties that affect processing:
+ * - formatOptions: date formatting (dateFormat, dateTimezone, dateLocale)
+ * - externalProperties: content injection from external sources
+ * - requestLookupDetails: auth headers for feed fetching
+ * - dateChecks: includes datePlaceholderReferences for custom date fields
  */
 const feedSchema = z.object({
   id: z.string().min(1),
   url: z.string().url(),
   blockingComparisons: z.array(z.string()).default([]),
   passingComparisons: z.array(z.string()).default([]),
-  dateChecks: dateCheckOptionsSchema,
+  dateChecks: feedV2EventSchemaDateChecks.optional(),
+  formatOptions: feedV2EventSchemaFormatOptions.optional(),
+  externalProperties: z.array(externalFeedPropertySchema).optional().default([]),
+  requestLookupDetails: feedV2EventRequestLookupDetails.optional().nullable(),
 });
 
 /**

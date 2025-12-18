@@ -387,6 +387,8 @@ async function startApiMode(
       deliveryRecordStore: infrastructure.deliveryRecordStore,
       discordClient: infrastructure.discordClient,
       feedRequestsServiceHost: infrastructure.feedRequestsServiceHost,
+      articleFieldStore: infrastructure.articleFieldStore,
+      responseHashStore: infrastructure.responseHashStore,
     },
     HTTP_PORT
   );

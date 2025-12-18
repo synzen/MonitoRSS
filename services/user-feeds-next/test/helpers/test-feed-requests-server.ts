@@ -15,7 +15,17 @@ interface FeedRequestBody {
   };
 }
 
-type ResponseProvider = () => { body: string; hash?: string };
+/** Error status types that can be simulated */
+type ErrorRequestStatus =
+  | FeedResponseRequestStatus.FetchTimeout
+  | FeedResponseRequestStatus.BadStatusCode
+  | FeedResponseRequestStatus.FetchError
+  | FeedResponseRequestStatus.InternalError
+  | FeedResponseRequestStatus.ParseError;
+
+type ResponseProvider = () =>
+  | { body: string; hash?: string }
+  | { requestStatus: ErrorRequestStatus; statusCode?: number };
 
 export interface TestFeedRequestsServer {
   server: Server<undefined>;
@@ -58,10 +68,41 @@ export function createTestFeedRequestsServer(): TestFeedRequestsServer {
 
       // Look up URL-specific provider, fall back to default
       const provider = urlRegistry.get(body.url) ?? defaultResponseProvider;
-      const { body: rssBody, hash } = provider();
+      const providerResult = provider();
 
+      // Handle error responses
+      if ("requestStatus" in providerResult) {
+        const { requestStatus } = providerResult;
+
+        // BadStatusCode needs a statusCode in the response
+        if (requestStatus === FeedResponseRequestStatus.BadStatusCode) {
+          return Response.json({
+            requestStatus,
+            response: {
+              statusCode: providerResult.statusCode ?? 500,
+            },
+          });
+        }
+
+        return Response.json({ requestStatus });
+      }
+
+      // Handle success responses
+      const { body: rssBody, hash } = providerResult;
       const computedHash =
         hash || createHash("sha256").update(rssBody).digest("hex");
+
+      // If hashToCompare matches, return MatchedHash status (simulates unchanged feed)
+      if (body.hashToCompare && body.hashToCompare === computedHash) {
+        return Response.json({
+          requestStatus: FeedResponseRequestStatus.MatchedHash,
+          response: {
+            body: "",
+            hash: computedHash,
+            statusCode: 200,
+          },
+        });
+      }
 
       return Response.json({
         requestStatus: FeedResponseRequestStatus.Success,
