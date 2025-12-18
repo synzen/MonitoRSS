@@ -1,6 +1,7 @@
 import { Heading, Stack } from "@chakra-ui/react";
 import { DeliveryHistory } from "./DeliveryHistory";
 import { RequestHistory } from "./RequestHistory";
+import { ArticleStatus } from "./ArticleStatus";
 
 export const UserFeedLogs = () => {
   return (
@@ -9,6 +10,7 @@ export const UserFeedLogs = () => {
         Logs
       </Heading>
       <RequestHistory />
+      <ArticleStatus />
       <DeliveryHistory />
     </Stack>
   );

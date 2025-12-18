@@ -69,7 +69,7 @@ import {
   UpdateDiscordChannelConnectionOutput,
 } from "../features/feedConnections";
 import { mockFeedChannelConnections } from "./data/feedConnection";
-import mockUserFeeds from "./data/userFeeds";
+import mockUserFeeds, { getMockUserFeeds } from "./data/userFeeds";
 import mockFeedSummaries from "./data/feeds";
 import { mockSendTestArticleResult } from "./data/testArticleResult";
 import { mockUserFeedArticles } from "./data/userFeedArticles";
@@ -86,6 +86,7 @@ import mockUserFeedManagementInvites from "./data/userFeedManagementInvites";
 import mockUserMe from "./data/userMe";
 import { GetSubscriptionChangePreviewOutput } from "../features/subscriptionProducts";
 import { mockUserFeedDeliveryLogs } from "./data/userFeedDeliveryLogs";
+import { getMockDiagnostics } from "./data/articleDiagnostics";
 import {
   CreateUserFeedUrlValidationInput,
   CreateUserFeedUrlValidationOutput,
@@ -704,7 +705,8 @@ const handlers = [
 
   http.get("/api/v1/user-feeds/:feedId", async ({ params }) => {
     const { feedId } = params;
-    const feed = mockUserFeeds.find((f) => f.id === feedId);
+    const feeds = getMockUserFeeds();
+    const feed = feeds.find((f) => f.id === feedId);
 
     if (!feed) {
       return HttpResponse.json(
@@ -789,6 +791,24 @@ const handlers = [
     return HttpResponse.json<GetUserFeedDeliveryLogsOutput>({
       result: {
         logs: mockUserFeedDeliveryLogs,
+      },
+    });
+  }),
+
+  http.post("/api/v1/user-feeds/:feedId/diagnose-articles", async ({ request }) => {
+    const body = (await request.json()) as { skip?: number; limit?: number };
+    const skip = body.skip || 0;
+    const limit = body.limit || 10;
+
+    const mockData = getMockDiagnostics();
+    const paginatedResults = mockData.slice(skip, skip + limit);
+
+    await delay(500);
+
+    return HttpResponse.json({
+      result: {
+        results: paginatedResults,
+        total: mockData.length,
       },
     });
   }),

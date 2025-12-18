@@ -1,0 +1,839 @@
+import {
+  ArticleDiagnosisOutcome,
+  ArticleDiagnosticResult,
+  DiagnosticStage,
+  DiagnosticStageStatus,
+} from "../../features/feed/types/ArticleDiagnostics";
+
+/**
+ * Mock state configuration for Article Diagnostics testing.
+ * Change this value to test different UI states:
+ * - 'normal': Shows mixed outcomes (default)
+ * - 'empty': Returns no articles (tests empty feed state)
+ * - 'no-connections': Articles exist but no active connections (empty mediumResults)
+ * - 'all-learning': All articles show "Learning Feed" (triggers pattern alert)
+ * - 'all-rate-limited': All articles show "Daily Limit Reached" (triggers pattern alert)
+ * - 'all-duplicate': All articles show "Previously Seen" (triggers pattern alert)
+ */
+type MockDiagnosticsState =
+  | "normal"
+  | "empty"
+  | "no-connections"
+  | "all-learning"
+  | "all-rate-limited"
+  | "all-duplicate";
+export const MOCK_DIAGNOSTICS_STATE: MockDiagnosticsState = "normal";
+
+const createPassedStages = (mediumId: string) => [
+  {
+    stage: DiagnosticStage.FeedState,
+    status: DiagnosticStageStatus.Passed,
+    summary: "Not first run",
+    details: {
+      hasPriorArticles: true,
+      isFirstRun: false,
+      storedComparisonNames: ["title", "description"],
+    },
+  },
+  {
+    stage: DiagnosticStage.IdComparison,
+    status: DiagnosticStageStatus.Passed,
+    summary: "Article ID is new",
+    details: {
+      articleIdHash: "a1b2c3d4e5f6",
+      foundInHotPartition: false,
+      foundInColdPartition: false,
+      isNew: true,
+    },
+  },
+  {
+    stage: DiagnosticStage.BlockingComparison,
+    status: DiagnosticStageStatus.Passed,
+    summary: "No blocking comparisons configured",
+    details: {
+      comparisonFields: [],
+      activeFields: [],
+      blockedByFields: [],
+    },
+  },
+  {
+    stage: DiagnosticStage.PassingComparison,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (no passing comparisons configured)",
+    details: null,
+  },
+  {
+    stage: DiagnosticStage.DateCheck,
+    status: DiagnosticStageStatus.Passed,
+    summary: "Within date threshold",
+    details: {
+      articleDate: new Date().toISOString(),
+      threshold: 604800000,
+      datePlaceholders: ["pubdate"],
+      ageMs: 3600000,
+      withinThreshold: true,
+    },
+  },
+  {
+    stage: DiagnosticStage.MediumFilter,
+    status: DiagnosticStageStatus.Passed,
+    summary: "Passes all filters",
+    details: {
+      mediumId,
+      filterExpression: null,
+      filterResult: true,
+      explainBlocked: [],
+    },
+  },
+  {
+    stage: DiagnosticStage.FeedRateLimit,
+    status: DiagnosticStageStatus.Passed,
+    summary: "Under daily limit (5/50)",
+    details: {
+      currentCount: 5,
+      limit: 50,
+      timeWindowSeconds: 86400,
+      remaining: 45,
+      wouldExceed: false,
+    },
+  },
+  {
+    stage: DiagnosticStage.MediumRateLimit,
+    status: DiagnosticStageStatus.Passed,
+    summary: "Under rate limit (2/10 per hour)",
+    details: {
+      currentCount: 2,
+      limit: 10,
+      timeWindowSeconds: 3600,
+      remaining: 8,
+      wouldExceed: false,
+    },
+  },
+];
+
+const createFirstRunStages = () => [
+  {
+    stage: DiagnosticStage.FeedState,
+    status: DiagnosticStageStatus.Failed,
+    summary: "First run - establishing baseline",
+    details: {
+      hasPriorArticles: false,
+      isFirstRun: true,
+      storedComparisonNames: [],
+    },
+  },
+  {
+    stage: DiagnosticStage.IdComparison,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (first run)",
+    details: null,
+  },
+  {
+    stage: DiagnosticStage.BlockingComparison,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (first run)",
+    details: null,
+  },
+  {
+    stage: DiagnosticStage.PassingComparison,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (first run)",
+    details: null,
+  },
+  {
+    stage: DiagnosticStage.DateCheck,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (first run)",
+    details: null,
+  },
+  {
+    stage: DiagnosticStage.MediumFilter,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (first run)",
+    details: null,
+  },
+  {
+    stage: DiagnosticStage.FeedRateLimit,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (first run)",
+    details: null,
+  },
+  {
+    stage: DiagnosticStage.MediumRateLimit,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (first run)",
+    details: null,
+  },
+];
+
+const createFilteredStages = (mediumId: string) => [
+  {
+    stage: DiagnosticStage.FeedState,
+    status: DiagnosticStageStatus.Passed,
+    summary: "Not first run",
+    details: {
+      hasPriorArticles: true,
+      isFirstRun: false,
+      storedComparisonNames: ["title", "description"],
+    },
+  },
+  {
+    stage: DiagnosticStage.IdComparison,
+    status: DiagnosticStageStatus.Passed,
+    summary: "Article ID is new",
+    details: {
+      articleIdHash: "f6e5d4c3b2a1",
+      foundInHotPartition: false,
+      foundInColdPartition: false,
+      isNew: true,
+    },
+  },
+  {
+    stage: DiagnosticStage.BlockingComparison,
+    status: DiagnosticStageStatus.Passed,
+    summary: "No blocking comparisons configured",
+    details: {
+      comparisonFields: [],
+      activeFields: [],
+      blockedByFields: [],
+    },
+  },
+  {
+    stage: DiagnosticStage.PassingComparison,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (no passing comparisons configured)",
+    details: null,
+  },
+  {
+    stage: DiagnosticStage.DateCheck,
+    status: DiagnosticStageStatus.Passed,
+    summary: "Within date threshold",
+    details: {
+      articleDate: new Date().toISOString(),
+      threshold: 604800000,
+      datePlaceholders: ["pubdate"],
+      ageMs: 7200000,
+      withinThreshold: true,
+    },
+  },
+  {
+    stage: DiagnosticStage.MediumFilter,
+    status: DiagnosticStageStatus.Failed,
+    summary: "Blocked by filters",
+    details: {
+      mediumId,
+      filterExpression: { type: "logical", op: "and" },
+      filterResult: false,
+      explainBlocked: ['title must contain "urgent"', 'category must not equal "sports"'],
+    },
+  },
+  {
+    stage: DiagnosticStage.FeedRateLimit,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (earlier check failed)",
+    details: null,
+  },
+  {
+    stage: DiagnosticStage.MediumRateLimit,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (earlier check failed)",
+    details: null,
+  },
+];
+
+const createDuplicateIdStages = () => [
+  {
+    stage: DiagnosticStage.FeedState,
+    status: DiagnosticStageStatus.Passed,
+    summary: "Not first run",
+    details: {
+      hasPriorArticles: true,
+      isFirstRun: false,
+      storedComparisonNames: ["title", "description"],
+    },
+  },
+  {
+    stage: DiagnosticStage.IdComparison,
+    status: DiagnosticStageStatus.Failed,
+    summary: "Article ID already seen",
+    details: {
+      articleIdHash: "duplicate123",
+      foundInHotPartition: true,
+      foundInColdPartition: false,
+      isNew: false,
+    },
+  },
+  {
+    stage: DiagnosticStage.BlockingComparison,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (article previously seen)",
+    details: null,
+  },
+  {
+    stage: DiagnosticStage.PassingComparison,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (article previously seen)",
+    details: null,
+  },
+  {
+    stage: DiagnosticStage.DateCheck,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (article previously seen)",
+    details: null,
+  },
+  {
+    stage: DiagnosticStage.MediumFilter,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (article previously seen)",
+    details: null,
+  },
+  {
+    stage: DiagnosticStage.FeedRateLimit,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (article previously seen)",
+    details: null,
+  },
+  {
+    stage: DiagnosticStage.MediumRateLimit,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (article previously seen)",
+    details: null,
+  },
+];
+
+const createRateLimitedStages = (mediumId: string) => [
+  {
+    stage: DiagnosticStage.FeedState,
+    status: DiagnosticStageStatus.Passed,
+    summary: "Not first run",
+    details: {
+      hasPriorArticles: true,
+      isFirstRun: false,
+      storedComparisonNames: ["title", "description"],
+    },
+  },
+  {
+    stage: DiagnosticStage.IdComparison,
+    status: DiagnosticStageStatus.Passed,
+    summary: "Article ID is new",
+    details: {
+      articleIdHash: "newart789",
+      foundInHotPartition: false,
+      foundInColdPartition: false,
+      isNew: true,
+    },
+  },
+  {
+    stage: DiagnosticStage.BlockingComparison,
+    status: DiagnosticStageStatus.Passed,
+    summary: "No blocking comparisons configured",
+    details: {
+      comparisonFields: [],
+      activeFields: [],
+      blockedByFields: [],
+    },
+  },
+  {
+    stage: DiagnosticStage.PassingComparison,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (no passing comparisons configured)",
+    details: null,
+  },
+  {
+    stage: DiagnosticStage.DateCheck,
+    status: DiagnosticStageStatus.Passed,
+    summary: "Within date threshold",
+    details: {
+      articleDate: new Date().toISOString(),
+      threshold: 604800000,
+      datePlaceholders: ["pubdate"],
+      ageMs: 1800000,
+      withinThreshold: true,
+    },
+  },
+  {
+    stage: DiagnosticStage.MediumFilter,
+    status: DiagnosticStageStatus.Passed,
+    summary: "Passes all filters",
+    details: {
+      mediumId,
+      filterExpression: null,
+      filterResult: true,
+      explainBlocked: [],
+    },
+  },
+  {
+    stage: DiagnosticStage.FeedRateLimit,
+    status: DiagnosticStageStatus.Failed,
+    summary: "Daily limit reached (50/50)",
+    details: {
+      currentCount: 50,
+      limit: 50,
+      timeWindowSeconds: 86400,
+      remaining: 0,
+      wouldExceed: true,
+    },
+  },
+  {
+    stage: DiagnosticStage.MediumRateLimit,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (earlier check failed)",
+    details: null,
+  },
+];
+
+const createBlockedByComparisonStages = (mediumId: string) => [
+  {
+    stage: DiagnosticStage.FeedState,
+    status: DiagnosticStageStatus.Passed,
+    summary: "Not first run",
+    details: {
+      hasPriorArticles: true,
+      isFirstRun: false,
+      storedComparisonNames: ["title", "description", "content"],
+    },
+  },
+  {
+    stage: DiagnosticStage.IdComparison,
+    status: DiagnosticStageStatus.Passed,
+    summary: "Article ID is new",
+    details: {
+      articleIdHash: "comp456",
+      foundInHotPartition: false,
+      foundInColdPartition: false,
+      isNew: true,
+    },
+  },
+  {
+    stage: DiagnosticStage.BlockingComparison,
+    status: DiagnosticStageStatus.Failed,
+    summary: "description field unchanged",
+    details: {
+      comparisonFields: ["description", "content"],
+      activeFields: ["description"],
+      blockedByFields: ["description"],
+    },
+  },
+  {
+    stage: DiagnosticStage.PassingComparison,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (earlier check failed)",
+    details: null,
+  },
+  {
+    stage: DiagnosticStage.DateCheck,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (earlier check failed)",
+    details: null,
+  },
+  {
+    stage: DiagnosticStage.MediumFilter,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (earlier check failed)",
+    details: null,
+  },
+  {
+    stage: DiagnosticStage.FeedRateLimit,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (earlier check failed)",
+    details: null,
+  },
+  {
+    stage: DiagnosticStage.MediumRateLimit,
+    status: DiagnosticStageStatus.Skipped,
+    summary: "Skipped (earlier check failed)",
+    details: null,
+  },
+];
+
+export const mockArticleDiagnostics: ArticleDiagnosticResult[] = [
+  {
+    articleId: "art-001",
+    articleIdHash: "hash001",
+    articleTitle: "Breaking News: Major Market Rally Pushes Stocks to Record Highs",
+    outcome: ArticleDiagnosisOutcome.WouldDeliver,
+    outcomeReason: "This article will be delivered to Discord when your feed is next processed.",
+    mediumResults: [
+      {
+        mediumId: "1",
+        outcome: ArticleDiagnosisOutcome.WouldDeliver,
+        outcomeReason: "Would be delivered",
+        stages: createPassedStages("1"),
+      },
+      {
+        mediumId: "1a",
+        outcome: ArticleDiagnosisOutcome.WouldDeliver,
+        outcomeReason: "Would be delivered",
+        stages: createPassedStages("1a"),
+      },
+    ],
+  },
+  {
+    articleId: "art-002",
+    articleIdHash: "hash002",
+    articleTitle: "Tech Update: New Smartphone Features Revolutionary Battery Technology",
+    outcome: ArticleDiagnosisOutcome.FirstRunBaseline,
+    outcomeReason:
+      "This is a new feed. Articles are being recorded but not delivered yet to prevent flooding your channel with old content.",
+    mediumResults: [
+      {
+        mediumId: "1",
+        outcome: ArticleDiagnosisOutcome.FirstRunBaseline,
+        outcomeReason: "First run - establishing baseline",
+        stages: createFirstRunStages(),
+      },
+      {
+        mediumId: "1a",
+        outcome: ArticleDiagnosisOutcome.FirstRunBaseline,
+        outcomeReason: "First run - establishing baseline",
+        stages: createFirstRunStages(),
+      },
+    ],
+  },
+  {
+    articleId: "art-003",
+    articleIdHash: "hash003",
+    articleTitle: "Sports: Championship Game Ends in Dramatic Overtime Victory",
+    outcome: ArticleDiagnosisOutcome.FilteredByMediumFilter,
+    outcomeReason:
+      "This article doesn't match the filter rules for your connection. Review your filter settings.",
+    mediumResults: [
+      {
+        mediumId: "1",
+        outcome: ArticleDiagnosisOutcome.WouldDeliver,
+        outcomeReason: "Would be delivered",
+        stages: createPassedStages("1"),
+      },
+      {
+        mediumId: "1a",
+        outcome: ArticleDiagnosisOutcome.FilteredByMediumFilter,
+        outcomeReason: "Blocked by filters",
+        stages: createFilteredStages("1a"),
+      },
+    ],
+  },
+  {
+    articleId: "art-004",
+    articleIdHash: "hash004",
+    articleTitle: "Weather Alert: Severe Storm Warning Issued for Metropolitan Area",
+    outcome: ArticleDiagnosisOutcome.DuplicateId,
+    outcomeReason:
+      "MonitoRSS has already seen this article. It may have been delivered previously, or recorded when the feed was first added.",
+    mediumResults: [
+      {
+        mediumId: "1",
+        outcome: ArticleDiagnosisOutcome.DuplicateId,
+        outcomeReason: "Previously seen",
+        stages: createDuplicateIdStages(),
+      },
+      {
+        mediumId: "1a",
+        outcome: ArticleDiagnosisOutcome.DuplicateId,
+        outcomeReason: "Previously seen",
+        stages: createDuplicateIdStages(),
+      },
+    ],
+  },
+  {
+    articleId: "art-005",
+    articleIdHash: "hash005",
+    articleTitle: "Politics: New Policy Announcement Sparks Debate Among Lawmakers",
+    outcome: ArticleDiagnosisOutcome.RateLimitedFeed,
+    outcomeReason:
+      "Your feed has hit its daily article limit (50/50). Wait until tomorrow for more articles.",
+    mediumResults: [
+      {
+        mediumId: "1",
+        outcome: ArticleDiagnosisOutcome.RateLimitedFeed,
+        outcomeReason: "Daily limit reached",
+        stages: createRateLimitedStages("1"),
+      },
+      {
+        mediumId: "1a",
+        outcome: ArticleDiagnosisOutcome.RateLimitedFeed,
+        outcomeReason: "Daily limit reached",
+        stages: createRateLimitedStages("1a"),
+      },
+    ],
+  },
+  {
+    articleId: "art-006",
+    articleIdHash: "hash006",
+    articleTitle: "Science: Researchers Discover New Species in Deep Ocean Expedition",
+    outcome: ArticleDiagnosisOutcome.BlockedByComparison,
+    outcomeReason:
+      "This article hasn't changed since it was last checked. The monitored fields are identical to the previous version.",
+    mediumResults: [
+      {
+        mediumId: "1",
+        outcome: ArticleDiagnosisOutcome.BlockedByComparison,
+        outcomeReason: "No changes detected",
+        stages: createBlockedByComparisonStages("1"),
+      },
+      {
+        mediumId: "1a",
+        outcome: ArticleDiagnosisOutcome.BlockedByComparison,
+        outcomeReason: "No changes detected",
+        stages: createBlockedByComparisonStages("1a"),
+      },
+    ],
+  },
+  {
+    articleId: "art-007",
+    articleIdHash: "hash007",
+    articleTitle: "Entertainment: Award-Winning Film Breaks Box Office Records",
+    outcome: ArticleDiagnosisOutcome.WouldDeliver,
+    outcomeReason: "This article will be delivered to Discord when your feed is next processed.",
+    mediumResults: [
+      {
+        mediumId: "1",
+        outcome: ArticleDiagnosisOutcome.WouldDeliver,
+        outcomeReason: "Would be delivered",
+        stages: createPassedStages("1"),
+      },
+      {
+        mediumId: "1a",
+        outcome: ArticleDiagnosisOutcome.WouldDeliver,
+        outcomeReason: "Would be delivered",
+        stages: createPassedStages("1a"),
+      },
+    ],
+  },
+  {
+    articleId: "art-008",
+    articleIdHash: "hash008",
+    articleTitle: "Health: New Study Reveals Benefits of Mediterranean Diet",
+    outcome: ArticleDiagnosisOutcome.WouldDeliver,
+    outcomeReason: "This article will be delivered to Discord when your feed is next processed.",
+    mediumResults: [
+      {
+        mediumId: "1",
+        outcome: ArticleDiagnosisOutcome.WouldDeliver,
+        outcomeReason: "Would be delivered",
+        stages: createPassedStages("1"),
+      },
+      {
+        mediumId: "1a",
+        outcome: ArticleDiagnosisOutcome.FilteredByMediumFilter,
+        outcomeReason: "Blocked by filters",
+        stages: createFilteredStages("1a"),
+      },
+    ],
+  },
+  {
+    articleId: "art-009",
+    articleIdHash: "hash009",
+    articleTitle: "Travel: Hidden Gems of Southeast Asia You Need to Visit",
+    outcome: ArticleDiagnosisOutcome.DuplicateId,
+    outcomeReason:
+      "MonitoRSS has already seen this article. It may have been delivered previously, or recorded when the feed was first added.",
+    mediumResults: [
+      {
+        mediumId: "1",
+        outcome: ArticleDiagnosisOutcome.DuplicateId,
+        outcomeReason: "Previously seen",
+        stages: createDuplicateIdStages(),
+      },
+      {
+        mediumId: "1a",
+        outcome: ArticleDiagnosisOutcome.DuplicateId,
+        outcomeReason: "Previously seen",
+        stages: createDuplicateIdStages(),
+      },
+    ],
+  },
+  {
+    articleId: "art-010",
+    articleIdHash: "hash010",
+    articleTitle: "Business: Startup Secures Record Funding for AI Innovation",
+    outcome: ArticleDiagnosisOutcome.WouldDeliver,
+    outcomeReason: "This article will be delivered to Discord when your feed is next processed.",
+    mediumResults: [
+      {
+        mediumId: "1",
+        outcome: ArticleDiagnosisOutcome.WouldDeliver,
+        outcomeReason: "Would be delivered",
+        stages: createPassedStages("1"),
+      },
+      {
+        mediumId: "1a",
+        outcome: ArticleDiagnosisOutcome.WouldDeliver,
+        outcomeReason: "Would be delivered",
+        stages: createPassedStages("1a"),
+      },
+    ],
+  },
+  {
+    articleId: "art-011",
+    articleIdHash: "hash011",
+    articleTitle: "Education: Universities Embrace Hybrid Learning Models",
+    outcome: ArticleDiagnosisOutcome.FirstRunBaseline,
+    outcomeReason:
+      "This is a new feed. Articles are being recorded but not delivered yet to prevent flooding your channel.",
+    mediumResults: [
+      {
+        mediumId: "1",
+        outcome: ArticleDiagnosisOutcome.FirstRunBaseline,
+        outcomeReason: "First run - establishing baseline",
+        stages: createFirstRunStages(),
+      },
+      {
+        mediumId: "1a",
+        outcome: ArticleDiagnosisOutcome.FirstRunBaseline,
+        outcomeReason: "First run - establishing baseline",
+        stages: createFirstRunStages(),
+      },
+    ],
+  },
+  {
+    articleId: "art-012",
+    articleIdHash: "hash012",
+    articleTitle: "Food: Master Chef Shares Secret Recipe for Perfect Pasta",
+    outcome: ArticleDiagnosisOutcome.WouldDeliver,
+    outcomeReason: "This article will be delivered to Discord when your feed is next processed.",
+    mediumResults: [
+      {
+        mediumId: "1",
+        outcome: ArticleDiagnosisOutcome.WouldDeliver,
+        outcomeReason: "Would be delivered",
+        stages: createPassedStages("1"),
+      },
+      {
+        mediumId: "1a",
+        outcome: ArticleDiagnosisOutcome.WouldDeliver,
+        outcomeReason: "Would be delivered",
+        stages: createPassedStages("1a"),
+      },
+    ],
+  },
+  {
+    articleId: "art-013",
+    articleIdHash: "hash013",
+    articleTitle: "Gaming: Highly Anticipated RPG Release Date Announced",
+    outcome: ArticleDiagnosisOutcome.FilteredByMediumFilter,
+    outcomeReason: "This article doesn't match the filter rules for your connection.",
+    mediumResults: [
+      {
+        mediumId: "1",
+        outcome: ArticleDiagnosisOutcome.FilteredByMediumFilter,
+        outcomeReason: "Blocked by filters",
+        stages: createFilteredStages("1"),
+      },
+      {
+        mediumId: "1a",
+        outcome: ArticleDiagnosisOutcome.FilteredByMediumFilter,
+        outcomeReason: "Blocked by filters",
+        stages: createFilteredStages("1a"),
+      },
+    ],
+  },
+  {
+    articleId: "art-014",
+    articleIdHash: "hash014",
+    articleTitle: "Music: Legendary Band Announces Reunion World Tour",
+    outcome: ArticleDiagnosisOutcome.WouldDeliver,
+    outcomeReason: "This article will be delivered to Discord when your feed is next processed.",
+    mediumResults: [
+      {
+        mediumId: "1",
+        outcome: ArticleDiagnosisOutcome.WouldDeliver,
+        outcomeReason: "Would be delivered",
+        stages: createPassedStages("1"),
+      },
+      {
+        mediumId: "1a",
+        outcome: ArticleDiagnosisOutcome.WouldDeliver,
+        outcomeReason: "Would be delivered",
+        stages: createPassedStages("1a"),
+      },
+    ],
+  },
+  {
+    articleId: "art-015",
+    articleIdHash: "hash015",
+    articleTitle: "Automotive: Electric Vehicle Sales Surge Past Expectations",
+    outcome: ArticleDiagnosisOutcome.BlockedByComparison,
+    outcomeReason: "This article hasn't changed since it was last checked.",
+    mediumResults: [
+      {
+        mediumId: "1",
+        outcome: ArticleDiagnosisOutcome.BlockedByComparison,
+        outcomeReason: "No changes detected",
+        stages: createBlockedByComparisonStages("1"),
+      },
+      {
+        mediumId: "1a",
+        outcome: ArticleDiagnosisOutcome.BlockedByComparison,
+        outcomeReason: "No changes detected",
+        stages: createBlockedByComparisonStages("1a"),
+      },
+    ],
+  },
+];
+
+const createAllLearningMockData = (): ArticleDiagnosticResult[] =>
+  mockArticleDiagnostics.map((article) => ({
+    ...article,
+    outcome: ArticleDiagnosisOutcome.FirstRunBaseline,
+    outcomeReason:
+      "This is a new feed. Articles are being recorded but not delivered yet to prevent flooding your channel.",
+    mediumResults: article.mediumResults.map((m) => ({
+      ...m,
+      outcome: ArticleDiagnosisOutcome.FirstRunBaseline,
+      outcomeReason: "First run - establishing baseline",
+      stages: createFirstRunStages(),
+    })),
+  }));
+
+const createAllRateLimitedMockData = (): ArticleDiagnosticResult[] =>
+  mockArticleDiagnostics.map((article) => ({
+    ...article,
+    outcome: ArticleDiagnosisOutcome.RateLimitedFeed,
+    outcomeReason:
+      "Your feed has hit its daily article limit (50/50). Wait until tomorrow for more articles.",
+    mediumResults: article.mediumResults.map((m) => ({
+      ...m,
+      outcome: ArticleDiagnosisOutcome.RateLimitedFeed,
+      outcomeReason: "Daily limit reached",
+      stages: createRateLimitedStages(m.mediumId),
+    })),
+  }));
+
+const createAllDuplicateMockData = (): ArticleDiagnosticResult[] =>
+  mockArticleDiagnostics.map((article) => ({
+    ...article,
+    outcome: ArticleDiagnosisOutcome.DuplicateId,
+    outcomeReason:
+      "MonitoRSS has already seen this article. It may have been delivered previously, or recorded when the feed was first added.",
+    mediumResults: article.mediumResults.map((m) => ({
+      ...m,
+      outcome: ArticleDiagnosisOutcome.DuplicateId,
+      outcomeReason: "Previously seen",
+      stages: createDuplicateIdStages(),
+    })),
+  }));
+
+const createNoConnectionsMockData = (): ArticleDiagnosticResult[] =>
+  mockArticleDiagnostics.map((article) => ({
+    ...article,
+    outcome: ArticleDiagnosisOutcome.WouldDeliver,
+    outcomeReason: "No active connections to deliver to.",
+    mediumResults: [],
+  }));
+
+export const getMockDiagnostics = (): ArticleDiagnosticResult[] => {
+  switch (MOCK_DIAGNOSTICS_STATE as MockDiagnosticsState) {
+    case "empty":
+      return [];
+    case "no-connections":
+      return createNoConnectionsMockData();
+    case "all-learning":
+      return createAllLearningMockData();
+    case "all-rate-limited":
+      return createAllRateLimitedMockData();
+    case "all-duplicate":
+      return createAllDuplicateMockData();
+    default:
+      return mockArticleDiagnostics;
+  }
+};

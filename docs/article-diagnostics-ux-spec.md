@@ -13,37 +13,37 @@ A diagnostic API exists in `user-feeds-next` at `POST /v1/user-feeds/diagnose-ar
 | API Outcome | User-Facing Label | Description |
 |-------------|-------------------|-------------|
 | `would-deliver` | Would Deliver | Article would be delivered successfully |
-| `first-run-baseline` | First Run Setup | Feed is new, articles stored but not delivered to prevent flooding |
-| `duplicate-id` | Already Delivered | Article ID already seen |
-| `blocked-by-comparison` | No Changes Detected | Article blocked by comparison fields (content unchanged) |
+| `first-run-baseline` | Learning | Feed is new, articles stored but not delivered to prevent flooding |
+| `duplicate-id` | Previously Seen | Article ID already seen |
+| `blocked-by-comparison` | Unchanged | Article blocked by comparison fields (content unchanged) |
 | `filtered-by-date-check` | Too Old | Article filtered out by date checks |
 | `filtered-by-medium-filter` | Blocked by Filters | Article filtered by connection-specific filters |
 | `rate-limited-feed` | Daily Limit Reached | Would exceed feed's daily article limit |
-| `rate-limited-medium` | Connection Rate Limited | Would exceed connection's rate limits |
-| `would-deliver-passing-comparison` | Delivering Update | Already seen but tracked field changed, will re-deliver |
+| `rate-limited-medium` | Limit Reached | Would exceed connection's rate limits |
+| `would-deliver-passing-comparison` | Would Deliver | Already seen but tracked field changed, will be delivered |
 
 ### Diagnostic Stages (for delivery checks view)
 
-- `feed-state` - Is this a first run?
-- `id-comparison` - Is the article ID new?
-- `blocking-comparison` - Do blocking fields match previous?
-- `passing-comparison` - Did passing fields change?
-- `date-check` - Is article within date threshold?
-- `medium-filter` - Does article pass connection filters?
-- `feed-rate-limit` - Is feed under daily limit?
-- `medium-rate-limit` - Is connection under rate limit?
+- `feed-state` → "Feed State" - Is this a first run?
+- `id-comparison` → "Duplicate Check" - Is the article ID new?
+- `blocking-comparison` → "Blocking Comparison" - Do blocking fields match previous?
+- `passing-comparison` → "Passing Comparison" - Did passing fields change?
+- `date-check` → "Date Check" - Is article within date threshold?
+- `medium-filter` → "Connection Filters" - Does article pass connection filters?
+- `feed-rate-limit` → "Feed Rate Limit" - Is feed under daily limit?
+- `medium-rate-limit` → "Connection Rate Limit" - Is connection under rate limit?
 
 ## UX Decisions
 
 ### Location
 
-**Decision:** New "Article Status" section in the existing Logs tab
+**Decision:** New "Delivery Preview" section in the existing Logs tab
 
 **Rationale:**
 - Logs tab already contains Request History and Delivery History
 - Users troubleshooting naturally go to Logs first
 - Avoids adding a 6th top-level tab (mobile responsiveness concerns)
-- Mental model: Request History (did fetch work?) → Delivery History (what was sent?) → Article Status (why wasn't this delivered?)
+- Mental model: Request History (did fetch work?) → Delivery History (what was sent?) → Delivery Preview (what will happen next?)
 
 ### Default View
 
@@ -51,27 +51,32 @@ A diagnostic API exists in `user-feeds-next` at `POST /v1/user-feeds/diagnose-ar
 
 **Rationale:**
 - Users typically say "nothing is working" rather than pointing to a specific article
-- Need to see patterns across multiple articles (e.g., "all articles are First Run")
+- Need to see patterns across multiple articles (e.g., "all articles are Learning")
 - Single-article picker doesn't help when users don't know which article to investigate
 
 ### Visual Layout
 
 ```
-Article Status                    Last checked: 2 min ago  [Refresh]
+Delivery Preview                 Preview generated: 2 min ago  [Refresh]
+Preview how articles will be handled when your feed is next processed.
 -----------------------------------------------------------------
 | Status              | Article Title                           |
 |---------------------|------------------------------------------|
-| First Run           | "Breaking News: Market Update..."       |
-| First Run           | "Tech Update: New Phone Released..."    |
-| First Run           | "Sports: Championship Game Tonight..."  |
-| First Run           | "Weather Alert: Storm Warning..."       |
-| First Run           | "Politics: New Policy Announced..."     |
+| Learning            | "Breaking News: Market Update..."       |
+| Learning            | "Tech Update: New Phone Released..."    |
+| Learning            | "Sports: Championship Game Tonight..."  |
+| Learning            | "Weather Alert: Storm Warning..."       |
+| Learning            | "Politics: New Policy Announced..."     |
 -----------------------------------------------------------------
                                                       [Load more]
 
 Pattern Alert (shown when dominant outcome detected):
-"This feed is new. Articles are being recorded but not delivered
-yet to prevent flooding your channel."
+"This feed is in its learning phase. MonitoRSS is identifying
+existing articles so it only delivers new ones. This typically
+completes within **10 minutes**."
+
+Note: The time shown is the feed's `refreshRateSeconds` formatted in human-readable
+form (e.g., "10 minutes", "1 hour", "6 hours"). This tells users how long to wait.
 ```
 
 ### Page Size
@@ -108,20 +113,23 @@ yet to prevent flooding your channel."
 
 ```
 -----------------------------------------------------------------
-| First Run           | "Breaking News: Market Update..."       |
+| Learning            | "Breaking News: Market Update..."       |
 |---------------------------------------------------------------|
 | Details                                                        |
 |                                                                |
-| This feed is new. Articles are being recorded but not          |
-| delivered yet to prevent flooding your channels.               |
-|                                                                |
-| Connections:                                                   |
-| | #announcements    | Would deliver after first run          | |
-| | #tech-news        | Would deliver after first run          | |
+| Skipped (Learning Phase): This article existed before the      |
+| feed was added. MonitoRSS skips pre-existing articles to       |
+| avoid flooding your channel with old content. New articles     |
+| will be delivered to all 2 connections once learning           |
+| completes (within 10 minutes).                                 |
 |                                                                |
 | [View Delivery Checks]                                         |
 -----------------------------------------------------------------
 ```
+
+Note: During the learning phase, the per-connection table is omitted since all
+connections have the same outcome. The table is shown for other statuses where
+per-connection results may differ.
 
 ### Per-Connection Breakdown
 
@@ -157,7 +165,7 @@ yet to prevent flooding your channel."
 - Chakra UI has built-in Skeleton components
 
 ```
-Article Status                                           [Refresh]
+Delivery Preview                                         [Refresh]
 -----------------------------------------------------------------
 | ████████████        | ██████████████████████████████████████  |
 | ████████████        | ██████████████████████████████████████  |
@@ -170,7 +178,7 @@ Article Status                                           [Refresh]
 
 ### Refresh Behavior
 
-**Decision:** Manual refresh button + "Last checked" timestamp
+**Decision:** Manual refresh button + "Preview generated" timestamp
 
 **Rationale:**
 - Auto-refresh can be jarring (UI jumps, unexpected loading)
@@ -187,7 +195,7 @@ Article Status                                           [Refresh]
 - Some outcomes are feed-level (first run applies to all articles)
 - Provides plain-language explanation without expanding every row
 
-**Threshold:** For feed-level states like "First Run", threshold is effectively 1 (if one article has it, all do). For per-article outcomes, show when pattern is dominant.
+**Threshold:** For feed-level states like "Learning", threshold is effectively 1 (if one article has it, all do). For "Previously Seen" (duplicate-id), threshold is 100% (all articles must have this outcome). For other per-article outcomes, show when pattern is dominant.
 
 ### No Connections State
 
@@ -199,7 +207,7 @@ Article Status                                           [Refresh]
 - Avoids confusion ("it says it would deliver, but where?")
 
 ```
-Article Status                    Last checked: just now  [Refresh]
+Delivery Preview                 Preview generated: just now  [Refresh]
 -----------------------------------------------------------------
 | No active connections                                          |
 |                                                                |
@@ -244,15 +252,15 @@ Article Status                    Last checked: just now  [Refresh]
 
 | API Outcome | Explanation Text |
 |-------------|------------------|
-| `would-deliver` | This article would be delivered to Discord when the feed is next processed. |
-| `first-run-baseline` | This is a new feed. Articles are being recorded but not delivered yet to prevent flooding your channel with old content. New articles will be delivered after this initial setup. |
-| `duplicate-id` | This article was already delivered. Its unique ID matches a previously sent article. |
-| `blocked-by-comparison` | This article hasn't changed since it was last checked. The monitored fields (like title or description) are identical to the previous version. |
-| `filtered-by-date-check` | This article's publish date is older than your configured threshold. Adjust date settings if you want older articles delivered. |
-| `filtered-by-medium-filter` | This article doesn't match the filter rules for [Connection Name]. Review your filter settings to adjust what gets delivered. |
-| `rate-limited-feed` | Your feed has hit its daily article limit ({current}/{max}). Upgrade your plan or wait until tomorrow for more articles. |
-| `rate-limited-medium` | The connection [Connection Name] has reached its rate limit. This article will be delivered once the limit resets. |
-| `would-deliver-passing-comparison` | This article was seen before, but a monitored field changed (like the title or description), so it will be re-delivered as an update. |
+| `would-deliver` | This article will be delivered to Discord when your feed is next processed. |
+| `first-run-baseline` | This feed is in its learning phase. MonitoRSS skips pre-existing articles to avoid flooding your channel with old content. |
+| `duplicate-id` | MonitoRSS has already seen this article. It may have been delivered previously, or recorded when the feed was first added. Either way, it won't be sent again to avoid duplicates. |
+| `blocked-by-comparison` | The fields in your Blocking Comparisons haven't changed since this article was last checked. |
+| `filtered-by-date-check` | This article's publish date is older than your maximum article age setting. Adjust date settings if you want older articles delivered. |
+| `filtered-by-medium-filter` | This article doesn't match the filter rules for your connection. Review your filter settings to adjust what gets delivered. |
+| `rate-limited-feed` | Your feed has delivered the maximum articles allowed in a 24-hour period. Delivery resumes automatically as older deliveries fall outside this window. Upgrade your plan for higher limits. |
+| `rate-limited-medium` | This connection has reached its delivery limit. The article will be delivered automatically once the limit resets. |
+| `would-deliver-passing-comparison` | This article was seen before, but one of your Passing Comparison fields changed, so it will be delivered. |
 
 ## Delivery Checks View (Level 3)
 
@@ -260,7 +268,44 @@ For power users who need to see exactly what happened at each stage of the deliv
 
 **Trigger:** "View Delivery Checks" text link in expanded row details (opens modal)
 
+### Learning Phase Modal
+
+During the learning phase, the modal shows an educational message instead of the
+stage-by-stage breakdown (since all stages would show "Skipped" anyway):
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Delivery Checks                                             [X] │
+│ "Breaking News: Market Update..."                               │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ℹ️  Learning Phase Active                                      │
+│                                                                 │
+│  This feed is in its learning phase. MonitoRSS is identifying   │
+│  existing articles so it only delivers new ones.                │
+│                                                                 │
+│                                                                 │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │ Expected completion: Within 10 minutes                    │  │
+│  │ Based on your feed's refresh interval                     │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  Delivery checks will be available once the feed begins         │
+│  normal operation.                                              │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Rationale:**
+- Keeps button visible for discoverability and consistency
+- Provides education instead of confusing "Skipped" stages
+- Prepares users for the full feature once learning completes
+- Shows expected completion time based on feed's refresh interval
+
 ### Modal Overview
+
+Uses a **subtle background strip** pattern instead of bordered boxes for expanded details.
+This reduces visual nesting and maintains reading flow.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -272,20 +317,19 @@ For power users who need to see exactly what happened at each stage of the deliv
 │                                                                 │
 │ > ✓  Feed State            Not first run                        │
 │                                                                 │
-│ > ✓  ID Comparison         Article ID is new                    │
+│ > ✓  Duplicate Check       Article ID is new                    │
 │                                                                 │
 │ v ✗  Blocking Comparison   description field unchanged          │
-│ ┌─────────────────────────────────────────────────────────────┐ │
-│ │ Configured Fields     description, content                  │ │
-│ │ Active Fields         description                           │ │
-│ │ Blocked By            description (no change detected)      │ │
-│ └─────────────────────────────────────────────────────────────┘ │
+│ ┃                                                               │
+│ ┃  Selected Fields       description, content                   │
+│ ┃  Available Fields      description                            │
+│ ┃  Blocked By            description (no change detected)       │
 │                                                                 │
 │   —  Passing Comparison    Skipped (earlier check failed)       │
 │                                                                 │
 │   —  Date Check            Skipped                              │
 │                                                                 │
-│   —  Medium Filter         Skipped                              │
+│   —  Connection Filters    Skipped                              │
 │                                                                 │
 │   —  Feed Rate Limit       Skipped                              │
 │                                                                 │
@@ -309,11 +353,12 @@ For power users who need to see exactly what happened at each stage of the deliv
 
 ### Stage Row Design
 
+Uses a **subtle background strip** pattern: expanded details use only a colored left border
+with subtle background, avoiding the visual heaviness of bordered boxes.
+
 **Collapsed Row:**
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│ [>] [Icon] Stage Name         Brief summary text                │
-└─────────────────────────────────────────────────────────────────┘
+[>] [Icon] Stage Name         Brief summary text
 ```
 
 - `[>]` = Chevron (clickable to expand)
@@ -323,33 +368,33 @@ For power users who need to see exactly what happened at each stage of the deliv
 
 **Expanded Row (Passed):**
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│ [v] ✓  Feed State            Not first run                      │
-│ ┌─────────────────────────────────────────────────────────────┐ │
-│ │ Has Prior Articles    Yes                                   │ │
-│ │ Is First Run          No                                    │ │
-│ │ Stored Comparisons    title, description                    │ │
-│ └─────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
+[v] ✓  Feed State            Not first run
+┃
+┃  Has Prior Articles    Yes
+┃  Is First Run          No
+┃  Stored Comparisons    title, description
 ```
+
+- Green left border (3px)
+- No background or very subtle gray background
+- Details are indented and aligned with stage content
 
 **Expanded Row (Failed - Auto-expanded by default):**
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│ [v] ✗  Blocking Comparison   description field unchanged        │
-│ ┌─────────────────────────────────────────────────────────────┐ │
-│ │ Configured Fields     description, content                  │ │
-│ │ Active Fields         description                           │ │
-│ │ Blocked By            description (no change detected)      │ │
-│ └─────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
+[v] ✗  Blocking Comparison   description field unchanged
+┃
+┃  Selected Fields       description, content
+┃  Available Fields      description
+┃  Blocked By            description (no change detected)
 ```
+
+- Red left border (3px)
+- Subtle red background tint (very low opacity to avoid alarm fatigue)
+- Details are indented and aligned with stage content
 
 **Skipped Row (Not expandable):**
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│     —  Passing Comparison    Skipped (earlier check failed)     │
-└─────────────────────────────────────────────────────────────────┘
+    —  Passing Comparison    Skipped (earlier check failed)
 ```
 
 - No chevron (nothing to expand)
@@ -359,84 +404,66 @@ For power users who need to see exactly what happened at each stage of the deliv
 
 ### Stage-Specific Expanded Details
 
+Details are shown as simple property lists with a colored left border (no box).
+
 **Feed State (Passed/Failed):**
 ```
-┌───────────────────────────────────────────────────────┐
-│ Has Prior Articles    Yes                             │
-│ Is First Run          No                              │
-│ Stored Comparisons    title, description, content     │
-└───────────────────────────────────────────────────────┘
+┃  Has Prior Articles    Yes
+┃  Is First Run          No
+┃  Stored Comparisons    title, description, content
 ```
 
-**ID Comparison (Passed/Failed):**
+**Duplicate Check (Passed/Failed):**
 ```
-┌───────────────────────────────────────────────────────┐
-│ Article ID Hash       a1b2c3d4e5f6...                 │
-│ Found in Hot Cache    No                              │
-│ Found in Cold Cache   No                              │
-│ Is New                Yes                             │
-└───────────────────────────────────────────────────────┘
+┃  Is New                Yes
 ```
 
 **Blocking Comparison (Passed/Failed):**
 ```
-┌───────────────────────────────────────────────────────┐
-│ Configured Fields     description, content            │
-│ Active Fields         description                     │
-│ Blocked By            description (no change)         │
-└───────────────────────────────────────────────────────┘
+┃  Selected Fields       description, content
+┃  Available Fields      description
+┃  Blocked By            description (no change)
 ```
 
 **Passing Comparison (Passed/Failed):**
 ```
-┌───────────────────────────────────────────────────────┐
-│ Configured Fields     title, author                   │
-│ Active Fields         title                           │
-│ Changed Fields        title (triggered re-delivery)   │
-└───────────────────────────────────────────────────────┘
+┃  Selected Fields       title, author
+┃  Available Fields      title
+┃  Changed Fields        title (triggered re-delivery)
 ```
 
 **Date Check (Passed/Failed):**
 ```
-┌───────────────────────────────────────────────────────┐
-│ Article Date          2024-01-15 10:30:00 UTC         │
-│ Age                   2 days, 4 hours                 │
-│ Threshold             7 days                          │
-│ Within Threshold      Yes                             │
-└───────────────────────────────────────────────────────┘
+┃  Article Date          2024-01-15 10:30:00 UTC
+┃  Age                   2 days, 4 hours
+┃  Maximum Age           7 days
+┃  Within Limit          Yes
 ```
 
-**Medium Filter (Passed/Failed):**
+**Connection Filters (Passed/Failed):**
 ```
-┌───────────────────────────────────────────────────────┐
-│ Connection            #announcements                  │
-│ Filter Result         Blocked                         │
-│ Blocked Because:                                      │
-│   • title must contain "urgent"                       │
-│   • category must not equal "sports"                  │
-└───────────────────────────────────────────────────────┘
+┃  Filter Result         Blocked
+┃  Blocked Because:
+┃    • title must contain "urgent"
+┃    • category must not equal "sports"
 ```
 
 **Feed Rate Limit (Passed/Failed):**
 ```
-┌───────────────────────────────────────────────────────┐
-│ Current Count         47 articles                     │
-│ Daily Limit           50 articles                     │
-│ Remaining             3 articles                      │
-│ Would Exceed          No                              │
-└───────────────────────────────────────────────────────┘
+┃  Current Count         47 articles
+┃  Limit                 50 articles
+┃  Time Window           1 day
+┃  Remaining             3 articles
+┃  Over Limit            No
 ```
 
 **Connection Rate Limit (Passed/Failed):**
 ```
-┌───────────────────────────────────────────────────────┐
-│ Connection            #announcements                  │
-│ Current Count         10 articles                     │
-│ Limit                 10 per hour                     │
-│ Time Window           1 hour                          │
-│ Remaining             0 articles                      │
-│ Would Exceed          Yes                             │
-└───────────────────────────────────────────────────────┘
+┃  Current Count         10 articles
+┃  Limit                 10 articles
+┃  Time Window           1 hour
+┃  Remaining             0 articles
+┃  Over Limit            Yes
 ```
 
 ### Visual Design Specifications
@@ -444,21 +471,21 @@ For power users who need to see exactly what happened at each stage of the deliv
 **Status Icons:**
 | Status  | Icon | Color | Background |
 |---------|------|-------|------------|
-| Passed  | ✓ (check) | green.500 | green.50 |
-| Failed  | ✗ (x-mark) | red.500 | red.50 |
-| Skipped | — (dash) | gray.400 | none |
+| Passed  | ✓ (check) | green.400 | none |
+| Failed  | ✗ (x-mark) | white | none (high contrast against red.900 row background) |
+| Skipped | — (dash) | gray.500 | none |
 
 **Row Styling:**
-- Passed rows: Default background, subtle left border (green.200)
-- Failed rows: Light red background (red.50), left border (red.400)
-- Skipped rows: Muted text (gray.500), no background, no border
+- Passed rows: Default background, subtle left border (green.200, 3px)
+- Failed rows: Very subtle red background (red.900 with low opacity in dark mode), left border (red.400, 3px)
+- Skipped rows: Muted text (gray.500), reduced opacity, no border
 
-**Detail Panel:**
-- Background: gray.50 (light mode) / gray.700 (dark mode)
-- Border radius: md (6px)
-- Padding: 12px
-- Margin: 0 24px 8px 24px (indented from stage row)
-- Font: Monospace for hash values, regular for labels
+**Detail Panel (Subtle Background Strip):**
+- No box border - uses only left border inherited from parent row
+- Padding: 12px left (pl-4), 8px vertical (py-2)
+- Margin-left: Aligned with stage name (ml-10 or similar)
+- Font: Monospace for values, regular for labels
+- Background: Inherits from row (subtle red for failed, none for passed)
 
 **Typography:**
 - Stage name: font-weight: 600 (semibold)
@@ -499,21 +526,20 @@ For power users who need to see exactly what happened at each stage of the deliv
 │ > ✓  Feed State                 │
 │      Not first run              │
 │                                 │
-│ > ✓  ID Comparison              │
+│ > ✓  Duplicate Check            │
 │      Article ID is new          │
 │                                 │
 │ v ✗  Blocking Comparison        │
 │      description unchanged      │
-│ ┌─────────────────────────────┐ │
-│ │ Configured Fields           │ │
-│ │ description, content        │ │
-│ │                             │ │
-│ │ Active Fields               │ │
-│ │ description                 │ │
-│ │                             │ │
-│ │ Blocked By                  │ │
-│ │ description (no change)     │ │
-│ └─────────────────────────────┘ │
+│ ┃                               │
+│ ┃  Selected Fields              │
+│ ┃  description, content         │
+│ ┃                               │
+│ ┃  Available Fields             │
+│ ┃  description                  │
+│ ┃                               │
+│ ┃  Blocked By                   │
+│ ┃  description (no change)      │
 │                                 │
 │   —  Passing Comparison         │
 │      Skipped                    │
@@ -566,8 +592,8 @@ Uses yellow/orange badge to indicate mixed results.
 
 **Logic for determining summary status:**
 - All connections would deliver -> "Would Deliver" (green)
-- All connections blocked for same reason -> Show that reason (e.g., "First Run")
-- Mixed results -> "Partial" (yellow/orange)
+- All connections blocked for same reason -> Show that reason (e.g., "Learning")
+- Mixed results -> "Mixed Results" (yellow/orange)
 - All connections blocked (different reasons) -> Show most common reason or "Blocked"
 
 ## Interaction Details
@@ -595,7 +621,7 @@ Uses yellow/orange badge to indicate mixed results.
 **Behavior:**
 - Shows loading spinner while fetching
 - Disables button during fetch
-- Updates "Last checked" timestamp on completion
+- Updates "Preview generated" timestamp on completion
 - Collapses all expanded rows on refresh (data may have changed)
 
 ### Load More Button
@@ -626,23 +652,23 @@ Uses yellow/orange badge to indicate mixed results.
 ```
 ---------------------------------
 | "Breaking News: Market..."    |
-| Status: First Run             |
+| Status: Learning              |
 ---------------------------------
 | "Tech Update: New Phone..."   |
-| Status: First Run             |
+| Status: Learning              |
 ---------------------------------
 ```
 
 ### Expanded Details on Mobile
 
 - Full width, stacked layout
-- Connection table becomes list:
+- Connection table becomes list (for non-learning statuses):
 
 ```
 Connections:
 
 #announcements
-  Would deliver after first run
+  Would deliver
 
 #tech-news
   Blocked by filters
@@ -650,6 +676,16 @@ Connections:
 
 @news-webhook
   Rate limited (5/5 today)
+```
+
+For learning phase, the simplified format is used (no per-connection list):
+
+```
+Skipped (Learning Phase): This article existed before the feed
+was added. MonitoRSS skips pre-existing articles to avoid
+flooding your channel with old content. New articles will be
+delivered to all 2 connections once learning completes (within
+10 minutes).
 ```
 
 ### Touch Considerations

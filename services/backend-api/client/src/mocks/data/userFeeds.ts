@@ -11,6 +11,15 @@ import mockDiscordServers from "./discordServers";
 import mockDiscordWebhooks from "./discordWebhooks";
 import { CustomPlaceholderStepType, UserFeedManagerStatus } from "../../constants";
 
+/**
+ * Mock state configuration for connections testing.
+ * Change this value to test different UI states:
+ * - 'normal': Shows connections (default)
+ * - 'no-connections': Removes all connections (tests no-connection state)
+ */
+type MockConnectionsState = "normal" | "no-connections";
+export const MOCK_CONNECTIONS_STATE: MockConnectionsState = "normal";
+
 const sampleFilters = {
   expression: {
     type: "LOGICAL",
@@ -571,5 +580,16 @@ const mockUserFeeds: UserFeed[] = [
 //     refreshRateOptions: [],
 //   });
 // }
+
+export const getMockUserFeeds = (): UserFeed[] => {
+  if (MOCK_CONNECTIONS_STATE === "no-connections") {
+    return mockUserFeeds.map((feed) => ({
+      ...feed,
+      connections: [],
+    }));
+  }
+
+  return mockUserFeeds;
+};
 
 export default mockUserFeeds;
