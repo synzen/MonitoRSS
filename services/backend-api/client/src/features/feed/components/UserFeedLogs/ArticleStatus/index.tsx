@@ -135,7 +135,14 @@ export const ArticleStatus = () => {
   return (
     <Stack spacing={4} mb={8} border="solid 1px" borderColor="gray.700" borderRadius="md">
       <Box>
-        <Flex px={4} py={4} justifyContent="space-between" alignItems="flex-start">
+        <Flex
+          px={4}
+          py={4}
+          justifyContent="space-between"
+          alignItems={{ base: "stretch", md: "flex-start" }}
+          flexDirection={{ base: "column", md: "row" }}
+          gap={3}
+        >
           <Stack spacing={1}>
             <Heading as="h3" size="sm" m={0} id="article-status-table-title">
               Delivery Preview
@@ -143,11 +150,18 @@ export const ArticleStatus = () => {
             <Text color="whiteAlpha.700" fontSize="sm">
               Preview how articles will be handled when your feed is next processed.
             </Text>
+            <Show below="md">
+              <Text fontSize="xs" color="whiteAlpha.600">
+                Preview generated: {formatLastChecked()}
+              </Text>
+            </Show>
           </Stack>
-          <HStack spacing={2}>
-            <Text fontSize="xs" color="whiteAlpha.600">
-              Preview generated: {formatLastChecked()}
-            </Text>
+          <HStack spacing={2} flexShrink={0}>
+            <Hide below="md">
+              <Text fontSize="xs" color="whiteAlpha.600" whiteSpace="nowrap">
+                Preview generated: {formatLastChecked()}
+              </Text>
+            </Hide>
             <Button
               size={{ base: "md", md: "sm" }}
               leftIcon={<RepeatIcon />}

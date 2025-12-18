@@ -9,9 +9,9 @@ export const UserFeedLogs = () => {
       <Heading size="md" as="h2">
         Logs
       </Heading>
-      <RequestHistory />
       <ArticleStatus />
       <DeliveryHistory />
+      <RequestHistory />
     </Stack>
   );
 };
