@@ -35,6 +35,8 @@ export enum ArticleDiagnosisOutcome {
   RateLimitedMedium = "rate-limited-medium",
   /** Article passes comparisons (already seen, but field changed) */
   WouldDeliverPassingComparison = "would-deliver-passing-comparison",
+  /** Different outcomes across mediums */
+  MixedResults = "mixed-results",
   /** Feed content has not changed (hash matches stored hash) */
   FeedUnchanged = "feed-unchanged",
   /** Feed fetch or parse failed */

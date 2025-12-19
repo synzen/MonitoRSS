@@ -8,19 +8,11 @@ interface Props {
   result: ArticleDiagnosticResult;
 }
 
-const hasPartialDelivery = (result: ArticleDiagnosticResult): boolean => {
-  const outcomes = result.mediumResults.map((m) => m.outcome);
-  const uniqueOutcomes = new Set(outcomes);
-
-  return uniqueOutcomes.size > 1;
-};
-
 export const ArticleStatusRow = ({ result }: Props) => {
   const { isOpen, onToggle } = useDisclosure();
 
-  const isPartial = hasPartialDelivery(result);
-  const displayOutcome = isPartial ? "Mixed Results" : getOutcomeLabel(result.outcome);
-  const colorScheme = isPartial ? "yellow" : getOutcomeColorScheme(result.outcome);
+  const displayOutcome = getOutcomeLabel(result.outcome);
+  const colorScheme = getOutcomeColorScheme(result.outcome);
 
   return (
     <>
@@ -45,7 +37,6 @@ export const ArticleStatusRow = ({ result }: Props) => {
               <StatusBadgeContent
                 outcome={result.outcome}
                 label={displayOutcome}
-                isPartial={isPartial}
               />
             </Badge>
           </HStack>

@@ -556,6 +556,195 @@ describe("diagnoseArticles (batch)", () => {
   });
 });
 
+describe("Aggregate outcome computation", () => {
+  beforeEach(() => {
+    clearInMemoryStore();
+  });
+
+  function createMockDependencies(): DiagnoseArticleDependencies {
+    return {
+      articleFieldStore: inMemoryArticleFieldStore,
+      deliveryRecordStore: createInMemoryDeliveryRecordStore(),
+    };
+  }
+
+  function createInput(
+    allArticles: Article[],
+    targetArticles?: Article[],
+    overrides: Partial<DiagnoseArticlesInput> = {}
+  ): DiagnoseArticlesInput {
+    return {
+      feed: {
+        id: "feed-1",
+        blockingComparisons: [],
+        passingComparisons: [],
+      },
+      mediums: [{ id: "medium-1" }],
+      articleDayLimit: 100,
+      allArticles,
+      targetArticles: targetArticles ?? allArticles,
+      ...overrides,
+    };
+  }
+
+  function createBlockingFilter(requiredKeyword: string): LogicalExpression {
+    return {
+      type: ExpressionType.Logical,
+      op: LogicalExpressionOperator.And,
+      children: [
+        {
+          type: ExpressionType.Relational,
+          op: RelationalExpressionOperator.Contains,
+          left: { type: RelationalExpressionLeft.Article, value: "title" },
+          right: { type: RelationalExpressionRight.String, value: requiredKeyword },
+        },
+      ],
+    };
+  }
+
+  async function storeBaseline() {
+    const baselineArticle = createArticle("baseline", { title: "Baseline" });
+    await inMemoryArticleFieldStore.startContext(async () => {
+      await inMemoryArticleFieldStore.storeArticles("feed-1", [baselineArticle], []);
+      await inMemoryArticleFieldStore.flushPendingInserts();
+    });
+  }
+
+  describe("Mixed results aggregate outcome", () => {
+    it("returns MixedResults as aggregate outcome when mediums have different outcomes", async () => {
+      const article = createArticle("article-1", { title: "Tech News Update" });
+      const deps = createMockDependencies();
+
+      await storeBaseline();
+
+      const input = createInput([article], [article], {
+        mediums: [
+          { id: "medium-1" }, // No filter → passes
+          { id: "medium-2", filters: { expression: createBlockingFilter("SPORTS") } }, // Blocks
+        ],
+      });
+
+      const { results } = await diagnoseArticles(input, deps);
+
+      expect(results).toHaveLength(1);
+      expect(results[0]?.outcome).toBe(ArticleDiagnosisOutcome.MixedResults);
+      expect(results[0]?.outcomeReason).toContain("Mixed results");
+    });
+
+    it("returns any medium's outcome as aggregate when all mediums have same outcome", async () => {
+      const article = createArticle("article-1", { title: "Tech News Update" });
+      const deps = createMockDependencies();
+
+      await storeBaseline();
+
+      const input = createInput([article], [article], {
+        mediums: [
+          { id: "medium-1" }, // No filter → WouldDeliver
+          { id: "medium-2" }, // No filter → WouldDeliver
+        ],
+      });
+
+      const { results } = await diagnoseArticles(input, deps);
+
+      expect(results).toHaveLength(1);
+      expect(results[0]?.outcome).toBe(ArticleDiagnosisOutcome.WouldDeliver);
+      expect(results[0]?.outcomeReason).toContain("pass");
+    });
+
+    it("returns MixedResults when one medium would deliver and another is rate limited", async () => {
+      const article = createArticle("article-1", { title: "New Article" });
+      const deliveryRecordStore = createInMemoryDeliveryRecordStore();
+      const deps: DiagnoseArticleDependencies = {
+        articleFieldStore: inMemoryArticleFieldStore,
+        deliveryRecordStore,
+      };
+
+      await storeBaseline();
+
+      // Store 5 deliveries to medium-2 to exceed its limit
+      await deliveryRecordStore.startContext(async () => {
+        const deliveries: ArticleDeliveryState[] = Array.from({ length: 5 }, (_, i): ArticleDeliveryState => ({
+          id: `delivery-m2-${i}`,
+          mediumId: "medium-2",
+          status: ArticleDeliveryStatus.Sent as const,
+          articleIdHash: `hash-m2-${i}`,
+          article: createArticle(`m2-${i}`),
+        }));
+        await deliveryRecordStore.store("feed-1", deliveries);
+      });
+
+      const input = createInput([article], [article], {
+        mediums: [
+          { id: "medium-1" }, // No restrictions → WouldDeliver
+          { id: "medium-2", rateLimits: [{ limit: 5, timeWindowSeconds: 86400 }] }, // Rate limit exceeded → RateLimitedMedium
+        ],
+      });
+
+      const { results } = await diagnoseArticles(input, deps);
+
+      expect(results).toHaveLength(1);
+      expect(results[0]?.outcome).toBe(ArticleDiagnosisOutcome.MixedResults);
+      expect(results[0]?.outcomeReason).toContain("Mixed results");
+    });
+
+    it("returns MixedResults when one medium would deliver and another is filtered", async () => {
+      const article = createArticle("article-1", { title: "Tech News" });
+      const deps = createMockDependencies();
+
+      await storeBaseline();
+
+      const input = createInput([article], [article], {
+        mediums: [
+          { id: "medium-1" }, // No filter → WouldDeliver
+          { id: "medium-2", filters: { expression: createBlockingFilter("SPORTS") } }, // Filter blocks → FilteredByMediumFilter
+        ],
+      });
+
+      const { results } = await diagnoseArticles(input, deps);
+
+      expect(results).toHaveLength(1);
+      expect(results[0]?.outcome).toBe(ArticleDiagnosisOutcome.MixedResults);
+      expect(results[0]?.outcomeReason).toContain("Mixed results");
+    });
+
+    it("returns MixedResults when one medium is rate limited and another is filtered", async () => {
+      const article = createArticle("article-1", { title: "Tech News" });
+      const deliveryRecordStore = createInMemoryDeliveryRecordStore();
+      const deps: DiagnoseArticleDependencies = {
+        articleFieldStore: inMemoryArticleFieldStore,
+        deliveryRecordStore,
+      };
+
+      await storeBaseline();
+
+      // Store 5 deliveries to medium-2 to exceed its limit
+      await deliveryRecordStore.startContext(async () => {
+        const deliveries: ArticleDeliveryState[] = Array.from({ length: 5 }, (_, i): ArticleDeliveryState => ({
+          id: `delivery-m2-${i}`,
+          mediumId: "medium-2",
+          status: ArticleDeliveryStatus.Sent as const,
+          articleIdHash: `hash-m2-${i}`,
+          article: createArticle(`m2-${i}`),
+        }));
+        await deliveryRecordStore.store("feed-1", deliveries);
+      });
+
+      const input = createInput([article], [article], {
+        mediums: [
+          { id: "medium-1", filters: { expression: createBlockingFilter("SPORTS") } }, // Filter blocks → FilteredByMediumFilter
+          { id: "medium-2", rateLimits: [{ limit: 5, timeWindowSeconds: 86400 }] }, // Rate limit exceeded → RateLimitedMedium
+        ],
+      });
+
+      const { results } = await diagnoseArticles(input, deps);
+
+      expect(results).toHaveLength(1);
+      expect(results[0]?.outcome).toBe(ArticleDiagnosisOutcome.MixedResults);
+      expect(results[0]?.outcomeReason).toContain("Mixed results");
+    });
+  });
+});
+
 describe("Multiple mediums with different outcomes", () => {
   beforeEach(() => {
     clearInMemoryStore();

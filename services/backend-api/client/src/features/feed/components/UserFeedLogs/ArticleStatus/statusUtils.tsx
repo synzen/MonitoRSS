@@ -33,6 +33,8 @@ export const getOutcomeLabel = (outcome: ArticleDiagnosisOutcome): string => {
       return "Limit Reached";
     case ArticleDiagnosisOutcome.WouldDeliverPassingComparison:
       return "Would Deliver";
+    case ArticleDiagnosisOutcome.MixedResults:
+      return "Mixed Results";
     case ArticleDiagnosisOutcome.FeedUnchanged:
       return "No Changes";
     case ArticleDiagnosisOutcome.FeedError:
@@ -58,6 +60,7 @@ export const getOutcomeColorScheme = (outcome: ArticleDiagnosisOutcome): string 
       return "orange";
     case ArticleDiagnosisOutcome.RateLimitedFeed:
     case ArticleDiagnosisOutcome.RateLimitedMedium:
+    case ArticleDiagnosisOutcome.MixedResults:
       return "yellow";
     case ArticleDiagnosisOutcome.FeedError:
       return "red";
@@ -82,6 +85,7 @@ export const getOutcomeIcon = (outcome: ArticleDiagnosisOutcome) => {
       return WarningIcon;
     case ArticleDiagnosisOutcome.RateLimitedFeed:
     case ArticleDiagnosisOutcome.RateLimitedMedium:
+    case ArticleDiagnosisOutcome.MixedResults:
       return TimeIcon;
     case ArticleDiagnosisOutcome.FeedError:
       return CloseIcon;
@@ -93,11 +97,10 @@ export const getOutcomeIcon = (outcome: ArticleDiagnosisOutcome) => {
 interface StatusBadgeContentProps {
   outcome: ArticleDiagnosisOutcome;
   label: string;
-  isPartial?: boolean;
 }
 
-export const StatusBadgeContent = ({ outcome, label, isPartial }: StatusBadgeContentProps) => {
-  const OutcomeIcon = isPartial ? WarningIcon : getOutcomeIcon(outcome);
+export const StatusBadgeContent = ({ outcome, label }: StatusBadgeContentProps) => {
+  const OutcomeIcon = getOutcomeIcon(outcome);
 
   return (
     <>
@@ -135,8 +138,7 @@ export function getHttpStatusMessage(statusCode: number): HttpStatusMessage {
       return {
         title: "Access Blocked by Publisher",
         explanation: "The feed's server is refusing access to MonitoRSS.",
-        action:
-          "Many publishers block automated readers. Try finding an official public RSS feed.",
+        action: "Many publishers block automated readers. Try finding an official public RSS feed.",
         severity: "auth",
         colorScheme: "orange",
         badgeVariant: "solid",
@@ -156,7 +158,8 @@ export function getHttpStatusMessage(statusCode: number): HttpStatusMessage {
       return {
         title: "Feed Permanently Removed",
         explanation: "This feed has been permanently deleted by the publisher.",
-        action: "This feed will not recover. Consider removing it and finding an alternative source.",
+        action:
+          "This feed will not recover. Consider removing it and finding an alternative source.",
         severity: "not-found",
         colorScheme: "red",
         badgeVariant: "solid",
@@ -232,17 +235,13 @@ export interface GenericErrorMessage {
   explanation: string;
 }
 
-export function getGenericErrorMessage(
-  feedState: string,
-  errorType?: string
-): GenericErrorMessage {
+export function getGenericErrorMessage(feedState: string, errorType?: string): GenericErrorMessage {
   if (feedState === "fetch-error") {
     switch (errorType) {
       case "timeout":
         return {
           title: "Failed to Fetch Feed",
-          explanation:
-            "The feed server took too long to respond. This is usually temporary.",
+          explanation: "The feed server took too long to respond. This is usually temporary.",
         };
       case "fetch":
         return {
@@ -269,14 +268,12 @@ export function getGenericErrorMessage(
       case "timeout":
         return {
           title: "Failed to Parse Feed",
-          explanation:
-            "The feed took too long to parse. It may be unusually large or complex.",
+          explanation: "The feed took too long to parse. It may be unusually large or complex.",
         };
       case "invalid":
         return {
           title: "Failed to Parse Feed",
-          explanation:
-            "The feed contains invalid XML. Contact the feed provider if this persists.",
+          explanation: "The feed contains invalid XML. Contact the feed provider if this persists.",
         };
       default:
         return {

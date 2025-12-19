@@ -10,6 +10,7 @@ export enum ArticleDiagnosisOutcome {
   RateLimitedFeed = "rate-limited-feed",
   RateLimitedMedium = "rate-limited-medium",
   WouldDeliverPassingComparison = "would-deliver-passing-comparison",
+  MixedResults = "mixed-results",
   FeedUnchanged = "feed-unchanged",
   FeedError = "feed-error",
 }

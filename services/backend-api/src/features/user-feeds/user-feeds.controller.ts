@@ -33,7 +33,6 @@ import { UserFeedManagerType } from "../user-feed-management-invites/constants";
 import {
   CreateUserFeedCloneInput,
   CreateUserFeedInputDto,
-  DiagnoseArticlesInputDto,
   GetUserFeedArticlePropertiesInputDto,
   GetUserFeedArticlePropertiesOutputDto,
   GetUserFeedArticlesInputDto,
@@ -290,7 +289,7 @@ export class UserFeedsController {
     @Param("feedId", GetUserFeedsPipe())
     [{ feed }]: GetUserFeedsPipeOutput,
     @Body(TransformValidationPipe)
-    { skip, limit }: DiagnoseArticlesInputDto
+    { skip, limit }: import("./dto").DiagnoseArticlesInputDto
   ) {
     return this.userFeedsService.diagnoseArticles({
       feed,

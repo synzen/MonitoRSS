@@ -214,8 +214,7 @@ const OUTCOME_PRIORITY: ArticleDiagnosisOutcome[] = [
 
 /**
  * Compute aggregate article-level outcome from per-medium outcomes.
- * If any medium would deliver, article outcome is WouldDeliver.
- * Otherwise, use the "worst" (highest priority) failure outcome.
+ * Returns MixedResults if mediums have different outcomes, otherwise returns any medium's outcome.
  */
 function computeAggregateOutcome(
   mediumResults: Array<{ outcome: ArticleDiagnosisOutcome; outcomeReason: string }>
@@ -227,36 +226,21 @@ function computeAggregateOutcome(
     };
   }
 
-  // If any medium would deliver, the article would be delivered
-  const wouldDeliver = mediumResults.find(
-    (m) =>
-      m.outcome === ArticleDiagnosisOutcome.WouldDeliver ||
-      m.outcome === ArticleDiagnosisOutcome.WouldDeliverPassingComparison
-  );
-  if (wouldDeliver) {
+  // Check if all mediums have the same outcome
+  const uniqueOutcomes = new Set(mediumResults.map(m => m.outcome));
+  const hasMixedResults = uniqueOutcomes.size > 1;
+
+  if (hasMixedResults) {
     return {
-      outcome: wouldDeliver.outcome,
-      outcomeReason: wouldDeliver.outcomeReason,
+      outcome: ArticleDiagnosisOutcome.MixedResults,
+      outcomeReason: "Mixed results across connections.",
     };
   }
 
-  // All mediums have failure outcomes - find the highest priority (worst) one
-  // Safe to use non-null assertion since we checked length > 0 above
-  let highestPriorityIndex = -1;
-  let highestPriorityResult: { outcome: ArticleDiagnosisOutcome; outcomeReason: string } =
-    mediumResults[0]!;
-
-  for (const result of mediumResults) {
-    const priorityIndex = OUTCOME_PRIORITY.indexOf(result.outcome);
-    if (priorityIndex > highestPriorityIndex) {
-      highestPriorityIndex = priorityIndex;
-      highestPriorityResult = result;
-    }
-  }
-
+  // All mediums have the same outcome - return any of them
   return {
-    outcome: highestPriorityResult.outcome,
-    outcomeReason: highestPriorityResult.outcomeReason,
+    outcome: mediumResults[0]!.outcome,
+    outcomeReason: mediumResults[0]!.outcomeReason,
   };
 }
 
