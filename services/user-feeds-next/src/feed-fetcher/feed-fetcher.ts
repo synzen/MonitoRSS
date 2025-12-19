@@ -121,7 +121,6 @@ async function handleFetchResponse({
   }
 
   if (
-    requestStatus === FeedResponseRequestStatus.Pending ||
     requestStatus === FeedResponseRequestStatus.MatchedHash
   ) {
     return { requestStatus };

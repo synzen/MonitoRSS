@@ -472,7 +472,7 @@ async function handleFeedV2EventInternal({
   });
 
   // Handle non-success results
-  if (feedResult.status === "pending" || feedResult.status === "matched-hash") {
+  if (feedResult.status === "matched-hash") {
     logger.debug(`No response body - pending request or matched hash`, {
       feedId: feed.id,
       requestStatus: feedResult.status,

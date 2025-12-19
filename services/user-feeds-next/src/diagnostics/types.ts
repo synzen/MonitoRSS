@@ -162,7 +162,26 @@ export type DiagnosticStageResult =
   | MediumRateLimitDiagnosticResult;
 
 /**
- * Complete diagnostic result for a single article
+ * Diagnostic result for a single medium (connection)
+ */
+export interface MediumDiagnosticResult {
+  mediumId: string;
+  outcome: ArticleDiagnosisOutcome;
+  outcomeReason: string;
+  stages: DiagnosticStageResult[];
+}
+
+/**
+ * Summary version of medium diagnostic result (without stages array)
+ */
+export interface MediumDiagnosisSummary {
+  mediumId: string;
+  outcome: ArticleDiagnosisOutcome;
+  outcomeReason: string;
+}
+
+/**
+ * Complete diagnostic result for a single article with per-medium outcomes
  */
 export interface ArticleDiagnosticResult {
   articleId: string;
@@ -170,11 +189,11 @@ export interface ArticleDiagnosticResult {
   articleTitle: string | null;
   outcome: ArticleDiagnosisOutcome;
   outcomeReason: string;
-  stages: DiagnosticStageResult[];
+  mediumResults: MediumDiagnosticResult[];
 }
 
 /**
- * Summary version of diagnostic result (without stages array)
+ * Summary version of diagnostic result (without stages in medium results)
  */
 export interface ArticleDiagnosisSummary {
   articleId: string;
@@ -182,6 +201,7 @@ export interface ArticleDiagnosisSummary {
   articleTitle: string | null;
   outcome: ArticleDiagnosisOutcome;
   outcomeReason: string;
+  mediumResults: MediumDiagnosisSummary[];
 }
 
 /**

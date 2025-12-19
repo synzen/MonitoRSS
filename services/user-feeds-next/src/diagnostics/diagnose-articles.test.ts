@@ -59,7 +59,7 @@ describe("diagnoseArticle", () => {
         blockingComparisons: [],
         passingComparisons: [],
       },
-      mediums: [],
+      mediums: [{ id: "medium-1" }],
       articleDayLimit: 20,
       allArticles: articles,
       targetArticles: targetArticles ?? articles,
@@ -75,8 +75,8 @@ describe("diagnoseArticle", () => {
 
       const { results } = await diagnoseArticles(input, deps);
 
-      expect(results[0]?.outcome).toBe(ArticleDiagnosisOutcome.FirstRunBaseline);
-      expect(results[0]?.outcomeReason).toContain("first");
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.FirstRunBaseline);
+      expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("first");
     });
   });
 
@@ -94,8 +94,8 @@ describe("diagnoseArticle", () => {
 
       const { results } = await diagnoseArticles(input, deps);
 
-      expect(results[0]?.outcome).toBe(ArticleDiagnosisOutcome.DuplicateId);
-      expect(results[0]?.outcomeReason).toContain("already");
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.DuplicateId);
+      expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("already");
     });
   });
 
@@ -129,8 +129,8 @@ describe("diagnoseArticle", () => {
 
       const { results } = await diagnoseArticles(input, deps);
 
-      expect(results[0]?.outcome).toBe(ArticleDiagnosisOutcome.BlockedByComparison);
-      expect(results[0]?.outcomeReason).toContain("block");
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.BlockedByComparison);
+      expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("block");
     });
   });
 
@@ -160,8 +160,8 @@ describe("diagnoseArticle", () => {
 
       const { results } = await diagnoseArticles(input, deps);
 
-      expect(results[0]?.outcome).toBe(ArticleDiagnosisOutcome.WouldDeliverPassingComparison);
-      expect(results[0]?.outcomeReason).toContain("changed");
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.WouldDeliverPassingComparison);
+      expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("changed");
     });
   });
 
@@ -194,8 +194,8 @@ describe("diagnoseArticle", () => {
 
       const { results } = await diagnoseArticles(input, deps);
 
-      expect(results[0]?.outcome).toBe(ArticleDiagnosisOutcome.FilteredByDateCheck);
-      expect(results[0]?.outcomeReason).toContain("old");
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.FilteredByDateCheck);
+      expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("old");
     });
   });
 
@@ -236,8 +236,8 @@ describe("diagnoseArticle", () => {
 
       const { results } = await diagnoseArticles(input, deps);
 
-      expect(results[0]?.outcome).toBe(ArticleDiagnosisOutcome.RateLimitedFeed);
-      expect(results[0]?.outcomeReason).toContain("limit");
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.RateLimitedFeed);
+      expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("limit");
     });
   });
 
@@ -256,21 +256,21 @@ describe("diagnoseArticle", () => {
 
       const { results } = await diagnoseArticles(input, deps);
 
-      expect(results[0]?.outcome).toBe(ArticleDiagnosisOutcome.WouldDeliver);
-      expect(results[0]?.outcomeReason).toContain("pass");
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.WouldDeliver);
+      expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("pass");
     });
   });
 
   describe("stages recorded", () => {
-    it("includes FeedState stage in result", async () => {
+    it("includes FeedState stage in medium result", async () => {
       const article = createArticle("article-1", { title: "Test" });
       const deps = createMockDependencies();
       const input = createInput([article]);
 
       const { results } = await diagnoseArticles(input, deps);
-      const result = results[0] as { stages: Array<{ stage: DiagnosticStage }> };
+      const mediumResult = results[0]?.mediumResults[0] as { stages: Array<{ stage: DiagnosticStage }> };
 
-      const feedState = result.stages.find(
+      const feedState = mediumResult.stages.find(
         (s) => s.stage === DiagnosticStage.FeedState
       );
       expect(feedState).toBeDefined();
@@ -316,8 +316,8 @@ describe("diagnoseArticle", () => {
 
       const { results } = await diagnoseArticles(input, deps);
 
-      expect(results[0]?.outcome).toBe(ArticleDiagnosisOutcome.FilteredByMediumFilter);
-      expect(results[0]?.outcomeReason).toContain("filter");
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.FilteredByMediumFilter);
+      expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("filter");
     });
 
     it("records MediumFilter stage when filter is evaluated", async () => {
@@ -357,9 +357,9 @@ describe("diagnoseArticle", () => {
       });
 
       const { results } = await diagnoseArticles(input, deps);
-      const result = results[0] as { stages: Array<{ stage: DiagnosticStage; passed: boolean }> };
+      const mediumResult = results[0]?.mediumResults[0] as { stages: Array<{ stage: DiagnosticStage; passed: boolean }> };
 
-      const mediumFilterStage = result.stages.find(
+      const mediumFilterStage = mediumResult.stages.find(
         (s) => s.stage === DiagnosticStage.MediumFilter
       );
       expect(mediumFilterStage).toBeDefined();
@@ -412,8 +412,8 @@ describe("diagnoseArticle", () => {
 
       const { results } = await diagnoseArticles(input, deps);
 
-      expect(results[0]?.outcome).toBe(ArticleDiagnosisOutcome.RateLimitedMedium);
-      expect(results[0]?.outcomeReason).toContain("medium");
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.RateLimitedMedium);
+      expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("rate limit");
     });
   });
 });
@@ -441,7 +441,7 @@ describe("diagnoseArticles (batch)", () => {
         blockingComparisons: [],
         passingComparisons: [],
       },
-      mediums: [],
+      mediums: [{ id: "medium-1" }],
       articleDayLimit: 20,
       allArticles,
       targetArticles: targetArticles ?? allArticles,
@@ -501,17 +501,17 @@ describe("diagnoseArticles (batch)", () => {
       const response = await diagnoseArticles(input, deps);
 
       // Both should have FirstRunBaseline since no prior articles
-      expect(response.results[0]?.outcome).toBe(
+      expect(response.results[0]?.mediumResults[0]?.outcome).toBe(
         ArticleDiagnosisOutcome.FirstRunBaseline
       );
-      expect(response.results[1]?.outcome).toBe(
+      expect(response.results[1]?.mediumResults[0]?.outcome).toBe(
         ArticleDiagnosisOutcome.FirstRunBaseline
       );
     });
   });
 
   describe("summaryOnly option", () => {
-    it("summaryOnly=true omits stages from results", async () => {
+    it("summaryOnly=true omits stages from medium results", async () => {
       const articles = [createArticle("article-1", { title: "Article 1" })];
       const deps = createMockDependencies();
       const input = createBatchInput(articles, articles, {
@@ -521,12 +521,12 @@ describe("diagnoseArticles (batch)", () => {
       const response = await diagnoseArticles(input, deps);
 
       expect(response.results).toHaveLength(1);
-      expect(response.results[0]).not.toHaveProperty("stages");
       expect(response.results[0]?.articleId).toBe("article-1");
-      expect(response.results[0]?.outcome).toBeDefined();
+      expect(response.results[0]?.mediumResults[0]).not.toHaveProperty("stages");
+      expect(response.results[0]?.mediumResults[0]?.outcome).toBeDefined();
     });
 
-    it("summaryOnly=false includes stages in results", async () => {
+    it("summaryOnly=false includes stages in medium results", async () => {
       const articles = [createArticle("article-1", { title: "Article 1" })];
       const deps = createMockDependencies();
       const input = createBatchInput(articles, articles, {
@@ -536,10 +536,9 @@ describe("diagnoseArticles (batch)", () => {
       const response = await diagnoseArticles(input, deps);
 
       expect(response.results).toHaveLength(1);
-      expect(response.results[0]).toHaveProperty("stages");
-      expect(
-        (response.results[0] as { stages: unknown[] }).stages.length
-      ).toBeGreaterThan(0);
+      const mediumResult = response.results[0]?.mediumResults[0] as { stages: unknown[] };
+      expect(mediumResult).toHaveProperty("stages");
+      expect(mediumResult.stages.length).toBeGreaterThan(0);
     });
   });
 
@@ -553,6 +552,301 @@ describe("diagnoseArticles (batch)", () => {
 
       expect(response.results).toHaveLength(0);
       expect(response.errors).toHaveLength(0);
+    });
+  });
+});
+
+describe("Multiple mediums with different outcomes", () => {
+  beforeEach(() => {
+    clearInMemoryStore();
+  });
+
+  function createMockDependencies(): DiagnoseArticleDependencies {
+    return {
+      articleFieldStore: inMemoryArticleFieldStore,
+      deliveryRecordStore: createInMemoryDeliveryRecordStore(),
+    };
+  }
+
+  function createInput(
+    allArticles: Article[],
+    targetArticles?: Article[],
+    overrides: Partial<DiagnoseArticlesInput> = {}
+  ): DiagnoseArticlesInput {
+    return {
+      feed: {
+        id: "feed-1",
+        blockingComparisons: [],
+        passingComparisons: [],
+      },
+      mediums: [{ id: "medium-1" }],
+      articleDayLimit: 100,
+      allArticles,
+      targetArticles: targetArticles ?? allArticles,
+      ...overrides,
+    };
+  }
+
+  function createBlockingFilter(requiredKeyword: string): LogicalExpression {
+    return {
+      type: ExpressionType.Logical,
+      op: LogicalExpressionOperator.And,
+      children: [
+        {
+          type: ExpressionType.Relational,
+          op: RelationalExpressionOperator.Contains,
+          left: { type: RelationalExpressionLeft.Article, value: "title" },
+          right: { type: RelationalExpressionRight.String, value: requiredKeyword },
+        },
+      ],
+    };
+  }
+
+  async function storeBaseline() {
+    const baselineArticle = createArticle("baseline", { title: "Baseline" });
+    await inMemoryArticleFieldStore.startContext(async () => {
+      await inMemoryArticleFieldStore.storeArticles("feed-1", [baselineArticle], []);
+      await inMemoryArticleFieldStore.flushPendingInserts();
+    });
+  }
+
+  describe("Different medium filters - same article, different outcomes", () => {
+    it("returns WouldDeliver for medium without filter and FilteredByMediumFilter for medium with blocking filter", async () => {
+      const article = createArticle("article-1", { title: "Tech News Update" });
+      const deps = createMockDependencies();
+
+      await storeBaseline();
+
+      const input = createInput([article], [article], {
+        mediums: [
+          { id: "medium-1" }, // No filter → passes
+          { id: "medium-2", filters: { expression: createBlockingFilter("SPORTS") } }, // Blocks
+        ],
+      });
+
+      const { results } = await diagnoseArticles(input, deps);
+
+      expect(results).toHaveLength(1);
+      expect(results[0]?.mediumResults).toHaveLength(2);
+      expect(results[0]?.mediumResults[0]?.mediumId).toBe("medium-1");
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.WouldDeliver);
+      expect(results[0]?.mediumResults[1]?.mediumId).toBe("medium-2");
+      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDiagnosisOutcome.FilteredByMediumFilter);
+    });
+  });
+
+  describe("Different medium rate limits - same article, different outcomes", () => {
+    it("returns WouldDeliver for medium under limit and RateLimitedMedium for medium over limit", async () => {
+      const article = createArticle("article-1", { title: "New Article" });
+      const deliveryRecordStore = createInMemoryDeliveryRecordStore();
+      const deps: DiagnoseArticleDependencies = {
+        articleFieldStore: inMemoryArticleFieldStore,
+        deliveryRecordStore,
+      };
+
+      await storeBaseline();
+
+      // Store 5 deliveries to BOTH mediums
+      await deliveryRecordStore.startContext(async () => {
+        const deliveries: ArticleDeliveryState[] = [
+          ...Array.from({ length: 5 }, (_, i): ArticleDeliveryState => ({
+            id: `delivery-m1-${i}`,
+            mediumId: "medium-1",
+            status: ArticleDeliveryStatus.Sent as const,
+            articleIdHash: `hash-m1-${i}`,
+            article: createArticle(`m1-${i}`),
+          })),
+          ...Array.from({ length: 5 }, (_, i): ArticleDeliveryState => ({
+            id: `delivery-m2-${i}`,
+            mediumId: "medium-2",
+            status: ArticleDeliveryStatus.Sent as const,
+            articleIdHash: `hash-m2-${i}`,
+            article: createArticle(`m2-${i}`),
+          })),
+        ];
+        await deliveryRecordStore.store("feed-1", deliveries);
+      });
+
+      const input = createInput([article], [article], {
+        mediums: [
+          { id: "medium-1", rateLimits: [{ limit: 10, timeWindowSeconds: 86400 }] }, // 5 of 10, under limit
+          { id: "medium-2", rateLimits: [{ limit: 5, timeWindowSeconds: 86400 }] }, // 5 of 5, at limit
+        ],
+      });
+
+      const { results } = await diagnoseArticles(input, deps);
+
+      expect(results).toHaveLength(1);
+      expect(results[0]?.mediumResults).toHaveLength(2);
+      expect(results[0]?.mediumResults[0]?.mediumId).toBe("medium-1");
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.WouldDeliver);
+      expect(results[0]?.mediumResults[1]?.mediumId).toBe("medium-2");
+      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDiagnosisOutcome.RateLimitedMedium);
+    });
+  });
+
+  describe("Mixed outcomes - three mediums with three different outcomes", () => {
+    it("returns WouldDeliver, FilteredByMediumFilter, and RateLimitedMedium for same article", async () => {
+      const article = createArticle("article-1", { title: "Tech News" });
+      const deliveryRecordStore = createInMemoryDeliveryRecordStore();
+      const deps: DiagnoseArticleDependencies = {
+        articleFieldStore: inMemoryArticleFieldStore,
+        deliveryRecordStore,
+      };
+
+      await storeBaseline();
+
+      // Store 5 deliveries to medium-3 to exceed its limit
+      await deliveryRecordStore.startContext(async () => {
+        const deliveries: ArticleDeliveryState[] = Array.from({ length: 5 }, (_, i): ArticleDeliveryState => ({
+          id: `delivery-m3-${i}`,
+          mediumId: "medium-3",
+          status: ArticleDeliveryStatus.Sent as const,
+          articleIdHash: `hash-m3-${i}`,
+          article: createArticle(`m3-${i}`),
+        }));
+        await deliveryRecordStore.store("feed-1", deliveries);
+      });
+
+      const input = createInput([article], [article], {
+        mediums: [
+          { id: "medium-1" }, // No restrictions → WouldDeliver
+          { id: "medium-2", filters: { expression: createBlockingFilter("SPORTS") } }, // Filter blocks → FilteredByMediumFilter
+          { id: "medium-3", rateLimits: [{ limit: 5, timeWindowSeconds: 86400 }] }, // Rate limit exceeded → RateLimitedMedium
+        ],
+      });
+
+      const { results } = await diagnoseArticles(input, deps);
+
+      expect(results).toHaveLength(1);
+      expect(results[0]?.mediumResults).toHaveLength(3);
+      expect(results[0]?.mediumResults[0]?.mediumId).toBe("medium-1");
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.WouldDeliver);
+      expect(results[0]?.mediumResults[1]?.mediumId).toBe("medium-2");
+      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDiagnosisOutcome.FilteredByMediumFilter);
+      expect(results[0]?.mediumResults[2]?.mediumId).toBe("medium-3");
+      expect(results[0]?.mediumResults[2]?.outcome).toBe(ArticleDiagnosisOutcome.RateLimitedMedium);
+    });
+  });
+
+  describe("Filter passes but rate limit blocks", () => {
+    it("returns WouldDeliver when filter passes and under limit, RateLimitedMedium when filter passes but over limit", async () => {
+      const article = createArticle("article-1", { title: "Sports Update" });
+      const deliveryRecordStore = createInMemoryDeliveryRecordStore();
+      const deps: DiagnoseArticleDependencies = {
+        articleFieldStore: inMemoryArticleFieldStore,
+        deliveryRecordStore,
+      };
+
+      await storeBaseline();
+
+      // Store 5 deliveries to medium-2 to exceed its limit
+      await deliveryRecordStore.startContext(async () => {
+        const deliveries: ArticleDeliveryState[] = Array.from({ length: 5 }, (_, i): ArticleDeliveryState => ({
+          id: `delivery-m2-${i}`,
+          mediumId: "medium-2",
+          status: ArticleDeliveryStatus.Sent as const,
+          articleIdHash: `hash-m2-${i}`,
+          article: createArticle(`m2-${i}`),
+        }));
+        await deliveryRecordStore.store("feed-1", deliveries);
+      });
+
+      // Both mediums have filters that pass (title contains "Sports")
+      const passingFilter = createBlockingFilter("Sports");
+
+      const input = createInput([article], [article], {
+        mediums: [
+          { id: "medium-1", filters: { expression: passingFilter } }, // Filter passes, no rate limit → WouldDeliver
+          { id: "medium-2", filters: { expression: passingFilter }, rateLimits: [{ limit: 5, timeWindowSeconds: 86400 }] }, // Filter passes, rate limit exceeded → RateLimitedMedium
+        ],
+      });
+
+      const { results } = await diagnoseArticles(input, deps);
+
+      expect(results).toHaveLength(1);
+      expect(results[0]?.mediumResults).toHaveLength(2);
+      expect(results[0]?.mediumResults[0]?.mediumId).toBe("medium-1");
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.WouldDeliver);
+      expect(results[0]?.mediumResults[1]?.mediumId).toBe("medium-2");
+      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDiagnosisOutcome.RateLimitedMedium);
+    });
+  });
+
+  describe("Shared stage applies to all mediums", () => {
+    it("returns DuplicateId for all mediums when article ID already seen", async () => {
+      const article = createArticle("article-1", { title: "Test Article" });
+      const deps = createMockDependencies();
+
+      // Store the article so it's a duplicate
+      await inMemoryArticleFieldStore.startContext(async () => {
+        await inMemoryArticleFieldStore.storeArticles("feed-1", [article], []);
+        await inMemoryArticleFieldStore.flushPendingInserts();
+      });
+
+      // Different medium configurations that would pass if not for duplicate
+      const input = createInput([article], [article], {
+        mediums: [
+          { id: "medium-1" }, // No filter
+          { id: "medium-2", filters: { expression: createBlockingFilter("Test") } }, // Filter that would pass
+        ],
+      });
+
+      const { results } = await diagnoseArticles(input, deps);
+
+      expect(results).toHaveLength(1);
+      expect(results[0]?.mediumResults).toHaveLength(2);
+      // Both should have DuplicateId because shared stage applies before medium-specific stages
+      expect(results[0]?.mediumResults[0]?.mediumId).toBe("medium-1");
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.DuplicateId);
+      expect(results[0]?.mediumResults[1]?.mediumId).toBe("medium-2");
+      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDiagnosisOutcome.DuplicateId);
+    });
+  });
+
+  describe("Multiple articles - results don't pollute each other", () => {
+    it("each article has independent per-medium outcomes", async () => {
+      // Article 1: title contains "Sports" but not "Tech"
+      // Article 2: title contains "Tech" but not "Sports"
+      const article1 = createArticle("article-1", { title: "Sports Update" });
+      const article2 = createArticle("article-2", { title: "Tech News" });
+      const deps = createMockDependencies();
+
+      await storeBaseline();
+
+      const sportsFilter = createBlockingFilter("Sports");
+      const techFilter = createBlockingFilter("Tech");
+
+      const input = createInput([article1, article2], [article1, article2], {
+        mediums: [
+          { id: "medium-1", filters: { expression: sportsFilter } }, // Requires "Sports" in title
+          { id: "medium-2", filters: { expression: techFilter } }, // Requires "Tech" in title
+        ],
+      });
+
+      const { results } = await diagnoseArticles(input, deps);
+
+      expect(results).toHaveLength(2);
+
+      // Article 1: "Sports Update"
+      // - Medium-1 (Sports filter): passes → WouldDeliver
+      // - Medium-2 (Tech filter): fails → FilteredByMediumFilter
+      expect(results[0]?.articleId).toBe("article-1");
+      expect(results[0]?.mediumResults).toHaveLength(2);
+      expect(results[0]?.mediumResults[0]?.mediumId).toBe("medium-1");
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.WouldDeliver);
+      expect(results[0]?.mediumResults[1]?.mediumId).toBe("medium-2");
+      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDiagnosisOutcome.FilteredByMediumFilter);
+
+      // Article 2: "Tech News"
+      // - Medium-1 (Sports filter): fails → FilteredByMediumFilter
+      // - Medium-2 (Tech filter): passes → WouldDeliver
+      expect(results[1]?.articleId).toBe("article-2");
+      expect(results[1]?.mediumResults).toHaveLength(2);
+      expect(results[1]?.mediumResults[0]?.mediumId).toBe("medium-1");
+      expect(results[1]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.FilteredByMediumFilter);
+      expect(results[1]?.mediumResults[1]?.mediumId).toBe("medium-2");
+      expect(results[1]?.mediumResults[1]?.outcome).toBe(ArticleDiagnosisOutcome.WouldDeliver);
     });
   });
 });

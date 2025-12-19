@@ -72,7 +72,7 @@ export async function handleDiagnoseArticle(
     try {
       const body = await parseJsonBody<unknown>(req);
       const input = diagnoseArticleInputSchema.parse(body);
-
+      
       // Get stored hash for comparison (only if prior articles exist)
       const hashToCompare = await getHashToCompare(
         input.feed.id,
@@ -123,7 +123,7 @@ export async function handleDiagnoseArticle(
           });
         }
 
-        // Return articles with FeedUnchanged outcome
+        // Return articles with FeedUnchanged outcome for each medium
         const allArticles = feedResultWithArticles.articles;
         const total = allArticles.length;
         const targetArticles = allArticles.slice(
@@ -138,7 +138,13 @@ export async function handleDiagnoseArticle(
           outcome: ArticleDiagnosisOutcome.FeedUnchanged,
           outcomeReason:
             "Feed content unchanged since last check. Articles will be processed when new content is detected.",
-          stages: [],
+          mediumResults: input.mediums.map((medium) => ({
+            mediumId: medium.id,
+            outcome: ArticleDiagnosisOutcome.FeedUnchanged,
+            outcomeReason:
+              "Feed content unchanged since last check. Articles will be processed when new content is detected.",
+            stages: [],
+          })),
         }));
 
         return jsonResponse({ results, errors: [], total });

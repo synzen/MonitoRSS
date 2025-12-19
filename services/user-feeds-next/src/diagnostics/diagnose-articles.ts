@@ -25,6 +25,8 @@ import {
   type DiagnosticStageResult,
   type FeedRateLimitDiagnosticResult,
   type MediumRateLimitDiagnosticResult,
+  type MediumDiagnosticResult,
+  type MediumDiagnosisSummary,
 } from "./types";
 
 export interface DiagnoseArticleDependencies {
@@ -46,6 +48,48 @@ function createReadOnlyArticleFieldStore(
     startContext: async <T>(cb: () => Promise<T>) => cb(),
     flushPendingInserts: async () => ({ affectedRows: 0 }),
   };
+}
+
+/**
+ * Stages that apply to all mediums (shared/article-level stages)
+ */
+const SHARED_STAGES = new Set([
+  DiagnosticStage.FeedState,
+  DiagnosticStage.IdComparison,
+  DiagnosticStage.BlockingComparison,
+  DiagnosticStage.PassingComparison,
+  DiagnosticStage.DateCheck,
+  DiagnosticStage.FeedRateLimit,
+]);
+
+/**
+ * Separate stages into shared (article-level) and medium-specific stages
+ */
+function separateStages(stages: DiagnosticStageResult[]): {
+  sharedStages: DiagnosticStageResult[];
+  mediumStagesMap: Map<string, DiagnosticStageResult[]>;
+} {
+  const sharedStages: DiagnosticStageResult[] = [];
+  const mediumStagesMap = new Map<string, DiagnosticStageResult[]>();
+
+  for (const stage of stages) {
+    if (SHARED_STAGES.has(stage.stage)) {
+      sharedStages.push(stage);
+    } else if (
+      stage.stage === DiagnosticStage.MediumFilter ||
+      stage.stage === DiagnosticStage.MediumRateLimit
+    ) {
+      const mediumId =
+        "mediumId" in stage.details ? (stage.details.mediumId as string) : null;
+      if (mediumId) {
+        const existing = mediumStagesMap.get(mediumId) || [];
+        existing.push(stage);
+        mediumStagesMap.set(mediumId, existing);
+      }
+    }
+  }
+
+  return { sharedStages, mediumStagesMap };
 }
 
 /**
@@ -129,7 +173,7 @@ function determineOutcome(
   if (exceededMediumRateLimit) {
     return {
       outcome: ArticleDiagnosisOutcome.RateLimitedMedium,
-      outcomeReason: `Medium ${exceededMediumRateLimit.details.mediumId} has reached its rate limit.`,
+      outcomeReason: "This connection has reached its rate limit.",
     };
   }
 
@@ -138,20 +182,81 @@ function determineOutcome(
     (s) => s.stage === DiagnosticStage.MediumFilter
   );
   if (mediumFilter && !mediumFilter.passed) {
-    const mediumId =
-      "mediumId" in mediumFilter.details
-        ? (mediumFilter.details.mediumId as string)
-        : "unknown";
     return {
       outcome: ArticleDiagnosisOutcome.FilteredByMediumFilter,
-      outcomeReason: `Article filtered out by medium ${mediumId}'s filter expression.`,
+      outcomeReason: "Article filtered out by this connection's filter expression.",
     };
   }
 
   // Article would be delivered
   return {
     outcome: ArticleDiagnosisOutcome.WouldDeliver,
-    outcomeReason: "Article passes all checks and would be delivered to all connections.",
+    outcomeReason: "Article passes all checks and would be delivered.",
+  };
+}
+
+/**
+ * Priority order for aggregating outcomes across mediums (higher index = worse/takes precedence)
+ */
+const OUTCOME_PRIORITY: ArticleDiagnosisOutcome[] = [
+  ArticleDiagnosisOutcome.WouldDeliver,
+  ArticleDiagnosisOutcome.WouldDeliverPassingComparison,
+  ArticleDiagnosisOutcome.FilteredByMediumFilter,
+  ArticleDiagnosisOutcome.RateLimitedMedium,
+  ArticleDiagnosisOutcome.FilteredByDateCheck,
+  ArticleDiagnosisOutcome.RateLimitedFeed,
+  ArticleDiagnosisOutcome.BlockedByComparison,
+  ArticleDiagnosisOutcome.DuplicateId,
+  ArticleDiagnosisOutcome.FirstRunBaseline,
+  ArticleDiagnosisOutcome.FeedUnchanged,
+  ArticleDiagnosisOutcome.FeedError,
+];
+
+/**
+ * Compute aggregate article-level outcome from per-medium outcomes.
+ * If any medium would deliver, article outcome is WouldDeliver.
+ * Otherwise, use the "worst" (highest priority) failure outcome.
+ */
+function computeAggregateOutcome(
+  mediumResults: Array<{ outcome: ArticleDiagnosisOutcome; outcomeReason: string }>
+): { outcome: ArticleDiagnosisOutcome; outcomeReason: string } {
+  if (mediumResults.length === 0) {
+    return {
+      outcome: ArticleDiagnosisOutcome.WouldDeliver,
+      outcomeReason: "No connections configured.",
+    };
+  }
+
+  // If any medium would deliver, the article would be delivered
+  const wouldDeliver = mediumResults.find(
+    (m) =>
+      m.outcome === ArticleDiagnosisOutcome.WouldDeliver ||
+      m.outcome === ArticleDiagnosisOutcome.WouldDeliverPassingComparison
+  );
+  if (wouldDeliver) {
+    return {
+      outcome: wouldDeliver.outcome,
+      outcomeReason: wouldDeliver.outcomeReason,
+    };
+  }
+
+  // All mediums have failure outcomes - find the highest priority (worst) one
+  // Safe to use non-null assertion since we checked length > 0 above
+  let highestPriorityIndex = -1;
+  let highestPriorityResult: { outcome: ArticleDiagnosisOutcome; outcomeReason: string } =
+    mediumResults[0]!;
+
+  for (const result of mediumResults) {
+    const priorityIndex = OUTCOME_PRIORITY.indexOf(result.outcome);
+    if (priorityIndex > highestPriorityIndex) {
+      highestPriorityIndex = priorityIndex;
+      highestPriorityResult = result;
+    }
+  }
+
+  return {
+    outcome: highestPriorityResult.outcome,
+    outcomeReason: highestPriorityResult.outcomeReason,
   };
 }
 
@@ -250,27 +355,45 @@ export async function diagnoseArticles(
     const builtResults: (ArticleDiagnosticResult | ArticleDiagnosisSummary)[] = [];
 
     for (const article of input.targetArticles) {
-      const stages = getDiagnosticResultsForArticle(article.flattened.idHash);
-      const { outcome, outcomeReason } = determineOutcome(stages);
+      const allStages = getDiagnosticResultsForArticle(article.flattened.idHash);
+      const { sharedStages, mediumStagesMap } = separateStages(allStages);
 
-      if (input.summaryOnly) {
-        builtResults.push({
-          articleId: article.flattened.id,
-          articleIdHash: article.flattened.idHash,
-          articleTitle: article.flattened.title || null,
-          outcome,
-          outcomeReason,
-        });
-      } else {
-        builtResults.push({
-          articleId: article.flattened.id,
-          articleIdHash: article.flattened.idHash,
-          articleTitle: article.flattened.title || null,
-          outcome,
-          outcomeReason,
-          stages,
-        });
+      // Build per-medium results
+      const mediumResults: (MediumDiagnosticResult | MediumDiagnosisSummary)[] = [];
+
+      for (const medium of input.mediums) {
+        const mediumSpecificStages = mediumStagesMap.get(medium.id) || [];
+        const combinedStages = [...sharedStages, ...mediumSpecificStages];
+        const { outcome, outcomeReason } = determineOutcome(combinedStages);
+
+        if (input.summaryOnly) {
+          mediumResults.push({
+            mediumId: medium.id,
+            outcome,
+            outcomeReason,
+          });
+        } else {
+          mediumResults.push({
+            mediumId: medium.id,
+            outcome,
+            outcomeReason,
+            stages: combinedStages,
+          });
+        }
       }
+
+      // Compute aggregate article-level outcome
+      const { outcome: articleOutcome, outcomeReason: articleOutcomeReason } =
+        computeAggregateOutcome(mediumResults);
+
+      builtResults.push({
+        articleId: article.flattened.id,
+        articleIdHash: article.flattened.idHash,
+        articleTitle: article.flattened.title || null,
+        outcome: articleOutcome,
+        outcomeReason: articleOutcomeReason,
+        mediumResults,
+      });
     }
 
     return builtResults;

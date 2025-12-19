@@ -33,6 +33,7 @@ import { UserFeedManagerType } from "../user-feed-management-invites/constants";
 import {
   CreateUserFeedCloneInput,
   CreateUserFeedInputDto,
+  DiagnoseArticlesInputDto,
   GetUserFeedArticlePropertiesInputDto,
   GetUserFeedArticlePropertiesOutputDto,
   GetUserFeedArticlesInputDto,
@@ -281,6 +282,21 @@ export class UserFeedsController {
     );
 
     return result;
+  }
+
+  @Post("/:feedId/diagnose-articles")
+  @HttpCode(HttpStatus.OK)
+  async diagnoseArticles(
+    @Param("feedId", GetUserFeedsPipe())
+    [{ feed }]: GetUserFeedsPipeOutput,
+    @Body(TransformValidationPipe)
+    { skip, limit }: DiagnoseArticlesInputDto
+  ) {
+    return this.userFeedsService.diagnoseArticles({
+      feed,
+      skip: skip ?? 0,
+      limit: limit ?? 10,
+    });
   }
 
   @Post("/:feedId/get-article-properties")

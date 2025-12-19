@@ -358,6 +358,26 @@ export class FeedHandlerService {
     return json;
   }
 
+  async diagnoseArticles(input: import("./types").DiagnoseArticlesInput) {
+    const response = await fetch(
+      `${this.host}/v1/user-feeds/diagnose-articles`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": this.apiKey,
+        },
+        body: JSON.stringify(input),
+      }
+    );
+
+    await this.validateResponseStatus(response, "Failed to diagnose articles", {
+      requestBody: input as unknown as Record<string, unknown>,
+    });
+
+    return response.json();
+  }
+
   async getDeliveryLogs(
     feedId: string,
     { limit, skip }: { limit: number; skip: number }

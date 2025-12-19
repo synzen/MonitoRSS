@@ -2241,4 +2241,87 @@ export class UserFeedsService {
 
     throw new Error(`Unhandled request status ${requestStatus}`);
   }
+
+  async diagnoseArticles({
+    feed,
+    skip,
+    limit,
+  }: {
+    feed: UserFeed;
+    skip: number;
+    limit: number;
+  }) {
+    const [user, { maxDailyArticles }] = await Promise.all([
+      this.usersService.getOrCreateUserByDiscordId(feed.user.discordUserId),
+      this.supportersService.getBenefitsOfDiscordUser(feed.user.discordUserId),
+    ]);
+
+    const lookupDetails = getFeedRequestLookupDetails({
+      feed,
+      user,
+      decryptionKey: this.configService.get("BACKEND_API_ENCRYPTION_KEY_HEX"),
+    });
+
+    const mediums = this.mapConnectionsToMediums(feed);
+
+    const result = await this.feedHandlerService.diagnoseArticles({
+      feed: {
+        id: feed._id.toHexString(),
+        url: feed.url,
+        blockingComparisons: feed.blockingComparisons || [],
+        passingComparisons: feed.passingComparisons || [],
+        dateChecks: feed.dateCheckOptions,
+        formatOptions: feed.formatOptions,
+        externalProperties: feed.externalProperties?.map((ep) => ({
+          sourceField: ep.sourceField,
+          label: ep.label,
+          cssSelector: ep.cssSelector,
+        })),
+        requestLookupDetails: lookupDetails
+          ? {
+              key: lookupDetails.key,
+              url: lookupDetails.url,
+              headers: lookupDetails.headers,
+            }
+          : null,
+      },
+      mediums,
+      articleDayLimit: feed.maxDailyArticles ?? maxDailyArticles,
+      skip,
+      limit,
+    });
+
+    return { result };
+  }
+
+  private mapConnectionsToMediums(
+    feed: UserFeed
+  ): import("../../services/feed-handler/types").DiagnoseArticlesMediumInput[] {
+    const mediums: import("../../services/feed-handler/types").DiagnoseArticlesMediumInput[] =
+      [];
+    const SKIP_CONNECTION_TYPES = [FeedConnectionTypeEntityKey.DiscordWebhooks];
+
+    for (const connectionType of Object.values(FeedConnectionTypeEntityKey)) {
+      if (SKIP_CONNECTION_TYPES.includes(connectionType)) continue;
+
+      const connections = feed.connections?.[connectionType] || [];
+
+      for (const conn of connections) {
+        if (conn.disabledCode) continue;
+
+        mediums.push({
+          id: conn.id.toHexString(),
+          rateLimits: conn.rateLimits?.map((rl) => ({
+            limit: rl.limit,
+            timeWindowSeconds: rl.timeWindowSeconds,
+          })),
+          filters: conn.filters?.expression
+            ? { expression: conn.filters.expression }
+            : undefined,
+        });
+      }
+    }
+
+    return mediums;
+  }
 }
