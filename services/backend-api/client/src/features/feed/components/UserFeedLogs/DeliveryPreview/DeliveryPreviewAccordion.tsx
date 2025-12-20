@@ -10,10 +10,7 @@ import {
   Skeleton,
   Text,
 } from "@chakra-ui/react";
-import {
-  ArticleDeliveryResult,
-  ArticleDeliveryOutcome,
-} from "../../../types/DeliveryPreview";
+import { ArticleDeliveryResult, ArticleDeliveryOutcome } from "../../../types/DeliveryPreview";
 import { ArticleDeliveryDetails } from "./ArticleDeliveryDetails";
 import { getOutcomeLabel, getOutcomeColorScheme, StatusBadgeContent } from "./deliveryPreviewUtils";
 import {
@@ -98,7 +95,11 @@ export const DeliveryPreviewAccordion = ({ results }: DeliveryPreviewAccordionPr
   <Box {...ARTICLE_LIST_CONTAINER_PROPS}>
     <Accordion allowMultiple>
       {results.map((result, index) => (
-        <DeliveryPreviewAccordionItem key={result.articleId} result={result} isFirst={index === 0} />
+        <DeliveryPreviewAccordionItem
+          key={result.articleId}
+          result={result}
+          isFirst={index === 0}
+        />
       ))}
     </Accordion>
   </Box>

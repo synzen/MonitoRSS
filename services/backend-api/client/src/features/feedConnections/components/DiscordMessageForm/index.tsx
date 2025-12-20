@@ -20,7 +20,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { Suspense, useContext, useState } from "react";
 import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { FaDiscord } from "react-icons/fa";
 import {
   DiscordMessageEmbedFormData,

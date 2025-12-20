@@ -94,7 +94,7 @@ const FeedRadioItem = ({
 };
 
 function debounce(func: Function, delay: number) {
-  let timeoutId: number;
+  let timeoutId: NodeJS.Timeout;
 
   return function cb(...args: any[]) {
     if (timeoutId) {

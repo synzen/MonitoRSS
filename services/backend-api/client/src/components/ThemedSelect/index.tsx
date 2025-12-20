@@ -2,7 +2,6 @@
 import { Avatar, HStack, Text, useColorModeValue } from "@chakra-ui/react";
 import Select, { AriaOnFocusProps, GroupBase, StylesConfig, components } from "react-select";
 import { ChevronDownIcon } from "@chakra-ui/icons";
-import StateManagedSelect from "react-select/dist/declarations/src/stateManager";
 import { REACT_SELECT_STYLES } from "@/constants/reactSelectStyles";
 
 const { Option, DropdownIndicator } = components;
@@ -27,7 +26,7 @@ interface Props<T> {
   isClearable?: boolean;
   onInputChange?: (value: string) => void;
   placeholder?: string | React.ReactNode;
-  selectProps?: React.ComponentProps<typeof StateManagedSelect>;
+  selectProps?: React.ComponentProps<typeof Select>;
   inputRef?: React.ComponentProps<typeof Select>["ref"];
   isInvalid: boolean;
   invertBg?: boolean;

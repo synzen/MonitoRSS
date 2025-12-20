@@ -2303,12 +2303,16 @@ export class UserFeedsService {
     const SKIP_CONNECTION_TYPES = [FeedConnectionTypeEntityKey.DiscordWebhooks];
 
     for (const connectionType of Object.values(FeedConnectionTypeEntityKey)) {
-      if (SKIP_CONNECTION_TYPES.includes(connectionType)) continue;
+      if (SKIP_CONNECTION_TYPES.includes(connectionType)) {
+        continue;
+      }
 
       const connections = feed.connections?.[connectionType] || [];
 
       for (const conn of connections) {
-        if (conn.disabledCode) continue;
+        if (conn.disabledCode) {
+          continue;
+        }
 
         mediums.push({
           id: conn.id.toHexString(),

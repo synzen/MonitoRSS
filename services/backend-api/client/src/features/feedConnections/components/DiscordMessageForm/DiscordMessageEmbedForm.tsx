@@ -31,7 +31,7 @@ import { Controller, FieldError, useFieldArray, useFormContext, useWatch } from 
 import { useTranslation } from "react-i18next";
 import { ChevronDownIcon, ChevronUpIcon, CloseIcon, DeleteIcon } from "@chakra-ui/icons";
 import { SketchPicker } from "react-color";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { uniqueId } from "lodash";
 import { DiscordMessageFormData } from "@/types/discord";
 import { getNestedField } from "@/utils/getNestedField";

@@ -1,6 +1,6 @@
 import { useFormContext } from "react-hook-form";
 import { Button, Flex, HStack, Text } from "@chakra-ui/react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { isEqual } from "lodash";
 import { AnimatedComponent } from "../AnimatedComponent";
 

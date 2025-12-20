@@ -35,7 +35,7 @@ import { v4 } from "uuid";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FiHelpCircle } from "react-icons/fi";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import CreatableSelect from "react-select/creatable";
 import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
 import CreateExternalPropertyModal from "./CreateExternalPropertyModal";

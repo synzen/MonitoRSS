@@ -582,7 +582,7 @@ const mockUserFeeds: UserFeed[] = [
 // }
 
 export const getMockUserFeeds = (): UserFeed[] => {
-  if (MOCK_CONNECTIONS_STATE === "no-connections") {
+  if ((MOCK_CONNECTIONS_STATE as MockConnectionsState) === "no-connections") {
     return mockUserFeeds.map((feed) => ({
       ...feed,
       connections: [],

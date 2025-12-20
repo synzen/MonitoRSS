@@ -28,7 +28,7 @@ import {
 } from "@chakra-ui/react";
 import { AddIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { v4 as uuidv4 } from "uuid";
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";

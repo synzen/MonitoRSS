@@ -7,10 +7,10 @@ export const ARTICLE_LIST_CONTAINER_PROPS: BoxProps = {
   overflow: "hidden",
 };
 
-export const ARTICLE_LIST_ITEM_PADDING: BoxProps = {
+export const ARTICLE_LIST_ITEM_PADDING = {
   px: 3,
   py: 2,
-};
+} as const;
 
 export const getArticleListItemBorderProps = (
   isFirst: boolean,
