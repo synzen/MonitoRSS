@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsNotEmpty,
+  IsNumber,
   IsObject,
   IsOptional,
   IsString,
@@ -58,6 +59,11 @@ export class FetchFeedDto {
   @IsOptional()
   @Type(() => Boolean)
   executeFetchIfStale?: boolean;
+
+  @IsNumber()
+  @IsOptional()
+  @Type(() => Number)
+  stalenessThresholdSeconds?: number;
 
   @IsBoolean()
   @IsOptional()

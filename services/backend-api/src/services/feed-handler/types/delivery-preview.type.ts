@@ -21,6 +21,7 @@ export interface DeliveryPreviewFeedInput {
     url?: string;
     headers?: Record<string, string>;
   } | null;
+  refreshRateSeconds?: number;
 }
 
 export interface DeliveryPreviewMediumInput {

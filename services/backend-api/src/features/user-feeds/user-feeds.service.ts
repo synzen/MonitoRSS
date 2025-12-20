@@ -84,6 +84,7 @@ import {
 } from "./dto/copy-user-feed-settings-input.dto";
 import { generateUserFeedOwnershipFilters } from "./utils/get-user-feed-ownership-filters.utils";
 import { generateUserFeedSearchFilters } from "./utils/get-user-feed-search-filters.utils";
+import { getEffectiveRefreshRateSeconds } from "./utils/get-effective-refresh-rate";
 import { UserFeedTargetFeedSelectionType } from "./constants/target-feed-selection-type.type";
 import { SourceFeedNotFoundException } from "./exceptions/source-feed-not-found.exception";
 import { getUserFeedTagLookupAggregateStage } from "./constants/user-feed-tag-lookup-aggregate-stage.constants";
@@ -1274,8 +1275,7 @@ export class UserFeedsService {
 
   async manuallyRequest(feed: UserFeed) {
     const lastRequestTime = feed.lastManualRequestAt || new Date(0);
-    const waitDurationSeconds =
-      feed.userRefreshRateSeconds || feed.refreshRateSeconds || 10 * 60;
+    const waitDurationSeconds = getEffectiveRefreshRateSeconds(feed, 10 * 60)!;
     const secondsSinceLastRequest = dayjs().diff(
       dayjs(lastRequestTime),
       "seconds"
@@ -2284,6 +2284,7 @@ export class UserFeedsService {
               headers: lookupDetails.headers,
             }
           : null,
+        refreshRateSeconds: getEffectiveRefreshRateSeconds(feed),
       },
       mediums,
       articleDayLimit: feed.maxDailyArticles ?? maxDailyArticles,

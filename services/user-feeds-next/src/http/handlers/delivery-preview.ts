@@ -95,6 +95,7 @@ export async function handleDeliveryPreview(
         feedRequestsServiceHost,
         executeFetchIfNotInCache: true,
         executeFetchIfStale: true,
+        stalenessThresholdSeconds: input.feed.refreshRateSeconds,
         hashToCompare,
       });
 
@@ -110,6 +111,7 @@ export async function handleDeliveryPreview(
             requestLookupDetails: input.feed.requestLookupDetails,
           },
           feedRequestsServiceHost,
+          stalenessThresholdSeconds: input.feed.refreshRateSeconds,
         });
 
         // If re-fetch fails, treat as error (shouldn't happen normally)

@@ -144,11 +144,13 @@ export class FeedFetcherController {
       lookupKey: data.lookupDetails?.key,
     });
 
-    const isFetchedOver30MinutesAgo =
+    const stalenessThresholdSeconds = data.stalenessThresholdSeconds ?? 1800; // 30 min default
+    const isStale =
       latestRequest &&
-      dayjs().diff(latestRequest.request.createdAt, 'minute') > 30;
+      dayjs().diff(latestRequest.request.createdAt, 'second') >
+        stalenessThresholdSeconds;
 
-    if (data.executeFetchIfStale && isFetchedOver30MinutesAgo) {
+    if (data.executeFetchIfStale && isStale) {
       const { request } = await this.feedFetcherService.fetchAndSaveResponse(
         data.url,
         {

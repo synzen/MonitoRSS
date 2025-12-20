@@ -24,6 +24,7 @@ export async function fetchFeed(
     executeFetch?: boolean;
     executeFetchIfNotInCache?: boolean;
     executeFetchIfStale?: boolean;
+    stalenessThresholdSeconds?: number;
     retries?: number;
     hashToCompare?: string;
     lookupDetails?: FeedRequestLookupDetails | null;
@@ -40,6 +41,7 @@ export async function fetchFeed(
       executeFetchIfNotExists: options?.executeFetchIfNotInCache ?? false,
       executeFetch: options?.executeFetch ?? false,
       executeFetchIfStale: options?.executeFetchIfStale ?? false,
+      stalenessThresholdSeconds: options?.stalenessThresholdSeconds,
       hashToCompare: options?.hashToCompare || undefined,
       lookupDetails: options?.lookupDetails,
     }

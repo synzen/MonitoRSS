@@ -33,9 +33,7 @@ const BackendGetDeliveryPreviewOutputSchema = object({
     .required(),
 }).required();
 
-type BackendGetDeliveryPreviewOutput = InferType<
-  typeof BackendGetDeliveryPreviewOutputSchema
->;
+type BackendGetDeliveryPreviewOutput = InferType<typeof BackendGetDeliveryPreviewOutputSchema>;
 
 /**
  * Schema for the transformed frontend output.
