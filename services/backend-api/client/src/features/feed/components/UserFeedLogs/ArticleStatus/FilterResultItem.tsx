@@ -1,4 +1,4 @@
-import { Box, Flex, Highlight, Stack, Text } from "@chakra-ui/react";
+import { Box, Highlight, Text } from "@chakra-ui/react";
 import { RelationalExpressionOperator } from "../../../../feedConnections/types";
 import { FilterExplainBlockedDetail } from "../../../types/ArticleDiagnostics";
 
@@ -7,89 +7,72 @@ interface FilterResultItemProps {
   matched?: boolean;
 }
 
-const getOperatorText = (operator: string, matched: boolean): string => {
-  // When matched OR blocked by negation, use positive framing
-  // When blocked (not matched, not negated), use negative framing
-  if (matched) {
-    switch (operator) {
-      case RelationalExpressionOperator.Contains:
-        return "contains";
-      case RelationalExpressionOperator.Equals:
-        return "equals";
-      case RelationalExpressionOperator.Matches:
-        return "matches regex";
-      default:
-        return "matches";
-    }
-  }
-
+const getReadableOperator = (operator: string): string => {
   switch (operator) {
     case RelationalExpressionOperator.Contains:
-      return "does not contain";
+      return "contain";
     case RelationalExpressionOperator.Equals:
-      return "does not equal";
+      return "equal";
     case RelationalExpressionOperator.Matches:
-      return "does not match regex";
+      return "regex match";
     default:
-      return "does not match";
+      return "match";
   }
+};
+
+const getProseExplanation = (
+  fieldName: string,
+  operator: string,
+  filterInput: string,
+  isNegated: boolean,
+  matched: boolean
+): string => {
+  const fieldLabel = fieldName.toLowerCase();
+  const readableOp = getReadableOperator(operator);
+
+  // When matched: describe what the filter rule is (what passed)
+  // When blocked: describe what the article actually did (opposite of what filter wanted)
+  const articleMatchedCondition = matched ? !isNegated : isNegated;
+  const doesOrDoesNot = articleMatchedCondition ? "does" : "does not";
+
+  return `The ${fieldLabel} ${doesOrDoesNot} ${readableOp} "${filterInput}".`;
 };
 
 export const FilterResultItem = ({ detail, matched = false }: FilterResultItemProps) => {
   const { fieldName, operator, isNegated, truncatedReferenceValue, filterInput } = detail;
 
-  const operatorText = getOperatorText(operator, matched);
-
-  let headline: string;
-
-  if (matched) {
-    headline = `${fieldName} ${operatorText} "${filterInput}"`;
-  } else if (isNegated) {
-    headline = `${fieldName} ${operatorText} "${filterInput}" (blocked by NOT filter)`;
-  } else {
-    headline = `${fieldName} ${operatorText} "${filterInput}"`;
-  }
-
-  let filterLabel: string;
-
-  if (matched) {
-    filterLabel = "Matched term";
-  } else if (isNegated) {
-    filterLabel = "Excluded term";
-  } else {
-    filterLabel = "Looking for";
-  }
-
-  const borderColor = matched ? "green.400" : "whiteAlpha.300";
-  const highlightBg = matched ? "green.300" : "orange.300";
+  const explanation = getProseExplanation(fieldName, operator, filterInput, isNegated, matched);
+  const borderColor = matched ? "green.600" : "orange.600";
+  const highlightBg = matched ? "green.700" : "orange.700";
 
   return (
-    <Box pl={4} py={2} borderLeft="2px solid" borderLeftColor={borderColor}>
-      <Text fontWeight="medium" fontSize="sm" mb={2}>
-        {headline}
+    <Box
+      py={3}
+      px={4}
+      bg="whiteAlpha.50"
+      borderLeft="3px solid"
+      borderLeftColor={borderColor}
+      borderRadius="md"
+    >
+      <Text fontSize="sm" mb={3}>
+        {explanation}
       </Text>
-      <Stack spacing={1} fontSize="sm">
-        <Flex>
-          <Text color="gray.400" minW="110px">
-            Actual value
-          </Text>
-          <Text fontFamily="mono" wordBreak="break-word">
-            {truncatedReferenceValue ? (
-              <Highlight query={filterInput} styles={{ bg: highlightBg, px: "1", rounded: "sm" }}>
-                {truncatedReferenceValue}
-              </Highlight>
-            ) : (
-              "(empty)"
-            )}
-          </Text>
-        </Flex>
-        <Flex>
-          <Text color="gray.400" minW="110px">
-            {filterLabel}
-          </Text>
-          <Text fontFamily="mono">{filterInput}</Text>
-        </Flex>
-      </Stack>
+      <Box bg="blackAlpha.300" p={2} borderRadius="sm">
+        <Text fontSize="xs" color="gray.400" mb={1}>
+          {fieldName}:
+        </Text>
+        <Text fontFamily="mono" fontSize="sm" wordBreak="break-word">
+          {truncatedReferenceValue ? (
+            <Highlight query={filterInput} styles={{ bg: highlightBg, px: "1", rounded: "sm" }}>
+              {truncatedReferenceValue}
+            </Highlight>
+          ) : (
+            <Text as="span" color="gray.500">
+              (empty)
+            </Text>
+          )}
+        </Text>
+      </Box>
     </Box>
   );
 };

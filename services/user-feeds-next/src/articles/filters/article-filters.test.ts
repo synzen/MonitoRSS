@@ -520,6 +520,139 @@ describe("article-filters", () => {
     });
   });
 
+  describe("explainMatched", () => {
+    it("populates explainMatched when non-negated CONTAINS filter passes", () => {
+      const article = createArticle({ title: "Hello World" });
+      const expression: LogicalExpression = {
+        type: ExpressionType.Logical,
+        op: LogicalExpressionOperator.Or,
+        children: [
+          {
+            type: ExpressionType.Relational,
+            op: RelationalExpressionOperator.Contains,
+            left: { type: RelationalExpressionLeft.Article, value: "title" },
+            right: { type: RelationalExpressionRight.String, value: "Hello" },
+          },
+        ],
+      };
+
+      const result = getArticleFilterResults(expression, article);
+      expect(result.result).toBe(true);
+      expect(result.explainMatched.length).toBe(1);
+      expect(result.explainBlocked.length).toBe(0);
+    });
+
+    it("populates explainMatched when NOT CONTAINS filter passes (article doesn't contain text)", () => {
+      const article = createArticle({ title: "Hello World" });
+      const expression: LogicalExpression = {
+        type: ExpressionType.Logical,
+        op: LogicalExpressionOperator.Or,
+        children: [
+          {
+            type: ExpressionType.Relational,
+            op: RelationalExpressionOperator.Contains,
+            left: { type: RelationalExpressionLeft.Article, value: "title" },
+            right: { type: RelationalExpressionRight.String, value: "forbidden" },
+            not: true,
+          },
+        ],
+      };
+
+      const result = getArticleFilterResults(expression, article);
+      expect(result.result).toBe(true);
+      expect(result.explainMatched.length).toBe(1);
+      expect(result.explainBlocked.length).toBe(0);
+    });
+
+    it("populates explainBlocked when NOT CONTAINS filter fails (article does contain text)", () => {
+      const article = createArticle({ title: "Hello World" });
+      const expression: LogicalExpression = {
+        type: ExpressionType.Logical,
+        op: LogicalExpressionOperator.Or,
+        children: [
+          {
+            type: ExpressionType.Relational,
+            op: RelationalExpressionOperator.Contains,
+            left: { type: RelationalExpressionLeft.Article, value: "title" },
+            right: { type: RelationalExpressionRight.String, value: "Hello" },
+            not: true,
+          },
+        ],
+      };
+
+      const result = getArticleFilterResults(expression, article);
+      expect(result.result).toBe(false);
+      expect(result.explainMatched.length).toBe(0);
+      expect(result.explainBlocked.length).toBe(1);
+    });
+
+    it("populates explainMatched when NOT EQ filter passes (values don't match)", () => {
+      const article = createArticle({ title: "Hello" });
+      const expression: LogicalExpression = {
+        type: ExpressionType.Logical,
+        op: LogicalExpressionOperator.Or,
+        children: [
+          {
+            type: ExpressionType.Relational,
+            op: RelationalExpressionOperator.Eq,
+            left: { type: RelationalExpressionLeft.Article, value: "title" },
+            right: { type: RelationalExpressionRight.String, value: "other" },
+            not: true,
+          },
+        ],
+      };
+
+      const result = getArticleFilterResults(expression, article);
+      expect(result.result).toBe(true);
+      expect(result.explainMatched.length).toBe(1);
+      expect(result.explainBlocked.length).toBe(0);
+    });
+
+    it("populates explainBlocked when NOT EQ filter fails (values match)", () => {
+      const article = createArticle({ title: "Hello" });
+      const expression: LogicalExpression = {
+        type: ExpressionType.Logical,
+        op: LogicalExpressionOperator.Or,
+        children: [
+          {
+            type: ExpressionType.Relational,
+            op: RelationalExpressionOperator.Eq,
+            left: { type: RelationalExpressionLeft.Article, value: "title" },
+            right: { type: RelationalExpressionRight.String, value: "Hello" },
+            not: true,
+          },
+        ],
+      };
+
+      const result = getArticleFilterResults(expression, article);
+      expect(result.result).toBe(false);
+      expect(result.explainMatched.length).toBe(0);
+      expect(result.explainBlocked.length).toBe(1);
+    });
+
+    it("populates explainMatched when NOT MATCHES filter passes (regex doesn't match)", () => {
+      const article = createArticle({ title: "Hello World" });
+      const expression: LogicalExpression = {
+        type: ExpressionType.Logical,
+        op: LogicalExpressionOperator.Or,
+        children: [
+          {
+            type: ExpressionType.Relational,
+            op: RelationalExpressionOperator.Matches,
+            left: { type: RelationalExpressionLeft.Article, value: "title" },
+            right: { type: RelationalExpressionRight.String, value: "^forbidden" },
+            not: true,
+          },
+        ],
+      };
+
+      const result = getArticleFilterResults(expression, article);
+      expect(result.result).toBe(true);
+      expect(result.explainMatched.length).toBe(1);
+      expect(result.explainBlocked.length).toBe(0);
+    });
+  });
+
   describe("validateRelationalLeft", () => {
     it("returns error if left is not an object", () => {
       const result = validateRelationalLeft("not-object" as never, "root.");

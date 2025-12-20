@@ -323,9 +323,9 @@ function evaluateRelationalExpression(
     }
   }
 
-  // Negation: If `not` flag is set, invert the result
+  // Negation: If `not` flag is set, invert the result and swap explain arrays
   if (expression.not) {
-    return { result: !val, explainBlocked, explainMatched };
+    return { result: !val, explainBlocked: explainMatched, explainMatched: explainBlocked };
   }
 
   return { result: val, explainBlocked, explainMatched };
