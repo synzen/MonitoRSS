@@ -18,7 +18,9 @@ import {
 } from "./diagnostic-context";
 import {
   ArticleDiagnosisOutcome,
+  CANONICAL_STAGES,
   DiagnosticStage,
+  DiagnosticStageStatus,
   type ArticleDiagnosticResult,
   type ArticleDiagnosisSummary,
   type DiagnoseArticlesResponse,
@@ -28,6 +30,7 @@ import {
   type MediumDiagnosticResult,
   type MediumDiagnosisSummary,
 } from "./types";
+import { buildCompleteStageList } from "./stage-builder";
 
 export interface DiagnoseArticleDependencies {
   articleFieldStore: ArticleFieldStore;
@@ -80,7 +83,7 @@ function separateStages(stages: DiagnosticStageResult[]): {
       stage.stage === DiagnosticStage.MediumRateLimit
     ) {
       const mediumId =
-        "mediumId" in stage.details ? (stage.details.mediumId as string) : null;
+        stage.details && "mediumId" in stage.details ? (stage.details.mediumId as string) : null;
       if (mediumId) {
         const existing = mediumStagesMap.get(mediumId) || [];
         existing.push(stage);
@@ -93,6 +96,20 @@ function separateStages(stages: DiagnosticStageResult[]): {
 }
 
 /**
+ * Check if a stage has failed status.
+ */
+function isFailed(stage: DiagnosticStageResult): boolean {
+  return stage.status === DiagnosticStageStatus.Failed;
+}
+
+/**
+ * Check if a stage has passed status.
+ */
+function isPassed(stage: DiagnosticStageResult): boolean {
+  return stage.status === DiagnosticStageStatus.Passed;
+}
+
+/**
  * Determine the diagnosis outcome based on recorded diagnostic stages.
  */
 function determineOutcome(
@@ -100,7 +117,7 @@ function determineOutcome(
 ): { outcome: ArticleDiagnosisOutcome; outcomeReason: string } {
   // Check FeedState for first run
   const feedState = stages.find((s) => s.stage === DiagnosticStage.FeedState);
-  if (feedState && "isFirstRun" in feedState.details && feedState.details.isFirstRun) {
+  if (feedState && feedState.details && "isFirstRun" in feedState.details && feedState.details.isFirstRun) {
     return {
       outcome: ArticleDiagnosisOutcome.FirstRunBaseline,
       outcomeReason: "Feed has no prior articles stored. This is a first-run baseline - all current articles will be stored but not delivered.",
@@ -111,12 +128,12 @@ function determineOutcome(
   const idComparison = stages.find(
     (s) => s.stage === DiagnosticStage.IdComparison
   );
-  if (idComparison && !idComparison.passed) {
+  if (idComparison && isFailed(idComparison)) {
     // Check if there's a passing comparison that allows delivery
     const passingComparison = stages.find(
       (s) => s.stage === DiagnosticStage.PassingComparison
     );
-    if (passingComparison?.passed) {
+    if (passingComparison && isPassed(passingComparison)) {
       return {
         outcome: ArticleDiagnosisOutcome.WouldDeliverPassingComparison,
         outcomeReason: "Article ID was already seen, but passes because a comparison field has changed.",
@@ -133,9 +150,9 @@ function determineOutcome(
   const blockingComparison = stages.find(
     (s) => s.stage === DiagnosticStage.BlockingComparison
   );
-  if (blockingComparison && !blockingComparison.passed) {
+  if (blockingComparison && isFailed(blockingComparison)) {
     const blockedByFields =
-      "blockedByFields" in blockingComparison.details
+      blockingComparison.details && "blockedByFields" in blockingComparison.details
         ? (blockingComparison.details.blockedByFields as string[]).join(", ")
         : "unknown fields";
     return {
@@ -146,7 +163,7 @@ function determineOutcome(
 
   // Check DateCheck
   const dateCheck = stages.find((s) => s.stage === DiagnosticStage.DateCheck);
-  if (dateCheck && !dateCheck.passed) {
+  if (dateCheck && isFailed(dateCheck)) {
     return {
       outcome: ArticleDiagnosisOutcome.FilteredByDateCheck,
       outcomeReason: "Article is older than the configured date threshold and will not be delivered.",
@@ -158,7 +175,7 @@ function determineOutcome(
     (s): s is FeedRateLimitDiagnosticResult =>
       s.stage === DiagnosticStage.FeedRateLimit
   );
-  if (feedRateLimit && !feedRateLimit.passed) {
+  if (feedRateLimit && isFailed(feedRateLimit)) {
     return {
       outcome: ArticleDiagnosisOutcome.RateLimitedFeed,
       outcomeReason: "Feed has reached its daily article delivery limit.",
@@ -168,7 +185,7 @@ function determineOutcome(
   // Check medium rate limits
   const exceededMediumRateLimit = stages.find(
     (s): s is MediumRateLimitDiagnosticResult =>
-      s.stage === DiagnosticStage.MediumRateLimit && !s.passed
+      s.stage === DiagnosticStage.MediumRateLimit && isFailed(s)
   );
   if (exceededMediumRateLimit) {
     return {
@@ -181,7 +198,7 @@ function determineOutcome(
   const mediumFilter = stages.find(
     (s) => s.stage === DiagnosticStage.MediumFilter
   );
-  if (mediumFilter && !mediumFilter.passed) {
+  if (mediumFilter && isFailed(mediumFilter)) {
     return {
       outcome: ArticleDiagnosisOutcome.FilteredByMediumFilter,
       outcomeReason: "Article filtered out by this connection's filter expression.",
@@ -283,7 +300,7 @@ export async function diagnoseArticles(
 ): Promise<DiagnoseArticlesResponse> {
   // Handle empty target articles
   if (input.targetArticles.length === 0) {
-    return { results: [], errors: [] };
+    return { results: [], errors: [], stages: CANONICAL_STAGES };
   }
 
   // Build set of target ID hashes for diagnostic context
@@ -348,7 +365,9 @@ export async function diagnoseArticles(
       for (const medium of input.mediums) {
         const mediumSpecificStages = mediumStagesMap.get(medium.id) || [];
         const combinedStages = [...sharedStages, ...mediumSpecificStages];
-        const { outcome, outcomeReason } = determineOutcome(combinedStages);
+        // Fill in skipped stages to return complete list
+        const completeStages = buildCompleteStageList(combinedStages);
+        const { outcome, outcomeReason } = determineOutcome(completeStages);
 
         if (input.summaryOnly) {
           mediumResults.push({
@@ -361,7 +380,7 @@ export async function diagnoseArticles(
             mediumId: medium.id,
             outcome,
             outcomeReason,
-            stages: combinedStages,
+            stages: completeStages,
           });
         }
       }
@@ -383,5 +402,5 @@ export async function diagnoseArticles(
     return builtResults;
   });
 
-  return { results, errors: [] };
+  return { results, errors: [], stages: CANONICAL_STAGES };
 }

@@ -497,7 +497,7 @@ describe("delivery", () => {
   });
 });
 
-import type { DiagnosticStageResult } from "../diagnostics";
+import { DiagnosticStageStatus, type DiagnosticStageResult } from "../diagnostics";
 
 describe("diagnostic recording in delivery", () => {
   it("records FeedRateLimit diagnostic when feed rate limit is checked", async () => {
@@ -523,7 +523,7 @@ describe("diagnostic recording in delivery", () => {
       (d) => d.stage === DiagnosticStage.FeedRateLimit
     );
     expect(rateLimitDiagnostic).toBeDefined();
-    expect(rateLimitDiagnostic!.passed).toBe(true);
+    expect(rateLimitDiagnostic!.status).toBe(DiagnosticStageStatus.Passed);
     expect(
       (rateLimitDiagnostic as { details: { remaining: number } }).details
         .remaining
@@ -554,7 +554,7 @@ describe("diagnostic recording in delivery", () => {
       (d) => d.stage === DiagnosticStage.MediumRateLimit
     );
     expect(rateLimitDiagnostic).toBeDefined();
-    expect(rateLimitDiagnostic!.passed).toBe(true);
+    expect(rateLimitDiagnostic!.status).toBe(DiagnosticStageStatus.Passed);
     expect(
       (rateLimitDiagnostic as { details: { mediumId: string } }).details.mediumId
     ).toBe("medium-123");
@@ -583,7 +583,7 @@ describe("diagnostic recording in delivery", () => {
       (d) => d.stage === DiagnosticStage.FeedRateLimit
     );
     expect(rateLimitDiagnostic).toBeDefined();
-    expect(rateLimitDiagnostic!.passed).toBe(false);
+    expect(rateLimitDiagnostic!.status).toBe(DiagnosticStageStatus.Failed);
     expect(
       (rateLimitDiagnostic as { details: { wouldExceed: boolean } }).details
         .wouldExceed
@@ -612,7 +612,7 @@ describe("diagnostic recording in delivery", () => {
       (d) => d.stage === DiagnosticStage.MediumFilter
     );
     expect(filterDiagnostic).toBeDefined();
-    expect(filterDiagnostic!.passed).toBe(true);
+    expect(filterDiagnostic!.status).toBe(DiagnosticStageStatus.Passed);
   });
 
   it("records failed MediumFilter diagnostic when filter blocks article", async () => {
@@ -637,7 +637,7 @@ describe("diagnostic recording in delivery", () => {
       (d) => d.stage === DiagnosticStage.MediumFilter
     );
     expect(filterDiagnostic).toBeDefined();
-    expect(filterDiagnostic!.passed).toBe(false);
+    expect(filterDiagnostic!.status).toBe(DiagnosticStageStatus.Failed);
     expect(
       (filterDiagnostic as { details: { explainBlocked: string[] } }).details
         .explainBlocked
@@ -737,7 +737,7 @@ describe("diagnostic recording during deliverArticles execution", () => {
       (d) => d.stage === DiagnosticStage.MediumFilter
     );
     expect(filterDiagnostic).toBeDefined();
-    expect(filterDiagnostic!.passed).toBe(true);
+    expect(filterDiagnostic!.status).toBe(DiagnosticStageStatus.Passed);
     expect(
       (filterDiagnostic as { details: { mediumId: string } }).details.mediumId
     ).toBe("medium-filter-test");
@@ -807,7 +807,7 @@ describe("diagnostic recording during deliverArticles execution", () => {
       (d) => d.stage === DiagnosticStage.MediumFilter
     );
     expect(filterDiagnostic).toBeDefined();
-    expect(filterDiagnostic!.passed).toBe(false);
+    expect(filterDiagnostic!.status).toBe(DiagnosticStageStatus.Failed);
     expect(
       (filterDiagnostic as { details: { explainBlocked: string[] } }).details
         .explainBlocked.length

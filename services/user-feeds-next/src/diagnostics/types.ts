@@ -57,6 +57,30 @@ export enum DiagnosticStage {
   MediumRateLimit = "medium-rate-limit",
 }
 
+/**
+ * Status of a diagnostic stage
+ */
+export enum DiagnosticStageStatus {
+  Passed = "passed",
+  Failed = "failed",
+  Skipped = "skipped",
+}
+
+/**
+ * Canonical list of all diagnostic stages in processing order.
+ * Used by frontend to determine which stages were skipped.
+ */
+export const CANONICAL_STAGES: DiagnosticStage[] = [
+  DiagnosticStage.FeedState,
+  DiagnosticStage.IdComparison,
+  DiagnosticStage.BlockingComparison,
+  DiagnosticStage.PassingComparison,
+  DiagnosticStage.DateCheck,
+  DiagnosticStage.FeedRateLimit,
+  DiagnosticStage.MediumFilter,
+  DiagnosticStage.MediumRateLimit,
+];
+
 export interface FeedStateDiagnosticDetails {
   hasPriorArticles: boolean;
   isFirstRun: boolean;
@@ -107,50 +131,56 @@ export interface RateLimitDiagnosticDetails {
 
 export interface FeedStateDiagnosticResult {
   stage: DiagnosticStage.FeedState;
-  passed: boolean;
+  status: DiagnosticStageStatus;
   details: FeedStateDiagnosticDetails;
 }
 
 export interface IdComparisonDiagnosticResult {
   stage: DiagnosticStage.IdComparison;
-  passed: boolean;
+  status: DiagnosticStageStatus;
   details: IdComparisonDiagnosticDetails;
 }
 
 export interface BlockingComparisonDiagnosticResult {
   stage: DiagnosticStage.BlockingComparison;
-  passed: boolean;
+  status: DiagnosticStageStatus;
   details: BlockingComparisonDiagnosticDetails;
 }
 
 export interface PassingComparisonDiagnosticResult {
   stage: DiagnosticStage.PassingComparison;
-  passed: boolean;
+  status: DiagnosticStageStatus;
   details: PassingComparisonDiagnosticDetails;
 }
 
 export interface DateCheckDiagnosticResult {
   stage: DiagnosticStage.DateCheck;
-  passed: boolean;
+  status: DiagnosticStageStatus;
   details: DateCheckDiagnosticDetails;
 }
 
 export interface MediumFilterDiagnosticResult {
   stage: DiagnosticStage.MediumFilter;
-  passed: boolean;
+  status: DiagnosticStageStatus;
   details: MediumFilterDiagnosticDetails;
 }
 
 export interface FeedRateLimitDiagnosticResult {
   stage: DiagnosticStage.FeedRateLimit;
-  passed: boolean;
+  status: DiagnosticStageStatus;
   details: RateLimitDiagnosticDetails;
 }
 
 export interface MediumRateLimitDiagnosticResult {
   stage: DiagnosticStage.MediumRateLimit;
-  passed: boolean;
+  status: DiagnosticStageStatus;
   details: RateLimitDiagnosticDetails & { mediumId: string };
+}
+
+export interface SkippedDiagnosticResult {
+  stage: DiagnosticStage;
+  status: DiagnosticStageStatus.Skipped;
+  details: null;
 }
 
 export type DiagnosticStageResult =
@@ -161,7 +191,8 @@ export type DiagnosticStageResult =
   | DateCheckDiagnosticResult
   | MediumFilterDiagnosticResult
   | FeedRateLimitDiagnosticResult
-  | MediumRateLimitDiagnosticResult;
+  | MediumRateLimitDiagnosticResult
+  | SkippedDiagnosticResult;
 
 /**
  * Diagnostic result for a single medium (connection)
@@ -212,4 +243,5 @@ export interface ArticleDiagnosisSummary {
 export interface DiagnoseArticlesResponse {
   results: ArticleDiagnosticResult[] | ArticleDiagnosisSummary[];
   errors: Array<{ articleId: string; message: string }>;
+  stages: DiagnosticStage[];
 }

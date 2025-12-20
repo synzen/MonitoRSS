@@ -87,6 +87,7 @@ import mockUserMe from "./data/userMe";
 import { GetSubscriptionChangePreviewOutput } from "../features/subscriptionProducts";
 import { mockUserFeedDeliveryLogs } from "./data/userFeedDeliveryLogs";
 import { getMockDiagnostics, getMockFeedState } from "./data/articleDiagnostics";
+import { DiagnosticStage } from "../features/feed/types/ArticleDiagnostics";
 import {
   CreateUserFeedUrlValidationInput,
   CreateUserFeedUrlValidationOutput,
@@ -810,6 +811,7 @@ const handlers = [
         result: {
           results: [],
           total: 0,
+          stages: Object.values(DiagnosticStage),
           feedState,
         },
       });
@@ -823,6 +825,7 @@ const handlers = [
       result: {
         results: paginatedResults,
         total: mockData.length,
+        stages: Object.values(DiagnosticStage),
       },
     });
   }),

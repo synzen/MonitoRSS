@@ -1,8 +1,9 @@
 import {
   ArticleDiagnosisOutcome,
-  ArticleDiagnosticResult,
   DiagnosticStage,
   DiagnosticStageStatus,
+  BackendArticleDiagnosticResult,
+  BackendMediumDiagnosticResult,
 } from "../../features/feed/types/ArticleDiagnostics";
 
 /**
@@ -32,7 +33,7 @@ type MockDiagnosticsState =
   | "feed-error-403"
   | "feed-error-404"
   | "feed-error-503";
-export const MOCK_DIAGNOSTICS_STATE: MockDiagnosticsState = "all-rate-limited";
+export const MOCK_DIAGNOSTICS_STATE: MockDiagnosticsState = "normal";
 
 export interface MockFeedState {
   state: string;
@@ -72,11 +73,15 @@ export const getMockFeedState = (): MockFeedState | undefined => {
   }
 };
 
+/**
+ * Backend format stages use { stage, status, details } - no summary.
+ * The frontend transformation adds summary strings.
+ * Backend returns complete stage list including skipped stages.
+ */
 export const createPassedStages = (mediumId: string) => [
   {
     stage: DiagnosticStage.FeedState,
     status: DiagnosticStageStatus.Passed,
-    summary: "Not first run",
     details: {
       hasPriorArticles: true,
       isFirstRun: false,
@@ -86,7 +91,6 @@ export const createPassedStages = (mediumId: string) => [
   {
     stage: DiagnosticStage.IdComparison,
     status: DiagnosticStageStatus.Passed,
-    summary: "Article ID is new",
     details: {
       articleIdHash: "a1b2c3d4e5f6",
       foundInHotPartition: false,
@@ -97,7 +101,6 @@ export const createPassedStages = (mediumId: string) => [
   {
     stage: DiagnosticStage.BlockingComparison,
     status: DiagnosticStageStatus.Passed,
-    summary: "No blocking comparisons configured",
     details: {
       comparisonFields: [],
       activeFields: [],
@@ -107,13 +110,11 @@ export const createPassedStages = (mediumId: string) => [
   {
     stage: DiagnosticStage.PassingComparison,
     status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (no passing comparisons configured)",
     details: null,
   },
   {
     stage: DiagnosticStage.DateCheck,
     status: DiagnosticStageStatus.Passed,
-    summary: "Within date threshold",
     details: {
       articleDate: new Date().toISOString(),
       threshold: 604800000,
@@ -123,20 +124,8 @@ export const createPassedStages = (mediumId: string) => [
     },
   },
   {
-    stage: DiagnosticStage.MediumFilter,
-    status: DiagnosticStageStatus.Passed,
-    summary: "Passes all filters",
-    details: {
-      mediumId,
-      filterExpression: null,
-      filterResult: true,
-      explainBlocked: [],
-    },
-  },
-  {
     stage: DiagnosticStage.FeedRateLimit,
     status: DiagnosticStageStatus.Passed,
-    summary: "Under daily limit (5/50)",
     details: {
       currentCount: 5,
       limit: 50,
@@ -146,9 +135,18 @@ export const createPassedStages = (mediumId: string) => [
     },
   },
   {
+    stage: DiagnosticStage.MediumFilter,
+    status: DiagnosticStageStatus.Passed,
+    details: {
+      mediumId,
+      filterExpression: null,
+      filterResult: true,
+      explainBlocked: [],
+    },
+  },
+  {
     stage: DiagnosticStage.MediumRateLimit,
     status: DiagnosticStageStatus.Passed,
-    summary: "Under rate limit (2/10 per hour)",
     details: {
       currentCount: 2,
       limit: 10,
@@ -163,7 +161,6 @@ export const createFirstRunStages = () => [
   {
     stage: DiagnosticStage.FeedState,
     status: DiagnosticStageStatus.Failed,
-    summary: "First run - establishing baseline",
     details: {
       hasPriorArticles: false,
       isFirstRun: true,
@@ -173,43 +170,36 @@ export const createFirstRunStages = () => [
   {
     stage: DiagnosticStage.IdComparison,
     status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (first run)",
     details: null,
   },
   {
     stage: DiagnosticStage.BlockingComparison,
     status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (first run)",
     details: null,
   },
   {
     stage: DiagnosticStage.PassingComparison,
     status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (first run)",
     details: null,
   },
   {
     stage: DiagnosticStage.DateCheck,
     status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (first run)",
-    details: null,
-  },
-  {
-    stage: DiagnosticStage.MediumFilter,
-    status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (first run)",
     details: null,
   },
   {
     stage: DiagnosticStage.FeedRateLimit,
     status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (first run)",
+    details: null,
+  },
+  {
+    stage: DiagnosticStage.MediumFilter,
+    status: DiagnosticStageStatus.Skipped,
     details: null,
   },
   {
     stage: DiagnosticStage.MediumRateLimit,
     status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (first run)",
     details: null,
   },
 ];
@@ -218,7 +208,6 @@ export const createFilteredStages = (mediumId: string) => [
   {
     stage: DiagnosticStage.FeedState,
     status: DiagnosticStageStatus.Passed,
-    summary: "Not first run",
     details: {
       hasPriorArticles: true,
       isFirstRun: false,
@@ -228,7 +217,6 @@ export const createFilteredStages = (mediumId: string) => [
   {
     stage: DiagnosticStage.IdComparison,
     status: DiagnosticStageStatus.Passed,
-    summary: "Article ID is new",
     details: {
       articleIdHash: "f6e5d4c3b2a1",
       foundInHotPartition: false,
@@ -239,7 +227,6 @@ export const createFilteredStages = (mediumId: string) => [
   {
     stage: DiagnosticStage.BlockingComparison,
     status: DiagnosticStageStatus.Passed,
-    summary: "No blocking comparisons configured",
     details: {
       comparisonFields: [],
       activeFields: [],
@@ -249,13 +236,11 @@ export const createFilteredStages = (mediumId: string) => [
   {
     stage: DiagnosticStage.PassingComparison,
     status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (no passing comparisons configured)",
     details: null,
   },
   {
     stage: DiagnosticStage.DateCheck,
     status: DiagnosticStageStatus.Passed,
-    summary: "Within date threshold",
     details: {
       articleDate: new Date().toISOString(),
       threshold: 604800000,
@@ -265,9 +250,19 @@ export const createFilteredStages = (mediumId: string) => [
     },
   },
   {
+    stage: DiagnosticStage.FeedRateLimit,
+    status: DiagnosticStageStatus.Passed,
+    details: {
+      currentCount: 5,
+      limit: 50,
+      timeWindowSeconds: 86400,
+      remaining: 45,
+      wouldExceed: false,
+    },
+  },
+  {
     stage: DiagnosticStage.MediumFilter,
     status: DiagnosticStageStatus.Failed,
-    summary: "Blocked by filters",
     details: {
       mediumId,
       filterExpression: { type: "logical", op: "and" },
@@ -276,15 +271,8 @@ export const createFilteredStages = (mediumId: string) => [
     },
   },
   {
-    stage: DiagnosticStage.FeedRateLimit,
-    status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (earlier check failed)",
-    details: null,
-  },
-  {
     stage: DiagnosticStage.MediumRateLimit,
     status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (earlier check failed)",
     details: null,
   },
 ];
@@ -293,7 +281,6 @@ export const createDuplicateIdStages = () => [
   {
     stage: DiagnosticStage.FeedState,
     status: DiagnosticStageStatus.Passed,
-    summary: "Not first run",
     details: {
       hasPriorArticles: true,
       isFirstRun: false,
@@ -303,7 +290,6 @@ export const createDuplicateIdStages = () => [
   {
     stage: DiagnosticStage.IdComparison,
     status: DiagnosticStageStatus.Failed,
-    summary: "Article ID already seen",
     details: {
       articleIdHash: "duplicate123",
       foundInHotPartition: true,
@@ -314,46 +300,39 @@ export const createDuplicateIdStages = () => [
   {
     stage: DiagnosticStage.BlockingComparison,
     status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (article previously seen)",
     details: null,
   },
   {
     stage: DiagnosticStage.PassingComparison,
     status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (article previously seen)",
     details: null,
   },
   {
     stage: DiagnosticStage.DateCheck,
     status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (article previously seen)",
-    details: null,
-  },
-  {
-    stage: DiagnosticStage.MediumFilter,
-    status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (article previously seen)",
     details: null,
   },
   {
     stage: DiagnosticStage.FeedRateLimit,
     status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (article previously seen)",
+    details: null,
+  },
+  {
+    stage: DiagnosticStage.MediumFilter,
+    status: DiagnosticStageStatus.Skipped,
     details: null,
   },
   {
     stage: DiagnosticStage.MediumRateLimit,
     status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (article previously seen)",
     details: null,
   },
 ];
 
-export const createRateLimitedStages = (mediumId: string) => [
+export const createRateLimitedStages = (_mediumId: string) => [
   {
     stage: DiagnosticStage.FeedState,
     status: DiagnosticStageStatus.Passed,
-    summary: "Not first run",
     details: {
       hasPriorArticles: true,
       isFirstRun: false,
@@ -363,7 +342,6 @@ export const createRateLimitedStages = (mediumId: string) => [
   {
     stage: DiagnosticStage.IdComparison,
     status: DiagnosticStageStatus.Passed,
-    summary: "Article ID is new",
     details: {
       articleIdHash: "newart789",
       foundInHotPartition: false,
@@ -374,7 +352,6 @@ export const createRateLimitedStages = (mediumId: string) => [
   {
     stage: DiagnosticStage.BlockingComparison,
     status: DiagnosticStageStatus.Passed,
-    summary: "No blocking comparisons configured",
     details: {
       comparisonFields: [],
       activeFields: [],
@@ -384,13 +361,11 @@ export const createRateLimitedStages = (mediumId: string) => [
   {
     stage: DiagnosticStage.PassingComparison,
     status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (no passing comparisons configured)",
     details: null,
   },
   {
     stage: DiagnosticStage.DateCheck,
     status: DiagnosticStageStatus.Passed,
-    summary: "Within date threshold",
     details: {
       articleDate: new Date().toISOString(),
       threshold: 604800000,
@@ -400,20 +375,8 @@ export const createRateLimitedStages = (mediumId: string) => [
     },
   },
   {
-    stage: DiagnosticStage.MediumFilter,
-    status: DiagnosticStageStatus.Passed,
-    summary: "Passes all filters",
-    details: {
-      mediumId,
-      filterExpression: null,
-      filterResult: true,
-      explainBlocked: [],
-    },
-  },
-  {
     stage: DiagnosticStage.FeedRateLimit,
     status: DiagnosticStageStatus.Failed,
-    summary: "Daily limit reached (50/50)",
     details: {
       currentCount: 50,
       limit: 50,
@@ -423,9 +386,13 @@ export const createRateLimitedStages = (mediumId: string) => [
     },
   },
   {
+    stage: DiagnosticStage.MediumFilter,
+    status: DiagnosticStageStatus.Skipped,
+    details: null,
+  },
+  {
     stage: DiagnosticStage.MediumRateLimit,
     status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (earlier check failed)",
     details: null,
   },
 ];
@@ -434,7 +401,6 @@ export const createBlockedByComparisonStages = (_mediumId: string) => [
   {
     stage: DiagnosticStage.FeedState,
     status: DiagnosticStageStatus.Passed,
-    summary: "Not first run",
     details: {
       hasPriorArticles: true,
       isFirstRun: false,
@@ -444,7 +410,6 @@ export const createBlockedByComparisonStages = (_mediumId: string) => [
   {
     stage: DiagnosticStage.IdComparison,
     status: DiagnosticStageStatus.Passed,
-    summary: "Article ID is new",
     details: {
       articleIdHash: "comp456",
       foundInHotPartition: false,
@@ -455,7 +420,6 @@ export const createBlockedByComparisonStages = (_mediumId: string) => [
   {
     stage: DiagnosticStage.BlockingComparison,
     status: DiagnosticStageStatus.Failed,
-    summary: "description field unchanged",
     details: {
       comparisonFields: ["description", "content"],
       activeFields: ["description"],
@@ -465,36 +429,31 @@ export const createBlockedByComparisonStages = (_mediumId: string) => [
   {
     stage: DiagnosticStage.PassingComparison,
     status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (earlier check failed)",
     details: null,
   },
   {
     stage: DiagnosticStage.DateCheck,
     status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (earlier check failed)",
-    details: null,
-  },
-  {
-    stage: DiagnosticStage.MediumFilter,
-    status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (earlier check failed)",
     details: null,
   },
   {
     stage: DiagnosticStage.FeedRateLimit,
     status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (earlier check failed)",
+    details: null,
+  },
+  {
+    stage: DiagnosticStage.MediumFilter,
+    status: DiagnosticStageStatus.Skipped,
     details: null,
   },
   {
     stage: DiagnosticStage.MediumRateLimit,
     status: DiagnosticStageStatus.Skipped,
-    summary: "Skipped (earlier check failed)",
     details: null,
   },
 ];
 
-export const mockArticleDiagnostics: ArticleDiagnosticResult[] = [
+export const mockArticleDiagnostics: BackendArticleDiagnosticResult[] = [
   {
     articleId: "art-001",
     articleIdHash: "hash001",
@@ -819,49 +778,55 @@ export const mockArticleDiagnostics: ArticleDiagnosticResult[] = [
   },
 ];
 
-const createAllLearningMockData = (): ArticleDiagnosticResult[] =>
+const createAllLearningMockData = (): BackendArticleDiagnosticResult[] =>
   mockArticleDiagnostics.map((article) => ({
     ...article,
     outcome: ArticleDiagnosisOutcome.FirstRunBaseline,
     outcomeReason:
       "This is a new feed. Articles are being recorded but not delivered yet to prevent flooding your channel.",
-    mediumResults: article.mediumResults.map((m) => ({
-      ...m,
-      outcome: ArticleDiagnosisOutcome.FirstRunBaseline,
-      outcomeReason: "First run - establishing baseline",
-      stages: createFirstRunStages(),
-    })),
+    mediumResults: article.mediumResults.map(
+      (m): BackendMediumDiagnosticResult => ({
+        ...m,
+        outcome: ArticleDiagnosisOutcome.FirstRunBaseline,
+        outcomeReason: "First run - establishing baseline",
+        stages: createFirstRunStages(),
+      })
+    ),
   }));
 
-const createAllRateLimitedMockData = (): ArticleDiagnosticResult[] =>
+const createAllRateLimitedMockData = (): BackendArticleDiagnosticResult[] =>
   mockArticleDiagnostics.map((article) => ({
     ...article,
     outcome: ArticleDiagnosisOutcome.RateLimitedFeed,
     outcomeReason:
       "Your feed has hit its daily article limit (50/50). Wait until tomorrow for more articles.",
-    mediumResults: article.mediumResults.map((m) => ({
-      ...m,
-      outcome: ArticleDiagnosisOutcome.RateLimitedFeed,
-      outcomeReason: "Daily limit reached",
-      stages: createRateLimitedStages(m.mediumId),
-    })),
+    mediumResults: article.mediumResults.map(
+      (m): BackendMediumDiagnosticResult => ({
+        ...m,
+        outcome: ArticleDiagnosisOutcome.RateLimitedFeed,
+        outcomeReason: "Daily limit reached",
+        stages: createRateLimitedStages(m.mediumId),
+      })
+    ),
   }));
 
-const createAllDuplicateMockData = (): ArticleDiagnosticResult[] =>
+const createAllDuplicateMockData = (): BackendArticleDiagnosticResult[] =>
   mockArticleDiagnostics.map((article) => ({
     ...article,
     outcome: ArticleDiagnosisOutcome.DuplicateId,
     outcomeReason:
       "MonitoRSS has already seen this article. It may have been delivered previously, or recorded when the feed was first added.",
-    mediumResults: article.mediumResults.map((m) => ({
-      ...m,
-      outcome: ArticleDiagnosisOutcome.DuplicateId,
-      outcomeReason: "Previously seen",
-      stages: createDuplicateIdStages(),
-    })),
+    mediumResults: article.mediumResults.map(
+      (m): BackendMediumDiagnosticResult => ({
+        ...m,
+        outcome: ArticleDiagnosisOutcome.DuplicateId,
+        outcomeReason: "Previously seen",
+        stages: createDuplicateIdStages(),
+      })
+    ),
   }));
 
-const createNoConnectionsMockData = (): ArticleDiagnosticResult[] =>
+const createNoConnectionsMockData = (): BackendArticleDiagnosticResult[] =>
   mockArticleDiagnostics.map((article) => ({
     ...article,
     outcome: ArticleDiagnosisOutcome.WouldDeliver,
@@ -869,18 +834,16 @@ const createNoConnectionsMockData = (): ArticleDiagnosticResult[] =>
     mediumResults: [],
   }));
 
-const createAllFeedUnchangedMockData = (): ArticleDiagnosticResult[] =>
+const createAllFeedUnchangedMockData = (): BackendArticleDiagnosticResult[] =>
   mockArticleDiagnostics.map((article) => ({
     ...article,
     outcome: ArticleDiagnosisOutcome.FeedUnchanged,
     outcomeReason:
       "Feed content unchanged since last check. Articles will be processed when new content is detected.",
-    // No stages for unchanged feed - diagnostics are skipped
-    stages: [],
     mediumResults: [],
   }));
 
-const createAllFeedErrorMockData = (): ArticleDiagnosticResult[] =>
+const createAllFeedErrorMockData = (): BackendArticleDiagnosticResult[] =>
   mockArticleDiagnostics.map((article) => ({
     ...article,
     outcome: ArticleDiagnosisOutcome.FeedError,
@@ -888,7 +851,7 @@ const createAllFeedErrorMockData = (): ArticleDiagnosticResult[] =>
     mediumResults: [],
   }));
 
-export const getMockDiagnostics = (): ArticleDiagnosticResult[] => {
+export const getMockDiagnostics = (): BackendArticleDiagnosticResult[] => {
   switch (MOCK_DIAGNOSTICS_STATE as MockDiagnosticsState) {
     case "empty":
       return [];

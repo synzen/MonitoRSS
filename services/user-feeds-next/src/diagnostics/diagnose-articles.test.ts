@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from "bun:test";
 import { diagnoseArticles } from "./diagnose-articles";
-import { ArticleDiagnosisOutcome, DiagnosticStage } from "./types";
+import { ArticleDiagnosisOutcome, DiagnosticStage, DiagnosticStageStatus } from "./types";
 import type { DiagnoseArticleDependencies, DiagnoseArticlesInput } from "./diagnose-articles";
 import {
   inMemoryArticleFieldStore,
@@ -357,13 +357,13 @@ describe("diagnoseArticle", () => {
       });
 
       const { results } = await diagnoseArticles(input, deps);
-      const mediumResult = results[0]?.mediumResults[0] as { stages: Array<{ stage: DiagnosticStage; passed: boolean }> };
+      const mediumResult = results[0]?.mediumResults[0] as { stages: Array<{ stage: DiagnosticStage; status: DiagnosticStageStatus }> };
 
       const mediumFilterStage = mediumResult.stages.find(
         (s) => s.stage === DiagnosticStage.MediumFilter
       );
       expect(mediumFilterStage).toBeDefined();
-      expect(mediumFilterStage!.passed).toBe(true);
+      expect(mediumFilterStage!.status).toBe(DiagnosticStageStatus.Passed);
     });
   });
 

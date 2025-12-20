@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { DiagnosticStageResult } from "./types";
+import { DiagnosticStage, DiagnosticStageStatus, type DiagnosticStageResult } from "./types";
 
 interface DiagnosticStore {
   enabled: boolean;
@@ -31,6 +31,17 @@ export function startDiagnosticContext<T>(
     },
     cb
   );
+}
+
+/**
+ * End the current diagnostic context early.
+ * Subsequent diagnostic recordings will be no-ops.
+ */
+export function endDiagnosticsEarly(): void {
+  const store = diagnosticStorage.getStore();
+  if (store) {
+    store.enabled = false;
+  }
 }
 
 /**
@@ -81,6 +92,29 @@ export function recordDiagnosticForArticle(
     stages = [];
     store.stagesByArticle.set(hash, stages);
   }
+
+  // Stages that block ALL further recording when failed (truly terminal failures)
+  const TERMINAL_BLOCKING_STAGES = new Set([
+    DiagnosticStage.FeedState,
+    DiagnosticStage.BlockingComparison,
+    DiagnosticStage.DateCheck,
+    DiagnosticStage.FeedRateLimit,
+  ]);
+
+  // Check if we have a terminal failure that blocks everything
+  if (stages.some((s) => s.status === DiagnosticStageStatus.Failed && TERMINAL_BLOCKING_STAGES.has(s.stage))) {
+    return;
+  }
+
+  // IdComparison failure only blocks if we're not recording PassingComparison
+  // (PassingComparison is specifically for seen articles where IdComparison failed)
+  const hasIdComparisonFailed = stages.some(
+    (s) => s.stage === DiagnosticStage.IdComparison && s.status === DiagnosticStageStatus.Failed
+  );
+  if (hasIdComparisonFailed && stage.stage !== DiagnosticStage.PassingComparison) {
+    return;
+  }
+
   stages.push(stage);
 }
 

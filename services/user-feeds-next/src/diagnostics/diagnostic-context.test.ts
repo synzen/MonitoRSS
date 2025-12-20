@@ -9,7 +9,7 @@ import {
   getAllDiagnosticResults,
   recordDiagnosticForTargetArticles,
 } from "./diagnostic-context";
-import { DiagnosticStage } from "./types";
+import { DiagnosticStage, DiagnosticStageStatus } from "./types";
 import type { DiagnosticStageResult } from "./types";
 
 describe("diagnostic-context", () => {
@@ -92,7 +92,7 @@ describe("diagnostic-context", () => {
       await startDiagnosticContext(targetHashes, async () => {
         const stage1: DiagnosticStageResult = {
           stage: DiagnosticStage.FeedState,
-          passed: true,
+          status: DiagnosticStageStatus.Passed,
           details: {
             hasPriorArticles: true,
             isFirstRun: false,
@@ -102,7 +102,7 @@ describe("diagnostic-context", () => {
 
         const stage2: DiagnosticStageResult = {
           stage: DiagnosticStage.IdComparison,
-          passed: true,
+          status: DiagnosticStageStatus.Passed,
           details: {
             articleIdHash: "hash2",
             foundInHotPartition: false,
@@ -131,7 +131,7 @@ describe("diagnostic-context", () => {
       await startDiagnosticContext(targetHashes, async () => {
         const feedState: DiagnosticStageResult = {
           stage: DiagnosticStage.FeedState,
-          passed: true,
+          status: DiagnosticStageStatus.Passed,
           details: {
             hasPriorArticles: true,
             isFirstRun: false,
@@ -141,7 +141,7 @@ describe("diagnostic-context", () => {
 
         const idComparison: DiagnosticStageResult = {
           stage: DiagnosticStage.IdComparison,
-          passed: true,
+          status: DiagnosticStageStatus.Passed,
           details: {
             articleIdHash: "hash1",
             foundInHotPartition: false,
@@ -180,7 +180,7 @@ describe("diagnostic-context", () => {
       await startDiagnosticContext(targetHashes, async () => {
         const stage1: DiagnosticStageResult = {
           stage: DiagnosticStage.FeedState,
-          passed: true,
+          status: DiagnosticStageStatus.Passed,
           details: {
             hasPriorArticles: true,
             isFirstRun: false,
@@ -190,7 +190,7 @@ describe("diagnostic-context", () => {
 
         const stage2: DiagnosticStageResult = {
           stage: DiagnosticStage.IdComparison,
-          passed: true,
+          status: DiagnosticStageStatus.Passed,
           details: {
             articleIdHash: "hash2",
             foundInHotPartition: false,
@@ -223,7 +223,7 @@ describe("diagnostic-context", () => {
       await startDiagnosticContext(targetHashes, async () => {
         const stage: DiagnosticStageResult = {
           stage: DiagnosticStage.FeedState,
-          passed: true,
+          status: DiagnosticStageStatus.Passed,
           details: {
             hasPriorArticles: true,
             isFirstRun: false,
@@ -251,7 +251,7 @@ describe("diagnostic-context", () => {
       await startDiagnosticContext(targetHashes, async () => {
         recordDiagnosticForTargetArticles(articleMap, (article, hash) => ({
           stage: DiagnosticStage.FeedState,
-          passed: true,
+          status: DiagnosticStageStatus.Passed,
           details: {
             hasPriorArticles: true,
             isFirstRun: false,
@@ -275,7 +275,7 @@ describe("diagnostic-context", () => {
         callCount++;
         return {
           stage: DiagnosticStage.FeedState,
-          passed: true,
+          status: DiagnosticStageStatus.Passed,
           details: {
             hasPriorArticles: true,
             isFirstRun: false,
@@ -294,7 +294,7 @@ describe("diagnostic-context", () => {
       await startDiagnosticContext(targetHashes, async () => {
         recordDiagnosticForTargetArticles(articleMap, () => ({
           stage: DiagnosticStage.FeedState,
-          passed: true,
+          status: DiagnosticStageStatus.Passed,
           details: {
             hasPriorArticles: true,
             isFirstRun: false,
@@ -319,7 +319,7 @@ describe("diagnostic-context", () => {
           if (hash === "hash1") return null;
           return {
             stage: DiagnosticStage.FeedState,
-            passed: true,
+            status: DiagnosticStageStatus.Passed,
             details: {
               hasPriorArticles: true,
               isFirstRun: false,
@@ -342,7 +342,7 @@ describe("diagnostic-context", () => {
         startDiagnosticContext("hash-1", async () => {
           recordDiagnosticForArticle("hash-1", {
             stage: DiagnosticStage.FeedState,
-            passed: true,
+            status: DiagnosticStageStatus.Passed,
             details: {
               hasPriorArticles: false,
               isFirstRun: true,
@@ -355,7 +355,7 @@ describe("diagnostic-context", () => {
         startDiagnosticContext("hash-2", async () => {
           recordDiagnosticForArticle("hash-2", {
             stage: DiagnosticStage.FeedState,
-            passed: false,
+            status: DiagnosticStageStatus.Failed,
             details: {
               hasPriorArticles: true,
               isFirstRun: false,
@@ -385,7 +385,7 @@ describe("diagnostic-context", () => {
           await new Promise((resolve) => setTimeout(resolve, 5));
           recordDiagnosticForArticle("ctx1-hash", {
             stage: DiagnosticStage.IdComparison,
-            passed: true,
+            status: DiagnosticStageStatus.Passed,
             details: {
               articleIdHash: "ctx1-hash",
               foundInHotPartition: false,
@@ -396,7 +396,7 @@ describe("diagnostic-context", () => {
           // Try to record to the other context's hash - should be ignored
           recordDiagnosticForArticle("ctx2-hash", {
             stage: DiagnosticStage.IdComparison,
-            passed: false,
+            status: DiagnosticStageStatus.Failed,
             details: {
               articleIdHash: "ctx2-hash",
               foundInHotPartition: true,
@@ -409,7 +409,7 @@ describe("diagnostic-context", () => {
         startDiagnosticContext("ctx2-hash", async () => {
           recordDiagnosticForArticle("ctx2-hash", {
             stage: DiagnosticStage.DateCheck,
-            passed: true,
+            status: DiagnosticStageStatus.Passed,
             details: {
               articleDate: "2024-01-01",
               threshold: 86400000,

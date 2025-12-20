@@ -5,6 +5,8 @@ import type { Article } from "../parser";
 import {
   recordDiagnosticForTargetArticles,
   DiagnosticStage,
+  DiagnosticStageStatus,
+  endDiagnosticsEarly,
 } from "../../diagnostics";
 
 const sha1 = createHash("sha1");
@@ -569,7 +571,7 @@ export async function getArticlesToDeliver(
     // Record diagnostic for first run - O(T) where T = target articles
     recordDiagnosticForTargetArticles(getArticleMap(), () => ({
       stage: DiagnosticStage.FeedState,
-      passed: true,
+      status: DiagnosticStageStatus.Failed,
       details: {
         hasPriorArticles: false,
         isFirstRun: true,
@@ -601,7 +603,7 @@ export async function getArticlesToDeliver(
   // Record FeedState diagnostic for non-first-run case - O(T)
   recordDiagnosticForTargetArticles(getArticleMap(), () => ({
     stage: DiagnosticStage.FeedState,
-    passed: true,
+    status: DiagnosticStageStatus.Passed,
     details: {
       hasPriorArticles: true,
       isFirstRun: false,
@@ -629,24 +631,8 @@ export async function getArticlesToDeliver(
     articles
   );
 
-  // Record IdComparison diagnostic - O(T)
   const newArticleHashes = new Set(newArticles.map((a) => a.flattened.idHash));
   const restoreHashes = new Set(articlesToRestore.map((a) => a.flattened.idHash));
-
-  recordDiagnosticForTargetArticles(getArticleMap(), (_, hash) => {
-    const isNew = newArticleHashes.has(hash);
-    const isRestored = restoreHashes.has(hash);
-    return {
-      stage: DiagnosticStage.IdComparison,
-      passed: isNew,
-      details: {
-        articleIdHash: hash,
-        foundInHotPartition: !isNew && !isRestored,
-        foundInColdPartition: isRestored,
-        isNew,
-      },
-    };
-  });
 
   // Get seen articles (existing IDs)
   const seenArticles = articles.filter(
@@ -661,6 +647,35 @@ export async function getArticlesToDeliver(
     newArticles
   );
 
+  // Check passing comparisons on SEEN articles (only using active comparisons)
+  // Must check BEFORE recording IdComparison so we know if seen articles pass via PassingComparison
+  const articlesPassedComparisons = await checkPassingComparisons(
+    store,
+    feedId,
+    activePassingComparisons,
+    seenArticles
+  );
+  const passedViaComparisonHashes = new Set(
+    articlesPassedComparisons.map((a) => a.flattened.idHash)
+  );
+
+  // Record IdComparison diagnostic - O(T)
+  recordDiagnosticForTargetArticles(getArticleMap(), (_, hash) => {
+    const isNew = newArticleHashes.has(hash);
+    const isRestored = restoreHashes.has(hash);
+
+    return {
+      stage: DiagnosticStage.IdComparison,
+      status: isNew ? DiagnosticStageStatus.Passed : DiagnosticStageStatus.Failed,
+      details: {
+        articleIdHash: hash,
+        foundInHotPartition: !isNew && !isRestored,
+        foundInColdPartition: isRestored,
+        isNew,
+      },
+    };
+  });
+
   // Record BlockingComparison diagnostic for new target articles - O(T)
   const pastBlocksHashes = new Set(articlesPastBlocks.map((a) => a.flattened.idHash));
 
@@ -669,7 +684,7 @@ export async function getArticlesToDeliver(
     const passed = pastBlocksHashes.has(hash);
     return {
       stage: DiagnosticStage.BlockingComparison,
-      passed,
+      status: passed ? DiagnosticStageStatus.Passed : DiagnosticStageStatus.Failed,
       details: {
         comparisonFields: blockingComparisons,
         activeFields: activeBlockingComparisons,
@@ -678,24 +693,15 @@ export async function getArticlesToDeliver(
     };
   });
 
-  // Check passing comparisons on SEEN articles (only using active comparisons)
-  const articlesPassedComparisons = await checkPassingComparisons(
-    store,
-    feedId,
-    activePassingComparisons,
-    seenArticles
-  );
-
   // Record PassingComparison diagnostic for seen target articles - O(T)
   const seenHashes = new Set(seenArticles.map((a) => a.flattened.idHash));
-  const passedHashes = new Set(articlesPassedComparisons.map((a) => a.flattened.idHash));
 
   recordDiagnosticForTargetArticles(getArticleMap(), (_, hash) => {
     if (!seenHashes.has(hash)) return null; // Only record for seen articles
-    const passed = passedHashes.has(hash);
+    const passed = passedViaComparisonHashes.has(hash);
     return {
       stage: DiagnosticStage.PassingComparison,
-      passed,
+      status: passed ? DiagnosticStageStatus.Passed : DiagnosticStageStatus.Failed,
       details: {
         comparisonFields: passingComparisons,
         activeFields: activePassingComparisons,
@@ -734,7 +740,7 @@ export async function getArticlesToDeliver(
 
       return {
         stage: DiagnosticStage.DateCheck,
-        passed: passes,
+        status: passes ? DiagnosticStageStatus.Passed : DiagnosticStageStatus.Failed,
         details: {
           articleDate,
           threshold,

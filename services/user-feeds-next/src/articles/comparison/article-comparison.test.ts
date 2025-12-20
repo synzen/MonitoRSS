@@ -6,7 +6,7 @@ import {
   type ArticleFieldStore,
 } from ".";
 import type { Article } from "../parser";
-import type { DiagnosticStageResult } from "../../diagnostics";
+import { DiagnosticStageStatus, type DiagnosticStageResult } from "../../diagnostics";
 
 function createArticle(
   id: string,
@@ -640,7 +640,8 @@ describe("article-comparison", () => {
         expect(
           (feedState as { details: { isFirstRun: boolean } }).details.isFirstRun
         ).toBe(true);
-        expect(feedState!.passed).toBe(true);
+        // First run records articles as baseline, status is Failed because articles won't be delivered
+        expect(feedState!.status).toBe(DiagnosticStageStatus.Failed);
       });
     });
 
@@ -715,7 +716,7 @@ describe("article-comparison", () => {
           (d) => d.stage === DiagnosticStage.BlockingComparison
         );
         expect(blockingComparison).toBeDefined();
-        expect(blockingComparison!.passed).toBe(false);
+        expect(blockingComparison!.status).toBe(DiagnosticStageStatus.Failed);
         expect(
           (
             blockingComparison as {
@@ -757,7 +758,7 @@ describe("article-comparison", () => {
           (d) => d.stage === DiagnosticStage.PassingComparison
         );
         expect(passingComparison).toBeDefined();
-        expect(passingComparison!.passed).toBe(true);
+        expect(passingComparison!.status).toBe(DiagnosticStageStatus.Passed);
         expect(
           (
             passingComparison as {
@@ -813,7 +814,7 @@ describe("article-comparison", () => {
           (d) => d.stage === DiagnosticStage.DateCheck
         );
         expect(dateCheck).toBeDefined();
-        expect(dateCheck!.passed).toBe(false);
+        expect(dateCheck!.status).toBe(DiagnosticStageStatus.Failed);
       });
     });
 
@@ -978,8 +979,8 @@ describe("article-comparison", () => {
 
           expect(blocking2).toBeDefined();
           expect(blocking3).toBeDefined();
-          expect(blocking2!.passed).toBe(false);
-          expect(blocking3!.passed).toBe(false);
+          expect(blocking2!.status).toBe(DiagnosticStageStatus.Failed);
+          expect(blocking3!.status).toBe(DiagnosticStageStatus.Failed);
         });
       });
     });

@@ -48,7 +48,7 @@ interface Props {
 const getStageName = (stage: DiagnosticStage): string => {
   switch (stage) {
     case DiagnosticStage.FeedState:
-      return "Feed State";
+      return "Initial Scan";
     case DiagnosticStage.IdComparison:
       return "Duplicate Check";
     case DiagnosticStage.BlockingComparison:
@@ -60,7 +60,7 @@ const getStageName = (stage: DiagnosticStage): string => {
     case DiagnosticStage.MediumFilter:
       return "Connection Filters";
     case DiagnosticStage.FeedRateLimit:
-      return "Feed Rate Limit";
+      return "Feed Daily Limit";
     case DiagnosticStage.MediumRateLimit:
       return "Connection Rate Limit";
     default:
@@ -187,7 +187,7 @@ const StageDetails = ({ stageResult }: StageDetailsProps) => {
       );
 
     case DiagnosticStage.IdComparison:
-      return <Stack spacing={0}>{renderDetailRow("Is New", details.isNew)}</Stack>;
+      return <Stack spacing={0}>{renderDetailRow("ID Used", details.articleIdHash)}</Stack>;
 
     case DiagnosticStage.BlockingComparison:
       return (

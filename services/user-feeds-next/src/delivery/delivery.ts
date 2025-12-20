@@ -49,6 +49,7 @@ import {
   isDiagnosticMode,
   recordDiagnosticForArticle,
   DiagnosticStage,
+  DiagnosticStageStatus,
 } from "../diagnostics";
 
 const SECONDS_PER_DAY = 86400;
@@ -81,10 +82,12 @@ export function recordRateLimitDiagnostic(
 
   const wouldExceed = params.remaining <= 0;
 
+  const status = wouldExceed ? DiagnosticStageStatus.Failed : DiagnosticStageStatus.Passed;
+
   if (params.isFeedLevel) {
     recordDiagnosticForArticle(params.articleIdHash, {
       stage: DiagnosticStage.FeedRateLimit,
-      passed: !wouldExceed,
+      status,
       details: {
         currentCount: params.currentCount,
         limit: params.limit,
@@ -96,7 +99,7 @@ export function recordRateLimitDiagnostic(
   } else {
     recordDiagnosticForArticle(params.articleIdHash, {
       stage: DiagnosticStage.MediumRateLimit,
-      passed: !wouldExceed,
+      status,
       details: {
         mediumId: params.mediumId || "",
         currentCount: params.currentCount,
@@ -132,7 +135,7 @@ export function recordMediumFilterDiagnostic(
 
   recordDiagnosticForArticle(params.articleIdHash, {
     stage: DiagnosticStage.MediumFilter,
-    passed: params.filterResult,
+    status: params.filterResult ? DiagnosticStageStatus.Passed : DiagnosticStageStatus.Failed,
     details: {
       mediumId: params.mediumId,
       filterExpression: params.filterExpression,

@@ -80,11 +80,43 @@ export const RateLimitDiagnosticDetailsSchema = object({
   wouldExceed: boolean().required(),
 });
 
-export const DiagnosticStageResultSchema = object({
+/**
+ * Schema for backend response format (with status enum).
+ * The frontend adds summary strings to this.
+ */
+export const BackendStageResultSchema = object({
   stage: string().oneOf(Object.values(DiagnosticStage)).required() as any,
+  status: string().oneOf(Object.values(DiagnosticStageStatus)).required() as any,
+  details: object().nullable(),
+});
+
+export const DiagnosticStageResultSchema = object({
+  stage: string().oneOf(Object.values(DiagnosticStage)).required(),
   status: string().oneOf(Object.values(DiagnosticStageStatus)).required() as any,
   summary: string().required(),
   details: object().nullable(),
+});
+
+/**
+ * Schema for backend medium result format (with passed boolean in stages).
+ */
+export const BackendMediumDiagnosticResultSchema = object({
+  mediumId: string().required(),
+  outcome: string().oneOf(Object.values(ArticleDiagnosisOutcome)).required() as any,
+  outcomeReason: string().required(),
+  stages: array(BackendStageResultSchema.required()).required(),
+});
+
+/**
+ * Schema for backend article result format.
+ */
+export const BackendArticleDiagnosticResultSchema = object({
+  articleId: string().required(),
+  articleIdHash: string().required(),
+  articleTitle: string().nullable(),
+  outcome: string().oneOf(Object.values(ArticleDiagnosisOutcome)).required() as any,
+  outcomeReason: string().required(),
+  mediumResults: array(BackendMediumDiagnosticResultSchema.required()).required(),
 });
 
 export const MediumDiagnosticResultSchema = object({
@@ -114,6 +146,10 @@ export type PassingComparisonDiagnosticDetails = InferType<
 export type DateCheckDiagnosticDetails = InferType<typeof DateCheckDiagnosticDetailsSchema>;
 export type MediumFilterDiagnosticDetails = InferType<typeof MediumFilterDiagnosticDetailsSchema>;
 export type RateLimitDiagnosticDetails = InferType<typeof RateLimitDiagnosticDetailsSchema>;
+
+export type BackendStageResult = InferType<typeof BackendStageResultSchema>;
+export type BackendMediumDiagnosticResult = InferType<typeof BackendMediumDiagnosticResultSchema>;
+export type BackendArticleDiagnosticResult = InferType<typeof BackendArticleDiagnosticResultSchema>;
 
 export type DiagnosticStageResult = InferType<typeof DiagnosticStageResultSchema>;
 export type MediumDiagnosticResult = InferType<typeof MediumDiagnosticResultSchema>;

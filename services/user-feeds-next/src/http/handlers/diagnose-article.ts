@@ -11,7 +11,9 @@ import {
   diagnoseArticles,
   FeedState,
   ArticleDiagnosisOutcome,
+  CANONICAL_STAGES,
   type DiagnoseArticlesInput,
+  endDiagnosticsEarly,
 } from "../../diagnostics";
 import type { ArticleFieldStore } from "../../articles/comparison";
 import type { DeliveryRecordStore } from "../../stores/interfaces/delivery-record-store";
@@ -38,6 +40,7 @@ function createErrorResponse(feedResult: FeedErrorResult): Response {
         },
       ],
       total: 0,
+      stages: CANONICAL_STAGES,
       feedState: {
         state: FeedState.FetchError,
         errorType: feedResult.errorType,
@@ -54,6 +57,7 @@ function createErrorResponse(feedResult: FeedErrorResult): Response {
       },
     ],
     total: 0,
+    stages: CANONICAL_STAGES,
     feedState: {
       state: FeedState.ParseError,
       errorType: feedResult.errorType,
@@ -96,6 +100,7 @@ export async function handleDiagnoseArticle(
 
       // Handle matched-hash by re-fetching without hash comparison to get articles
       if (feedResult.status === "matched-hash") {
+        endDiagnosticsEarly();
         // Re-fetch without hash comparison to get the actual articles
         const feedResultWithArticles = await fetchAndParseFeed({
           feed: {
@@ -105,7 +110,6 @@ export async function handleDiagnoseArticle(
             requestLookupDetails: input.feed.requestLookupDetails,
           },
           feedRequestsServiceHost,
-          // No hashToCompare - force full fetch
         });
 
         // If re-fetch fails, treat as error (shouldn't happen normally)
@@ -122,6 +126,7 @@ export async function handleDiagnoseArticle(
             results: [],
             errors: [{ message: "Unexpected matched-hash on re-fetch" }],
             total: 0,
+            stages: CANONICAL_STAGES,
           });
         }
 
@@ -149,13 +154,14 @@ export async function handleDiagnoseArticle(
           })),
         }));
 
-        return jsonResponse({ results, errors: [], total });
+        return jsonResponse({ results, errors: [], total, stages: CANONICAL_STAGES });
       }
 
       if (
         feedResult.status === "fetch-error" ||
         feedResult.status === "parse-error"
       ) {
+        endDiagnosticsEarly()
         return createErrorResponse(feedResult);
       }
 
@@ -198,7 +204,9 @@ export async function handleDiagnoseArticle(
         }
       );
 
-      return jsonResponse({ results, errors, total });
+      console.log("Diagnostics results:", JSON.stringify(results[0], null, 2), "Errors:", errors);
+
+      return jsonResponse({ results, errors, total, stages: CANONICAL_STAGES });
     } catch (err) {
       // Handle Zod validation errors
       if (err instanceof z.ZodError) {
