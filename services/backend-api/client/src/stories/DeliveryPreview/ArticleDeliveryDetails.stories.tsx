@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import React from "react";
 import { MemoryRouter } from "react-router-dom";
-import { ArticleDiagnosticDetails } from "../../features/feed/components/UserFeedLogs/ArticleStatus/ArticleDiagnosticDetails";
+import { ArticleDeliveryDetails } from "../../features/feed/components/UserFeedLogs/DeliveryPreview/ArticleDeliveryDetails";
 import { UserFeedContext } from "../../contexts/UserFeedContext";
 import { UserFeed } from "../../features/feed/types";
 import {
@@ -35,8 +35,8 @@ const MockUserFeedProvider = ({
 );
 
 const meta = {
-  title: "Feed/ArticleStatus/ArticleDiagnosticDetails",
-  component: ArticleDiagnosticDetails,
+  title: "Feed/DeliveryPreview/ArticleDeliveryDetails",
+  component: ArticleDeliveryDetails,
   parameters: {
     layout: "padded",
   },
@@ -50,7 +50,7 @@ const meta = {
       </MemoryRouter>
     ),
   ],
-} satisfies Meta<typeof ArticleDiagnosticDetails>;
+} satisfies Meta<typeof ArticleDeliveryDetails>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

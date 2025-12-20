@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useArticleDiagnostics } from "./useArticleDiagnostics";
+import { useDeliveryPreview } from "./useDeliveryPreview";
 
 interface Props {
   feedId?: string;
@@ -7,11 +7,11 @@ interface Props {
   disabled?: boolean;
 }
 
-export const useArticleDiagnosticsWithPagination = ({ feedId, limit, disabled }: Props) => {
+export const useDeliveryPreviewWithPagination = ({ feedId, limit, disabled }: Props) => {
   const useLimit = limit || 10;
 
   const { error, data, status, fetchStatus, refetch, dataUpdatedAt, fetchNextPage, hasNextPage } =
-    useArticleDiagnostics({
+    useDeliveryPreview({
       feedId,
       data: {
         skip: 0,

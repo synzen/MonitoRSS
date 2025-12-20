@@ -20,26 +20,26 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { useUserFeedContext } from "../../../../../contexts/UserFeedContext";
 import { pages } from "../../../../../constants";
 import { UserFeedTabSearchParam } from "../../../../../constants/userFeedTabSearchParam";
-import { useArticleDiagnosticsWithPagination } from "../../../hooks/useArticleDiagnosticsWithPagination";
+import { useDeliveryPreviewWithPagination } from "../../../hooks/useDeliveryPreviewWithPagination";
 import { InlineErrorAlert } from "../../../../../components";
-import { ArticleStatusAccordion, ArticleStatusAccordionSkeleton } from "./ArticleStatusAccordion";
+import { DeliveryPreviewAccordion, DeliveryPreviewAccordionSkeleton } from "./DeliveryPreviewAccordion";
 import {
-  ArticleDiagnosisOutcome,
-  ArticleDiagnosticResult,
-} from "../../../types/ArticleDiagnostics";
+  ArticleDeliveryOutcome,
+  ArticleDeliveryResult,
+} from "../../../types/DeliveryPreview";
 import { formatRefreshRateSeconds } from "../../../../../utils/formatRefreshRateSeconds";
 import { FeedLevelStateDisplay, FeedState } from "./FeedLevelStateDisplay";
 
 dayjs.extend(relativeTime);
 
 export const getPatternAlert = (
-  results: ArticleDiagnosticResult[],
+  results: ArticleDeliveryResult[],
   refreshRateSeconds: number
 ): { type: "info" | "warning"; message: string } | null => {
   if (results.length === 0) return null;
 
   const outcomeCounts = results.reduce((acc, r) => {
-    const outcome = r.outcome as ArticleDiagnosisOutcome;
+    const outcome = r.outcome as ArticleDeliveryOutcome;
     acc[outcome] = (acc[outcome] || 0) + 1;
 
     return acc;
@@ -54,7 +54,7 @@ export const getPatternAlert = (
   const percentage = count / totalResults;
 
   // First run is a feed-level state - if any article has it, all do
-  if (outcome === ArticleDiagnosisOutcome.FirstRunBaseline && count >= 1) {
+  if (outcome === ArticleDeliveryOutcome.FirstRunBaseline && count >= 1) {
     const formattedTime = formatRefreshRateSeconds(refreshRateSeconds);
 
     return {
@@ -63,7 +63,7 @@ export const getPatternAlert = (
     };
   }
 
-  if (outcome === ArticleDiagnosisOutcome.RateLimitedFeed && percentage > 0.5) {
+  if (outcome === ArticleDeliveryOutcome.RateLimitedFeed && percentage > 0.5) {
     return {
       type: "warning",
       message:
@@ -71,7 +71,7 @@ export const getPatternAlert = (
     };
   }
 
-  if (outcome === ArticleDiagnosisOutcome.DuplicateId && percentage === 1) {
+  if (outcome === ArticleDeliveryOutcome.DuplicateId && percentage === 1) {
     return {
       type: "info",
       message:
@@ -80,7 +80,7 @@ export const getPatternAlert = (
   }
 
   // FeedUnchanged is a feed-level state - if any article has it, all do
-  if (outcome === ArticleDiagnosisOutcome.FeedUnchanged && count >= 1) {
+  if (outcome === ArticleDeliveryOutcome.FeedUnchanged && count >= 1) {
     return {
       type: "info",
       message:
@@ -91,11 +91,11 @@ export const getPatternAlert = (
   return null;
 };
 
-export interface ArticleStatusPresentationalProps {
+export interface DeliveryPreviewPresentationalProps {
   isLoading?: boolean;
   error?: Error | null;
   isFetching?: boolean;
-  results?: ArticleDiagnosticResult[];
+  results?: ArticleDeliveryResult[];
   total?: number;
   hasMore?: boolean;
   hasNoConnections?: boolean;
@@ -108,7 +108,7 @@ export interface ArticleStatusPresentationalProps {
   onLoadMore?: () => void;
 }
 
-export const ArticleStatusPresentational = ({
+export const DeliveryPreviewPresentational = ({
   isLoading = false,
   error = null,
   isFetching = false,
@@ -123,7 +123,7 @@ export const ArticleStatusPresentational = ({
   lastCheckedFormatted = "Never",
   onRefresh = () => {},
   onLoadMore = () => {},
-}: ArticleStatusPresentationalProps) => {
+}: DeliveryPreviewPresentationalProps) => {
   const hasFeedLevelState = !!feedState;
   const hasNoData = results.length === 0 && !isLoading && !hasFeedLevelState;
   const patternAlert = getPatternAlert(results, refreshRateSeconds);
@@ -140,7 +140,7 @@ export const ArticleStatusPresentational = ({
           gap={3}
         >
           <Stack spacing={1}>
-            <Heading as="h3" size="sm" m={0} id="article-status-table-title">
+            <Heading as="h3" size="sm" m={0} id="delivery-preview-title">
               Delivery Preview
             </Heading>
             <Text color="whiteAlpha.700" fontSize="sm">
@@ -174,10 +174,10 @@ export const ArticleStatusPresentational = ({
         </Box>
       </Box>
       <Box px={4} pb={4}>
-        {isLoading && <ArticleStatusAccordionSkeleton />}
+        {isLoading && <DeliveryPreviewAccordionSkeleton />}
         {error && (
           <InlineErrorAlert
-            title="Failed to load article diagnostics"
+            title="Failed to load delivery preview"
             description={error.message}
           />
         )}
@@ -223,9 +223,9 @@ export const ArticleStatusPresentational = ({
               </Alert>
             )}
             {isFetching && results.length === 0 ? (
-              <ArticleStatusAccordionSkeleton />
+              <DeliveryPreviewAccordionSkeleton />
             ) : (
-              <ArticleStatusAccordion results={results} />
+              <DeliveryPreviewAccordion results={results} />
             )}
             <Flex justifyContent="space-between" alignItems="center">
               <Text fontSize="sm" color="whiteAlpha.600">
@@ -249,7 +249,7 @@ export const ArticleStatusPresentational = ({
   );
 };
 
-export const ArticleStatus = () => {
+export const DeliveryPreview = () => {
   const { userFeed } = useUserFeedContext();
   const {
     results,
@@ -262,7 +262,7 @@ export const ArticleStatus = () => {
     total,
     lastChecked,
     feedState,
-  } = useArticleDiagnosticsWithPagination({
+  } = useDeliveryPreviewWithPagination({
     feedId: userFeed.id,
   });
 
@@ -278,7 +278,7 @@ export const ArticleStatus = () => {
   };
 
   return (
-    <ArticleStatusPresentational
+    <DeliveryPreviewPresentational
       isLoading={isLoading}
       error={error}
       isFetching={isFetching}

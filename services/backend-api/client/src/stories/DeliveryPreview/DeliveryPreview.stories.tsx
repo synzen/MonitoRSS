@@ -2,9 +2,9 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import React from "react";
 import { MemoryRouter } from "react-router-dom";
 import {
-  ArticleStatusPresentational,
-  ArticleStatusPresentationalProps,
-} from "../../features/feed/components/UserFeedLogs/ArticleStatus";
+  DeliveryPreviewPresentational,
+  DeliveryPreviewPresentationalProps,
+} from "../../features/feed/components/UserFeedLogs/DeliveryPreview";
 import { UserFeedContext } from "../../contexts/UserFeedContext";
 import { UserFeed } from "../../features/feed/types";
 import {
@@ -34,7 +34,7 @@ const MockUserFeedProvider = ({ children }: { children: React.ReactNode }) => (
   </UserFeedContext.Provider>
 );
 
-const defaultArgs: Partial<ArticleStatusPresentationalProps> = {
+const defaultArgs: Partial<DeliveryPreviewPresentationalProps> = {
   feedId: "feed-123",
   refreshRateSeconds: 600,
   addConnectionUrl: "/feeds/feed-123?tab=connections",
@@ -42,8 +42,8 @@ const defaultArgs: Partial<ArticleStatusPresentationalProps> = {
 };
 
 const meta = {
-  title: "Feed/ArticleStatus/ArticleStatus",
-  component: ArticleStatusPresentational,
+  title: "Feed/DeliveryPreview/DeliveryPreview",
+  component: DeliveryPreviewPresentational,
   parameters: {
     layout: "padded",
   },
@@ -58,7 +58,7 @@ const meta = {
     ),
   ],
   args: defaultArgs,
-} satisfies Meta<typeof ArticleStatusPresentational>;
+} satisfies Meta<typeof DeliveryPreviewPresentational>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -73,7 +73,7 @@ export const Loading: Story = {
 
 export const ErrorState: Story = {
   args: {
-    error: new Error("Failed to fetch article diagnostics. Please try again later."),
+    error: new Error("Failed to fetch delivery preview. Please try again later."),
   },
 };
 

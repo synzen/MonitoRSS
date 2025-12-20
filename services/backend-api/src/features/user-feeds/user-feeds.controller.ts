@@ -283,15 +283,15 @@ export class UserFeedsController {
     return result;
   }
 
-  @Post("/:feedId/diagnose-articles")
+  @Post("/:feedId/delivery-preview")
   @HttpCode(HttpStatus.OK)
-  async diagnoseArticles(
+  async getDeliveryPreview(
     @Param("feedId", GetUserFeedsPipe())
     [{ feed }]: GetUserFeedsPipeOutput,
     @Body(TransformValidationPipe)
-    { skip, limit }: import("./dto").DiagnoseArticlesInputDto
+    { skip, limit }: import("./dto").DeliveryPreviewInputDto
   ) {
-    return this.userFeedsService.diagnoseArticles({
+    return this.userFeedsService.getDeliveryPreview({
       feed,
       skip: skip ?? 0,
       limit: limit ?? 10,

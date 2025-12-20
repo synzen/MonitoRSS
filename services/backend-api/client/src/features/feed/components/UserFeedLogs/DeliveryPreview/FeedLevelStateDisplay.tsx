@@ -3,7 +3,7 @@ import { WarningIcon } from "@chakra-ui/icons";
 import { Link } from "react-router-dom";
 import { pages } from "../../../../../constants";
 import { UserFeedTabSearchParam } from "../../../../../constants/userFeedTabSearchParam";
-import { getHttpStatusMessage, getGenericErrorMessage } from "./statusUtils";
+import { getHttpStatusMessage, getGenericErrorMessage } from "./deliveryPreviewUtils";
 
 export interface FeedState {
   state: string;

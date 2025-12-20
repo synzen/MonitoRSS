@@ -1,4 +1,4 @@
-export interface DiagnoseArticlesFeedInput {
+export interface DeliveryPreviewFeedInput {
   id: string;
   url: string;
   blockingComparisons: string[];
@@ -23,7 +23,7 @@ export interface DiagnoseArticlesFeedInput {
   } | null;
 }
 
-export interface DiagnoseArticlesMediumInput {
+export interface DeliveryPreviewMediumInput {
   id: string;
   rateLimits?: Array<{
     limit: number;
@@ -34,9 +34,9 @@ export interface DiagnoseArticlesMediumInput {
   };
 }
 
-export interface DiagnoseArticlesInput {
-  feed: DiagnoseArticlesFeedInput;
-  mediums: DiagnoseArticlesMediumInput[];
+export interface DeliveryPreviewInput {
+  feed: DeliveryPreviewFeedInput;
+  mediums: DeliveryPreviewMediumInput[];
   articleDayLimit: number;
   skip: number;
   limit: number;

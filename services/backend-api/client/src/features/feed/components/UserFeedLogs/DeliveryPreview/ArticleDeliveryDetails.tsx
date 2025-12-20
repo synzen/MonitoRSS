@@ -16,73 +16,73 @@ import {
 import { Link } from "react-router-dom";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
 import {
-  ArticleDiagnosisOutcome,
-  ArticleDiagnosticResult,
-  MediumDiagnosticResult,
-} from "../../../types/ArticleDiagnostics";
+  ArticleDeliveryOutcome,
+  ArticleDeliveryResult,
+  MediumDeliveryResult,
+} from "../../../types/DeliveryPreview";
 import { useUserFeedContext } from "../../../../../contexts/UserFeedContext";
 import { pages } from "../../../../../constants";
 import { FeedConnectionType } from "../../../../../types";
 import { DeliveryChecksModal } from "./DeliveryChecksModal";
-import { getOutcomeColorScheme } from "./statusUtils";
+import { getOutcomeColorScheme } from "./deliveryPreviewUtils";
 import { formatRefreshRateSeconds } from "../../../../../utils/formatRefreshRateSeconds";
 
 interface Props {
-  result: ArticleDiagnosticResult;
+  result: ArticleDeliveryResult;
 }
 
-const getOutcomeLabel = (outcome: ArticleDiagnosisOutcome): string => {
+const getOutcomeLabel = (outcome: ArticleDeliveryOutcome): string => {
   switch (outcome) {
-    case ArticleDiagnosisOutcome.WouldDeliver:
+    case ArticleDeliveryOutcome.WouldDeliver:
       return "Would deliver";
-    case ArticleDiagnosisOutcome.FirstRunBaseline:
+    case ArticleDeliveryOutcome.FirstRunBaseline:
       return "Skipped (learning)";
-    case ArticleDiagnosisOutcome.DuplicateId:
+    case ArticleDeliveryOutcome.DuplicateId:
       return "Previously seen";
-    case ArticleDiagnosisOutcome.BlockedByComparison:
+    case ArticleDeliveryOutcome.BlockedByComparison:
       return "Unchanged";
-    case ArticleDiagnosisOutcome.FilteredByDateCheck:
+    case ArticleDeliveryOutcome.FilteredByDateCheck:
       return "Too old";
-    case ArticleDiagnosisOutcome.FilteredByMediumFilter:
+    case ArticleDeliveryOutcome.FilteredByMediumFilter:
       return "Blocked by filters";
-    case ArticleDiagnosisOutcome.RateLimitedFeed:
+    case ArticleDeliveryOutcome.RateLimitedFeed:
       return "Daily limit reached";
-    case ArticleDiagnosisOutcome.RateLimitedMedium:
+    case ArticleDeliveryOutcome.RateLimitedMedium:
       return "Limit reached";
-    case ArticleDiagnosisOutcome.WouldDeliverPassingComparison:
+    case ArticleDeliveryOutcome.WouldDeliverPassingComparison:
       return "Will re-deliver";
-    case ArticleDiagnosisOutcome.FeedUnchanged:
+    case ArticleDeliveryOutcome.FeedUnchanged:
       return "No changes detected";
-    case ArticleDiagnosisOutcome.FeedError:
+    case ArticleDeliveryOutcome.FeedError:
       return "Feed error";
     default:
       return "Unknown";
   }
 };
 
-const getExplanationText = (outcome: ArticleDiagnosisOutcome): string => {
+const getExplanationText = (outcome: ArticleDeliveryOutcome): string => {
   switch (outcome) {
-    case ArticleDiagnosisOutcome.WouldDeliver:
+    case ArticleDeliveryOutcome.WouldDeliver:
       return "This article would be delivered to Discord when the feed is next processed.";
-    case ArticleDiagnosisOutcome.FirstRunBaseline:
+    case ArticleDeliveryOutcome.FirstRunBaseline:
       return "This feed is in its learning phase. MonitoRSS skips pre-existing articles to avoid flooding your channel with old content.";
-    case ArticleDiagnosisOutcome.DuplicateId:
+    case ArticleDeliveryOutcome.DuplicateId:
       return "MonitoRSS has already seen this article. It may have been delivered previously, or recorded when the feed was first added. Either way, it won't be sent again to avoid duplicates.";
-    case ArticleDiagnosisOutcome.BlockedByComparison:
+    case ArticleDeliveryOutcome.BlockedByComparison:
       return "The fields in your Blocking Comparisons haven't changed since this article was last checked.";
-    case ArticleDiagnosisOutcome.FilteredByDateCheck:
+    case ArticleDeliveryOutcome.FilteredByDateCheck:
       return "This article's publish date is older than your maximum article age setting. Adjust date settings if you want older articles delivered.";
-    case ArticleDiagnosisOutcome.FilteredByMediumFilter:
+    case ArticleDeliveryOutcome.FilteredByMediumFilter:
       return "This article doesn't match the filter rules for your connection, so it will not be delivered. Review your filter settings to adjust what gets delivered.";
-    case ArticleDiagnosisOutcome.RateLimitedFeed:
+    case ArticleDeliveryOutcome.RateLimitedFeed:
       return "Your feed has hit its daily article limit. Upgrade your plan or wait until tomorrow for more articles.";
-    case ArticleDiagnosisOutcome.RateLimitedMedium:
+    case ArticleDeliveryOutcome.RateLimitedMedium:
       return "This connection has reached its delivery limit. The article will be delivered automatically once the limit resets.";
-    case ArticleDiagnosisOutcome.WouldDeliverPassingComparison:
+    case ArticleDeliveryOutcome.WouldDeliverPassingComparison:
       return "This article was seen before, but one of your Passing Comparison fields changed, so it will be re-delivered as an update.";
-    case ArticleDiagnosisOutcome.FeedUnchanged:
+    case ArticleDeliveryOutcome.FeedUnchanged:
       return "The feed's content hasn't changed since it was last checked. MonitoRSS skips unchanged feeds to save resources. New articles will be detected automatically once the publisher has indicated that there are new changes.";
-    case ArticleDiagnosisOutcome.FeedError:
+    case ArticleDeliveryOutcome.FeedError:
       return "MonitoRSS couldn't fetch or parse this feed. This may be temporary (server issues) or indicate a problem with the feed URL.";
     default:
       return "";
@@ -90,7 +90,7 @@ const getExplanationText = (outcome: ArticleDiagnosisOutcome): string => {
 };
 
 interface ConnectionResultRowProps {
-  mediumResult: MediumDiagnosticResult;
+  mediumResult: MediumDeliveryResult;
 }
 
 const ConnectionResultRow = ({ mediumResult }: ConnectionResultRowProps) => {
@@ -134,11 +134,11 @@ const ConnectionResultRow = ({ mediumResult }: ConnectionResultRowProps) => {
   );
 };
 
-export const ArticleDiagnosticDetails = ({ result }: Props) => {
+export const ArticleDeliveryDetails = ({ result }: Props) => {
   const { userFeed } = useUserFeedContext();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  const isLearningPhase = result.outcome === ArticleDiagnosisOutcome.FirstRunBaseline;
+  const isLearningPhase = result.outcome === ArticleDeliveryOutcome.FirstRunBaseline;
   const connectionCount = result.mediumResults.length;
 
   const hasPartialDelivery = () => {

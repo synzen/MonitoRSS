@@ -10,4 +10,4 @@ export * from "./UserFeedSummary";
 export * from "./UserFeedComputedStatus";
 export * from "./UserFeedManagementInvite";
 export * from "./UserFeedDeliveryLog";
-export * from "./ArticleDiagnostics";
+export * from "./DeliveryPreview";

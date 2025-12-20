@@ -11,48 +11,48 @@ import {
   Text,
 } from "@chakra-ui/react";
 import {
-  ArticleDiagnosticResult,
-  ArticleDiagnosisOutcome,
-} from "../../../types/ArticleDiagnostics";
-import { ArticleDiagnosticDetails } from "./ArticleDiagnosticDetails";
-import { getOutcomeLabel, getOutcomeColorScheme, StatusBadgeContent } from "./statusUtils";
+  ArticleDeliveryResult,
+  ArticleDeliveryOutcome,
+} from "../../../types/DeliveryPreview";
+import { ArticleDeliveryDetails } from "./ArticleDeliveryDetails";
+import { getOutcomeLabel, getOutcomeColorScheme, StatusBadgeContent } from "./deliveryPreviewUtils";
 import {
   ARTICLE_LIST_CONTAINER_PROPS,
   ARTICLE_LIST_ITEM_PADDING,
   getArticleListItemBorderProps,
-} from "./articleStatusStyles";
+} from "./deliveryPreviewStyles";
 
-const getStatusBorderColor = (outcome: ArticleDiagnosisOutcome): string => {
+const getStatusBorderColor = (outcome: ArticleDeliveryOutcome): string => {
   switch (outcome) {
-    case ArticleDiagnosisOutcome.WouldDeliver:
-    case ArticleDiagnosisOutcome.WouldDeliverPassingComparison:
+    case ArticleDeliveryOutcome.WouldDeliver:
+    case ArticleDeliveryOutcome.WouldDeliverPassingComparison:
       return "green.400";
-    case ArticleDiagnosisOutcome.FirstRunBaseline:
+    case ArticleDeliveryOutcome.FirstRunBaseline:
       return "blue.400";
-    case ArticleDiagnosisOutcome.DuplicateId:
-    case ArticleDiagnosisOutcome.BlockedByComparison:
-    case ArticleDiagnosisOutcome.FeedUnchanged:
+    case ArticleDeliveryOutcome.DuplicateId:
+    case ArticleDeliveryOutcome.BlockedByComparison:
+    case ArticleDeliveryOutcome.FeedUnchanged:
       return "gray.500";
-    case ArticleDiagnosisOutcome.FilteredByDateCheck:
-    case ArticleDiagnosisOutcome.FilteredByMediumFilter:
+    case ArticleDeliveryOutcome.FilteredByDateCheck:
+    case ArticleDeliveryOutcome.FilteredByMediumFilter:
       return "orange.400";
-    case ArticleDiagnosisOutcome.RateLimitedFeed:
-    case ArticleDiagnosisOutcome.RateLimitedMedium:
-    case ArticleDiagnosisOutcome.MixedResults:
+    case ArticleDeliveryOutcome.RateLimitedFeed:
+    case ArticleDeliveryOutcome.RateLimitedMedium:
+    case ArticleDeliveryOutcome.MixedResults:
       return "yellow.400";
-    case ArticleDiagnosisOutcome.FeedError:
+    case ArticleDeliveryOutcome.FeedError:
       return "red.400";
     default:
       return "gray.500";
   }
 };
 
-interface ArticleStatusAccordionItemProps {
-  result: ArticleDiagnosticResult;
+interface DeliveryPreviewAccordionItemProps {
+  result: ArticleDeliveryResult;
   isFirst: boolean;
 }
 
-const ArticleStatusAccordionItem = ({ result, isFirst }: ArticleStatusAccordionItemProps) => {
+const DeliveryPreviewAccordionItem = ({ result, isFirst }: DeliveryPreviewAccordionItemProps) => {
   const displayOutcome = getOutcomeLabel(result.outcome);
   const colorScheme = getOutcomeColorScheme(result.outcome);
   const borderColor = getStatusBorderColor(result.outcome);
@@ -84,27 +84,27 @@ const ArticleStatusAccordionItem = ({ result, isFirst }: ArticleStatusAccordionI
         <AccordionIcon ml={2} />
       </AccordionButton>
       <AccordionPanel p={0}>
-        <ArticleDiagnosticDetails result={result} />
+        <ArticleDeliveryDetails result={result} />
       </AccordionPanel>
     </AccordionItem>
   );
 };
 
-interface ArticleStatusAccordionProps {
-  results: ArticleDiagnosticResult[];
+interface DeliveryPreviewAccordionProps {
+  results: ArticleDeliveryResult[];
 }
 
-export const ArticleStatusAccordion = ({ results }: ArticleStatusAccordionProps) => (
+export const DeliveryPreviewAccordion = ({ results }: DeliveryPreviewAccordionProps) => (
   <Box {...ARTICLE_LIST_CONTAINER_PROPS}>
     <Accordion allowMultiple>
       {results.map((result, index) => (
-        <ArticleStatusAccordionItem key={result.articleId} result={result} isFirst={index === 0} />
+        <DeliveryPreviewAccordionItem key={result.articleId} result={result} isFirst={index === 0} />
       ))}
     </Accordion>
   </Box>
 );
 
-export const ArticleStatusAccordionSkeleton = ({ count = 10 }: { count?: number }) => (
+export const DeliveryPreviewAccordionSkeleton = ({ count = 10 }: { count?: number }) => (
   <Box {...ARTICLE_LIST_CONTAINER_PROPS}>
     {[...Array(count)].map((_, i) => (
       <Box

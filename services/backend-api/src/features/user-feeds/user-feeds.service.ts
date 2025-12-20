@@ -2242,7 +2242,7 @@ export class UserFeedsService {
     throw new Error(`Unhandled request status ${requestStatus}`);
   }
 
-  async diagnoseArticles({
+  async getDeliveryPreview({
     feed,
     skip,
     limit,
@@ -2264,7 +2264,7 @@ export class UserFeedsService {
 
     const mediums = this.mapConnectionsToMediums(feed);
 
-    const result = await this.feedHandlerService.diagnoseArticles({
+    const result = await this.feedHandlerService.getDeliveryPreview({
       feed: {
         id: feed._id.toHexString(),
         url: feed.url,
@@ -2296,8 +2296,8 @@ export class UserFeedsService {
 
   private mapConnectionsToMediums(
     feed: UserFeed
-  ): import("../../services/feed-handler/types").DiagnoseArticlesMediumInput[] {
-    const mediums: import("../../services/feed-handler/types").DiagnoseArticlesMediumInput[] =
+  ): import("../../services/feed-handler/types").DeliveryPreviewMediumInput[] {
+    const mediums: import("../../services/feed-handler/types").DeliveryPreviewMediumInput[] =
       [];
     const SKIP_CONNECTION_TYPES = [FeedConnectionTypeEntityKey.DiscordWebhooks];
 

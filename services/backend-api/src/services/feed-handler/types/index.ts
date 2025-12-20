@@ -14,4 +14,4 @@ export * from "./discord-message-api-payload.type";
 export * from "./get-delivery-count-result.type copy";
 export * from "./validate-discord-payload-input.type";
 export * from "./validate-discord-payload-output.type";
-export * from "./diagnose-articles.type";
+export * from "./delivery-preview.type";

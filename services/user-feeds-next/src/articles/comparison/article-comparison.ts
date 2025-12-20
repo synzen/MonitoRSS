@@ -3,11 +3,11 @@ import { createHash } from "crypto";
 import dayjs from "dayjs";
 import type { Article } from "../parser";
 import {
-  recordDiagnosticForTargetArticles,
-  DiagnosticStage,
-  DiagnosticStageStatus,
-  endDiagnosticsEarly,
-} from "../../diagnostics";
+  recordDeliveryPreviewForTargetArticles,
+  DeliveryPreviewStage,
+  DeliveryPreviewStageStatus,
+  endDeliveryPreviewEarly,
+} from "../../delivery-preview";
 
 const sha1 = createHash("sha1");
 
@@ -568,10 +568,10 @@ export async function getArticlesToDeliver(
   const hasPriorArticles = await store.hasPriorArticlesStored(feedId);
 
   if (!hasPriorArticles) {
-    // Record diagnostic for first run - O(T) where T = target articles
-    recordDiagnosticForTargetArticles(getArticleMap(), () => ({
-      stage: DiagnosticStage.FeedState,
-      status: DiagnosticStageStatus.Failed,
+    // Record delivery preview for first run - O(T) where T = target articles
+    recordDeliveryPreviewForTargetArticles(getArticleMap(), () => ({
+      stage: DeliveryPreviewStage.FeedState,
+      status: DeliveryPreviewStageStatus.Failed,
       details: {
         hasPriorArticles: false,
         isFirstRun: true,
@@ -600,10 +600,10 @@ export async function getArticlesToDeliver(
   // Only comparisons that have been stored before will be used for blocking/passing
   const storedComparisonNames = await store.getStoredComparisonNames(feedId);
 
-  // Record FeedState diagnostic for non-first-run case - O(T)
-  recordDiagnosticForTargetArticles(getArticleMap(), () => ({
-    stage: DiagnosticStage.FeedState,
-    status: DiagnosticStageStatus.Passed,
+  // Record FeedState delivery preview for non-first-run case - O(T)
+  recordDeliveryPreviewForTargetArticles(getArticleMap(), () => ({
+    stage: DeliveryPreviewStage.FeedState,
+    status: DeliveryPreviewStageStatus.Passed,
     details: {
       hasPriorArticles: true,
       isFirstRun: false,
@@ -659,14 +659,14 @@ export async function getArticlesToDeliver(
     articlesPassedComparisons.map((a) => a.flattened.idHash)
   );
 
-  // Record IdComparison diagnostic - O(T)
-  recordDiagnosticForTargetArticles(getArticleMap(), (_, hash) => {
+  // Record IdComparison delivery preview - O(T)
+  recordDeliveryPreviewForTargetArticles(getArticleMap(), (_, hash) => {
     const isNew = newArticleHashes.has(hash);
     const isRestored = restoreHashes.has(hash);
 
     return {
-      stage: DiagnosticStage.IdComparison,
-      status: isNew ? DiagnosticStageStatus.Passed : DiagnosticStageStatus.Failed,
+      stage: DeliveryPreviewStage.IdComparison,
+      status: isNew ? DeliveryPreviewStageStatus.Passed : DeliveryPreviewStageStatus.Failed,
       details: {
         articleIdHash: hash,
         foundInHotPartition: !isNew && !isRestored,
@@ -676,15 +676,15 @@ export async function getArticlesToDeliver(
     };
   });
 
-  // Record BlockingComparison diagnostic for new target articles - O(T)
+  // Record BlockingComparison delivery preview for new target articles - O(T)
   if (blockingComparisons.length > 0) {
   const pastBlocksHashes = new Set(articlesPastBlocks.map((a) => a.flattened.idHash));
-    recordDiagnosticForTargetArticles(getArticleMap(), (_, hash) => {
+    recordDeliveryPreviewForTargetArticles(getArticleMap(), (_, hash) => {
       if (!newArticleHashes.has(hash)) return null; // Only record for new articles
       const passed = pastBlocksHashes.has(hash);
       return {
-        stage: DiagnosticStage.BlockingComparison,
-        status: passed ? DiagnosticStageStatus.Passed : DiagnosticStageStatus.Failed,
+        stage: DeliveryPreviewStage.BlockingComparison,
+        status: passed ? DeliveryPreviewStageStatus.Passed : DeliveryPreviewStageStatus.Failed,
         details: {
           comparisonFields: blockingComparisons,
           activeFields: activeBlockingComparisons,
@@ -694,16 +694,16 @@ export async function getArticlesToDeliver(
     });
   }
 
-  // Record PassingComparison diagnostic for seen target articles - O(T)
+  // Record PassingComparison delivery preview for seen target articles - O(T)
   if (passingComparisons.length > 0) {
     const seenHashes = new Set(seenArticles.map((a) => a.flattened.idHash));
 
-    recordDiagnosticForTargetArticles(getArticleMap(), (_, hash) => {
+    recordDeliveryPreviewForTargetArticles(getArticleMap(), (_, hash) => {
       if (!seenHashes.has(hash)) return null; // Only record for seen articles
       const passed = passedViaComparisonHashes.has(hash);
       return {
-        stage: DiagnosticStage.PassingComparison,
-        status: passed ? DiagnosticStageStatus.Passed : DiagnosticStageStatus.Failed,
+        stage: DeliveryPreviewStage.PassingComparison,
+        status: passed ? DeliveryPreviewStageStatus.Passed : DeliveryPreviewStageStatus.Failed,
         details: {
           comparisonFields: passingComparisons,
           activeFields: activePassingComparisons,
@@ -725,14 +725,14 @@ export async function getArticlesToDeliver(
     dateChecks
   );
 
-  // Record DateCheck diagnostic for candidate target articles - O(T)
+  // Record DateCheck delivery preview for candidate target articles - O(T)
   if (dateChecks?.oldArticleDateDiffMsThreshold) {
     const candidateHashes = new Set(candidateArticles.map((a) => a.flattened.idHash));
     const placeholders =
       dateChecks.datePlaceholderReferences || DEFAULT_DATE_PLACEHOLDERS;
     const threshold = dateChecks.oldArticleDateDiffMsThreshold;
 
-    recordDiagnosticForTargetArticles(getArticleMap(), (article, hash) => {
+    recordDeliveryPreviewForTargetArticles(getArticleMap(), (article, hash) => {
       if (!candidateHashes.has(hash)) return null; // Only record for candidates
 
       const { articleDate, ageMs, passes } = getArticleDateCheckInfo(
@@ -742,8 +742,8 @@ export async function getArticlesToDeliver(
       );
 
       return {
-        stage: DiagnosticStage.DateCheck,
-        status: passes ? DiagnosticStageStatus.Passed : DiagnosticStageStatus.Failed,
+        stage: DeliveryPreviewStage.DateCheck,
+        status: passes ? DeliveryPreviewStageStatus.Passed : DeliveryPreviewStageStatus.Failed,
         details: {
           articleDate,
           threshold,

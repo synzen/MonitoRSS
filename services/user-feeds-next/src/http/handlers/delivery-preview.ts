@@ -1,20 +1,20 @@
 /**
- * Handler for POST /v1/user-feeds/diagnose-articles
- * Diagnoses what would happen to specific articles when processed.
+ * Handler for POST /v1/user-feeds/delivery-preview
+ * Generates a preview of what would happen to specific articles when processed.
  */
 
 import { z } from "zod";
 import { withAuth } from "../middleware";
 import { jsonResponse, parseJsonBody } from "../utils";
-import { diagnoseArticleInputSchema } from "../schemas";
+import { deliveryPreviewInputSchema } from "../schemas";
 import {
-  diagnoseArticles,
+  generateDeliveryPreview,
   FeedState,
-  ArticleDiagnosisOutcome,
+  ArticleDeliveryOutcome,
   CANONICAL_STAGES,
-  type DiagnoseArticlesInput,
-  endDiagnosticsEarly,
-} from "../../diagnostics";
+  type DeliveryPreviewInput,
+  endDeliveryPreviewEarly,
+} from "../../delivery-preview";
 import type { ArticleFieldStore } from "../../articles/comparison";
 import type { DeliveryRecordStore } from "../../stores/interfaces/delivery-record-store";
 import type { ResponseHashStore } from "../../feeds/feed-event-handler";
@@ -65,7 +65,7 @@ function createErrorResponse(feedResult: FeedErrorResult): Response {
   });
 }
 
-export async function handleDiagnoseArticle(
+export async function handleDeliveryPreview(
   req: Request,
   feedRequestsServiceHost: string,
   articleFieldStore: ArticleFieldStore,
@@ -75,8 +75,8 @@ export async function handleDiagnoseArticle(
   return withAuth(req, async () => {
     try {
       const body = await parseJsonBody<unknown>(req);
-      const input = diagnoseArticleInputSchema.parse(body);
-      
+      const input = deliveryPreviewInputSchema.parse(body);
+
       // Get stored hash for comparison (only if prior articles exist)
       const hashToCompare = await getHashToCompare(
         input.feed.id,
@@ -100,7 +100,7 @@ export async function handleDiagnoseArticle(
 
       // Handle matched-hash by re-fetching without hash comparison to get articles
       if (feedResult.status === "matched-hash") {
-        endDiagnosticsEarly();
+        endDeliveryPreviewEarly();
         // Re-fetch without hash comparison to get the actual articles
         const feedResultWithArticles = await fetchAndParseFeed({
           feed: {
@@ -142,12 +142,12 @@ export async function handleDiagnoseArticle(
           articleId: article.flattened.id,
           articleIdHash: article.flattened.idHash,
           articleTitle: article.flattened.title || null,
-          outcome: ArticleDiagnosisOutcome.FeedUnchanged,
+          outcome: ArticleDeliveryOutcome.FeedUnchanged,
           outcomeReason:
             "Feed content unchanged since last check. Articles will be processed when new content is detected.",
           mediumResults: input.mediums.map((medium) => ({
             mediumId: medium.id,
-            outcome: ArticleDiagnosisOutcome.FeedUnchanged,
+            outcome: ArticleDeliveryOutcome.FeedUnchanged,
             outcomeReason:
               "Feed content unchanged since last check. Articles will be processed when new content is detected.",
             stages: [],
@@ -161,11 +161,11 @@ export async function handleDiagnoseArticle(
         feedResult.status === "fetch-error" ||
         feedResult.status === "parse-error"
       ) {
-        endDiagnosticsEarly()
+        endDeliveryPreviewEarly()
         return createErrorResponse(feedResult);
       }
 
-      // Success - apply pagination and continue with diagnosis
+      // Success - apply pagination and continue with delivery preview
       const allArticles = feedResult.articles;
       const total = allArticles.length;
       const targetArticles = allArticles.slice(
@@ -174,7 +174,7 @@ export async function handleDiagnoseArticle(
       );
 
       // Map mediums to properly type the filter expressions
-      const mediums: DiagnoseArticlesInput["mediums"] = input.mediums.map(
+      const mediums: DeliveryPreviewInput["mediums"] = input.mediums.map(
         (m) => ({
           id: m.id,
           rateLimits: m.rateLimits,
@@ -184,7 +184,7 @@ export async function handleDiagnoseArticle(
         })
       );
 
-      const { results, errors } = await diagnoseArticles(
+      const { results, errors } = await generateDeliveryPreview(
         {
           feed: {
             id: input.feed.id,
@@ -203,8 +203,6 @@ export async function handleDiagnoseArticle(
           deliveryRecordStore,
         }
       );
-
-      console.log("Diagnostics results:", JSON.stringify(results[0], null, 2), "Errors:", errors);
 
       return jsonResponse({ results, errors, total, stages: CANONICAL_STAGES });
     } catch (err) {

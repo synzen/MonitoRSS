@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach } from "bun:test";
-import { diagnoseArticles } from "./diagnose-articles";
-import { ArticleDiagnosisOutcome, DiagnosticStage, DiagnosticStageStatus } from "./types";
-import type { DiagnoseArticleDependencies, DiagnoseArticlesInput } from "./diagnose-articles";
+import { generateDeliveryPreview } from "./generate-delivery-preview";
+import { ArticleDeliveryOutcome, DeliveryPreviewStage, DeliveryPreviewStageStatus } from "./types";
+import type { DeliveryPreviewDependencies, DeliveryPreviewInput } from "./generate-delivery-preview";
 import {
   inMemoryArticleFieldStore,
   clearInMemoryStore,
@@ -36,12 +36,12 @@ function createArticle(
   };
 }
 
-describe("diagnoseArticle", () => {
+describe("generateDeliveryPreview", () => {
   beforeEach(() => {
     clearInMemoryStore();
   });
 
-  function createMockDependencies(): DiagnoseArticleDependencies {
+  function createMockDependencies(): DeliveryPreviewDependencies {
     return {
       articleFieldStore: inMemoryArticleFieldStore,
       deliveryRecordStore: createInMemoryDeliveryRecordStore(),
@@ -51,8 +51,8 @@ describe("diagnoseArticle", () => {
   function createInput(
     articles: Article[],
     targetArticles?: Article[],
-    overrides: Partial<DiagnoseArticlesInput> = {}
-  ): DiagnoseArticlesInput {
+    overrides: Partial<DeliveryPreviewInput> = {}
+  ): DeliveryPreviewInput {
     return {
       feed: {
         id: "feed-1",
@@ -73,9 +73,9 @@ describe("diagnoseArticle", () => {
       const deps = createMockDependencies();
       const input = createInput(articles);
 
-      const { results } = await diagnoseArticles(input, deps);
+      const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.FirstRunBaseline);
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.FirstRunBaseline);
       expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("first");
     });
   });
@@ -92,9 +92,9 @@ describe("diagnoseArticle", () => {
         await inMemoryArticleFieldStore.flushPendingInserts();
       });
 
-      const { results } = await diagnoseArticles(input, deps);
+      const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.DuplicateId);
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.DuplicateId);
       expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("already");
     });
   });
@@ -127,9 +127,9 @@ describe("diagnoseArticle", () => {
         await inMemoryArticleFieldStore.flushPendingInserts();
       });
 
-      const { results } = await diagnoseArticles(input, deps);
+      const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.BlockedByComparison);
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.BlockedByComparison);
       expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("block");
     });
   });
@@ -158,9 +158,9 @@ describe("diagnoseArticle", () => {
         await inMemoryArticleFieldStore.flushPendingInserts();
       });
 
-      const { results } = await diagnoseArticles(input, deps);
+      const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.WouldDeliverPassingComparison);
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.WouldDeliverPassingComparison);
       expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("changed");
     });
   });
@@ -192,9 +192,9 @@ describe("diagnoseArticle", () => {
         await inMemoryArticleFieldStore.flushPendingInserts();
       });
 
-      const { results } = await diagnoseArticles(input, deps);
+      const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.FilteredByDateCheck);
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.FilteredByDateCheck);
       expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("old");
     });
   });
@@ -203,7 +203,7 @@ describe("diagnoseArticle", () => {
     it("returns RateLimitedFeed when feed daily limit exceeded", async () => {
       const article = createArticle("article-new", { title: "New Article" });
       const deliveryRecordStore = createInMemoryDeliveryRecordStore();
-      const deps: DiagnoseArticleDependencies = {
+      const deps: DeliveryPreviewDependencies = {
         articleFieldStore: inMemoryArticleFieldStore,
         deliveryRecordStore,
       };
@@ -234,9 +234,9 @@ describe("diagnoseArticle", () => {
         articleDayLimit: 5, // Already at limit
       });
 
-      const { results } = await diagnoseArticles(input, deps);
+      const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.RateLimitedFeed);
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.RateLimitedFeed);
       expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("limit");
     });
   });
@@ -254,9 +254,9 @@ describe("diagnoseArticle", () => {
         await inMemoryArticleFieldStore.flushPendingInserts();
       });
 
-      const { results } = await diagnoseArticles(input, deps);
+      const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.WouldDeliver);
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.WouldDeliver);
       expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("pass");
     });
   });
@@ -267,11 +267,11 @@ describe("diagnoseArticle", () => {
       const deps = createMockDependencies();
       const input = createInput([article]);
 
-      const { results } = await diagnoseArticles(input, deps);
-      const mediumResult = results[0]?.mediumResults[0] as { stages: Array<{ stage: DiagnosticStage }> };
+      const { results } = await generateDeliveryPreview(input, deps);
+      const mediumResult = results[0]?.mediumResults[0] as { stages: Array<{ stage: DeliveryPreviewStage }> };
 
       const feedState = mediumResult.stages.find(
-        (s) => s.stage === DiagnosticStage.FeedState
+        (s) => s.stage === DeliveryPreviewStage.FeedState
       );
       expect(feedState).toBeDefined();
     });
@@ -314,9 +314,9 @@ describe("diagnoseArticle", () => {
         await inMemoryArticleFieldStore.flushPendingInserts();
       });
 
-      const { results } = await diagnoseArticles(input, deps);
+      const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.FilteredByMediumFilter);
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.FilteredByMediumFilter);
       expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("filter");
     });
 
@@ -356,14 +356,14 @@ describe("diagnoseArticle", () => {
         await inMemoryArticleFieldStore.flushPendingInserts();
       });
 
-      const { results } = await diagnoseArticles(input, deps);
-      const mediumResult = results[0]?.mediumResults[0] as { stages: Array<{ stage: DiagnosticStage; status: DiagnosticStageStatus }> };
+      const { results } = await generateDeliveryPreview(input, deps);
+      const mediumResult = results[0]?.mediumResults[0] as { stages: Array<{ stage: DeliveryPreviewStage; status: DeliveryPreviewStageStatus }> };
 
       const mediumFilterStage = mediumResult.stages.find(
-        (s) => s.stage === DiagnosticStage.MediumFilter
+        (s) => s.stage === DeliveryPreviewStage.MediumFilter
       );
       expect(mediumFilterStage).toBeDefined();
-      expect(mediumFilterStage!.status).toBe(DiagnosticStageStatus.Passed);
+      expect(mediumFilterStage!.status).toBe(DeliveryPreviewStageStatus.Passed);
     });
   });
 
@@ -371,7 +371,7 @@ describe("diagnoseArticle", () => {
     it("returns RateLimitedMedium when medium rate limit exceeded", async () => {
       const article = createArticle("article-new", { title: "New Article" });
       const deliveryRecordStore = createInMemoryDeliveryRecordStore();
-      const deps: DiagnoseArticleDependencies = {
+      const deps: DeliveryPreviewDependencies = {
         articleFieldStore: inMemoryArticleFieldStore,
         deliveryRecordStore,
       };
@@ -410,20 +410,20 @@ describe("diagnoseArticle", () => {
         ],
       });
 
-      const { results } = await diagnoseArticles(input, deps);
+      const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.RateLimitedMedium);
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.RateLimitedMedium);
       expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("rate limit");
     });
   });
 });
 
-describe("diagnoseArticles (batch)", () => {
+describe("generateDeliveryPreview (batch)", () => {
   beforeEach(() => {
     clearInMemoryStore();
   });
 
-  function createMockDependencies(): DiagnoseArticleDependencies {
+  function createMockDependencies(): DeliveryPreviewDependencies {
     return {
       articleFieldStore: inMemoryArticleFieldStore,
       deliveryRecordStore: createInMemoryDeliveryRecordStore(),
@@ -433,8 +433,8 @@ describe("diagnoseArticles (batch)", () => {
   function createBatchInput(
     allArticles: Article[],
     targetArticles?: Article[],
-    overrides: Partial<DiagnoseArticlesInput> = {}
-  ): DiagnoseArticlesInput {
+    overrides: Partial<DeliveryPreviewInput> = {}
+  ): DeliveryPreviewInput {
     return {
       feed: {
         id: "feed-1",
@@ -459,7 +459,7 @@ describe("diagnoseArticles (batch)", () => {
       const deps = createMockDependencies();
       const input = createBatchInput(articles);
 
-      const response = await diagnoseArticles(input, deps);
+      const response = await generateDeliveryPreview(input, deps);
 
       expect(response.results).toHaveLength(3);
       expect(response.errors).toHaveLength(0);
@@ -471,26 +471,26 @@ describe("diagnoseArticles (batch)", () => {
     });
   });
 
-  describe("diagnoses only target articles from all articles", () => {
-    it("diagnoses subset of articles when targetArticles differs from allArticles", async () => {
+  describe("generates preview only for target articles from all articles", () => {
+    it("generates preview for subset of articles when targetArticles differs from allArticles", async () => {
       const allArticles = [
         createArticle("article-1", { title: "Article 1" }),
         createArticle("article-2", { title: "Article 2" }),
         createArticle("article-3", { title: "Article 3" }),
       ];
-      const targetArticles = [allArticles[1]!]; // Only diagnose article-2
+      const targetArticles = [allArticles[1]!]; // Only preview article-2
       const deps = createMockDependencies();
       const input = createBatchInput(allArticles, targetArticles);
 
-      const response = await diagnoseArticles(input, deps);
+      const response = await generateDeliveryPreview(input, deps);
 
       expect(response.results).toHaveLength(1);
       expect(response.results[0]?.articleId).toBe("article-2");
     });
   });
 
-  describe("each article has independent rate limit diagnostics", () => {
-    it("diagnoses each article independently", async () => {
+  describe("each article has independent rate limit previews", () => {
+    it("generates preview for each article independently", async () => {
       const articles = [
         createArticle("article-1", { title: "Article 1" }),
         createArticle("article-2", { title: "Article 2" }),
@@ -498,14 +498,14 @@ describe("diagnoseArticles (batch)", () => {
       const deps = createMockDependencies();
       const input = createBatchInput(articles);
 
-      const response = await diagnoseArticles(input, deps);
+      const response = await generateDeliveryPreview(input, deps);
 
       // Both should have FirstRunBaseline since no prior articles
       expect(response.results[0]?.mediumResults[0]?.outcome).toBe(
-        ArticleDiagnosisOutcome.FirstRunBaseline
+        ArticleDeliveryOutcome.FirstRunBaseline
       );
       expect(response.results[1]?.mediumResults[0]?.outcome).toBe(
-        ArticleDiagnosisOutcome.FirstRunBaseline
+        ArticleDeliveryOutcome.FirstRunBaseline
       );
     });
   });
@@ -518,7 +518,7 @@ describe("diagnoseArticles (batch)", () => {
         summaryOnly: true,
       });
 
-      const response = await diagnoseArticles(input, deps);
+      const response = await generateDeliveryPreview(input, deps);
 
       expect(response.results).toHaveLength(1);
       expect(response.results[0]?.articleId).toBe("article-1");
@@ -533,7 +533,7 @@ describe("diagnoseArticles (batch)", () => {
         summaryOnly: false,
       });
 
-      const response = await diagnoseArticles(input, deps);
+      const response = await generateDeliveryPreview(input, deps);
 
       expect(response.results).toHaveLength(1);
       const mediumResult = response.results[0]?.mediumResults[0] as { stages: unknown[] };
@@ -548,7 +548,7 @@ describe("diagnoseArticles (batch)", () => {
       const deps = createMockDependencies();
       const input = createBatchInput(allArticles, []);
 
-      const response = await diagnoseArticles(input, deps);
+      const response = await generateDeliveryPreview(input, deps);
 
       expect(response.results).toHaveLength(0);
       expect(response.errors).toHaveLength(0);
@@ -561,7 +561,7 @@ describe("Aggregate outcome computation", () => {
     clearInMemoryStore();
   });
 
-  function createMockDependencies(): DiagnoseArticleDependencies {
+  function createMockDependencies(): DeliveryPreviewDependencies {
     return {
       articleFieldStore: inMemoryArticleFieldStore,
       deliveryRecordStore: createInMemoryDeliveryRecordStore(),
@@ -571,8 +571,8 @@ describe("Aggregate outcome computation", () => {
   function createInput(
     allArticles: Article[],
     targetArticles?: Article[],
-    overrides: Partial<DiagnoseArticlesInput> = {}
-  ): DiagnoseArticlesInput {
+    overrides: Partial<DeliveryPreviewInput> = {}
+  ): DeliveryPreviewInput {
     return {
       feed: {
         id: "feed-1",
@@ -624,10 +624,10 @@ describe("Aggregate outcome computation", () => {
         ],
       });
 
-      const { results } = await diagnoseArticles(input, deps);
+      const { results } = await generateDeliveryPreview(input, deps);
 
       expect(results).toHaveLength(1);
-      expect(results[0]?.outcome).toBe(ArticleDiagnosisOutcome.MixedResults);
+      expect(results[0]?.outcome).toBe(ArticleDeliveryOutcome.MixedResults);
       expect(results[0]?.outcomeReason).toContain("Mixed results");
     });
 
@@ -644,17 +644,17 @@ describe("Aggregate outcome computation", () => {
         ],
       });
 
-      const { results } = await diagnoseArticles(input, deps);
+      const { results } = await generateDeliveryPreview(input, deps);
 
       expect(results).toHaveLength(1);
-      expect(results[0]?.outcome).toBe(ArticleDiagnosisOutcome.WouldDeliver);
+      expect(results[0]?.outcome).toBe(ArticleDeliveryOutcome.WouldDeliver);
       expect(results[0]?.outcomeReason).toContain("pass");
     });
 
     it("returns MixedResults when one medium would deliver and another is rate limited", async () => {
       const article = createArticle("article-1", { title: "New Article" });
       const deliveryRecordStore = createInMemoryDeliveryRecordStore();
-      const deps: DiagnoseArticleDependencies = {
+      const deps: DeliveryPreviewDependencies = {
         articleFieldStore: inMemoryArticleFieldStore,
         deliveryRecordStore,
       };
@@ -680,10 +680,10 @@ describe("Aggregate outcome computation", () => {
         ],
       });
 
-      const { results } = await diagnoseArticles(input, deps);
+      const { results } = await generateDeliveryPreview(input, deps);
 
       expect(results).toHaveLength(1);
-      expect(results[0]?.outcome).toBe(ArticleDiagnosisOutcome.MixedResults);
+      expect(results[0]?.outcome).toBe(ArticleDeliveryOutcome.MixedResults);
       expect(results[0]?.outcomeReason).toContain("Mixed results");
     });
 
@@ -700,17 +700,17 @@ describe("Aggregate outcome computation", () => {
         ],
       });
 
-      const { results } = await diagnoseArticles(input, deps);
+      const { results } = await generateDeliveryPreview(input, deps);
 
       expect(results).toHaveLength(1);
-      expect(results[0]?.outcome).toBe(ArticleDiagnosisOutcome.MixedResults);
+      expect(results[0]?.outcome).toBe(ArticleDeliveryOutcome.MixedResults);
       expect(results[0]?.outcomeReason).toContain("Mixed results");
     });
 
     it("returns MixedResults when one medium is rate limited and another is filtered", async () => {
       const article = createArticle("article-1", { title: "Tech News" });
       const deliveryRecordStore = createInMemoryDeliveryRecordStore();
-      const deps: DiagnoseArticleDependencies = {
+      const deps: DeliveryPreviewDependencies = {
         articleFieldStore: inMemoryArticleFieldStore,
         deliveryRecordStore,
       };
@@ -736,10 +736,10 @@ describe("Aggregate outcome computation", () => {
         ],
       });
 
-      const { results } = await diagnoseArticles(input, deps);
+      const { results } = await generateDeliveryPreview(input, deps);
 
       expect(results).toHaveLength(1);
-      expect(results[0]?.outcome).toBe(ArticleDiagnosisOutcome.MixedResults);
+      expect(results[0]?.outcome).toBe(ArticleDeliveryOutcome.MixedResults);
       expect(results[0]?.outcomeReason).toContain("Mixed results");
     });
   });
@@ -750,7 +750,7 @@ describe("Multiple mediums with different outcomes", () => {
     clearInMemoryStore();
   });
 
-  function createMockDependencies(): DiagnoseArticleDependencies {
+  function createMockDependencies(): DeliveryPreviewDependencies {
     return {
       articleFieldStore: inMemoryArticleFieldStore,
       deliveryRecordStore: createInMemoryDeliveryRecordStore(),
@@ -760,8 +760,8 @@ describe("Multiple mediums with different outcomes", () => {
   function createInput(
     allArticles: Article[],
     targetArticles?: Article[],
-    overrides: Partial<DiagnoseArticlesInput> = {}
-  ): DiagnoseArticlesInput {
+    overrides: Partial<DeliveryPreviewInput> = {}
+  ): DeliveryPreviewInput {
     return {
       feed: {
         id: "feed-1",
@@ -813,14 +813,14 @@ describe("Multiple mediums with different outcomes", () => {
         ],
       });
 
-      const { results } = await diagnoseArticles(input, deps);
+      const { results } = await generateDeliveryPreview(input, deps);
 
       expect(results).toHaveLength(1);
       expect(results[0]?.mediumResults).toHaveLength(2);
       expect(results[0]?.mediumResults[0]?.mediumId).toBe("medium-1");
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.WouldDeliver);
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.WouldDeliver);
       expect(results[0]?.mediumResults[1]?.mediumId).toBe("medium-2");
-      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDiagnosisOutcome.FilteredByMediumFilter);
+      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDeliveryOutcome.FilteredByMediumFilter);
     });
   });
 
@@ -828,7 +828,7 @@ describe("Multiple mediums with different outcomes", () => {
     it("returns WouldDeliver for medium under limit and RateLimitedMedium for medium over limit", async () => {
       const article = createArticle("article-1", { title: "New Article" });
       const deliveryRecordStore = createInMemoryDeliveryRecordStore();
-      const deps: DiagnoseArticleDependencies = {
+      const deps: DeliveryPreviewDependencies = {
         articleFieldStore: inMemoryArticleFieldStore,
         deliveryRecordStore,
       };
@@ -863,14 +863,14 @@ describe("Multiple mediums with different outcomes", () => {
         ],
       });
 
-      const { results } = await diagnoseArticles(input, deps);
+      const { results } = await generateDeliveryPreview(input, deps);
 
       expect(results).toHaveLength(1);
       expect(results[0]?.mediumResults).toHaveLength(2);
       expect(results[0]?.mediumResults[0]?.mediumId).toBe("medium-1");
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.WouldDeliver);
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.WouldDeliver);
       expect(results[0]?.mediumResults[1]?.mediumId).toBe("medium-2");
-      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDiagnosisOutcome.RateLimitedMedium);
+      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDeliveryOutcome.RateLimitedMedium);
     });
   });
 
@@ -878,7 +878,7 @@ describe("Multiple mediums with different outcomes", () => {
     it("returns WouldDeliver, FilteredByMediumFilter, and RateLimitedMedium for same article", async () => {
       const article = createArticle("article-1", { title: "Tech News" });
       const deliveryRecordStore = createInMemoryDeliveryRecordStore();
-      const deps: DiagnoseArticleDependencies = {
+      const deps: DeliveryPreviewDependencies = {
         articleFieldStore: inMemoryArticleFieldStore,
         deliveryRecordStore,
       };
@@ -905,16 +905,16 @@ describe("Multiple mediums with different outcomes", () => {
         ],
       });
 
-      const { results } = await diagnoseArticles(input, deps);
+      const { results } = await generateDeliveryPreview(input, deps);
 
       expect(results).toHaveLength(1);
       expect(results[0]?.mediumResults).toHaveLength(3);
       expect(results[0]?.mediumResults[0]?.mediumId).toBe("medium-1");
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.WouldDeliver);
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.WouldDeliver);
       expect(results[0]?.mediumResults[1]?.mediumId).toBe("medium-2");
-      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDiagnosisOutcome.FilteredByMediumFilter);
+      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDeliveryOutcome.FilteredByMediumFilter);
       expect(results[0]?.mediumResults[2]?.mediumId).toBe("medium-3");
-      expect(results[0]?.mediumResults[2]?.outcome).toBe(ArticleDiagnosisOutcome.RateLimitedMedium);
+      expect(results[0]?.mediumResults[2]?.outcome).toBe(ArticleDeliveryOutcome.RateLimitedMedium);
     });
   });
 
@@ -922,7 +922,7 @@ describe("Multiple mediums with different outcomes", () => {
     it("returns WouldDeliver when filter passes and under limit, RateLimitedMedium when filter passes but over limit", async () => {
       const article = createArticle("article-1", { title: "Sports Update" });
       const deliveryRecordStore = createInMemoryDeliveryRecordStore();
-      const deps: DiagnoseArticleDependencies = {
+      const deps: DeliveryPreviewDependencies = {
         articleFieldStore: inMemoryArticleFieldStore,
         deliveryRecordStore,
       };
@@ -951,14 +951,14 @@ describe("Multiple mediums with different outcomes", () => {
         ],
       });
 
-      const { results } = await diagnoseArticles(input, deps);
+      const { results } = await generateDeliveryPreview(input, deps);
 
       expect(results).toHaveLength(1);
       expect(results[0]?.mediumResults).toHaveLength(2);
       expect(results[0]?.mediumResults[0]?.mediumId).toBe("medium-1");
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.WouldDeliver);
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.WouldDeliver);
       expect(results[0]?.mediumResults[1]?.mediumId).toBe("medium-2");
-      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDiagnosisOutcome.RateLimitedMedium);
+      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDeliveryOutcome.RateLimitedMedium);
     });
   });
 
@@ -981,15 +981,15 @@ describe("Multiple mediums with different outcomes", () => {
         ],
       });
 
-      const { results } = await diagnoseArticles(input, deps);
+      const { results } = await generateDeliveryPreview(input, deps);
 
       expect(results).toHaveLength(1);
       expect(results[0]?.mediumResults).toHaveLength(2);
       // Both should have DuplicateId because shared stage applies before medium-specific stages
       expect(results[0]?.mediumResults[0]?.mediumId).toBe("medium-1");
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.DuplicateId);
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.DuplicateId);
       expect(results[0]?.mediumResults[1]?.mediumId).toBe("medium-2");
-      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDiagnosisOutcome.DuplicateId);
+      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDeliveryOutcome.DuplicateId);
     });
   });
 
@@ -1013,7 +1013,7 @@ describe("Multiple mediums with different outcomes", () => {
         ],
       });
 
-      const { results } = await diagnoseArticles(input, deps);
+      const { results } = await generateDeliveryPreview(input, deps);
 
       expect(results).toHaveLength(2);
 
@@ -1023,9 +1023,9 @@ describe("Multiple mediums with different outcomes", () => {
       expect(results[0]?.articleId).toBe("article-1");
       expect(results[0]?.mediumResults).toHaveLength(2);
       expect(results[0]?.mediumResults[0]?.mediumId).toBe("medium-1");
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.WouldDeliver);
+      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.WouldDeliver);
       expect(results[0]?.mediumResults[1]?.mediumId).toBe("medium-2");
-      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDiagnosisOutcome.FilteredByMediumFilter);
+      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDeliveryOutcome.FilteredByMediumFilter);
 
       // Article 2: "Tech News"
       // - Medium-1 (Sports filter): fails → FilteredByMediumFilter
@@ -1033,9 +1033,9 @@ describe("Multiple mediums with different outcomes", () => {
       expect(results[1]?.articleId).toBe("article-2");
       expect(results[1]?.mediumResults).toHaveLength(2);
       expect(results[1]?.mediumResults[0]?.mediumId).toBe("medium-1");
-      expect(results[1]?.mediumResults[0]?.outcome).toBe(ArticleDiagnosisOutcome.FilteredByMediumFilter);
+      expect(results[1]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.FilteredByMediumFilter);
       expect(results[1]?.mediumResults[1]?.mediumId).toBe("medium-2");
-      expect(results[1]?.mediumResults[1]?.outcome).toBe(ArticleDiagnosisOutcome.WouldDeliver);
+      expect(results[1]?.mediumResults[1]?.outcome).toBe(ArticleDeliveryOutcome.WouldDeliver);
     });
   });
 });

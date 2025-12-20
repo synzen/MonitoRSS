@@ -12,9 +12,9 @@ import {
   ArticleDeliveryContentType,
 } from "../../src/stores/interfaces/delivery-record-store";
 import {
-  ArticleDiagnosisOutcome,
-  DiagnosticStage,
-} from "../../src/diagnostics";
+  ArticleDeliveryOutcome,
+  DeliveryPreviewStage,
+} from "../../src/delivery-preview";
 import { FeedResponseRequestStatus } from "../../src/feed-fetcher";
 import { createHash } from "crypto";
 
@@ -1194,8 +1194,8 @@ describe("HTTP API (e2e)", () => {
     });
   });
 
-  describe("POST /v1/user-feeds/diagnose-articles", () => {
-    const endpoint = "/v1/user-feeds/diagnose-articles";
+  describe("POST /v1/user-feeds/delivery-preview", () => {
+    const endpoint = "/v1/user-feeds/delivery-preview";
 
     // Test feed with multiple articles for diagnosis testing
     const DIAGNOSE_FEED_URL = "https://example.com/diagnose-test-feed.xml";
@@ -1394,14 +1394,14 @@ describe("HTTP API (e2e)", () => {
 
       const result = results[0]!;
       expect(result.articleId).toBe(DIAGNOSE_ARTICLE_ID_1);
-      expect(result.outcome).toBe(ArticleDiagnosisOutcome.FirstRunBaseline);
+      expect(result.outcome).toBe(ArticleDeliveryOutcome.FirstRunBaseline);
       expect(result.outcomeReason).toBeDefined();
       expect(Array.isArray(result.stages)).toBe(true);
 
       // Should have FeedState stage showing first run
       const stages = result.stages as JsonBody[];
       const feedStateStage = stages.find(
-        (s) => s.stage === DiagnosticStage.FeedState
+        (s) => s.stage === DeliveryPreviewStage.FeedState
       );
       expect(feedStateStage).toBeDefined();
       expect(feedStateStage?.details).toBeDefined();
@@ -1460,13 +1460,13 @@ describe("HTTP API (e2e)", () => {
       const results = body.results as JsonBody[];
       const result = results[0]!;
 
-      expect(result.outcome).toBe(ArticleDiagnosisOutcome.DuplicateId);
+      expect(result.outcome).toBe(ArticleDeliveryOutcome.DuplicateId);
       expect(result.outcomeReason).toContain("already been seen");
 
       // Should have IdComparison stage showing not new
       const stages = result.stages as JsonBody[];
       const idComparisonStage = stages.find(
-        (s) => s.stage === DiagnosticStage.IdComparison
+        (s) => s.stage === DeliveryPreviewStage.IdComparison
       );
       expect(idComparisonStage).toBeDefined();
       expect(idComparisonStage?.passed).toBe(false);
@@ -1518,7 +1518,7 @@ describe("HTTP API (e2e)", () => {
       const results = body.results as JsonBody[];
       const result = results[0]!;
 
-      expect(result.outcome).toBe(ArticleDiagnosisOutcome.WouldDeliver);
+      expect(result.outcome).toBe(ArticleDeliveryOutcome.WouldDeliver);
       expect(result.outcomeReason).toContain("passes all checks");
     });
 
@@ -1584,7 +1584,7 @@ describe("HTTP API (e2e)", () => {
       const results = body.results as JsonBody[];
       const result = results[0]!;
 
-      expect(result.outcome).toBe(ArticleDiagnosisOutcome.RateLimitedFeed);
+      expect(result.outcome).toBe(ArticleDeliveryOutcome.RateLimitedFeed);
       expect(result.outcomeReason).toContain("daily article delivery limit");
     });
 
@@ -1648,7 +1648,7 @@ describe("HTTP API (e2e)", () => {
       const results = body.results as JsonBody[];
       const result = results[0]!;
 
-      expect(result.outcome).toBe(ArticleDiagnosisOutcome.RateLimitedMedium);
+      expect(result.outcome).toBe(ArticleDeliveryOutcome.RateLimitedMedium);
       expect(result.outcomeReason).toContain("rate limit");
     });
 
@@ -1712,7 +1712,7 @@ describe("HTTP API (e2e)", () => {
       const results = body.results as JsonBody[];
       const result = results[0]!;
 
-      expect(result.outcome).toBe(ArticleDiagnosisOutcome.FilteredByMediumFilter);
+      expect(result.outcome).toBe(ArticleDeliveryOutcome.FilteredByMediumFilter);
       expect(result.outcomeReason).toContain("filtered out by medium");
     });
 
@@ -1771,7 +1771,7 @@ describe("HTTP API (e2e)", () => {
       const results = body.results as JsonBody[];
       const result = results[0]!;
 
-      expect(result.outcome).toBe(ArticleDiagnosisOutcome.BlockedByComparison);
+      expect(result.outcome).toBe(ArticleDeliveryOutcome.BlockedByComparison);
       expect(result.outcomeReason).toContain("blocked by comparison");
     });
 
@@ -1832,7 +1832,7 @@ describe("HTTP API (e2e)", () => {
       const result = results[0]!;
 
       expect(result.outcome).toBe(
-        ArticleDiagnosisOutcome.WouldDeliverPassingComparison
+        ArticleDeliveryOutcome.WouldDeliverPassingComparison
       );
       expect(result.outcomeReason).toContain("comparison field has changed");
     });
@@ -1882,7 +1882,7 @@ describe("HTTP API (e2e)", () => {
       const results = body.results as JsonBody[];
       const result = results[0]!;
 
-      expect(result.outcome).toBe(ArticleDiagnosisOutcome.FilteredByDateCheck);
+      expect(result.outcome).toBe(ArticleDeliveryOutcome.FilteredByDateCheck);
       expect(result.outcomeReason).toContain("older than");
     });
 
@@ -2028,7 +2028,7 @@ describe("HTTP API (e2e)", () => {
       expect(results.length).toBe(2);
 
       // All articles should have FeedUnchanged outcome
-      expect(results[0]!.outcome).toBe(ArticleDiagnosisOutcome.FeedUnchanged);
+      expect(results[0]!.outcome).toBe(ArticleDeliveryOutcome.FeedUnchanged);
       expect(results[0]!.outcomeReason).toBeDefined();
       expect(results[0]!.stages).toEqual([]); // No diagnostic stages
 

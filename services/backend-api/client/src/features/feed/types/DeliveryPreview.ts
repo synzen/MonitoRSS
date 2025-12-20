@@ -1,6 +1,6 @@
 import { InferType, array, boolean, number, object, string, mixed } from "yup";
 
-export enum ArticleDiagnosisOutcome {
+export enum ArticleDeliveryOutcome {
   WouldDeliver = "would-deliver",
   FirstRunBaseline = "first-run-baseline",
   DuplicateId = "duplicate-id",
@@ -15,7 +15,7 @@ export enum ArticleDiagnosisOutcome {
   FeedError = "feed-error",
 }
 
-export enum DiagnosticStage {
+export enum DeliveryPreviewStage {
   FeedState = "feed-state",
   IdComparison = "id-comparison",
   BlockingComparison = "blocking-comparison",
@@ -26,38 +26,38 @@ export enum DiagnosticStage {
   MediumRateLimit = "medium-rate-limit",
 }
 
-export enum DiagnosticStageStatus {
+export enum DeliveryPreviewStageStatus {
   Passed = "passed",
   Failed = "failed",
   Skipped = "skipped",
 }
 
-export const FeedStateDiagnosticDetailsSchema = object({
+export const FeedStateDeliveryPreviewDetailsSchema = object({
   hasPriorArticles: boolean().required(),
   isFirstRun: boolean().required(),
   storedComparisonNames: array(string().required()).required(),
 });
 
-export const IdComparisonDiagnosticDetailsSchema = object({
+export const IdComparisonDeliveryPreviewDetailsSchema = object({
   articleIdHash: string().required(),
   foundInHotPartition: boolean().required(),
   foundInColdPartition: boolean().required(),
   isNew: boolean().required(),
 });
 
-export const BlockingComparisonDiagnosticDetailsSchema = object({
+export const BlockingComparisonDeliveryPreviewDetailsSchema = object({
   comparisonFields: array(string().required()).required(),
   activeFields: array(string().required()).required(),
   blockedByFields: array(string().required()).required(),
 });
 
-export const PassingComparisonDiagnosticDetailsSchema = object({
+export const PassingComparisonDeliveryPreviewDetailsSchema = object({
   comparisonFields: array(string().required()).required(),
   activeFields: array(string().required()).required(),
   changedFields: array(string().required()).required(),
 });
 
-export const DateCheckDiagnosticDetailsSchema = object({
+export const DateCheckDeliveryPreviewDetailsSchema = object({
   articleDate: string().nullable(),
   threshold: number().nullable(),
   datePlaceholders: array(string().required()).required(),
@@ -74,7 +74,7 @@ export const FilterExplainBlockedDetailSchema = object({
   isNegated: boolean().required(),
 });
 
-export const MediumFilterDiagnosticDetailsSchema = object({
+export const MediumFilterDeliveryPreviewDetailsSchema = object({
   mediumId: string().required(),
   filterExpression: mixed().nullable(),
   filterResult: boolean().required(),
@@ -82,7 +82,7 @@ export const MediumFilterDiagnosticDetailsSchema = object({
   explainMatched: array(FilterExplainBlockedDetailSchema.required()).required(),
 });
 
-export const RateLimitDiagnosticDetailsSchema = object({
+export const RateLimitDeliveryPreviewDetailsSchema = object({
   currentCount: number().required(),
   limit: number().required(),
   timeWindowSeconds: number().required(),
@@ -95,14 +95,14 @@ export const RateLimitDiagnosticDetailsSchema = object({
  * The frontend adds summary strings to this.
  */
 export const BackendStageResultSchema = object({
-  stage: string().oneOf(Object.values(DiagnosticStage)).required() as any,
-  status: string().oneOf(Object.values(DiagnosticStageStatus)).required() as any,
+  stage: string().oneOf(Object.values(DeliveryPreviewStage)).required() as any,
+  status: string().oneOf(Object.values(DeliveryPreviewStageStatus)).required() as any,
   details: object().nullable(),
 });
 
-export const DiagnosticStageResultSchema = object({
-  stage: string().oneOf(Object.values(DiagnosticStage)).required(),
-  status: string().oneOf(Object.values(DiagnosticStageStatus)).required() as any,
+export const DeliveryPreviewStageResultSchema = object({
+  stage: string().oneOf(Object.values(DeliveryPreviewStage)).required(),
+  status: string().oneOf(Object.values(DeliveryPreviewStageStatus)).required() as any,
   summary: string().required(),
   details: object().nullable(),
 });
@@ -110,9 +110,9 @@ export const DiagnosticStageResultSchema = object({
 /**
  * Schema for backend medium result format (with passed boolean in stages).
  */
-export const BackendMediumDiagnosticResultSchema = object({
+export const BackendMediumDeliveryResultSchema = object({
   mediumId: string().required(),
-  outcome: string().oneOf(Object.values(ArticleDiagnosisOutcome)).required() as any,
+  outcome: string().oneOf(Object.values(ArticleDeliveryOutcome)).required() as any,
   outcomeReason: string().required(),
   stages: array(BackendStageResultSchema.required()).required(),
 });
@@ -120,48 +120,48 @@ export const BackendMediumDiagnosticResultSchema = object({
 /**
  * Schema for backend article result format.
  */
-export const BackendArticleDiagnosticResultSchema = object({
+export const BackendArticleDeliveryResultSchema = object({
   articleId: string().required(),
   articleIdHash: string().required(),
   articleTitle: string().nullable(),
-  outcome: string().oneOf(Object.values(ArticleDiagnosisOutcome)).required() as any,
+  outcome: string().oneOf(Object.values(ArticleDeliveryOutcome)).required() as any,
   outcomeReason: string().required(),
-  mediumResults: array(BackendMediumDiagnosticResultSchema.required()).required(),
+  mediumResults: array(BackendMediumDeliveryResultSchema.required()).required(),
 });
 
-export const MediumDiagnosticResultSchema = object({
+export const MediumDeliveryResultSchema = object({
   mediumId: string().required(),
-  outcome: string().oneOf(Object.values(ArticleDiagnosisOutcome)).required() as any,
+  outcome: string().oneOf(Object.values(ArticleDeliveryOutcome)).required() as any,
   outcomeReason: string().required(),
-  stages: array(DiagnosticStageResultSchema.required()).required(),
+  stages: array(DeliveryPreviewStageResultSchema.required()).required(),
 });
 
-export const ArticleDiagnosticResultSchema = object({
+export const ArticleDeliveryResultSchema = object({
   articleId: string().required(),
   articleIdHash: string().required(),
   articleTitle: string().nullable(),
-  outcome: string().oneOf(Object.values(ArticleDiagnosisOutcome)).required() as any,
+  outcome: string().oneOf(Object.values(ArticleDeliveryOutcome)).required() as any,
   outcomeReason: string().required(),
-  mediumResults: array(MediumDiagnosticResultSchema.required()).required(),
+  mediumResults: array(MediumDeliveryResultSchema.required()).required(),
 });
 
-export type FeedStateDiagnosticDetails = InferType<typeof FeedStateDiagnosticDetailsSchema>;
-export type IdComparisonDiagnosticDetails = InferType<typeof IdComparisonDiagnosticDetailsSchema>;
-export type BlockingComparisonDiagnosticDetails = InferType<
-  typeof BlockingComparisonDiagnosticDetailsSchema
+export type FeedStateDeliveryPreviewDetails = InferType<typeof FeedStateDeliveryPreviewDetailsSchema>;
+export type IdComparisonDeliveryPreviewDetails = InferType<typeof IdComparisonDeliveryPreviewDetailsSchema>;
+export type BlockingComparisonDeliveryPreviewDetails = InferType<
+  typeof BlockingComparisonDeliveryPreviewDetailsSchema
 >;
-export type PassingComparisonDiagnosticDetails = InferType<
-  typeof PassingComparisonDiagnosticDetailsSchema
+export type PassingComparisonDeliveryPreviewDetails = InferType<
+  typeof PassingComparisonDeliveryPreviewDetailsSchema
 >;
-export type DateCheckDiagnosticDetails = InferType<typeof DateCheckDiagnosticDetailsSchema>;
+export type DateCheckDeliveryPreviewDetails = InferType<typeof DateCheckDeliveryPreviewDetailsSchema>;
 export type FilterExplainBlockedDetail = InferType<typeof FilterExplainBlockedDetailSchema>;
-export type MediumFilterDiagnosticDetails = InferType<typeof MediumFilterDiagnosticDetailsSchema>;
-export type RateLimitDiagnosticDetails = InferType<typeof RateLimitDiagnosticDetailsSchema>;
+export type MediumFilterDeliveryPreviewDetails = InferType<typeof MediumFilterDeliveryPreviewDetailsSchema>;
+export type RateLimitDeliveryPreviewDetails = InferType<typeof RateLimitDeliveryPreviewDetailsSchema>;
 
 export type BackendStageResult = InferType<typeof BackendStageResultSchema>;
-export type BackendMediumDiagnosticResult = InferType<typeof BackendMediumDiagnosticResultSchema>;
-export type BackendArticleDiagnosticResult = InferType<typeof BackendArticleDiagnosticResultSchema>;
+export type BackendMediumDeliveryResult = InferType<typeof BackendMediumDeliveryResultSchema>;
+export type BackendArticleDeliveryResult = InferType<typeof BackendArticleDeliveryResultSchema>;
 
-export type DiagnosticStageResult = InferType<typeof DiagnosticStageResultSchema>;
-export type MediumDiagnosticResult = InferType<typeof MediumDiagnosticResultSchema>;
-export type ArticleDiagnosticResult = InferType<typeof ArticleDiagnosticResultSchema>;
+export type DeliveryPreviewStageResult = InferType<typeof DeliveryPreviewStageResultSchema>;
+export type MediumDeliveryResult = InferType<typeof MediumDeliveryResultSchema>;
+export type ArticleDeliveryResult = InferType<typeof ArticleDeliveryResultSchema>;

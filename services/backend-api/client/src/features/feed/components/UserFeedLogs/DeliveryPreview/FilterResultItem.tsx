@@ -1,6 +1,6 @@
 import { Box, Highlight, Text } from "@chakra-ui/react";
 import { RelationalExpressionOperator } from "../../../../feedConnections/types";
-import { FilterExplainBlockedDetail } from "../../../types/ArticleDiagnostics";
+import { FilterExplainBlockedDetail } from "../../../types/DeliveryPreview";
 
 interface FilterResultItemProps {
   detail: FilterExplainBlockedDetail;

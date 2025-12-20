@@ -15,7 +15,7 @@ import {
   handleGetArticles,
   handlePreview,
   handleTest,
-  handleDiagnoseArticle,
+  handleDeliveryPreview,
 } from "./handlers";
 import { jsonResponse, handleError } from "./utils";
 
@@ -27,9 +27,9 @@ export interface HttpServerContext {
   discordClient: DiscordRestClient;
   /** Override the feed requests service host (for testing) */
   feedRequestsServiceHost: string;
-  /** Article field store for diagnosis */
+  /** Article field store for delivery preview */
   articleFieldStore?: ArticleFieldStore;
-  /** Response hash store for diagnosis (to check if feed content changed) */
+  /** Response hash store for delivery preview (to check if feed content changed) */
   responseHashStore?: ResponseHashStore;
 }
 
@@ -96,7 +96,7 @@ export function createHttpServer(
           ),
       },
 
-      "/v1/user-feeds/diagnose-articles": {
+      "/v1/user-feeds/delivery-preview": {
         POST: (req) => {
           if (!context.articleFieldStore) {
             return jsonResponse(
@@ -110,7 +110,7 @@ export function createHttpServer(
               500
             );
           }
-          return handleDiagnoseArticle(
+          return handleDeliveryPreview(
             req,
             context.feedRequestsServiceHost,
             context.articleFieldStore,

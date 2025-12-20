@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import React from "react";
 import { MemoryRouter } from "react-router-dom";
-import { FeedLevelStateDisplay } from "../../features/feed/components/UserFeedLogs/ArticleStatus/FeedLevelStateDisplay";
+import { FeedLevelStateDisplay } from "../../features/feed/components/UserFeedLogs/DeliveryPreview/FeedLevelStateDisplay";
 import {
   createFeedState404,
   createFeedState403,
@@ -15,7 +15,7 @@ import {
 } from "./mockFactories";
 
 const meta = {
-  title: "Feed/ArticleStatus/FeedLevelStateDisplay",
+  title: "Feed/DeliveryPreview/FeedLevelStateDisplay",
   component: FeedLevelStateDisplay,
   parameters: {
     layout: "padded",

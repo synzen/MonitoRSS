@@ -5,4 +5,4 @@ export { handleDeliveryLogs } from "./delivery-logs";
 export { handleGetArticles } from "./get-articles";
 export { handlePreview } from "./preview";
 export { handleTest } from "./test";
-export { handleDiagnoseArticle } from "./diagnose-article";
+export { handleDeliveryPreview } from "./delivery-preview";

@@ -358,9 +358,9 @@ export class FeedHandlerService {
     return json;
   }
 
-  async diagnoseArticles(input: import("./types").DiagnoseArticlesInput) {
+  async getDeliveryPreview(input: import("./types").DeliveryPreviewInput) {
     const response = await fetch(
-      `${this.host}/v1/user-feeds/diagnose-articles`,
+      `${this.host}/v1/user-feeds/delivery-preview`,
       {
         method: "POST",
         headers: {
@@ -371,9 +371,13 @@ export class FeedHandlerService {
       }
     );
 
-    await this.validateResponseStatus(response, "Failed to diagnose articles", {
-      requestBody: input as unknown as Record<string, unknown>,
-    });
+    await this.validateResponseStatus(
+      response,
+      "Failed to get delivery preview",
+      {
+        requestBody: input as unknown as Record<string, unknown>,
+      }
+    );
 
     return response.json();
   }

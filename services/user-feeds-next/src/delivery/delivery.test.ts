@@ -497,17 +497,17 @@ describe("delivery", () => {
   });
 });
 
-import { DiagnosticStageStatus, type DiagnosticStageResult } from "../diagnostics";
+import { DeliveryPreviewStage, DeliveryPreviewStageStatus, type DeliveryPreviewStageResult } from "../delivery-preview";
 
 describe("diagnostic recording in delivery", () => {
   it("records FeedRateLimit diagnostic when feed rate limit is checked", async () => {
-    const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
-      await import("../diagnostics");
+    const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+      await import("../delivery-preview");
     const { recordRateLimitDiagnostic } = await import(".");
 
-    let diagnostics: DiagnosticStageResult[] = [];
+    let previews: DeliveryPreviewStageResult[] = [];
 
-    await startDiagnosticContext("test-hash", async () => {
+    await startDeliveryPreviewContext("test-hash", async () => {
       recordRateLimitDiagnostic({
         articleIdHash: "test-hash",
         isFeedLevel: true,
@@ -516,14 +516,14 @@ describe("diagnostic recording in delivery", () => {
         timeWindowSeconds: 86400,
         remaining: 5,
       });
-      diagnostics = getDiagnosticResultsForArticle("test-hash");
+      previews = getDeliveryPreviewResultsForArticle("test-hash");
     });
 
-    const rateLimitDiagnostic = diagnostics.find(
-      (d) => d.stage === DiagnosticStage.FeedRateLimit
+    const rateLimitDiagnostic = previews.find(
+      (d) => d.stage === DeliveryPreviewStage.FeedRateLimit
     );
     expect(rateLimitDiagnostic).toBeDefined();
-    expect(rateLimitDiagnostic!.status).toBe(DiagnosticStageStatus.Passed);
+    expect(rateLimitDiagnostic!.status).toBe(DeliveryPreviewStageStatus.Passed);
     expect(
       (rateLimitDiagnostic as { details: { remaining: number } }).details
         .remaining
@@ -531,13 +531,13 @@ describe("diagnostic recording in delivery", () => {
   });
 
   it("records MediumRateLimit diagnostic when medium rate limit is checked", async () => {
-    const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
-      await import("../diagnostics");
+    const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+      await import("../delivery-preview");
     const { recordRateLimitDiagnostic } = await import(".");
 
-    let diagnostics: DiagnosticStageResult[] = [];
+    let previews: DeliveryPreviewStageResult[] = [];
 
-    await startDiagnosticContext("test-hash", async () => {
+    await startDeliveryPreviewContext("test-hash", async () => {
       recordRateLimitDiagnostic({
         articleIdHash: "test-hash",
         isFeedLevel: false,
@@ -547,27 +547,27 @@ describe("diagnostic recording in delivery", () => {
         timeWindowSeconds: 3600,
         remaining: 2,
       });
-      diagnostics = getDiagnosticResultsForArticle("test-hash");
+      previews = getDeliveryPreviewResultsForArticle("test-hash");
     });
 
-    const rateLimitDiagnostic = diagnostics.find(
-      (d) => d.stage === DiagnosticStage.MediumRateLimit
+    const rateLimitDiagnostic = previews.find(
+      (d) => d.stage === DeliveryPreviewStage.MediumRateLimit
     );
     expect(rateLimitDiagnostic).toBeDefined();
-    expect(rateLimitDiagnostic!.status).toBe(DiagnosticStageStatus.Passed);
+    expect(rateLimitDiagnostic!.status).toBe(DeliveryPreviewStageStatus.Passed);
     expect(
       (rateLimitDiagnostic as { details: { mediumId: string } }).details.mediumId
     ).toBe("medium-123");
   });
 
   it("records failed rate limit diagnostic when limit exceeded", async () => {
-    const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
-      await import("../diagnostics");
+    const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+      await import("../delivery-preview");
     const { recordRateLimitDiagnostic } = await import(".");
 
-    let diagnostics: DiagnosticStageResult[] = [];
+    let previews: DeliveryPreviewStageResult[] = [];
 
-    await startDiagnosticContext("test-hash", async () => {
+    await startDeliveryPreviewContext("test-hash", async () => {
       recordRateLimitDiagnostic({
         articleIdHash: "test-hash",
         isFeedLevel: true,
@@ -576,14 +576,14 @@ describe("diagnostic recording in delivery", () => {
         timeWindowSeconds: 86400,
         remaining: 0,
       });
-      diagnostics = getDiagnosticResultsForArticle("test-hash");
+      previews = getDeliveryPreviewResultsForArticle("test-hash");
     });
 
-    const rateLimitDiagnostic = diagnostics.find(
-      (d) => d.stage === DiagnosticStage.FeedRateLimit
+    const rateLimitDiagnostic = previews.find(
+      (d) => d.stage === DeliveryPreviewStage.FeedRateLimit
     );
     expect(rateLimitDiagnostic).toBeDefined();
-    expect(rateLimitDiagnostic!.status).toBe(DiagnosticStageStatus.Failed);
+    expect(rateLimitDiagnostic!.status).toBe(DeliveryPreviewStageStatus.Failed);
     expect(
       (rateLimitDiagnostic as { details: { wouldExceed: boolean } }).details
         .wouldExceed
@@ -591,13 +591,13 @@ describe("diagnostic recording in delivery", () => {
   });
 
   it("records MediumFilter diagnostic when filter is evaluated", async () => {
-    const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
-      await import("../diagnostics");
+    const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+      await import("../delivery-preview");
     const { recordMediumFilterDiagnostic } = await import(".");
 
-    let diagnostics: DiagnosticStageResult[] = [];
+    let previews: DeliveryPreviewStageResult[] = [];
 
-    await startDiagnosticContext("test-hash", async () => {
+    await startDeliveryPreviewContext("test-hash", async () => {
       recordMediumFilterDiagnostic({
         articleIdHash: "test-hash",
         mediumId: "medium-123",
@@ -606,24 +606,24 @@ describe("diagnostic recording in delivery", () => {
         explainBlocked: [],
         explainMatched: [],
       });
-      diagnostics = getDiagnosticResultsForArticle("test-hash");
+      previews = getDeliveryPreviewResultsForArticle("test-hash");
     });
 
-    const filterDiagnostic = diagnostics.find(
-      (d) => d.stage === DiagnosticStage.MediumFilter
+    const filterDiagnostic = previews.find(
+      (d) => d.stage === DeliveryPreviewStage.MediumFilter
     );
     expect(filterDiagnostic).toBeDefined();
-    expect(filterDiagnostic!.status).toBe(DiagnosticStageStatus.Passed);
+    expect(filterDiagnostic!.status).toBe(DeliveryPreviewStageStatus.Passed);
   });
 
   it("records failed MediumFilter diagnostic when filter blocks article", async () => {
-    const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
-      await import("../diagnostics");
+    const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+      await import("../delivery-preview");
     const { recordMediumFilterDiagnostic } = await import(".");
 
-    let diagnostics: DiagnosticStageResult[] = [];
+    let previews: DeliveryPreviewStageResult[] = [];
 
-    await startDiagnosticContext("test-hash", async () => {
+    await startDeliveryPreviewContext("test-hash", async () => {
       recordMediumFilterDiagnostic({
         articleIdHash: "test-hash",
         mediumId: "medium-123",
@@ -641,20 +641,20 @@ describe("diagnostic recording in delivery", () => {
         ],
         explainMatched: [],
       });
-      diagnostics = getDiagnosticResultsForArticle("test-hash");
+      previews = getDeliveryPreviewResultsForArticle("test-hash");
     });
 
-    const filterDiagnostic = diagnostics.find(
-      (d) => d.stage === DiagnosticStage.MediumFilter
+    const filterDiagnostic = previews.find(
+      (d) => d.stage === DeliveryPreviewStage.MediumFilter
     );
     expect(filterDiagnostic).toBeDefined();
-    expect(filterDiagnostic!.status).toBe(DiagnosticStageStatus.Failed);
+    expect(filterDiagnostic!.status).toBe(DeliveryPreviewStageStatus.Failed);
     const details = filterDiagnostic!.details as { explainBlocked: Array<{ message: string }> };
     expect(details.explainBlocked[0]!.message).toBe("Title does not contain 'keyword'");
   });
 
-  it("does not record diagnostics outside diagnostic context", async () => {
-    const { getDiagnosticResultsForArticle } = await import("../diagnostics");
+  it("does not record previews outside diagnostic context", async () => {
+    const { getDeliveryPreviewResultsForArticle } = await import("../delivery-preview");
     const { recordRateLimitDiagnostic, recordMediumFilterDiagnostic } =
       await import(".");
 
@@ -677,15 +677,15 @@ describe("diagnostic recording in delivery", () => {
       explainMatched: [],
     });
 
-    const diagnostics = getDiagnosticResultsForArticle("test-hash");
-    expect(diagnostics).toEqual([]);
+    const previews = getDeliveryPreviewResultsForArticle("test-hash");
+    expect(previews).toEqual([]);
   });
 });
 
 describe("diagnostic recording during deliverArticles execution", () => {
   it("records MediumFilter diagnostic when medium filter is evaluated during delivery", async () => {
-    const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
-      await import("../diagnostics");
+    const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+      await import("../delivery-preview");
     const { deliverArticles } = await import(".");
 
     const store = createInMemoryDeliveryRecordStore();
@@ -724,9 +724,9 @@ describe("diagnostic recording during deliverArticles execution", () => {
       },
     };
 
-    let diagnostics: DiagnosticStageResult[] = [];
+    let previews: DeliveryPreviewStageResult[] = [];
 
-    await startDiagnosticContext("hash-1", async () => {
+    await startDeliveryPreviewContext("hash-1", async () => {
       await store.startContext(async () => {
         await deliverArticles(
           [article],
@@ -740,22 +740,22 @@ describe("diagnostic recording during deliverArticles execution", () => {
           }
         );
       });
-      diagnostics = getDiagnosticResultsForArticle("hash-1");
+      previews = getDeliveryPreviewResultsForArticle("hash-1");
     });
 
-    const filterDiagnostic = diagnostics.find(
-      (d) => d.stage === DiagnosticStage.MediumFilter
+    const filterDiagnostic = previews.find(
+      (d) => d.stage === DeliveryPreviewStage.MediumFilter
     );
     expect(filterDiagnostic).toBeDefined();
-    expect(filterDiagnostic!.status).toBe(DiagnosticStageStatus.Passed);
+    expect(filterDiagnostic!.status).toBe(DeliveryPreviewStageStatus.Passed);
     expect(
       (filterDiagnostic as { details: { mediumId: string } }).details.mediumId
     ).toBe("medium-filter-test");
   });
 
   it("records failed MediumFilter diagnostic when filter blocks article during delivery", async () => {
-    const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
-      await import("../diagnostics");
+    const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+      await import("../delivery-preview");
     const { deliverArticles } = await import(".");
 
     const store = createInMemoryDeliveryRecordStore();
@@ -794,9 +794,9 @@ describe("diagnostic recording during deliverArticles execution", () => {
       },
     };
 
-    let diagnostics: DiagnosticStageResult[] = [];
+    let previews: DeliveryPreviewStageResult[] = [];
 
-    await startDiagnosticContext("hash-1", async () => {
+    await startDeliveryPreviewContext("hash-1", async () => {
       await store.startContext(async () => {
         await deliverArticles(
           [article],
@@ -810,14 +810,14 @@ describe("diagnostic recording during deliverArticles execution", () => {
           }
         );
       });
-      diagnostics = getDiagnosticResultsForArticle("hash-1");
+      previews = getDeliveryPreviewResultsForArticle("hash-1");
     });
 
-    const filterDiagnostic = diagnostics.find(
-      (d) => d.stage === DiagnosticStage.MediumFilter
+    const filterDiagnostic = previews.find(
+      (d) => d.stage === DeliveryPreviewStage.MediumFilter
     );
     expect(filterDiagnostic).toBeDefined();
-    expect(filterDiagnostic!.status).toBe(DiagnosticStageStatus.Failed);
+    expect(filterDiagnostic!.status).toBe(DeliveryPreviewStageStatus.Failed);
     const details = filterDiagnostic!.details as { explainBlocked: Array<{ message: string }> };
     expect(details.explainBlocked.length).toBeGreaterThan(0);
   });

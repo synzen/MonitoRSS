@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import React from "react";
 import { MemoryRouter } from "react-router-dom";
-import { DeliveryChecksModal } from "../../features/feed/components/UserFeedLogs/ArticleStatus/DeliveryChecksModal";
+import { DeliveryChecksModal } from "../../features/feed/components/UserFeedLogs/DeliveryPreview/DeliveryChecksModal";
 import { UserFeedContext } from "../../contexts/UserFeedContext";
 import { UserFeed } from "../../features/feed/types";
-import { ArticleDiagnosisOutcome } from "../../features/feed/types/ArticleDiagnostics";
+import { ArticleDeliveryOutcome } from "../../features/feed/types/DeliveryPreview";
 import {
   createLearningArticle,
   createBlockedByFiltersArticle,
@@ -31,7 +31,7 @@ const MockUserFeedProvider = ({ children }: { children: React.ReactNode }) => (
 );
 
 const meta = {
-  title: "Feed/ArticleStatus/DeliveryChecksModal",
+  title: "Feed/DeliveryPreview/DeliveryChecksModal",
   component: DeliveryChecksModal,
   parameters: {
     layout: "centered",
@@ -65,7 +65,7 @@ export const FeedUnchanged: Story = {
   args: {
     isOpen: true,
     onClose: () => {},
-    result: createArticleResult(ArticleDiagnosisOutcome.FeedUnchanged, {
+    result: createArticleResult(ArticleDeliveryOutcome.FeedUnchanged, {
       articleTitle: "Feed Content Unchanged Example",
       connectionIds: [],
     }),
@@ -76,7 +76,7 @@ export const FeedError: Story = {
   args: {
     isOpen: true,
     onClose: () => {},
-    result: createArticleResult(ArticleDiagnosisOutcome.FeedError, {
+    result: createArticleResult(ArticleDeliveryOutcome.FeedError, {
       articleTitle: "Feed Error Example",
       connectionIds: [],
     }),

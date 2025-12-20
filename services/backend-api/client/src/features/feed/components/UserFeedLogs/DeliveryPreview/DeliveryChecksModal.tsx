@@ -34,40 +34,40 @@ import {
 } from "@chakra-ui/icons";
 import { formatRefreshRateSeconds } from "../../../../../utils/formatRefreshRateSeconds";
 import {
-  ArticleDiagnosisOutcome,
-  ArticleDiagnosticResult,
-  DiagnosticStage,
-  DiagnosticStageResult,
-  DiagnosticStageStatus,
+  ArticleDeliveryOutcome,
+  ArticleDeliveryResult,
+  DeliveryPreviewStage,
+  DeliveryPreviewStageResult,
+  DeliveryPreviewStageStatus,
   FilterExplainBlockedDetail,
-} from "../../../types/ArticleDiagnostics";
+} from "../../../types/DeliveryPreview";
 import { useUserFeedContext } from "../../../../../contexts/UserFeedContext";
 import { FilterResultItem } from "./FilterResultItem";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  result: ArticleDiagnosticResult;
+  result: ArticleDeliveryResult;
   initialMediumId?: string;
 }
 
-const getStageName = (stage: DiagnosticStage): string => {
+const getStageName = (stage: DeliveryPreviewStage): string => {
   switch (stage) {
-    case DiagnosticStage.FeedState:
+    case DeliveryPreviewStage.FeedState:
       return "Initial Scan";
-    case DiagnosticStage.IdComparison:
+    case DeliveryPreviewStage.IdComparison:
       return "Duplicate Check";
-    case DiagnosticStage.BlockingComparison:
+    case DeliveryPreviewStage.BlockingComparison:
       return "Blocking Comparison";
-    case DiagnosticStage.PassingComparison:
+    case DeliveryPreviewStage.PassingComparison:
       return "Passing Comparison";
-    case DiagnosticStage.DateCheck:
+    case DeliveryPreviewStage.DateCheck:
       return "Date Check";
-    case DiagnosticStage.MediumFilter:
+    case DeliveryPreviewStage.MediumFilter:
       return "Connection Filters";
-    case DiagnosticStage.FeedRateLimit:
+    case DeliveryPreviewStage.FeedRateLimit:
       return "Feed Daily Limit";
-    case DiagnosticStage.MediumRateLimit:
+    case DeliveryPreviewStage.MediumRateLimit:
       return "Connection Rate Limit";
     default:
       return stage;
@@ -76,10 +76,10 @@ const getStageName = (stage: DiagnosticStage): string => {
 
 type ArticlePath = "new" | "seen";
 
-function getArticlePath(stages: DiagnosticStageResult[]): ArticlePath {
-  const idComparisonStage = stages.find((s) => s.stage === DiagnosticStage.IdComparison);
+function getArticlePath(stages: DeliveryPreviewStageResult[]): ArticlePath {
+  const idComparisonStage = stages.find((s) => s.stage === DeliveryPreviewStage.IdComparison);
 
-  if (idComparisonStage?.status === DiagnosticStageStatus.Passed) {
+  if (idComparisonStage?.status === DeliveryPreviewStageStatus.Passed) {
     return "new";
   }
 
@@ -87,28 +87,28 @@ function getArticlePath(stages: DiagnosticStageResult[]): ArticlePath {
 }
 
 function getRelevantStages(
-  stages: DiagnosticStageResult[],
+  stages: DeliveryPreviewStageResult[],
   articlePath: ArticlePath
-): DiagnosticStageResult[] {
+): DeliveryPreviewStageResult[] {
   return stages.filter((stage) => {
-    if (stage.stage === DiagnosticStage.PassingComparison && articlePath === "new") {
+    if (stage.stage === DeliveryPreviewStage.PassingComparison && articlePath === "new") {
       return false;
     }
 
-    if (stage.stage === DiagnosticStage.BlockingComparison && articlePath === "seen") {
+    if (stage.stage === DeliveryPreviewStage.BlockingComparison && articlePath === "seen") {
       return false;
     }
 
-    return stage.status !== DiagnosticStageStatus.Skipped;
+    return stage.status !== DeliveryPreviewStageStatus.Skipped;
   });
 }
 
 interface StatusSummaryProps {
-  stages: DiagnosticStageResult[];
+  stages: DeliveryPreviewStageResult[];
 }
 
 const StatusSummary = ({ stages }: StatusSummaryProps) => {
-  const failedStage = stages.find((s) => s.status === DiagnosticStageStatus.Failed);
+  const failedStage = stages.find((s) => s.status === DeliveryPreviewStageStatus.Failed);
   const isSuccess = !failedStage;
 
   const bgColor = isSuccess ? "green.900" : "orange.900";
@@ -143,12 +143,12 @@ const StatusSummary = ({ stages }: StatusSummaryProps) => {
 };
 
 interface StatusIndicatorProps {
-  status: DiagnosticStageStatus;
+  status: DeliveryPreviewStageStatus;
 }
 
 const StatusIndicator = ({ status }: StatusIndicatorProps) => {
-  const isPassed = status === DiagnosticStageStatus.Passed;
-  const isFailed = status === DiagnosticStageStatus.Failed;
+  const isPassed = status === DeliveryPreviewStageStatus.Passed;
+  const isFailed = status === DeliveryPreviewStageStatus.Failed;
 
   if (isPassed) {
     return (
@@ -176,7 +176,7 @@ const StatusIndicator = ({ status }: StatusIndicatorProps) => {
 };
 
 interface PipelineStageProps {
-  stageResult: DiagnosticStageResult;
+  stageResult: DeliveryPreviewStageResult;
   stepNumber: number;
   totalSteps: number;
   isLast: boolean;
@@ -191,8 +191,8 @@ const PipelineStage = ({
   defaultExpanded = false,
 }: PipelineStageProps) => {
   const { isOpen, onToggle } = useDisclosure({ defaultIsOpen: defaultExpanded });
-  const isPassed = stageResult.status === DiagnosticStageStatus.Passed;
-  const isFailed = stageResult.status === DiagnosticStageStatus.Failed;
+  const isPassed = stageResult.status === DeliveryPreviewStageStatus.Passed;
+  const isFailed = stageResult.status === DeliveryPreviewStageStatus.Failed;
   const hasDetails = !!stageResult.details;
 
   const getCircleColor = () => {
@@ -269,11 +269,11 @@ const PipelineStage = ({
 };
 
 interface StagesPipelineProps {
-  stages: DiagnosticStageResult[];
+  stages: DeliveryPreviewStageResult[];
 }
 
 const StagesPipeline = ({ stages }: StagesPipelineProps) => {
-  const failedStageIndex = stages.findIndex((s) => s.status === DiagnosticStageStatus.Failed);
+  const failedStageIndex = stages.findIndex((s) => s.status === DeliveryPreviewStageStatus.Failed);
 
   return (
     <Box as="ol" listStyleType="none" m={0} p={0} aria-label="Article delivery pipeline stages">
@@ -389,7 +389,7 @@ const TechnicalRow = ({ label, value }: TechnicalRowProps) => {
 };
 
 interface StageDetailsProps {
-  stageResult: DiagnosticStageResult;
+  stageResult: DeliveryPreviewStageResult;
 }
 
 const formatDuration = (ms: number): string => {
@@ -425,12 +425,12 @@ const formatTimeWindow = (seconds: number): string => {
 
 const StageDetails = ({ stageResult }: StageDetailsProps) => {
   const details = stageResult.details as Record<string, unknown> | null;
-  const isFailed = stageResult.status === DiagnosticStageStatus.Failed;
+  const isFailed = stageResult.status === DeliveryPreviewStageStatus.Failed;
 
   if (!details) return null;
 
   switch (stageResult.stage) {
-    case DiagnosticStage.FeedState: {
+    case DeliveryPreviewStage.FeedState: {
       const isFirstRun = details.isFirstRun as boolean;
 
       if (isFirstRun) {
@@ -449,7 +449,7 @@ const StageDetails = ({ stageResult }: StageDetailsProps) => {
       );
     }
 
-    case DiagnosticStage.IdComparison: {
+    case DeliveryPreviewStage.IdComparison: {
       const isNew = details.isNew as boolean;
 
       if (isNew) {
@@ -468,7 +468,7 @@ const StageDetails = ({ stageResult }: StageDetailsProps) => {
       );
     }
 
-    case DiagnosticStage.BlockingComparison: {
+    case DeliveryPreviewStage.BlockingComparison: {
       const comparisonFields = details.comparisonFields as string[];
       const blockedByFields = details.blockedByFields as string[];
 
@@ -508,7 +508,7 @@ const StageDetails = ({ stageResult }: StageDetailsProps) => {
       );
     }
 
-    case DiagnosticStage.PassingComparison: {
+    case DeliveryPreviewStage.PassingComparison: {
       const comparisonFields = details.comparisonFields as string[];
       const changedFields = details.changedFields as string[];
 
@@ -551,7 +551,7 @@ const StageDetails = ({ stageResult }: StageDetailsProps) => {
       );
     }
 
-    case DiagnosticStage.DateCheck: {
+    case DeliveryPreviewStage.DateCheck: {
       const ageMs = details.ageMs as number | null;
       const threshold = details.threshold as number | null;
       const withinThreshold = details.withinThreshold as boolean;
@@ -607,7 +607,7 @@ const StageDetails = ({ stageResult }: StageDetailsProps) => {
       );
     }
 
-    case DiagnosticStage.MediumFilter: {
+    case DeliveryPreviewStage.MediumFilter: {
       const filterResult = details.filterResult as boolean;
       const explainBlocked = (details.explainBlocked as FilterExplainBlockedDetail[]) || [];
       const explainMatched = (details.explainMatched as FilterExplainBlockedDetail[]) || [];
@@ -659,17 +659,17 @@ const StageDetails = ({ stageResult }: StageDetailsProps) => {
       );
     }
 
-    case DiagnosticStage.FeedRateLimit:
+    case DeliveryPreviewStage.FeedRateLimit:
     // falls through
 
-    case DiagnosticStage.MediumRateLimit: {
+    case DeliveryPreviewStage.MediumRateLimit: {
       const currentCount = details.currentCount as number;
       const limit = details.limit as number;
       const remaining = details.remaining as number;
       const timeWindowSeconds = details.timeWindowSeconds as number;
       const wouldExceed = details.wouldExceed as boolean;
       const timeWindowText = formatTimeWindow(timeWindowSeconds);
-      const isConnectionLimit = stageResult.stage === DiagnosticStage.MediumRateLimit;
+      const isConnectionLimit = stageResult.stage === DeliveryPreviewStage.MediumRateLimit;
 
       if (wouldExceed) {
         return (
@@ -830,9 +830,9 @@ export const DeliveryChecksModal = ({ isOpen, onClose, result, initialMediumId }
     initialMediumId || result.mediumResults[0]?.mediumId
   );
 
-  const isLearningPhase = result.outcome === ArticleDiagnosisOutcome.FirstRunBaseline;
-  const isFeedUnchanged = result.outcome === ArticleDiagnosisOutcome.FeedUnchanged;
-  const isFeedError = result.outcome === ArticleDiagnosisOutcome.FeedError;
+  const isLearningPhase = result.outcome === ArticleDeliveryOutcome.FirstRunBaseline;
+  const isFeedUnchanged = result.outcome === ArticleDeliveryOutcome.FeedUnchanged;
+  const isFeedError = result.outcome === ArticleDeliveryOutcome.FeedError;
   const hasNoStages = isLearningPhase || isFeedUnchanged || isFeedError;
 
   useEffect(() => {

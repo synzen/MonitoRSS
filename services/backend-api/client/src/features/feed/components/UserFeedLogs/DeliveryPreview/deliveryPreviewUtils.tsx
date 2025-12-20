@@ -11,83 +11,83 @@ import {
 import { Icon } from "@chakra-ui/react";
 import { FaBan } from "react-icons/fa";
 import { IconType } from "react-icons";
-import { ArticleDiagnosisOutcome } from "../../../types/ArticleDiagnostics";
+import { ArticleDeliveryOutcome } from "../../../types/DeliveryPreview";
 
-export const getOutcomeLabel = (outcome: ArticleDiagnosisOutcome): string => {
+export const getOutcomeLabel = (outcome: ArticleDeliveryOutcome): string => {
   switch (outcome) {
-    case ArticleDiagnosisOutcome.WouldDeliver:
+    case ArticleDeliveryOutcome.WouldDeliver:
       return "Would Deliver";
-    case ArticleDiagnosisOutcome.FirstRunBaseline:
+    case ArticleDeliveryOutcome.FirstRunBaseline:
       return "Learning";
-    case ArticleDiagnosisOutcome.DuplicateId:
+    case ArticleDeliveryOutcome.DuplicateId:
       return "Previously Seen";
-    case ArticleDiagnosisOutcome.BlockedByComparison:
+    case ArticleDeliveryOutcome.BlockedByComparison:
       return "Unchanged";
-    case ArticleDiagnosisOutcome.FilteredByDateCheck:
+    case ArticleDeliveryOutcome.FilteredByDateCheck:
       return "Too Old";
-    case ArticleDiagnosisOutcome.FilteredByMediumFilter:
+    case ArticleDeliveryOutcome.FilteredByMediumFilter:
       return "Blocked by Filters";
-    case ArticleDiagnosisOutcome.RateLimitedFeed:
+    case ArticleDeliveryOutcome.RateLimitedFeed:
       return "Daily Limit Reached";
-    case ArticleDiagnosisOutcome.RateLimitedMedium:
+    case ArticleDeliveryOutcome.RateLimitedMedium:
       return "Limit Reached";
-    case ArticleDiagnosisOutcome.WouldDeliverPassingComparison:
+    case ArticleDeliveryOutcome.WouldDeliverPassingComparison:
       return "Would Deliver";
-    case ArticleDiagnosisOutcome.MixedResults:
+    case ArticleDeliveryOutcome.MixedResults:
       return "Mixed Results";
-    case ArticleDiagnosisOutcome.FeedUnchanged:
+    case ArticleDeliveryOutcome.FeedUnchanged:
       return "No Changes";
-    case ArticleDiagnosisOutcome.FeedError:
+    case ArticleDeliveryOutcome.FeedError:
       return "Feed Error";
     default:
       return "Unknown";
   }
 };
 
-export const getOutcomeColorScheme = (outcome: ArticleDiagnosisOutcome): string => {
+export const getOutcomeColorScheme = (outcome: ArticleDeliveryOutcome): string => {
   switch (outcome) {
-    case ArticleDiagnosisOutcome.WouldDeliver:
-    case ArticleDiagnosisOutcome.WouldDeliverPassingComparison:
+    case ArticleDeliveryOutcome.WouldDeliver:
+    case ArticleDeliveryOutcome.WouldDeliverPassingComparison:
       return "green";
-    case ArticleDiagnosisOutcome.FirstRunBaseline:
+    case ArticleDeliveryOutcome.FirstRunBaseline:
       return "blue";
-    case ArticleDiagnosisOutcome.DuplicateId:
-    case ArticleDiagnosisOutcome.BlockedByComparison:
-    case ArticleDiagnosisOutcome.FeedUnchanged:
+    case ArticleDeliveryOutcome.DuplicateId:
+    case ArticleDeliveryOutcome.BlockedByComparison:
+    case ArticleDeliveryOutcome.FeedUnchanged:
       return "gray";
-    case ArticleDiagnosisOutcome.FilteredByDateCheck:
-    case ArticleDiagnosisOutcome.FilteredByMediumFilter:
+    case ArticleDeliveryOutcome.FilteredByDateCheck:
+    case ArticleDeliveryOutcome.FilteredByMediumFilter:
       return "orange";
-    case ArticleDiagnosisOutcome.RateLimitedFeed:
-    case ArticleDiagnosisOutcome.RateLimitedMedium:
-    case ArticleDiagnosisOutcome.MixedResults:
+    case ArticleDeliveryOutcome.RateLimitedFeed:
+    case ArticleDeliveryOutcome.RateLimitedMedium:
+    case ArticleDeliveryOutcome.MixedResults:
       return "yellow";
-    case ArticleDiagnosisOutcome.FeedError:
+    case ArticleDeliveryOutcome.FeedError:
       return "red";
     default:
       return "gray";
   }
 };
 
-export const getOutcomeIcon = (outcome: ArticleDiagnosisOutcome) => {
+export const getOutcomeIcon = (outcome: ArticleDeliveryOutcome) => {
   switch (outcome) {
-    case ArticleDiagnosisOutcome.WouldDeliver:
-    case ArticleDiagnosisOutcome.WouldDeliverPassingComparison:
+    case ArticleDeliveryOutcome.WouldDeliver:
+    case ArticleDeliveryOutcome.WouldDeliverPassingComparison:
       return CheckIcon;
-    case ArticleDiagnosisOutcome.FirstRunBaseline:
+    case ArticleDeliveryOutcome.FirstRunBaseline:
       return InfoIcon;
-    case ArticleDiagnosisOutcome.DuplicateId:
-    case ArticleDiagnosisOutcome.BlockedByComparison:
-    case ArticleDiagnosisOutcome.FeedUnchanged:
+    case ArticleDeliveryOutcome.DuplicateId:
+    case ArticleDeliveryOutcome.BlockedByComparison:
+    case ArticleDeliveryOutcome.FeedUnchanged:
       return RepeatIcon;
-    case ArticleDiagnosisOutcome.FilteredByDateCheck:
-    case ArticleDiagnosisOutcome.FilteredByMediumFilter:
+    case ArticleDeliveryOutcome.FilteredByDateCheck:
+    case ArticleDeliveryOutcome.FilteredByMediumFilter:
       return WarningIcon;
-    case ArticleDiagnosisOutcome.RateLimitedFeed:
-    case ArticleDiagnosisOutcome.RateLimitedMedium:
-    case ArticleDiagnosisOutcome.MixedResults:
+    case ArticleDeliveryOutcome.RateLimitedFeed:
+    case ArticleDeliveryOutcome.RateLimitedMedium:
+    case ArticleDeliveryOutcome.MixedResults:
       return TimeIcon;
-    case ArticleDiagnosisOutcome.FeedError:
+    case ArticleDeliveryOutcome.FeedError:
       return CloseIcon;
     default:
       return CloseIcon;
@@ -95,7 +95,7 @@ export const getOutcomeIcon = (outcome: ArticleDiagnosisOutcome) => {
 };
 
 interface StatusBadgeContentProps {
-  outcome: ArticleDiagnosisOutcome;
+  outcome: ArticleDeliveryOutcome;
   label: string;
 }
 

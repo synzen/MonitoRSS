@@ -1,9 +1,9 @@
 import {
   CANONICAL_STAGES,
-  DiagnosticStage,
-  DiagnosticStageStatus,
-  type DiagnosticStageResult,
-  type SkippedDiagnosticResult,
+  DeliveryPreviewStage,
+  DeliveryPreviewStageStatus,
+  type DeliveryPreviewStageResult,
+  type SkippedDeliveryPreviewResult,
 } from "./types";
 
 /**
@@ -11,9 +11,9 @@ import {
  * Stages are returned in canonical order.
  */
 export function buildCompleteStageList(
-  runStages: DiagnosticStageResult[],
-  canonicalStages: DiagnosticStage[] = CANONICAL_STAGES
-): DiagnosticStageResult[] {
+  runStages: DeliveryPreviewStageResult[],
+  canonicalStages: DeliveryPreviewStage[] = CANONICAL_STAGES
+): DeliveryPreviewStageResult[] {
   const runStageMap = new Map(runStages.map((s) => [s.stage, s]));
 
   return canonicalStages.map((stageId) => {
@@ -24,9 +24,9 @@ export function buildCompleteStageList(
     }
 
     // This stage was skipped - create a skipped entry
-    const skippedStage: SkippedDiagnosticResult = {
+    const skippedStage: SkippedDeliveryPreviewResult = {
       stage: stageId,
-      status: DiagnosticStageStatus.Skipped,
+      status: DeliveryPreviewStageStatus.Skipped,
       details: null,
     };
 

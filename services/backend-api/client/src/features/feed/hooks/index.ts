@@ -37,5 +37,5 @@ export * from "./useCreateUserFeedClone";
 export * from "./useUpdateUserFeedManagementInvite";
 export * from "./useUserFeedDeliveryLogsWithPagination";
 export * from "./useCreateUserFeedManualRequest";
-export * from "./useArticleDiagnostics";
-export * from "./useArticleDiagnosticsWithPagination";
+export * from "./useDeliveryPreview";
+export * from "./useDeliveryPreviewWithPagination";

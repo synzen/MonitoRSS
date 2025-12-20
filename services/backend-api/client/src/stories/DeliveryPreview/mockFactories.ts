@@ -1,12 +1,12 @@
 import {
-  ArticleDiagnosisOutcome,
-  ArticleDiagnosticResult,
-  DiagnosticStage,
-  DiagnosticStageResult,
-  DiagnosticStageStatus,
-  MediumDiagnosticResult,
-} from "../../features/feed/types/ArticleDiagnostics";
-import { FeedState } from "../../features/feed/components/UserFeedLogs/ArticleStatus/FeedLevelStateDisplay";
+  ArticleDeliveryOutcome,
+  ArticleDeliveryResult,
+  DeliveryPreviewStage,
+  DeliveryPreviewStageResult,
+  DeliveryPreviewStageStatus,
+  MediumDeliveryResult,
+} from "../../features/feed/types/DeliveryPreview";
+import { FeedState } from "../../features/feed/components/UserFeedLogs/DeliveryPreview/FeedLevelStateDisplay";
 
 // Mock connection data
 export const mockConnections = [
@@ -81,10 +81,10 @@ export const createParseInvalidFormat = (): FeedState => ({
 // Frontend-format Stage Factories (for Storybook - with status and summary)
 // ============================================================================
 
-const createPassedStages = (mediumId: string): DiagnosticStageResult[] => [
+const createPassedStages = (mediumId: string): DeliveryPreviewStageResult[] => [
   {
-    stage: DiagnosticStage.FeedState,
-    status: DiagnosticStageStatus.Passed,
+    stage: DeliveryPreviewStage.FeedState,
+    status: DeliveryPreviewStageStatus.Passed,
     summary: "Feed is ready",
     details: {
       hasPriorArticles: true,
@@ -93,8 +93,8 @@ const createPassedStages = (mediumId: string): DiagnosticStageResult[] => [
     },
   },
   {
-    stage: DiagnosticStage.IdComparison,
-    status: DiagnosticStageStatus.Passed,
+    stage: DeliveryPreviewStage.IdComparison,
+    status: DeliveryPreviewStageStatus.Passed,
     summary: "New article",
     details: {
       articleIdHash: "a1b2c3d4e5f6",
@@ -104,8 +104,8 @@ const createPassedStages = (mediumId: string): DiagnosticStageResult[] => [
     },
   },
   {
-    stage: DiagnosticStage.BlockingComparison,
-    status: DiagnosticStageStatus.Passed,
+    stage: DeliveryPreviewStage.BlockingComparison,
+    status: DeliveryPreviewStageStatus.Passed,
     summary: "Not configured",
     details: {
       comparisonFields: [],
@@ -114,14 +114,14 @@ const createPassedStages = (mediumId: string): DiagnosticStageResult[] => [
     },
   },
   {
-    stage: DiagnosticStage.PassingComparison,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.PassingComparison,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Not configured",
     details: null,
   },
   {
-    stage: DiagnosticStage.DateCheck,
-    status: DiagnosticStageStatus.Passed,
+    stage: DeliveryPreviewStage.DateCheck,
+    status: DeliveryPreviewStageStatus.Passed,
     summary: "Article is recent",
     details: {
       articleDate: new Date().toISOString(),
@@ -132,8 +132,8 @@ const createPassedStages = (mediumId: string): DiagnosticStageResult[] => [
     },
   },
   {
-    stage: DiagnosticStage.MediumFilter,
-    status: DiagnosticStageStatus.Passed,
+    stage: DeliveryPreviewStage.MediumFilter,
+    status: DeliveryPreviewStageStatus.Passed,
     summary: "Matches your filters",
     details: {
       mediumId,
@@ -144,8 +144,8 @@ const createPassedStages = (mediumId: string): DiagnosticStageResult[] => [
     },
   },
   {
-    stage: DiagnosticStage.FeedRateLimit,
-    status: DiagnosticStageStatus.Passed,
+    stage: DeliveryPreviewStage.FeedRateLimit,
+    status: DeliveryPreviewStageStatus.Passed,
     summary: "5 of 50 today",
     details: {
       currentCount: 5,
@@ -156,8 +156,8 @@ const createPassedStages = (mediumId: string): DiagnosticStageResult[] => [
     },
   },
   {
-    stage: DiagnosticStage.MediumRateLimit,
-    status: DiagnosticStageStatus.Passed,
+    stage: DeliveryPreviewStage.MediumRateLimit,
+    status: DeliveryPreviewStageStatus.Passed,
     summary: "2 of 10 this hour",
     details: {
       currentCount: 2,
@@ -169,10 +169,10 @@ const createPassedStages = (mediumId: string): DiagnosticStageResult[] => [
   },
 ];
 
-const createFirstRunStages = (): DiagnosticStageResult[] => [
+const createFirstRunStages = (): DeliveryPreviewStageResult[] => [
   {
-    stage: DiagnosticStage.FeedState,
-    status: DiagnosticStageStatus.Failed,
+    stage: DeliveryPreviewStage.FeedState,
+    status: DeliveryPreviewStageStatus.Failed,
     summary: "Recording existing articles",
     details: {
       hasPriorArticles: false,
@@ -181,53 +181,53 @@ const createFirstRunStages = (): DiagnosticStageResult[] => [
     },
   },
   {
-    stage: DiagnosticStage.IdComparison,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.IdComparison,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Skipped during initial scan",
     details: null,
   },
   {
-    stage: DiagnosticStage.BlockingComparison,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.BlockingComparison,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Skipped during initial scan",
     details: null,
   },
   {
-    stage: DiagnosticStage.PassingComparison,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.PassingComparison,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Skipped during initial scan",
     details: null,
   },
   {
-    stage: DiagnosticStage.DateCheck,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.DateCheck,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Skipped during initial scan",
     details: null,
   },
   {
-    stage: DiagnosticStage.MediumFilter,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.MediumFilter,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Skipped during initial scan",
     details: null,
   },
   {
-    stage: DiagnosticStage.FeedRateLimit,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.FeedRateLimit,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Skipped during initial scan",
     details: null,
   },
   {
-    stage: DiagnosticStage.MediumRateLimit,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.MediumRateLimit,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Skipped during initial scan",
     details: null,
   },
 ];
 
-const createFilteredStages = (mediumId: string): DiagnosticStageResult[] => [
+const createFilteredStages = (mediumId: string): DeliveryPreviewStageResult[] => [
   {
-    stage: DiagnosticStage.FeedState,
-    status: DiagnosticStageStatus.Passed,
+    stage: DeliveryPreviewStage.FeedState,
+    status: DeliveryPreviewStageStatus.Passed,
     summary: "Feed is ready",
     details: {
       hasPriorArticles: true,
@@ -236,8 +236,8 @@ const createFilteredStages = (mediumId: string): DiagnosticStageResult[] => [
     },
   },
   {
-    stage: DiagnosticStage.IdComparison,
-    status: DiagnosticStageStatus.Passed,
+    stage: DeliveryPreviewStage.IdComparison,
+    status: DeliveryPreviewStageStatus.Passed,
     summary: "New article",
     details: {
       articleIdHash: "f6e5d4c3b2a1",
@@ -247,8 +247,8 @@ const createFilteredStages = (mediumId: string): DiagnosticStageResult[] => [
     },
   },
   {
-    stage: DiagnosticStage.BlockingComparison,
-    status: DiagnosticStageStatus.Passed,
+    stage: DeliveryPreviewStage.BlockingComparison,
+    status: DeliveryPreviewStageStatus.Passed,
     summary: "Not configured",
     details: {
       comparisonFields: [],
@@ -257,14 +257,14 @@ const createFilteredStages = (mediumId: string): DiagnosticStageResult[] => [
     },
   },
   {
-    stage: DiagnosticStage.PassingComparison,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.PassingComparison,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Not configured",
     details: null,
   },
   {
-    stage: DiagnosticStage.DateCheck,
-    status: DiagnosticStageStatus.Passed,
+    stage: DeliveryPreviewStage.DateCheck,
+    status: DeliveryPreviewStageStatus.Passed,
     summary: "Article is recent",
     details: {
       articleDate: new Date().toISOString(),
@@ -275,8 +275,8 @@ const createFilteredStages = (mediumId: string): DiagnosticStageResult[] => [
     },
   },
   {
-    stage: DiagnosticStage.MediumFilter,
-    status: DiagnosticStageStatus.Failed,
+    stage: DeliveryPreviewStage.MediumFilter,
+    status: DeliveryPreviewStageStatus.Failed,
     summary: "Doesn't match filters",
     details: {
       mediumId,
@@ -304,23 +304,23 @@ const createFilteredStages = (mediumId: string): DiagnosticStageResult[] => [
     },
   },
   {
-    stage: DiagnosticStage.FeedRateLimit,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.FeedRateLimit,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Skipped - blocked above",
     details: null,
   },
   {
-    stage: DiagnosticStage.MediumRateLimit,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.MediumRateLimit,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Skipped - blocked above",
     details: null,
   },
 ];
 
-const createDuplicateIdStages = (): DiagnosticStageResult[] => [
+const createDuplicateIdStages = (): DeliveryPreviewStageResult[] => [
   {
-    stage: DiagnosticStage.FeedState,
-    status: DiagnosticStageStatus.Passed,
+    stage: DeliveryPreviewStage.FeedState,
+    status: DeliveryPreviewStageStatus.Passed,
     summary: "Feed is ready",
     details: {
       hasPriorArticles: true,
@@ -329,8 +329,8 @@ const createDuplicateIdStages = (): DiagnosticStageResult[] => [
     },
   },
   {
-    stage: DiagnosticStage.IdComparison,
-    status: DiagnosticStageStatus.Failed,
+    stage: DeliveryPreviewStage.IdComparison,
+    status: DeliveryPreviewStageStatus.Failed,
     summary: "Already processed",
     details: {
       articleIdHash: "duplicate123",
@@ -340,47 +340,47 @@ const createDuplicateIdStages = (): DiagnosticStageResult[] => [
     },
   },
   {
-    stage: DiagnosticStage.BlockingComparison,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.BlockingComparison,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Skipped - already processed",
     details: null,
   },
   {
-    stage: DiagnosticStage.PassingComparison,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.PassingComparison,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Skipped - already processed",
     details: null,
   },
   {
-    stage: DiagnosticStage.DateCheck,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.DateCheck,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Skipped - already processed",
     details: null,
   },
   {
-    stage: DiagnosticStage.MediumFilter,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.MediumFilter,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Skipped - already processed",
     details: null,
   },
   {
-    stage: DiagnosticStage.FeedRateLimit,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.FeedRateLimit,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Skipped - already processed",
     details: null,
   },
   {
-    stage: DiagnosticStage.MediumRateLimit,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.MediumRateLimit,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Skipped - already processed",
     details: null,
   },
 ];
 
-const createRateLimitedStages = (mediumId: string): DiagnosticStageResult[] => [
+const createRateLimitedStages = (mediumId: string): DeliveryPreviewStageResult[] => [
   {
-    stage: DiagnosticStage.FeedState,
-    status: DiagnosticStageStatus.Passed,
+    stage: DeliveryPreviewStage.FeedState,
+    status: DeliveryPreviewStageStatus.Passed,
     summary: "Feed is ready",
     details: {
       hasPriorArticles: true,
@@ -389,8 +389,8 @@ const createRateLimitedStages = (mediumId: string): DiagnosticStageResult[] => [
     },
   },
   {
-    stage: DiagnosticStage.IdComparison,
-    status: DiagnosticStageStatus.Passed,
+    stage: DeliveryPreviewStage.IdComparison,
+    status: DeliveryPreviewStageStatus.Passed,
     summary: "New article",
     details: {
       articleIdHash: "newart789",
@@ -400,8 +400,8 @@ const createRateLimitedStages = (mediumId: string): DiagnosticStageResult[] => [
     },
   },
   {
-    stage: DiagnosticStage.BlockingComparison,
-    status: DiagnosticStageStatus.Passed,
+    stage: DeliveryPreviewStage.BlockingComparison,
+    status: DeliveryPreviewStageStatus.Passed,
     summary: "Not configured",
     details: {
       comparisonFields: [],
@@ -410,14 +410,14 @@ const createRateLimitedStages = (mediumId: string): DiagnosticStageResult[] => [
     },
   },
   {
-    stage: DiagnosticStage.PassingComparison,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.PassingComparison,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Not configured",
     details: null,
   },
   {
-    stage: DiagnosticStage.DateCheck,
-    status: DiagnosticStageStatus.Passed,
+    stage: DeliveryPreviewStage.DateCheck,
+    status: DeliveryPreviewStageStatus.Passed,
     summary: "Article is recent",
     details: {
       articleDate: new Date().toISOString(),
@@ -428,8 +428,8 @@ const createRateLimitedStages = (mediumId: string): DiagnosticStageResult[] => [
     },
   },
   {
-    stage: DiagnosticStage.MediumFilter,
-    status: DiagnosticStageStatus.Passed,
+    stage: DeliveryPreviewStage.MediumFilter,
+    status: DeliveryPreviewStageStatus.Passed,
     summary: "Matches your filters",
     details: {
       mediumId,
@@ -440,8 +440,8 @@ const createRateLimitedStages = (mediumId: string): DiagnosticStageResult[] => [
     },
   },
   {
-    stage: DiagnosticStage.FeedRateLimit,
-    status: DiagnosticStageStatus.Failed,
+    stage: DeliveryPreviewStage.FeedRateLimit,
+    status: DeliveryPreviewStageStatus.Failed,
     summary: "Limit reached (50/50)",
     details: {
       currentCount: 50,
@@ -452,17 +452,17 @@ const createRateLimitedStages = (mediumId: string): DiagnosticStageResult[] => [
     },
   },
   {
-    stage: DiagnosticStage.MediumRateLimit,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.MediumRateLimit,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Skipped - blocked above",
     details: null,
   },
 ];
 
-const createBlockedByComparisonStages = (_mediumId: string): DiagnosticStageResult[] => [
+const createBlockedByComparisonStages = (_mediumId: string): DeliveryPreviewStageResult[] => [
   {
-    stage: DiagnosticStage.FeedState,
-    status: DiagnosticStageStatus.Passed,
+    stage: DeliveryPreviewStage.FeedState,
+    status: DeliveryPreviewStageStatus.Passed,
     summary: "Feed is ready",
     details: {
       hasPriorArticles: true,
@@ -471,8 +471,8 @@ const createBlockedByComparisonStages = (_mediumId: string): DiagnosticStageResu
     },
   },
   {
-    stage: DiagnosticStage.IdComparison,
-    status: DiagnosticStageStatus.Passed,
+    stage: DeliveryPreviewStage.IdComparison,
+    status: DeliveryPreviewStageStatus.Passed,
     summary: "New article",
     details: {
       articleIdHash: "comp456",
@@ -482,8 +482,8 @@ const createBlockedByComparisonStages = (_mediumId: string): DiagnosticStageResu
     },
   },
   {
-    stage: DiagnosticStage.BlockingComparison,
-    status: DiagnosticStageStatus.Failed,
+    stage: DeliveryPreviewStage.BlockingComparison,
+    status: DeliveryPreviewStageStatus.Failed,
     summary: "No changes in description",
     details: {
       comparisonFields: ["description", "content"],
@@ -492,32 +492,32 @@ const createBlockedByComparisonStages = (_mediumId: string): DiagnosticStageResu
     },
   },
   {
-    stage: DiagnosticStage.PassingComparison,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.PassingComparison,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Skipped - blocked above",
     details: null,
   },
   {
-    stage: DiagnosticStage.DateCheck,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.DateCheck,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Skipped - blocked above",
     details: null,
   },
   {
-    stage: DiagnosticStage.MediumFilter,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.MediumFilter,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Skipped - blocked above",
     details: null,
   },
   {
-    stage: DiagnosticStage.FeedRateLimit,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.FeedRateLimit,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Skipped - blocked above",
     details: null,
   },
   {
-    stage: DiagnosticStage.MediumRateLimit,
-    status: DiagnosticStageStatus.Skipped,
+    stage: DeliveryPreviewStage.MediumRateLimit,
+    status: DeliveryPreviewStageStatus.Skipped,
     summary: "Skipped - blocked above",
     details: null,
   },
@@ -528,24 +528,24 @@ const createBlockedByComparisonStages = (_mediumId: string): DiagnosticStageResu
 // ============================================================================
 
 export const createMediumResult = (
-  outcome: ArticleDiagnosisOutcome,
+  outcome: ArticleDeliveryOutcome,
   mediumId = "conn-1"
-): MediumDiagnosticResult => {
-  const getStages = (): DiagnosticStageResult[] => {
+): MediumDeliveryResult => {
+  const getStages = (): DeliveryPreviewStageResult[] => {
     switch (outcome) {
-      case ArticleDiagnosisOutcome.WouldDeliver:
-      case ArticleDiagnosisOutcome.WouldDeliverPassingComparison:
+      case ArticleDeliveryOutcome.WouldDeliver:
+      case ArticleDeliveryOutcome.WouldDeliverPassingComparison:
         return createPassedStages(mediumId);
-      case ArticleDiagnosisOutcome.FirstRunBaseline:
+      case ArticleDeliveryOutcome.FirstRunBaseline:
         return createFirstRunStages();
-      case ArticleDiagnosisOutcome.FilteredByMediumFilter:
+      case ArticleDeliveryOutcome.FilteredByMediumFilter:
         return createFilteredStages(mediumId);
-      case ArticleDiagnosisOutcome.DuplicateId:
+      case ArticleDeliveryOutcome.DuplicateId:
         return createDuplicateIdStages();
-      case ArticleDiagnosisOutcome.RateLimitedFeed:
-      case ArticleDiagnosisOutcome.RateLimitedMedium:
+      case ArticleDeliveryOutcome.RateLimitedFeed:
+      case ArticleDeliveryOutcome.RateLimitedMedium:
         return createRateLimitedStages(mediumId);
-      case ArticleDiagnosisOutcome.BlockedByComparison:
+      case ArticleDeliveryOutcome.BlockedByComparison:
         return createBlockedByComparisonStages(mediumId);
       default:
         return createPassedStages(mediumId);
@@ -554,19 +554,19 @@ export const createMediumResult = (
 
   const getOutcomeReason = () => {
     switch (outcome) {
-      case ArticleDiagnosisOutcome.WouldDeliver:
+      case ArticleDeliveryOutcome.WouldDeliver:
         return "Would be delivered";
-      case ArticleDiagnosisOutcome.FirstRunBaseline:
+      case ArticleDeliveryOutcome.FirstRunBaseline:
         return "First run - establishing baseline";
-      case ArticleDiagnosisOutcome.FilteredByMediumFilter:
+      case ArticleDeliveryOutcome.FilteredByMediumFilter:
         return "Blocked by filters";
-      case ArticleDiagnosisOutcome.DuplicateId:
+      case ArticleDeliveryOutcome.DuplicateId:
         return "Previously seen";
-      case ArticleDiagnosisOutcome.RateLimitedFeed:
+      case ArticleDeliveryOutcome.RateLimitedFeed:
         return "Daily limit reached";
-      case ArticleDiagnosisOutcome.RateLimitedMedium:
+      case ArticleDeliveryOutcome.RateLimitedMedium:
         return "Connection limit reached";
-      case ArticleDiagnosisOutcome.BlockedByComparison:
+      case ArticleDeliveryOutcome.BlockedByComparison:
         return "No changes detected";
       default:
         return "";
@@ -586,14 +586,14 @@ export const createMediumResult = (
 // ============================================================================
 
 export const createArticleResult = (
-  outcome: ArticleDiagnosisOutcome,
+  outcome: ArticleDeliveryOutcome,
   options: {
     articleId?: string;
     articleTitle?: string;
     connectionIds?: string[];
-    mixedOutcomes?: ArticleDiagnosisOutcome[];
+    mixedOutcomes?: ArticleDeliveryOutcome[];
   } = {}
-): ArticleDiagnosticResult => {
+): ArticleDeliveryResult => {
   const {
     articleId = "art-001",
     articleTitle = "Breaking News: Major Market Rally Pushes Stocks to Record Highs",
@@ -603,28 +603,28 @@ export const createArticleResult = (
 
   const getOutcomeReason = () => {
     switch (outcome) {
-      case ArticleDiagnosisOutcome.WouldDeliver:
+      case ArticleDeliveryOutcome.WouldDeliver:
         return "This article will be delivered to Discord when your feed is next processed.";
-      case ArticleDiagnosisOutcome.FirstRunBaseline:
+      case ArticleDeliveryOutcome.FirstRunBaseline:
         return "This is a new feed. Articles are being recorded but not delivered yet.";
-      case ArticleDiagnosisOutcome.FilteredByMediumFilter:
+      case ArticleDeliveryOutcome.FilteredByMediumFilter:
         return "This article doesn't match the filter rules for your connection.";
-      case ArticleDiagnosisOutcome.DuplicateId:
+      case ArticleDeliveryOutcome.DuplicateId:
         return "MonitoRSS has already seen this article.";
-      case ArticleDiagnosisOutcome.RateLimitedFeed:
+      case ArticleDeliveryOutcome.RateLimitedFeed:
         return "Your feed has hit its daily article limit.";
-      case ArticleDiagnosisOutcome.FeedUnchanged:
+      case ArticleDeliveryOutcome.FeedUnchanged:
         return "Feed content unchanged since last check.";
-      case ArticleDiagnosisOutcome.FeedError:
+      case ArticleDeliveryOutcome.FeedError:
         return "Feed fetch error (timeout): Request timed out after 30 seconds";
-      case ArticleDiagnosisOutcome.MixedResults:
+      case ArticleDeliveryOutcome.MixedResults:
         return "This article would deliver to some connections but not others.";
       default:
         return "";
     }
   };
 
-  let mediumResults: MediumDiagnosticResult[];
+  let mediumResults: MediumDeliveryResult[];
 
   if (mixedOutcomes && mixedOutcomes.length > 0) {
     mediumResults = mixedOutcomes.map((o, i) =>
@@ -649,48 +649,48 @@ export const createArticleResult = (
 // ============================================================================
 
 export const createWouldDeliverArticle = () =>
-  createArticleResult(ArticleDiagnosisOutcome.WouldDeliver, {
+  createArticleResult(ArticleDeliveryOutcome.WouldDeliver, {
     articleTitle: "Tech Update: New Smartphone Features Revolutionary Battery Technology",
     connectionIds: ["conn-1", "conn-2"],
   });
 
 export const createLearningArticle = () =>
-  createArticleResult(ArticleDiagnosisOutcome.FirstRunBaseline, {
+  createArticleResult(ArticleDeliveryOutcome.FirstRunBaseline, {
     articleTitle: "Entertainment: Award-Winning Film Breaks Box Office Records",
     connectionIds: ["conn-1"],
   });
 
 export const createFilteredByDateArticle = () =>
-  createArticleResult(ArticleDiagnosisOutcome.FilteredByDateCheck, {
+  createArticleResult(ArticleDeliveryOutcome.FilteredByDateCheck, {
     articleTitle: "Archive: Historical Article From Last Year",
     connectionIds: ["conn-1"],
   });
 
 export const createBlockedByFiltersArticle = () =>
-  createArticleResult(ArticleDiagnosisOutcome.FilteredByMediumFilter, {
+  createArticleResult(ArticleDeliveryOutcome.FilteredByMediumFilter, {
     articleTitle: "Sports: Championship Game Ends in Dramatic Overtime Victory",
     connectionIds: ["conn-1", "conn-2"],
   });
 
 export const createRateLimitedArticle = () =>
-  createArticleResult(ArticleDiagnosisOutcome.RateLimitedFeed, {
+  createArticleResult(ArticleDeliveryOutcome.RateLimitedFeed, {
     articleTitle: "Politics: New Policy Announcement Sparks Debate Among Lawmakers",
     connectionIds: ["conn-1"],
   });
 
 export const createMixedResultsArticle = () =>
-  createArticleResult(ArticleDiagnosisOutcome.MixedResults, {
+  createArticleResult(ArticleDeliveryOutcome.MixedResults, {
     articleTitle: "Health: New Study Reveals Benefits of Mediterranean Diet",
     connectionIds: ["conn-1", "conn-2", "conn-3"],
     mixedOutcomes: [
-      ArticleDiagnosisOutcome.WouldDeliver,
-      ArticleDiagnosisOutcome.FilteredByMediumFilter,
-      ArticleDiagnosisOutcome.RateLimitedMedium,
+      ArticleDeliveryOutcome.WouldDeliver,
+      ArticleDeliveryOutcome.FilteredByMediumFilter,
+      ArticleDeliveryOutcome.RateLimitedMedium,
     ],
   });
 
 export const createDeletedConnectionArticle = () => {
-  const result = createArticleResult(ArticleDiagnosisOutcome.WouldDeliver, {
+  const result = createArticleResult(ArticleDeliveryOutcome.WouldDeliver, {
     articleTitle: "Science: Researchers Discover New Species in Deep Ocean",
     connectionIds: ["deleted-conn-xyz"],
   });
@@ -698,7 +698,7 @@ export const createDeletedConnectionArticle = () => {
 };
 
 export const createMultipleConnectionsArticle = () =>
-  createArticleResult(ArticleDiagnosisOutcome.WouldDeliver, {
+  createArticleResult(ArticleDeliveryOutcome.WouldDeliver, {
     articleTitle: "Business: Startup Secures Record Funding for AI Innovation",
     connectionIds: ["conn-1", "conn-2", "conn-3"],
   });
@@ -707,60 +707,60 @@ export const createMultipleConnectionsArticle = () =>
 // Bulk Article Factories (for main container stories)
 // ============================================================================
 
-export const createNormalDeliveryArticles = (): ArticleDiagnosticResult[] => [
+export const createNormalDeliveryArticles = (): ArticleDeliveryResult[] => [
   createWouldDeliverArticle(),
-  createArticleResult(ArticleDiagnosisOutcome.DuplicateId, {
+  createArticleResult(ArticleDeliveryOutcome.DuplicateId, {
     articleId: "art-002",
     articleTitle: "Weather Alert: Severe Storm Warning Issued for Metropolitan Area",
     connectionIds: ["conn-1"],
   }),
-  createArticleResult(ArticleDiagnosisOutcome.WouldDeliver, {
+  createArticleResult(ArticleDeliveryOutcome.WouldDeliver, {
     articleId: "art-003",
     articleTitle: "Food: Master Chef Shares Secret Recipe for Perfect Pasta",
     connectionIds: ["conn-1", "conn-2"],
   }),
-  createArticleResult(ArticleDiagnosisOutcome.FilteredByMediumFilter, {
+  createArticleResult(ArticleDeliveryOutcome.FilteredByMediumFilter, {
     articleId: "art-004",
     articleTitle: "Gaming: Highly Anticipated RPG Release Date Announced",
     connectionIds: ["conn-1"],
   }),
-  createArticleResult(ArticleDiagnosisOutcome.WouldDeliver, {
+  createArticleResult(ArticleDeliveryOutcome.WouldDeliver, {
     articleId: "art-005",
     articleTitle: "Music: Legendary Band Announces Reunion World Tour",
     connectionIds: ["conn-1"],
   }),
 ];
 
-export const createLearningPhaseArticles = (): ArticleDiagnosticResult[] =>
+export const createLearningPhaseArticles = (): ArticleDeliveryResult[] =>
   Array.from({ length: 10 }, (_, i) =>
-    createArticleResult(ArticleDiagnosisOutcome.FirstRunBaseline, {
+    createArticleResult(ArticleDeliveryOutcome.FirstRunBaseline, {
       articleId: `art-${i + 1}`,
       articleTitle: `Learning Phase Article ${i + 1}: Sample Content`,
       connectionIds: ["conn-1", "conn-2"],
     })
   );
 
-export const createRateLimitedArticles = (): ArticleDiagnosticResult[] =>
+export const createRateLimitedArticles = (): ArticleDeliveryResult[] =>
   Array.from({ length: 10 }, (_, i) =>
-    createArticleResult(ArticleDiagnosisOutcome.RateLimitedFeed, {
+    createArticleResult(ArticleDeliveryOutcome.RateLimitedFeed, {
       articleId: `art-${i + 1}`,
       articleTitle: `Rate Limited Article ${i + 1}: Daily Limit Reached`,
       connectionIds: ["conn-1"],
     })
   );
 
-export const createAllProcessedArticles = (): ArticleDiagnosticResult[] =>
+export const createAllProcessedArticles = (): ArticleDeliveryResult[] =>
   Array.from({ length: 10 }, (_, i) =>
-    createArticleResult(ArticleDiagnosisOutcome.DuplicateId, {
+    createArticleResult(ArticleDeliveryOutcome.DuplicateId, {
       articleId: `art-${i + 1}`,
       articleTitle: `Previously Seen Article ${i + 1}: Already Delivered`,
       connectionIds: ["conn-1"],
     })
   );
 
-export const createFeedUnchangedArticles = (): ArticleDiagnosticResult[] =>
+export const createFeedUnchangedArticles = (): ArticleDeliveryResult[] =>
   Array.from({ length: 5 }, (_, i) =>
-    createArticleResult(ArticleDiagnosisOutcome.FeedUnchanged, {
+    createArticleResult(ArticleDeliveryOutcome.FeedUnchanged, {
       articleId: `art-${i + 1}`,
       articleTitle: `Unchanged Article ${i + 1}`,
       connectionIds: [],

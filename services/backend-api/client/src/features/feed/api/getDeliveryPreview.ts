@@ -1,17 +1,17 @@
 import { array, InferType, mixed, number, object, string } from "yup";
 import fetchRest from "../../../utils/fetchRest";
 import {
-  ArticleDiagnosticResultSchema,
-  BackendArticleDiagnosticResultSchema,
+  ArticleDeliveryResultSchema,
+  BackendArticleDeliveryResultSchema,
   BackendStageResult,
-  DiagnosticStage,
-  DiagnosticStageStatus,
-  DiagnosticStageResult,
-  MediumDiagnosticResult,
-  ArticleDiagnosticResult,
-} from "../types/ArticleDiagnostics";
+  DeliveryPreviewStage,
+  DeliveryPreviewStageStatus,
+  DeliveryPreviewStageResult,
+  MediumDeliveryResult,
+  ArticleDeliveryResult,
+} from "../types/DeliveryPreview";
 
-export interface GetArticleDiagnosticsInput {
+export interface GetDeliveryPreviewInput {
   feedId: string;
   data: {
     skip: number;
@@ -22,10 +22,10 @@ export interface GetArticleDiagnosticsInput {
 /**
  * Schema for validating backend response (with status enum in stages).
  */
-const BackendGetArticleDiagnosticsOutputSchema = object({
+const BackendGetDeliveryPreviewOutputSchema = object({
   result: object()
     .shape({
-      results: array(BackendArticleDiagnosticResultSchema).required(),
+      results: array(BackendArticleDeliveryResultSchema).required(),
       total: number().required(),
       stages: array(string().required()).required(),
       feedState: mixed<{ state: string; errorType?: string; httpStatusCode?: number }>(),
@@ -33,17 +33,17 @@ const BackendGetArticleDiagnosticsOutputSchema = object({
     .required(),
 }).required();
 
-type BackendGetArticleDiagnosticsOutput = InferType<
-  typeof BackendGetArticleDiagnosticsOutputSchema
+type BackendGetDeliveryPreviewOutput = InferType<
+  typeof BackendGetDeliveryPreviewOutputSchema
 >;
 
 /**
  * Schema for the transformed frontend output.
  */
-const GetArticleDiagnosticsOutputSchema = object({
+const GetDeliveryPreviewOutputSchema = object({
   result: object()
     .shape({
-      results: array(ArticleDiagnosticResultSchema).required(),
+      results: array(ArticleDeliveryResultSchema).required(),
       total: number().required(),
       stages: array(string().required()).required(),
       feedState: mixed<{ state: string; errorType?: string; httpStatusCode?: number }>(),
@@ -51,26 +51,26 @@ const GetArticleDiagnosticsOutputSchema = object({
     .required(),
 }).required();
 
-export type GetArticleDiagnosticsOutput = InferType<typeof GetArticleDiagnosticsOutputSchema>;
+export type GetDeliveryPreviewOutput = InferType<typeof GetDeliveryPreviewOutputSchema>;
 
 /**
- * Generate a human-readable summary for a diagnostic stage.
+ * Generate a human-readable summary for a delivery preview stage.
  */
 function generateStageSummary(
-  stage: DiagnosticStage,
-  status: DiagnosticStageStatus,
+  stage: DeliveryPreviewStage,
+  status: DeliveryPreviewStageStatus,
   details: Record<string, unknown> | null
 ): string {
-  const passed = status === DiagnosticStageStatus.Passed;
+  const passed = status === DeliveryPreviewStageStatus.Passed;
 
   switch (stage) {
-    case DiagnosticStage.FeedState:
+    case DeliveryPreviewStage.FeedState:
       return passed ? "Feed is ready" : "Recording existing articles";
 
-    case DiagnosticStage.IdComparison:
+    case DeliveryPreviewStage.IdComparison:
       return passed ? "New article" : "Already processed";
 
-    case DiagnosticStage.BlockingComparison: {
+    case DeliveryPreviewStage.BlockingComparison: {
       if (passed) {
         const fields = details?.comparisonFields as string[] | undefined;
 
@@ -82,7 +82,7 @@ function generateStageSummary(
       return blocked?.length ? `No changes in ${blocked.join(", ")}` : "No changes detected";
     }
 
-    case DiagnosticStage.PassingComparison: {
+    case DeliveryPreviewStage.PassingComparison: {
       if (passed) {
         const changed = details?.changedFields as string[] | undefined;
 
@@ -92,20 +92,20 @@ function generateStageSummary(
       return "No updates detected";
     }
 
-    case DiagnosticStage.DateCheck:
+    case DeliveryPreviewStage.DateCheck:
       return passed ? "Article is recent" : "Article is too old";
 
-    case DiagnosticStage.MediumFilter:
+    case DeliveryPreviewStage.MediumFilter:
       return passed ? "Matches your filters" : "Doesn't match filters";
 
-    case DiagnosticStage.FeedRateLimit: {
+    case DeliveryPreviewStage.FeedRateLimit: {
       const current = (details?.currentCount as number) ?? 0;
       const limit = (details?.limit as number) ?? 0;
 
       return passed ? `${current} of ${limit} today` : `Limit reached (${current}/${limit})`;
     }
 
-    case DiagnosticStage.MediumRateLimit: {
+    case DeliveryPreviewStage.MediumRateLimit: {
       const current = (details?.currentCount as number) ?? 0;
       const limit = (details?.limit as number) ?? 0;
 
@@ -120,20 +120,20 @@ function generateStageSummary(
 /**
  * Generate a summary for a skipped stage based on context.
  */
-function generateSkippedSummary(stage: DiagnosticStage, stages: BackendStageResult[]): string {
+function generateSkippedSummary(stage: DeliveryPreviewStage, stages: BackendStageResult[]): string {
   // Find the first failed stage to determine skip reason
-  const firstFailedStage = stages.find((s) => s.status === DiagnosticStageStatus.Failed);
-  const failedStage = firstFailedStage?.stage as DiagnosticStage | undefined;
+  const firstFailedStage = stages.find((s) => s.status === DeliveryPreviewStageStatus.Failed);
+  const failedStage = firstFailedStage?.stage as DeliveryPreviewStage | undefined;
 
-  if (failedStage === DiagnosticStage.FeedState) {
+  if (failedStage === DeliveryPreviewStage.FeedState) {
     return "Skipped during initial scan";
   }
 
-  if (failedStage === DiagnosticStage.IdComparison) {
+  if (failedStage === DeliveryPreviewStage.IdComparison) {
     return "Skipped - already processed";
   }
 
-  if (stage === DiagnosticStage.PassingComparison) {
+  if (stage === DeliveryPreviewStage.PassingComparison) {
     return "Not configured";
   }
 
@@ -146,13 +146,13 @@ function generateSkippedSummary(stage: DiagnosticStage, stages: BackendStageResu
 function transformStage(
   backendStage: BackendStageResult,
   allStages: BackendStageResult[]
-): DiagnosticStageResult {
-  const stage = backendStage.stage as DiagnosticStage;
-  const status = backendStage.status as DiagnosticStageStatus;
+): DeliveryPreviewStageResult {
+  const stage = backendStage.stage as DeliveryPreviewStage;
+  const status = backendStage.status as DeliveryPreviewStageStatus;
 
   // Generate summary based on status
   const summary =
-    status === DiagnosticStageStatus.Skipped
+    status === DeliveryPreviewStageStatus.Skipped
       ? generateSkippedSummary(stage, allStages)
       : generateStageSummary(stage, status, backendStage.details as Record<string, unknown> | null);
 
@@ -168,18 +168,18 @@ function transformStage(
  * Transform the backend response to frontend format.
  */
 function transformResponse(
-  backendResponse: BackendGetArticleDiagnosticsOutput
-): GetArticleDiagnosticsOutput {
+  backendResponse: BackendGetDeliveryPreviewOutput
+): GetDeliveryPreviewOutput {
   const canonicalStages = backendResponse.result.stages;
 
-  const transformedResults: ArticleDiagnosticResult[] = backendResponse.result.results.map(
+  const transformedResults: ArticleDeliveryResult[] = backendResponse.result.results.map(
     (article) => ({
       articleId: article.articleId,
       articleIdHash: article.articleIdHash,
       articleTitle: article.articleTitle,
       outcome: article.outcome,
       outcomeReason: article.outcomeReason,
-      mediumResults: article.mediumResults.map((medium): MediumDiagnosticResult => {
+      mediumResults: article.mediumResults.map((medium): MediumDeliveryResult => {
         // Backend now returns complete stage list with status - just add summaries
         const transformedStages = medium.stages.map((stage) =>
           transformStage(stage, medium.stages)
@@ -205,12 +205,12 @@ function transformResponse(
   };
 }
 
-export const getArticleDiagnostics = async ({
+export const getDeliveryPreview = async ({
   feedId,
   data,
-}: GetArticleDiagnosticsInput): Promise<GetArticleDiagnosticsOutput> => {
+}: GetDeliveryPreviewInput): Promise<GetDeliveryPreviewOutput> => {
   // Fetch with backend schema that accepts status enum
-  const backendRes = (await fetchRest(`/api/v1/user-feeds/${feedId}/diagnose-articles`, {
+  const backendRes = (await fetchRest(`/api/v1/user-feeds/${feedId}/delivery-preview`, {
     requestOptions: {
       method: "POST",
       body: JSON.stringify({
@@ -218,8 +218,8 @@ export const getArticleDiagnostics = async ({
         limit: data.limit,
       }),
     },
-    validateSchema: BackendGetArticleDiagnosticsOutputSchema,
-  })) as BackendGetArticleDiagnosticsOutput;
+    validateSchema: BackendGetDeliveryPreviewOutputSchema,
+  })) as BackendGetDeliveryPreviewOutput;
 
   // Transform to frontend format with summaries
   const transformedRes = transformResponse(backendRes);

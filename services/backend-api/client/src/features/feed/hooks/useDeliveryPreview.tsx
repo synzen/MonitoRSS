@@ -1,20 +1,20 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 import {
-  GetArticleDiagnosticsInput,
-  GetArticleDiagnosticsOutput,
-  getArticleDiagnostics,
-} from "../api/getArticleDiagnostics";
+  GetDeliveryPreviewInput,
+  GetDeliveryPreviewOutput,
+  getDeliveryPreview,
+} from "../api/getDeliveryPreview";
 
 interface Props {
   feedId?: string;
-  data: GetArticleDiagnosticsInput["data"];
+  data: GetDeliveryPreviewInput["data"];
   disabled?: boolean;
 }
 
-export const useArticleDiagnostics = ({ feedId, data: inputData, disabled }: Props) => {
+export const useDeliveryPreview = ({ feedId, data: inputData, disabled }: Props) => {
   const queryKey = [
-    "article-diagnostics",
+    "delivery-preview",
     {
       feedId,
       data: inputData,
@@ -22,14 +22,14 @@ export const useArticleDiagnostics = ({ feedId, data: inputData, disabled }: Pro
   ];
 
   const { data, status, error, fetchStatus, refetch, dataUpdatedAt, fetchNextPage, hasNextPage } =
-    useInfiniteQuery<GetArticleDiagnosticsOutput, ApiAdapterError | Error>(
+    useInfiniteQuery<GetDeliveryPreviewOutput, ApiAdapterError | Error>(
       queryKey,
       async ({ pageParam: skip }) => {
         if (!feedId) {
-          throw new Error("Feed ID is required to fetch article diagnostics");
+          throw new Error("Feed ID is required to fetch delivery preview");
         }
 
-        return getArticleDiagnostics({
+        return getDeliveryPreview({
           feedId,
           data: {
             ...inputData,

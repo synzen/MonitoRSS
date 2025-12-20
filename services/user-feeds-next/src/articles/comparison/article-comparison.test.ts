@@ -6,7 +6,7 @@ import {
   type ArticleFieldStore,
 } from ".";
 import type { Article } from "../parser";
-import { DiagnosticStageStatus, type DiagnosticStageResult } from "../../diagnostics";
+import { DeliveryPreviewStage, DeliveryPreviewStageStatus, type DeliveryPreviewStageResult } from "../../delivery-preview";
 
 function createArticle(
   id: string,
@@ -616,38 +616,38 @@ describe("article-comparison", () => {
 
   describe("diagnostic recording", () => {
     it("records FeedState diagnostic on first run", async () => {
-      const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
-        await import("../../diagnostics");
+      const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+        await import("../../delivery-preview/delivery-preview-context");
 
       await inMemoryArticleFieldStore.startContext(async () => {
-        let diagnostics: DiagnosticStageResult[] = [];
+        let diagnostics: DeliveryPreviewStageResult[] = [];
 
-        await startDiagnosticContext("hash-1", async () => {
+        await startDeliveryPreviewContext("hash-1", async () => {
           await getArticlesToDeliver(
             inMemoryArticleFieldStore,
             "diag-feed-1",
             [createArticle("1", { title: "Test" })],
             { blockingComparisons: [], passingComparisons: [] }
           );
-          diagnostics = getDiagnosticResultsForArticle("hash-1");
+          diagnostics = getDeliveryPreviewResultsForArticle("hash-1");
         });
 
         expect(diagnostics.length).toBeGreaterThan(0);
         const feedState = diagnostics.find(
-          (d) => d.stage === DiagnosticStage.FeedState
+          (d) => d.stage === DeliveryPreviewStage.FeedState
         );
         expect(feedState).toBeDefined();
         expect(
           (feedState as { details: { isFirstRun: boolean } }).details.isFirstRun
         ).toBe(true);
         // First run records articles as baseline, status is Failed because articles won't be delivered
-        expect(feedState!.status).toBe(DiagnosticStageStatus.Failed);
+        expect(feedState!.status).toBe(DeliveryPreviewStageStatus.Failed);
       });
     });
 
     it("records IdComparison diagnostic for new articles", async () => {
-      const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
-        await import("../../diagnostics");
+      const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+        await import("../../delivery-preview/delivery-preview-context");
 
       await inMemoryArticleFieldStore.startContext(async () => {
         // First run to establish baseline
@@ -659,10 +659,10 @@ describe("article-comparison", () => {
         );
         await inMemoryArticleFieldStore.flushPendingInserts();
 
-        let diagnostics: DiagnosticStageResult[] = [];
+        let diagnostics: DeliveryPreviewStageResult[] = [];
 
         // Second run with diagnostic context for a new article
-        await startDiagnosticContext("hash-2", async () => {
+        await startDeliveryPreviewContext("hash-2", async () => {
           await getArticlesToDeliver(
             inMemoryArticleFieldStore,
             "diag-feed-2",
@@ -672,11 +672,11 @@ describe("article-comparison", () => {
             ],
             { blockingComparisons: [], passingComparisons: [] }
           );
-          diagnostics = getDiagnosticResultsForArticle("hash-2");
+          diagnostics = getDeliveryPreviewResultsForArticle("hash-2");
         });
 
         const idComparison = diagnostics.find(
-          (d) => d.stage === DiagnosticStage.IdComparison
+          (d) => d.stage === DeliveryPreviewStage.IdComparison
         );
         expect(idComparison).toBeDefined();
         expect(
@@ -686,8 +686,8 @@ describe("article-comparison", () => {
     });
 
     it("records BlockingComparison diagnostic when article is blocked", async () => {
-      const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
-        await import("../../diagnostics");
+      const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+        await import("../../delivery-preview/delivery-preview-context");
 
       await inMemoryArticleFieldStore.startContext(async () => {
         // First run
@@ -699,24 +699,24 @@ describe("article-comparison", () => {
         );
         await inMemoryArticleFieldStore.flushPendingInserts();
 
-        let diagnostics: DiagnosticStageResult[] = [];
+        let diagnostics: DeliveryPreviewStageResult[] = [];
 
         // Second run with same title (should be blocked)
-        await startDiagnosticContext("hash-2", async () => {
+        await startDeliveryPreviewContext("hash-2", async () => {
           await getArticlesToDeliver(
             inMemoryArticleFieldStore,
             "diag-feed-3",
             [createArticle("2", { title: "Same Title" })],
             { blockingComparisons: ["title"], passingComparisons: [] }
           );
-          diagnostics = getDiagnosticResultsForArticle("hash-2");
+          diagnostics = getDeliveryPreviewResultsForArticle("hash-2");
         });
 
         const blockingComparison = diagnostics.find(
-          (d) => d.stage === DiagnosticStage.BlockingComparison
+          (d) => d.stage === DeliveryPreviewStage.BlockingComparison
         );
         expect(blockingComparison).toBeDefined();
-        expect(blockingComparison!.status).toBe(DiagnosticStageStatus.Failed);
+        expect(blockingComparison!.status).toBe(DeliveryPreviewStageStatus.Failed);
         expect(
           (
             blockingComparison as {
@@ -728,8 +728,8 @@ describe("article-comparison", () => {
     });
 
     it("records PassingComparison diagnostic when article passes", async () => {
-      const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
-        await import("../../diagnostics");
+      const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+        await import("../../delivery-preview/delivery-preview-context");
 
       await inMemoryArticleFieldStore.startContext(async () => {
         // First run
@@ -741,24 +741,24 @@ describe("article-comparison", () => {
         );
         await inMemoryArticleFieldStore.flushPendingInserts();
 
-        let diagnostics: DiagnosticStageResult[] = [];
+        let diagnostics: DeliveryPreviewStageResult[] = [];
 
         // Second run with changed title (should pass)
-        await startDiagnosticContext("hash-1", async () => {
+        await startDeliveryPreviewContext("hash-1", async () => {
           await getArticlesToDeliver(
             inMemoryArticleFieldStore,
             "diag-feed-4",
             [createArticle("1", { title: "Updated Title" })],
             { blockingComparisons: [], passingComparisons: ["title"] }
           );
-          diagnostics = getDiagnosticResultsForArticle("hash-1");
+          diagnostics = getDeliveryPreviewResultsForArticle("hash-1");
         });
 
         const passingComparison = diagnostics.find(
-          (d) => d.stage === DiagnosticStage.PassingComparison
+          (d) => d.stage === DeliveryPreviewStage.PassingComparison
         );
         expect(passingComparison).toBeDefined();
-        expect(passingComparison!.status).toBe(DiagnosticStageStatus.Passed);
+        expect(passingComparison!.status).toBe(DeliveryPreviewStageStatus.Passed);
         expect(
           (
             passingComparison as {
@@ -770,8 +770,8 @@ describe("article-comparison", () => {
     });
 
     it("records DateCheck diagnostic when article is filtered by date", async () => {
-      const { startDiagnosticContext, getDiagnosticResultsForArticle, DiagnosticStage } =
-        await import("../../diagnostics");
+      const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+        await import("../../delivery-preview/delivery-preview-context");
 
       await inMemoryArticleFieldStore.startContext(async () => {
         // First run to establish baseline
@@ -783,7 +783,7 @@ describe("article-comparison", () => {
         );
         await inMemoryArticleFieldStore.flushPendingInserts();
 
-        let diagnostics: DiagnosticStageResult[] = [];
+        let diagnostics: DeliveryPreviewStageResult[] = [];
 
         // Second run with old article date
         const oldDate = new Date(
@@ -794,7 +794,7 @@ describe("article-comparison", () => {
           raw: { date: oldDate },
         };
 
-        await startDiagnosticContext("hash-2", async () => {
+        await startDeliveryPreviewContext("hash-2", async () => {
           await getArticlesToDeliver(
             inMemoryArticleFieldStore,
             "diag-feed-5",
@@ -807,19 +807,19 @@ describe("article-comparison", () => {
               },
             }
           );
-          diagnostics = getDiagnosticResultsForArticle("hash-2");
+          diagnostics = getDeliveryPreviewResultsForArticle("hash-2");
         });
 
         const dateCheck = diagnostics.find(
-          (d) => d.stage === DiagnosticStage.DateCheck
+          (d) => d.stage === DeliveryPreviewStage.DateCheck
         );
         expect(dateCheck).toBeDefined();
-        expect(dateCheck!.status).toBe(DiagnosticStageStatus.Failed);
+        expect(dateCheck!.status).toBe(DeliveryPreviewStageStatus.Failed);
       });
     });
 
     it("does not record diagnostics outside diagnostic context", async () => {
-      const { getAllDiagnosticResults } = await import("../../diagnostics");
+      const { getAllDeliveryPreviewResults } = await import("../../delivery-preview/delivery-preview-context");
 
       await inMemoryArticleFieldStore.startContext(async () => {
         await getArticlesToDeliver(
@@ -830,7 +830,7 @@ describe("article-comparison", () => {
         );
 
         // Outside diagnostic context, should return empty Map
-        const diagnostics = getAllDiagnosticResults();
+        const diagnostics = getAllDeliveryPreviewResults();
         expect(diagnostics.size).toBe(0);
       });
     });
@@ -839,15 +839,14 @@ describe("article-comparison", () => {
   describe("multi-target diagnostic recording", () => {
     it("records FeedState diagnostic for all target articles", async () => {
       const {
-        startDiagnosticContext,
-        getDiagnosticResultsForArticle,
-        DiagnosticStage,
-      } = await import("../../diagnostics");
+        startDeliveryPreviewContext,
+        getDeliveryPreviewResultsForArticle,
+      } = await import("../../delivery-preview/delivery-preview-context");
 
       await inMemoryArticleFieldStore.startContext(async () => {
         const targetHashes = new Set(["hash-1", "hash-2"]);
 
-        await startDiagnosticContext(targetHashes, async () => {
+        await startDeliveryPreviewContext(targetHashes, async () => {
           await getArticlesToDeliver(
             inMemoryArticleFieldStore,
             "multi-diag-feed-1",
@@ -859,14 +858,14 @@ describe("article-comparison", () => {
           );
 
           // Both targets should have FeedState diagnostic
-          const diag1 = getDiagnosticResultsForArticle("hash-1");
-          const diag2 = getDiagnosticResultsForArticle("hash-2");
+          const diag1 = getDeliveryPreviewResultsForArticle("hash-1");
+          const diag2 = getDeliveryPreviewResultsForArticle("hash-2");
 
           const feedState1 = diag1.find(
-            (d) => d.stage === DiagnosticStage.FeedState
+            (d) => d.stage === DeliveryPreviewStage.FeedState
           );
           const feedState2 = diag2.find(
-            (d) => d.stage === DiagnosticStage.FeedState
+            (d) => d.stage === DeliveryPreviewStage.FeedState
           );
 
           expect(feedState1).toBeDefined();
@@ -885,10 +884,9 @@ describe("article-comparison", () => {
 
     it("records IdComparison diagnostic for each target article", async () => {
       const {
-        startDiagnosticContext,
-        getDiagnosticResultsForArticle,
-        DiagnosticStage,
-      } = await import("../../diagnostics");
+        startDeliveryPreviewContext,
+        getDeliveryPreviewResultsForArticle,
+      } = await import("../../delivery-preview/delivery-preview-context");
 
       await inMemoryArticleFieldStore.startContext(async () => {
         // First run to establish baseline
@@ -903,7 +901,7 @@ describe("article-comparison", () => {
         const targetHashes = new Set(["hash-1", "hash-2"]);
 
         // Second run - hash-1 is seen, hash-2 is new
-        await startDiagnosticContext(targetHashes, async () => {
+        await startDeliveryPreviewContext(targetHashes, async () => {
           await getArticlesToDeliver(
             inMemoryArticleFieldStore,
             "multi-diag-feed-2",
@@ -914,14 +912,14 @@ describe("article-comparison", () => {
             { blockingComparisons: [], passingComparisons: [] }
           );
 
-          const diag1 = getDiagnosticResultsForArticle("hash-1");
-          const diag2 = getDiagnosticResultsForArticle("hash-2");
+          const diag1 = getDeliveryPreviewResultsForArticle("hash-1");
+          const diag2 = getDeliveryPreviewResultsForArticle("hash-2");
 
           const idComp1 = diag1.find(
-            (d) => d.stage === DiagnosticStage.IdComparison
+            (d) => d.stage === DeliveryPreviewStage.IdComparison
           );
           const idComp2 = diag2.find(
-            (d) => d.stage === DiagnosticStage.IdComparison
+            (d) => d.stage === DeliveryPreviewStage.IdComparison
           );
 
           expect(idComp1).toBeDefined();
@@ -938,10 +936,9 @@ describe("article-comparison", () => {
 
     it("records BlockingComparison for each new target article", async () => {
       const {
-        startDiagnosticContext,
-        getDiagnosticResultsForArticle,
-        DiagnosticStage,
-      } = await import("../../diagnostics");
+        startDeliveryPreviewContext,
+        getDeliveryPreviewResultsForArticle,
+      } = await import("../../delivery-preview/delivery-preview-context");
 
       await inMemoryArticleFieldStore.startContext(async () => {
         // First run
@@ -956,7 +953,7 @@ describe("article-comparison", () => {
         const targetHashes = new Set(["hash-2", "hash-3"]);
 
         // Second run - both new articles with same title should be blocked
-        await startDiagnosticContext(targetHashes, async () => {
+        await startDeliveryPreviewContext(targetHashes, async () => {
           await getArticlesToDeliver(
             inMemoryArticleFieldStore,
             "multi-diag-feed-3",
@@ -967,36 +964,36 @@ describe("article-comparison", () => {
             { blockingComparisons: ["title"], passingComparisons: [] }
           );
 
-          const diag2 = getDiagnosticResultsForArticle("hash-2");
-          const diag3 = getDiagnosticResultsForArticle("hash-3");
+          const diag2 = getDeliveryPreviewResultsForArticle("hash-2");
+          const diag3 = getDeliveryPreviewResultsForArticle("hash-3");
 
           const blocking2 = diag2.find(
-            (d) => d.stage === DiagnosticStage.BlockingComparison
+            (d) => d.stage === DeliveryPreviewStage.BlockingComparison
           );
           const blocking3 = diag3.find(
-            (d) => d.stage === DiagnosticStage.BlockingComparison
+            (d) => d.stage === DeliveryPreviewStage.BlockingComparison
           );
 
           expect(blocking2).toBeDefined();
           expect(blocking3).toBeDefined();
-          expect(blocking2!.status).toBe(DiagnosticStageStatus.Failed);
-          expect(blocking3!.status).toBe(DiagnosticStageStatus.Failed);
+          expect(blocking2!.status).toBe(DeliveryPreviewStageStatus.Failed);
+          expect(blocking3!.status).toBe(DeliveryPreviewStageStatus.Failed);
         });
       });
     });
 
     it("only records for articles that are in the target set", async () => {
       const {
-        startDiagnosticContext,
-        getDiagnosticResultsForArticle,
-        getAllDiagnosticResults,
-      } = await import("../../diagnostics");
+        startDeliveryPreviewContext,
+        getDeliveryPreviewResultsForArticle,
+        getAllDeliveryPreviewResults,
+      } = await import("../../delivery-preview/delivery-preview-context");
 
       await inMemoryArticleFieldStore.startContext(async () => {
         // Only target hash-1, but process multiple articles
         const targetHashes = new Set(["hash-1"]);
 
-        await startDiagnosticContext(targetHashes, async () => {
+        await startDeliveryPreviewContext(targetHashes, async () => {
           await getArticlesToDeliver(
             inMemoryArticleFieldStore,
             "multi-diag-feed-4",
@@ -1008,7 +1005,7 @@ describe("article-comparison", () => {
             { blockingComparisons: [], passingComparisons: [] }
           );
 
-          const allResults = getAllDiagnosticResults();
+          const allResults = getAllDeliveryPreviewResults();
 
           // Only hash-1 should have diagnostics recorded
           expect(allResults.has("hash-1")).toBe(true);
@@ -1016,12 +1013,12 @@ describe("article-comparison", () => {
           expect(allResults.has("hash-3")).toBe(false);
 
           // hash-1 should have diagnostics
-          const diag1 = getDiagnosticResultsForArticle("hash-1");
+          const diag1 = getDeliveryPreviewResultsForArticle("hash-1");
           expect(diag1.length).toBeGreaterThan(0);
 
           // hash-2 and hash-3 should not have diagnostics
-          const diag2 = getDiagnosticResultsForArticle("hash-2");
-          const diag3 = getDiagnosticResultsForArticle("hash-3");
+          const diag2 = getDeliveryPreviewResultsForArticle("hash-2");
+          const diag3 = getDeliveryPreviewResultsForArticle("hash-3");
           expect(diag2).toEqual([]);
           expect(diag3).toEqual([]);
         });

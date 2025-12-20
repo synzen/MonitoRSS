@@ -1,5 +1,5 @@
 /**
- * Zod schema for POST /v1/user-feeds/diagnose-articles request
+ * Zod schema for POST /v1/user-feeds/delivery-preview request
  * Reuses schemas from feed-v2-event.schema.ts for consistency.
  */
 
@@ -30,7 +30,7 @@ const mediumFiltersSchema = z
   .optional();
 
 /**
- * Medium schema for diagnosis.
+ * Medium schema for delivery preview.
  */
 const mediumSchema = z.object({
   id: z.string().min(1),
@@ -39,7 +39,7 @@ const mediumSchema = z.object({
 });
 
 /**
- * Feed schema for diagnosis.
+ * Feed schema for delivery preview.
  * Now includes all feed properties that affect processing:
  * - formatOptions: date formatting (dateFormat, dateTimezone, dateLocale)
  * - externalProperties: content injection from external sources
@@ -58,9 +58,9 @@ const feedSchema = z.object({
 });
 
 /**
- * Main input schema for diagnose-article endpoint.
+ * Main input schema for delivery-preview endpoint.
  */
-export const diagnoseArticleInputSchema = z.object({
+export const deliveryPreviewInputSchema = z.object({
   feed: feedSchema,
   mediums: z.array(mediumSchema).default([]),
   articleDayLimit: z.number().positive(),
@@ -69,4 +69,4 @@ export const diagnoseArticleInputSchema = z.object({
   summaryOnly: z.boolean().default(false),
 });
 
-export type DiagnoseArticleInput = z.infer<typeof diagnoseArticleInputSchema>;
+export type DeliveryPreviewInput = z.infer<typeof deliveryPreviewInputSchema>;

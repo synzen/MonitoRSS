@@ -46,12 +46,12 @@ import {
   inMemoryDeliveryRecordStore,
 } from "../stores/in-memory/delivery-record-store";
 import {
-  isDiagnosticMode,
-  recordDiagnosticForArticle,
-  DiagnosticStage,
-  DiagnosticStageStatus,
+  isDeliveryPreviewMode,
+  recordDeliveryPreviewForArticle,
+  DeliveryPreviewStage,
+  DeliveryPreviewStageStatus,
   type FilterExplainBlockedDetail,
-} from "../diagnostics";
+} from "../delivery-preview";
 
 const SECONDS_PER_DAY = 86400;
 
@@ -77,17 +77,17 @@ export interface RateLimitDiagnosticParams {
 export function recordRateLimitDiagnostic(
   params: RateLimitDiagnosticParams
 ): void {
-  if (!isDiagnosticMode()) {
+  if (!isDeliveryPreviewMode()) {
     return;
   }
 
   const wouldExceed = params.remaining <= 0;
 
-  const status = wouldExceed ? DiagnosticStageStatus.Failed : DiagnosticStageStatus.Passed;
+  const status = wouldExceed ? DeliveryPreviewStageStatus.Failed : DeliveryPreviewStageStatus.Passed;
 
   if (params.isFeedLevel) {
-    recordDiagnosticForArticle(params.articleIdHash, {
-      stage: DiagnosticStage.FeedRateLimit,
+    recordDeliveryPreviewForArticle(params.articleIdHash, {
+      stage: DeliveryPreviewStage.FeedRateLimit,
       status,
       details: {
         currentCount: params.currentCount,
@@ -98,8 +98,8 @@ export function recordRateLimitDiagnostic(
       },
     });
   } else {
-    recordDiagnosticForArticle(params.articleIdHash, {
-      stage: DiagnosticStage.MediumRateLimit,
+    recordDeliveryPreviewForArticle(params.articleIdHash, {
+      stage: DeliveryPreviewStage.MediumRateLimit,
       status,
       details: {
         mediumId: params.mediumId || "",
@@ -131,13 +131,13 @@ export interface MediumFilterDiagnosticParams {
 export function recordMediumFilterDiagnostic(
   params: MediumFilterDiagnosticParams
 ): void {
-  if (!isDiagnosticMode()) {
+  if (!isDeliveryPreviewMode()) {
     return;
   }
 
-  recordDiagnosticForArticle(params.articleIdHash, {
-    stage: DiagnosticStage.MediumFilter,
-    status: params.filterResult ? DiagnosticStageStatus.Passed : DiagnosticStageStatus.Failed,
+  recordDeliveryPreviewForArticle(params.articleIdHash, {
+    stage: DeliveryPreviewStage.MediumFilter,
+    status: params.filterResult ? DeliveryPreviewStageStatus.Passed : DeliveryPreviewStageStatus.Failed,
     details: {
       mediumId: params.mediumId,
       filterExpression: params.filterExpression,

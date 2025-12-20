@@ -86,8 +86,8 @@ import mockUserFeedManagementInvites from "./data/userFeedManagementInvites";
 import mockUserMe from "./data/userMe";
 import { GetSubscriptionChangePreviewOutput } from "../features/subscriptionProducts";
 import { mockUserFeedDeliveryLogs } from "./data/userFeedDeliveryLogs";
-import { getMockDiagnostics, getMockFeedState } from "./data/articleDiagnostics";
-import { DiagnosticStage } from "../features/feed/types/ArticleDiagnostics";
+import { getMockDeliveryPreviews, getMockFeedState } from "./data/deliveryPreview";
+import { DeliveryPreviewStage } from "../features/feed/types/DeliveryPreview";
 import {
   CreateUserFeedUrlValidationInput,
   CreateUserFeedUrlValidationOutput,
@@ -796,7 +796,7 @@ const handlers = [
     });
   }),
 
-  http.post("/api/v1/user-feeds/:feedId/diagnose-articles", async ({ request }) => {
+  http.post("/api/v1/user-feeds/:feedId/delivery-preview", async ({ request }) => {
     const body = (await request.json()) as { skip?: number; limit?: number };
     const skip = body.skip || 0;
     const limit = body.limit || 10;
@@ -811,21 +811,21 @@ const handlers = [
         result: {
           results: [],
           total: 0,
-          stages: Object.values(DiagnosticStage),
+          stages: Object.values(DeliveryPreviewStage),
           feedState,
         },
       });
     }
 
-    // Normal case: return article diagnostics
-    const mockData = getMockDiagnostics();
+    // Normal case: return delivery preview results
+    const mockData = getMockDeliveryPreviews();
     const paginatedResults = mockData.slice(skip, skip + limit);
 
     return HttpResponse.json({
       result: {
         results: paginatedResults,
         total: mockData.length,
-        stages: Object.values(DiagnosticStage),
+        stages: Object.values(DeliveryPreviewStage),
       },
     });
   }),
