@@ -25,7 +25,10 @@ export const useArticleDiagnosticsWithPagination = ({ feedId, limit, disabled }:
   const total = data?.pages[0].result.total || 0;
   const feedState = data?.pages[0].result.feedState;
 
-  const lastChecked = useMemo(() => new Date(dataUpdatedAt), [dataUpdatedAt]);
+  const lastChecked = useMemo(
+    () => (!dataUpdatedAt ? new Date() : new Date(dataUpdatedAt)),
+    [dataUpdatedAt]
+  );
 
   return {
     results: allResults,

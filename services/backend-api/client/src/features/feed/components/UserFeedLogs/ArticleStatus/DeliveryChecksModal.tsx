@@ -103,6 +103,45 @@ function getRelevantStages(
   });
 }
 
+interface StatusSummaryProps {
+  stages: DiagnosticStageResult[];
+}
+
+const StatusSummary = ({ stages }: StatusSummaryProps) => {
+  const failedStage = stages.find((s) => s.status === DiagnosticStageStatus.Failed);
+  const isSuccess = !failedStage;
+
+  const bgColor = isSuccess ? "green.900" : "orange.900";
+  const borderColor = isSuccess ? "green.600" : "orange.600";
+  const iconColor = isSuccess ? "green.400" : "orange.400";
+
+  return (
+    <Box
+      bg={bgColor}
+      borderLeft="4px solid"
+      borderLeftColor={borderColor}
+      borderRadius="md"
+      p={4}
+      mb={4}
+    >
+      <HStack spacing={3} align="flex-start">
+        <Box mt={0.5}>
+          {isSuccess ? (
+            <CheckIcon color={iconColor} boxSize={4} />
+          ) : (
+            <WarningIcon color={iconColor} boxSize={4} />
+          )}
+        </Box>
+        <Box>
+          <Text fontWeight="semibold" mb={1}>
+            {isSuccess ? "Would deliver" : `Blocked at: ${getStageName(failedStage.stage)}`}
+          </Text>
+        </Box>
+      </HStack>
+    </Box>
+  );
+};
+
 interface StatusIndicatorProps {
   status: DiagnosticStageStatus;
 }
@@ -856,6 +895,7 @@ export const DeliveryChecksModal = ({ isOpen, onClose, result, initialMediumId }
                   </Select>
                 </FormControl>
               )}
+              <StatusSummary stages={relevantStages} />
               <StagesPipeline key={selectedMediumId} stages={relevantStages} />
             </Stack>
           )}
