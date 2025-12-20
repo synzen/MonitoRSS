@@ -4,3 +4,5 @@ node_modules
 dist
 setupTests.ts
 vite.config.ts
+# Storybook stories use satisfies syntax that conflicts with prettier parser
+src/stories

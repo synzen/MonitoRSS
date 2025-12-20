@@ -1,6 +1,5 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useMemo } from "react";
 import { useArticleDiagnostics } from "./useArticleDiagnostics";
-import { ArticleDiagnosticResult } from "../types/ArticleDiagnostics";
 
 interface Props {
   feedId?: string;
@@ -9,66 +8,33 @@ interface Props {
 }
 
 export const useArticleDiagnosticsWithPagination = ({ feedId, limit, disabled }: Props) => {
-  const [skip, setSkip] = useState(0);
-  const [accumulatedResults, setAccumulatedResults] = useState<ArticleDiagnosticResult[]>([]);
-  const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const useLimit = limit || 10;
 
-  const { error, data, status, fetchStatus, refetch } = useArticleDiagnostics({
-    feedId,
-    data: {
-      skip,
-      limit: useLimit,
-    },
-    disabled,
-  });
+  const { error, data, status, fetchStatus, refetch, dataUpdatedAt, fetchNextPage, hasNextPage } =
+    useArticleDiagnostics({
+      feedId,
+      data: {
+        skip: 0,
+        limit: useLimit,
+      },
+      disabled,
+    });
 
-  // Set lastChecked on initial load
-  useEffect(() => {
-    if (status === "success" && lastChecked === null) {
-      setLastChecked(new Date());
-    }
-  }, [status, lastChecked]);
+  const allResults = data?.pages.flatMap((p) => p.result.results) || [];
 
-  const allResults = useMemo(() => {
-    if (!data?.result.results) return accumulatedResults;
+  const total = data?.pages[0].result.total || 0;
+  const feedState = data?.pages[0].result.feedState;
 
-    if (skip === 0) {
-      return data.result.results;
-    }
-
-    const existingIds = new Set(accumulatedResults.map((r) => r.articleId));
-    const newResults = data.result.results.filter((r) => !existingIds.has(r.articleId));
-
-    return [...accumulatedResults, ...newResults];
-  }, [data?.result.results, accumulatedResults, skip]);
-
-  const loadMore = useCallback(() => {
-    if (fetchStatus === "fetching") return;
-
-    setAccumulatedResults(allResults);
-    setSkip((prev) => prev + useLimit);
-  }, [fetchStatus, allResults, useLimit]);
-
-  const refresh = useCallback(async () => {
-    setSkip(0);
-    setAccumulatedResults([]);
-    await refetch();
-    setLastChecked(new Date());
-  }, [refetch]);
-
-  const hasMore = data?.result ? allResults.length < data.result.total : false;
-  const total = data?.result?.total ?? 0;
-  const feedState = data?.result?.feedState;
+  const lastChecked = useMemo(() => new Date(dataUpdatedAt), [dataUpdatedAt]);
 
   return {
     results: allResults,
     error,
     status,
     fetchStatus,
-    loadMore,
-    refresh,
-    hasMore,
+    loadMore: fetchNextPage,
+    refresh: refetch,
+    hasMore: hasNextPage,
     total,
     lastChecked,
     limit: useLimit,

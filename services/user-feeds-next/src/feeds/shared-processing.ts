@@ -72,6 +72,8 @@ export interface FeedProcessingOptions {
   };
   feedRequestsServiceHost: string;
   hashToCompare?: string;
+  executeFetchIfStale?: boolean;
+  executeFetchIfNotInCache?: boolean;
 }
 
 /**
@@ -110,6 +112,8 @@ export async function fetchAndParseFeed(
         hashToCompare: options.hashToCompare,
         lookupDetails: options.feed.requestLookupDetails,
         serviceHost: options.feedRequestsServiceHost,
+        executeFetchIfStale: options.executeFetchIfStale,
+        executeFetchIfNotInCache: options.executeFetchIfNotInCache
       }
     );
   } catch (err) {

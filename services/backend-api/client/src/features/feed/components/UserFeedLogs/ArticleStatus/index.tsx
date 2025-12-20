@@ -10,15 +10,7 @@ import {
   Hide,
   HStack,
   Show,
-  Skeleton,
   Stack,
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
   Text,
 } from "@chakra-ui/react";
 import { RepeatIcon } from "@chakra-ui/icons";
@@ -30,18 +22,17 @@ import { pages } from "../../../../../constants";
 import { UserFeedTabSearchParam } from "../../../../../constants/userFeedTabSearchParam";
 import { useArticleDiagnosticsWithPagination } from "../../../hooks/useArticleDiagnosticsWithPagination";
 import { InlineErrorAlert } from "../../../../../components";
-import { ArticleStatusRow } from "./ArticleStatusRow";
-import { ArticleStatusCard } from "./ArticleStatusCard";
+import { ArticleStatusAccordion, ArticleStatusAccordionSkeleton } from "./ArticleStatusAccordion";
 import {
   ArticleDiagnosisOutcome,
   ArticleDiagnosticResult,
 } from "../../../types/ArticleDiagnostics";
 import { formatRefreshRateSeconds } from "../../../../../utils/formatRefreshRateSeconds";
-import { FeedLevelStateDisplay } from "./FeedLevelStateDisplay";
+import { FeedLevelStateDisplay, FeedState } from "./FeedLevelStateDisplay";
 
 dayjs.extend(relativeTime);
 
-const getPatternAlert = (
+export const getPatternAlert = (
   results: ArticleDiagnosticResult[],
   refreshRateSeconds: number
 ): { type: "info" | "warning"; message: string } | null => {
@@ -100,37 +91,42 @@ const getPatternAlert = (
   return null;
 };
 
-export const ArticleStatus = () => {
-  const { userFeed } = useUserFeedContext();
-  const {
-    results,
-    status,
-    error,
-    fetchStatus,
-    loadMore,
-    refresh,
-    hasMore,
-    total,
-    lastChecked,
-    feedState,
-  } = useArticleDiagnosticsWithPagination({
-    feedId: userFeed.id,
-  });
+export interface ArticleStatusPresentationalProps {
+  isLoading?: boolean;
+  error?: Error | null;
+  isFetching?: boolean;
+  results?: ArticleDiagnosticResult[];
+  total?: number;
+  hasMore?: boolean;
+  hasNoConnections?: boolean;
+  feedState?: FeedState | null;
+  feedId: string;
+  refreshRateSeconds: number;
+  addConnectionUrl: string;
+  lastCheckedFormatted?: string;
+  onRefresh?: () => void;
+  onLoadMore?: () => void;
+}
 
-  const activeConnections = userFeed.connections.filter((c) => !c.disabledCode);
-  const hasNoConnections = activeConnections.length === 0;
+export const ArticleStatusPresentational = ({
+  isLoading = false,
+  error = null,
+  isFetching = false,
+  results = [],
+  total = 0,
+  hasMore = false,
+  hasNoConnections = false,
+  feedState = null,
+  feedId,
+  refreshRateSeconds,
+  addConnectionUrl,
+  lastCheckedFormatted = "Never",
+  onRefresh = () => {},
+  onLoadMore = () => {},
+}: ArticleStatusPresentationalProps) => {
   const hasFeedLevelState = !!feedState;
-  const hasNoData = results.length === 0 && status === "success" && !hasFeedLevelState;
-  const isLoading = status === "loading";
-  const isFetching = fetchStatus === "fetching";
-
-  const patternAlert = getPatternAlert(results, userFeed.refreshRateSeconds);
-
-  const formatLastChecked = () => {
-    if (!lastChecked) return "Never";
-
-    return dayjs(lastChecked).fromNow();
-  };
+  const hasNoData = results.length === 0 && !isLoading && !hasFeedLevelState;
+  const patternAlert = getPatternAlert(results, refreshRateSeconds);
 
   return (
     <Stack spacing={4} mb={8} border="solid 1px" borderColor="gray.700" borderRadius="md">
@@ -152,20 +148,20 @@ export const ArticleStatus = () => {
             </Text>
             <Show below="md">
               <Text fontSize="xs" color="whiteAlpha.600">
-                Preview generated: {formatLastChecked()}
+                Preview generated: {lastCheckedFormatted}
               </Text>
             </Show>
           </Stack>
           <HStack spacing={2} flexShrink={0}>
             <Hide below="md">
               <Text fontSize="xs" color="whiteAlpha.600" whiteSpace="nowrap">
-                Preview generated: {formatLastChecked()}
+                Preview generated: {lastCheckedFormatted}
               </Text>
             </Hide>
             <Button
               size={{ base: "md", md: "sm" }}
               leftIcon={<RepeatIcon />}
-              onClick={refresh}
+              onClick={onRefresh}
               isLoading={isFetching}
               variant="outline"
             >
@@ -178,48 +174,7 @@ export const ArticleStatus = () => {
         </Box>
       </Box>
       <Box px={4} pb={4}>
-        {isLoading && (
-          <>
-            {/* Desktop: Table skeleton */}
-            <Show above="md">
-              <TableContainer border="1px solid" borderColor="gray.700" borderRadius="md">
-                <Table size="sm" variant="simple" aria-labelledby="article-status-table-title">
-                  <Thead>
-                    <Tr>
-                      <Th width="150px">Status</Th>
-                      <Th>Article Title</Th>
-                    </Tr>
-                  </Thead>
-                  <Tbody>
-                    {[...Array(5)].map((_, i) => (
-                      <Tr key={i}>
-                        <Td>
-                          <Skeleton height="20px" width="100px" />
-                        </Td>
-                        <Td>
-                          <Skeleton height="20px" />
-                        </Td>
-                      </Tr>
-                    ))}
-                  </Tbody>
-                </Table>
-              </TableContainer>
-            </Show>
-            {/* Mobile: Card skeleton */}
-            <Hide above="md">
-              <Stack spacing={3}>
-                {[...Array(5)].map((_, i) => (
-                  <Box key={i} border="1px solid" borderColor="gray.700" borderRadius="md" p={4}>
-                    <Stack spacing={2}>
-                      <Skeleton height="20px" />
-                      <Skeleton height="16px" width="120px" />
-                    </Stack>
-                  </Box>
-                ))}
-              </Stack>
-            </Hide>
-          </>
-        )}
+        {isLoading && <ArticleStatusAccordionSkeleton />}
         {error && (
           <InlineErrorAlert
             title="Failed to load article diagnostics"
@@ -232,12 +187,12 @@ export const ArticleStatus = () => {
             <AlertDescription>
               <Stack spacing={2}>
                 <Text>
-                  Add a connection to specify where articles should be delivered. Article
-                  diagnostics will be available once you have at least one active connection.
+                  Add a connection to specify where articles should be delivered. Delivery previews
+                  will be available once you have at least one active connection.
                 </Text>
                 <Button
                   as={Link}
-                  to={pages.userFeed(userFeed.id, { tab: UserFeedTabSearchParam.Connections })}
+                  to={addConnectionUrl}
                   colorScheme="blue"
                   size="sm"
                   width="fit-content"
@@ -257,7 +212,7 @@ export const ArticleStatus = () => {
           </Box>
         )}
         {!isLoading && !error && !hasNoConnections && hasFeedLevelState && feedState && (
-          <FeedLevelStateDisplay feedState={feedState} feedId={userFeed.id} />
+          <FeedLevelStateDisplay feedState={feedState} feedId={feedId} />
         )}
         {!isLoading && !error && !hasNoConnections && !hasNoData && !hasFeedLevelState && (
           <Stack spacing={4}>
@@ -267,64 +222,11 @@ export const ArticleStatus = () => {
                 <AlertDescription>{patternAlert.message}</AlertDescription>
               </Alert>
             )}
-            {/* Desktop: Table layout */}
-            <Show above="md">
-              <Box border="1px solid" borderColor="gray.700" borderRadius="md" overflowX="hidden">
-                <Table
-                  size="sm"
-                  variant="simple"
-                  aria-labelledby="article-status-table-title"
-                  tableLayout="fixed"
-                  width="100%"
-                >
-                  <Thead>
-                    <Tr>
-                      <Th width="150px">Status</Th>
-                      <Th>Article Title</Th>
-                    </Tr>
-                  </Thead>
-                  <Tbody>
-                    {isFetching && results.length === 0
-                      ? [...Array(5)].map((_, i) => (
-                          <Tr key={i}>
-                            <Td>
-                              <Skeleton height="20px" width="100px" />
-                            </Td>
-                            <Td>
-                              <Skeleton height="20px" />
-                            </Td>
-                          </Tr>
-                        ))
-                      : results.map((result) => (
-                          <ArticleStatusRow key={result.articleId} result={result} />
-                        ))}
-                  </Tbody>
-                </Table>
-              </Box>
-            </Show>
-            {/* Mobile: Card layout */}
-            <Hide above="md">
-              <Stack spacing={3}>
-                {isFetching && results.length === 0
-                  ? [...Array(5)].map((_, i) => (
-                      <Box
-                        key={i}
-                        border="1px solid"
-                        borderColor="gray.700"
-                        borderRadius="md"
-                        p={4}
-                      >
-                        <Stack spacing={2}>
-                          <Skeleton height="20px" />
-                          <Skeleton height="16px" width="120px" />
-                        </Stack>
-                      </Box>
-                    ))
-                  : results.map((result) => (
-                      <ArticleStatusCard key={result.articleId} result={result} />
-                    ))}
-              </Stack>
-            </Hide>
+            {isFetching && results.length === 0 ? (
+              <ArticleStatusAccordionSkeleton />
+            ) : (
+              <ArticleStatusAccordion results={results} />
+            )}
             <Flex justifyContent="space-between" alignItems="center">
               <Text fontSize="sm" color="whiteAlpha.600">
                 Showing {results.length} of {total} articles
@@ -332,7 +234,7 @@ export const ArticleStatus = () => {
               {hasMore && (
                 <Button
                   size={{ base: "md", md: "sm" }}
-                  onClick={loadMore}
+                  onClick={onLoadMore}
                   isLoading={isFetching}
                   variant="outline"
                 >
@@ -344,5 +246,53 @@ export const ArticleStatus = () => {
         )}
       </Box>
     </Stack>
+  );
+};
+
+export const ArticleStatus = () => {
+  const { userFeed } = useUserFeedContext();
+  const {
+    results,
+    status,
+    error,
+    fetchStatus,
+    loadMore,
+    refresh,
+    hasMore,
+    total,
+    lastChecked,
+    feedState,
+  } = useArticleDiagnosticsWithPagination({
+    feedId: userFeed.id,
+  });
+
+  const activeConnections = userFeed.connections.filter((c) => !c.disabledCode);
+  const hasNoConnections = activeConnections.length === 0;
+  const isLoading = status === "loading";
+  const isFetching = fetchStatus === "fetching";
+
+  const formatLastChecked = () => {
+    if (!lastChecked) return "Never";
+
+    return dayjs(lastChecked).fromNow();
+  };
+
+  return (
+    <ArticleStatusPresentational
+      isLoading={isLoading}
+      error={error}
+      isFetching={isFetching}
+      results={results}
+      total={total}
+      hasMore={hasMore}
+      hasNoConnections={hasNoConnections}
+      feedState={feedState}
+      feedId={userFeed.id}
+      refreshRateSeconds={userFeed.refreshRateSeconds}
+      addConnectionUrl={pages.userFeed(userFeed.id, { tab: UserFeedTabSearchParam.Connections })}
+      lastCheckedFormatted={formatLastChecked()}
+      onRefresh={refresh}
+      onLoadMore={loadMore}
+    />
   );
 };

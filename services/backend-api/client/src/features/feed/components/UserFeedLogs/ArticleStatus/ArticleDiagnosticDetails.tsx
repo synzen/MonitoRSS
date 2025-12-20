@@ -102,6 +102,11 @@ const ConnectionResultRow = ({ mediumResult }: ConnectionResultRowProps) => {
   return (
     <Tr>
       <Td>
+        <Badge colorScheme={getOutcomeColorScheme(mediumResult.outcome)} fontSize="xs">
+          {getOutcomeLabel(mediumResult.outcome)}
+        </Badge>
+      </Td>
+      <Td>
         {connection ? (
           <Button
             as={Link}
@@ -124,11 +129,6 @@ const ConnectionResultRow = ({ mediumResult }: ConnectionResultRowProps) => {
             (deleted connection)
           </Text>
         )}
-      </Td>
-      <Td>
-        <Badge colorScheme={getOutcomeColorScheme(mediumResult.outcome)} fontSize="xs">
-          {getOutcomeLabel(mediumResult.outcome)}
-        </Badge>
       </Td>
     </Tr>
   );
@@ -180,11 +180,11 @@ export const ArticleDiagnosticDetails = ({ result }: Props) => {
               Connections
             </Text>
             <TableContainer>
-              <Table size="sm" variant="simple">
+              <Table size="sm" variant="simple" sx={{ tableLayout: "fixed" }}>
                 <Thead>
                   <Tr>
+                    <Th width="300px">Status</Th>
                     <Th>Name</Th>
-                    <Th>Status</Th>
                   </Tr>
                 </Thead>
                 <Tbody>

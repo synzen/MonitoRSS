@@ -32,7 +32,7 @@ type MockDiagnosticsState =
   | "feed-error-403"
   | "feed-error-404"
   | "feed-error-503";
-export const MOCK_DIAGNOSTICS_STATE: MockDiagnosticsState = "all-feed-unchanged";
+export const MOCK_DIAGNOSTICS_STATE: MockDiagnosticsState = "all-rate-limited";
 
 export interface MockFeedState {
   state: string;
@@ -72,7 +72,7 @@ export const getMockFeedState = (): MockFeedState | undefined => {
   }
 };
 
-const createPassedStages = (mediumId: string) => [
+export const createPassedStages = (mediumId: string) => [
   {
     stage: DiagnosticStage.FeedState,
     status: DiagnosticStageStatus.Passed,
@@ -159,7 +159,7 @@ const createPassedStages = (mediumId: string) => [
   },
 ];
 
-const createFirstRunStages = () => [
+export const createFirstRunStages = () => [
   {
     stage: DiagnosticStage.FeedState,
     status: DiagnosticStageStatus.Failed,
@@ -214,7 +214,7 @@ const createFirstRunStages = () => [
   },
 ];
 
-const createFilteredStages = (mediumId: string) => [
+export const createFilteredStages = (mediumId: string) => [
   {
     stage: DiagnosticStage.FeedState,
     status: DiagnosticStageStatus.Passed,
@@ -289,7 +289,7 @@ const createFilteredStages = (mediumId: string) => [
   },
 ];
 
-const createDuplicateIdStages = () => [
+export const createDuplicateIdStages = () => [
   {
     stage: DiagnosticStage.FeedState,
     status: DiagnosticStageStatus.Passed,
@@ -349,7 +349,7 @@ const createDuplicateIdStages = () => [
   },
 ];
 
-const createRateLimitedStages = (mediumId: string) => [
+export const createRateLimitedStages = (mediumId: string) => [
   {
     stage: DiagnosticStage.FeedState,
     status: DiagnosticStageStatus.Passed,
@@ -430,7 +430,7 @@ const createRateLimitedStages = (mediumId: string) => [
   },
 ];
 
-const createBlockedByComparisonStages = (mediumId: string) => [
+export const createBlockedByComparisonStages = (_mediumId: string) => [
   {
     stage: DiagnosticStage.FeedState,
     status: DiagnosticStageStatus.Passed,

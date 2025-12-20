@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 import {
   GetArticleDiagnosticsInput,
@@ -21,27 +21,35 @@ export const useArticleDiagnostics = ({ feedId, data: inputData, disabled }: Pro
     },
   ];
 
-  const { data, status, error, fetchStatus, refetch } = useQuery<
-    GetArticleDiagnosticsOutput,
-    ApiAdapterError | Error
-  >(
-    queryKey,
-    async () => {
-      if (!feedId) {
-        throw new Error("Feed ID is required to fetch article diagnostics");
-      }
+  const { data, status, error, fetchStatus, refetch, dataUpdatedAt, fetchNextPage, hasNextPage } =
+    useInfiniteQuery<GetArticleDiagnosticsOutput, ApiAdapterError | Error>(
+      queryKey,
+      async ({ pageParam: skip }) => {
+        if (!feedId) {
+          throw new Error("Feed ID is required to fetch article diagnostics");
+        }
 
-      return getArticleDiagnostics({
-        feedId,
-        data: inputData,
-      });
-    },
-    {
-      enabled: !!feedId && !disabled,
-      keepPreviousData: true,
-      refetchOnWindowFocus: false,
-    }
-  );
+        return getArticleDiagnostics({
+          feedId,
+          data: {
+            ...inputData,
+            skip,
+          },
+        });
+      },
+      {
+        enabled: !!feedId && !disabled,
+        keepPreviousData: true,
+        refetchOnWindowFocus: false,
+        getNextPageParam: (lastPage, allPages) => {
+          if (lastPage.result.results.length < inputData.limit) {
+            return undefined;
+          }
+
+          return allPages.length * inputData.limit;
+        },
+      }
+    );
 
   return {
     data,
@@ -49,5 +57,8 @@ export const useArticleDiagnostics = ({ feedId, data: inputData, disabled }: Pro
     error,
     fetchStatus,
     refetch,
+    dataUpdatedAt,
+    fetchNextPage,
+    hasNextPage,
   };
 };

@@ -89,6 +89,8 @@ export async function handleDiagnoseArticle(
           requestLookupDetails: input.feed.requestLookupDetails,
         },
         feedRequestsServiceHost,
+        executeFetchIfNotInCache: true,
+        executeFetchIfStale: true,
         hashToCompare,
       });
 

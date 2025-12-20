@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
 import {
+  Accordion,
+  AccordionButton,
+  AccordionIcon,
+  AccordionItem,
+  AccordionPanel,
   Box,
   Button,
-  Collapse,
   Flex,
   HStack,
   Modal,
@@ -20,7 +24,6 @@ import {
   CheckIcon,
   MinusIcon,
   CloseIcon,
-  ChevronRightIcon,
   InfoIcon,
   RepeatIcon,
   WarningIcon,
@@ -67,18 +70,12 @@ const getStageName = (stage: DiagnosticStage): string => {
 
 interface StageRowProps {
   stageResult: DiagnosticStageResult;
-  isAutoExpanded: boolean;
 }
 
-const StageRow = ({ stageResult, isAutoExpanded }: StageRowProps) => {
-  const [isExpanded, setIsExpanded] = useState(isAutoExpanded);
+const StageRow = ({ stageResult }: StageRowProps) => {
   const isSkipped = stageResult.status === DiagnosticStageStatus.Skipped;
   const isPassed = stageResult.status === DiagnosticStageStatus.Passed;
   const isFailed = stageResult.status === DiagnosticStageStatus.Failed;
-
-  useEffect(() => {
-    setIsExpanded(isAutoExpanded);
-  }, [isAutoExpanded]);
 
   const getStatusIcon = () => {
     if (isPassed) {
@@ -114,46 +111,34 @@ const StageRow = ({ stageResult, isAutoExpanded }: StageRowProps) => {
   const canExpand = !isSkipped && stageResult.details;
 
   return (
-    <Box {...getRowStyles()}>
-      <Flex
+    <AccordionItem border="none" isDisabled={!canExpand} sx={getRowStyles()}>
+      <AccordionButton
         px={4}
         py={3}
-        cursor={canExpand ? "pointer" : "default"}
-        onClick={canExpand ? () => setIsExpanded(!isExpanded) : undefined}
         _hover={canExpand ? { bg: "whiteAlpha.50" } : undefined}
-        alignItems="center"
+        cursor={canExpand ? "pointer" : "default"}
         opacity={isSkipped ? 0.5 : 1}
+        _disabled={{ cursor: "default", opacity: isSkipped ? 0.5 : 1 }}
       >
         <HStack spacing={3} flex={1}>
-          {canExpand ? (
-            <Box
-              color="gray.500"
-              flexShrink={0}
-              transform={isExpanded ? "rotate(90deg)" : "rotate(0deg)"}
-              transition="transform 150ms ease-out"
-            >
-              <ChevronRightIcon boxSize={4} />
-            </Box>
-          ) : (
-            <Box width={4} />
-          )}
-          <Box flexShrink={0}>{getStatusIcon()}</Box>
-          <Text fontWeight="semibold" fontSize="sm" minWidth="150px">
+          {canExpand ? <AccordionIcon boxSize={4} color="gray.500" /> : <Box width={4} />}
+          <Box display="flex" alignItems="center">
+            {getStatusIcon()}
+          </Box>
+          <Text fontWeight="semibold" fontSize="sm" minWidth="150px" textAlign="left">
             {getStageName(stageResult.stage)}
           </Text>
-          <Text fontSize="sm" color="whiteAlpha.800" flex={1}>
+          <Text fontSize="sm" color="whiteAlpha.800" flex={1} textAlign="left">
             {stageResult.summary}
           </Text>
         </HStack>
-      </Flex>
+      </AccordionButton>
       {canExpand && (
-        <Collapse in={isExpanded} animateOpacity>
-          <Box ml={10} pl={4} py={2} fontSize="sm">
-            <StageDetails stageResult={stageResult} />
-          </Box>
-        </Collapse>
+        <AccordionPanel ml={10} pl={4} py={2} fontSize="sm">
+          <StageDetails stageResult={stageResult} />
+        </AccordionPanel>
       )}
-    </Box>
+    </AccordionItem>
   );
 };
 
@@ -267,6 +252,7 @@ const StageDetails = ({ stageResult }: StageDetailsProps) => {
                 Blocked Because:
               </Text>
               {(details.explainBlocked as string[]).map((reason, idx) => (
+                // eslint-disable-next-line react/no-array-index-key
                 <Text key={idx} pl={4}>
                   • {reason}
                 </Text>
@@ -474,15 +460,15 @@ export const DeliveryChecksModal = ({ isOpen, onClose, result, initialMediumId }
                   </Select>
                 </Box>
               )}
-              <Stack spacing={1} key={selectedMediumId}>
-                {stages.map((stageResult, index) => (
-                  <StageRow
-                    key={stageResult.stage}
-                    stageResult={stageResult}
-                    isAutoExpanded={index === failedStageIndex}
-                  />
+              <Accordion
+                allowMultiple
+                defaultIndex={failedStageIndex !== -1 ? [failedStageIndex] : []}
+                key={selectedMediumId}
+              >
+                {stages.map((stageResult) => (
+                  <StageRow key={stageResult.stage} stageResult={stageResult} />
                 ))}
-              </Stack>
+              </Accordion>
             </Stack>
           )}
         </ModalBody>

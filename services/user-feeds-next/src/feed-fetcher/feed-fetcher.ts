@@ -35,18 +35,19 @@ export async function fetchFeed(
   let body: { json: () => Promise<unknown> };
 
   try {
+    const requestBody = {
+      url,
+      executeFetchIfNotExists: options?.executeFetchIfNotInCache ?? false,
+      executeFetch: options?.executeFetch ?? false,
+      executeFetchIfStale: options?.executeFetchIfStale ?? false,
+      hashToCompare: options?.hashToCompare || undefined,
+      lookupDetails: options?.lookupDetails,
+    }
     const response = await pRetry(
       async () =>
         request(serviceHost, {
           method: "POST",
-          body: JSON.stringify({
-            url,
-            executeFetchIfNotExists: options?.executeFetchIfNotInCache ?? false,
-            executeFetch: options?.executeFetch ?? false,
-            executeFetchIfStale: options?.executeFetchIfStale ?? false,
-            hashToCompare: options?.hashToCompare || undefined,
-            lookupDetails: options?.lookupDetails,
-          }),
+          body: JSON.stringify(requestBody),
           headers: {
             "content-type": "application/json",
             accept: "application/json",
