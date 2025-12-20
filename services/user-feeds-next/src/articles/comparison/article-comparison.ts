@@ -677,38 +677,41 @@ export async function getArticlesToDeliver(
   });
 
   // Record BlockingComparison diagnostic for new target articles - O(T)
+  if (blockingComparisons.length > 0) {
   const pastBlocksHashes = new Set(articlesPastBlocks.map((a) => a.flattened.idHash));
-
-  recordDiagnosticForTargetArticles(getArticleMap(), (_, hash) => {
-    if (!newArticleHashes.has(hash)) return null; // Only record for new articles
-    const passed = pastBlocksHashes.has(hash);
-    return {
-      stage: DiagnosticStage.BlockingComparison,
-      status: passed ? DiagnosticStageStatus.Passed : DiagnosticStageStatus.Failed,
-      details: {
-        comparisonFields: blockingComparisons,
-        activeFields: activeBlockingComparisons,
-        blockedByFields: passed ? [] : activeBlockingComparisons,
-      },
-    };
-  });
+    recordDiagnosticForTargetArticles(getArticleMap(), (_, hash) => {
+      if (!newArticleHashes.has(hash)) return null; // Only record for new articles
+      const passed = pastBlocksHashes.has(hash);
+      return {
+        stage: DiagnosticStage.BlockingComparison,
+        status: passed ? DiagnosticStageStatus.Passed : DiagnosticStageStatus.Failed,
+        details: {
+          comparisonFields: blockingComparisons,
+          activeFields: activeBlockingComparisons,
+          blockedByFields: passed ? [] : activeBlockingComparisons,
+        },
+      };
+    });
+  }
 
   // Record PassingComparison diagnostic for seen target articles - O(T)
-  const seenHashes = new Set(seenArticles.map((a) => a.flattened.idHash));
+  if (passingComparisons.length > 0) {
+    const seenHashes = new Set(seenArticles.map((a) => a.flattened.idHash));
 
-  recordDiagnosticForTargetArticles(getArticleMap(), (_, hash) => {
-    if (!seenHashes.has(hash)) return null; // Only record for seen articles
-    const passed = passedViaComparisonHashes.has(hash);
-    return {
-      stage: DiagnosticStage.PassingComparison,
-      status: passed ? DiagnosticStageStatus.Passed : DiagnosticStageStatus.Failed,
-      details: {
-        comparisonFields: passingComparisons,
-        activeFields: activePassingComparisons,
-        changedFields: passed ? activePassingComparisons : [],
-      },
-    };
-  });
+    recordDiagnosticForTargetArticles(getArticleMap(), (_, hash) => {
+      if (!seenHashes.has(hash)) return null; // Only record for seen articles
+      const passed = passedViaComparisonHashes.has(hash);
+      return {
+        stage: DiagnosticStage.PassingComparison,
+        status: passed ? DiagnosticStageStatus.Passed : DiagnosticStageStatus.Failed,
+        details: {
+          comparisonFields: passingComparisons,
+          activeFields: activePassingComparisons,
+          changedFields: passed ? activePassingComparisons : [],
+        },
+      };
+    });
+  }
 
   // Combine and reverse (deliver oldest first)
   const candidateArticles = [

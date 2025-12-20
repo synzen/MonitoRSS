@@ -493,7 +493,7 @@ describe("article-filters", () => {
       const result = getArticleFilterResults(expression, article);
       expect(result.result).toBe(false);
       expect(result.explainBlocked.length).toBe(1);
-      expect(result.explainBlocked[0]!.referenceValue).toBe("Hello World");
+      expect(result.explainBlocked[0]!.truncatedReferenceValue).toBe("Hello World");
       expect(result.explainBlocked[0]!.filterInput).toBe("Goodbye World");
     });
 

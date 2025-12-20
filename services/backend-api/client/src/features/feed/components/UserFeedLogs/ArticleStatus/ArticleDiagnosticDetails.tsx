@@ -73,7 +73,7 @@ const getExplanationText = (outcome: ArticleDiagnosisOutcome): string => {
     case ArticleDiagnosisOutcome.FilteredByDateCheck:
       return "This article's publish date is older than your maximum article age setting. Adjust date settings if you want older articles delivered.";
     case ArticleDiagnosisOutcome.FilteredByMediumFilter:
-      return "This article doesn't match the filter rules for your connection. Review your filter settings to adjust what gets delivered.";
+      return "This article doesn't match the filter rules for your connection, so it will not be delivered. Review your filter settings to adjust what gets delivered.";
     case ArticleDiagnosisOutcome.RateLimitedFeed:
       return "Your feed has hit its daily article limit. Upgrade your plan or wait until tomorrow for more articles.";
     case ArticleDiagnosisOutcome.RateLimitedMedium:

@@ -604,6 +604,7 @@ describe("diagnostic recording in delivery", () => {
         filterExpression: { type: "LOGICAL", op: "AND", children: [] },
         filterResult: true,
         explainBlocked: [],
+        explainMatched: [],
       });
       diagnostics = getDiagnosticResultsForArticle("test-hash");
     });
@@ -628,7 +629,17 @@ describe("diagnostic recording in delivery", () => {
         mediumId: "medium-123",
         filterExpression: { type: "LOGICAL", op: "AND", children: [] },
         filterResult: false,
-        explainBlocked: ["Title does not contain 'keyword'"],
+        explainBlocked: [
+          {
+            message: "Title does not contain 'keyword'",
+            truncatedReferenceValue: "Some article title",
+            filterInput: "keyword",
+            fieldName: "title",
+            operator: "CONTAINS",
+            isNegated: false,
+          },
+        ],
+        explainMatched: [],
       });
       diagnostics = getDiagnosticResultsForArticle("test-hash");
     });
@@ -638,10 +649,8 @@ describe("diagnostic recording in delivery", () => {
     );
     expect(filterDiagnostic).toBeDefined();
     expect(filterDiagnostic!.status).toBe(DiagnosticStageStatus.Failed);
-    expect(
-      (filterDiagnostic as { details: { explainBlocked: string[] } }).details
-        .explainBlocked
-    ).toContain("Title does not contain 'keyword'");
+    const details = filterDiagnostic!.details as { explainBlocked: Array<{ message: string }> };
+    expect(details.explainBlocked[0]!.message).toBe("Title does not contain 'keyword'");
   });
 
   it("does not record diagnostics outside diagnostic context", async () => {
@@ -665,6 +674,7 @@ describe("diagnostic recording in delivery", () => {
       filterExpression: null,
       filterResult: true,
       explainBlocked: [],
+      explainMatched: [],
     });
 
     const diagnostics = getDiagnosticResultsForArticle("test-hash");
@@ -808,10 +818,8 @@ describe("diagnostic recording during deliverArticles execution", () => {
     );
     expect(filterDiagnostic).toBeDefined();
     expect(filterDiagnostic!.status).toBe(DiagnosticStageStatus.Failed);
-    expect(
-      (filterDiagnostic as { details: { explainBlocked: string[] } }).details
-        .explainBlocked.length
-    ).toBeGreaterThan(0);
+    const details = filterDiagnostic!.details as { explainBlocked: Array<{ message: string }> };
+    expect(details.explainBlocked.length).toBeGreaterThan(0);
   });
 });
 

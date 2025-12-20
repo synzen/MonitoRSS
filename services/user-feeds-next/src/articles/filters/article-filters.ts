@@ -60,16 +60,89 @@ export type FilterExpressionReference = {
 
 export interface FilterExplainBlocked {
   message: string;
-  referenceValue: string | null;
+  truncatedReferenceValue: string | null;
   filterInput: string;
+  fieldName: string;
+  operator: RelationalExpressionOperator;
+  isNegated: boolean;
 }
 
 export interface FilterResult {
   result: boolean;
   explainBlocked: FilterExplainBlocked[];
+  explainMatched: FilterExplainBlocked[];
 }
 
 const REGEX_TIMEOUT_MS = 5000;
+
+const TRUNCATE_LIMITS: Record<string, number> = {
+  title: 80,
+  description: 150,
+};
+const DEFAULT_TRUNCATE_LIMIT = 100;
+const CONTEXT_CHARS = 30;
+
+function truncateValue(
+  value: string | null | undefined,
+  fieldName: string,
+  operator: RelationalExpressionOperator,
+  filterInput: string,
+  isNegated: boolean
+): string | null {
+  if (value == null) {
+    return null;
+  }
+
+  const limit = TRUNCATE_LIMITS[fieldName] || DEFAULT_TRUNCATE_LIMIT;
+
+  if (value.length <= limit) {
+    return value;
+  }
+
+  // For NOT filters that blocked (article DID match), show context around the match
+  if (isNegated) {
+    if (operator === RelationalExpressionOperator.Contains) {
+      const matchIndex = value.toLowerCase().indexOf(filterInput.toLowerCase());
+
+      if (matchIndex !== -1) {
+        const start = Math.max(0, matchIndex - CONTEXT_CHARS);
+        const end = Math.min(
+          value.length,
+          matchIndex + filterInput.length + CONTEXT_CHARS
+        );
+        let truncated = value.slice(start, end);
+        if (start > 0) truncated = `...${truncated}`;
+        if (end < value.length) truncated = `${truncated}...`;
+
+        return truncated;
+      }
+    }
+
+    if (operator === RelationalExpressionOperator.Matches) {
+      try {
+        const match = new RegExp(filterInput, "i").exec(value);
+
+        if (match) {
+          const start = Math.max(0, match.index - CONTEXT_CHARS);
+          const end = Math.min(
+            value.length,
+            match.index + match[0].length + CONTEXT_CHARS
+          );
+          let truncated = value.slice(start, end);
+          if (start > 0) truncated = `...${truncated}`;
+          if (end < value.length) truncated = `${truncated}...`;
+
+          return truncated;
+        }
+      } catch {
+        // Invalid regex, fall through to default truncation
+      }
+    }
+  }
+
+  // Default: truncate from start
+  return `${value.slice(0, limit)}...`;
+}
 
 /**
  * Test a regex pattern against a reference string using a sandboxed VM context.
@@ -114,14 +187,19 @@ function evaluateRelationalExpression(
       explainBlocked: [
         {
           message: "Reference value does not exist",
-          referenceValue: null,
+          truncatedReferenceValue: null,
           filterInput: right.value,
+          fieldName: left.value,
+          operator: expression.op,
+          isNegated: expression.not ?? false,
         },
       ],
+      explainMatched: [],
     };
   }
 
   const explainBlocked: FilterExplainBlocked[] = [];
+  const explainMatched: FilterExplainBlocked[] = [];
   let valueToCompareAgainst = referenceObject.flattened[left.value];
 
   // If property doesn't exist, treat as empty string
@@ -131,14 +209,40 @@ function evaluateRelationalExpression(
 
   let val = false;
 
+  const isNegated = expression.not ?? false;
+
   switch (expression.op) {
     case RelationalExpressionOperator.Eq: {
       val = valueToCompareAgainst === right.value;
-      if (!val) {
+      if (val) {
+        explainMatched.push({
+          message: "Reference value matches filter input",
+          truncatedReferenceValue: truncateValue(
+            valueToCompareAgainst,
+            left.value,
+            expression.op,
+            right.value,
+            isNegated
+          ),
+          filterInput: right.value,
+          fieldName: left.value,
+          operator: expression.op,
+          isNegated,
+        });
+      } else {
         explainBlocked.push({
           message: "Reference value does not match filter input",
-          referenceValue: valueToCompareAgainst ?? null,
+          truncatedReferenceValue: truncateValue(
+            valueToCompareAgainst,
+            left.value,
+            expression.op,
+            right.value,
+            isNegated
+          ),
           filterInput: right.value,
+          fieldName: left.value,
+          operator: expression.op,
+          isNegated,
         });
       }
       break;
@@ -148,11 +252,35 @@ function evaluateRelationalExpression(
       val = (valueToCompareAgainst ?? "")
         .toLowerCase()
         .includes(right.value.toLowerCase());
-      if (!val) {
+      if (val) {
+        explainMatched.push({
+          message: "Reference value contains filter input",
+          truncatedReferenceValue: truncateValue(
+            valueToCompareAgainst,
+            left.value,
+            expression.op,
+            right.value,
+            true // Always show context around match for matched items
+          ),
+          filterInput: right.value,
+          fieldName: left.value,
+          operator: expression.op,
+          isNegated,
+        });
+      } else {
         explainBlocked.push({
           message: "Reference value does not contain filter input",
-          referenceValue: valueToCompareAgainst ?? null,
+          truncatedReferenceValue: truncateValue(
+            valueToCompareAgainst,
+            left.value,
+            expression.op,
+            right.value,
+            isNegated
+          ),
           filterInput: right.value,
+          fieldName: left.value,
+          operator: expression.op,
+          isNegated,
         });
       }
       break;
@@ -160,11 +288,35 @@ function evaluateRelationalExpression(
 
     case RelationalExpressionOperator.Matches: {
       val = testRegex(right.value, valueToCompareAgainst ?? "");
-      if (!val) {
+      if (val) {
+        explainMatched.push({
+          message: "Reference value matches regex",
+          truncatedReferenceValue: truncateValue(
+            valueToCompareAgainst,
+            left.value,
+            expression.op,
+            right.value,
+            true // Always show context around match for matched items
+          ),
+          filterInput: right.value,
+          fieldName: left.value,
+          operator: expression.op,
+          isNegated,
+        });
+      } else {
         explainBlocked.push({
           message: "Reference value does not match regex",
-          referenceValue: valueToCompareAgainst ?? null,
+          truncatedReferenceValue: truncateValue(
+            valueToCompareAgainst,
+            left.value,
+            expression.op,
+            right.value,
+            isNegated
+          ),
           filterInput: right.value,
+          fieldName: left.value,
+          operator: expression.op,
+          isNegated,
         });
       }
       break;
@@ -173,10 +325,10 @@ function evaluateRelationalExpression(
 
   // Negation: If `not` flag is set, invert the result
   if (expression.not) {
-    return { result: !val, explainBlocked };
+    return { result: !val, explainBlocked, explainMatched };
   }
 
-  return { result: val, explainBlocked };
+  return { result: val, explainBlocked, explainMatched };
 }
 
 /**
@@ -192,31 +344,34 @@ function evaluateLogicalExpression(
     case LogicalExpressionOperator.And: {
       // AND: ALL children must pass, short-circuit on first failure
       if (!children.length) {
-        return { result: true, explainBlocked: [] };
+        return { result: true, explainBlocked: [], explainMatched: [] };
       }
 
+      const allExplainMatched: FilterExplainBlocked[] = [];
+
       for (const child of children) {
-        const { result, explainBlocked } = evaluateExpression(
+        const { result, explainBlocked, explainMatched } = evaluateExpression(
           child,
           references
         );
         if (!result) {
-          return { result: false, explainBlocked };
+          return { result: false, explainBlocked, explainMatched: [] };
         }
+        allExplainMatched.push(...explainMatched);
       }
-      return { result: true, explainBlocked: [] };
+      return { result: true, explainBlocked: [], explainMatched: allExplainMatched };
     }
 
     case LogicalExpressionOperator.Or: {
       // OR: ANY child can pass, short-circuit on first success
       if (!children.length) {
-        return { result: true, explainBlocked: [] };
+        return { result: true, explainBlocked: [], explainMatched: [] };
       }
 
       const allExplainBlocked: FilterExplainBlocked[] = [];
 
       for (const child of children) {
-        const { result, explainBlocked } = evaluateExpression(
+        const { result, explainBlocked, explainMatched } = evaluateExpression(
           child,
           references
         );
@@ -224,10 +379,10 @@ function evaluateLogicalExpression(
           allExplainBlocked.push(...explainBlocked);
         }
         if (result) {
-          return { result: true, explainBlocked: [] };
+          return { result: true, explainBlocked: [], explainMatched };
         }
       }
-      return { result: false, explainBlocked: allExplainBlocked };
+      return { result: false, explainBlocked: allExplainBlocked, explainMatched: [] };
     }
   }
 }
@@ -240,7 +395,7 @@ export function evaluateExpression(
   references: FilterExpressionReference
 ): FilterResult {
   if (!expression) {
-    return { result: true, explainBlocked: [] };
+    return { result: true, explainBlocked: [], explainMatched: [] };
   }
 
   switch (expression.type) {

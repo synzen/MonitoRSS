@@ -35,8 +35,10 @@ import {
   DiagnosticStage,
   DiagnosticStageResult,
   DiagnosticStageStatus,
+  FilterExplainBlockedDetail,
 } from "../../../types/ArticleDiagnostics";
 import { useUserFeedContext } from "../../../../../contexts/UserFeedContext";
+import { FilterResultItem } from "./FilterResultItem";
 
 interface Props {
   isOpen: boolean;
@@ -246,17 +248,30 @@ const StageDetails = ({ stageResult }: StageDetailsProps) => {
       return (
         <Stack spacing={0}>
           {renderDetailRow("Filter Result", details.filterResult ? "Passed" : "Blocked")}
+          {Array.isArray(details.explainMatched) && details.explainMatched.length > 0 && (
+            <Box py={1}>
+              <Text color="gray.400" mb={2}>
+                Matched Because:
+              </Text>
+              <Stack spacing={3}>
+                {(details.explainMatched as FilterExplainBlockedDetail[]).map((detail, idx) => (
+                  // eslint-disable-next-line react/no-array-index-key
+                  <FilterResultItem key={idx} detail={detail} matched />
+                ))}
+              </Stack>
+            </Box>
+          )}
           {Array.isArray(details.explainBlocked) && details.explainBlocked.length > 0 && (
             <Box py={1}>
-              <Text color="gray.400" mb={1}>
+              <Text color="gray.400" mb={2}>
                 Blocked Because:
               </Text>
-              {(details.explainBlocked as string[]).map((reason, idx) => (
-                // eslint-disable-next-line react/no-array-index-key
-                <Text key={idx} pl={4}>
-                  • {reason}
-                </Text>
-              ))}
+              <Stack spacing={3}>
+                {(details.explainBlocked as FilterExplainBlockedDetail[]).map((detail, idx) => (
+                  // eslint-disable-next-line react/no-array-index-key
+                  <FilterResultItem key={idx} detail={detail} />
+                ))}
+              </Stack>
             </Box>
           )}
         </Stack>

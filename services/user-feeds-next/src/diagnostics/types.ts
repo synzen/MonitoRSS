@@ -114,11 +114,21 @@ export interface DateCheckDiagnosticDetails {
   withinThreshold: boolean;
 }
 
+export interface FilterExplainBlockedDetail {
+  message: string;
+  truncatedReferenceValue: string | null;
+  filterInput: string;
+  fieldName: string;
+  operator: string;
+  isNegated: boolean;
+}
+
 export interface MediumFilterDiagnosticDetails {
   mediumId: string;
   filterExpression: unknown | null;
   filterResult: boolean;
-  explainBlocked: string[];
+  explainBlocked: FilterExplainBlockedDetail[];
+  explainMatched: FilterExplainBlockedDetail[];
 }
 
 export interface RateLimitDiagnosticDetails {

@@ -50,6 +50,7 @@ import {
   recordDiagnosticForArticle,
   DiagnosticStage,
   DiagnosticStageStatus,
+  type FilterExplainBlockedDetail,
 } from "../diagnostics";
 
 const SECONDS_PER_DAY = 86400;
@@ -120,7 +121,8 @@ export interface MediumFilterDiagnosticParams {
   mediumId: string;
   filterExpression: unknown | null;
   filterResult: boolean;
-  explainBlocked: string[];
+  explainBlocked: FilterExplainBlockedDetail[];
+  explainMatched: FilterExplainBlockedDetail[];
 }
 
 /**
@@ -141,6 +143,7 @@ export function recordMediumFilterDiagnostic(
       filterExpression: params.filterExpression,
       filterResult: params.filterResult,
       explainBlocked: params.explainBlocked,
+      explainMatched: params.explainMatched,
     },
   });
 }
@@ -1124,7 +1127,8 @@ async function sendArticleToMedium(
         mediumId: medium.id,
         filterExpression: medium.filters.expression,
         filterResult: filterResult.result,
-        explainBlocked: filterResult.explainBlocked.map((e) => e.message),
+        explainBlocked: filterResult.explainBlocked,
+        explainMatched: filterResult.explainMatched,
       });
 
       if (!filterResult.result) {

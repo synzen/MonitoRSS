@@ -65,11 +65,21 @@ export const DateCheckDiagnosticDetailsSchema = object({
   withinThreshold: boolean().required(),
 });
 
+export const FilterExplainBlockedDetailSchema = object({
+  message: string().required(),
+  truncatedReferenceValue: string().nullable(),
+  filterInput: string().required(),
+  fieldName: string().required(),
+  operator: string().required(),
+  isNegated: boolean().required(),
+});
+
 export const MediumFilterDiagnosticDetailsSchema = object({
   mediumId: string().required(),
   filterExpression: mixed().nullable(),
   filterResult: boolean().required(),
-  explainBlocked: array(string().required()).required(),
+  explainBlocked: array(FilterExplainBlockedDetailSchema.required()).required(),
+  explainMatched: array(FilterExplainBlockedDetailSchema.required()).required(),
 });
 
 export const RateLimitDiagnosticDetailsSchema = object({
@@ -144,6 +154,7 @@ export type PassingComparisonDiagnosticDetails = InferType<
   typeof PassingComparisonDiagnosticDetailsSchema
 >;
 export type DateCheckDiagnosticDetails = InferType<typeof DateCheckDiagnosticDetailsSchema>;
+export type FilterExplainBlockedDetail = InferType<typeof FilterExplainBlockedDetailSchema>;
 export type MediumFilterDiagnosticDetails = InferType<typeof MediumFilterDiagnosticDetailsSchema>;
 export type RateLimitDiagnosticDetails = InferType<typeof RateLimitDiagnosticDetailsSchema>;
 

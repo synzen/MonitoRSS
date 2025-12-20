@@ -140,6 +140,7 @@ const createPassedStages = (mediumId: string): DiagnosticStageResult[] => [
       filterExpression: null,
       filterResult: true,
       explainBlocked: [],
+      explainMatched: [],
     },
   },
   {
@@ -281,7 +282,25 @@ const createFilteredStages = (mediumId: string): DiagnosticStageResult[] => [
       mediumId,
       filterExpression: { type: "logical", op: "and" },
       filterResult: false,
-      explainBlocked: ['title must contain "urgent"', 'category must not equal "sports"'],
+      explainBlocked: [
+        {
+          message: 'title must contain "urgent"',
+          truncatedReferenceValue: "Breaking News: Market Update for Today",
+          filterInput: "urgent",
+          fieldName: "title",
+          operator: "CONTAINS",
+          isNegated: false,
+        },
+        {
+          message: 'category must not equal "sports"',
+          truncatedReferenceValue: "sports",
+          filterInput: "sports",
+          fieldName: "category",
+          operator: "EQ",
+          isNegated: true,
+        },
+      ],
+      explainMatched: [],
     },
   },
   {
@@ -417,6 +436,7 @@ const createRateLimitedStages = (mediumId: string): DiagnosticStageResult[] => [
       filterExpression: null,
       filterResult: true,
       explainBlocked: [],
+      explainMatched: [],
     },
   },
   {
