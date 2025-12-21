@@ -6,7 +6,7 @@ let pool: Pool | null = null;
 export function initPool(uri: string): Pool {
   pool = new Pool({
     connectionString: uri,
-    max: 75,
+    max: 20,
     idleTimeoutMillis: 30000,
   });
   pool.on("error", (err) =>
