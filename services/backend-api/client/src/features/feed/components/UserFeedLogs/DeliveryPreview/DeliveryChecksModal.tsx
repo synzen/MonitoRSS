@@ -869,7 +869,9 @@ export const DeliveryChecksModal = ({ isOpen, onClose, result, initialMediumId }
         <ModalCloseButton />
         <ModalBody>
           {isLearningPhase && (
-            <LearningPhaseContent refreshRateSeconds={userFeed.refreshRateSeconds} />
+            <LearningPhaseContent
+              refreshRateSeconds={userFeed.userRefreshRateSeconds || userFeed.refreshRateSeconds}
+            />
           )}
           {isFeedUnchanged && <FeedUnchangedContent />}
           {isFeedError && <FeedErrorContent outcomeReason={result.outcomeReason} />}

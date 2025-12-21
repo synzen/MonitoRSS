@@ -20,6 +20,7 @@ import {
   CreateFilterValidationOutput,
   CreateFilterValidationResponse,
   CreatePreviewInput,
+  DeliveryPreviewInput,
   GetArticlesInput,
   GetArticlesResponse,
   GetDeliveryCountResult,
@@ -358,7 +359,7 @@ export class FeedHandlerService {
     return json;
   }
 
-  async getDeliveryPreview(input: import("./types").DeliveryPreviewInput) {
+  async getDeliveryPreview(input: DeliveryPreviewInput) {
     const response = await fetch(
       `${this.host}/v1/user-feeds/delivery-preview`,
       {

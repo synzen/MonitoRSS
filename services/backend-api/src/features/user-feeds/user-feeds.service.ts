@@ -89,6 +89,7 @@ import { UserFeedTargetFeedSelectionType } from "./constants/target-feed-selecti
 import { SourceFeedNotFoundException } from "./exceptions/source-feed-not-found.exception";
 import { getUserFeedTagLookupAggregateStage } from "./constants/user-feed-tag-lookup-aggregate-stage.constants";
 import { RefreshRateNotAllowedException } from "../feeds/exceptions/refresh-rate-not-allowed.exception";
+import { calculateSlotOffsetMs } from "../../common/utils/fnv1a-hash";
 
 const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
   (c) => c !== FeedConnectionDisabledCode.Manual
@@ -447,6 +448,7 @@ export class UserFeedsService {
         discordUserId,
       },
       refreshRateSeconds,
+      slotOffsetMs: calculateSlotOffsetMs(finalUrl, refreshRateSeconds),
       maxDailyArticles,
       feedRequestLookupKey: tempLookupDetails?.key,
       dateCheckOptions: enableDateChecks
@@ -1062,6 +1064,16 @@ export class UserFeedsService {
       );
       useUpdateObject.$set!.url = finalUrl;
       useUpdateObject.$set!.inputUrl = updates.url;
+
+      // Recalculate slot offset when URL changes to maintain even distribution
+      const effectiveRefreshRate =
+        feed.userRefreshRateSeconds ??
+        feed.refreshRateSeconds ??
+        this.supportersService.defaultRefreshRateSeconds;
+      useUpdateObject.$set!.slotOffsetMs = calculateSlotOffsetMs(
+        finalUrl,
+        effectiveRefreshRate
+      );
     }
 
     if (updates.disabledCode !== undefined) {
@@ -1135,6 +1147,15 @@ export class UserFeedsService {
         updates.userRefreshRateSeconds === fastestPossibleRate
       ) {
         useUpdateObject.$unset!.userRefreshRateSeconds = "";
+
+        // Recalculate slot offset based on the new effective rate
+        const newEffectiveRate =
+          feed.refreshRateSeconds ??
+          this.supportersService.defaultRefreshRateSeconds;
+        useUpdateObject.$set!.slotOffsetMs = calculateSlotOffsetMs(
+          feed.url,
+          newEffectiveRate
+        );
       } else if (updates.userRefreshRateSeconds > 86400) {
         throw new RefreshRateNotAllowedException(
           `Refresh rate is too high. Maximum is 86400 seconds (24 hours).`
@@ -1146,6 +1167,12 @@ export class UserFeedsService {
       } else {
         useUpdateObject.$set!.userRefreshRateSeconds =
           updates.userRefreshRateSeconds;
+
+        // Recalculate slot offset based on the new user refresh rate
+        useUpdateObject.$set!.slotOffsetMs = calculateSlotOffsetMs(
+          feed.url,
+          updates.userRefreshRateSeconds
+        );
       }
     }
 

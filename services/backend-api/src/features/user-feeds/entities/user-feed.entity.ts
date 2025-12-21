@@ -128,6 +128,24 @@ export class UserFeed {
   })
   userRefreshRateSeconds?: number;
 
+  /**
+   * Determines when this feed is fetched within its refresh interval.
+   *
+   * Calculated as: fnv1aHash(url) % (refreshRateSeconds * 1000)
+   *
+   * This enables staggered fetching - instead of all feeds with the same
+   * refresh rate being fetched at once, each feed is assigned to a time
+   * slot within the interval. The scheduler queries feeds in 60-second
+   * windows based on this offset.
+   *
+   * Example: For a 20-minute interval, a feed with slotOffsetMs = 300000
+   * will be fetched 5 minutes into each 20-minute cycle.
+   */
+  @Prop({
+    required: false,
+  })
+  slotOffsetMs?: number;
+
   @Prop({
     required: false,
   })
@@ -192,6 +210,22 @@ UserFeedSchema.index({
 // For looking up feeds with specific URLs when refreshing user external credentials
 UserFeedSchema.index({
   "user.discordUserId": 1,
+});
+
+/**
+ * Index for slot-based feed scheduling queries.
+ * Queries filter by refresh rate, then slot window, then enabled status.
+ */
+UserFeedSchema.index({
+  refreshRateSeconds: 1,
+  slotOffsetMs: 1,
+  disabledCode: 1,
+});
+
+UserFeedSchema.index({
+  userRefreshRateSeconds: 1,
+  slotOffsetMs: 1,
+  disabledCode: 1,
 });
 
 export const UserFeedFeature: ModelDefinition = {
