@@ -17,7 +17,6 @@ import {
   formatArticleForDiscord,
   CustomPlaceholderStepType,
 } from "../../articles/formatter";
-import type { Article } from "../../articles/parser";
 import {
   CustomPlaceholderRegexEvalException,
   FiltersRegexEvalException,
@@ -88,6 +87,7 @@ export async function handleGetArticles(
           dateLocale: input.formatter.options.dateLocale,
         },
         externalFeedProperties: input.formatter.externalProperties ?? [],
+        includeHtmlInErrors: input.includeHtmlInErrors,
         findRssFromHtml: input.findRssFromHtml,
         executeFetch: input.executeFetch,
         executeFetchIfStale: input.executeFetchIfStale,
@@ -113,6 +113,7 @@ export async function handleGetArticles(
             url: resolvedUrl,
             attemptedToResolveFromHtml,
             feedTitle: fetchResult.feed.title || null,
+            externalContentErrors: fetchResult.externalContentErrors,
           },
         });
       }
@@ -144,6 +145,14 @@ export async function handleGetArticles(
         customPlaceholders: input.formatter.customPlaceholders,
       });
 
+      // Filter external content errors to only include those for returned articles
+      const returnedArticleIds = new Set(
+        matchedArticles.map((a) => a.flattened.id)
+      );
+      const filteredErrors = fetchResult.externalContentErrors?.filter((err) =>
+        returnedArticleIds.has(err.articleId)
+      );
+
       return jsonResponse({
         result: {
           requestStatus: GetFeedArticlesRequestStatus.Success,
@@ -154,6 +163,10 @@ export async function handleGetArticles(
           url: resolvedUrl,
           attemptedToResolveFromHtml,
           feedTitle: fetchResult.feed.title || null,
+          externalContentErrors:
+            filteredErrors && filteredErrors.length > 0
+              ? filteredErrors
+              : undefined,
         },
       });
     } catch (err) {

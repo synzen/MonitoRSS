@@ -11,6 +11,8 @@ export interface GetArticlesInput {
   findRssFromHtml?: boolean;
   executeFetch?: boolean;
   executeFetchIfStale?: boolean;
+  /** Include raw HTML in NO_SELECTOR_MATCH errors for troubleshooting (preview mode only) */
+  includeHtmlInErrors?: boolean;
   filters?: {
     expression?: Record<string, unknown>;
     returnType: GetFeedArticlesFilterReturnType;

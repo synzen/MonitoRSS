@@ -32,6 +32,39 @@ class Response {
   statusCode?: number;
 }
 
+class ExternalContentError {
+  @IsString()
+  articleId: string;
+
+  @IsString()
+  sourceField: string;
+
+  @IsString()
+  label: string;
+
+  @IsString()
+  cssSelector: string;
+
+  @IsString()
+  errorType: string;
+
+  @IsString()
+  @IsOptional()
+  message?: string;
+
+  @IsInt()
+  @IsOptional()
+  statusCode?: number;
+
+  @IsString()
+  @IsOptional()
+  pageHtml?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  pageHtmlTruncated?: boolean;
+}
+
 class Result {
   @IsIn(Object.values(GetArticlesResponseRequestStatus))
   requestStatus: GetArticlesResponseRequestStatus;
@@ -72,6 +105,12 @@ class Result {
   @IsOptional()
   @ValidateIf((v) => v !== null)
   feedTitle?: string | null;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ExternalContentError)
+  @IsOptional()
+  externalContentErrors?: ExternalContentError[];
 }
 
 export class GetArticlesResponse {

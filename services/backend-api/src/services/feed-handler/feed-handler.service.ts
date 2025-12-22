@@ -243,6 +243,7 @@ export class FeedHandlerService {
       findRssFromHtml,
       executeFetch,
       executeFetchIfStale,
+      includeHtmlInErrors,
     }: GetArticlesInput,
     lookupDetails: FeedRequestLookupDetails | null
   ): Promise<GetArticlesResponse["result"]> {
@@ -258,6 +259,7 @@ export class FeedHandlerService {
       findRssFromHtml,
       executeFetch,
       executeFetchIfStale,
+      includeHtmlInErrors,
       requestLookupDetails: lookupDetails
         ? {
             key: lookupDetails.key,

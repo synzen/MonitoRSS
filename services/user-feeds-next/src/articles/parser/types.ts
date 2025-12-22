@@ -1,3 +1,5 @@
+import type { ExternalContentError } from "./inject-external-content";
+
 export interface FlattenedArticle {
   id: string;
   idHash: string;
@@ -30,6 +32,7 @@ export interface ParseArticlesResult {
   feed: {
     title?: string;
   };
+  externalContentErrors?: ExternalContentError[];
 }
 
 export const ARTICLE_FIELD_DELIMITER = "__";

@@ -2,7 +2,6 @@ import {
   Box,
   Button,
   Code,
-  Collapse,
   Divider,
   Flex,
   FormControl,
@@ -27,12 +26,11 @@ import {
   Text,
   theme,
 } from "@chakra-ui/react";
-import { AddIcon, ChevronDownIcon, ChevronUpIcon, DeleteIcon, EditIcon } from "@chakra-ui/icons";
+import { AddIcon, DeleteIcon, EditIcon } from "@chakra-ui/icons";
 import { InferType, array, object, string } from "yup";
 import { Controller, FormProvider, useFieldArray, useForm, useFormContext } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { v4 } from "uuid";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FiHelpCircle } from "react-icons/fi";
 import { motion } from "motion/react";
@@ -108,12 +106,6 @@ const ExternalPropertyForm = ({
   const cssSelectorError =
     errors?.externalProperties?.[externalPropertyIndex]?.cssSelector?.message;
   const labelError = errors?.externalProperties?.[externalPropertyIndex]?.label?.message;
-
-  const [showPreview, setShowPreview] = useState(false);
-
-  const onTogglePreview = () => {
-    setShowPreview((p) => !p);
-  };
 
   return (
     <Stack
@@ -360,39 +352,21 @@ const ExternalPropertyForm = ({
           </FormHelperText>
         </FormControl>
       </Stack>
-      <Button
-        leftIcon={showPreview ? <ChevronUpIcon /> : <ChevronDownIcon />}
-        size="sm"
-        onClick={() => onTogglePreview()}
-        mt={6}
-        mb={1}
-        aria-controls={`preview-${externalProperty.id}`}
-        aria-expanded={showPreview}
-      >
-        {showPreview ? "Hide Generated Placeholders" : "Show Generated Placeholders"}
-      </Button>
-      <Box bg="gray.800" rounded="lg">
-        <Collapse
-          in={showPreview}
-          transition={{ enter: { duration: 0.3 } }}
-          id={`preview-${externalProperty.id}`}
-        >
-          <ExternalPropertyPreview
-            externalProperties={
-              !externalProperty
-                ? []
-                : [
-                    {
-                      id: externalProperty.id,
-                      sourceField: externalProperty.sourceField,
-                      cssSelector: externalProperty.cssSelector,
-                      label: externalProperty.label,
-                    },
-                  ]
-            }
-            disabled={!showPreview}
-          />
-        </Collapse>
+      <Box bg="gray.800" rounded="lg" mt={6}>
+        <ExternalPropertyPreview
+          externalProperties={
+            !externalProperty
+              ? []
+              : [
+                  {
+                    id: externalProperty.id,
+                    sourceField: externalProperty.sourceField,
+                    cssSelector: externalProperty.cssSelector,
+                    label: externalProperty.label,
+                  },
+                ]
+          }
+        />
       </Box>
     </Stack>
   );

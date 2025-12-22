@@ -168,18 +168,19 @@ export async function fetchAndParseFeed(
 
   // Create external fetch function if needed (uses the injected fetch or default)
   const externalFetchFn = options.feed.externalProperties?.length
-    ? async (url: string): Promise<string | null> => {
+    ? async (url: string) => {
         try {
           const res = await doFetch(url, {
             executeFetchIfNotInCache: true,
             retries: 3,
             serviceHost: options.feedRequestsServiceHost,
           });
-          return res.requestStatus === FeedResponseRequestStatus.Success
-            ? res.body
-            : null;
+          if (res.requestStatus === FeedResponseRequestStatus.Success) {
+            return { body: res.body, statusCode: 200 };
+          }
+          return { body: null };
         } catch {
-          return null;
+          return { body: null };
         }
       }
     : undefined;

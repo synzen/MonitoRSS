@@ -11,6 +11,8 @@ export interface GetFeedArticlesInput {
   selectPropertyTypes?: string[];
   skip?: number;
   discordUserId: string;
+  /** Include raw HTML in NO_SELECTOR_MATCH errors for troubleshooting (preview mode only) */
+  includeHtmlInErrors?: boolean;
   filters?: {
     returnType: GetFeedArticlesFilterReturnType.IncludeEvaluationResults;
     expression?: Record<string, unknown>;

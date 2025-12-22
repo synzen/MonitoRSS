@@ -336,6 +336,7 @@ export class UserFeedsController {
       selectPropertyTypes,
       skip,
       formatter: { externalProperties, ...formatter },
+      includeHtmlInErrors,
     }: GetUserFeedArticlesInputDto,
     @Param("feedId", GetUserFeedsPipe())
     [{ feed }]: GetUserFeedsPipeOutput
@@ -350,6 +351,7 @@ export class UserFeedsController {
       selectProperties,
       selectPropertyTypes,
       skip,
+      includeHtmlInErrors,
       formatter: {
         ...formatter,
         externalProperties,
@@ -369,6 +371,7 @@ export class UserFeedsController {
       selectedProperties,
       totalArticles,
       response,
+      externalContentErrors,
     } = await this.userFeedsService.getFeedArticles(input);
 
     return {
@@ -379,6 +382,7 @@ export class UserFeedsController {
         filterStatuses,
         selectedProperties,
         totalArticles,
+        externalContentErrors,
       },
     };
   }

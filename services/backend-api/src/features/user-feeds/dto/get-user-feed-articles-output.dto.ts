@@ -4,6 +4,18 @@ class FilterStatus {
   passed: boolean;
 }
 
+interface ExternalContentError {
+  articleId: string;
+  sourceField: string;
+  label: string;
+  cssSelector: string;
+  errorType: string;
+  message?: string;
+  statusCode?: number;
+  pageHtml?: string;
+  pageHtmlTruncated?: boolean;
+}
+
 class ResultDto {
   requestStatus: GetArticlesResponseRequestStatus;
   articles: Array<Record<string, string>>;
@@ -13,6 +25,7 @@ class ResultDto {
   response?: {
     statusCode?: number;
   };
+  externalContentErrors?: ExternalContentError[];
 }
 
 export class GetUserFeedArticlesOutputDto {

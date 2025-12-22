@@ -9,6 +9,7 @@ import {
   type Article,
   type UserFeedFormatOptions,
   type ExternalFeedProperty,
+  type ExternalContentError,
 } from "../../articles/parser";
 import { parseArticlesFromXmlWithWorkers as parseArticlesFromXml } from "../../articles/parser/worker";
 import { FeedArticleNotFoundException } from "../../feed-fetcher/exceptions";
@@ -26,6 +27,8 @@ import type {
 export interface FetchFeedArticleOptions {
   formatOptions?: UserFeedFormatOptions;
   externalFeedProperties?: ExternalFeedProperty[];
+  /** Include raw HTML in NO_SELECTOR_MATCH errors for troubleshooting (preview mode only) */
+  includeHtmlInErrors?: boolean;
   requestLookupDetails?: {
     key: string;
     url?: string;
@@ -47,6 +50,7 @@ export interface FetchFeedArticlesResult {
     feed: {
       title?: string;
     };
+    externalContentErrors?: ExternalContentError[];
   };
   url: string;
   attemptedToResolveFromHtml: boolean;
@@ -120,14 +124,20 @@ export async function findOrFetchFeedArticles(
   });
 
   // Inject external content if external properties are specified
+  let externalContentErrors: ExternalContentError[] = [];
   if (options.externalFeedProperties?.length) {
-    await injectExternalContent(
+    externalContentErrors = await injectExternalContent(
       articles,
       options.externalFeedProperties,
       async (articleUrl: string) => {
-        const response = await fetch(articleUrl);
-        return response.text();
-      }
+        try {
+          const response = await fetch(articleUrl);
+          return { body: await response.text(), statusCode: response.status };
+        } catch {
+          return { body: null };
+        }
+      },
+      { includeHtmlInErrors: options.includeHtmlInErrors }
     );
   }
 
@@ -142,6 +152,8 @@ export async function findOrFetchFeedArticles(
     output: {
       articles,
       feed,
+      externalContentErrors:
+        externalContentErrors.length > 0 ? externalContentErrors : undefined,
     },
     url,
     attemptedToResolveFromHtml: false,

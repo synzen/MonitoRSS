@@ -1428,6 +1428,7 @@ export class UserFeedsService {
     formatter,
     discordUserId,
     feed,
+    includeHtmlInErrors,
   }: GetFeedArticlesInput): Promise<GetFeedArticlesOutput> {
     const user = await this.usersService.getOrCreateUserByDiscordId(
       discordUserId
@@ -1442,6 +1443,7 @@ export class UserFeedsService {
         skip: skip || 0,
         selectProperties,
         selectPropertyTypes,
+        includeHtmlInErrors,
         formatter: {
           ...formatter,
           options: {

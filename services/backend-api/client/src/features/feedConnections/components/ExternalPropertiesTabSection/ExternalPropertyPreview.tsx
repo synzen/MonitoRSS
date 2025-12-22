@@ -40,17 +40,14 @@ import {
   useUserFeedConnectionContext,
 } from "../../../../contexts/UserFeedConnectionContext";
 import MessagePlaceholderText from "../../../../components/MessagePlaceholderText";
+import { ExternalContentErrorsAlert } from "./ExternalContentErrorsAlert";
+import { ExternalContentError } from "../../../feed/types";
 
 interface Props {
   externalProperties: ExternalProperty[];
-  disabled?: boolean;
 }
 
-const ArticlesSection = ({
-  externalProperties,
-  disabled,
-  articleId,
-}: Props & { articleId?: string }) => {
+const ArticlesSection = ({ externalProperties, articleId }: Props & { articleId?: string }) => {
   const { userFeed, articleFormatOptions } = useUserFeedConnectionContext();
   const isIncomplete = externalProperties.some((i) => !i.sourceField || !i.cssSelector || !i.label);
   const queryData = {
@@ -64,6 +61,7 @@ const ArticlesSection = ({
       : undefined,
     random: true,
     selectPropertyTypes: [SelectArticlePropertyType.ExternalInjections],
+    includeHtmlInErrors: true,
     formatOptions: {
       formatTables: articleFormatOptions?.formatTables ?? false,
       stripImages: articleFormatOptions?.stripImages ?? false,
@@ -78,7 +76,7 @@ const ArticlesSection = ({
 
   const { data, status, error, fetchStatus } = useUserFeedArticles({
     data: queryData,
-    disabled: disabled || externalProperties.length === 0 || isIncomplete,
+    disabled: externalProperties.length === 0 || isIncomplete,
     feedId: userFeed.id,
     queryKeyFields: externalProperties.map((p) => `external-property-preview-page-${p.id}`),
   });
@@ -86,6 +84,9 @@ const ArticlesSection = ({
   const articleEntries = Object.entries(data?.result.articles[0] || {}).filter(
     ([key, value]) => key.startsWith("external::") && !!value
   );
+
+  const externalContentErrors = (data?.result.externalContentErrors ||
+    []) as ExternalContentError[];
 
   const { alertComponent, hasAlert } = useGetUserFeedArticlesError({
     getUserFeedArticlesStatus: status,
@@ -118,7 +119,63 @@ const ArticlesSection = ({
     );
   }
 
+  const someExternalWebPageLinkExists = externalProperties.some((i) => !!article[i.sourceField]);
+
+  const externalLinksSection = someExternalWebPageLinkExists && (
+    <Stack mb={4}>
+      <Text display="block" fontSize="sm">
+        Content scraped from:
+      </Text>
+      <UnorderedList>
+        {externalProperties.map(({ sourceField, id }) => {
+          const href = article[sourceField];
+
+          if (!href) {
+            return null;
+          }
+
+          return (
+            <ListItem key={id}>
+              <Link
+                key={id}
+                gap={2}
+                isExternal
+                target="_blank"
+                href={href || undefined}
+                rel="noopener noreferrer"
+                color="blue.300"
+              >
+                {href}
+                <ExternalLinkIcon paddingLeft={1} />
+              </Link>
+            </ListItem>
+          );
+        })}
+      </UnorderedList>
+    </Stack>
+  );
+
   if (!articleEntries.length) {
+    if (fetchStatus === "fetching") {
+      return (
+        <Center flexDir="column" gap={2} bg="gray.800" rounded="lg" p={4}>
+          <Spinner />
+          <Text color="whiteAlpha.700" fontSize="sm">
+            Loading preview...
+          </Text>
+        </Center>
+      );
+    }
+
+    if (externalContentErrors.length > 0) {
+      return (
+        <Stack>
+          {externalLinksSection}
+          <ExternalContentErrorsAlert errors={externalContentErrors} />
+        </Stack>
+      );
+    }
+
     return (
       <Alert status="info" justifyContent="center">
         <AlertDescription>
@@ -129,8 +186,6 @@ const ArticlesSection = ({
     );
   }
 
-  const someExternalWebPageLinkExists = externalProperties.some((i) => !!article[i.sourceField]);
-
   return (
     <Stack>
       <Box srOnly aria-live="polite">
@@ -140,39 +195,7 @@ const ArticlesSection = ({
         {fetchStatus === "fetching" && <span>Loading preview...</span>}
       </Box>
       <Box padding={2} rounded="lg" maxHeight={300} overflow="scroll">
-        {someExternalWebPageLinkExists && (
-          <Stack mb={8}>
-            <Text display="block">
-              The following placeholders were extracted from the external webpages:
-            </Text>
-            <UnorderedList>
-              {externalProperties.map(({ sourceField, id }) => {
-                const href = article[sourceField];
-
-                if (!href) {
-                  return null;
-                }
-
-                return (
-                  <ListItem key={id}>
-                    <Link
-                      key={id}
-                      gap={2}
-                      isExternal
-                      target="_blank"
-                      href={href || undefined}
-                      rel="noopener noreferrer"
-                      color="blue.300"
-                    >
-                      {href}
-                      <ExternalLinkIcon paddingLeft={1} />
-                    </Link>
-                  </ListItem>
-                );
-              })}
-            </UnorderedList>
-          </Stack>
-        )}
+        {externalLinksSection}
         <TableContainer>
           <Table size="sm" variant="simple">
             <Thead>
@@ -200,6 +223,9 @@ const ArticlesSection = ({
           </Table>
         </TableContainer>
       </Box>
+      {externalContentErrors.length > 0 && (
+        <ExternalContentErrorsAlert errors={externalContentErrors} />
+      )}
       <Stack>
         <Text fontSize="sm" color="whiteAlpha.700" textAlign="center">
           These generated placeholders may be used while creating custom message formats per
@@ -210,10 +236,7 @@ const ArticlesSection = ({
   );
 };
 
-export const ExternalPropertyPreview = ({
-  externalProperties: inputExternalProperties,
-  disabled,
-}: Props) => {
+export const ExternalPropertyPreview = ({ externalProperties: inputExternalProperties }: Props) => {
   const { userFeed, articleFormatOptions } = useUserFeedContext();
   const [selectedConnectionId, setSelectedConnectionId] = useState<string>(
     userFeed.connections[0]?.id
@@ -233,7 +256,7 @@ export const ExternalPropertyPreview = ({
         stripImages: false,
       },
     },
-    disabled: disabled || externalProperties.length === 0,
+    disabled: externalProperties.length === 0,
     feedId: userFeed.id,
   });
 
@@ -336,11 +359,7 @@ export const ExternalPropertyPreview = ({
                     </HStack>
                   </FormControl>
                 </HStack>
-                <ArticlesSection
-                  externalProperties={externalProperties}
-                  articleId={articleId}
-                  disabled={disabled}
-                />
+                <ArticlesSection externalProperties={externalProperties} articleId={articleId} />
                 <ArticleSelectDialog
                   trigger={
                     <Button size="sm" leftIcon={<RepeatIcon />} mt={4}>

@@ -15,6 +15,7 @@ import {
   injectExternalContent,
   type ExternalFeedProperty,
   type ExternalFetchFn,
+  type ExternalContentError,
 } from "../inject-external-content";
 import type {
   ParseArticlesResult,
@@ -164,14 +165,20 @@ export async function parseArticlesFromXmlWithWorkers(
 
     // Process in chunks of 25 with 1s delay between chunks (matching original behavior)
     const chunkedArticles = chunkArray(result.articles, 25);
+    const allErrors: ExternalContentError[] = [];
 
     for (const chunk of chunkedArticles) {
-      await injectExternalContent(
+      const chunkErrors = await injectExternalContent(
         chunk,
         options.externalFeedProperties,
         options.externalFetchFn
       );
+      allErrors.push(...chunkErrors);
       await new Promise((res) => setTimeout(res, 1000));
+    }
+
+    if (allErrors.length > 0) {
+      result.externalContentErrors = allErrors;
     }
 
     logger.debug(`External content injection complete`);
