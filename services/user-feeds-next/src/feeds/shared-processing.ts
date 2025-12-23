@@ -10,6 +10,7 @@ import {
   FeedRequestBadStatusCodeException,
   FeedRequestFetchException,
   FeedRequestTimedOutException,
+  FeedRequestInvalidSslCertificateException,
 } from "../feed-fetcher/exceptions";
 import {
   FeedParseTimeoutException,
@@ -152,6 +153,13 @@ export async function fetchAndParseFeed(
       return {
         status: "fetch-error",
         errorType: "timeout",
+        message: err.message,
+      };
+    }
+    if (err instanceof FeedRequestInvalidSslCertificateException) {
+      return {
+        status: "fetch-error",
+        errorType: "invalid-ssl-certificate",
         message: err.message,
       };
     }

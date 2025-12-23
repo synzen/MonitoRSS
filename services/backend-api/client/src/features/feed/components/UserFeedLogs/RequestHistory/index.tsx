@@ -180,7 +180,14 @@ export const RequestHistory = () => {
   );
 
   return (
-    <Stack spacing={4} mb={8} border="solid 1px" borderColor="gray.700" borderRadius="md">
+    <Stack
+      id="request-history"
+      spacing={4}
+      mb={8}
+      border="solid 1px"
+      borderColor="gray.700"
+      borderRadius="md"
+    >
       <Box>
         <Stack px={4} py={4}>
           <Heading size="sm" as="h3" m={0} id="request-history-table-title">

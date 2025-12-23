@@ -212,7 +212,7 @@ export const DeliveryPreviewPresentational = ({
           </Box>
         )}
         {!isLoading && !error && !hasNoConnections && hasFeedLevelState && feedState && (
-          <FeedLevelStateDisplay feedState={feedState} feedId={feedId} />
+          <FeedLevelStateDisplay feedState={feedState} />
         )}
         {!isLoading && !error && !hasNoConnections && !hasNoData && !hasFeedLevelState && (
           <Stack spacing={4}>

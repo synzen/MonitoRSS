@@ -1,9 +1,9 @@
-import { request } from "undici";
 import pRetry from "p-retry";
 import {
   FeedRequestBadStatusCodeException,
   FeedRequestFetchException,
   FeedRequestInternalException,
+  FeedRequestInvalidSslCertificateException,
   FeedRequestNetworkException,
   FeedRequestParseException,
   FeedRequestServerStatusException,
@@ -32,8 +32,7 @@ export async function fetchFeed(
   }
 ): Promise<FetchFeedResult> {
   const serviceHost = options.serviceHost;
-  let statusCode: number;
-  let body: { json: () => Promise<unknown> };
+  let response: Response;
 
   try {
     const requestBody = {
@@ -44,10 +43,10 @@ export async function fetchFeed(
       stalenessThresholdSeconds: options?.stalenessThresholdSeconds,
       hashToCompare: options?.hashToCompare || undefined,
       lookupDetails: options?.lookupDetails,
-    }
-    const response = await pRetry(
+    };
+    response = await pRetry(
       async () =>
-        request(serviceHost, {
+        fetch(serviceHost, {
           method: "POST",
           body: JSON.stringify(requestBody),
           headers: {
@@ -61,9 +60,6 @@ export async function fetchFeed(
         randomize: true,
       }
     );
-
-    statusCode = response.statusCode;
-    body = response.body;
   } catch (err) {
     throw new FeedRequestNetworkException(
       `Failed to execute request to feed requests API: ${(err as Error).message}`
@@ -71,8 +67,8 @@ export async function fetchFeed(
   }
 
   return handleFetchResponse({
-    statusCode,
-    json: body.json.bind(body),
+    statusCode: response.status,
+    json: response.json.bind(response),
   });
 }
 
@@ -120,6 +116,12 @@ async function handleFetchResponse({
     throw new FeedRequestBadStatusCodeException(
       `Bad status code received for feed request (${response.response.statusCode})`,
       response.response.statusCode
+    );
+  }
+
+  if (requestStatus === FeedResponseRequestStatus.InvalidSslCertificate) {
+    throw new FeedRequestInvalidSslCertificateException(
+      "Feed server has an invalid SSL certificate"
     );
   }
 

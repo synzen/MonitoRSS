@@ -254,6 +254,12 @@ export function getGenericErrorMessage(feedState: string, errorType?: string): G
           title: "Failed to Fetch Feed",
           explanation: "An unexpected error occurred. Try refreshing in a few minutes.",
         };
+      case "invalid-ssl-certificate":
+        return {
+          title: "Invalid SSL Certificate",
+          explanation:
+            "The feed server's SSL certificate could not be verified. The certificate may be expired, self-signed, or misconfigured. Contact the feed provider or try an alternative feed URL.",
+        };
       default:
         return {
           title: "Failed to Fetch Feed",

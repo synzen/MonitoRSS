@@ -6,6 +6,7 @@ export enum FeedResponseRequestStatus {
   FetchError = "FETCH_ERROR",
   FetchTimeout = "FETCH_TIMEOUT",
   MatchedHash = "MATCHED_HASH",
+  InvalidSslCertificate = "INVALID_SSL_CERTIFICATE",
 }
 
 interface FeedResponseInternalError {
@@ -14,6 +15,10 @@ interface FeedResponseInternalError {
 
 interface FeedResponseMatchedHash {
   requestStatus: FeedResponseRequestStatus.MatchedHash;
+}
+
+interface FeedResponseInvalidSslCertificate {
+  requestStatus: FeedResponseRequestStatus.InvalidSslCertificate;
 }
 
 interface FeedResponseFetchError {
@@ -49,7 +54,8 @@ export type FeedResponse =
   | FeedResponseSuccess
   | FeedResponseFetchError
   | FeedResponseBadStatusCodeError
-  | FeedResponseMatchedHash;
+  | FeedResponseMatchedHash
+  | FeedResponseInvalidSslCertificate;
 
 export interface FeedRequestLookupDetails {
   key: string;

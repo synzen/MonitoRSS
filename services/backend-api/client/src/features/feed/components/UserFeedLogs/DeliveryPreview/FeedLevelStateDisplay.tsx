@@ -1,9 +1,10 @@
 import { Badge, Box, Button, Flex, HStack, Icon, Stack, Text } from "@chakra-ui/react";
 import { WarningIcon } from "@chakra-ui/icons";
-import { Link } from "react-router-dom";
-import { pages } from "../../../../../constants";
-import { UserFeedTabSearchParam } from "../../../../../constants/userFeedTabSearchParam";
 import { getHttpStatusMessage, getGenericErrorMessage } from "./deliveryPreviewUtils";
+
+const scrollToRequestHistory = () => {
+  document.getElementById("request-history")?.scrollIntoView({ behavior: "smooth" });
+};
 
 export interface FeedState {
   state: string;
@@ -13,15 +14,13 @@ export interface FeedState {
 
 interface FeedLevelStateDisplayProps {
   feedState: FeedState;
-  feedId: string;
 }
 
 interface HttpStatusErrorDisplayProps {
   statusCode: number;
-  feedId: string;
 }
 
-const HttpStatusErrorDisplay = ({ statusCode, feedId }: HttpStatusErrorDisplayProps) => {
+const HttpStatusErrorDisplay = ({ statusCode }: HttpStatusErrorDisplayProps) => {
   const statusInfo = getHttpStatusMessage(statusCode);
   const StatusIcon = statusInfo.icon;
 
@@ -67,8 +66,7 @@ const HttpStatusErrorDisplay = ({ statusCode, feedId }: HttpStatusErrorDisplayPr
         </Text>
       </Stack>
       <Button
-        as={Link}
-        to={pages.userFeed(feedId, { tab: UserFeedTabSearchParam.Logs })}
+        onClick={scrollToRequestHistory}
         size={{ base: "md", md: "sm" }}
         width={{ base: "100%", md: "auto" }}
         variant="outline"
@@ -84,10 +82,9 @@ const HttpStatusErrorDisplay = ({ statusCode, feedId }: HttpStatusErrorDisplayPr
 interface GenericErrorDisplayProps {
   feedState: string;
   errorType?: string;
-  feedId: string;
 }
 
-const GenericErrorDisplay = ({ feedState, errorType, feedId }: GenericErrorDisplayProps) => {
+const GenericErrorDisplay = ({ feedState, errorType }: GenericErrorDisplayProps) => {
   const errorInfo = getGenericErrorMessage(feedState, errorType);
 
   return (
@@ -100,8 +97,7 @@ const GenericErrorDisplay = ({ feedState, errorType, feedId }: GenericErrorDispl
       </HStack>
       <Text color="whiteAlpha.900">{errorInfo.explanation}</Text>
       <Button
-        as={Link}
-        to={pages.userFeed(feedId, { tab: UserFeedTabSearchParam.Logs })}
+        onClick={scrollToRequestHistory}
         size={{ base: "md", md: "sm" }}
         width={{ base: "100%", md: "auto" }}
         variant="outline"
@@ -114,7 +110,7 @@ const GenericErrorDisplay = ({ feedState, errorType, feedId }: GenericErrorDispl
   );
 };
 
-export const FeedLevelStateDisplay = ({ feedState, feedId }: FeedLevelStateDisplayProps) => {
+export const FeedLevelStateDisplay = ({ feedState }: FeedLevelStateDisplayProps) => {
   // Note: "unchanged" state is no longer a feed-level state.
   // When the feed is unchanged, the backend returns articles with FeedUnchanged outcome.
 
@@ -123,16 +119,12 @@ export const FeedLevelStateDisplay = ({ feedState, feedId }: FeedLevelStateDispl
     feedState.errorType === "bad-status-code" &&
     feedState.httpStatusCode
   ) {
-    return <HttpStatusErrorDisplay statusCode={feedState.httpStatusCode} feedId={feedId} />;
+    return <HttpStatusErrorDisplay statusCode={feedState.httpStatusCode} />;
   }
 
   if (feedState.state === "fetch-error" || feedState.state === "parse-error") {
     return (
-      <GenericErrorDisplay
-        feedState={feedState.state}
-        errorType={feedState.errorType}
-        feedId={feedId}
-      />
+      <GenericErrorDisplay feedState={feedState.state} errorType={feedState.errorType} />
     );
   }
 
