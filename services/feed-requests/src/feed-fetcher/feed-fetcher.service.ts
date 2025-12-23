@@ -369,11 +369,15 @@ export class FeedFetcherService {
       });
 
       if (
-        err instanceof TypeError &&
-        err['cause']?.['code'] === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE'
+        (err instanceof TypeError &&
+          err['cause']?.['code'] === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE') ||
+        (err as Error).message?.includes(
+          'unable to get local issuer certificate',
+        )
       ) {
         request.status = RequestStatus.INVALID_SSL_CERTIFICATE;
-        request.errorMessage = err['cause']?.['message'];
+        request.errorMessage =
+          err?.['cause']?.['message'] || (err as Error).message;
       } else if (
         (err as Error).name === 'AbortError' ||
         (err as Error).message.includes('Connect Timeout Error')

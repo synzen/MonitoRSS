@@ -69,6 +69,7 @@ const createStatusLabel = (
     case UserFeedRequestStatus.INTERNAL_ERROR:
     case UserFeedRequestStatus.PARSE_ERROR:
     case UserFeedRequestStatus.TIMED_OUT:
+    case UserFeedRequestStatus.INVALID_SSL_CERTIFICATE:
       return (
         <Badge fontSize="sm" colorScheme="red">
           {status}
