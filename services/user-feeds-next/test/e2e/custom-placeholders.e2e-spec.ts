@@ -1,12 +1,14 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, before, after } from "node:test";
+import * as assert from "node:assert";
 import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../../src/delivery";
 import { CustomPlaceholderStepType } from "../../src/shared/constants";
 import getTestRssFeed from "../data/test-rss-feed";
 import { createTestContext } from "../helpers/test-context";
+import { setupTestDatabase, teardownTestDatabase, type TestStores } from "../helpers/setup-integration-tests";
 import type { FeedV2Event } from "../../src/shared/schemas";
 
-// Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
+let stores: TestStores;
 
 type MediumDetails = FeedV2Event["data"]["mediums"][0]["details"];
 
@@ -64,16 +66,24 @@ function createEventWithCustomPlaceholders(
  * Helper to extract the Discord payload from captured requests
  */
 function getDiscordPayload(ctx: ReturnType<typeof createTestContext>) {
-  expect(ctx.discordClient.capturedPayloads.length).toBeGreaterThan(0);
+  assert.ok(ctx.discordClient.capturedPayloads.length > 0);
   return JSON.parse(
     ctx.discordClient.capturedPayloads[0]!.options.body as string
   );
 }
 
-describe("Custom Placeholders (e2e)", () => {
+describe("Custom Placeholders (e2e)", { concurrency: true }, () => {
+  before(async () => {
+    stores = await setupTestDatabase();
+  });
+
+  after(async () => {
+    await teardownTestDatabase();
+  });
+
   describe("Basic Custom Placeholder Tests", () => {
     it("applies regex replacement in delivered payload", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithCustom = createEventWithCustomPlaceholders(
         ctx.testFeedV2Event,
@@ -109,19 +119,19 @@ describe("Custom Placeholders (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithCustom);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("Goodbye World");
+        assert.strictEqual(payload.content, "Goodbye World");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("supports multiple custom placeholders in same message", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithCustom = createEventWithCustomPlaceholders(
         ctx.testFeedV2Event,
@@ -157,18 +167,18 @@ describe("Custom Placeholders (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithCustom);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("Title: HELLO | Desc: world");
+        assert.strictEqual(payload.content, "Title: HELLO | Desc: world");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("applies custom placeholders in embed fields", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithCustom = createEventWithCustomPlaceholders(
         ctx.testFeedV2Event,
@@ -204,13 +214,13 @@ describe("Custom Placeholders (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithCustom);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.embeds).toBeDefined();
-        expect(payload.embeds[0].title).toBe("HELLO WORLD");
-        expect(payload.embeds[0].description).toBe("Original: Hello World");
+        assert.notStrictEqual(payload.embeds, undefined);
+        assert.strictEqual(payload.embeds[0].title, "HELLO WORLD");
+        assert.strictEqual(payload.embeds[0].description, "Original: Hello World");
       } finally {
         ctx.cleanup();
       }
@@ -219,7 +229,7 @@ describe("Custom Placeholders (e2e)", () => {
 
   describe("Step Type Combination Tests", () => {
     it("chains regex + uppercase steps", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithCustom = createEventWithCustomPlaceholders(
         ctx.testFeedV2Event,
@@ -256,16 +266,16 @@ describe("Custom Placeholders (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithCustom);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("IMPORTANT NEWS");
+        assert.strictEqual(payload.content, "IMPORTANT NEWS");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("chains regex + urlEncode steps", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithCustom = createEventWithCustomPlaceholders(
         ctx.testFeedV2Event,
@@ -302,18 +312,16 @@ describe("Custom Placeholders (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithCustom);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe(
-          "https://search.example.com?q=Hello%20World"
-        );
+        assert.strictEqual(payload.content, "https://search.example.com?q=Hello%20World");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("chains lowercase + regex steps", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithCustom = createEventWithCustomPlaceholders(
         ctx.testFeedV2Event,
@@ -356,16 +364,16 @@ describe("Custom Placeholders (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithCustom);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("major event happening");
+        assert.strictEqual(payload.content, "major event happening");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("formats dates with timezone using dateFormat step", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithCustom = createEventWithCustomPlaceholders(
         ctx.testFeedV2Event,
@@ -407,10 +415,10 @@ describe("Custom Placeholders (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithCustom);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
         const payload = getDiscordPayload(ctx);
         // 14:30 UTC = 10:30 EDT (summer time in New York)
-        expect(payload.content).toBe("Published: 2023-06-15 10:30");
+        assert.strictEqual(payload.content, "Published: 2023-06-15 10:30");
       } finally {
         ctx.cleanup();
       }
@@ -419,7 +427,7 @@ describe("Custom Placeholders (e2e)", () => {
 
   describe("Edge Cases and Robustness", () => {
     it("outputs empty string when source placeholder is missing", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithCustom = createEventWithCustomPlaceholders(
         ctx.testFeedV2Event,
@@ -449,16 +457,16 @@ describe("Custom Placeholders (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithCustom);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("Value: []");
+        assert.strictEqual(payload.content, "Value: []");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("preserves original value when regex matches nothing", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithCustom = createEventWithCustomPlaceholders(
         ctx.testFeedV2Event,
@@ -494,16 +502,16 @@ describe("Custom Placeholders (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithCustom);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("Original Title");
+        assert.strictEqual(payload.content, "Original Title");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("chains multiple regex steps for complex transformations", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithCustom = createEventWithCustomPlaceholders(
         ctx.testFeedV2Event,
@@ -557,9 +565,9 @@ describe("Custom Placeholders (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithCustom);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("Important News");
+        assert.strictEqual(payload.content, "Important News");
       } finally {
         ctx.cleanup();
       }
@@ -568,7 +576,7 @@ describe("Custom Placeholders (e2e)", () => {
 
   describe("Integration with Other Features", () => {
     it("applies custom placeholders to HTML-converted content", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithCustom = createEventWithCustomPlaceholders(
         ctx.testFeedV2Event,
@@ -611,10 +619,10 @@ describe("Custom Placeholders (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithCustom);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
         const payload = getDiscordPayload(ctx);
         // HTML <strong> should be converted to ** before custom placeholder runs
-        expect(payload.content).toBe("BOLD:Important announcement");
+        assert.strictEqual(payload.content, "BOLD:Important announcement");
       } finally {
         ctx.cleanup();
       }

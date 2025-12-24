@@ -1,4 +1,5 @@
-import { describe, expect, it, beforeEach } from "bun:test";
+import { describe, it, beforeEach } from "node:test";
+import assert from "node:assert";
 import {
   calculateCacheKeyForArticles,
   doFeedArticlesExistInCache,
@@ -30,7 +31,7 @@ function createArticle(
   };
 }
 
-describe("parsed-articles-cache", () => {
+describe("parsed-articles-cache", { concurrency: true }, () => {
   beforeEach(() => {
     clearInMemoryParsedArticlesCache();
   });
@@ -50,8 +51,8 @@ describe("parsed-articles-cache", () => {
       const key1 = calculateCacheKeyForArticles(params);
       const key2 = calculateCacheKeyForArticles(params);
 
-      expect(key1).toBe(key2);
-      expect(key1).toMatch(/^articles:com:[a-f0-9]{40}$/);
+      assert.strictEqual(key1, key2);
+      assert.ok(/^articles:com:[a-f0-9]{40}$/.test(key1));
     });
 
     it("generates different keys for different URLs", () => {
@@ -69,7 +70,7 @@ describe("parsed-articles-cache", () => {
         options,
       });
 
-      expect(key1).not.toBe(key2);
+      assert.notStrictEqual(key1, key2);
     });
 
     it("generates different keys for different format options", () => {
@@ -85,7 +86,7 @@ describe("parsed-articles-cache", () => {
         options: { formatOptions: { dateFormat: "DD/MM/YYYY" } },
       });
 
-      expect(key1).not.toBe(key2);
+      assert.notStrictEqual(key1, key2);
     });
 
     it("normalizes empty format options", () => {
@@ -107,7 +108,7 @@ describe("parsed-articles-cache", () => {
         },
       });
 
-      expect(key1).toBe(key2);
+      assert.strictEqual(key1, key2);
     });
 
     it("includes external feed properties in key", () => {
@@ -128,7 +129,7 @@ describe("parsed-articles-cache", () => {
         },
       });
 
-      expect(key1).not.toBe(key2);
+      assert.notStrictEqual(key1, key2);
     });
 
     it("includes request lookup details key in cache key", () => {
@@ -147,7 +148,7 @@ describe("parsed-articles-cache", () => {
         },
       });
 
-      expect(key1).not.toBe(key2);
+      assert.notStrictEqual(key1, key2);
     });
   });
 
@@ -155,38 +156,38 @@ describe("parsed-articles-cache", () => {
     const store = inMemoryParsedArticlesCacheStore;
 
     it("returns false for non-existent key", async () => {
-      expect(await store.exists("nonexistent")).toBe(false);
+      assert.strictEqual(await store.exists("nonexistent"), false);
     });
 
     it("returns null for non-existent key", async () => {
-      expect(await store.get("nonexistent")).toBeNull();
+      assert.strictEqual(await store.get("nonexistent"), null);
     });
 
     it("stores and retrieves a value", async () => {
       await store.set("test-key", "test-value", { expSeconds: 60 });
 
-      expect(await store.exists("test-key")).toBe(true);
-      expect(await store.get("test-key")).toBe("test-value");
+      assert.strictEqual(await store.exists("test-key"), true);
+      assert.strictEqual(await store.get("test-key"), "test-value");
     });
 
     it("deletes a value", async () => {
       await store.set("test-key", "test-value", { expSeconds: 60 });
       await store.del("test-key");
 
-      expect(await store.exists("test-key")).toBe(false);
+      assert.strictEqual(await store.exists("test-key"), false);
     });
 
     it("returns TTL for a key", async () => {
       await store.set("test-key", "test-value", { expSeconds: 60 });
 
       const ttl = await store.ttl("test-key");
-      expect(ttl).toBeGreaterThan(0);
-      expect(ttl).toBeLessThanOrEqual(60);
+      assert.ok(ttl > 0);
+      assert.ok(ttl <= 60);
     });
 
     it("returns -1 TTL for non-existent key", async () => {
       const ttl = await store.ttl("nonexistent");
-      expect(ttl).toBe(-1);
+      assert.strictEqual(ttl, -1);
     });
 
     it("preserves old TTL when useOldTTL is true", async () => {
@@ -204,7 +205,7 @@ describe("parsed-articles-cache", () => {
 
       // TTL should still be close to 100, not 10
       const ttl = await store.ttl("test-key");
-      expect(ttl).toBeGreaterThan(50);
+      assert.ok(ttl > 50);
     });
 
     it("updates expiration with expire", async () => {
@@ -212,7 +213,7 @@ describe("parsed-articles-cache", () => {
       await store.expire("test-key", 100);
 
       const ttl = await store.ttl("test-key");
-      expect(ttl).toBeGreaterThan(50);
+      assert.ok(ttl > 50);
     });
   });
 
@@ -224,7 +225,7 @@ describe("parsed-articles-cache", () => {
     };
 
     it("doFeedArticlesExistInCache returns false when not cached", async () => {
-      expect(await doFeedArticlesExistInCache(store, testParams)).toBe(false);
+      assert.strictEqual(await doFeedArticlesExistInCache(store, testParams), false);
     });
 
     it("setFeedArticlesInCache stores and getFeedArticlesFromCache retrieves", async () => {
@@ -237,9 +238,9 @@ describe("parsed-articles-cache", () => {
 
       const cached = await getFeedArticlesFromCache(store, testParams);
 
-      expect(cached).not.toBeNull();
-      expect(cached!.articles.length).toBe(2);
-      expect(cached!.articles[0]!.flattened.id).toBe("1");
+      assert.notStrictEqual(cached, null);
+      assert.strictEqual(cached!.articles.length, 2);
+      assert.strictEqual(cached!.articles[0]!.flattened.id, "1");
     });
 
     it("doFeedArticlesExistInCache returns true after caching", async () => {
@@ -248,7 +249,7 @@ describe("parsed-articles-cache", () => {
         data: { articles: [createArticle("1")] },
       });
 
-      expect(await doFeedArticlesExistInCache(store, testParams)).toBe(true);
+      assert.strictEqual(await doFeedArticlesExistInCache(store, testParams), true);
     });
 
     it("invalidateFeedArticlesCache removes cached articles", async () => {
@@ -259,7 +260,7 @@ describe("parsed-articles-cache", () => {
 
       await invalidateFeedArticlesCache(store, testParams);
 
-      expect(await doFeedArticlesExistInCache(store, testParams)).toBe(false);
+      assert.strictEqual(await doFeedArticlesExistInCache(store, testParams), false);
     });
 
     it("refreshFeedArticlesCacheExpiration updates TTL", async () => {
@@ -274,7 +275,7 @@ describe("parsed-articles-cache", () => {
       await refreshFeedArticlesCacheExpiration(store, testParams);
 
       // Should still exist and have a fresh TTL
-      expect(await doFeedArticlesExistInCache(store, testParams)).toBe(true);
+      assert.strictEqual(await doFeedArticlesExistInCache(store, testParams), true);
     });
 
     it("compresses and decompresses data correctly", async () => {
@@ -290,13 +291,9 @@ describe("parsed-articles-cache", () => {
 
       const cached = await getFeedArticlesFromCache(store, testParams);
 
-      expect(cached).not.toBeNull();
-      expect(cached!.articles[0]!.flattened.title).toBe(
-        "Article with special chars: <>&\"'"
-      );
-      expect(cached!.articles[1]!.flattened.description).toBe(
-        "Long description ".repeat(100)
-      );
+      assert.notStrictEqual(cached, null);
+      assert.strictEqual(cached!.articles[0]!.flattened.title, "Article with special chars: <>&\"'");
+      assert.strictEqual(cached!.articles[1]!.flattened.description, "Long description ".repeat(100));
     });
   });
 
@@ -315,7 +312,7 @@ describe("parsed-articles-cache", () => {
       });
 
       // Still should not exist
-      expect(await doFeedArticlesExistInCache(store, testParams)).toBe(false);
+      assert.strictEqual(await doFeedArticlesExistInCache(store, testParams), false);
     });
 
     it("updates cached articles when they exist", async () => {
@@ -333,7 +330,7 @@ describe("parsed-articles-cache", () => {
 
       // Should have updated articles
       const cached = await getFeedArticlesFromCache(store, testParams);
-      expect(cached!.articles.length).toBe(2);
+      assert.strictEqual(cached!.articles.length, 2);
     });
 
     it("preserves TTL when updating", async () => {
@@ -361,7 +358,7 @@ describe("parsed-articles-cache", () => {
       );
 
       // TTL should be close to before (within a few seconds)
-      expect(Math.abs(ttlAfter - ttlBefore)).toBeLessThan(5);
+      assert.ok(Math.abs(ttlAfter - ttlBefore) < 5);
     });
   });
 });

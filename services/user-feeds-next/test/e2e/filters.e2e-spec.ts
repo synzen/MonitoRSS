@@ -1,11 +1,13 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, before, after } from "node:test";
+import assert from "node:assert";
 import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../../src/delivery";
 import getTestRssFeed from "../data/test-rss-feed";
 import { createTestContext } from "../helpers/test-context";
+import { setupTestDatabase, teardownTestDatabase, type TestStores } from "../helpers/setup-integration-tests";
 import type { FeedV2Event } from "../../src/shared/schemas";
 
-// Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
+let stores: TestStores;
 
 // Filter expression type constants
 const ExpressionType = {
@@ -117,16 +119,24 @@ function createEventWithFilters(
  * Helper to extract the Discord payload from captured requests
  */
 function getDiscordPayload(ctx: ReturnType<typeof createTestContext>) {
-  expect(ctx.discordClient.capturedPayloads.length).toBeGreaterThan(0);
+  assert.ok(ctx.discordClient.capturedPayloads.length > 0);
   return JSON.parse(
     ctx.discordClient.capturedPayloads[0]!.options.body as string
   );
 }
 
-describe("Filters (e2e)", () => {
+describe("Filters (e2e)", { concurrency: true }, () => {
+  before(async () => {
+    stores = await setupTestDatabase();
+  });
+
+  after(async () => {
+    await teardownTestDatabase();
+  });
+
   describe("Basic Filter Tests", () => {
     it("blocks article when CONTAINS filter does not match", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithFilter = createEventWithFilters(
         ctx.testFeedV2Event,
@@ -146,17 +156,17 @@ describe("Filters (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithFilter);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.FilteredOut);
-        expect(ctx.discordClient.capturedPayloads.length).toBe(0);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.FilteredOut);
+        assert.strictEqual(ctx.discordClient.capturedPayloads.length, 0);
       } finally {
         ctx.cleanup();
       }
     });
 
     it("passes article when CONTAINS filter matches", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithFilter = createEventWithFilters(
         ctx.testFeedV2Event,
@@ -176,17 +186,17 @@ describe("Filters (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithFilter);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
-        expect(ctx.discordClient.capturedPayloads.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
+        assert.strictEqual(ctx.discordClient.capturedPayloads.length, 1);
       } finally {
         ctx.cleanup();
       }
     });
 
     it("blocks article when EQ filter does not match exactly", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithFilter = createEventWithFilters(
         ctx.testFeedV2Event,
@@ -206,17 +216,17 @@ describe("Filters (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithFilter);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.FilteredOut);
-        expect(ctx.discordClient.capturedPayloads.length).toBe(0);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.FilteredOut);
+        assert.strictEqual(ctx.discordClient.capturedPayloads.length, 0);
       } finally {
         ctx.cleanup();
       }
     });
 
     it("passes article when EQ filter matches exactly", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithFilter = createEventWithFilters(
         ctx.testFeedV2Event,
@@ -233,10 +243,10 @@ describe("Filters (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithFilter);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
-        expect(ctx.discordClient.capturedPayloads.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
+        assert.strictEqual(ctx.discordClient.capturedPayloads.length, 1);
       } finally {
         ctx.cleanup();
       }
@@ -245,7 +255,7 @@ describe("Filters (e2e)", () => {
 
   describe("Operator Tests", () => {
     it("MATCHES operator filters using regex pattern", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       // Match titles starting with "Breaking:"
       const eventWithFilter = createEventWithFilters(
@@ -267,17 +277,17 @@ describe("Filters (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithFilter);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
-        expect(ctx.discordClient.capturedPayloads.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
+        assert.strictEqual(ctx.discordClient.capturedPayloads.length, 1);
       } finally {
         ctx.cleanup();
       }
     });
 
     it("MATCHES operator blocks when regex does not match", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithFilter = createEventWithFilters(
         ctx.testFeedV2Event,
@@ -298,16 +308,16 @@ describe("Filters (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithFilter);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.FilteredOut);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.FilteredOut);
       } finally {
         ctx.cleanup();
       }
     });
 
     it("NOT operator negates the filter result", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       // Block articles that contain "spam" using NOT + CONTAINS
       const eventWithFilter = createEventWithFilters(
@@ -328,9 +338,9 @@ describe("Filters (e2e)", () => {
         }));
 
         const passResults = await ctx.handleEvent(eventWithFilter);
-        expect(passResults).not.toBeNull();
-        expect(passResults!.length).toBe(1);
-        expect(passResults![0]!.status).toBe(
+        assert.notStrictEqual(passResults, null);
+        assert.strictEqual(passResults!.length, 1);
+        assert.strictEqual(passResults![0]!.status,
           ArticleDeliveryStatus.PendingDelivery
         );
 
@@ -346,9 +356,9 @@ describe("Filters (e2e)", () => {
         }));
 
         const blockResults = await ctx.handleEvent(eventWithFilter);
-        expect(blockResults).not.toBeNull();
-        expect(blockResults!.length).toBe(1);
-        expect(blockResults![0]!.status).toBe(
+        assert.notStrictEqual(blockResults, null);
+        assert.strictEqual(blockResults!.length, 1);
+        assert.strictEqual(blockResults![0]!.status,
           ArticleDeliveryStatus.FilteredOut
         );
       } finally {
@@ -357,7 +367,7 @@ describe("Filters (e2e)", () => {
     });
 
     it("AND operator requires all conditions to pass", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithFilter = createEventWithFilters(
         ctx.testFeedV2Event,
@@ -386,9 +396,9 @@ describe("Filters (e2e)", () => {
         }));
 
         const partialResults = await ctx.handleEvent(eventWithFilter);
-        expect(partialResults).not.toBeNull();
-        expect(partialResults!.length).toBe(1);
-        expect(partialResults![0]!.status).toBe(
+        assert.notStrictEqual(partialResults, null);
+        assert.strictEqual(partialResults!.length, 1);
+        assert.strictEqual(partialResults![0]!.status,
           ArticleDeliveryStatus.FilteredOut
         );
 
@@ -410,9 +420,9 @@ describe("Filters (e2e)", () => {
         }));
 
         const passResults = await ctx.handleEvent(eventWithFilter);
-        expect(passResults).not.toBeNull();
-        expect(passResults!.length).toBe(1);
-        expect(passResults![0]!.status).toBe(
+        assert.notStrictEqual(passResults, null);
+        assert.strictEqual(passResults!.length, 1);
+        assert.strictEqual(passResults![0]!.status,
           ArticleDeliveryStatus.PendingDelivery
         );
       } finally {
@@ -421,7 +431,7 @@ describe("Filters (e2e)", () => {
     });
 
     it("OR operator requires at least one condition to pass", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithFilter = createEventWithFilters(
         ctx.testFeedV2Event,
@@ -444,9 +454,9 @@ describe("Filters (e2e)", () => {
         }));
 
         const blockResults = await ctx.handleEvent(eventWithFilter);
-        expect(blockResults).not.toBeNull();
-        expect(blockResults!.length).toBe(1);
-        expect(blockResults![0]!.status).toBe(
+        assert.notStrictEqual(blockResults, null);
+        assert.strictEqual(blockResults!.length, 1);
+        assert.strictEqual(blockResults![0]!.status,
           ArticleDeliveryStatus.FilteredOut
         );
 
@@ -462,9 +472,9 @@ describe("Filters (e2e)", () => {
         }));
 
         const passResults = await ctx.handleEvent(eventWithFilter);
-        expect(passResults).not.toBeNull();
-        expect(passResults!.length).toBe(1);
-        expect(passResults![0]!.status).toBe(
+        assert.notStrictEqual(passResults, null);
+        assert.strictEqual(passResults!.length, 1);
+        assert.strictEqual(passResults![0]!.status,
           ArticleDeliveryStatus.PendingDelivery
         );
       } finally {
@@ -475,7 +485,7 @@ describe("Filters (e2e)", () => {
 
   describe("Complex Filter Tests", () => {
     it("handles nested AND/OR expressions", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       // (contains "news" OR contains "update") AND contains "important"
       const eventWithFilter = createEventWithFilters(
@@ -508,9 +518,9 @@ describe("Filters (e2e)", () => {
         }));
 
         const passResults = await ctx.handleEvent(eventWithFilter);
-        expect(passResults).not.toBeNull();
-        expect(passResults!.length).toBe(1);
-        expect(passResults![0]!.status).toBe(
+        assert.notStrictEqual(passResults, null);
+        assert.strictEqual(passResults!.length, 1);
+        assert.strictEqual(passResults![0]!.status,
           ArticleDeliveryStatus.PendingDelivery
         );
 
@@ -532,9 +542,9 @@ describe("Filters (e2e)", () => {
         }));
 
         const blockResults = await ctx.handleEvent(eventWithFilter);
-        expect(blockResults).not.toBeNull();
-        expect(blockResults!.length).toBe(1);
-        expect(blockResults![0]!.status).toBe(
+        assert.notStrictEqual(blockResults, null);
+        assert.strictEqual(blockResults!.length, 1);
+        assert.strictEqual(blockResults![0]!.status,
           ArticleDeliveryStatus.FilteredOut
         );
       } finally {
@@ -543,7 +553,7 @@ describe("Filters (e2e)", () => {
     });
 
     it("filters on multiple fields simultaneously", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithFilter = createEventWithFilters(
         ctx.testFeedV2Event,
@@ -573,16 +583,16 @@ describe("Filters (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithFilter);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
       } finally {
         ctx.cleanup();
       }
     });
 
     it("CONTAINS is case-insensitive", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithFilter = createEventWithFilters(
         ctx.testFeedV2Event,
@@ -603,9 +613,9 @@ describe("Filters (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithFilter);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
       } finally {
         ctx.cleanup();
       }
@@ -614,7 +624,7 @@ describe("Filters (e2e)", () => {
 
   describe("Edge Cases", () => {
     it("treats missing field as empty string", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       // Filter on a field that doesn't exist in the article
       const eventWithFilter = createEventWithFilters(
@@ -636,16 +646,16 @@ describe("Filters (e2e)", () => {
         const results = await ctx.handleEvent(eventWithFilter);
 
         // Should be filtered out since empty string doesn't contain "value"
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.FilteredOut);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.FilteredOut);
       } finally {
         ctx.cleanup();
       }
     });
 
     it("handles regex with special characters", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       // Match version numbers like "v1.2.3"
       const eventWithFilter = createEventWithFilters(
@@ -666,16 +676,16 @@ describe("Filters (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithFilter);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
       } finally {
         ctx.cleanup();
       }
     });
 
     it("handles empty filter children gracefully", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       // AND with a single child
       const eventWithFilter = createEventWithFilters(
@@ -696,16 +706,16 @@ describe("Filters (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithFilter);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
       } finally {
         ctx.cleanup();
       }
     });
 
     it("delivers article content when filter passes", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithFilter = createEventWithFilters(
         ctx.testFeedV2Event,
@@ -725,13 +735,13 @@ describe("Filters (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithFilter);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
 
         // Verify the content was delivered correctly
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("A special announcement");
+        assert.strictEqual(payload.content, "A special announcement");
       } finally {
         ctx.cleanup();
       }

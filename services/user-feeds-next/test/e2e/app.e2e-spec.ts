@@ -1,24 +1,33 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, before, after } from "node:test";
+import * as assert from "node:assert";
 import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../../src/delivery";
 import getTestRssFeed, { DEFAULT_TEST_ARTICLES } from "../data/test-rss-feed";
 import { createTestContext } from "../helpers/test-context";
+import {
+  setupTestDatabase,
+  teardownTestDatabase,
+  type TestStores,
+} from "../helpers/setup-integration-tests";
 
-// Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
+let stores: TestStores;
 
-describe("App (e2e)", () => {
+describe("App (e2e)", { concurrency: true }, () => {
+  before(async () => {
+    stores = await setupTestDatabase();
+  });
+
+  after(async () => {
+    await teardownTestDatabase();
+  });
 
   it("sends new articles based on guid", async () => {
-    const ctx = createTestContext();
-    console.log("APP DEBUG: feedUrl=", ctx.feedUrl, "feedId=", ctx.testFeedV2Event.data.feed.id);
+    const ctx = createTestContext(stores);
 
     try {
       const seedResult = await ctx.handleEvent();
-      console.log("APP DEBUG: seed result=", seedResult?.length);
-      ctx.discordClient.clear(); // keep clear separate here for debugging
+      ctx.discordClient.clear();
 
-      // Override fetch to return ONLY a new article (replace: true)
-      // This simulates a feed where a new article appeared and old one dropped off
       ctx.setFeedResponse(() => ({
         body: getTestRssFeed(
           [{ guid: "new-article", title: "New Article Title" }],
@@ -28,21 +37,18 @@ describe("App (e2e)", () => {
       }));
 
       const results = await ctx.handleEvent();
-      console.log("APP DEBUG: delivery result=", results?.length);
 
-      expect(results).not.toBeNull();
-      expect(results!.length).toBe(1);
-      // Channel delivery is asynchronous, so status is PendingDelivery
-      expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
-      // Verify Discord API was called
-      expect(ctx.discordClient.capturedPayloads.length).toBe(1);
+      assert.notStrictEqual(results, null);
+      assert.strictEqual(results!.length, 1);
+      assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
+      assert.strictEqual(ctx.discordClient.capturedPayloads.length, 1);
     } finally {
       ctx.cleanup();
     }
   });
 
   it("does not send new articles if blocked by comparisons", async () => {
-    const ctx = createTestContext({
+    const ctx = createTestContext(stores, {
       feedEventOverrides: {
         blockingComparisons: ["title"],
       },
@@ -50,11 +56,8 @@ describe("App (e2e)", () => {
 
     try {
       await ctx.seedArticles();
-
-      // Initialize the comparisons storage first
       await ctx.handleEvent();
 
-      // Fetch returns article with different guid but same title as existing article
       ctx.setFeedResponse(() => ({
         body: getTestRssFeed([
           {
@@ -67,15 +70,15 @@ describe("App (e2e)", () => {
 
       const results = await ctx.handleEvent();
 
-      expect(results).not.toBeNull();
-      expect(results!.length).toBe(0);
+      assert.notStrictEqual(results, null);
+      assert.strictEqual(results!.length, 0);
     } finally {
       ctx.cleanup();
     }
   });
 
   it("sends new articles based on passing comparisons", async () => {
-    const ctx = createTestContext({
+    const ctx = createTestContext(stores, {
       feedEventOverrides: {
         passingComparisons: ["title"],
       },
@@ -83,11 +86,8 @@ describe("App (e2e)", () => {
 
     try {
       await ctx.seedArticles();
-
-      // Initialize the comparisons storage first
       await ctx.handleEvent();
 
-      // Fetch returns article with same guid but different title
       ctx.setFeedResponse(() => ({
         body: getTestRssFeed(
           [
@@ -103,12 +103,10 @@ describe("App (e2e)", () => {
 
       const results = await ctx.handleEvent();
 
-      expect(results).not.toBeNull();
-      expect(results!.length).toBe(1);
-      // Channel delivery is asynchronous, so status is PendingDelivery
-      expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+      assert.notStrictEqual(results, null);
+      assert.strictEqual(results!.length, 1);
+      assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
 
-      // Test again with another different title
       ctx.setFeedResponse(() => ({
         body: getTestRssFeed(
           [
@@ -124,17 +122,16 @@ describe("App (e2e)", () => {
 
       const results2 = await ctx.handleEvent();
 
-      expect(results2).not.toBeNull();
-      expect(results2!.length).toBe(1);
-      // Channel delivery is asynchronous, so status is PendingDelivery
-      expect(results2![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+      assert.notStrictEqual(results2, null);
+      assert.strictEqual(results2!.length, 1);
+      assert.strictEqual(results2![0]!.status, ArticleDeliveryStatus.PendingDelivery);
     } finally {
       ctx.cleanup();
     }
   });
 
   it("does not send new articles based on passing comparisons if there are no new articles", async () => {
-    const ctx = createTestContext({
+    const ctx = createTestContext(stores, {
       feedEventOverrides: {
         passingComparisons: ["rss:title__#"],
       },
@@ -142,11 +139,8 @@ describe("App (e2e)", () => {
 
     try {
       await ctx.seedArticles();
-
-      // Initialize the comparisons storage first
       await ctx.handleEvent();
 
-      // Fetch returns the same articles (no new articles, no title change)
       ctx.setFeedResponse(() => ({
         body: getTestRssFeed(),
         hash: randomUUID(),
@@ -154,17 +148,16 @@ describe("App (e2e)", () => {
 
       const results = await ctx.handleEvent();
 
-      expect(results).not.toBeNull();
-      expect(results!.length).toBe(0);
+      assert.notStrictEqual(results, null);
+      assert.strictEqual(results!.length, 0);
     } finally {
       ctx.cleanup();
     }
   });
 
   it("formats HTML to Discord markdown in delivered payloads", async () => {
-    const ctx = createTestContext();
+    const ctx = createTestContext(stores);
 
-    // Modify the medium to use description instead of title
     const eventWithDescription = {
       ...ctx.testFeedV2Event,
       data: {
@@ -182,10 +175,8 @@ describe("App (e2e)", () => {
     };
 
     try {
-      // Seed with modified event
       await ctx.seedArticles(eventWithDescription);
 
-      // Feed returns article with HTML content
       ctx.setFeedResponse(() => ({
         body: getTestRssFeed([
           {
@@ -198,22 +189,19 @@ describe("App (e2e)", () => {
 
       const results = await ctx.handleEvent(eventWithDescription);
 
-      expect(results).not.toBeNull();
-      expect(results!.length).toBe(1);
-      // Channel delivery is asynchronous, so status is PendingDelivery
-      expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+      assert.notStrictEqual(results, null);
+      assert.strictEqual(results!.length, 1);
+      assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
 
-      // Check the payload that was sent to Discord
-      expect(ctx.discordClient.capturedPayloads.length).toBeGreaterThan(0);
+      assert.ok(ctx.discordClient.capturedPayloads.length > 0);
       const payload = JSON.parse(
         ctx.discordClient.capturedPayloads[0]!.options.body as string
       );
 
-      // Verify HTML was converted to Discord markdown
-      expect(payload.content).toContain("**Bold**");
-      expect(payload.content).toContain("*italic*");
-      expect(payload.content).not.toContain("<strong>");
-      expect(payload.content).not.toContain("<em>");
+      assert.ok(payload.content.includes("**Bold**"));
+      assert.ok(payload.content.includes("*italic*"));
+      assert.ok(!payload.content.includes("<strong>"));
+      assert.ok(!payload.content.includes("<em>"));
     } finally {
       ctx.cleanup();
     }

@@ -1,4 +1,5 @@
-import { describe, expect, it } from "bun:test";
+import { describe, it } from "node:test";
+import assert from "node:assert";
 import type { JobResponse } from "@synzen/discord-rest";
 import type { JobResponseError } from "@synzen/discord-rest/dist/RESTConsumer";
 import {
@@ -63,7 +64,7 @@ function createMockPublisher(): {
   return { publisher, messages };
 }
 
-describe("feed-event-handler", () => {
+describe("feed-event-handler", { concurrency: true }, () => {
   describe("handleArticleDeliveryResult", () => {
     it("does not emit rejection event for successful delivery", async () => {
       const { publisher, messages } = createMockPublisher();
@@ -79,7 +80,7 @@ describe("feed-event-handler", () => {
         inMemoryDeliveryRecordStore
       );
 
-      expect(messages).toHaveLength(0);
+      assert.strictEqual(messages.length, 0);
     });
 
     it("emits badFormat rejection event for 400 response", async () => {
@@ -101,16 +102,14 @@ describe("feed-event-handler", () => {
         inMemoryDeliveryRecordStore
       );
 
-      expect(messages).toHaveLength(1);
+      assert.strictEqual(messages.length, 1);
       const { queue, payload } = messages[0]!;
-      expect(queue).toBe(
-        MessageBrokerQueue.FeedRejectedArticleDisableConnection
-      );
-      expect(payload.data.rejectedCode).toBe("user-feeds/bad-request");
-      expect((payload.data.feed as { id: string }).id).toBe("feed-400");
-      expect((payload.data.medium as { id: string }).id).toBe("medium-400");
-      expect(payload.data.articleId).toBe("article-400");
-      expect(payload.data.rejectedMessage).toContain("Bad embed");
+      assert.strictEqual(queue, MessageBrokerQueue.FeedRejectedArticleDisableConnection);
+      assert.strictEqual(payload.data.rejectedCode, "user-feeds/bad-request");
+      assert.strictEqual((payload.data.feed as { id: string }).id, "feed-400");
+      assert.strictEqual((payload.data.medium as { id: string }).id, "medium-400");
+      assert.strictEqual(payload.data.articleId, "article-400");
+      assert.ok((payload.data.rejectedMessage as string).includes("Bad embed"));
     });
 
     it("emits missingPermissions rejection event for 403 response", async () => {
@@ -131,14 +130,12 @@ describe("feed-event-handler", () => {
         inMemoryDeliveryRecordStore
       );
 
-      expect(messages).toHaveLength(1);
+      assert.strictEqual(messages.length, 1);
       const { queue, payload } = messages[0]!;
-      expect(queue).toBe(
-        MessageBrokerQueue.FeedRejectedArticleDisableConnection
-      );
-      expect(payload.data.rejectedCode).toBe("user-feeds/forbidden");
-      expect((payload.data.feed as { id: string }).id).toBe("feed-403");
-      expect((payload.data.medium as { id: string }).id).toBe("medium-403");
+      assert.strictEqual(queue, MessageBrokerQueue.FeedRejectedArticleDisableConnection);
+      assert.strictEqual(payload.data.rejectedCode, "user-feeds/forbidden");
+      assert.strictEqual((payload.data.feed as { id: string }).id, "feed-403");
+      assert.strictEqual((payload.data.medium as { id: string }).id, "medium-403");
     });
 
     it("emits notFound rejection event for 404 response", async () => {
@@ -159,14 +156,12 @@ describe("feed-event-handler", () => {
         inMemoryDeliveryRecordStore
       );
 
-      expect(messages).toHaveLength(1);
+      assert.strictEqual(messages.length, 1);
       const { queue, payload } = messages[0]!;
-      expect(queue).toBe(
-        MessageBrokerQueue.FeedRejectedArticleDisableConnection
-      );
-      expect(payload.data.rejectedCode).toBe("user-feeds/medium-not-found");
-      expect((payload.data.feed as { id: string }).id).toBe("feed-404");
-      expect((payload.data.medium as { id: string }).id).toBe("medium-404");
+      assert.strictEqual(queue, MessageBrokerQueue.FeedRejectedArticleDisableConnection);
+      assert.strictEqual(payload.data.rejectedCode, "user-feeds/medium-not-found");
+      assert.strictEqual((payload.data.feed as { id: string }).id, "feed-404");
+      assert.strictEqual((payload.data.medium as { id: string }).id, "medium-404");
     });
 
     it("does not emit rejection event for 5xx errors", async () => {
@@ -183,7 +178,7 @@ describe("feed-event-handler", () => {
         inMemoryDeliveryRecordStore
       );
 
-      expect(messages).toHaveLength(0);
+      assert.strictEqual(messages.length, 0);
     });
 
     it("does not emit rejection event for error state", async () => {
@@ -200,7 +195,7 @@ describe("feed-event-handler", () => {
         inMemoryDeliveryRecordStore
       );
 
-      expect(messages).toHaveLength(0);
+      assert.strictEqual(messages.length, 0);
     });
   });
 });

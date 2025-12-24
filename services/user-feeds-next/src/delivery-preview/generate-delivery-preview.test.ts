@@ -1,4 +1,5 @@
-import { describe, expect, it, beforeEach } from "bun:test";
+import { describe, it, beforeEach } from "node:test";
+import assert from "node:assert";
 import { generateDeliveryPreview } from "./generate-delivery-preview";
 import { ArticleDeliveryOutcome, DeliveryPreviewStage, DeliveryPreviewStageStatus } from "./types";
 import type { DeliveryPreviewDependencies, DeliveryPreviewInput } from "./generate-delivery-preview";
@@ -36,7 +37,7 @@ function createArticle(
   };
 }
 
-describe("generateDeliveryPreview", () => {
+describe("generateDeliveryPreview", { concurrency: true }, () => {
   beforeEach(() => {
     clearInMemoryStore();
   });
@@ -75,8 +76,8 @@ describe("generateDeliveryPreview", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.FirstRunBaseline);
-      expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("first");
+      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.FirstRunBaseline);
+      assert.ok(results[0]?.mediumResults[0]?.outcomeReason?.includes("first"));
     });
   });
 
@@ -94,8 +95,8 @@ describe("generateDeliveryPreview", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.DuplicateId);
-      expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("already");
+      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.DuplicateId);
+      assert.ok(results[0]?.mediumResults[0]?.outcomeReason?.includes("already"));
     });
   });
 
@@ -129,8 +130,8 @@ describe("generateDeliveryPreview", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.BlockedByComparison);
-      expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("block");
+      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.BlockedByComparison);
+      assert.ok(results[0]?.mediumResults[0]?.outcomeReason?.includes("block"));
     });
   });
 
@@ -160,8 +161,8 @@ describe("generateDeliveryPreview", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.WouldDeliverPassingComparison);
-      expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("changed");
+      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.WouldDeliverPassingComparison);
+      assert.ok(results[0]?.mediumResults[0]?.outcomeReason?.includes("changed"));
     });
   });
 
@@ -194,8 +195,8 @@ describe("generateDeliveryPreview", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.FilteredByDateCheck);
-      expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("old");
+      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.FilteredByDateCheck);
+      assert.ok(results[0]?.mediumResults[0]?.outcomeReason?.includes("old"));
     });
   });
 
@@ -236,8 +237,8 @@ describe("generateDeliveryPreview", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.RateLimitedFeed);
-      expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("limit");
+      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.RateLimitedFeed);
+      assert.ok(results[0]?.mediumResults[0]?.outcomeReason?.includes("limit"));
     });
   });
 
@@ -256,8 +257,8 @@ describe("generateDeliveryPreview", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.WouldDeliver);
-      expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("pass");
+      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.WouldDeliver);
+      assert.ok(results[0]?.mediumResults[0]?.outcomeReason?.includes("pass"));
     });
   });
 
@@ -273,7 +274,7 @@ describe("generateDeliveryPreview", () => {
       const feedState = mediumResult.stages.find(
         (s) => s.stage === DeliveryPreviewStage.FeedState
       );
-      expect(feedState).toBeDefined();
+      assert.notStrictEqual(feedState, undefined);
     });
   });
 
@@ -316,8 +317,8 @@ describe("generateDeliveryPreview", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.FilteredByMediumFilter);
-      expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("filter");
+      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.FilteredByMediumFilter);
+      assert.ok(results[0]?.mediumResults[0]?.outcomeReason?.includes("filter"));
     });
 
     it("records MediumFilter stage when filter is evaluated", async () => {
@@ -362,8 +363,8 @@ describe("generateDeliveryPreview", () => {
       const mediumFilterStage = mediumResult.stages.find(
         (s) => s.stage === DeliveryPreviewStage.MediumFilter
       );
-      expect(mediumFilterStage).toBeDefined();
-      expect(mediumFilterStage!.status).toBe(DeliveryPreviewStageStatus.Passed);
+      assert.notStrictEqual(mediumFilterStage, undefined);
+      assert.strictEqual(mediumFilterStage!.status, DeliveryPreviewStageStatus.Passed);
     });
   });
 
@@ -412,13 +413,13 @@ describe("generateDeliveryPreview", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.RateLimitedMedium);
-      expect(results[0]?.mediumResults[0]?.outcomeReason).toContain("rate limit");
+      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.RateLimitedMedium);
+      assert.ok(results[0]?.mediumResults[0]?.outcomeReason?.includes("rate limit"));
     });
   });
 });
 
-describe("generateDeliveryPreview (batch)", () => {
+describe("generateDeliveryPreview (batch)", { concurrency: true }, () => {
   beforeEach(() => {
     clearInMemoryStore();
   });
@@ -461,9 +462,9 @@ describe("generateDeliveryPreview (batch)", () => {
 
       const response = await generateDeliveryPreview(input, deps);
 
-      expect(response.results).toHaveLength(3);
-      expect(response.errors).toHaveLength(0);
-      expect(response.results.map((r: { articleId: string }) => r.articleId)).toEqual([
+      assert.strictEqual(response.results.length, 3);
+      assert.strictEqual(response.errors.length, 0);
+      assert.deepStrictEqual(response.results.map((r: { articleId: string }) => r.articleId), [
         "article-1",
         "article-2",
         "article-3",
@@ -484,8 +485,8 @@ describe("generateDeliveryPreview (batch)", () => {
 
       const response = await generateDeliveryPreview(input, deps);
 
-      expect(response.results).toHaveLength(1);
-      expect(response.results[0]?.articleId).toBe("article-2");
+      assert.strictEqual(response.results.length, 1);
+      assert.strictEqual(response.results[0]?.articleId, "article-2");
     });
   });
 
@@ -501,12 +502,8 @@ describe("generateDeliveryPreview (batch)", () => {
       const response = await generateDeliveryPreview(input, deps);
 
       // Both should have FirstRunBaseline since no prior articles
-      expect(response.results[0]?.mediumResults[0]?.outcome).toBe(
-        ArticleDeliveryOutcome.FirstRunBaseline
-      );
-      expect(response.results[1]?.mediumResults[0]?.outcome).toBe(
-        ArticleDeliveryOutcome.FirstRunBaseline
-      );
+      assert.strictEqual(response.results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.FirstRunBaseline);
+      assert.strictEqual(response.results[1]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.FirstRunBaseline);
     });
   });
 
@@ -520,10 +517,10 @@ describe("generateDeliveryPreview (batch)", () => {
 
       const response = await generateDeliveryPreview(input, deps);
 
-      expect(response.results).toHaveLength(1);
-      expect(response.results[0]?.articleId).toBe("article-1");
-      expect(response.results[0]?.mediumResults[0]).not.toHaveProperty("stages");
-      expect(response.results[0]?.mediumResults[0]?.outcome).toBeDefined();
+      assert.strictEqual(response.results.length, 1);
+      assert.strictEqual(response.results[0]?.articleId, "article-1");
+      assert.strictEqual((response.results[0]?.mediumResults[0] as Record<string, unknown>).stages, undefined);
+      assert.notStrictEqual(response.results[0]?.mediumResults[0]?.outcome, undefined);
     });
 
     it("summaryOnly=false includes stages in medium results", async () => {
@@ -535,10 +532,10 @@ describe("generateDeliveryPreview (batch)", () => {
 
       const response = await generateDeliveryPreview(input, deps);
 
-      expect(response.results).toHaveLength(1);
+      assert.strictEqual(response.results.length, 1);
       const mediumResult = response.results[0]?.mediumResults[0] as { stages: unknown[] };
-      expect(mediumResult).toHaveProperty("stages");
-      expect(mediumResult.stages.length).toBeGreaterThan(0);
+      assert.notStrictEqual(mediumResult.stages, undefined);
+      assert.ok(mediumResult.stages.length > 0);
     });
   });
 
@@ -550,13 +547,13 @@ describe("generateDeliveryPreview (batch)", () => {
 
       const response = await generateDeliveryPreview(input, deps);
 
-      expect(response.results).toHaveLength(0);
-      expect(response.errors).toHaveLength(0);
+      assert.strictEqual(response.results.length, 0);
+      assert.strictEqual(response.errors.length, 0);
     });
   });
 });
 
-describe("Aggregate outcome computation", () => {
+describe("Aggregate outcome computation", { concurrency: true }, () => {
   beforeEach(() => {
     clearInMemoryStore();
   });
@@ -626,9 +623,9 @@ describe("Aggregate outcome computation", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results).toHaveLength(1);
-      expect(results[0]?.outcome).toBe(ArticleDeliveryOutcome.MixedResults);
-      expect(results[0]?.outcomeReason).toContain("Mixed results");
+      assert.strictEqual(results.length, 1);
+      assert.strictEqual(results[0]?.outcome, ArticleDeliveryOutcome.MixedResults);
+      assert.ok(results[0]?.outcomeReason?.includes("Mixed results"));
     });
 
     it("returns any medium's outcome as aggregate when all mediums have same outcome", async () => {
@@ -646,9 +643,9 @@ describe("Aggregate outcome computation", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results).toHaveLength(1);
-      expect(results[0]?.outcome).toBe(ArticleDeliveryOutcome.WouldDeliver);
-      expect(results[0]?.outcomeReason).toContain("pass");
+      assert.strictEqual(results.length, 1);
+      assert.strictEqual(results[0]?.outcome, ArticleDeliveryOutcome.WouldDeliver);
+      assert.ok(results[0]?.outcomeReason?.includes("pass"));
     });
 
     it("returns MixedResults when one medium would deliver and another is rate limited", async () => {
@@ -682,9 +679,9 @@ describe("Aggregate outcome computation", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results).toHaveLength(1);
-      expect(results[0]?.outcome).toBe(ArticleDeliveryOutcome.MixedResults);
-      expect(results[0]?.outcomeReason).toContain("Mixed results");
+      assert.strictEqual(results.length, 1);
+      assert.strictEqual(results[0]?.outcome, ArticleDeliveryOutcome.MixedResults);
+      assert.ok(results[0]?.outcomeReason?.includes("Mixed results"));
     });
 
     it("returns MixedResults when one medium would deliver and another is filtered", async () => {
@@ -702,9 +699,9 @@ describe("Aggregate outcome computation", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results).toHaveLength(1);
-      expect(results[0]?.outcome).toBe(ArticleDeliveryOutcome.MixedResults);
-      expect(results[0]?.outcomeReason).toContain("Mixed results");
+      assert.strictEqual(results.length, 1);
+      assert.strictEqual(results[0]?.outcome, ArticleDeliveryOutcome.MixedResults);
+      assert.ok(results[0]?.outcomeReason?.includes("Mixed results"));
     });
 
     it("returns MixedResults when one medium is rate limited and another is filtered", async () => {
@@ -738,14 +735,14 @@ describe("Aggregate outcome computation", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results).toHaveLength(1);
-      expect(results[0]?.outcome).toBe(ArticleDeliveryOutcome.MixedResults);
-      expect(results[0]?.outcomeReason).toContain("Mixed results");
+      assert.strictEqual(results.length, 1);
+      assert.strictEqual(results[0]?.outcome, ArticleDeliveryOutcome.MixedResults);
+      assert.ok(results[0]?.outcomeReason?.includes("Mixed results"));
     });
   });
 });
 
-describe("Multiple mediums with different outcomes", () => {
+describe("Multiple mediums with different outcomes", { concurrency: true }, () => {
   beforeEach(() => {
     clearInMemoryStore();
   });
@@ -815,12 +812,12 @@ describe("Multiple mediums with different outcomes", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results).toHaveLength(1);
-      expect(results[0]?.mediumResults).toHaveLength(2);
-      expect(results[0]?.mediumResults[0]?.mediumId).toBe("medium-1");
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.WouldDeliver);
-      expect(results[0]?.mediumResults[1]?.mediumId).toBe("medium-2");
-      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDeliveryOutcome.FilteredByMediumFilter);
+      assert.strictEqual(results.length, 1);
+      assert.strictEqual(results[0]?.mediumResults.length, 2);
+      assert.strictEqual(results[0]?.mediumResults[0]?.mediumId, "medium-1");
+      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.WouldDeliver);
+      assert.strictEqual(results[0]?.mediumResults[1]?.mediumId, "medium-2");
+      assert.strictEqual(results[0]?.mediumResults[1]?.outcome, ArticleDeliveryOutcome.FilteredByMediumFilter);
     });
   });
 
@@ -865,12 +862,12 @@ describe("Multiple mediums with different outcomes", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results).toHaveLength(1);
-      expect(results[0]?.mediumResults).toHaveLength(2);
-      expect(results[0]?.mediumResults[0]?.mediumId).toBe("medium-1");
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.WouldDeliver);
-      expect(results[0]?.mediumResults[1]?.mediumId).toBe("medium-2");
-      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDeliveryOutcome.RateLimitedMedium);
+      assert.strictEqual(results.length, 1);
+      assert.strictEqual(results[0]?.mediumResults.length, 2);
+      assert.strictEqual(results[0]?.mediumResults[0]?.mediumId, "medium-1");
+      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.WouldDeliver);
+      assert.strictEqual(results[0]?.mediumResults[1]?.mediumId, "medium-2");
+      assert.strictEqual(results[0]?.mediumResults[1]?.outcome, ArticleDeliveryOutcome.RateLimitedMedium);
     });
   });
 
@@ -907,14 +904,14 @@ describe("Multiple mediums with different outcomes", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results).toHaveLength(1);
-      expect(results[0]?.mediumResults).toHaveLength(3);
-      expect(results[0]?.mediumResults[0]?.mediumId).toBe("medium-1");
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.WouldDeliver);
-      expect(results[0]?.mediumResults[1]?.mediumId).toBe("medium-2");
-      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDeliveryOutcome.FilteredByMediumFilter);
-      expect(results[0]?.mediumResults[2]?.mediumId).toBe("medium-3");
-      expect(results[0]?.mediumResults[2]?.outcome).toBe(ArticleDeliveryOutcome.RateLimitedMedium);
+      assert.strictEqual(results.length, 1);
+      assert.strictEqual(results[0]?.mediumResults.length, 3);
+      assert.strictEqual(results[0]?.mediumResults[0]?.mediumId, "medium-1");
+      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.WouldDeliver);
+      assert.strictEqual(results[0]?.mediumResults[1]?.mediumId, "medium-2");
+      assert.strictEqual(results[0]?.mediumResults[1]?.outcome, ArticleDeliveryOutcome.FilteredByMediumFilter);
+      assert.strictEqual(results[0]?.mediumResults[2]?.mediumId, "medium-3");
+      assert.strictEqual(results[0]?.mediumResults[2]?.outcome, ArticleDeliveryOutcome.RateLimitedMedium);
     });
   });
 
@@ -953,12 +950,12 @@ describe("Multiple mediums with different outcomes", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results).toHaveLength(1);
-      expect(results[0]?.mediumResults).toHaveLength(2);
-      expect(results[0]?.mediumResults[0]?.mediumId).toBe("medium-1");
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.WouldDeliver);
-      expect(results[0]?.mediumResults[1]?.mediumId).toBe("medium-2");
-      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDeliveryOutcome.RateLimitedMedium);
+      assert.strictEqual(results.length, 1);
+      assert.strictEqual(results[0]?.mediumResults.length, 2);
+      assert.strictEqual(results[0]?.mediumResults[0]?.mediumId, "medium-1");
+      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.WouldDeliver);
+      assert.strictEqual(results[0]?.mediumResults[1]?.mediumId, "medium-2");
+      assert.strictEqual(results[0]?.mediumResults[1]?.outcome, ArticleDeliveryOutcome.RateLimitedMedium);
     });
   });
 
@@ -983,13 +980,13 @@ describe("Multiple mediums with different outcomes", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results).toHaveLength(1);
-      expect(results[0]?.mediumResults).toHaveLength(2);
+      assert.strictEqual(results.length, 1);
+      assert.strictEqual(results[0]?.mediumResults.length, 2);
       // Both should have DuplicateId because shared stage applies before medium-specific stages
-      expect(results[0]?.mediumResults[0]?.mediumId).toBe("medium-1");
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.DuplicateId);
-      expect(results[0]?.mediumResults[1]?.mediumId).toBe("medium-2");
-      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDeliveryOutcome.DuplicateId);
+      assert.strictEqual(results[0]?.mediumResults[0]?.mediumId, "medium-1");
+      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.DuplicateId);
+      assert.strictEqual(results[0]?.mediumResults[1]?.mediumId, "medium-2");
+      assert.strictEqual(results[0]?.mediumResults[1]?.outcome, ArticleDeliveryOutcome.DuplicateId);
     });
   });
 
@@ -1015,27 +1012,27 @@ describe("Multiple mediums with different outcomes", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      expect(results).toHaveLength(2);
+      assert.strictEqual(results.length, 2);
 
       // Article 1: "Sports Update"
       // - Medium-1 (Sports filter): passes → WouldDeliver
       // - Medium-2 (Tech filter): fails → FilteredByMediumFilter
-      expect(results[0]?.articleId).toBe("article-1");
-      expect(results[0]?.mediumResults).toHaveLength(2);
-      expect(results[0]?.mediumResults[0]?.mediumId).toBe("medium-1");
-      expect(results[0]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.WouldDeliver);
-      expect(results[0]?.mediumResults[1]?.mediumId).toBe("medium-2");
-      expect(results[0]?.mediumResults[1]?.outcome).toBe(ArticleDeliveryOutcome.FilteredByMediumFilter);
+      assert.strictEqual(results[0]?.articleId, "article-1");
+      assert.strictEqual(results[0]?.mediumResults.length, 2);
+      assert.strictEqual(results[0]?.mediumResults[0]?.mediumId, "medium-1");
+      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.WouldDeliver);
+      assert.strictEqual(results[0]?.mediumResults[1]?.mediumId, "medium-2");
+      assert.strictEqual(results[0]?.mediumResults[1]?.outcome, ArticleDeliveryOutcome.FilteredByMediumFilter);
 
       // Article 2: "Tech News"
       // - Medium-1 (Sports filter): fails → FilteredByMediumFilter
       // - Medium-2 (Tech filter): passes → WouldDeliver
-      expect(results[1]?.articleId).toBe("article-2");
-      expect(results[1]?.mediumResults).toHaveLength(2);
-      expect(results[1]?.mediumResults[0]?.mediumId).toBe("medium-1");
-      expect(results[1]?.mediumResults[0]?.outcome).toBe(ArticleDeliveryOutcome.FilteredByMediumFilter);
-      expect(results[1]?.mediumResults[1]?.mediumId).toBe("medium-2");
-      expect(results[1]?.mediumResults[1]?.outcome).toBe(ArticleDeliveryOutcome.WouldDeliver);
+      assert.strictEqual(results[1]?.articleId, "article-2");
+      assert.strictEqual(results[1]?.mediumResults.length, 2);
+      assert.strictEqual(results[1]?.mediumResults[0]?.mediumId, "medium-1");
+      assert.strictEqual(results[1]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.FilteredByMediumFilter);
+      assert.strictEqual(results[1]?.mediumResults[1]?.mediumId, "medium-2");
+      assert.strictEqual(results[1]?.mediumResults[1]?.outcome, ArticleDeliveryOutcome.WouldDeliver);
     });
   });
 });

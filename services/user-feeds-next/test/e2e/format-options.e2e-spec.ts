@@ -1,11 +1,13 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, before, after } from "node:test";
+import assert from "node:assert";
 import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../../src/delivery";
 import getTestRssFeed from "../data/test-rss-feed";
 import { createTestContext } from "../helpers/test-context";
+import { setupTestDatabase, teardownTestDatabase, type TestStores } from "../helpers/setup-integration-tests";
 import type { FeedV2Event } from "../../src/shared/schemas";
 
-// Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
+let stores: TestStores;
 
 /**
  * Helper to create a feed event with format options and/or date checks.
@@ -52,16 +54,24 @@ function createEventWithFormatOptions(
  * Helper to extract the Discord payload from captured requests
  */
 function getDiscordPayload(ctx: ReturnType<typeof createTestContext>) {
-  expect(ctx.discordClient.capturedPayloads.length).toBeGreaterThan(0);
+  assert.ok(ctx.discordClient.capturedPayloads.length > 0);
   return JSON.parse(
     ctx.discordClient.capturedPayloads[0]!.options.body as string
   );
 }
 
-describe("Format Options (e2e)", () => {
+describe("Format Options (e2e)", { concurrency: true }, () => {
+  before(async () => {
+    stores = await setupTestDatabase();
+  });
+
+  after(async () => {
+    await teardownTestDatabase();
+  });
+
   describe("Feed Format Options", () => {
     it("formats dates with custom dateFormat", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithFormat = createEventWithFormatOptions(
         ctx.testFeedV2Event,
@@ -93,19 +103,19 @@ describe("Format Options (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithFormat);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("Published: 2023-06-15");
+        assert.strictEqual(payload.content, "Published: 2023-06-15");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("converts dates to specified timezone", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithFormat = createEventWithFormatOptions(
         ctx.testFeedV2Event,
@@ -138,18 +148,18 @@ describe("Format Options (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithFormat);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("Published: 2023-06-15 10:30");
+        assert.strictEqual(payload.content, "Published: 2023-06-15 10:30");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("applies dateLocale to date formatting", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithFormat = createEventWithFormatOptions(
         ctx.testFeedV2Event,
@@ -182,20 +192,20 @@ describe("Format Options (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithFormat);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
         // French locale: "juin" instead of "June"
         // Note: dayjs locale must be loaded - if not available, falls back to English
-        expect(payload.content).toMatch(/Published: (juin|June) 15, 2023/);
+        assert.ok(/Published: (juin|June) 15, 2023/.test(payload.content));
       } finally {
         ctx.cleanup();
       }
     });
 
     it("combines dateFormat, dateTimezone, and dateLocale", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithFormat = createEventWithFormatOptions(
         ctx.testFeedV2Event,
@@ -229,10 +239,10 @@ describe("Format Options (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithFormat);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("Thursday, June 15, 2023 at 13:00");
+        assert.strictEqual(payload.content, "Thursday, June 15, 2023 at 13:00");
       } finally {
         ctx.cleanup();
       }
@@ -241,7 +251,7 @@ describe("Format Options (e2e)", () => {
 
   describe("Feed Date Checks", () => {
     it("blocks articles older than threshold", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       // Set threshold to 1 day (86400000 ms)
       const eventWithDateCheck = createEventWithFormatOptions(
@@ -277,16 +287,16 @@ describe("Format Options (e2e)", () => {
         const results = await ctx.handleEvent(eventWithDateCheck);
 
         // Article should be filtered out (not delivered)
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(0);
-        expect(ctx.discordClient.capturedPayloads.length).toBe(0);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 0);
+        assert.strictEqual(ctx.discordClient.capturedPayloads.length, 0);
       } finally {
         ctx.cleanup();
       }
     });
 
     it("passes articles within threshold", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       // Set threshold to 1 day (86400000 ms)
       const eventWithDateCheck = createEventWithFormatOptions(
@@ -321,19 +331,19 @@ describe("Format Options (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithDateCheck);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("Recent Article");
+        assert.strictEqual(payload.content, "Recent Article");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("passes articles with future dates", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       // Set threshold to 1 day
       const eventWithDateCheck = createEventWithFormatOptions(
@@ -369,19 +379,19 @@ describe("Format Options (e2e)", () => {
         const results = await ctx.handleEvent(eventWithDateCheck);
 
         // Future articles should pass
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("Future Article");
+        assert.strictEqual(payload.content, "Future Article");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("uses custom datePlaceholderReferences", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       // Check 'customDate' field instead of default 'pubDate'
       const eventWithDateCheck = createEventWithFormatOptions(
@@ -421,12 +431,12 @@ describe("Format Options (e2e)", () => {
 
         // Should pass because customDate (1 hour ago) is within threshold,
         // even though pubDate (2 days ago) is outside threshold
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("Custom Date Article");
+        assert.strictEqual(payload.content, "Custom Date Article");
       } finally {
         ctx.cleanup();
       }

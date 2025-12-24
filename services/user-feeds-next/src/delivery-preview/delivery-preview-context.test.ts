@@ -1,4 +1,5 @@
-import { describe, expect, it, beforeEach } from "bun:test";
+import { describe, it, beforeEach } from "node:test";
+import assert from "node:assert";
 import {
   startDeliveryPreviewContext,
   isDeliveryPreviewMode,
@@ -12,14 +13,14 @@ import {
 import { DeliveryPreviewStage, DeliveryPreviewStageStatus } from "./types";
 import type { DeliveryPreviewStageResult } from "./types";
 
-describe("delivery-preview-context", () => {
+describe("delivery-preview-context", { concurrency: true }, () => {
   beforeEach(() => {
     clearDeliveryPreviewContext();
   });
 
   describe("isDeliveryPreviewMode", () => {
     it("returns false outside delivery preview context", () => {
-      expect(isDeliveryPreviewMode()).toBe(false);
+      assert.strictEqual(isDeliveryPreviewMode(), false);
     });
 
     it("returns true inside delivery preview context", async () => {
@@ -29,7 +30,7 @@ describe("delivery-preview-context", () => {
         insideValue = isDeliveryPreviewMode();
       });
 
-      expect(insideValue).toBe(true);
+      assert.strictEqual(insideValue, true);
     });
 
     it("returns false after delivery preview context ends", async () => {
@@ -37,13 +38,13 @@ describe("delivery-preview-context", () => {
         // Inside context
       });
 
-      expect(isDeliveryPreviewMode()).toBe(false);
+      assert.strictEqual(isDeliveryPreviewMode(), false);
     });
   });
 
   describe("getTargetArticleIdHash", () => {
     it("returns null outside delivery preview context", () => {
-      expect(getTargetArticleIdHash()).toBeNull();
+      assert.strictEqual(getTargetArticleIdHash(), null);
     });
 
     it("returns the target article hash inside delivery preview context", async () => {
@@ -53,7 +54,7 @@ describe("delivery-preview-context", () => {
         captured.hash = getTargetArticleIdHash();
       });
 
-      expect(captured.hash).toBe("my-article-hash");
+      assert.strictEqual(captured.hash, "my-article-hash");
     });
   });
 
@@ -63,17 +64,18 @@ describe("delivery-preview-context", () => {
         return { value: 42, message: "success" };
       });
 
-      expect(result).toEqual({ value: 42, message: "success" });
+      assert.deepStrictEqual(result, { value: 42, message: "success" });
     });
 
     it("propagates errors from the callback", async () => {
       const error = new Error("Test error");
 
-      await expect(
+      await assert.rejects(
         startDeliveryPreviewContext("test-hash", async () => {
           throw error;
-        })
-      ).rejects.toThrow("Test error");
+        }),
+        { message: "Test error" }
+      );
     });
   });
 
@@ -82,7 +84,7 @@ describe("delivery-preview-context", () => {
       const targetHashes = new Set(["hash1", "hash2", "hash3"]);
 
       await startDeliveryPreviewContext(targetHashes, async () => {
-        expect(isDeliveryPreviewMode()).toBe(true);
+        assert.strictEqual(isDeliveryPreviewMode(), true);
       });
     });
 
@@ -117,11 +119,11 @@ describe("delivery-preview-context", () => {
         const hash1Results = getDeliveryPreviewResultsForArticle("hash1");
         const hash2Results = getDeliveryPreviewResultsForArticle("hash2");
 
-        expect(hash1Results).toHaveLength(1);
-        expect(hash1Results[0]?.stage).toBe(DeliveryPreviewStage.FeedState);
+        assert.strictEqual(hash1Results.length, 1);
+        assert.strictEqual(hash1Results[0]?.stage, DeliveryPreviewStage.FeedState);
 
-        expect(hash2Results).toHaveLength(1);
-        expect(hash2Results[0]?.stage).toBe(DeliveryPreviewStage.IdComparison);
+        assert.strictEqual(hash2Results.length, 1);
+        assert.strictEqual(hash2Results[0]?.stage, DeliveryPreviewStage.IdComparison);
       });
     });
 
@@ -154,9 +156,9 @@ describe("delivery-preview-context", () => {
         recordDeliveryPreviewForArticle("hash1", idComparison);
 
         const results = getDeliveryPreviewResultsForArticle("hash1");
-        expect(results).toHaveLength(2);
-        expect(results[0]?.stage).toBe(DeliveryPreviewStage.FeedState);
-        expect(results[1]?.stage).toBe(DeliveryPreviewStage.IdComparison);
+        assert.strictEqual(results.length, 2);
+        assert.strictEqual(results[0]?.stage, DeliveryPreviewStage.FeedState);
+        assert.strictEqual(results[1]?.stage, DeliveryPreviewStage.IdComparison);
       });
     });
 
@@ -165,13 +167,13 @@ describe("delivery-preview-context", () => {
 
       await startDeliveryPreviewContext(targetHashes, async () => {
         const results = getDeliveryPreviewResultsForArticle("non-existent");
-        expect(results).toEqual([]);
+        assert.deepStrictEqual(results, []);
       });
     });
 
     it("getDeliveryPreviewResultsForArticle returns empty array outside context", () => {
       const results = getDeliveryPreviewResultsForArticle("hash1");
-      expect(results).toEqual([]);
+      assert.deepStrictEqual(results, []);
     });
 
     it("getAllDeliveryPreviewResults returns Map of all recorded previews", async () => {
@@ -204,17 +206,17 @@ describe("delivery-preview-context", () => {
 
         const allResults = getAllDeliveryPreviewResults();
 
-        expect(allResults).toBeInstanceOf(Map);
-        expect(allResults.size).toBe(2);
-        expect(allResults.get("hash1")).toHaveLength(1);
-        expect(allResults.get("hash2")).toHaveLength(1);
+        assert.ok(allResults instanceof Map);
+        assert.strictEqual(allResults.size, 2);
+        assert.strictEqual(allResults.get("hash1")!.length, 1);
+        assert.strictEqual(allResults.get("hash2")!.length, 1);
       });
     });
 
     it("getAllDeliveryPreviewResults returns empty Map outside context", () => {
       const results = getAllDeliveryPreviewResults();
-      expect(results).toBeInstanceOf(Map);
-      expect(results.size).toBe(0);
+      assert.ok(results instanceof Map);
+      assert.strictEqual(results.size, 0);
     });
 
     it("recordDeliveryPreviewForArticle does nothing for non-target hash", async () => {
@@ -234,7 +236,7 @@ describe("delivery-preview-context", () => {
         recordDeliveryPreviewForArticle("non-target", stage);
 
         const allResults = getAllDeliveryPreviewResults();
-        expect(allResults.has("non-target")).toBe(false);
+        assert.strictEqual(allResults.has("non-target"), false);
       });
     });
   });
@@ -260,10 +262,10 @@ describe("delivery-preview-context", () => {
         }));
 
         const allResults = getAllDeliveryPreviewResults();
-        expect(allResults.size).toBe(2);
-        expect(allResults.has("hash1")).toBe(true);
-        expect(allResults.has("hash2")).toBe(true);
-        expect(allResults.has("hash3")).toBe(false);
+        assert.strictEqual(allResults.size, 2);
+        assert.strictEqual(allResults.has("hash1"), true);
+        assert.strictEqual(allResults.has("hash2"), true);
+        assert.strictEqual(allResults.has("hash3"), false);
       });
     });
 
@@ -284,7 +286,7 @@ describe("delivery-preview-context", () => {
         };
       });
 
-      expect(callCount).toBe(0);
+      assert.strictEqual(callCount, 0);
     });
 
     it("does nothing when target hash not in map", async () => {
@@ -303,7 +305,7 @@ describe("delivery-preview-context", () => {
         }));
 
         const allResults = getAllDeliveryPreviewResults();
-        expect(allResults.size).toBe(0);
+        assert.strictEqual(allResults.size, 0);
       });
     });
 
@@ -329,9 +331,9 @@ describe("delivery-preview-context", () => {
         });
 
         const allResults = getAllDeliveryPreviewResults();
-        expect(allResults.size).toBe(1);
-        expect(allResults.has("hash1")).toBe(false);
-        expect(allResults.has("hash2")).toBe(true);
+        assert.strictEqual(allResults.size, 1);
+        assert.strictEqual(allResults.has("hash1"), false);
+        assert.strictEqual(allResults.has("hash2"), true);
       });
     });
   });
@@ -368,15 +370,11 @@ describe("delivery-preview-context", () => {
       ]);
 
       // Verify contexts didn't leak - each should only have its own preview
-      expect(results[0]).toHaveLength(1);
-      expect(
-        (results[0][0]!.details as { isFirstRun: boolean }).isFirstRun
-      ).toBe(true);
+      assert.strictEqual(results[0]!.length, 1);
+      assert.strictEqual((results[0]![0]!.details as { isFirstRun: boolean }).isFirstRun, true);
 
-      expect(results[1]).toHaveLength(1);
-      expect(
-        (results[1][0]!.details as { isFirstRun: boolean }).isFirstRun
-      ).toBe(false);
+      assert.strictEqual(results[1]!.length, 1);
+      assert.strictEqual((results[1]![0]!.details as { isFirstRun: boolean }).isFirstRun, false);
     });
 
     it("does not leak previews between interleaved contexts", async () => {
@@ -423,12 +421,12 @@ describe("delivery-preview-context", () => {
       ]);
 
       // Context 1 should only have IdComparison
-      expect(result1).toHaveLength(1);
-      expect(result1[0]!.stage).toBe(DeliveryPreviewStage.IdComparison);
+      assert.strictEqual(result1!.length, 1);
+      assert.strictEqual(result1![0]!.stage, DeliveryPreviewStage.IdComparison);
 
       // Context 2 should only have DateCheck (not the IdComparison attempted from ctx1)
-      expect(result2).toHaveLength(1);
-      expect(result2[0]!.stage).toBe(DeliveryPreviewStage.DateCheck);
+      assert.strictEqual(result2!.length, 1);
+      assert.strictEqual(result2![0]!.stage, DeliveryPreviewStage.DateCheck);
     });
   });
 });

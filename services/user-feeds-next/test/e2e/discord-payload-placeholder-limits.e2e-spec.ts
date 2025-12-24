@@ -1,11 +1,11 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, before, after } from "node:test";
+import assert from "node:assert";
 import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../../src/delivery";
 import getTestRssFeed from "../data/test-rss-feed";
 import { createTestContext } from "../helpers/test-context";
+import { setupTestDatabase, teardownTestDatabase, type TestStores } from "../helpers/setup-integration-tests";
 import type { FeedV2Event, EmbedInput } from "../../src/shared/schemas";
-
-// Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
 
 /**
  * Input type for placeholder limits, with appendString being optional.
@@ -17,6 +17,8 @@ type PlaceholderLimitInput = {
 };
 
 type MediumDetails = FeedV2Event["data"]["mediums"][0]["details"];
+
+let stores: TestStores;
 
 /**
  * Helper to create a feed event with placeholder limits configured on the medium.
@@ -57,16 +59,24 @@ function createEventWithPlaceholderLimits(
  * Helper to extract the Discord payload from captured requests
  */
 function getDiscordPayload(ctx: ReturnType<typeof createTestContext>) {
-  expect(ctx.discordClient.capturedPayloads.length).toBeGreaterThan(0);
+  assert.ok(ctx.discordClient.capturedPayloads.length > 0);
   return JSON.parse(
     ctx.discordClient.capturedPayloads[0]!.options.body as string
   );
 }
 
-describe("Discord Payload Placeholder Limits (e2e)", () => {
+describe("Discord Payload Placeholder Limits (e2e)", { concurrency: true }, () => {
+  before(async () => {
+    stores = await setupTestDatabase();
+  });
+
+  after(async () => {
+    await teardownTestDatabase();
+  });
+
   describe("Character Count Truncation", () => {
     it("truncates placeholder value to specified character count", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithLimits = createEventWithPlaceholderLimits(
         ctx.testFeedV2Event,
@@ -100,19 +110,19 @@ describe("Discord Payload Placeholder Limits (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithLimits);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content.length).toBeLessThanOrEqual(20);
+        assert.ok(payload.content.length <= 20);
       } finally {
         ctx.cleanup();
       }
     });
 
     it("does not truncate when value is under limit", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithLimits = createEventWithPlaceholderLimits(
         ctx.testFeedV2Event,
@@ -146,10 +156,10 @@ describe("Discord Payload Placeholder Limits (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithLimits);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("Short title");
+        assert.strictEqual(payload.content, "Short title");
       } finally {
         ctx.cleanup();
       }
@@ -158,7 +168,7 @@ describe("Discord Payload Placeholder Limits (e2e)", () => {
 
   describe("Append String After Truncation", () => {
     it("appends string after truncated content", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithLimits = createEventWithPlaceholderLimits(
         ctx.testFeedV2Event,
@@ -192,19 +202,19 @@ describe("Discord Payload Placeholder Limits (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithLimits);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toContain("...");
+        assert.ok(payload.content.includes("..."));
         // Total length should be within limit + append string
-        expect(payload.content.length).toBeLessThanOrEqual(18); // 15 + 3 for "..."
+        assert.ok(payload.content.length <= 18); // 15 + 3 for "..."
       } finally {
         ctx.cleanup();
       }
     });
 
     it("does not append string when value is under limit", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithLimits = createEventWithPlaceholderLimits(
         ctx.testFeedV2Event,
@@ -238,18 +248,18 @@ describe("Discord Payload Placeholder Limits (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithLimits);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("Short");
-        expect(payload.content).not.toContain("...");
+        assert.strictEqual(payload.content, "Short");
+        assert.ok(!payload.content.includes("..."));
       } finally {
         ctx.cleanup();
       }
     });
 
     it("uses placeholder in append string", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithLimits = createEventWithPlaceholderLimits(
         ctx.testFeedV2Event,
@@ -285,11 +295,11 @@ describe("Discord Payload Placeholder Limits (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithLimits);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toContain("https://example.com/article");
-        expect(payload.content).toContain("Read More");
+        assert.ok(payload.content.includes("https://example.com/article"));
+        assert.ok(payload.content.includes("Read More"));
       } finally {
         ctx.cleanup();
       }
@@ -298,7 +308,7 @@ describe("Discord Payload Placeholder Limits (e2e)", () => {
 
   describe("Multiple Placeholder Limits", () => {
     it("applies limits to multiple placeholders", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithLimits = createEventWithPlaceholderLimits(
         ctx.testFeedV2Event,
@@ -338,12 +348,12 @@ describe("Discord Payload Placeholder Limits (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithLimits);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         // Both placeholders should be truncated with their respective append strings
-        expect(payload.content).toContain("...");
-        expect(payload.content).toContain("[more]");
+        assert.ok(payload.content.includes("..."));
+        assert.ok(payload.content.includes("[more]"));
       } finally {
         ctx.cleanup();
       }
@@ -352,7 +362,7 @@ describe("Discord Payload Placeholder Limits (e2e)", () => {
 
   describe("Placeholder Limits in Embeds", () => {
     it("applies placeholder limits in embed fields", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithLimits = createEventWithPlaceholderLimits(
         ctx.testFeedV2Event,
@@ -394,12 +404,12 @@ describe("Discord Payload Placeholder Limits (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithLimits);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.embeds[0].description).toContain("...");
+        assert.ok(payload.embeds[0].description.includes("..."));
         // Description should be truncated
-        expect(payload.embeds[0].description.length).toBeLessThanOrEqual(28); // 25 + 3 for "..."
+        assert.ok(payload.embeds[0].description.length <= 28); // 25 + 3 for "..."
       } finally {
         ctx.cleanup();
       }
@@ -408,7 +418,7 @@ describe("Discord Payload Placeholder Limits (e2e)", () => {
 
   describe("Edge Cases", () => {
     it("handles limit of 0 (defaults to 2000)", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithLimits = createEventWithPlaceholderLimits(
         ctx.testFeedV2Event,
@@ -441,18 +451,18 @@ describe("Discord Payload Placeholder Limits (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithLimits);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         // With limit 0, the limit defaults to 2000 (no truncation)
-        expect(payload.content).toBe("Title: Any Title - End");
+        assert.strictEqual(payload.content, "Title: Any Title - End");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("handles very small limit with append string", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithLimits = createEventWithPlaceholderLimits(
         ctx.testFeedV2Event,
@@ -486,19 +496,19 @@ describe("Discord Payload Placeholder Limits (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithLimits);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         // Should have some content even with very small limit
-        expect(payload.content.length).toBeGreaterThan(0);
-        expect(payload.content).toContain("...");
+        assert.ok(payload.content.length > 0);
+        assert.ok(payload.content.includes("..."));
       } finally {
         ctx.cleanup();
       }
     });
 
     it("handles placeholder that does not exist in article", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithLimits = createEventWithPlaceholderLimits(
         ctx.testFeedV2Event,
@@ -531,19 +541,19 @@ describe("Discord Payload Placeholder Limits (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithLimits);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         // Nonexistent placeholder should be empty
-        expect(payload.content).toContain("Value:");
-        expect(payload.content).toContain("Title: Real Title");
+        assert.ok(payload.content.includes("Value:"));
+        assert.ok(payload.content.includes("Title: Real Title"));
       } finally {
         ctx.cleanup();
       }
     });
 
     it("handles empty placeholderLimits array", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithLimits = createEventWithPlaceholderLimits(
         ctx.testFeedV2Event,
@@ -571,11 +581,11 @@ describe("Discord Payload Placeholder Limits (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithLimits);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         // No truncation should occur
-        expect(payload.content).toBe("Full Title Without Truncation");
+        assert.strictEqual(payload.content, "Full Title Without Truncation");
       } finally {
         ctx.cleanup();
       }

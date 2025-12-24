@@ -1,4 +1,5 @@
-import { describe, expect, it } from "bun:test";
+import { describe, it } from "node:test";
+import assert from "node:assert";
 import {
   evaluateExpression,
   getArticleFilterResults,
@@ -28,12 +29,12 @@ function createArticle(flattened: Record<string, string>): Article {
   };
 }
 
-describe("article-filters", () => {
+describe("article-filters", { concurrency: true }, () => {
   describe("getArticleFilterResults", () => {
     it("returns true for null expression", () => {
       const article = createArticle({ title: "Hello" });
       const result = getArticleFilterResults(null, article);
-      expect(result.result).toBe(true);
+      assert.strictEqual(result.result, true);
     });
 
     it("throws if expression type is invalid", () => {
@@ -41,7 +42,7 @@ describe("article-filters", () => {
         type: "invalid",
       } as never;
 
-      expect(() => evaluateExpression(expression, {} as never)).toThrow();
+      assert.throws(() => evaluateExpression(expression, {} as never));
     });
   });
 
@@ -66,7 +67,7 @@ describe("article-filters", () => {
           [RelationalExpressionLeft.Article]: createArticle({ title: "s" }),
         };
 
-        expect(evaluateExpression(expression, reference).result).toBe(false);
+        assert.strictEqual(evaluateExpression(expression, reference).result, false);
       });
 
       const eqTestCases = [
@@ -112,7 +113,8 @@ describe("article-filters", () => {
               }),
             };
 
-            expect(evaluateExpression(expression, reference).result).toBe(
+            assert.strictEqual(
+              evaluateExpression(expression, reference).result,
               expected
             );
           });
@@ -153,7 +155,8 @@ describe("article-filters", () => {
             }),
           };
 
-          expect(evaluateExpression(expression, reference).result).toBe(
+          assert.strictEqual(
+            evaluateExpression(expression, reference).result,
             expected
           );
         });
@@ -193,7 +196,8 @@ describe("article-filters", () => {
             }),
           };
 
-          expect(evaluateExpression(expression, reference).result).toBe(
+          assert.strictEqual(
+            evaluateExpression(expression, reference).result,
             expected
           );
         });
@@ -202,7 +206,7 @@ describe("article-filters", () => {
 
     describe("AND operand", () => {
       it("returns true correctly with 1 child", () => {
-        expect(
+        assert.strictEqual(
           evaluateExpression(
             {
               type: ExpressionType.Logical,
@@ -225,12 +229,13 @@ describe("article-filters", () => {
             {
               ARTICLE: createArticle({ title: "a" }),
             }
-          ).result
-        ).toBe(true);
+          ).result,
+          true
+        );
       });
 
       it("returns true correctly with 2 children", () => {
-        expect(
+        assert.strictEqual(
           evaluateExpression(
             {
               type: ExpressionType.Logical,
@@ -265,12 +270,13 @@ describe("article-filters", () => {
             {
               ARTICLE: createArticle({ title: "a", description: "b" }),
             }
-          ).result
-        ).toBe(true);
+          ).result,
+          true
+        );
       });
 
       it("returns false correctly", () => {
-        expect(
+        assert.strictEqual(
           evaluateExpression(
             {
               type: ExpressionType.Logical,
@@ -305,14 +311,15 @@ describe("article-filters", () => {
             {
               ARTICLE: createArticle({ title: "a", description: "b" }),
             }
-          ).result
-        ).toBe(false);
+          ).result,
+          false
+        );
       });
     });
 
     describe("OR operand", () => {
       it("returns true correctly", () => {
-        expect(
+        assert.strictEqual(
           evaluateExpression(
             {
               type: ExpressionType.Logical,
@@ -347,12 +354,13 @@ describe("article-filters", () => {
             {
               ARTICLE: createArticle({ title: "a", description: "b" }),
             }
-          ).result
-        ).toBe(true);
+          ).result,
+          true
+        );
       });
 
       it("returns false correctly", () => {
-        expect(
+        assert.strictEqual(
           evaluateExpression(
             {
               type: ExpressionType.Logical,
@@ -387,12 +395,13 @@ describe("article-filters", () => {
             {
               ARTICLE: createArticle({ title: "a", description: "b" }),
             }
-          ).result
-        ).toBe(false);
+          ).result,
+          false
+        );
       });
 
       it("returns false if reference contains no value", () => {
-        expect(
+        assert.strictEqual(
           evaluateExpression(
             {
               type: ExpressionType.Logical,
@@ -427,12 +436,13 @@ describe("article-filters", () => {
             {
               ARTICLE: createArticle({}),
             }
-          ).result
-        ).toBe(false);
+          ).result,
+          false
+        );
       });
 
       it("returns false if reference object does not exist", () => {
-        expect(
+        assert.strictEqual(
           evaluateExpression(
             {
               type: ExpressionType.Logical,
@@ -465,8 +475,9 @@ describe("article-filters", () => {
               ],
             },
             {} as never
-          ).result
-        ).toBe(false);
+          ).result,
+          false
+        );
       });
     });
   });
@@ -491,10 +502,10 @@ describe("article-filters", () => {
       };
 
       const result = getArticleFilterResults(expression, article);
-      expect(result.result).toBe(false);
-      expect(result.explainBlocked.length).toBe(1);
-      expect(result.explainBlocked[0]!.truncatedReferenceValue).toBe("Hello World");
-      expect(result.explainBlocked[0]!.filterInput).toBe("Goodbye World");
+      assert.strictEqual(result.result, false);
+      assert.strictEqual(result.explainBlocked.length, 1);
+      assert.strictEqual(result.explainBlocked[0]!.truncatedReferenceValue, "Hello World");
+      assert.strictEqual(result.explainBlocked[0]!.filterInput, "Goodbye World");
     });
 
     it("treats missing fields as empty string", () => {
@@ -516,7 +527,7 @@ describe("article-filters", () => {
       };
 
       const result = getArticleFilterResults(expression, article);
-      expect(result.result).toBe(true);
+      assert.strictEqual(result.result, true);
     });
   });
 
@@ -537,9 +548,9 @@ describe("article-filters", () => {
       };
 
       const result = getArticleFilterResults(expression, article);
-      expect(result.result).toBe(true);
-      expect(result.explainMatched.length).toBe(1);
-      expect(result.explainBlocked.length).toBe(0);
+      assert.strictEqual(result.result, true);
+      assert.strictEqual(result.explainMatched.length, 1);
+      assert.strictEqual(result.explainBlocked.length, 0);
     });
 
     it("populates explainMatched when NOT CONTAINS filter passes (article doesn't contain text)", () => {
@@ -559,9 +570,9 @@ describe("article-filters", () => {
       };
 
       const result = getArticleFilterResults(expression, article);
-      expect(result.result).toBe(true);
-      expect(result.explainMatched.length).toBe(1);
-      expect(result.explainBlocked.length).toBe(0);
+      assert.strictEqual(result.result, true);
+      assert.strictEqual(result.explainMatched.length, 1);
+      assert.strictEqual(result.explainBlocked.length, 0);
     });
 
     it("populates explainBlocked when NOT CONTAINS filter fails (article does contain text)", () => {
@@ -581,9 +592,9 @@ describe("article-filters", () => {
       };
 
       const result = getArticleFilterResults(expression, article);
-      expect(result.result).toBe(false);
-      expect(result.explainMatched.length).toBe(0);
-      expect(result.explainBlocked.length).toBe(1);
+      assert.strictEqual(result.result, false);
+      assert.strictEqual(result.explainMatched.length, 0);
+      assert.strictEqual(result.explainBlocked.length, 1);
     });
 
     it("populates explainMatched when NOT EQ filter passes (values don't match)", () => {
@@ -603,9 +614,9 @@ describe("article-filters", () => {
       };
 
       const result = getArticleFilterResults(expression, article);
-      expect(result.result).toBe(true);
-      expect(result.explainMatched.length).toBe(1);
-      expect(result.explainBlocked.length).toBe(0);
+      assert.strictEqual(result.result, true);
+      assert.strictEqual(result.explainMatched.length, 1);
+      assert.strictEqual(result.explainBlocked.length, 0);
     });
 
     it("populates explainBlocked when NOT EQ filter fails (values match)", () => {
@@ -625,9 +636,9 @@ describe("article-filters", () => {
       };
 
       const result = getArticleFilterResults(expression, article);
-      expect(result.result).toBe(false);
-      expect(result.explainMatched.length).toBe(0);
-      expect(result.explainBlocked.length).toBe(1);
+      assert.strictEqual(result.result, false);
+      assert.strictEqual(result.explainMatched.length, 0);
+      assert.strictEqual(result.explainBlocked.length, 1);
     });
 
     it("populates explainMatched when NOT MATCHES filter passes (regex doesn't match)", () => {
@@ -647,18 +658,18 @@ describe("article-filters", () => {
       };
 
       const result = getArticleFilterResults(expression, article);
-      expect(result.result).toBe(true);
-      expect(result.explainMatched.length).toBe(1);
-      expect(result.explainBlocked.length).toBe(0);
+      assert.strictEqual(result.result, true);
+      assert.strictEqual(result.explainMatched.length, 1);
+      assert.strictEqual(result.explainBlocked.length, 0);
     });
   });
 
   describe("validateRelationalLeft", () => {
     it("returns error if left is not an object", () => {
       const result = validateRelationalLeft("not-object" as never, "root.");
-      expect(result.length).toBe(1);
-      expect(result[0]).toContain("root.");
-      expect(result[0]).toContain("object");
+      assert.strictEqual(result.length, 1);
+      assert.ok(result[0]!.includes("root."));
+      assert.ok(result[0]!.includes("object"));
     });
 
     it("returns error if left.type is not ARTICLE", () => {
@@ -666,8 +677,8 @@ describe("article-filters", () => {
         { type: "INVALID", value: "title" } as never,
         "root."
       );
-      expect(result.length).toBe(1);
-      expect(result[0]).toContain("root.type");
+      assert.strictEqual(result.length, 1);
+      assert.ok(result[0]!.includes("root.type"));
     });
 
     it("returns error if left.value is not a string", () => {
@@ -675,9 +686,9 @@ describe("article-filters", () => {
         { type: RelationalExpressionLeft.Article, value: 123 } as never,
         "root."
       );
-      expect(result.length).toBe(1);
-      expect(result[0]).toContain("root.value");
-      expect(result[0]).toContain("string");
+      assert.strictEqual(result.length, 1);
+      assert.ok(result[0]!.includes("root.value"));
+      assert.ok(result[0]!.includes("string"));
     });
 
     it("returns empty array for valid left", () => {
@@ -685,16 +696,16 @@ describe("article-filters", () => {
         { type: RelationalExpressionLeft.Article, value: "title" },
         "root."
       );
-      expect(result).toEqual([]);
+      assert.deepStrictEqual(result, []);
     });
   });
 
   describe("validateRelationalRight", () => {
     it("returns error if right is not an object", () => {
       const result = validateRelationalRight("not-object" as never, "root.");
-      expect(result.length).toBe(1);
-      expect(result[0]).toContain("root.");
-      expect(result[0]).toContain("object");
+      assert.strictEqual(result.length, 1);
+      assert.ok(result[0]!.includes("root."));
+      assert.ok(result[0]!.includes("object"));
     });
 
     it("returns error if right.type is not STRING", () => {
@@ -702,8 +713,8 @@ describe("article-filters", () => {
         { type: "INVALID", value: "test" } as never,
         "root."
       );
-      expect(result.length).toBe(1);
-      expect(result[0]).toContain("root.type");
+      assert.strictEqual(result.length, 1);
+      assert.ok(result[0]!.includes("root.type"));
     });
 
     it("returns error if right.value is not a string", () => {
@@ -711,9 +722,9 @@ describe("article-filters", () => {
         { type: RelationalExpressionRight.String, value: 123 } as never,
         "root."
       );
-      expect(result.length).toBe(1);
-      expect(result[0]).toContain("root.value");
-      expect(result[0]).toContain("string");
+      assert.strictEqual(result.length, 1);
+      assert.ok(result[0]!.includes("root.value"));
+      assert.ok(result[0]!.includes("string"));
     });
 
     it("returns empty array for valid right", () => {
@@ -721,7 +732,7 @@ describe("article-filters", () => {
         { type: RelationalExpressionRight.String, value: "test" },
         "root."
       );
-      expect(result).toEqual([]);
+      assert.deepStrictEqual(result, []);
     });
   });
 
@@ -731,9 +742,9 @@ describe("article-filters", () => {
         { type: "INVALID" } as never,
         "root."
       );
-      expect(result.length).toBe(1);
-      expect(result[0]).toContain("root.type");
-      expect(result[0]).toContain(ExpressionType.Relational);
+      assert.strictEqual(result.length, 1);
+      assert.ok(result[0]!.includes("root.type"));
+      assert.ok(result[0]!.includes(ExpressionType.Relational));
     });
 
     it("returns error if op is not a valid relational operator", () => {
@@ -746,8 +757,8 @@ describe("article-filters", () => {
         } as never,
         "root."
       );
-      expect(result.length).toBe(1);
-      expect(result[0]).toContain("root.op");
+      assert.strictEqual(result.length, 1);
+      assert.ok(result[0]!.includes("root.op"));
     });
 
     it("returns left error for invalid left value", () => {
@@ -760,9 +771,9 @@ describe("article-filters", () => {
         } as never,
         "root."
       );
-      expect(result).toHaveLength(1);
-      expect(result[0]).toContain("root.left");
-      expect(result[0]).toContain("object");
+      assert.strictEqual(result.length, 1);
+      assert.ok(result[0]!.includes("root.left"));
+      assert.ok(result[0]!.includes("object"));
     });
 
     it("returns right error for invalid right value", () => {
@@ -775,9 +786,9 @@ describe("article-filters", () => {
         } as never,
         "root."
       );
-      expect(result).toHaveLength(1);
-      expect(result[0]).toContain("root.right");
-      expect(result[0]).toContain("object");
+      assert.strictEqual(result.length, 1);
+      assert.ok(result[0]!.includes("root.right"));
+      assert.ok(result[0]!.includes("object"));
     });
 
     it("returns empty array for valid relational expression", () => {
@@ -790,16 +801,16 @@ describe("article-filters", () => {
         },
         "root."
       );
-      expect(result).toEqual([]);
+      assert.deepStrictEqual(result, []);
     });
   });
 
   describe("validateLogicalExpression", () => {
     it("returns error if input is not an object", () => {
       const result = validateLogicalExpression("not-object" as never, "root.");
-      expect(result.length).toBe(1);
-      expect(result[0]).toContain("root.");
-      expect(result[0]).toContain("object");
+      assert.strictEqual(result.length, 1);
+      assert.ok(result[0]!.includes("root."));
+      assert.ok(result[0]!.includes("object"));
     });
 
     it("returns error if type is not LOGICAL", () => {
@@ -807,9 +818,9 @@ describe("article-filters", () => {
         { type: "INVALID" } as never,
         "root."
       );
-      expect(result.length).toBe(1);
-      expect(result[0]).toContain("root.type");
-      expect(result[0]).toContain(ExpressionType.Logical);
+      assert.strictEqual(result.length, 1);
+      assert.ok(result[0]!.includes("root.type"));
+      assert.ok(result[0]!.includes(ExpressionType.Logical));
     });
 
     it("returns error if op is not a valid logical operator", () => {
@@ -821,8 +832,8 @@ describe("article-filters", () => {
         } as never,
         "root."
       );
-      expect(result.length).toBe(1);
-      expect(result[0]).toContain("root.op");
+      assert.strictEqual(result.length, 1);
+      assert.ok(result[0]!.includes("root.op"));
     });
 
     it("returns error if children is not an array", () => {
@@ -834,9 +845,9 @@ describe("article-filters", () => {
         } as never,
         "root."
       );
-      expect(result.length).toBe(1);
-      expect(result[0]).toContain("root.children");
-      expect(result[0]).toContain("array");
+      assert.strictEqual(result.length, 1);
+      assert.ok(result[0]!.includes("root.children"));
+      assert.ok(result[0]!.includes("array"));
     });
 
     it("returns error if a child has an invalid type", () => {
@@ -848,8 +859,8 @@ describe("article-filters", () => {
         } as never,
         "root."
       );
-      expect(result.length).toBe(1);
-      expect(result[0]).toContain("root.children[0].type");
+      assert.strictEqual(result.length, 1);
+      assert.ok(result[0]!.includes("root.children[0].type"));
     });
 
     it("validates nested relational expressions", () => {
@@ -868,8 +879,8 @@ describe("article-filters", () => {
         } as never,
         "root."
       );
-      expect(result.length).toBe(1);
-      expect(result[0]).toContain("root.children[0].op");
+      assert.strictEqual(result.length, 1);
+      assert.ok(result[0]!.includes("root.children[0].op"));
     });
 
     it("validates deeply nested logical expressions", () => {
@@ -897,8 +908,8 @@ describe("article-filters", () => {
         } as never,
         "root."
       );
-      expect(result.length).toBe(1);
-      expect(result[0]).toContain("root.children[0].children[0].left.type");
+      assert.strictEqual(result.length, 1);
+      assert.ok(result[0]!.includes("root.children[0].children[0].left.type"));
     });
 
     it("returns error when depth exceeds 10 levels", () => {
@@ -930,8 +941,8 @@ describe("article-filters", () => {
 
       const deeplyNested = createNestedLogical(11);
       const result = validateLogicalExpression(deeplyNested, "root.");
-      expect(result.length).toBeGreaterThan(0);
-      expect(result[0]).toContain("Depth");
+      assert.ok(result.length > 0);
+      assert.ok(result[0]!.includes("Depth"));
     });
 
     it("returns empty array for valid logical expression", () => {
@@ -950,7 +961,7 @@ describe("article-filters", () => {
         },
         "root."
       );
-      expect(result).toEqual([]);
+      assert.deepStrictEqual(result, []);
     });
 
     it("collects multiple errors from different children", () => {
@@ -975,13 +986,13 @@ describe("article-filters", () => {
         } as never,
         "root."
       );
-      expect(result).toHaveLength(2);
-      expect(
+      assert.strictEqual(result.length, 2);
+      assert.ok(
         result.some((e: string) => e.includes("root.children[0].left"))
-      ).toBe(true);
-      expect(
+      );
+      assert.ok(
         result.some((e: string) => e.includes("root.children[1].right"))
-      ).toBe(true);
+      );
     });
 
     it("handles exactly 10 levels of nesting without error", () => {
@@ -1012,7 +1023,7 @@ describe("article-filters", () => {
 
       const tenLevels = createNestedLogical(9); // 0-9 = 10 levels
       const result = validateLogicalExpression(tenLevels, "root.");
-      expect(result).toEqual([]);
+      assert.deepStrictEqual(result, []);
     });
 
     it("validates complex OR expression with multiple children", () => {
@@ -1040,7 +1051,7 @@ describe("article-filters", () => {
         },
         "root."
       );
-      expect(result).toEqual([]);
+      assert.deepStrictEqual(result, []);
     });
   });
 });

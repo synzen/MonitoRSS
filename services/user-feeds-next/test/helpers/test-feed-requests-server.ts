@@ -1,4 +1,4 @@
-import type { Server } from "bun";
+import http from "http";
 import { createHash, randomUUID } from "crypto";
 import { FeedResponseRequestStatus } from "../../src/feed-fetcher";
 
@@ -28,7 +28,7 @@ type ResponseProvider = () =>
   | { requestStatus: ErrorRequestStatus; statusCode?: number };
 
 export interface TestFeedRequestsServer {
-  server: Server<undefined>;
+  server: http.Server;
   port: number;
   /** Register a response provider for a specific URL */
   registerUrl(url: string, provider: ResponseProvider): void;
@@ -46,6 +46,8 @@ export interface TestFeedRequestsServer {
   clear(): void;
   /** Clear state for a specific URL only */
   clearUrl(url: string): void;
+  /** Stop the server */
+  stop(): Promise<void>;
 }
 
 export function createTestFeedRequestsServer(): TestFeedRequestsServer {
@@ -60,66 +62,84 @@ export function createTestFeedRequestsServer(): TestFeedRequestsServer {
     hash: "",
   });
 
-  const server = Bun.serve({
-    port: 0, // Random available port
-    fetch: async (req) => {
-      const body = (await req.json()) as FeedRequestBody;
-      requests.push({ url: body.url, body });
+  const server = http.createServer(async (req, res) => {
+    let bodyData = "";
 
-      // Look up URL-specific provider, fall back to default
-      const provider = urlRegistry.get(body.url) ?? defaultResponseProvider;
-      const providerResult = provider();
+    req.on("data", (chunk) => {
+      bodyData += chunk.toString();
+    });
 
-      // Handle error responses
-      if ("requestStatus" in providerResult) {
-        const { requestStatus } = providerResult;
+    req.on("end", () => {
+      try {
+        const body = JSON.parse(bodyData) as FeedRequestBody;
+        requests.push({ url: body.url, body });
 
-        // BadStatusCode needs a statusCode in the response
-        if (requestStatus === FeedResponseRequestStatus.BadStatusCode) {
-          return Response.json({
-            requestStatus,
-            response: {
-              statusCode: providerResult.statusCode ?? 500,
-            },
-          });
+        // Look up URL-specific provider, fall back to default
+        const provider = urlRegistry.get(body.url) ?? defaultResponseProvider;
+        const providerResult = provider();
+
+        res.setHeader("Content-Type", "application/json");
+
+        // Handle error responses
+        if ("requestStatus" in providerResult) {
+          const { requestStatus } = providerResult;
+
+          // BadStatusCode needs a statusCode in the response
+          if (requestStatus === FeedResponseRequestStatus.BadStatusCode) {
+            res.end(JSON.stringify({
+              requestStatus,
+              response: {
+                statusCode: providerResult.statusCode ?? 500,
+              },
+            }));
+            return;
+          }
+
+          res.end(JSON.stringify({ requestStatus }));
+          return;
         }
 
-        return Response.json({ requestStatus });
-      }
+        // Handle success responses
+        const { body: rssBody, hash } = providerResult;
+        const computedHash =
+          hash || createHash("sha256").update(rssBody).digest("hex");
 
-      // Handle success responses
-      const { body: rssBody, hash } = providerResult;
-      const computedHash =
-        hash || createHash("sha256").update(rssBody).digest("hex");
+        // If hashToCompare matches, return MatchedHash status (simulates unchanged feed)
+        if (body.hashToCompare && body.hashToCompare === computedHash) {
+          res.end(JSON.stringify({
+            requestStatus: FeedResponseRequestStatus.MatchedHash,
+            response: {
+              body: "",
+              hash: computedHash,
+              statusCode: 200,
+            },
+          }));
+          return;
+        }
 
-      // If hashToCompare matches, return MatchedHash status (simulates unchanged feed)
-      if (body.hashToCompare && body.hashToCompare === computedHash) {
-        return Response.json({
-          requestStatus: FeedResponseRequestStatus.MatchedHash,
+        res.end(JSON.stringify({
+          requestStatus: FeedResponseRequestStatus.Success,
           response: {
-            body: "",
+            body: rssBody,
             hash: computedHash,
             statusCode: 200,
           },
-        });
+        }));
+      } catch (error) {
+        res.statusCode = 500;
+        res.end(JSON.stringify({ error: "Internal server error" }));
       }
-
-      return Response.json({
-        requestStatus: FeedResponseRequestStatus.Success,
-        response: {
-          body: rssBody,
-          hash: computedHash,
-          statusCode: 200,
-        },
-      });
-    },
+    });
   });
 
-  // When using port 0, Bun assigns an available port
-  const assignedPort = server.port;
-  if (assignedPort === undefined) {
-    throw new Error("Failed to get assigned port from Bun.serve()");
+  // Listen on port 0 to get a random available port
+  server.listen(0);
+
+  const address = server.address();
+  if (!address || typeof address === "string") {
+    throw new Error("Failed to get assigned port from server");
   }
+  const assignedPort = address.port;
 
   return {
     server,
@@ -159,6 +179,15 @@ export function createTestFeedRequestsServer(): TestFeedRequestsServer {
           requests.splice(i, 1);
         }
       }
+    },
+
+    stop: () => {
+      return new Promise((resolve, reject) => {
+        server.close((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
     },
   };
 }

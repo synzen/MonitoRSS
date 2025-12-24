@@ -1,4 +1,5 @@
-import { describe, expect, it, beforeEach } from "bun:test";
+import { describe, it } from "node:test";
+import assert from "node:assert";
 import type { JobResponse } from "@synzen/discord-rest";
 import type {
   JobData,
@@ -10,8 +11,6 @@ import {
   ArticleDeliveryErrorCode,
   type DiscordDeliveryResult,
   getUnderLimitCheck,
-  deliverArticles,
-  type LimitState,
   createTestDiscordRestClient,
 } from ".";
 import { createInMemoryDeliveryRecordStore } from "../stores/in-memory/delivery-record-store";
@@ -62,7 +61,7 @@ function createErrorResult(message: string): JobResponseError {
   };
 }
 
-describe("delivery", () => {
+describe("delivery", { concurrency: true }, () => {
   describe("processDeliveryResult", () => {
     describe("error state (producer-level error)", () => {
       it("returns Failed status with Internal error code", () => {
@@ -74,10 +73,10 @@ describe("delivery", () => {
         const { processed, rejectionEvent } =
           processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Failed);
-        expect(processed.errorCode).toBe(ArticleDeliveryErrorCode.Internal);
-        expect(processed.internalMessage).toBe("Connection timeout");
-        expect(rejectionEvent).toBeUndefined();
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Failed);
+        assert.strictEqual(processed.errorCode, ArticleDeliveryErrorCode.Internal);
+        assert.strictEqual(processed.internalMessage, "Connection timeout");
+        assert.strictEqual(rejectionEvent, undefined);
       });
 
       it("extracts metadata from job", () => {
@@ -95,7 +94,7 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.meta).toEqual({
+        assert.deepStrictEqual(processed.meta, {
           feedId: "my-feed",
           articleIdHash: "my-hash",
           mediumId: "my-medium",
@@ -116,10 +115,8 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Rejected);
-        expect(processed.errorCode).toBe(
-          ArticleDeliveryErrorCode.ThirdPartyBadRequest
-        );
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Rejected);
+        assert.strictEqual(processed.errorCode, ArticleDeliveryErrorCode.ThirdPartyBadRequest);
       });
 
       it("generates badFormat rejection event", () => {
@@ -137,13 +134,13 @@ describe("delivery", () => {
 
         const { rejectionEvent } = processDeliveryResult(deliveryResult);
 
-        expect(rejectionEvent).toBeDefined();
-        expect(rejectionEvent?.type).toBe("badFormat");
+        assert.notStrictEqual(rejectionEvent, undefined);
+        assert.strictEqual(rejectionEvent?.type, "badFormat");
         if (rejectionEvent?.type === "badFormat") {
-          expect(rejectionEvent.data.feedId).toBe("feed-1");
-          expect(rejectionEvent.data.mediumId).toBe("medium-1");
-          expect(rejectionEvent.data.articleId).toBe("article-1");
-          expect(rejectionEvent.data.responseBody).toContain("Bad embed");
+          assert.strictEqual(rejectionEvent.data.feedId, "feed-1");
+          assert.strictEqual(rejectionEvent.data.mediumId, "medium-1");
+          assert.strictEqual(rejectionEvent.data.articleId, "article-1");
+          assert.ok(rejectionEvent.data.responseBody.includes("Bad embed"));
         }
       });
 
@@ -155,10 +152,10 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.externalDetail).toBeDefined();
+        assert.notStrictEqual(processed.externalDetail, undefined);
         const externalDetail = JSON.parse(processed.externalDetail!);
-        expect(externalDetail.type).toBe("DISCORD_RESPONSE");
-        expect(externalDetail.data.responseBody).toEqual({ code: 50035 });
+        assert.strictEqual(externalDetail.type, "DISCORD_RESPONSE");
+        assert.deepStrictEqual(externalDetail.data.responseBody, { code: 50035 });
       });
     });
 
@@ -171,10 +168,8 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Rejected);
-        expect(processed.errorCode).toBe(
-          ArticleDeliveryErrorCode.ThirdPartyForbidden
-        );
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Rejected);
+        assert.strictEqual(processed.errorCode, ArticleDeliveryErrorCode.ThirdPartyForbidden);
       });
 
       it("generates missingPermissions rejection event", () => {
@@ -191,11 +186,11 @@ describe("delivery", () => {
 
         const { rejectionEvent } = processDeliveryResult(deliveryResult);
 
-        expect(rejectionEvent).toBeDefined();
-        expect(rejectionEvent?.type).toBe("missingPermissions");
+        assert.notStrictEqual(rejectionEvent, undefined);
+        assert.strictEqual(rejectionEvent?.type, "missingPermissions");
         if (rejectionEvent?.type === "missingPermissions") {
-          expect(rejectionEvent.data.feedId).toBe("feed-2");
-          expect(rejectionEvent.data.mediumId).toBe("medium-2");
+          assert.strictEqual(rejectionEvent.data.feedId, "feed-2");
+          assert.strictEqual(rejectionEvent.data.mediumId, "medium-2");
         }
       });
     });
@@ -209,10 +204,8 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Rejected);
-        expect(processed.errorCode).toBe(
-          ArticleDeliveryErrorCode.ThirdPartyNotFound
-        );
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Rejected);
+        assert.strictEqual(processed.errorCode, ArticleDeliveryErrorCode.ThirdPartyNotFound);
       });
 
       it("generates notFound rejection event", () => {
@@ -229,11 +222,11 @@ describe("delivery", () => {
 
         const { rejectionEvent } = processDeliveryResult(deliveryResult);
 
-        expect(rejectionEvent).toBeDefined();
-        expect(rejectionEvent?.type).toBe("notFound");
+        assert.notStrictEqual(rejectionEvent, undefined);
+        assert.strictEqual(rejectionEvent?.type, "notFound");
         if (rejectionEvent?.type === "notFound") {
-          expect(rejectionEvent.data.feedId).toBe("feed-3");
-          expect(rejectionEvent.data.mediumId).toBe("medium-3");
+          assert.strictEqual(rejectionEvent.data.feedId, "feed-3");
+          assert.strictEqual(rejectionEvent.data.mediumId, "medium-3");
         }
       });
     });
@@ -248,11 +241,9 @@ describe("delivery", () => {
         const { processed, rejectionEvent } =
           processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Failed);
-        expect(processed.errorCode).toBe(
-          ArticleDeliveryErrorCode.ThirdPartyInternal
-        );
-        expect(rejectionEvent).toBeUndefined();
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Failed);
+        assert.strictEqual(processed.errorCode, ArticleDeliveryErrorCode.ThirdPartyInternal);
+        assert.strictEqual(rejectionEvent, undefined);
       });
 
       it("returns Failed status for 502", () => {
@@ -263,10 +254,8 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Failed);
-        expect(processed.errorCode).toBe(
-          ArticleDeliveryErrorCode.ThirdPartyInternal
-        );
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Failed);
+        assert.strictEqual(processed.errorCode, ArticleDeliveryErrorCode.ThirdPartyInternal);
       });
 
       it("returns Failed status for 503", () => {
@@ -277,10 +266,8 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Failed);
-        expect(processed.errorCode).toBe(
-          ArticleDeliveryErrorCode.ThirdPartyInternal
-        );
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Failed);
+        assert.strictEqual(processed.errorCode, ArticleDeliveryErrorCode.ThirdPartyInternal);
       });
     });
 
@@ -294,10 +281,10 @@ describe("delivery", () => {
         const { processed, rejectionEvent } =
           processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Failed);
-        expect(processed.errorCode).toBe(ArticleDeliveryErrorCode.Internal);
-        expect(processed.internalMessage).toContain("Unhandled status code");
-        expect(rejectionEvent).toBeUndefined();
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Failed);
+        assert.strictEqual(processed.errorCode, ArticleDeliveryErrorCode.Internal);
+        assert.ok(processed.internalMessage!.includes("Unhandled status code"));
+        assert.strictEqual(rejectionEvent, undefined);
       });
 
       it("returns Failed with Internal error for status > 400 (non-5xx)", () => {
@@ -308,9 +295,9 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Failed);
-        expect(processed.errorCode).toBe(ArticleDeliveryErrorCode.Internal);
-        expect(processed.internalMessage).toContain("Unhandled status code");
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Failed);
+        assert.strictEqual(processed.errorCode, ArticleDeliveryErrorCode.Internal);
+        assert.ok(processed.internalMessage!.includes("Unhandled status code"));
       });
     });
 
@@ -324,9 +311,9 @@ describe("delivery", () => {
         const { processed, rejectionEvent } =
           processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Sent);
-        expect(processed.errorCode).toBeUndefined();
-        expect(rejectionEvent).toBeUndefined();
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Sent);
+        assert.strictEqual(processed.errorCode, undefined);
+        assert.strictEqual(rejectionEvent, undefined);
       });
 
       it("returns Sent status for 201", () => {
@@ -337,7 +324,7 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Sent);
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Sent);
       });
 
       it("returns Sent status for 204", () => {
@@ -348,7 +335,7 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Sent);
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Sent);
       });
 
       it("extracts metadata from job", () => {
@@ -365,7 +352,7 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.meta).toEqual({
+        assert.deepStrictEqual(processed.meta, {
           feedId: "success-feed",
           articleIdHash: "success-hash",
           mediumId: "success-medium",
@@ -388,7 +375,7 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.meta).toEqual({
+        assert.deepStrictEqual(processed.meta, {
           feedId: "",
           articleIdHash: "",
           mediumId: "",
@@ -404,8 +391,8 @@ describe("delivery", () => {
 
       const result = await getUnderLimitCheck(store, { feedId: "feed-1" }, []);
 
-      expect(result.underLimit).toBe(true);
-      expect(result.remaining).toBe(Number.MAX_SAFE_INTEGER);
+      assert.strictEqual(result.underLimit, true);
+      assert.strictEqual(result.remaining, Number.MAX_SAFE_INTEGER);
     });
 
     it("returns full limit when no deliveries exist", async () => {
@@ -415,8 +402,8 @@ describe("delivery", () => {
         { limit: 100, timeWindowSeconds: 86400 },
       ]);
 
-      expect(result.underLimit).toBe(true);
-      expect(result.remaining).toBe(100);
+      assert.strictEqual(result.underLimit, true);
+      assert.strictEqual(result.remaining, 100);
     });
 
     it("returns remaining based on delivery count", async () => {
@@ -435,8 +422,8 @@ describe("delivery", () => {
         { limit: 100, timeWindowSeconds: 86400 },
       ]);
 
-      expect(result.underLimit).toBe(true);
-      expect(result.remaining).toBe(97);
+      assert.strictEqual(result.underLimit, true);
+      assert.strictEqual(result.remaining, 97);
     });
 
     it("returns 0 remaining when at limit", async () => {
@@ -454,8 +441,8 @@ describe("delivery", () => {
         { limit: 5, timeWindowSeconds: 86400 },
       ]);
 
-      expect(result.underLimit).toBe(false);
-      expect(result.remaining).toBe(0);
+      assert.strictEqual(result.underLimit, false);
+      assert.strictEqual(result.remaining, 0);
     });
 
     it("returns minimum remaining across multiple limits", async () => {
@@ -473,8 +460,8 @@ describe("delivery", () => {
         { limit: 5, timeWindowSeconds: 3600 }, // 3 remaining
       ]);
 
-      expect(result.underLimit).toBe(true);
-      expect(result.remaining).toBe(3); // Minimum
+      assert.strictEqual(result.underLimit, true);
+      assert.strictEqual(result.remaining, 3); // Minimum
     });
 
     it("filters by mediumId when provided", async () => {
@@ -492,14 +479,14 @@ describe("delivery", () => {
         { limit: 10, timeWindowSeconds: 86400 },
       ]);
 
-      expect(result.remaining).toBe(8); // Only 2 deliveries to medium-1
+      assert.strictEqual(result.remaining, 8); // Only 2 deliveries to medium-1
     });
   });
 });
 
 import { DeliveryPreviewStage, DeliveryPreviewStageStatus, type DeliveryPreviewStageResult } from "../delivery-preview";
 
-describe("diagnostic recording in delivery", () => {
+describe("diagnostic recording in delivery", { concurrency: true }, () => {
   it("records FeedRateLimit diagnostic when feed rate limit is checked", async () => {
     const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
       await import("../delivery-preview");
@@ -522,12 +509,9 @@ describe("diagnostic recording in delivery", () => {
     const rateLimitDiagnostic = previews.find(
       (d) => d.stage === DeliveryPreviewStage.FeedRateLimit
     );
-    expect(rateLimitDiagnostic).toBeDefined();
-    expect(rateLimitDiagnostic!.status).toBe(DeliveryPreviewStageStatus.Passed);
-    expect(
-      (rateLimitDiagnostic as { details: { remaining: number } }).details
-        .remaining
-    ).toBe(5);
+    assert.notStrictEqual(rateLimitDiagnostic, undefined);
+    assert.strictEqual(rateLimitDiagnostic!.status, DeliveryPreviewStageStatus.Passed);
+    assert.strictEqual((rateLimitDiagnostic as { details: { remaining: number } }).details.remaining, 5);
   });
 
   it("records MediumRateLimit diagnostic when medium rate limit is checked", async () => {
@@ -553,11 +537,9 @@ describe("diagnostic recording in delivery", () => {
     const rateLimitDiagnostic = previews.find(
       (d) => d.stage === DeliveryPreviewStage.MediumRateLimit
     );
-    expect(rateLimitDiagnostic).toBeDefined();
-    expect(rateLimitDiagnostic!.status).toBe(DeliveryPreviewStageStatus.Passed);
-    expect(
-      (rateLimitDiagnostic as { details: { mediumId: string } }).details.mediumId
-    ).toBe("medium-123");
+    assert.notStrictEqual(rateLimitDiagnostic, undefined);
+    assert.strictEqual(rateLimitDiagnostic!.status, DeliveryPreviewStageStatus.Passed);
+    assert.strictEqual((rateLimitDiagnostic as { details: { mediumId: string } }).details.mediumId, "medium-123");
   });
 
   it("records failed rate limit diagnostic when limit exceeded", async () => {
@@ -582,12 +564,9 @@ describe("diagnostic recording in delivery", () => {
     const rateLimitDiagnostic = previews.find(
       (d) => d.stage === DeliveryPreviewStage.FeedRateLimit
     );
-    expect(rateLimitDiagnostic).toBeDefined();
-    expect(rateLimitDiagnostic!.status).toBe(DeliveryPreviewStageStatus.Failed);
-    expect(
-      (rateLimitDiagnostic as { details: { wouldExceed: boolean } }).details
-        .wouldExceed
-    ).toBe(true);
+    assert.notStrictEqual(rateLimitDiagnostic, undefined);
+    assert.strictEqual(rateLimitDiagnostic!.status, DeliveryPreviewStageStatus.Failed);
+    assert.strictEqual((rateLimitDiagnostic as { details: { wouldExceed: boolean } }).details.wouldExceed, true);
   });
 
   it("records MediumFilter diagnostic when filter is evaluated", async () => {
@@ -612,8 +591,8 @@ describe("diagnostic recording in delivery", () => {
     const filterDiagnostic = previews.find(
       (d) => d.stage === DeliveryPreviewStage.MediumFilter
     );
-    expect(filterDiagnostic).toBeDefined();
-    expect(filterDiagnostic!.status).toBe(DeliveryPreviewStageStatus.Passed);
+    assert.notStrictEqual(filterDiagnostic, undefined);
+    assert.strictEqual(filterDiagnostic!.status, DeliveryPreviewStageStatus.Passed);
   });
 
   it("records failed MediumFilter diagnostic when filter blocks article", async () => {
@@ -647,10 +626,10 @@ describe("diagnostic recording in delivery", () => {
     const filterDiagnostic = previews.find(
       (d) => d.stage === DeliveryPreviewStage.MediumFilter
     );
-    expect(filterDiagnostic).toBeDefined();
-    expect(filterDiagnostic!.status).toBe(DeliveryPreviewStageStatus.Failed);
+    assert.notStrictEqual(filterDiagnostic, undefined);
+    assert.strictEqual(filterDiagnostic!.status, DeliveryPreviewStageStatus.Failed);
     const details = filterDiagnostic!.details as { explainBlocked: Array<{ message: string }> };
-    expect(details.explainBlocked[0]!.message).toBe("Title does not contain 'keyword'");
+    assert.strictEqual(details.explainBlocked[0]!.message, "Title does not contain 'keyword'");
   });
 
   it("does not record previews outside diagnostic context", async () => {
@@ -678,11 +657,11 @@ describe("diagnostic recording in delivery", () => {
     });
 
     const previews = getDeliveryPreviewResultsForArticle("test-hash");
-    expect(previews).toEqual([]);
+    assert.deepStrictEqual(previews, []);
   });
 });
 
-describe("diagnostic recording during deliverArticles execution", () => {
+describe("diagnostic recording during deliverArticles execution", { concurrency: true }, () => {
   it("records MediumFilter diagnostic when medium filter is evaluated during delivery", async () => {
     const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
       await import("../delivery-preview");
@@ -746,11 +725,9 @@ describe("diagnostic recording during deliverArticles execution", () => {
     const filterDiagnostic = previews.find(
       (d) => d.stage === DeliveryPreviewStage.MediumFilter
     );
-    expect(filterDiagnostic).toBeDefined();
-    expect(filterDiagnostic!.status).toBe(DeliveryPreviewStageStatus.Passed);
-    expect(
-      (filterDiagnostic as { details: { mediumId: string } }).details.mediumId
-    ).toBe("medium-filter-test");
+    assert.notStrictEqual(filterDiagnostic, undefined);
+    assert.strictEqual(filterDiagnostic!.status, DeliveryPreviewStageStatus.Passed);
+    assert.strictEqual((filterDiagnostic as { details: { mediumId: string } }).details.mediumId, "medium-filter-test");
   });
 
   it("records failed MediumFilter diagnostic when filter blocks article during delivery", async () => {
@@ -816,10 +793,10 @@ describe("diagnostic recording during deliverArticles execution", () => {
     const filterDiagnostic = previews.find(
       (d) => d.stage === DeliveryPreviewStage.MediumFilter
     );
-    expect(filterDiagnostic).toBeDefined();
-    expect(filterDiagnostic!.status).toBe(DeliveryPreviewStageStatus.Failed);
+    assert.notStrictEqual(filterDiagnostic, undefined);
+    assert.strictEqual(filterDiagnostic!.status, DeliveryPreviewStageStatus.Failed);
     const details = filterDiagnostic!.details as { explainBlocked: Array<{ message: string }> };
-    expect(details.explainBlocked.length).toBeGreaterThan(0);
+    assert.ok(details.explainBlocked.length > 0);
   });
 });
 

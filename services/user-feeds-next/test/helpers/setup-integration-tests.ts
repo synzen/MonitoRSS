@@ -1,10 +1,5 @@
-import type { Pool } from "pg";
+import { Client, Pool } from "pg";
 import {
-  initPool,
-  closePool,
-  runMigrations,
-  ensurePartitionsExist,
-  truncateAllTables,
   createPostgresArticleFieldStore,
   createPostgresDeliveryRecordStore,
   createPostgresResponseHashStore,
@@ -22,107 +17,13 @@ import {
   createTestFeedRequestsServer,
   type TestFeedRequestsServer,
 } from "./test-feed-requests-server";
+import { TEMPLATE_DB_NAME, getAdminUri, getTestDbUri } from "./test-constants";
 
 // ============================================================================
-// Test Infrastructure State
+// Types
 // ============================================================================
 
-let pool: Pool | null = null;
-let articleFieldStore: ArticleFieldStore | null = null;
-let deliveryRecordStore: DeliveryRecordStore | null = null;
-let responseHashStore: ResponseHashStore | null = null;
-let feedRetryStore: FeedRetryStore | null = null;
-let discordClient: DiscordRestClient | null = null;
-let testFeedRequestsServer: TestFeedRequestsServer | null = null;
-
-// ============================================================================
-// Setup Functions
-// ============================================================================
-
-/**
- * Initialize the test database connection and run migrations.
- * Call this in beforeAll.
- */
-export async function setupIntegrationTests(): Promise<{
-  pool: Pool;
-  articleFieldStore: ArticleFieldStore;
-  deliveryRecordStore: DeliveryRecordStore;
-  responseHashStore: ResponseHashStore;
-  feedRetryStore: FeedRetryStore;
-  discordClient: DiscordRestClient;
-  testFeedRequestsServer: TestFeedRequestsServer;
-}> {
-  // Start the test feed-requests server with random available port
-  testFeedRequestsServer = createTestFeedRequestsServer();
-
-  // Get connection string from environment
-  const postgresUri =
-    process.env.USER_FEEDS_POSTGRES_URI ||
-    "postgres://postgres:postgres@localhost:5433/userfeeds_test";
-
-  // Initialize the pool
-  pool = initPool(postgresUri);
-
-  // Run migrations (creates tables if they don't exist)
-  await runMigrations(pool);
-
-  // Ensure partitions exist for current/next month
-  await ensurePartitionsExist(pool);
-
-  // Create stores
-  articleFieldStore = createPostgresArticleFieldStore(pool);
-  deliveryRecordStore = createPostgresDeliveryRecordStore(pool);
-  responseHashStore = createPostgresResponseHashStore(pool);
-  feedRetryStore = createPostgresFeedRetryStore(pool);
-  discordClient = createTestDiscordRestClient();
-
-  return {
-    pool,
-    articleFieldStore,
-    deliveryRecordStore,
-    responseHashStore,
-    feedRetryStore,
-    discordClient,
-    testFeedRequestsServer,
-  };
-}
-
-/**
- * Clean up test database state between tests.
- * Call this in beforeEach.
- */
-export async function cleanupTestData(): Promise<void> {
-  if (!pool) {
-    throw new Error(
-      "Pool not initialized. Call setupIntegrationTests first."
-    );
-  }
-
-  await truncateAllTables(pool);
-}
-
-/**
- * Tear down the test database connection.
- * Call this in afterAll.
- */
-export async function teardownIntegrationTests(): Promise<void> {
-  if (testFeedRequestsServer) {
-    testFeedRequestsServer.server.stop();
-    testFeedRequestsServer = null;
-  }
-
-  await closePool();
-  pool = null;
-  articleFieldStore = null;
-  deliveryRecordStore = null;
-  responseHashStore = null;
-  feedRetryStore = null;
-}
-
-/**
- * Get the current stores (throws if not initialized).
- */
-export function getStores(): {
+export interface TestStores {
   pool: Pool;
   articleFieldStore: ArticleFieldStore;
   deliveryRecordStore: DeliveryRecordStore;
@@ -130,41 +31,91 @@ export function getStores(): {
   feedRetryStore: FeedRetryStore;
   discordClient: DiscordRestClient;
   feedRequestsServiceHost: string;
-} {
-  if (
-    !pool ||
-    !articleFieldStore ||
-    !deliveryRecordStore ||
-    !responseHashStore ||
-    !feedRetryStore ||
-    !discordClient ||
-    !testFeedRequestsServer
-  ) {
-    throw new Error(
-      "Stores not initialized. Call setupIntegrationTests first."
-    );
-  }
+}
 
+// ============================================================================
+// Per-File State (each test file gets its own module instance)
+// ============================================================================
+
+let testPool: Pool | null = null;
+let testFeedRequestsServer: TestFeedRequestsServer | null = null;
+let currentDatabaseName: string | null = null;
+
+// ============================================================================
+// Test Server Management
+// ============================================================================
+
+function getOrCreateTestServer(): TestFeedRequestsServer {
+  if (!testFeedRequestsServer) {
+    testFeedRequestsServer = createTestFeedRequestsServer();
+  }
+  return testFeedRequestsServer;
+}
+
+// ============================================================================
+// Per-File Database Setup (for parallel test execution)
+// ============================================================================
+
+/**
+ * Set up a unique database for the current test file.
+ * Call this in the test file's before() hook.
+ * Returns stores scoped to the new database.
+ */
+export async function setupTestDatabase(): Promise<TestStores> {
+  currentDatabaseName = `test_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const testServer = getOrCreateTestServer();
+
+  // Clone from template using simple Client
+  const adminClient = new Client({ connectionString: getAdminUri() });
+  await adminClient.connect();
+  await adminClient.query(`CREATE DATABASE "${currentDatabaseName}" TEMPLATE ${TEMPLATE_DB_NAME}`);
+  await adminClient.end();
+
+  // Connect to the new test database with a Pool
+  testPool = new Pool({ connectionString: getTestDbUri(currentDatabaseName), max: 10 });
+
+  // Create stores
   return {
-    pool,
-    articleFieldStore,
-    deliveryRecordStore,
-    responseHashStore,
-    feedRetryStore,
-    discordClient: discordClient!,
-    feedRequestsServiceHost: `http://localhost:${testFeedRequestsServer.port}`,
+    pool: testPool,
+    articleFieldStore: createPostgresArticleFieldStore(testPool),
+    deliveryRecordStore: createPostgresDeliveryRecordStore(testPool),
+    responseHashStore: createPostgresResponseHashStore(testPool),
+    feedRetryStore: createPostgresFeedRetryStore(testPool),
+    discordClient: createTestDiscordRestClient(),
+    feedRequestsServiceHost: `http://localhost:${testServer.port}`,
   };
 }
 
 /**
- * Get the test feed-requests server (throws if not initialized).
+ * Tear down the database for the current test file.
+ * Call this in the test file's after() hook.
  */
-export function getTestFeedRequestsServer(): TestFeedRequestsServer {
-  if (!testFeedRequestsServer) {
-    throw new Error(
-      "Test feed-requests server not initialized. Call setupIntegrationTests first."
-    );
+export async function teardownTestDatabase(): Promise<void> {
+  if (testPool) {
+    await testPool.end();
+    testPool = null;
   }
 
-  return testFeedRequestsServer;
+  if (testFeedRequestsServer) {
+    await testFeedRequestsServer.stop();
+    testFeedRequestsServer = null;
+  }
+
+  if (currentDatabaseName) {
+    const adminClient = new Client({ connectionString: getAdminUri() });
+    await adminClient.connect();
+    try {
+      await adminClient.query(`DROP DATABASE IF EXISTS "${currentDatabaseName}"`);
+    } finally {
+      await adminClient.end();
+    }
+    currentDatabaseName = null;
+  }
+}
+
+/**
+ * Get the test feed-requests server.
+ */
+export function getTestFeedRequestsServer(): TestFeedRequestsServer {
+  return getOrCreateTestServer();
 }

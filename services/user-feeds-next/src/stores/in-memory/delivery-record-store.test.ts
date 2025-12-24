@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach } from "bun:test";
+import { describe, it, beforeEach } from "node:test";
+import assert from "node:assert";
 import { createInMemoryDeliveryRecordStore } from "./delivery-record-store";
 import {
   ArticleDeliveryStatus,
@@ -8,7 +9,7 @@ import {
   generateDeliveryId,
 } from "../interfaces/delivery-record-store";
 
-describe("Delivery Record Store", () => {
+describe("Delivery Record Store", { concurrency: true }, () => {
   describe("createInMemoryDeliveryRecordStore", () => {
     let store: ReturnType<typeof createInMemoryDeliveryRecordStore>;
 
@@ -25,14 +26,16 @@ describe("Delivery Record Store", () => {
         article: null,
       };
 
-      await expect(store.store("feed-1", [state])).rejects.toThrow(
-        "No context was started for DeliveryRecordStore"
+      await assert.rejects(
+        store.store("feed-1", [state]),
+        { message: /No context was started for DeliveryRecordStore/ }
       );
     });
 
     it("should require context for flushPendingInserts", async () => {
-      await expect(store.flushPendingInserts()).rejects.toThrow(
-        "No context was started for DeliveryRecordStore"
+      await assert.rejects(
+        store.flushPendingInserts(),
+        { message: /No context was started for DeliveryRecordStore/ }
       );
     });
 
@@ -58,8 +61,8 @@ describe("Delivery Record Store", () => {
         return store.store("feed-1", states, true);
       });
 
-      expect(result?.inserted).toBe(2);
-      expect(store._records.size).toBe(2);
+      assert.strictEqual(result?.inserted, 2);
+      assert.strictEqual(store._records.size, 2);
     });
 
     it("should store failed articles correctly", async () => {
@@ -80,12 +83,10 @@ describe("Delivery Record Store", () => {
       });
 
       const record = store._records.get("delivery-1");
-      expect(record).toBeDefined();
-      expect(record?.status).toBe(ArticleDeliveryStatus.Failed);
-      expect(record?.errorCode).toBe(
-        ArticleDeliveryErrorCode.NoChannelOrWebhook
-      );
-      expect(record?.internalMessage).toBe("No channel found");
+      assert.notStrictEqual(record, undefined);
+      assert.strictEqual(record?.status, ArticleDeliveryStatus.Failed);
+      assert.strictEqual(record?.errorCode, ArticleDeliveryErrorCode.NoChannelOrWebhook);
+      assert.strictEqual(record?.internalMessage, "No channel found");
     });
 
     it("should store rejected articles correctly", async () => {
@@ -107,9 +108,9 @@ describe("Delivery Record Store", () => {
       });
 
       const record = store._records.get("delivery-1");
-      expect(record).toBeDefined();
-      expect(record?.status).toBe(ArticleDeliveryStatus.Rejected);
-      expect(record?.externalDetail).toBe('{"message": "Invalid embed"}');
+      assert.notStrictEqual(record, undefined);
+      assert.strictEqual(record?.status, ArticleDeliveryStatus.Rejected);
+      assert.strictEqual(record?.externalDetail, '{"message": "Invalid embed"}');
     });
 
     it("should store pending delivery states correctly", async () => {
@@ -129,11 +130,9 @@ describe("Delivery Record Store", () => {
       });
 
       const record = store._records.get("delivery-1");
-      expect(record).toBeDefined();
-      expect(record?.status).toBe(ArticleDeliveryStatus.PendingDelivery);
-      expect(record?.contentType).toBe(
-        ArticleDeliveryContentType.DiscordArticleMessage
-      );
+      assert.notStrictEqual(record, undefined);
+      assert.strictEqual(record?.status, ArticleDeliveryStatus.PendingDelivery);
+      assert.strictEqual(record?.contentType, ArticleDeliveryContentType.DiscordArticleMessage);
     });
 
     it("should store filtered out articles correctly", async () => {
@@ -153,11 +152,9 @@ describe("Delivery Record Store", () => {
       });
 
       const record = store._records.get("delivery-1");
-      expect(record).toBeDefined();
-      expect(record?.status).toBe(ArticleDeliveryStatus.FilteredOut);
-      expect(record?.externalDetail).toBe(
-        '{"explainBlocked": ["title contains banned"]}'
-      );
+      assert.notStrictEqual(record, undefined);
+      assert.strictEqual(record?.status, ArticleDeliveryStatus.FilteredOut);
+      assert.strictEqual(record?.externalDetail, '{"explainBlocked": ["title contains banned"]}');
     });
 
     it("should store rate limited articles correctly", async () => {
@@ -182,12 +179,8 @@ describe("Delivery Record Store", () => {
         await store.store("feed-1", states, true);
       });
 
-      expect(store._records.get("delivery-1")?.status).toBe(
-        ArticleDeliveryStatus.RateLimited
-      );
-      expect(store._records.get("delivery-2")?.status).toBe(
-        ArticleDeliveryStatus.MediumRateLimitedByUser
-      );
+      assert.strictEqual(store._records.get("delivery-1")?.status, ArticleDeliveryStatus.RateLimited);
+      assert.strictEqual(store._records.get("delivery-2")?.status, ArticleDeliveryStatus.MediumRateLimitedByUser);
     });
 
     it("should batch inserts when flush=false", async () => {
@@ -213,15 +206,15 @@ describe("Delivery Record Store", () => {
       await store.startContext(async () => {
         // Store without flushing
         await store.store("feed-1", states1, false);
-        expect(store._records.size).toBe(0); // Not persisted yet
+        assert.strictEqual(store._records.size, 0);
 
         await store.store("feed-1", states2, false);
-        expect(store._records.size).toBe(0); // Still not persisted
+        assert.strictEqual(store._records.size, 0);
 
         // Now flush
         const { affectedRows } = await store.flushPendingInserts();
-        expect(affectedRows).toBe(2);
-        expect(store._records.size).toBe(2);
+        assert.strictEqual(affectedRows, 2);
+        assert.strictEqual(store._records.size, 2);
       });
     });
 
@@ -245,7 +238,7 @@ describe("Delivery Record Store", () => {
 
         // Second flush should have nothing
         const { affectedRows } = await store.flushPendingInserts();
-        expect(affectedRows).toBe(0);
+        assert.strictEqual(affectedRows, 0);
       });
     });
 
@@ -272,7 +265,7 @@ describe("Delivery Record Store", () => {
       });
 
       const record = store._records.get("delivery-1");
-      expect(record?.articleData).toEqual({ title: "Test Title" });
+      assert.deepStrictEqual(record?.articleData, { title: "Test Title" });
     });
   });
 
@@ -307,9 +300,9 @@ describe("Delivery Record Store", () => {
         status: ArticleDeliveryStatus.Sent,
       });
 
-      expect(result.status).toBe(ArticleDeliveryStatus.Sent);
-      expect(result.feed_id).toBe("feed-1");
-      expect(result.medium_id).toBe("medium-1");
+      assert.strictEqual(result.status, ArticleDeliveryStatus.Sent);
+      assert.strictEqual(result.feed_id, "feed-1");
+      assert.strictEqual(result.medium_id, "medium-1");
     });
 
     it("should update error code and internal message", async () => {
@@ -336,19 +329,18 @@ describe("Delivery Record Store", () => {
         internalMessage: "Discord returned 500",
       });
 
-      expect(result.status).toBe(ArticleDeliveryStatus.Failed);
-      expect(result.error_code).toBe(
-        ArticleDeliveryErrorCode.ThirdPartyInternal
-      );
-      expect(result.internal_message).toBe("Discord returned 500");
+      assert.strictEqual(result.status, ArticleDeliveryStatus.Failed);
+      assert.strictEqual(result.error_code, ArticleDeliveryErrorCode.ThirdPartyInternal);
+      assert.strictEqual(result.internal_message, "Discord returned 500");
     });
 
     it("should throw if record not found", async () => {
-      await expect(
+      await assert.rejects(
         store.updateDeliveryStatus("non-existent", {
           status: ArticleDeliveryStatus.Sent,
-        })
-      ).rejects.toThrow("Record not found");
+        }),
+        { message: /Record not found/ }
+      );
     });
   });
 
@@ -393,7 +385,7 @@ describe("Delivery Record Store", () => {
       });
 
       const count = await store.countDeliveriesInPastTimeframe({}, 3600);
-      expect(count).toBe(2); // Only the 2 sent deliveries
+      assert.strictEqual(count, 2);
     });
 
     it("should filter by feedId", async () => {
@@ -430,7 +422,7 @@ describe("Delivery Record Store", () => {
         { feedId: "feed-1" },
         3600
       );
-      expect(count).toBe(1);
+      assert.strictEqual(count, 1);
     });
 
     it("should filter by mediumId", async () => {
@@ -461,7 +453,7 @@ describe("Delivery Record Store", () => {
         { mediumId: "medium-1" },
         3600
       );
-      expect(count).toBe(1);
+      assert.strictEqual(count, 1);
     });
 
     it("should filter by both feedId and mediumId", async () => {
@@ -505,7 +497,7 @@ describe("Delivery Record Store", () => {
         { feedId: "feed-1", mediumId: "medium-1" },
         3600
       );
-      expect(count).toBe(1);
+      assert.strictEqual(count, 1);
     });
   });
 
@@ -514,12 +506,10 @@ describe("Delivery Record Store", () => {
       const id1 = generateDeliveryId();
       const id2 = generateDeliveryId();
 
-      expect(id1).toBeDefined();
-      expect(id2).toBeDefined();
-      expect(id1).not.toBe(id2);
-      expect(id1).toMatch(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-      );
+      assert.notStrictEqual(id1, undefined);
+      assert.notStrictEqual(id2, undefined);
+      assert.notStrictEqual(id1, id2);
+      assert.ok(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id1));
     });
   });
 });

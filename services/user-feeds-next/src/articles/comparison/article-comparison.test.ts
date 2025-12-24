@@ -1,4 +1,5 @@
-import { describe, expect, it, beforeEach } from "bun:test";
+import { describe, it, beforeEach } from "node:test";
+import assert from "node:assert";
 import {
   getArticlesToDeliver,
   inMemoryArticleFieldStore,
@@ -22,7 +23,7 @@ function createArticle(
   };
 }
 
-describe("article-comparison", () => {
+describe("article-comparison", { concurrency: true }, () => {
   beforeEach(() => {
     clearInMemoryStore();
   });
@@ -96,7 +97,7 @@ describe("article-comparison", () => {
           { blockingComparisons: [], passingComparisons: [] }
         );
 
-        expect(result.articlesToDeliver.length).toBe(0);
+        assert.strictEqual(result.articlesToDeliver.length, 0);
         await inMemoryArticleFieldStore.flushPendingInserts();
       });
     });
@@ -124,8 +125,8 @@ describe("article-comparison", () => {
         );
         await inMemoryArticleFieldStore.flushPendingInserts();
 
-        expect(result.articlesToDeliver.length).toBe(1);
-        expect(result.articlesToDeliver[0]!.flattened.id).toBe("2");
+        assert.strictEqual(result.articlesToDeliver.length, 1);
+        assert.strictEqual(result.articlesToDeliver[0]!.flattened.id, "2");
       });
     });
 
@@ -152,8 +153,8 @@ describe("article-comparison", () => {
         );
         await inMemoryArticleFieldStore.flushPendingInserts();
 
-        expect(result.articlesToDeliver.length).toBe(0);
-        expect(result.articlesBlocked.length).toBe(1);
+        assert.strictEqual(result.articlesToDeliver.length, 0);
+        assert.strictEqual(result.articlesBlocked.length, 1);
       });
     });
 
@@ -177,8 +178,8 @@ describe("article-comparison", () => {
         );
         await inMemoryArticleFieldStore.flushPendingInserts();
 
-        expect(result.articlesToDeliver.length).toBe(1);
-        expect(result.articlesPassed.length).toBe(1);
+        assert.strictEqual(result.articlesToDeliver.length, 1);
+        assert.strictEqual(result.articlesPassed.length, 1);
       });
     });
 
@@ -202,7 +203,7 @@ describe("article-comparison", () => {
         );
         await inMemoryArticleFieldStore.flushPendingInserts();
 
-        expect(result.articlesToDeliver.length).toBe(0);
+        assert.strictEqual(result.articlesToDeliver.length, 0);
       });
     });
 
@@ -227,7 +228,7 @@ describe("article-comparison", () => {
         await inMemoryArticleFieldStore.flushPendingInserts();
 
         // First run for feed-2, so nothing delivered
-        expect(result.articlesToDeliver.length).toBe(0);
+        assert.strictEqual(result.articlesToDeliver.length, 0);
       });
     });
   });
@@ -257,8 +258,8 @@ describe("article-comparison", () => {
         passingComparisons: [],
       });
 
-      expect(result.articlesToDeliver.length).toBe(1);
-      expect(result.articlesToDeliver[0]!.flattened.id).toBe("2");
+      assert.strictEqual(result.articlesToDeliver.length, 1);
+      assert.strictEqual(result.articlesToDeliver[0]!.flattened.id, "2");
     });
 
     it("does not deliver articles in hot partition", async () => {
@@ -275,7 +276,7 @@ describe("article-comparison", () => {
         passingComparisons: [],
       });
 
-      expect(result.articlesToDeliver.length).toBe(0);
+      assert.strictEqual(result.articlesToDeliver.length, 0);
     });
 
     it("does not deliver articles in cold partition", async () => {
@@ -292,7 +293,7 @@ describe("article-comparison", () => {
         passingComparisons: [],
       });
 
-      expect(result.articlesToDeliver.length).toBe(0);
+      assert.strictEqual(result.articlesToDeliver.length, 0);
     });
 
     it("re-stores cold partition articles with fresh timestamp", async () => {
@@ -315,15 +316,15 @@ describe("article-comparison", () => {
       // Should have 2 storeArticles calls:
       // 1. New articles [article-2] with comparison fields
       // 2. Cold partition articles [article-1] with empty comparison fields (ID only)
-      expect(mockStore.storedArticles.length).toBe(2);
+      assert.strictEqual(mockStore.storedArticles.length, 2);
 
       // First call stores new articles
-      expect(mockStore.storedArticles[0]!.length).toBe(1);
-      expect(mockStore.storedArticles[0]![0]!.flattened.id).toBe("2");
+      assert.strictEqual(mockStore.storedArticles[0]!.length, 1);
+      assert.strictEqual(mockStore.storedArticles[0]![0]!.flattened.id, "2");
 
       // Second call re-stores cold partition articles
-      expect(mockStore.storedArticles[1]!.length).toBe(1);
-      expect(mockStore.storedArticles[1]![0]!.flattened.id).toBe("1");
+      assert.strictEqual(mockStore.storedArticles[1]!.length, 1);
+      assert.strictEqual(mockStore.storedArticles[1]![0]!.flattened.id, "1");
     });
 
     it("handles mixed hot and cold partitions correctly", async () => {
@@ -345,12 +346,12 @@ describe("article-comparison", () => {
       });
 
       // Only article-3 should be delivered
-      expect(result.articlesToDeliver.length).toBe(1);
-      expect(result.articlesToDeliver[0]!.flattened.id).toBe("3");
+      assert.strictEqual(result.articlesToDeliver.length, 1);
+      assert.strictEqual(result.articlesToDeliver[0]!.flattened.id, "3");
 
       // Should re-store article-2 from cold partition
-      expect(mockStore.storedArticles.length).toBe(2);
-      expect(mockStore.storedArticles[1]![0]!.flattened.id).toBe("2");
+      assert.strictEqual(mockStore.storedArticles.length, 2);
+      assert.strictEqual(mockStore.storedArticles[1]![0]!.flattened.id, "2");
     });
 
     it("skips second pass when all articles are in hot partition", async () => {
@@ -376,7 +377,7 @@ describe("article-comparison", () => {
       });
 
       // Only first pass needed since all in hot partition
-      expect(partitionedCalls).toBe(1);
+      assert.strictEqual(partitionedCalls, 1);
     });
   });
 
@@ -417,8 +418,8 @@ describe("article-comparison", () => {
 
         // Article 2 should be blocked because author matches (author was stored)
         // Even though category is a new comparison, it's now stored, so it won't affect this run
-        expect(result.articlesBlocked.length).toBe(1);
-        expect(result.articlesToDeliver.length).toBe(0);
+        assert.strictEqual(result.articlesBlocked.length, 1);
+        assert.strictEqual(result.articlesToDeliver.length, 0);
       });
     });
 
@@ -442,8 +443,8 @@ describe("article-comparison", () => {
         );
         await inMemoryArticleFieldStore.flushPendingInserts();
 
-        expect(result.articlesToDeliver.length).toBe(1);
-        expect(result.articlesBlocked.length).toBe(0);
+        assert.strictEqual(result.articlesToDeliver.length, 1);
+        assert.strictEqual(result.articlesBlocked.length, 0);
       });
     });
 
@@ -477,8 +478,8 @@ describe("article-comparison", () => {
       });
 
       // Article should pass based on title alone (description is new, not used)
-      expect(result.articlesPassed.length).toBe(1);
-      expect(result.articlesToDeliver.length).toBe(1);
+      assert.strictEqual(result.articlesPassed.length, 1);
+      assert.strictEqual(result.articlesToDeliver.length, 1);
     });
 
     it("stores comparison names when articles are stored", async () => {
@@ -494,8 +495,8 @@ describe("article-comparison", () => {
       });
 
       // Both comparison names should be stored
-      expect(mockStore.comparisonNames.has("field1")).toBe(true);
-      expect(mockStore.comparisonNames.has("field2")).toBe(true);
+      assert.ok(mockStore.comparisonNames.has("field1"));
+      assert.ok(mockStore.comparisonNames.has("field2"));
     });
   });
 
@@ -516,19 +517,20 @@ describe("article-comparison", () => {
 
         // Flush pending inserts
         const result = await inMemoryArticleFieldStore.flushPendingInserts();
-        expect(result.affectedRows).toBe(2); // 2 article IDs
+        assert.strictEqual(result.affectedRows, 2); // 2 article IDs
 
         // After flush, articles should be visible
         const hasPrior =
           await inMemoryArticleFieldStore.hasPriorArticlesStored("feed-ctx");
-        expect(hasPrior).toBe(true);
+        assert.strictEqual(hasPrior, true);
       });
     });
 
     it("throws when flushPendingInserts called without context", async () => {
-      await expect(
-        inMemoryArticleFieldStore.flushPendingInserts()
-      ).rejects.toThrow("No context was started for ArticleFieldStore");
+      await assert.rejects(
+        inMemoryArticleFieldStore.flushPendingInserts(),
+        { message: /No context was started for ArticleFieldStore/ }
+      );
     });
 
     it("clears pending inserts after flush", async () => {
@@ -543,20 +545,21 @@ describe("article-comparison", () => {
 
         // First flush should have affected rows
         const result1 = await inMemoryArticleFieldStore.flushPendingInserts();
-        expect(result1.affectedRows).toBe(1);
+        assert.strictEqual(result1.affectedRows, 1);
 
         // Second flush should have no affected rows (buffer cleared)
         const result2 = await inMemoryArticleFieldStore.flushPendingInserts();
-        expect(result2.affectedRows).toBe(0);
+        assert.strictEqual(result2.affectedRows, 0);
       });
     });
 
     it("throws when storeArticles called without context", async () => {
       const articles = [createArticle("no-ctx-1")];
 
-      await expect(
-        inMemoryArticleFieldStore.storeArticles("feed-no-ctx", articles, [])
-      ).rejects.toThrow("No context was started for ArticleFieldStore");
+      await assert.rejects(
+        inMemoryArticleFieldStore.storeArticles("feed-no-ctx", articles, []),
+        { message: /No context was started for ArticleFieldStore/ }
+      );
     });
 
     it("includes comparison field inserts in affected rows count", async () => {
@@ -572,7 +575,7 @@ describe("article-comparison", () => {
 
         // Should flush: 1 article ID + 2 comparison fields = 3 inserts
         const result = await inMemoryArticleFieldStore.flushPendingInserts();
-        expect(result.affectedRows).toBe(3);
+        assert.strictEqual(result.affectedRows, 3);
       });
     });
 
@@ -601,16 +604,16 @@ describe("article-comparison", () => {
       ]);
 
       // Each context should have its own affected rows
-      expect(result1.affectedRows).toBe(1);
-      expect(result2.affectedRows).toBe(1);
+      assert.strictEqual(result1.affectedRows, 1);
+      assert.strictEqual(result2.affectedRows, 1);
 
       // Both feeds should have articles stored
       const hasPrior1 =
         await inMemoryArticleFieldStore.hasPriorArticlesStored("feed-iso-1");
       const hasPrior2 =
         await inMemoryArticleFieldStore.hasPriorArticlesStored("feed-iso-2");
-      expect(hasPrior1).toBe(true);
-      expect(hasPrior2).toBe(true);
+      assert.strictEqual(hasPrior1, true);
+      assert.strictEqual(hasPrior2, true);
     });
   });
 
@@ -632,16 +635,17 @@ describe("article-comparison", () => {
           diagnostics = getDeliveryPreviewResultsForArticle("hash-1");
         });
 
-        expect(diagnostics.length).toBeGreaterThan(0);
+        assert.ok(diagnostics.length > 0);
         const feedState = diagnostics.find(
           (d) => d.stage === DeliveryPreviewStage.FeedState
         );
-        expect(feedState).toBeDefined();
-        expect(
-          (feedState as { details: { isFirstRun: boolean } }).details.isFirstRun
-        ).toBe(true);
+        assert.notStrictEqual(feedState, undefined);
+        assert.strictEqual(
+          (feedState as { details: { isFirstRun: boolean } }).details.isFirstRun,
+          true
+        );
         // First run records articles as baseline, status is Failed because articles won't be delivered
-        expect(feedState!.status).toBe(DeliveryPreviewStageStatus.Failed);
+        assert.strictEqual(feedState!.status, DeliveryPreviewStageStatus.Failed);
       });
     });
 
@@ -678,10 +682,11 @@ describe("article-comparison", () => {
         const idComparison = diagnostics.find(
           (d) => d.stage === DeliveryPreviewStage.IdComparison
         );
-        expect(idComparison).toBeDefined();
-        expect(
-          (idComparison as { details: { isNew: boolean } }).details.isNew
-        ).toBe(true);
+        assert.notStrictEqual(idComparison, undefined);
+        assert.strictEqual(
+          (idComparison as { details: { isNew: boolean } }).details.isNew,
+          true
+        );
       });
     });
 
@@ -715,15 +720,15 @@ describe("article-comparison", () => {
         const blockingComparison = diagnostics.find(
           (d) => d.stage === DeliveryPreviewStage.BlockingComparison
         );
-        expect(blockingComparison).toBeDefined();
-        expect(blockingComparison!.status).toBe(DeliveryPreviewStageStatus.Failed);
-        expect(
+        assert.notStrictEqual(blockingComparison, undefined);
+        assert.strictEqual(blockingComparison!.status, DeliveryPreviewStageStatus.Failed);
+        assert.ok(
           (
             blockingComparison as {
               details: { blockedByFields: string[] };
             }
-          ).details.blockedByFields
-        ).toContain("title");
+          ).details.blockedByFields.includes("title")
+        );
       });
     });
 
@@ -757,15 +762,15 @@ describe("article-comparison", () => {
         const passingComparison = diagnostics.find(
           (d) => d.stage === DeliveryPreviewStage.PassingComparison
         );
-        expect(passingComparison).toBeDefined();
-        expect(passingComparison!.status).toBe(DeliveryPreviewStageStatus.Passed);
-        expect(
+        assert.notStrictEqual(passingComparison, undefined);
+        assert.strictEqual(passingComparison!.status, DeliveryPreviewStageStatus.Passed);
+        assert.ok(
           (
             passingComparison as {
               details: { changedFields: string[] };
             }
-          ).details.changedFields
-        ).toContain("title");
+          ).details.changedFields.includes("title")
+        );
       });
     });
 
@@ -813,8 +818,8 @@ describe("article-comparison", () => {
         const dateCheck = diagnostics.find(
           (d) => d.stage === DeliveryPreviewStage.DateCheck
         );
-        expect(dateCheck).toBeDefined();
-        expect(dateCheck!.status).toBe(DeliveryPreviewStageStatus.Failed);
+        assert.notStrictEqual(dateCheck, undefined);
+        assert.strictEqual(dateCheck!.status, DeliveryPreviewStageStatus.Failed);
       });
     });
 
@@ -831,7 +836,7 @@ describe("article-comparison", () => {
 
         // Outside diagnostic context, should return empty Map
         const diagnostics = getAllDeliveryPreviewResults();
-        expect(diagnostics.size).toBe(0);
+        assert.strictEqual(diagnostics.size, 0);
       });
     });
   });
@@ -868,16 +873,18 @@ describe("article-comparison", () => {
             (d) => d.stage === DeliveryPreviewStage.FeedState
           );
 
-          expect(feedState1).toBeDefined();
-          expect(feedState2).toBeDefined();
-          expect(
+          assert.notStrictEqual(feedState1, undefined);
+          assert.notStrictEqual(feedState2, undefined);
+          assert.strictEqual(
             (feedState1 as { details: { isFirstRun: boolean } }).details
-              .isFirstRun
-          ).toBe(true);
-          expect(
+              .isFirstRun,
+            true
+          );
+          assert.strictEqual(
             (feedState2 as { details: { isFirstRun: boolean } }).details
-              .isFirstRun
-          ).toBe(true);
+              .isFirstRun,
+            true
+          );
         });
       });
     });
@@ -922,14 +929,16 @@ describe("article-comparison", () => {
             (d) => d.stage === DeliveryPreviewStage.IdComparison
           );
 
-          expect(idComp1).toBeDefined();
-          expect(idComp2).toBeDefined();
-          expect(
-            (idComp1 as { details: { isNew: boolean } }).details.isNew
-          ).toBe(false); // hash-1 was seen before
-          expect(
-            (idComp2 as { details: { isNew: boolean } }).details.isNew
-          ).toBe(true); // hash-2 is new
+          assert.notStrictEqual(idComp1, undefined);
+          assert.notStrictEqual(idComp2, undefined);
+          assert.strictEqual(
+            (idComp1 as { details: { isNew: boolean } }).details.isNew,
+            false
+          ); // hash-1 was seen before
+          assert.strictEqual(
+            (idComp2 as { details: { isNew: boolean } }).details.isNew,
+            true
+          ); // hash-2 is new
         });
       });
     });
@@ -974,10 +983,10 @@ describe("article-comparison", () => {
             (d) => d.stage === DeliveryPreviewStage.BlockingComparison
           );
 
-          expect(blocking2).toBeDefined();
-          expect(blocking3).toBeDefined();
-          expect(blocking2!.status).toBe(DeliveryPreviewStageStatus.Failed);
-          expect(blocking3!.status).toBe(DeliveryPreviewStageStatus.Failed);
+          assert.notStrictEqual(blocking2, undefined);
+          assert.notStrictEqual(blocking3, undefined);
+          assert.strictEqual(blocking2!.status, DeliveryPreviewStageStatus.Failed);
+          assert.strictEqual(blocking3!.status, DeliveryPreviewStageStatus.Failed);
         });
       });
     });
@@ -1008,19 +1017,19 @@ describe("article-comparison", () => {
           const allResults = getAllDeliveryPreviewResults();
 
           // Only hash-1 should have diagnostics recorded
-          expect(allResults.has("hash-1")).toBe(true);
-          expect(allResults.has("hash-2")).toBe(false);
-          expect(allResults.has("hash-3")).toBe(false);
+          assert.ok(allResults.has("hash-1"));
+          assert.ok(!allResults.has("hash-2"));
+          assert.ok(!allResults.has("hash-3"));
 
           // hash-1 should have diagnostics
           const diag1 = getDeliveryPreviewResultsForArticle("hash-1");
-          expect(diag1.length).toBeGreaterThan(0);
+          assert.ok(diag1.length > 0);
 
           // hash-2 and hash-3 should not have diagnostics
           const diag2 = getDeliveryPreviewResultsForArticle("hash-2");
           const diag3 = getDeliveryPreviewResultsForArticle("hash-3");
-          expect(diag2).toEqual([]);
-          expect(diag3).toEqual([]);
+          assert.deepStrictEqual(diag2, []);
+          assert.deepStrictEqual(diag3, []);
         });
       });
     });

@@ -1,12 +1,14 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, before, after } from "node:test";
+import assert from "node:assert";
 import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../../src/delivery";
 import { CustomPlaceholderStepType } from "../../src/shared/constants";
 import getTestRssFeed from "../data/test-rss-feed";
 import { createTestContext } from "../helpers/test-context";
 import type { FeedV2Event } from "../../src/shared/schemas";
+import { setupTestDatabase, teardownTestDatabase, type TestStores } from "../helpers/setup-integration-tests";
 
-// Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
+let stores: TestStores;
 
 type MediumDetails = FeedV2Event["data"]["mediums"][0]["details"];
 
@@ -88,16 +90,24 @@ function createEventWithPlaceholderOptions(
  * Helper to extract the Discord payload from captured requests
  */
 function getDiscordPayload(ctx: ReturnType<typeof createTestContext>) {
-  expect(ctx.discordClient.capturedPayloads.length).toBeGreaterThan(0);
+  assert.ok(ctx.discordClient.capturedPayloads.length > 0);
   return JSON.parse(
     ctx.discordClient.capturedPayloads[0]!.options.body as string
   );
 }
 
-describe("Placeholder Options (e2e)", () => {
+describe("Placeholder Options (e2e)", { concurrency: true }, () => {
+  before(async () => {
+    stores = await setupTestDatabase();
+  });
+
+  after(async () => {
+    await teardownTestDatabase();
+  });
+
   describe("Placeholder Limits", () => {
     it("truncates placeholder to characterCount", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithLimits = createEventWithPlaceholderOptions(
         ctx.testFeedV2Event,
@@ -132,22 +142,22 @@ describe("Placeholder Options (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithLimits);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
 
         const payload = getDiscordPayload(ctx);
         // applySplit truncates at word boundaries, so 20 char limit gives us 19 chars
         // ("This is a very long" without trailing space)
-        expect(payload.content.length).toBeLessThanOrEqual(20);
-        expect(payload.content).toBe("This is a very long");
+        assert.ok(payload.content.length <= 20);
+        assert.strictEqual(payload.content, "This is a very long");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("appends appendString when truncated", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithLimits = createEventWithPlaceholderOptions(
         ctx.testFeedV2Event,
@@ -182,19 +192,19 @@ describe("Placeholder Options (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithLimits);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         // Should be truncated with ... appended
-        expect(payload.content).toMatch(/\.\.\.$/);
-        expect(payload.content.length).toBeLessThanOrEqual(25);
+        assert.ok(/\.\.\.$/.test(payload.content));
+        assert.ok(payload.content.length <= 25);
       } finally {
         ctx.cleanup();
       }
     });
 
     it("applies different limits to different placeholders", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithLimits = createEventWithPlaceholderOptions(
         ctx.testFeedV2Event,
@@ -234,21 +244,21 @@ describe("Placeholder Options (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithLimits);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         // applySplit truncates at word boundaries within character limits
         // Title: "This is a very long title" with limit 10 + "~" → "This is~"
         // Description: "This is a very long description text" with limit 15 + "..." → "This is a..."
-        expect(payload.content).toContain("Title: This is~");
-        expect(payload.content).toContain("Desc: This is a...");
+        assert.ok(payload.content.includes("Title: This is~"));
+        assert.ok(payload.content.includes("Desc: This is a..."));
       } finally {
         ctx.cleanup();
       }
     });
 
     it("appendString can contain placeholders", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithLimits = createEventWithPlaceholderOptions(
         ctx.testFeedV2Event,
@@ -285,11 +295,11 @@ describe("Placeholder Options (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithLimits);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         // appendString should resolve {{title}} to "MORE"
-        expect(payload.content).toContain("[MORE]");
+        assert.ok(payload.content.includes("[MORE]"));
       } finally {
         ctx.cleanup();
       }
@@ -298,7 +308,7 @@ describe("Placeholder Options (e2e)", () => {
 
   describe("Placeholder Fallback", () => {
     it("uses fallback when primary is empty", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       // Test fallback from missing field to real RSS field (title)
       const eventWithFallback = createEventWithPlaceholderOptions(
@@ -328,18 +338,18 @@ describe("Placeholder Options (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithFallback);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("Value: Fallback Title Value");
+        assert.strictEqual(payload.content, "Value: Fallback Title Value");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("supports text:: literal fallback", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithFallback = createEventWithPlaceholderOptions(
         ctx.testFeedV2Event,
@@ -368,17 +378,17 @@ describe("Placeholder Options (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithFallback);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("Value: Default Text");
+        assert.strictEqual(payload.content, "Value: Default Text");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("chains multiple fallbacks", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       // Chain fallback from missing fields to title (last one that exists)
       const eventWithFallback = createEventWithPlaceholderOptions(
@@ -408,17 +418,17 @@ describe("Placeholder Options (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithFallback);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("Value: Chain Fallback Title");
+        assert.strictEqual(payload.content, "Value: Chain Fallback Title");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("fallback works in embeds", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithFallback = createEventWithPlaceholderOptions(
         ctx.testFeedV2Event,
@@ -453,12 +463,12 @@ describe("Placeholder Options (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithFallback);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.embeds).toBeDefined();
-        expect(payload.embeds[0].title).toBe("Article Title");
-        expect(payload.embeds[0].description).toBe("No description");
+        assert.notStrictEqual(payload.embeds, undefined);
+        assert.strictEqual(payload.embeds[0].title, "Article Title");
+        assert.strictEqual(payload.embeds[0].description, "No description");
       } finally {
         ctx.cleanup();
       }
@@ -467,7 +477,7 @@ describe("Placeholder Options (e2e)", () => {
 
   describe("Integration Tests", () => {
     it("format options work with custom placeholders", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithIntegration = createEventWithPlaceholderOptions(
         ctx.testFeedV2Event,
@@ -507,18 +517,18 @@ describe("Placeholder Options (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithIntegration);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         // Date should be formatted and uppercased (though dates are already uppercase)
-        expect(payload.content).toBe("Date: 2023-06-15");
+        assert.strictEqual(payload.content, "Date: 2023-06-15");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("placeholder limits work with fallback syntax", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       // When using fallback syntax, the limit must match the full accessor
       // e.g., placeholder: "missing||description" matches {{missing||description}}
@@ -558,14 +568,14 @@ describe("Placeholder Options (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithIntegration);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         // Should fall back to description, then truncate with word boundary
         // "This is a very long" = 19 chars + "..." = 22 chars total, but limit is 20
         // So it truncates further: "This is a..." (12 chars)
-        expect(payload.content.length).toBeLessThanOrEqual(20);
-        expect(payload.content).toMatch(/\.\.\.$/);
+        assert.ok(payload.content.length <= 20);
+        assert.ok(/\.\.\.$/.test(payload.content));
       } finally {
         ctx.cleanup();
       }

@@ -9,6 +9,7 @@ export function initPool(uri: string): Pool {
     max: 20,
     idleTimeoutMillis: 30000,
   });
+
   pool.on("error", (err) =>
     logger.error("PostgreSQL pool error", { error: err.stack })
   );

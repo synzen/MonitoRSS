@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, mock } from "bun:test";
+import { describe, it, beforeEach } from "node:test";
+import assert from "node:assert";
 import dayjs from "dayjs";
 import {
   createInMemoryFeedRetryStore,
@@ -13,7 +14,7 @@ import {
 } from "../interfaces/feed-retry-store";
 import { MessageBrokerQueue, FeedRejectedDisabledCode } from "../../shared/constants";
 
-describe("Feed Retry Store", () => {
+describe("Feed Retry Store", { concurrency: true }, () => {
   describe("createInMemoryFeedRetryStore", () => {
     let store: FeedRetryStore;
 
@@ -23,7 +24,7 @@ describe("Feed Retry Store", () => {
 
     it("should return null for non-existent feed", async () => {
       const result = await store.get("non-existent-feed");
-      expect(result).toBeNull();
+      assert.strictEqual(result, null);
     });
 
     it("should store and retrieve a retry record", async () => {
@@ -36,7 +37,7 @@ describe("Feed Retry Store", () => {
       });
 
       const result = await store.get(feedId);
-      expect(result).toEqual({
+      assert.deepStrictEqual(result, {
         attempts_so_far: 3,
         created_at: createdAt,
       });
@@ -57,7 +58,7 @@ describe("Feed Retry Store", () => {
       });
 
       const result = await store.get(feedId);
-      expect(result?.attempts_so_far).toBe(5);
+      assert.strictEqual(result?.attempts_so_far, 5);
     });
 
     it("should remove a retry record", async () => {
@@ -70,11 +71,11 @@ describe("Feed Retry Store", () => {
 
       await store.remove(feedId);
       const result = await store.get(feedId);
-      expect(result).toBeNull();
+      assert.strictEqual(result, null);
     });
 
     it("should handle removing non-existent record gracefully", async () => {
-      await expect(store.remove("non-existent")).resolves.toBeUndefined();
+      await store.remove("non-existent");
     });
 
     it("should store multiple feeds independently", async () => {
@@ -89,8 +90,8 @@ describe("Feed Retry Store", () => {
       const result1 = await store.get(feedId1);
       const result2 = await store.get(feedId2);
 
-      expect(result1?.attempts_so_far).toBe(2);
-      expect(result2?.attempts_so_far).toBe(7);
+      assert.strictEqual(result1?.attempts_so_far, 2);
+      assert.strictEqual(result2?.attempts_so_far, 7);
     });
   });
 
@@ -121,12 +122,12 @@ describe("Feed Retry Store", () => {
         publisher,
       });
 
-      expect(result.disabled).toBe(false);
-      expect(publishedMessages).toHaveLength(0);
+      assert.strictEqual(result.disabled, false);
+      assert.strictEqual(publishedMessages.length, 0);
 
       const record = await store.get(feedId);
-      expect(record).not.toBeNull();
-      expect(record?.attempts_so_far).toBe(1);
+      assert.notStrictEqual(record, null);
+      assert.strictEqual(record?.attempts_so_far, 1);
     });
 
     it("should increment attempts on subsequent failures", async () => {
@@ -145,11 +146,11 @@ describe("Feed Retry Store", () => {
         publisher,
       });
 
-      expect(result.disabled).toBe(false);
+      assert.strictEqual(result.disabled, false);
 
       const record = await store.get(feedId);
-      expect(record?.attempts_so_far).toBe(4);
-      expect(record?.created_at).toEqual(createdAt);
+      assert.strictEqual(record?.attempts_so_far, 4);
+      assert.deepStrictEqual(record?.created_at, createdAt);
     });
 
     it("should disable feed after MAX_RETRY_ATTEMPTS failures", async () => {
@@ -167,19 +168,19 @@ describe("Feed Retry Store", () => {
         publisher,
       });
 
-      expect(result.disabled).toBe(true);
-      expect(publishedMessages).toHaveLength(1);
+      assert.strictEqual(result.disabled, true);
+      assert.strictEqual(publishedMessages.length, 1);
 
       const message = publishedMessages[0]!;
-      expect(message.queue).toBe(MessageBrokerQueue.FeedRejectedDisableFeed);
-      expect(message.message).toEqual({
+      assert.strictEqual(message.queue, MessageBrokerQueue.FeedRejectedDisableFeed);
+      assert.deepStrictEqual(message.message, {
         feed_id: feedId,
         disabled_code: FeedRejectedDisabledCode.InvalidFeed,
       });
 
       // Record should be removed after disabling
       const record = await store.get(feedId);
-      expect(record).toBeNull();
+      assert.strictEqual(record, null);
     });
 
     it("should disable feed after RETRY_CUTOFF_DAYS days", async () => {
@@ -202,11 +203,9 @@ describe("Feed Retry Store", () => {
         publisher,
       });
 
-      expect(result.disabled).toBe(true);
-      expect(publishedMessages).toHaveLength(1);
-      expect(publishedMessages[0]!.queue).toBe(
-        MessageBrokerQueue.FeedRejectedDisableFeed
-      );
+      assert.strictEqual(result.disabled, true);
+      assert.strictEqual(publishedMessages.length, 1);
+      assert.strictEqual(publishedMessages[0]!.queue, MessageBrokerQueue.FeedRejectedDisableFeed);
     });
 
     it("should not disable feed if within cutoff and under max attempts", async () => {
@@ -224,15 +223,15 @@ describe("Feed Retry Store", () => {
         publisher,
       });
 
-      expect(result.disabled).toBe(false);
-      expect(publishedMessages).toHaveLength(0);
+      assert.strictEqual(result.disabled, false);
+      assert.strictEqual(publishedMessages.length, 0);
     });
 
     it("should disable at exactly MAX_RETRY_ATTEMPTS", async () => {
       const feedId = "exact-max-feed";
 
       await store.upsert(feedId, {
-        attempts_so_far: MAX_RETRY_ATTEMPTS, // Exactly at threshold
+        attempts_so_far: MAX_RETRY_ATTEMPTS,
         created_at: new Date(),
       });
 
@@ -242,7 +241,7 @@ describe("Feed Retry Store", () => {
         publisher,
       });
 
-      expect(result.disabled).toBe(true);
+      assert.strictEqual(result.disabled, true);
     });
 
     it("should not disable at MAX_RETRY_ATTEMPTS - 1", async () => {
@@ -259,7 +258,7 @@ describe("Feed Retry Store", () => {
         publisher,
       });
 
-      expect(result.disabled).toBe(false);
+      assert.strictEqual(result.disabled, false);
     });
   });
 
@@ -284,19 +283,16 @@ describe("Feed Retry Store", () => {
       });
 
       const record = await store.get(feedId);
-      expect(record).toBeNull();
+      assert.strictEqual(record, null);
     });
 
     it("should handle success for feed with no retry record", async () => {
       const feedId = "always-healthy-feed";
 
-      // Should not throw
-      await expect(
-        handleFeedParseSuccess({
-          feedId,
-          store,
-        })
-      ).resolves.toBeUndefined();
+      await handleFeedParseSuccess({
+        feedId,
+        store,
+      });
     });
 
     it("should only remove the specific feed's record", async () => {
@@ -314,8 +310,8 @@ describe("Feed Retry Store", () => {
 
       await handleFeedParseSuccess({ feedId: feedId1, store });
 
-      expect(await store.get(feedId1)).toBeNull();
-      expect(await store.get(feedId2)).not.toBeNull();
+      assert.strictEqual(await store.get(feedId1), null);
+      assert.notStrictEqual(await store.get(feedId2), null);
     });
   });
 });

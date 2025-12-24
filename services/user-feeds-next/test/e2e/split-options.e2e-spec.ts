@@ -1,11 +1,13 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, before, after } from "node:test";
+import assert from "node:assert";
 import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../../src/delivery";
 import getTestRssFeed from "../data/test-rss-feed";
 import { createTestContext } from "../helpers/test-context";
 import type { FeedV2Event } from "../../src/shared/schemas";
+import { setupTestDatabase, teardownTestDatabase, type TestStores } from "../helpers/setup-integration-tests";
 
-// Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
+let stores: TestStores;
 
 /**
  * Helper to create a feed event with split options configured on the medium.
@@ -49,10 +51,18 @@ function getAllDiscordPayloads(ctx: ReturnType<typeof createTestContext>) {
   );
 }
 
-describe("Split Options (e2e)", () => {
+describe("Split Options (e2e)", { concurrency: true }, () => {
+  before(async () => {
+    stores = await setupTestDatabase();
+  });
+
+  after(async () => {
+    await teardownTestDatabase();
+  });
+
   describe("Medium Split Options", () => {
     it("splits long content into multiple messages", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       try {
         await ctx.seedArticles();
@@ -85,24 +95,24 @@ describe("Split Options (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithSplit);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
         // One article should be processed (though it may create multiple messages)
-        expect(results!.length).toBeGreaterThanOrEqual(1);
+        assert.ok(results!.length >= 1);
 
         // Should have multiple payloads due to splitting
         const payloads = getAllDiscordPayloads(ctx);
-        expect(payloads.length).toBeGreaterThan(1);
+        assert.ok(payloads.length > 1);
 
         // Verify all parts together contain the original text
         const combinedContent = payloads.map((p) => p.content).join("");
-        expect(combinedContent).toContain("This is a test sentence");
+        assert.ok(combinedContent.includes("This is a test sentence"));
       } finally {
         ctx.cleanup();
       }
     });
 
     it("uses custom splitChar for splitting", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       // Use pipe character as split char
       const eventWithSplit = createEventWithSplitOptions(ctx.testFeedV2Event, {
@@ -135,16 +145,16 @@ describe("Split Options (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithSplit);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payloads = getAllDiscordPayloads(ctx);
-        expect(payloads.length).toBeGreaterThan(1);
+        assert.ok(payloads.length > 1);
 
         // Content should be split on pipe characters
         payloads.forEach((p, i) => {
           if (i < payloads.length - 1) {
             // Non-final parts should end with the text before |
-            expect(p.content).toContain("This is segment");
+            assert.ok(p.content.includes("This is segment"));
           }
         });
       } finally {
@@ -153,7 +163,7 @@ describe("Split Options (e2e)", () => {
     });
 
     it("appends appendChar to last split message", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithSplit = createEventWithSplitOptions(ctx.testFeedV2Event, {
         content: "{{description}}",
@@ -184,25 +194,25 @@ describe("Split Options (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithSplit);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payloads = getAllDiscordPayloads(ctx);
-        expect(payloads.length).toBeGreaterThan(1);
+        assert.ok(payloads.length > 1);
 
         // Last message should have appendChar (implementation behavior)
-        expect(payloads[payloads.length - 1].content).toContain(
+        assert.ok(payloads[payloads.length - 1].content.includes(
           "...(continued)"
-        );
+        ));
 
         // First message should NOT have appendChar
-        expect(payloads[0].content).not.toContain("...(continued)");
+        assert.ok(!payloads[0].content.includes("...(continued)"));
       } finally {
         ctx.cleanup();
       }
     });
 
     it("prepends prependChar to first split message", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithSplit = createEventWithSplitOptions(ctx.testFeedV2Event, {
         content: "{{description}}",
@@ -233,25 +243,23 @@ describe("Split Options (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithSplit);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payloads = getAllDiscordPayloads(ctx);
-        expect(payloads.length).toBeGreaterThan(1);
+        assert.ok(payloads.length > 1);
 
         // First message SHOULD have prependChar (implementation behavior)
-        expect(payloads[0].content).toMatch(/^\(continued\)\.\.\./);
+        assert.ok(/^\(continued\)\.\.\./.test(payloads[0].content));
 
         // Last message should NOT have prependChar
-        expect(payloads[payloads.length - 1].content).not.toMatch(
-          /^\(continued\)\.\.\./
-        );
+        assert.ok(!/^\(continued\)\.\.\./.test(payloads[payloads.length - 1].content));
       } finally {
         ctx.cleanup();
       }
     });
 
     it("combines append and prepend chars", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithSplit = createEventWithSplitOptions(ctx.testFeedV2Event, {
         content: "{{description}}",
@@ -283,20 +291,20 @@ describe("Split Options (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithSplit);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payloads = getAllDiscordPayloads(ctx);
-        expect(payloads.length).toBeGreaterThan(1);
+        assert.ok(payloads.length > 1);
 
         // Per implementation: first message has prependChar, last has appendChar
         // First message: has prepend, no append
-        expect(payloads[0].content).toMatch(/^\[CONT\]/);
-        expect(payloads[0].content).not.toContain("[MORE]");
+        assert.ok(/^\[CONT\]/.test(payloads[0].content));
+        assert.ok(!payloads[0].content.includes("[MORE]"));
 
         // Last message: has append, no prepend
         const lastPayload = payloads[payloads.length - 1];
-        expect(lastPayload.content).not.toMatch(/^\[CONT\]/);
-        expect(lastPayload.content).toContain("[MORE]");
+        assert.ok(!/^\[CONT\]/.test(lastPayload.content));
+        assert.ok(lastPayload.content.includes("[MORE]"));
 
         // Middle messages (if any): have neither append nor prepend
         // (This is based on the implementation's behavior)

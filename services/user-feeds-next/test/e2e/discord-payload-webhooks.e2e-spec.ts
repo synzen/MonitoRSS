@@ -1,13 +1,15 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, before, after } from "node:test";
+import assert from "node:assert";
 import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../../src/delivery";
 import getTestRssFeed from "../data/test-rss-feed";
 import { createTestContext } from "../helpers/test-context";
+import { setupTestDatabase, teardownTestDatabase, type TestStores } from "../helpers/setup-integration-tests";
 import type { FeedV2Event, EmbedInput, ComponentV2Input } from "../../src/shared/schemas";
 
-// Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
-
 type MediumDetails = FeedV2Event["data"]["mediums"][0]["details"];
+
+let stores: TestStores;
 
 /**
  * Helper to create a feed event with webhook configured on the medium.
@@ -56,7 +58,7 @@ function createEventWithWebhook(
  * Helper to extract the Discord payload from captured requests
  */
 function getDiscordPayload(ctx: ReturnType<typeof createTestContext>) {
-  expect(ctx.discordClient.capturedPayloads.length).toBeGreaterThan(0);
+  assert.ok(ctx.discordClient.capturedPayloads.length > 0);
   return JSON.parse(
     ctx.discordClient.capturedPayloads[0]!.options.body as string
   );
@@ -66,14 +68,22 @@ function getDiscordPayload(ctx: ReturnType<typeof createTestContext>) {
  * Helper to get the URL that was called
  */
 function getRequestUrl(ctx: ReturnType<typeof createTestContext>): string {
-  expect(ctx.discordClient.capturedPayloads.length).toBeGreaterThan(0);
+  assert.ok(ctx.discordClient.capturedPayloads.length > 0);
   return ctx.discordClient.capturedPayloads[0]!.url;
 }
 
-describe("Discord Payload Webhooks (e2e)", () => {
+describe("Discord Payload Webhooks (e2e)", { concurrency: true }, () => {
+  before(async () => {
+    stores = await setupTestDatabase();
+  });
+
+  after(async () => {
+    await teardownTestDatabase();
+  });
+
   describe("Webhook Basic Delivery", () => {
     it("delivers to webhook with username", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithWebhook = createEventWithWebhook(ctx.testFeedV2Event, {
         id: "webhook-123",
@@ -99,19 +109,19 @@ describe("Discord Payload Webhooks (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithWebhook);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.username).toBe("RSS Bot");
+        assert.strictEqual(payload.username, "RSS Bot");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("delivers to webhook with username containing placeholders", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithWebhook = createEventWithWebhook(ctx.testFeedV2Event, {
         id: "webhook-123",
@@ -138,18 +148,18 @@ describe("Discord Payload Webhooks (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithWebhook);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.username).toBe("TechBlog News");
+        assert.strictEqual(payload.username, "TechBlog News");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("delivers to webhook with avatar_url", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithWebhook = createEventWithWebhook(ctx.testFeedV2Event, {
         id: "webhook-123",
@@ -176,18 +186,18 @@ describe("Discord Payload Webhooks (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithWebhook);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.avatar_url).toBe("https://example.com/avatar.png");
+        assert.strictEqual(payload.avatar_url, "https://example.com/avatar.png");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("delivers to webhook with avatar_url containing placeholders", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       // Use an extracted image from description HTML content
       const eventWithWebhook = createEventWithWebhook(ctx.testFeedV2Event, {
@@ -217,11 +227,11 @@ describe("Discord Payload Webhooks (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithWebhook);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.avatar_url).toBe(
+        assert.strictEqual(payload.avatar_url,
           "https://example.com/dynamic-avatar.png"
         );
       } finally {
@@ -232,7 +242,7 @@ describe("Discord Payload Webhooks (e2e)", () => {
 
   describe("Webhook URL Construction", () => {
     it("constructs correct webhook URL", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithWebhook = createEventWithWebhook(ctx.testFeedV2Event, {
         id: "webhook-456",
@@ -258,14 +268,14 @@ describe("Discord Payload Webhooks (e2e)", () => {
         await ctx.handleEvent(eventWithWebhook);
 
         const url = getRequestUrl(ctx);
-        expect(url).toContain("/webhooks/webhook-456/secret-token-xyz");
+        assert.ok(url.includes("/webhooks/webhook-456/secret-token-xyz"));
       } finally {
         ctx.cleanup();
       }
     });
 
     it("constructs webhook URL with thread ID parameter", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithWebhook = createEventWithWebhook(ctx.testFeedV2Event, {
         id: "webhook-789",
@@ -293,7 +303,7 @@ describe("Discord Payload Webhooks (e2e)", () => {
         await ctx.handleEvent(eventWithWebhook);
 
         const url = getRequestUrl(ctx);
-        expect(url).toContain("thread_id=thread-123456");
+        assert.ok(url.includes("thread_id=thread-123456"));
       } finally {
         ctx.cleanup();
       }
@@ -302,7 +312,7 @@ describe("Discord Payload Webhooks (e2e)", () => {
 
   describe("Webhook with Content and Embeds", () => {
     it("delivers webhook message with content and embeds", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithWebhook = createEventWithWebhook(
         ctx.testFeedV2Event,
@@ -343,17 +353,17 @@ describe("Discord Payload Webhooks (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithWebhook);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.username).toBe("Full Webhook");
-        expect(payload.avatar_url).toBe("https://example.com/icon.png");
-        expect(payload.content).toBe("New article: Full Article");
-        expect(payload.embeds).toBeArray();
-        expect(payload.embeds[0].title).toBe("Full Article");
-        expect(payload.embeds[0].description).toBe("Full description");
-        expect(payload.embeds[0].color).toBe(0x00ff00);
+        assert.strictEqual(payload.username, "Full Webhook");
+        assert.strictEqual(payload.avatar_url, "https://example.com/icon.png");
+        assert.strictEqual(payload.content, "New article: Full Article");
+        assert.ok(Array.isArray(payload.embeds));
+        assert.strictEqual(payload.embeds[0].title, "Full Article");
+        assert.strictEqual(payload.embeds[0].description, "Full description");
+        assert.strictEqual(payload.embeds[0].color, 0x00ff00);
       } finally {
         ctx.cleanup();
       }
@@ -362,7 +372,7 @@ describe("Discord Payload Webhooks (e2e)", () => {
 
   describe("Webhook without optional fields", () => {
     it("delivers webhook message without username when not specified", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithWebhook = createEventWithWebhook(ctx.testFeedV2Event, {
         id: "webhook-minimal",
@@ -387,13 +397,13 @@ describe("Discord Payload Webhooks (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithWebhook);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
         // Username should be undefined or empty when not specified
-        expect(payload.username).toBeFalsy();
-        expect(payload.avatar_url).toBeFalsy();
+        assert.ok(!payload.username);
+        assert.ok(!payload.avatar_url);
       } finally {
         ctx.cleanup();
       }
@@ -402,7 +412,7 @@ describe("Discord Payload Webhooks (e2e)", () => {
 
   describe("Webhook with Components V2", () => {
     it("delivers webhook message with componentsV2 and username/avatar_url", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const componentsV2: ComponentV2Input[] = [
         {
@@ -466,19 +476,19 @@ describe("Discord Payload Webhooks (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithV2);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
 
         const payload = getDiscordPayload(ctx);
 
         // Verify username and avatar_url are set correctly
-        expect(payload.username).toBe("V2 Bot");
-        expect(payload.avatar_url).toBe("https://example.com/v2-avatar.png");
+        assert.strictEqual(payload.username, "V2 Bot");
+        assert.strictEqual(payload.avatar_url, "https://example.com/v2-avatar.png");
 
         // Verify componentsV2 are also present
-        expect(payload.components).toBeArray();
-        expect(payload.components.length).toBeGreaterThan(0);
+        assert.ok(Array.isArray(payload.components));
+        assert.ok(payload.components.length > 0);
       } finally {
         ctx.cleanup();
       }

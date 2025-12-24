@@ -1,12 +1,14 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, before, after } from "node:test";
+import * as assert from "node:assert";
 import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../../src/delivery";
 import { DiscordComponentType } from "../../src/shared/constants";
 import getTestRssFeed from "../data/test-rss-feed";
 import { createTestContext } from "../helpers/test-context";
+import { setupTestDatabase, teardownTestDatabase, type TestStores } from "../helpers/setup-integration-tests";
 import type { FeedV2Event } from "../../src/shared/schemas";
 
-// Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
+let stores: TestStores;
 
 type ComponentsArray = NonNullable<
   FeedV2Event["data"]["mediums"][0]["details"]["components"]
@@ -43,16 +45,24 @@ function createEventWithComponents(
  * Helper to extract the Discord payload from captured requests
  */
 function getDiscordPayload(ctx: ReturnType<typeof createTestContext>) {
-  expect(ctx.discordClient.capturedPayloads.length).toBeGreaterThan(0);
+  assert.ok(ctx.discordClient.capturedPayloads.length > 0);
   return JSON.parse(
     ctx.discordClient.capturedPayloads[0]!.options.body as string
   );
 }
 
-describe("Discord Payload Components V1 (e2e)", () => {
+describe("Discord Payload Components V1 (e2e)", { concurrency: true }, () => {
+  before(async () => {
+    stores = await setupTestDatabase();
+  });
+
+  after(async () => {
+    await teardownTestDatabase();
+  });
+
   describe("Action Row with Buttons", () => {
     it("sends message with a single button", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithComponents = createEventWithComponents(
         ctx.testFeedV2Event,
@@ -91,31 +101,31 @@ describe("Discord Payload Components V1 (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithComponents);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.components).toBeArray();
-        expect(payload.components.length).toBe(1);
+        assert.ok(Array.isArray(payload.components));
+        assert.strictEqual(payload.components.length, 1);
 
         const actionRow = payload.components[0];
-        expect(actionRow.type).toBe(1); // ActionRow type number
-        expect(actionRow.components).toBeArray();
-        expect(actionRow.components.length).toBe(1);
+        assert.strictEqual(actionRow.type, 1); // ActionRow type number
+        assert.ok(Array.isArray(actionRow.components));
+        assert.strictEqual(actionRow.components.length, 1);
 
         const button = actionRow.components[0];
-        expect(button.type).toBe(2); // Button type number
-        expect(button.style).toBe(5);
-        expect(button.label).toBe("Read More");
-        expect(button.url).toBe("https://example.com/article/1");
+        assert.strictEqual(button.type, 2); // Button type number
+        assert.strictEqual(button.style, 5);
+        assert.strictEqual(button.label, "Read More");
+        assert.strictEqual(button.url, "https://example.com/article/1");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("sends message with multiple buttons in action row", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithComponents = createEventWithComponents(
         ctx.testFeedV2Event,
@@ -161,27 +171,25 @@ describe("Discord Payload Components V1 (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithComponents);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
         const actionRow = payload.components[0];
-        expect(actionRow.components.length).toBe(2);
+        assert.strictEqual(actionRow.components.length, 2);
 
-        expect(actionRow.components[0].label).toBe("Article Link");
-        expect(actionRow.components[0].url).toBe(
-          "https://example.com/article/2"
-        );
+        assert.strictEqual(actionRow.components[0].label, "Article Link");
+        assert.strictEqual(actionRow.components[0].url, "https://example.com/article/2");
 
-        expect(actionRow.components[1].label).toBe("Source");
-        expect(actionRow.components[1].url).toBe("https://example.com");
+        assert.strictEqual(actionRow.components[1].label, "Source");
+        assert.strictEqual(actionRow.components[1].url, "https://example.com");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("sends message with multiple action rows", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithComponents = createEventWithComponents(
         ctx.testFeedV2Event,
@@ -232,14 +240,14 @@ describe("Discord Payload Components V1 (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithComponents);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.components.length).toBe(2);
+        assert.strictEqual(payload.components.length, 2);
 
-        expect(payload.components[0].components[0].label).toBe("Row 1 Button");
-        expect(payload.components[1].components[0].label).toBe("Row 2 Button");
+        assert.strictEqual(payload.components[0].components[0].label, "Row 1 Button");
+        assert.strictEqual(payload.components[1].components[0].label, "Row 2 Button");
       } finally {
         ctx.cleanup();
       }
@@ -248,7 +256,7 @@ describe("Discord Payload Components V1 (e2e)", () => {
 
   describe("Button Styles", () => {
     it("sends button with style 1 (Primary)", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithComponents = createEventWithComponents(
         ctx.testFeedV2Event,
@@ -286,17 +294,17 @@ describe("Discord Payload Components V1 (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithComponents);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.components[0].components[0].style).toBe(1);
+        assert.strictEqual(payload.components[0].components[0].style, 1);
       } finally {
         ctx.cleanup();
       }
     });
 
     it("sends button with different styles (1-5)", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithComponents = createEventWithComponents(
         ctx.testFeedV2Event,
@@ -362,26 +370,26 @@ describe("Discord Payload Components V1 (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithComponents);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         const buttons = payload.components[0].components;
 
-        expect(buttons[0].style).toBe(1);
-        expect(buttons[0].label).toBe("Primary");
+        assert.strictEqual(buttons[0].style, 1);
+        assert.strictEqual(buttons[0].label, "Primary");
 
-        expect(buttons[1].style).toBe(2);
-        expect(buttons[1].label).toBe("Secondary");
+        assert.strictEqual(buttons[1].style, 2);
+        assert.strictEqual(buttons[1].label, "Secondary");
 
-        expect(buttons[2].style).toBe(3);
-        expect(buttons[2].label).toBe("Success");
+        assert.strictEqual(buttons[2].style, 3);
+        assert.strictEqual(buttons[2].label, "Success");
 
-        expect(buttons[3].style).toBe(4);
-        expect(buttons[3].label).toBe("Danger");
+        assert.strictEqual(buttons[3].style, 4);
+        assert.strictEqual(buttons[3].label, "Danger");
 
-        expect(buttons[4].style).toBe(5);
-        expect(buttons[4].label).toBe("Link");
-        expect(buttons[4].url).toBe("https://example.com");
+        assert.strictEqual(buttons[4].style, 5);
+        assert.strictEqual(buttons[4].label, "Link");
+        assert.strictEqual(buttons[4].url, "https://example.com");
       } finally {
         ctx.cleanup();
       }
@@ -390,7 +398,7 @@ describe("Discord Payload Components V1 (e2e)", () => {
 
   describe("Button with Emoji", () => {
     it("sends button with custom emoji", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithComponents = createEventWithComponents(
         ctx.testFeedV2Event,
@@ -433,22 +441,22 @@ describe("Discord Payload Components V1 (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithComponents);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         const button = payload.components[0].components[0];
 
-        expect(button.emoji).toBeDefined();
-        expect(button.emoji.id).toBe("123456789");
-        expect(button.emoji.name).toBe("custom_emoji");
-        expect(button.emoji.animated).toBe(false);
+        assert.notStrictEqual(button.emoji, undefined);
+        assert.strictEqual(button.emoji.id, "123456789");
+        assert.strictEqual(button.emoji.name, "custom_emoji");
+        assert.strictEqual(button.emoji.animated, false);
       } finally {
         ctx.cleanup();
       }
     });
 
     it("sends button with animated emoji", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithComponents = createEventWithComponents(
         ctx.testFeedV2Event,
@@ -491,12 +499,12 @@ describe("Discord Payload Components V1 (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithComponents);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         const button = payload.components[0].components[0];
 
-        expect(button.emoji.animated).toBe(true);
+        assert.strictEqual(button.emoji.animated, true);
       } finally {
         ctx.cleanup();
       }
@@ -505,7 +513,7 @@ describe("Discord Payload Components V1 (e2e)", () => {
 
   describe("Button URL Placeholders", () => {
     it("replaces placeholders in button URL", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithComponents = createEventWithComponents(
         ctx.testFeedV2Event,
@@ -544,13 +552,13 @@ describe("Discord Payload Components V1 (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithComponents);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         const button = payload.components[0].components[0];
 
-        expect(button.label).toBe("View Dynamic Article");
-        expect(button.url).toBe("https://example.com/dynamic/article");
+        assert.strictEqual(button.label, "View Dynamic Article");
+        assert.strictEqual(button.url, "https://example.com/dynamic/article");
       } finally {
         ctx.cleanup();
       }

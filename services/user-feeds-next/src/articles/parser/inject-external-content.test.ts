@@ -1,4 +1,5 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it } from "node:test";
+import assert from "node:assert";
 import { chunkArray } from "../../shared/utils";
 import {
   injectExternalContent,
@@ -9,40 +10,40 @@ import {
   type Article,
 } from ".";
 
-describe("chunkArray", () => {
+describe("chunkArray", { concurrency: true }, () => {
   it("splits array into chunks of specified size", () => {
     const arr = [1, 2, 3, 4, 5, 6, 7];
     const result = chunkArray(arr, 3);
 
-    expect(result).toEqual([[1, 2, 3], [4, 5, 6], [7]]);
+    assert.deepStrictEqual(result, [[1, 2, 3], [4, 5, 6], [7]]);
   });
 
   it("returns single chunk when array is smaller than chunk size", () => {
     const arr = [1, 2];
     const result = chunkArray(arr, 5);
 
-    expect(result).toEqual([[1, 2]]);
+    assert.deepStrictEqual(result, [[1, 2]]);
   });
 
   it("returns empty array for empty input", () => {
     const arr: number[] = [];
     const result = chunkArray(arr, 3);
 
-    expect(result).toEqual([]);
+    assert.deepStrictEqual(result, []);
   });
 
   it("handles chunk size of 1", () => {
     const arr = ["a", "b", "c"];
     const result = chunkArray(arr, 1);
 
-    expect(result).toEqual([["a"], ["b"], ["c"]]);
+    assert.deepStrictEqual(result, [["a"], ["b"], ["c"]]);
   });
 
   it("handles exact divisible array length", () => {
     const arr = [1, 2, 3, 4, 5, 6];
     const result = chunkArray(arr, 2);
 
-    expect(result).toEqual([
+    assert.deepStrictEqual(result, [
       [1, 2],
       [3, 4],
       [5, 6],
@@ -50,7 +51,7 @@ describe("chunkArray", () => {
   });
 });
 
-describe("injectExternalContent", () => {
+describe("injectExternalContent", { concurrency: true }, () => {
   const createArticle = (
     id: string,
     flattened: Record<string, string>
@@ -76,7 +77,7 @@ describe("injectExternalContent", () => {
       await injectExternalContent(articles, [], fetchFn);
 
       // Only original fields should exist
-      expect(Object.keys(articles[0]!.flattened)).toEqual([
+      assert.deepStrictEqual(Object.keys(articles[0]!.flattened), [
         "id",
         "idHash",
         "title",
@@ -108,9 +109,7 @@ describe("injectExternalContent", () => {
 
       await injectExternalContent(articles, externalProps, fetchFn);
 
-      expect(articles[0]!.flattened["external::link::content0"]).toBe(
-        '<div class="article-body">Article content here</div>'
-      );
+      assert.strictEqual(articles[0]!.flattened["external::link::content0"], '<div class="article-body">Article content here</div>');
     });
 
     it("extracts images from injected content", async () => {
@@ -129,9 +128,7 @@ describe("injectExternalContent", () => {
 
       await injectExternalContent(articles, externalProps, fetchFn);
 
-      expect(articles[0]!.flattened["external::link::content0::image0"]).toBe(
-        "http://example.com/image.jpg"
-      );
+      assert.strictEqual(articles[0]!.flattened["external::link::content0::image0"], "http://example.com/image.jpg");
     });
 
     it("extracts anchors from injected content", async () => {
@@ -150,9 +147,7 @@ describe("injectExternalContent", () => {
 
       await injectExternalContent(articles, externalProps, fetchFn);
 
-      expect(articles[0]!.flattened["external::link::content0::anchor0"]).toBe(
-        "http://example.com/link"
-      );
+      assert.strictEqual(articles[0]!.flattened["external::link::content0::anchor0"], "http://example.com/link");
     });
   });
 
@@ -175,15 +170,9 @@ describe("injectExternalContent", () => {
 
       await injectExternalContent(articles, externalProps, fetchFn);
 
-      expect(articles[0]!.flattened["external::link::item0"]).toBe(
-        '<div class="item">Item 0</div>'
-      );
-      expect(articles[0]!.flattened["external::link::item1"]).toBe(
-        '<div class="item">Item 1</div>'
-      );
-      expect(articles[0]!.flattened["external::link::item2"]).toBe(
-        '<div class="item">Item 2</div>'
-      );
+      assert.strictEqual(articles[0]!.flattened["external::link::item0"], '<div class="item">Item 0</div>');
+      assert.strictEqual(articles[0]!.flattened["external::link::item1"], '<div class="item">Item 1</div>');
+      assert.strictEqual(articles[0]!.flattened["external::link::item2"], '<div class="item">Item 2</div>');
     });
 
     it("limits to 10 matches per selector", async () => {
@@ -206,9 +195,9 @@ describe("injectExternalContent", () => {
       await injectExternalContent(articles, externalProps, fetchFn);
 
       // Should have items 0-9, not 10-14
-      expect(articles[0]!.flattened["external::link::item0"]).toBeDefined();
-      expect(articles[0]!.flattened["external::link::item9"]).toBeDefined();
-      expect(articles[0]!.flattened["external::link::item10"]).toBeUndefined();
+      assert.notStrictEqual(articles[0]!.flattened["external::link::item0"], undefined);
+      assert.notStrictEqual(articles[0]!.flattened["external::link::item9"], undefined);
+      assert.strictEqual(articles[0]!.flattened["external::link::item10"], undefined);
     });
   });
 
@@ -227,9 +216,7 @@ describe("injectExternalContent", () => {
       await injectExternalContent(articles, externalProps, fetchFn);
 
       // Should not throw, and no external content should be added
-      expect(
-        articles[0]!.flattened["external::link::content0"]
-      ).toBeUndefined();
+      assert.strictEqual(articles[0]!.flattened["external::link::content0"], undefined);
     });
 
     it("handles invalid HTML gracefully", async () => {
@@ -247,9 +234,7 @@ describe("injectExternalContent", () => {
       await injectExternalContent(articles, externalProps, fetchFn);
 
       // Should not throw - empty body with no .content selector just results in no content
-      expect(
-        articles[0]!.flattened["external::link::content0"]
-      ).toBeUndefined();
+      assert.strictEqual(articles[0]!.flattened["external::link::content0"], undefined);
     });
 
     it("skips articles without the source field", async () => {
@@ -269,7 +254,7 @@ describe("injectExternalContent", () => {
 
       await injectExternalContent(articles, externalProps, fetchFn);
 
-      expect(fetchCalled).toBe(false);
+      assert.strictEqual(fetchCalled, false);
     });
 
     it("continues processing other properties when one fails", async () => {
@@ -298,12 +283,8 @@ describe("injectExternalContent", () => {
       await injectExternalContent(articles, externalProps, fetchFn);
 
       // link1 should fail, link2 should succeed
-      expect(
-        articles[0]!.flattened["external::link1::content10"]
-      ).toBeUndefined();
-      expect(articles[0]!.flattened["external::link2::content20"]).toBe(
-        '<div class="content">Success</div>'
-      );
+      assert.strictEqual(articles[0]!.flattened["external::link1::content10"], undefined);
+      assert.strictEqual(articles[0]!.flattened["external::link2::content20"], '<div class="content">Success</div>');
     });
   });
 
@@ -329,12 +310,8 @@ describe("injectExternalContent", () => {
       await injectExternalContent(articles, externalProps, fetchFn);
 
       // Both properties should extract content
-      expect(articles[0]!.flattened["external::link::title0"]).toBe(
-        '<div class="title">Title</div>'
-      );
-      expect(articles[0]!.flattened["external::link::body0"]).toBe(
-        '<div class="body">Body</div>'
-      );
+      assert.strictEqual(articles[0]!.flattened["external::link::title0"], '<div class="title">Title</div>');
+      assert.strictEqual(articles[0]!.flattened["external::link::body0"], '<div class="body">Body</div>');
     });
   });
 
@@ -362,7 +339,7 @@ describe("injectExternalContent", () => {
         fetchFn
       );
 
-      expect(errors).toEqual([]);
+      assert.deepStrictEqual(errors, []);
     });
 
     it("returns FETCH_FAILED error with status code when fetch returns non-2xx", async () => {
@@ -385,15 +362,13 @@ describe("injectExternalContent", () => {
         fetchFn
       );
 
-      expect(errors).toHaveLength(1);
-      expect(errors[0]).toMatchObject({
-        articleId: "article-1",
-        sourceField: "link",
-        label: "content",
-        cssSelector: ".body",
-        errorType: ExternalContentErrorType.FETCH_FAILED,
-        statusCode: 404,
-      });
+      assert.strictEqual(errors.length, 1);
+      assert.strictEqual(errors[0]!.articleId, "article-1");
+      assert.strictEqual(errors[0]!.sourceField, "link");
+      assert.strictEqual(errors[0]!.label, "content");
+      assert.strictEqual(errors[0]!.cssSelector, ".body");
+      assert.strictEqual(errors[0]!.errorType, ExternalContentErrorType.FETCH_FAILED);
+      assert.strictEqual(errors[0]!.statusCode, 404);
     });
 
     it("returns FETCH_FAILED error without status code when fetch throws (network error)", async () => {
@@ -415,15 +390,13 @@ describe("injectExternalContent", () => {
         fetchFn
       );
 
-      expect(errors).toHaveLength(1);
-      expect(errors[0]).toMatchObject({
-        articleId: "article-2",
-        sourceField: "link",
-        label: "summary",
-        cssSelector: ".summary",
-        errorType: ExternalContentErrorType.FETCH_FAILED,
-      });
-      expect(errors[0]!.statusCode).toBeUndefined();
+      assert.strictEqual(errors.length, 1);
+      assert.strictEqual(errors[0]!.articleId, "article-2");
+      assert.strictEqual(errors[0]!.sourceField, "link");
+      assert.strictEqual(errors[0]!.label, "summary");
+      assert.strictEqual(errors[0]!.cssSelector, ".summary");
+      assert.strictEqual(errors[0]!.errorType, ExternalContentErrorType.FETCH_FAILED);
+      assert.strictEqual(errors[0]!.statusCode, undefined);
     });
 
     it("returns HTML_PARSE_FAILED error when HTML parsing throws", async () => {
@@ -450,15 +423,13 @@ describe("injectExternalContent", () => {
       );
 
       // With null body and status 200, we get a FETCH_FAILED since there's no body
-      expect(errors).toHaveLength(1);
-      expect(errors[0]).toMatchObject({
-        articleId: "article-3",
-        sourceField: "link",
-        label: "content",
-        cssSelector: ".content",
-        errorType: ExternalContentErrorType.FETCH_FAILED,
-        statusCode: 200,
-      });
+      assert.strictEqual(errors.length, 1);
+      assert.strictEqual(errors[0]!.articleId, "article-3");
+      assert.strictEqual(errors[0]!.sourceField, "link");
+      assert.strictEqual(errors[0]!.label, "content");
+      assert.strictEqual(errors[0]!.cssSelector, ".content");
+      assert.strictEqual(errors[0]!.errorType, ExternalContentErrorType.FETCH_FAILED);
+      assert.strictEqual(errors[0]!.statusCode, 200);
     });
 
     it("returns INVALID_CSS_SELECTOR error with message when querySelectorAll throws", async () => {
@@ -485,15 +456,13 @@ describe("injectExternalContent", () => {
         fetchFn
       );
 
-      expect(errors).toHaveLength(1);
-      expect(errors[0]).toMatchObject({
-        articleId: "article-4",
-        sourceField: "link",
-        label: "content",
-        cssSelector: "[invalid[[",
-        errorType: ExternalContentErrorType.INVALID_CSS_SELECTOR,
-      });
-      expect(errors[0]!.message).toBeDefined();
+      assert.strictEqual(errors.length, 1);
+      assert.strictEqual(errors[0]!.articleId, "article-4");
+      assert.strictEqual(errors[0]!.sourceField, "link");
+      assert.strictEqual(errors[0]!.label, "content");
+      assert.strictEqual(errors[0]!.cssSelector, "[invalid[[");
+      assert.strictEqual(errors[0]!.errorType, ExternalContentErrorType.INVALID_CSS_SELECTOR);
+      assert.notStrictEqual(errors[0]!.message, undefined);
     });
 
     it("returns multiple errors for multiple articles with different failures", async () => {
@@ -522,19 +491,15 @@ describe("injectExternalContent", () => {
         fetchFn
       );
 
-      expect(errors).toHaveLength(2);
+      assert.strictEqual(errors.length, 2);
 
       const articleAError = errors.find((e) => e.articleId === "article-a");
       const articleBError = errors.find((e) => e.articleId === "article-b");
 
-      expect(articleAError).toMatchObject({
-        errorType: ExternalContentErrorType.FETCH_FAILED,
-        statusCode: 404,
-      });
+      assert.strictEqual(articleAError!.errorType, ExternalContentErrorType.FETCH_FAILED);
+      assert.strictEqual(articleAError!.statusCode, 404);
 
-      expect(articleBError).toMatchObject({
-        errorType: ExternalContentErrorType.INVALID_CSS_SELECTOR,
-      });
+      assert.strictEqual(articleBError!.errorType, ExternalContentErrorType.INVALID_CSS_SELECTOR);
     });
 
     it("includes correct articleId, sourceField, label, cssSelector in each error", async () => {
@@ -563,8 +528,8 @@ describe("injectExternalContent", () => {
         fetchFn
       );
 
-      expect(errors).toHaveLength(1);
-      expect(errors[0]).toEqual({
+      assert.strictEqual(errors.length, 1);
+      assert.deepStrictEqual(errors[0], {
         articleId: "my-article-id",
         sourceField: "customUrl",
         label: "myLabel",
@@ -597,17 +562,15 @@ describe("injectExternalContent", () => {
         fetchFn
       );
 
-      expect(errors).toHaveLength(1);
-      expect(errors[0]).toMatchObject({
-        articleId: "article-1",
-        sourceField: "link",
-        label: "content",
-        cssSelector: ".nonexistent",
-        errorType: ExternalContentErrorType.NO_SELECTOR_MATCH,
-        message: 'CSS selector ".nonexistent" matched 0 elements',
-      });
+      assert.strictEqual(errors.length, 1);
+      assert.strictEqual(errors[0]!.articleId, "article-1");
+      assert.strictEqual(errors[0]!.sourceField, "link");
+      assert.strictEqual(errors[0]!.label, "content");
+      assert.strictEqual(errors[0]!.cssSelector, ".nonexistent");
+      assert.strictEqual(errors[0]!.errorType, ExternalContentErrorType.NO_SELECTOR_MATCH);
+      assert.strictEqual(errors[0]!.message, 'CSS selector ".nonexistent" matched 0 elements');
       // HTML should not be included by default
-      expect(errors[0]!.pageHtml).toBeUndefined();
+      assert.strictEqual(errors[0]!.pageHtml, undefined);
     });
 
     it("includes HTML when includeHtmlInErrors option is true", async () => {
@@ -632,9 +595,9 @@ describe("injectExternalContent", () => {
         { includeHtmlInErrors: true }
       );
 
-      expect(errors).toHaveLength(1);
-      expect(errors[0]!.pageHtml).toBe(pageHtml);
-      expect(errors[0]!.pageHtmlTruncated).toBe(false);
+      assert.strictEqual(errors.length, 1);
+      assert.strictEqual(errors[0]!.pageHtml, pageHtml);
+      assert.strictEqual(errors[0]!.pageHtmlTruncated, false);
     });
 
     it("truncates HTML larger than 50KB and sets truncated flag", async () => {
@@ -661,9 +624,9 @@ describe("injectExternalContent", () => {
         { includeHtmlInErrors: true }
       );
 
-      expect(errors).toHaveLength(1);
-      expect(errors[0]!.pageHtml!.length).toBe(50 * 1024);
-      expect(errors[0]!.pageHtmlTruncated).toBe(true);
+      assert.strictEqual(errors.length, 1);
+      assert.strictEqual(errors[0]!.pageHtml!.length, 50 * 1024);
+      assert.strictEqual(errors[0]!.pageHtmlTruncated, true);
     });
 
     it("does not return error when selector matches elements", async () => {
@@ -686,7 +649,7 @@ describe("injectExternalContent", () => {
         fetchFn
       );
 
-      expect(errors).toHaveLength(0);
+      assert.strictEqual(errors.length, 0);
     });
 
     it("reports NO_SELECTOR_MATCH for each property that finds no matches", async () => {
@@ -711,13 +674,9 @@ describe("injectExternalContent", () => {
         fetchFn
       );
 
-      expect(errors).toHaveLength(2);
-      expect(errors.map((e) => e.label).sort()).toEqual(["body", "title"]);
-      expect(
-        errors.every(
-          (e) => e.errorType === ExternalContentErrorType.NO_SELECTOR_MATCH
-        )
-      ).toBe(true);
+      assert.strictEqual(errors.length, 2);
+      assert.deepStrictEqual(errors.map((e) => e.label).sort(), ["body", "title"]);
+      assert.ok(errors.every((e) => e.errorType === ExternalContentErrorType.NO_SELECTOR_MATCH));
     });
 
     it("strips script tags from HTML in errors for security", async () => {
@@ -742,10 +701,10 @@ describe("injectExternalContent", () => {
         { includeHtmlInErrors: true }
       );
 
-      expect(errors).toHaveLength(1);
-      expect(errors[0]!.pageHtml).not.toContain("<script>");
-      expect(errors[0]!.pageHtml).not.toContain("alert('xss')");
-      expect(errors[0]!.pageHtml).toContain('<div class="article">Content</div>');
+      assert.strictEqual(errors.length, 1);
+      assert.ok(!errors[0]!.pageHtml!.includes("<script>"));
+      assert.ok(!errors[0]!.pageHtml!.includes("alert('xss')"));
+      assert.ok(errors[0]!.pageHtml!.includes('<div class="article">Content</div>'));
     });
   });
 });

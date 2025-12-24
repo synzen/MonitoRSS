@@ -1,4 +1,5 @@
-import { describe, expect, it } from "bun:test";
+import { describe, it } from "node:test";
+import assert from "node:assert";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
@@ -50,41 +51,43 @@ const SAMPLE_ATOM = `<?xml version="1.0" encoding="UTF-8"?>
   </entry>
 </feed>`;
 
-describe("article-parser", () => {
+describe("article-parser", { concurrency: true }, () => {
   describe("parseArticlesFromXml", () => {
     it("parses RSS feed correctly", async () => {
       const result = await parseArticlesFromXml(SAMPLE_RSS);
 
-      expect(result.feed.title).toBe("Sample Feed");
-      expect(result.articles.length).toBe(2);
+      assert.strictEqual(result.feed.title, "Sample Feed");
+      assert.strictEqual(result.articles.length, 2);
 
       const firstArticle = result.articles[0]!;
-      expect(firstArticle.flattened.title).toBe("First Article");
-      expect(firstArticle.flattened.link).toBe("https://example.com/article1");
-      expect(firstArticle.flattened.id).toBeDefined();
-      expect(firstArticle.flattened.idHash).toBeDefined();
+      assert.strictEqual(firstArticle.flattened.title, "First Article");
+      assert.strictEqual(firstArticle.flattened.link, "https://example.com/article1");
+      assert.notStrictEqual(firstArticle.flattened.id, undefined);
+      assert.notStrictEqual(firstArticle.flattened.idHash, undefined);
     });
 
     it("parses Atom feed correctly", async () => {
       const result = await parseArticlesFromXml(SAMPLE_ATOM);
 
-      expect(result.feed.title).toBe("Atom Feed");
-      expect(result.articles.length).toBe(1);
+      assert.strictEqual(result.feed.title, "Atom Feed");
+      assert.strictEqual(result.articles.length, 1);
 
       const entry = result.articles[0]!;
-      expect(entry.flattened.title).toBe("Atom Entry");
-      expect(entry.flattened.id).toBeDefined();
+      assert.strictEqual(entry.flattened.title, "Atom Entry");
+      assert.notStrictEqual(entry.flattened.id, undefined);
     });
 
     it("throws InvalidFeedException for invalid XML", async () => {
-      expect(parseArticlesFromXml("not valid xml")).rejects.toBeInstanceOf(
+      await assert.rejects(
+        parseArticlesFromXml("not valid xml"),
         InvalidFeedException
       );
     });
 
     it("throws InvalidFeedException for non-feed XML", async () => {
       const html = "<html><body>Not a feed</body></html>";
-      expect(parseArticlesFromXml(html)).rejects.toBeInstanceOf(
+      await assert.rejects(
+        parseArticlesFromXml(html),
         InvalidFeedException
       );
     });
@@ -99,7 +102,7 @@ describe("article-parser", () => {
 
       // The pubdate field should be formatted
       const firstArticle = result.articles[0]!;
-      expect(firstArticle.flattened.pubdate).toBe("2024-01-01");
+      assert.strictEqual(firstArticle.flattened.pubdate, "2024-01-01");
     });
 
     it("returns empty articles array for empty feed", async () => {
@@ -111,8 +114,8 @@ describe("article-parser", () => {
         </rss>`;
 
       const result = await parseArticlesFromXml(emptyFeed);
-      expect(result.articles.length).toBe(0);
-      expect(result.feed.title).toBe("Empty Feed");
+      assert.strictEqual(result.articles.length, 0);
+      assert.strictEqual(result.feed.title, "Empty Feed");
     });
 
     it("extracts images from description HTML", async () => {
@@ -132,9 +135,7 @@ describe("article-parser", () => {
       const article = result.articles[0]!;
 
       // Should have extracted image
-      expect(article.flattened["extracted::description::image1"]).toBe(
-        "https://example.com/image.jpg"
-      );
+      assert.strictEqual(article.flattened["extracted::description::image1"], "https://example.com/image.jpg");
     });
   });
 
@@ -153,10 +154,8 @@ describe("article-parser", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.id).toBe(article.id);
-      expect(flattenedArticle[`author${DL}name${DL}tag`]).toBe(
-        article.author.name.tag
-      );
+      assert.strictEqual(flattenedArticle.id, article.id);
+      assert.strictEqual(flattenedArticle[`author${DL}name${DL}tag`], article.author.name.tag);
     });
 
     it("flattens categories into a single string", () => {
@@ -168,7 +167,7 @@ describe("article-parser", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle["processed::categories"]).toBe("cat1,cat2,cat3");
+      assert.strictEqual(flattenedArticle["processed::categories"], "cat1,cat2,cat3");
     });
 
     it("flattens arrays", () => {
@@ -181,9 +180,9 @@ describe("article-parser", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.id).toBe(article.id);
-      expect(flattenedArticle[`tags${DL}0`]).toBe(article.tags[0]);
-      expect(flattenedArticle[`tags${DL}1`]).toBe(article.tags[1]);
+      assert.strictEqual(flattenedArticle.id, article.id);
+      assert.strictEqual(flattenedArticle[`tags${DL}0`], article.tags[0]);
+      assert.strictEqual(flattenedArticle[`tags${DL}1`], article.tags[1]);
     });
 
     it("flattens arrays of objects", () => {
@@ -203,13 +202,9 @@ describe("article-parser", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.id).toBe(article.id);
-      expect(flattenedArticle[`tags${DL}0${DL}name`]).toBe(
-        article.tags[0]!.name
-      );
-      expect(flattenedArticle[`tags${DL}1${DL}name`]).toBe(
-        article.tags[1]!.name
-      );
+      assert.strictEqual(flattenedArticle.id, article.id);
+      assert.strictEqual(flattenedArticle[`tags${DL}0${DL}name`], article.tags[0]!.name);
+      assert.strictEqual(flattenedArticle[`tags${DL}1${DL}name`], article.tags[1]!.name);
     });
 
     it("flattens arrays of objects with arrays", () => {
@@ -231,25 +226,13 @@ describe("article-parser", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.id).toBe(article.id);
-      expect(flattenedArticle[`tags${DL}0${DL}name`]).toBe(
-        article.tags[0]!.name
-      );
-      expect(flattenedArticle[`tags${DL}0${DL}aliases${DL}0`]).toBe(
-        article.tags[0]!.aliases[0]
-      );
-      expect(flattenedArticle[`tags${DL}0${DL}aliases${DL}1`]).toBe(
-        article.tags[0]!.aliases[1]
-      );
-      expect(flattenedArticle[`tags${DL}1${DL}name`]).toBe(
-        article.tags[1]!.name
-      );
-      expect(flattenedArticle[`tags${DL}1${DL}aliases${DL}0`]).toBe(
-        article.tags[1]!.aliases[0]
-      );
-      expect(flattenedArticle[`tags${DL}1${DL}aliases${DL}1`]).toBe(
-        article.tags[1]!.aliases[1]
-      );
+      assert.strictEqual(flattenedArticle.id, article.id);
+      assert.strictEqual(flattenedArticle[`tags${DL}0${DL}name`], article.tags[0]!.name);
+      assert.strictEqual(flattenedArticle[`tags${DL}0${DL}aliases${DL}0`], article.tags[0]!.aliases[0]);
+      assert.strictEqual(flattenedArticle[`tags${DL}0${DL}aliases${DL}1`], article.tags[0]!.aliases[1]);
+      assert.strictEqual(flattenedArticle[`tags${DL}1${DL}name`], article.tags[1]!.name);
+      assert.strictEqual(flattenedArticle[`tags${DL}1${DL}aliases${DL}0`], article.tags[1]!.aliases[0]);
+      assert.strictEqual(flattenedArticle[`tags${DL}1${DL}aliases${DL}1`], article.tags[1]!.aliases[1]);
     });
 
     it("handles keys with the delimiter in it", () => {
@@ -264,8 +247,8 @@ describe("article-parser", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.id).toBe(article.id);
-      expect(flattenedArticle[`a${DL}${DL}b`]).toBe(article.a[`${DL}b`]);
+      assert.strictEqual(flattenedArticle.id, article.id);
+      assert.strictEqual(flattenedArticle[`a${DL}${DL}b`], article.a[`${DL}b`]);
     });
 
     (
@@ -291,9 +274,9 @@ describe("article-parser", () => {
           useParserRules: [],
         });
 
-        expect(flattenedArticle.id).toBe(article.id);
-        expect(flattenedArticle.a).toBeUndefined();
-        expect(flattenedArticle[`b${DL}c${DL}d`]).toBeUndefined();
+        assert.strictEqual(flattenedArticle.id, article.id);
+        assert.strictEqual(flattenedArticle.a, undefined);
+        assert.strictEqual(flattenedArticle[`b${DL}c${DL}d`], undefined);
       });
     });
 
@@ -314,9 +297,9 @@ describe("article-parser", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.id).toBe(article.id);
-      expect(flattenedArticle.a).toBeUndefined();
-      expect(flattenedArticle[`b${DL}c${DL}d${DL}e`]).toBeUndefined();
+      assert.strictEqual(flattenedArticle.id, article.id);
+      assert.strictEqual(flattenedArticle.a, undefined);
+      assert.strictEqual(flattenedArticle[`b${DL}c${DL}d${DL}e`], undefined);
     });
 
     it("removes empty objects", () => {
@@ -336,9 +319,9 @@ describe("article-parser", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.id).toBe(article.id);
-      expect(flattenedArticle.a).toBeUndefined();
-      expect(flattenedArticle[`b${DL}c${DL}d${DL}e`]).toBeUndefined();
+      assert.strictEqual(flattenedArticle.id, article.id);
+      assert.strictEqual(flattenedArticle.a, undefined);
+      assert.strictEqual(flattenedArticle[`b${DL}c${DL}d${DL}e`], undefined);
     });
 
     it("removes empty arrays", () => {
@@ -358,9 +341,9 @@ describe("article-parser", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.id).toBe(article.id);
-      expect(flattenedArticle.a).toBeUndefined();
-      expect(flattenedArticle[`b${DL}c${DL}d${DL}e`]).toBeUndefined();
+      assert.strictEqual(flattenedArticle.id, article.id);
+      assert.strictEqual(flattenedArticle.a, undefined);
+      assert.strictEqual(flattenedArticle[`b${DL}c${DL}d${DL}e`], undefined);
     });
 
     it("converts numbers to strings", () => {
@@ -380,9 +363,9 @@ describe("article-parser", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.id).toBe(article.id);
-      expect(flattenedArticle.a).toBe("1");
-      expect(flattenedArticle[`b${DL}c${DL}d${DL}e`]).toBe("2");
+      assert.strictEqual(flattenedArticle.id, article.id);
+      assert.strictEqual(flattenedArticle.a, "1");
+      assert.strictEqual(flattenedArticle[`b${DL}c${DL}d${DL}e`], "2");
     });
 
     it("extracts images", () => {
@@ -398,15 +381,9 @@ describe("article-parser", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle[`extracted::description::image1`]).toBe(
-        "https://example.com/image.jpg"
-      );
-      expect(flattenedArticle[`extracted::description::image2`]).toBe(
-        "https://example.com/image2.jpg"
-      );
-      expect(flattenedArticle[`extracted::summary::image1`]).toBe(
-        "https://example.com/image3.jpg"
-      );
+      assert.strictEqual(flattenedArticle[`extracted::description::image1`], "https://example.com/image.jpg");
+      assert.strictEqual(flattenedArticle[`extracted::description::image2`], "https://example.com/image2.jpg");
+      assert.strictEqual(flattenedArticle[`extracted::summary::image1`], "https://example.com/image3.jpg");
     });
 
     it("extracts anchors", () => {
@@ -420,12 +397,8 @@ describe("article-parser", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle[`extracted::description::anchor1`]).toBe(
-        "https://example.com"
-      );
-      expect(flattenedArticle[`extracted::summary::anchor1`]).toBe(
-        "https://example.com"
-      );
+      assert.strictEqual(flattenedArticle[`extracted::description::anchor1`], "https://example.com");
+      assert.strictEqual(flattenedArticle[`extracted::summary::anchor1`], "https://example.com");
     });
   });
 
@@ -447,13 +420,9 @@ describe("article-parser", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.id).toBe(article.id);
-      expect(flattenedArticle.a).toBe(
-        dayjs(article.a).tz("UTC").locale("en").format()
-      );
-      expect(flattenedArticle[`b${DL}c${DL}d${DL}e`]).toBe(
-        dayjs(article.b.c.d.e).tz("UTC").locale("en").format()
-      );
+      assert.strictEqual(flattenedArticle.id, article.id);
+      assert.strictEqual(flattenedArticle.a, dayjs(article.a).tz("UTC").locale("en").format());
+      assert.strictEqual(flattenedArticle[`b${DL}c${DL}d${DL}e`], dayjs(article.b.c.d.e).tz("UTC").locale("en").format());
     });
 
     it("converts dates to ISO strings with a custom date format", () => {
@@ -480,13 +449,9 @@ describe("article-parser", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.id).toBe(article.id);
-      expect(flattenedArticle.a).toBe(
-        dayjs(article.a).tz("UTC").locale("en").format(dateFormat)
-      );
-      expect(flattenedArticle[`b${DL}c${DL}d${DL}e`]).toBe(
-        dayjs(article.b.c.d.e).tz("UTC").locale("en").format(dateFormat)
-      );
+      assert.strictEqual(flattenedArticle.id, article.id);
+      assert.strictEqual(flattenedArticle.a, dayjs(article.a).tz("UTC").locale("en").format(dateFormat));
+      assert.strictEqual(flattenedArticle[`b${DL}c${DL}d${DL}e`], dayjs(article.b.c.d.e).tz("UTC").locale("en").format(dateFormat));
     });
 
     it("converts dates to ISO strings with advanced custom date formats", () => {
@@ -507,7 +472,7 @@ describe("article-parser", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.a).toMatch(/^\d+$/);
+      assert.ok(/^\d+$/.test(flattenedArticle.a));
     });
 
     it("works with custom timezones", () => {
@@ -534,13 +499,9 @@ describe("article-parser", () => {
         useParserRules: [],
       });
 
-      expect(flattenedArticle.id).toBe(article.id);
-      expect(flattenedArticle.a).toBe(
-        dayjs(article.a).tz(dateTimezone).format()
-      );
-      expect(flattenedArticle[`b${DL}c${DL}d${DL}e`]).toBe(
-        dayjs(article.b.c.d.e).tz(dateTimezone).format()
-      );
+      assert.strictEqual(flattenedArticle.id, article.id);
+      assert.strictEqual(flattenedArticle.a, dayjs(article.a).tz(dateTimezone).format());
+      assert.strictEqual(flattenedArticle[`b${DL}c${DL}d${DL}e`], dayjs(article.b.c.d.e).tz(dateTimezone).format());
     });
 
     it("falls back to UTC for invalid timezones", () => {
@@ -563,7 +524,7 @@ describe("article-parser", () => {
       });
 
       // Should fall back to UTC instead of throwing
-      expect(flattenedArticle.a).toBe(dayjs(date).utc().locale("en").format());
+      assert.strictEqual(flattenedArticle.a, dayjs(date).utc().locale("en").format());
     });
   });
 });

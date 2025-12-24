@@ -1,11 +1,13 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, before, after } from "node:test";
+import assert from "node:assert";
 import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../../src/delivery";
 import getTestRssFeed from "../data/test-rss-feed";
 import { createTestContext } from "../helpers/test-context";
+import { setupTestDatabase, teardownTestDatabase, type TestStores } from "../helpers/setup-integration-tests";
 import type { FeedV2Event, MentionTargetInput } from "../../src/shared/schemas";
 
-// Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
+let stores: TestStores;
 
 type MentionsConfig = NonNullable<
   FeedV2Event["data"]["mediums"][0]["details"]["mentions"]
@@ -48,16 +50,24 @@ function createEventWithMentions(
  * Helper to extract the Discord payload from captured requests
  */
 function getDiscordPayload(ctx: ReturnType<typeof createTestContext>) {
-  expect(ctx.discordClient.capturedPayloads.length).toBeGreaterThan(0);
+  assert.ok(ctx.discordClient.capturedPayloads.length > 0);
   return JSON.parse(
     ctx.discordClient.capturedPayloads[0]!.options.body as string
   );
 }
 
-describe("Discord Payload Mentions (e2e)", () => {
+describe("Discord Payload Mentions (e2e)", { concurrency: true }, () => {
+  before(async () => {
+    stores = await setupTestDatabase();
+  });
+
+  after(async () => {
+    await teardownTestDatabase();
+  });
+
   describe("User Mentions", () => {
     it("includes user mention in payload", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithMentions = createEventWithMentions(ctx.testFeedV2Event, {
         targets: [
@@ -86,20 +96,20 @@ describe("Discord Payload Mentions (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithMentions);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toContain("<@123456789>");
-        expect(payload.content).toContain("User Mention Article");
+        assert.ok(payload.content.includes("<@123456789>"));
+        assert.ok(payload.content.includes("User Mention Article"));
       } finally {
         ctx.cleanup();
       }
     });
 
     it("includes multiple user mentions in payload", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithMentions = createEventWithMentions(ctx.testFeedV2Event, {
         targets: [
@@ -127,12 +137,12 @@ describe("Discord Payload Mentions (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithMentions);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toContain("<@111111111>");
-        expect(payload.content).toContain("<@222222222>");
-        expect(payload.content).toContain("<@333333333>");
+        assert.ok(payload.content.includes("<@111111111>"));
+        assert.ok(payload.content.includes("<@222222222>"));
+        assert.ok(payload.content.includes("<@333333333>"));
       } finally {
         ctx.cleanup();
       }
@@ -141,7 +151,7 @@ describe("Discord Payload Mentions (e2e)", () => {
 
   describe("Role Mentions", () => {
     it("includes role mention in payload", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithMentions = createEventWithMentions(ctx.testFeedV2Event, {
         targets: [
@@ -170,19 +180,19 @@ describe("Discord Payload Mentions (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithMentions);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
         // Role mentions use <@&ID> format
-        expect(payload.content).toContain("<@&987654321>");
+        assert.ok(payload.content.includes("<@&987654321>"));
       } finally {
         ctx.cleanup();
       }
     });
 
     it("includes multiple role mentions in payload", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithMentions = createEventWithMentions(ctx.testFeedV2Event, {
         targets: [
@@ -209,11 +219,11 @@ describe("Discord Payload Mentions (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithMentions);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toContain("<@&role-1>");
-        expect(payload.content).toContain("<@&role-2>");
+        assert.ok(payload.content.includes("<@&role-1>"));
+        assert.ok(payload.content.includes("<@&role-2>"));
       } finally {
         ctx.cleanup();
       }
@@ -222,7 +232,7 @@ describe("Discord Payload Mentions (e2e)", () => {
 
   describe("Mixed Mentions", () => {
     it("includes both user and role mentions in payload", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithMentions = createEventWithMentions(ctx.testFeedV2Event, {
         targets: [
@@ -250,12 +260,12 @@ describe("Discord Payload Mentions (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithMentions);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toContain("<@user-123>");
-        expect(payload.content).toContain("<@&role-456>");
-        expect(payload.content).toContain("<@user-789>");
+        assert.ok(payload.content.includes("<@user-123>"));
+        assert.ok(payload.content.includes("<@&role-456>"));
+        assert.ok(payload.content.includes("<@user-789>"));
       } finally {
         ctx.cleanup();
       }
@@ -264,7 +274,7 @@ describe("Discord Payload Mentions (e2e)", () => {
 
   describe("Conditional Mentions with Filters", () => {
     it("includes mention when filter matches", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithMentions = createEventWithMentions(ctx.testFeedV2Event, {
         targets: [
@@ -308,17 +318,17 @@ describe("Discord Payload Mentions (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithMentions);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toContain("<@tech-user>");
+        assert.ok(payload.content.includes("<@tech-user>"));
       } finally {
         ctx.cleanup();
       }
     });
 
     it("excludes mention when filter does not match", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithMentions = createEventWithMentions(ctx.testFeedV2Event, {
         targets: [
@@ -362,17 +372,17 @@ describe("Discord Payload Mentions (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithMentions);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).not.toContain("<@tech-user>");
+        assert.ok(!payload.content.includes("<@tech-user>"));
       } finally {
         ctx.cleanup();
       }
     });
 
     it("includes some mentions and excludes others based on filters", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithMentions = createEventWithMentions(ctx.testFeedV2Event, {
         targets: [
@@ -439,15 +449,15 @@ describe("Discord Payload Mentions (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithMentions);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         // always-user should be included (no filter)
-        expect(payload.content).toContain("<@always-user>");
+        assert.ok(payload.content.includes("<@always-user>"));
         // tech-role should be included (filter matches "Tech")
-        expect(payload.content).toContain("<@&tech-role>");
+        assert.ok(payload.content.includes("<@&tech-role>"));
         // sports-user should NOT be included (filter doesn't match "Sports")
-        expect(payload.content).not.toContain("<@sports-user>");
+        assert.ok(!payload.content.includes("<@sports-user>"));
       } finally {
         ctx.cleanup();
       }
@@ -456,7 +466,7 @@ describe("Discord Payload Mentions (e2e)", () => {
 
   describe("Mentions Placeholder Usage", () => {
     it("uses mentions placeholder in content template", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithMentions = createEventWithMentions(
         ctx.testFeedV2Event,
@@ -484,10 +494,10 @@ describe("Discord Payload Mentions (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithMentions);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe(
+        assert.strictEqual(payload.content,
           "Hey <@notify-user>! Check out: Important Update"
         );
       } finally {
@@ -496,7 +506,7 @@ describe("Discord Payload Mentions (e2e)", () => {
     });
 
     it("handles empty mentions placeholder when no mentions match", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithMentions = createEventWithMentions(
         ctx.testFeedV2Event,
@@ -543,12 +553,12 @@ describe("Discord Payload Mentions (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithMentions);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         // Mention placeholder should be empty since filter didn't match
-        expect(payload.content).not.toContain("<@conditional-user>");
-        expect(payload.content).toContain("New: Regular Article");
+        assert.ok(!payload.content.includes("<@conditional-user>"));
+        assert.ok(payload.content.includes("New: Regular Article"));
       } finally {
         ctx.cleanup();
       }
@@ -557,7 +567,7 @@ describe("Discord Payload Mentions (e2e)", () => {
 
   describe("No Mentions Configuration", () => {
     it("handles null mentions configuration", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithoutMentions: FeedV2Event = {
         ...ctx.testFeedV2Event,
@@ -594,12 +604,12 @@ describe("Discord Payload Mentions (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithoutMentions);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         // Should not contain any mention tags
-        expect(payload.content).not.toMatch(/<@[!&]?\d+>/);
-        expect(payload.content).toContain("Article without Mentions");
+        assert.ok(!/<@[!&]?\d+>/.test(payload.content));
+        assert.ok(payload.content.includes("Article without Mentions"));
       } finally {
         ctx.cleanup();
       }

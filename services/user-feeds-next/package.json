@@ -27,8 +27,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node ./dist/index.js",
-    "test": "bun test src/**/*.test.ts",
-    "test:unit": "bun test src/**/*.test.ts",
+    "test": "node --import tsx --test src/**/*.test.ts",
+    "test:unit": "node --import tsx --test src/**/*.test.ts",
     "test:e2e": "./test-e2e.sh"
   },
   "devDependencies": {

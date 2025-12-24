@@ -3,7 +3,7 @@ cleanup () {
   docker compose -f docker-compose.test.yml -p user-feeds-next-test rm -f -s -v
 }
 
-export TEST_COMMAND="bun test --concurrent --preload ./test/setup.ts ./test/e2e/*.e2e-spec.ts"
+export TEST_COMMAND="npx tsx ./test/helpers/prepare-template-db.ts && node --import tsx --test-reporter=dot --test ./test/e2e/*.e2e-spec.ts"
 
 docker compose -f docker-compose.test.yml -p user-feeds-next-test up \
   --build \
