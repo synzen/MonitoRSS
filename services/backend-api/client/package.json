@@ -7,9 +7,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint src",
-    "test": "vitest",
-    "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "test": "vitest"
   },
   "dependencies": {
     "@chakra-ui/anatomy": "^2.3.4",
@@ -49,12 +47,6 @@
     "yup": "^1.4.0"
   },
   "devDependencies": {
-    "@chromatic-com/storybook": "^4.1.3",
-    "@storybook/addon-a11y": "^10.1.10",
-    "@storybook/addon-docs": "^10.1.10",
-    "@storybook/addon-onboarding": "^10.1.10",
-    "@storybook/addon-vitest": "^10.1.10",
-    "@storybook/react-vite": "^10.1.10",
     "@tanstack/react-query-devtools": "^4.32.0",
     "@testing-library/dom": "^8.18.1",
     "@testing-library/jest-dom": "^5.16.5",
@@ -69,8 +61,6 @@
     "@typescript-eslint/eslint-plugin": "^7.8.0",
     "@typescript-eslint/parser": "^7.8.0",
     "@vitejs/plugin-react-swc": "^4.2.2",
-    "@vitest/browser-playwright": "^4.0.16",
-    "@vitest/coverage-v8": "^4.0.16",
     "cross-env": "^7.0.3",
     "eslint": "^8.2.0",
     "eslint-config-airbnb": "^19.0.4",
@@ -79,13 +69,11 @@
     "eslint-plugin-jsx-a11y": "^6.5.1",
     "eslint-plugin-react": "^7.28.0",
     "eslint-plugin-react-hooks": "^4.6.2",
-    "eslint-plugin-storybook": "^10.1.10",
     "eslint-plugin-unused-imports": "^3.2.0",
     "happy-dom": "^17.1.4",
     "msw": "^2.7.1",
     "playwright": "^1.57.0",
     "prettier": "2.8.2",
-    "storybook": "^10.1.10",
     "typescript": "^5.4.5",
     "vite": "^7.3.0",
     "vitest": "^4.0.16"

@@ -1449,7 +1449,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       const result = results[0]!;
 
       assert.strictEqual(result.outcome, ArticleDeliveryOutcome.DuplicateId);
-      assert.ok(result.outcomeReason.includes("already been seen"));
+      assert.ok((result.outcomeReason as string).includes("already been seen"));
       assert.deepStrictEqual(result.mediumResults, []);
     });
 
@@ -1499,7 +1499,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       const result = results[0]!;
 
       assert.strictEqual(result.outcome, ArticleDeliveryOutcome.WouldDeliver);
-      assert.ok(result.outcomeReason.includes("passes all checks"));
+      assert.ok((result.outcomeReason as string).includes("passes all checks"));
     });
 
     it("returns RateLimitedFeed outcome when feed daily limit exceeded", async () => {
@@ -1564,7 +1564,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       const result = results[0]!;
 
       assert.strictEqual(result.outcome, ArticleDeliveryOutcome.RateLimitedFeed);
-      assert.ok(result.outcomeReason.includes("daily article delivery limit"));
+      assert.ok((result.outcomeReason as string).includes("daily article delivery limit"));
     });
 
     it("returns RateLimitedMedium outcome when medium rate limit exceeded", async () => {
@@ -1627,7 +1627,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       const result = results[0]!;
 
       assert.strictEqual(result.outcome, ArticleDeliveryOutcome.RateLimitedMedium);
-      assert.ok(result.outcomeReason.includes("rate limit"));
+      assert.ok((result.outcomeReason as string).includes("rate limit"));
     });
 
     it("returns FilteredByMediumFilter outcome when medium filter blocks article", async () => {
@@ -1690,7 +1690,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       const result = results[0]!;
 
       assert.strictEqual(result.outcome, ArticleDeliveryOutcome.FilteredByMediumFilter);
-      assert.ok(result.outcomeReason.includes("filtered out"));
+      assert.ok((result.outcomeReason as string).includes("filtered out"));
     });
 
     it("returns BlockedByComparison outcome when blocking comparison field was seen", async () => {
@@ -1748,7 +1748,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       const result = results[0]!;
 
       assert.strictEqual(result.outcome, ArticleDeliveryOutcome.BlockedByComparison);
-      assert.ok(result.outcomeReason.includes("blocked by comparison"));
+      assert.ok((result.outcomeReason as string).includes("blocked by comparison"));
     });
 
     it("returns WouldDeliverPassingComparison outcome when passing comparison field changed", async () => {
@@ -1809,7 +1809,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       assert.strictEqual(result.outcome, 
         ArticleDeliveryOutcome.WouldDeliverPassingComparison
       );
-      assert.ok(result.outcomeReason.includes("comparison field has changed"));
+      assert.ok((result.outcomeReason as string).includes("comparison field has changed"));
     });
 
     it("returns FilteredByDateCheck outcome when article is too old", async () => {
@@ -1857,7 +1857,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       const result = results[0]!;
 
       assert.strictEqual(result.outcome, ArticleDeliveryOutcome.FilteredByDateCheck);
-      assert.ok(result.outcomeReason.includes("older than"));
+      assert.ok((result.outcomeReason as string).includes("older than"));
     });
 
     it("returns paginated results with correct total", async () => {
