@@ -15,6 +15,7 @@ import { RequestStatus } from './constants';
 import {
   FetchFeedDto,
   FetchFeedDetailsDto,
+  FetchFeedDeliveryPreviewDto,
   GetFeedRequestsInputDto,
   GetFeedRequestsOutputDto,
 } from './dto';
@@ -101,6 +102,117 @@ export class FeedFetcherController {
     @Body(ValidationPipe) data: FetchFeedDto,
   ): Promise<FetchFeedDetailsDto> {
     return this.getLatestRequest(data);
+  }
+
+  @Post('feed-requests/delivery-preview')
+  @UseGuards(ApiGuard)
+  async fetchFeedDeliveryPreview(
+    @Body(ValidationPipe) data: FetchFeedDeliveryPreviewDto,
+  ): Promise<FetchFeedDetailsDto> {
+    const lookupKey = data.lookupKey || data.url;
+
+    // 1. Get latest request (any status, including errors)
+    let latestRequest =
+      await this.partitionedRequestsStoreService.getLatestRequestAnyStatus(
+        lookupKey,
+      );
+
+    // 2. Check staleness
+    const threshold = data.stalenessThresholdSeconds ?? 1800;
+    const isStale =
+      !latestRequest ||
+      dayjs().diff(latestRequest.createdAt, 'second') > threshold;
+
+    // 3. If stale, fetch new
+    if (isStale) {
+      const { request } = await this.feedFetcherService.fetchAndSaveResponse(
+        data.url,
+        {
+          lookupDetails: data.lookupKey ? { key: data.lookupKey } : undefined,
+          source: undefined,
+        },
+      );
+
+      await this.partitionedRequestsStoreService.flushInserts([request]);
+
+      // Re-fetch latest
+      latestRequest =
+        await this.partitionedRequestsStoreService.getLatestRequestAnyStatus(
+          lookupKey,
+        );
+    }
+
+    // 4. Map to response
+    if (!latestRequest) {
+      return { requestStatus: 'FETCH_ERROR' as const };
+    }
+
+    const decodedBody = await this.feedFetcherService.decodeResponseContent(
+      latestRequest.response?.content,
+    );
+
+    return this.mapStatusToResponse(
+      latestRequest.status,
+      latestRequest.response,
+      decodedBody,
+    );
+  }
+
+  /**
+   * Maps a request status and response to FetchFeedDetailsDto.
+   * Shared between delivery preview and regular feed request endpoints.
+   */
+  private mapStatusToResponse(
+    status: RequestStatus,
+    response: { textHash?: string | null; statusCode: number } | null,
+    body: string,
+  ): FetchFeedDetailsDto {
+    if (status === RequestStatus.INVALID_SSL_CERTIFICATE) {
+      return { requestStatus: 'INVALID_SSL_CERTIFICATE' as const };
+    }
+
+    if (status === RequestStatus.REFUSED_LARGE_FEED) {
+      return { requestStatus: 'REFUSED_LARGE_FEED' as const };
+    }
+
+    if (status === RequestStatus.FETCH_TIMEOUT) {
+      return { requestStatus: 'FETCH_TIMEOUT' as const };
+    }
+
+    if (status === RequestStatus.FETCH_ERROR || !response) {
+      return { requestStatus: 'FETCH_ERROR' as const };
+    }
+
+    if (status === RequestStatus.OK) {
+      return {
+        requestStatus: 'SUCCESS' as const,
+        response: {
+          hash: response.textHash,
+          body,
+          statusCode: response.statusCode,
+        },
+      };
+    }
+
+    if (status === RequestStatus.PARSE_ERROR) {
+      return {
+        requestStatus: 'PARSE_ERROR' as const,
+        response: { statusCode: response.statusCode },
+      };
+    }
+
+    if (status === RequestStatus.INTERNAL_ERROR) {
+      return { requestStatus: 'INTERNAL_ERROR' as const };
+    }
+
+    if (status === RequestStatus.BAD_STATUS_CODE) {
+      return {
+        requestStatus: 'BAD_STATUS_CODE' as const,
+        response: { statusCode: response.statusCode },
+      };
+    }
+
+    throw new Error(`Unhandled request status: ${status}`);
   }
 
   private async getLatestRequest(
@@ -191,9 +303,7 @@ export class FeedFetcherController {
       };
     }
 
-    const latestRequestStatus = latestRequest.request.status;
-    const latestRequestResponse = latestRequest.request.response;
-
+    // Check for hash match before mapping status
     if (
       data.hashToCompare &&
       latestRequest.request.response?.textHash &&
@@ -204,68 +314,10 @@ export class FeedFetcherController {
       };
     }
 
-    if (latestRequestStatus === RequestStatus.INVALID_SSL_CERTIFICATE) {
-      return {
-        requestStatus: 'INVALID_SSL_CERTIFICATE' as const,
-      };
-    }
-
-    if (latestRequestStatus === RequestStatus.REFUSED_LARGE_FEED) {
-      return {
-        requestStatus: 'REFUSED_LARGE_FEED' as const,
-      };
-    }
-
-    if (latestRequestStatus === RequestStatus.FETCH_TIMEOUT) {
-      return {
-        requestStatus: 'FETCH_TIMEOUT' as const,
-      };
-    }
-
-    if (
-      latestRequestStatus === RequestStatus.FETCH_ERROR ||
-      !latestRequestResponse
-    ) {
-      return {
-        requestStatus: 'FETCH_ERROR' as const,
-      };
-    }
-
-    if (latestRequestStatus === RequestStatus.OK) {
-      return {
-        requestStatus: 'SUCCESS' as const,
-        response: {
-          hash: latestRequestResponse.textHash,
-          body: latestRequest.decodedResponseText as string,
-          statusCode: latestRequestResponse.statusCode,
-        },
-      };
-    }
-
-    if (latestRequestStatus === RequestStatus.PARSE_ERROR) {
-      return {
-        requestStatus: 'PARSE_ERROR' as const,
-        response: {
-          statusCode: latestRequestResponse.statusCode,
-        },
-      };
-    }
-
-    if (latestRequestStatus === RequestStatus.INTERNAL_ERROR) {
-      return {
-        requestStatus: 'INTERNAL_ERROR' as const,
-      };
-    }
-
-    if (latestRequestStatus === RequestStatus.BAD_STATUS_CODE) {
-      return {
-        requestStatus: 'BAD_STATUS_CODE' as const,
-        response: {
-          statusCode: latestRequestResponse.statusCode,
-        },
-      };
-    }
-
-    throw new Error(`Unhandled request status: ${latestRequestStatus}`);
+    return this.mapStatusToResponse(
+      latestRequest.request.status,
+      latestRequest.request.response,
+      latestRequest.decodedResponseText ?? '',
+    );
   }
 }

@@ -176,6 +176,28 @@ export class FeedFetcherService {
     return { request, decodedResponseText: '' };
   }
 
+  /**
+   * Decode compressed response content from a request.
+   * Used by delivery preview to get the body from any request status.
+   */
+  async decodeResponseContent(
+    compressedContent: string | null | undefined,
+  ): Promise<string> {
+    if (!compressedContent) {
+      return '';
+    }
+
+    try {
+      const decompressed = await inflatePromise(
+        Buffer.from(compressedContent, 'base64'),
+      );
+
+      return decompressed.toString();
+    } catch {
+      return '';
+    }
+  }
+
   async fetchAndSaveResponse(
     url: string,
     options?: {

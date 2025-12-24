@@ -147,3 +147,66 @@ async function handleFetchResponse({
     `Unexpected feed request status in response: ${requestStatus}`
   );
 }
+
+/**
+ * Fetch feed for delivery preview using the dedicated endpoint.
+ * This endpoint checks staleness based on ANY request status (including errors),
+ * preventing duplicate fetches when only error records exist.
+ *
+ * Compatible with fetchFeed signature so it can be passed to fetchAndParseFeed.
+ */
+export async function fetchFeedForDeliveryPreview(
+  url: string,
+  options: {
+    serviceHost: string;
+    stalenessThresholdSeconds?: number;
+    lookupDetails?: FeedRequestLookupDetails | null;
+    // These are accepted for compatibility but not used by this endpoint
+    executeFetch?: boolean;
+    executeFetchIfNotInCache?: boolean;
+    executeFetchIfStale?: boolean;
+    retries?: number;
+    hashToCompare?: string;
+  }
+): Promise<FetchFeedResult> {
+  const serviceHost = options.serviceHost;
+  let response: Response;
+
+  try {
+    const requestBody = {
+      url,
+      lookupKey: options.lookupDetails?.key,
+      stalenessThresholdSeconds: options.stalenessThresholdSeconds,
+    };
+
+    const endpointUrl = serviceHost.endsWith("/")
+      ? `${serviceHost}delivery-preview`
+      : `${serviceHost}/delivery-preview`;
+
+    response = await pRetry(
+      async () =>
+        fetch(endpointUrl, {
+          method: "POST",
+          body: JSON.stringify(requestBody),
+          headers: {
+            "content-type": "application/json",
+            accept: "application/json",
+            "api-key": API_KEY,
+          },
+        }),
+      {
+        retries: 2,
+        randomize: true,
+      }
+    );
+  } catch (err) {
+    throw new FeedRequestNetworkException(
+      `Failed to execute request to feed requests API: ${(err as Error).message}`
+    );
+  }
+
+  return handleFetchResponse({
+    statusCode: response.status,
+    json: response.json.bind(response),
+  });
+}

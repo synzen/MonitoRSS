@@ -24,6 +24,7 @@ import {
   getHashToCompare,
   type FeedProcessingResult,
 } from "../../feeds/shared-processing";
+import { fetchFeedForDeliveryPreview } from "../../feed-fetcher";
 
 type FeedErrorResult = Extract<
   FeedProcessingResult,
@@ -84,26 +85,10 @@ export async function handleDeliveryPreview(
         responseHashStore
       );
 
-      // Use shared processing to fetch and parse feed
-      const feedResult = await fetchAndParseFeed({
-        feed: {
-          url: input.feed.url,
-          formatOptions: input.feed.formatOptions,
-          externalProperties: input.feed.externalProperties,
-          requestLookupDetails: input.feed.requestLookupDetails,
-        },
-        feedRequestsServiceHost,
-        executeFetchIfNotInCache: true,
-        executeFetchIfStale: true,
-        stalenessThresholdSeconds: input.feed.refreshRateSeconds,
-        hashToCompare,
-      });
-
-      // Handle matched-hash by re-fetching without hash comparison to get articles
-      if (feedResult.status === "matched-hash") {
-        endDeliveryPreviewEarly();
-        // Re-fetch without hash comparison to get the actual articles
-        const feedResultWithArticles = await fetchAndParseFeed({
+      // Use shared processing to fetch and parse feed with the delivery preview endpoint
+      // This endpoint checks staleness against ANY request status (including errors)
+      const feedResult = await fetchAndParseFeed(
+        {
           feed: {
             url: input.feed.url,
             formatOptions: input.feed.formatOptions,
@@ -112,7 +97,28 @@ export async function handleDeliveryPreview(
           },
           feedRequestsServiceHost,
           stalenessThresholdSeconds: input.feed.refreshRateSeconds,
-        });
+          hashToCompare,
+        },
+        { fetchFeedFn: fetchFeedForDeliveryPreview }
+      );
+
+      // Handle matched-hash by re-fetching without hash comparison to get articles
+      if (feedResult.status === "matched-hash") {
+        endDeliveryPreviewEarly();
+        // Re-fetch without hash comparison to get the actual articles
+        const feedResultWithArticles = await fetchAndParseFeed(
+          {
+            feed: {
+              url: input.feed.url,
+              formatOptions: input.feed.formatOptions,
+              externalProperties: input.feed.externalProperties,
+              requestLookupDetails: input.feed.requestLookupDetails,
+            },
+            feedRequestsServiceHost,
+            stalenessThresholdSeconds: input.feed.refreshRateSeconds,
+          },
+          { fetchFeedFn: fetchFeedForDeliveryPreview }
+        );
 
         // If re-fetch fails, treat as error (shouldn't happen normally)
         if (
