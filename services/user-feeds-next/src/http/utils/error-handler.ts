@@ -9,6 +9,7 @@ import {
   FeedRequestBadStatusCodeException,
   FeedRequestTimedOutException,
   FeedArticleNotFoundException,
+  FeedRequestInvalidSslCertificateException,
 } from "../../feed-fetcher/exceptions";
 import {
   CustomPlaceholderRegexEvalException,
@@ -31,6 +32,7 @@ export enum GetFeedArticlesRequestStatus {
   FetchError = "FETCH_ERROR",
   BadStatusCode = "BAD_STATUS_CODE",
   TimedOut = "TIMED_OUT",
+  InvalidSslCertificate = "INVALID_SSL_CERTIFICATE"
 }
 
 /**
@@ -185,6 +187,20 @@ export function handleGetArticlesError(err: unknown, url: string): Response {
         feedTitle: null,
       },
     });
+  }
+
+  if (err instanceof FeedRequestInvalidSslCertificateException) {
+    return jsonResponse({
+      result: {
+        requestStatus: GetFeedArticlesRequestStatus.InvalidSslCertificate,
+        articles: [],
+        totalArticles: 0,
+        selectedProperties: [],
+        url,
+        attemptedToResolveFromHtml: false,
+        feedTitle: null,
+      }
+    })
   }
 
   // Fall through to generic error handler

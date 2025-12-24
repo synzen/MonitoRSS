@@ -68,6 +68,7 @@ import { convertToNestedDiscordEmbed } from "../../utils/convert-to-nested-disco
 import { CustomPlaceholderStepType } from "../../common/constants/custom-placeholder-step-type.constants";
 import {
   FeedFetchTimeoutException,
+  FeedInvalidSslCertException,
   FeedParseException,
   FeedRequestException,
   NoFeedOnHtmlPageException,
@@ -2266,6 +2267,12 @@ export class UserFeedsService {
       this.feedFetcherService.handleStatusCode(statusCode);
     } else if (requestStatus === GetArticlesResponseRequestStatus.FetchError) {
       throw new FeedRequestException(`Feed fetch failed`);
+    } else if (
+      requestStatus === GetArticlesResponseRequestStatus.InvalidSslCertificate
+    ) {
+      throw new FeedInvalidSslCertException(
+        "Issue encountered with SSL certificate"
+      );
     }
 
     throw new Error(`Unhandled request status ${requestStatus}`);

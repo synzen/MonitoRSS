@@ -19,6 +19,7 @@ export enum GetArticlesResponseRequestStatus {
   BadStatusCode = "BAD_STATUS_CODE",
   FetchError = "FETCH_ERROR",
   TimedOut = "TIMED_OUT",
+  InvalidSslCertificate = "INVALID_SSL_CERTIFICATE"
 }
 
 class FilterStatus {
