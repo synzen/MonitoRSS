@@ -100,6 +100,14 @@ export function handleError(err: unknown): Response {
     return jsonResponse({ message: err.message }, 400);
   }
 
+  // Fastify JSON parsing error -> 400 BAD_REQUEST
+  if (
+    err instanceof Error &&
+    err.message.includes("Body is not valid JSON")
+  ) {
+    return jsonResponse({ message: "Invalid JSON body" }, 400);
+  }
+
   // Unexpected errors -> 500 INTERNAL_SERVER_ERROR
   const exception = err as Error;
   logger.error(

@@ -382,7 +382,7 @@ async function startApiMode(
   }
   await infrastructure.discordClient.initialize();
 
-  const httpServer = createHttpServer(
+  const httpServer = await createHttpServer(
     {
       deliveryRecordStore: infrastructure.deliveryRecordStore,
       discordClient: infrastructure.discordClient,
@@ -396,7 +396,7 @@ async function startApiMode(
   logger.info(`HTTP server listening on port ${HTTP_PORT}`);
 
   return async () => {
-    httpServer.stop();
+    await httpServer.close();
     logger.info("HTTP server stopped");
     infrastructure.discordClient?.close();
   };

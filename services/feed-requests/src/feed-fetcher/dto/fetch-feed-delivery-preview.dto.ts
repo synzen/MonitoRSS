@@ -14,4 +14,8 @@ export class FetchFeedDeliveryPreviewDto {
   @IsOptional()
   @Type(() => Number)
   stalenessThresholdSeconds?: number;
+
+  @IsString()
+  @IsOptional()
+  hashToCompare?: string;
 }

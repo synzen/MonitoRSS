@@ -1,8 +1,8 @@
 /**
- * Bun.serve() HTTP server setup
+ * Fastify HTTP server setup (migrated from Bun.serve())
  */
 
-import type { Server } from "bun";
+import Fastify, { type FastifyInstance } from "fastify";
 import type { DeliveryRecordStore } from "../stores/interfaces/delivery-record-store";
 import type { DiscordRestClient } from "../delivery/mediums/discord/discord-rest-client";
 import type { ArticleFieldStore } from "../articles/comparison";
@@ -17,7 +17,13 @@ import {
   handleTest,
   handleDeliveryPreview,
 } from "./handlers";
-import { jsonResponse, handleError } from "./utils";
+import {
+  jsonResponse,
+  handleError,
+  toWebRequest,
+  fromWebResponse,
+  adaptHandler,
+} from "./utils";
 
 /**
  * Context for HTTP server with injected dependencies.
@@ -34,97 +40,114 @@ export interface HttpServerContext {
 }
 
 /**
- * Create the HTTP server with Bun.serve().
+ * Create the HTTP server with Fastify.
  */
-export function createHttpServer(
+export async function createHttpServer(
   context: HttpServerContext,
   port: number
-): Server<undefined> {
-  return Bun.serve({
-    port,
-    routes: {
-      "/v1/user-feeds/health": () => jsonResponse({ status: "ok" }),
+): Promise<FastifyInstance> {
+  const app = Fastify({ logger: false });
 
-      "/v1/user-feeds/filter-validation": {
-        POST: (req) => handleFilterValidation(req),
-      },
+  // Health endpoint (no auth required)
+  app.get("/v1/user-feeds/health", async () => ({ status: "ok" }));
 
-      "/v1/user-feeds/validate-discord-payload": {
-        POST: (req) => handleValidateDiscordPayload(req),
-      },
+  // POST endpoints - use adaptHandler to wrap existing handlers
+  app.post(
+    "/v1/user-feeds/filter-validation",
+    adaptHandler(handleFilterValidation)
+  );
 
-      "/v1/user-feeds/:feedId/delivery-count": {
-        GET: (req) => {
-          const url = new URL(req.url);
-          const feedId = req.params.feedId;
-          return handleDeliveryCount(
-            req,
-            url,
-            feedId,
-            context.deliveryRecordStore
-          );
-        },
-      },
+  app.post(
+    "/v1/user-feeds/validate-discord-payload",
+    adaptHandler(handleValidateDiscordPayload)
+  );
 
-      "/v1/user-feeds/:feedId/delivery-logs": {
-        GET: (req) => {
-          const url = new URL(req.url);
-          const feedId = req.params.feedId;
-          return handleDeliveryLogs(
-            req,
-            url,
-            feedId,
-            context.deliveryRecordStore
-          );
-        },
-      },
+  app.post(
+    "/v1/user-feeds/get-articles",
+    adaptHandler((req) => handleGetArticles(req, context.feedRequestsServiceHost))
+  );
 
-      "/v1/user-feeds/get-articles": {
-        POST: (req) => handleGetArticles(req, context.feedRequestsServiceHost),
-      },
+  app.post(
+    "/v1/user-feeds/preview",
+    adaptHandler((req) => handlePreview(req, context.feedRequestsServiceHost))
+  );
 
-      "/v1/user-feeds/preview": {
-        POST: (req) => handlePreview(req, context.feedRequestsServiceHost),
-      },
+  app.post(
+    "/v1/user-feeds/test",
+    adaptHandler((req) =>
+      handleTest(req, context.discordClient, context.feedRequestsServiceHost)
+    )
+  );
 
-      "/v1/user-feeds/test": {
-        POST: (req) =>
-          handleTest(
-            req,
-            context.discordClient,
-            context.feedRequestsServiceHost
-          ),
-      },
+  app.post(
+    "/v1/user-feeds/delivery-preview",
+    adaptHandler(async (req) => {
+      if (!context.articleFieldStore) {
+        return jsonResponse(
+          { message: "Article field store not configured" },
+          500
+        );
+      }
+      if (!context.responseHashStore) {
+        return jsonResponse(
+          { message: "Response hash store not configured" },
+          500
+        );
+      }
+      return handleDeliveryPreview(
+        req,
+        context.feedRequestsServiceHost,
+        context.articleFieldStore,
+        context.deliveryRecordStore,
+        context.responseHashStore
+      );
+    })
+  );
 
-      "/v1/user-feeds/delivery-preview": {
-        POST: (req) => {
-          if (!context.articleFieldStore) {
-            return jsonResponse(
-              { message: "Article field store not configured" },
-              500
-            );
-          }
-          if (!context.responseHashStore) {
-            return jsonResponse(
-              { message: "Response hash store not configured" },
-              500
-            );
-          }
-          return handleDeliveryPreview(
-            req,
-            context.feedRequestsServiceHost,
-            context.articleFieldStore,
-            context.deliveryRecordStore,
-            context.responseHashStore
-          );
-        },
-      },
-    },
-    fetch() {
-      return jsonResponse({ error: "Not Found" }, 404);
-    },
-    error(err) {
-      return handleError(err);
-    },
+  // GET endpoints with path params
+  app.get<{ Params: { feedId: string } }>(
+    "/v1/user-feeds/:feedId/delivery-count",
+    async (request, reply) => {
+      const webRequest = toWebRequest(request);
+      const url = new URL(webRequest.url);
+      const feedId = request.params.feedId;
+      const response = await handleDeliveryCount(
+        webRequest,
+        url,
+        feedId,
+        context.deliveryRecordStore
+      );
+      await fromWebResponse(response, reply);
+    }
+  );
+
+  app.get<{ Params: { feedId: string } }>(
+    "/v1/user-feeds/:feedId/delivery-logs",
+    async (request, reply) => {
+      const webRequest = toWebRequest(request);
+      const url = new URL(webRequest.url);
+      const feedId = request.params.feedId;
+      const response = await handleDeliveryLogs(
+        webRequest,
+        url,
+        feedId,
+        context.deliveryRecordStore
+      );
+      await fromWebResponse(response, reply);
+    }
+  );
+
+  // Global error handler
+  app.setErrorHandler(async (error, request, reply) => {
+    const response = handleError(error);
+    await fromWebResponse(response, reply);
   });
+
+  // 404 handler
+  app.setNotFoundHandler(async (request, reply) => {
+    reply.status(404).send({ error: "Not Found" });
+  });
+
+  await app.listen({ port, host: "0.0.0.0" });
+  return app;
 }

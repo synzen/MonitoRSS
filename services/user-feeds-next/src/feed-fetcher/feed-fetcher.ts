@@ -177,6 +177,7 @@ export async function fetchFeedForDeliveryPreview(
       url,
       lookupKey: options.lookupDetails?.key,
       stalenessThresholdSeconds: options.stalenessThresholdSeconds,
+      hashToCompare: options.hashToCompare,
     };
 
     const endpointUrl = serviceHost.endsWith("/")

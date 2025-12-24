@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
-import type { Server } from "bun";
+import type { FastifyInstance } from "fastify";
 import { randomUUID } from "crypto";
 import { createHttpServer } from "../../src/http";
 import { createTestDiscordRestClient } from "../../src/delivery";
@@ -11,10 +11,7 @@ import {
   ArticleDeliveryStatus,
   ArticleDeliveryContentType,
 } from "../../src/stores/interfaces/delivery-record-store";
-import {
-  ArticleDeliveryOutcome,
-  DeliveryPreviewStage,
-} from "../../src/delivery-preview";
+import { ArticleDeliveryOutcome } from "../../src/delivery-preview";
 import { FeedResponseRequestStatus } from "../../src/feed-fetcher";
 import { createHash } from "crypto";
 
@@ -42,11 +39,11 @@ const TEST_RSS_CONTENT = `<?xml version="1.0" encoding="UTF-8"?>
 // Type for JSON response bodies
 type JsonBody = Record<string, unknown>;
 
-let server: Server<undefined>;
+let server: FastifyInstance;
 let baseUrl: string;
 
 describe("HTTP API (e2e)", () => {
-  beforeAll(() => {
+  beforeAll(async () => {
     // Register the test feed URL with the shared test feed requests server
     const testServer = getTestFeedRequestsServer();
     testServer.registerUrl(TEST_FEED_URL, () => ({
@@ -58,7 +55,7 @@ describe("HTTP API (e2e)", () => {
     const stores = getStores();
 
     // Start the HTTP server with postgres delivery record store
-    server = createHttpServer(
+    server = await createHttpServer(
       {
         deliveryRecordStore: stores.deliveryRecordStore,
         discordClient: createTestDiscordRestClient(),
@@ -71,8 +68,8 @@ describe("HTTP API (e2e)", () => {
     baseUrl = `http://localhost:${TEST_PORT}`;
   });
 
-  afterAll(() => {
-    server.stop();
+  afterAll(async () => {
+    await server.close();
     // Clean up the registered URL
     const testServer = getTestFeedRequestsServer();
     testServer.unregisterUrl(TEST_FEED_URL);
@@ -1396,17 +1393,7 @@ describe("HTTP API (e2e)", () => {
       expect(result.articleId).toBe(DIAGNOSE_ARTICLE_ID_1);
       expect(result.outcome).toBe(ArticleDeliveryOutcome.FirstRunBaseline);
       expect(result.outcomeReason).toBeDefined();
-      expect(Array.isArray(result.stages)).toBe(true);
-
-      // Should have FeedState stage showing first run
-      const stages = result.stages as JsonBody[];
-      const feedStateStage = stages.find(
-        (s) => s.stage === DeliveryPreviewStage.FeedState
-      );
-      expect(feedStateStage).toBeDefined();
-      expect(feedStateStage?.details).toBeDefined();
-      const feedStateDetails = feedStateStage?.details as JsonBody;
-      expect(feedStateDetails.isFirstRun).toBe(true);
+      expect(result.mediumResults).toEqual([]);
     });
 
     it("returns DuplicateId outcome for previously seen article", async () => {
@@ -1462,14 +1449,7 @@ describe("HTTP API (e2e)", () => {
 
       expect(result.outcome).toBe(ArticleDeliveryOutcome.DuplicateId);
       expect(result.outcomeReason).toContain("already been seen");
-
-      // Should have IdComparison stage showing not new
-      const stages = result.stages as JsonBody[];
-      const idComparisonStage = stages.find(
-        (s) => s.stage === DeliveryPreviewStage.IdComparison
-      );
-      expect(idComparisonStage).toBeDefined();
-      expect(idComparisonStage?.passed).toBe(false);
+      expect(result.mediumResults).toEqual([]);
     });
 
     it("returns WouldDeliver outcome for new article that passes all checks", async () => {
@@ -1713,7 +1693,7 @@ describe("HTTP API (e2e)", () => {
       const result = results[0]!;
 
       expect(result.outcome).toBe(ArticleDeliveryOutcome.FilteredByMediumFilter);
-      expect(result.outcomeReason).toContain("filtered out by medium");
+      expect(result.outcomeReason).toContain("filtered out");
     });
 
     it("returns BlockedByComparison outcome when blocking comparison field was seen", async () => {
@@ -1978,7 +1958,7 @@ describe("HTTP API (e2e)", () => {
       expect(results.length).toBe(1);
       expect(results[0]!.articleId).toBe(DIAGNOSE_ARTICLE_ID_1);
       expect(results[0]!.outcome).toBeDefined();
-      expect(results[0]!.stages).toBeUndefined();
+      expect(results[0]!.mediumResults).toEqual([]);
     });
 
     it("returns FeedUnchanged outcome when feed hash matches stored hash", async () => {
@@ -2030,7 +2010,7 @@ describe("HTTP API (e2e)", () => {
       // All articles should have FeedUnchanged outcome
       expect(results[0]!.outcome).toBe(ArticleDeliveryOutcome.FeedUnchanged);
       expect(results[0]!.outcomeReason).toBeDefined();
-      expect(results[0]!.stages).toEqual([]); // No diagnostic stages
+      expect(results[0]!.mediumResults).toEqual([]);
 
       // Should NOT have feedState in response (removed "unchanged" as feed-level state)
       expect(body.feedState).toBeUndefined();

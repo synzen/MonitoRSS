@@ -1,5 +1,6 @@
 /**
  * Worker pool module exports.
+ * NOTE: Worker pool is currently disabled - these are stub exports.
  */
 
 export {
@@ -8,14 +9,3 @@ export {
   getFeedParserPoolStats,
   type ParseArticlesOptions,
 } from "./feed-parser-pool";
-
-export { WorkerPool, type WorkerPoolOptions } from "./worker-pool";
-
-export type {
-  WorkerTaskMessage,
-  WorkerResultMessage,
-  WorkerErrorMessage,
-  WorkerResponse,
-  FeedParserTaskPayload,
-  FeedParserResultPayload,
-} from "./types";

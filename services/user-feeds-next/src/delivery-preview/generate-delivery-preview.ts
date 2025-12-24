@@ -385,18 +385,33 @@ export async function generateDeliveryPreview(
         }
       }
 
-      // Compute aggregate article-level outcome
-      const { outcome: articleOutcome, outcomeReason: articleOutcomeReason } =
-        computeAggregateOutcome(mediumResults);
+      // When there are no mediums, compute outcome from shared stages directly
+      if (input.mediums.length === 0) {
+        const completeStages = buildCompleteStageList(sharedStages);
+        const { outcome, outcomeReason } = determineOutcome(completeStages);
 
-      builtResults.push({
-        articleId: article.flattened.id,
-        articleIdHash: article.flattened.idHash,
-        articleTitle: article.flattened.title || null,
-        outcome: articleOutcome,
-        outcomeReason: articleOutcomeReason,
-        mediumResults,
-      });
+        builtResults.push({
+          articleId: article.flattened.id,
+          articleIdHash: article.flattened.idHash,
+          articleTitle: article.flattened.title || null,
+          outcome,
+          outcomeReason,
+          mediumResults: [],
+        });
+      } else {
+        // Compute aggregate article-level outcome from per-medium outcomes
+        const { outcome: articleOutcome, outcomeReason: articleOutcomeReason } =
+          computeAggregateOutcome(mediumResults);
+
+        builtResults.push({
+          articleId: article.flattened.id,
+          articleIdHash: article.flattened.idHash,
+          articleTitle: article.flattened.title || null,
+          outcome: articleOutcome,
+          outcomeReason: articleOutcomeReason,
+          mediumResults,
+        });
+      }
     }
 
     return builtResults;

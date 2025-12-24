@@ -2,6 +2,7 @@
 import {
   Body,
   Controller,
+  HttpStatus,
   Post,
   UseGuards,
   ValidationPipe,
@@ -145,6 +146,34 @@ export class FeedFetcherController {
     // 4. Map to response
     if (!latestRequest) {
       return { requestStatus: 'FETCH_ERROR' as const };
+    }
+
+    // Check for hash match before mapping status
+    if (
+      data.hashToCompare &&
+      latestRequest.response?.textHash &&
+      data.hashToCompare === latestRequest.response.textHash
+    ) {
+      return { requestStatus: 'MATCHED_HASH' as const };
+    }
+
+    // Handle 304 Not Modified - get body from last successful request with content
+    if (latestRequest.response?.statusCode === HttpStatus.NOT_MODIFIED) {
+      const lastWithBody =
+        await this.partitionedRequestsStoreService.getLatestRequestWithResponseBody(
+          lookupKey,
+        );
+
+      if (lastWithBody?.response?.content) {
+        latestRequest = {
+          ...latestRequest,
+          response: {
+            ...latestRequest.response,
+            content: lastWithBody.response.content,
+            textHash: lastWithBody.response.textHash,
+          },
+        };
+      }
     }
 
     const decodedBody = await this.feedFetcherService.decodeResponseContent(
