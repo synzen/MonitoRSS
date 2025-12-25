@@ -1,5 +1,8 @@
 FROM node:22 AS build
 
+# Node.js uses its own CA bundle; add system certs for sites like apps.usfa.fema.gov
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
 WORKDIR /usr/src/app
 
 COPY package*.json ./
@@ -25,6 +28,10 @@ RUN npm prune --production
 RUN /usr/local/bin/node-prune
 
 FROM node:22-alpine AS prod
+
+# Alpine has a minimal CA bundle; add full certs to avoid SSL verification errors
+RUN apk --no-cache add ca-certificates && update-ca-certificates
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
 WORKDIR /usr/src/app
 
