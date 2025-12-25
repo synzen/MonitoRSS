@@ -228,7 +228,7 @@ services:
     build:
       context: services/user-feeds-next
       dockerfile: Dockerfile
-    command: bun run scripts/run-migrations.ts
+    command: node ./dist/src/scripts/run-migrations.js
     depends_on:
       - feed-requests-postgres-db
     environment:

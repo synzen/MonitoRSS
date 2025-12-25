@@ -77,7 +77,7 @@ services:
       file: ./docker-compose.base.yml
       service: user-feeds-next-postgres-migration
     image: ghcr.io/synzen/monitorss-user-feeds:main
-    command: "bun run scripts/run-migrations.ts"
+    command: "node ./dist/src/scripts/run-migrations.js"
     env_file:
       - ./.env.prod
     environment:
