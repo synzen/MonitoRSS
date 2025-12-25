@@ -1,6 +1,9 @@
 import { Badge, Box, Button, Flex, HStack, Icon, Stack, Text } from "@chakra-ui/react";
-import { WarningIcon } from "@chakra-ui/icons";
-import { getHttpStatusMessage, getGenericErrorMessage } from "./deliveryPreviewUtils";
+import {
+  FeedErrorInfo,
+  getHttpStatusMessage,
+  getGenericErrorMessage,
+} from "./deliveryPreviewUtils";
 
 const scrollToRequestHistory = () => {
   document.getElementById("request-history")?.scrollIntoView({ behavior: "smooth" });
@@ -16,13 +19,12 @@ interface FeedLevelStateDisplayProps {
   feedState: FeedState;
 }
 
-interface HttpStatusErrorDisplayProps {
-  statusCode: number;
+interface FeedErrorDisplayProps {
+  errorInfo: FeedErrorInfo;
 }
 
-const HttpStatusErrorDisplay = ({ statusCode }: HttpStatusErrorDisplayProps) => {
-  const statusInfo = getHttpStatusMessage(statusCode);
-  const StatusIcon = statusInfo.icon;
+const FeedErrorDisplay = ({ errorInfo }: FeedErrorDisplayProps) => {
+  const StatusIcon = errorInfo.icon;
 
   return (
     <Box
@@ -30,12 +32,8 @@ const HttpStatusErrorDisplay = ({ statusCode }: HttpStatusErrorDisplayProps) => 
       py={6}
       px={4}
       borderLeftWidth="4px"
-      borderLeftColor={`${statusInfo.colorScheme}.400`}
-      bg={
-        statusInfo.severity === "auth" || statusInfo.severity === "not-found"
-          ? `${statusInfo.colorScheme}.900`
-          : undefined
-      }
+      borderLeftColor={`${errorInfo.colorScheme}.400`}
+      bg={errorInfo.severity === "blocking" ? `${errorInfo.colorScheme}.900` : undefined}
     >
       <Flex
         direction={{ base: "column", sm: "row" }}
@@ -45,57 +43,26 @@ const HttpStatusErrorDisplay = ({ statusCode }: HttpStatusErrorDisplayProps) => 
         mb={3}
       >
         <HStack spacing={2}>
-          <Icon as={StatusIcon} color={`${statusInfo.colorScheme}.400`} aria-hidden="true" />
+          <Icon as={StatusIcon} color={`${errorInfo.colorScheme}.400`} aria-hidden="true" />
           <Text fontWeight="semibold" color="white">
-            {statusInfo.title}
+            {errorInfo.title}
           </Text>
         </HStack>
         <Badge
-          colorScheme={statusInfo.colorScheme}
-          variant={statusInfo.badgeVariant}
+          colorScheme={errorInfo.colorScheme}
+          variant={errorInfo.badgeVariant}
           fontSize="xs"
           fontFamily="mono"
         >
-          HTTP {statusCode}
+          {errorInfo.badgeText}
         </Badge>
       </Flex>
       <Stack spacing={2}>
-        <Text color="whiteAlpha.900">{statusInfo.explanation}</Text>
+        <Text color="whiteAlpha.900">{errorInfo.explanation}</Text>
         <Text fontSize="sm" color="whiteAlpha.800">
-          {statusInfo.action}
+          {errorInfo.action}
         </Text>
       </Stack>
-      <Button
-        onClick={scrollToRequestHistory}
-        size={{ base: "md", md: "sm" }}
-        width={{ base: "100%", md: "auto" }}
-        variant="outline"
-        mt={4}
-        minH="44px"
-      >
-        View Request History
-      </Button>
-    </Box>
-  );
-};
-
-interface GenericErrorDisplayProps {
-  feedState: string;
-  errorType?: string;
-}
-
-const GenericErrorDisplay = ({ feedState, errorType }: GenericErrorDisplayProps) => {
-  const errorInfo = getGenericErrorMessage(feedState, errorType);
-
-  return (
-    <Box role="status" py={6} px={4} borderLeftWidth="4px" borderLeftColor="red.400">
-      <HStack spacing={2} mb={3}>
-        <Icon as={WarningIcon} color="red.400" aria-hidden="true" />
-        <Text fontWeight="semibold" color="white">
-          {errorInfo.title}
-        </Text>
-      </HStack>
-      <Text color="whiteAlpha.900">{errorInfo.explanation}</Text>
       <Button
         onClick={scrollToRequestHistory}
         size={{ base: "md", md: "sm" }}
@@ -119,13 +86,15 @@ export const FeedLevelStateDisplay = ({ feedState }: FeedLevelStateDisplayProps)
     feedState.errorType === "bad-status-code" &&
     feedState.httpStatusCode
   ) {
-    return <HttpStatusErrorDisplay statusCode={feedState.httpStatusCode} />;
+    const errorInfo = getHttpStatusMessage(feedState.httpStatusCode);
+
+    return <FeedErrorDisplay errorInfo={errorInfo} />;
   }
 
   if (feedState.state === "fetch-error" || feedState.state === "parse-error") {
-    return (
-      <GenericErrorDisplay feedState={feedState.state} errorType={feedState.errorType} />
-    );
+    const errorInfo = getGenericErrorMessage(feedState.state, feedState.errorType);
+
+    return <FeedErrorDisplay errorInfo={errorInfo} />;
   }
 
   return null;

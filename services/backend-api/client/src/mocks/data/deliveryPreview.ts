@@ -33,7 +33,7 @@ type MockDiagnosticsState =
   | "feed-error-403"
   | "feed-error-404"
   | "feed-error-503";
-export const MOCK_DIAGNOSTICS_STATE: MockDiagnosticsState = "normal";
+export const MOCK_DIAGNOSTICS_STATE: MockDiagnosticsState = "feed-error-403";
 
 export interface MockFeedState {
   state: string;
