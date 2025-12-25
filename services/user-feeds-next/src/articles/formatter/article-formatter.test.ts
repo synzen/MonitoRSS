@@ -1,5 +1,5 @@
 import { describe, it } from "node:test";
-import assert from "node:assert";
+import assert, { deepStrictEqual } from "node:assert";
 import {
   replaceTemplateString,
   applySplit,
@@ -36,7 +36,7 @@ function createArticle(flattened: Record<string, string>): Article {
   };
 }
 
-describe("article-formatter", { concurrency: true }, () => {
+describe("article-formatter", () => {
   describe("replaceTemplateString", () => {
     it("replaces simple placeholders", () => {
       const result = replaceTemplateString(
@@ -215,7 +215,9 @@ describe("article-formatter", { concurrency: true }, () => {
 
       describe("Media Gallery", () => {
         it("filters out media gallery items with empty URLs", () => {
-          const article = createArticle({ image1: "https://example.com/1.png" });
+          const article = createArticle({
+            image1: "https://example.com/1.png",
+          });
           const payloads = generateDiscordPayloads(article, {
             componentsV2: [
               {
@@ -234,10 +236,15 @@ describe("article-formatter", { concurrency: true }, () => {
           });
 
           assert.strictEqual(payloads.length, 1);
-          const container = payloads[0]!.components![0] as { components: Array<{ items: Array<{ media: { url: string } }> }> };
+          const container = payloads[0]!.components![0] as {
+            components: Array<{ items: Array<{ media: { url: string } }> }>;
+          };
           const gallery = container.components[0]!;
           assert.strictEqual(gallery.items.length, 1);
-          assert.strictEqual(gallery.items[0]!.media.url, "https://example.com/1.png");
+          assert.strictEqual(
+            gallery.items[0]!.media.url,
+            "https://example.com/1.png"
+          );
         });
 
         it("removes entire media gallery when all items have empty URLs", () => {
@@ -264,7 +271,9 @@ describe("article-formatter", { concurrency: true }, () => {
           });
 
           assert.strictEqual(payloads.length, 1);
-          const container = payloads[0]!.components![0] as { components: Array<{ type: number }> };
+          const container = payloads[0]!.components![0] as {
+            components: Array<{ type: number }>;
+          };
           // Only the TEXT_DISPLAY should remain, gallery should be filtered out
           assert.strictEqual(container.components.length, 1);
         });
@@ -280,7 +289,10 @@ describe("article-formatter", { concurrency: true }, () => {
                     type: "MEDIA_GALLERY",
                     items: [
                       { media: { url: "https://example.com/static.png" } },
-                      { media: { url: "https://example.com/another.png" }, description: "A description" },
+                      {
+                        media: { url: "https://example.com/another.png" },
+                        description: "A description",
+                      },
                     ],
                   },
                 ],
@@ -289,11 +301,21 @@ describe("article-formatter", { concurrency: true }, () => {
           });
 
           assert.strictEqual(payloads.length, 1);
-          const container = payloads[0]!.components![0] as { components: Array<{ items: Array<{ media: { url: string }; description?: string }> }> };
+          const container = payloads[0]!.components![0] as {
+            components: Array<{
+              items: Array<{ media: { url: string }; description?: string }>;
+            }>;
+          };
           const gallery = container.components[0]!;
           assert.strictEqual(gallery.items.length, 2);
-          assert.strictEqual(gallery.items[0]!.media.url, "https://example.com/static.png");
-          assert.strictEqual(gallery.items[1]!.media.url, "https://example.com/another.png");
+          assert.strictEqual(
+            gallery.items[0]!.media.url,
+            "https://example.com/static.png"
+          );
+          assert.strictEqual(
+            gallery.items[1]!.media.url,
+            "https://example.com/another.png"
+          );
           assert.strictEqual(gallery.items[1]!.description, "A description");
         });
 
@@ -319,11 +341,21 @@ describe("article-formatter", { concurrency: true }, () => {
           });
 
           assert.strictEqual(payloads.length, 1);
-          const container = payloads[0]!.components![0] as { components: Array<{ items: Array<{ media: { url: string }; description?: string }> }> };
+          const container = payloads[0]!.components![0] as {
+            components: Array<{
+              items: Array<{ media: { url: string }; description?: string }>;
+            }>;
+          };
           const gallery = container.components[0]!;
           assert.strictEqual(gallery.items.length, 1);
-          assert.strictEqual(gallery.items[0]!.media.url, "https://example.com/dynamic.png");
-          assert.strictEqual(gallery.items[0]!.description, "Dynamic description");
+          assert.strictEqual(
+            gallery.items[0]!.media.url,
+            "https://example.com/dynamic.png"
+          );
+          assert.strictEqual(
+            gallery.items[0]!.description,
+            "Dynamic description"
+          );
         });
 
         it("encodes spaces in media gallery URLs", () => {
@@ -344,13 +376,20 @@ describe("article-formatter", { concurrency: true }, () => {
             ],
           });
 
-          const container = payloads[0]!.components![0] as { components: Array<{ items: Array<{ media: { url: string } }> }> };
+          const container = payloads[0]!.components![0] as {
+            components: Array<{ items: Array<{ media: { url: string } }> }>;
+          };
           const gallery = container.components[0]!;
-          assert.strictEqual(gallery.items[0]!.media.url, "https://example.com/image%20with%20spaces.png");
+          assert.strictEqual(
+            gallery.items[0]!.media.url,
+            "https://example.com/image%20with%20spaces.png"
+          );
         });
 
         it("preserves spoiler flag on media gallery items", () => {
-          const article = createArticle({ img: "https://example.com/spoiler.png" });
+          const article = createArticle({
+            img: "https://example.com/spoiler.png",
+          });
           const payloads = generateDiscordPayloads(article, {
             componentsV2: [
               {
@@ -365,7 +404,9 @@ describe("article-formatter", { concurrency: true }, () => {
             ],
           });
 
-          const container = payloads[0]!.components![0] as { components: Array<{ items: Array<{ spoiler?: boolean }> }> };
+          const container = payloads[0]!.components![0] as {
+            components: Array<{ items: Array<{ spoiler?: boolean }> }>;
+          };
           const gallery = container.components[0]!;
           assert.strictEqual(gallery.items[0]!.spoiler, true);
         });
@@ -604,7 +645,10 @@ describe("article-formatter", { concurrency: true }, () => {
       );
 
       assert.strictEqual(enhanced[0]!.username, "Bot: John");
-      assert.strictEqual(enhanced[0]!.avatar_url, "https://avatar.com/John.png");
+      assert.strictEqual(
+        enhanced[0]!.avatar_url,
+        "https://avatar.com/John.png"
+      );
     });
 
     it("truncates username to 256 characters", () => {
@@ -620,6 +664,37 @@ describe("article-formatter", { concurrency: true }, () => {
       );
 
       assert.ok(enhanced[0]!.username!.length <= 256);
+    });
+  });
+  
+  describe("formatArticleForDiscord", () => {
+    it("returns the original content formatted with markdown", async () => {
+      const val = `<p style="text-align: left;"></p><div style="text-align: center;"><b style="font-family: arial;"><span style="font-size: large;">&nbsp;(VOSTFR)&nbsp;</span></b></div>`;
+
+      const result = await formatArticleForDiscord(
+        {
+          flattened: {
+            id: "1",
+            idHash: "1",
+            title: val,
+          },
+          raw: {},
+        },
+        {
+          customPlaceholders: [
+            {
+              id: "test",
+              referenceName: "test",
+              sourcePlaceholder: "title",
+              steps: [],
+            },
+          ],
+          disableImageLinkPreviews: false,
+          formatTables: false,
+          stripImages: false,
+        }
+      );
+      deepStrictEqual(result.customPlaceholderPreviews[0][0], "(VOSTFR)");
     });
   });
 
@@ -668,7 +743,10 @@ describe("article-formatter", { concurrency: true }, () => {
       it("works with nested inline elements", () => {
         const value = `<a href="https://example.com"><strong>Hello World</strong></a>`;
         const result = formatValueForDiscord(value);
-        assert.strictEqual(result.value, "[**Hello World**](https://example.com)");
+        assert.strictEqual(
+          result.value,
+          "[**Hello World**](https://example.com)"
+        );
       });
     });
 
@@ -839,7 +917,10 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         <p>hello <strong>world 😀</strong> <p>another example</p></p>
         `;
         const result = formatValueForDiscord(val);
-        assert.strictEqual(result.value, "hello **world 😀** \n\nanother example");
+        assert.strictEqual(
+          result.value,
+          "hello **world 😀** \n\nanother example"
+        );
       });
 
       it("does not add extra newlines for empty paragraphs", () => {
@@ -930,7 +1011,14 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         limit: 5,
         isEnabled: true,
       });
-      assert.deepStrictEqual(result, ["hello", "world", ".", "hello", "world", "."]);
+      assert.deepStrictEqual(result, [
+        "hello",
+        "world",
+        ".",
+        "hello",
+        "world",
+        ".",
+      ]);
     });
 
     it("should preserve double new lines when possible", () => {
@@ -1006,7 +1094,13 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         isEnabled: true,
       });
 
-      assert.deepStrictEqual(result, ["hello!", "world?", "fate.", "codingh", "ere!"]);
+      assert.deepStrictEqual(result, [
+        "hello!",
+        "world?",
+        "fate.",
+        "codingh",
+        "ere!",
+      ]);
     });
   });
 

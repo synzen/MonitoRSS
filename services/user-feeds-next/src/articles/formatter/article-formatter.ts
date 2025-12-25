@@ -149,24 +149,8 @@ export function formatValueForDiscord(
     },
   };
 
-  // <b> tag uses same format as <strong>
-  const bSelector: SelectorDefinition = {
-    selector: "b",
-    format: "heading",
-    options: {
-      trailingLineBreaks: 0,
-      leadingLineBreaks: 0,
-    },
-  };
-
   const emSelector: SelectorDefinition = {
     selector: "em",
-    format: "italicize",
-  };
-
-  // <i> tag uses same format as <em>
-  const iSelector: SelectorDefinition = {
-    selector: "i",
     format: "italicize",
   };
 
@@ -364,9 +348,7 @@ export function formatValueForDiscord(
     selectors: [
       imageSelector,
       strongSelector,
-      bSelector,
       emSelector,
-      iSelector,
       uSelector,
       anchorSelector,
       unorderedListSelector,
