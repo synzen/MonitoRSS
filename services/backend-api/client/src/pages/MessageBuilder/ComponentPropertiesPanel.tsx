@@ -819,6 +819,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             isInvalid={!!mediaUrlError}
             as="input"
             isRequired
+            helperText="Items with empty URLs are removed. If all items are empty, the gallery is omitted."
           />
           <InputWithInsertPlaceholder
             value={(component as any).description || ""}

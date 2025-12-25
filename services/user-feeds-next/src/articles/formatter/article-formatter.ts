@@ -1240,7 +1240,7 @@ function buildMediaGalleryV2(
         )
       : undefined,
     spoiler: item.spoiler,
-  }));
+  })).filter((item) => !!item.media.url);
 
   return {
     type: DISCORD_COMPONENT_TYPE_TO_NUMBER[DiscordComponentType.MediaGalleryV2],
@@ -1251,7 +1251,7 @@ function buildMediaGalleryV2(
 function buildContainerChildV2(
   child: ContainerChildV2Input,
   ctx: ReplacePlaceholderContext
-): DiscordMessageComponentV2 {
+): DiscordMessageComponentV2 | null {
   switch (child.type) {
     case "SEPARATOR":
       return buildSeparatorV2(child);
@@ -1264,9 +1264,15 @@ function buildContainerChildV2(
         child,
         ctx
       ) as unknown as DiscordMessageComponentV2;
-    case "MEDIA_GALLERY":
-      return buildMediaGalleryV2(child, ctx);
-    default:
+    case "MEDIA_GALLERY": {
+      const gallery = buildMediaGalleryV2(child, ctx);
+
+      if (gallery.items.length === 0) {
+        return null;
+      }
+
+      return gallery;
+    } default:
       throw new Error(
         `Unknown container child type: ${(child as { type: string }).type}`
       );
@@ -1279,7 +1285,7 @@ function buildContainerV2(
 ): DiscordContainerV2 {
   const components = container.components.map((child) =>
     buildContainerChildV2(child, ctx)
-  );
+  ).filter((c): c is DiscordMessageComponentV2 => c !== null);
 
   return {
     type: DISCORD_COMPONENT_TYPE_TO_NUMBER[DiscordComponentType.ContainerV2],

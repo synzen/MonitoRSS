@@ -165,7 +165,7 @@ describe("article-formatter", { concurrency: true }, () => {
         embeds: [{ title: "{{title}}" }],
       });
 
-      assert.ok(payloads[0]!.embeds?.[0]?.title!.length <= 256);
+      assert.ok((payloads[0]!.embeds?.[0]?.title?.length ?? 0) <= 256);
     });
 
     it("supports placeholder fallbacks", () => {
@@ -211,6 +211,164 @@ describe("article-formatter", { concurrency: true }, () => {
         assert.strictEqual(payloads[0]!.flags, DISCORD_COMPONENTS_V2_FLAG);
         assert.notStrictEqual(payloads[0]!.components, undefined);
         assert.strictEqual(payloads[0]!.content, undefined);
+      });
+
+      describe("Media Gallery", () => {
+        it("filters out media gallery items with empty URLs", () => {
+          const article = createArticle({ image1: "https://example.com/1.png" });
+          const payloads = generateDiscordPayloads(article, {
+            componentsV2: [
+              {
+                type: "CONTAINER",
+                components: [
+                  {
+                    type: "MEDIA_GALLERY",
+                    items: [
+                      { media: { url: "{{image1}}" } },
+                      { media: { url: "{{missing_image}}" } },
+                    ],
+                  },
+                ],
+              },
+            ],
+          });
+
+          assert.strictEqual(payloads.length, 1);
+          const container = payloads[0]!.components![0] as { components: Array<{ items: Array<{ media: { url: string } }> }> };
+          const gallery = container.components[0]!;
+          assert.strictEqual(gallery.items.length, 1);
+          assert.strictEqual(gallery.items[0]!.media.url, "https://example.com/1.png");
+        });
+
+        it("removes entire media gallery when all items have empty URLs", () => {
+          const article = createArticle({ title: "Test" });
+          const payloads = generateDiscordPayloads(article, {
+            componentsV2: [
+              {
+                type: "CONTAINER",
+                components: [
+                  {
+                    type: "TEXT_DISPLAY",
+                    content: "{{title}}",
+                  },
+                  {
+                    type: "MEDIA_GALLERY",
+                    items: [
+                      { media: { url: "{{missing1}}" } },
+                      { media: { url: "{{missing2}}" } },
+                    ],
+                  },
+                ],
+              },
+            ],
+          });
+
+          assert.strictEqual(payloads.length, 1);
+          const container = payloads[0]!.components![0] as { components: Array<{ type: number }> };
+          // Only the TEXT_DISPLAY should remain, gallery should be filtered out
+          assert.strictEqual(container.components.length, 1);
+        });
+
+        it("preserves media gallery items with valid static URLs", () => {
+          const article = createArticle({});
+          const payloads = generateDiscordPayloads(article, {
+            componentsV2: [
+              {
+                type: "CONTAINER",
+                components: [
+                  {
+                    type: "MEDIA_GALLERY",
+                    items: [
+                      { media: { url: "https://example.com/static.png" } },
+                      { media: { url: "https://example.com/another.png" }, description: "A description" },
+                    ],
+                  },
+                ],
+              },
+            ],
+          });
+
+          assert.strictEqual(payloads.length, 1);
+          const container = payloads[0]!.components![0] as { components: Array<{ items: Array<{ media: { url: string }; description?: string }> }> };
+          const gallery = container.components[0]!;
+          assert.strictEqual(gallery.items.length, 2);
+          assert.strictEqual(gallery.items[0]!.media.url, "https://example.com/static.png");
+          assert.strictEqual(gallery.items[1]!.media.url, "https://example.com/another.png");
+          assert.strictEqual(gallery.items[1]!.description, "A description");
+        });
+
+        it("replaces placeholders in media gallery item URLs", () => {
+          const article = createArticle({
+            img: "https://example.com/dynamic.png",
+            desc: "Dynamic description",
+          });
+          const payloads = generateDiscordPayloads(article, {
+            componentsV2: [
+              {
+                type: "CONTAINER",
+                components: [
+                  {
+                    type: "MEDIA_GALLERY",
+                    items: [
+                      { media: { url: "{{img}}" }, description: "{{desc}}" },
+                    ],
+                  },
+                ],
+              },
+            ],
+          });
+
+          assert.strictEqual(payloads.length, 1);
+          const container = payloads[0]!.components![0] as { components: Array<{ items: Array<{ media: { url: string }; description?: string }> }> };
+          const gallery = container.components[0]!;
+          assert.strictEqual(gallery.items.length, 1);
+          assert.strictEqual(gallery.items[0]!.media.url, "https://example.com/dynamic.png");
+          assert.strictEqual(gallery.items[0]!.description, "Dynamic description");
+        });
+
+        it("encodes spaces in media gallery URLs", () => {
+          const article = createArticle({
+            img: "https://example.com/image with spaces.png",
+          });
+          const payloads = generateDiscordPayloads(article, {
+            componentsV2: [
+              {
+                type: "CONTAINER",
+                components: [
+                  {
+                    type: "MEDIA_GALLERY",
+                    items: [{ media: { url: "{{img}}" } }],
+                  },
+                ],
+              },
+            ],
+          });
+
+          const container = payloads[0]!.components![0] as { components: Array<{ items: Array<{ media: { url: string } }> }> };
+          const gallery = container.components[0]!;
+          assert.strictEqual(gallery.items[0]!.media.url, "https://example.com/image%20with%20spaces.png");
+        });
+
+        it("preserves spoiler flag on media gallery items", () => {
+          const article = createArticle({ img: "https://example.com/spoiler.png" });
+          const payloads = generateDiscordPayloads(article, {
+            componentsV2: [
+              {
+                type: "CONTAINER",
+                components: [
+                  {
+                    type: "MEDIA_GALLERY",
+                    items: [{ media: { url: "{{img}}" }, spoiler: true }],
+                  },
+                ],
+              },
+            ],
+          });
+
+          const container = payloads[0]!.components![0] as { components: Array<{ items: Array<{ spoiler?: boolean }> }> };
+          const gallery = container.components[0]!;
+          assert.strictEqual(gallery.items[0]!.spoiler, true);
+        });
       });
 
       it("silently prefers V2 over V1 when both are provided", () => {
