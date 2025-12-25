@@ -310,7 +310,17 @@ export class FeedFetcherController {
       });
     }
 
-    // If there's no text, response must be fetched to be cached
+    // If there's no request with a response body, try to get latest non-304 request
+    // (this will return errors like SSL certificate issues to the user)
+    if (!latestRequest) {
+      latestRequest = await this.feedFetcherService.getLatestRequestNon304({
+        url: data.url,
+        lookupKey: data.lookupDetails?.key,
+      });
+    }
+
+    // Only fetch fresh if there's no non-304 request
+    // (meaning either all requests are 304, or there are no requests at all)
     if (!latestRequest) {
       const savedData = await this.feedFetcherService.fetchAndSaveResponse(
         data.url,

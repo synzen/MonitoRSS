@@ -176,6 +176,50 @@ export class FeedFetcherService {
     return { request, decodedResponseText: '' };
   }
 
+  async getLatestRequestNon304({
+    url,
+    lookupKey,
+  }: {
+    url: string;
+    lookupKey: string | undefined;
+  }): Promise<{
+    request: Request;
+    decodedResponseText: string | null | undefined;
+  } | null> {
+    const request = await this.partitionedRequestsStore.getLatestRequestNon304(
+      lookupKey || url,
+    );
+
+    if (!request) {
+      return null;
+    }
+
+    if (request.response?.redisCacheKey || request.response?.content) {
+      let compressedText: string | null = null;
+
+      if (request.response.content) {
+        compressedText = request.response.content;
+      } else if (request.response.redisCacheKey) {
+        compressedText = await this.cacheStorageService.getFeedHtmlContent({
+          key: request.response.redisCacheKey,
+        });
+      }
+
+      const text = compressedText
+        ? (
+            await inflatePromise(Buffer.from(compressedText, 'base64'))
+          ).toString()
+        : '';
+
+      return {
+        request,
+        decodedResponseText: text,
+      };
+    }
+
+    return { request, decodedResponseText: '' };
+  }
+
   /**
    * Decode compressed response content from a request.
    * Used by delivery preview to get the body from any request status.
