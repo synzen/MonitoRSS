@@ -504,7 +504,7 @@ describe("article-parser", () => {
       assert.strictEqual(flattenedArticle[`b${DL}c${DL}d${DL}e`], dayjs(article.b.c.d.e).tz(dateTimezone).format());
     });
 
-    it("falls back to UTC for invalid timezones", () => {
+    it("falls back to UTC for invalid timezones (non-ASCII)", () => {
       const date = new Date("2024-01-15T12:00:00Z");
       const article = {
         id: "hello world",
@@ -518,6 +518,26 @@ describe("article-parser", () => {
         formatOptions: {
           dateFormat: undefined,
           dateTimezone: invalidTimezone,
+          dateLocale: undefined,
+        },
+        useParserRules: [],
+      });
+
+      // Should fall back to UTC instead of throwing
+      assert.strictEqual(flattenedArticle.a, dayjs(date).utc().locale("en").format());
+    });
+
+    it("falls back to UTC for invalid timezones (invalid IANA name)", () => {
+      const date = new Date("2024-01-15T12:00:00Z");
+      const article = {
+        id: "hello world",
+        a: date,
+      };
+
+      const flattenedArticle = flattenArticle(article, {
+        formatOptions: {
+          dateFormat: undefined,
+          dateTimezone: "Invalid/Timezone",
           dateLocale: undefined,
         },
         useParserRules: [],

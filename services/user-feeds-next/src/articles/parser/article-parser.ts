@@ -83,15 +83,18 @@ export function flattenArticle(
     }
 
     if (value instanceof Date) {
-      const useTimezone = options.formatOptions?.dateTimezone || "UTC";
+      const requestedTimezone = options.formatOptions?.dateTimezone || "UTC";
       let dateVal;
 
       try {
-        dateVal = dayjs(value).tz(useTimezone);
+        // eslint-disable-next-line no-control-regex
+        if (/[^\x00-\x7F]/.test(requestedTimezone)) {
+          // Non-ASCII characters (e.g., Unicode minus) aren't valid in timezones
+          throw new Error("Invalid timezone");
+        }
+        dateVal = dayjs(value).tz(requestedTimezone);
       } catch {
-        // Invalid timezone (e.g., Unicode minus character instead of ASCII hyphen)
-        // Fall back to UTC
-        logger.debug(`Invalid timezone "${useTimezone}", falling back to UTC`);
+        logger.debug(`Invalid timezone "${requestedTimezone}", falling back to UTC`);
         dateVal = dayjs(value).utc();
       }
 
