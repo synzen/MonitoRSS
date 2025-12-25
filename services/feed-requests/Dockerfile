@@ -27,10 +27,10 @@ RUN curl -sf https://gobinaries.com/tj/node-prune | sh
 RUN npm prune --production
 RUN /usr/local/bin/node-prune
 
-FROM node:22-alpine AS prod
+FROM node:22-slim AS prod
 
-# Alpine has a minimal CA bundle; add full certs to avoid SSL verification errors
-RUN apk --no-cache add ca-certificates && update-ca-certificates
+# Slim image doesn't include CA certs; install them for sites like apps.usfa.fema.gov
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
 WORKDIR /usr/src/app
