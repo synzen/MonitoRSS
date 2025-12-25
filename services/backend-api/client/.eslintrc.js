@@ -6,7 +6,6 @@ module.exports = {
     "airbnb",
     "airbnb-typescript",
     "plugin:prettier/recommended",
-    "plugin:storybook/recommended"
   ],
   parserOptions: {
     project: "./tsconfig.eslint.json",
