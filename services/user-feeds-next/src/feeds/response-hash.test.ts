@@ -12,7 +12,7 @@ import {
   type ArticleFieldStore,
 } from "../articles/comparison";
 
-describe("response-hash", { concurrency: true }, () => {
+describe("response-hash", () => {
   describe("inMemoryResponseHashStore", () => {
     beforeEach(() => {
       clearResponseHashStore();

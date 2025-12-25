@@ -14,7 +14,7 @@ import {
 } from "../interfaces/feed-retry-store";
 import { MessageBrokerQueue, FeedRejectedDisabledCode } from "../../shared/constants";
 
-describe("Feed Retry Store", { concurrency: true }, () => {
+describe("Feed Retry Store", () => {
   describe("createInMemoryFeedRetryStore", () => {
     let store: FeedRetryStore;
 

@@ -10,7 +10,7 @@ import {
   type Article,
 } from ".";
 
-describe("chunkArray", { concurrency: true }, () => {
+describe("chunkArray", () => {
   it("splits array into chunks of specified size", () => {
     const arr = [1, 2, 3, 4, 5, 6, 7];
     const result = chunkArray(arr, 3);
@@ -51,7 +51,7 @@ describe("chunkArray", { concurrency: true }, () => {
   });
 });
 
-describe("injectExternalContent", { concurrency: true }, () => {
+describe("injectExternalContent", () => {
   const createArticle = (
     id: string,
     flattened: Record<string, string>

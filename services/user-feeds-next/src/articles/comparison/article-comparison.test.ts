@@ -23,7 +23,7 @@ function createArticle(
   };
 }
 
-describe("article-comparison", { concurrency: true }, () => {
+describe("article-comparison", () => {
   beforeEach(() => {
     clearInMemoryStore();
   });

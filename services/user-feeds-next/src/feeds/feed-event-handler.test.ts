@@ -64,7 +64,7 @@ function createMockPublisher(): {
   return { publisher, messages };
 }
 
-describe("feed-event-handler", { concurrency: true }, () => {
+describe("feed-event-handler", () => {
   describe("handleArticleDeliveryResult", () => {
     it("does not emit rejection event for successful delivery", async () => {
       const { publisher, messages } = createMockPublisher();

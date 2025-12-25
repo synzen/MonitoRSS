@@ -29,7 +29,7 @@ function createArticle(flattened: Record<string, string>): Article {
   };
 }
 
-describe("article-filters", { concurrency: true }, () => {
+describe("article-filters", () => {
   describe("getArticleFilterResults", () => {
     it("returns true for null expression", () => {
       const article = createArticle({ title: "Hello" });

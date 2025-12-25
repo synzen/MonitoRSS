@@ -37,7 +37,7 @@ function createArticle(
   };
 }
 
-describe("generateDeliveryPreview", { concurrency: true }, () => {
+describe("generateDeliveryPreview", () => {
   beforeEach(() => {
     clearInMemoryStore();
   });
@@ -419,7 +419,7 @@ describe("generateDeliveryPreview", { concurrency: true }, () => {
   });
 });
 
-describe("generateDeliveryPreview (batch)", { concurrency: true }, () => {
+describe("generateDeliveryPreview (batch)", () => {
   beforeEach(() => {
     clearInMemoryStore();
   });
@@ -553,7 +553,7 @@ describe("generateDeliveryPreview (batch)", { concurrency: true }, () => {
   });
 });
 
-describe("Aggregate outcome computation", { concurrency: true }, () => {
+describe("Aggregate outcome computation", () => {
   beforeEach(() => {
     clearInMemoryStore();
   });
@@ -742,7 +742,7 @@ describe("Aggregate outcome computation", { concurrency: true }, () => {
   });
 });
 
-describe("Multiple mediums with different outcomes", { concurrency: true }, () => {
+describe("Multiple mediums with different outcomes", () => {
   beforeEach(() => {
     clearInMemoryStore();
   });

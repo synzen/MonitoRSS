@@ -51,7 +51,7 @@ const SAMPLE_ATOM = `<?xml version="1.0" encoding="UTF-8"?>
   </entry>
 </feed>`;
 
-describe("article-parser", { concurrency: true }, () => {
+describe("article-parser", () => {
   describe("parseArticlesFromXml", () => {
     it("parses RSS feed correctly", async () => {
       const result = await parseArticlesFromXml(SAMPLE_RSS);

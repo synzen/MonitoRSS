@@ -2,7 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert";
 import { replaceTemplateString } from ".";
 
-describe("replaceTemplateString", { concurrency: true }, () => {
+describe("replaceTemplateString", () => {
   it("returns the input if the string is falsy", () => {
     const str = replaceTemplateString(
       {

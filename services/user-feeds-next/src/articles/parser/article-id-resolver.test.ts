@@ -2,7 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert";
 import { ArticleIDResolver } from ".";
 
-describe("ArticleIDResolver", { concurrency: true }, () => {
+describe("ArticleIDResolver", () => {
   const idTypeNames = ["guid", "pubdate", "title"];
   // Expected ID types include single types and merged pairs: guid, pubdate, title, guid,pubdate, guid,title, pubdate,title
   const expectedIDTypes = [

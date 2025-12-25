@@ -13,7 +13,7 @@ import {
 import { DeliveryPreviewStage, DeliveryPreviewStageStatus } from "./types";
 import type { DeliveryPreviewStageResult } from "./types";
 
-describe("delivery-preview-context", { concurrency: true }, () => {
+describe("delivery-preview-context", () => {
   beforeEach(() => {
     clearDeliveryPreviewContext();
   });

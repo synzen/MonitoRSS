@@ -9,7 +9,7 @@ import {
   generateDeliveryId,
 } from "../interfaces/delivery-record-store";
 
-describe("Delivery Record Store", { concurrency: true }, () => {
+describe("Delivery Record Store", () => {
   describe("createInMemoryDeliveryRecordStore", () => {
     let store: ReturnType<typeof createInMemoryDeliveryRecordStore>;
 

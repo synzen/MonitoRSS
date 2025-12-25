@@ -31,7 +31,7 @@ function createArticle(
   };
 }
 
-describe("parsed-articles-cache", { concurrency: true }, () => {
+describe("parsed-articles-cache", () => {
   beforeEach(() => {
     clearInMemoryParsedArticlesCache();
   });

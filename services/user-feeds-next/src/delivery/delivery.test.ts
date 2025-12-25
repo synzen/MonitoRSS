@@ -61,7 +61,7 @@ function createErrorResult(message: string): JobResponseError {
   };
 }
 
-describe("delivery", { concurrency: true }, () => {
+describe("delivery", () => {
   describe("processDeliveryResult", () => {
     describe("error state (producer-level error)", () => {
       it("returns Failed status with Internal error code", () => {
@@ -486,7 +486,7 @@ describe("delivery", { concurrency: true }, () => {
 
 import { DeliveryPreviewStage, DeliveryPreviewStageStatus, type DeliveryPreviewStageResult } from "../delivery-preview";
 
-describe("diagnostic recording in delivery", { concurrency: true }, () => {
+describe("diagnostic recording in delivery", () => {
   it("records FeedRateLimit diagnostic when feed rate limit is checked", async () => {
     const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
       await import("../delivery-preview");
@@ -661,7 +661,7 @@ describe("diagnostic recording in delivery", { concurrency: true }, () => {
   });
 });
 
-describe("diagnostic recording during deliverArticles execution", { concurrency: true }, () => {
+describe("diagnostic recording during deliverArticles execution", () => {
   it("records MediumFilter diagnostic when medium filter is evaluated during delivery", async () => {
     const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
       await import("../delivery-preview");
