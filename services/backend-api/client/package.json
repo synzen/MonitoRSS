@@ -51,6 +51,7 @@
     "@testing-library/dom": "^8.18.1",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/qs": "^6.9.7",
     "@types/react": "^18.0.21",
     "@types/react-color": "^3.0.6",

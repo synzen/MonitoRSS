@@ -1,6 +1,6 @@
 # Story 1.4: Template Gallery Modal
 
-Status: ready-for-dev
+Status: done
 
 ## Dependencies
 
@@ -50,87 +50,87 @@ So that I can browse templates visually and see exactly how my messages will loo
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Create TemplateGalleryModal component structure** (AC: #1)
-  - [ ] Create directory: `services/backend-api/client/src/features/templates/components/TemplateGalleryModal/`
-  - [ ] Create `index.tsx` file
-  - [ ] Define `TemplateGalleryModalProps` interface with required props
-  - [ ] Update `components/index.ts` barrel export to include TemplateGalleryModal
+- [x] **Task 1: Create TemplateGalleryModal component structure** (AC: #1)
+  - [x] Create directory: `services/backend-api/client/src/features/templates/components/TemplateGalleryModal/`
+  - [x] Create `index.tsx` file
+  - [x] Define `TemplateGalleryModalProps` interface with required props
+  - [x] Update `components/index.ts` barrel export to include TemplateGalleryModal
 
-- [ ] **Task 2: Implement modal container using Chakra Modal** (AC: #1, #8)
-  - [ ] Use Chakra `Modal` component with `isOpen` and `onClose` props
-  - [ ] Set modal size: `size={{ base: "full", lg: "6xl" }}` (full-screen mobile, 6xl desktop)
-  - [ ] Add `ModalOverlay` with default dimmed background
-  - [ ] Configure `closeOnOverlayClick={true}` and `closeOnEsc={true}`
-  - [ ] Implement `isCentered={true}` for desktop positioning
+- [x] **Task 2: Implement modal container using Chakra Modal** (AC: #1, #8)
+  - [x] Use Chakra `Modal` component with `isOpen` and `onClose` props
+  - [x] Set modal size: `size={{ base: "full", lg: "6xl" }}` (full-screen mobile, 6xl desktop)
+  - [x] Add `ModalOverlay` with default dimmed background
+  - [x] Configure `closeOnOverlayClick={true}` and `closeOnEsc={true}`
+  - [x] Implement `isCentered={true}` for desktop positioning
 
-- [ ] **Task 3: Implement ModalHeader** (AC: #1)
-  - [ ] Add `ModalHeader` with text "Choose a Template"
-  - [ ] Add `ModalCloseButton` in top-right corner
-  - [ ] Use consistent typography with existing MonitoRSS modals
+- [x] **Task 3: Implement ModalHeader** (AC: #1)
+  - [x] Add `ModalHeader` with text "Choose a Template"
+  - [x] Add `ModalCloseButton` in top-right corner
+  - [x] Use consistent typography with existing MonitoRSS modals
 
-- [ ] **Task 4: Implement responsive layout for ModalBody** (AC: #2, #3)
-  - [ ] Use Chakra `Grid` or `Flex` with responsive direction
-  - [ ] Desktop (lg+): `gridTemplateColumns="1fr 400px"` (gallery left, preview right)
-  - [ ] Tablet/Mobile (<lg): `gridTemplateColumns="1fr"` (stacked vertically)
-  - [ ] Set `gap={6}` between grid and preview sections
-  - [ ] Enable scrolling within ModalBody for long content
+- [x] **Task 4: Implement responsive layout for ModalBody** (AC: #2, #3)
+  - [x] Use Chakra `Grid` or `Flex` with responsive direction
+  - [x] Desktop (lg+): `gridTemplateColumns="1fr 400px"` (gallery left, preview right)
+  - [x] Tablet/Mobile (<lg): `gridTemplateColumns="1fr"` (stacked vertically)
+  - [x] Set `gap={6}` between grid and preview sections
+  - [x] Enable scrolling within ModalBody for long content
 
-- [ ] **Task 5: Implement template selection grid using RadioGroup** (AC: #4, #5)
-  - [ ] Use Chakra `useRadioGroup` hook for selection state management
-  - [ ] Wrap grid in `<fieldset>` with visually hidden `<legend>Choose a template</legend>`
-  - [ ] Use `SimpleGrid` with responsive columns: `columns={{ base: 1, md: 2, lg: 3 }}`
-  - [ ] Map over templates array and render `TemplateCard` for each
-  - [ ] Pass `getRadioProps({ value: template.id, isDisabled })` to each TemplateCard
-  - [ ] Implement `onChange` handler to update selected template state
+- [x] **Task 5: Implement template selection grid using RadioGroup** (AC: #4, #5)
+  - [x] Use Chakra `useRadioGroup` hook for selection state management
+  - [x] Wrap grid in `<fieldset>` with visually hidden `<legend>Choose a template</legend>`
+  - [x] Use `SimpleGrid` with responsive columns: `columns={{ base: 1, md: 2, lg: 3 }}`
+  - [x] Map over templates array and render `TemplateCard` for each
+  - [x] Pass `getRadioProps({ value: template.id, isDisabled })` to each TemplateCard
+  - [x] Implement `onChange` handler to update selected template state
 
-- [ ] **Task 6: Implement feed capability filtering** (AC: #5)
-  - [ ] Accept `feedFields: string[]` prop for available article fields
-  - [ ] Create `isTemplateCompatible(template: Template, feedFields: string[]): boolean` utility
-  - [ ] Mark templates as disabled if `template.requiredFields` not satisfied by feedFields
-  - [ ] Pass `isDisabled` to TemplateCard via `getRadioProps`
+- [x] **Task 6: Implement feed capability filtering** (AC: #5)
+  - [x] Accept `feedFields: string[]` prop for available article fields
+  - [x] Create `isTemplateCompatible(template: Template, feedFields: string[]): boolean` utility
+  - [x] Mark templates as disabled if `template.requiredFields` not satisfied by feedFields
+  - [x] Pass `isDisabled` to TemplateCard via `getRadioProps`
 
-- [ ] **Task 7: Implement preview panel** (AC: #5, #7)
-  - [ ] Create preview panel Box with `minHeight={{ base: "200px", lg: "auto" }}`
-  - [ ] Use `DiscordMessageDisplay` component (from Story 1.2) for rendering
-  - [ ] Pass preview data from API response to DiscordMessageDisplay
-  - [ ] Show Skeleton loading state while preview is fetching
-  - [ ] Display placeholder message when no template selected: "Select a template to preview"
+- [x] **Task 7: Implement preview panel** (AC: #5, #7)
+  - [x] Create preview panel Box with `minHeight={{ base: "200px", lg: "auto" }}`
+  - [x] Use `DiscordMessageDisplay` component (from Story 1.2) for rendering
+  - [x] Pass preview data from API response to DiscordMessageDisplay
+  - [x] Show Skeleton loading state while preview is fetching
+  - [x] Display placeholder message when no template selected: "Select a template to preview"
 
-- [ ] **Task 8: Implement preview API integration** (AC: #5, #7)
-  - [ ] Use existing preview API endpoint for generating template preview
-  - [ ] Create preview hook or use existing `useConnectionPreview` pattern
-  - [ ] Trigger preview fetch when template or article selection changes
-  - [ ] Handle loading, success, and error states
-  - [ ] Convert template.messageComponent to preview API payload using `convertMessageBuilderStateToConnectionPreviewInput`
+- [x] **Task 8: Implement preview API integration** (AC: #5, #7)
+  - [x] Use existing preview API endpoint for generating template preview
+  - [x] Create preview hook or use existing `useConnectionPreview` pattern
+  - [x] Trigger preview fetch when template or article selection changes
+  - [x] Handle loading, success, and error states
+  - [x] Convert template.messageComponent to preview API payload using `convertMessageBuilderStateToConnectionPreviewInput`
 
-- [ ] **Task 9: Implement article selector integration** (AC: #6)
-  - [ ] Accept `articles` prop with available articles for preview
-  - [ ] Accept `selectedArticleId` and `onArticleChange` props for controlled selection
-  - [ ] Add article selector UI above or near preview panel
-  - [ ] Reuse existing article selector component or pattern from MessageBuilder
-  - [ ] Update preview when article selection changes
+- [x] **Task 9: Implement article selector integration** (AC: #6)
+  - [x] Accept `articles` prop with available articles for preview
+  - [x] Accept `selectedArticleId` and `onArticleChange` props for controlled selection
+  - [x] Add article selector UI above or near preview panel
+  - [x] Reuse existing article selector component or pattern from MessageBuilder
+  - [x] Update preview when article selection changes
 
-- [ ] **Task 10: Implement ModalFooter with action buttons** (AC: #8)
-  - [ ] Add `ModalFooter` with button layout
-  - [ ] Follow button hierarchy: Tertiary left, Secondary center-right, Primary right
-  - [ ] Add placeholder buttons (actual actions will be context-dependent in Stories 2.1/3.1)
-  - [ ] Example layout: `[Customize manually]  [Cancel]  [Primary Action]`
-  - [ ] Style "Customize manually" as link/ghost variant
-  - [ ] Style "Cancel" as outline/secondary variant
+- [x] **Task 10: Implement ModalFooter with action buttons** (AC: #8)
+  - [x] Add `ModalFooter` with button layout
+  - [x] Follow button hierarchy: Tertiary left, Secondary center-right, Primary right
+  - [x] Add placeholder buttons (actual actions will be context-dependent in Stories 2.1/3.1)
+  - [x] Example layout: `[Customize manually]  [Cancel]  [Primary Action]`
+  - [x] Style "Customize manually" as link/ghost variant
+  - [x] Style "Cancel" as outline/secondary variant
 
-- [ ] **Task 11: Add focus management and accessibility** (AC: #8)
-  - [ ] Chakra Modal handles focus trap automatically
-  - [ ] Chakra Modal handles focus return on close automatically
-  - [ ] Add `aria-labelledby` pointing to modal header
-  - [ ] Ensure template grid fieldset is properly announced
-  - [ ] Add `aria-busy="true"` to preview panel during loading
-  - [ ] Add `aria-live="polite"` region for preview updates
+- [x] **Task 11: Add focus management and accessibility** (AC: #8)
+  - [x] Chakra Modal handles focus trap automatically
+  - [x] Chakra Modal handles focus return on close automatically
+  - [x] Add `aria-labelledby` pointing to modal header
+  - [x] Ensure template grid fieldset is properly announced
+  - [x] Add `aria-busy="true"` to preview panel during loading
+  - [x] Add `aria-live="polite"` region for preview updates
 
-- [ ] **Task 12: Export and integrate** (AC: #1)
-  - [ ] Export TemplateGalleryModal from `components/index.ts`
-  - [ ] Export from feature barrel file `src/features/templates/index.ts`
-  - [ ] Export utility functions (isTemplateCompatible) from appropriate location
-  - [ ] Verify TypeScript compiles without errors
+- [x] **Task 12: Export and integrate** (AC: #1)
+  - [x] Export TemplateGalleryModal from `components/index.ts`
+  - [x] Export from feature barrel file `src/features/templates/index.ts`
+  - [x] Export utility functions (isTemplateCompatible) from appropriate location
+  - [x] Verify TypeScript compiles without errors
 
 ## Dev Notes
 
@@ -719,21 +719,21 @@ Recent commits show:
 
 Before marking this story complete, verify:
 
-- [ ] TypeScript compiles without errors (`npm run type-check`)
-- [ ] TemplateGalleryModal is exported from `src/features/templates/index.ts`
-- [ ] Modal opens and closes correctly via all methods (X, ESC, overlay, props)
-- [ ] Template grid displays using TemplateCard components
-- [ ] Template selection updates via RadioGroup (arrow keys work)
-- [ ] Preview panel shows DiscordMessageDisplay with fetched data
-- [ ] Preview shows Skeleton while loading
-- [ ] Preview updates when template or article selection changes
-- [ ] Disabled templates show "Needs articles" badge and are not selectable
-- [ ] Responsive layout works: side-by-side on desktop, stacked on mobile
-- [ ] Focus is trapped within modal
-- [ ] Screen reader announces modal title and radio group
-- [ ] Button hierarchy follows pattern: tertiary left, secondary center, primary right
-- [ ] Article selector is functional and updates preview
-- [ ] Empty feed state shows info banner and disables non-default templates
+- [x] TypeScript compiles without errors (`npm run type-check`)
+- [x] TemplateGalleryModal is exported from `src/features/templates/index.ts`
+- [x] Modal opens and closes correctly via all methods (X, ESC, overlay, props)
+- [x] Template grid displays using TemplateCard components
+- [x] Template selection updates via RadioGroup (arrow keys work)
+- [x] Preview panel shows DiscordMessageDisplay with fetched data
+- [x] Preview shows Skeleton while loading
+- [x] Preview updates when template or article selection changes
+- [x] Disabled templates show "Needs articles" badge and are not selectable
+- [x] Responsive layout works: side-by-side on desktop, stacked on mobile
+- [x] Focus is trapped within modal
+- [x] Screen reader announces modal title and radio group
+- [x] Button hierarchy follows pattern: tertiary left, secondary center, primary right
+- [x] Article selector is functional and updates preview
+- [x] Empty feed state shows info banner and disables non-default templates
 
 ## Dev Agent Record
 
@@ -749,4 +749,18 @@ Before marking this story complete, verify:
 
 ### Completion Notes List
 
+- Implemented TemplateGalleryModal component with full acceptance criteria coverage
+- Component uses Chakra UI Modal, Grid, SimpleGrid, and useRadioGroup for accessible template selection
+- Preview panel integrates with existing preview API via useQuery and convertMessageBuilderStateToConnectionPreviewInput
+- Responsive layout: side-by-side on desktop (lg+), stacked on mobile/tablet
+- 45 tests passing covering rendering, modal behavior, template selection, feed filtering, article selection, action buttons, accessibility, preview states, and error handling
+- TypeScript compiles without errors
+- Exported from features/templates/index.ts and components/index.ts
+- Code review (2025-12-26): Added error state UI for preview API failures, added ESC key and overlay click tests, fixed act() warning in accessibility test
+
 ### File List
+
+- `services/backend-api/client/src/features/templates/components/TemplateGalleryModal/index.tsx` - Main component with preview error handling
+- `services/backend-api/client/src/features/templates/components/TemplateGalleryModal/TemplateGalleryModal.test.tsx` - Tests (45 tests)
+- `services/backend-api/client/src/features/templates/components/index.ts` - Updated barrel export
+- `services/backend-api/client/src/features/templates/index.ts` - Feature barrel export

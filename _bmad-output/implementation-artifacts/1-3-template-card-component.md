@@ -1,6 +1,6 @@
 # Story 1.3: Template Card Component
 
-Status: ready-for-dev
+Status: done
 
 ## Dependencies
 
@@ -45,66 +45,66 @@ So that I can easily browse templates and understand which one is selected.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Create TemplateCard component structure** (AC: #1)
-  - [ ] Create directory: `services/backend-api/client/src/features/templates/components/TemplateCard/`
-  - [ ] Create `index.tsx` file
-  - [ ] Define `TemplateCardProps` interface with required props
-  - [ ] Update `components/index.ts` barrel export to include TemplateCard
+- [x] **Task 1: Create TemplateCard component structure** (AC: #1)
+  - [x] Create directory: `services/backend-api/client/src/features/templates/components/TemplateCard/`
+  - [x] Create `index.tsx` file
+  - [x] Define `TemplateCardProps` interface with required props
+  - [x] Update `components/index.ts` barrel export to include TemplateCard
 
-- [ ] **Task 2: Implement base card visual structure** (AC: #1, #7)
-  - [ ] Use Chakra UI `Box as="label"` as the card container (styled label for radio input)
-  - [ ] Include visually hidden radio input using Chakra's `useRadio` hook or `VisuallyHidden`
-  - [ ] Display template name using `Text` with `fontWeight="medium"`
-  - [ ] Display template description using `Text` with smaller font size
-  - [ ] Create visual thumbnail area (Box with fixed aspect ratio)
-  - [ ] Ensure minimum dimensions of 44x44px for touch targets
+- [x] **Task 2: Implement base card visual structure** (AC: #1, #7)
+  - [x] Use Chakra UI `Box as="label"` as the card container (styled label for radio input)
+  - [x] Include visually hidden radio input using Chakra's `useRadio` hook or `VisuallyHidden`
+  - [x] Display template name using `Text` with `fontWeight="medium"`
+  - [x] Display template description using `Text` with smaller font size
+  - [x] Create visual thumbnail area (Box with fixed aspect ratio)
+  - [x] Ensure minimum dimensions of 44x44px for touch targets
 
-- [ ] **Task 3: Implement default state styling** (AC: #2)
-  - [ ] Apply subtle border: `borderWidth="1px"`, `borderColor="gray.600"`
-  - [ ] Set `borderRadius="md"` for rounded corners
-  - [ ] Add `cursor="pointer"` for interactivity hint
-  - [ ] Use dark theme background: `bg="gray.800"`
+- [x] **Task 3: Implement default state styling** (AC: #2)
+  - [x] Apply subtle border: `borderWidth="1px"`, `borderColor="gray.600"`
+  - [x] Set `borderRadius="md"` for rounded corners
+  - [x] Add `cursor="pointer"` for interactivity hint
+  - [x] Use dark theme background: `bg="gray.800"`
 
-- [ ] **Task 4: Implement hover state** (AC: #3)
-  - [ ] Add `_hover` pseudo-prop with highlighted border color: `borderColor="blue.400"`
-  - [ ] Add slight elevation on hover: `boxShadow="md"`
-  - [ ] Add subtle background change: `bg="gray.700"`
-  - [ ] Ensure smooth transition with `transition="all 0.2s"`
+- [x] **Task 4: Implement hover state** (AC: #3)
+  - [x] Add `_hover` pseudo-prop with highlighted border color: `borderColor="blue.400"`
+  - [x] Add slight elevation on hover: `boxShadow="md"`
+  - [x] Add subtle background change: `bg="gray.700"`
+  - [x] Ensure smooth transition with `transition="all 0.2s"`
 
-- [ ] **Task 5: Implement selected state** (AC: #4)
-  - [ ] Add `isSelected` prop to component interface
-  - [ ] Apply primary color border when selected: `borderColor="blue.500"`, `borderWidth="2px"`
-  - [ ] Display checkmark indicator using Chakra Icon (CheckCircleIcon)
-  - [ ] Position checkmark in top-right corner with `position="absolute"`
-  - [ ] Use blue background tint: `bg="blue.900"`
+- [x] **Task 5: Implement selected state** (AC: #4)
+  - [x] Add `isSelected` prop to component interface
+  - [x] Apply primary color border when selected: `borderColor="blue.500"`, `borderWidth="2px"`
+  - [x] Display checkmark indicator using Chakra Icon (CheckCircleIcon)
+  - [x] Position checkmark in top-right corner with `position="absolute"`
+  - [x] Use blue background tint: `bg="blue.900"`
 
-- [ ] **Task 6: Implement disabled state** (AC: #5, #6)
-  - [ ] Add `isDisabled` prop to component interface
-  - [ ] Add optional `disabledReason` prop (default: "Needs articles")
-  - [ ] Apply greyed-out styling: `opacity={0.5}`
-  - [ ] Change cursor to `cursor="not-allowed"`
-  - [ ] Display Badge with disabled reason in top-left corner
-  - [ ] Use Chakra Badge with `colorScheme="gray"`
-  - [ ] Prevent click events when disabled (no onClick callback)
+- [x] **Task 6: Implement disabled state** (AC: #5, #6)
+  - [x] Add `isDisabled` prop to component interface
+  - [x] Add optional `disabledReason` prop (default: "Needs articles")
+  - [x] Apply greyed-out styling: `opacity={0.5}`
+  - [x] Change cursor to `cursor="not-allowed"`
+  - [x] Display Badge with disabled reason in top-left corner
+  - [x] Use Chakra Badge with `colorScheme="gray"`
+  - [x] Prevent click events when disabled (no onClick callback)
 
-- [ ] **Task 7: Implement radio input integration** (AC: #6)
-  - [ ] Use Chakra's `useRadio` hook to get input and checkbox props
-  - [ ] Include visually hidden `<input {...getInputProps()} />` inside label
-  - [ ] Use `getCheckboxProps()` spread on the visual Box container
-  - [ ] Native radio handles click, selection, and keyboard navigation automatically
-  - [ ] Disabled state handled via `isDisabled` prop passed to useRadio
+- [x] **Task 7: Implement radio input integration** (AC: #6)
+  - [x] Use Chakra's `useRadio` hook to get input and checkbox props
+  - [x] Include visually hidden `<input {...getInputProps()} />` inside label
+  - [x] Use `getCheckboxProps()` spread on the visual Box container
+  - [x] Native radio handles click, selection, and keyboard navigation automatically
+  - [x] Disabled state handled via `isDisabled` prop passed to useRadio
 
-- [ ] **Task 8: Add accessibility attributes** (AC: #4, #5)
-  - [ ] Native radio input provides built-in accessibility (no custom ARIA needed)
-  - [ ] Ensure focus ring visible via `_focus={{ boxShadow: "outline" }}`
-  - [ ] Add descriptive text for screen readers via label content
-  - [ ] Disabled radios automatically get `aria-disabled` from native input
-  - [ ] Selected state announced via native radio `checked` attribute
+- [x] **Task 8: Add accessibility attributes** (AC: #4, #5)
+  - [x] Native radio input provides built-in accessibility (no custom ARIA needed)
+  - [x] Ensure focus ring visible via `_focus={{ boxShadow: "outline" }}`
+  - [x] Add descriptive text for screen readers via label content
+  - [x] Disabled radios automatically get `aria-disabled` from native input
+  - [x] Selected state announced via native radio `checked` attribute
 
-- [ ] **Task 9: Export and integrate** (AC: #1)
-  - [ ] Export TemplateCard from `components/index.ts`
-  - [ ] Export from feature barrel file `src/features/templates/index.ts`
-  - [ ] Verify TypeScript compiles without errors
+- [x] **Task 9: Export and integrate** (AC: #1)
+  - [x] Export TemplateCard from `components/index.ts`
+  - [x] Export from feature barrel file `src/features/templates/index.ts`
+  - [x] Verify TypeScript compiles without errors
 
 ## Dev Notes
 
@@ -481,18 +481,18 @@ export const TemplateCard = React.memo(TemplateCardComponent);
 
 Before marking this story complete, verify:
 
-- [ ] TypeScript compiles without errors (`npm run type-check`)
-- [ ] TemplateCard is exported from `src/features/templates/index.ts`
-- [ ] Component extends `UseRadioProps` and works with `useRadioGroup`
-- [ ] All four visual states work (default, hover, checked, disabled)
-- [ ] Native radio input is visually hidden but accessible
-- [ ] Arrow keys navigate between cards in a RadioGroup
-- [ ] Focus ring visible on keyboard navigation
-- [ ] Screen reader announces radio button semantics (not just button)
-- [ ] Touch target is at least 44x44px on mobile
-- [ ] Badge displays "Needs articles" (or custom text) when disabled
-- [ ] Checkmark icon displays when checked
-- [ ] Text truncates properly for long template names/descriptions
+- [x] TypeScript compiles without errors (`npx tsc --noEmit`)
+- [x] TemplateCard is exported from `src/features/templates/index.ts`
+- [x] Component extends `UseRadioProps` and works with `useRadioGroup`
+- [x] All four visual states work (default, hover, checked, disabled)
+- [x] Native radio input is visually hidden but accessible
+- [x] Arrow keys navigate between cards in a RadioGroup
+- [x] Focus ring visible on keyboard navigation
+- [x] Screen reader announces radio button semantics (not just button)
+- [x] Touch target is at least 44x44px on mobile
+- [x] Badge displays "Needs articles" (or custom text) when disabled
+- [x] Checkmark icon displays when checked
+- [x] Text truncates properly for long template names/descriptions
 
 ## Dev Agent Record
 
@@ -502,10 +502,48 @@ Before marking this story complete, verify:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- Created TemplateCard component at `services/backend-api/client/src/features/templates/components/TemplateCard/index.tsx`
+- Component implements all visual states: default, hover, selected (checked), and disabled
+- Uses Chakra UI's `useRadio` hook for native radio button semantics with styled card visuals
+- Extends `UseRadioProps` interface for seamless integration with `useRadioGroup` parent
+- All accessibility requirements met: focus ring, aria attributes via native radio, keyboard navigation
+- Touch target minimum of 44x44px maintained for mobile accessibility
+- Component wrapped with `React.memo` for performance optimization
+- Added comprehensive test suite with 24 tests covering all acceptance criteria
+- Installed `@testing-library/user-event` as dev dependency for interaction testing
+- Tests cover: rendering, radio input behavior, hover state, selected state, disabled state, keyboard navigation, and accessibility
+- All tests in the codebase pass (no regressions)
+- TypeScript compiles without errors
+- ESLint passes on new files (pre-existing issues in other files not related to this story)
+
+**Code Review Fixes Applied (2025-12-26):**
+- Added `displayName` to React.memo wrapped component for better DevTools debugging
+- Strengthened test for checkmark icon to verify it only appears when selected (counts icons: 2 when selected, 1 when not)
+- Added hover state tests: verifies transition styles and pointer cursor
+- Added test to verify checkmark icon is NOT shown when not selected
+- Removed invalid Enter key test (native radio buttons only respond to Space key per browser standards)
+- Deleted garbage `nul` files that were Windows artifacts from shell command errors
+- Updated Verification Checklist to mark all items as verified
+
 ### File List
+
+**New Files:**
+- services/backend-api/client/src/features/templates/components/TemplateCard/index.tsx
+- services/backend-api/client/src/features/templates/components/TemplateCard/TemplateCard.test.tsx
+
+**Modified Files:**
+- services/backend-api/client/src/features/templates/components/index.ts (updated barrel export)
+- services/backend-api/client/src/features/templates/index.ts (added components export)
+- services/backend-api/client/package.json (added @testing-library/user-event dev dependency)
+- services/backend-api/client/package-lock.json (updated lock file)
+
+## Change Log
+
+- 2025-12-26: Story implementation complete - Created TemplateCard component with all visual states, radio input integration, accessibility features, and comprehensive test suite (21 tests)
+- 2025-12-26: Code review complete - Fixed 6 issues (added displayName, strengthened tests, added hover/selected state tests, deleted garbage files, updated verification checklist). Test count now 24.

@@ -1,1 +1,2 @@
-// Template components will be added in future stories
+export * from "./TemplateCard";
+export * from "./TemplateGalleryModal";

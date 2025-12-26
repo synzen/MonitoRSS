@@ -42,8 +42,8 @@ development_status:
   epic-1: in-progress
   1-1-template-types-and-constants: done
   1-2-shared-discord-message-display-component: done
-  1-3-template-card-component: ready-for-dev
-  1-4-template-gallery-modal: ready-for-dev
+  1-3-template-card-component: done
+  1-4-template-gallery-modal: done
   1-5-accessible-template-selection: ready-for-dev
   epic-1-retrospective: optional
 
