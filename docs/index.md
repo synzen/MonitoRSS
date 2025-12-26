@@ -61,12 +61,19 @@
 | [Architecture Overview](./architecture-overview.md) | High-level system design |
 | [Source Tree Analysis](./source-tree-analysis.md) | Codebase structure |
 
+### UX Specifications
+
+| Document | Description |
+|----------|-------------|
+| [Article Diagnostics UX](./article-diagnostics-ux-spec.md) | Article diagnostics feature UX spec |
+
 ### Development
 
 | Document | Description |
 |----------|-------------|
 | [Development Guide](./development-guide.md) | Setup and development workflow |
 | [Technology Stack](./technology-stack.md) | Technologies used |
+| [Project Context](./project_context.md) | AI implementation context, patterns, critical rules |
 
 ### Operations
 

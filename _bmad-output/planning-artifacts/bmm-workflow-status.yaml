@@ -1,0 +1,44 @@
+# BMM Workflow Status - MonitoRSS
+# Restored from existing documentation on 2025-12-26
+
+# STATUS DEFINITIONS:
+# ==================
+# Initial Status (before completion):
+#   - required: Must be completed to progress
+#   - optional: Can be completed but not required
+#   - recommended: Strongly suggested but not required
+#   - conditional: Required only if certain conditions met (e.g., if_has_ui)
+#
+# Completion Status:
+#   - {file-path}: File created/found (e.g., "docs/prd.md")
+#   - skipped: Optional/conditional workflow that was skipped
+
+generated: "2025-12-26"
+project: "MonitoRSS"
+project_type: "bmad-method"
+selected_track: "bmad-method"
+field_type: "brownfield"
+workflow_path: "{project-root}/_bmad/bmm/workflows/workflow-status/paths/method-brownfield.yaml"
+
+workflow_status:
+  # Phase 0: Documentation (Prerequisite for brownfield)
+  document-project: "docs/index.md"
+
+  # Phase 0: Discovery (Optional)
+  brainstorm-project: skipped
+  research: "docs/analysis/research/technical-template-systems-research-2025-12-13.md"
+  product-brief: skipped
+
+  # Phase 1: Planning
+  prd: "docs/prd.md"
+  create-ux-design: "docs/ux-design-specification.md"
+
+  # Phase 2: Solutioning
+  create-architecture: "docs/architecture.md"
+  create-epics-and-stories: "docs/epics.md"
+  test-design: "docs/test-design-system.md"
+  validate-architecture: skipped
+  implementation-readiness: "docs/implementation-readiness-report-2025-12-14.md"
+
+  # Phase 3: Implementation
+  sprint-planning: "_bmad-output/implementation-artifacts/sprint-status.yaml"
