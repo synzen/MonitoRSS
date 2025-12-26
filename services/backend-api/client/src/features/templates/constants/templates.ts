@@ -88,7 +88,7 @@ export const COMPACT_CARD_TEMPLATE: Template = {
   id: "compact-card",
   name: "Compact Card",
   description: "Modern card layout with thumbnail and read button",
-  requiredFields: [],
+  requiredFields: ["title"],
   messageComponent: {
     type: ComponentType.V2Root,
     id: "compact-card-root",

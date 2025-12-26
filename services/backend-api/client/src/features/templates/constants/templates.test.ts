@@ -60,8 +60,8 @@ describe("templates", () => {
   });
 
   describe("COMPACT_CARD_TEMPLATE", () => {
-    it("has empty requiredFields (works with any feed)", () => {
-      expect(COMPACT_CARD_TEMPLATE.requiredFields).toEqual([]);
+    it("requires title field", () => {
+      expect(COMPACT_CARD_TEMPLATE.requiredFields).toEqual(["title"]);
     });
 
     it("uses V2Root format", () => {

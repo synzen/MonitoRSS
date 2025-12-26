@@ -316,6 +316,14 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                         Preview requires a connection
                       </Text>
                     )}
+                  {!isActuallyLoading &&
+                    !isPreviewError &&
+                    previewMessages.length === 0 &&
+                    articles.length === 0 && (
+                      <Text color="gray.500" textAlign="center" py={8}>
+                        Preview will appear when your feed has articles
+                      </Text>
+                    )}
                 </Box>
               </Box>
             </GridItem>

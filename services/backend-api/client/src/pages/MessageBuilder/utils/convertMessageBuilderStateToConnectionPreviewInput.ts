@@ -1,5 +1,5 @@
 import { UserFeed } from "../../../features/feed";
-import { CreateDiscordChannelConnectionPreviewInput } from "../../../features/feedConnections";
+import { CreateDiscordChannelConnectionPreviewInput } from "../../../features/feedConnections/api/createDiscordChannelConnectionPreview";
 import { FeedDiscordChannelConnection } from "../../../types";
 import { DiscordButtonStyle } from "../constants/DiscordButtonStyle";
 import {

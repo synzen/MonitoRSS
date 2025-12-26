@@ -48,15 +48,15 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 2: New User Onboarding Flow
-  epic-2: backlog
-  2-1-template-selection-step-in-connection-flow: backlog
-  2-2-one-click-template-application: backlog
-  2-3-empty-feed-handling: backlog
-  2-4-test-send-and-completion: backlog
+  epic-2: in-progress
+  2-1-template-selection-step-in-connection-flow: done
+  2-2-one-click-template-application: ready-for-dev
+  2-3-empty-feed-handling: ready-for-dev
+  2-4-test-send-and-completion: ready-for-dev
   epic-2-retrospective: optional
 
   # Epic 3: Existing User Template Access
-  epic-3: backlog
-  3-1-templates-button-in-message-builder: backlog
+  epic-3: in-progress
+  3-1-templates-button-in-message-builder: ready-for-dev
   3-2-apply-template-to-existing-connection: backlog
   epic-3-retrospective: optional

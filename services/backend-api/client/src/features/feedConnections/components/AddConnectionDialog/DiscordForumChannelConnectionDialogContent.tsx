@@ -29,10 +29,21 @@ import {
   GetDiscordChannelType,
 } from "@/features/discordServers";
 import RouteParams from "../../../../types/RouteParams";
-import { useCreateDiscordChannelConnection, useUpdateDiscordChannelConnection } from "../../hooks";
+import {
+  useCreateDiscordChannelConnection,
+  useUpdateDiscordChannelConnection,
+  useConnectionTemplateSelection,
+  convertTemplateToUpdateDetails,
+} from "../../hooks";
 import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "../../../../components";
 import { FeedDiscordChannelConnection } from "../../../../types";
 import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
+import { TemplateGalleryModal } from "../../../templates/components/TemplateGalleryModal";
+import {
+  TEMPLATES,
+  DEFAULT_TEMPLATE,
+  getTemplateById,
+} from "../../../templates/constants/templates";
 
 const formSchema = object({
   name: string().required("Name is required").max(250, "Name must be fewer than 250 characters"),
@@ -60,6 +71,24 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
   onClose,
   isOpen,
 }) => {
+  const isEditing = !!connection;
+
+  // Template selection state
+  const {
+    currentStep,
+    isTemplateStep,
+    selectedTemplateId,
+    setSelectedTemplateId,
+    selectedArticleId,
+    setSelectedArticleId,
+    userFeed,
+    articles,
+    feedFields,
+    handleNextStep: templateHandleNextStep,
+    handleBackStep,
+    getTemplateUpdateDetails,
+  } = useConnectionTemplateSelection({ isOpen, isEditing });
+
   const defaultValues: Partial<FormData> = {
     name: connection?.name,
     serverId: connection?.details.channel?.guildId,
@@ -74,6 +103,7 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
     handleSubmit,
     control,
     reset,
+    trigger,
     formState: { errors, isSubmitting, isValid, isSubmitted },
     watch,
     setValue,
@@ -92,6 +122,14 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
   useEffect(() => {
     reset(defaultValues);
   }, [connection?.id]);
+
+  const handleNextStep = async () => {
+    const isFormValid = await trigger(["serverId", "channelId", "name"]);
+
+    if (isFormValid) {
+      templateHandleNextStep();
+    }
+  };
 
   const executeUpdate = async ({ channelId: inputChannelId, name, threadId }: FormData) => {
     if (!feedId) {
@@ -132,13 +170,39 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
       throw new Error("Feed ID missing while creating discord forum channel connection");
     }
 
-    await mutateAsync({
+    // Create the connection first
+    const createResult = await mutateAsync({
       feedId,
       details: {
         name,
         channelId: threadId || inputChannelId,
       },
     });
+
+    // Get the template to apply (selected or default)
+    const templateToApply = selectedTemplateId
+      ? getTemplateById(selectedTemplateId) || DEFAULT_TEMPLATE
+      : DEFAULT_TEMPLATE;
+
+    // Apply template to the connection
+    if (createResult?.result?.id) {
+      const newConnectionId = createResult.result.id;
+
+      // Convert template messageComponent to API format
+      const templateData = convertTemplateToUpdateDetails(templateToApply);
+
+      // Update the connection with template data
+      await updateMutateAsync({
+        feedId,
+        connectionId: newConnectionId,
+        details: {
+          content: templateData.content,
+          embeds: templateData.embeds,
+          componentsV2: templateData.componentsV2,
+          placeholderLimits: templateData.placeholderLimits,
+        },
+      });
+    }
 
     createSuccessAlert({
       title: "Successfully added connection.",
@@ -168,6 +232,42 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
   const formErrorLength = Object.keys(errors).length;
 
   const useError = error || updateError;
+
+  // For template selection step, show TemplateGalleryModal instead of regular modal
+  if (isTemplateStep) {
+    return (
+      <TemplateGalleryModal
+        isOpen={isOpen}
+        onClose={handleBackStep}
+        templates={TEMPLATES}
+        selectedTemplateId={selectedTemplateId}
+        onTemplateSelect={setSelectedTemplateId}
+        feedFields={feedFields}
+        articles={articles.map((a) => ({
+          id: a.id,
+          title: (a as Record<string, unknown>).title as string | undefined,
+        }))}
+        selectedArticleId={selectedArticleId}
+        onArticleChange={setSelectedArticleId}
+        feedId={feedId || ""}
+        userFeed={userFeed}
+        primaryActionLabel="Continue"
+        onPrimaryAction={(templateId) => {
+          setSelectedTemplateId(templateId);
+          handleSubmit(onSubmit)();
+        }}
+        isPrimaryActionLoading={isSubmitting}
+        secondaryActionLabel="Skip"
+        onSecondaryAction={() => {
+          setSelectedTemplateId(undefined);
+          handleSubmit(onSubmit)();
+        }}
+        tertiaryActionLabel="Back"
+        onTertiaryAction={handleBackStep}
+        testId="forum-template-selection-modal"
+      />
+    );
+  }
 
   return (
     <Modal
@@ -321,17 +421,23 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
             <Button variant="ghost" mr={3} onClick={onClose} isDisabled={isSubmitting}>
               <span>{t("common.buttons.cancel")}</span>
             </Button>
-            <Button
-              colorScheme="blue"
-              type="submit"
-              form="addfeed"
-              isLoading={isSubmitting}
-              aria-disabled={isSubmitting || !isValid}
-            >
-              <span>
-                {t("features.feed.components.addDiscordChannelConnectionDialog.saveButton")}
-              </span>
-            </Button>
+            {connection ? (
+              <Button
+                colorScheme="blue"
+                type="submit"
+                form="addfeed"
+                isLoading={isSubmitting}
+                aria-disabled={isSubmitting || !isValid}
+              >
+                <span>
+                  {t("features.feed.components.addDiscordChannelConnectionDialog.saveButton")}
+                </span>
+              </Button>
+            ) : (
+              <Button colorScheme="blue" onClick={handleNextStep} isDisabled={isSubmitting}>
+                <span>Next</span>
+              </Button>
+            )}
           </HStack>
         </ModalFooter>
       </ModalContent>
