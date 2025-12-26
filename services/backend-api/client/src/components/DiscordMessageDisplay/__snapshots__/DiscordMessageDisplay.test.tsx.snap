@@ -1,0 +1,382 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for MediaGallery 1`] = `
+<div>
+  <div
+    class="css-1xfxy4"
+  >
+    <div
+      class="chakra-stack css-met7i8"
+    >
+      <span
+        class="chakra-avatar css-rx5axe"
+      >
+        <div
+          aria-label="MonitoRSS"
+          class="chakra-avatar__initials css-1ebyn6"
+          role="img"
+        >
+          M
+        </div>
+      </span>
+      <div
+        class="chakra-stack css-5yi6ba"
+      >
+        <div
+          class="chakra-stack css-1uodvt1"
+        >
+          <p
+            class="chakra-text css-qs00kd"
+          >
+            MonitoRSS
+          </p>
+          <div
+            class="css-slgk8p"
+          >
+            ✓ APP
+          </div>
+          <p
+            class="chakra-text css-ev7024"
+          >
+            Today at 12:04 PM
+          </p>
+        </div>
+        <div
+          class="css-0"
+        >
+          <div
+            class="chakra-stack css-leaw1b"
+          >
+            <div
+              class="css-j6odf0"
+            >
+              <div
+                class="chakra-stack css-wpcv6r"
+              >
+                <div
+                  class="css-1j7eqwl"
+                >
+                  <div
+                    class="css-in21zj"
+                  >
+                    <div
+                      class="css-mbp9te"
+                    >
+                      <div
+                        class="css-1si198d"
+                      >
+                        Loading...
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    class="css-in21zj"
+                  >
+                    <div
+                      class="css-mbp9te"
+                    >
+                      <div
+                        class="css-1si198d"
+                      >
+                        Loading...
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <span
+    hidden=""
+    id="__chakra_env"
+  />
+</div>
+`;
+
+exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for V2 message 1`] = `
+<div>
+  <div
+    class="css-1xfxy4"
+  >
+    <div
+      class="chakra-stack css-met7i8"
+    >
+      <span
+        class="chakra-avatar css-rx5axe"
+      >
+        <div
+          aria-label="MonitoRSS"
+          class="chakra-avatar__initials css-1ebyn6"
+          role="img"
+        >
+          M
+        </div>
+      </span>
+      <div
+        class="chakra-stack css-5yi6ba"
+      >
+        <div
+          class="chakra-stack css-1uodvt1"
+        >
+          <p
+            class="chakra-text css-qs00kd"
+          >
+            MonitoRSS
+          </p>
+          <div
+            class="css-slgk8p"
+          >
+            ✓ APP
+          </div>
+          <p
+            class="chakra-text css-ev7024"
+          >
+            Today at 12:04 PM
+          </p>
+        </div>
+        <div
+          class="css-0"
+        >
+          <div
+            class="chakra-stack css-leaw1b"
+          >
+            <div
+              class="css-j6odf0"
+            >
+              <div
+                class="chakra-stack css-wpcv6r"
+              >
+                <div
+                  class="css-13tbf25"
+                >
+                  <div
+                    class="css-1ptozdn"
+                  />
+                  <div
+                    class="chakra-stack css-czdqmm"
+                  >
+                    <div
+                      class="markup css-itvw0n"
+                    >
+                      <p
+                        style="margin: 0px;"
+                      >
+                        <strong>
+                          Article Title
+                        </strong>
+                      </p>
+                    </div>
+                    <div
+                      class="chakra-stack css-pks1rh"
+                    >
+                      <div
+                        class="chakra-stack css-18x5s7b"
+                      >
+                        <div
+                          class="markup css-itvw0n"
+                        >
+                          <p
+                            style="margin: 0px;"
+                          >
+                            Section text content
+                          </p>
+                        </div>
+                      </div>
+                      <div
+                        class="css-g4rt53"
+                      >
+                        <div
+                          class="css-123lip0"
+                        >
+                          No Image
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="css-1j9oeic"
+                    >
+                      <hr
+                        aria-orientation="horizontal"
+                        class="chakra-divider css-565ulb"
+                      />
+                    </div>
+                    <div
+                      class="css-0"
+                    >
+                      <div
+                        class="chakra-stack css-1uodvt1"
+                      >
+                        <a
+                          class="chakra-button css-yxvja0"
+                          href="https://example.com"
+                          rel="noopener noreferrer"
+                          target="_blank"
+                        >
+                          Read More
+                          <span
+                            class="chakra-button__icon css-1hzyiq5"
+                          >
+                            <svg
+                              aria-hidden="true"
+                              class="chakra-icon css-1pckyyl"
+                              focusable="false"
+                              viewBox="0 0 24 24"
+                            >
+                              <g
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-linecap="round"
+                                stroke-width="2"
+                              >
+                                <path
+                                  d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
+                                />
+                                <path
+                                  d="M15 3h6v6"
+                                />
+                                <path
+                                  d="M10 14L21 3"
+                                />
+                              </g>
+                            </svg>
+                          </span>
+                        </a>
+                        <button
+                          class="chakra-button css-1ssv207"
+                          type="button"
+                        >
+                          Subscribe
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <span
+    hidden=""
+    id="__chakra_env"
+  />
+</div>
+`;
+
+exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for empty state 1`] = `
+<div>
+  <div
+    class="css-1xfxy4"
+  >
+    <div
+      class="chakra-stack css-met7i8"
+    >
+      <span
+        class="chakra-avatar css-rx5axe"
+      >
+        <div
+          aria-label="MonitoRSS"
+          class="chakra-avatar__initials css-1ebyn6"
+          role="img"
+        >
+          M
+        </div>
+      </span>
+      <div
+        class="chakra-stack css-5yi6ba"
+      >
+        <div
+          class="chakra-stack css-1uodvt1"
+        >
+          <p
+            class="chakra-text css-qs00kd"
+          >
+            MonitoRSS
+          </p>
+          <div
+            class="css-slgk8p"
+          >
+            ✓ APP
+          </div>
+          <p
+            class="chakra-text css-ev7024"
+          >
+            Today at 12:04 PM
+          </p>
+        </div>
+        <p
+          class="chakra-text css-jz8g4j"
+        >
+          No components added yet
+        </p>
+      </div>
+    </div>
+  </div>
+  <span
+    hidden=""
+    id="__chakra_env"
+  />
+</div>
+`;
+
+exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for loading state 1`] = `
+<div>
+  <div
+    class="css-1xfxy4"
+  >
+    <div
+      class="chakra-stack css-met7i8"
+    >
+      <span
+        class="chakra-avatar css-rx5axe"
+      >
+        <div
+          aria-label="MonitoRSS"
+          class="chakra-avatar__initials css-1ebyn6"
+          role="img"
+        >
+          M
+        </div>
+      </span>
+      <div
+        class="chakra-stack css-5yi6ba"
+      >
+        <div
+          class="chakra-stack css-1uodvt1"
+        >
+          <p
+            class="chakra-text css-qs00kd"
+          >
+            MonitoRSS
+          </p>
+          <div
+            class="css-slgk8p"
+          >
+            ✓ APP
+          </div>
+          <p
+            class="chakra-text css-ev7024"
+          >
+            Today at 12:04 PM
+          </p>
+        </div>
+        <p
+          class="chakra-text css-jz8g4j"
+        >
+          No components added yet
+        </p>
+      </div>
+    </div>
+  </div>
+  <span
+    hidden=""
+    id="__chakra_env"
+  />
+</div>
+`;
