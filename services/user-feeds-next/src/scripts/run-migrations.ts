@@ -1,6 +1,6 @@
 import { config } from "dotenv";
-import { initPool, closePool, runMigrations } from "../src/stores/postgres";
-import { logger } from "../src/shared/utils";
+import { initPool, closePool, runMigrations } from "../stores/postgres";
+import { logger } from "../shared/utils";
 
 config();
 

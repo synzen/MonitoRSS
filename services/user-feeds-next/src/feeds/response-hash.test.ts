@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach } from "bun:test";
+import { describe, it, beforeEach } from "node:test";
+import assert from "node:assert";
 import {
   inMemoryResponseHashStore,
   clearResponseHashStore,
@@ -19,27 +20,27 @@ describe("response-hash", () => {
 
     it("returns null for non-existent feed", async () => {
       const result = await inMemoryResponseHashStore.get("non-existent-feed");
-      expect(result).toBeNull();
+      assert.strictEqual(result, null);
     });
 
     it("stores and retrieves a hash", async () => {
       await inMemoryResponseHashStore.set("feed-1", "hash-abc");
       const result = await inMemoryResponseHashStore.get("feed-1");
-      expect(result).toBe("hash-abc");
+      assert.strictEqual(result, "hash-abc");
     });
 
     it("overwrites existing hash", async () => {
       await inMemoryResponseHashStore.set("feed-1", "hash-abc");
       await inMemoryResponseHashStore.set("feed-1", "hash-xyz");
       const result = await inMemoryResponseHashStore.get("feed-1");
-      expect(result).toBe("hash-xyz");
+      assert.strictEqual(result, "hash-xyz");
     });
 
     it("removes a hash", async () => {
       await inMemoryResponseHashStore.set("feed-1", "hash-abc");
       await inMemoryResponseHashStore.remove("feed-1");
       const result = await inMemoryResponseHashStore.get("feed-1");
-      expect(result).toBeNull();
+      assert.strictEqual(result, null);
     });
 
     it("remove is idempotent for non-existent feed", async () => {
@@ -48,8 +49,9 @@ describe("response-hash", () => {
     });
 
     it("throws error when setting empty hash", async () => {
-      await expect(inMemoryResponseHashStore.set("feed-1", "")).rejects.toThrow(
-        "Hash is required"
+      await assert.rejects(
+        inMemoryResponseHashStore.set("feed-1", ""),
+        { message: /Hash is required/ }
       );
     });
 
@@ -57,12 +59,12 @@ describe("response-hash", () => {
       await inMemoryResponseHashStore.set("feed-1", "hash-a");
       await inMemoryResponseHashStore.set("feed-2", "hash-b");
 
-      expect(await inMemoryResponseHashStore.get("feed-1")).toBe("hash-a");
-      expect(await inMemoryResponseHashStore.get("feed-2")).toBe("hash-b");
+      assert.strictEqual(await inMemoryResponseHashStore.get("feed-1"), "hash-a");
+      assert.strictEqual(await inMemoryResponseHashStore.get("feed-2"), "hash-b");
 
       await inMemoryResponseHashStore.remove("feed-1");
-      expect(await inMemoryResponseHashStore.get("feed-1")).toBeNull();
-      expect(await inMemoryResponseHashStore.get("feed-2")).toBe("hash-b");
+      assert.strictEqual(await inMemoryResponseHashStore.get("feed-1"), null);
+      assert.strictEqual(await inMemoryResponseHashStore.get("feed-2"), "hash-b");
     });
   });
 
@@ -77,7 +79,7 @@ describe("response-hash", () => {
       };
 
       const result = parseFeedDeletedEvent(event);
-      expect(result).toEqual(event);
+      assert.deepStrictEqual(result, event);
     });
 
     it("returns null for invalid event (missing feed)", () => {
@@ -86,14 +88,14 @@ describe("response-hash", () => {
       };
 
       const result = parseFeedDeletedEvent(event);
-      expect(result).toBeNull();
+      assert.strictEqual(result, null);
     });
 
     it("returns null for invalid event (missing data)", () => {
       const event = {};
 
       const result = parseFeedDeletedEvent(event);
-      expect(result).toBeNull();
+      assert.strictEqual(result, null);
     });
 
     it("returns null for invalid event (non-string id)", () => {
@@ -106,7 +108,7 @@ describe("response-hash", () => {
       };
 
       const result = parseFeedDeletedEvent(event);
-      expect(result).toBeNull();
+      assert.strictEqual(result, null);
     });
   });
 
@@ -160,7 +162,7 @@ describe("response-hash", () => {
         articleFieldStore: mockArticleFieldStore,
       });
 
-      expect(removedFeedIds).toEqual(["feed-to-delete"]);
+      assert.deepStrictEqual(removedFeedIds, ["feed-to-delete"]);
     });
 
     it("clears article field store for the feed", async () => {
@@ -177,7 +179,7 @@ describe("response-hash", () => {
         articleFieldStore: mockArticleFieldStore,
       });
 
-      expect(clearedFeedIds).toEqual(["feed-to-delete"]);
+      assert.deepStrictEqual(clearedFeedIds, ["feed-to-delete"]);
     });
 
     it("uses default stores when none provided", async () => {
@@ -199,7 +201,7 @@ describe("response-hash", () => {
       await handleFeedDeletedEvent(event);
 
       // Verify hash was removed
-      expect(await inMemoryResponseHashStore.get("feed-xyz")).toBeNull();
+      assert.strictEqual(await inMemoryResponseHashStore.get("feed-xyz"), null);
     });
   });
 });

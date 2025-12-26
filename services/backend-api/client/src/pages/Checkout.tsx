@@ -23,9 +23,8 @@ import dayjs from "dayjs";
 import { ChevronLeftIcon } from "@chakra-ui/icons";
 import { FaCircleCheck } from "react-icons/fa6";
 import { BoxConstrained, DashboardContentV2 } from "../components";
-import { pages, ProductKey } from "../constants";
+import { pages, ProductKey, PRICE_IDS, findProductKeyByPriceId } from "../constants";
 import { usePaddleContext } from "../contexts/PaddleContext";
-import { useSubscriptionProducts } from "../features/subscriptionProducts";
 import { useUserMe } from "../features/discordUser";
 import getChakraColor from "../utils/getChakraColor";
 
@@ -47,16 +46,12 @@ export const Checkout = ({ cancelUrl }: Props) => {
     checkoutLoadedData: checkoutData,
     isSubscriptionCreated,
   } = usePaddleContext();
-  const { data: subProducts, error: subProductsError } = useSubscriptionProducts();
   const [waitingForUpdate, setWaitingForUpdate] = useState(false);
   const checkoutRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const { status: userStatus, error: userError } = useUserMe();
   const topLevelProductCheckoutData = checkoutData?.items.find((item) => item.priceId === priceId);
   const feedsCheckoutData = checkoutData?.items.find((item) => item.priceId === feedsPriceId);
-  const additionalFeedsProduct = subProducts?.data.products.find(
-    (p) => p.id === ProductKey.Tier3Feed
-  );
 
   useEffect(() => {
     if (isSubscriptionCreated && headingRef.current) {
@@ -124,32 +119,27 @@ export const Checkout = ({ cancelUrl }: Props) => {
   };
 
   const onChangeInterval = (newInterval: "month" | "year") => {
-    const product = subProducts?.data.products.find((p) =>
-      p.prices.find((pr) => pr.id === priceId)
-    );
-
-    if (!product) {
+    if (!priceId) {
       return;
     }
 
-    const price = product.prices.find((pr) => pr.interval === newInterval);
+    const productKey = findProductKeyByPriceId(priceId);
 
-    if (!price) {
+    if (!productKey) {
       return;
     }
 
-    const priceIdOfAdditionalFeeds = additionalFeedsProduct?.prices.find(
-      (pr) => pr.interval === newInterval
-    )?.id;
+    const newPriceId = PRICE_IDS[productKey][newInterval];
+    const priceIdOfAdditionalFeeds = PRICE_IDS[ProductKey.Tier3Feed][newInterval];
 
-    setPriceId(price.id);
+    setPriceId(newPriceId);
     updateCheckout({
       prices: [
         {
-          priceId: price.id,
+          priceId: newPriceId,
           quantity: 1,
         },
-        ...(priceIdOfAdditionalFeeds && feedsQuantity > 0
+        ...(feedsQuantity > 0
           ? [
               {
                 priceId: priceIdOfAdditionalFeeds,
@@ -161,8 +151,8 @@ export const Checkout = ({ cancelUrl }: Props) => {
     });
   };
 
-  const isLoaded = !waitingForUpdate && !!checkoutData && !!subProducts && userStatus === "success";
-  const error = subProductsError || userError;
+  const isLoaded = !waitingForUpdate && !!checkoutData && userStatus === "success";
+  const error = userError;
 
   const todayFormatted = dayjs().format("D MMM YYYY");
   const expirationFormatted = topLevelProductCheckoutData

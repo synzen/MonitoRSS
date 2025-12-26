@@ -1,11 +1,13 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, before, after } from "node:test";
+import * as assert from "node:assert";
 import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../../src/delivery";
 import getTestRssFeed from "../data/test-rss-feed";
 import { createTestContext } from "../helpers/test-context";
 import type { FeedV2Event, EmbedInput } from "../../src/shared/schemas";
+import { setupTestDatabase, teardownTestDatabase, type TestStores } from "../helpers/setup-integration-tests";
 
-// Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
+let stores: TestStores;
 
 /**
  * Helper to create a feed event with embeds configured on the medium.
@@ -50,10 +52,18 @@ function getDiscordPayload(ctx: ReturnType<typeof createTestContext>) {
   );
 }
 
-describe("Discord Payload Embeds (e2e)", () => {
+describe("Discord Payload Embeds (e2e)", { concurrency: true }, () => {
+  before(async () => {
+    stores = await setupTestDatabase();
+  });
+
+  after(async () => {
+    await teardownTestDatabase();
+  });
+
   describe("Basic Embed Fields", () => {
     it("sends embed with title and description", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithEmbeds = createEventWithEmbeds(ctx.testFeedV2Event, [
         {
@@ -81,15 +91,15 @@ describe("Discord Payload Embeds (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithEmbeds);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.embeds).toBeArray();
-        expect(payload.embeds.length).toBe(1);
-        expect(payload.embeds[0].title).toBe("Test Article Title");
-        expect(payload.embeds[0].description).toBe(
+        assert.ok(Array.isArray(payload.embeds));
+        assert.strictEqual(payload.embeds.length, 1);
+        assert.strictEqual(payload.embeds[0].title, "Test Article Title");
+        assert.strictEqual(payload.embeds[0].description, 
           "Article description: This is the article description"
         );
       } finally {
@@ -98,7 +108,7 @@ describe("Discord Payload Embeds (e2e)", () => {
     });
 
     it("sends embed with url", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithEmbeds = createEventWithEmbeds(ctx.testFeedV2Event, [
         {
@@ -126,18 +136,18 @@ describe("Discord Payload Embeds (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithEmbeds);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.embeds[0].url).toBe("https://example.com/article/123");
+        assert.strictEqual(payload.embeds[0].url, "https://example.com/article/123");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("sends embed with color", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithEmbeds = createEventWithEmbeds(ctx.testFeedV2Event, [
         {
@@ -164,12 +174,12 @@ describe("Discord Payload Embeds (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithEmbeds);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.embeds[0].color).toBe(0xff5733);
+        assert.strictEqual(payload.embeds[0].color, 0xff5733);
       } finally {
         ctx.cleanup();
       }
@@ -178,7 +188,7 @@ describe("Discord Payload Embeds (e2e)", () => {
 
   describe("Embed Footer", () => {
     it("sends embed with footer text", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithEmbeds = createEventWithEmbeds(ctx.testFeedV2Event, [
         {
@@ -208,19 +218,19 @@ describe("Discord Payload Embeds (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithEmbeds);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.embeds[0].footer).toBeDefined();
-        expect(payload.embeds[0].footer.text).toBe("Posted by John Doe");
+        assert.notStrictEqual(payload.embeds[0].footer, undefined);
+        assert.strictEqual(payload.embeds[0].footer.text, "Posted by John Doe");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("sends embed with footer icon_url", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithEmbeds = createEventWithEmbeds(ctx.testFeedV2Event, [
         {
@@ -250,11 +260,11 @@ describe("Discord Payload Embeds (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithEmbeds);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.embeds[0].footer.icon_url).toBe(
+        assert.strictEqual(payload.embeds[0].footer.icon_url, 
           "https://example.com/icon.png"
         );
       } finally {
@@ -265,7 +275,7 @@ describe("Discord Payload Embeds (e2e)", () => {
 
   describe("Embed Images", () => {
     it("sends embed with image", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithEmbeds = createEventWithEmbeds(ctx.testFeedV2Event, [
         {
@@ -294,12 +304,12 @@ describe("Discord Payload Embeds (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithEmbeds);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.embeds[0].image).toBeDefined();
-        expect(payload.embeds[0].image.url).toBe(
+        assert.notStrictEqual(payload.embeds[0].image, undefined);
+        assert.strictEqual(payload.embeds[0].image.url, 
           "https://example.com/image.jpg"
         );
       } finally {
@@ -308,7 +318,7 @@ describe("Discord Payload Embeds (e2e)", () => {
     });
 
     it("sends embed with thumbnail", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithEmbeds = createEventWithEmbeds(ctx.testFeedV2Event, [
         {
@@ -337,12 +347,12 @@ describe("Discord Payload Embeds (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithEmbeds);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.embeds[0].thumbnail).toBeDefined();
-        expect(payload.embeds[0].thumbnail.url).toBe(
+        assert.notStrictEqual(payload.embeds[0].thumbnail, undefined);
+        assert.strictEqual(payload.embeds[0].thumbnail.url, 
           "https://example.com/thumbnail.jpg"
         );
       } finally {
@@ -353,7 +363,7 @@ describe("Discord Payload Embeds (e2e)", () => {
 
   describe("Embed Author", () => {
     it("sends embed with author name", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithEmbeds = createEventWithEmbeds(ctx.testFeedV2Event, [
         {
@@ -383,19 +393,19 @@ describe("Discord Payload Embeds (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithEmbeds);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.embeds[0].author).toBeDefined();
-        expect(payload.embeds[0].author.name).toBe("Jane Smith");
+        assert.notStrictEqual(payload.embeds[0].author, undefined);
+        assert.strictEqual(payload.embeds[0].author.name, "Jane Smith");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("sends embed with author url and icon", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithEmbeds = createEventWithEmbeds(ctx.testFeedV2Event, [
         {
@@ -426,12 +436,12 @@ describe("Discord Payload Embeds (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithEmbeds);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.embeds[0].author.url).toBe("https://example.com/author");
-        expect(payload.embeds[0].author.icon_url).toBe(
+        assert.strictEqual(payload.embeds[0].author.url, "https://example.com/author");
+        assert.strictEqual(payload.embeds[0].author.icon_url, 
           "https://example.com/author-icon.png"
         );
       } finally {
@@ -442,7 +452,7 @@ describe("Discord Payload Embeds (e2e)", () => {
 
   describe("Embed Fields", () => {
     it("sends embed with fields", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithEmbeds = createEventWithEmbeds(ctx.testFeedV2Event, [
         {
@@ -487,28 +497,28 @@ describe("Discord Payload Embeds (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithEmbeds);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.embeds[0].fields).toBeArray();
-        expect(payload.embeds[0].fields.length).toBe(3);
+        assert.ok(Array.isArray(payload.embeds[0].fields));
+        assert.strictEqual(payload.embeds[0].fields.length, 3);
 
-        expect(payload.embeds[0].fields[0].name).toBe("Title Field");
-        expect(payload.embeds[0].fields[0].value).toBe("Article with Fields");
-        expect(payload.embeds[0].fields[0].inline).toBe(true);
+        assert.strictEqual(payload.embeds[0].fields[0].name, "Title Field");
+        assert.strictEqual(payload.embeds[0].fields[0].value, "Article with Fields");
+        assert.strictEqual(payload.embeds[0].fields[0].inline, true);
 
-        expect(payload.embeds[0].fields[1].name).toBe("Link Field");
-        expect(payload.embeds[0].fields[1].value).toBe(
+        assert.strictEqual(payload.embeds[0].fields[1].name, "Link Field");
+        assert.strictEqual(payload.embeds[0].fields[1].value, 
           "https://example.com/article"
         );
-        expect(payload.embeds[0].fields[1].inline).toBe(true);
+        assert.strictEqual(payload.embeds[0].fields[1].inline, true);
 
-        expect(payload.embeds[0].fields[2].name).toBe("Description Field");
-        expect(payload.embeds[0].fields[2].value).toBe(
+        assert.strictEqual(payload.embeds[0].fields[2].name, "Description Field");
+        assert.strictEqual(payload.embeds[0].fields[2].value, 
           "A detailed description"
         );
-        expect(payload.embeds[0].fields[2].inline).toBe(false);
+        assert.strictEqual(payload.embeds[0].fields[2].inline, false);
       } finally {
         ctx.cleanup();
       }
@@ -517,7 +527,7 @@ describe("Discord Payload Embeds (e2e)", () => {
 
   describe("Embed Timestamp", () => {
     it("sends embed with 'now' timestamp", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithEmbeds = createEventWithEmbeds(ctx.testFeedV2Event, [
         {
@@ -544,20 +554,20 @@ describe("Discord Payload Embeds (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithEmbeds);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.embeds[0].timestamp).toBeDefined();
+        assert.notStrictEqual(payload.embeds[0].timestamp, undefined);
         // Timestamp should be a valid ISO string
-        expect(() => new Date(payload.embeds[0].timestamp)).not.toThrow();
+        assert.ok(new Date(payload.embeds[0].timestamp));
       } finally {
         ctx.cleanup();
       }
     });
 
     it("sends embed with 'article' timestamp", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithEmbeds = createEventWithEmbeds(ctx.testFeedV2Event, [
         {
@@ -587,21 +597,21 @@ describe("Discord Payload Embeds (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithEmbeds);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.embeds[0].timestamp).toBeDefined();
+        assert.notStrictEqual(payload.embeds[0].timestamp, undefined);
         // Timestamp should match the article's publish date
         const payloadDate = new Date(payload.embeds[0].timestamp);
-        expect(payloadDate.getTime()).toBe(articleDate.getTime());
+        assert.strictEqual(payloadDate.getTime(), articleDate.getTime());
       } finally {
         ctx.cleanup();
       }
     });
 
     it("sends embed without timestamp when set to empty string", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithEmbeds = createEventWithEmbeds(ctx.testFeedV2Event, [
         {
@@ -628,13 +638,13 @@ describe("Discord Payload Embeds (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithEmbeds);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
 
         const payload = getDiscordPayload(ctx);
         // Timestamp should be undefined or not present
-        expect(payload.embeds[0].timestamp).toBeFalsy();
+        assert.ok(!payload.embeds[0].timestamp);
       } finally {
         ctx.cleanup();
       }
@@ -643,7 +653,7 @@ describe("Discord Payload Embeds (e2e)", () => {
 
   describe("Multiple Embeds", () => {
     it("sends message with multiple embeds", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithEmbeds = createEventWithEmbeds(ctx.testFeedV2Event, [
         {
@@ -681,27 +691,25 @@ describe("Discord Payload Embeds (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithEmbeds);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.embeds).toBeArray();
-        expect(payload.embeds.length).toBe(3);
+        assert.ok(Array.isArray(payload.embeds));
+        assert.strictEqual(payload.embeds.length, 3);
 
-        expect(payload.embeds[0].title).toBe(
+        assert.strictEqual(payload.embeds[0].title, 
           "First Embed: Multi-Embed Article"
         );
-        expect(payload.embeds[0].color).toBe(0xff0000);
+        assert.strictEqual(payload.embeds[0].color, 0xff0000);
 
-        expect(payload.embeds[1].title).toBe("Second Embed");
-        expect(payload.embeds[1].description).toBe(
-          "Description for second embed"
-        );
-        expect(payload.embeds[1].color).toBe(0x00ff00);
+        assert.strictEqual(payload.embeds[1].title, "Second Embed");
+        assert.strictEqual(payload.embeds[1].description, "Description for second embed");
+        assert.strictEqual(payload.embeds[1].color, 0x00ff00);
 
-        expect(payload.embeds[2].title).toBe("Third Embed");
-        expect(payload.embeds[2].footer.text).toBe("Footer text");
-        expect(payload.embeds[2].color).toBe(0x0000ff);
+        assert.strictEqual(payload.embeds[2].title, "Third Embed");
+        assert.strictEqual(payload.embeds[2].footer.text, "Footer text");
+        assert.strictEqual(payload.embeds[2].color, 0x0000ff);
       } finally {
         ctx.cleanup();
       }
@@ -710,7 +718,7 @@ describe("Discord Payload Embeds (e2e)", () => {
 
   describe("Complete Embed", () => {
     it("sends embed with all fields populated", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithEmbeds = createEventWithEmbeds(ctx.testFeedV2Event, [
         {
@@ -762,30 +770,30 @@ describe("Discord Payload Embeds (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithEmbeds);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
         const embed = payload.embeds[0];
 
-        expect(embed.title).toBe("Complete Article");
-        expect(embed.description).toBe("Full description here");
-        expect(embed.url).toBe("https://example.com/article/full");
-        expect(embed.color).toBe(0x5865f2);
-        expect(embed.author.name).toBe("Static Author");
-        expect(embed.author.url).toBe("https://example.com/author");
-        expect(embed.author.icon_url).toBe(
+        assert.strictEqual(embed.title, "Complete Article");
+        assert.strictEqual(embed.description, "Full description here");
+        assert.strictEqual(embed.url, "https://example.com/article/full");
+        assert.strictEqual(embed.color, 0x5865f2);
+        assert.strictEqual(embed.author.name, "Static Author");
+        assert.strictEqual(embed.author.url, "https://example.com/author");
+        assert.strictEqual(embed.author.icon_url, 
           "https://example.com/author-icon.png"
         );
-        expect(embed.thumbnail.url).toBe("https://example.com/thumb.png");
-        expect(embed.image.url).toBe("https://example.com/image.png");
-        expect(embed.footer.text).toBe("Via RSS Feed");
-        expect(embed.footer.icon_url).toBe(
+        assert.strictEqual(embed.thumbnail.url, "https://example.com/thumb.png");
+        assert.strictEqual(embed.image.url, "https://example.com/image.png");
+        assert.strictEqual(embed.footer.text, "Via RSS Feed");
+        assert.strictEqual(embed.footer.icon_url, 
           "https://example.com/footer-icon.png"
         );
-        expect(embed.fields[0].name).toBe("Source");
-        expect(embed.fields[0].value).toBe("https://example.com/article/full");
-        expect(new Date(embed.timestamp).getTime()).toBe(articleDate.getTime());
+        assert.strictEqual(embed.fields[0].name, "Source");
+        assert.strictEqual(embed.fields[0].value, "https://example.com/article/full");
+        assert.strictEqual(new Date(embed.timestamp).getTime(), articleDate.getTime());
       } finally {
         ctx.cleanup();
       }

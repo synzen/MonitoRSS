@@ -283,6 +283,21 @@ export class UserFeedsController {
     return result;
   }
 
+  @Post("/:feedId/delivery-preview")
+  @HttpCode(HttpStatus.OK)
+  async getDeliveryPreview(
+    @Param("feedId", GetUserFeedsPipe())
+    [{ feed }]: GetUserFeedsPipeOutput,
+    @Body(TransformValidationPipe)
+    { skip, limit }: import("./dto").DeliveryPreviewInputDto
+  ) {
+    return this.userFeedsService.getDeliveryPreview({
+      feed,
+      skip: skip ?? 0,
+      limit: limit ?? 10,
+    });
+  }
+
   @Post("/:feedId/get-article-properties")
   @UseFilters(GetUserFeedArticlesExceptionFilter)
   async getArticleProperties(
@@ -321,6 +336,7 @@ export class UserFeedsController {
       selectPropertyTypes,
       skip,
       formatter: { externalProperties, ...formatter },
+      includeHtmlInErrors,
     }: GetUserFeedArticlesInputDto,
     @Param("feedId", GetUserFeedsPipe())
     [{ feed }]: GetUserFeedsPipeOutput
@@ -335,6 +351,7 @@ export class UserFeedsController {
       selectProperties,
       selectPropertyTypes,
       skip,
+      includeHtmlInErrors,
       formatter: {
         ...formatter,
         externalProperties,
@@ -354,6 +371,7 @@ export class UserFeedsController {
       selectedProperties,
       totalArticles,
       response,
+      externalContentErrors,
     } = await this.userFeedsService.getFeedArticles(input);
 
     return {
@@ -364,6 +382,7 @@ export class UserFeedsController {
         filterStatuses,
         selectedProperties,
         totalArticles,
+        externalContentErrors,
       },
     };
   }

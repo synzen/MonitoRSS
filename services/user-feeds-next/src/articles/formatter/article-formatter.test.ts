@@ -1,4 +1,5 @@
-import { describe, expect, it } from "bun:test";
+import { describe, it } from "node:test";
+import assert, { deepStrictEqual } from "node:assert";
 import {
   replaceTemplateString,
   applySplit,
@@ -42,7 +43,7 @@ describe("article-formatter", () => {
         { title: "Hello World" },
         "Title: {{title}}"
       );
-      expect(result).toBe("Title: Hello World");
+      assert.strictEqual(result, "Title: Hello World");
     });
 
     it("replaces multiple placeholders", () => {
@@ -50,7 +51,7 @@ describe("article-formatter", () => {
         { title: "Hello", author: "John" },
         "{{title}} by {{author}}"
       );
-      expect(result).toBe("Hello by John");
+      assert.strictEqual(result, "Hello by John");
     });
 
     it("replaces with empty string for missing placeholders", () => {
@@ -58,7 +59,7 @@ describe("article-formatter", () => {
         { title: "Hello" },
         "{{title}} - {{missing}}"
       );
-      expect(result).toBe("Hello - ");
+      assert.strictEqual(result, "Hello - ");
     });
 
     it("supports fallback syntax", () => {
@@ -67,7 +68,7 @@ describe("article-formatter", () => {
         "{{missing||title}}",
         { supportFallbacks: true }
       );
-      expect(result).toBe("Hello");
+      assert.strictEqual(result, "Hello");
     });
 
     it("supports text:: fallback", () => {
@@ -76,7 +77,7 @@ describe("article-formatter", () => {
         "{{missing||text::Default Text}}",
         { supportFallbacks: true }
       );
-      expect(result).toBe("Default Text");
+      assert.strictEqual(result, "Default Text");
     });
 
     it("uses first non-empty value in fallback chain", () => {
@@ -85,33 +86,33 @@ describe("article-formatter", () => {
         "{{first||second||third}}",
         { supportFallbacks: true }
       );
-      expect(result).toBe("Third Value");
+      assert.strictEqual(result, "Third Value");
     });
   });
 
   describe("applySplit", () => {
     it("returns single item for short text", () => {
       const result = applySplit("Hello World", { limit: 100 });
-      expect(result.length).toBe(1);
-      expect(result[0]).toBe("Hello World");
+      assert.strictEqual(result.length, 1);
+      assert.strictEqual(result[0], "Hello World");
     });
 
     it("truncates long text by default", () => {
       const longText = "A".repeat(100);
       const result = applySplit(longText, { limit: 50 });
-      expect(result.length).toBe(1);
-      expect(result[0]!.length).toBeLessThanOrEqual(50);
+      assert.strictEqual(result.length, 1);
+      assert.ok(result[0]!.length <= 50);
     });
 
     it("splits into multiple parts when enabled", () => {
       const longText = "A".repeat(100);
       const result = applySplit(longText, { limit: 50, isEnabled: true });
-      expect(result.length).toBeGreaterThan(1);
+      assert.ok(result.length > 1);
     });
 
     it("handles undefined input", () => {
       const result = applySplit(undefined);
-      expect(result).toEqual([""]);
+      assert.deepStrictEqual(result, [""]);
     });
   });
 
@@ -122,8 +123,8 @@ describe("article-formatter", () => {
         content: "New article: {{title}}",
       });
 
-      expect(payloads.length).toBe(1);
-      expect(payloads[0]!.content).toBe("New article: Test Title");
+      assert.strictEqual(payloads.length, 1);
+      assert.strictEqual(payloads[0]!.content, "New article: Test Title");
     });
 
     it("generates payload with embeds", () => {
@@ -141,11 +142,11 @@ describe("article-formatter", () => {
         ],
       });
 
-      expect(payloads.length).toBe(1);
-      expect(payloads[0]!.embeds?.length).toBe(1);
-      expect(payloads[0]!.embeds?.[0]?.title).toBe("Test Title");
-      expect(payloads[0]!.embeds?.[0]?.description).toBe("Test Desc");
-      expect(payloads[0]!.embeds?.[0]?.color).toBe(0x00ff00);
+      assert.strictEqual(payloads.length, 1);
+      assert.strictEqual(payloads[0]!.embeds?.length, 1);
+      assert.strictEqual(payloads[0]!.embeds?.[0]?.title, "Test Title");
+      assert.strictEqual(payloads[0]!.embeds?.[0]?.description, "Test Desc");
+      assert.strictEqual(payloads[0]!.embeds?.[0]?.color, 0x00ff00);
     });
 
     it("filters out empty payloads", () => {
@@ -155,7 +156,7 @@ describe("article-formatter", () => {
         embeds: [],
       });
 
-      expect(payloads.length).toBe(0);
+      assert.strictEqual(payloads.length, 0);
     });
 
     it("truncates embed fields to Discord limits", () => {
@@ -164,7 +165,7 @@ describe("article-formatter", () => {
         embeds: [{ title: "{{title}}" }],
       });
 
-      expect(payloads[0]!.embeds?.[0]?.title?.length).toBeLessThanOrEqual(256);
+      assert.ok((payloads[0]!.embeds?.[0]?.title?.length ?? 0) <= 256);
     });
 
     it("supports placeholder fallbacks", () => {
@@ -174,7 +175,7 @@ describe("article-formatter", () => {
         enablePlaceholderFallback: true,
       });
 
-      expect(payloads[0]!.content).toBe("Backup Title");
+      assert.strictEqual(payloads[0]!.content, "Backup Title");
     });
 
     it("adds timestamp when configured", () => {
@@ -185,7 +186,7 @@ describe("article-formatter", () => {
         embeds: [{ title: "Test", timestamp: "article" }],
       });
 
-      expect(payloads[0]!.embeds?.[0]?.timestamp).toBeDefined();
+      assert.notStrictEqual(payloads[0]!.embeds?.[0]?.timestamp, undefined);
     });
 
     describe("V2 Components", () => {
@@ -206,10 +207,209 @@ describe("article-formatter", () => {
           ],
         });
 
-        expect(payloads.length).toBe(1);
-        expect(payloads[0]!.flags).toBe(DISCORD_COMPONENTS_V2_FLAG);
-        expect(payloads[0]!.components).toBeDefined();
-        expect(payloads[0]!.content).toBeUndefined();
+        assert.strictEqual(payloads.length, 1);
+        assert.strictEqual(payloads[0]!.flags, DISCORD_COMPONENTS_V2_FLAG);
+        assert.notStrictEqual(payloads[0]!.components, undefined);
+        assert.strictEqual(payloads[0]!.content, undefined);
+      });
+
+      describe("Media Gallery", () => {
+        it("filters out media gallery items with empty URLs", () => {
+          const article = createArticle({
+            image1: "https://example.com/1.png",
+          });
+          const payloads = generateDiscordPayloads(article, {
+            componentsV2: [
+              {
+                type: "CONTAINER",
+                components: [
+                  {
+                    type: "MEDIA_GALLERY",
+                    items: [
+                      { media: { url: "{{image1}}" } },
+                      { media: { url: "{{missing_image}}" } },
+                    ],
+                  },
+                ],
+              },
+            ],
+          });
+
+          assert.strictEqual(payloads.length, 1);
+          const container = payloads[0]!.components![0] as {
+            components: Array<{ items: Array<{ media: { url: string } }> }>;
+          };
+          const gallery = container.components[0]!;
+          assert.strictEqual(gallery.items.length, 1);
+          assert.strictEqual(
+            gallery.items[0]!.media.url,
+            "https://example.com/1.png"
+          );
+        });
+
+        it("removes entire media gallery when all items have empty URLs", () => {
+          const article = createArticle({ title: "Test" });
+          const payloads = generateDiscordPayloads(article, {
+            componentsV2: [
+              {
+                type: "CONTAINER",
+                components: [
+                  {
+                    type: "TEXT_DISPLAY",
+                    content: "{{title}}",
+                  },
+                  {
+                    type: "MEDIA_GALLERY",
+                    items: [
+                      { media: { url: "{{missing1}}" } },
+                      { media: { url: "{{missing2}}" } },
+                    ],
+                  },
+                ],
+              },
+            ],
+          });
+
+          assert.strictEqual(payloads.length, 1);
+          const container = payloads[0]!.components![0] as {
+            components: Array<{ type: number }>;
+          };
+          // Only the TEXT_DISPLAY should remain, gallery should be filtered out
+          assert.strictEqual(container.components.length, 1);
+        });
+
+        it("preserves media gallery items with valid static URLs", () => {
+          const article = createArticle({});
+          const payloads = generateDiscordPayloads(article, {
+            componentsV2: [
+              {
+                type: "CONTAINER",
+                components: [
+                  {
+                    type: "MEDIA_GALLERY",
+                    items: [
+                      { media: { url: "https://example.com/static.png" } },
+                      {
+                        media: { url: "https://example.com/another.png" },
+                        description: "A description",
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          });
+
+          assert.strictEqual(payloads.length, 1);
+          const container = payloads[0]!.components![0] as {
+            components: Array<{
+              items: Array<{ media: { url: string }; description?: string }>;
+            }>;
+          };
+          const gallery = container.components[0]!;
+          assert.strictEqual(gallery.items.length, 2);
+          assert.strictEqual(
+            gallery.items[0]!.media.url,
+            "https://example.com/static.png"
+          );
+          assert.strictEqual(
+            gallery.items[1]!.media.url,
+            "https://example.com/another.png"
+          );
+          assert.strictEqual(gallery.items[1]!.description, "A description");
+        });
+
+        it("replaces placeholders in media gallery item URLs", () => {
+          const article = createArticle({
+            img: "https://example.com/dynamic.png",
+            desc: "Dynamic description",
+          });
+          const payloads = generateDiscordPayloads(article, {
+            componentsV2: [
+              {
+                type: "CONTAINER",
+                components: [
+                  {
+                    type: "MEDIA_GALLERY",
+                    items: [
+                      { media: { url: "{{img}}" }, description: "{{desc}}" },
+                    ],
+                  },
+                ],
+              },
+            ],
+          });
+
+          assert.strictEqual(payloads.length, 1);
+          const container = payloads[0]!.components![0] as {
+            components: Array<{
+              items: Array<{ media: { url: string }; description?: string }>;
+            }>;
+          };
+          const gallery = container.components[0]!;
+          assert.strictEqual(gallery.items.length, 1);
+          assert.strictEqual(
+            gallery.items[0]!.media.url,
+            "https://example.com/dynamic.png"
+          );
+          assert.strictEqual(
+            gallery.items[0]!.description,
+            "Dynamic description"
+          );
+        });
+
+        it("encodes spaces in media gallery URLs", () => {
+          const article = createArticle({
+            img: "https://example.com/image with spaces.png",
+          });
+          const payloads = generateDiscordPayloads(article, {
+            componentsV2: [
+              {
+                type: "CONTAINER",
+                components: [
+                  {
+                    type: "MEDIA_GALLERY",
+                    items: [{ media: { url: "{{img}}" } }],
+                  },
+                ],
+              },
+            ],
+          });
+
+          const container = payloads[0]!.components![0] as {
+            components: Array<{ items: Array<{ media: { url: string } }> }>;
+          };
+          const gallery = container.components[0]!;
+          assert.strictEqual(
+            gallery.items[0]!.media.url,
+            "https://example.com/image%20with%20spaces.png"
+          );
+        });
+
+        it("preserves spoiler flag on media gallery items", () => {
+          const article = createArticle({
+            img: "https://example.com/spoiler.png",
+          });
+          const payloads = generateDiscordPayloads(article, {
+            componentsV2: [
+              {
+                type: "CONTAINER",
+                components: [
+                  {
+                    type: "MEDIA_GALLERY",
+                    items: [{ media: { url: "{{img}}" }, spoiler: true }],
+                  },
+                ],
+              },
+            ],
+          });
+
+          const container = payloads[0]!.components![0] as {
+            components: Array<{ items: Array<{ spoiler?: boolean }> }>;
+          };
+          const gallery = container.components[0]!;
+          assert.strictEqual(gallery.items[0]!.spoiler, true);
+        });
       });
 
       it("silently prefers V2 over V1 when both are provided", () => {
@@ -239,10 +439,10 @@ describe("article-formatter", () => {
           ],
         });
 
-        expect(payloads.length).toBe(1);
-        expect(payloads[0]!.flags).toBe(DISCORD_COMPONENTS_V2_FLAG);
+        assert.strictEqual(payloads.length, 1);
+        assert.strictEqual(payloads[0]!.flags, DISCORD_COMPONENTS_V2_FLAG);
         // V2 takes precedence, content should not be present
-        expect(payloads[0]!.content).toBeUndefined();
+        assert.strictEqual(payloads[0]!.content, undefined);
       });
     });
 
@@ -266,15 +466,15 @@ describe("article-formatter", () => {
           ],
         });
 
-        expect(payloads.length).toBe(1);
-        expect(payloads[0]!.content).toBe("Hello Test");
-        expect(payloads[0]!.components).toBeDefined();
-        expect(payloads[0]!.components!.length).toBe(1);
+        assert.strictEqual(payloads.length, 1);
+        assert.strictEqual(payloads[0]!.content, "Hello Test");
+        assert.notStrictEqual(payloads[0]!.components, undefined);
+        assert.strictEqual(payloads[0]!.components!.length, 1);
         // Check the button label has placeholder replaced
         const actionRow = payloads[0]!.components![0] as {
           components: Array<{ label: string }>;
         };
-        expect(actionRow.components[0]!.label).toBe("Test");
+        assert.strictEqual(actionRow.components[0]!.label, "Test");
       });
 
       it("does not set V2 flag for V1 components", () => {
@@ -296,7 +496,7 @@ describe("article-formatter", () => {
           ],
         });
 
-        expect(payloads[0]!.flags).toBeUndefined();
+        assert.strictEqual(payloads[0]!.flags, undefined);
       });
     });
   });
@@ -305,25 +505,25 @@ describe("article-formatter", () => {
     it("replaces placeholders in template", () => {
       const article = createArticle({ title: "My Article Title" });
       const name = generateThreadName(article, "New: {{title}}", {});
-      expect(name).toBe("New: My Article Title");
+      assert.strictEqual(name, "New: My Article Title");
     });
 
     it("uses default template if not provided", () => {
       const article = createArticle({ title: "Default Title" });
       const name = generateThreadName(article, null, {});
-      expect(name).toBe("Default Title");
+      assert.strictEqual(name, "Default Title");
     });
 
     it("falls back to 'New Article' if no title", () => {
       const article = createArticle({});
       const name = generateThreadName(article, null, {});
-      expect(name).toBe("New Article");
+      assert.strictEqual(name, "New Article");
     });
 
     it("truncates to 100 characters", () => {
       const article = createArticle({ title: "A".repeat(200) });
       const name = generateThreadName(article, "{{title}}", {});
-      expect(name.length).toBeLessThanOrEqual(100);
+      assert.ok(name.length <= 100);
     });
   });
 
@@ -337,9 +537,9 @@ describe("article-formatter", () => {
         tags: ["tag1", "tag2"],
       });
 
-      expect(body.thread_name).toBe("My Thread");
-      expect(body.applied_tags).toEqual(["tag1", "tag2"]);
-      expect(body.content).toBe("Test");
+      assert.strictEqual(body.thread_name, "My Thread");
+      assert.deepStrictEqual(body.applied_tags, ["tag1", "tag2"]);
+      assert.strictEqual(body.content, "Test");
     });
 
     it("builds channel forum body with name and message", () => {
@@ -351,10 +551,10 @@ describe("article-formatter", () => {
         tags: ["tag1"],
       });
 
-      expect(body.name).toBe("My Thread");
-      expect(body.message).toBe(payload);
-      expect(body.type).toBe(11);
-      expect(body.applied_tags).toEqual(["tag1"]);
+      assert.strictEqual(body.name, "My Thread");
+      assert.strictEqual(body.message, payload);
+      assert.strictEqual(body.type, 11);
+      assert.deepStrictEqual(body.applied_tags, ["tag1"]);
     });
   });
 
@@ -365,13 +565,13 @@ describe("article-formatter", () => {
         [{ id: "tag1" }, { id: "tag2" }],
         article
       );
-      expect(tags).toEqual(["tag1", "tag2"]);
+      assert.deepStrictEqual(tags, ["tag1", "tag2"]);
     });
 
     it("returns empty array for null tags", () => {
       const article = createArticle({});
-      expect(getForumTagsToSend(null, article)).toEqual([]);
-      expect(getForumTagsToSend(undefined, article)).toEqual([]);
+      assert.deepStrictEqual(getForumTagsToSend(null, article), []);
+      assert.deepStrictEqual(getForumTagsToSend(undefined, article), []);
     });
 
     it("filters tags based on expression", () => {
@@ -427,7 +627,7 @@ describe("article-formatter", () => {
         ],
         article
       );
-      expect(tags).toEqual(["tech-tag"]);
+      assert.deepStrictEqual(tags, ["tech-tag"]);
     });
   });
 
@@ -444,8 +644,11 @@ describe("article-formatter", () => {
         {}
       );
 
-      expect(enhanced[0]!.username).toBe("Bot: John");
-      expect(enhanced[0]!.avatar_url).toBe("https://avatar.com/John.png");
+      assert.strictEqual(enhanced[0]!.username, "Bot: John");
+      assert.strictEqual(
+        enhanced[0]!.avatar_url,
+        "https://avatar.com/John.png"
+      );
     });
 
     it("truncates username to 256 characters", () => {
@@ -460,7 +663,38 @@ describe("article-formatter", () => {
         {}
       );
 
-      expect(enhanced[0]!.username!.length).toBeLessThanOrEqual(256);
+      assert.ok(enhanced[0]!.username!.length <= 256);
+    });
+  });
+  
+  describe("formatArticleForDiscord", () => {
+    it("returns the original content formatted with markdown", async () => {
+      const val = `<p style="text-align: left;"></p><div style="text-align: center;"><b style="font-family: arial;"><span style="font-size: large;">&nbsp;(VOSTFR)&nbsp;</span></b></div>`;
+
+      const result = await formatArticleForDiscord(
+        {
+          flattened: {
+            id: "1",
+            idHash: "1",
+            title: val,
+          },
+          raw: {},
+        },
+        {
+          customPlaceholders: [
+            {
+              id: "test",
+              referenceName: "test",
+              sourcePlaceholder: "title",
+              steps: [],
+            },
+          ],
+          disableImageLinkPreviews: false,
+          formatTables: false,
+          stripImages: false,
+        }
+      );
+      deepStrictEqual(result.customPlaceholderPreviews[0][0], "(VOSTFR)");
     });
   });
 
@@ -469,7 +703,7 @@ describe("article-formatter", () => {
       it("ignores when there are no children", () => {
         const value = "<div>hello <div></div></div>";
         const result = formatValueForDiscord(value);
-        expect(result.value).toBe("hello");
+        assert.strictEqual(result.value, "hello");
       });
     });
 
@@ -477,7 +711,7 @@ describe("article-formatter", () => {
       it("adds a newline", () => {
         const value = "hello<br />world";
         const result = formatValueForDiscord(value);
-        expect(result.value).toBe("hello\nworld");
+        assert.strictEqual(result.value, "hello\nworld");
       });
     });
 
@@ -485,7 +719,7 @@ describe("article-formatter", () => {
       it("adds new lines", () => {
         const value = "hello\nworld";
         const result = formatValueForDiscord(value);
-        expect(result.value).toBe("hello\nworld");
+        assert.strictEqual(result.value, "hello\nworld");
       });
     });
 
@@ -493,7 +727,8 @@ describe("article-formatter", () => {
       it("returns the text with the link", () => {
         const value = 'Say <a href="https://example.com">Hello World</a> to me';
         const result = formatValueForDiscord(value);
-        expect(result.value).toBe(
+        assert.strictEqual(
+          result.value,
           "Say [Hello World](https://example.com) to me"
         );
       });
@@ -502,13 +737,16 @@ describe("article-formatter", () => {
         const value =
           'Say <a href="https://example.com">https://example.com</a> to me';
         const result = formatValueForDiscord(value);
-        expect(result.value).toBe("Say https://example.com to me");
+        assert.strictEqual(result.value, "Say https://example.com to me");
       });
 
       it("works with nested inline elements", () => {
         const value = `<a href="https://example.com"><strong>Hello World</strong></a>`;
         const result = formatValueForDiscord(value);
-        expect(result.value).toBe("[**Hello World**](https://example.com)");
+        assert.strictEqual(
+          result.value,
+          "[**Hello World**](https://example.com)"
+        );
       });
     });
 
@@ -516,14 +754,14 @@ describe("article-formatter", () => {
       it("returns the image link with no alt", () => {
         const value = '<img src="https://example.com/image.png" />';
         const result = formatValueForDiscord(value);
-        expect(result.value).toBe("https://example.com/image.png");
+        assert.strictEqual(result.value, "https://example.com/image.png");
       });
 
       it("returns the image link with an alt", () => {
         const value =
           '<img src="https://example.com/image.png" alt="this should not show" />';
         const result = formatValueForDiscord(value);
-        expect(result.value).toBe("https://example.com/image.png");
+        assert.strictEqual(result.value, "https://example.com/image.png");
       });
 
       it("excludes the image if strip image option is true", () => {
@@ -533,7 +771,7 @@ describe("article-formatter", () => {
           formatTables: false,
           disableImageLinkPreviews: false,
         });
-        expect(result.value).toBe("Hello World");
+        assert.strictEqual(result.value, "Hello World");
       });
 
       it("wraps links with < and > when disable image link previews is true", () => {
@@ -544,7 +782,8 @@ describe("article-formatter", () => {
           formatTables: false,
           disableImageLinkPreviews: true,
         });
-        expect(result.value).toBe(
+        assert.strictEqual(
+          result.value,
           "Hello <https://example.com/image.png> World <https://example.com/image2.png>"
         );
       });
@@ -556,7 +795,7 @@ describe("article-formatter", () => {
           const result = formatValueForDiscord(
             `<${elem}>hello world</${elem}>`
           );
-          expect(result.value).toBe("**hello world**");
+          assert.strictEqual(result.value, "**hello world**");
         });
       });
     });
@@ -565,19 +804,19 @@ describe("article-formatter", () => {
       it("returns the text bolded", () => {
         const value = "a <strong>hello world</strong> b";
         const result = formatValueForDiscord(value);
-        expect(result.value).toBe("a **hello world** b");
+        assert.strictEqual(result.value, "a **hello world** b");
       });
 
       it("does not add new newlines", () => {
         const value = `<p>First <strong>Before</strong>:</p>`;
         const result = formatValueForDiscord(value);
-        expect(result.value).toBe("First **Before**:");
+        assert.strictEqual(result.value, "First **Before**:");
       });
 
       it("adds spaces around it", () => {
         const value = `this <strong>is</strong> bold`;
         const result = formatValueForDiscord(value);
-        expect(result.value).toBe("this **is** bold");
+        assert.strictEqual(result.value, "this **is** bold");
       });
     });
 
@@ -585,13 +824,13 @@ describe("article-formatter", () => {
       it("returns the text in an inline code block", () => {
         const value = "<code>hello world</code>";
         const result = formatValueForDiscord(value);
-        expect(result.value).toBe("`hello world`");
+        assert.strictEqual(result.value, "`hello world`");
       });
 
       it("does not add new line before starting tag", () => {
         const value = `<p>First <code>Before</code>:</p>`;
         const result = formatValueForDiscord(value);
-        expect(result.value).toBe("First `Before`:");
+        assert.strictEqual(result.value, "First `Before`:");
       });
     });
 
@@ -599,13 +838,13 @@ describe("article-formatter", () => {
       it("returns the text in a code block", () => {
         const value = "<pre>hello world</pre>";
         const result = formatValueForDiscord(value);
-        expect(result.value).toBe("```hello world```");
+        assert.strictEqual(result.value, "```hello world```");
       });
 
       it('returns the text in a code block if its only child is a "code" element with a text node', () => {
         const value = "<pre><code>hello world</code></pre>";
         const result = formatValueForDiscord(value);
-        expect(result.value).toBe("```hello world```");
+        assert.strictEqual(result.value, "```hello world```");
       });
     });
 
@@ -613,7 +852,7 @@ describe("article-formatter", () => {
       it("returns the text italicized", () => {
         const value = "<em>hello world</em>";
         const result = formatValueForDiscord(value);
-        expect(result.value).toBe("*hello world*");
+        assert.strictEqual(result.value, "*hello world*");
       });
     });
 
@@ -621,7 +860,7 @@ describe("article-formatter", () => {
       it("returns the text underlined", () => {
         const value = "<u>hello world</u>";
         const result = formatValueForDiscord(value);
-        expect(result.value).toBe("__hello world__");
+        assert.strictEqual(result.value, "__hello world__");
       });
     });
 
@@ -652,7 +891,8 @@ describe("article-formatter", () => {
           disableImageLinkPreviews: false,
         });
 
-        expect(result.value).toBe(
+        assert.strictEqual(
+          result.value,
           `\`\`\`
 
 COMPANY                      CONTACT           COUNTRY
@@ -667,7 +907,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
     describe("unordered list", () => {
       it("overrides the prefix", () => {
         const result = formatValueForDiscord("<ul><li>1</li><li>2</li></ul>");
-        expect(result.value).toBe("* 1\n* 2");
+        assert.strictEqual(result.value, "* 1\n* 2");
       });
     });
 
@@ -677,7 +917,10 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         <p>hello <strong>world 😀</strong> <p>another example</p></p>
         `;
         const result = formatValueForDiscord(val);
-        expect(result.value).toBe("hello **world 😀** \n\nanother example");
+        assert.strictEqual(
+          result.value,
+          "hello **world 😀** \n\nanother example"
+        );
       });
 
       it("does not add extra newlines for empty paragraphs", () => {
@@ -685,7 +928,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         <p>hello world <p></p>Hello world</p>
         `;
         const result = formatValueForDiscord(val);
-        expect(result.value).toBe("hello world \n\nHello world");
+        assert.strictEqual(result.value, "hello world \n\nHello world");
       });
     });
   });
@@ -695,7 +938,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
       const result = applySplit("hello world", {
         isEnabled: false,
       });
-      expect(result).toEqual(["hello world"]);
+      assert.deepStrictEqual(result, ["hello world"]);
     });
 
     it("applies split with a low limit", () => {
@@ -705,12 +948,12 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         appendChar: "",
         prependChar: "",
       });
-      expect(result).toEqual(["hell", "o", "worl", "d"]);
+      assert.deepStrictEqual(result, ["hell", "o", "worl", "d"]);
     });
 
     it("returns an empty string if input text is empty", () => {
       const result = applySplit("");
-      expect(result).toEqual([""]);
+      assert.deepStrictEqual(result, [""]);
     });
 
     it("applies split with a high limit", () => {
@@ -720,7 +963,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         appendChar: "",
         prependChar: "",
       });
-      expect(result).toEqual(["hello world"]);
+      assert.deepStrictEqual(result, ["hello world"]);
     });
 
     it("does not add append char if there was nothing to split on", () => {
@@ -730,7 +973,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         appendChar: "!",
         prependChar: "",
       });
-      expect(result).toEqual(["hello world"]);
+      assert.deepStrictEqual(result, ["hello world"]);
     });
 
     it("does not add prepend char if there was nothing to split on", () => {
@@ -740,7 +983,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         appendChar: "",
         prependChar: "!",
       });
-      expect(result).toEqual(["hello world"]);
+      assert.deepStrictEqual(result, ["hello world"]);
     });
 
     it("does not add append and prepend char if there was nothing to split on", () => {
@@ -750,7 +993,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         appendChar: "!",
         prependChar: "!",
       });
-      expect(result).toEqual(["hello world"]);
+      assert.deepStrictEqual(result, ["hello world"]);
     });
 
     it("applies split with a high limit and append and prepend char and multiple lines", () => {
@@ -760,7 +1003,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         appendChar: "!",
         prependChar: "!",
       });
-      expect(result).toEqual(["!hello world", "hello world!"]);
+      assert.deepStrictEqual(result, ["!hello world", "hello world!"]);
     });
 
     it("does not create duplicate split chars with multiple new lines", () => {
@@ -768,7 +1011,14 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         limit: 5,
         isEnabled: true,
       });
-      expect(result).toEqual(["hello", "world", ".", "hello", "world", "."]);
+      assert.deepStrictEqual(result, [
+        "hello",
+        "world",
+        ".",
+        "hello",
+        "world",
+        ".",
+      ]);
     });
 
     it("should preserve double new lines when possible", () => {
@@ -776,7 +1026,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         limit: 4,
         isEnabled: true,
       });
-      expect(result).toEqual(["a\n\na", "b"]);
+      assert.deepStrictEqual(result, ["a\n\na", "b"]);
     });
 
     it("uses limit of 1 if input limit is under the length of append/prepend chars", () => {
@@ -792,11 +1042,11 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         prependChar,
       });
 
-      expect(result[0]).toBe(`${prependChar}h`);
+      assert.strictEqual(result[0], `${prependChar}h`);
       result.slice(1, result.length - 1).map((r) => {
-        expect(r.length).toBe(1);
+        assert.strictEqual(r.length, 1);
       });
-      expect(result[result.length - 1]).toBe(`d${appendChar}`);
+      assert.strictEqual(result[result.length - 1], `d${appendChar}`);
     });
 
     it("splits on periods when available", () => {
@@ -808,7 +1058,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         isEnabled: true,
       });
 
-      expect(result).toEqual(["hello.", "world."]);
+      assert.deepStrictEqual(result, ["hello.", "world."]);
     });
 
     it("splits on question marks when available", () => {
@@ -820,7 +1070,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         isEnabled: true,
       });
 
-      expect(result).toEqual(["hello?", "world?"]);
+      assert.deepStrictEqual(result, ["hello?", "world?"]);
     });
 
     it("splits on exclamation marks when available", () => {
@@ -832,7 +1082,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         isEnabled: true,
       });
 
-      expect(result).toEqual(["hello!", "world!"]);
+      assert.deepStrictEqual(result, ["hello!", "world!"]);
     });
 
     it("splits on all punctuation when available", () => {
@@ -844,7 +1094,13 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         isEnabled: true,
       });
 
-      expect(result).toEqual(["hello!", "world?", "fate.", "codingh", "ere!"]);
+      assert.deepStrictEqual(result, [
+        "hello!",
+        "world?",
+        "fate.",
+        "codingh",
+        "ere!",
+      ]);
     });
   });
 
@@ -852,59 +1108,59 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
     it("returns a nested string", () => {
       const obj = { foo: { bar: { a: "1" } } };
       const val = getNestedPrimitiveValue(obj, "foo__bar__a");
-      expect(val).toBe("1");
+      assert.strictEqual(val, "1");
     });
 
     it("returns nested numbers as strings", () => {
       const obj = { foo: { bar: { a: 1 } } };
       const val = getNestedPrimitiveValue(obj, "foo__bar__a");
-      expect(val).toBe("1");
+      assert.strictEqual(val, "1");
     });
 
     it("returns nested dates as strings", () => {
       const date = new Date("2021-01-01");
       const obj = { foo: { bar: { a: date } } };
       const val = getNestedPrimitiveValue(obj, "foo__bar__a");
-      expect(val).toBe(date.toISOString());
+      assert.strictEqual(val, date.toISOString());
     });
 
     it("returns invalid dates as null", () => {
       const date = new Date("abc");
       const obj = { foo: { bar: { a: date } } };
       const val = getNestedPrimitiveValue(obj, "foo__bar__a");
-      expect(val).toBe(null);
+      assert.strictEqual(val, null);
     });
 
     it("returns objects as null", () => {
       const obj = { foo: { bar: { a: {} } } };
       const val = getNestedPrimitiveValue(obj, "foo__bar__a");
-      expect(val).toBe(null);
+      assert.strictEqual(val, null);
     });
 
     it("returns arrays as null", () => {
       const obj = { foo: { bar: { a: [] } } };
       const val = getNestedPrimitiveValue(obj, "foo__bar__a");
-      expect(val).toBe(null);
+      assert.strictEqual(val, null);
     });
 
     it("returns non-existent fields as null", () => {
       const obj = { foo: {} };
       const val = getNestedPrimitiveValue(obj as never, "foo__bar__a");
-      expect(val).toBe(null);
+      assert.strictEqual(val, null);
     });
 
     it("returns array index values", () => {
       const obj = { foo: { bar: { a: ["a", "b"] } } };
       const val = getNestedPrimitiveValue(obj, "foo__bar__a__1");
-      expect(val).toBe("b");
+      assert.strictEqual(val, "b");
     });
 
     it("returns null/undefined as null", () => {
       const obj = { foo: { bar: { a: undefined as unknown } } };
-      expect(getNestedPrimitiveValue(obj, "foo__bar__a")).toBe(null);
+      assert.strictEqual(getNestedPrimitiveValue(obj, "foo__bar__a"), null);
 
       obj.foo.bar.a = null;
-      expect(getNestedPrimitiveValue(obj, "foo__bar__a")).toBe(null);
+      assert.strictEqual(getNestedPrimitiveValue(obj, "foo__bar__a"), null);
     });
   });
 
@@ -936,7 +1192,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
             ],
           },
         ]);
-        expect(result["custom::test"]).toBe("Goodbye World");
+        assert.strictEqual(result["custom::test"], "Goodbye World");
       });
 
       it("does not modify source placeholder", () => {
@@ -955,7 +1211,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
             ],
           },
         ]);
-        expect(result["title"]).toBe("Hello World");
+        assert.strictEqual(result["title"], "Hello World");
       });
 
       it("replaces with empty string if no replacement specified", () => {
@@ -973,7 +1229,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
             ],
           },
         ]);
-        expect(result["custom::test"]).toBe("World");
+        assert.strictEqual(result["custom::test"], "World");
       });
 
       it("replaces globally", () => {
@@ -992,7 +1248,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
             ],
           },
         ]);
-        expect(result["custom::test"]).toBe("Hezzo Hezzo Worzd");
+        assert.strictEqual(result["custom::test"], "Hezzo Hezzo Worzd");
       });
 
       it("replaces case-insensitively by default", () => {
@@ -1011,7 +1267,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
             ],
           },
         ]);
-        expect(result["custom::test"]).toBe("replaced replaced world");
+        assert.strictEqual(result["custom::test"], "replaced replaced world");
       });
 
       it("chains multiple steps", () => {
@@ -1035,7 +1291,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
             ],
           },
         ]);
-        expect(result["custom::test"]).toBe("farewell world");
+        assert.strictEqual(result["custom::test"], "farewell world");
       });
 
       it("returns previews with intermediate step outputs", () => {
@@ -1057,7 +1313,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
             ],
           },
         ]);
-        expect(previews).toEqual([
+        assert.deepStrictEqual(previews, [
           ["hello world", "goodbye world", "GOODBYE WORLD"],
         ]);
       });
@@ -1074,7 +1330,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
             steps: [{ type: CustomPlaceholderStepType.UrlEncode }],
           },
         ]);
-        expect(result["custom::test"]).toBe("Hello%20World!");
+        assert.strictEqual(result["custom::test"], "Hello%20World!");
       });
 
       it("encodes special characters", () => {
@@ -1089,7 +1345,8 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
             steps: [{ type: CustomPlaceholderStepType.UrlEncode }],
           },
         ]);
-        expect(result["custom::test"]).toBe(
+        assert.strictEqual(
+          result["custom::test"],
           "foo%3Dbar%26baz%3Dqux%3Ftest%23hash"
         );
       });
@@ -1111,7 +1368,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
             ],
           },
         ]);
-        expect(result["custom::test"]).toBe("2023-06-15");
+        assert.strictEqual(result["custom::test"], "2023-06-15");
       });
 
       it("applies timezone", () => {
@@ -1131,7 +1388,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
           },
         ]);
         // 10:30 UTC = 06:30 EDT (summer time)
-        expect(result["custom::test"]).toBe("06:30");
+        assert.strictEqual(result["custom::test"], "06:30");
       });
 
       it("returns empty string for invalid date", () => {
@@ -1149,7 +1406,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
             ],
           },
         ]);
-        expect(result["custom::test"]).toBe("");
+        assert.strictEqual(result["custom::test"], "");
       });
 
       it("returns empty string for invalid timezone", () => {
@@ -1168,7 +1425,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
             ],
           },
         ]);
-        expect(result["custom::test"]).toBe("");
+        assert.strictEqual(result["custom::test"], "");
       });
     });
 
@@ -1183,7 +1440,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
             steps: [{ type: CustomPlaceholderStepType.Uppercase }],
           },
         ]);
-        expect(result["custom::test"]).toBe("HELLO WORLD");
+        assert.strictEqual(result["custom::test"], "HELLO WORLD");
       });
     });
 
@@ -1198,7 +1455,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
             steps: [{ type: CustomPlaceholderStepType.Lowercase }],
           },
         ]);
-        expect(result["custom::test"]).toBe("hello world");
+        assert.strictEqual(result["custom::test"], "hello world");
       });
     });
 
@@ -1219,7 +1476,7 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
             ],
           },
         ]);
-        expect(result["custom::test"]).toBe("");
+        assert.strictEqual(result["custom::test"], "");
       });
     });
   });

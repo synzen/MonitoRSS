@@ -2,6 +2,12 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { createHash } from "crypto";
 import dayjs from "dayjs";
 import type { Article } from "../parser";
+import {
+  recordDeliveryPreviewForTargetArticles,
+  DeliveryPreviewStage,
+  DeliveryPreviewStageStatus,
+  endDeliveryPreviewEarly,
+} from "../../delivery-preview";
 
 const sha1 = createHash("sha1");
 
@@ -30,6 +36,8 @@ export interface DateCheckOptions {
   oldArticleDateDiffMsThreshold?: number;
   datePlaceholderReferences?: string[];
 }
+
+const DEFAULT_DATE_PLACEHOLDERS = ["date", "pubdate"];
 
 export interface ArticleComparisonResult {
   articlesToDeliver: Article[];
@@ -489,9 +497,31 @@ async function checkPassingComparisons(
   return results.filter((article): article is Article => article !== null);
 }
 
-/**
- * Filter articles based on date checks.
- */
+interface ArticleDateCheckInfo {
+  articleDate: string | null;
+  ageMs: number | null;
+  passes: boolean;
+}
+
+function getArticleDateCheckInfo(
+  article: Article,
+  threshold: number,
+  placeholders: string[]
+): ArticleDateCheckInfo {
+  for (const placeholder of placeholders) {
+    const raw = article.raw[placeholder as keyof typeof article.raw];
+    if (raw) {
+      const parsed = dayjs(raw);
+      if (parsed.isValid()) {
+        const ageMs = dayjs().diff(parsed, "millisecond");
+        const passes = ageMs < 0 || ageMs <= threshold;
+        return { articleDate: raw, ageMs, passes };
+      }
+    }
+  }
+  return { articleDate: null, ageMs: null, passes: true };
+}
+
 function filterArticlesBasedOnDateChecks(
   articles: Article[],
   dateChecks?: DateCheckOptions
@@ -501,29 +531,12 @@ function filterArticlesBasedOnDateChecks(
   }
 
   const threshold = dateChecks.oldArticleDateDiffMsThreshold;
-  const placeholders = dateChecks.datePlaceholderReferences || [
-    "date",
-    "pubdate",
-  ];
+  const placeholders =
+    dateChecks.datePlaceholderReferences || DEFAULT_DATE_PLACEHOLDERS;
 
   return articles.filter((article) => {
-    // Try to find a valid date from the configured placeholders
-    const dateValue = placeholders
-      .map((placeholder) => {
-        const raw = article.raw[placeholder as keyof typeof article.raw];
-        return dayjs(raw || "invalid date");
-      })
-      .find((d) => d.isValid());
-
-    if (!dateValue) {
-      // No valid date found, deliver anyway
-      return true;
-    }
-
-    const diffMs = dayjs().diff(dateValue, "millisecond");
-
-    // Pass if: in the future OR within threshold
-    return diffMs < 0 || diffMs <= threshold;
+    const { passes } = getArticleDateCheckInfo(article, threshold, placeholders);
+    return passes;
   });
 }
 
@@ -542,10 +555,30 @@ export async function getArticlesToDeliver(
 ): Promise<ArticleComparisonResult> {
   const { blockingComparisons, passingComparisons, dateChecks } = options;
 
+  // Lazy article map creation - only created when in diagnostic mode
+  let articleMap: Map<string, (typeof articles)[number]> | null = null;
+  function getArticleMap() {
+    if (!articleMap) {
+      articleMap = new Map(articles.map((a) => [a.flattened.idHash, a]));
+    }
+    return articleMap;
+  }
+
   // Check if we have prior articles stored
   const hasPriorArticles = await store.hasPriorArticlesStored(feedId);
 
   if (!hasPriorArticles) {
+    // Record delivery preview for first run - O(T) where T = target articles
+    recordDeliveryPreviewForTargetArticles(getArticleMap(), () => ({
+      stage: DeliveryPreviewStage.FeedState,
+      status: DeliveryPreviewStageStatus.Failed,
+      details: {
+        hasPriorArticles: false,
+        isFirstRun: true,
+        storedComparisonNames: [],
+      },
+    }));
+
     // First run - store all articles, deliver nothing
     await store.storeArticles(feedId, articles, [
       ...blockingComparisons,
@@ -566,6 +599,18 @@ export async function getArticlesToDeliver(
   // Get which comparison field names are "active" (already stored)
   // Only comparisons that have been stored before will be used for blocking/passing
   const storedComparisonNames = await store.getStoredComparisonNames(feedId);
+
+  // Record FeedState delivery preview for non-first-run case - O(T)
+  recordDeliveryPreviewForTargetArticles(getArticleMap(), () => ({
+    stage: DeliveryPreviewStage.FeedState,
+    status: DeliveryPreviewStageStatus.Passed,
+    details: {
+      hasPriorArticles: true,
+      isFirstRun: false,
+      storedComparisonNames: Array.from(storedComparisonNames),
+    },
+  }));
+
   const activeBlockingComparisons = blockingComparisons.filter((name) =>
     storedComparisonNames.has(name)
   );
@@ -586,8 +631,10 @@ export async function getArticlesToDeliver(
     articles
   );
 
-  // Get seen articles (existing IDs)
   const newArticleHashes = new Set(newArticles.map((a) => a.flattened.idHash));
+  const restoreHashes = new Set(articlesToRestore.map((a) => a.flattened.idHash));
+
+  // Get seen articles (existing IDs)
   const seenArticles = articles.filter(
     (a) => !newArticleHashes.has(a.flattened.idHash)
   );
@@ -601,12 +648,70 @@ export async function getArticlesToDeliver(
   );
 
   // Check passing comparisons on SEEN articles (only using active comparisons)
+  // Must check BEFORE recording IdComparison so we know if seen articles pass via PassingComparison
   const articlesPassedComparisons = await checkPassingComparisons(
     store,
     feedId,
     activePassingComparisons,
     seenArticles
   );
+  const passedViaComparisonHashes = new Set(
+    articlesPassedComparisons.map((a) => a.flattened.idHash)
+  );
+
+  // Record IdComparison delivery preview - O(T)
+  recordDeliveryPreviewForTargetArticles(getArticleMap(), (_, hash) => {
+    const isNew = newArticleHashes.has(hash);
+    const isRestored = restoreHashes.has(hash);
+
+    return {
+      stage: DeliveryPreviewStage.IdComparison,
+      status: isNew ? DeliveryPreviewStageStatus.Passed : DeliveryPreviewStageStatus.Failed,
+      details: {
+        articleIdHash: hash,
+        foundInHotPartition: !isNew && !isRestored,
+        foundInColdPartition: isRestored,
+        isNew,
+      },
+    };
+  });
+
+  // Record BlockingComparison delivery preview for new target articles - O(T)
+  if (blockingComparisons.length > 0) {
+  const pastBlocksHashes = new Set(articlesPastBlocks.map((a) => a.flattened.idHash));
+    recordDeliveryPreviewForTargetArticles(getArticleMap(), (_, hash) => {
+      if (!newArticleHashes.has(hash)) return null; // Only record for new articles
+      const passed = pastBlocksHashes.has(hash);
+      return {
+        stage: DeliveryPreviewStage.BlockingComparison,
+        status: passed ? DeliveryPreviewStageStatus.Passed : DeliveryPreviewStageStatus.Failed,
+        details: {
+          comparisonFields: blockingComparisons,
+          activeFields: activeBlockingComparisons,
+          blockedByFields: passed ? [] : activeBlockingComparisons,
+        },
+      };
+    });
+  }
+
+  // Record PassingComparison delivery preview for seen target articles - O(T)
+  if (passingComparisons.length > 0) {
+    const seenHashes = new Set(seenArticles.map((a) => a.flattened.idHash));
+
+    recordDeliveryPreviewForTargetArticles(getArticleMap(), (_, hash) => {
+      if (!seenHashes.has(hash)) return null; // Only record for seen articles
+      const passed = passedViaComparisonHashes.has(hash);
+      return {
+        stage: DeliveryPreviewStage.PassingComparison,
+        status: passed ? DeliveryPreviewStageStatus.Passed : DeliveryPreviewStageStatus.Failed,
+        details: {
+          comparisonFields: passingComparisons,
+          activeFields: activePassingComparisons,
+          changedFields: passed ? activePassingComparisons : [],
+        },
+      };
+    });
+  }
 
   // Combine and reverse (deliver oldest first)
   const candidateArticles = [
@@ -619,6 +724,36 @@ export async function getArticlesToDeliver(
     candidateArticles,
     dateChecks
   );
+
+  // Record DateCheck delivery preview for candidate target articles - O(T)
+  if (dateChecks?.oldArticleDateDiffMsThreshold) {
+    const candidateHashes = new Set(candidateArticles.map((a) => a.flattened.idHash));
+    const placeholders =
+      dateChecks.datePlaceholderReferences || DEFAULT_DATE_PLACEHOLDERS;
+    const threshold = dateChecks.oldArticleDateDiffMsThreshold;
+
+    recordDeliveryPreviewForTargetArticles(getArticleMap(), (article, hash) => {
+      if (!candidateHashes.has(hash)) return null; // Only record for candidates
+
+      const { articleDate, ageMs, passes } = getArticleDateCheckInfo(
+        article,
+        threshold,
+        placeholders
+      );
+
+      return {
+        stage: DeliveryPreviewStage.DateCheck,
+        status: passes ? DeliveryPreviewStageStatus.Passed : DeliveryPreviewStageStatus.Failed,
+        details: {
+          articleDate,
+          threshold,
+          datePlaceholders: placeholders,
+          ageMs,
+          withinThreshold: passes,
+        },
+      };
+    });
+  }
 
   // Store new articles
   if (newArticles.length > 0) {

@@ -88,6 +88,10 @@ export const FEED_EXCEPTION_FILTER_ERROR_CODES: Record<
     status: HttpStatus.BAD_REQUEST,
     code: ApiErrorCode.ADD_FEED_WITH_SOURCE_FEED_NOT_FOUND,
   },
+  [FeedInvalidSslCertException.name]: {
+    status: HttpStatus.BAD_REQUEST,
+    code: ApiErrorCode.FEED_INVALID_SSL_CERT,
+  },
 };
 
 @Catch(StandardException)

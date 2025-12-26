@@ -1,15 +1,17 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, before, after } from "node:test";
+import * as assert from "node:assert";
 import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../../src/delivery";
 import getTestRssFeed from "../data/test-rss-feed";
 import { createTestContext } from "../helpers/test-context";
+import { setupTestDatabase, teardownTestDatabase, type TestStores } from "../helpers/setup-integration-tests";
 import type {
   FeedV2Event,
   ForumTagInput,
   EmbedInput,
 } from "../../src/shared/schemas";
 
-// Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
+let stores: TestStores;
 
 type MediumDetails = FeedV2Event["data"]["mediums"][0]["details"];
 
@@ -104,7 +106,7 @@ function getDiscordPayload(
   ctx: ReturnType<typeof createTestContext>,
   type?: "enqueue" | "api-request"
 ) {
-  expect(ctx.discordClient.capturedPayloads.length).toBeGreaterThan(0);
+  assert.ok(ctx.discordClient.capturedPayloads.length > 0);
 
   // Find the payload of the requested type, or use the first one
   const captured = type
@@ -125,14 +127,22 @@ function getDiscordPayload(
  * Helper to get the payload type (enqueue or api-request)
  */
 function getPayloadType(ctx: ReturnType<typeof createTestContext>): string {
-  expect(ctx.discordClient.capturedPayloads.length).toBeGreaterThan(0);
+  assert.ok(ctx.discordClient.capturedPayloads.length > 0);
   return ctx.discordClient.capturedPayloads[0]!.type;
 }
 
-describe("Discord Payload Forum Channels (e2e)", () => {
+describe("Discord Payload Forum Channels (e2e)", { concurrency: true }, () => {
+  before(async () => {
+    stores = await setupTestDatabase();
+  });
+
+  after(async () => {
+    await teardownTestDatabase();
+  });
+
   describe("Forum Thread Title", () => {
     it("creates forum thread with custom title using placeholders", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithForum = createEventWithForumChannel(ctx.testFeedV2Event, {
         forumThreadTitle: "News: {{title}}",
@@ -156,22 +166,22 @@ describe("Discord Payload Forum Channels (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithForum);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBeGreaterThanOrEqual(1);
+        assert.notStrictEqual(results, null);
+        assert.ok(results!.length >= 1);
 
         // Forum channel delivery uses api-request for thread creation
         const payloadType = getPayloadType(ctx);
-        expect(payloadType).toBe("api-request");
+        assert.strictEqual(payloadType, "api-request");
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.name).toBe("News: Breaking News Article");
+        assert.strictEqual(payload.name, "News: Breaking News Article");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("uses default title when forumThreadTitle is not set", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithForum = createEventWithForumChannel(ctx.testFeedV2Event, {
         forumThreadTitle: null,
@@ -195,18 +205,18 @@ describe("Discord Payload Forum Channels (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithForum);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         // Default title template is {{title}}
-        expect(payload.name).toBe("Article Title for Thread");
+        assert.strictEqual(payload.name, "Article Title for Thread");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("truncates forum thread title to 100 characters", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithForum = createEventWithForumChannel(ctx.testFeedV2Event, {
         forumThreadTitle: "{{title}}",
@@ -233,10 +243,10 @@ describe("Discord Payload Forum Channels (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithForum);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.name.length).toBeLessThanOrEqual(100);
+        assert.ok(payload.name.length <= 100);
       } finally {
         ctx.cleanup();
       }
@@ -245,7 +255,7 @@ describe("Discord Payload Forum Channels (e2e)", () => {
 
   describe("Forum Thread Tags", () => {
     it("includes forum tags in payload", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithForum = createEventWithForumChannel(ctx.testFeedV2Event, {
         forumThreadTitle: "{{title}}",
@@ -270,19 +280,19 @@ describe("Discord Payload Forum Channels (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithForum);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.applied_tags).toBeArray();
-        expect(payload.applied_tags).toContain("tag-1");
-        expect(payload.applied_tags).toContain("tag-2");
+        assert.ok(Array.isArray(payload.applied_tags));
+        assert.ok(payload.applied_tags.includes("tag-1"));
+        assert.ok(payload.applied_tags.includes("tag-2"));
       } finally {
         ctx.cleanup();
       }
     });
 
     it("filters forum tags based on expression", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithForum = createEventWithForumChannel(ctx.testFeedV2Event, {
         forumThreadTitle: "{{title}}",
@@ -327,20 +337,20 @@ describe("Discord Payload Forum Channels (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithForum);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.applied_tags).toBeArray();
+        assert.ok(Array.isArray(payload.applied_tags));
         // tag-always should be included, tag-tech should not (filter didn't match)
-        expect(payload.applied_tags).toContain("tag-always");
-        expect(payload.applied_tags).not.toContain("tag-tech");
+        assert.ok(payload.applied_tags.includes("tag-always"));
+        assert.ok(!payload.applied_tags.includes("tag-tech"));
       } finally {
         ctx.cleanup();
       }
     });
 
     it("includes filtered tag when expression matches", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithForum = createEventWithForumChannel(ctx.testFeedV2Event, {
         forumThreadTitle: "{{title}}",
@@ -384,10 +394,10 @@ describe("Discord Payload Forum Channels (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithForum);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.applied_tags).toContain("tag-tech");
+        assert.ok(payload.applied_tags.includes("tag-tech"));
       } finally {
         ctx.cleanup();
       }
@@ -396,7 +406,7 @@ describe("Discord Payload Forum Channels (e2e)", () => {
 
   describe("Forum Channel Thread Structure", () => {
     it("creates channel forum thread with correct structure", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithForum = createEventWithForumChannel(ctx.testFeedV2Event, {
         forumThreadTitle: "{{title}}",
@@ -421,17 +431,17 @@ describe("Discord Payload Forum Channels (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithForum);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
 
         // Channel forum uses name, message, applied_tags, type structure
-        expect(payload.name).toBeDefined();
-        expect(payload.message).toBeDefined();
-        expect(payload.type).toBe(11); // GUILD_PUBLIC_THREAD
+        assert.notStrictEqual(payload.name, undefined);
+        assert.notStrictEqual(payload.message, undefined);
+        assert.strictEqual(payload.type, 11); // GUILD_PUBLIC_THREAD
 
         // Message content should be in the message object
-        expect(payload.message.content).toBe("Read more about this topic!");
+        assert.strictEqual(payload.message.content, "Read more about this topic!");
       } finally {
         ctx.cleanup();
       }
@@ -440,7 +450,7 @@ describe("Discord Payload Forum Channels (e2e)", () => {
 
   describe("Forum Webhook Thread Structure", () => {
     it("creates webhook forum thread with thread_name", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithForum = createEventWithForumWebhook(ctx.testFeedV2Event, {
         forumThreadTitle: "Webhook: {{title}}",
@@ -465,21 +475,21 @@ describe("Discord Payload Forum Channels (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithForum);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         // Webhook forum uses api-request for thread creation
         const payload = getDiscordPayload(ctx, "api-request");
 
         // Webhook forum uses thread_name instead of name
-        expect(payload.thread_name).toBe("Webhook: Webhook Forum Article");
-        expect(payload.username).toBe("RSS Bot");
+        assert.strictEqual(payload.thread_name, "Webhook: Webhook Forum Article");
+        assert.strictEqual(payload.username, "RSS Bot");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("creates webhook forum thread with avatar and tags", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithForum = createEventWithForumWebhook(ctx.testFeedV2Event, {
         forumThreadTitle: "{{title}}",
@@ -506,15 +516,15 @@ describe("Discord Payload Forum Channels (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithForum);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         // Webhook forum uses api-request for thread creation
         const payload = getDiscordPayload(ctx, "api-request");
 
-        expect(payload.thread_name).toBe("Full Webhook Forum Test");
-        expect(payload.username).toBe("News Bot");
-        expect(payload.avatar_url).toBe("https://example.com/bot-avatar.png");
-        expect(payload.applied_tags).toContain("news-tag");
+        assert.strictEqual(payload.thread_name, "Full Webhook Forum Test");
+        assert.strictEqual(payload.username, "News Bot");
+        assert.strictEqual(payload.avatar_url, "https://example.com/bot-avatar.png");
+        assert.ok(payload.applied_tags.includes("news-tag"));
       } finally {
         ctx.cleanup();
       }
@@ -523,7 +533,7 @@ describe("Discord Payload Forum Channels (e2e)", () => {
 
   describe("Forum Content and Embeds", () => {
     it("includes content and embeds in forum thread message", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const baseEvent = createEventWithForumChannel(ctx.testFeedV2Event, {
         forumThreadTitle: "{{title}}",
@@ -572,24 +582,24 @@ describe("Discord Payload Forum Channels (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithEmbeds);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         // Channel forum uses api-request for thread creation
         const payload = getDiscordPayload(ctx, "api-request");
 
         // Content should be in the message object
-        expect((payload.message as Record<string, unknown>).content).toBe(
+        assert.strictEqual((payload.message as Record<string, unknown>).content,
           "Article content: Forum article description"
         );
 
         // Embeds should be in the message object
         const message = payload.message as Record<string, unknown>;
-        expect(message.embeds).toBeArray();
+        assert.ok(Array.isArray(message.embeds));
         const embeds = message.embeds as Array<Record<string, unknown>>;
-        expect(embeds.length).toBeGreaterThan(0);
-        expect(embeds[0]!.title).toBe("Forum with Embeds");
-        expect(embeds[0]!.description).toBe("Forum article description");
-        expect(embeds[0]!.color).toBe(0x00ff00);
+        assert.ok(embeds.length > 0);
+        assert.strictEqual(embeds[0]!.title, "Forum with Embeds");
+        assert.strictEqual(embeds[0]!.description, "Forum article description");
+        assert.strictEqual(embeds[0]!.color, 0x00ff00);
       } finally {
         ctx.cleanup();
       }

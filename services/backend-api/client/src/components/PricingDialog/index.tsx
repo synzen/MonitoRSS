@@ -32,19 +32,16 @@ import {
   Divider,
   Skeleton,
 } from "@chakra-ui/react";
-import { ChangeEvent, useEffect, useState } from "react";
-import { captureException } from "@sentry/react";
+import { ChangeEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { InlineErrorAlert } from "../InlineErrorAlert";
-import { useUserMe } from "../../features/discordUser";
 import { FAQ } from "../FAQ";
 import { ChangeSubscriptionDialog } from "../ChangeSubscriptionDialog";
 import { pages, ProductKey } from "../../constants";
-import { useSubscriptionProducts } from "../../features/subscriptionProducts";
 import { EXTERNAL_PROPERTIES_MAX_ARTICLES } from "../../constants/externalPropertiesMaxArticles";
 import { usePaddleContext } from "../../contexts/PaddleContext";
-import { PricePreview } from "../../types/PricePreview";
 import { notifyInfo } from "../../utils/notifyInfo";
+import { usePricingData } from "../../features/subscriptionProducts";
 
 interface Props {
   isOpen: boolean;
@@ -61,189 +58,95 @@ enum Feature {
   ExternalProperties = "External Properties",
 }
 
-const tiers: Array<{
-  name: string;
+interface TierConfig {
   productId: ProductKey;
-  disableSubscribe?: boolean;
-  priceFormatted: string;
-  highlighted?: boolean;
-  baseFeedLimit: number;
   supportsAdditionalFeeds?: boolean;
   features: Array<{ name: string; description: string; enabled?: boolean }>;
-}> = [
+}
+
+const TIER_CONFIGS: TierConfig[] = [
   {
-    name: "TIER 1",
     productId: ProductKey.Tier1,
-    priceFormatted: "$5",
-    baseFeedLimit: 35,
-    supportsAdditionalFeeds: false,
     features: [
-      {
-        name: Feature.Feeds,
-        description: "Track 35 news feeds",
-        enabled: true,
-      },
-      {
-        name: Feature.ArticleLimit,
-        description: "1000 articles daily per feed",
-        enabled: true,
-      },
-      {
-        name: Feature.Webhooks,
-        description: "Custom name/avatar with webhooks",
-        enabled: true,
-      },
-      {
-        name: Feature.CustomPlaceholders,
-        description: "Custom placeholders",
-        enabled: true,
-      },
-      {
-        name: Feature.RefreshRate,
-        description: "2 minute refresh rate",
-        enabled: true,
-      },
+      { name: Feature.Feeds, description: "Track 35 news feeds", enabled: true },
+      { name: Feature.ArticleLimit, description: "1000 articles daily per feed", enabled: true },
+      { name: Feature.Webhooks, description: "Custom name/avatar with webhooks", enabled: true },
+      { name: Feature.CustomPlaceholders, description: "Custom placeholders", enabled: true },
+      { name: Feature.RefreshRate, description: "2 minute refresh rate", enabled: true },
     ],
   },
   {
-    name: "TIER 2",
     productId: ProductKey.Tier2,
-    priceFormatted: "$10",
-    highlighted: true,
-    baseFeedLimit: 70,
-    supportsAdditionalFeeds: false,
     features: [
-      {
-        name: Feature.Feeds,
-        description: "Track 70 news feeds",
-        enabled: true,
-      },
-      {
-        name: Feature.ArticleLimit,
-        description: "1000 articles daily per feed",
-        enabled: true,
-      },
-      {
-        name: Feature.Webhooks,
-        description: "Custom name/avatar with webhooks",
-        enabled: true,
-      },
-      {
-        name: Feature.CustomPlaceholders,
-        description: "Custom placeholders",
-        enabled: true,
-      },
+      { name: Feature.Feeds, description: "Track 70 news feeds", enabled: true },
+      { name: Feature.ArticleLimit, description: "1000 articles daily per feed", enabled: true },
+      { name: Feature.Webhooks, description: "Custom name/avatar with webhooks", enabled: true },
+      { name: Feature.CustomPlaceholders, description: "Custom placeholders", enabled: true },
       {
         name: Feature.ExternalProperties,
         description: "External properties (scrape external links)*",
         enabled: true,
       },
-      {
-        name: Feature.RefreshRate,
-        description: "2 minute refresh rate",
-        enabled: true,
-      },
+      { name: Feature.RefreshRate, description: "2 minute refresh rate", enabled: true },
     ],
   },
   {
-    name: "TIER 3",
     productId: ProductKey.Tier3,
-    priceFormatted: "$20",
-    baseFeedLimit: 140,
     supportsAdditionalFeeds: true,
     features: [
-      {
-        name: Feature.Feeds,
-        description: "Track 140 news feeds",
-        enabled: true,
-      },
-      {
-        name: Feature.ArticleLimit,
-        description: "1000 articles daily per feed",
-        enabled: true,
-      },
-      {
-        name: Feature.Webhooks,
-        description: "Custom name/avatar with webhooks",
-        enabled: true,
-      },
-      {
-        name: Feature.CustomPlaceholders,
-        description: "Custom placeholders",
-        enabled: true,
-      },
+      { name: Feature.Feeds, description: "Track 140 news feeds", enabled: true },
+      { name: Feature.ArticleLimit, description: "1000 articles daily per feed", enabled: true },
+      { name: Feature.Webhooks, description: "Custom name/avatar with webhooks", enabled: true },
+      { name: Feature.CustomPlaceholders, description: "Custom placeholders", enabled: true },
       {
         name: Feature.ExternalProperties,
         description: "External properties (scrape external links)*",
         enabled: true,
       },
-      {
-        name: Feature.RefreshRate,
-        description: "2 minute refresh rate",
-        enabled: true,
-      },
+      { name: Feature.RefreshRate, description: "2 minute refresh rate", enabled: true },
     ],
   },
 ];
 
 const getIdealPriceTextSize = (length: number) => {
-  if (length < 10) {
-    return "6xl";
-  }
-
-  if (length < 11) {
-    return "5xl";
-  }
+  if (length < 10) return "6xl";
+  if (length < 11) return "5xl";
 
   return "4xl";
 };
 
-const initialInterval =
-  (localStorage.getItem("preferredPricingInterval") as "month" | "year") || "month";
-
 interface ChangeSubscriptionDetails {
-  prices: Array<{
-    priceId: string;
-    quantity: number;
-  }>;
+  prices: Array<{ priceId: string; quantity: number }>;
   productId: string;
   isDowngrade?: boolean;
 }
 
 export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
-  const { getPricePreview, getChargePreview, resetCheckoutData } = usePaddleContext();
-  const [pricePreviewErrored, setPricePreviewErrored] = useState(false);
-  const [isLoadingPricePreview, setIsLoadingPricePreview] = useState(true);
-  const [products, setProducts] = useState<Array<PricePreview>>();
-  const [additionalFeedPricePreview, setAdditionalFeedPricePreview] = useState<PricePreview | null>(
-    null
-  );
-  const [chargePreview, setChargePreview] = useState<string | null>(null);
-  const [additionalFeedsInput, setAdditionalFeedsInput] = useState<number>(0);
-  const [loadingAdditionalFeedsChange, setLoadingAdditionalFeedsChange] = useState(false);
-  const { status: userStatus, error: userError, data: userData } = useUserMe();
-  const [interval, setInterval] = useState<"month" | "year">(initialInterval);
-  const { data: subProducts, error: subProductsError } = useSubscriptionProducts();
-  const [baseAdditionalFeedsPrice, setBaseAdditionalFeedsPrice] = useState<string | null>(null);
+  const { resetCheckoutData } = usePaddleContext();
+  const navigate = useNavigate();
   const [changeSubscriptionDetails, setChangeSubscriptionDetails] =
     useState<ChangeSubscriptionDetails>();
-  const navigate = useNavigate();
-  const userBillingInterval = userData?.result.subscription.billingInterval;
-  const billingPeriodEndsAt = userData?.result.subscription.billingPeriod?.end;
-  const priceIdOfAdditionalFeeds = subProducts?.data.products
-    .filter((p) => p.id === ProductKey.Tier3Feed)
-    .map((p) => p.prices.find((price) => price.interval === interval)?.id)
-    .filter((id): id is string => !!id)[0];
 
-  const priceIdOfTier3 = subProducts?.data.products
-    .filter((p) => p.id === ProductKey.Tier3)
-    .map((p) => p.prices.find((price) => price.interval === interval)?.id)
-    .filter((id): id is string => !!id)[0];
-
-  const additionalFeedsQuantity = additionalFeedPricePreview?.prices[0].quantity;
-  const userSubscriptionAdditionalFeeds = userData?.result.subscription.addons?.find(
-    (a) => a.key === ProductKey.Tier3Feed
-  )?.quantity;
+  const {
+    products,
+    interval,
+    changeInterval,
+    isLoading,
+    isLoadingAdditionalFeedsChange,
+    hasError,
+    userSubscription,
+    billingPeriodEndsAt,
+    additionalFeedsInput,
+    changeAdditionalFeedsInput,
+    additionalFeedPricePreview,
+    additionalFeedsQuantity,
+    userSubscriptionAdditionalFeeds,
+    chargePreview,
+    baseAdditionalFeedsPrice,
+    priceIdOfAdditionalFeeds,
+    getProductPrice,
+    getProduct,
+  } = usePricingData({ isOpen });
 
   const onClosePricingModal = () => {
     resetCheckoutData();
@@ -251,55 +154,28 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
   };
 
   const onChangeInterval = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.checked) {
-      setInterval("year");
-      localStorage.setItem("preferredPricingInterval", "year");
-    } else {
-      setInterval("month");
-      localStorage.setItem("preferredPricingInterval", "month");
-    }
+    changeInterval(e.target.checked ? "year" : "month");
   };
 
   const onClickPrice = (priceId?: string, productId?: ProductKey, isDowngrade?: boolean) => {
-    if (!priceId || !productId || !userData) {
+    if (!priceId || !productId || !userSubscription) {
       return;
     }
 
-    if (userData.result.subscription.product.key === ProductKey.Free) {
-      navigate(
-        pages.checkout(
-          priceId,
-          productId === ProductKey.Tier3 &&
-            !!additionalFeedsQuantity &&
-            additionalFeedsQuantity > 0 &&
-            priceIdOfAdditionalFeeds
-            ? {
-                priceId: priceIdOfAdditionalFeeds,
-                quantity: additionalFeedsQuantity,
-              }
-            : undefined
-        )
-      );
+    const additionalFeedsItem =
+      productId === ProductKey.Tier3 &&
+      !!additionalFeedsQuantity &&
+      additionalFeedsQuantity > 0 &&
+      priceIdOfAdditionalFeeds
+        ? { priceId: priceIdOfAdditionalFeeds, quantity: additionalFeedsQuantity }
+        : undefined;
+
+    if (userSubscription.product.key === ProductKey.Free) {
+      navigate(pages.checkout(priceId, additionalFeedsItem));
       onClose();
     } else {
       setChangeSubscriptionDetails({
-        prices: [
-          {
-            priceId,
-            quantity: 1,
-          },
-          ...(productId === ProductKey.Tier3 &&
-          !!additionalFeedsQuantity &&
-          additionalFeedsQuantity > 0 &&
-          priceIdOfAdditionalFeeds
-            ? [
-                {
-                  priceId: priceIdOfAdditionalFeeds,
-                  quantity: additionalFeedsQuantity,
-                },
-              ]
-            : []),
-        ],
+        prices: [{ priceId, quantity: 1 }, ...(additionalFeedsItem ? [additionalFeedsItem] : [])],
         productId,
         isDowngrade,
       });
@@ -307,235 +183,20 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
     }
   };
 
-  useEffect(() => {
-    if (userBillingInterval) {
-      setInterval(userBillingInterval);
-    }
-  }, [userBillingInterval]);
-
-  // useEffect(() => {
-  //   const addons = userData?.result.subscription.addons || [];
-
-  //   const extraFeedsAddonQuantity = addons.find((a) => a.key === ProductKey.Tier3Feed)?.quantity;
-
-  //   if (extraFeedsAddonQuantity) {
-  //     setAdditionalFeeds(extraFeedsAddonQuantity);
-  //   }
-
-  //   getPricePreview([
-  //     {
-  //       priceId: priceIdOfAdditionalFeeds as string,
-  //       quantity: additionalFeeds || 1,
-  //     },
-  //   ]).then((preview) => {
-  //     const additionalFeedsPreview = preview.find((p) => p.id === ProductKey.Tier3Feed);
-
-  //     if (additionalFeedsPreview) {
-  //       setAdditionalFeedPricePreview(additionalFeedsPreview);
-  //     }
-  //   });
-  // }, [userData?.result.subscription.addons?.length]);
-
-  // useEffect(() => {
-  //   if (!priceIdOfAdditionalFeeds || !priceIdOfTier3) {
-  //     return;
-  //   }
-
-  //   async function getPreview() {
-  //     const [preview, chargePreviewResult] = await Promise.all([
-  //       getPricePreview([
-  //         {
-  //           priceId: priceIdOfAdditionalFeeds as string,
-  //           quantity: additionalFeeds || 1,
-  //         },
-  //       ]),
-  //       getChargePreview([
-  //         {
-  //           priceId: priceIdOfAdditionalFeeds as string,
-  //           quantity: additionalFeeds || 1,
-  //         },
-  //         {
-  //           priceId: priceIdOfTier3 as string,
-  //           quantity: 1,
-  //         },
-  //       ]),
-  //     ]);
-
-  //     const additionalFeedsPreview = preview.find((p) => p.id === ProductKey.Tier3Feed);
-
-  //     if (additionalFeedsPreview) {
-  //       setAdditionalFeedPricePreview(additionalFeedsPreview);
-  //     }
-
-  //     setChargePreview(chargePreviewResult.totalFormatted);
-  //   }
-
-  //   setAdditionalFeedPricePreview(null);
-  //   setChargePreview(null);
-  //   getPreview();
-  // }, [additionalFeeds, interval, priceIdOfAdditionalFeeds, priceIdOfTier3]);
-
-  const onChangeAdditionalFeeds = (newQuantity: number) => {
-    if (!priceIdOfAdditionalFeeds || !priceIdOfTier3) {
-      return;
-    }
-
-    setLoadingAdditionalFeedsChange(true);
-
-    async function getPreview() {
-      if (newQuantity > 0) {
-        const [preview, chargePreviewResult] = await Promise.all([
-          getPricePreview([
-            {
-              priceId: priceIdOfAdditionalFeeds as string,
-              quantity: newQuantity,
-            },
-          ]),
-          getChargePreview([
-            {
-              priceId: priceIdOfAdditionalFeeds as string,
-              quantity: newQuantity,
-            },
-            {
-              priceId: priceIdOfTier3 as string,
-              quantity: 1,
-            },
-          ]),
-        ]);
-
-        const additionalFeedsPreview = preview.find((p) => p.id === ProductKey.Tier3Feed);
-
-        if (additionalFeedsPreview) {
-          setAdditionalFeedPricePreview(additionalFeedsPreview);
-        }
-
-        setChargePreview(chargePreviewResult.totalFormatted);
-      } else {
-        const chargePreviewResult = await getChargePreview([
-          {
-            priceId: priceIdOfTier3 as string,
-            quantity: 1,
-          },
-        ]);
-
-        setChargePreview(chargePreviewResult.totalFormatted);
-      }
-
-      setLoadingAdditionalFeedsChange(false);
-    }
-
-    getPreview();
-  };
-
-  useEffect(() => {
-    onChangeAdditionalFeeds(additionalFeedsInput);
-  }, [interval]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    async function execute() {
-      if (!subProducts || !userData) {
-        return;
-      }
-
-      try {
-        setIsLoadingPricePreview(true);
-
-        const userAdditionalFeedsAddon = userData.result.subscription.addons?.find(
-          (a) => a.key === ProductKey.Tier3Feed
-        );
-
-        if (userAdditionalFeedsAddon?.quantity != null) {
-          setAdditionalFeedsInput(userAdditionalFeedsAddon.quantity);
-        }
-
-        // Fetch main tier prices
-        const pricesToPreview = [
-          ProductKey.Tier1,
-          ProductKey.Tier2,
-          ProductKey.Tier3,
-          ProductKey.Tier3Feed,
-        ];
-        const [pricePreview, totalT3ChargePreview] = await Promise.all([
-          getPricePreview(
-            subProducts.data.products.flatMap((product) => {
-              if (!pricesToPreview.includes(product.id as ProductKey)) {
-                return [];
-              }
-
-              if (product.id === ProductKey.Tier3Feed && userAdditionalFeedsAddon) {
-                return product.prices.map((p) => ({
-                  priceId: p.id,
-                  quantity: userAdditionalFeedsAddon.quantity,
-                }));
-              }
-
-              return product.prices.map((price) => ({
-                priceId: price.id,
-                quantity: 1,
-              }));
-            })
-          ),
-          getChargePreview([
-            {
-              priceId: priceIdOfAdditionalFeeds as string,
-              quantity: userAdditionalFeedsAddon?.quantity || 1,
-            },
-            {
-              priceId: priceIdOfTier3 as string,
-              quantity: 1,
-            },
-          ]),
-        ]);
-
-        setChargePreview(totalT3ChargePreview.totalFormatted);
-        setProducts(pricePreview);
-
-        const t3FeedPricePreview = pricePreview.find((p) => p.id === ProductKey.Tier3Feed);
-
-        if (t3FeedPricePreview) {
-          setAdditionalFeedPricePreview(t3FeedPricePreview);
-
-          const basePriceFormatted = t3FeedPricePreview.prices.find(
-            (p) => p.interval === "month"
-          )?.formattedPrice;
-
-          if (basePriceFormatted) {
-            setBaseAdditionalFeedsPrice(basePriceFormatted);
-          }
-        }
-      } catch (err) {
-        console.error(err);
-        setPricePreviewErrored(true);
-        captureException(new Error(`Price preview failed to load`), {
-          extra: {
-            error: err,
-          },
-        });
-      } finally {
-        setIsLoadingPricePreview(false);
-      }
-    }
-
-    execute();
-  }, [!!subProducts, !!userData, isOpen]);
-
   const biggestPriceLength = products
     ? Math.max(
-        ...(products?.flatMap((pr) =>
+        ...products.flatMap((pr) =>
           pr.prices.filter((p) => p.interval === interval).map((p) => p.formattedPrice.length)
-        ) || []),
+        ),
         0
       )
     : 4;
 
   const priceTextSize = getIdealPriceTextSize(biggestPriceLength);
-  const userSubscription = userData?.result.subscription;
-  const userTierIndex = tiers?.findIndex((p) => p.productId === userSubscription?.product.key);
-  const failedToLoadPrices = pricePreviewErrored || subProductsError || userError;
+  const userTierIndex = TIER_CONFIGS.findIndex(
+    (t) => t.productId === userSubscription?.product.key
+  );
+
   const changeSubscriptionDetailsWithProduct = changeSubscriptionDetails?.prices
     .map((price) => {
       if (price.priceId === "free-monthly") {
@@ -551,12 +212,9 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
       const product = products?.find((prod) =>
         prod.prices.some((thisPrice) => thisPrice.id === price.priceId)
       );
-
       const productPrice = product?.prices.find((p) => p.id === price.priceId);
 
-      if (!product || !productPrice) {
-        return null;
-      }
+      if (!product || !productPrice) return null;
 
       return {
         ...price,
@@ -575,17 +233,12 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
         billingPeriodEndsAt={billingPeriodEndsAt}
         details={
           changeSubscriptionDetailsWithProduct?.length
-            ? {
-                prices: changeSubscriptionDetailsWithProduct,
-              }
+            ? { prices: changeSubscriptionDetailsWithProduct }
             : undefined
         }
         onClose={(reopenPricing) => {
           setChangeSubscriptionDetails(undefined);
-
-          if (reopenPricing) {
-            onOpen();
-          }
+          if (reopenPricing) onOpen();
         }}
       />
       <Modal
@@ -617,19 +270,16 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                     <Heading as="h2" size="md" hidden>
                       Tiers
                     </Heading>
-                    {(isLoadingPricePreview || userStatus === "loading") && <Spinner mb={8} />}
-                    {failedToLoadPrices && (
+                    {isLoading && <Spinner mb={8} />}
+                    {hasError && (
                       <Stack mb={4}>
                         <InlineErrorAlert
                           title="Something went wrong while loading prices."
-                          description={
-                            subProductsError?.message ||
-                            "This issue has been automatically sent for diagnostics. Please try again later, refreshing the page, or contacting us at support@monitorss.xyz"
-                          }
+                          description="This issue has been automatically sent for diagnostics. Please try again later, refreshing the page, or contacting us at support@monitorss.xyz"
                         />
                       </Stack>
                     )}
-                    {!subProductsError && !userError && products && userSubscription && (
+                    {!hasError && products && userSubscription && (
                       <>
                         <Stack alignItems="center" spacing={4}>
                           <HStack alignItems="center" spacing={4}>
@@ -654,7 +304,6 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                         <Flex overflow="auto" width="100%" margin="auto">
                           <SimpleGrid
                             margin="auto"
-                            // justifyContent="center"
                             gridTemplateColumns={[
                               "325px",
                               "450px",
@@ -666,26 +315,14 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                             spacing={4}
                             role="list"
                           >
-                            {tiers.map(
+                            {TIER_CONFIGS.map(
                               (
-                                {
-                                  name: _name,
-                                  priceFormatted: _priceFormatted,
-                                  highlighted: _highlighted,
-                                  features,
-                                  productId,
-                                  baseFeedLimit: _baseFeedLimit,
-                                  supportsAdditionalFeeds,
-                                },
+                                { productId, features, supportsAdditionalFeeds },
                                 currentTierIndex
                               ) => {
-                                const associatedProduct = products?.find((p) => p.id === productId);
-
-                                const associatedPrice = associatedProduct?.prices.find(
-                                  (p) => p.interval === interval
-                                );
-
-                                const basePrice = associatedPrice?.formattedPrice || "$0";
+                                const product = getProduct(productId);
+                                const price = getProductPrice(productId);
+                                const basePrice = price?.formattedPrice || "$0";
 
                                 const shorterProductPrice = basePrice.endsWith(".00") ? (
                                   <Text fontSize={priceTextSize} fontWeight="bold">
@@ -699,7 +336,6 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
 
                                 const isOnThisTier =
                                   userSubscription.product.key === productId &&
-                                  // There is no billing period on free
                                   (userSubscription.billingInterval === interval ||
                                     !userSubscription.billingInterval);
                                 const isAboveUserTier =
@@ -717,17 +353,12 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                   userSubscriptionAdditionalFeeds !== additionalFeedsQuantity;
 
                                 return (
-                                  <Card
-                                    size="lg"
-                                    shadow="lg"
-                                    key={associatedProduct?.name}
-                                    role="listitem"
-                                  >
+                                  <Card size="lg" shadow="lg" key={product?.name} role="listitem">
                                     <CardHeader pb={0}>
                                       <Stack>
                                         <HStack justifyContent="flex-start">
                                           <Heading size="md" fontWeight="semibold">
-                                            {associatedProduct?.name || ""}
+                                            {product?.name || ""}
                                           </Heading>
                                         </HStack>
                                       </Stack>
@@ -736,43 +367,39 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                       <Stack spacing="12">
                                         <Box>
                                           <Text fontSize={priceTextSize} fontWeight="bold">
-                                            {isLoadingPricePreview && (
+                                            {isLoading && (
                                               <Spinner
                                                 colorScheme="blue"
                                                 color="blue.300"
                                                 size="lg"
                                               />
                                             )}
-                                            {!isLoadingPricePreview &&
-                                              (shorterProductPrice || "N/A")}
+                                            {!isLoading && (shorterProductPrice || "N/A")}
                                           </Text>
                                           <Text fontSize="lg" color="whiteAlpha.600">
                                             {interval === "month" ? "per month" : "per year"}
                                           </Text>
                                         </Box>
                                         <Stack as="ul" listStyleType="none">
-                                          {features.map((f) => {
-                                            return (
-                                              <HStack key={f.name} as="li">
-                                                {f.enabled ? (
-                                                  <Flex
-                                                    bg="blue.500"
-                                                    rounded="full"
-                                                    p={1}
-                                                    aria-disabled
-                                                  >
-                                                    <CheckIcon fontSize="md" width={3} height={3} />
-                                                  </Flex>
-                                                ) : (
-                                                  // </Box>
-                                                  <Flex bg="whiteAlpha.600" rounded="full" p={1.5}>
-                                                    <CloseIcon width={2} height={2} fontSize="sm" />
-                                                  </Flex>
-                                                )}
-                                                <Text fontSize="lg">{f.description}</Text>
-                                              </HStack>
-                                            );
-                                          })}
+                                          {features.map((f) => (
+                                            <HStack key={f.name} as="li">
+                                              {f.enabled ? (
+                                                <Flex
+                                                  bg="blue.500"
+                                                  rounded="full"
+                                                  p={1}
+                                                  aria-disabled
+                                                >
+                                                  <CheckIcon fontSize="md" width={3} height={3} />
+                                                </Flex>
+                                              ) : (
+                                                <Flex bg="whiteAlpha.600" rounded="full" p={1.5}>
+                                                  <CloseIcon width={2} height={2} fontSize="sm" />
+                                                </Flex>
+                                              )}
+                                              <Text fontSize="lg">{f.description}</Text>
+                                            </HStack>
+                                          ))}
                                         </Stack>
                                         {supportsAdditionalFeeds && (
                                           <Box>
@@ -785,8 +412,8 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                                 <Skeleton height="18px" width="30px" />
                                               ) : (
                                                 <Text fontSize="sm" color="whiteAlpha.700">
-                                                  Add more feeds for{" "}
-                                                  {baseAdditionalFeedsPrice || "-"} each per month.
+                                                  Add more feeds for {baseAdditionalFeedsPrice} each
+                                                  per month.
                                                 </Text>
                                               )}
                                               <HStack spacing={2} alignItems="center">
@@ -796,11 +423,10 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                                   size="sm"
                                                   variant="outline"
                                                   onClick={() => {
-                                                    const newQuantity = additionalFeedsInput - 1;
-
-                                                    if (newQuantity >= 0) {
-                                                      onChangeAdditionalFeeds(newQuantity);
-                                                      setAdditionalFeedsInput(newQuantity);
+                                                    if (additionalFeedsInput > 0) {
+                                                      changeAdditionalFeedsInput(
+                                                        additionalFeedsInput - 1
+                                                      );
                                                     }
                                                   }}
                                                   isDisabled={!additionalFeedsQuantity}
@@ -808,12 +434,9 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                                 <NumberInput
                                                   value={additionalFeedsInput}
                                                   onChange={(valueString) => {
-                                                    const newQuantity = Math.max(
-                                                      0,
+                                                    changeAdditionalFeedsInput(
                                                       parseInt(valueString, 10)
                                                     );
-                                                    onChangeAdditionalFeeds(newQuantity);
-                                                    setAdditionalFeedsInput(newQuantity);
                                                   }}
                                                   min={0}
                                                   max={1000}
@@ -832,10 +455,9 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                                   size="sm"
                                                   variant="outline"
                                                   onClick={() => {
-                                                    const newQuantity = additionalFeedsInput + 1;
-
-                                                    onChangeAdditionalFeeds(newQuantity);
-                                                    setAdditionalFeedsInput(newQuantity);
+                                                    changeAdditionalFeedsInput(
+                                                      additionalFeedsInput + 1
+                                                    );
                                                   }}
                                                 />
                                               </HStack>
@@ -844,12 +466,12 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                                 color="blue.300"
                                                 aria-live="polite"
                                                 aria-busy={
-                                                  loadingAdditionalFeedsChange ||
+                                                  isLoadingAdditionalFeedsChange ||
                                                   !additionalFeedPricePreview
                                                 }
                                                 hidden={additionalFeedsQuantity === undefined}
                                               >
-                                                {loadingAdditionalFeedsChange ||
+                                                {isLoadingAdditionalFeedsChange ||
                                                 !additionalFeedPricePreview ? (
                                                   <Skeleton height="22px" width="180px" />
                                                 ) : (
@@ -873,14 +495,14 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                         {supportsAdditionalFeeds && additionalFeedsInput > 0 && (
                                           <Box
                                             aria-live="polite"
-                                            aria-busy={loadingAdditionalFeedsChange}
+                                            aria-busy={isLoadingAdditionalFeedsChange}
                                           >
                                             <Divider my={4} />
                                             <Stack spacing={2}>
                                               <Text fontSize="md" fontWeight="semibold">
                                                 Total
                                               </Text>
-                                              {loadingAdditionalFeedsChange ? (
+                                              {isLoadingAdditionalFeedsChange ? (
                                                 <Skeleton height="28px" width="120px" />
                                               ) : (
                                                 <Text
@@ -911,11 +533,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                               return;
                                             }
 
-                                            onClickPrice(
-                                              associatedPrice?.id,
-                                              productId,
-                                              isBelowUserTier
-                                            );
+                                            onClickPrice(price?.id, productId, isBelowUserTier);
                                           }}
                                           variant={
                                             isOnThisTier || (isOnThisTier && isUpdate)
@@ -935,10 +553,10 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                           {isOnThisTier && !isUpdate && <span>Current Plan</span>}
                                           {isOnThisTier && isUpdate && <span>Update Plan</span>}
                                           {isBelowUserTier && (
-                                            <span>Downgrade to {associatedProduct?.name}</span>
+                                            <span>Downgrade to {product?.name}</span>
                                           )}
                                           {isAboveUserTier && (
-                                            <span>Upgrade to {associatedProduct?.name}</span>
+                                            <span>Upgrade to {product?.name}</span>
                                           )}
                                         </Button>
                                       </Stack>
@@ -953,7 +571,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                     )}
                   </Stack>
                 </Flex>
-                {!failedToLoadPrices && (
+                {!hasError && (
                   <>
                     <Box textAlign="center" pb={3} fontSize="lg">
                       <Text fontSize="sm">

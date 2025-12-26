@@ -346,6 +346,59 @@ export default class PartitionedRequestsStoreService {
     return this.mapPartitionedRequestToModel(result);
   }
 
+  /**
+   * Get the latest non-304 request for a lookup key.
+   * Used to show errors to users when no cached content is available.
+   */
+  async getLatestRequestNon304(lookupKey: string): Promise<Request | null> {
+    const em = this.orm.em.getConnection();
+
+    const [result] = await em.execute(
+      `SELECT req.*, res.content AS response_body_content,
+        res.content_hash AS response_content_hash
+       FROM request_partitioned req
+       LEFT JOIN response_bodies res
+       ON req.response_body_hash_key = res.hash_key
+       WHERE req.lookup_key = ?
+       AND (req.response_status_code != 304 OR req.response_status_code IS NULL)
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [lookupKey],
+    );
+
+    if (!result) {
+      return null;
+    }
+
+    return this.mapPartitionedRequestToModel(result);
+  }
+
+  /**
+   * Get the latest request for a lookup key, regardless of status or body presence.
+   * Used by delivery preview to check staleness including error states.
+   */
+  async getLatestRequestAnyStatus(lookupKey: string): Promise<Request | null> {
+    const em = this.orm.em.getConnection();
+
+    const [result] = await em.execute(
+      `SELECT req.*, res.content AS response_body_content,
+        res.content_hash AS response_content_hash
+       FROM request_partitioned req
+       LEFT JOIN response_bodies res
+       ON req.response_body_hash_key = res.hash_key
+       WHERE req.lookup_key = ?
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [lookupKey],
+    );
+
+    if (!result) {
+      return null;
+    }
+
+    return this.mapPartitionedRequestToModel(result);
+  }
+
   private mapPartitionedRequestToModel(result: any) {
     const request: Request = {
       id: result.id,

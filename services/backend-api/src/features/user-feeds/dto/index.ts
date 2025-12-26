@@ -18,3 +18,4 @@ export * from "./get-user-feed-tags-output.dto";
 export * from "./update-user-feed-tag-input.dto";
 export * from "./get-user-feed-tag-output.dto";
 export * from "./create-user-feed-tag-input.dto";
+export * from "./delivery-preview-input.dto";

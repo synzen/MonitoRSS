@@ -33,3 +33,4 @@ deploy-api.sh
 .DS_Store
 *.log
 coverage/
+**/*.heapsnapshot

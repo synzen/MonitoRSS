@@ -49,21 +49,9 @@ async function tableExists(pool: Pool, tableName: string): Promise<boolean> {
   const { rows } = await pool.query(
     `SELECT EXISTS (
       SELECT FROM pg_tables
-      WHERE schemaname = 'public'
-      AND tablename = $1
+      WHERE tablename = $1
     ) as exists`,
     [tableName]
-  );
-  return rows[0]?.exists === true;
-}
-
-async function typeExists(pool: Pool, typeName: string): Promise<boolean> {
-  const { rows } = await pool.query(
-    `SELECT EXISTS (
-      SELECT FROM pg_type
-      WHERE typname = $1
-    ) as exists`,
-    [typeName]
   );
   return rows[0]?.exists === true;
 }
@@ -89,22 +77,18 @@ const migrations: Migration[] = [
     name: "initial_schema",
     up: async (pool) => {
       // Create ENUMs
-      if (!(await typeExists(pool, "delivery_record_partitioned_status"))) {
-        await pool.query(`
-          CREATE TYPE delivery_record_partitioned_status AS ENUM (
-            'pending-delivery', 'sent', 'failed', 'rejected',
-            'filtered-out', 'rate-limited', 'medium-rate-limited-by-user'
-          )
-        `);
-      }
+      await pool.query(`
+        CREATE TYPE delivery_record_partitioned_status AS ENUM (
+          'pending-delivery', 'sent', 'failed', 'rejected',
+          'filtered-out', 'rate-limited', 'medium-rate-limited-by-user'
+        )
+      `);
 
-      if (!(await typeExists(pool, "delivery_record_partitioned_content_type"))) {
-        await pool.query(`
-          CREATE TYPE delivery_record_partitioned_content_type AS ENUM (
-            'discord-article-message', 'discord-thread-creation'
-          )
-        `);
-      }
+      await pool.query(`
+        CREATE TYPE delivery_record_partitioned_content_type AS ENUM (
+          'discord-article-message', 'discord-thread-creation'
+        )
+      `);
 
       // Create feed_article_field_partitioned table
       if (!(await tableExists(pool, "feed_article_field_partitioned"))) {

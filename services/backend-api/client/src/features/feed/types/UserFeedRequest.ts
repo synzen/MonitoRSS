@@ -8,6 +8,7 @@ export enum UserFeedRequestStatus {
   FETCH_TIMEOUT = "FETCH_TIMEOUT",
   PARSE_ERROR = "PARSE_ERROR",
   TIMED_OUT = "TIMED_OUT",
+  INVALID_SSL_CERTIFICATE = "INVALID_SSL_CERTIFICATE",
 }
 
 export const UserFeedRequestSchema = object({

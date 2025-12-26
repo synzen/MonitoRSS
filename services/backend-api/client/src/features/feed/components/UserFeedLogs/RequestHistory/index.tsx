@@ -69,6 +69,7 @@ const createStatusLabel = (
     case UserFeedRequestStatus.INTERNAL_ERROR:
     case UserFeedRequestStatus.PARSE_ERROR:
     case UserFeedRequestStatus.TIMED_OUT:
+    case UserFeedRequestStatus.INVALID_SSL_CERTIFICATE:
       return (
         <Badge fontSize="sm" colorScheme="red">
           {status}
@@ -179,13 +180,22 @@ export const RequestHistory = () => {
   );
 
   return (
-    <Stack spacing={4} mb={8} border="solid 1px" borderColor="gray.700" borderRadius="md">
+    <Stack
+      id="request-history"
+      spacing={4}
+      mb={8}
+      border="solid 1px"
+      borderColor="gray.700"
+      borderRadius="md"
+    >
       <Box>
         <Stack px={4} py={4}>
           <Heading size="sm" as="h3" m={0} id="request-history-table-title">
             {t("features.userFeeds.components.requestsTable.title")}
           </Heading>
-          <Text>Outgoing HTTP requests to the feed URL along with their response details.</Text>
+          <Text color="whiteAlpha.700" fontSize="sm">
+            Outgoing HTTP requests to the feed URL along with their response details.
+          </Text>
         </Stack>
         <Box px={4}>
           <Divider />

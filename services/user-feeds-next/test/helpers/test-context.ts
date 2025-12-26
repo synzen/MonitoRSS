@@ -1,6 +1,6 @@
 import {
-  getStores,
   getTestFeedRequestsServer,
+  type TestStores,
 } from "./setup-integration-tests";
 import {
   createTestDiscordRestClient,
@@ -46,10 +46,10 @@ export interface CreateTestContextOptions {
 }
 
 export function createTestContext(
+  stores: TestStores,
   options?: CreateTestContextOptions
 ): TestContext {
   const testServer = getTestFeedRequestsServer();
-  const stores = getStores();
   const feedUrl = testServer.generateTestUrl();
   const discordClient = createTestDiscordRestClient();
 

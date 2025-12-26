@@ -18,7 +18,6 @@ import {
   CustomPlaceholderStepType,
   type CustomPlaceholder,
 } from "../../articles/formatter";
-import type { Article } from "../../articles/parser";
 import {
   CustomPlaceholderRegexEvalException,
   FiltersRegexEvalException,

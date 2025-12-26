@@ -11,6 +11,7 @@ import {
 import { User, UserModel } from "../users/entities/user.entity";
 import { Types } from "mongoose";
 import logger from "../../utils/logger";
+import { calculateSlotOffsetMs } from "../../common/utils/fnv1a-hash";
 
 @Injectable()
 export class MongoMigrationsService {
@@ -143,6 +144,93 @@ export class MongoMigrationsService {
             throw err;
           }
         }
+      },
+    },
+    {
+      id: "backfill-slot-offset-ms",
+      apply: async () => {
+        const BATCH_SIZE = 1000;
+        let processed = 0;
+        let updated = 0;
+
+        const cursor = this.userFeedModel
+          .find({ slotOffsetMs: { $exists: false } })
+          .select("_id url refreshRateSeconds userRefreshRateSeconds")
+          .lean()
+          .cursor();
+
+        let batch: Array<{
+          _id: string;
+          url: string;
+          effectiveRefreshRate: number;
+        }> = [];
+
+        for await (const doc of cursor) {
+          const effectiveRefreshRate =
+            doc.userRefreshRateSeconds ?? doc.refreshRateSeconds;
+
+          if (!effectiveRefreshRate || !doc.url) {
+            processed++;
+            continue;
+          }
+
+          batch.push({
+            _id: doc._id.toString(),
+            url: doc.url,
+            effectiveRefreshRate,
+          });
+
+          if (batch.length >= BATCH_SIZE) {
+            const bulkOps = batch.map(({ _id, url, effectiveRefreshRate }) => ({
+              updateOne: {
+                filter: { _id },
+                update: {
+                  $set: {
+                    slotOffsetMs: calculateSlotOffsetMs(
+                      url,
+                      effectiveRefreshRate
+                    ),
+                  },
+                },
+              },
+            }));
+
+            await this.userFeedModel.bulkWrite(bulkOps);
+            updated += batch.length;
+            processed += batch.length;
+            batch = [];
+
+            if (processed % 10000 === 0) {
+              logger.info(
+                `slotOffsetMs migration progress: ${processed} feeds processed, ${updated} updated`
+              );
+            }
+          }
+        }
+
+        if (batch.length > 0) {
+          const bulkOps = batch.map(({ _id, url, effectiveRefreshRate }) => ({
+            updateOne: {
+              filter: { _id },
+              update: {
+                $set: {
+                  slotOffsetMs: calculateSlotOffsetMs(
+                    url,
+                    effectiveRefreshRate
+                  ),
+                },
+              },
+            },
+          }));
+
+          await this.userFeedModel.bulkWrite(bulkOps);
+          updated += batch.length;
+          processed += batch.length;
+        }
+
+        logger.info(
+          `slotOffsetMs migration complete. Processed: ${processed}, Updated: ${updated}`
+        );
       },
     },
   ];

@@ -20,6 +20,7 @@ import {
   CreateFilterValidationOutput,
   CreateFilterValidationResponse,
   CreatePreviewInput,
+  DeliveryPreviewInput,
   GetArticlesInput,
   GetArticlesResponse,
   GetDeliveryCountResult,
@@ -242,6 +243,7 @@ export class FeedHandlerService {
       findRssFromHtml,
       executeFetch,
       executeFetchIfStale,
+      includeHtmlInErrors,
     }: GetArticlesInput,
     lookupDetails: FeedRequestLookupDetails | null
   ): Promise<GetArticlesResponse["result"]> {
@@ -257,6 +259,7 @@ export class FeedHandlerService {
       findRssFromHtml,
       executeFetch,
       executeFetchIfStale,
+      includeHtmlInErrors,
       requestLookupDetails: lookupDetails
         ? {
             key: lookupDetails.key,
@@ -356,6 +359,30 @@ export class FeedHandlerService {
         };
 
     return json;
+  }
+
+  async getDeliveryPreview(input: DeliveryPreviewInput) {
+    const response = await fetch(
+      `${this.host}/v1/user-feeds/delivery-preview`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": this.apiKey,
+        },
+        body: JSON.stringify(input),
+      }
+    );
+
+    await this.validateResponseStatus(
+      response,
+      "Failed to get delivery preview",
+      {
+        requestBody: input as unknown as Record<string, unknown>,
+      }
+    );
+
+    return response.json();
   }
 
   async getDeliveryLogs(

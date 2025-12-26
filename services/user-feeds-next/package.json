@@ -1,7 +1,6 @@
 {
   "name": "user-feeds-next",
-  "module": "index.ts",
-  "type": "module",
+  "main": "dist/index.js",
   "private": true,
   "dependencies": {
     "@monitorss/logger": "^1.1.2",
@@ -10,6 +9,7 @@
     "dayjs": "^1.11.19",
     "dotenv": "^17.2.3",
     "fast-xml-parser": "^4.4.1",
+    "fastify": "^5.6.2",
     "feedparser": "^2.2.10",
     "flat": "^6.0.1",
     "html-to-text": "^9.0.5",
@@ -25,18 +25,20 @@
     "zod": "^4.1.13"
   },
   "scripts": {
-    "start": "bun index.ts",
-    "test": "bun test src/**/*.test.ts",
-    "test:unit": "bun test src/**/*.test.ts",
+    "build": "tsc",
+    "start": "node ./dist/index.js",
+    "test": "node --import tsx --test-reporter=dot --test src/**/*.test.ts",
+    "test:unit": "node --import tsx --test-reporter=dot --test src/**/*.test.ts",
     "test:e2e": "./test-e2e.sh"
   },
   "devDependencies": {
-    "@types/bun": "latest",
     "@types/flat": "^5.0.5",
     "@types/html-to-text": "^9.0.4",
+    "@types/node": "^22.0.0",
     "@types/object-path": "^0.11.4",
     "@types/pg": "^8.16.0",
-    "prettier": "3.7.4"
+    "prettier": "3.7.4",
+    "tsx": "^4.19.0"
   },
   "peerDependencies": {
     "typescript": "^5"

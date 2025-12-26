@@ -6,4 +6,5 @@ export enum UserFeedArticleRequestStatus {
   FetchError = "FETCH_ERROR",
   TimedOut = "TIMED_OUT",
   FetchTimeout = "FETCH_TIMEOUT",
+  InvalidSslCert = "INVALID_SSL_CERTIFICATE",
 }

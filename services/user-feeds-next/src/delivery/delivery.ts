@@ -45,9 +45,108 @@ import {
 import {
   inMemoryDeliveryRecordStore,
 } from "../stores/in-memory/delivery-record-store";
+import {
+  isDeliveryPreviewMode,
+  recordDeliveryPreviewForArticle,
+  DeliveryPreviewStage,
+  DeliveryPreviewStageStatus,
+  type FilterExplainBlockedDetail,
+} from "../delivery-preview";
+
+const SECONDS_PER_DAY = 86400;
 
 // Re-export ArticleDeliveryState for convenience
 export type { ArticleDeliveryState };
+
+/**
+ * Parameters for recording a rate limit diagnostic.
+ */
+export interface RateLimitDiagnosticParams {
+  articleIdHash: string;
+  isFeedLevel: boolean;
+  mediumId?: string;
+  currentCount: number;
+  limit: number;
+  timeWindowSeconds: number;
+  remaining: number;
+}
+
+/**
+ * Record a rate limit diagnostic (feed or medium level).
+ */
+export function recordRateLimitDiagnostic(
+  params: RateLimitDiagnosticParams
+): void {
+  if (!isDeliveryPreviewMode()) {
+    return;
+  }
+
+  const wouldExceed = params.remaining <= 0;
+
+  const status = wouldExceed ? DeliveryPreviewStageStatus.Failed : DeliveryPreviewStageStatus.Passed;
+
+  if (params.isFeedLevel) {
+    recordDeliveryPreviewForArticle(params.articleIdHash, {
+      stage: DeliveryPreviewStage.FeedRateLimit,
+      status,
+      details: {
+        currentCount: params.currentCount,
+        limit: params.limit,
+        timeWindowSeconds: params.timeWindowSeconds,
+        remaining: params.remaining,
+        wouldExceed,
+      },
+    });
+  } else {
+    recordDeliveryPreviewForArticle(params.articleIdHash, {
+      stage: DeliveryPreviewStage.MediumRateLimit,
+      status,
+      details: {
+        mediumId: params.mediumId || "",
+        currentCount: params.currentCount,
+        limit: params.limit,
+        timeWindowSeconds: params.timeWindowSeconds,
+        remaining: params.remaining,
+        wouldExceed,
+      },
+    });
+  }
+}
+
+/**
+ * Parameters for recording a medium filter diagnostic.
+ */
+export interface MediumFilterDiagnosticParams {
+  articleIdHash: string;
+  mediumId: string;
+  filterExpression: unknown | null;
+  filterResult: boolean;
+  explainBlocked: FilterExplainBlockedDetail[];
+  explainMatched: FilterExplainBlockedDetail[];
+}
+
+/**
+ * Record a medium filter diagnostic.
+ */
+export function recordMediumFilterDiagnostic(
+  params: MediumFilterDiagnosticParams
+): void {
+  if (!isDeliveryPreviewMode()) {
+    return;
+  }
+
+  recordDeliveryPreviewForArticle(params.articleIdHash, {
+    stage: DeliveryPreviewStage.MediumFilter,
+    status: params.filterResult ? DeliveryPreviewStageStatus.Passed : DeliveryPreviewStageStatus.Failed,
+    details: {
+      mediumId: params.mediumId,
+      filterExpression: params.filterExpression,
+      filterResult: params.filterResult,
+      explainBlocked: params.explainBlocked,
+      explainMatched: params.explainMatched,
+    },
+  });
+}
 
 // Re-export for convenience
 export {
@@ -1021,6 +1120,17 @@ async function sendArticleToMedium(
         medium.filters.expression,
         article
       );
+
+      // Record diagnostic for filter evaluation
+      recordMediumFilterDiagnostic({
+        articleIdHash: article.flattened.idHash,
+        mediumId: medium.id,
+        filterExpression: medium.filters.expression,
+        filterResult: filterResult.result,
+        explainBlocked: filterResult.explainBlocked,
+        explainMatched: filterResult.explainMatched,
+      });
+
       if (!filterResult.result) {
         return [
           {
@@ -1174,10 +1284,22 @@ export async function deliverArticles(
     [
       {
         limit: options.articleDayLimit,
-        timeWindowSeconds: 86400, // 24 hours
+        timeWindowSeconds: SECONDS_PER_DAY,
       },
     ]
   );
+
+  // Record feed rate limit diagnostic for each article (captured when in diagnostic context)
+  for (const article of articles) {
+    recordRateLimitDiagnostic({
+      articleIdHash: article.flattened.idHash,
+      isFeedLevel: true,
+      currentCount: options.articleDayLimit - feedLimitInfo.remaining,
+      limit: options.articleDayLimit,
+      timeWindowSeconds: SECONDS_PER_DAY,
+      remaining: feedLimitInfo.remaining,
+    });
+  }
 
   /**
    * Rate limit handling in memory is not the best, especially since articles get dropped and
@@ -1197,6 +1319,22 @@ export async function deliverArticles(
       { mediumId: medium.id },
       medium.rateLimits ?? []
     );
+
+    // Record medium rate limit diagnostic for each article (captured when in diagnostic context)
+    const primaryLimit = medium.rateLimits?.[0];
+    if (primaryLimit) {
+      for (const article of articles) {
+        recordRateLimitDiagnostic({
+          articleIdHash: article.flattened.idHash,
+          isFeedLevel: false,
+          mediumId: medium.id,
+          currentCount: primaryLimit.limit - mediumLimitInfo.remaining,
+          limit: primaryLimit.limit,
+          timeWindowSeconds: primaryLimit.timeWindowSeconds,
+          remaining: mediumLimitInfo.remaining,
+        });
+      }
+    }
 
     limitState.remainingInMedium = mediumLimitInfo.remaining;
 

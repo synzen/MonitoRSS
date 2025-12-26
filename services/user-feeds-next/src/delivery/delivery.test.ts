@@ -1,4 +1,5 @@
-import { describe, expect, it, beforeEach } from "bun:test";
+import { describe, it } from "node:test";
+import assert from "node:assert";
 import type { JobResponse } from "@synzen/discord-rest";
 import type {
   JobData,
@@ -10,12 +11,19 @@ import {
   ArticleDeliveryErrorCode,
   type DiscordDeliveryResult,
   getUnderLimitCheck,
-  deliverArticles,
-  type LimitState,
+  createTestDiscordRestClient,
 } from ".";
 import { createInMemoryDeliveryRecordStore } from "../stores/in-memory/delivery-record-store";
 import type { ArticleDeliveryState } from "../stores/interfaces/delivery-record-store";
 import type { Article } from "../articles/parser";
+import {
+  ExpressionType,
+  LogicalExpressionOperator,
+  RelationalExpressionOperator,
+  RelationalExpressionLeft,
+  RelationalExpressionRight,
+  type LogicalExpression,
+} from "../articles/filters";
 
 function createJobData(overrides?: Partial<JobData>): JobData {
   return {
@@ -65,10 +73,10 @@ describe("delivery", () => {
         const { processed, rejectionEvent } =
           processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Failed);
-        expect(processed.errorCode).toBe(ArticleDeliveryErrorCode.Internal);
-        expect(processed.internalMessage).toBe("Connection timeout");
-        expect(rejectionEvent).toBeUndefined();
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Failed);
+        assert.strictEqual(processed.errorCode, ArticleDeliveryErrorCode.Internal);
+        assert.strictEqual(processed.internalMessage, "Connection timeout");
+        assert.strictEqual(rejectionEvent, undefined);
       });
 
       it("extracts metadata from job", () => {
@@ -86,7 +94,7 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.meta).toEqual({
+        assert.deepStrictEqual(processed.meta, {
           feedId: "my-feed",
           articleIdHash: "my-hash",
           mediumId: "my-medium",
@@ -107,10 +115,8 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Rejected);
-        expect(processed.errorCode).toBe(
-          ArticleDeliveryErrorCode.ThirdPartyBadRequest
-        );
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Rejected);
+        assert.strictEqual(processed.errorCode, ArticleDeliveryErrorCode.ThirdPartyBadRequest);
       });
 
       it("generates badFormat rejection event", () => {
@@ -128,13 +134,13 @@ describe("delivery", () => {
 
         const { rejectionEvent } = processDeliveryResult(deliveryResult);
 
-        expect(rejectionEvent).toBeDefined();
-        expect(rejectionEvent?.type).toBe("badFormat");
+        assert.notStrictEqual(rejectionEvent, undefined);
+        assert.strictEqual(rejectionEvent?.type, "badFormat");
         if (rejectionEvent?.type === "badFormat") {
-          expect(rejectionEvent.data.feedId).toBe("feed-1");
-          expect(rejectionEvent.data.mediumId).toBe("medium-1");
-          expect(rejectionEvent.data.articleId).toBe("article-1");
-          expect(rejectionEvent.data.responseBody).toContain("Bad embed");
+          assert.strictEqual(rejectionEvent.data.feedId, "feed-1");
+          assert.strictEqual(rejectionEvent.data.mediumId, "medium-1");
+          assert.strictEqual(rejectionEvent.data.articleId, "article-1");
+          assert.ok(rejectionEvent.data.responseBody.includes("Bad embed"));
         }
       });
 
@@ -146,10 +152,10 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.externalDetail).toBeDefined();
+        assert.notStrictEqual(processed.externalDetail, undefined);
         const externalDetail = JSON.parse(processed.externalDetail!);
-        expect(externalDetail.type).toBe("DISCORD_RESPONSE");
-        expect(externalDetail.data.responseBody).toEqual({ code: 50035 });
+        assert.strictEqual(externalDetail.type, "DISCORD_RESPONSE");
+        assert.deepStrictEqual(externalDetail.data.responseBody, { code: 50035 });
       });
     });
 
@@ -162,10 +168,8 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Rejected);
-        expect(processed.errorCode).toBe(
-          ArticleDeliveryErrorCode.ThirdPartyForbidden
-        );
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Rejected);
+        assert.strictEqual(processed.errorCode, ArticleDeliveryErrorCode.ThirdPartyForbidden);
       });
 
       it("generates missingPermissions rejection event", () => {
@@ -182,11 +186,11 @@ describe("delivery", () => {
 
         const { rejectionEvent } = processDeliveryResult(deliveryResult);
 
-        expect(rejectionEvent).toBeDefined();
-        expect(rejectionEvent?.type).toBe("missingPermissions");
+        assert.notStrictEqual(rejectionEvent, undefined);
+        assert.strictEqual(rejectionEvent?.type, "missingPermissions");
         if (rejectionEvent?.type === "missingPermissions") {
-          expect(rejectionEvent.data.feedId).toBe("feed-2");
-          expect(rejectionEvent.data.mediumId).toBe("medium-2");
+          assert.strictEqual(rejectionEvent.data.feedId, "feed-2");
+          assert.strictEqual(rejectionEvent.data.mediumId, "medium-2");
         }
       });
     });
@@ -200,10 +204,8 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Rejected);
-        expect(processed.errorCode).toBe(
-          ArticleDeliveryErrorCode.ThirdPartyNotFound
-        );
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Rejected);
+        assert.strictEqual(processed.errorCode, ArticleDeliveryErrorCode.ThirdPartyNotFound);
       });
 
       it("generates notFound rejection event", () => {
@@ -220,11 +222,11 @@ describe("delivery", () => {
 
         const { rejectionEvent } = processDeliveryResult(deliveryResult);
 
-        expect(rejectionEvent).toBeDefined();
-        expect(rejectionEvent?.type).toBe("notFound");
+        assert.notStrictEqual(rejectionEvent, undefined);
+        assert.strictEqual(rejectionEvent?.type, "notFound");
         if (rejectionEvent?.type === "notFound") {
-          expect(rejectionEvent.data.feedId).toBe("feed-3");
-          expect(rejectionEvent.data.mediumId).toBe("medium-3");
+          assert.strictEqual(rejectionEvent.data.feedId, "feed-3");
+          assert.strictEqual(rejectionEvent.data.mediumId, "medium-3");
         }
       });
     });
@@ -239,11 +241,9 @@ describe("delivery", () => {
         const { processed, rejectionEvent } =
           processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Failed);
-        expect(processed.errorCode).toBe(
-          ArticleDeliveryErrorCode.ThirdPartyInternal
-        );
-        expect(rejectionEvent).toBeUndefined();
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Failed);
+        assert.strictEqual(processed.errorCode, ArticleDeliveryErrorCode.ThirdPartyInternal);
+        assert.strictEqual(rejectionEvent, undefined);
       });
 
       it("returns Failed status for 502", () => {
@@ -254,10 +254,8 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Failed);
-        expect(processed.errorCode).toBe(
-          ArticleDeliveryErrorCode.ThirdPartyInternal
-        );
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Failed);
+        assert.strictEqual(processed.errorCode, ArticleDeliveryErrorCode.ThirdPartyInternal);
       });
 
       it("returns Failed status for 503", () => {
@@ -268,10 +266,8 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Failed);
-        expect(processed.errorCode).toBe(
-          ArticleDeliveryErrorCode.ThirdPartyInternal
-        );
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Failed);
+        assert.strictEqual(processed.errorCode, ArticleDeliveryErrorCode.ThirdPartyInternal);
       });
     });
 
@@ -285,10 +281,10 @@ describe("delivery", () => {
         const { processed, rejectionEvent } =
           processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Failed);
-        expect(processed.errorCode).toBe(ArticleDeliveryErrorCode.Internal);
-        expect(processed.internalMessage).toContain("Unhandled status code");
-        expect(rejectionEvent).toBeUndefined();
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Failed);
+        assert.strictEqual(processed.errorCode, ArticleDeliveryErrorCode.Internal);
+        assert.ok(processed.internalMessage!.includes("Unhandled status code"));
+        assert.strictEqual(rejectionEvent, undefined);
       });
 
       it("returns Failed with Internal error for status > 400 (non-5xx)", () => {
@@ -299,9 +295,9 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Failed);
-        expect(processed.errorCode).toBe(ArticleDeliveryErrorCode.Internal);
-        expect(processed.internalMessage).toContain("Unhandled status code");
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Failed);
+        assert.strictEqual(processed.errorCode, ArticleDeliveryErrorCode.Internal);
+        assert.ok(processed.internalMessage!.includes("Unhandled status code"));
       });
     });
 
@@ -315,9 +311,9 @@ describe("delivery", () => {
         const { processed, rejectionEvent } =
           processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Sent);
-        expect(processed.errorCode).toBeUndefined();
-        expect(rejectionEvent).toBeUndefined();
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Sent);
+        assert.strictEqual(processed.errorCode, undefined);
+        assert.strictEqual(rejectionEvent, undefined);
       });
 
       it("returns Sent status for 201", () => {
@@ -328,7 +324,7 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Sent);
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Sent);
       });
 
       it("returns Sent status for 204", () => {
@@ -339,7 +335,7 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.status).toBe(ArticleDeliveryStatus.Sent);
+        assert.strictEqual(processed.status, ArticleDeliveryStatus.Sent);
       });
 
       it("extracts metadata from job", () => {
@@ -356,7 +352,7 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.meta).toEqual({
+        assert.deepStrictEqual(processed.meta, {
           feedId: "success-feed",
           articleIdHash: "success-hash",
           mediumId: "success-medium",
@@ -379,7 +375,7 @@ describe("delivery", () => {
 
         const { processed } = processDeliveryResult(deliveryResult);
 
-        expect(processed.meta).toEqual({
+        assert.deepStrictEqual(processed.meta, {
           feedId: "",
           articleIdHash: "",
           mediumId: "",
@@ -395,8 +391,8 @@ describe("delivery", () => {
 
       const result = await getUnderLimitCheck(store, { feedId: "feed-1" }, []);
 
-      expect(result.underLimit).toBe(true);
-      expect(result.remaining).toBe(Number.MAX_SAFE_INTEGER);
+      assert.strictEqual(result.underLimit, true);
+      assert.strictEqual(result.remaining, Number.MAX_SAFE_INTEGER);
     });
 
     it("returns full limit when no deliveries exist", async () => {
@@ -406,8 +402,8 @@ describe("delivery", () => {
         { limit: 100, timeWindowSeconds: 86400 },
       ]);
 
-      expect(result.underLimit).toBe(true);
-      expect(result.remaining).toBe(100);
+      assert.strictEqual(result.underLimit, true);
+      assert.strictEqual(result.remaining, 100);
     });
 
     it("returns remaining based on delivery count", async () => {
@@ -426,8 +422,8 @@ describe("delivery", () => {
         { limit: 100, timeWindowSeconds: 86400 },
       ]);
 
-      expect(result.underLimit).toBe(true);
-      expect(result.remaining).toBe(97);
+      assert.strictEqual(result.underLimit, true);
+      assert.strictEqual(result.remaining, 97);
     });
 
     it("returns 0 remaining when at limit", async () => {
@@ -445,8 +441,8 @@ describe("delivery", () => {
         { limit: 5, timeWindowSeconds: 86400 },
       ]);
 
-      expect(result.underLimit).toBe(false);
-      expect(result.remaining).toBe(0);
+      assert.strictEqual(result.underLimit, false);
+      assert.strictEqual(result.remaining, 0);
     });
 
     it("returns minimum remaining across multiple limits", async () => {
@@ -464,8 +460,8 @@ describe("delivery", () => {
         { limit: 5, timeWindowSeconds: 3600 }, // 3 remaining
       ]);
 
-      expect(result.underLimit).toBe(true);
-      expect(result.remaining).toBe(3); // Minimum
+      assert.strictEqual(result.underLimit, true);
+      assert.strictEqual(result.remaining, 3); // Minimum
     });
 
     it("filters by mediumId when provided", async () => {
@@ -483,8 +479,324 @@ describe("delivery", () => {
         { limit: 10, timeWindowSeconds: 86400 },
       ]);
 
-      expect(result.remaining).toBe(8); // Only 2 deliveries to medium-1
+      assert.strictEqual(result.remaining, 8); // Only 2 deliveries to medium-1
     });
+  });
+});
+
+import { DeliveryPreviewStage, DeliveryPreviewStageStatus, type DeliveryPreviewStageResult } from "../delivery-preview";
+
+describe("diagnostic recording in delivery", () => {
+  it("records FeedRateLimit diagnostic when feed rate limit is checked", async () => {
+    const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+      await import("../delivery-preview");
+    const { recordRateLimitDiagnostic } = await import(".");
+
+    let previews: DeliveryPreviewStageResult[] = [];
+
+    await startDeliveryPreviewContext("test-hash", async () => {
+      recordRateLimitDiagnostic({
+        articleIdHash: "test-hash",
+        isFeedLevel: true,
+        currentCount: 15,
+        limit: 20,
+        timeWindowSeconds: 86400,
+        remaining: 5,
+      });
+      previews = getDeliveryPreviewResultsForArticle("test-hash");
+    });
+
+    const rateLimitDiagnostic = previews.find(
+      (d) => d.stage === DeliveryPreviewStage.FeedRateLimit
+    );
+    assert.notStrictEqual(rateLimitDiagnostic, undefined);
+    assert.strictEqual(rateLimitDiagnostic!.status, DeliveryPreviewStageStatus.Passed);
+    assert.strictEqual((rateLimitDiagnostic as { details: { remaining: number } }).details.remaining, 5);
+  });
+
+  it("records MediumRateLimit diagnostic when medium rate limit is checked", async () => {
+    const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+      await import("../delivery-preview");
+    const { recordRateLimitDiagnostic } = await import(".");
+
+    let previews: DeliveryPreviewStageResult[] = [];
+
+    await startDeliveryPreviewContext("test-hash", async () => {
+      recordRateLimitDiagnostic({
+        articleIdHash: "test-hash",
+        isFeedLevel: false,
+        mediumId: "medium-123",
+        currentCount: 8,
+        limit: 10,
+        timeWindowSeconds: 3600,
+        remaining: 2,
+      });
+      previews = getDeliveryPreviewResultsForArticle("test-hash");
+    });
+
+    const rateLimitDiagnostic = previews.find(
+      (d) => d.stage === DeliveryPreviewStage.MediumRateLimit
+    );
+    assert.notStrictEqual(rateLimitDiagnostic, undefined);
+    assert.strictEqual(rateLimitDiagnostic!.status, DeliveryPreviewStageStatus.Passed);
+    assert.strictEqual((rateLimitDiagnostic as { details: { mediumId: string } }).details.mediumId, "medium-123");
+  });
+
+  it("records failed rate limit diagnostic when limit exceeded", async () => {
+    const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+      await import("../delivery-preview");
+    const { recordRateLimitDiagnostic } = await import(".");
+
+    let previews: DeliveryPreviewStageResult[] = [];
+
+    await startDeliveryPreviewContext("test-hash", async () => {
+      recordRateLimitDiagnostic({
+        articleIdHash: "test-hash",
+        isFeedLevel: true,
+        currentCount: 20,
+        limit: 20,
+        timeWindowSeconds: 86400,
+        remaining: 0,
+      });
+      previews = getDeliveryPreviewResultsForArticle("test-hash");
+    });
+
+    const rateLimitDiagnostic = previews.find(
+      (d) => d.stage === DeliveryPreviewStage.FeedRateLimit
+    );
+    assert.notStrictEqual(rateLimitDiagnostic, undefined);
+    assert.strictEqual(rateLimitDiagnostic!.status, DeliveryPreviewStageStatus.Failed);
+    assert.strictEqual((rateLimitDiagnostic as { details: { wouldExceed: boolean } }).details.wouldExceed, true);
+  });
+
+  it("records MediumFilter diagnostic when filter is evaluated", async () => {
+    const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+      await import("../delivery-preview");
+    const { recordMediumFilterDiagnostic } = await import(".");
+
+    let previews: DeliveryPreviewStageResult[] = [];
+
+    await startDeliveryPreviewContext("test-hash", async () => {
+      recordMediumFilterDiagnostic({
+        articleIdHash: "test-hash",
+        mediumId: "medium-123",
+        filterExpression: { type: "LOGICAL", op: "AND", children: [] },
+        filterResult: true,
+        explainBlocked: [],
+        explainMatched: [],
+      });
+      previews = getDeliveryPreviewResultsForArticle("test-hash");
+    });
+
+    const filterDiagnostic = previews.find(
+      (d) => d.stage === DeliveryPreviewStage.MediumFilter
+    );
+    assert.notStrictEqual(filterDiagnostic, undefined);
+    assert.strictEqual(filterDiagnostic!.status, DeliveryPreviewStageStatus.Passed);
+  });
+
+  it("records failed MediumFilter diagnostic when filter blocks article", async () => {
+    const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+      await import("../delivery-preview");
+    const { recordMediumFilterDiagnostic } = await import(".");
+
+    let previews: DeliveryPreviewStageResult[] = [];
+
+    await startDeliveryPreviewContext("test-hash", async () => {
+      recordMediumFilterDiagnostic({
+        articleIdHash: "test-hash",
+        mediumId: "medium-123",
+        filterExpression: { type: "LOGICAL", op: "AND", children: [] },
+        filterResult: false,
+        explainBlocked: [
+          {
+            message: "Title does not contain 'keyword'",
+            truncatedReferenceValue: "Some article title",
+            filterInput: "keyword",
+            fieldName: "title",
+            operator: "CONTAINS",
+            isNegated: false,
+          },
+        ],
+        explainMatched: [],
+      });
+      previews = getDeliveryPreviewResultsForArticle("test-hash");
+    });
+
+    const filterDiagnostic = previews.find(
+      (d) => d.stage === DeliveryPreviewStage.MediumFilter
+    );
+    assert.notStrictEqual(filterDiagnostic, undefined);
+    assert.strictEqual(filterDiagnostic!.status, DeliveryPreviewStageStatus.Failed);
+    const details = filterDiagnostic!.details as { explainBlocked: Array<{ message: string }> };
+    assert.strictEqual(details.explainBlocked[0]!.message, "Title does not contain 'keyword'");
+  });
+
+  it("does not record previews outside diagnostic context", async () => {
+    const { getDeliveryPreviewResultsForArticle } = await import("../delivery-preview");
+    const { recordRateLimitDiagnostic, recordMediumFilterDiagnostic } =
+      await import(".");
+
+    // Call outside diagnostic context - should not throw
+    recordRateLimitDiagnostic({
+      articleIdHash: "test-hash",
+      isFeedLevel: true,
+      currentCount: 0,
+      limit: 20,
+      timeWindowSeconds: 86400,
+      remaining: 20,
+    });
+
+    recordMediumFilterDiagnostic({
+      articleIdHash: "test-hash",
+      mediumId: "medium-123",
+      filterExpression: null,
+      filterResult: true,
+      explainBlocked: [],
+      explainMatched: [],
+    });
+
+    const previews = getDeliveryPreviewResultsForArticle("test-hash");
+    assert.deepStrictEqual(previews, []);
+  });
+});
+
+describe("diagnostic recording during deliverArticles execution", () => {
+  it("records MediumFilter diagnostic when medium filter is evaluated during delivery", async () => {
+    const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+      await import("../delivery-preview");
+    const { deliverArticles } = await import(".");
+
+    const store = createInMemoryDeliveryRecordStore();
+    const article: Article = {
+      flattened: {
+        id: "article-1",
+        idHash: "hash-1",
+        title: "Test Article",
+      },
+      raw: {},
+    };
+
+    // Create a medium with a filter that will pass
+    const filterExpression: LogicalExpression = {
+      type: ExpressionType.Logical,
+      op: LogicalExpressionOperator.And,
+      children: [
+        {
+          type: ExpressionType.Relational,
+          op: RelationalExpressionOperator.Contains,
+          left: { type: RelationalExpressionLeft.Article, value: "title" },
+          right: { type: RelationalExpressionRight.String, value: "Test" },
+        },
+      ],
+    };
+    const mediumWithFilter = {
+      id: "medium-filter-test",
+      filters: {
+        expression: filterExpression,
+      },
+      details: {
+        guildId: "guild-123",
+        channel: {
+          id: "channel-123",
+        },
+      },
+    };
+
+    let previews: DeliveryPreviewStageResult[] = [];
+
+    await startDeliveryPreviewContext("hash-1", async () => {
+      await store.startContext(async () => {
+        await deliverArticles(
+          [article],
+          [mediumWithFilter],
+          {
+            feedId: "feed-1",
+            feedUrl: "https://example.com/feed.xml",
+            articleDayLimit: 100,
+            discordClient: createTestDiscordRestClient(),
+            deliveryRecordStore: store,
+          }
+        );
+      });
+      previews = getDeliveryPreviewResultsForArticle("hash-1");
+    });
+
+    const filterDiagnostic = previews.find(
+      (d) => d.stage === DeliveryPreviewStage.MediumFilter
+    );
+    assert.notStrictEqual(filterDiagnostic, undefined);
+    assert.strictEqual(filterDiagnostic!.status, DeliveryPreviewStageStatus.Passed);
+    assert.strictEqual((filterDiagnostic as { details: { mediumId: string } }).details.mediumId, "medium-filter-test");
+  });
+
+  it("records failed MediumFilter diagnostic when filter blocks article during delivery", async () => {
+    const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+      await import("../delivery-preview");
+    const { deliverArticles } = await import(".");
+
+    const store = createInMemoryDeliveryRecordStore();
+    const article: Article = {
+      flattened: {
+        id: "article-1",
+        idHash: "hash-1",
+        title: "No Match Here",
+      },
+      raw: {},
+    };
+
+    // Create a medium with a filter that will NOT pass
+    const blockingFilterExpression: LogicalExpression = {
+      type: ExpressionType.Logical,
+      op: LogicalExpressionOperator.And,
+      children: [
+        {
+          type: ExpressionType.Relational,
+          op: RelationalExpressionOperator.Contains,
+          left: { type: RelationalExpressionLeft.Article, value: "title" },
+          right: { type: RelationalExpressionRight.String, value: "REQUIRED_KEYWORD" },
+        },
+      ],
+    };
+    const mediumWithBlockingFilter = {
+      id: "medium-blocking-test",
+      filters: {
+        expression: blockingFilterExpression,
+      },
+      details: {
+        guildId: "guild-123",
+        channel: {
+          id: "channel-123",
+        },
+      },
+    };
+
+    let previews: DeliveryPreviewStageResult[] = [];
+
+    await startDeliveryPreviewContext("hash-1", async () => {
+      await store.startContext(async () => {
+        await deliverArticles(
+          [article],
+          [mediumWithBlockingFilter],
+          {
+            feedId: "feed-1",
+            feedUrl: "https://example.com/feed.xml",
+            articleDayLimit: 100,
+            discordClient: createTestDiscordRestClient(),
+            deliveryRecordStore: store,
+          }
+        );
+      });
+      previews = getDeliveryPreviewResultsForArticle("hash-1");
+    });
+
+    const filterDiagnostic = previews.find(
+      (d) => d.stage === DeliveryPreviewStage.MediumFilter
+    );
+    assert.notStrictEqual(filterDiagnostic, undefined);
+    assert.strictEqual(filterDiagnostic!.status, DeliveryPreviewStageStatus.Failed);
+    const details = filterDiagnostic!.details as { explainBlocked: Array<{ message: string }> };
+    assert.ok(details.explainBlocked.length > 0);
   });
 });
 

@@ -7,7 +7,11 @@ import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 
 @Injectable()
 export class ScheduleEmitterService {
-  timers = new Map<number, NodeJS.Timeout>();
+  /**
+   * Tracks which refresh rates are currently active (have feeds using them).
+   * Used to detect when refresh rates are added or removed.
+   */
+  activeRefreshRates = new Set<number>();
 
   constructor(
     private readonly configService: ConfigService,
@@ -15,6 +19,13 @@ export class ScheduleEmitterService {
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel
   ) {}
 
+  /**
+   * Called every 30 seconds to trigger feed fetching for all refresh rates.
+   *
+   * With slot-based staggering, we must call onTimerTrigger for EVERY refresh
+   * rate on EVERY 30-second tick. The slot window filtering in the query
+   * ensures only feeds due in the current 30-second window are fetched.
+   */
   async syncTimerStates(
     onTimerTrigger: (refreshRateSeconds: number) => Promise<void>
   ) {
@@ -32,69 +43,73 @@ export class ScheduleEmitterService {
       );
     }
 
-    const setOfRefreshRatesMs = new Set([
+    const currentRefreshRatesMs = new Set([
       ...allRefreshRatesSeconds
         .concat(allUserRefreshRateSeconds)
         .filter((s) => !!s)
         .map((seconds) => seconds * 1000),
     ]);
 
-    logger.info(
-      `Found ${setOfRefreshRatesMs.size} unique refresh rates: ${Array.from(
-        setOfRefreshRatesMs
-      ).join(",")}`
-    );
+    this.logRefreshRateChanges(currentRefreshRatesMs);
+    this.activeRefreshRates = currentRefreshRatesMs;
 
-    this.cleanupTimers(this.timers, setOfRefreshRatesMs);
-    this.setNewTimers(this.timers, setOfRefreshRatesMs, onTimerTrigger);
+    // Trigger all refresh rates on every 30-second tick
+    // The slot window query will filter to only feeds due now
+    await this.triggerAllRefreshRates(currentRefreshRatesMs, onTimerTrigger);
   }
 
-  cleanupTimers(
-    inputTimers: Map<number, NodeJS.Timeout>,
-    refreshRates: Set<number>
-  ) {
-    const timersRemoved: number[] = [];
-    inputTimers.forEach((timer, key) => {
-      if (refreshRates.has(key)) {
-        return;
-      }
+  private logRefreshRateChanges(currentRefreshRatesMs: Set<number>) {
+    const added = [...currentRefreshRatesMs].filter(
+      (r) => !this.activeRefreshRates.has(r)
+    );
+    const removed = [...this.activeRefreshRates].filter(
+      (r) => !currentRefreshRatesMs.has(r)
+    );
 
-      timersRemoved.push(key);
-      clearInterval(timer);
-      inputTimers.delete(key);
-    });
+    if (added.length > 0) {
+      logger.info(
+        `New refresh rates detected: [${added
+          .map((r) => `${r / 1000}s`)
+          .join(", ")}]`
+      );
+    }
+
+    if (removed.length > 0) {
+      logger.info(
+        `Refresh rates removed: [${removed
+          .map((r) => `${r / 1000}s`)
+          .join(", ")}]`
+      );
+    }
 
     logger.debug(
-      `Removed ${timersRemoved.length} timers: [${timersRemoved.map(
-        (refreshRate) => `${refreshRate / 1000}s`
-      )}]`
+      `Active refresh rates (${currentRefreshRatesMs.size}): ${Array.from(
+        currentRefreshRatesMs
+      )
+        .map((r) => `${r / 1000}s`)
+        .join(", ")}`
     );
   }
 
-  setNewTimers(
-    inputTimers: Map<number, NodeJS.Timeout>,
-    refreshRates: Set<number>,
+  private async triggerAllRefreshRates(
+    refreshRatesMs: Set<number>,
     onTimerTrigger: (refreshRateSeconds: number) => Promise<void>
   ) {
-    const timersSet: number[] = [];
-
-    refreshRates.forEach((refreshRate) => {
-      if (inputTimers.has(refreshRate)) {
-        return;
+    const triggerPromises = Array.from(refreshRatesMs).map(
+      async (refreshRateMs) => {
+        try {
+          await onTimerTrigger(refreshRateMs / 1000);
+        } catch (err) {
+          logger.error(
+            `Failed to trigger refresh rate ${refreshRateMs / 1000}s`,
+            {
+              stack: (err as Error).stack,
+            }
+          );
+        }
       }
-
-      timersSet.push(refreshRate);
-      const timer = setInterval(async () => {
-        await onTimerTrigger(refreshRate / 1000);
-      }, refreshRate);
-      inputTimers.set(refreshRate, timer);
-      onTimerTrigger(refreshRate / 1000);
-    });
-
-    logger.debug(
-      `Set ${timersSet.length} timers: [${timersSet.map(
-        (refreshRate) => `${refreshRate / 1000}s`
-      )}]`
     );
+
+    await Promise.all(triggerPromises);
   }
 }

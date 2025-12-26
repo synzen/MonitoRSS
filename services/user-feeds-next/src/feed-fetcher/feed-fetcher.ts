@@ -1,9 +1,9 @@
-import { request } from "undici";
 import pRetry from "p-retry";
 import {
   FeedRequestBadStatusCodeException,
   FeedRequestFetchException,
   FeedRequestInternalException,
+  FeedRequestInvalidSslCertificateException,
   FeedRequestNetworkException,
   FeedRequestParseException,
   FeedRequestServerStatusException,
@@ -24,6 +24,7 @@ export async function fetchFeed(
     executeFetch?: boolean;
     executeFetchIfNotInCache?: boolean;
     executeFetchIfStale?: boolean;
+    stalenessThresholdSeconds?: number;
     retries?: number;
     hashToCompare?: string;
     lookupDetails?: FeedRequestLookupDetails | null;
@@ -31,22 +32,23 @@ export async function fetchFeed(
   }
 ): Promise<FetchFeedResult> {
   const serviceHost = options.serviceHost;
-  let statusCode: number;
-  let body: { json: () => Promise<unknown> };
+  let response: Response;
 
   try {
-    const response = await pRetry(
+    const requestBody = {
+      url,
+      executeFetchIfNotExists: options?.executeFetchIfNotInCache ?? false,
+      executeFetch: options?.executeFetch ?? false,
+      executeFetchIfStale: options?.executeFetchIfStale ?? false,
+      stalenessThresholdSeconds: options?.stalenessThresholdSeconds,
+      hashToCompare: options?.hashToCompare || undefined,
+      lookupDetails: options?.lookupDetails,
+    };
+    response = await pRetry(
       async () =>
-        request(serviceHost, {
+        fetch(serviceHost, {
           method: "POST",
-          body: JSON.stringify({
-            url,
-            executeFetchIfNotExists: options?.executeFetchIfNotInCache ?? false,
-            executeFetch: options?.executeFetch ?? false,
-            executeFetchIfStale: options?.executeFetchIfStale ?? false,
-            hashToCompare: options?.hashToCompare || undefined,
-            lookupDetails: options?.lookupDetails,
-          }),
+          body: JSON.stringify(requestBody),
           headers: {
             "content-type": "application/json",
             accept: "application/json",
@@ -58,9 +60,6 @@ export async function fetchFeed(
         randomize: true,
       }
     );
-
-    statusCode = response.statusCode;
-    body = response.body;
   } catch (err) {
     throw new FeedRequestNetworkException(
       `Failed to execute request to feed requests API: ${(err as Error).message}`
@@ -68,8 +67,8 @@ export async function fetchFeed(
   }
 
   return handleFetchResponse({
-    statusCode,
-    json: body.json.bind(body),
+    statusCode: response.status,
+    json: response.json.bind(response),
   });
 }
 
@@ -120,8 +119,13 @@ async function handleFetchResponse({
     );
   }
 
+  if (requestStatus === FeedResponseRequestStatus.InvalidSslCertificate) {
+    throw new FeedRequestInvalidSslCertificateException(
+      "Feed server has an invalid SSL certificate"
+    );
+  }
+
   if (
-    requestStatus === FeedResponseRequestStatus.Pending ||
     requestStatus === FeedResponseRequestStatus.MatchedHash
   ) {
     return { requestStatus };
@@ -142,4 +146,68 @@ async function handleFetchResponse({
   throw new Error(
     `Unexpected feed request status in response: ${requestStatus}`
   );
+}
+
+/**
+ * Fetch feed for delivery preview using the dedicated endpoint.
+ * This endpoint checks staleness based on ANY request status (including errors),
+ * preventing duplicate fetches when only error records exist.
+ *
+ * Compatible with fetchFeed signature so it can be passed to fetchAndParseFeed.
+ */
+export async function fetchFeedForDeliveryPreview(
+  url: string,
+  options: {
+    serviceHost: string;
+    stalenessThresholdSeconds?: number;
+    lookupDetails?: FeedRequestLookupDetails | null;
+    // These are accepted for compatibility but not used by this endpoint
+    executeFetch?: boolean;
+    executeFetchIfNotInCache?: boolean;
+    executeFetchIfStale?: boolean;
+    retries?: number;
+    hashToCompare?: string;
+  }
+): Promise<FetchFeedResult> {
+  const serviceHost = options.serviceHost;
+  let response: Response;
+
+  try {
+    const requestBody = {
+      url,
+      lookupKey: options.lookupDetails?.key,
+      stalenessThresholdSeconds: options.stalenessThresholdSeconds,
+      hashToCompare: options.hashToCompare,
+    };
+
+    const endpointUrl = serviceHost.endsWith("/")
+      ? `${serviceHost}delivery-preview`
+      : `${serviceHost}/delivery-preview`;
+
+    response = await pRetry(
+      async () =>
+        fetch(endpointUrl, {
+          method: "POST",
+          body: JSON.stringify(requestBody),
+          headers: {
+            "content-type": "application/json",
+            accept: "application/json",
+            "api-key": API_KEY,
+          },
+        }),
+      {
+        retries: 2,
+        randomize: true,
+      }
+    );
+  } catch (err) {
+    throw new FeedRequestNetworkException(
+      `Failed to execute request to feed requests API: ${(err as Error).message}`
+    );
+  }
+
+  return handleFetchResponse({
+    statusCode: response.status,
+    json: response.json.bind(response),
+  });
 }

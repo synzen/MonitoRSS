@@ -10,3 +10,5 @@ export * from "./UserFeedSummary";
 export * from "./UserFeedComputedStatus";
 export * from "./UserFeedManagementInvite";
 export * from "./UserFeedDeliveryLog";
+export * from "./DeliveryPreview";
+export * from "./ExternalContentError";

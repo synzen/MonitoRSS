@@ -152,7 +152,9 @@ export const DeliveryHistory = () => {
           <Heading as="h3" size="sm" m={0} id="delivery-history-table-title">
             Article Delivery History
           </Heading>
-          <Text>Delivery attempts for articles across all connections.</Text>
+          <Text color="whiteAlpha.700" fontSize="sm">
+            Delivery attempts for articles across all connections.
+          </Text>
         </Stack>
         <Box px={4}>
           <Divider />

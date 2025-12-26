@@ -69,13 +69,13 @@ import {
   UpdateDiscordChannelConnectionOutput,
 } from "../features/feedConnections";
 import { mockFeedChannelConnections } from "./data/feedConnection";
-import mockUserFeeds from "./data/userFeeds";
+import mockUserFeeds, { getMockUserFeeds } from "./data/userFeeds";
 import mockFeedSummaries from "./data/feeds";
 import { mockSendTestArticleResult } from "./data/testArticleResult";
 import { mockUserFeedArticles } from "./data/userFeedArticles";
 import { GetUserFeedRequestsOutput } from "../features/feed/api/getUserFeedRequests";
 import { mockUserFeedRequests } from "./data/userFeedRequests";
-import { mockCreatePreviewResult } from "./data/createPreview";
+import { getMockCreatePreviewResult } from "./data/createPreview";
 import mockDiscordThreads from "./data/discordThreads";
 import mockDiscordServerMembers from "./data/discordServerMembers";
 import mockDiscordUser from "./data/discordUser";
@@ -84,11 +84,10 @@ import { legacyFeedBulkConversion } from "./data/legacyFeedBulkConversion";
 import { UserFeedManagerStatus } from "../constants";
 import mockUserFeedManagementInvites from "./data/userFeedManagementInvites";
 import mockUserMe from "./data/userMe";
-import {
-  GetSubscriptionChangePreviewOutput,
-  GetSubscriptionProductsOutput,
-} from "../features/subscriptionProducts";
+import { GetSubscriptionChangePreviewOutput } from "../features/subscriptionProducts";
 import { mockUserFeedDeliveryLogs } from "./data/userFeedDeliveryLogs";
+import { getMockDeliveryPreviews, getMockFeedState } from "./data/deliveryPreview";
+import { DeliveryPreviewStage } from "../features/feed/types/DeliveryPreview";
 import {
   CreateUserFeedUrlValidationInput,
   CreateUserFeedUrlValidationOutput,
@@ -133,98 +132,6 @@ const handlers = [
 
     return new HttpResponse(null, {
       status: 204,
-    });
-  }),
-  http.get("/api/v1/subscription-products", async ({ request }) => {
-    const url = new URL(request.url);
-    const currencyCode = url.searchParams.get("currency") || "USD";
-
-    await delay(500);
-
-    return HttpResponse.json<GetSubscriptionProductsOutput>({
-      data: {
-        products: [
-          {
-            id: "free",
-            name: "Free",
-            prices: [
-              {
-                interval: "month",
-                formattedPrice: "$0",
-                currencyCode,
-                id: "f0",
-              },
-              {
-                interval: "year",
-                formattedPrice: "$0",
-                currencyCode,
-                id: "f1",
-              },
-            ],
-          },
-          {
-            id: "tier1",
-            name: "Tier 1",
-            prices: [
-              {
-                interval: "month",
-                formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
-                currencyCode,
-                id: "p1",
-              },
-              {
-                interval: "year",
-                formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
-                currencyCode,
-                id: "p2",
-              },
-            ],
-          },
-          {
-            id: "tier2",
-            name: "Tier 2",
-            prices: [
-              {
-                interval: "month",
-                formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
-                currencyCode,
-                id: "p3",
-              },
-              {
-                interval: "year",
-                formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
-                currencyCode,
-                id: "p4",
-              },
-            ],
-          },
-          {
-            id: "tier3",
-            name: "Tier 3",
-            prices: [
-              {
-                interval: "month",
-                formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
-                currencyCode,
-                id: "p5",
-              },
-              {
-                interval: "year",
-                formattedPrice: `$${(Math.random() * 100).toFixed(2)}`,
-                currencyCode,
-                id: "p6",
-              },
-            ],
-          },
-        ],
-        currencies: [
-          { code: "USD", symbol: "$" },
-          {
-            code: "EUR",
-            symbol: "€",
-          },
-        ],
-      },
     });
   }),
   http.post("/api/v1/error-reports", async () => {
@@ -799,7 +706,8 @@ const handlers = [
 
   http.get("/api/v1/user-feeds/:feedId", async ({ params }) => {
     const { feedId } = params;
-    const feed = mockUserFeeds.find((f) => f.id === feedId);
+    const feeds = getMockUserFeeds();
+    const feed = feeds.find((f) => f.id === feedId);
 
     if (!feed) {
       return HttpResponse.json(
@@ -884,6 +792,40 @@ const handlers = [
     return HttpResponse.json<GetUserFeedDeliveryLogsOutput>({
       result: {
         logs: mockUserFeedDeliveryLogs,
+      },
+    });
+  }),
+
+  http.post("/api/v1/user-feeds/:feedId/delivery-preview", async ({ request }) => {
+    const body = (await request.json()) as { skip?: number; limit?: number };
+    const skip = body.skip || 0;
+    const limit = body.limit || 10;
+
+    const feedState = getMockFeedState();
+
+    await delay(500);
+
+    // When feedState is present, return empty results (feed-level state)
+    if (feedState) {
+      return HttpResponse.json({
+        result: {
+          results: [],
+          total: 0,
+          stages: Object.values(DeliveryPreviewStage),
+          feedState,
+        },
+      });
+    }
+
+    // Normal case: return delivery preview results
+    const mockData = getMockDeliveryPreviews();
+    const paginatedResults = mockData.slice(skip, skip + limit);
+
+    return HttpResponse.json({
+      result: {
+        results: paginatedResults,
+        total: mockData.length,
+        stages: Object.values(DeliveryPreviewStage),
       },
     });
   }),
@@ -1013,7 +955,7 @@ const handlers = [
     await delay(500);
 
     return HttpResponse.json<CreateDiscordChannelConnectionPreviewOutput>({
-      result: mockCreatePreviewResult,
+      result: getMockCreatePreviewResult(true),
     });
   }),
 

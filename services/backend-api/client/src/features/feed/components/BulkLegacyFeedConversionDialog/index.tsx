@@ -28,7 +28,7 @@ import {
   Tr,
   useDisclosure,
 } from "@chakra-ui/react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { WarningIcon } from "@chakra-ui/icons";
 import { cloneElement } from "react";
 import { useNavigate } from "react-router-dom";

@@ -12,6 +12,7 @@ export interface GetUserFeedArticlesInput {
     random?: boolean;
     selectProperties?: string[];
     selectPropertyTypes?: SelectArticlePropertyType[];
+    includeHtmlInErrors?: boolean;
     filters?: {
       expression?: Record<string, any>;
       returnType?: GetArticlesFilterReturnType;
@@ -56,6 +57,19 @@ const GetUserFeedArticlesOutputSchema = object({
       )
         .optional()
         .default([]),
+      externalContentErrors: array(
+        object({
+          articleId: string().required(),
+          sourceField: string().required(),
+          label: string().required(),
+          cssSelector: string().required(),
+          errorType: string().required(),
+          message: string().optional(),
+          statusCode: number().optional(),
+          pageHtml: string().optional(),
+          pageHtmlTruncated: boolean().optional(),
+        })
+      ).optional(),
     })
     .required(),
 }).required();

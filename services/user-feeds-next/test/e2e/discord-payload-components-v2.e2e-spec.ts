@@ -1,11 +1,13 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, before, after } from "node:test";
+import * as assert from "node:assert";
 import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../../src/delivery";
 import getTestRssFeed from "../data/test-rss-feed";
 import { createTestContext } from "../helpers/test-context";
+import { setupTestDatabase, teardownTestDatabase, type TestStores } from "../helpers/setup-integration-tests";
 import type { FeedV2Event, ComponentV2Input } from "../../src/shared/schemas";
 
-// Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
+let stores: TestStores;
 
 type MediumDetails = FeedV2Event["data"]["mediums"][0]["details"];
 
@@ -38,16 +40,24 @@ function createEventWithComponentsV2(
  * Helper to extract the Discord payload from captured requests
  */
 function getDiscordPayload(ctx: ReturnType<typeof createTestContext>) {
-  expect(ctx.discordClient.capturedPayloads.length).toBeGreaterThan(0);
+  assert.ok(ctx.discordClient.capturedPayloads.length > 0);
   return JSON.parse(
     ctx.discordClient.capturedPayloads[0]!.options.body as string
   );
 }
 
-describe("Discord Payload Components V2 (e2e)", () => {
+describe("Discord Payload Components V2 (e2e)", { concurrency: true }, () => {
+  before(async () => {
+    stores = await setupTestDatabase();
+  });
+
+  after(async () => {
+    await teardownTestDatabase();
+  });
+
   describe("TEXT_DISPLAY Component", () => {
     it("sends message with TEXT_DISPLAY component", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithComponentsV2 = createEventWithComponentsV2(
         ctx.testFeedV2Event,
@@ -89,26 +99,26 @@ describe("Discord Payload Components V2 (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithComponentsV2);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.components).toBeArray();
-        expect(payload.components.length).toBeGreaterThan(0);
+        assert.ok(Array.isArray(payload.components));
+        assert.ok(payload.components.length > 0);
 
         // Find the section component
         const section = payload.components.find(
           (c: { type: number }) => c.type === 9
         ); // Section type
-        expect(section).toBeDefined();
+        assert.notStrictEqual(section, undefined);
 
         // Check text display within section
         const textDisplay = section.components.find(
           (c: { type: number }) => c.type === 10
         ); // TextDisplay type
-        expect(textDisplay).toBeDefined();
-        expect(textDisplay.content).toBe("Article: Text Display Article");
+        assert.notStrictEqual(textDisplay, undefined);
+        assert.strictEqual(textDisplay.content, "Article: Text Display Article");
       } finally {
         ctx.cleanup();
       }
@@ -117,7 +127,7 @@ describe("Discord Payload Components V2 (e2e)", () => {
 
   describe("THUMBNAIL Component", () => {
     it("sends message with THUMBNAIL accessory", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithComponentsV2 = createEventWithComponentsV2(
         ctx.testFeedV2Event,
@@ -158,28 +168,26 @@ describe("Discord Payload Components V2 (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithComponentsV2);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
         const section = payload.components.find(
           (c: { type: number }) => c.type === 9
         );
-        expect(section).toBeDefined();
+        assert.notStrictEqual(section, undefined);
 
         // Check accessory (thumbnail)
-        expect(section.accessory).toBeDefined();
-        expect(section.accessory.type).toBe(11); // Thumbnail type
-        expect(section.accessory.media.url).toBe(
-          "https://example.com/thumb.png"
-        );
+        assert.notStrictEqual(section.accessory, undefined);
+        assert.strictEqual(section.accessory.type, 11); // Thumbnail type
+        assert.strictEqual(section.accessory.media.url, "https://example.com/thumb.png");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("sends THUMBNAIL with spoiler", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithComponentsV2 = createEventWithComponentsV2(
         ctx.testFeedV2Event,
@@ -219,13 +227,13 @@ describe("Discord Payload Components V2 (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithComponentsV2);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         const section = payload.components.find(
           (c: { type: number }) => c.type === 9
         );
-        expect(section.accessory.spoiler).toBe(true);
+        assert.strictEqual(section.accessory.spoiler, true);
       } finally {
         ctx.cleanup();
       }
@@ -234,7 +242,7 @@ describe("Discord Payload Components V2 (e2e)", () => {
 
   describe("ACTION_ROW V2 Component", () => {
     it("sends message with ACTION_ROW containing buttons", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithComponentsV2 = createEventWithComponentsV2(
         ctx.testFeedV2Event,
@@ -278,22 +286,20 @@ describe("Discord Payload Components V2 (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithComponentsV2);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
         const actionRow = payload.components.find(
           (c: { type: number }) => c.type === 1
         ); // ActionRow type
-        expect(actionRow).toBeDefined();
-        expect(actionRow.components).toBeArray();
-        expect(actionRow.components.length).toBe(2);
+        assert.notStrictEqual(actionRow, undefined);
+        assert.ok(Array.isArray(actionRow.components));
+        assert.strictEqual(actionRow.components.length, 2);
 
-        expect(actionRow.components[0].label).toBe("Read Article");
-        expect(actionRow.components[0].url).toBe(
-          "https://example.com/action-row"
-        );
-        expect(actionRow.components[1].label).toBe("Share");
+        assert.strictEqual(actionRow.components[0].label, "Read Article");
+        assert.strictEqual(actionRow.components[0].url, "https://example.com/action-row");
+        assert.strictEqual(actionRow.components[1].label, "Share");
       } finally {
         ctx.cleanup();
       }
@@ -302,7 +308,7 @@ describe("Discord Payload Components V2 (e2e)", () => {
 
   describe("SEPARATOR Component", () => {
     it("sends message with SEPARATOR component", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithComponentsV2 = createEventWithComponentsV2(
         ctx.testFeedV2Event,
@@ -365,16 +371,16 @@ describe("Discord Payload Components V2 (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithComponentsV2);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
         const separator = payload.components.find(
           (c: { type: number }) => c.type === 14
         ); // Separator type
-        expect(separator).toBeDefined();
-        expect(separator.divider).toBe(true);
-        expect(separator.spacing).toBe(2);
+        assert.notStrictEqual(separator, undefined);
+        assert.strictEqual(separator.divider, true);
+        assert.strictEqual(separator.spacing, 2);
       } finally {
         ctx.cleanup();
       }
@@ -383,7 +389,7 @@ describe("Discord Payload Components V2 (e2e)", () => {
 
   describe("MEDIA_GALLERY Component", () => {
     it("sends message with MEDIA_GALLERY component", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithComponentsV2 = createEventWithComponentsV2(
         ctx.testFeedV2Event,
@@ -433,27 +439,23 @@ describe("Discord Payload Components V2 (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithComponentsV2);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
         const container = payload.components.find(
           (c: { type: number }) => c.type === 17
         ); // Container type
-        expect(container).toBeDefined();
+        assert.notStrictEqual(container, undefined);
 
         const gallery = container.components.find(
           (c: { type: number }) => c.type === 12
         ); // MediaGallery type
-        expect(gallery).toBeDefined();
-        expect(gallery.items).toBeArray();
-        expect(gallery.items.length).toBe(2);
-        expect(gallery.items[0].media.url).toBe(
-          "https://example.com/image1.jpg"
-        );
-        expect(gallery.items[1].media.url).toBe(
-          "https://example.com/image2.jpg"
-        );
+        assert.notStrictEqual(gallery, undefined);
+        assert.ok(Array.isArray(gallery.items));
+        assert.strictEqual(gallery.items.length, 2);
+        assert.strictEqual(gallery.items[0].media.url, "https://example.com/image1.jpg");
+        assert.strictEqual(gallery.items[1].media.url, "https://example.com/image2.jpg");
       } finally {
         ctx.cleanup();
       }
@@ -462,7 +464,7 @@ describe("Discord Payload Components V2 (e2e)", () => {
 
   describe("CONTAINER Component", () => {
     it("sends message with CONTAINER and accent_color", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithComponentsV2 = createEventWithComponentsV2(
         ctx.testFeedV2Event,
@@ -499,22 +501,22 @@ describe("Discord Payload Components V2 (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithComponentsV2);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
         const container = payload.components.find(
           (c: { type: number }) => c.type === 17
         ); // Container type
-        expect(container).toBeDefined();
-        expect(container.accent_color).toBe(0xff5733);
+        assert.notStrictEqual(container, undefined);
+        assert.strictEqual(container.accent_color, 0xff5733);
       } finally {
         ctx.cleanup();
       }
     });
 
     it("sends CONTAINER with spoiler", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithComponentsV2 = createEventWithComponentsV2(
         ctx.testFeedV2Event,
@@ -550,13 +552,13 @@ describe("Discord Payload Components V2 (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithComponentsV2);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         const container = payload.components.find(
           (c: { type: number }) => c.type === 17
         );
-        expect(container.spoiler).toBe(true);
+        assert.strictEqual(container.spoiler, true);
       } finally {
         ctx.cleanup();
       }
@@ -565,7 +567,7 @@ describe("Discord Payload Components V2 (e2e)", () => {
 
   describe("SECTION with Accessory", () => {
     it("sends SECTION with BUTTON accessory", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithComponentsV2 = createEventWithComponentsV2(
         ctx.testFeedV2Event,
@@ -613,23 +615,23 @@ describe("Discord Payload Components V2 (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithComponentsV2);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
         const section = payload.components.find(
           (c: { type: number }) => c.type === 9
         );
-        expect(section).toBeDefined();
+        assert.notStrictEqual(section, undefined);
 
         // Check text displays
-        expect(section.components.length).toBe(2);
+        assert.strictEqual(section.components.length, 2);
 
         // Check button accessory
-        expect(section.accessory).toBeDefined();
-        expect(section.accessory.type).toBe(2); // Button type
-        expect(section.accessory.label).toBe("Open");
-        expect(section.accessory.url).toBe("https://example.com/section");
+        assert.notStrictEqual(section.accessory, undefined);
+        assert.strictEqual(section.accessory.type, 2); // Button type
+        assert.strictEqual(section.accessory.label, "Open");
+        assert.strictEqual(section.accessory.url, "https://example.com/section");
       } finally {
         ctx.cleanup();
       }
@@ -638,7 +640,7 @@ describe("Discord Payload Components V2 (e2e)", () => {
 
   describe("Complex Component Layouts", () => {
     it("sends message with multiple V2 component types", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithComponentsV2 = createEventWithComponentsV2(
         ctx.testFeedV2Event,
@@ -696,8 +698,8 @@ describe("Discord Payload Components V2 (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithComponentsV2);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
 
@@ -705,29 +707,29 @@ describe("Discord Payload Components V2 (e2e)", () => {
         const container = payload.components.find(
           (c: { type: number }) => c.type === 17
         );
-        expect(container).toBeDefined();
-        expect(container.accent_color).toBe(0x5865f2);
+        assert.notStrictEqual(container, undefined);
+        assert.strictEqual(container.accent_color, 0x5865f2);
 
         // Should have 4 child components
-        expect(container.components.length).toBe(4);
+        assert.strictEqual(container.components.length, 4);
 
         // First text display
         const firstText = container.components[0];
-        expect(firstText.type).toBe(10);
-        expect(firstText.content).toBe("**Complex Article**");
+        assert.strictEqual(firstText.type, 10);
+        assert.strictEqual(firstText.content, "**Complex Article**");
 
         // Separator
         const separator = container.components[1];
-        expect(separator.type).toBe(14);
+        assert.strictEqual(separator.type, 14);
 
         // Second text display
         const secondText = container.components[2];
-        expect(secondText.content).toBe("Complex description");
+        assert.strictEqual(secondText.content, "Complex description");
 
         // Action row
         const actionRow = container.components[3];
-        expect(actionRow.type).toBe(1);
-        expect(actionRow.components[0].url).toBe("https://example.com/complex");
+        assert.strictEqual(actionRow.type, 1);
+        assert.strictEqual(actionRow.components[0].url, "https://example.com/complex");
       } finally {
         ctx.cleanup();
       }

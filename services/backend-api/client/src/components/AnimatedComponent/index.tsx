@@ -1,5 +1,5 @@
 import React from "react";
-import { AnimatePresence, AnimatePresenceProps } from "framer-motion";
+import { AnimatePresence, AnimatePresenceProps } from "motion/react";
 
 interface NewAnimatePresenceProps extends Omit<AnimatePresenceProps, "children"> {
   children: React.ReactNode;

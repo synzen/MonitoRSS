@@ -124,4 +124,9 @@ export class GetUserFeedArticlesInputDto {
   @Type(() => FormatterDto)
   @IsObject()
   formatter: FormatterDto;
+
+  @IsBoolean()
+  @Type(() => Boolean)
+  @IsOptional()
+  includeHtmlInErrors?: boolean;
 }

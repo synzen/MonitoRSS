@@ -176,6 +176,72 @@ export class FeedFetcherService {
     return { request, decodedResponseText: '' };
   }
 
+  async getLatestRequestNon304({
+    url,
+    lookupKey,
+  }: {
+    url: string;
+    lookupKey: string | undefined;
+  }): Promise<{
+    request: Request;
+    decodedResponseText: string | null | undefined;
+  } | null> {
+    const request = await this.partitionedRequestsStore.getLatestRequestNon304(
+      lookupKey || url,
+    );
+
+    if (!request) {
+      return null;
+    }
+
+    if (request.response?.redisCacheKey || request.response?.content) {
+      let compressedText: string | null = null;
+
+      if (request.response.content) {
+        compressedText = request.response.content;
+      } else if (request.response.redisCacheKey) {
+        compressedText = await this.cacheStorageService.getFeedHtmlContent({
+          key: request.response.redisCacheKey,
+        });
+      }
+
+      const text = compressedText
+        ? (
+            await inflatePromise(Buffer.from(compressedText, 'base64'))
+          ).toString()
+        : '';
+
+      return {
+        request,
+        decodedResponseText: text,
+      };
+    }
+
+    return { request, decodedResponseText: '' };
+  }
+
+  /**
+   * Decode compressed response content from a request.
+   * Used by delivery preview to get the body from any request status.
+   */
+  async decodeResponseContent(
+    compressedContent: string | null | undefined,
+  ): Promise<string> {
+    if (!compressedContent) {
+      return '';
+    }
+
+    try {
+      const decompressed = await inflatePromise(
+        Buffer.from(compressedContent, 'base64'),
+      );
+
+      return decompressed.toString();
+    } catch {
+      return '';
+    }
+  }
+
   async fetchAndSaveResponse(
     url: string,
     options?: {
@@ -369,11 +435,15 @@ export class FeedFetcherService {
       });
 
       if (
-        err instanceof TypeError &&
-        err['cause']?.['code'] === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE'
+        (err instanceof TypeError &&
+          err['cause']?.['code'] === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE') ||
+        (err as Error).message?.includes(
+          'unable to get local issuer certificate',
+        )
       ) {
         request.status = RequestStatus.INVALID_SSL_CERTIFICATE;
-        request.errorMessage = err['cause']?.['message'];
+        request.errorMessage =
+          err?.['cause']?.['message'] || (err as Error).message;
       } else if (
         (err as Error).name === 'AbortError' ||
         (err as Error).message.includes('Connect Timeout Error')

@@ -13,8 +13,11 @@ export {
 } from "./utils";
 export {
   injectExternalContent,
+  ExternalContentErrorType,
   type ExternalFeedProperty,
   type ExternalFetchFn,
+  type ExternalFetchResult,
+  type ExternalContentError,
 } from "./inject-external-content";
 export {
   type Article,

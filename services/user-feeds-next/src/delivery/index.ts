@@ -10,6 +10,8 @@ export {
   ArticleDeliveryErrorCode,
   ArticleDeliveryContentType,
   ArticleDeliveryRejectedCode,
+  recordRateLimitDiagnostic,
+  recordMediumFilterDiagnostic,
   type LimitState,
   type DiscordDeliveryResult,
   type ProcessedDeliveryResult,
@@ -21,6 +23,8 @@ export {
   type MediumNotFoundEvent,
   type MediumRejectionEvent,
   type EnqueueMessagesOptions,
+  type RateLimitDiagnosticParams,
+  type MediumFilterDiagnosticParams,
 } from "./delivery";
 
 // Re-export Discord REST client types and factories

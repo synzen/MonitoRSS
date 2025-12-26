@@ -1,13 +1,14 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, before, after } from "node:test";
+import assert from "node:assert";
 import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../../src/delivery";
 import { CustomPlaceholderStepType } from "../../src/shared/constants";
 import getTestRssFeed from "../data/test-rss-feed";
 import { createTestContext } from "../helpers/test-context";
-import { getTestFeedRequestsServer } from "../helpers/setup-integration-tests";
+import { setupTestDatabase, teardownTestDatabase, type TestStores, getTestFeedRequestsServer } from "../helpers/setup-integration-tests";
 import type { FeedV2Event } from "../../src/shared/schemas";
 
-// Note: Test infrastructure setup/teardown is handled by test/setup.ts (preload file)
+let stores: TestStores;
 
 type MediumDetails = FeedV2Event["data"]["mediums"][0]["details"];
 
@@ -55,16 +56,24 @@ function createEventWithExternalProperties(
  * Helper to extract the Discord payload from captured requests
  */
 function getDiscordPayload(ctx: ReturnType<typeof createTestContext>) {
-  expect(ctx.discordClient.capturedPayloads.length).toBeGreaterThan(0);
+  assert.ok(ctx.discordClient.capturedPayloads.length > 0);
   return JSON.parse(
     ctx.discordClient.capturedPayloads[0]!.options.body as string
   );
 }
 
-describe("External Properties (e2e)", () => {
+describe("External Properties (e2e)", { concurrency: true }, () => {
+  before(async () => {
+    stores = await setupTestDatabase();
+  });
+
+  after(async () => {
+    await teardownTestDatabase();
+  });
+
   describe("Basic External Property Tests", () => {
     it("injects external content from article link", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
       const testServer = getTestFeedRequestsServer();
       const articleLink = `https://example.com/article-${randomUUID()}`;
 
@@ -98,13 +107,13 @@ describe("External Properties (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithExternal);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
 
         const payload = getDiscordPayload(ctx);
         // HTML is converted to markdown, so just the text content remains
-        expect(payload.content).toBe("Extracted Article Content");
+        assert.strictEqual(payload.content, "Extracted Article Content");
       } finally {
         testServer.unregisterUrl(articleLink);
         ctx.cleanup();
@@ -112,7 +121,7 @@ describe("External Properties (e2e)", () => {
     });
 
     it("extracts multiple CSS matches with indexes", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
       const testServer = getTestFeedRequestsServer();
       const articleLink = `https://example.com/article-${randomUUID()}`;
 
@@ -148,11 +157,11 @@ describe("External Properties (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithExternal);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe(
+        assert.strictEqual(payload.content,
           "Items: First Item | Second Item | Third Item"
         );
       } finally {
@@ -162,7 +171,7 @@ describe("External Properties (e2e)", () => {
     });
 
     it("extracts images from injected content", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
       const testServer = getTestFeedRequestsServer();
       const articleLink = `https://example.com/article-${randomUUID()}`;
 
@@ -198,11 +207,11 @@ describe("External Properties (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithExternal);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe(
+        assert.strictEqual(payload.content,
           "Image URL: https://example.com/image.jpg"
         );
       } finally {
@@ -212,7 +221,7 @@ describe("External Properties (e2e)", () => {
     });
 
     it("extracts anchors from injected content", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
       const testServer = getTestFeedRequestsServer();
       const articleLink = `https://example.com/article-${randomUUID()}`;
 
@@ -247,11 +256,11 @@ describe("External Properties (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithExternal);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe(
+        assert.strictEqual(payload.content,
           "Link URL: https://example.com/related-article"
         );
       } finally {
@@ -263,7 +272,7 @@ describe("External Properties (e2e)", () => {
 
   describe("Multiple External Properties", () => {
     it("handles multiple properties with same source field (cached)", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
       const testServer = getTestFeedRequestsServer();
       const articleLink = `https://example.com/article-${randomUUID()}`;
 
@@ -299,11 +308,11 @@ describe("External Properties (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithExternal);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe(
+        assert.strictEqual(payload.content,
           "Title: Article Title | Body: Article Body Content"
         );
       } finally {
@@ -313,7 +322,7 @@ describe("External Properties (e2e)", () => {
     });
 
     it("handles multiple properties with different source fields", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
       const testServer = getTestFeedRequestsServer();
       const articleLink = `https://example.com/article-${randomUUID()}`;
       const commentsUrl = `https://example.com/comments-${randomUUID()}`;
@@ -362,11 +371,11 @@ describe("External Properties (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithExternal);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe(
+        assert.strictEqual(payload.content,
           "Main: Main Content | Comments: Discussion Thread"
         );
       } finally {
@@ -377,7 +386,7 @@ describe("External Properties (e2e)", () => {
     });
 
     it("all indexed placeholders are available in output", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
       const testServer = getTestFeedRequestsServer();
       const articleLink = `https://example.com/article-${randomUUID()}`;
 
@@ -414,10 +423,10 @@ describe("External Properties (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithExternal);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe(
+        assert.strictEqual(payload.content,
           "P0: Paragraph One | P1: Paragraph Two | P2: Paragraph Three | P3: Paragraph Four"
         );
       } finally {
@@ -429,7 +438,7 @@ describe("External Properties (e2e)", () => {
 
   describe("CSS Selector Tests", () => {
     it("supports ID selector (#id)", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
       const testServer = getTestFeedRequestsServer();
       const articleLink = `https://example.com/article-${randomUUID()}`;
 
@@ -467,10 +476,10 @@ describe("External Properties (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithExternal);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("Main Content Here");
+        assert.strictEqual(payload.content, "Main Content Here");
       } finally {
         testServer.unregisterUrl(articleLink);
         ctx.cleanup();
@@ -478,7 +487,7 @@ describe("External Properties (e2e)", () => {
     });
 
     it("supports class selector (.class)", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
       const testServer = getTestFeedRequestsServer();
       const articleLink = `https://example.com/article-${randomUUID()}`;
 
@@ -516,10 +525,10 @@ describe("External Properties (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithExternal);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("Body Content");
+        assert.strictEqual(payload.content, "Body Content");
       } finally {
         testServer.unregisterUrl(articleLink);
         ctx.cleanup();
@@ -527,7 +536,7 @@ describe("External Properties (e2e)", () => {
     });
 
     it("supports nested selectors (div.content p)", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
       const testServer = getTestFeedRequestsServer();
       const articleLink = `https://example.com/article-${randomUUID()}`;
 
@@ -567,10 +576,10 @@ describe("External Properties (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithExternal);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("Inner paragraph in content");
+        assert.strictEqual(payload.content, "Inner paragraph in content");
       } finally {
         testServer.unregisterUrl(articleLink);
         ctx.cleanup();
@@ -578,7 +587,7 @@ describe("External Properties (e2e)", () => {
     });
 
     it("supports attribute selector ([data-content])", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
       const testServer = getTestFeedRequestsServer();
       const articleLink = `https://example.com/article-${randomUUID()}`;
 
@@ -616,10 +625,10 @@ describe("External Properties (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithExternal);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("Main Data Content");
+        assert.strictEqual(payload.content, "Main Data Content");
       } finally {
         testServer.unregisterUrl(articleLink);
         ctx.cleanup();
@@ -629,7 +638,7 @@ describe("External Properties (e2e)", () => {
 
   describe("Edge Cases and Error Handling", () => {
     it("handles missing source field in article gracefully", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
 
       const eventWithExternal = createEventWithExternalProperties(
         ctx.testFeedV2Event,
@@ -656,19 +665,19 @@ describe("External Properties (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithExternal);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
-        expect(results![0]!.status).toBe(ArticleDeliveryStatus.PendingDelivery);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("Title: Article Without Link");
+        assert.strictEqual(payload.content, "Title: Article Without Link");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("handles external fetch failure gracefully", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
       const testServer = getTestFeedRequestsServer();
       const articleLink = `https://example.com/failing-${randomUUID()}`;
 
@@ -698,19 +707,19 @@ describe("External Properties (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithExternal);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
         // External placeholder should be empty when fetch fails
-        expect(payload.content).toBe("Content: [] End");
+        assert.strictEqual(payload.content, "Content: [] End");
       } finally {
         ctx.cleanup();
       }
     });
 
     it("handles CSS selector that matches nothing", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
       const testServer = getTestFeedRequestsServer();
       const articleLink = `https://example.com/article-${randomUUID()}`;
 
@@ -745,11 +754,11 @@ describe("External Properties (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithExternal);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         // Placeholder should be empty when selector matches nothing
-        expect(payload.content).toBe("Content: [] End");
+        assert.strictEqual(payload.content, "Content: [] End");
       } finally {
         testServer.unregisterUrl(articleLink);
         ctx.cleanup();
@@ -757,7 +766,7 @@ describe("External Properties (e2e)", () => {
     });
 
     it("limits to maximum 10 matches per selector", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
       const testServer = getTestFeedRequestsServer();
       const articleLink = `https://example.com/article-${randomUUID()}`;
 
@@ -796,11 +805,11 @@ describe("External Properties (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithExternal);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         // item9 should exist (10th item), item10 should be empty (11th - beyond limit)
-        expect(payload.content).toBe("Item9: [Item 9] | Item10: []");
+        assert.strictEqual(payload.content, "Item9: [Item 9] | Item10: []");
       } finally {
         testServer.unregisterUrl(articleLink);
         ctx.cleanup();
@@ -810,7 +819,7 @@ describe("External Properties (e2e)", () => {
 
   describe("Integration with Other Features", () => {
     it("works with custom placeholders to transform external content", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
       const testServer = getTestFeedRequestsServer();
       const articleLink = `https://example.com/article-${randomUUID()}`;
 
@@ -849,11 +858,11 @@ describe("External Properties (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithExternal);
 
-        expect(results).not.toBeNull();
-        expect(results!.length).toBe(1);
+        assert.notStrictEqual(results, null);
+        assert.strictEqual(results!.length, 1);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("LOWERCASE TITLE");
+        assert.strictEqual(payload.content, "LOWERCASE TITLE");
       } finally {
         testServer.unregisterUrl(articleLink);
         ctx.cleanup();
@@ -861,7 +870,7 @@ describe("External Properties (e2e)", () => {
     });
 
     it("applies regex custom placeholder to external content", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
       const testServer = getTestFeedRequestsServer();
       const articleLink = `https://example.com/article-${randomUUID()}`;
 
@@ -906,10 +915,10 @@ describe("External Properties (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithExternal);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        expect(payload.content).toBe("Price: $19.99");
+        assert.strictEqual(payload.content, "Price: $19.99");
       } finally {
         testServer.unregisterUrl(articleLink);
         ctx.cleanup();
@@ -917,7 +926,7 @@ describe("External Properties (e2e)", () => {
     });
 
     it("preserves HTML formatting from external content", async () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext(stores);
       const testServer = getTestFeedRequestsServer();
       const articleLink = `https://example.com/article-${randomUUID()}`;
 
@@ -952,12 +961,12 @@ describe("External Properties (e2e)", () => {
 
         const results = await ctx.handleEvent(eventWithExternal);
 
-        expect(results).not.toBeNull();
+        assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
         // HTML should be converted to Discord markdown
-        expect(payload.content).toContain("**Bold text**");
-        expect(payload.content).toContain("*italic text*");
+        assert.ok(payload.content.includes("**Bold text**"));
+        assert.ok(payload.content.includes("*italic text*"));
       } finally {
         testServer.unregisterUrl(articleLink);
         ctx.cleanup();

@@ -17,7 +17,7 @@ import {
   ModalFooter,
   ModalCloseButton,
 } from "@chakra-ui/react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { FaArrowRight, FaArrowLeft, FaTimes } from "react-icons/fa";
 import { FaScrewdriverWrench } from "react-icons/fa6";
 import { useIsMessageBuilderMobile } from "../../hooks";
@@ -433,7 +433,10 @@ interface MessageBuilderTourProps {
   resetTrigger?: number;
 }
 
-export const MessageBuilderTour: React.FC<MessageBuilderTourProps> = ({ onComplete, resetTrigger }) => {
+export const MessageBuilderTour: React.FC<MessageBuilderTourProps> = ({
+  onComplete,
+  resetTrigger,
+}) => {
   const [tourState, setTourState] = useState<TourState | null>(null);
   const [isActive, setIsActive] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);

@@ -2,7 +2,6 @@ import { INestApplicationContext } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "../app.module";
 import applyMongoMigrations from "../apply-mongo-migrations";
-import { ScheduleEmitterService } from "../features/schedule-emitter/schedule-emitter.service";
 import { ScheduleHandlerService } from "../features/schedule-handler/schedule-handler.service";
 import logger from "../utils/logger";
 import { getModelToken } from "@nestjs/mongoose";
@@ -15,6 +14,8 @@ import decrypt from "../utils/decrypt";
 import { UsersService } from "../features/users/users.service";
 import { RedditAppRevokedException } from "../services/apis/reddit/errors/reddit-app-revoked.exception";
 import { UserExternalCredentialStatus } from "../common/constants/user-external-credential-status.constants";
+import { SCHEDULER_WINDOW_SIZE_MS } from "../common/constants/scheduler.constants";
+import { UserFeed, UserFeedModel } from "../features/user-feeds/entities";
 
 bootstrap();
 
@@ -36,17 +37,23 @@ async function bootstrap() {
         });
       });
 
-    setInterval(() => {
-      runTimerSync(app);
-    }, 1000 * 60);
-
     refreshRedditCredentials(app);
     setInterval(() => {
       refreshRedditCredentials(app);
     }, 1000 * 60 * 20); // Every 20 minutes
 
-    await runTimerSync(app);
+    runMaintenanceOps(app);
+    setInterval(() => {
+      runMaintenanceOps(app);
+    }, 1000 * 60 * 5); // Every 5 minutes
 
+    await runTimers(app);
+
+    setInterval(() => {
+      runTimers(app).catch((err) => {
+        logger.error(`Failed to run timers`, { stack: err.stack });
+      });
+    }, SCHEDULER_WINDOW_SIZE_MS);
     logger.info("Initiailized schedule emitter service");
   } catch (err) {
     logger.error(`Failed to initialize schedule emitter`, {
@@ -55,54 +62,54 @@ async function bootstrap() {
   }
 }
 
-async function runTimerSync(app: INestApplicationContext) {
-  const scheduleEmitterService = app.get(ScheduleEmitterService);
+async function runTimers(app: INestApplicationContext) {
   const scheduleHandlerService = app.get(ScheduleHandlerService);
+  const userFeedModel = app.get<UserFeedModel>(getModelToken(UserFeed.name));
+  const [allRefreshRatesSeconds, allUserRefreshRateSeconds]: [
+    number[],
+    number[]
+  ] = await Promise.all([
+    userFeedModel.distinct("refreshRateSeconds").exec(),
+    userFeedModel.distinct("userRefreshRateSeconds").exec(),
+  ]);
 
-  try {
-    logger.debug(`Syncing timer states`);
-    await scheduleEmitterService.syncTimerStates(async (refreshRateSeconds) => {
+  const currentRefreshRatesMs = new Set([
+    ...allRefreshRatesSeconds
+      .concat(allUserRefreshRateSeconds)
+      .filter((s) => !!s)
+      .map((seconds) => seconds * 1000),
+  ]);
+
+  const promises = Array.from(currentRefreshRatesMs).map(
+    async (refreshRateMs) => {
       try {
-        logger.debug(`Handling refresh rate ${refreshRateSeconds}s`);
-
-        await scheduleHandlerService.handleRefreshRate(refreshRateSeconds, {
+        await scheduleHandlerService.handleRefreshRate(refreshRateMs / 1000, {
           urlsHandler: async (data) =>
-            urlsEventHandler(app, {
+            await scheduleHandlerService.emitUrlRequestBatchEvent({
+              rateSeconds: refreshRateMs / 1000,
               data,
-              rateSeconds: refreshRateSeconds,
             }),
         });
       } catch (err) {
-        logger.error(`Failed to handle schedule event`, {
-          stack: err.stack,
-        });
+        logger.error(
+          `Failed to trigger refresh rate ${refreshRateMs / 1000}s`,
+          {
+            stack: err.stack,
+          }
+        );
       }
-    });
-  } catch (err) {
-    logger.error(`Failed to sync timer states`, {
-      stack: err.stack,
-    });
-  }
+    }
+  );
+
+  await Promise.all(promises);
 }
 
-async function urlsEventHandler(
-  app: INestApplicationContext,
-  data: {
-    rateSeconds: number;
-    data: Array<{ url: string }>;
-  }
-) {
-  const scheduleHandlerService = app.get(ScheduleHandlerService);
-
+async function runMaintenanceOps(app: INestApplicationContext) {
   try {
-    logger.debug(`Handling urls event for refresh rate ${data.rateSeconds}`, {
-      data,
-    });
-    await scheduleHandlerService.emitUrlRequestBatchEvent(data);
+    const scheduleHandlerService = app.get(ScheduleHandlerService);
+    await scheduleHandlerService.runMaintenanceOperations();
   } catch (err) {
-    logger.error(`Failed to handle url event`, {
-      stack: err.stack,
-    });
+    logger.error(`Failed to run maintenance operations`, { stack: err.stack });
   }
 }
 

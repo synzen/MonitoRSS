@@ -19,7 +19,7 @@ import {
 } from "@chakra-ui/react";
 import { useFieldArray, useFormContext } from "react-hook-form";
 import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { v4 } from "uuid";
 import { useRef } from "react";
 import { DiscordMessageFormData } from "@/types/discord";

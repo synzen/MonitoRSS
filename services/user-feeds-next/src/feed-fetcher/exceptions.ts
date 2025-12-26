@@ -50,6 +50,13 @@ export class FeedRequestTimedOutException extends Error {
   }
 }
 
+export class FeedRequestInvalidSslCertificateException extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "FeedRequestInvalidSslCertificateException";
+  }
+}
+
 export class FeedArticleNotFoundException extends Error {
   constructor(message: string) {
     super(message);

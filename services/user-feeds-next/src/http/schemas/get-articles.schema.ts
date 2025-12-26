@@ -130,6 +130,8 @@ export const getArticlesInputSchema = z.object({
   executeFetch: z.boolean().optional(),
   requestLookupDetails: lookupDetailsSchema.optional().nullable(),
   executeFetchIfStale: z.boolean().optional(),
+  /** Include raw HTML in NO_SELECTOR_MATCH errors for troubleshooting (preview mode only) */
+  includeHtmlInErrors: z.boolean().optional(),
 });
 
 export type GetArticlesInput = z.infer<typeof getArticlesInputSchema>;

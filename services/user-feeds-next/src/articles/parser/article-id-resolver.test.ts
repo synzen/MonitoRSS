@@ -1,4 +1,5 @@
-import { describe, expect, it, beforeEach, spyOn, mock } from "bun:test";
+import { describe, it } from "node:test";
+import assert from "node:assert";
 import { ArticleIDResolver } from ".";
 
 describe("ArticleIDResolver", () => {
@@ -16,10 +17,10 @@ describe("ArticleIDResolver", () => {
   describe("constructor", () => {
     it("adds all id types to this.useIdTypes", () => {
       const idResolver = new ArticleIDResolver();
-      expect(idResolver.useIdTypes.size).toBe(expectedIDTypes.length);
+      assert.strictEqual(idResolver.useIdTypes.size, expectedIDTypes.length);
 
       for (const item of expectedIDTypes) {
-        expect(idResolver.useIdTypes.has(item)).toBe(true);
+        assert.ok(idResolver.useIdTypes.has(item));
       }
     });
 
@@ -27,7 +28,7 @@ describe("ArticleIDResolver", () => {
       const idResolver = new ArticleIDResolver();
 
       for (const item of expectedIDTypes) {
-        expect(idResolver.idsRecorded[item] instanceof Set).toBe(true);
+        assert.ok(idResolver.idsRecorded[item] instanceof Set);
       }
     });
 
@@ -38,7 +39,7 @@ describe("ArticleIDResolver", () => {
         "guid,title",
         "pubdate,title",
       ];
-      expect(idResolver.mergedTypeNames).toEqual(expectedMergedTypeNames);
+      assert.deepStrictEqual(idResolver.mergedTypeNames, expectedMergedTypeNames);
     });
   });
 
@@ -47,7 +48,7 @@ describe("ArticleIDResolver", () => {
       const idResolver = new ArticleIDResolver();
       // Clear merged types so they won't match
       idResolver.mergedTypeNames = ["lswikedgjowir", "rjhgyn;bkjdn"];
-      expect(idResolver.getIDType()).toBe(idTypeNames[0]);
+      assert.strictEqual(idResolver.getIDType(), idTypeNames[0]);
     });
 
     it("returns the first merged id type if there are invalids", () => {
@@ -58,7 +59,7 @@ describe("ArticleIDResolver", () => {
         idResolver.useIdTypes.delete(idType);
       }
 
-      expect(idResolver.getIDType()).toBe(expectedIDTypes[3]); // guid,pubdate
+      assert.strictEqual(idResolver.getIDType(), expectedIDTypes[3]); // guid,pubdate
     });
 
     it("returns the last failed id type if there are no valid id types", () => {
@@ -66,19 +67,20 @@ describe("ArticleIDResolver", () => {
       idResolver.useIdTypes.clear();
       const failedType = "aedsgwtdrfkhjnb";
       idResolver.failedTypeNames.push(failedType);
-      expect(idResolver.getIDType()).toBe(failedType);
+      assert.strictEqual(idResolver.getIDType(), failedType);
     });
   });
 
   describe("static getIDTypeValue()", () => {
     it("returns the article value for non-merged id type", () => {
       const article = { id: "id", a: "b", dingus: "berry" };
-      expect(ArticleIDResolver.getIDTypeValue(article, "a")).toBe(article.a);
+      assert.strictEqual(ArticleIDResolver.getIDTypeValue(article, "a"), article.a);
     });
 
     it("returns the article values joined for a merged id type", () => {
       const article = { id: "id", joe: "poe", doe: "koe" };
-      expect(ArticleIDResolver.getIDTypeValue(article, "doe,joe")).toBe(
+      assert.strictEqual(
+        ArticleIDResolver.getIDTypeValue(article, "doe,joe"),
         "koepoe"
       );
     });
@@ -94,8 +96,8 @@ describe("ArticleIDResolver", () => {
       // Record an article with values for both types
       idResolver.recordArticle({ id: "1", a: "valueA", b: "valueB" });
 
-      expect(idResolver.idsRecorded.a.has("valueA")).toBe(true);
-      expect(idResolver.idsRecorded.b.has("valueB")).toBe(true);
+      assert.ok(idResolver.idsRecorded.a.has("valueA"));
+      assert.ok(idResolver.idsRecorded.b.has("valueB"));
     });
 
     it("deletes the id type from this.useIdTypes if there is no article value", () => {
@@ -106,7 +108,7 @@ describe("ArticleIDResolver", () => {
       // Record an article with no value for "a"
       idResolver.recordArticle({ id: "1" });
 
-      expect(idResolver.useIdTypes.has("a")).toBe(false);
+      assert.ok(!idResolver.useIdTypes.has("a"));
     });
 
     it("adds the id type to this.failedTypeNames if there is no article value", () => {
@@ -117,7 +119,7 @@ describe("ArticleIDResolver", () => {
       // Record an article with no value for "a"
       idResolver.recordArticle({ id: "1" });
 
-      expect(idResolver.failedTypeNames.includes("a")).toBe(true);
+      assert.ok(idResolver.failedTypeNames.includes("a"));
     });
 
     it("deletes the id type from this.useIdTypes if the article value was seen before", () => {
@@ -129,7 +131,7 @@ describe("ArticleIDResolver", () => {
       idResolver.recordArticle({ id: "1", a: "duplicate" });
       idResolver.recordArticle({ id: "2", a: "duplicate" });
 
-      expect(idResolver.useIdTypes.has("a")).toBe(false);
+      assert.ok(!idResolver.useIdTypes.has("a"));
     });
 
     it("adds the id type to this.failedTypeNames if the article value was seen before", () => {
@@ -141,7 +143,7 @@ describe("ArticleIDResolver", () => {
       idResolver.recordArticle({ id: "1", a: "duplicate" });
       idResolver.recordArticle({ id: "2", a: "duplicate" });
 
-      expect(idResolver.failedTypeNames.includes("a")).toBe(true);
+      assert.ok(idResolver.failedTypeNames.includes("a"));
     });
   });
 });

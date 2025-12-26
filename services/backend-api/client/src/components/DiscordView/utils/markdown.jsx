@@ -393,6 +393,38 @@ const baseRules = {
       );
     },
   },
+  discordMention: {
+    order: SimpleMarkdown.defaultRules.escape.order,
+    match(source) {
+      // Match Discord mentions: <@userId>, <@!userId>, <@&roleId>, <#channelId>
+      return /^<(@!?|@&|#)([a-zA-Z0-9_-]+)>/.exec(source);
+    },
+    parse(capture) {
+      const prefix = capture[1];
+      const id = capture[2];
+      let type = "user";
+
+      if (prefix === "@&") {
+        type = "role";
+      } else if (prefix === "#") {
+        type = "channel";
+      }
+
+      return {
+        type: "discordMention",
+        mentionType: type,
+        id,
+        raw: capture[0],
+      };
+    },
+    react(node, recurseOutput, state) {
+      return (
+        <span key={state.key} className="discord-mention">
+          {node.raw}
+        </span>
+      );
+    },
+  },
   customEmoji: {
     order: SimpleMarkdown.defaultRules.text.order,
     match(source) {

@@ -1,4 +1,5 @@
-import { describe, expect, it } from "bun:test";
+import { describe, it } from "node:test";
+import assert from "node:assert";
 import { replaceTemplateString } from ".";
 
 describe("replaceTemplateString", () => {
@@ -9,7 +10,7 @@ describe("replaceTemplateString", () => {
       },
       undefined
     );
-    expect(str).toBeUndefined();
+    assert.strictEqual(str, undefined);
   });
 
   it("replaces {{empty}} with empty text", () => {
@@ -20,7 +21,7 @@ describe("replaceTemplateString", () => {
     const str = "{{empty}}";
     const outputStr = replaceTemplateString(object, str);
 
-    expect(outputStr).toBe("");
+    assert.strictEqual(outputStr, "");
   });
 
   it("replaces top-level values", () => {
@@ -32,7 +33,7 @@ describe("replaceTemplateString", () => {
     const str = "foo: {{foo}}, bar: {{bar}}";
     const outputStr = replaceTemplateString(object, str);
 
-    expect(outputStr).toBe("foo: 1, bar: 2");
+    assert.strictEqual(outputStr, "foo: 1, bar: 2");
   });
 
   it("replaces all instances", () => {
@@ -44,7 +45,7 @@ describe("replaceTemplateString", () => {
     const str = "foo: {{foo}}, bar: {{bar}}, foo: {{foo}}";
     const outputStr = replaceTemplateString(object, str);
 
-    expect(outputStr).toBe("foo: 1, bar: 2, foo: 1");
+    assert.strictEqual(outputStr, "foo: 1, bar: 2, foo: 1");
   });
 
   it("works with split options", () => {
@@ -53,7 +54,7 @@ describe("replaceTemplateString", () => {
     };
 
     const str = "foo: {{foo}}";
-    expect(
+    assert.strictEqual(
       replaceTemplateString(object as never, str, {
         split: {
           func: (str, { appendString }) =>
@@ -66,8 +67,9 @@ describe("replaceTemplateString", () => {
             },
           ],
         },
-      })
-    ).toBe("foo: a...");
+      }),
+      "foo: a..."
+    );
   });
 
   it("works with || when there is no fallback support", () => {
@@ -76,7 +78,7 @@ describe("replaceTemplateString", () => {
     };
 
     const str = "foo: {{foo||bar}}";
-    expect(replaceTemplateString(object, str)).toBe("foo: 2");
+    assert.strictEqual(replaceTemplateString(object, str), "foo: 2");
   });
 
   describe("with fallback support", () => {
@@ -86,11 +88,12 @@ describe("replaceTemplateString", () => {
       };
 
       const str = "foo: {{foo||bar}}";
-      expect(
+      assert.strictEqual(
         replaceTemplateString(object, str, {
           supportFallbacks: true,
-        })
-      ).toBe("foo: 2");
+        }),
+        "foo: 2"
+      );
     });
 
     it("works with multiple fallbacks", () => {
@@ -99,22 +102,24 @@ describe("replaceTemplateString", () => {
       };
 
       const str = "foo: {{foo||bar||baz}}";
-      expect(
+      assert.strictEqual(
         replaceTemplateString(object, str, {
           supportFallbacks: true,
-        })
-      ).toBe("foo: 2");
+        }),
+        "foo: 2"
+      );
     });
 
     it("works with text fallback", () => {
       const object = {};
 
       const str = "foo: {{foo||bar||text::hello world}}";
-      expect(
+      assert.strictEqual(
         replaceTemplateString(object, str, {
           supportFallbacks: true,
-        })
-      ).toBe("foo: hello world");
+        }),
+        "foo: hello world"
+      );
     });
 
     it("stops at the first available fallback", () => {
@@ -124,11 +129,12 @@ describe("replaceTemplateString", () => {
       };
 
       const str = "foo: {{foo||bar||baz}}";
-      expect(
+      assert.strictEqual(
         replaceTemplateString(object, str, {
           supportFallbacks: true,
-        })
-      ).toBe("foo: 2");
+        }),
+        "foo: 2"
+      );
     });
   });
 });

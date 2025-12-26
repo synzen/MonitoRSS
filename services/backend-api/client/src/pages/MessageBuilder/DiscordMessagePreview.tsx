@@ -693,7 +693,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
           }}
         />
         {/* Server and Channel Info */}
-        <HStack mb={2}>
+        <HStack mb={2} flexWrap="wrap">
           <Text fontSize="sm" color="gray.400" fontWeight="medium">
             Previewing in{" "}
             <Box as="span" color="gray.300">
