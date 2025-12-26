@@ -40,7 +40,7 @@ story_location: _bmad-output/implementation-artifacts
 development_status:
   # Epic 1: Template Gallery Foundation
   epic-1: in-progress
-  1-1-template-types-and-constants: ready-for-dev
+  1-1-template-types-and-constants: done
   1-2-shared-discord-message-display-component: ready-for-dev
   1-3-template-card-component: ready-for-dev
   1-4-template-gallery-modal: ready-for-dev
