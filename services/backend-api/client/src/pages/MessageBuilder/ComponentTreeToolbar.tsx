@@ -3,7 +3,7 @@ import { Box, HStack, VStack, Button, Text } from "@chakra-ui/react";
 import { useFormContext } from "react-hook-form";
 import { FaCog } from "react-icons/fa";
 import { VscCollapseAll } from "react-icons/vsc";
-import { ComponentType, Component, SectionComponent } from "./types";
+import { ComponentType, Component, SectionComponent, canComponentHaveChildren } from "./types";
 import { useMessageBuilderContext } from "./MessageBuilderContext";
 import { useNavigableTreeContext } from "../../contexts/NavigableTreeContext";
 import MessageBuilderFormState from "./types/MessageBuilderFormState";
@@ -55,15 +55,7 @@ export const ComponentTreeToolbar: React.FC = () => {
     ? findComponentById(messageComponent || null, currentSelectedId)
     : null;
 
-  const canAddChildren =
-    selectedComponent &&
-    (selectedComponent.type === ComponentType.LegacyRoot ||
-      selectedComponent.type === ComponentType.LegacyEmbedContainer ||
-      selectedComponent.type === ComponentType.LegacyEmbed ||
-      selectedComponent.type === ComponentType.LegacyActionRow ||
-      selectedComponent.type === ComponentType.V2Root ||
-      selectedComponent.type === ComponentType.V2ActionRow ||
-      selectedComponent.type === ComponentType.V2Section);
+  const canAddChildren = selectedComponent && canComponentHaveChildren(selectedComponent.type);
 
   const handleAddChild = (childType: ComponentType, isAccessory?: boolean) => {
     if (!selectedComponent) return;
@@ -103,6 +95,7 @@ export const ComponentTreeToolbar: React.FC = () => {
               align="center"
               width="100%"
               display={{ base: "flex", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "none" }}
+              flexWrap="wrap"
             >
               <Text fontSize="md">
                 Selected:{" "}

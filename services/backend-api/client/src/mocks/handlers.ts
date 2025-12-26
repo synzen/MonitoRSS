@@ -75,7 +75,7 @@ import { mockSendTestArticleResult } from "./data/testArticleResult";
 import { mockUserFeedArticles } from "./data/userFeedArticles";
 import { GetUserFeedRequestsOutput } from "../features/feed/api/getUserFeedRequests";
 import { mockUserFeedRequests } from "./data/userFeedRequests";
-import { mockCreatePreviewResult } from "./data/createPreview";
+import { getMockCreatePreviewResult } from "./data/createPreview";
 import mockDiscordThreads from "./data/discordThreads";
 import mockDiscordServerMembers from "./data/discordServerMembers";
 import mockDiscordUser from "./data/discordUser";
@@ -955,7 +955,7 @@ const handlers = [
     await delay(500);
 
     return HttpResponse.json<CreateDiscordChannelConnectionPreviewOutput>({
-      result: mockCreatePreviewResult,
+      result: getMockCreatePreviewResult(true),
     });
   }),
 

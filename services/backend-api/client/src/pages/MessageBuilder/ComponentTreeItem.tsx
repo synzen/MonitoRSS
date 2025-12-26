@@ -4,7 +4,7 @@ import { FaExclamationCircle } from "react-icons/fa";
 import { ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import { AddComponentButton } from "./AddComponentButton";
 import type { Component, SectionComponent } from "./types";
-import { ComponentType } from "./types";
+import { ComponentType, canComponentHaveChildren } from "./types";
 import {
   NavigableTreeItem,
   NavigableTreeItemExpandButton,
@@ -43,16 +43,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
   const hasAccessory =
     component.type === ComponentType.V2Section &&
     (component as SectionComponent).accessory !== undefined;
-  const canHaveChildren =
-    component.type === ComponentType.LegacyRoot ||
-    component.type === ComponentType.LegacyEmbedContainer ||
-    component.type === ComponentType.LegacyEmbed ||
-    component.type === ComponentType.LegacyActionRow ||
-    component.type === ComponentType.V2Root ||
-    component.type === ComponentType.V2ActionRow ||
-    component.type === ComponentType.V2Section ||
-    component.type === ComponentType.V2Container ||
-    component.type === ComponentType.V2MediaGallery;
+  const canHaveChildren = canComponentHaveChildren(component.type);
   const { isFocused, isExpanded, isSelected } = useNavigableTreeItemContext();
 
   const handleAddChild = (childType: ComponentType, asAccessory?: boolean) => {

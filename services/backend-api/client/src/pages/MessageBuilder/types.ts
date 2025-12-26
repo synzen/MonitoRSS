@@ -29,6 +29,22 @@ export enum ComponentType {
 
 export const ROOT_COMPONENT_TYPES = [ComponentType.LegacyRoot, ComponentType.V2Root];
 
+export const PARENT_COMPONENT_TYPES = [
+  ComponentType.LegacyRoot,
+  ComponentType.LegacyEmbedContainer,
+  ComponentType.LegacyEmbed,
+  ComponentType.LegacyActionRow,
+  ComponentType.V2Root,
+  ComponentType.V2ActionRow,
+  ComponentType.V2Section,
+  ComponentType.V2Container,
+  ComponentType.V2MediaGallery,
+] as const;
+
+export function canComponentHaveChildren(type: ComponentType): boolean {
+  return (PARENT_COMPONENT_TYPES as readonly ComponentType[]).includes(type);
+}
+
 export interface MessageBuilderProblem {
   message: string;
   path: string;
