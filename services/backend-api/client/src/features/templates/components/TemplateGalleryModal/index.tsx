@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Modal,
   ModalOverlay,
@@ -176,6 +176,23 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
   // Only show loading when query is actually fetching, not when disabled
   const isActuallyLoading = fetchStatus === "fetching";
 
+  // Track previous loading state to detect transition from loading to loaded
+  const wasLoadingRef = useRef(false);
+  const [previewAnnouncement, setPreviewAnnouncement] = useState("");
+
+  // Announce when preview finishes loading for a template
+  useEffect(() => {
+    if (wasLoadingRef.current && !isActuallyLoading && previewData && selectedTemplateId) {
+      const template = templates.find((t) => t.id === selectedTemplateId);
+      if (template) {
+        setPreviewAnnouncement(`Preview updated for ${template.name} template`);
+        const timer = setTimeout(() => setPreviewAnnouncement(""), 1000);
+        return () => clearTimeout(timer);
+      }
+    }
+    wasLoadingRef.current = isActuallyLoading;
+  }, [isActuallyLoading, previewData, selectedTemplateId, templates]);
+
   return (
     <Modal
       isOpen={isOpen}
@@ -234,6 +251,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                 borderRadius="md"
                 p={4}
                 minH={{ base: "200px", lg: "400px" }}
+                role="region"
                 aria-label="Template preview"
                 aria-busy={isActuallyLoading}
               >
@@ -267,7 +285,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                     </Select>
                   </FormControl>
                 )}
-                <Box aria-live="polite">
+                <Box>
                   {isActuallyLoading && <Skeleton height="300px" borderRadius="md" />}
                   {!isActuallyLoading && isPreviewError && (
                     <Alert status="error" borderRadius="md">
@@ -302,6 +320,11 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
               </Box>
             </GridItem>
           </Grid>
+          <VisuallyHidden>
+            <div aria-live="polite" aria-atomic="true">
+              {previewAnnouncement}
+            </div>
+          </VisuallyHidden>
         </ModalBody>
         <ModalFooter>
           {tertiaryActionLabel && (

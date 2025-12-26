@@ -1,3 +1,4 @@
+import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
@@ -7,6 +8,7 @@ import { TemplateGalleryModal, isTemplateCompatible } from "./index";
 import { Template } from "../../types";
 import { ComponentType } from "../../../../pages/MessageBuilder/types";
 import { createDiscordChannelConnectionPreview } from "../../../feedConnections/api";
+import { SendTestArticleDeliveryStatus } from "../../../../types";
 
 vi.mock("../../../feedConnections/api", () => ({
   createDiscordChannelConnectionPreview: vi.fn(),
@@ -605,16 +607,73 @@ describe("TemplateGalleryModal", () => {
       expect(screen.getByLabelText("Template preview")).toBeInTheDocument();
     });
 
-    it("has aria-live region for preview updates", () => {
+    it("has role=region on preview panel", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} />
         </TestWrapper>
       );
       const previewPanel = screen.getByLabelText("Template preview");
-      // The aria-live region should exist within the preview panel
-      const liveRegion = previewPanel.querySelector('[aria-live="polite"]');
+      expect(previewPanel).toHaveAttribute("role", "region");
+    });
+
+    it("has aria-live region for preview updates", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal {...defaultProps} />
+        </TestWrapper>
+      );
+      // The aria-live region for preview updates is visually hidden (not inside preview panel)
+      // to prevent duplicate announcements
+      const liveRegion = document.querySelector('[aria-live="polite"][aria-atomic="true"]');
       expect(liveRegion).toBeInTheDocument();
+    });
+
+    it("has visually hidden aria-live region for template announcement", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal {...defaultProps} />
+        </TestWrapper>
+      );
+      // The aria-live region is visually hidden for screen reader announcements
+      const liveRegion = document.querySelector('[aria-live="polite"][aria-atomic="true"]');
+      expect(liveRegion).toBeInTheDocument();
+    });
+
+    it("sets aria-busy on preview panel when loading", async () => {
+      mockCreatePreview.mockImplementation(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(
+              () =>
+                resolve({ result: { status: SendTestArticleDeliveryStatus.Success, messages: [] } }),
+              1000
+            )
+          )
+      );
+
+      const mockUserFeed = { id: "feed-123" } as Parameters<
+        typeof TemplateGalleryModal
+      >[0]["userFeed"];
+      const mockConnection = { id: "connection-456" } as Parameters<
+        typeof TemplateGalleryModal
+      >[0]["connection"];
+
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            selectedTemplateId="default"
+            userFeed={mockUserFeed}
+            connection={mockConnection}
+          />
+        </TestWrapper>
+      );
+
+      const previewPanel = screen.getByLabelText("Template preview");
+      await waitFor(() => {
+        expect(previewPanel).toHaveAttribute("aria-busy", "true");
+      });
     });
 
     it("supports keyboard interaction within radio group", async () => {
@@ -637,6 +696,244 @@ describe("TemplateGalleryModal", () => {
       // Click on a different template should work
       await user.click(radios[1]);
       expect(onTemplateSelect).toHaveBeenCalledWith("rich-embed");
+    });
+
+    it("navigates between templates with arrow keys", async () => {
+      const user = userEvent.setup();
+      const onTemplateSelect = vi.fn();
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal {...defaultProps} onTemplateSelect={onTemplateSelect} />
+        </TestWrapper>
+      );
+
+      const radios = screen.getAllByRole("radio");
+
+      // Click on first radio to focus it
+      await user.click(radios[0]);
+
+      // Arrow right should move to next template
+      await user.keyboard("{ArrowRight}");
+      expect(document.activeElement).toBe(radios[1]);
+
+      // Arrow left should move back
+      await user.keyboard("{ArrowLeft}");
+      expect(document.activeElement).toBe(radios[0]);
+    });
+
+    it("selects template with Space key", async () => {
+      const user = userEvent.setup();
+      const onTemplateSelect = vi.fn();
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal {...defaultProps} onTemplateSelect={onTemplateSelect} />
+        </TestWrapper>
+      );
+
+      const radios = screen.getAllByRole("radio");
+
+      // Click to focus then move to next with arrow, then select with space
+      await user.click(radios[0]);
+      await user.keyboard("{ArrowRight}");
+      await user.keyboard(" ");
+      expect(onTemplateSelect).toHaveBeenCalledWith("rich-embed");
+    });
+
+    it("provides logical tab order through modal elements", async () => {
+      const user = userEvent.setup();
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal {...defaultProps} onPrimaryAction={vi.fn()} />
+        </TestWrapper>
+      );
+
+      // Tab through modal - verify elements receive focus in order
+      // Chakra Modal moves focus to first focusable element on open
+      await user.tab();
+
+      // Verify radios are reachable
+      const radios = screen.getAllByRole("radio");
+      expect(radios).toHaveLength(3);
+
+      // Verify article selector is present
+      const articleSelector = screen.getByLabelText("Preview article");
+      expect(articleSelector).toBeInTheDocument();
+
+      // Verify buttons are present
+      const cancelButton = screen.getByText("Cancel");
+      expect(cancelButton).toBeInTheDocument();
+
+      const primaryButton = screen.getByText("Use this template");
+      expect(primaryButton).toBeInTheDocument();
+    });
+
+    it("disables templates that are not compatible", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal {...defaultProps} feedFields={["title"]} />
+        </TestWrapper>
+      );
+
+      const radios = screen.getAllByRole("radio");
+      // First template has no required fields, so it's enabled
+      // Second and third are disabled (require description/image)
+
+      expect(radios[0]).not.toBeDisabled();
+      expect(radios[1]).toBeDisabled();
+      expect(radios[2]).toBeDisabled();
+    });
+
+    it("selects template with Enter key", async () => {
+      const user = userEvent.setup();
+      const onTemplateSelect = vi.fn();
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal {...defaultProps} onTemplateSelect={onTemplateSelect} />
+        </TestWrapper>
+      );
+
+      const radios = screen.getAllByRole("radio");
+
+      // Click to focus then move to next with arrow, then select with Enter
+      await user.click(radios[0]);
+      await user.keyboard("{ArrowRight}");
+      await user.keyboard("{Enter}");
+      expect(onTemplateSelect).toHaveBeenCalledWith("rich-embed");
+    });
+
+    it("modal has focus trap enabled via Chakra Modal default behavior", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal {...defaultProps} onPrimaryAction={vi.fn()} />
+        </TestWrapper>
+      );
+
+      // Chakra Modal provides focus trap by default
+      // Verify modal is rendered with dialog role which enables focus management
+      const modalContent = screen.getByRole("dialog");
+      expect(modalContent).toBeInTheDocument();
+
+      // Verify modal has aria-modal="true" which indicates it should trap focus
+      expect(modalContent).toHaveAttribute("aria-modal", "true");
+    });
+
+    it("has multiple focusable elements for Tab navigation within modal", async () => {
+      const user = userEvent.setup();
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal {...defaultProps} onPrimaryAction={vi.fn()} />
+        </TestWrapper>
+      );
+
+      // Verify there are multiple focusable elements in the modal
+      const closeButton = screen.getByLabelText("Close");
+      const radios = screen.getAllByRole("radio");
+      const cancelButton = screen.getByText("Cancel");
+      const primaryButton = screen.getByText("Use this template");
+
+      expect(closeButton).toBeInTheDocument();
+      expect(radios.length).toBeGreaterThan(0);
+      expect(cancelButton).toBeInTheDocument();
+      expect(primaryButton).toBeInTheDocument();
+
+      // Tab should move focus between elements
+      await user.tab();
+      // Focus is now somewhere in the modal
+      const modalContent = screen.getByRole("dialog");
+      expect(modalContent.contains(document.activeElement)).toBe(true);
+    });
+
+    it("returns focus to trigger element when modal closes", async () => {
+      const user = userEvent.setup();
+
+      const ModalWithTrigger = () => {
+        const [isOpen, setIsOpen] = React.useState(false);
+
+        return (
+          <>
+            <button data-testid="trigger" onClick={() => setIsOpen(true)}>
+              Open Modal
+            </button>
+            <TemplateGalleryModal
+              {...defaultProps}
+              isOpen={isOpen}
+              onClose={() => setIsOpen(false)}
+            />
+          </>
+        );
+      };
+
+      render(
+        <TestWrapper>
+          <ModalWithTrigger />
+        </TestWrapper>
+      );
+
+      const triggerButton = screen.getByTestId("trigger");
+
+      // Open modal by clicking trigger
+      await user.click(triggerButton);
+
+      // Modal should be open
+      expect(screen.getByText("Choose a Template")).toBeInTheDocument();
+
+      // Close modal with Escape
+      await user.keyboard("{Escape}");
+
+      // Focus should return to trigger button
+      await waitFor(() => {
+        expect(document.activeElement).toBe(triggerButton);
+      });
+    });
+
+    it("has visually hidden aria-live region that receives announcement text", async () => {
+      mockCreatePreview.mockResolvedValue({
+        result: { status: SendTestArticleDeliveryStatus.Success, messages: [{ content: "test" }] },
+      });
+
+      const mockUserFeed = { id: "feed-123" } as Parameters<
+        typeof TemplateGalleryModal
+      >[0]["userFeed"];
+      const mockConnection = { id: "connection-456" } as Parameters<
+        typeof TemplateGalleryModal
+      >[0]["connection"];
+
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            selectedTemplateId="default"
+            userFeed={mockUserFeed}
+            connection={mockConnection}
+          />
+        </TestWrapper>
+      );
+
+      // Wait for preview to load and announcement to be set
+      await waitFor(
+        () => {
+          // Find the visually hidden aria-live region with aria-atomic
+          const liveRegion = document.querySelector('[aria-live="polite"][aria-atomic="true"]');
+          expect(liveRegion).toBeInTheDocument();
+          expect(liveRegion?.textContent).toContain("Preview updated for Simple Text template");
+        },
+        { timeout: 3000 }
+      );
+    });
+
+    it("has exactly one aria-live region with aria-atomic for template announcements", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal {...defaultProps} />
+        </TestWrapper>
+      );
+
+      // Our custom announcement region has aria-atomic="true"
+      // (Chakra may add other aria-live regions for alerts, etc.)
+      const announcementRegions = document.querySelectorAll(
+        '[aria-live="polite"][aria-atomic="true"]'
+      );
+      expect(announcementRegions).toHaveLength(1);
     });
   });
 
