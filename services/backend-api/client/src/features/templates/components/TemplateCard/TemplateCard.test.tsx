@@ -166,7 +166,7 @@ describe("TemplateCard", () => {
       await user.hover(card);
 
       // Verify the card has transition for smooth hover effects
-      expect(visualBox).toHaveStyle({ transition: "all 0.2s" });
+      expect(visualBox).toHaveStyle({ transition: "background 0.2s,border-color 0.2s" });
     });
 
     it("has pointer cursor in default state", () => {
@@ -302,6 +302,143 @@ describe("TemplateCard", () => {
       render(<TestWrapper templates={[mockTemplate]} disabledTemplates={["test-template"]} />);
       const radio = screen.getByRole("radio");
       expect(radio).toBeDisabled();
+    });
+  });
+
+  describe("inline explanation for disabled cards", () => {
+    const templateWithImageField: Template = {
+      ...mockTemplate,
+      id: "image-template",
+      name: "Image Template",
+      requiredFields: ["image"],
+    };
+
+    const templateWithDescriptionField: Template = {
+      ...mockTemplate,
+      id: "description-template",
+      name: "Description Template",
+      requiredFields: ["description"],
+    };
+
+    const templateWithMultipleFields: Template = {
+      ...mockTemplate,
+      id: "multi-field-template",
+      name: "Multi Field Template",
+      requiredFields: ["image", "description"],
+    };
+
+    it("always shows explanation for disabled cards with required fields", () => {
+      render(
+        <TestWrapper templates={[templateWithImageField]} disabledTemplates={["image-template"]} />
+      );
+
+      // Explanation should be visible immediately without any interaction
+      expect(screen.getByText(/This template displays images from articles/i)).toBeInTheDocument();
+    });
+
+    it("shows correct explanation for image field", () => {
+      render(
+        <TestWrapper templates={[templateWithImageField]} disabledTemplates={["image-template"]} />
+      );
+
+      expect(
+        screen.getByText(
+          "This template displays images from articles. Your feed's articles don't include images."
+        )
+      ).toBeInTheDocument();
+    });
+
+    it("shows correct explanation for description field", () => {
+      render(
+        <TestWrapper
+          templates={[templateWithDescriptionField]}
+          disabledTemplates={["description-template"]}
+        />
+      );
+
+      expect(
+        screen.getByText(
+          "This template shows article descriptions. Your feed's articles don't include descriptions."
+        )
+      ).toBeInTheDocument();
+    });
+
+    it("shows combined explanation for multiple missing fields", () => {
+      render(
+        <TestWrapper
+          templates={[templateWithMultipleFields]}
+          disabledTemplates={["multi-field-template"]}
+        />
+      );
+
+      expect(
+        screen.getByText(
+          "This template needs image and description fields that your feed's articles don't have."
+        )
+      ).toBeInTheDocument();
+    });
+
+    it("does not show explanation for disabled cards without required fields", () => {
+      const templateWithNoRequiredFields: Template = {
+        ...mockTemplate,
+        id: "no-fields-template",
+        requiredFields: [],
+      };
+
+      render(
+        <TestWrapper
+          templates={[templateWithNoRequiredFields]}
+          disabledTemplates={["no-fields-template"]}
+        />
+      );
+
+      // Should not find any explanation text
+      expect(screen.queryByText(/This template/i)).not.toBeInTheDocument();
+    });
+
+    it("shows info icon with explanation", () => {
+      render(
+        <TestWrapper templates={[templateWithImageField]} disabledTemplates={["image-template"]} />
+      );
+
+      const card = screen.getByTestId("template-card-image-template");
+
+      // Should have ViewIcon + InfoIcon
+      const icons = card.querySelectorAll("svg");
+      expect(icons.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("does not show explanation for enabled cards", () => {
+      render(<TestWrapper templates={[templateWithImageField]} />);
+
+      // Explanation should not be visible for enabled cards
+      expect(screen.queryByText(/This template displays images/i)).not.toBeInTheDocument();
+    });
+  });
+
+  describe("visual distinction for disabled cards", () => {
+    it("applies dashed border style when disabled", () => {
+      render(<TestWrapper templates={[mockTemplate]} disabledTemplates={["test-template"]} />);
+      const card = screen.getByTestId("template-card-test-template");
+      const visualBox = card.children[1];
+
+      expect(visualBox).toHaveStyle({ borderStyle: "dashed" });
+    });
+
+    it("applies solid border style when enabled", () => {
+      render(<TestWrapper templates={[mockTemplate]} />);
+      const card = screen.getByTestId("template-card-test-template");
+      const visualBox = card.children[1];
+
+      expect(visualBox).toHaveStyle({ borderStyle: "solid" });
+    });
+
+    it("has not-allowed cursor when disabled", () => {
+      render(<TestWrapper templates={[mockTemplate]} disabledTemplates={["test-template"]} />);
+      const card = screen.getByTestId("template-card-test-template");
+      const visualBox = card.children[1];
+
+      expect(visualBox).toHaveStyle({ cursor: "not-allowed" });
     });
   });
 });

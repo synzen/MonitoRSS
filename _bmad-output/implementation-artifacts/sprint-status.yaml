@@ -50,8 +50,8 @@ development_status:
   # Epic 2: New User Onboarding Flow
   epic-2: in-progress
   2-1-template-selection-step-in-connection-flow: done
-  2-2-one-click-template-application: ready-for-dev
-  2-3-empty-feed-handling: ready-for-dev
+  2-2-one-click-template-application: done
+  2-3-empty-feed-handling: done
   2-4-test-send-and-completion: ready-for-dev
   epic-2-retrospective: optional
 

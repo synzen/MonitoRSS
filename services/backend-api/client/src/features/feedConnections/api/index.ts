@@ -6,3 +6,4 @@ export * from "./createDiscordChannelConnectionTestArticle";
 export * from "./createDiscordChannelConnectionPreview";
 export * from "./createDiscordChannelConnectionClone";
 export * from "./createDiscordChannelConnectionCopySettings";
+export * from "./createTemplatePreview";

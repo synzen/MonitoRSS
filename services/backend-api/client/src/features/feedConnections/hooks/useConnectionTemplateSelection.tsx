@@ -272,7 +272,6 @@ export const useConnectionTemplateSelection = ({
     }
   }, [articles, selectedArticleId]);
 
-  // Auto-select default template when it's the only compatible option
   useEffect(() => {
     if (currentStep === ConnectionCreationStep.TemplateSelection && !selectedTemplateId) {
       const compatibleTemplates = TEMPLATES.filter((template) => {

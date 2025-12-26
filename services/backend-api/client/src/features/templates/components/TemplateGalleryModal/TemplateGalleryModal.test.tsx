@@ -4,17 +4,22 @@ import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { TemplateGalleryModal, isTemplateCompatible } from "./index";
+import { TemplateGalleryModal, isTemplateCompatible, getMissingFields, getDisabledReason } from "./index";
 import { Template } from "../../types";
 import { ComponentType } from "../../../../pages/MessageBuilder/types";
-import { createDiscordChannelConnectionPreview } from "../../../feedConnections/api";
+import {
+  createDiscordChannelConnectionPreview,
+  createTemplatePreview,
+} from "../../../feedConnections/api";
 import { SendTestArticleDeliveryStatus } from "../../../../types";
 
 vi.mock("../../../feedConnections/api", () => ({
   createDiscordChannelConnectionPreview: vi.fn(),
+  createTemplatePreview: vi.fn(),
 }));
 
 const mockCreatePreview = vi.mocked(createDiscordChannelConnectionPreview);
+const mockCreateTemplatePreview = vi.mocked(createTemplatePreview);
 
 const createQueryClient = () =>
   new QueryClient({
@@ -101,6 +106,13 @@ const defaultProps = {
 describe("TemplateGalleryModal", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Set default mock return values to prevent "Query data cannot be undefined" warnings
+    mockCreatePreview.mockResolvedValue({
+      result: { status: SendTestArticleDeliveryStatus.Success, messages: [] },
+    });
+    mockCreateTemplatePreview.mockResolvedValue({
+      result: { status: SendTestArticleDeliveryStatus.Success, messages: [] },
+    });
   });
 
   describe("isTemplateCompatible utility", () => {
@@ -150,6 +162,154 @@ describe("TemplateGalleryModal", () => {
         },
       };
       expect(isTemplateCompatible(template, ["title", "description"])).toBe(false);
+    });
+  });
+
+  describe("getMissingFields utility", () => {
+    it("returns empty array when template has no required fields", () => {
+      const template: Template = {
+        id: "test",
+        name: "Test",
+        description: "Test",
+        requiredFields: [],
+        messageComponent: {
+          type: ComponentType.LegacyRoot,
+          id: "root",
+          name: "Root",
+          children: [],
+        },
+      };
+      expect(getMissingFields(template, ["title"])).toEqual([]);
+    });
+
+    it("returns empty array when all required fields are present", () => {
+      const template: Template = {
+        id: "test",
+        name: "Test",
+        description: "Test",
+        requiredFields: ["description", "image"],
+        messageComponent: {
+          type: ComponentType.LegacyRoot,
+          id: "root",
+          name: "Root",
+          children: [],
+        },
+      };
+      expect(getMissingFields(template, ["title", "description", "image"])).toEqual([]);
+    });
+
+    it("returns only missing fields when some are absent", () => {
+      const template: Template = {
+        id: "test",
+        name: "Test",
+        description: "Test",
+        requiredFields: ["description", "image"],
+        messageComponent: {
+          type: ComponentType.LegacyRoot,
+          id: "root",
+          name: "Root",
+          children: [],
+        },
+      };
+      expect(getMissingFields(template, ["title", "description"])).toEqual(["image"]);
+    });
+
+    it("returns all required fields when none are present", () => {
+      const template: Template = {
+        id: "test",
+        name: "Test",
+        description: "Test",
+        requiredFields: ["description", "image"],
+        messageComponent: {
+          type: ComponentType.LegacyRoot,
+          id: "root",
+          name: "Root",
+          children: [],
+        },
+      };
+      expect(getMissingFields(template, ["title"])).toEqual(["description", "image"]);
+    });
+  });
+
+  describe("getDisabledReason utility", () => {
+    it("returns empty string when template has no required fields", () => {
+      const template: Template = {
+        id: "test",
+        name: "Test",
+        description: "Test",
+        requiredFields: [],
+        messageComponent: {
+          type: ComponentType.LegacyRoot,
+          id: "root",
+          name: "Root",
+          children: [],
+        },
+      };
+      expect(getDisabledReason(template, ["title"])).toBe("");
+    });
+
+    it("returns empty string when all required fields are present", () => {
+      const template: Template = {
+        id: "test",
+        name: "Test",
+        description: "Test",
+        requiredFields: ["description"],
+        messageComponent: {
+          type: ComponentType.LegacyRoot,
+          id: "root",
+          name: "Root",
+          children: [],
+        },
+      };
+      expect(getDisabledReason(template, ["title", "description"])).toBe("");
+    });
+
+    it("returns formatted message with single missing field", () => {
+      const template: Template = {
+        id: "test",
+        name: "Test",
+        description: "Test",
+        requiredFields: ["image"],
+        messageComponent: {
+          type: ComponentType.LegacyRoot,
+          id: "root",
+          name: "Root",
+          children: [],
+        },
+      };
+      expect(getDisabledReason(template, ["title"])).toBe("Needs: image");
+    });
+
+    it("returns formatted message with multiple missing fields", () => {
+      const template: Template = {
+        id: "test",
+        name: "Test",
+        description: "Test",
+        requiredFields: ["description", "image"],
+        messageComponent: {
+          type: ComponentType.LegacyRoot,
+          id: "root",
+          name: "Root",
+          children: [],
+        },
+      };
+      expect(getDisabledReason(template, ["title"])).toBe("Needs: description, image");
+    });
+
+    it("returns 'Needs articles' when feedFields is empty (no articles)", () => {
+      const template: Template = {
+        id: "test",
+        name: "Test",
+        description: "Test",
+        requiredFields: ["image"],
+        messageComponent: {
+          type: ComponentType.LegacyRoot,
+          id: "root",
+          name: "Root",
+          children: [],
+        },
+      };
+      expect(getDisabledReason(template, [])).toBe("Needs articles");
     });
   });
 
@@ -354,10 +514,20 @@ describe("TemplateGalleryModal", () => {
       expect(mediaGalleryRadio).toBeDisabled();
     });
 
-    it("shows disabled badge on incompatible templates", () => {
+    it("shows disabled badge with missing fields on incompatible templates", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} feedFields={["title", "link"]} />
+        </TestWrapper>
+      );
+      expect(screen.getByText("Needs: description")).toBeInTheDocument();
+      expect(screen.getByText("Needs: image")).toBeInTheDocument();
+    });
+
+    it("shows 'Needs articles' badge when feedFields is empty", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal {...defaultProps} feedFields={[]} />
         </TestWrapper>
       );
       const badges = screen.getAllByText("Needs articles");
@@ -384,6 +554,30 @@ describe("TemplateGalleryModal", () => {
       expect(
         screen.getByText("Some templates are unavailable until your feed has articles")
       ).toBeInTheDocument();
+    });
+
+    it("disables ALL non-default templates when feedFields is empty (AC1)", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal {...defaultProps} feedFields={[]} />
+        </TestWrapper>
+      );
+      const radios = screen.getAllByRole("radio");
+
+      // Default template should be enabled
+      const defaultRadio = radios.find((r) => r.getAttribute("value") === "default");
+      expect(defaultRadio).not.toBeDisabled();
+
+      // ALL other templates should be disabled
+      const richEmbedRadio = radios.find((r) => r.getAttribute("value") === "rich-embed");
+      const mediaGalleryRadio = radios.find((r) => r.getAttribute("value") === "media-gallery");
+
+      expect(richEmbedRadio).toBeDisabled();
+      expect(mediaGalleryRadio).toBeDisabled();
+
+      // Verify only 1 template is enabled out of all templates
+      const enabledRadios = radios.filter((r) => !r.hasAttribute("disabled"));
+      expect(enabledRadios).toHaveLength(1);
     });
   });
 
@@ -938,7 +1132,9 @@ describe("TemplateGalleryModal", () => {
   });
 
   describe("preview panel loading state", () => {
-    it("shows placeholder text when no connection ID and template selected", async () => {
+    it("shows loading or preview when no connection ID but template and article selected", async () => {
+      // Since Story 2-2, we have a template preview endpoint that works without connectionId
+      // The preview should attempt to load using the template preview API
       render(
         <TestWrapper>
           <TemplateGalleryModal
@@ -948,9 +1144,27 @@ describe("TemplateGalleryModal", () => {
           />
         </TestWrapper>
       );
-      // Wait for React Query to settle and show the placeholder
+      // The preview panel should show loading or preview content, not an error
+      // Since articles exist, we should not see the "Preview will appear when your feed has articles" message
       await waitFor(() => {
-        expect(screen.getByText("Preview requires a connection")).toBeInTheDocument();
+        expect(screen.queryByText("Preview will appear when your feed has articles")).not.toBeInTheDocument();
+      });
+    });
+
+    it("shows placeholder message when no articles available", async () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            articles={[]}
+            selectedArticleId={undefined}
+            connectionId={undefined}
+            selectedTemplateId="default"
+          />
+        </TestWrapper>
+      );
+      await waitFor(() => {
+        expect(screen.getByText("Preview will appear when your feed has articles")).toBeInTheDocument();
       });
     });
   });

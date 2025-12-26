@@ -43,6 +43,51 @@ const sampleFilters = {
 
 const mockUserFeeds: UserFeed[] = [
   {
+    id: "empty-feed",
+    title: "[Test] Empty Feed (No Articles)",
+    url: "https://www.empty-feed-test.com/rss",
+    createdAt: new Date().toISOString(),
+    inputUrl: "https://www.empty-feed-test.com/rss",
+    updatedAt: new Date().toISOString(),
+    externalProperties: [],
+    refreshRateOptions: [{ rateSeconds: 600 }],
+    blockingComparisons: [],
+    passingComparisons: [],
+    isLegacyFeed: false,
+    formatOptions: {
+      dateFormat: undefined,
+      dateTimezone: "UTC",
+    },
+    shareManageOptions: {
+      invites: [],
+    },
+    connections: [
+      {
+        id: "empty-conn-1",
+        name: "Empty Feed Connection",
+        key: FeedConnectionType.DiscordChannel,
+        details: {
+          channel: {
+            id: mockDiscordChannels[0].id,
+            guildId: mockDiscordServers[0].id,
+          },
+          embeds: [],
+          formatter: {
+            formatTables: false,
+            stripImages: false,
+          },
+        },
+        filters: null,
+        splitOptions: null,
+        mentions: null,
+      },
+    ],
+    healthStatus: UserFeedHealthStatus.Ok,
+    disabledCode: undefined,
+    userRefreshRateSeconds: 600,
+    refreshRateSeconds: 600,
+  },
+  {
     id: "1f",
     title: "New York Times",
     url: "https://www.feed1.com",

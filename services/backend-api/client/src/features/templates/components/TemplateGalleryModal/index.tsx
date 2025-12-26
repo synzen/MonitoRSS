@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, ReactNode } from "react";
 import {
   Modal,
   ModalOverlay,
@@ -29,10 +29,13 @@ import { Template } from "../../types";
 import {
   CreateDiscordChannelConnectionPreviewInput,
   createDiscordChannelConnectionPreview,
+  createTemplatePreview,
+  CreateTemplatePreviewInput,
 } from "../../../feedConnections/api";
 import convertMessageBuilderStateToConnectionPreviewInput from "../../../../pages/MessageBuilder/utils/convertMessageBuilderStateToConnectionPreviewInput";
 import { UserFeed } from "../../../feed";
 import { FeedDiscordChannelConnection } from "../../../../types";
+import { convertTemplateMessageComponentToPreviewInput } from "./templatePreviewUtils";
 
 export interface Article {
   id: string;
@@ -62,6 +65,7 @@ export interface TemplateGalleryModalProps {
   tertiaryActionLabel?: string;
   onTertiaryAction?: () => void;
   testId?: string;
+  stepIndicator?: ReactNode;
 }
 
 export function isTemplateCompatible(template: Template, feedFields: string[]): boolean {
@@ -70,6 +74,30 @@ export function isTemplateCompatible(template: Template, feedFields: string[]): 
   }
 
   return template.requiredFields.every((field) => feedFields.includes(field));
+}
+
+export function getMissingFields(template: Template, feedFields: string[]): string[] {
+  if (!template.requiredFields || template.requiredFields.length === 0) {
+    return [];
+  }
+
+  return template.requiredFields.filter((field) => !feedFields.includes(field));
+}
+
+export function getDisabledReason(template: Template, feedFields: string[]): string {
+  const missingFields = getMissingFields(template, feedFields);
+
+  if (missingFields.length === 0) {
+    return "";
+  }
+
+  // If feedFields is empty (no articles), use generic message per spec
+  if (feedFields.length === 0) {
+    return "Needs articles";
+  }
+
+  // If articles exist but specific fields are missing, show which fields
+  return `Needs: ${missingFields.join(", ")}`;
 }
 
 interface UseTemplatePreviewParams {
@@ -94,30 +122,46 @@ const useTemplatePreview = ({
   return useQuery({
     queryKey: ["template-preview", template?.id, articleId, feedId, connectionId],
     queryFn: async () => {
-      if (!template || !articleId || !connectionId || !userFeed || !connection) {
+      if (!template || !articleId) {
         return null;
       }
 
-      const previewInputData = convertMessageBuilderStateToConnectionPreviewInput(
-        userFeed,
-        connection,
+      // If we have a connectionId, use the existing connection preview endpoint
+      if (connectionId && userFeed && connection) {
+        const previewInputData = convertMessageBuilderStateToConnectionPreviewInput(
+          userFeed,
+          connection,
+          template.messageComponent
+        );
+
+        const input: CreateDiscordChannelConnectionPreviewInput = {
+          feedId,
+          connectionId,
+          data: {
+            article: { id: articleId },
+            ...previewInputData,
+          },
+        };
+
+        return createDiscordChannelConnectionPreview(input);
+      }
+
+      // Otherwise, use the template preview endpoint (no connection required)
+      const previewInputData = convertTemplateMessageComponentToPreviewInput(
         template.messageComponent
       );
 
-      const input: CreateDiscordChannelConnectionPreviewInput = {
+      const input: CreateTemplatePreviewInput = {
         feedId,
-        connectionId,
         data: {
           article: { id: articleId },
           ...previewInputData,
         },
       };
 
-      const result = await createDiscordChannelConnectionPreview(input);
-
-      return result;
+      return createTemplatePreview(input);
     },
-    enabled: enabled && !!template && !!articleId && !!connectionId && !!userFeed && !!connection,
+    enabled: enabled && !!template && !!articleId && !!feedId,
     staleTime: 30000,
   });
 };
@@ -145,6 +189,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
     tertiaryActionLabel,
     onTertiaryAction,
     testId,
+    stepIndicator,
   } = props;
 
   const { getRootProps, getRadioProps } = useRadioGroup({
@@ -184,13 +229,18 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
   useEffect(() => {
     if (wasLoadingRef.current && !isActuallyLoading && previewData && selectedTemplateId) {
       const template = templates.find((t) => t.id === selectedTemplateId);
+
       if (template) {
         setPreviewAnnouncement(`Preview updated for ${template.name} template`);
         const timer = setTimeout(() => setPreviewAnnouncement(""), 1000);
+
         return () => clearTimeout(timer);
       }
     }
+
     wasLoadingRef.current = isActuallyLoading;
+
+    return () => {};
   }, [isActuallyLoading, previewData, selectedTemplateId, templates]);
 
   return (
@@ -215,6 +265,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
         </ModalHeader>
         <ModalCloseButton color="white" />
         <ModalBody>
+          {stepIndicator && <Box mb={4}>{stepIndicator}</Box>}
           {hasNoFeedFields && (
             <Alert status="info" mb={4} borderRadius="md">
               <AlertIcon />
@@ -228,6 +279,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                 <SimpleGrid {...getRootProps()} columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
                   {templates.map((template) => {
                     const isCompatible = isTemplateCompatible(template, feedFields);
+                    const disabledReason = getDisabledReason(template, feedFields);
                     const radio = getRadioProps({
                       value: template.id,
                     });
@@ -236,7 +288,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                       <TemplateCard
                         key={template.id}
                         template={template}
-                        disabledReason="Needs articles"
+                        disabledReason={disabledReason}
                         isDisabled={!isCompatible}
                         {...radio}
                       />
@@ -311,9 +363,9 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                     !isPreviewError &&
                     previewMessages.length === 0 &&
                     selectedTemplateId &&
-                    !connectionId && (
+                    articles.length > 0 && (
                       <Text color="gray.500" textAlign="center" py={8}>
-                        Preview requires a connection
+                        Loading preview...
                       </Text>
                     )}
                   {!isActuallyLoading &&

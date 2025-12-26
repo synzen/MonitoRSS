@@ -154,6 +154,19 @@ interface CreatePreviewInput {
     | DiscordChannelConnection["details"]["channelNewThreadExcludesPreview"];
 }
 
+interface CreateTemplatePreviewInput {
+  userFeed: UserFeed;
+  content?: string;
+  embeds?: DiscordPreviewEmbed[];
+  feedFormatOptions: UserFeed["formatOptions"] | null;
+  articleId?: string;
+  placeholderLimits?:
+    | DiscordChannelConnection["details"]["placeholderLimits"]
+    | null;
+  enablePlaceholderFallback?: boolean;
+  componentsV2?: DiscordChannelConnection["details"]["componentsV2"] | null;
+}
+
 @Injectable()
 export class FeedConnectionsDiscordChannelsService {
   constructor(
@@ -1219,6 +1232,87 @@ export class FeedConnectionsDiscordChannelsService {
         placeholderLimits,
         enablePlaceholderFallback: enablePlaceholderFallback,
         components: castDiscordComponentRowsForMedium(componentRows),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        componentsV2: (componentsV2 as any) ?? undefined,
+      },
+    } as const;
+
+    return this.feedHandlerService.createPreview({
+      details: payload,
+    });
+  }
+
+  async createTemplatePreview({
+    userFeed,
+    content,
+    embeds,
+    feedFormatOptions,
+    articleId,
+    placeholderLimits,
+    enablePlaceholderFallback,
+    componentsV2,
+  }: CreateTemplatePreviewInput) {
+    const user = await this.usersService.getOrCreateUserByDiscordId(
+      userFeed.user.discordUserId
+    );
+
+    const payload: CreateDiscordChannelPreviewInput["details"] = {
+      type: "discord",
+      includeCustomPlaceholderPreviews: false,
+      feed: {
+        requestLookupDetails: getFeedRequestLookupDetails({
+          feed: userFeed,
+          user,
+          decryptionKey: this.configService.get(
+            "BACKEND_API_ENCRYPTION_KEY_HEX"
+          ),
+        }),
+        url: userFeed.url,
+        formatOptions: {
+          ...feedFormatOptions,
+          dateFormat:
+            feedFormatOptions?.dateFormat || user?.preferences?.dateFormat,
+          dateTimezone:
+            feedFormatOptions?.dateTimezone || user?.preferences?.dateTimezone,
+          dateLocale:
+            feedFormatOptions?.dateLocale || user?.preferences?.dateLocale,
+        },
+        externalProperties: undefined,
+      },
+      article: articleId ? { id: articleId } : undefined,
+      mediumDetails: {
+        channel: undefined,
+        webhook: undefined,
+        guildId: "",
+        content: castDiscordContentForMedium(content),
+        embeds: castDiscordEmbedsForMedium(
+          embeds?.map((e) => ({
+            title: e.title || undefined,
+            description: e.description || undefined,
+            url: e.url || undefined,
+            imageURL: e.image?.url || undefined,
+            thumbnailURL: e.thumbnail?.url || undefined,
+            authorIconURL: e.author?.iconUrl || undefined,
+            authorName: e.author?.name || undefined,
+            authorURL: e.author?.url || undefined,
+            color: e.color || undefined,
+            footerIconURL: e.footer?.iconUrl || undefined,
+            footerText: e.footer?.text || undefined,
+            timestamp: e.timestamp || undefined,
+            fields:
+              e.fields?.filter(
+                (f): f is { name: string; value: string; inline?: boolean } =>
+                  !!f.name && !!f.value
+              ) || [],
+          }))
+        ),
+        formatter: undefined,
+        splitOptions: undefined,
+        mentions: undefined,
+        customPlaceholders: undefined,
+        placeholderLimits,
+        enablePlaceholderFallback: enablePlaceholderFallback,
+        components: undefined,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         componentsV2: (componentsV2 as any) ?? undefined,
       },

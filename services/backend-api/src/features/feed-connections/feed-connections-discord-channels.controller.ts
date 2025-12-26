@@ -31,6 +31,7 @@ import {
   CreateDiscordChannelConnectionTestArticleInputDto,
   CreateDiscordChannelConnectionTestArticleOutputDto,
   CreateDiscordChnnnelConnectionInputDto,
+  CreateTemplatePreviewInputDto,
   UpdateDiscordChannelConnectionInputDto,
   UpdateDiscordChannelConnectionOutputDto,
 } from "./dto";
@@ -261,6 +262,50 @@ export class FeedConnectionsDiscordChannelsController {
       externalProperties,
       channelNewThreadTitle,
       channelNewThreadExcludesPreview,
+      componentsV2,
+    });
+
+    return {
+      result: {
+        status: result.status,
+        messages: result.messages,
+        customPlaceholderPreviews: result.customPlaceholderPreviews,
+      },
+    };
+  }
+
+  @Post("/template-preview")
+  @UseFilters(CreateDiscordChannelTestArticleFilter)
+  async createTemplatePreview(
+    @Param(
+      "feedId",
+      GetUserFeedsPipe({
+        userTypes: [
+          UserFeedManagerType.Creator,
+          UserFeedManagerType.SharedManager,
+        ],
+      })
+    )
+    [{ feed }]: GetUserFeedsPipeOutput,
+    @Body(ValidationPipe)
+    {
+      article,
+      content,
+      embeds,
+      userFeedFormatOptions,
+      placeholderLimits,
+      enablePlaceholderFallback,
+      componentsV2,
+    }: CreateTemplatePreviewInputDto
+  ): Promise<CreateDiscordChannelConnectionPreviewOutputDto> {
+    const result = await this.service.createTemplatePreview({
+      userFeed: feed,
+      feedFormatOptions: { ...feed.formatOptions, ...userFeedFormatOptions },
+      articleId: article?.id,
+      content,
+      embeds,
+      placeholderLimits,
+      enablePlaceholderFallback,
       componentsV2,
     });
 

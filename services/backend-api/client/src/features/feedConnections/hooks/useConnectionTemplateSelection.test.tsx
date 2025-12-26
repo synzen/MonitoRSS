@@ -326,6 +326,136 @@ describe("useConnectionTemplateSelection", () => {
         expect(result.current.feedFields).not.toContain("idHash");
       });
     });
+
+    it("returns empty feedFields when no articles available", async () => {
+      mockUseUserFeedArticles.mockReturnValue({
+        data: {
+          result: {
+            articles: [],
+            totalArticles: 0,
+            selectedProperties: [],
+            requestStatus: UserFeedArticleRequestStatus.Success,
+            response: { statusCode: 200 },
+            filterStatuses: [],
+          },
+        },
+        status: "success",
+        error: null,
+        refetch: vi.fn(),
+        fetchStatus: "idle",
+      });
+
+      const { result } = renderHook(
+        () =>
+          useConnectionTemplateSelection({
+            isOpen: true,
+            isEditing: false,
+          }),
+        { wrapper: TestWrapper }
+      );
+
+      act(() => {
+        result.current.handleNextStep();
+      });
+
+      await waitFor(() => {
+        expect(result.current.feedFields).toEqual([]);
+        expect(result.current.articles).toEqual([]);
+      });
+    });
+  });
+
+  describe("empty feed auto-selection", () => {
+    it("auto-selects default template when feed is empty and only default is compatible", async () => {
+      // Mock empty articles (empty feed)
+      mockUseUserFeedArticles.mockReturnValue({
+        data: {
+          result: {
+            articles: [],
+            totalArticles: 0,
+            selectedProperties: [],
+            requestStatus: UserFeedArticleRequestStatus.Success,
+            response: { statusCode: 200 },
+            filterStatuses: [],
+          },
+        },
+        status: "success",
+        error: null,
+        refetch: vi.fn(),
+        fetchStatus: "idle",
+      });
+
+      const { result } = renderHook(
+        () =>
+          useConnectionTemplateSelection({
+            isOpen: true,
+            isEditing: false,
+          }),
+        { wrapper: TestWrapper }
+      );
+
+      // Navigate to template step
+      act(() => {
+        result.current.handleNextStep();
+      });
+
+      // Wait for auto-selection to occur
+      await waitFor(() => {
+        // With empty feed, only default template is compatible (has no requiredFields)
+        // The hook should auto-select it
+        expect(result.current.selectedTemplateId).toBe("default");
+      });
+    });
+
+    it("does not auto-select when multiple templates are compatible", async () => {
+      // Mock articles with all required fields so multiple templates are compatible
+      mockUseUserFeedArticles.mockReturnValue({
+        data: {
+          result: {
+            articles: [
+              {
+                id: "article-1",
+                idHash: "hash1",
+                title: "Test",
+                description: "Test desc",
+                image: "https://example.com/img.jpg",
+              },
+            ],
+            totalArticles: 1,
+            selectedProperties: ["title", "description", "image"],
+            requestStatus: UserFeedArticleRequestStatus.Success,
+            response: { statusCode: 200 },
+            filterStatuses: [],
+          },
+        },
+        status: "success",
+        error: null,
+        refetch: vi.fn(),
+        fetchStatus: "idle",
+      });
+
+      const { result } = renderHook(
+        () =>
+          useConnectionTemplateSelection({
+            isOpen: true,
+            isEditing: false,
+          }),
+        { wrapper: TestWrapper }
+      );
+
+      act(() => {
+        result.current.handleNextStep();
+      });
+
+      // Wait a tick for effects to run
+      await waitFor(() => {
+        expect(result.current.feedFields.length).toBeGreaterThan(0);
+      });
+
+      // With all fields available, multiple templates are compatible
+      // Auto-selection should NOT happen
+      expect(result.current.selectedTemplateId).toBeUndefined();
+    });
   });
 
   describe("isTemplateStep", () => {

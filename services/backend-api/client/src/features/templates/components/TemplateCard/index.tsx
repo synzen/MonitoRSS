@@ -1,7 +1,30 @@
 import React from "react";
-import { Box, VStack, Text, Badge, Icon, useRadio, UseRadioProps } from "@chakra-ui/react";
-import { CheckCircleIcon, ViewIcon } from "@chakra-ui/icons";
+import { Box, VStack, Text, Badge, Icon, useRadio, UseRadioProps, Divider } from "@chakra-ui/react";
+import { CheckCircleIcon, ViewIcon, InfoIcon } from "@chakra-ui/icons";
 import { Template } from "../../types";
+
+const FIELD_EXPLANATIONS: Record<string, string> = {
+  image: "This template displays images from articles. Your feed's articles don't include images.",
+  description:
+    "This template shows article descriptions. Your feed's articles don't include descriptions.",
+  author:
+    "This template shows author names. Your feed's articles don't include author information.",
+  default: "This template requires fields that your feed's articles don't have.",
+};
+
+const getExplanationForFields = (requiredFields: string[]): string => {
+  if (requiredFields.length === 0) {
+    return "";
+  }
+
+  if (requiredFields.length === 1) {
+    return FIELD_EXPLANATIONS[requiredFields[0]] || FIELD_EXPLANATIONS.default;
+  }
+
+  return `This template needs ${requiredFields.join(
+    " and "
+  )} fields that your feed's articles don't have.`;
+};
 
 export interface TemplateCardProps extends UseRadioProps {
   template: Template;
@@ -18,20 +41,32 @@ const TemplateCardComponent = (props: TemplateCardProps) => {
 
   const { isChecked, isDisabled } = state;
 
+  const explanation = getExplanationForFields(template.requiredFields || []);
+
   return (
-    <Box as="label" data-testid={testId}>
+    <Box
+      as="label"
+      data-testid={testId}
+      _focusWithin={{
+        "> div": {
+          outline: "2px solid",
+          outlineColor: "blue.300",
+          outlineOffset: "2px",
+        },
+      }}
+    >
       <input {...input} />
       <Box
         {...rootProps}
         position="relative"
-        borderWidth={isChecked ? "2px" : "1px"}
-        borderColor={isChecked ? "blue.500" : "gray.600"}
+        borderWidth="2px"
+        borderColor={isChecked ? "blue.500" : isDisabled ? "gray.700" : "gray.600"}
+        borderStyle={isDisabled ? "dashed" : "solid"}
         borderRadius="md"
         bg={isChecked ? "blue.900" : "gray.800"}
         p={4}
         cursor={isDisabled ? "not-allowed" : "pointer"}
-        opacity={isDisabled ? 0.5 : 1}
-        transition="all 0.2s"
+        transition="background 0.2s, border-color 0.2s"
         minH="120px"
         minW="44px"
         _hover={
@@ -39,25 +74,28 @@ const TemplateCardComponent = (props: TemplateCardProps) => {
             ? {
                 borderColor: "blue.400",
                 bg: "gray.700",
-                boxShadow: "md",
               }
             : undefined
         }
-        _focus={{
-          boxShadow: "outline",
-        }}
         _checked={{
           borderColor: "blue.500",
-          borderWidth: "2px",
           bg: "blue.900",
         }}
         _disabled={{
-          opacity: 0.5,
+          opacity: 1,
           cursor: "not-allowed",
         }}
       >
         {isDisabled && (
-          <Badge position="absolute" top={2} left={2} colorScheme="gray" fontSize="xs">
+          <Badge
+            position="absolute"
+            top={2}
+            left={2}
+            zIndex={1}
+            colorScheme="orange"
+            variant="subtle"
+            fontSize="xs"
+          >
             {disabledReason}
           </Badge>
         )}
@@ -80,6 +118,8 @@ const TemplateCardComponent = (props: TemplateCardProps) => {
           display="flex"
           alignItems="center"
           justifyContent="center"
+          filter={isDisabled ? "grayscale(100%)" : undefined}
+          opacity={isDisabled ? 0.5 : 1}
         >
           {template.thumbnail ? (
             <Box
@@ -95,13 +135,29 @@ const TemplateCardComponent = (props: TemplateCardProps) => {
           )}
         </Box>
         <VStack align="start" spacing={1}>
-          <Text fontWeight="medium" fontSize="sm" color="white" noOfLines={1}>
+          <Text
+            fontWeight="medium"
+            fontSize="sm"
+            color={isDisabled ? "gray.400" : "white"}
+            noOfLines={1}
+          >
             {template.name}
           </Text>
           <Text fontSize="xs" color="gray.400" noOfLines={2}>
             {template.description}
           </Text>
         </VStack>
+        {isDisabled && explanation && (
+          <Box mt={3}>
+            <Divider borderColor="gray.600" mb={3} />
+            <Box display="flex" alignItems="flex-start" gap={2}>
+              <Icon as={InfoIcon} color="blue.300" boxSize={3} mt={0.5} flexShrink={0} />
+              <Text fontSize="xs" color="gray.300" lineHeight="tall">
+                {explanation}
+              </Text>
+            </Box>
+          </Box>
+        )}
       </Box>
     </Box>
   );
