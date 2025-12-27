@@ -619,7 +619,7 @@ describe("convertTemplateToUpdateDetails", () => {
 
       expect(details.embeds).toBeDefined();
       expect(details.embeds?.length).toBe(1);
-      expect(details.embeds?.[0].color).toBe("5814783");
+      expect(details.embeds?.[0].color).toBe("58b9ff");
       expect(details.embeds?.[0].title).toBe("{{title}}");
       expect(details.embeds?.[0].url).toBe("{{link}}");
       expect(details.embeds?.[0].description).toBe("{{description}}");
@@ -783,7 +783,7 @@ describe("convertTemplateToUpdateDetails", () => {
       expect(actionRowComponents[0].url).toBe("{{link}}");
     });
 
-    it("sets content and embeds to null for V2 templates", () => {
+    it("sets content and embeds to empty for V2 templates", () => {
       const template: Template = {
         id: "test",
         name: "Test",
@@ -799,8 +799,8 @@ describe("convertTemplateToUpdateDetails", () => {
 
       const details = convertTemplateToUpdateDetails(template);
 
-      expect(details.content).toBeNull();
-      expect(details.embeds).toBeUndefined();
+      expect(details.content).toBe("");
+      expect(details.embeds).toEqual([]);
     });
   });
 

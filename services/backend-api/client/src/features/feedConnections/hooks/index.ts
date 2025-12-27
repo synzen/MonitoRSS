@@ -11,3 +11,5 @@ export * from "./useUpdateConnection";
 export * from "./useGetUserFeedArticlesError";
 export * from "./useCreateDiscordChannelConnectionCopySettings";
 export * from "./useConnectionTemplateSelection";
+export * from "./useTestSendFlow";
+export * from "./useSendTestArticleDirect";

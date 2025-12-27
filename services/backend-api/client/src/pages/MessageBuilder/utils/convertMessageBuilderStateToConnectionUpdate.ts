@@ -1,4 +1,4 @@
-import { UpdateDiscordChannelConnectionInput } from "../../../features/feedConnections";
+import { UpdateDiscordChannelConnectionInput } from "../../../features/feedConnections/api";
 import { DiscordButtonStyle } from "../constants/DiscordButtonStyle";
 import {
   ComponentType,

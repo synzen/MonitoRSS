@@ -23,7 +23,12 @@ import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
 import { FastifyReply, FastifyRequest } from "fastify";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
 
-import { ADD_DISCORD_CHANNEL_CONNECTION_ERROR_CODES } from "../feed-connections/filters";
+import {
+  ADD_DISCORD_CHANNEL_CONNECTION_ERROR_CODES,
+  CreateDiscordChannelTestArticleFilter,
+} from "../feed-connections/filters";
+import { FeedConnectionsDiscordChannelsService } from "../feed-connections/feed-connections-discord-channels.service";
+import { FeedsService } from "../feeds/feeds.service";
 import {
   FEED_EXCEPTION_FILTER_ERROR_CODES,
   FeedExceptionFilter,
@@ -41,6 +46,7 @@ import {
   GetUserFeedOutputDto,
   GetUserFeedsInputDto,
   GetUserFeedsOutputDto,
+  SendTestArticleInputDto,
   UpdateUserFeedInputDto,
   UpdateUserFeedOutputDto,
   UpdateUserFeedsInput,
@@ -73,7 +79,9 @@ import { UpdateUserFeedExceptionFilter } from "../feeds/filters/update-user-feed
 export class UserFeedsController {
   constructor(
     private readonly userFeedsService: UserFeedsService,
-    private readonly usersService: UsersService
+    private readonly usersService: UsersService,
+    private readonly feedConnectionsService: FeedConnectionsDiscordChannelsService,
+    private readonly feedsService: FeedsService
   ) {}
 
   @Post()
@@ -229,6 +237,59 @@ export class UserFeedsController {
       result: {
         id,
       },
+    };
+  }
+
+  @Post("/:feedId/test-send")
+  @UseFilters(CreateDiscordChannelTestArticleFilter)
+  async sendTestArticle(
+    @Param(
+      "feedId",
+      GetUserFeedsPipe({
+        userTypes: [
+          UserFeedManagerType.Creator,
+          UserFeedManagerType.SharedManager,
+        ],
+      })
+    )
+    [{ feed }]: GetUserFeedsPipeOutput,
+    @Body(ValidationPipe)
+    {
+      article,
+      channelId,
+      content,
+      embeds,
+      componentsV2,
+      placeholderLimits,
+      webhook,
+      threadId,
+      userFeedFormatOptions,
+    }: SendTestArticleInputDto,
+    @DiscordAccessToken()
+    { access_token }: SessionAccessToken
+  ) {
+    await this.feedsService.canUseChannel({
+      channelId,
+      userAccessToken: access_token,
+    });
+
+    const result = await this.feedConnectionsService.sendTestArticleDirect(
+      feed,
+      {
+        article,
+        channelId,
+        content,
+        embeds,
+        componentsV2,
+        placeholderLimits,
+        webhook,
+        threadId,
+        userFeedFormatOptions,
+      }
+    );
+
+    return {
+      result,
     };
   }
 

@@ -1199,4 +1199,408 @@ describe("TemplateGalleryModal", () => {
       );
     });
   });
+
+  describe("test send functionality", () => {
+    it("shows Send to Discord button when onTestSend is provided and articles available", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            selectedTemplateId="default"
+            onTestSend={vi.fn()}
+            onSave={vi.fn()}
+          />
+        </TestWrapper>
+      );
+      expect(screen.getByText("Send to Discord")).toBeInTheDocument();
+    });
+
+    it("shows Save button when onTestSend is provided and articles available", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            selectedTemplateId="default"
+            onTestSend={vi.fn()}
+            onSave={vi.fn()}
+          />
+        </TestWrapper>
+      );
+      expect(screen.getByText("Save")).toBeInTheDocument();
+    });
+
+    it("disables Send to Discord button when no template is selected", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            selectedTemplateId={undefined}
+            onTestSend={vi.fn()}
+            onSave={vi.fn()}
+          />
+        </TestWrapper>
+      );
+      expect(screen.getByText("Send to Discord")).toBeDisabled();
+    });
+
+    it("disables Send to Discord button when no article is selected", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            selectedTemplateId="default"
+            selectedArticleId={undefined}
+            onTestSend={vi.fn()}
+            onSave={vi.fn()}
+          />
+        </TestWrapper>
+      );
+      expect(screen.getByText("Send to Discord")).toBeDisabled();
+    });
+
+    it("shows only Save button when no articles available (empty feed)", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            articles={[]}
+            selectedTemplateId="default"
+            onTestSend={vi.fn()}
+            onSave={vi.fn()}
+          />
+        </TestWrapper>
+      );
+      expect(screen.getByText("Save")).toBeInTheDocument();
+      expect(screen.queryByText("Send to Discord")).not.toBeInTheDocument();
+    });
+
+    it("calls onTestSend when Send to Discord button is clicked", async () => {
+      const user = userEvent.setup();
+      const onTestSend = vi.fn();
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            selectedTemplateId="default"
+            onTestSend={onTestSend}
+            onSave={vi.fn()}
+          />
+        </TestWrapper>
+      );
+
+      await user.click(screen.getByText("Send to Discord"));
+      expect(onTestSend).toHaveBeenCalled();
+    });
+
+    it("calls onSave when Save button is clicked", async () => {
+      const user = userEvent.setup();
+      const onSave = vi.fn();
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            selectedTemplateId="default"
+            onTestSend={vi.fn()}
+            onSave={onSave}
+          />
+        </TestWrapper>
+      );
+
+      await user.click(screen.getByText("Save"));
+      expect(onSave).toHaveBeenCalled();
+    });
+
+    it("shows Sending... text during loading", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            selectedTemplateId="default"
+            onTestSend={vi.fn()}
+            onSave={vi.fn()}
+            isTestSendLoading
+          />
+        </TestWrapper>
+      );
+      expect(screen.getByText("Sending...")).toBeInTheDocument();
+    });
+
+    it("displays success feedback alert after test send", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            selectedTemplateId="default"
+            onTestSend={vi.fn()}
+            onSave={vi.fn()}
+            testSendFeedback={{ status: "success", message: "Article sent to Discord successfully!" }}
+          />
+        </TestWrapper>
+      );
+      expect(screen.getByText("Article sent to Discord successfully!")).toBeInTheDocument();
+    });
+
+    it("displays error feedback alert with retry button after failed test send", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            selectedTemplateId="default"
+            onTestSend={vi.fn()}
+            onSave={vi.fn()}
+            testSendFeedback={{ status: "error", message: "Failed to send test article. Please try again." }}
+          />
+        </TestWrapper>
+      );
+      expect(screen.getByText("Failed to send test article. Please try again.")).toBeInTheDocument();
+      expect(screen.getByText("Retry")).toBeInTheDocument();
+    });
+
+    it("calls onTestSend when Retry button is clicked", async () => {
+      const user = userEvent.setup();
+      const onTestSend = vi.fn();
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            selectedTemplateId="default"
+            onTestSend={onTestSend}
+            onSave={vi.fn()}
+            testSendFeedback={{ status: "error", message: "Failed to send test article." }}
+          />
+        </TestWrapper>
+      );
+
+      await user.click(screen.getByText("Retry"));
+      expect(onTestSend).toHaveBeenCalled();
+    });
+
+    it("shows loading state on Save button", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            selectedTemplateId="default"
+            onTestSend={vi.fn()}
+            onSave={vi.fn()}
+            isSaveLoading
+          />
+        </TestWrapper>
+      );
+      const saveButton = screen.getByText("Save").closest("button");
+      expect(saveButton).toHaveAttribute("data-loading");
+    });
+
+    it("Save button is primary (blue) when no articles available", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            articles={[]}
+            selectedTemplateId="default"
+            onTestSend={vi.fn()}
+            onSave={vi.fn()}
+          />
+        </TestWrapper>
+      );
+      const saveButton = screen.getByText("Save").closest("button");
+      expect(saveButton).toHaveClass("chakra-button");
+    });
+  });
+
+  describe("error panel integration", () => {
+    it("shows error panel when testSendFeedback has deliveryStatus", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            selectedTemplateId="default"
+            onTestSend={vi.fn()}
+            onSave={vi.fn()}
+            testSendFeedback={{
+              status: "error",
+              message: "Discord couldn't process this message.",
+              deliveryStatus: SendTestArticleDeliveryStatus.BadPayload,
+            }}
+          />
+        </TestWrapper>
+      );
+
+      expect(
+        screen.getByText(/Test Failed - Discord Couldn't Process This Message/i)
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Try Another Template/i })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Use Anyway - I understand/i })
+      ).toBeInTheDocument();
+    });
+
+    it("does not show error panel for success feedback", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            selectedTemplateId="default"
+            onTestSend={vi.fn()}
+            onSave={vi.fn()}
+            testSendFeedback={{
+              status: "success",
+              message: "Article sent to Discord successfully!",
+            }}
+          />
+        </TestWrapper>
+      );
+
+      expect(
+        screen.queryByText(/Test Failed - Discord Couldn't Process This Message/i)
+      ).not.toBeInTheDocument();
+      expect(screen.getByText("Article sent to Discord successfully!")).toBeInTheDocument();
+    });
+
+    it("does not show error panel for error feedback without deliveryStatus", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            selectedTemplateId="default"
+            onTestSend={vi.fn()}
+            onSave={vi.fn()}
+            testSendFeedback={{
+              status: "error",
+              message: "Failed to send test article. Please try again.",
+            }}
+          />
+        </TestWrapper>
+      );
+
+      expect(
+        screen.queryByText(/Test Failed - Discord Couldn't Process This Message/i)
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByText("Failed to send test article. Please try again.")
+      ).toBeInTheDocument();
+    });
+
+    it("hides template gallery when error panel is shown", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            selectedTemplateId="default"
+            onTestSend={vi.fn()}
+            onSave={vi.fn()}
+            testSendFeedback={{
+              status: "error",
+              message: "Discord couldn't process this message.",
+              deliveryStatus: SendTestArticleDeliveryStatus.BadPayload,
+            }}
+          />
+        </TestWrapper>
+      );
+
+      expect(screen.queryByRole("radio")).not.toBeInTheDocument();
+      expect(screen.queryByLabelText("Template preview")).not.toBeInTheDocument();
+    });
+
+    it("hides modal footer when error panel is shown", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            selectedTemplateId="default"
+            onTestSend={vi.fn()}
+            onSave={vi.fn()}
+            tertiaryActionLabel="Back"
+            testSendFeedback={{
+              status: "error",
+              message: "Discord couldn't process this message.",
+              deliveryStatus: SendTestArticleDeliveryStatus.BadPayload,
+            }}
+          />
+        </TestWrapper>
+      );
+
+      // Footer buttons should be hidden when error panel is showing
+      expect(screen.queryByText("Back")).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Skip/i })).not.toBeInTheDocument();
+      // Save button in footer should be hidden (but Use Anyway in error panel should be visible)
+      const saveButtons = screen.queryAllByRole("button", { name: /^Save$/i });
+      expect(saveButtons).toHaveLength(0);
+    });
+
+    it("calls onClearTestSendFeedback when Try Another Template is clicked", async () => {
+      const user = userEvent.setup();
+      const onClearTestSendFeedback = vi.fn();
+
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            selectedTemplateId="default"
+            onTestSend={vi.fn()}
+            onSave={vi.fn()}
+            onClearTestSendFeedback={onClearTestSendFeedback}
+            testSendFeedback={{
+              status: "error",
+              message: "Discord couldn't process this message.",
+              deliveryStatus: SendTestArticleDeliveryStatus.BadPayload,
+            }}
+          />
+        </TestWrapper>
+      );
+
+      await user.click(screen.getByRole("button", { name: /Try Another Template/i }));
+      expect(onClearTestSendFeedback).toHaveBeenCalledTimes(1);
+    });
+
+    it("calls onSave when Use Anyway is clicked", async () => {
+      const user = userEvent.setup();
+      const onSave = vi.fn();
+
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            selectedTemplateId="default"
+            onTestSend={vi.fn()}
+            onSave={onSave}
+            testSendFeedback={{
+              status: "error",
+              message: "Discord couldn't process this message.",
+              deliveryStatus: SendTestArticleDeliveryStatus.BadPayload,
+            }}
+          />
+        </TestWrapper>
+      );
+
+      await user.click(screen.getByRole("button", { name: /Use Anyway - I understand/i }));
+      expect(onSave).toHaveBeenCalledTimes(1);
+    });
+
+    it("shows loading state on Use Anyway button when isSaveLoading is true", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            selectedTemplateId="default"
+            onTestSend={vi.fn()}
+            onSave={vi.fn()}
+            isSaveLoading
+            testSendFeedback={{
+              status: "error",
+              message: "Discord couldn't process this message.",
+              deliveryStatus: SendTestArticleDeliveryStatus.BadPayload,
+            }}
+          />
+        </TestWrapper>
+      );
+
+      const useAnywayButton = screen.getByRole("button", {
+        name: /Use Anyway - I understand/i,
+      });
+      expect(useAnywayButton).toBeInTheDocument();
+    });
+  });
 });

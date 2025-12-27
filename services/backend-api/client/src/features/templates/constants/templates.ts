@@ -68,7 +68,7 @@ export const RICH_EMBED_TEMPLATE: Template = {
                 type: ComponentType.LegacyEmbedFooter,
                 id: "rich-embed-footer",
                 name: "Footer",
-                footerText: "📰 {{feed::title}}",
+                footerText: "📰 {{title}}",
               },
               {
                 type: ComponentType.LegacyEmbedTimestamp,

@@ -31,7 +31,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { InferType, object, string } from "yup";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import {
   DiscordActiveThreadDropdown,
   DiscordChannelDropdown,
@@ -43,7 +43,8 @@ import {
   useCreateDiscordChannelConnection,
   useUpdateDiscordChannelConnection,
   useConnectionTemplateSelection,
-  convertTemplateToUpdateDetails,
+  useTestSendFlow,
+  getTemplateUpdateData,
 } from "../../hooks";
 import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "../../../../components";
 import { FeedDiscordChannelConnection } from "../../../../types";
@@ -54,6 +55,7 @@ import {
   DEFAULT_TEMPLATE,
   getTemplateById,
 } from "../../../templates/constants/templates";
+import { convertTemplateToUpdateDetails } from "../../hooks/useConnectionTemplateSelection";
 
 const formSchema = object({
   name: string().required("Name is required").max(250, "Name must be fewer than 250 characters"),
@@ -76,10 +78,7 @@ interface Props {
 
 type FormData = InferType<typeof formSchema>;
 
-const connectionSteps = [
-  { title: "Channel" },
-  { title: "Template" },
-];
+const connectionSteps = [{ title: "Channel" }, { title: "Template" }];
 
 export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
   connection,
@@ -90,7 +89,6 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
 
   // Template selection state
   const {
-    currentStep,
     isTemplateStep,
     selectedTemplateId,
     setSelectedTemplateId,
@@ -101,7 +99,6 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
     feedFields,
     handleNextStep: templateHandleNextStep,
     handleBackStep,
-    getTemplateUpdateDetails,
   } = useConnectionTemplateSelection({ isOpen, isEditing });
 
   // Stepper for visual progress (only for new connections)
@@ -134,12 +131,112 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
     mode: "all",
     defaultValues,
   });
-  const [serverId, channelId] = watch(["serverId", "channelId"]);
+  const [serverId, channelId, watchedThreadId] = watch(["serverId", "channelId", "threadId"]);
   const { mutateAsync, error } = useCreateDiscordChannelConnection();
   const { mutateAsync: updateMutateAsync, error: updateError } =
     useUpdateDiscordChannelConnection();
   const { createSuccessAlert } = usePageAlertContext();
   const initialFocusRef = useRef<any>(null);
+
+  // Create connection callback for test send flow
+  const createConnection = useCallback(async (): Promise<string | undefined> => {
+    if (!feedId) {
+      throw new Error("Feed ID missing");
+    }
+
+    const formValues = watch();
+    const { name, channelId: inputChannelId, threadId } = formValues;
+
+    const createResult = await mutateAsync({
+      feedId,
+      details: {
+        name,
+        channelId: threadId || inputChannelId,
+      },
+    });
+
+    const newConnectionId = createResult?.result?.id;
+
+    if (newConnectionId) {
+      // Apply template to new connection
+      const templateData = getTemplateUpdateData(selectedTemplateId);
+
+      await updateMutateAsync({
+        feedId,
+        connectionId: newConnectionId,
+        details: {
+          content: templateData.content,
+          embeds: templateData.embeds,
+          componentsV2: templateData.componentsV2,
+          placeholderLimits: templateData.placeholderLimits,
+        },
+      });
+    }
+
+    return newConnectionId;
+  }, [feedId, watch, mutateAsync, updateMutateAsync, selectedTemplateId]);
+
+  // Update connection template callback
+  const updateConnectionTemplate = useCallback(
+    async (connectionId: string) => {
+      if (!feedId) return;
+
+      const templateData = getTemplateUpdateData(selectedTemplateId);
+
+      await updateMutateAsync({
+        feedId,
+        connectionId,
+        details: {
+          content: templateData.content,
+          embeds: templateData.embeds,
+          componentsV2: templateData.componentsV2,
+          placeholderLimits: templateData.placeholderLimits,
+        },
+      });
+    },
+    [feedId, selectedTemplateId, updateMutateAsync]
+  );
+
+  // Success callback
+  const onSaveSuccess = useCallback(
+    (connectionName: string | undefined) => {
+      createSuccessAlert({
+        title: "You're all set!",
+        description: `New articles will be delivered automatically to ${
+          connectionName || "your channel"
+        }.`,
+      });
+    },
+    [createSuccessAlert]
+  );
+
+  // Get connection name from form
+  const getConnectionName = useCallback(() => watch("name"), [watch]);
+
+  // Determine the effective channel ID for test send (thread if selected, otherwise channel)
+  const testSendChannelId = watchedThreadId || channelId;
+
+  // Test send flow hook
+  const {
+    testSendFeedback,
+    isSaving,
+    isTestSending,
+    handleTestSend,
+    handleSave,
+    handleSkip,
+    clearTestSendFeedback,
+  } = useTestSendFlow({
+    feedId,
+    channelId: testSendChannelId,
+    selectedTemplateId,
+    selectedArticleId,
+    isOpen,
+    createConnection,
+    updateConnectionTemplate,
+    onSaveSuccess,
+    onClose,
+    getConnectionName,
+  });
 
   useEffect(() => {
     reset(defaultValues);
@@ -227,8 +324,8 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
     }
 
     createSuccessAlert({
-      title: "Successfully added connection.",
-      description: "New articles will be delivered automatically when found.",
+      title: "You're all set!",
+      description: `New articles will be delivered automatically to ${name || "your channel"}.`,
     });
     onClose();
   };
@@ -244,12 +341,22 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
       } else {
         await executeCreate(form);
       }
-    } catch (err) {}
+    } catch (err) {
+      // Error handled by mutation error state
+    }
   };
 
   useEffect(() => {
     reset();
   }, [isOpen]);
+
+  // Handle skip (apply default template and save)
+  const onSkip = useCallback(async () => {
+    setSelectedTemplateId(undefined);
+    await handleSkip(async () => {
+      await handleSubmit(onSubmit)();
+    });
+  }, [setSelectedTemplateId, handleSkip, handleSubmit, onSubmit]);
 
   const formErrorLength = Object.keys(errors).length;
 
@@ -259,7 +366,7 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
   const templateStepIndicator = (
     <Stepper index={1} size="sm" colorScheme="blue">
       {connectionSteps.map((step, index) => (
-        <Step key={index}>
+        <Step key={step.title}>
           <StepIndicator>
             <StepStatus
               complete={<CheckIcon boxSize={3} />}
@@ -294,21 +401,18 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
         onArticleChange={setSelectedArticleId}
         feedId={feedId || ""}
         userFeed={userFeed}
-        primaryActionLabel="Continue"
-        onPrimaryAction={(templateId) => {
-          setSelectedTemplateId(templateId);
-          handleSubmit(onSubmit)();
-        }}
-        isPrimaryActionLoading={isSubmitting}
         secondaryActionLabel="Skip"
-        onSecondaryAction={() => {
-          setSelectedTemplateId(undefined);
-          handleSubmit(onSubmit)();
-        }}
+        onSecondaryAction={onSkip}
         tertiaryActionLabel="Back"
         onTertiaryAction={handleBackStep}
         testId="forum-template-selection-modal"
         stepIndicator={templateStepIndicator}
+        onTestSend={handleTestSend}
+        isTestSendLoading={isTestSending}
+        testSendFeedback={testSendFeedback}
+        onClearTestSendFeedback={clearTestSendFeedback}
+        onSave={handleSave}
+        isSaveLoading={isSaving || isSubmitting}
       />
     );
   }
@@ -330,8 +434,8 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
           <Stack spacing={4}>
             {!isEditing && (
               <Stepper index={activeStep} size="sm" colorScheme="blue">
-                {connectionSteps.map((step, index) => (
-                  <Step key={index}>
+                {connectionSteps.map((step) => (
+                  <Step key={step.title}>
                     <StepIndicator>
                       <StepStatus
                         complete={<CheckIcon boxSize={3} />}

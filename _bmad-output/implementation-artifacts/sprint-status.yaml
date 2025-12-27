@@ -52,11 +52,11 @@ development_status:
   2-1-template-selection-step-in-connection-flow: done
   2-2-one-click-template-application: done
   2-3-empty-feed-handling: done
-  2-4-test-send-and-completion: ready-for-dev
+  2-4-test-send-and-completion: review
   epic-2-retrospective: optional
 
   # Epic 3: Existing User Template Access
   epic-3: in-progress
   3-1-templates-button-in-message-builder: ready-for-dev
-  3-2-apply-template-to-existing-connection: backlog
+  3-2-apply-template-to-existing-connection: ready-for-dev
   epic-3-retrospective: optional

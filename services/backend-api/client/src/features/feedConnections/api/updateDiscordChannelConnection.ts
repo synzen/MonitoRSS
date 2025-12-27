@@ -98,6 +98,7 @@ export interface UpdateDiscordChannelConnectionInput {
         text?: string | null;
         iconUrl?: string | null;
       } | null;
+      timestamp?: string | null;
     }>;
     splitOptions?: {
       splitChar?: string | null;

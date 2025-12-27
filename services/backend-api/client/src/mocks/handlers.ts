@@ -871,6 +871,17 @@ const handlers = [
     });
   }),
 
+  http.post("/api/v1/user-feeds/:feedId/test-send", async () => {
+    await delay(500);
+
+    return HttpResponse.json(
+      {
+        result: mockSendTestArticleResult,
+      },
+      { status: 200 }
+    );
+  }),
+
   http.get("/api/v1/user-feeds/:feedId/retry", async ({ params }) => {
     const { feedId } = params as Record<string, unknown>;
     const feed = mockUserFeeds.find((f) => f.id === feedId);

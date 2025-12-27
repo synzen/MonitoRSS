@@ -4,9 +4,11 @@ import {
   FeedConnectionDisabledCode,
   FeedConnectionType,
 } from "../feeds/constants";
-import { GetUserFeedArticlesInputDto } from "./dto";
+import { GetUserFeedArticlesInputDto, SendTestArticleInputDto } from "./dto";
 import { UserFeedDisabledCode, UserFeedHealthStatus } from "./types";
 import { UserFeedsController } from "./user-feeds.controller";
+import { SendTestArticleResult } from "../../services/feed-handler/types";
+import { TestDeliveryStatus } from "../../services/feed-handler/constants";
 
 describe("UserFeedsController", () => {
   let controller: UserFeedsController;
@@ -20,6 +22,12 @@ describe("UserFeedsController", () => {
   };
   const supportersService = {
     getBenefitsOfDiscordUser: jest.fn(),
+  };
+  const feedConnectionsService = {
+    sendTestArticleDirect: jest.fn(),
+  };
+  const feedsService = {
+    canUseChannel: jest.fn(),
   };
   const discordUserId = "discord-user-id";
   const feed = {
@@ -74,9 +82,12 @@ describe("UserFeedsController", () => {
     supportersService.getBenefitsOfDiscordUser.mockResolvedValue({
       refreshRateSeconds: 60,
     });
+    feedsService.canUseChannel.mockResolvedValue(undefined);
     controller = new UserFeedsController(
       userFeedsService as never,
-      supportersService as never
+      supportersService as never,
+      feedConnectionsService as never,
+      feedsService as never
     );
   });
 
@@ -295,6 +306,100 @@ describe("UserFeedsController", () => {
           ],
         },
       });
+    });
+  });
+
+  describe("sendTestArticle", () => {
+    const accessToken = { access_token: "test-token" };
+
+    it("validates channel permission and calls sendTestArticleDirect", async () => {
+      const testArticleResult: SendTestArticleResult = {
+        status: TestDeliveryStatus.Success,
+        apiPayload: { content: "test" },
+      };
+
+      feedConnectionsService.sendTestArticleDirect.mockResolvedValue(
+        testArticleResult
+      );
+
+      const input: SendTestArticleInputDto = {
+        article: { id: "article-1" },
+        channelId: "channel-123",
+        content: "Test content",
+      };
+
+      const result = await controller.sendTestArticle(
+        [{ feed }] as never,
+        input,
+        accessToken as never
+      );
+
+      expect(feedsService.canUseChannel).toHaveBeenCalledWith({
+        channelId: "channel-123",
+        userAccessToken: "test-token",
+      });
+
+      expect(feedConnectionsService.sendTestArticleDirect).toHaveBeenCalledWith(
+        feed,
+        {
+          article: { id: "article-1" },
+          channelId: "channel-123",
+          content: "Test content",
+          embeds: undefined,
+          componentsV2: undefined,
+          placeholderLimits: undefined,
+          webhook: undefined,
+          threadId: undefined,
+          userFeedFormatOptions: undefined,
+        }
+      );
+
+      expect(result).toEqual({
+        result: testArticleResult,
+      });
+    });
+
+    it("passes all optional parameters correctly", async () => {
+      const testArticleResult: SendTestArticleResult = {
+        status: TestDeliveryStatus.Success,
+        apiPayload: { content: "test" },
+      };
+
+      feedConnectionsService.sendTestArticleDirect.mockResolvedValue(
+        testArticleResult
+      );
+
+      const input: SendTestArticleInputDto = {
+        article: { id: "article-1" },
+        channelId: "channel-123",
+        content: "Test content",
+        embeds: [{ title: "Test Embed" }],
+        threadId: "thread-456",
+        webhook: { name: "Test Webhook", iconUrl: "https://example.com/icon.png" },
+        placeholderLimits: [{ placeholder: "title", characterCount: 100 }],
+        userFeedFormatOptions: { dateFormat: "YYYY-MM-DD" },
+      };
+
+      await controller.sendTestArticle(
+        [{ feed }] as never,
+        input,
+        accessToken as never
+      );
+
+      expect(feedConnectionsService.sendTestArticleDirect).toHaveBeenCalledWith(
+        feed,
+        {
+          article: { id: "article-1" },
+          channelId: "channel-123",
+          content: "Test content",
+          embeds: [{ title: "Test Embed" }],
+          componentsV2: undefined,
+          placeholderLimits: [{ placeholder: "title", characterCount: 100 }],
+          webhook: { name: "Test Webhook", iconUrl: "https://example.com/icon.png" },
+          threadId: "thread-456",
+          userFeedFormatOptions: { dateFormat: "YYYY-MM-DD" },
+        }
+      );
     });
   });
 });

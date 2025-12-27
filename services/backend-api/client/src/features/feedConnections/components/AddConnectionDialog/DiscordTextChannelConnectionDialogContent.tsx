@@ -34,13 +34,15 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, object, string } from "yup";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import {
   useCreateDiscordChannelConnection,
   useUpdateDiscordChannelConnection,
   useConnectionTemplateSelection,
-  convertTemplateToUpdateDetails,
+  useTestSendFlow,
+  getTemplateUpdateData,
 } from "../../hooks";
+import { FeedDiscordChannelConnection } from "../../../../types";
 import {
   DiscordActiveThreadDropdown,
   DiscordChannelDropdown,
@@ -48,10 +50,10 @@ import {
   GetDiscordChannelType,
 } from "../../../discordServers";
 import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "../../../../components";
-import { FeedDiscordChannelConnection } from "../../../../types";
 import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 import { TemplateGalleryModal } from "../../../templates/components/TemplateGalleryModal";
 import { TEMPLATES, DEFAULT_TEMPLATE, getTemplateById } from "../../../templates/constants/templates";
+import { convertTemplateToUpdateDetails } from "../../hooks/useConnectionTemplateSelection";
 
 enum DiscordCreateChannelThreadMethod {
   Existing = "EXISTING",
@@ -149,12 +151,114 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
     mode: "all",
     defaultValues: defaultFormValues,
   });
-  const [serverId, channelId] = watch(["serverId", "channelId"]);
+  const [serverId, channelId, watchedThreadId, watchedCreateThreadMethod] = watch([
+    "serverId",
+    "channelId",
+    "threadId",
+    "createThreadMethod",
+  ]);
   const { mutateAsync, error } = useCreateDiscordChannelConnection();
   const { mutateAsync: updateMutateAsync, error: updateError } =
     useUpdateDiscordChannelConnection();
   const initialFocusRef = useRef<any>(null);
   const { createSuccessAlert } = usePageAlertContext();
+
+  // Create connection callback for test send flow
+  const createConnection = useCallback(async (): Promise<string | undefined> => {
+    if (!feedId) {
+      throw new Error("Feed ID missing");
+    }
+
+    const formValues = watch();
+    const { name, createThreadMethod, channelId: inputChannelId, threadId } = formValues;
+
+    const createResult = await mutateAsync({
+      feedId,
+      details: {
+        name,
+        channelId: threadId || inputChannelId,
+        threadCreationMethod:
+          createThreadMethod === DiscordCreateChannelThreadMethod.New ? "new-thread" : undefined,
+      },
+    });
+
+    const newConnectionId = createResult?.result?.id;
+
+    if (newConnectionId) {
+      // Apply template to new connection
+      const templateData = getTemplateUpdateData(selectedTemplateId);
+
+      await updateMutateAsync({
+        feedId,
+        connectionId: newConnectionId,
+        details: {
+          content: templateData.content,
+          embeds: templateData.embeds,
+          componentsV2: templateData.componentsV2,
+          placeholderLimits: templateData.placeholderLimits,
+        },
+      });
+    }
+
+    return newConnectionId;
+  }, [feedId, watch, mutateAsync, updateMutateAsync, selectedTemplateId]);
+
+  // Update connection template callback
+  const updateConnectionTemplate = useCallback(async (connectionId: string) => {
+    if (!feedId) return;
+
+    const templateData = getTemplateUpdateData(selectedTemplateId);
+
+    await updateMutateAsync({
+      feedId,
+      connectionId,
+      details: {
+        content: templateData.content,
+        embeds: templateData.embeds,
+        componentsV2: templateData.componentsV2,
+        placeholderLimits: templateData.placeholderLimits,
+      },
+    });
+  }, [feedId, selectedTemplateId, updateMutateAsync]);
+
+  // Success callback
+  const onSaveSuccess = useCallback((connectionName: string | undefined) => {
+    createSuccessAlert({
+      title: "You're all set!",
+      description: `New articles will be delivered automatically to ${connectionName || "your channel"}.`,
+    });
+  }, [createSuccessAlert]);
+
+  // Get connection name from form
+  const getConnectionName = useCallback(() => watch("name"), [watch]);
+
+  // Determine the effective channel/thread ID for test send
+  const testSendChannelId =
+    watchedCreateThreadMethod === DiscordCreateChannelThreadMethod.Existing && watchedThreadId
+      ? watchedThreadId
+      : channelId;
+
+  // Test send flow hook
+  const {
+    testSendFeedback,
+    isSaving,
+    isTestSending,
+    handleTestSend,
+    handleSave,
+    handleSkip,
+    clearTestSendFeedback,
+  } = useTestSendFlow({
+    feedId,
+    channelId: testSendChannelId,
+    selectedTemplateId,
+    selectedArticleId,
+    isOpen,
+    createConnection,
+    updateConnectionTemplate,
+    onSaveSuccess,
+    onClose,
+    getConnectionName,
+  });
 
   useEffect(() => {
     if (connection) {
@@ -194,7 +298,9 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
           title: "Successfully updated connection.",
         });
         onClose();
-      } catch (err) {}
+      } catch (err) {
+        // Error handled by mutation error state
+      }
 
       return;
     }
@@ -237,11 +343,13 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
       }
 
       createSuccessAlert({
-        title: "Successfully added connection.",
-        description: "New articles will be delivered automatically when found.",
+        title: "You're all set!",
+        description: `New articles will be delivered automatically to ${name || "your channel"}.`,
       });
       onClose();
-    } catch (err) {}
+    } catch (err) {
+      // Error handled by mutation error state
+    }
   };
 
   useEffect(() => {
@@ -261,6 +369,14 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
       templateHandleNextStep();
     }
   };
+
+  // Handle skip (apply default template and save)
+  const onSkip = useCallback(async () => {
+    setSelectedTemplateId(undefined);
+    await handleSkip(async () => {
+      await handleSubmit(onSubmit)();
+    });
+  }, [setSelectedTemplateId, handleSkip, handleSubmit, onSubmit]);
 
   const errorCount = Object.keys(errors).length;
 
@@ -305,21 +421,18 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
         onArticleChange={setSelectedArticleId}
         feedId={feedId || ""}
         userFeed={userFeed}
-        primaryActionLabel="Continue"
-        onPrimaryAction={(templateId) => {
-          setSelectedTemplateId(templateId);
-          handleSubmit(onSubmit)();
-        }}
-        isPrimaryActionLoading={isSubmitting}
         secondaryActionLabel="Skip"
-        onSecondaryAction={() => {
-          setSelectedTemplateId(undefined);
-          handleSubmit(onSubmit)();
-        }}
+        onSecondaryAction={onSkip}
         tertiaryActionLabel="Back"
         onTertiaryAction={handleBackStep}
         testId="template-selection-modal"
         stepIndicator={templateStepIndicator}
+        onTestSend={handleTestSend}
+        isTestSendLoading={isTestSending}
+        testSendFeedback={testSendFeedback}
+        onClearTestSendFeedback={clearTestSendFeedback}
+        onSave={handleSave}
+        isSaveLoading={isSaving || isSubmitting}
       />
     );
   }
