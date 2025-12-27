@@ -58,6 +58,7 @@ describe("useTestSendFlow", () => {
     webhookIconUrl: undefined,
     selectedTemplateId: "template-1",
     selectedArticleId: "article-1",
+    detectedImageField: null,
     isOpen: true,
     createConnection: vi.fn(),
     updateConnectionTemplate: vi.fn(),

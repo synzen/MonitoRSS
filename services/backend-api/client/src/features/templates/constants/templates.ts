@@ -1,4 +1,4 @@
-import { ComponentType } from "../../../pages/MessageBuilder/types";
+import { ComponentType, MessageComponentRoot } from "../../../pages/MessageBuilder/types";
 import { DiscordButtonStyle } from "../../../pages/MessageBuilder/constants/DiscordButtonStyle";
 import { Template } from "../types";
 
@@ -9,7 +9,7 @@ export const DEFAULT_TEMPLATE: Template = {
   name: "Simple Text",
   description: "Clean text format that works with any feed",
   requiredFields: [],
-  messageComponent: {
+  createMessageComponent: (): MessageComponentRoot => ({
     type: ComponentType.LegacyRoot,
     id: "default-root",
     name: "Simple Text Template",
@@ -21,7 +21,7 @@ export const DEFAULT_TEMPLATE: Template = {
         content: "**{{title}}**\n{{link}}",
       },
     ],
-  },
+  }),
 };
 
 export const RICH_EMBED_TEMPLATE: Template = {
@@ -29,7 +29,7 @@ export const RICH_EMBED_TEMPLATE: Template = {
   name: "Rich Embed",
   description: "Full embed with image, description, and branding",
   requiredFields: ["description"],
-  messageComponent: {
+  createMessageComponent: (imageField = "image"): MessageComponentRoot => ({
     type: ComponentType.LegacyRoot,
     id: "rich-embed-root",
     name: "Rich Embed Template",
@@ -62,7 +62,7 @@ export const RICH_EMBED_TEMPLATE: Template = {
                 type: ComponentType.LegacyEmbedThumbnail,
                 id: "rich-embed-thumb",
                 name: "Thumbnail",
-                thumbnailUrl: "{{image}}",
+                thumbnailUrl: `{{${imageField}}}`,
               },
               {
                 type: ComponentType.LegacyEmbedFooter,
@@ -81,7 +81,7 @@ export const RICH_EMBED_TEMPLATE: Template = {
         ],
       },
     ],
-  },
+  }),
 };
 
 export const COMPACT_CARD_TEMPLATE: Template = {
@@ -89,7 +89,7 @@ export const COMPACT_CARD_TEMPLATE: Template = {
   name: "Compact Card",
   description: "Modern card layout with thumbnail and read button",
   requiredFields: ["title"],
-  messageComponent: {
+  createMessageComponent: (imageField = "image"): MessageComponentRoot => ({
     type: ComponentType.V2Root,
     id: "compact-card-root",
     name: "Compact Card Template",
@@ -117,7 +117,7 @@ export const COMPACT_CARD_TEMPLATE: Template = {
               type: ComponentType.V2Thumbnail,
               id: "compact-card-thumb",
               name: "Thumbnail",
-              mediaUrl: "{{image}}",
+              mediaUrl: `{{${imageField}}}`,
               description: "Article thumbnail",
             },
           },
@@ -140,7 +140,7 @@ export const COMPACT_CARD_TEMPLATE: Template = {
         ],
       },
     ],
-  },
+  }),
 };
 
 export const MEDIA_GALLERY_TEMPLATE: Template = {
@@ -148,7 +148,7 @@ export const MEDIA_GALLERY_TEMPLATE: Template = {
   name: "Media Gallery",
   description: "Showcase images in a modern gallery layout",
   requiredFields: ["image"],
-  messageComponent: {
+  createMessageComponent: (imageField = "image"): MessageComponentRoot => ({
     type: ComponentType.V2Root,
     id: "media-gallery-root",
     name: "Media Gallery Template",
@@ -189,7 +189,7 @@ export const MEDIA_GALLERY_TEMPLATE: Template = {
                 type: ComponentType.V2MediaGalleryItem,
                 id: "media-gallery-item-1",
                 name: "Image 1",
-                mediaUrl: "{{image}}",
+                mediaUrl: `{{${imageField}}}`,
                 description: "{{title}}",
                 children: [],
               },
@@ -214,7 +214,7 @@ export const MEDIA_GALLERY_TEMPLATE: Template = {
         ],
       },
     ],
-  },
+  }),
 };
 
 export const TEMPLATES: Template[] = [

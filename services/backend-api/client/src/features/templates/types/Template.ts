@@ -6,5 +6,5 @@ export interface Template {
   description: string;
   thumbnail?: string;
   requiredFields: string[];
-  messageComponent: MessageComponentRoot;
+  createMessageComponent: (imageField?: string) => MessageComponentRoot;
 }

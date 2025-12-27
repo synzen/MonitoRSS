@@ -1,23 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import RouteParams from "../../../types/RouteParams";
 import { useUserFeedArticles, useUserFeed } from "../../feed/hooks";
-import { Template } from "../../templates/types";
-import { UpdateDiscordChannelConnectionInput } from "../api";
 import { TEMPLATES, DEFAULT_TEMPLATE, getTemplateById } from "../../templates/constants/templates";
 import convertMessageBuilderStateToConnectionUpdate from "../../../pages/MessageBuilder/utils/convertMessageBuilderStateToConnectionUpdate";
+import { detectImageField } from "../../templates/utils";
 
 enum ConnectionCreationStep {
   ServerChannel = "server-channel",
   TemplateSelection = "template-selection",
 }
-
-// Helper function to convert template messageComponent to update API format
-const convertTemplateToUpdateDetails = (
-  template: Template
-): Partial<UpdateDiscordChannelConnectionInput["details"]> => {
-  return convertMessageBuilderStateToConnectionUpdate(template.messageComponent);
-};
 
 interface UseConnectionTemplateSelectionOptions {
   isOpen: boolean;
@@ -39,13 +31,12 @@ export const useConnectionTemplateSelection = ({
   // Fetch user feed data for template preview
   const { feed: userFeed } = useUserFeed({ feedId });
 
-  // Fetch articles for template compatibility and preview
+  // Fetch articles for template compatibility and preview (no selectProperties to get all fields)
   const { data: articlesData } = useUserFeedArticles({
     feedId,
     data: {
       skip: 0,
       limit: 10,
-      selectProperties: ["id", "title", "description", "link", "image"],
       formatOptions: {
         dateFormat: userFeed?.formatOptions?.dateFormat,
         dateTimezone: userFeed?.formatOptions?.dateTimezone,
@@ -73,6 +64,13 @@ export const useConnectionTemplateSelection = ({
           return value !== undefined && value !== null && value !== "";
         })
       : [];
+
+  // Auto-detect image field by scanning article values for image URLs
+  const detectedImageField = useMemo(() => {
+    if (articles.length === 0) return null;
+
+    return detectImageField(articles[0] as Record<string, unknown>);
+  }, [articles]);
 
   // Set first article as selected when articles load
   useEffect(() => {
@@ -117,11 +115,14 @@ export const useConnectionTemplateSelection = ({
   };
 
   const getTemplateUpdateDetails = () => {
-    const templateToApply = selectedTemplateId
-      ? getTemplateById(selectedTemplateId) || DEFAULT_TEMPLATE
-      : DEFAULT_TEMPLATE;
+    const imageField = detectedImageField || "image";
+    const templateId = selectedTemplateId || DEFAULT_TEMPLATE.id;
 
-    return convertTemplateToUpdateDetails(templateToApply);
+    // Get template and create message component with the detected image field
+    const template = getTemplateById(templateId) || DEFAULT_TEMPLATE;
+    const messageComponent = template.createMessageComponent(imageField);
+
+    return convertMessageBuilderStateToConnectionUpdate(messageComponent);
   };
 
   const isTemplateStep = currentStep === ConnectionCreationStep.TemplateSelection && !isEditing;
@@ -137,6 +138,7 @@ export const useConnectionTemplateSelection = ({
     userFeed,
     articles,
     feedFields,
+    detectedImageField,
     handleNextStep,
     handleBackStep,
     getTemplateUpdateDetails,
@@ -144,4 +146,4 @@ export const useConnectionTemplateSelection = ({
   };
 };
 
-export { ConnectionCreationStep, convertTemplateToUpdateDetails };
+export { ConnectionCreationStep };

@@ -54,6 +54,7 @@ export interface TemplateGalleryModalProps {
   selectedTemplateId?: string;
   onTemplateSelect: (templateId: string) => void;
   feedFields: string[];
+  detectedImageField?: string | null;
   articles: Article[];
   selectedArticleId?: string;
   onArticleChange: (articleId: string) => void;
@@ -78,24 +79,48 @@ export interface TemplateGalleryModalProps {
   isSaveLoading?: boolean;
 }
 
-export function isTemplateCompatible(template: Template, feedFields: string[]): boolean {
+export function isTemplateCompatible(
+  template: Template,
+  feedFields: string[],
+  detectedImageField?: string | null
+): boolean {
   if (!template.requiredFields || template.requiredFields.length === 0) {
     return true;
   }
 
-  return template.requiredFields.every((field) => feedFields.includes(field));
+  return template.requiredFields.every((field) => {
+    if (field === "image" && detectedImageField) {
+      return true;
+    }
+
+    return feedFields.includes(field);
+  });
 }
 
-export function getMissingFields(template: Template, feedFields: string[]): string[] {
+export function getMissingFields(
+  template: Template,
+  feedFields: string[],
+  detectedImageField?: string | null
+): string[] {
   if (!template.requiredFields || template.requiredFields.length === 0) {
     return [];
   }
 
-  return template.requiredFields.filter((field) => !feedFields.includes(field));
+  return template.requiredFields.filter((field) => {
+    if (field === "image" && detectedImageField) {
+      return false;
+    }
+
+    return !feedFields.includes(field);
+  });
 }
 
-export function getDisabledReason(template: Template, feedFields: string[]): string {
-  const missingFields = getMissingFields(template, feedFields);
+export function getDisabledReason(
+  template: Template,
+  feedFields: string[],
+  detectedImageField?: string | null
+): string {
+  const missingFields = getMissingFields(template, feedFields, detectedImageField);
 
   if (missingFields.length === 0) {
     return "";
@@ -117,6 +142,7 @@ interface UseTemplatePreviewParams {
   connectionId?: string;
   userFeed?: UserFeed;
   connection?: FeedDiscordChannelConnection;
+  detectedImageField?: string | null;
   enabled: boolean;
 }
 
@@ -127,6 +153,7 @@ const useTemplatePreview = ({
   connectionId,
   userFeed,
   connection,
+  detectedImageField,
   enabled,
 }: UseTemplatePreviewParams) => {
   return useQuery({
@@ -136,12 +163,15 @@ const useTemplatePreview = ({
         return null;
       }
 
+      // Create message component with detected image field
+      const messageComponent = template.createMessageComponent(detectedImageField || "image");
+
       // If we have a connectionId, use the existing connection preview endpoint
       if (connectionId && userFeed && connection) {
         const previewInputData = convertMessageBuilderStateToConnectionPreviewInput(
           userFeed,
           connection,
-          template.messageComponent
+          messageComponent
         );
 
         const input: CreateDiscordChannelConnectionPreviewInput = {
@@ -157,9 +187,7 @@ const useTemplatePreview = ({
       }
 
       // Otherwise, use the template preview endpoint (no connection required)
-      const previewInputData = convertTemplateMessageComponentToPreviewInput(
-        template.messageComponent
-      );
+      const previewInputData = convertTemplateMessageComponentToPreviewInput(messageComponent);
 
       const input: CreateTemplatePreviewInput = {
         feedId,
@@ -184,6 +212,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
     selectedTemplateId,
     onTemplateSelect,
     feedFields,
+    detectedImageField,
     articles,
     selectedArticleId,
     onArticleChange,
@@ -230,6 +259,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
     connectionId,
     userFeed,
     connection,
+    detectedImageField,
     enabled: isOpen && !!selectedTemplateId && !!selectedArticleId,
   });
 
@@ -310,8 +340,16 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                       spacing={4}
                     >
                       {templates.map((template) => {
-                        const isCompatible = isTemplateCompatible(template, feedFields);
-                        const disabledReason = getDisabledReason(template, feedFields);
+                        const isCompatible = isTemplateCompatible(
+                          template,
+                          feedFields,
+                          detectedImageField
+                        );
+                        const disabledReason = getDisabledReason(
+                          template,
+                          feedFields,
+                          detectedImageField
+                        );
                         const radio = getRadioProps({
                           value: template.id,
                         });

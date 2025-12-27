@@ -45,7 +45,7 @@ describe("templates", () => {
     });
 
     it("uses LegacyRoot format", () => {
-      expect(DEFAULT_TEMPLATE.messageComponent.type).toBe(ComponentType.LegacyRoot);
+      expect(DEFAULT_TEMPLATE.createMessageComponent().type).toBe(ComponentType.LegacyRoot);
     });
   });
 
@@ -55,7 +55,7 @@ describe("templates", () => {
     });
 
     it("uses LegacyRoot format", () => {
-      expect(RICH_EMBED_TEMPLATE.messageComponent.type).toBe(ComponentType.LegacyRoot);
+      expect(RICH_EMBED_TEMPLATE.createMessageComponent().type).toBe(ComponentType.LegacyRoot);
     });
   });
 
@@ -65,7 +65,7 @@ describe("templates", () => {
     });
 
     it("uses V2Root format", () => {
-      expect(COMPACT_CARD_TEMPLATE.messageComponent.type).toBe(ComponentType.V2Root);
+      expect(COMPACT_CARD_TEMPLATE.createMessageComponent().type).toBe(ComponentType.V2Root);
     });
   });
 
@@ -75,7 +75,7 @@ describe("templates", () => {
     });
 
     it("uses V2Root format", () => {
-      expect(MEDIA_GALLERY_TEMPLATE.messageComponent.type).toBe(ComponentType.V2Root);
+      expect(MEDIA_GALLERY_TEMPLATE.createMessageComponent().type).toBe(ComponentType.V2Root);
     });
   });
 

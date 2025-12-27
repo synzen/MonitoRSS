@@ -58,7 +58,7 @@ import {
   DEFAULT_TEMPLATE,
   getTemplateById,
 } from "../../../templates/constants/templates";
-import { convertTemplateToUpdateDetails } from "../../hooks/useConnectionTemplateSelection";
+import convertMessageBuilderStateToConnectionUpdate from "../../../../pages/MessageBuilder/utils/convertMessageBuilderStateToConnectionUpdate";
 
 const formSchema = object({
   name: string().required("Name is required").max(250, "Name must be less than 250 characters"),
@@ -97,6 +97,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
     userFeed,
     articles,
     feedFields,
+    detectedImageField,
     handleNextStep: templateHandleNextStep,
     handleBackStep,
   } = useConnectionTemplateSelection({ isOpen, isEditing: false });
@@ -232,6 +233,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
     webhookIconUrl: webhookData?.iconUrl,
     selectedTemplateId,
     selectedArticleId,
+    detectedImageField,
     isOpen,
     createConnection,
     updateConnectionTemplate,
@@ -277,8 +279,11 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
       if (createResult?.result?.id) {
         const newConnectionId = createResult.result.id;
 
-        // Convert template messageComponent to API format
-        const templateData = convertTemplateToUpdateDetails(templateToApply);
+        // Create message component with detected image field and convert to API format
+        const messageComponent = templateToApply.createMessageComponent(
+          detectedImageField || "image"
+        );
+        const templateData = convertMessageBuilderStateToConnectionUpdate(messageComponent);
 
         // Update the connection with template data
         await updateMutateAsync({
@@ -350,6 +355,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
         selectedTemplateId={selectedTemplateId}
         onTemplateSelect={setSelectedTemplateId}
         feedFields={feedFields}
+        detectedImageField={detectedImageField}
         articles={articles.map((a) => ({
           id: a.id,
           title: (a as Record<string, unknown>).title as string | undefined,

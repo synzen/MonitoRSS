@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { TestSendFeedback } from "../../templates/types";
 import { DEFAULT_TEMPLATE, getTemplateById } from "../../templates/constants/templates";
 import { useSendTestArticleDirect } from "./useSendTestArticleDirect";
-import { convertTemplateToUpdateDetails } from "./useConnectionTemplateSelection";
+import convertMessageBuilderStateToConnectionUpdate from "../../../pages/MessageBuilder/utils/convertMessageBuilderStateToConnectionUpdate";
 import { SendTestArticleDeliveryStatus } from "@/types";
 
 /**
@@ -36,6 +36,7 @@ export interface UseTestSendFlowOptions {
   webhookIconUrl?: string | undefined;
   selectedTemplateId: string | undefined;
   selectedArticleId: string | undefined;
+  detectedImageField: string | null;
   isOpen: boolean;
   createConnection: () => Promise<string | undefined>;
   updateConnectionTemplate: (connectionId: string) => Promise<void>;
@@ -64,6 +65,7 @@ export const useTestSendFlow = ({
   webhookIconUrl,
   selectedTemplateId,
   selectedArticleId,
+  detectedImageField,
   isOpen,
   createConnection,
   updateConnectionTemplate,
@@ -103,7 +105,7 @@ export const useTestSendFlow = ({
       }
 
       // Get template data to send
-      const templateData = getTemplateUpdateData(selectedTemplateId);
+      const templateData = getTemplateUpdateData(selectedTemplateId, detectedImageField || "image");
 
       const response = await sendTestArticleDirectMutation.mutateAsync({
         feedId,
@@ -246,10 +248,15 @@ export const useTestSendFlow = ({
 /**
  * Helper function to build template update details
  */
-export const getTemplateUpdateData = (selectedTemplateId: string | undefined) => {
+export const getTemplateUpdateData = (
+  selectedTemplateId: string | undefined,
+  imageField: string = "image"
+) => {
   const templateToApply = selectedTemplateId
     ? getTemplateById(selectedTemplateId) || DEFAULT_TEMPLATE
     : DEFAULT_TEMPLATE;
 
-  return convertTemplateToUpdateDetails(templateToApply);
+  const messageComponent = templateToApply.createMessageComponent(imageField);
+
+  return convertMessageBuilderStateToConnectionUpdate(messageComponent);
 };

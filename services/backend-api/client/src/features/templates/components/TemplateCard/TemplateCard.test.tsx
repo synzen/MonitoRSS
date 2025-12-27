@@ -11,12 +11,12 @@ const mockTemplate: Template = {
   name: "Test Template",
   description: "A test template description",
   requiredFields: [],
-  messageComponent: {
+  createMessageComponent: () => ({
     type: ComponentType.LegacyRoot,
     id: "root",
     name: "Root",
     children: [],
-  },
+  }),
 };
 
 const mockTemplateWithThumbnail: Template = {

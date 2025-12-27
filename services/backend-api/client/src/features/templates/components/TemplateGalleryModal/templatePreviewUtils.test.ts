@@ -103,7 +103,9 @@ describe("convertTemplateMessageComponentToPreviewInput", () => {
         id: "root",
         name: "Root",
         children: [],
-        placeholderLimits: [{ placeholder: "description", characterCount: 100, appendString: "..." }],
+        placeholderLimits: [
+          { placeholder: "description", characterCount: 100, appendString: "..." },
+        ],
       };
 
       const result = convertTemplateMessageComponentToPreviewInput(messageComponent);
@@ -266,6 +268,7 @@ describe("convertTemplateMessageComponentToPreviewInput", () => {
                 name: "Divider",
                 visual: true,
                 spacing: 2,
+                children: [],
               },
             ],
           },
@@ -304,6 +307,7 @@ describe("convertTemplateMessageComponentToPreviewInput", () => {
                     name: "Item",
                     mediaUrl: "{{image}}",
                     description: "Image description",
+                    children: [],
                   },
                 ],
               },

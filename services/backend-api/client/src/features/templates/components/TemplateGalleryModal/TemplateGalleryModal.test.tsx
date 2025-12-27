@@ -4,7 +4,12 @@ import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { TemplateGalleryModal, isTemplateCompatible, getMissingFields, getDisabledReason } from "./index";
+import {
+  TemplateGalleryModal,
+  isTemplateCompatible,
+  getMissingFields,
+  getDisabledReason,
+} from "./index";
 import { Template } from "../../types";
 import { ComponentType } from "../../../../pages/MessageBuilder/types";
 import {
@@ -36,36 +41,36 @@ const mockTemplates: Template[] = [
     name: "Simple Text",
     description: "Clean text format that works with any feed",
     requiredFields: [],
-    messageComponent: {
+    createMessageComponent: () => ({
       type: ComponentType.LegacyRoot,
       id: "root",
       name: "Root",
       children: [],
-    },
+    }),
   },
   {
     id: "rich-embed",
     name: "Rich Embed",
     description: "Full embed with image and description",
     requiredFields: ["description"],
-    messageComponent: {
+    createMessageComponent: () => ({
       type: ComponentType.LegacyRoot,
       id: "root",
       name: "Root",
       children: [],
-    },
+    }),
   },
   {
     id: "media-gallery",
     name: "Media Gallery",
     description: "Showcase images in a modern gallery layout",
     requiredFields: ["image"],
-    messageComponent: {
+    createMessageComponent: () => ({
       type: ComponentType.LegacyRoot,
       id: "root",
       name: "Root",
       children: [],
-    },
+    }),
   },
 ];
 
@@ -122,12 +127,12 @@ describe("TemplateGalleryModal", () => {
         name: "Test",
         description: "Test",
         requiredFields: [],
-        messageComponent: {
+        createMessageComponent: () => ({
           type: ComponentType.LegacyRoot,
           id: "root",
           name: "Root",
           children: [],
-        },
+        }),
       };
       expect(isTemplateCompatible(template, ["title"])).toBe(true);
     });
@@ -138,12 +143,12 @@ describe("TemplateGalleryModal", () => {
         name: "Test",
         description: "Test",
         requiredFields: ["description", "image"],
-        messageComponent: {
+        createMessageComponent: () => ({
           type: ComponentType.LegacyRoot,
           id: "root",
           name: "Root",
           children: [],
-        },
+        }),
       };
       expect(isTemplateCompatible(template, ["title", "description", "image"])).toBe(true);
     });
@@ -154,12 +159,12 @@ describe("TemplateGalleryModal", () => {
         name: "Test",
         description: "Test",
         requiredFields: ["description", "image"],
-        messageComponent: {
+        createMessageComponent: () => ({
           type: ComponentType.LegacyRoot,
           id: "root",
           name: "Root",
           children: [],
-        },
+        }),
       };
       expect(isTemplateCompatible(template, ["title", "description"])).toBe(false);
     });
@@ -172,12 +177,12 @@ describe("TemplateGalleryModal", () => {
         name: "Test",
         description: "Test",
         requiredFields: [],
-        messageComponent: {
+        createMessageComponent: () => ({
           type: ComponentType.LegacyRoot,
           id: "root",
           name: "Root",
           children: [],
-        },
+        }),
       };
       expect(getMissingFields(template, ["title"])).toEqual([]);
     });
@@ -188,12 +193,12 @@ describe("TemplateGalleryModal", () => {
         name: "Test",
         description: "Test",
         requiredFields: ["description", "image"],
-        messageComponent: {
+        createMessageComponent: () => ({
           type: ComponentType.LegacyRoot,
           id: "root",
           name: "Root",
           children: [],
-        },
+        }),
       };
       expect(getMissingFields(template, ["title", "description", "image"])).toEqual([]);
     });
@@ -204,12 +209,12 @@ describe("TemplateGalleryModal", () => {
         name: "Test",
         description: "Test",
         requiredFields: ["description", "image"],
-        messageComponent: {
+        createMessageComponent: () => ({
           type: ComponentType.LegacyRoot,
           id: "root",
           name: "Root",
           children: [],
-        },
+        }),
       };
       expect(getMissingFields(template, ["title", "description"])).toEqual(["image"]);
     });
@@ -220,12 +225,12 @@ describe("TemplateGalleryModal", () => {
         name: "Test",
         description: "Test",
         requiredFields: ["description", "image"],
-        messageComponent: {
+        createMessageComponent: () => ({
           type: ComponentType.LegacyRoot,
           id: "root",
           name: "Root",
           children: [],
-        },
+        }),
       };
       expect(getMissingFields(template, ["title"])).toEqual(["description", "image"]);
     });
@@ -238,12 +243,12 @@ describe("TemplateGalleryModal", () => {
         name: "Test",
         description: "Test",
         requiredFields: [],
-        messageComponent: {
+        createMessageComponent: () => ({
           type: ComponentType.LegacyRoot,
           id: "root",
           name: "Root",
           children: [],
-        },
+        }),
       };
       expect(getDisabledReason(template, ["title"])).toBe("");
     });
@@ -254,12 +259,12 @@ describe("TemplateGalleryModal", () => {
         name: "Test",
         description: "Test",
         requiredFields: ["description"],
-        messageComponent: {
+        createMessageComponent: () => ({
           type: ComponentType.LegacyRoot,
           id: "root",
           name: "Root",
           children: [],
-        },
+        }),
       };
       expect(getDisabledReason(template, ["title", "description"])).toBe("");
     });
@@ -270,12 +275,12 @@ describe("TemplateGalleryModal", () => {
         name: "Test",
         description: "Test",
         requiredFields: ["image"],
-        messageComponent: {
+        createMessageComponent: () => ({
           type: ComponentType.LegacyRoot,
           id: "root",
           name: "Root",
           children: [],
-        },
+        }),
       };
       expect(getDisabledReason(template, ["title"])).toBe("Needs: image");
     });
@@ -286,12 +291,12 @@ describe("TemplateGalleryModal", () => {
         name: "Test",
         description: "Test",
         requiredFields: ["description", "image"],
-        messageComponent: {
+        createMessageComponent: () => ({
           type: ComponentType.LegacyRoot,
           id: "root",
           name: "Root",
           children: [],
-        },
+        }),
       };
       expect(getDisabledReason(template, ["title"])).toBe("Needs: description, image");
     });
@@ -302,12 +307,12 @@ describe("TemplateGalleryModal", () => {
         name: "Test",
         description: "Test",
         requiredFields: ["image"],
-        messageComponent: {
+        createMessageComponent: () => ({
           type: ComponentType.LegacyRoot,
           id: "root",
           name: "Root",
           children: [],
-        },
+        }),
       };
       expect(getDisabledReason(template, [])).toBe("Needs articles");
     });
@@ -838,11 +843,11 @@ describe("TemplateGalleryModal", () => {
       mockCreatePreview.mockImplementation(
         () =>
           new Promise((resolve) =>
-            setTimeout(
-              () =>
-                resolve({ result: { status: SendTestArticleDeliveryStatus.Success, messages: [] } }),
-              1000
-            )
+            setTimeout(() => {
+              resolve({
+                result: { status: SendTestArticleDeliveryStatus.Success, messages: [] },
+              });
+            }, 1000)
           )
       );
 
@@ -1147,7 +1152,9 @@ describe("TemplateGalleryModal", () => {
       // The preview panel should show loading or preview content, not an error
       // Since articles exist, we should not see the "Preview will appear when your feed has articles" message
       await waitFor(() => {
-        expect(screen.queryByText("Preview will appear when your feed has articles")).not.toBeInTheDocument();
+        expect(
+          screen.queryByText("Preview will appear when your feed has articles")
+        ).not.toBeInTheDocument();
       });
     });
 
@@ -1164,7 +1171,9 @@ describe("TemplateGalleryModal", () => {
         </TestWrapper>
       );
       await waitFor(() => {
-        expect(screen.getByText("Preview will appear when your feed has articles")).toBeInTheDocument();
+        expect(
+          screen.getByText("Preview will appear when your feed has articles")
+        ).toBeInTheDocument();
       });
     });
   });
@@ -1333,7 +1342,10 @@ describe("TemplateGalleryModal", () => {
             selectedTemplateId="default"
             onTestSend={vi.fn()}
             onSave={vi.fn()}
-            testSendFeedback={{ status: "success", message: "Article sent to Discord successfully!" }}
+            testSendFeedback={{
+              status: "success",
+              message: "Article sent to Discord successfully!",
+            }}
           />
         </TestWrapper>
       );
@@ -1348,11 +1360,16 @@ describe("TemplateGalleryModal", () => {
             selectedTemplateId="default"
             onTestSend={vi.fn()}
             onSave={vi.fn()}
-            testSendFeedback={{ status: "error", message: "Failed to send test article. Please try again." }}
+            testSendFeedback={{
+              status: "error",
+              message: "Failed to send test article. Please try again.",
+            }}
           />
         </TestWrapper>
       );
-      expect(screen.getByText("Failed to send test article. Please try again.")).toBeInTheDocument();
+      expect(
+        screen.getByText("Failed to send test article. Please try again.")
+      ).toBeInTheDocument();
       expect(screen.getByText("Retry")).toBeInTheDocument();
     });
 
@@ -1429,9 +1446,7 @@ describe("TemplateGalleryModal", () => {
       expect(
         screen.getByText(/Test Failed - Discord Couldn't Process This Message/i)
       ).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: /Try Another Template/i })
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Try Another Template/i })).toBeInTheDocument();
       expect(
         screen.getByRole("button", { name: /Use Anyway - I understand/i })
       ).toBeInTheDocument();
