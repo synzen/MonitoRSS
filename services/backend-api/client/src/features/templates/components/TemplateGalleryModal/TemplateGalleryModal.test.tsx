@@ -328,6 +328,16 @@ describe("TemplateGalleryModal", () => {
       expect(screen.getByText("Choose a Template")).toBeInTheDocument();
     });
 
+    it("displays custom modal title when modalTitle prop is provided", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal {...defaultProps} modalTitle="Browse Templates" />
+        </TestWrapper>
+      );
+      expect(screen.getByText("Browse Templates")).toBeInTheDocument();
+      expect(screen.queryByText("Choose a Template")).not.toBeInTheDocument();
+    });
+
     it("displays close button", () => {
       render(
         <TestWrapper>
@@ -376,7 +386,7 @@ describe("TemplateGalleryModal", () => {
           />
         </TestWrapper>
       );
-      // Wait for initial render to complete
+      // Wait for initial render to complete - single preview mode shows this message
       await waitFor(() => {
         expect(screen.getByText("Select a template to preview")).toBeInTheDocument();
       });
@@ -640,8 +650,8 @@ describe("TemplateGalleryModal", () => {
           <TemplateGalleryModal {...defaultProps} articles={[]} isLoadingArticles />
         </TestWrapper>
       );
-      // The label should still be visible
-      expect(screen.getByText("Preview article")).toBeInTheDocument();
+      // The skeleton shows "Preview" label (from TemplateGalleryLoadingSkeleton)
+      expect(screen.getByText("Preview")).toBeInTheDocument();
       // But the select should not be visible (skeleton instead)
       expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     });
@@ -1467,13 +1477,9 @@ describe("TemplateGalleryModal", () => {
         </TestWrapper>
       );
 
-      expect(
-        screen.getByText(/Test Failed - Discord Couldn't Process This Message/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Discord couldn't send this preview/i)).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /Try Another Template/i })).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: /Use Anyway - I understand/i })
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Use this template/i })).toBeInTheDocument();
     });
 
     it("does not show error panel for success feedback", () => {
@@ -1492,9 +1498,7 @@ describe("TemplateGalleryModal", () => {
         </TestWrapper>
       );
 
-      expect(
-        screen.queryByText(/Test Failed - Discord Couldn't Process This Message/i)
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText(/Discord couldn't send this preview/i)).not.toBeInTheDocument();
       expect(screen.getByText("Article sent to Discord successfully!")).toBeInTheDocument();
     });
 
@@ -1514,9 +1518,7 @@ describe("TemplateGalleryModal", () => {
         </TestWrapper>
       );
 
-      expect(
-        screen.queryByText(/Test Failed - Discord Couldn't Process This Message/i)
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText(/Discord couldn't send this preview/i)).not.toBeInTheDocument();
       expect(
         screen.getByText("Failed to send test article. Please try again.")
       ).toBeInTheDocument();
@@ -1594,7 +1596,7 @@ describe("TemplateGalleryModal", () => {
       expect(onClearTestSendFeedback).toHaveBeenCalledTimes(1);
     });
 
-    it("calls onSave when Use Anyway is clicked", async () => {
+    it("calls onSave when Use this template is clicked", async () => {
       const user = userEvent.setup();
       const onSave = vi.fn();
 
@@ -1614,11 +1616,11 @@ describe("TemplateGalleryModal", () => {
         </TestWrapper>
       );
 
-      await user.click(screen.getByRole("button", { name: /Use Anyway - I understand/i }));
+      await user.click(screen.getByRole("button", { name: /Use this template/i }));
       expect(onSave).toHaveBeenCalledTimes(1);
     });
 
-    it("shows loading state on Use Anyway button when isSaveLoading is true", () => {
+    it("shows loading state on Use this template button when isSaveLoading is true", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal
@@ -1636,10 +1638,86 @@ describe("TemplateGalleryModal", () => {
         </TestWrapper>
       );
 
-      const useAnywayButton = screen.getByRole("button", {
-        name: /Use Anyway - I understand/i,
+      const useTemplateButton = screen.getByRole("button", {
+        name: /Use this template/i,
       });
-      expect(useAnywayButton).toBeInTheDocument();
+      expect(useTemplateButton).toBeInTheDocument();
+      expect(useTemplateButton).toHaveAttribute("data-loading");
+    });
+  });
+
+  describe("dual preview mode (showComparisonPreview)", () => {
+    const mockMessageComponent = {
+      type: ComponentType.LegacyRoot as const,
+      id: "root",
+      name: "Root",
+      children: [],
+    };
+
+    it("displays single Preview label when showComparisonPreview is false", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal {...defaultProps} showComparisonPreview={false} />
+        </TestWrapper>
+      );
+      expect(screen.getByText("Preview")).toBeInTheDocument();
+      expect(screen.queryByText("Current Format")).not.toBeInTheDocument();
+      expect(screen.queryByText("Template Preview")).not.toBeInTheDocument();
+    });
+
+    it("displays dual preview labels when showComparisonPreview is true", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            showComparisonPreview
+            currentMessageComponent={mockMessageComponent}
+          />
+        </TestWrapper>
+      );
+      expect(screen.getByText("Current Format")).toBeInTheDocument();
+      expect(screen.getByText("Template Preview")).toBeInTheDocument();
+      expect(screen.queryByText(/^Preview$/)).not.toBeInTheDocument();
+    });
+
+    it("shows placeholder in template preview when no template selected", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            showComparisonPreview
+            currentMessageComponent={mockMessageComponent}
+            selectedTemplateId={undefined}
+          />
+        </TestWrapper>
+      );
+      expect(screen.getByText("Select a template to compare")).toBeInTheDocument();
+    });
+
+    it("shows No current format message when currentMessageComponent is not provided", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            showComparisonPreview
+            currentMessageComponent={undefined}
+          />
+        </TestWrapper>
+      );
+      expect(screen.getByText("No current format to display")).toBeInTheDocument();
+    });
+
+    it("still displays article selector in dual preview mode", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...defaultProps}
+            showComparisonPreview
+            currentMessageComponent={mockMessageComponent}
+          />
+        </TestWrapper>
+      );
+      expect(screen.getByLabelText("Preview article")).toBeInTheDocument();
     });
   });
 });

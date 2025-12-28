@@ -42,6 +42,7 @@ import convertMessageBuilderStateToConnectionPreviewInput from "../../../../page
 import { UserFeed } from "../../../feed";
 import { FeedDiscordChannelConnection } from "../../../../types";
 import { convertTemplateMessageComponentToPreviewInput } from "./templatePreviewUtils";
+import { MessageComponentRoot } from "../../../../pages/MessageBuilder/types";
 
 export interface Article {
   id: string;
@@ -81,6 +82,11 @@ export interface TemplateGalleryModalProps {
   onSave?: () => void;
   isSaveLoading?: boolean;
   saveError?: { message: string } | null;
+  // Message builder context props
+  modalTitle?: string;
+  showComparisonPreview?: boolean;
+  currentMessageComponent?: MessageComponentRoot;
+  finalFocusRef?: React.RefObject<HTMLElement>;
 }
 
 export function isTemplateCompatible(
@@ -208,6 +214,54 @@ const useTemplatePreview = ({
   });
 };
 
+interface UseCurrentFormatPreviewParams {
+  currentMessageComponent?: MessageComponentRoot;
+  articleId?: string;
+  feedId: string;
+  connectionId?: string;
+  userFeed?: UserFeed;
+  connection?: FeedDiscordChannelConnection;
+  enabled: boolean;
+}
+
+const useCurrentFormatPreview = ({
+  currentMessageComponent,
+  articleId,
+  feedId,
+  connectionId,
+  userFeed,
+  connection,
+  enabled,
+}: UseCurrentFormatPreviewParams) => {
+  return useQuery({
+    queryKey: ["current-format-preview", articleId, feedId, connectionId],
+    queryFn: async () => {
+      if (!currentMessageComponent || !articleId || !connectionId || !userFeed || !connection) {
+        return null;
+      }
+
+      const previewInputData = convertMessageBuilderStateToConnectionPreviewInput(
+        userFeed,
+        connection,
+        currentMessageComponent
+      );
+
+      const input: CreateDiscordChannelConnectionPreviewInput = {
+        feedId,
+        connectionId,
+        data: {
+          article: { id: articleId },
+          ...previewInputData,
+        },
+      };
+
+      return createDiscordChannelConnectionPreview(input);
+    },
+    enabled: enabled && !!currentMessageComponent && !!articleId && !!connectionId,
+    staleTime: 30000,
+  });
+};
+
 const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
   const {
     isOpen,
@@ -241,6 +295,10 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
     onSave,
     isSaveLoading,
     saveError,
+    modalTitle,
+    showComparisonPreview,
+    currentMessageComponent,
+    finalFocusRef,
   } = props;
 
   const hasArticles = articles.length > 0;
@@ -268,6 +326,24 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
     detectedImageField,
     enabled: isOpen && !!selectedTemplateId && !!selectedArticleId,
   });
+
+  // Current format preview (for dual preview mode)
+  const {
+    data: currentFormatData,
+    isError: isCurrentFormatError,
+    fetchStatus: currentFormatFetchStatus,
+  } = useCurrentFormatPreview({
+    currentMessageComponent,
+    articleId: selectedArticleId,
+    feedId,
+    connectionId,
+    userFeed,
+    connection,
+    enabled: isOpen && showComparisonPreview === true && !!selectedArticleId,
+  });
+
+  const currentFormatMessages = currentFormatData?.result?.messages || [];
+  const isCurrentFormatLoading = currentFormatFetchStatus === "fetching";
 
   const hasNoFeedFields = feedFields.length === 0;
 
@@ -387,11 +463,9 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
               minH={{ base: "200px", lg: "400px" }}
               role="region"
               aria-label="Template preview"
-              aria-busy={isActuallyLoading}
+              aria-busy={isActuallyLoading || isCurrentFormatLoading}
             >
-              <Text fontSize="sm" color="gray.400" mb={3}>
-                Preview
-              </Text>
+              {/* Article Selector - shared between both previews */}
               {articles.length > 0 && (
                 <FormControl mb={4}>
                   <FormLabel htmlFor="article-selector" fontSize="xs" color="gray.400" mb={1}>
@@ -419,31 +493,132 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                   </Select>
                 </FormControl>
               )}
-              <Box>
-                {isActuallyLoading && (
-                  <Skeleton height="300px" borderRadius="md" aria-label="Loading preview" />
-                )}
-                {!isActuallyLoading && isPreviewError && (
-                  <Alert status="error" borderRadius="md">
-                    <AlertIcon />
-                    Failed to load preview. Please try again.
-                  </Alert>
-                )}
-                {!isActuallyLoading && !isPreviewError && previewMessages.length > 0 && (
-                  <DiscordMessageDisplay
-                    messages={previewMessages}
-                    maxHeight={{ base: 200, lg: 350 }}
-                  />
-                )}
-                {!isActuallyLoading &&
-                  !isPreviewError &&
-                  previewMessages.length === 0 &&
-                  articles.length === 0 && (
-                    <Text color="gray.500" textAlign="center" py={8}>
-                      Preview will appear when your feed has articles
+
+              {/* Dual Preview Mode */}
+              {showComparisonPreview && (
+                <VStack spacing={4} align="stretch">
+                  {/* Current Format Preview */}
+                  <Box>
+                    <Text fontSize="sm" fontWeight="semibold" color="gray.400" mb={2}>
+                      Current Format
                     </Text>
+                    {isCurrentFormatLoading && <Skeleton height="200px" borderRadius="md" />}
+                    {!isCurrentFormatLoading && isCurrentFormatError && (
+                      <Alert status="error" borderRadius="md">
+                        <AlertIcon />
+                        Failed to load current format preview.
+                      </Alert>
+                    )}
+                    {!isCurrentFormatLoading &&
+                      !isCurrentFormatError &&
+                      currentFormatMessages.length > 0 && (
+                        <DiscordMessageDisplay messages={currentFormatMessages} maxHeight={200} />
+                      )}
+                    {!isCurrentFormatLoading &&
+                      !isCurrentFormatError &&
+                      currentFormatMessages.length === 0 && (
+                        <Box
+                          p={8}
+                          textAlign="center"
+                          bg="gray.800"
+                          borderRadius="md"
+                          color="gray.500"
+                        >
+                          No current format to display
+                        </Box>
+                      )}
+                  </Box>
+
+                  {/* Template Preview */}
+                  <Box>
+                    <Text fontSize="sm" fontWeight="semibold" color="gray.400" mb={2}>
+                      Template Preview
+                    </Text>
+                    {!selectedTemplateId && (
+                      <Box
+                        p={8}
+                        textAlign="center"
+                        bg="gray.800"
+                        borderRadius="md"
+                        color="gray.500"
+                      >
+                        Select a template to compare
+                      </Box>
+                    )}
+                    {selectedTemplateId && isActuallyLoading && (
+                      <Skeleton height="200px" borderRadius="md" />
+                    )}
+                    {selectedTemplateId && !isActuallyLoading && isPreviewError && (
+                      <Alert status="error" borderRadius="md">
+                        <AlertIcon />
+                        Failed to load template preview.
+                      </Alert>
+                    )}
+                    {selectedTemplateId &&
+                      !isActuallyLoading &&
+                      !isPreviewError &&
+                      previewMessages.length > 0 && (
+                        <DiscordMessageDisplay messages={previewMessages} maxHeight={200} />
+                      )}
+                    {selectedTemplateId &&
+                      !isActuallyLoading &&
+                      !isPreviewError &&
+                      previewMessages.length === 0 && (
+                        <Box
+                          p={8}
+                          textAlign="center"
+                          bg="gray.800"
+                          borderRadius="md"
+                          color="gray.500"
+                        >
+                          Preview will appear when your feed has articles
+                        </Box>
+                      )}
+                  </Box>
+                </VStack>
+              )}
+
+              {/* Single Preview Mode (original behavior) */}
+              {!showComparisonPreview && (
+                <Box>
+                  <Text fontSize="sm" color="gray.400" mb={3}>
+                    Preview
+                  </Text>
+                  {/* No template selected - show placeholder */}
+                  {!selectedTemplateId && (
+                    <Box p={8} textAlign="center" bg="gray.800" borderRadius="md" color="gray.500">
+                      Select a template to preview
+                    </Box>
                   )}
-              </Box>
+                  {selectedTemplateId && isActuallyLoading && (
+                    <Skeleton height="300px" borderRadius="md" aria-label="Loading preview" />
+                  )}
+                  {selectedTemplateId && !isActuallyLoading && isPreviewError && (
+                    <Alert status="error" borderRadius="md">
+                      <AlertIcon />
+                      Failed to load preview. Please try again.
+                    </Alert>
+                  )}
+                  {selectedTemplateId &&
+                    !isActuallyLoading &&
+                    !isPreviewError &&
+                    previewMessages.length > 0 && (
+                      <DiscordMessageDisplay
+                        messages={previewMessages}
+                        maxHeight={{ base: 200, lg: 350 }}
+                      />
+                    )}
+                  {selectedTemplateId &&
+                    !isActuallyLoading &&
+                    !isPreviewError &&
+                    previewMessages.length === 0 &&
+                    articles.length === 0 && (
+                      <Text color="gray.500" textAlign="center" py={8}>
+                        Preview will appear when your feed has articles
+                      </Text>
+                    )}
+                </Box>
+              )}
               {onTestSend && hasArticles && (
                 <Box mt={4}>
                   <Button
@@ -506,6 +681,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
       scrollBehavior="inside"
       closeOnOverlayClick
       closeOnEsc
+      finalFocusRef={finalFocusRef}
     >
       <ModalOverlay />
       <ModalContent
@@ -513,7 +689,9 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
         data-testid={testId}
         aria-labelledby="template-gallery-modal-header"
       >
-        <ModalHeader id="template-gallery-modal-header">Choose a Template</ModalHeader>
+        <ModalHeader id="template-gallery-modal-header">
+          {modalTitle || "Choose a Template"}
+        </ModalHeader>
         <ModalCloseButton />
         <ModalBody>{renderModalBodyContent()}</ModalBody>
         {/* Hide footer when error panel is showing - error panel has its own action buttons */}
