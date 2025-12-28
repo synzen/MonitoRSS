@@ -35,17 +35,18 @@ import {
   useConnectionTemplateSelection,
   useTestSendFlow,
   getTemplateUpdateData,
+  useConnectionDialogCallbacks,
 } from "../../hooks";
-import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "../../../../components";
 import { FeedDiscordChannelConnection } from "../../../../types";
 import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
-import { TemplateGalleryModal } from "../../../templates/components/TemplateGalleryModal";
 import {
   TEMPLATES,
   DEFAULT_TEMPLATE,
   getTemplateById,
 } from "../../../templates/constants/templates";
+import { TemplateGalleryModal } from "../../../templates/components/TemplateGalleryModal";
 import convertMessageBuilderStateToConnectionUpdate from "../../../../pages/MessageBuilder/utils/convertMessageBuilderStateToConnectionUpdate";
+import { ConnectionDialogErrorDisplay } from "./ConnectionDialogErrorDisplay";
 
 const formSchema = object({
   name: string().required("Name is required").max(250, "Name must be fewer than 250 characters"),
@@ -121,6 +122,9 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
   const { createSuccessAlert } = usePageAlertContext();
   const initialFocusRef = useRef<any>(null);
 
+  // Shared callbacks from hook
+  const { onSaveSuccess } = useConnectionDialogCallbacks();
+
   // Create connection callback for test send flow
   const createConnection = useCallback(async (): Promise<string | undefined> => {
     if (!feedId) {
@@ -130,68 +134,23 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
     const formValues = watch();
     const { name, channelId: inputChannelId, threadId } = formValues;
 
+    // Get template data to include in create call
+    const templateData = getTemplateUpdateData(selectedTemplateId, detectedImageField || "image");
+
     const createResult = await mutateAsync({
       feedId,
       details: {
         name,
         channelId: threadId || inputChannelId,
+        content: templateData.content,
+        embeds: templateData.embeds,
+        componentsV2: templateData.componentsV2,
+        placeholderLimits: templateData.placeholderLimits,
       },
     });
 
-    const newConnectionId = createResult?.result?.id;
-
-    if (newConnectionId) {
-      // Apply template to new connection
-      const templateData = getTemplateUpdateData(selectedTemplateId);
-
-      await updateMutateAsync({
-        feedId,
-        connectionId: newConnectionId,
-        details: {
-          content: templateData.content,
-          embeds: templateData.embeds,
-          componentsV2: templateData.componentsV2,
-          placeholderLimits: templateData.placeholderLimits,
-        },
-      });
-    }
-
-    return newConnectionId;
-  }, [feedId, watch, mutateAsync, updateMutateAsync, selectedTemplateId]);
-
-  // Update connection template callback
-  const updateConnectionTemplate = useCallback(
-    async (connectionId: string) => {
-      if (!feedId) return;
-
-      const templateData = getTemplateUpdateData(selectedTemplateId);
-
-      await updateMutateAsync({
-        feedId,
-        connectionId,
-        details: {
-          content: templateData.content,
-          embeds: templateData.embeds,
-          componentsV2: templateData.componentsV2,
-          placeholderLimits: templateData.placeholderLimits,
-        },
-      });
-    },
-    [feedId, selectedTemplateId, updateMutateAsync]
-  );
-
-  // Success callback
-  const onSaveSuccess = useCallback(
-    (connectionName: string | undefined) => {
-      createSuccessAlert({
-        title: "You're all set!",
-        description: `New articles will be delivered automatically to ${
-          connectionName || "your channel"
-        }.`,
-      });
-    },
-    [createSuccessAlert]
-  );
+    return createResult?.result?.id;
+  }, [feedId, watch, mutateAsync, selectedTemplateId, detectedImageField]);
 
   // Get connection name from form
   const getConnectionName = useCallback(() => watch("name"), [watch]);
@@ -206,7 +165,6 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
     isTestSending,
     handleTestSend,
     handleSave,
-    handleSkip,
     clearTestSendFeedback,
   } = useTestSendFlow({
     feedId,
@@ -216,7 +174,6 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
     detectedImageField,
     isOpen,
     createConnection,
-    updateConnectionTemplate,
     onSaveSuccess,
     onClose,
     getConnectionName,
@@ -273,42 +230,27 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
       throw new Error("Feed ID missing while creating discord forum channel connection");
     }
 
-    // Create the connection first
-    const createResult = await mutateAsync({
-      feedId,
-      details: {
-        name,
-        channelId: threadId || inputChannelId,
-      },
-    });
-
     // Get the template to apply (selected or default)
     const templateToApply = selectedTemplateId
       ? getTemplateById(selectedTemplateId) || DEFAULT_TEMPLATE
       : DEFAULT_TEMPLATE;
 
-    // Apply template to the connection
-    if (createResult?.result?.id) {
-      const newConnectionId = createResult.result.id;
+    // Create message component with detected image field and convert to API format
+    const messageComponent = templateToApply.createMessageComponent(detectedImageField || "image");
+    const templateData = convertMessageBuilderStateToConnectionUpdate(messageComponent);
 
-      // Create message component with detected image field and convert to API format
-      const messageComponent = templateToApply.createMessageComponent(
-        detectedImageField || "image"
-      );
-      const templateData = convertMessageBuilderStateToConnectionUpdate(messageComponent);
-
-      // Update the connection with template data
-      await updateMutateAsync({
-        feedId,
-        connectionId: newConnectionId,
-        details: {
-          content: templateData.content,
-          embeds: templateData.embeds,
-          componentsV2: templateData.componentsV2,
-          placeholderLimits: templateData.placeholderLimits,
-        },
-      });
-    }
+    // Create the connection with template data in a single atomic operation
+    await mutateAsync({
+      feedId,
+      details: {
+        name,
+        channelId: threadId || inputChannelId,
+        content: templateData.content,
+        embeds: templateData.embeds,
+        componentsV2: templateData.componentsV2,
+        placeholderLimits: templateData.placeholderLimits,
+      },
+    });
 
     createSuccessAlert({
       title: "You're all set!",
@@ -337,14 +279,6 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
     reset();
   }, [isOpen]);
 
-  // Handle skip (apply default template and save)
-  const onSkip = useCallback(async () => {
-    setSelectedTemplateId(undefined);
-    await handleSkip(async () => {
-      await handleSubmit(onSubmit)();
-    });
-  }, [setSelectedTemplateId, handleSkip, handleSubmit, onSubmit]);
-
   const formErrorLength = Object.keys(errors).length;
 
   const useError = error || updateError;
@@ -354,7 +288,7 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
     return (
       <TemplateGalleryModal
         isOpen={isOpen}
-        onClose={handleBackStep}
+        onClose={onClose}
         templates={TEMPLATES}
         selectedTemplateId={selectedTemplateId}
         onTemplateSelect={setSelectedTemplateId}
@@ -369,10 +303,9 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
         isLoadingArticles={isLoadingArticles}
         feedId={feedId || ""}
         userFeed={userFeed}
-        secondaryActionLabel="Skip"
-        onSecondaryAction={onSkip}
         tertiaryActionLabel="← Back to Channel"
         onTertiaryAction={handleBackStep}
+        onCancel={onClose}
         testId="forum-template-selection-modal"
         onTestSend={handleTestSend}
         isTestSendLoading={isTestSending}
@@ -521,15 +454,11 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
                 </FormControl>
               </Stack>
             </form>
-            {useError && (
-              <InlineErrorAlert
-                title={t("common.errors.somethingWentWrong")}
-                description={useError.message}
-              />
-            )}
-            {isSubmitted && formErrorLength > 0 && (
-              <InlineErrorIncompleteFormAlert fieldCount={formErrorLength} />
-            )}
+            <ConnectionDialogErrorDisplay
+              error={useError}
+              isSubmitted={isSubmitted}
+              formErrorCount={formErrorLength}
+            />
           </Stack>
         </ModalBody>
         <ModalFooter>

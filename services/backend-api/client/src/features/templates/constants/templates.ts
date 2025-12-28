@@ -1,6 +1,12 @@
 import { ComponentType, MessageComponentRoot } from "../../../pages/MessageBuilder/types";
 import { DiscordButtonStyle } from "../../../pages/MessageBuilder/constants/DiscordButtonStyle";
 import { Template } from "../types";
+import {
+  SimpleTextThumbnail,
+  RichEmbedThumbnail,
+  CompactCardThumbnail,
+  MediaGalleryThumbnail,
+} from "../components/TemplateThumbnails";
 
 export const DEFAULT_TEMPLATE_ID = "default";
 
@@ -8,6 +14,7 @@ export const DEFAULT_TEMPLATE: Template = {
   id: "default",
   name: "Simple Text",
   description: "Clean text format that works with any feed",
+  ThumbnailComponent: SimpleTextThumbnail,
   requiredFields: [],
   createMessageComponent: (): MessageComponentRoot => ({
     type: ComponentType.LegacyRoot,
@@ -28,6 +35,7 @@ export const RICH_EMBED_TEMPLATE: Template = {
   id: "rich-embed",
   name: "Rich Embed",
   description: "Full embed with image, description, and branding",
+  ThumbnailComponent: RichEmbedThumbnail,
   requiredFields: ["description"],
   createMessageComponent: (imageField = "image"): MessageComponentRoot => ({
     type: ComponentType.LegacyRoot,
@@ -88,6 +96,7 @@ export const COMPACT_CARD_TEMPLATE: Template = {
   id: "compact-card",
   name: "Compact Card",
   description: "Modern card layout with thumbnail and read button",
+  ThumbnailComponent: CompactCardThumbnail,
   requiredFields: ["title"],
   createMessageComponent: (imageField = "image"): MessageComponentRoot => ({
     type: ComponentType.V2Root,
@@ -147,6 +156,7 @@ export const MEDIA_GALLERY_TEMPLATE: Template = {
   id: "media-gallery",
   name: "Media Gallery",
   description: "Showcase images in a modern gallery layout",
+  ThumbnailComponent: MediaGalleryThumbnail,
   requiredFields: ["image"],
   createMessageComponent: (imageField = "image"): MessageComponentRoot => ({
     type: ComponentType.V2Root,

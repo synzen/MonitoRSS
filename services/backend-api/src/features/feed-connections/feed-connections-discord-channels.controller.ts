@@ -75,6 +75,10 @@ export class FeedConnectionsDiscordChannelsController {
       webhook,
       applicationWebhook,
       threadCreationMethod,
+      content,
+      embeds,
+      componentsV2,
+      placeholderLimits,
     }: CreateDiscordChnnnelConnectionInputDto,
     @DiscordAccessToken()
     { access_token, discord: { id: discordUserId } }: SessionAccessToken
@@ -89,6 +93,12 @@ export class FeedConnectionsDiscordChannelsController {
         applicationWebhook,
         userDiscordUserId: discordUserId,
         threadCreationMethod,
+        templateData: {
+          content,
+          embeds,
+          componentsV2,
+          placeholderLimits,
+        },
       }
     );
 

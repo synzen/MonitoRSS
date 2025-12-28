@@ -149,13 +149,17 @@ So that I can browse templates visually and see exactly how my messages will loo
 ### Props Interface Design
 
 ```typescript
-import { Template } from "../../types";
+import { Template, TestSendFeedback } from "../../types";
+import { UserFeed } from "../../../feed";
+import { FeedDiscordChannelConnection } from "../../../../types";
 
 interface TemplateGalleryModalProps {
   /** Whether the modal is open */
   isOpen: boolean;
-  /** Callback when modal should close */
+  /** Callback when modal should close (overlay click, ESC, X button - closes the entire dialog) */
   onClose: () => void;
+  /** Callback to cancel the entire flow (used by Cancel button in footer) */
+  onCancel?: () => void;
   /** Available templates to display */
   templates: Template[];
   /** Currently selected template ID (controlled) */
@@ -164,16 +168,24 @@ interface TemplateGalleryModalProps {
   onTemplateSelect: (templateId: string) => void;
   /** Available fields from the feed (for compatibility filtering) */
   feedFields: string[];
+  /** Detected image field from feed articles (for image-requiring templates) */
+  detectedImageField?: string | null;
   /** Available articles for preview selection */
-  articles: Array<{ id: string; title: string; [key: string]: unknown }>;
+  articles: Array<{ id: string; title?: string; [key: string]: unknown }>;
   /** Currently selected article ID for preview */
   selectedArticleId?: string;
   /** Callback when article selection changes */
   onArticleChange: (articleId: string) => void;
+  /** Whether articles are currently loading */
+  isLoadingArticles?: boolean;
   /** Connection ID for preview API (if applicable) */
   connectionId?: string;
   /** Feed ID for preview API */
   feedId: string;
+  /** User feed data for preview */
+  userFeed?: UserFeed;
+  /** Existing connection data for preview (editing mode) */
+  connection?: FeedDiscordChannelConnection;
   /** Primary action button label (context-dependent) */
   primaryActionLabel?: string;
   /** Primary action callback */
@@ -184,14 +196,33 @@ interface TemplateGalleryModalProps {
   secondaryActionLabel?: string;
   /** Secondary action callback (default: onClose) */
   onSecondaryAction?: () => void;
-  /** Tertiary action label (e.g., "Customize manually") */
+  /** Tertiary action label (e.g., "← Back to Channel") */
   tertiaryActionLabel?: string;
   /** Tertiary action callback */
   onTertiaryAction?: () => void;
   /** Optional test ID */
   testId?: string;
+  /** Test send callback (when provided, enables test send flow with Save button) */
+  onTestSend?: () => void;
+  /** Whether test send is in progress */
+  isTestSendLoading?: boolean;
+  /** Test send feedback (success/error state) */
+  testSendFeedback?: TestSendFeedback | null;
+  /** Callback to clear test send feedback */
+  onClearTestSendFeedback?: () => void;
+  /** Save callback (used with test send flow) */
+  onSave?: () => void;
+  /** Whether save is in progress */
+  isSaveLoading?: boolean;
+  /** Error from save operation */
+  saveError?: { message: string } | null;
 }
 ```
+
+**Key prop distinctions:**
+- `onClose`: Used when closing the modal via overlay click, ESC, or X button (closes the entire dialog completely)
+- `onCancel`: Used by the Cancel button in the footer (also closes the entire dialog)
+- `onTertiaryAction`: Used for "← Back to Channel" link to navigate back to the previous step
 
 ### Modal Size and Responsive Behavior
 
@@ -215,28 +246,42 @@ Per UX specification (docs/ux-design-specification.md:498-503):
 
 ### Layout Structure
 
-Per UX specification (docs/ux-design-specification.md:468-503):
+**Updated 2025-12-28: Changed from grid to single-column list for unified mobile/desktop experience**
 
 ```
-+-----------------------------------------------------------+
-|  Choose a Template                              [X]       |
-+-----------------------------------------------------------+
-|                                                           |
-|  +----------+  +----------+  +----------+                 |
-|  | Template |  | Template |  | Template |   +----------+  |
-|  |    1     |  |    2     |  |    3     |   |  Preview |  |
-|  |          |  | Selected |  |          |   |          |  |
-|  +----------+  +----------+  +----------+   |  Discord |  |
-|                                             |   Embed  |  |
-|  +----------+  +----------+  +----------+   |          |  |
-|  | Template |  | Template |  | Default  |   |          |  |
-|  |    4     |  |    5     |  | (safe)   |   +----------+  |
-|  +----------+  +----------+  +----------+   [Article v]   |
-|                                                           |
-+-----------------------------------------------------------+
-|  [Customize manually]     [Cancel]  [Primary Action]      |
-+-----------------------------------------------------------+
++─────────────────────────────────────────────────────────────────+
+│  Choose a Template                                        [X]  │
++─────────────────────────────────────────────────────────────────+
+│                                                                 │
+│  Pick a starting point for your message layout.                │
+│  You can customize everything after applying.                  │
+│                                                                 │
+│  ┌───────────────────────────────────┐  ┌───────────────────┐  │
+│  │ ┌────────┐  Template 1            │  │ Preview           │  │
+│  │ │ IMAGE  │  Description...        │  │                   │  │
+│  │ └────────┘                        │  │ [Article ▾]       │  │
+│  ├───────────────────────────────────┤  │                   │  │
+│  │ ┌────────┐  Template 2 (selected) │  │ ┌───────────────┐ │  │
+│  │ │ IMAGE  │  Description...     [✓]│  │ │ Discord       │ │  │
+│  │ └────────┘                        │  │ │ Preview       │ │  │
+│  ├───────────────────────────────────┤  │ └───────────────┘ │  │
+│  │ ┌────────┐  Template 3           ↕│  │                   │  │
+│  │ │ IMAGE  │  Description...        │  │ [Send to Discord] │  │
+│  │ └────────┘                        │  └───────────────────┘  │
+│  └───────────────────────────────────┘                         │
+│   (scrolls independently)              (stays fixed)           │
+│                                                                 │
++─────────────────────────────────────────────────────────────────+
+│  [← Back to Channel]                        [Cancel]  [Save]   │
++─────────────────────────────────────────────────────────────────+
 ```
+
+**Key layout features:**
+- Single-column list of horizontal template cards (same on mobile and desktop)
+- Helper text at top explains what selecting a template does
+- Template list scrolls independently (`maxH: 60vh`, `overflowY: auto`)
+- Preview panel stays fixed while browsing templates
+- Enabled templates sorted to top, disabled templates at bottom
 
 ### Component Structure
 
@@ -322,34 +367,41 @@ export const TemplateGalleryModal = (props: TemplateGalleryModalProps) => {
         <ModalCloseButton color="white" />
 
         <ModalBody>
-          <Grid
-            templateColumns={{ base: "1fr", lg: "1fr 400px" }}
-            gap={6}
-          >
-            {/* Template Selection Grid */}
-            <GridItem>
+          {/* Helper text */}
+          <Text color="gray.400" mb={4}>
+            Pick a starting point for your message layout. You can customize everything after applying.
+          </Text>
+
+          <Grid templateColumns={{ base: "1fr", lg: "1fr 400px" }} gap={6}>
+            {/* Template Selection List - scrolls independently */}
+            <GridItem maxH={{ lg: "60vh" }} overflowY={{ lg: "auto" }}>
               <Box as="fieldset">
                 <VisuallyHidden as="legend">Choose a template</VisuallyHidden>
-                <SimpleGrid
-                  {...getRootProps()}
-                  columns={{ base: 1, md: 2, lg: 3 }}
-                  spacing={4}
-                >
-                  {templates.map((template) => {
-                    const radio = getRadioProps({
-                      value: template.id,
-                      isDisabled: !isTemplateCompatible(template),
-                    });
-                    return (
-                      <TemplateCard
-                        key={template.id}
-                        template={template}
-                        disabledReason="Needs articles"
-                        {...radio}
-                      />
-                    );
-                  })}
-                </SimpleGrid>
+                <VStack {...getRootProps()} spacing={3} align="stretch" p={1}>
+                  {/* Sort enabled templates to top */}
+                  {[...templates]
+                    .sort((a, b) => {
+                      const aCompatible = isTemplateCompatible(a, feedFields, detectedImageField);
+                      const bCompatible = isTemplateCompatible(b, feedFields, detectedImageField);
+                      if (aCompatible && !bCompatible) return -1;
+                      if (!aCompatible && bCompatible) return 1;
+                      return 0;
+                    })
+                    .map((template) => {
+                      const isCompatible = isTemplateCompatible(template, feedFields, detectedImageField);
+                      const disabledReason = getDisabledReason(template, feedFields, detectedImageField);
+                      const radio = getRadioProps({ value: template.id });
+                      return (
+                        <TemplateCard
+                          key={template.id}
+                          template={template}
+                          disabledReason={disabledReason}
+                          isDisabled={!isCompatible}
+                          {...radio}
+                        />
+                      );
+                    })}
+                </VStack>
               </Box>
             </GridItem>
 
@@ -757,6 +809,10 @@ Before marking this story complete, verify:
 - TypeScript compiles without errors
 - Exported from features/templates/index.ts and components/index.ts
 - Code review (2025-12-26): Added error state UI for preview API failures, added ESC key and overlay click tests, fixed act() warning in accessibility test
+- UX refinement (2025-12-28): Changed from 3-column grid to single-column VStack list for unified mobile/desktop experience. Added helper text explaining template selection. Added independent scroll for template list. Added sorting (enabled templates first).
+- UX refinement (2025-12-28): Removed redundant "Skip" button (default template is always pre-selected, so Skip and Save did the same thing). Added `onCancel` prop to allow true cancellation of the entire connection flow, distinct from `onClose` which goes back to previous step. Footer now shows: [← Back to Channel] | [Cancel] [Save].
+- UX fix (2025-12-28): Fixed X button behavior in connection dialogs. The X button (ModalCloseButton) now closes the entire dialog (`onClose`) instead of going back to the previous step. Back navigation is handled by the explicit "← Back to Channel" link. This aligns with user mental model that X = close/dismiss.
+- Accessibility improvement (2025-12-28): TemplateCard now shows disabled explanation as visible text instead of tooltip. Tooltips are inaccessible to keyboard/touch users. Explanation language updated to reflect detection uncertainty (e.g., "No images detected in recent articles" instead of assertive "Your feed doesn't include images").
 
 ### File List
 

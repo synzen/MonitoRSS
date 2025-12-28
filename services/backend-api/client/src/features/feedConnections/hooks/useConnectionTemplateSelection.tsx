@@ -23,7 +23,7 @@ export const useConnectionTemplateSelection = ({
   const [currentStep, setCurrentStep] = useState<ConnectionCreationStep>(
     ConnectionCreationStep.ServerChannel
   );
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>();
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(DEFAULT_TEMPLATE.id);
   const [selectedArticleId, setSelectedArticleId] = useState<string | undefined>();
 
   const { feedId } = useParams<RouteParams>();
@@ -80,27 +80,14 @@ export const useConnectionTemplateSelection = ({
     }
   }, [articles, selectedArticleId]);
 
+
+  // Reset state when modal closes (so it's ready for next open without flash)
   useEffect(() => {
-    if (currentStep === ConnectionCreationStep.TemplateSelection && !selectedTemplateId) {
-      const compatibleTemplates = TEMPLATES.filter((template) => {
-        if (!template.requiredFields || template.requiredFields.length === 0) {
-          return true;
-        }
-
-        return template.requiredFields.every((field) => feedFields.includes(field));
-      });
-
-      if (compatibleTemplates.length === 1 && compatibleTemplates[0].id === DEFAULT_TEMPLATE.id) {
-        setSelectedTemplateId(DEFAULT_TEMPLATE.id);
-      }
+    if (!isOpen) {
+      setCurrentStep(ConnectionCreationStep.ServerChannel);
+      setSelectedTemplateId(DEFAULT_TEMPLATE.id);
+      setSelectedArticleId(undefined);
     }
-  }, [currentStep, selectedTemplateId, feedFields]);
-
-  // Reset state when modal closes/opens
-  useEffect(() => {
-    setCurrentStep(ConnectionCreationStep.ServerChannel);
-    setSelectedTemplateId(undefined);
-    setSelectedArticleId(undefined);
   }, [isOpen]);
 
   const handleNextStep = () => {

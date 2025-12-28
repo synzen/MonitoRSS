@@ -61,7 +61,6 @@ describe("useTestSendFlow", () => {
     detectedImageField: null,
     isOpen: true,
     createConnection: vi.fn(),
-    updateConnectionTemplate: vi.fn(),
     onSaveSuccess: vi.fn(),
     onClose: vi.fn(),
     getConnectionName: vi.fn(() => "Test Channel"),

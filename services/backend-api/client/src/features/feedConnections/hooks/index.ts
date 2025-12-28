@@ -13,3 +13,4 @@ export * from "./useCreateDiscordChannelConnectionCopySettings";
 export * from "./useConnectionTemplateSelection";
 export * from "./useTestSendFlow";
 export * from "./useSendTestArticleDirect";
+export * from "./useConnectionDialogCallbacks";

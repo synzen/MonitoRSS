@@ -1,13 +1,19 @@
 import { Type } from "class-transformer";
 import {
+  IsArray,
   IsIn,
   IsNotEmpty,
   IsObject,
   IsOptional,
   IsString,
   MaxLength,
+  ValidateIf,
   ValidateNested,
 } from "class-validator";
+import {
+  DiscordEmbed,
+  DiscordPlaceholderLimitOptions,
+} from "../../../common";
 
 class Webhook {
   @IsString()
@@ -69,4 +75,26 @@ export class CreateDiscordChnnnelConnectionInputDto {
   @IsOptional()
   @IsIn(["new-thread"])
   threadCreationMethod?: "new-thread";
+
+  @IsString()
+  @IsOptional()
+  content?: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => DiscordEmbed)
+  @IsOptional()
+  embeds?: DiscordEmbed[];
+
+  @IsArray()
+  @IsObject({ each: true })
+  @IsOptional()
+  @ValidateIf((v) => v !== null)
+  componentsV2?: Array<Record<string, unknown>>;
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => DiscordPlaceholderLimitOptions)
+  placeholderLimits?: DiscordPlaceholderLimitOptions[];
 }

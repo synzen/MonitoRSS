@@ -10,7 +10,7 @@ import {
   ModalFooter,
   Grid,
   GridItem,
-  SimpleGrid,
+  VStack,
   Box,
   Button,
   Skeleton,
@@ -29,6 +29,7 @@ import { useQuery } from "@tanstack/react-query";
 import { TemplateCard } from "../TemplateCard";
 import { DiscordMessageDisplay } from "../../../../components/DiscordMessageDisplay";
 import { InlineErrorAlert } from "../../../../components/InlineErrorAlert";
+import { TemplateGalleryLoadingSkeleton } from "./TemplateGalleryLoadingSkeleton";
 import { Template, TestSendFeedback } from "../../types";
 import { TestSendErrorPanel } from "../TestSendErrorPanel";
 import {
@@ -51,6 +52,7 @@ export interface Article {
 export interface TemplateGalleryModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onCancel?: () => void;
   templates: Template[];
   selectedTemplateId?: string;
   onTemplateSelect: (templateId: string) => void;
@@ -210,6 +212,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
   const {
     isOpen,
     onClose,
+    onCancel,
     templates,
     selectedTemplateId,
     onTemplateSelect,
@@ -303,6 +306,197 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
     }
   }, [saveError]);
 
+  const showErrorPanel = testSendFeedback?.status === "error" && testSendFeedback.deliveryStatus;
+
+  const renderModalBodyContent = () => {
+    if (showErrorPanel) {
+      return (
+        <TestSendErrorPanel
+          feedback={testSendFeedback}
+          onTryAnother={onClearTestSendFeedback || (() => {})}
+          onUseAnyway={onSave || (() => {})}
+          isUseAnywayLoading={isSaveLoading}
+        />
+      );
+    }
+
+    if (isLoadingArticles) {
+      return <TemplateGalleryLoadingSkeleton />;
+    }
+
+    return (
+      <>
+        {hasNoFeedFields && (
+          <Alert status="info" mb={4} borderRadius="md">
+            <AlertIcon />
+            Some templates are unavailable until your feed has articles
+          </Alert>
+        )}
+        <Text color="gray.400" mb={4}>
+          Pick a starting point for your message layout. You can customize everything after
+          applying.
+        </Text>
+        <Grid templateColumns={{ base: "1fr", lg: "1fr 400px" }} gap={6}>
+          <GridItem maxH={{ lg: "60vh" }} overflowY={{ lg: "auto" }}>
+            <Box as="fieldset">
+              <VisuallyHidden as="legend">Choose a template</VisuallyHidden>
+              <VStack {...getRootProps()} spacing={3} align="stretch" p={1}>
+                {[...templates]
+                  .sort((a, b) => {
+                    const aCompatible = isTemplateCompatible(a, feedFields, detectedImageField);
+                    const bCompatible = isTemplateCompatible(b, feedFields, detectedImageField);
+
+                    if (aCompatible && !bCompatible) return -1;
+                    if (!aCompatible && bCompatible) return 1;
+
+                    return 0;
+                  })
+                  .map((template) => {
+                    const isCompatible = isTemplateCompatible(
+                      template,
+                      feedFields,
+                      detectedImageField
+                    );
+                    const disabledReason = getDisabledReason(
+                      template,
+                      feedFields,
+                      detectedImageField
+                    );
+                    const radio = getRadioProps({
+                      value: template.id,
+                    });
+
+                    return (
+                      <TemplateCard
+                        key={template.id}
+                        template={template}
+                        disabledReason={disabledReason}
+                        isDisabled={!isCompatible}
+                        {...radio}
+                      />
+                    );
+                  })}
+              </VStack>
+            </Box>
+          </GridItem>
+          <GridItem>
+            <Box
+              bg="gray.900"
+              borderRadius="md"
+              p={4}
+              minH={{ base: "200px", lg: "400px" }}
+              role="region"
+              aria-label="Template preview"
+              aria-busy={isActuallyLoading}
+            >
+              <Text fontSize="sm" color="gray.400" mb={3}>
+                Preview
+              </Text>
+              {articles.length > 0 && (
+                <FormControl mb={4}>
+                  <FormLabel htmlFor="article-selector" fontSize="xs" color="gray.400" mb={1}>
+                    Preview article
+                  </FormLabel>
+                  <Select
+                    id="article-selector"
+                    value={selectedArticleId || ""}
+                    onChange={(e) => onArticleChange(e.target.value)}
+                    bg="gray.700"
+                    borderColor="gray.600"
+                    size="sm"
+                    color="white"
+                    _hover={{ borderColor: "gray.500" }}
+                  >
+                    {articles.map((article) => (
+                      <option
+                        key={article.id}
+                        value={article.id}
+                        style={{ backgroundColor: "#2D3748" }}
+                      >
+                        {article.title || article.id}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+              <Box>
+                {isActuallyLoading && (
+                  <Skeleton height="300px" borderRadius="md" aria-label="Loading preview" />
+                )}
+                {!isActuallyLoading && isPreviewError && (
+                  <Alert status="error" borderRadius="md">
+                    <AlertIcon />
+                    Failed to load preview. Please try again.
+                  </Alert>
+                )}
+                {!isActuallyLoading && !isPreviewError && previewMessages.length > 0 && (
+                  <DiscordMessageDisplay
+                    messages={previewMessages}
+                    maxHeight={{ base: 200, lg: 350 }}
+                  />
+                )}
+                {!isActuallyLoading &&
+                  !isPreviewError &&
+                  previewMessages.length === 0 &&
+                  articles.length === 0 && (
+                    <Text color="gray.500" textAlign="center" py={8}>
+                      Preview will appear when your feed has articles
+                    </Text>
+                  )}
+              </Box>
+              {onTestSend && hasArticles && (
+                <Box mt={4}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onTestSend}
+                    isLoading={isTestSendLoading}
+                    isDisabled={!canTestSend}
+                    aria-busy={isTestSendLoading}
+                    leftIcon={<FaDiscord />}
+                  >
+                    {isTestSendLoading ? "Sending..." : "Send to Discord"}
+                  </Button>
+                </Box>
+              )}
+              {testSendFeedback && !testSendFeedback.deliveryStatus && (
+                <Box mt={3}>
+                  {testSendFeedback.status === "success" && (
+                    <Alert status="success" borderRadius="md" size="sm">
+                      <AlertIcon />
+                      <AlertDescription>{testSendFeedback.message}</AlertDescription>
+                    </Alert>
+                  )}
+                  {testSendFeedback.status === "error" && (
+                    <Alert status="error" borderRadius="md" size="sm">
+                      <AlertIcon />
+                      <HStack justifyContent="space-between" flex={1}>
+                        <AlertDescription>{testSendFeedback.message}</AlertDescription>
+                        <Button size="sm" variant="outline" onClick={onTestSend}>
+                          Retry
+                        </Button>
+                      </HStack>
+                    </Alert>
+                  )}
+                </Box>
+              )}
+            </Box>
+          </GridItem>
+        </Grid>
+        <VisuallyHidden>
+          <div aria-live="polite" aria-atomic="true">
+            {previewAnnouncement}
+          </div>
+        </VisuallyHidden>
+        {saveError && (
+          <Box mt={4} ref={saveErrorRef}>
+            <InlineErrorAlert title="Failed to save" description={saveError.message} />
+          </Box>
+        )}
+      </>
+    );
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -321,205 +515,9 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
       >
         <ModalHeader id="template-gallery-modal-header">Choose a Template</ModalHeader>
         <ModalCloseButton />
-        <ModalBody>
-          {testSendFeedback?.status === "error" && testSendFeedback.deliveryStatus ? (
-            <TestSendErrorPanel
-              feedback={testSendFeedback}
-              onTryAnother={onClearTestSendFeedback || (() => {})}
-              onUseAnyway={onSave || (() => {})}
-              isUseAnywayLoading={isSaveLoading}
-            />
-          ) : (
-            <>
-              {hasNoFeedFields && (
-                <Alert status="info" mb={4} borderRadius="md">
-                  <AlertIcon />
-                  Some templates are unavailable until your feed has articles
-                </Alert>
-              )}
-              <Grid templateColumns={{ base: "1fr", lg: "1fr 400px" }} gap={6}>
-                <GridItem>
-                  <Box as="fieldset">
-                    <VisuallyHidden as="legend">Choose a template</VisuallyHidden>
-                    <SimpleGrid {...getRootProps()} columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
-                      {templates.map((template) => {
-                        const isCompatible = isTemplateCompatible(
-                          template,
-                          feedFields,
-                          detectedImageField
-                        );
-                        const disabledReason = getDisabledReason(
-                          template,
-                          feedFields,
-                          detectedImageField
-                        );
-                        const radio = getRadioProps({
-                          value: template.id,
-                        });
-
-                        return (
-                          <TemplateCard
-                            key={template.id}
-                            template={template}
-                            disabledReason={disabledReason}
-                            isDisabled={!isCompatible}
-                            {...radio}
-                          />
-                        );
-                      })}
-                    </SimpleGrid>
-                  </Box>
-                </GridItem>
-                <GridItem>
-                  <Box
-                    bg="gray.900"
-                    borderRadius="md"
-                    p={4}
-                    minH={{ base: "200px", lg: "400px" }}
-                    role="region"
-                    aria-label="Template preview"
-                    aria-busy={isActuallyLoading || isLoadingArticles}
-                  >
-                    <Text fontSize="sm" color="gray.400" mb={3}>
-                      Preview
-                    </Text>
-                    {(articles.length > 0 || isLoadingArticles) && (
-                      <FormControl mb={4}>
-                        <FormLabel htmlFor="article-selector" fontSize="xs" color="gray.400" mb={1}>
-                          Preview article
-                        </FormLabel>
-                        {isLoadingArticles ? (
-                          <Skeleton height="32px" borderRadius="md" aria-label="Loading articles" />
-                        ) : (
-                          <Select
-                            id="article-selector"
-                            value={selectedArticleId || ""}
-                            onChange={(e) => onArticleChange(e.target.value)}
-                            bg="gray.700"
-                            borderColor="gray.600"
-                            size="sm"
-                            color="white"
-                            _hover={{ borderColor: "gray.500" }}
-                          >
-                            {articles.map((article) => (
-                              <option
-                                key={article.id}
-                                value={article.id}
-                                style={{ backgroundColor: "#2D3748" }}
-                              >
-                                {article.title || article.id}
-                              </option>
-                            ))}
-                          </Select>
-                        )}
-                      </FormControl>
-                    )}
-                    <Box>
-                      {(isActuallyLoading || isLoadingArticles) && (
-                        <Skeleton
-                          height="300px"
-                          borderRadius="md"
-                          aria-label={isLoadingArticles ? "Loading articles" : "Loading preview"}
-                        />
-                      )}
-                      {!isActuallyLoading && !isLoadingArticles && isPreviewError && (
-                        <Alert status="error" borderRadius="md">
-                          <AlertIcon />
-                          Failed to load preview. Please try again.
-                        </Alert>
-                      )}
-                      {!isActuallyLoading &&
-                        !isLoadingArticles &&
-                        !isPreviewError &&
-                        previewMessages.length > 0 && (
-                          <DiscordMessageDisplay
-                            messages={previewMessages}
-                            maxHeight={{ base: 200, lg: 350 }}
-                          />
-                        )}
-                      {!isActuallyLoading &&
-                        !isLoadingArticles &&
-                        !isPreviewError &&
-                        previewMessages.length === 0 &&
-                        !selectedTemplateId && (
-                          <Text color="gray.500" textAlign="center" py={8}>
-                            Select a template to preview
-                          </Text>
-                        )}
-                      {!isActuallyLoading &&
-                        !isLoadingArticles &&
-                        !isPreviewError &&
-                        previewMessages.length === 0 &&
-                        selectedTemplateId &&
-                        articles.length > 0 && (
-                          <Text color="gray.500" textAlign="center" py={8}>
-                            Loading preview...
-                          </Text>
-                        )}
-                      {!isActuallyLoading &&
-                        !isLoadingArticles &&
-                        !isPreviewError &&
-                        previewMessages.length === 0 &&
-                        articles.length === 0 && (
-                          <Text color="gray.500" textAlign="center" py={8}>
-                            Preview will appear when your feed has articles
-                          </Text>
-                        )}
-                    </Box>
-                    {onTestSend && hasArticles && (
-                      <Box mt={4}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={onTestSend}
-                          isLoading={isTestSendLoading}
-                          isDisabled={!canTestSend}
-                          aria-busy={isTestSendLoading}
-                          leftIcon={<FaDiscord />}
-                        >
-                          {isTestSendLoading ? "Sending..." : "Send to Discord"}
-                        </Button>
-                      </Box>
-                    )}
-                    {testSendFeedback && !testSendFeedback.deliveryStatus && (
-                      <Box mt={3}>
-                        {testSendFeedback.status === "success" && (
-                          <Alert status="success" borderRadius="md" size="sm">
-                            <AlertIcon />
-                            <AlertDescription>{testSendFeedback.message}</AlertDescription>
-                          </Alert>
-                        )}
-                        {testSendFeedback.status === "error" && (
-                          <Alert status="error" borderRadius="md" size="sm">
-                            <AlertIcon />
-                            <HStack justifyContent="space-between" flex={1}>
-                              <AlertDescription>{testSendFeedback.message}</AlertDescription>
-                              <Button size="sm" variant="outline" onClick={onTestSend}>
-                                Retry
-                              </Button>
-                            </HStack>
-                          </Alert>
-                        )}
-                      </Box>
-                    )}
-                  </Box>
-                </GridItem>
-              </Grid>
-              <VisuallyHidden>
-                <div aria-live="polite" aria-atomic="true">
-                  {previewAnnouncement}
-                </div>
-              </VisuallyHidden>
-              {saveError && (
-                <Box mt={4} ref={saveErrorRef}>
-                  <InlineErrorAlert title="Failed to save" description={saveError.message} />
-                </Box>
-              )}
-            </>
-          )}
-        </ModalBody>
+        <ModalBody>{renderModalBodyContent()}</ModalBody>
         {/* Hide footer when error panel is showing - error panel has its own action buttons */}
-        {!(testSendFeedback?.status === "error" && testSendFeedback.deliveryStatus) && (
+        {!showErrorPanel && (
           <ModalFooter>
             {onTestSend ? (
               <HStack w="100%" justifyContent="space-between">
@@ -533,8 +531,8 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                   {tertiaryActionLabel}
                 </Button>
                 <HStack>
-                  <Button variant="ghost" onClick={onSecondaryAction || onClose}>
-                    {secondaryActionLabel}
+                  <Button variant="ghost" onClick={onCancel || onClose}>
+                    Cancel
                   </Button>
                   <Button
                     colorScheme="blue"

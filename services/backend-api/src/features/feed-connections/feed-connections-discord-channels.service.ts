@@ -191,6 +191,7 @@ export class FeedConnectionsDiscordChannelsService {
     userAccessToken,
     userDiscordUserId,
     threadCreationMethod,
+    templateData,
   }: {
     feed: UserFeed;
     name: string;
@@ -210,6 +211,12 @@ export class FeedConnectionsDiscordChannelsService {
     userAccessToken: string;
     userDiscordUserId: string;
     threadCreationMethod?: "new-thread";
+    templateData?: {
+      content?: string;
+      embeds?: DiscordChannelConnection["details"]["embeds"];
+      componentsV2?: DiscordChannelConnection["details"]["componentsV2"];
+      placeholderLimits?: DiscordChannelConnection["details"]["placeholderLimits"];
+    };
   }): Promise<DiscordChannelConnection> {
     const connectionId = new Types.ObjectId();
     let channelToAdd: DiscordChannelConnection["details"]["channel"];
@@ -315,6 +322,28 @@ export class FeedConnectionsDiscordChannelsService {
       throw new Error("Must provide either channelId or webhookId");
     }
 
+    let validatedComponentsV2: DiscordChannelConnection["details"]["componentsV2"] =
+      templateData?.componentsV2;
+
+    if (templateData?.componentsV2) {
+      const validationResult =
+        await this.feedHandlerService.validateDiscordPayload({
+          componentsV2: templateData.componentsV2,
+        });
+
+      if (!validationResult.valid) {
+        throw new InvalidComponentsV2Exception(
+          validationResult.errors.map(
+            (e) => new InvalidComponentsV2Exception(e.message, e.path)
+          )
+        );
+      }
+
+      // Use the parsed payload which strips unknown fields
+      // @ts-ignore
+      validatedComponentsV2 = validationResult.data.componentsV2;
+    }
+
     try {
       const updated = await this.userFeedModel.findOneAndUpdate(
         {
@@ -329,7 +358,10 @@ export class FeedConnectionsDiscordChannelsService {
                 type: FeedConnectionType.DiscordChannel,
                 channel: channelToAdd,
                 webhook: webhookToAdd,
-                embeds: [],
+                embeds: templateData?.embeds || [],
+                content: templateData?.content,
+                componentsV2: validatedComponentsV2,
+                placeholderLimits: templateData?.placeholderLimits,
               },
             },
           },

@@ -39,7 +39,6 @@ export interface UseTestSendFlowOptions {
   detectedImageField: string | null;
   isOpen: boolean;
   createConnection: () => Promise<string | undefined>;
-  updateConnectionTemplate: (connectionId: string) => Promise<void>;
   onSaveSuccess: (connectionName: string | undefined) => void;
   onClose: () => void;
   getConnectionName: () => string | undefined;
@@ -52,7 +51,6 @@ export interface UseTestSendFlowResult {
   isTestSending: boolean;
   handleTestSend: () => Promise<void>;
   handleSave: () => Promise<void>;
-  handleSkip: (submitForm: () => Promise<void>) => Promise<void>;
   setCreatedConnectionId: (id: string | undefined) => void;
   clearTestSendFeedback: () => void;
 }
@@ -68,7 +66,6 @@ export const useTestSendFlow = ({
   detectedImageField,
   isOpen,
   createConnection,
-  updateConnectionTemplate,
   onSaveSuccess,
   onClose,
   getConnectionName,
@@ -177,15 +174,14 @@ export const useTestSendFlow = ({
     return newConnectionId;
   }, [createdConnectionId, createConnection]);
 
-  // Handle save - creates connection and applies template
+  // Handle save - creates connection (template data is included in create call)
   const handleSave = useCallback(async () => {
     setIsSaving(true);
 
     try {
-      // If connection already created (from previous save attempt), just update template and close
+      // If connection already created (from previous save attempt), just close
+      // Template data is already included in the create call, so no update needed
       if (createdConnectionId && feedId) {
-        await updateConnectionTemplate(createdConnectionId);
-
         const connectionName = getConnectionName();
         onSaveSuccess(connectionName);
         onClose();
@@ -193,7 +189,7 @@ export const useTestSendFlow = ({
         return;
       }
 
-      // Create the connection
+      // Create the connection (includes template data)
       const connectionId = await ensureConnectionCreated();
 
       if (connectionId && feedId) {
@@ -209,23 +205,11 @@ export const useTestSendFlow = ({
   }, [
     createdConnectionId,
     feedId,
-    updateConnectionTemplate,
     getConnectionName,
     onSaveSuccess,
     onClose,
     ensureConnectionCreated,
   ]);
-
-  // Handle skip (apply default template and save via form submission)
-  const handleSkip = useCallback(async (submitForm: () => Promise<void>) => {
-    setIsSaving(true);
-
-    try {
-      await submitForm();
-    } finally {
-      setIsSaving(false);
-    }
-  }, []);
 
   // Clear test send feedback (used when dismissing error panel)
   const clearTestSendFeedback = useCallback(() => {
@@ -239,7 +223,6 @@ export const useTestSendFlow = ({
     isTestSending,
     handleTestSend,
     handleSave,
-    handleSkip,
     setCreatedConnectionId,
     clearTestSendFeedback,
   };

@@ -32,6 +32,7 @@ import {
   useConnectionTemplateSelection,
   useTestSendFlow,
   getTemplateUpdateData,
+  useConnectionDialogCallbacks,
 } from "../../hooks";
 import { FeedDiscordChannelConnection } from "../../../../types";
 import {
@@ -40,15 +41,15 @@ import {
   DiscordServerSearchSelectv2,
   GetDiscordChannelType,
 } from "../../../discordServers";
-import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "../../../../components";
 import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
-import { TemplateGalleryModal } from "../../../templates/components/TemplateGalleryModal";
 import {
   TEMPLATES,
   DEFAULT_TEMPLATE,
   getTemplateById,
 } from "../../../templates/constants/templates";
+import { TemplateGalleryModal } from "../../../templates/components/TemplateGalleryModal";
 import convertMessageBuilderStateToConnectionUpdate from "../../../../pages/MessageBuilder/utils/convertMessageBuilderStateToConnectionUpdate";
+import { ConnectionDialogErrorDisplay } from "./ConnectionDialogErrorDisplay";
 
 enum DiscordCreateChannelThreadMethod {
   Existing = "EXISTING",
@@ -148,6 +149,9 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
   const initialFocusRef = useRef<any>(null);
   const { createSuccessAlert } = usePageAlertContext();
 
+  // Shared callbacks from hook
+  const { onSaveSuccess } = useConnectionDialogCallbacks();
+
   // Create connection callback for test send flow
   const createConnection = useCallback(async (): Promise<string | undefined> => {
     if (!feedId) {
@@ -157,6 +161,9 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
     const formValues = watch();
     const { name, createThreadMethod, channelId: inputChannelId, threadId } = formValues;
 
+    // Get template data to include in create call
+    const templateData = getTemplateUpdateData(selectedTemplateId, detectedImageField || "image");
+
     const createResult = await mutateAsync({
       feedId,
       details: {
@@ -164,63 +171,15 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
         channelId: threadId || inputChannelId,
         threadCreationMethod:
           createThreadMethod === DiscordCreateChannelThreadMethod.New ? "new-thread" : undefined,
+        content: templateData.content,
+        embeds: templateData.embeds,
+        componentsV2: templateData.componentsV2,
+        placeholderLimits: templateData.placeholderLimits,
       },
     });
 
-    const newConnectionId = createResult?.result?.id;
-
-    if (newConnectionId) {
-      // Apply template to new connection
-      const templateData = getTemplateUpdateData(selectedTemplateId);
-
-      await updateMutateAsync({
-        feedId,
-        connectionId: newConnectionId,
-        details: {
-          content: templateData.content,
-          embeds: templateData.embeds,
-          componentsV2: templateData.componentsV2,
-          placeholderLimits: templateData.placeholderLimits,
-        },
-      });
-    }
-
-    return newConnectionId;
-  }, [feedId, watch, mutateAsync, updateMutateAsync, selectedTemplateId]);
-
-  // Update connection template callback
-  const updateConnectionTemplate = useCallback(
-    async (connectionId: string) => {
-      if (!feedId) return;
-
-      const templateData = getTemplateUpdateData(selectedTemplateId);
-
-      await updateMutateAsync({
-        feedId,
-        connectionId,
-        details: {
-          content: templateData.content,
-          embeds: templateData.embeds,
-          componentsV2: templateData.componentsV2,
-          placeholderLimits: templateData.placeholderLimits,
-        },
-      });
-    },
-    [feedId, selectedTemplateId, updateMutateAsync]
-  );
-
-  // Success callback
-  const onSaveSuccess = useCallback(
-    (connectionName: string | undefined) => {
-      createSuccessAlert({
-        title: "You're all set!",
-        description: `New articles will be delivered automatically to ${
-          connectionName || "your channel"
-        }.`,
-      });
-    },
-    [createSuccessAlert]
-  );
+    return createResult?.result?.id;
+  }, [feedId, watch, mutateAsync, selectedTemplateId, detectedImageField]);
 
   // Get connection name from form
   const getConnectionName = useCallback(() => watch("name"), [watch]);
@@ -238,7 +197,6 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
     isTestSending,
     handleTestSend,
     handleSave,
-    handleSkip,
     clearTestSendFeedback,
   } = useTestSendFlow({
     feedId,
@@ -248,7 +206,6 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
     detectedImageField,
     isOpen,
     createConnection,
-    updateConnectionTemplate,
     onSaveSuccess,
     onClose,
     getConnectionName,
@@ -300,44 +257,31 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
     }
 
     try {
-      // Create the connection first
-      const createResult = await mutateAsync({
+      // Get the template to apply (selected or default)
+      const templateToApply = selectedTemplateId
+        ? getTemplateById(selectedTemplateId) || DEFAULT_TEMPLATE
+        : DEFAULT_TEMPLATE;
+
+      // Create message component with detected image field and convert to API format
+      const messageComponent = templateToApply.createMessageComponent(
+        detectedImageField || "image"
+      );
+      const templateData = convertMessageBuilderStateToConnectionUpdate(messageComponent);
+
+      // Create the connection with template data in a single atomic operation
+      await mutateAsync({
         feedId,
         details: {
           name,
           channelId: threadId || inputChannelId,
           threadCreationMethod:
             createThreadMethod === DiscordCreateChannelThreadMethod.New ? "new-thread" : undefined,
+          content: templateData.content,
+          embeds: templateData.embeds,
+          componentsV2: templateData.componentsV2,
+          placeholderLimits: templateData.placeholderLimits,
         },
       });
-
-      // Get the template to apply (selected or default)
-      const templateToApply = selectedTemplateId
-        ? getTemplateById(selectedTemplateId) || DEFAULT_TEMPLATE
-        : DEFAULT_TEMPLATE;
-
-      // Apply template to the connection
-      if (createResult?.result?.id) {
-        const newConnectionId = createResult.result.id;
-
-        // Create message component with detected image field and convert to API format
-        const messageComponent = templateToApply.createMessageComponent(
-          detectedImageField || "image"
-        );
-        const templateData = convertMessageBuilderStateToConnectionUpdate(messageComponent);
-
-        // Update the connection with template data
-        await updateMutateAsync({
-          feedId,
-          connectionId: newConnectionId,
-          details: {
-            content: templateData.content,
-            embeds: templateData.embeds,
-            componentsV2: templateData.componentsV2,
-            placeholderLimits: templateData.placeholderLimits,
-          },
-        });
-      }
 
       createSuccessAlert({
         title: "You're all set!",
@@ -367,14 +311,6 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
     }
   };
 
-  // Handle skip (apply default template and save)
-  const onSkip = useCallback(async () => {
-    setSelectedTemplateId(undefined);
-    await handleSkip(async () => {
-      await handleSubmit(onSubmit)();
-    });
-  }, [setSelectedTemplateId, handleSkip, handleSubmit, onSubmit]);
-
   const errorCount = Object.keys(errors).length;
 
   const submissionError = error || updateError;
@@ -384,7 +320,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
     return (
       <TemplateGalleryModal
         isOpen={isOpen}
-        onClose={handleBackStep}
+        onClose={onClose}
         templates={TEMPLATES}
         selectedTemplateId={selectedTemplateId}
         onTemplateSelect={setSelectedTemplateId}
@@ -399,10 +335,9 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
         isLoadingArticles={isLoadingArticles}
         feedId={feedId || ""}
         userFeed={userFeed}
-        secondaryActionLabel="Skip"
-        onSecondaryAction={onSkip}
         tertiaryActionLabel="← Back to Channel"
         onTertiaryAction={handleBackStep}
+        onCancel={onClose}
         testId="template-selection-modal"
         onTestSend={handleTestSend}
         isTestSendLoading={isTestSending}
@@ -629,15 +564,11 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                 </FormControl>
               </Stack>
             </form>
-            {submissionError && (
-              <InlineErrorAlert
-                title={t("common.errors.somethingWentWrong")}
-                description={submissionError.message}
-              />
-            )}
-            {isSubmitted && errorCount > 0 && (
-              <InlineErrorIncompleteFormAlert fieldCount={errorCount} />
-            )}
+            <ConnectionDialogErrorDisplay
+              error={submissionError}
+              isSubmitted={isSubmitted}
+              formErrorCount={errorCount}
+            />
           </Stack>
         </ModalBody>
         <ModalFooter>

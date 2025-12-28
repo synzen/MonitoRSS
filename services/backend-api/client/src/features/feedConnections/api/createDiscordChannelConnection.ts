@@ -20,6 +20,56 @@ export interface CreateDiscordChannelConnectionInput {
       iconUrl?: string | null;
       threadId?: string | null;
     };
+    content?: string | null;
+    embeds?: Array<{
+      color?: string | null;
+      author?: {
+        name?: string | null;
+        url?: string | null;
+        iconUrl?: string | null;
+      } | null;
+      title?: string | null;
+      url?: string | null;
+      description?: string | null;
+      thumbnail?: {
+        url?: string | null;
+      } | null;
+      image?: {
+        url?: string | null;
+      } | null;
+      footer?: {
+        text?: string | null;
+        iconUrl?: string | null;
+      } | null;
+      timestamp?: string | null;
+    }>;
+    componentsV2?: Array<{
+      type: string;
+      content?: string;
+      components?: Array<{
+        type: string;
+        content?: string;
+        style?: number;
+        label?: string;
+        url?: string | null;
+        disabled?: boolean;
+      }>;
+      accessory?: {
+        type: string;
+        style?: number;
+        label?: string;
+        url?: string | null;
+        disabled?: boolean;
+        media?: {
+          url: string;
+        };
+      } | null;
+    }> | null;
+    placeholderLimits?: Array<{
+      placeholder: string;
+      characterCount: number;
+      appendString?: string | null;
+    }> | null;
   };
 }
 

@@ -26,10 +26,10 @@ import { useEffect, useRef, useCallback } from "react";
 import RouteParams from "../../../../types/RouteParams";
 import {
   useCreateDiscordChannelConnection,
-  useUpdateDiscordChannelConnection,
   useConnectionTemplateSelection,
   useTestSendFlow,
   getTemplateUpdateData,
+  useConnectionDialogCallbacks,
 } from "../../hooks";
 import {
   DiscordActiveThreadDropdown,
@@ -39,16 +39,16 @@ import {
 } from "../../../discordServers";
 import { SubscriberBlockText } from "@/components/SubscriberBlockText";
 import { BlockableFeature, SupporterTier } from "../../../../constants";
-import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "../../../../components";
 import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 import { useIsFeatureAllowed } from "../../../../hooks";
-import { TemplateGalleryModal } from "../../../templates/components/TemplateGalleryModal";
 import {
   TEMPLATES,
   DEFAULT_TEMPLATE,
   getTemplateById,
 } from "../../../templates/constants/templates";
+import { TemplateGalleryModal } from "../../../templates/components/TemplateGalleryModal";
 import convertMessageBuilderStateToConnectionUpdate from "../../../../pages/MessageBuilder/utils/convertMessageBuilderStateToConnectionUpdate";
+import { ConnectionDialogErrorDisplay } from "./ConnectionDialogErrorDisplay";
 
 const formSchema = object({
   name: string().required("Name is required").max(250, "Name must be less than 250 characters"),
@@ -110,11 +110,12 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
     "webhook",
   ]);
   const { mutateAsync, error } = useCreateDiscordChannelConnection();
-  const { mutateAsync: updateMutateAsync, error: updateError } =
-    useUpdateDiscordChannelConnection();
   const { createSuccessAlert } = usePageAlertContext();
   const { allowed } = useIsFeatureAllowed({ feature: BlockableFeature.DiscordWebhooks });
   const initialFocusRef = useRef<any>(null);
+
+  // Shared callbacks from hook
+  const { onSaveSuccess } = useConnectionDialogCallbacks();
 
   // Create connection callback for test send flow
   const createConnection = useCallback(async (): Promise<string | undefined> => {
@@ -124,6 +125,9 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
 
     const formValues = watch();
     const { name, webhook, threadId: inputThreadId } = formValues;
+
+    // Get template data to include in create call
+    const templateData = getTemplateUpdateData(selectedTemplateId, detectedImageField || "image");
 
     const createResult = await mutateAsync({
       feedId,
@@ -135,63 +139,15 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
           iconUrl: webhook.iconUrl,
           threadId: inputThreadId,
         },
+        content: templateData.content,
+        embeds: templateData.embeds,
+        componentsV2: templateData.componentsV2,
+        placeholderLimits: templateData.placeholderLimits,
       },
     });
 
-    const newConnectionId = createResult?.result?.id;
-
-    if (newConnectionId) {
-      // Apply template to new connection
-      const templateData = getTemplateUpdateData(selectedTemplateId);
-
-      await updateMutateAsync({
-        feedId,
-        connectionId: newConnectionId,
-        details: {
-          content: templateData.content,
-          embeds: templateData.embeds,
-          componentsV2: templateData.componentsV2,
-          placeholderLimits: templateData.placeholderLimits,
-        },
-      });
-    }
-
-    return newConnectionId;
-  }, [feedId, watch, mutateAsync, updateMutateAsync, selectedTemplateId, channelId]);
-
-  // Update connection template callback
-  const updateConnectionTemplate = useCallback(
-    async (connectionId: string) => {
-      if (!feedId) return;
-
-      const templateData = getTemplateUpdateData(selectedTemplateId);
-
-      await updateMutateAsync({
-        feedId,
-        connectionId,
-        details: {
-          content: templateData.content,
-          embeds: templateData.embeds,
-          componentsV2: templateData.componentsV2,
-          placeholderLimits: templateData.placeholderLimits,
-        },
-      });
-    },
-    [feedId, selectedTemplateId, updateMutateAsync]
-  );
-
-  // Success callback
-  const onSaveSuccess = useCallback(
-    (connectionName: string | undefined) => {
-      createSuccessAlert({
-        title: "You're all set!",
-        description: `New articles will be delivered automatically to ${
-          connectionName || "your channel"
-        }.`,
-      });
-    },
-    [createSuccessAlert]
-  );
+    return createResult?.result?.id;
+  }, [feedId, watch, mutateAsync, selectedTemplateId, channelId, detectedImageField]);
 
   // Get connection name from form
   const getConnectionName = useCallback(() => watch("name"), [watch]);
@@ -206,7 +162,6 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
     isTestSending,
     handleTestSend,
     handleSave,
-    handleSkip,
     clearTestSendFeedback,
   } = useTestSendFlow({
     feedId,
@@ -218,7 +173,6 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
     detectedImageField,
     isOpen,
     createConnection,
-    updateConnectionTemplate,
     onSaveSuccess,
     onClose,
     getConnectionName,
@@ -238,8 +192,19 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
     }
 
     try {
-      // Create the connection first
-      const createResult = await mutateAsync({
+      // Get the template to apply (selected or default)
+      const templateToApply = selectedTemplateId
+        ? getTemplateById(selectedTemplateId) || DEFAULT_TEMPLATE
+        : DEFAULT_TEMPLATE;
+
+      // Create message component with detected image field and convert to API format
+      const messageComponent = templateToApply.createMessageComponent(
+        detectedImageField || "image"
+      );
+      const templateData = convertMessageBuilderStateToConnectionUpdate(messageComponent);
+
+      // Create the connection with template data in a single atomic operation
+      await mutateAsync({
         feedId,
         details: {
           name,
@@ -249,36 +214,12 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
             iconUrl: webhook.iconUrl,
             threadId: inputThreadId,
           },
+          content: templateData.content,
+          embeds: templateData.embeds,
+          componentsV2: templateData.componentsV2,
+          placeholderLimits: templateData.placeholderLimits,
         },
       });
-
-      // Get the template to apply (selected or default)
-      const templateToApply = selectedTemplateId
-        ? getTemplateById(selectedTemplateId) || DEFAULT_TEMPLATE
-        : DEFAULT_TEMPLATE;
-
-      // Apply template to the connection
-      if (createResult?.result?.id) {
-        const newConnectionId = createResult.result.id;
-
-        // Create message component with detected image field and convert to API format
-        const messageComponent = templateToApply.createMessageComponent(
-          detectedImageField || "image"
-        );
-        const templateData = convertMessageBuilderStateToConnectionUpdate(messageComponent);
-
-        // Update the connection with template data
-        await updateMutateAsync({
-          feedId,
-          connectionId: newConnectionId,
-          details: {
-            content: templateData.content,
-            embeds: templateData.embeds,
-            componentsV2: templateData.componentsV2,
-            placeholderLimits: templateData.placeholderLimits,
-          },
-        });
-      }
 
       createSuccessAlert({
         title: "You're all set!",
@@ -294,24 +235,14 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
     reset();
   }, [isOpen]);
 
-  // Handle skip (apply default template and save)
-  const onSkip = useCallback(async () => {
-    setSelectedTemplateId(undefined);
-    await handleSkip(async () => {
-      await handleSubmit(onSubmit)();
-    });
-  }, [setSelectedTemplateId, handleSkip, handleSubmit, onSubmit]);
-
   const errorCount = Object.keys(errors).length;
-
-  const useError = error || updateError;
 
   // For template selection step, show TemplateGalleryModal instead of regular modal
   if (isTemplateStep) {
     return (
       <TemplateGalleryModal
         isOpen={isOpen}
-        onClose={handleBackStep}
+        onClose={onClose}
         templates={TEMPLATES}
         selectedTemplateId={selectedTemplateId}
         onTemplateSelect={setSelectedTemplateId}
@@ -326,10 +257,9 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
         isLoadingArticles={isLoadingArticles}
         feedId={feedId || ""}
         userFeed={userFeed}
-        secondaryActionLabel="Skip"
-        onSecondaryAction={onSkip}
         tertiaryActionLabel="← Back to Channel"
         onTertiaryAction={handleBackStep}
+        onCancel={onClose}
         testId="webhook-template-selection-modal"
         onTestSend={handleTestSend}
         isTestSendLoading={isTestSending}
@@ -337,7 +267,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
         onClearTestSendFeedback={clearTestSendFeedback}
         onSave={handleSave}
         isSaveLoading={isSaving || isSubmitting}
-        saveError={error || updateError}
+        saveError={error}
       />
     );
   }
@@ -566,15 +496,11 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                 </FormControl>
               </Stack>
             </form>
-            {useError && (
-              <InlineErrorAlert
-                title={t("common.errors.somethingWentWrong")}
-                description={useError.message}
-              />
-            )}
-            {isSubmitted && errorCount > 0 && (
-              <InlineErrorIncompleteFormAlert fieldCount={errorCount} />
-            )}
+            <ConnectionDialogErrorDisplay
+              error={error}
+              isSubmitted={isSubmitted}
+              formErrorCount={errorCount}
+            />
           </Stack>
         </ModalBody>
         <ModalFooter>

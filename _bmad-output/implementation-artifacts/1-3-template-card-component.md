@@ -150,118 +150,105 @@ interface TemplateCardProps extends UseRadioProps {
 
 | State | Border | Background | Cursor | Additional |
 |-------|--------|------------|--------|------------|
-| **Default** | 1px gray.600 | gray.800 | pointer | - |
-| **Hover** | 1px blue.400 | gray.700 | pointer | boxShadow: md |
-| **Selected** | 2px blue.500 | blue.900 | pointer | CheckCircle icon |
-| **Disabled** | 1px gray.600 | gray.800 | not-allowed | opacity: 0.5, Badge |
-| **Focus** | - | - | - | boxShadow: outline |
+| **Default** | 2px gray.600 | gray.800 | pointer | - |
+| **Hover** | 2px blue.400 | gray.700 | pointer | - |
+| **Selected** | 2px blue.500 | blue.900 | pointer | CheckCircle icon (top-right) |
+| **Disabled** | 2px gray.700 dashed | gray.800 | not-allowed | Badge + visible explanation text, grayscale thumbnail |
+| **Focus** | - | - | - | outline: 2px blue.300 |
 
 ### Component Structure
 
-Uses Chakra's `useRadio` hook for proper radio button semantics with styled card visuals:
+Uses Chakra's `useRadio` hook for proper radio button semantics with styled card visuals.
+
+**Layout: Horizontal card with image on left, text on right**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ ┌──────────┐  Template Name  [Needs: image]           [✓]      │
+│ │  IMAGE   │  Description text that explains what              │
+│ │ (120x60) │  this template does...                            │
+│ └──────────┘                                                    │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ```tsx
 import { useRadio, UseRadioProps } from "@chakra-ui/react";
 
 export const TemplateCard = (props: TemplateCardProps) => {
   const { template, disabledReason, testId, ...radioProps } = props;
-  const { getInputProps, getCheckboxProps, state } = useRadio(radioProps);
+  const { getInputProps, getRootProps, state } = useRadio(radioProps);
 
   const input = getInputProps();
-  const checkbox = getCheckboxProps();
-
-  // Destructure state for cleaner conditionals
+  const rootProps = getRootProps();
   const { isChecked, isDisabled } = state;
 
   return (
-    <Box as="label" data-testid={testId}>
-      {/* Visually hidden native radio input - provides all accessibility */}
+    <Box as="label" data-testid={testId} _focusWithin={{ "> div": { outline: "2px solid", outlineColor: "blue.300", outlineOffset: "2px" } }}>
       <input {...input} />
-
-      {/* Visual card representation */}
       <Box
-        {...checkbox}
+        {...rootProps}
         position="relative"
-        borderWidth={isChecked ? "2px" : "1px"}
-        borderColor={isChecked ? "blue.500" : "gray.600"}
+        borderWidth="2px"
+        borderColor={getBorderColor(isChecked, isDisabled ?? false)}
+        borderStyle={isDisabled ? "dashed" : "solid"}
         borderRadius="md"
         bg={isChecked ? "blue.900" : "gray.800"}
-        p={4}
+        p={3}
         cursor={isDisabled ? "not-allowed" : "pointer"}
-        opacity={isDisabled ? 0.5 : 1}
-        transition="all 0.2s"
-        minH="120px"
-        minW="44px"  // Touch target minimum
-        _hover={!isDisabled && !isChecked ? {
-          borderColor: "blue.400",
-          bg: "gray.700",
-          boxShadow: "md"
-        } : undefined}
-        _focus={{
-          boxShadow: "outline"
-        }}
-        _checked={{
-          borderColor: "blue.500",
-          borderWidth: "2px",
-          bg: "blue.900"
-        }}
-        _disabled={{
-          opacity: 0.5,
-          cursor: "not-allowed"
-        }}
+        transition="background 0.2s, border-color 0.2s"
+        minW="44px"
+        _hover={!isDisabled && !isChecked ? { borderColor: "blue.400", bg: "gray.700" } : undefined}
       >
-        {/* Disabled Badge - Top Left */}
-        {isDisabled && (
-          <Badge
-            position="absolute"
-            top={2}
-            left={2}
-            colorScheme="gray"
-            fontSize="xs"
-          >
-            {disabledReason || "Needs articles"}
-          </Badge>
-        )}
-
         {/* Selected Indicator - Top Right */}
         {isChecked && (
-          <Icon
-            as={CheckCircleIcon}
-            position="absolute"
-            top={2}
-            right={2}
-            color="blue.400"
-            boxSize={5}
-            aria-hidden="true"
-          />
+          <Icon as={CheckCircleIcon} position="absolute" top={2} right={2} color="blue.400" boxSize={5} aria-hidden="true" />
         )}
 
-        {/* Thumbnail Preview Area */}
-        <Box
-          bg="gray.900"
-          borderRadius="sm"
-          h="60px"
-          mb={3}
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        >
-          {template.thumbnail ? (
-            <Image src={template.thumbnail} alt="" maxH="100%" />
-          ) : (
-            <Icon as={ViewIcon} color="gray.500" boxSize={6} aria-hidden="true" />
-          )}
-        </Box>
+        {/* Horizontal layout: Image left, text right */}
+        <HStack spacing={4} align="center">
+          {/* Thumbnail - fixed size */}
+          <Box
+            bg="gray.900"
+            borderRadius="sm"
+            w="120px"
+            h="60px"
+            flexShrink={0}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            filter={isDisabled ? "grayscale(100%)" : undefined}
+            opacity={isDisabled ? 0.5 : 1}
+            p={1}
+          >
+            {getThumbnailContent(template)}
+          </Box>
 
-        {/* Template Info */}
-        <VStack align="start" spacing={1}>
-          <Text fontWeight="medium" fontSize="sm" color="white" noOfLines={1}>
-            {template.name}
-          </Text>
-          <Text fontSize="xs" color="gray.400" noOfLines={2}>
-            {template.description}
-          </Text>
-        </VStack>
+          {/* Text content */}
+          <VStack align="start" spacing={1} flex={1} minW={0}>
+            <HStack spacing={2} w="100%">
+              <Text fontWeight="medium" fontSize="sm" color={isDisabled ? "gray.400" : "white"}>
+                {template.name}
+              </Text>
+              {isDisabled && (
+                <Badge colorScheme="orange" variant="subtle" fontSize="xs" flexShrink={0}>
+                  {disabledReason}
+                </Badge>
+              )}
+            </HStack>
+            <Text fontSize="sm" color="gray.400">
+              {template.description}
+            </Text>
+            {/* Visible explanation for disabled state - accessible alternative to tooltip */}
+            {isDisabled && (
+              <HStack spacing={1} align="center">
+                <Icon as={InfoOutlineIcon} boxSize={3} color="gray.400" aria-hidden="true" />
+                <Text fontSize="xs" color="gray.400">
+                  {explanation}
+                </Text>
+              </HStack>
+            )}
+          </VStack>
+        </HStack>
       </Box>
     </Box>
   );
@@ -434,7 +421,7 @@ Manual testing scenarios (test within a RadioGroup parent):
    - Solution: Always have fallback icon
 
 4. **Text overflow**: Template names/descriptions may be too long
-   - Solution: Use `noOfLines` prop for text truncation
+   - Solution: Since descriptions are hardcoded, write them concisely - no truncation needed
 
 5. **Click event bubbling**: Nested interactive elements could cause issues
    - Solution: This design has no nested interactives
@@ -492,7 +479,7 @@ Before marking this story complete, verify:
 - [x] Touch target is at least 44x44px on mobile
 - [x] Badge displays "Needs articles" (or custom text) when disabled
 - [x] Checkmark icon displays when checked
-- [x] Text truncates properly for long template names/descriptions
+- [x] Text displays fully (no truncation needed - descriptions are hardcoded and concise)
 
 ## Dev Agent Record
 
@@ -547,3 +534,5 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 - 2025-12-26: Story implementation complete - Created TemplateCard component with all visual states, radio input integration, accessibility features, and comprehensive test suite (21 tests)
 - 2025-12-26: Code review complete - Fixed 6 issues (added displayName, strengthened tests, added hover/selected state tests, deleted garbage files, updated verification checklist). Test count now 24.
+- 2025-12-28: UX refinement - Changed from vertical layout (image on top) to horizontal layout (image left, text right) for unified mobile/desktop experience. Removed text truncation (descriptions are hardcoded). Added tooltip to disabled badge. Increased font size to sm for accessibility.
+- 2025-12-28: Accessibility improvement - Replaced tooltip with visible explanation text for disabled templates. Tooltips are not accessible (hover-only, no touch/keyboard). Now shows explanation text with info icon below template description. Updated language to reflect detection uncertainty ("No images detected in recent articles" instead of "Your feed doesn't include images").

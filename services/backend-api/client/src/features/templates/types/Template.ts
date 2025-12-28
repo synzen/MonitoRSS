@@ -5,6 +5,7 @@ export interface Template {
   name: string;
   description: string;
   thumbnail?: string;
+  ThumbnailComponent?: React.FC;
   requiredFields: string[];
   createMessageComponent: (imageField?: string) => MessageComponentRoot;
 }
