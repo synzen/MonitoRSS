@@ -77,7 +77,7 @@ const TestSendErrorPanel = ({
             aria-expanded={isDetailsOpen}
             aria-controls="technical-details-section"
           >
-            What Discord received
+            Technical Details
           </Button>
           <Collapse in={isDetailsOpen} animateOpacity>
             <Box

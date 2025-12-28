@@ -1,5 +1,4 @@
 import {
-  Box,
   Button,
   FormControl,
   FormErrorMessage,
@@ -16,16 +15,7 @@ import {
   ModalOverlay,
   Stack,
   Text,
-  Stepper,
-  Step,
-  StepIndicator,
-  StepStatus,
-  StepNumber,
-  StepTitle,
-  StepSeparator,
-  useSteps,
 } from "@chakra-ui/react";
-import { CheckIcon } from "@chakra-ui/icons";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -78,8 +68,6 @@ interface Props {
 
 type FormData = InferType<typeof formSchema>;
 
-const connectionSteps = [{ title: "Channel" }, { title: "Template" }];
-
 export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> = ({
   onClose,
   isOpen,
@@ -98,16 +86,10 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
     articles,
     feedFields,
     detectedImageField,
+    isLoadingArticles,
     handleNextStep: templateHandleNextStep,
     handleBackStep,
   } = useConnectionTemplateSelection({ isOpen, isEditing: false });
-
-  // Stepper for visual progress
-  const activeStepIndex = isTemplateStep ? 1 : 0;
-  const { activeStep } = useSteps({
-    index: activeStepIndex,
-    count: connectionSteps.length,
-  });
 
   const {
     handleSubmit,
@@ -324,27 +306,6 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
 
   const useError = error || updateError;
 
-  // Create step indicator for template selection modal
-  const templateStepIndicator = (
-    <Stepper index={1} size="sm" colorScheme="blue">
-      {connectionSteps.map((step) => (
-        <Step key={step.title}>
-          <StepIndicator>
-            <StepStatus
-              complete={<CheckIcon boxSize={3} />}
-              incomplete={<StepNumber />}
-              active={<StepNumber />}
-            />
-          </StepIndicator>
-          <Box flexShrink="0">
-            <StepTitle>{step.title}</StepTitle>
-          </Box>
-          <StepSeparator />
-        </Step>
-      ))}
-    </Stepper>
-  );
-
   // For template selection step, show TemplateGalleryModal instead of regular modal
   if (isTemplateStep) {
     return (
@@ -362,20 +323,21 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
         }))}
         selectedArticleId={selectedArticleId}
         onArticleChange={setSelectedArticleId}
+        isLoadingArticles={isLoadingArticles}
         feedId={feedId || ""}
         userFeed={userFeed}
         secondaryActionLabel="Skip"
         onSecondaryAction={onSkip}
-        tertiaryActionLabel="Back"
+        tertiaryActionLabel="← Back to Channel"
         onTertiaryAction={handleBackStep}
         testId="webhook-template-selection-modal"
-        stepIndicator={templateStepIndicator}
         onTestSend={handleTestSend}
         isTestSendLoading={isTestSending}
         testSendFeedback={testSendFeedback}
         onClearTestSendFeedback={clearTestSendFeedback}
         onSave={handleSave}
         isSaveLoading={isSaving || isSubmitting}
+        saveError={error || updateError}
       />
     );
   }
@@ -393,23 +355,6 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
         <ModalCloseButton />
         <ModalBody>
           <Stack spacing={4}>
-            <Stepper index={activeStep} size="sm" colorScheme="blue">
-              {connectionSteps.map((step) => (
-                <Step key={step.title}>
-                  <StepIndicator>
-                    <StepStatus
-                      complete={<CheckIcon boxSize={3} />}
-                      incomplete={<StepNumber />}
-                      active={<StepNumber />}
-                    />
-                  </StepIndicator>
-                  <Box flexShrink="0">
-                    <StepTitle>{step.title}</StepTitle>
-                  </Box>
-                  <StepSeparator />
-                </Step>
-              ))}
-            </Stepper>
             <Text>
               Send articles authored by a webhook with a custom name and icon as a message to a
               Discord channel or thread.
@@ -639,7 +584,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                 <span>{t("common.buttons.cancel")}</span>
               </Button>
               <Button colorScheme="blue" onClick={handleNextStep} isDisabled={isSubmitting}>
-                <span>Next</span>
+                <span>Next: Choose Template</span>
               </Button>
             </HStack>
           )}

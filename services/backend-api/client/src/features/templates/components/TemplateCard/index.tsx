@@ -12,6 +12,9 @@ const FIELD_EXPLANATIONS: Record<string, string> = {
   default: "This template requires fields that your feed's articles don't have.",
 };
 
+const NEEDS_ARTICLES_EXPLANATION =
+  "Templates require article data to determine compatibility. This feed currently has no articles available.";
+
 const getExplanationForFields = (requiredFields: string[]): string => {
   if (requiredFields.length === 0) {
     return "";
@@ -41,7 +44,10 @@ const TemplateCardComponent = (props: TemplateCardProps) => {
 
   const { isChecked, isDisabled } = state;
 
-  const explanation = getExplanationForFields(template.requiredFields || []);
+  const needsArticles = disabledReason === "Needs articles";
+  const explanation = needsArticles
+    ? NEEDS_ARTICLES_EXPLANATION
+    : getExplanationForFields(template.requiredFields || []);
 
   return (
     <Box

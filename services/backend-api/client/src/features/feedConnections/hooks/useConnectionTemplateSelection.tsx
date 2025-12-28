@@ -31,12 +31,13 @@ export const useConnectionTemplateSelection = ({
   // Fetch user feed data for template preview
   const { feed: userFeed } = useUserFeed({ feedId });
 
-  // Fetch articles for template compatibility and preview (no selectProperties to get all fields)
-  const { data: articlesData } = useUserFeedArticles({
+  // Fetch articles for template compatibility and preview
+  const { data: articlesData, fetchStatus } = useUserFeedArticles({
     feedId,
     data: {
       skip: 0,
       limit: 10,
+      selectProperties: ["id", "title"],
       formatOptions: {
         dateFormat: userFeed?.formatOptions?.dateFormat,
         dateTimezone: userFeed?.formatOptions?.dateTimezone,
@@ -126,6 +127,7 @@ export const useConnectionTemplateSelection = ({
   };
 
   const isTemplateStep = currentStep === ConnectionCreationStep.TemplateSelection && !isEditing;
+  const isLoadingArticles = fetchStatus === "fetching";
 
   return {
     currentStep,
@@ -139,6 +141,7 @@ export const useConnectionTemplateSelection = ({
     articles,
     feedFields,
     detectedImageField,
+    isLoadingArticles,
     handleNextStep,
     handleBackStep,
     getTemplateUpdateDetails,

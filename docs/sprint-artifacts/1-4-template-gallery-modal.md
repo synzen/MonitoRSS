@@ -106,7 +106,9 @@ So that I can browse templates visually and see exactly how my messages will loo
 - [ ] **Task 9: Implement article selector integration** (AC: #6)
   - [ ] Accept `articles` prop with available articles for preview
   - [ ] Accept `selectedArticleId` and `onArticleChange` props for controlled selection
+  - [ ] Accept `isLoadingArticles` prop to show loading state while articles are being fetched
   - [ ] Add article selector UI above or near preview panel
+  - [ ] Show Skeleton placeholder for article selector while loading
   - [ ] Reuse existing article selector component or pattern from MessageBuilder
   - [ ] Update preview when article selection changes
 
@@ -170,6 +172,8 @@ interface TemplateGalleryModalProps {
   selectedArticleId?: string;
   /** Callback when article selection changes */
   onArticleChange: (articleId: string) => void;
+  /** Whether articles are currently being loaded */
+  isLoadingArticles?: boolean;
   /** Connection ID for preview API (if applicable) */
   connectionId?: string;
   /** Feed ID for preview API */

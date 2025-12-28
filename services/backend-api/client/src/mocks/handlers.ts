@@ -63,7 +63,6 @@ import { generateMockApiErrorResponse } from "./generateMockApiErrorResponse";
 import mockDiscordBot from "./data/discordBot";
 import {
   CreateDiscordChannelConnectionCloneOutput,
-  CreateDiscordChannelConnectionOutput,
   CreateDiscordChannelConnectionPreviewOutput,
   CreateDiscordChannelConnectionTestArticleOutput,
   UpdateDiscordChannelConnectionOutput,
@@ -944,9 +943,19 @@ const handlers = [
   http.post("/api/v1/user-feeds/:feedId/connections/discord-channels", async () => {
     await delay(500);
 
-    return HttpResponse.json<CreateDiscordChannelConnectionOutput>({
-      result: mockFeedChannelConnections[0],
-    });
+    // Sample error state for testing - uncomment the error response to test error handling
+    return HttpResponse.json(
+      generateMockApiErrorResponse({
+        code: "DISCORD_CHANNEL_PERMISSIONS_MISSING",
+      }),
+      {
+        status: 403,
+      }
+    );
+
+    // return HttpResponse.json<CreateDiscordChannelConnectionOutput>({
+    //   result: mockFeedChannelConnections[0],
+    // });
   }),
 
   http.post("/api/v1/user-feeds/:feedId/connections/discord-channels/:id/clone", async () => {

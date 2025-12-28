@@ -1,5 +1,4 @@
 import {
-  Box,
   Button,
   FormControl,
   FormErrorMessage,
@@ -16,16 +15,7 @@ import {
   ModalOverlay,
   Stack,
   Text,
-  Stepper,
-  Step,
-  StepIndicator,
-  StepStatus,
-  StepNumber,
-  StepTitle,
-  StepSeparator,
-  useSteps,
 } from "@chakra-ui/react";
-import { CheckIcon } from "@chakra-ui/icons";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -78,8 +68,6 @@ interface Props {
 
 type FormData = InferType<typeof formSchema>;
 
-const connectionSteps = [{ title: "Channel" }, { title: "Template" }];
-
 export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
   connection,
   onClose,
@@ -98,16 +86,10 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
     articles,
     feedFields,
     detectedImageField,
+    isLoadingArticles,
     handleNextStep: templateHandleNextStep,
     handleBackStep,
   } = useConnectionTemplateSelection({ isOpen, isEditing });
-
-  // Stepper for visual progress (only for new connections)
-  const activeStepIndex = isTemplateStep ? 1 : 0;
-  const { activeStep } = useSteps({
-    index: activeStepIndex,
-    count: connectionSteps.length,
-  });
 
   const defaultValues: Partial<FormData> = {
     name: connection?.name,
@@ -367,27 +349,6 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
 
   const useError = error || updateError;
 
-  // Create step indicator for template selection modal
-  const templateStepIndicator = (
-    <Stepper index={1} size="sm" colorScheme="blue">
-      {connectionSteps.map((step, index) => (
-        <Step key={step.title}>
-          <StepIndicator>
-            <StepStatus
-              complete={<CheckIcon boxSize={3} />}
-              incomplete={<StepNumber />}
-              active={<StepNumber />}
-            />
-          </StepIndicator>
-          <Box flexShrink="0">
-            <StepTitle>{step.title}</StepTitle>
-          </Box>
-          <StepSeparator />
-        </Step>
-      ))}
-    </Stepper>
-  );
-
   // For template selection step, show TemplateGalleryModal instead of regular modal
   if (isTemplateStep) {
     return (
@@ -405,20 +366,21 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
         }))}
         selectedArticleId={selectedArticleId}
         onArticleChange={setSelectedArticleId}
+        isLoadingArticles={isLoadingArticles}
         feedId={feedId || ""}
         userFeed={userFeed}
         secondaryActionLabel="Skip"
         onSecondaryAction={onSkip}
-        tertiaryActionLabel="Back"
+        tertiaryActionLabel="← Back to Channel"
         onTertiaryAction={handleBackStep}
         testId="forum-template-selection-modal"
-        stepIndicator={templateStepIndicator}
         onTestSend={handleTestSend}
         isTestSendLoading={isTestSending}
         testSendFeedback={testSendFeedback}
         onClearTestSendFeedback={clearTestSendFeedback}
         onSave={handleSave}
         isSaveLoading={isSaving || isSubmitting}
+        saveError={error || updateError}
       />
     );
   }
@@ -438,25 +400,6 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
         <ModalCloseButton />
         <ModalBody>
           <Stack spacing={4}>
-            {!isEditing && (
-              <Stepper index={activeStep} size="sm" colorScheme="blue">
-                {connectionSteps.map((step) => (
-                  <Step key={step.title}>
-                    <StepIndicator>
-                      <StepStatus
-                        complete={<CheckIcon boxSize={3} />}
-                        incomplete={<StepNumber />}
-                        active={<StepNumber />}
-                      />
-                    </StepIndicator>
-                    <Box flexShrink="0">
-                      <StepTitle>{step.title}</StepTitle>
-                    </Box>
-                    <StepSeparator />
-                  </Step>
-                ))}
-              </Stepper>
-            )}
             <Text>Send articles as messages authored by the bot to a Discord forum</Text>
             <form id="addfeed" onSubmit={handleSubmit(onSubmit)}>
               <Stack spacing={4}>
@@ -608,7 +551,7 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
               </Button>
             ) : (
               <Button colorScheme="blue" onClick={handleNextStep} isDisabled={isSubmitting}>
-                <span>Next</span>
+                <span>Next: Choose Template</span>
               </Button>
             )}
           </HStack>

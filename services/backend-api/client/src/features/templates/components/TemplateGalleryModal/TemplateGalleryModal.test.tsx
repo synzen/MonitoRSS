@@ -633,6 +633,30 @@ describe("TemplateGalleryModal", () => {
       );
       expect(screen.queryByLabelText("Preview article")).not.toBeInTheDocument();
     });
+
+    it("shows skeleton for article selector when loading", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal {...defaultProps} articles={[]} isLoadingArticles />
+        </TestWrapper>
+      );
+      // The label should still be visible
+      expect(screen.getByText("Preview article")).toBeInTheDocument();
+      // But the select should not be visible (skeleton instead)
+      expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    });
+
+    it("shows skeleton for preview panel when loading articles", () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal {...defaultProps} articles={[]} isLoadingArticles />
+        </TestWrapper>
+      );
+      // The preview area should show a skeleton, not the "no articles" message
+      expect(
+        screen.queryByText("Preview will appear when your feed has articles")
+      ).not.toBeInTheDocument();
+    });
   });
 
   describe("action buttons", () => {

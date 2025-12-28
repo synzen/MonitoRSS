@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, ReactNode } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { FaDiscord } from "react-icons/fa";
 import {
   Modal,
@@ -28,6 +28,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { TemplateCard } from "../TemplateCard";
 import { DiscordMessageDisplay } from "../../../../components/DiscordMessageDisplay";
+import { InlineErrorAlert } from "../../../../components/InlineErrorAlert";
 import { Template, TestSendFeedback } from "../../types";
 import { TestSendErrorPanel } from "../TestSendErrorPanel";
 import {
@@ -58,6 +59,7 @@ export interface TemplateGalleryModalProps {
   articles: Article[];
   selectedArticleId?: string;
   onArticleChange: (articleId: string) => void;
+  isLoadingArticles?: boolean;
   connectionId?: string;
   feedId: string;
   userFeed?: UserFeed;
@@ -70,13 +72,13 @@ export interface TemplateGalleryModalProps {
   tertiaryActionLabel?: string;
   onTertiaryAction?: () => void;
   testId?: string;
-  stepIndicator?: ReactNode;
   onTestSend?: () => void;
   isTestSendLoading?: boolean;
   testSendFeedback?: TestSendFeedback | null;
   onClearTestSendFeedback?: () => void;
   onSave?: () => void;
   isSaveLoading?: boolean;
+  saveError?: { message: string } | null;
 }
 
 export function isTemplateCompatible(
@@ -216,6 +218,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
     articles,
     selectedArticleId,
     onArticleChange,
+    isLoadingArticles,
     feedId,
     connectionId,
     userFeed,
@@ -228,13 +231,13 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
     tertiaryActionLabel,
     onTertiaryAction,
     testId,
-    stepIndicator,
     onTestSend,
     isTestSendLoading,
     testSendFeedback,
     onClearTestSendFeedback,
     onSave,
     isSaveLoading,
+    saveError,
   } = props;
 
   const hasArticles = articles.length > 0;
@@ -273,6 +276,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
   // Track previous loading state to detect transition from loading to loaded
   const wasLoadingRef = useRef(false);
   const [previewAnnouncement, setPreviewAnnouncement] = useState("");
+  const saveErrorRef = useRef<HTMLDivElement>(null);
 
   // Announce when preview finishes loading for a template
   useEffect(() => {
@@ -292,6 +296,13 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
     return () => {};
   }, [isActuallyLoading, previewData, selectedTemplateId, templates]);
 
+  // Scroll to save error when it appears
+  useEffect(() => {
+    if (saveError && saveErrorRef.current) {
+      saveErrorRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [saveError]);
+
   return (
     <Modal
       isOpen={isOpen}
@@ -304,15 +315,12 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
     >
       <ModalOverlay />
       <ModalContent
-        bg="gray.800"
         maxH={{ base: "100vh", lg: "90vh" }}
         data-testid={testId}
         aria-labelledby="template-gallery-modal-header"
       >
-        <ModalHeader id="template-gallery-modal-header" color="white">
-          Choose a Template
-        </ModalHeader>
-        <ModalCloseButton color="white" />
+        <ModalHeader id="template-gallery-modal-header">Choose a Template</ModalHeader>
+        <ModalCloseButton />
         <ModalBody>
           {testSendFeedback?.status === "error" && testSendFeedback.deliveryStatus ? (
             <TestSendErrorPanel
@@ -323,7 +331,6 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
             />
           ) : (
             <>
-              {stepIndicator && <Box mb={4}>{stepIndicator}</Box>}
               {hasNoFeedFields && (
                 <Alert status="info" mb={4} borderRadius="md">
                   <AlertIcon />
@@ -334,11 +341,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                 <GridItem>
                   <Box as="fieldset">
                     <VisuallyHidden as="legend">Choose a template</VisuallyHidden>
-                    <SimpleGrid
-                      {...getRootProps()}
-                      columns={{ base: 1, md: 2, lg: 3 }}
-                      spacing={4}
-                    >
+                    <SimpleGrid {...getRootProps()} columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
                       {templates.map((template) => {
                         const isCompatible = isTemplateCompatible(
                           template,
@@ -375,58 +378,67 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                     minH={{ base: "200px", lg: "400px" }}
                     role="region"
                     aria-label="Template preview"
-                    aria-busy={isActuallyLoading}
+                    aria-busy={isActuallyLoading || isLoadingArticles}
                   >
                     <Text fontSize="sm" color="gray.400" mb={3}>
                       Preview
                     </Text>
-                    {articles.length > 0 && (
+                    {(articles.length > 0 || isLoadingArticles) && (
                       <FormControl mb={4}>
-                        <FormLabel
-                          htmlFor="article-selector"
-                          fontSize="xs"
-                          color="gray.400"
-                          mb={1}
-                        >
+                        <FormLabel htmlFor="article-selector" fontSize="xs" color="gray.400" mb={1}>
                           Preview article
                         </FormLabel>
-                        <Select
-                          id="article-selector"
-                          value={selectedArticleId || ""}
-                          onChange={(e) => onArticleChange(e.target.value)}
-                          bg="gray.700"
-                          borderColor="gray.600"
-                          size="sm"
-                          color="white"
-                          _hover={{ borderColor: "gray.500" }}
-                        >
-                          {articles.map((article) => (
-                            <option
-                              key={article.id}
-                              value={article.id}
-                              style={{ backgroundColor: "#2D3748" }}
-                            >
-                              {article.title || article.id}
-                            </option>
-                          ))}
-                        </Select>
+                        {isLoadingArticles ? (
+                          <Skeleton height="32px" borderRadius="md" aria-label="Loading articles" />
+                        ) : (
+                          <Select
+                            id="article-selector"
+                            value={selectedArticleId || ""}
+                            onChange={(e) => onArticleChange(e.target.value)}
+                            bg="gray.700"
+                            borderColor="gray.600"
+                            size="sm"
+                            color="white"
+                            _hover={{ borderColor: "gray.500" }}
+                          >
+                            {articles.map((article) => (
+                              <option
+                                key={article.id}
+                                value={article.id}
+                                style={{ backgroundColor: "#2D3748" }}
+                              >
+                                {article.title || article.id}
+                              </option>
+                            ))}
+                          </Select>
+                        )}
                       </FormControl>
                     )}
                     <Box>
-                      {isActuallyLoading && <Skeleton height="300px" borderRadius="md" />}
-                      {!isActuallyLoading && isPreviewError && (
+                      {(isActuallyLoading || isLoadingArticles) && (
+                        <Skeleton
+                          height="300px"
+                          borderRadius="md"
+                          aria-label={isLoadingArticles ? "Loading articles" : "Loading preview"}
+                        />
+                      )}
+                      {!isActuallyLoading && !isLoadingArticles && isPreviewError && (
                         <Alert status="error" borderRadius="md">
                           <AlertIcon />
                           Failed to load preview. Please try again.
                         </Alert>
                       )}
-                      {!isActuallyLoading && !isPreviewError && previewMessages.length > 0 && (
-                        <DiscordMessageDisplay
-                          messages={previewMessages}
-                          maxHeight={{ base: 200, lg: 350 }}
-                        />
-                      )}
                       {!isActuallyLoading &&
+                        !isLoadingArticles &&
+                        !isPreviewError &&
+                        previewMessages.length > 0 && (
+                          <DiscordMessageDisplay
+                            messages={previewMessages}
+                            maxHeight={{ base: 200, lg: 350 }}
+                          />
+                        )}
+                      {!isActuallyLoading &&
+                        !isLoadingArticles &&
                         !isPreviewError &&
                         previewMessages.length === 0 &&
                         !selectedTemplateId && (
@@ -435,6 +447,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                           </Text>
                         )}
                       {!isActuallyLoading &&
+                        !isLoadingArticles &&
                         !isPreviewError &&
                         previewMessages.length === 0 &&
                         selectedTemplateId &&
@@ -444,6 +457,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                           </Text>
                         )}
                       {!isActuallyLoading &&
+                        !isLoadingArticles &&
                         !isPreviewError &&
                         previewMessages.length === 0 &&
                         articles.length === 0 && (
@@ -496,6 +510,11 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                   {previewAnnouncement}
                 </div>
               </VisuallyHidden>
+              {saveError && (
+                <Box mt={4} ref={saveErrorRef}>
+                  <InlineErrorAlert title="Failed to save" description={saveError.message} />
+                </Box>
+              )}
             </>
           )}
         </ModalBody>
