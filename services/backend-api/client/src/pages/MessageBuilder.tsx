@@ -45,7 +45,11 @@ import { ComponentPropertiesPanel } from "./MessageBuilder/ComponentPropertiesPa
 import { ComponentTreeItem } from "./MessageBuilder/ComponentTreeItem";
 import { ComponentTreeToolbar } from "./MessageBuilder/ComponentTreeToolbar";
 import { NavigableTreeItem } from "../components/NavigableTree";
-import { NavigableTreeContext, NavigableTreeProvider } from "../contexts/NavigableTreeContext";
+import {
+  NavigableTreeContext,
+  NavigableTreeProvider,
+  useNavigableTreeContext,
+} from "../contexts/NavigableTreeContext";
 import {
   MessageBuilderProvider,
   useMessageBuilderContext,
@@ -79,7 +83,7 @@ import { useMessageBuilderTour, useIsMessageBuilderDesktop } from "../hooks";
 import { MESSAGE_BUILDER_MOBILE_BREAKPOINT } from "./MessageBuilder/constants/MessageBuilderMobileBreakpoint";
 import { useUserFeedArticles } from "../features/feed/hooks";
 import { TemplateGalleryModal } from "../features/templates/components/TemplateGalleryModal";
-import { TEMPLATES } from "../features/templates/constants";
+import { TEMPLATES, getTemplateById, DEFAULT_TEMPLATE } from "../features/templates/constants";
 
 const SIDE_PANEL_WIDTH = {
   base: "350px",
@@ -93,7 +97,8 @@ const CENTER_PANEL_WIDTH = {
 
 const MessageBuilderContent: React.FC = () => {
   const { resetMessage } = useMessageBuilderContext();
-  const { watch, handleSubmit, formState } = useFormContext<MessageBuilderFormState>();
+  const { watch, handleSubmit, formState, setValue } = useFormContext<MessageBuilderFormState>();
+  const { setCurrentSelectedId } = useNavigableTreeContext();
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const [isProblemsCollapsed, setIsProblemsCollapsed] = useState(false);
   const messageComponent = watch("messageComponent");
@@ -164,6 +169,33 @@ const MessageBuilderContent: React.FC = () => {
   const handleCloseTemplatesModal = () => {
     setSelectedTemplateId(undefined);
     onCloseTemplates();
+  };
+
+  // Detect image field from articles for template creation
+  const detectedImageField =
+    galleryArticles.length > 0
+      ? Object.keys(galleryArticles[0]).find(
+          (key) =>
+            key.toLowerCase().includes("image") &&
+            (galleryArticles[0] as Record<string, unknown>)[key] !== undefined
+        ) || null
+      : null;
+
+  // Apply template to form state
+  const handleApplyTemplate = (selectedId: string) => {
+    const template = getTemplateById(selectedId) || DEFAULT_TEMPLATE;
+    const newMessageComponent = template.createMessageComponent(detectedImageField || "image");
+
+    setValue("messageComponent", newMessageComponent, {
+      shouldValidate: true,
+      shouldDirty: true,
+      shouldTouch: true,
+    });
+
+    // Select the root component so the user sees something selected
+    setCurrentSelectedId(newMessageComponent.id);
+
+    handleCloseTemplatesModal();
   };
 
   // Header hooks
@@ -683,6 +715,7 @@ const MessageBuilderContent: React.FC = () => {
               selectedTemplateId={selectedTemplateId}
               onTemplateSelect={setSelectedTemplateId}
               feedFields={feedFields}
+              detectedImageField={detectedImageField}
               articles={galleryArticles}
               selectedArticleId={selectedArticleId}
               onArticleChange={setSelectedArticleId}
@@ -694,6 +727,8 @@ const MessageBuilderContent: React.FC = () => {
               modalTitle="Browse Templates"
               showComparisonPreview
               currentMessageComponent={messageComponent}
+              primaryActionLabel="Use this template"
+              onPrimaryAction={handleApplyTemplate}
               secondaryActionLabel="Cancel"
               onSecondaryAction={handleCloseTemplatesModal}
               finalFocusRef={templatesButtonRef}

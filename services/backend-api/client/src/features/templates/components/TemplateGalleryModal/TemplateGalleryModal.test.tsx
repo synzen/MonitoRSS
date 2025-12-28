@@ -512,6 +512,31 @@ describe("TemplateGalleryModal", () => {
       const richEmbedRadio = radios.find((r) => r.getAttribute("value") === "rich-embed");
       expect(richEmbedRadio).toBeChecked();
     });
+
+    it("clears selection when selectedTemplateId changes to undefined", () => {
+      const { rerender } = render(
+        <TestWrapper>
+          <TemplateGalleryModal {...defaultProps} selectedTemplateId="rich-embed" />
+        </TestWrapper>
+      );
+
+      // Verify template is selected
+      const radios = screen.getAllByRole("radio");
+      const richEmbedRadio = radios.find((r) => r.getAttribute("value") === "rich-embed");
+      expect(richEmbedRadio).toBeChecked();
+
+      // Rerender with undefined selectedTemplateId (simulates modal close/reopen)
+      rerender(
+        <TestWrapper>
+          <TemplateGalleryModal {...defaultProps} selectedTemplateId={undefined} />
+        </TestWrapper>
+      );
+
+      // Verify no template is selected
+      const radiosAfter = screen.getAllByRole("radio");
+      const checkedRadios = radiosAfter.filter((r) => (r as HTMLInputElement).checked);
+      expect(checkedRadios).toHaveLength(0);
+    });
   });
 
   describe("feed capability filtering", () => {
@@ -692,7 +717,7 @@ describe("TemplateGalleryModal", () => {
       expect(screen.getByText("Apply Template")).toBeInTheDocument();
     });
 
-    it("disables primary action when no template selected", () => {
+    it("primary action button is always enabled for simpler UX", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal
@@ -702,20 +727,23 @@ describe("TemplateGalleryModal", () => {
           />
         </TestWrapper>
       );
-      expect(screen.getByText("Use this template")).toBeDisabled();
+      expect(screen.getByText("Use this template")).not.toBeDisabled();
     });
 
-    it("enables primary action when template is selected", () => {
+    it("does not call onPrimaryAction when clicked without template selected", async () => {
+      const user = userEvent.setup();
+      const onPrimaryAction = vi.fn();
       render(
         <TestWrapper>
           <TemplateGalleryModal
             {...defaultProps}
-            onPrimaryAction={vi.fn()}
-            selectedTemplateId="default"
+            onPrimaryAction={onPrimaryAction}
+            selectedTemplateId={undefined}
           />
         </TestWrapper>
       );
-      expect(screen.getByText("Use this template")).not.toBeDisabled();
+      await user.click(screen.getByText("Use this template"));
+      expect(onPrimaryAction).not.toHaveBeenCalled();
     });
 
     it("calls onPrimaryAction with selected template ID", async () => {
@@ -1230,6 +1258,7 @@ describe("TemplateGalleryModal", () => {
             selectedTemplateId="default"
             userFeed={mockUserFeed}
             connection={mockConnection}
+            showComparisonPreview={false}
           />
         </TestWrapper>
       );

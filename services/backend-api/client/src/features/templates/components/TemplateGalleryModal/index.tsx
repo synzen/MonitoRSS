@@ -304,9 +304,26 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
   const hasArticles = articles.length > 0;
   const canTestSend = hasArticles && !!selectedTemplateId && !!selectedArticleId;
 
+  // Validation error for template selection
+  const [showTemplateError, setShowTemplateError] = useState(false);
+
+  // Clear error when template is selected
+  useEffect(() => {
+    if (selectedTemplateId) {
+      setShowTemplateError(false);
+    }
+  }, [selectedTemplateId]);
+
+  // Reset error when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setShowTemplateError(false);
+    }
+  }, [isOpen]);
+
   const { getRootProps, getRadioProps } = useRadioGroup({
     name: "template-selection",
-    value: selectedTemplateId,
+    value: selectedTemplateId || "",
     onChange: onTemplateSelect,
   });
 
@@ -383,6 +400,19 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
   }, [saveError]);
 
   const showErrorPanel = testSendFeedback?.status === "error" && testSendFeedback.deliveryStatus;
+
+  // Handle primary action with validation
+  const handlePrimaryAction = () => {
+    if (!selectedTemplateId) {
+      setShowTemplateError(true);
+
+      return;
+    }
+
+    if (onPrimaryAction) {
+      onPrimaryAction(selectedTemplateId);
+    }
+  };
 
   const renderModalBodyContent = () => {
     if (showErrorPanel) {
@@ -696,7 +726,13 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
         <ModalBody>{renderModalBodyContent()}</ModalBody>
         {/* Hide footer when error panel is showing - error panel has its own action buttons */}
         {!showErrorPanel && (
-          <ModalFooter>
+          <ModalFooter flexDirection="column" gap={3} alignItems="stretch">
+            {showTemplateError && (
+              <Alert status="error" borderRadius="md">
+                <AlertIcon />
+                <AlertDescription>Please select a template first.</AlertDescription>
+              </Alert>
+            )}
             {onTestSend ? (
               <HStack w="100%" justifyContent="space-between">
                 <Button
@@ -723,7 +759,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                 </HStack>
               </HStack>
             ) : (
-              <>
+              <HStack w="100%" justifyContent="flex-end">
                 {tertiaryActionLabel && (
                   <Button
                     variant="link"
@@ -743,13 +779,12 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                   <Button
                     colorScheme="blue"
                     isLoading={isPrimaryActionLoading}
-                    isDisabled={!selectedTemplateId}
-                    onClick={() => selectedTemplateId && onPrimaryAction(selectedTemplateId)}
+                    onClick={handlePrimaryAction}
                   >
                     {primaryActionLabel}
                   </Button>
                 )}
-              </>
+              </HStack>
             )}
           </ModalFooter>
         )}
