@@ -4,7 +4,9 @@ import RouteParams from "../../../types/RouteParams";
 import { useUserFeedArticles, useUserFeed } from "../../feed/hooks";
 import { TEMPLATES, DEFAULT_TEMPLATE, getTemplateById } from "../../templates/constants/templates";
 import convertMessageBuilderStateToConnectionUpdate from "../../../pages/MessageBuilder/utils/convertMessageBuilderStateToConnectionUpdate";
-import { detectImageField } from "../../templates/utils";
+import { detectFields } from "../../templates/utils";
+import { DetectedFields } from "../../templates/types";
+import { useTemplateFeedFields } from "../../templates/hooks";
 
 enum ConnectionCreationStep {
   ServerChannel = "server-channel",
@@ -37,7 +39,7 @@ export const useConnectionTemplateSelection = ({
     data: {
       skip: 0,
       limit: 10,
-      selectProperties: ["id", "title"],
+      selectProperties: ["*"],
       formatOptions: {
         dateFormat: userFeed?.formatOptions?.dateFormat,
         dateTimezone: userFeed?.formatOptions?.dateTimezone,
@@ -52,25 +54,11 @@ export const useConnectionTemplateSelection = ({
 
   // Extract feed fields from articles - only include fields with actual content
   const articles = articlesData?.result?.articles || [];
-  const feedFields =
-    articles.length > 0
-      ? Object.keys(articles[0]).filter((key) => {
-          if (key === "id" || key === "idHash") {
-            return false;
-          }
+  const feedFields = useTemplateFeedFields(articles as Array<Record<string, unknown>>);
 
-          const value = (articles[0] as Record<string, unknown>)[key];
-
-          // Field must have a truthy value (not undefined, null, or empty string)
-          return value !== undefined && value !== null && value !== "";
-        })
-      : [];
-
-  // Auto-detect image field by scanning article values for image URLs
-  const detectedImageField = useMemo(() => {
-    if (articles.length === 0) return null;
-
-    return detectImageField(articles[0] as Record<string, unknown>);
+  // Auto-detect fields by scanning article values
+  const detectedFields = useMemo<DetectedFields>(() => {
+    return detectFields(articles[0]);
   }, [articles]);
 
   // Set first article as selected when articles load
@@ -79,7 +67,6 @@ export const useConnectionTemplateSelection = ({
       setSelectedArticleId(articles[0].id);
     }
   }, [articles, selectedArticleId]);
-
 
   // Reset state when modal closes (so it's ready for next open without flash)
   useEffect(() => {
@@ -103,12 +90,11 @@ export const useConnectionTemplateSelection = ({
   };
 
   const getTemplateUpdateDetails = () => {
-    const imageField = detectedImageField || "image";
     const templateId = selectedTemplateId || DEFAULT_TEMPLATE.id;
 
-    // Get template and create message component with the detected image field
+    // Get template and create message component with detected fields
     const template = getTemplateById(templateId) || DEFAULT_TEMPLATE;
-    const messageComponent = template.createMessageComponent(imageField);
+    const messageComponent = template.createMessageComponent(detectedFields);
 
     return convertMessageBuilderStateToConnectionUpdate(messageComponent);
   };
@@ -127,7 +113,7 @@ export const useConnectionTemplateSelection = ({
     userFeed,
     articles,
     feedFields,
-    detectedImageField,
+    detectedFields,
     isLoadingArticles,
     handleNextStep,
     handleBackStep,

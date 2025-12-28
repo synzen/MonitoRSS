@@ -84,6 +84,8 @@ vi.mock("../features/templates/components/TemplateGalleryModal", () => ({
   }),
 }));
 
+const defaultDetectedFields = { image: "image", description: "description", title: "title" };
+
 describe("MessageBuilder Template Application", () => {
   describe("handleApplyTemplate function", () => {
     it("applies template messageComponent to form via setValue", () => {
@@ -91,7 +93,7 @@ describe("MessageBuilder Template Application", () => {
 
       const handleApplyTemplate = (selectedId: string) => {
         const template = getTemplateById(selectedId) || DEFAULT_TEMPLATE;
-        const newMessageComponent = template.createMessageComponent("image");
+        const newMessageComponent = template.createMessageComponent(defaultDetectedFields);
 
         setValue("messageComponent", newMessageComponent, {
           shouldValidate: true,
@@ -117,7 +119,7 @@ describe("MessageBuilder Template Application", () => {
 
       const handleApplyTemplate = (selectedId: string) => {
         const template = getTemplateById(selectedId) || DEFAULT_TEMPLATE;
-        const newMessageComponent = template.createMessageComponent("image");
+        const newMessageComponent = template.createMessageComponent(defaultDetectedFields);
 
         setValue("messageComponent", newMessageComponent, {
           shouldValidate: true,
@@ -144,7 +146,7 @@ describe("MessageBuilder Template Application", () => {
 
       const handleApplyTemplate = (selectedId: string) => {
         const template = getTemplateById(selectedId) || DEFAULT_TEMPLATE;
-        const newMessageComponent = template.createMessageComponent("image");
+        const newMessageComponent = template.createMessageComponent(defaultDetectedFields);
 
         setValue("messageComponent", newMessageComponent, {
           shouldValidate: true,
@@ -166,11 +168,11 @@ describe("MessageBuilder Template Application", () => {
 
     it("passes detected image field to createMessageComponent", () => {
       const setValue = vi.fn();
-      const detectedImageField = "thumbnail_url";
+      const detectedFields = { image: "thumbnail_url", description: "description", title: "title" };
 
       const handleApplyTemplate = (selectedId: string) => {
         const template = getTemplateById(selectedId) || DEFAULT_TEMPLATE;
-        const newMessageComponent = template.createMessageComponent(detectedImageField || "image");
+        const newMessageComponent = template.createMessageComponent(detectedFields);
 
         setValue("messageComponent", newMessageComponent, {
           shouldValidate: true,
@@ -233,11 +235,15 @@ describe("MessageBuilder Template Application", () => {
 
     it("templates with image use the passed imageField parameter", () => {
       const richEmbed = getTemplateById("rich-embed")!;
-      const customField = "custom_image_field";
-      const messageComponent = richEmbed.createMessageComponent(customField);
+      const customFields = {
+        image: "custom_image_field",
+        description: "description",
+        title: "title",
+      };
+      const messageComponent = richEmbed.createMessageComponent(customFields);
 
       const jsonStr = JSON.stringify(messageComponent);
-      expect(jsonStr).toContain(customField);
+      expect(jsonStr).toContain("custom_image_field");
     });
   });
 });

@@ -103,7 +103,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
     userFeed,
     articles,
     feedFields,
-    detectedImageField,
+    detectedFields,
     isLoadingArticles,
     handleNextStep: templateHandleNextStep,
     handleBackStep,
@@ -162,7 +162,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
     const { name, createThreadMethod, channelId: inputChannelId, threadId } = formValues;
 
     // Get template data to include in create call
-    const templateData = getTemplateUpdateData(selectedTemplateId, detectedImageField || "image");
+    const templateData = getTemplateUpdateData(selectedTemplateId, detectedFields);
 
     const createResult = await mutateAsync({
       feedId,
@@ -179,7 +179,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
     });
 
     return createResult?.result?.id;
-  }, [feedId, watch, mutateAsync, selectedTemplateId, detectedImageField]);
+  }, [feedId, watch, mutateAsync, selectedTemplateId, detectedFields]);
 
   // Get connection name from form
   const getConnectionName = useCallback(() => watch("name"), [watch]);
@@ -203,7 +203,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
     channelId: testSendChannelId,
     selectedTemplateId,
     selectedArticleId,
-    detectedImageField,
+    detectedFields,
     isOpen,
     createConnection,
     onSaveSuccess,
@@ -262,10 +262,8 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
         ? getTemplateById(selectedTemplateId) || DEFAULT_TEMPLATE
         : DEFAULT_TEMPLATE;
 
-      // Create message component with detected image field and convert to API format
-      const messageComponent = templateToApply.createMessageComponent(
-        detectedImageField || "image"
-      );
+      // Create message component with detected fields and convert to API format
+      const messageComponent = templateToApply.createMessageComponent(detectedFields);
       const templateData = convertMessageBuilderStateToConnectionUpdate(messageComponent);
 
       // Create the connection with template data in a single atomic operation
@@ -325,7 +323,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
         selectedTemplateId={selectedTemplateId}
         onTemplateSelect={setSelectedTemplateId}
         feedFields={feedFields}
-        detectedImageField={detectedImageField}
+        detectedFields={detectedFields}
         articles={articles.map((a) => ({
           id: a.id,
           title: (a as Record<string, unknown>).title as string | undefined,

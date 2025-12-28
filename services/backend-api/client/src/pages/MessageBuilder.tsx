@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Box,
   Flex,
@@ -84,6 +84,8 @@ import { MESSAGE_BUILDER_MOBILE_BREAKPOINT } from "./MessageBuilder/constants/Me
 import { useUserFeedArticles } from "../features/feed/hooks";
 import { TemplateGalleryModal } from "../features/templates/components/TemplateGalleryModal";
 import { TEMPLATES, getTemplateById, DEFAULT_TEMPLATE } from "../features/templates/constants";
+import { detectFields } from "../features/templates/utils";
+import { useTemplateFeedFields } from "../features/templates/hooks";
 
 const SIDE_PANEL_WIDTH = {
   base: "350px",
@@ -134,7 +136,7 @@ const MessageBuilderContent: React.FC = () => {
     data: {
       skip: 0,
       limit: 10,
-      selectProperties: ["id", "title", "description", "link", "image"],
+      selectProperties: ["*"],
       formatOptions: {
         dateFormat: userFeed?.formatOptions?.dateFormat,
         dateTimezone: userFeed?.formatOptions?.dateTimezone,
@@ -148,15 +150,7 @@ const MessageBuilderContent: React.FC = () => {
   });
 
   const galleryArticles = galleryArticlesData?.result?.articles || [];
-  const feedFields =
-    galleryArticles.length > 0
-      ? Object.keys(galleryArticles[0]).filter(
-          (key) =>
-            key !== "id" &&
-            key !== "idHash" &&
-            (galleryArticles[0] as Record<string, unknown>)[key] !== undefined
-        )
-      : [];
+  const feedFields = useTemplateFeedFields(galleryArticles as Array<Record<string, unknown>>);
 
   // Set initial selected article when articles load
   useEffect(() => {
@@ -171,20 +165,15 @@ const MessageBuilderContent: React.FC = () => {
     onCloseTemplates();
   };
 
-  // Detect image field from articles for template creation
-  const detectedImageField =
-    galleryArticles.length > 0
-      ? Object.keys(galleryArticles[0]).find(
-          (key) =>
-            key.toLowerCase().includes("image") &&
-            (galleryArticles[0] as Record<string, unknown>)[key] !== undefined
-        ) || null
-      : null;
+  // Detect fields from articles for template creation
+  const detectedFields = useMemo(() => {
+    return detectFields(galleryArticles[0]);
+  }, [galleryArticles]);
 
   // Apply template to form state
   const handleApplyTemplate = (selectedId: string) => {
     const template = getTemplateById(selectedId) || DEFAULT_TEMPLATE;
-    const newMessageComponent = template.createMessageComponent(detectedImageField || "image");
+    const newMessageComponent = template.createMessageComponent(detectedFields);
 
     setValue("messageComponent", newMessageComponent, {
       shouldValidate: true,
@@ -715,7 +704,7 @@ const MessageBuilderContent: React.FC = () => {
               selectedTemplateId={selectedTemplateId}
               onTemplateSelect={setSelectedTemplateId}
               feedFields={feedFields}
-              detectedImageField={detectedImageField}
+              detectedFields={detectedFields}
               articles={galleryArticles}
               selectedArticleId={selectedArticleId}
               onArticleChange={setSelectedArticleId}

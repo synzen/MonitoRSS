@@ -2,16 +2,13 @@ module.exports = {
   root: true,
   parser: "@typescript-eslint/parser",
   plugins: ["@typescript-eslint", "unused-imports"],
-  extends: [
-    "airbnb",
-    "airbnb-typescript",
-    "plugin:prettier/recommended",
-  ],
+  extends: ["airbnb", "airbnb-typescript", "plugin:prettier/recommended"],
   parserOptions: {
     project: "./tsconfig.eslint.json",
   },
   rules: {
     "no-empty": 0,
+    "no-continue": 0,
     "prettier/prettier": [
       "error",
       {
@@ -19,6 +16,7 @@ module.exports = {
       },
     ],
     "linebreak-style": 0,
+    "no-restricted-syntax": 0,
     /** Generic rules */
     "padding-line-between-statements": [
       "error",

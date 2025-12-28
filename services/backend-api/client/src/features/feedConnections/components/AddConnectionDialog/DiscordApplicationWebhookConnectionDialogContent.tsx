@@ -85,7 +85,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
     userFeed,
     articles,
     feedFields,
-    detectedImageField,
+    detectedFields,
     isLoadingArticles,
     handleNextStep: templateHandleNextStep,
     handleBackStep,
@@ -127,7 +127,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
     const { name, webhook, threadId: inputThreadId } = formValues;
 
     // Get template data to include in create call
-    const templateData = getTemplateUpdateData(selectedTemplateId, detectedImageField || "image");
+    const templateData = getTemplateUpdateData(selectedTemplateId, detectedFields);
 
     const createResult = await mutateAsync({
       feedId,
@@ -147,7 +147,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
     });
 
     return createResult?.result?.id;
-  }, [feedId, watch, mutateAsync, selectedTemplateId, channelId, detectedImageField]);
+  }, [feedId, watch, mutateAsync, selectedTemplateId, channelId, detectedFields]);
 
   // Get connection name from form
   const getConnectionName = useCallback(() => watch("name"), [watch]);
@@ -170,7 +170,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
     webhookIconUrl: webhookData?.iconUrl,
     selectedTemplateId,
     selectedArticleId,
-    detectedImageField,
+    detectedFields,
     isOpen,
     createConnection,
     onSaveSuccess,
@@ -197,10 +197,8 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
         ? getTemplateById(selectedTemplateId) || DEFAULT_TEMPLATE
         : DEFAULT_TEMPLATE;
 
-      // Create message component with detected image field and convert to API format
-      const messageComponent = templateToApply.createMessageComponent(
-        detectedImageField || "image"
-      );
+      // Create message component with detected fields and convert to API format
+      const messageComponent = templateToApply.createMessageComponent(detectedFields);
       const templateData = convertMessageBuilderStateToConnectionUpdate(messageComponent);
 
       // Create the connection with template data in a single atomic operation
@@ -247,7 +245,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
         selectedTemplateId={selectedTemplateId}
         onTemplateSelect={setSelectedTemplateId}
         feedFields={feedFields}
-        detectedImageField={detectedImageField}
+        detectedFields={detectedFields}
         articles={articles.map((a) => ({
           id: a.id,
           title: (a as Record<string, unknown>).title as string | undefined,

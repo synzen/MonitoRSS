@@ -58,5 +58,5 @@ development_status:
   # Epic 3: Existing User Template Access
   epic-3: in-progress
   3-1-templates-button-in-message-builder: done
-  3-2-apply-template-to-existing-connection: review
+  3-2-apply-template-to-existing-connection: done
   epic-3-retrospective: optional

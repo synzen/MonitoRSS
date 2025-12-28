@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { TestSendFeedback } from "../../templates/types";
+import { DetectedFields, TestSendFeedback } from "../../templates/types";
 import { DEFAULT_TEMPLATE, getTemplateById } from "../../templates/constants/templates";
 import { useSendTestArticleDirect } from "./useSendTestArticleDirect";
 import convertMessageBuilderStateToConnectionUpdate from "../../../pages/MessageBuilder/utils/convertMessageBuilderStateToConnectionUpdate";
@@ -36,7 +36,7 @@ export interface UseTestSendFlowOptions {
   webhookIconUrl?: string | undefined;
   selectedTemplateId: string | undefined;
   selectedArticleId: string | undefined;
-  detectedImageField: string | null;
+  detectedFields: DetectedFields;
   isOpen: boolean;
   createConnection: () => Promise<string | undefined>;
   onSaveSuccess: (connectionName: string | undefined) => void;
@@ -63,7 +63,7 @@ export const useTestSendFlow = ({
   webhookIconUrl,
   selectedTemplateId,
   selectedArticleId,
-  detectedImageField,
+  detectedFields,
   isOpen,
   createConnection,
   onSaveSuccess,
@@ -102,7 +102,7 @@ export const useTestSendFlow = ({
       }
 
       // Get template data to send
-      const templateData = getTemplateUpdateData(selectedTemplateId, detectedImageField || "image");
+      const templateData = getTemplateUpdateData(selectedTemplateId, detectedFields);
 
       const response = await sendTestArticleDirectMutation.mutateAsync({
         feedId,
@@ -233,13 +233,13 @@ export const useTestSendFlow = ({
  */
 export const getTemplateUpdateData = (
   selectedTemplateId: string | undefined,
-  imageField: string = "image"
+  detectedFields: DetectedFields
 ) => {
   const templateToApply = selectedTemplateId
     ? getTemplateById(selectedTemplateId) || DEFAULT_TEMPLATE
     : DEFAULT_TEMPLATE;
 
-  const messageComponent = templateToApply.createMessageComponent(imageField);
+  const messageComponent = templateToApply.createMessageComponent(detectedFields);
 
   return convertMessageBuilderStateToConnectionUpdate(messageComponent);
 };

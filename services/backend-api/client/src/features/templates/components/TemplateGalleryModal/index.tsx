@@ -30,7 +30,7 @@ import { TemplateCard } from "../TemplateCard";
 import { DiscordMessageDisplay } from "../../../../components/DiscordMessageDisplay";
 import { InlineErrorAlert } from "../../../../components/InlineErrorAlert";
 import { TemplateGalleryLoadingSkeleton } from "./TemplateGalleryLoadingSkeleton";
-import { Template, TestSendFeedback } from "../../types";
+import { DetectedFields, Template, TestSendFeedback } from "../../types";
 import { TestSendErrorPanel } from "../TestSendErrorPanel";
 import {
   CreateDiscordChannelConnectionPreviewInput,
@@ -58,7 +58,7 @@ export interface TemplateGalleryModalProps {
   selectedTemplateId?: string;
   onTemplateSelect: (templateId: string) => void;
   feedFields: string[];
-  detectedImageField?: string | null;
+  detectedFields: DetectedFields;
   articles: Article[];
   selectedArticleId?: string;
   onArticleChange: (articleId: string) => void;
@@ -92,45 +92,37 @@ export interface TemplateGalleryModalProps {
 export function isTemplateCompatible(
   template: Template,
   feedFields: string[],
-  detectedImageField?: string | null
+  detectedFields: DetectedFields
 ): boolean {
   if (!template.requiredFields || template.requiredFields.length === 0) {
     return true;
   }
 
   return template.requiredFields.every((field) => {
-    if (field === "image" && detectedImageField) {
-      return true;
-    }
-
-    return feedFields.includes(field);
+    return detectedFields[field] || feedFields.includes(field);
   });
 }
 
 export function getMissingFields(
   template: Template,
   feedFields: string[],
-  detectedImageField?: string | null
+  detectedFields: DetectedFields
 ): string[] {
   if (!template.requiredFields || template.requiredFields.length === 0) {
     return [];
   }
 
   return template.requiredFields.filter((field) => {
-    if (field === "image" && detectedImageField) {
-      return false;
-    }
-
-    return !feedFields.includes(field);
+    return !detectedFields[field] && !feedFields.includes(field);
   });
 }
 
 export function getDisabledReason(
   template: Template,
   feedFields: string[],
-  detectedImageField?: string | null
+  detectedFields: DetectedFields
 ): string {
-  const missingFields = getMissingFields(template, feedFields, detectedImageField);
+  const missingFields = getMissingFields(template, feedFields, detectedFields);
 
   if (missingFields.length === 0) {
     return "";
@@ -152,7 +144,7 @@ interface UseTemplatePreviewParams {
   connectionId?: string;
   userFeed?: UserFeed;
   connection?: FeedDiscordChannelConnection;
-  detectedImageField?: string | null;
+  detectedFields: DetectedFields;
   enabled: boolean;
 }
 
@@ -163,7 +155,7 @@ const useTemplatePreview = ({
   connectionId,
   userFeed,
   connection,
-  detectedImageField,
+  detectedFields,
   enabled,
 }: UseTemplatePreviewParams) => {
   return useQuery({
@@ -173,8 +165,8 @@ const useTemplatePreview = ({
         return null;
       }
 
-      // Create message component with detected image field
-      const messageComponent = template.createMessageComponent(detectedImageField || "image");
+      // Create message component with detected fields
+      const messageComponent = template.createMessageComponent(detectedFields);
 
       // If we have a connectionId, use the existing connection preview endpoint
       if (connectionId && userFeed && connection) {
@@ -271,7 +263,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
     selectedTemplateId,
     onTemplateSelect,
     feedFields,
-    detectedImageField,
+    detectedFields,
     articles,
     selectedArticleId,
     onArticleChange,
@@ -340,7 +332,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
     connectionId,
     userFeed,
     connection,
-    detectedImageField,
+    detectedFields,
     enabled: isOpen && !!selectedTemplateId && !!selectedArticleId,
   });
 
@@ -449,8 +441,8 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
               <VStack {...getRootProps()} spacing={3} align="stretch" p={1}>
                 {[...templates]
                   .sort((a, b) => {
-                    const aCompatible = isTemplateCompatible(a, feedFields, detectedImageField);
-                    const bCompatible = isTemplateCompatible(b, feedFields, detectedImageField);
+                    const aCompatible = isTemplateCompatible(a, feedFields, detectedFields);
+                    const bCompatible = isTemplateCompatible(b, feedFields, detectedFields);
 
                     if (aCompatible && !bCompatible) return -1;
                     if (!aCompatible && bCompatible) return 1;
@@ -458,16 +450,8 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                     return 0;
                   })
                   .map((template) => {
-                    const isCompatible = isTemplateCompatible(
-                      template,
-                      feedFields,
-                      detectedImageField
-                    );
-                    const disabledReason = getDisabledReason(
-                      template,
-                      feedFields,
-                      detectedImageField
-                    );
+                    const isCompatible = isTemplateCompatible(template, feedFields, detectedFields);
+                    const disabledReason = getDisabledReason(template, feedFields, detectedFields);
                     const radio = getRadioProps({
                       value: template.id,
                     });
@@ -523,7 +507,6 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                   </Select>
                 </FormControl>
               )}
-
               {/* Dual Preview Mode */}
               {showComparisonPreview && (
                 <VStack spacing={4} align="stretch">
@@ -558,7 +541,6 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                         </Box>
                       )}
                   </Box>
-
                   {/* Template Preview */}
                   <Box>
                     <Text fontSize="sm" fontWeight="semibold" color="gray.400" mb={2}>
@@ -607,7 +589,6 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                   </Box>
                 </VStack>
               )}
-
               {/* Single Preview Mode (original behavior) */}
               {!showComparisonPreview && (
                 <Box>

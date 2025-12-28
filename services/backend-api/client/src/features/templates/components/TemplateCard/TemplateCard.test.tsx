@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { ChakraProvider, useRadioGroup, HStack } from "@chakra-ui/react";
 import { describe, it, expect, vi } from "vitest";
 import { TemplateCard } from "./index";
-import { Template } from "../../types";
+import { Template, TemplateRequiredField } from "../../types";
 import { ComponentType } from "../../../../pages/MessageBuilder/types";
 
 const mockTemplate: Template = {
@@ -310,21 +310,21 @@ describe("TemplateCard", () => {
       ...mockTemplate,
       id: "image-template",
       name: "Image Template",
-      requiredFields: ["image"],
+      requiredFields: [TemplateRequiredField.Image],
     };
 
     const templateWithDescriptionField: Template = {
       ...mockTemplate,
       id: "description-template",
       name: "Description Template",
-      requiredFields: ["description"],
+      requiredFields: [TemplateRequiredField.Description],
     };
 
     const templateWithMultipleFields: Template = {
       ...mockTemplate,
       id: "multi-field-template",
       name: "Multi Field Template",
-      requiredFields: ["image", "description"],
+      requiredFields: [TemplateRequiredField.Image, TemplateRequiredField.Description],
     };
 
     it("always shows explanation for disabled cards with required fields", () => {

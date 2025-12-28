@@ -10,7 +10,7 @@ import {
   getMissingFields,
   getDisabledReason,
 } from "./index";
-import { Template } from "../../types";
+import { Template, TemplateRequiredField } from "../../types";
 import { ComponentType } from "../../../../pages/MessageBuilder/types";
 import {
   createDiscordChannelConnectionPreview,
@@ -52,7 +52,7 @@ const mockTemplates: Template[] = [
     id: "rich-embed",
     name: "Rich Embed",
     description: "Full embed with image and description",
-    requiredFields: ["description"],
+    requiredFields: [TemplateRequiredField.Description],
     createMessageComponent: () => ({
       type: ComponentType.LegacyRoot,
       id: "root",
@@ -64,7 +64,7 @@ const mockTemplates: Template[] = [
     id: "media-gallery",
     name: "Media Gallery",
     description: "Showcase images in a modern gallery layout",
-    requiredFields: ["image"],
+    requiredFields: [TemplateRequiredField.Image],
     createMessageComponent: () => ({
       type: ComponentType.LegacyRoot,
       id: "root",
@@ -101,12 +101,16 @@ const defaultProps = {
   selectedTemplateId: undefined,
   onTemplateSelect: vi.fn(),
   feedFields: ["title", "description", "link", "image"],
+  detectedFields: { image: "image", description: "description", title: "title" },
   articles: mockArticles,
   selectedArticleId: "article-1",
   onArticleChange: vi.fn(),
   feedId: "feed-123",
   connectionId: "connection-456",
 };
+
+const emptyDetectedFields = { image: null, description: null, title: null };
+const fullDetectedFields = { image: "image", description: "description", title: "title" };
 
 describe("TemplateGalleryModal", () => {
   beforeEach(() => {
@@ -134,7 +138,7 @@ describe("TemplateGalleryModal", () => {
           children: [],
         }),
       };
-      expect(isTemplateCompatible(template, ["title"])).toBe(true);
+      expect(isTemplateCompatible(template, ["title"], emptyDetectedFields)).toBe(true);
     });
 
     it("returns true when all required fields are present", () => {
@@ -142,7 +146,7 @@ describe("TemplateGalleryModal", () => {
         id: "test",
         name: "Test",
         description: "Test",
-        requiredFields: ["description", "image"],
+        requiredFields: [TemplateRequiredField.Description, TemplateRequiredField.Image],
         createMessageComponent: () => ({
           type: ComponentType.LegacyRoot,
           id: "root",
@@ -150,7 +154,9 @@ describe("TemplateGalleryModal", () => {
           children: [],
         }),
       };
-      expect(isTemplateCompatible(template, ["title", "description", "image"])).toBe(true);
+      expect(
+        isTemplateCompatible(template, ["title", "description", "image"], fullDetectedFields)
+      ).toBe(true);
     });
 
     it("returns false when some required fields are missing", () => {
@@ -158,7 +164,7 @@ describe("TemplateGalleryModal", () => {
         id: "test",
         name: "Test",
         description: "Test",
-        requiredFields: ["description", "image"],
+        requiredFields: [TemplateRequiredField.Description, TemplateRequiredField.Image],
         createMessageComponent: () => ({
           type: ComponentType.LegacyRoot,
           id: "root",
@@ -166,7 +172,13 @@ describe("TemplateGalleryModal", () => {
           children: [],
         }),
       };
-      expect(isTemplateCompatible(template, ["title", "description"])).toBe(false);
+      expect(
+        isTemplateCompatible(template, ["title", "description"], {
+          image: null,
+          description: "description",
+          title: "title",
+        })
+      ).toBe(false);
     });
   });
 
@@ -184,7 +196,7 @@ describe("TemplateGalleryModal", () => {
           children: [],
         }),
       };
-      expect(getMissingFields(template, ["title"])).toEqual([]);
+      expect(getMissingFields(template, ["title"], emptyDetectedFields)).toEqual([]);
     });
 
     it("returns empty array when all required fields are present", () => {
@@ -192,7 +204,7 @@ describe("TemplateGalleryModal", () => {
         id: "test",
         name: "Test",
         description: "Test",
-        requiredFields: ["description", "image"],
+        requiredFields: [TemplateRequiredField.Description, TemplateRequiredField.Image],
         createMessageComponent: () => ({
           type: ComponentType.LegacyRoot,
           id: "root",
@@ -200,7 +212,9 @@ describe("TemplateGalleryModal", () => {
           children: [],
         }),
       };
-      expect(getMissingFields(template, ["title", "description", "image"])).toEqual([]);
+      expect(
+        getMissingFields(template, ["title", "description", "image"], fullDetectedFields)
+      ).toEqual([]);
     });
 
     it("returns only missing fields when some are absent", () => {
@@ -208,7 +222,7 @@ describe("TemplateGalleryModal", () => {
         id: "test",
         name: "Test",
         description: "Test",
-        requiredFields: ["description", "image"],
+        requiredFields: [TemplateRequiredField.Description, TemplateRequiredField.Image],
         createMessageComponent: () => ({
           type: ComponentType.LegacyRoot,
           id: "root",
@@ -216,7 +230,13 @@ describe("TemplateGalleryModal", () => {
           children: [],
         }),
       };
-      expect(getMissingFields(template, ["title", "description"])).toEqual(["image"]);
+      expect(
+        getMissingFields(template, ["title", "description"], {
+          image: null,
+          description: "description",
+          title: "title",
+        })
+      ).toEqual(["image"]);
     });
 
     it("returns all required fields when none are present", () => {
@@ -224,7 +244,7 @@ describe("TemplateGalleryModal", () => {
         id: "test",
         name: "Test",
         description: "Test",
-        requiredFields: ["description", "image"],
+        requiredFields: [TemplateRequiredField.Description, TemplateRequiredField.Image],
         createMessageComponent: () => ({
           type: ComponentType.LegacyRoot,
           id: "root",
@@ -232,7 +252,123 @@ describe("TemplateGalleryModal", () => {
           children: [],
         }),
       };
-      expect(getMissingFields(template, ["title"])).toEqual(["description", "image"]);
+      expect(getMissingFields(template, ["title"], emptyDetectedFields)).toEqual([
+        "description",
+        "image",
+      ]);
+    });
+  });
+
+  describe("isTemplateCompatible and getMissingFields consistency", () => {
+    const createTemplate = (requiredFields: TemplateRequiredField[]): Template => ({
+      id: "test",
+      name: "Test",
+      description: "Test",
+      requiredFields,
+      createMessageComponent: () => ({
+        type: ComponentType.LegacyRoot,
+        id: "root",
+        name: "Root",
+        children: [],
+      }),
+    });
+
+    it("getMissingFields returns empty when isTemplateCompatible returns true", () => {
+      const template = createTemplate([TemplateRequiredField.Description]);
+
+      // Field in feedFields but not detectedFields - should still be compatible
+      const feedFields = ["description"];
+      const detectedFields = { image: null, description: null, title: null };
+
+      expect(isTemplateCompatible(template, feedFields, detectedFields)).toBe(true);
+      expect(getMissingFields(template, feedFields, detectedFields)).toEqual([]);
+    });
+
+    it("getMissingFields returns fields when isTemplateCompatible returns false", () => {
+      const template = createTemplate([TemplateRequiredField.Image]);
+
+      // Field not in feedFields AND not in detectedFields - should be incompatible
+      const feedFields = ["title"];
+      const detectedFields = { image: null, description: null, title: "title" };
+
+      expect(isTemplateCompatible(template, feedFields, detectedFields)).toBe(false);
+      expect(getMissingFields(template, feedFields, detectedFields)).toContain("image");
+    });
+
+    it("field in feedFields but not detectedFields is still available", () => {
+      // This test specifically catches the original bug where || was used instead of &&
+      const template = createTemplate([TemplateRequiredField.Description]);
+
+      // description is in feedFields but detectedFields.description is null
+      const feedFields = ["title", "description", "link"];
+      const detectedFields = { image: null, description: null, title: "title" };
+
+      // Should be compatible because "description" is in feedFields
+      expect(isTemplateCompatible(template, feedFields, detectedFields)).toBe(true);
+      // getMissingFields should return empty since field IS available in feedFields
+      expect(getMissingFields(template, feedFields, detectedFields)).toEqual([]);
+    });
+
+    it("field in detectedFields but not feedFields is still available", () => {
+      const template = createTemplate([TemplateRequiredField.Image]);
+
+      // image is in detectedFields but not in feedFields
+      const feedFields = ["title", "link"];
+      const detectedFields = { image: "imageUrl", description: null, title: "title" };
+
+      // Should be compatible because image is in detectedFields
+      expect(isTemplateCompatible(template, feedFields, detectedFields)).toBe(true);
+      expect(getMissingFields(template, feedFields, detectedFields)).toEqual([]);
+    });
+
+    it("functions agree on all combinations for a multi-field template", () => {
+      const template = createTemplate([
+        TemplateRequiredField.Description,
+        TemplateRequiredField.Image,
+      ]);
+
+      // Test various combinations
+      const testCases = [
+        {
+          feedFields: ["description", "image"],
+          detectedFields: emptyDetectedFields,
+          shouldBeCompatible: true,
+        },
+        {
+          feedFields: ["description"],
+          detectedFields: { image: "img", description: null, title: null },
+          shouldBeCompatible: true,
+        },
+        {
+          feedFields: ["title"],
+          detectedFields: fullDetectedFields,
+          shouldBeCompatible: true,
+        },
+        {
+          feedFields: ["title"],
+          detectedFields: { image: null, description: "desc", title: null },
+          shouldBeCompatible: false,
+        },
+        {
+          feedFields: [],
+          detectedFields: emptyDetectedFields,
+          shouldBeCompatible: false,
+        },
+      ];
+
+      testCases.forEach(({ feedFields, detectedFields, shouldBeCompatible }) => {
+        const compatible = isTemplateCompatible(template, feedFields, detectedFields);
+        const missing = getMissingFields(template, feedFields, detectedFields);
+
+        expect(compatible).toBe(shouldBeCompatible);
+
+        // If compatible, missing should be empty; if not compatible, missing should have items
+        if (shouldBeCompatible) {
+          expect(missing).toEqual([]);
+        } else {
+          expect(missing.length).toBeGreaterThan(0);
+        }
+      });
     });
   });
 
@@ -250,7 +386,7 @@ describe("TemplateGalleryModal", () => {
           children: [],
         }),
       };
-      expect(getDisabledReason(template, ["title"])).toBe("");
+      expect(getDisabledReason(template, ["title"], emptyDetectedFields)).toBe("");
     });
 
     it("returns empty string when all required fields are present", () => {
@@ -258,7 +394,7 @@ describe("TemplateGalleryModal", () => {
         id: "test",
         name: "Test",
         description: "Test",
-        requiredFields: ["description"],
+        requiredFields: [TemplateRequiredField.Description],
         createMessageComponent: () => ({
           type: ComponentType.LegacyRoot,
           id: "root",
@@ -266,7 +402,13 @@ describe("TemplateGalleryModal", () => {
           children: [],
         }),
       };
-      expect(getDisabledReason(template, ["title", "description"])).toBe("");
+      expect(
+        getDisabledReason(template, ["title", "description"], {
+          image: null,
+          description: "description",
+          title: "title",
+        })
+      ).toBe("");
     });
 
     it("returns formatted message with single missing field", () => {
@@ -274,7 +416,7 @@ describe("TemplateGalleryModal", () => {
         id: "test",
         name: "Test",
         description: "Test",
-        requiredFields: ["image"],
+        requiredFields: [TemplateRequiredField.Image],
         createMessageComponent: () => ({
           type: ComponentType.LegacyRoot,
           id: "root",
@@ -282,7 +424,7 @@ describe("TemplateGalleryModal", () => {
           children: [],
         }),
       };
-      expect(getDisabledReason(template, ["title"])).toBe("Needs: image");
+      expect(getDisabledReason(template, ["title"], emptyDetectedFields)).toBe("Needs: image");
     });
 
     it("returns formatted message with multiple missing fields", () => {
@@ -290,7 +432,7 @@ describe("TemplateGalleryModal", () => {
         id: "test",
         name: "Test",
         description: "Test",
-        requiredFields: ["description", "image"],
+        requiredFields: [TemplateRequiredField.Description, TemplateRequiredField.Image],
         createMessageComponent: () => ({
           type: ComponentType.LegacyRoot,
           id: "root",
@@ -298,7 +440,9 @@ describe("TemplateGalleryModal", () => {
           children: [],
         }),
       };
-      expect(getDisabledReason(template, ["title"])).toBe("Needs: description, image");
+      expect(getDisabledReason(template, ["title"], emptyDetectedFields)).toBe(
+        "Needs: description, image"
+      );
     });
 
     it("returns 'Needs articles' when feedFields is empty (no articles)", () => {
@@ -306,7 +450,7 @@ describe("TemplateGalleryModal", () => {
         id: "test",
         name: "Test",
         description: "Test",
-        requiredFields: ["image"],
+        requiredFields: [TemplateRequiredField.Image],
         createMessageComponent: () => ({
           type: ComponentType.LegacyRoot,
           id: "root",
@@ -314,7 +458,7 @@ describe("TemplateGalleryModal", () => {
           children: [],
         }),
       };
-      expect(getDisabledReason(template, [])).toBe("Needs articles");
+      expect(getDisabledReason(template, [], emptyDetectedFields)).toBe("Needs articles");
     });
   });
 
@@ -543,7 +687,11 @@ describe("TemplateGalleryModal", () => {
     it("disables templates when required fields are not available", () => {
       render(
         <TestWrapper>
-          <TemplateGalleryModal {...defaultProps} feedFields={["title", "link"]} />
+          <TemplateGalleryModal
+            {...defaultProps}
+            feedFields={["title", "link"]}
+            detectedFields={emptyDetectedFields}
+          />
         </TestWrapper>
       );
       const radios = screen.getAllByRole("radio");
@@ -557,7 +705,11 @@ describe("TemplateGalleryModal", () => {
     it("shows disabled badge with missing fields on incompatible templates", () => {
       render(
         <TestWrapper>
-          <TemplateGalleryModal {...defaultProps} feedFields={["title", "link"]} />
+          <TemplateGalleryModal
+            {...defaultProps}
+            feedFields={["title", "link"]}
+            detectedFields={emptyDetectedFields}
+          />
         </TestWrapper>
       );
       expect(screen.getByText("Needs: description")).toBeInTheDocument();
@@ -567,7 +719,11 @@ describe("TemplateGalleryModal", () => {
     it("shows 'Needs articles' badge when feedFields is empty", () => {
       render(
         <TestWrapper>
-          <TemplateGalleryModal {...defaultProps} feedFields={[]} />
+          <TemplateGalleryModal
+            {...defaultProps}
+            feedFields={[]}
+            detectedFields={emptyDetectedFields}
+          />
         </TestWrapper>
       );
       const badges = screen.getAllByText("Needs articles");
@@ -599,7 +755,11 @@ describe("TemplateGalleryModal", () => {
     it("disables ALL non-default templates when feedFields is empty (AC1)", () => {
       render(
         <TestWrapper>
-          <TemplateGalleryModal {...defaultProps} feedFields={[]} />
+          <TemplateGalleryModal
+            {...defaultProps}
+            feedFields={[]}
+            detectedFields={emptyDetectedFields}
+          />
         </TestWrapper>
       );
       const radios = screen.getAllByRole("radio");
@@ -904,13 +1064,13 @@ describe("TemplateGalleryModal", () => {
     it("sets aria-busy on preview panel when loading", async () => {
       mockCreatePreview.mockImplementation(
         () =>
-          new Promise((resolve) =>
+          new Promise((resolve) => {
             setTimeout(() => {
               resolve({
                 result: { status: SendTestArticleDeliveryStatus.Success, messages: [] },
               });
-            }, 1000)
-          )
+            }, 1000);
+          })
       );
 
       const mockUserFeed = { id: "feed-123" } as Parameters<
@@ -1031,7 +1191,11 @@ describe("TemplateGalleryModal", () => {
     it("disables templates that are not compatible", () => {
       render(
         <TestWrapper>
-          <TemplateGalleryModal {...defaultProps} feedFields={["title"]} />
+          <TemplateGalleryModal
+            {...defaultProps}
+            feedFields={["title"]}
+            detectedFields={emptyDetectedFields}
+          />
         </TestWrapper>
       );
 
@@ -1112,7 +1276,7 @@ describe("TemplateGalleryModal", () => {
 
         return (
           <>
-            <button data-testid="trigger" onClick={() => setIsOpen(true)}>
+            <button data-testid="trigger" type="button" onClick={() => setIsOpen(true)}>
               Open Modal
             </button>
             <TemplateGalleryModal

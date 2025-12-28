@@ -1,1 +1,1 @@
-// Template hooks will be added in future stories
+export { useTemplateFeedFields } from "./useTemplateFeedFields";
