@@ -156,6 +156,7 @@ export const useTestSendFlow = ({
     webhookName,
     webhookIconUrl,
     selectedTemplateId,
+    detectedFields,
     sendTestArticleDirectMutation,
   ]);
 

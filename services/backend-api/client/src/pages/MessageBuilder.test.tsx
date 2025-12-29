@@ -168,7 +168,11 @@ describe("MessageBuilder Template Application", () => {
 
     it("passes detected image field to createMessageComponent", () => {
       const setValue = vi.fn();
-      const detectedFields = { image: ["thumbnail_url"], description: ["description"], title: ["title"] };
+      const detectedFields = {
+        image: ["thumbnail_url"],
+        description: ["description"],
+        title: ["title"],
+      };
 
       const handleApplyTemplate = (selectedId: string) => {
         const template = getTemplateById(selectedId) || DEFAULT_TEMPLATE;
