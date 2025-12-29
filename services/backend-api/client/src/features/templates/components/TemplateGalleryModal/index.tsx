@@ -8,8 +8,6 @@ import {
   ModalCloseButton,
   ModalBody,
   ModalFooter,
-  Grid,
-  GridItem,
   VStack,
   Box,
   Button,
@@ -42,6 +40,7 @@ import convertMessageBuilderStateToConnectionPreviewInput from "../../../../page
 import { UserFeed } from "../../../feed";
 import { FeedDiscordChannelConnection } from "../../../../types";
 import { convertTemplateMessageComponentToPreviewInput } from "./templatePreviewUtils";
+import { TemplateGalleryLayout } from "./TemplateGalleryLayout";
 import { MessageComponentRoot } from "../../../../pages/MessageBuilder/types";
 
 export interface Article {
@@ -434,8 +433,8 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
           Pick a starting point for your message layout. You can customize everything after
           applying.
         </Text>
-        <Grid templateColumns={{ base: "1fr", lg: "1fr 400px" }} gap={6}>
-          <GridItem maxH={{ lg: "60vh" }} overflowY={{ lg: "auto" }}>
+        <TemplateGalleryLayout
+          templateList={
             <Box as="fieldset">
               <VisuallyHidden as="legend">Choose a template</VisuallyHidden>
               <VStack {...getRootProps()} spacing={3} align="stretch" p={1}>
@@ -468,8 +467,8 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                   })}
               </VStack>
             </Box>
-          </GridItem>
-          <GridItem>
+          }
+          preview={
             <Box
               bg="gray.900"
               borderRadius="md"
@@ -587,6 +586,10 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                         </Box>
                       )}
                   </Box>
+                  <Text fontSize="sm" color="gray.400" mt={2}>
+                    These are approximate previews. Send to Discord to see the actual
+                    representation.
+                  </Text>
                 </VStack>
               )}
               {/* Single Preview Mode (original behavior) */}
@@ -628,6 +631,10 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                         Preview will appear when your feed has articles
                       </Text>
                     )}
+                  <Text fontSize="sm" color="gray.400" mt={2}>
+                    This is an approximate preview. Send to Discord to see the actual
+                    representation.
+                  </Text>
                 </Box>
               )}
               {onTestSend && hasArticles && (
@@ -667,8 +674,8 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                 </Box>
               )}
             </Box>
-          </GridItem>
-        </Grid>
+          }
+        />
         <VisuallyHidden>
           <div aria-live="polite" aria-atomic="true">
             {previewAnnouncement}
