@@ -4,4 +4,4 @@ export enum TemplateRequiredField {
   Title = "title",
 }
 
-export type DetectedFields = Record<TemplateRequiredField, string | null>;
+export type DetectedFields = Record<TemplateRequiredField, string[]>;

@@ -101,7 +101,7 @@ const defaultProps = {
   selectedTemplateId: undefined,
   onTemplateSelect: vi.fn(),
   feedFields: ["title", "description", "link", "image"],
-  detectedFields: { image: "image", description: "description", title: "title" },
+  detectedFields: { image: ["image"], description: ["description"], title: ["title"] },
   articles: mockArticles,
   selectedArticleId: "article-1",
   onArticleChange: vi.fn(),
@@ -109,8 +109,8 @@ const defaultProps = {
   connectionId: "connection-456",
 };
 
-const emptyDetectedFields = { image: null, description: null, title: null };
-const fullDetectedFields = { image: "image", description: "description", title: "title" };
+const emptyDetectedFields = { image: [], description: [], title: [] };
+const fullDetectedFields = { image: ["image"], description: ["description"], title: ["title"] };
 
 describe("TemplateGalleryModal", () => {
   beforeEach(() => {
@@ -174,9 +174,9 @@ describe("TemplateGalleryModal", () => {
       };
       expect(
         isTemplateCompatible(template, ["title", "description"], {
-          image: null,
-          description: "description",
-          title: "title",
+          image: [],
+          description: ["description"],
+          title: ["title"],
         })
       ).toBe(false);
     });
@@ -232,9 +232,9 @@ describe("TemplateGalleryModal", () => {
       };
       expect(
         getMissingFields(template, ["title", "description"], {
-          image: null,
-          description: "description",
-          title: "title",
+          image: [],
+          description: ["description"],
+          title: ["title"],
         })
       ).toEqual(["image"]);
     });
@@ -278,7 +278,7 @@ describe("TemplateGalleryModal", () => {
 
       // Field in feedFields but not detectedFields - should still be compatible
       const feedFields = ["description"];
-      const detectedFields = { image: null, description: null, title: null };
+      const detectedFields = { image: [], description: [], title: [] };
 
       expect(isTemplateCompatible(template, feedFields, detectedFields)).toBe(true);
       expect(getMissingFields(template, feedFields, detectedFields)).toEqual([]);
@@ -289,7 +289,7 @@ describe("TemplateGalleryModal", () => {
 
       // Field not in feedFields AND not in detectedFields - should be incompatible
       const feedFields = ["title"];
-      const detectedFields = { image: null, description: null, title: "title" };
+      const detectedFields = { image: [], description: [], title: ["title"] };
 
       expect(isTemplateCompatible(template, feedFields, detectedFields)).toBe(false);
       expect(getMissingFields(template, feedFields, detectedFields)).toContain("image");
@@ -299,9 +299,9 @@ describe("TemplateGalleryModal", () => {
       // This test specifically catches the original bug where || was used instead of &&
       const template = createTemplate([TemplateRequiredField.Description]);
 
-      // description is in feedFields but detectedFields.description is null
+      // description is in feedFields but detectedFields.description is empty
       const feedFields = ["title", "description", "link"];
-      const detectedFields = { image: null, description: null, title: "title" };
+      const detectedFields = { image: [], description: [], title: ["title"] };
 
       // Should be compatible because "description" is in feedFields
       expect(isTemplateCompatible(template, feedFields, detectedFields)).toBe(true);
@@ -314,7 +314,7 @@ describe("TemplateGalleryModal", () => {
 
       // image is in detectedFields but not in feedFields
       const feedFields = ["title", "link"];
-      const detectedFields = { image: "imageUrl", description: null, title: "title" };
+      const detectedFields = { image: ["imageUrl"], description: [], title: ["title"] };
 
       // Should be compatible because image is in detectedFields
       expect(isTemplateCompatible(template, feedFields, detectedFields)).toBe(true);
@@ -336,7 +336,7 @@ describe("TemplateGalleryModal", () => {
         },
         {
           feedFields: ["description"],
-          detectedFields: { image: "img", description: null, title: null },
+          detectedFields: { image: ["img"], description: [], title: [] },
           shouldBeCompatible: true,
         },
         {
@@ -346,7 +346,7 @@ describe("TemplateGalleryModal", () => {
         },
         {
           feedFields: ["title"],
-          detectedFields: { image: null, description: "desc", title: null },
+          detectedFields: { image: [], description: ["desc"], title: [] },
           shouldBeCompatible: false,
         },
         {
@@ -404,9 +404,9 @@ describe("TemplateGalleryModal", () => {
       };
       expect(
         getDisabledReason(template, ["title", "description"], {
-          image: null,
-          description: "description",
-          title: "title",
+          image: [],
+          description: ["description"],
+          title: ["title"],
         })
       ).toBe("");
     });

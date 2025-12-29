@@ -58,7 +58,7 @@ describe("useTestSendFlow", () => {
     webhookIconUrl: undefined,
     selectedTemplateId: "template-1",
     selectedArticleId: "article-1",
-    detectedFields: { image: null, description: null, title: null },
+    detectedFields: { image: [], description: [], title: [] },
     isOpen: true,
     createConnection: vi.fn(),
     onSaveSuccess: vi.fn(),

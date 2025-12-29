@@ -58,7 +58,7 @@ export const useConnectionTemplateSelection = ({
 
   // Auto-detect fields by scanning article values
   const detectedFields = useMemo<DetectedFields>(() => {
-    return detectFields(articles[0]);
+    return detectFields(articles);
   }, [articles]);
 
   // Set first article as selected when articles load

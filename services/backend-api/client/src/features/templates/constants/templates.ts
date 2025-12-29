@@ -1,4 +1,8 @@
-import { ComponentType, MessageComponentRoot } from "../../../pages/MessageBuilder/types";
+import {
+  ComponentType,
+  MediaGalleryItemComponent,
+  MessageComponentRoot,
+} from "../../../pages/MessageBuilder/types";
 import { DiscordButtonStyle } from "../../../pages/MessageBuilder/constants/DiscordButtonStyle";
 import { DetectedFields, Template, TemplateRequiredField } from "../types";
 import {
@@ -38,8 +42,8 @@ export const RICH_EMBED_TEMPLATE: Template = {
   ThumbnailComponent: RichEmbedThumbnail,
   requiredFields: [TemplateRequiredField.Description],
   createMessageComponent: (fields?: DetectedFields): MessageComponentRoot => {
-    const imageField = fields?.image ?? "image";
-    const descriptionField = fields?.description ?? "description";
+    const imageField = fields?.image[0] ?? "image";
+    const descriptionField = fields?.description[0] ?? "description";
 
     return {
       type: ComponentType.LegacyRoot,
@@ -104,8 +108,8 @@ export const COMPACT_CARD_TEMPLATE: Template = {
   ThumbnailComponent: CompactCardThumbnail,
   requiredFields: [TemplateRequiredField.Title],
   createMessageComponent: (fields?: DetectedFields): MessageComponentRoot => {
-    const imageField = fields?.image ?? "image";
-    const descriptionField = fields?.description ?? "description";
+    const imageField = fields?.image[0] ?? "image";
+    const descriptionField = fields?.description[0] ?? "description";
 
     return {
       type: ComponentType.V2Root,
@@ -171,8 +175,19 @@ export const MEDIA_GALLERY_TEMPLATE: Template = {
   ThumbnailComponent: MediaGalleryThumbnail,
   requiredFields: [TemplateRequiredField.Image],
   createMessageComponent: (fields?: DetectedFields): MessageComponentRoot => {
-    const imageField = fields?.image ?? "image";
-    const descriptionField = fields?.description ?? "description";
+    const descriptionField = fields?.description[0] ?? "description";
+    const imageFields = fields?.image ?? [];
+
+    const imagesToUse = imageFields.length > 0 ? imageFields.slice(0, 10) : ["image"];
+
+    const galleryItems: MediaGalleryItemComponent[] = imagesToUse.map((imageField, index) => ({
+      type: ComponentType.V2MediaGalleryItem,
+      id: `media-gallery-item-${index + 1}`,
+      name: `Image ${index + 1}`,
+      mediaUrl: `{{${imageField}}}`,
+      description: "{{title}}",
+      children: [],
+    }));
 
     return {
       type: ComponentType.V2Root,
@@ -212,16 +227,7 @@ export const MEDIA_GALLERY_TEMPLATE: Template = {
               type: ComponentType.V2MediaGallery,
               id: "media-gallery-gallery",
               name: "Image Gallery",
-              children: [
-                {
-                  type: ComponentType.V2MediaGalleryItem,
-                  id: "media-gallery-item-1",
-                  name: "Image 1",
-                  mediaUrl: `{{${imageField}}}`,
-                  description: "{{title}}",
-                  children: [],
-                },
-              ],
+              children: galleryItems,
             },
             {
               type: ComponentType.V2ActionRow,

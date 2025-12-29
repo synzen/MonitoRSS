@@ -167,7 +167,7 @@ const MessageBuilderContent: React.FC = () => {
 
   // Detect fields from articles for template creation
   const detectedFields = useMemo(() => {
-    return detectFields(galleryArticles[0]);
+    return detectFields(galleryArticles);
   }, [galleryArticles]);
 
   // Apply template to form state

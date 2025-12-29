@@ -98,7 +98,7 @@ export function isTemplateCompatible(
   }
 
   return template.requiredFields.every((field) => {
-    return detectedFields[field] || feedFields.includes(field);
+    return detectedFields[field].length > 0 || feedFields.includes(field);
   });
 }
 
@@ -112,7 +112,7 @@ export function getMissingFields(
   }
 
   return template.requiredFields.filter((field) => {
-    return !detectedFields[field] && !feedFields.includes(field);
+    return detectedFields[field].length === 0 && !feedFields.includes(field);
   });
 }
 

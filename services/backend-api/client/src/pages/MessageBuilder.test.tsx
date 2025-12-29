@@ -84,7 +84,7 @@ vi.mock("../features/templates/components/TemplateGalleryModal", () => ({
   }),
 }));
 
-const defaultDetectedFields = { image: "image", description: "description", title: "title" };
+const defaultDetectedFields = { image: ["image"], description: ["description"], title: ["title"] };
 
 describe("MessageBuilder Template Application", () => {
   describe("handleApplyTemplate function", () => {
@@ -168,7 +168,7 @@ describe("MessageBuilder Template Application", () => {
 
     it("passes detected image field to createMessageComponent", () => {
       const setValue = vi.fn();
-      const detectedFields = { image: "thumbnail_url", description: "description", title: "title" };
+      const detectedFields = { image: ["thumbnail_url"], description: ["description"], title: ["title"] };
 
       const handleApplyTemplate = (selectedId: string) => {
         const template = getTemplateById(selectedId) || DEFAULT_TEMPLATE;
@@ -236,9 +236,9 @@ describe("MessageBuilder Template Application", () => {
     it("templates with image use the passed imageField parameter", () => {
       const richEmbed = getTemplateById("rich-embed")!;
       const customFields = {
-        image: "custom_image_field",
-        description: "description",
-        title: "title",
+        image: ["custom_image_field"],
+        description: ["description"],
+        title: ["title"],
       };
       const messageComponent = richEmbed.createMessageComponent(customFields);
 
