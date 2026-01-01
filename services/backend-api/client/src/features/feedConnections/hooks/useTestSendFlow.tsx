@@ -38,20 +38,18 @@ export interface UseTestSendFlowOptions {
   selectedArticleId: string | undefined;
   detectedFields: DetectedFields;
   isOpen: boolean;
-  createConnection: () => Promise<string | undefined>;
+  createConnection: () => Promise<void>;
   onSaveSuccess: (connectionName: string | undefined) => void;
   onClose: () => void;
   getConnectionName: () => string | undefined;
 }
 
 export interface UseTestSendFlowResult {
-  createdConnectionId: string | undefined;
   testSendFeedback: TestSendFeedback | null;
   isSaving: boolean;
   isTestSending: boolean;
   handleTestSend: () => Promise<void>;
   handleSave: () => Promise<void>;
-  setCreatedConnectionId: (id: string | undefined) => void;
   clearTestSendFeedback: () => void;
 }
 
@@ -70,7 +68,6 @@ export const useTestSendFlow = ({
   onClose,
   getConnectionName,
 }: UseTestSendFlowOptions): UseTestSendFlowResult => {
-  const [createdConnectionId, setCreatedConnectionId] = useState<string | undefined>();
   const [testSendFeedback, setTestSendFeedback] = useState<TestSendFeedback | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isTestSending, setIsTestSending] = useState(false);
@@ -85,7 +82,6 @@ export const useTestSendFlow = ({
   // Reset test send state when modal closes
   useEffect(() => {
     if (!isOpen) {
-      setCreatedConnectionId(undefined);
       setTestSendFeedback(null);
       setIsSaving(false);
       setIsTestSending(false);
@@ -160,57 +156,21 @@ export const useTestSendFlow = ({
     sendTestArticleDirectMutation,
   ]);
 
-  // Create connection if not already created (for save)
-  const ensureConnectionCreated = useCallback(async (): Promise<string | undefined> => {
-    if (createdConnectionId) {
-      return createdConnectionId;
-    }
-
-    const newConnectionId = await createConnection();
-
-    if (newConnectionId) {
-      setCreatedConnectionId(newConnectionId);
-    }
-
-    return newConnectionId;
-  }, [createdConnectionId, createConnection]);
-
   // Handle save - creates connection (template data is included in create call)
   const handleSave = useCallback(async () => {
     setIsSaving(true);
 
     try {
-      // If connection already created (from previous save attempt), just close
-      // Template data is already included in the create call, so no update needed
-      if (createdConnectionId && feedId) {
-        const connectionName = getConnectionName();
-        onSaveSuccess(connectionName);
-        onClose();
-
-        return;
-      }
-
-      // Create the connection (includes template data)
-      const connectionId = await ensureConnectionCreated();
-
-      if (connectionId && feedId) {
-        const connectionName = getConnectionName();
-        onSaveSuccess(connectionName);
-        onClose();
-      }
+      await createConnection();
+      const connectionName = getConnectionName();
+      onSaveSuccess(connectionName);
+      onClose();
     } catch (err) {
       // Error handled by mutation error state
     } finally {
       setIsSaving(false);
     }
-  }, [
-    createdConnectionId,
-    feedId,
-    getConnectionName,
-    onSaveSuccess,
-    onClose,
-    ensureConnectionCreated,
-  ]);
+  }, [createConnection, getConnectionName, onSaveSuccess, onClose]);
 
   // Clear test send feedback (used when dismissing error panel)
   const clearTestSendFeedback = useCallback(() => {
@@ -218,13 +178,11 @@ export const useTestSendFlow = ({
   }, []);
 
   return {
-    createdConnectionId,
     testSendFeedback,
     isSaving,
     isTestSending,
     handleTestSend,
     handleSave,
-    setCreatedConnectionId,
     clearTestSendFeedback,
   };
 };

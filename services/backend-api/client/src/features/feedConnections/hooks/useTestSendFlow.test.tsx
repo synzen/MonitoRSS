@@ -294,7 +294,6 @@ describe("useTestSendFlow", () => {
 
       await waitFor(() => {
         expect(result.current.testSendFeedback).toBeNull();
-        expect(result.current.createdConnectionId).toBeUndefined();
         expect(result.current.isSaving).toBe(false);
         expect(result.current.isTestSending).toBe(false);
       });

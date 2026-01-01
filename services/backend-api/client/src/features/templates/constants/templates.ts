@@ -116,7 +116,7 @@ export const COMPACT_CARD_TEMPLATE: Template = {
       id: "compact-card-root",
       name: "Compact Card Template",
       placeholderLimits: [
-        { placeholder: descriptionField, characterCount: 100, appendString: "..." },
+        { placeholder: descriptionField, characterCount: 200, appendString: "..." },
       ],
       children: [
         {

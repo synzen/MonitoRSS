@@ -153,7 +153,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
   const { onSaveSuccess } = useConnectionDialogCallbacks();
 
   // Create connection callback for test send flow
-  const createConnection = useCallback(async (): Promise<string | undefined> => {
+  const createConnection = useCallback(async (): Promise<void> => {
     if (!feedId) {
       throw new Error("Feed ID missing");
     }
@@ -164,7 +164,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
     // Get template data to include in create call
     const templateData = getTemplateUpdateData(selectedTemplateId, detectedFields);
 
-    const createResult = await mutateAsync({
+    await mutateAsync({
       feedId,
       details: {
         name,
@@ -177,8 +177,6 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
         placeholderLimits: templateData.placeholderLimits,
       },
     });
-
-    return createResult?.result?.id;
   }, [feedId, watch, mutateAsync, selectedTemplateId, detectedFields]);
 
   // Get connection name from form
