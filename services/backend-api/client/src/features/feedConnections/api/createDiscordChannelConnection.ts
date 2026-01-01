@@ -70,6 +70,12 @@ export interface CreateDiscordChannelConnectionInput {
       characterCount: number;
       appendString?: string | null;
     }> | null;
+    formatter?: {
+      formatTables?: boolean | null;
+      stripImages?: boolean | null;
+      disableImageLinkPreviews?: boolean | null;
+      ignoreNewLines?: boolean | null;
+    } | null;
   };
 }
 

@@ -216,6 +216,7 @@ export class FeedConnectionsDiscordChannelsService {
       embeds?: DiscordChannelConnection["details"]["embeds"];
       componentsV2?: DiscordChannelConnection["details"]["componentsV2"];
       placeholderLimits?: DiscordChannelConnection["details"]["placeholderLimits"];
+      formatter?: DiscordChannelConnection["details"]["formatter"];
     };
   }): Promise<DiscordChannelConnection> {
     const connectionId = new Types.ObjectId();
@@ -362,6 +363,7 @@ export class FeedConnectionsDiscordChannelsService {
                 content: templateData?.content,
                 componentsV2: validatedComponentsV2,
                 placeholderLimits: templateData?.placeholderLimits,
+                formatter: templateData?.formatter || undefined,
               },
             },
           },

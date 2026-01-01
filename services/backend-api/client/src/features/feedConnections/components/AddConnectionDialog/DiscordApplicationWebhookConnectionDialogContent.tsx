@@ -143,6 +143,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
         embeds: templateData.embeds,
         componentsV2: templateData.componentsV2,
         placeholderLimits: templateData.placeholderLimits,
+        formatter: templateData.formatter,
       },
     });
   }, [feedId, watch, mutateAsync, selectedTemplateId, channelId, detectedFields]);
@@ -214,6 +215,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
           embeds: templateData.embeds,
           componentsV2: templateData.componentsV2,
           placeholderLimits: templateData.placeholderLimits,
+          formatter: templateData.formatter,
         },
       });
 

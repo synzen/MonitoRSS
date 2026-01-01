@@ -10,7 +10,11 @@ import {
   ValidateIf,
   ValidateNested,
 } from "class-validator";
-import { DiscordEmbed, DiscordPlaceholderLimitOptions } from "../../../common";
+import {
+  DiscordConnectionFormatterOptions,
+  DiscordEmbed,
+  DiscordPlaceholderLimitOptions,
+} from "../../../common";
 
 class Webhook {
   @IsString()
@@ -94,4 +98,11 @@ export class CreateDiscordChnnnelConnectionInputDto {
   @ValidateNested({ each: true })
   @Type(() => DiscordPlaceholderLimitOptions)
   placeholderLimits?: DiscordPlaceholderLimitOptions[];
+
+  @IsOptional()
+  @Type(() => DiscordConnectionFormatterOptions)
+  @ValidateNested()
+  @IsObject()
+  @ValidateIf((v) => v !== null)
+  formatter?: DiscordConnectionFormatterOptions | null;
 }

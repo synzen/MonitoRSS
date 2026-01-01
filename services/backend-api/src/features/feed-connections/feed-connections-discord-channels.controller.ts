@@ -79,6 +79,7 @@ export class FeedConnectionsDiscordChannelsController {
       embeds,
       componentsV2,
       placeholderLimits,
+      formatter,
     }: CreateDiscordChnnnelConnectionInputDto,
     @DiscordAccessToken()
     { access_token, discord: { id: discordUserId } }: SessionAccessToken
@@ -98,6 +99,7 @@ export class FeedConnectionsDiscordChannelsController {
           embeds,
           componentsV2,
           placeholderLimits,
+          formatter: formatter || undefined,
         },
       }
     );

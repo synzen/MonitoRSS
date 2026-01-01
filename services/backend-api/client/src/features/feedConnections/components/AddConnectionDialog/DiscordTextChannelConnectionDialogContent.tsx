@@ -175,6 +175,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
         embeds: templateData.embeds,
         componentsV2: templateData.componentsV2,
         placeholderLimits: templateData.placeholderLimits,
+        formatter: templateData.formatter,
       },
     });
   }, [feedId, watch, mutateAsync, selectedTemplateId, detectedFields]);
@@ -276,6 +277,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
           embeds: templateData.embeds,
           componentsV2: templateData.componentsV2,
           placeholderLimits: templateData.placeholderLimits,
+          formatter: templateData.formatter,
         },
       });
 

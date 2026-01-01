@@ -52,6 +52,27 @@ describe("detectImageFields", () => {
       ];
       expect(detectImageFields(articles)).toEqual(["image"]);
     });
+
+    it("skips values with whitespace (mixed content)", () => {
+      const articles = [
+        {
+          mixedContent:
+            "https://example.com/photo.png?query=1 submitted by /u/Someone [link] [comments]",
+          image: "https://example.com/actual.jpg",
+        },
+      ];
+      expect(detectImageFields(articles)).toEqual(["image"]);
+    });
+
+    it("skips values with newlines", () => {
+      const articles = [
+        {
+          multiline: "https://example.com/photo.jpg\nSome other text",
+          image: "https://example.com/actual.jpg",
+        },
+      ];
+      expect(detectImageFields(articles)).toEqual(["image"]);
+    });
   });
 
   describe("deduplication", () => {
@@ -149,6 +170,71 @@ describe("detectImageFields", () => {
       // Article 1: img vs thumbnail -> keeps img
       // Article 2: banner is unique
       expect(detectImageFields(articles)).toEqual(["banner", "img"]);
+    });
+  });
+
+  describe("Reddit CDN deduplication", () => {
+    it("deduplicates preview.redd.it and i.redd.it URLs with same filename", () => {
+      const articles = [
+        {
+          image__url: "https://i.redd.it/7azztrbwusag1.png",
+          "extracted::description::anchor3":
+            "https://preview.redd.it/7azztrbwusag1.png?width=640&crop=smart&auto=webp&s=abc123",
+        },
+      ];
+      expect(detectImageFields(articles)).toEqual(["image__url"]);
+    });
+
+    it("deduplicates same Reddit image with different query parameters", () => {
+      const articles = [
+        {
+          thumbnail: "https://preview.redd.it/abc123.jpg?width=108&crop=smart",
+          image: "https://preview.redd.it/abc123.jpg?width=1080&format=png",
+        },
+      ];
+      expect(detectImageFields(articles)).toEqual(["image"]);
+    });
+
+    it("keeps different Reddit images as separate", () => {
+      const articles = [
+        {
+          image1: "https://i.redd.it/first.png",
+          image2: "https://i.redd.it/second.png",
+        },
+      ];
+      expect(detectImageFields(articles)).toEqual(["image1", "image2"]);
+    });
+
+    it("deduplicates redditmedia.com URLs by filename", () => {
+      const articles = [
+        {
+          thumb: "https://a.thumbs.redditmedia.com/abc123.jpg",
+          full: "https://i.redditmedia.com/abc123.jpg",
+        },
+      ];
+      expect(detectImageFields(articles)).toEqual(["full"]);
+    });
+  });
+
+  describe("query parameter normalization", () => {
+    it("deduplicates same image with different query parameters", () => {
+      const articles = [
+        {
+          thumb: "https://example.com/photo.jpg?size=small",
+          full: "https://example.com/photo.jpg?size=large",
+        },
+      ];
+      expect(detectImageFields(articles)).toEqual(["full"]);
+    });
+
+    it("deduplicates image with and without query parameters", () => {
+      const articles = [
+        {
+          clean: "https://example.com/photo.jpg",
+          withParams: "https://example.com/photo.jpg?v=123",
+        },
+      ];
+      expect(detectImageFields(articles)).toEqual(["clean"]);
     });
   });
 
