@@ -108,6 +108,18 @@ export const RICH_EMBED_TEMPLATE: Template = {
             ...(linkField
               ? [
                   {
+                    type: ComponentType.V2Divider as const,
+                    id: "rich-embed-divider",
+                    name: "Divider",
+                    visual: false,
+                    spacing: 1 as const,
+                    children: [] as [],
+                  },
+                ]
+              : []),
+            ...(linkField
+              ? [
+                  {
                     type: ComponentType.V2ActionRow as const,
                     id: "rich-embed-actions",
                     name: "Actions",
