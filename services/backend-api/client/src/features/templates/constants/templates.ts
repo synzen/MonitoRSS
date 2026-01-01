@@ -54,8 +54,8 @@ export const RICH_EMBED_TEMPLATE: Template = {
       id: "rich-embed-title",
       name: "Title",
       content: linkField
-        ? `## [{{title}}]({{${linkField}}})${authorField ? "\n**{{author}}**" : ""}`
-        : `## {{title}}${authorField ? "\n**{{author}}**" : ""}`,
+        ? `### [{{title}}]({{${linkField}}})${authorField ? "\n**{{author}}**" : ""}`
+        : `### {{title}}${authorField ? "\n**{{author}}**" : ""}`,
     };
 
     const headerComponent = hasImage

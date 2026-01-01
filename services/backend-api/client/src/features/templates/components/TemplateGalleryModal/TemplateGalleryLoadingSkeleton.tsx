@@ -8,7 +8,6 @@ import { TemplateGalleryLayout } from "./TemplateGalleryLayout";
 export const TemplateGalleryLoadingSkeleton = () => {
   return (
     <Box>
-      <Skeleton height="20px" width="70%" mb={4} />
       <TemplateGalleryLayout
         templateList={
           <VStack spacing={3} align="stretch" p={1}>

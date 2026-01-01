@@ -43,6 +43,9 @@ import { convertTemplateMessageComponentToPreviewInput } from "./templatePreview
 import { TemplateGalleryLayout } from "./TemplateGalleryLayout";
 import { MessageComponentRoot } from "../../../../pages/MessageBuilder/types";
 
+const TEMPLATE_GALLERY_HELPER_TEXT =
+  "Pick a starting point for your message layout. You can customize everything after applying.";
+
 export interface Article {
   id: string;
   title?: string;
@@ -418,7 +421,14 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
     }
 
     if (isLoadingArticles) {
-      return <TemplateGalleryLoadingSkeleton />;
+      return (
+        <>
+          <Text color="gray.400" mb={4}>
+            {TEMPLATE_GALLERY_HELPER_TEXT}
+          </Text>
+          <TemplateGalleryLoadingSkeleton />
+        </>
+      );
     }
 
     return (
@@ -429,10 +439,11 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
             Some templates are unavailable until your feed has articles
           </Alert>
         )}
-        <Text color="gray.400" mb={4}>
-          Pick a starting point for your message layout. You can customize everything after
-          applying.
-        </Text>
+        {!hasNoFeedFields && (
+          <Text color="gray.400" mb={4}>
+            {TEMPLATE_GALLERY_HELPER_TEXT}
+          </Text>
+        )}
         <TemplateGalleryLayout
           templateList={
             <Box as="fieldset">
