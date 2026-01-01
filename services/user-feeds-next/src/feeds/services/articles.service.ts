@@ -6,6 +6,7 @@
 import { fetchFeed, FeedResponseRequestStatus } from "../../feed-fetcher";
 import {
   injectExternalContent,
+  InvalidFeedException,
   type Article,
   type UserFeedFormatOptions,
   type ExternalFeedProperty,
@@ -13,6 +14,7 @@ import {
 } from "../../articles/parser";
 import { parseArticlesFromXmlWithWorkers as parseArticlesFromXml } from "../../articles/parser/worker";
 import { FeedArticleNotFoundException } from "../../feed-fetcher/exceptions";
+import { parse as parseHtml, valid as isValidHtml } from "node-html-parser";
 import {
   getFeedArticlesFromCache,
   setFeedArticlesInCache,
@@ -54,6 +56,54 @@ export interface FetchFeedArticlesResult {
   };
   url: string;
   attemptedToResolveFromHtml: boolean;
+}
+
+/**
+ * Extract RSS feed URL from HTML page by looking for link tags.
+ */
+function extractRssFromHtml(html: string): string | null {
+  if (!isValidHtml(html)) {
+    return null;
+  }
+
+  const root = parseHtml(html);
+  const elem = root.querySelector('link[type="application/rss+xml"]');
+
+  if (!elem) {
+    return null;
+  }
+
+  return elem.getAttribute("href") || null;
+}
+
+/**
+ * Try to get RSS URL for Reddit pages by appending .rss to the path.
+ */
+function tryGetRedditRssUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    const hostname = parsed.hostname.toLowerCase();
+
+    if (
+      hostname === "reddit.com" ||
+      hostname === "www.reddit.com" ||
+      hostname === "old.reddit.com"
+    ) {
+      if (parsed.pathname.endsWith(".rss")) {
+        return null;
+      }
+
+      // Remove trailing slashes so we can append .rss directly
+      // e.g., "/r/subreddit/top/" -> "/r/subreddit/top" -> "/r/subreddit/top.rss"
+      const cleanPath = parsed.pathname.replace(/\/+$/, "");
+
+      return `https://www.reddit.com${cleanPath}.rss`;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -119,9 +169,48 @@ export async function findOrFetchFeedArticles(
     };
   }
 
-  let { articles, feed } = await parseArticlesFromXml(result.body, {
-    formatOptions: options.formatOptions,
-  });
+  let articles: Article[];
+  let feed: { title?: string };
+  let resolvedUrl = url;
+  let attemptedToResolveFromHtml = false;
+
+  try {
+    const parsed = await parseArticlesFromXml(result.body, {
+      formatOptions: options.formatOptions,
+    });
+    articles = parsed.articles;
+    feed = parsed.feed;
+  } catch (err) {
+    if (err instanceof InvalidFeedException && options.findRssFromHtml) {
+      attemptedToResolveFromHtml = true;
+
+      // Try to extract RSS URL from HTML link tags
+      const rssUrl = extractRssFromHtml(result.body);
+
+      if (rssUrl) {
+        const absoluteRssUrl = rssUrl.startsWith("/")
+          ? new URL(url).origin + rssUrl
+          : rssUrl;
+
+        return findOrFetchFeedArticles(absoluteRssUrl, {
+          ...options,
+          findRssFromHtml: false,
+        });
+      }
+
+      // Try Reddit-specific URL transformation
+      const redditRssUrl = tryGetRedditRssUrl(url);
+
+      if (redditRssUrl) {
+        return findOrFetchFeedArticles(redditRssUrl, {
+          ...options,
+          findRssFromHtml: false,
+        });
+      }
+    }
+
+    throw err;
+  }
 
   // Inject external content if external properties are specified
   let externalContentErrors: ExternalContentError[] = [];
@@ -143,7 +232,7 @@ export async function findOrFetchFeedArticles(
 
   // Store in cache for future requests
   await setFeedArticlesInCache(parsedArticlesCacheStore, {
-    url,
+    url: resolvedUrl,
     options: cacheKeyOptions,
     data: { articles },
   });
@@ -155,8 +244,8 @@ export async function findOrFetchFeedArticles(
       externalContentErrors:
         externalContentErrors.length > 0 ? externalContentErrors : undefined,
     },
-    url,
-    attemptedToResolveFromHtml: false,
+    url: resolvedUrl,
+    attemptedToResolveFromHtml,
   };
 }
 
