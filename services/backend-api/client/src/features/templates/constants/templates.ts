@@ -108,24 +108,24 @@ export const RICH_EMBED_TEMPLATE: Template = {
             ...(linkField
               ? [
                   {
-                    type: ComponentType.V2Divider,
+                    type: ComponentType.V2Divider as const,
                     id: "rich-embed-divider",
                     name: "Divider",
                     visual: true,
-                    spacing: 1,
-                    children: [],
-                  } as any,
+                    spacing: 1 as const,
+                    children: [] as [],
+                  },
                 ]
               : []),
             ...(linkField
               ? [
                   {
-                    type: ComponentType.V2ActionRow,
+                    type: ComponentType.V2ActionRow as const,
                     id: "rich-embed-actions",
                     name: "Actions",
                     children: [
                       {
-                        type: ComponentType.V2Button,
+                        type: ComponentType.V2Button as const,
                         id: "rich-embed-btn",
                         name: "View Button",
                         label: "View",
@@ -153,6 +153,7 @@ export const COMPACT_CARD_TEMPLATE: Template = {
   createMessageComponent: (fields?: DetectedFields): MessageComponentRoot => {
     const imageField = fields?.image[0] ?? "image";
     const descriptionField = fields?.description[0] ?? "description";
+    const linkField = fields?.link[0];
 
     return {
       type: ComponentType.V2Root,
@@ -189,22 +190,26 @@ export const COMPACT_CARD_TEMPLATE: Template = {
                 description: "Article thumbnail",
               },
             },
-            {
-              type: ComponentType.V2ActionRow,
-              id: "compact-card-actions",
-              name: "Actions",
-              children: [
-                {
-                  type: ComponentType.V2Button,
-                  id: "compact-card-btn",
-                  name: "Read More Button",
-                  label: "Read More",
-                  style: DiscordButtonStyle.Link,
-                  disabled: false,
-                  href: "{{link}}",
-                },
-              ],
-            },
+            ...(linkField
+              ? [
+                  {
+                    type: ComponentType.V2ActionRow as const,
+                    id: "compact-card-actions",
+                    name: "Actions",
+                    children: [
+                      {
+                        type: ComponentType.V2Button as const,
+                        id: "compact-card-btn",
+                        name: "View Button",
+                        label: "View",
+                        style: DiscordButtonStyle.Link,
+                        disabled: false,
+                        href: `{{${linkField}}}`,
+                      },
+                    ],
+                  },
+                ]
+              : []),
           ],
         },
       ],
@@ -221,6 +226,7 @@ export const MEDIA_GALLERY_TEMPLATE: Template = {
   createMessageComponent: (fields?: DetectedFields): MessageComponentRoot => {
     const descriptionField = fields?.description[0] ?? "description";
     const imageFields = fields?.image ?? [];
+    const linkField = fields?.link[0];
 
     const imagesToUse = imageFields.length > 0 ? imageFields.slice(0, 10) : ["image"];
 
@@ -274,22 +280,26 @@ export const MEDIA_GALLERY_TEMPLATE: Template = {
               name: "Image Gallery",
               children: galleryItems,
             },
-            {
-              type: ComponentType.V2ActionRow,
-              id: "media-gallery-actions",
-              name: "Actions",
-              children: [
-                {
-                  type: ComponentType.V2Button,
-                  id: "media-gallery-btn",
-                  name: "View Button",
-                  label: "View Article",
-                  style: DiscordButtonStyle.Link,
-                  disabled: false,
-                  href: "{{link}}",
-                },
-              ],
-            },
+            ...(linkField
+              ? [
+                  {
+                    type: ComponentType.V2ActionRow as const,
+                    id: "media-gallery-actions",
+                    name: "Actions",
+                    children: [
+                      {
+                        type: ComponentType.V2Button as const,
+                        id: "media-gallery-btn",
+                        name: "View Button",
+                        label: "View",
+                        style: DiscordButtonStyle.Link,
+                        disabled: false,
+                        href: `{{${linkField}}}`,
+                      },
+                    ],
+                  },
+                ]
+              : []),
           ],
         },
       ],
