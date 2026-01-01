@@ -24,6 +24,7 @@ export const DEFAULT_TEMPLATE: Template = {
     type: ComponentType.LegacyRoot,
     id: "default-root",
     name: "Simple Text Template",
+    stripImages: true,
     children: [
       {
         type: ComponentType.LegacyText,
@@ -38,62 +39,104 @@ export const DEFAULT_TEMPLATE: Template = {
 export const RICH_EMBED_TEMPLATE: Template = {
   id: "rich-embed",
   name: "Rich Embed",
-  description: "Full embed with image, description, and branding",
+  description: "Full embed with image, description and link button",
   ThumbnailComponent: RichEmbedThumbnail,
   requiredFields: [TemplateRequiredField.Description],
   createMessageComponent: (fields?: DetectedFields): MessageComponentRoot => {
-    const imageField = fields?.image[0] ?? "image";
+    const imageField = fields?.image[0];
     const descriptionField = fields?.description[0] ?? "description";
+    const authorField = fields?.author[0];
+    const linkField = fields?.link[0];
+
+    const hasImage = !!imageField;
+    const titleComponent = {
+      type: ComponentType.V2TextDisplay as const,
+      id: "rich-embed-title",
+      name: "Title",
+      content: linkField
+        ? `## [{{title}}]({{${linkField}}})${authorField ? "\n**{{author}}**" : ""}`
+        : `## {{title}}${authorField ? "\n**{{author}}**" : ""}`,
+    };
+
+    const headerComponent = hasImage
+      ? [
+          {
+            type: ComponentType.V2Section as const,
+            id: "rich-embed-section",
+            name: "Header Section",
+            children: [titleComponent],
+            accessory: {
+              type: ComponentType.V2Thumbnail as const,
+              id: "rich-embed-thumb",
+              name: "Thumbnail",
+              mediaUrl: `{{${imageField}}}`,
+              description: "Article thumbnail",
+            },
+          },
+        ]
+      : [titleComponent];
 
     return {
-      type: ComponentType.LegacyRoot,
+      type: ComponentType.V2Root,
       id: "rich-embed-root",
       name: "Rich Embed Template",
+      placeholderLimits: [
+        { placeholder: descriptionField, characterCount: 1750, appendString: "..." },
+      ],
+      stripImages: true,
       children: [
         {
-          type: ComponentType.LegacyEmbedContainer,
+          type: ComponentType.V2Container,
           id: "rich-embed-container",
-          name: "Embeds",
+          name: "Embed Container",
           children: [
+            ...headerComponent,
             {
-              type: ComponentType.LegacyEmbed,
-              id: "rich-embed-embed",
-              name: "Main Embed",
-              color: 5814783,
-              children: [
-                {
-                  type: ComponentType.LegacyEmbedTitle,
-                  id: "rich-embed-title",
-                  name: "Title",
-                  title: "{{title}}",
-                  titleUrl: "{{link}}",
-                },
-                {
-                  type: ComponentType.LegacyEmbedDescription,
-                  id: "rich-embed-desc",
-                  name: "Description",
-                  description: `{{${descriptionField}}}`,
-                },
-                {
-                  type: ComponentType.LegacyEmbedThumbnail,
-                  id: "rich-embed-thumb",
-                  name: "Thumbnail",
-                  thumbnailUrl: `{{${imageField}}}`,
-                },
-                {
-                  type: ComponentType.LegacyEmbedFooter,
-                  id: "rich-embed-footer",
-                  name: "Footer",
-                  footerText: "📰 {{title}}",
-                },
-                {
-                  type: ComponentType.LegacyEmbedTimestamp,
-                  id: "rich-embed-timestamp",
-                  name: "Timestamp",
-                  timestamp: "article",
-                },
-              ],
+              type: ComponentType.V2Divider,
+              id: "rich-embed-divider",
+              name: "Divider",
+              visual: true,
+              spacing: 1,
+              children: [],
             },
+            {
+              type: ComponentType.V2TextDisplay,
+              id: "rich-embed-desc",
+              name: "Description",
+              content: `{{${descriptionField}}}`,
+            },
+            ...(linkField
+              ? [
+                  {
+                    type: ComponentType.V2Divider,
+                    id: "rich-embed-divider",
+                    name: "Divider",
+                    visual: true,
+                    spacing: 1,
+                    children: [],
+                  } as any,
+                ]
+              : []),
+            ...(linkField
+              ? [
+                  {
+                    type: ComponentType.V2ActionRow,
+                    id: "rich-embed-actions",
+                    name: "Actions",
+                    children: [
+                      {
+                        type: ComponentType.V2Button,
+                        id: "rich-embed-btn",
+                        name: "View Button",
+                        label: "View",
+                        style: DiscordButtonStyle.Link,
+                        disabled: false,
+                        href: `{{${linkField}}}`,
+                      },
+                    ],
+                  },
+                ]
+              : []),
           ],
         },
       ],
@@ -118,6 +161,7 @@ export const COMPACT_CARD_TEMPLATE: Template = {
       placeholderLimits: [
         { placeholder: descriptionField, characterCount: 200, appendString: "..." },
       ],
+      stripImages: true,
       children: [
         {
           type: ComponentType.V2Container,
@@ -196,6 +240,7 @@ export const MEDIA_GALLERY_TEMPLATE: Template = {
       placeholderLimits: [
         { placeholder: descriptionField, characterCount: 150, appendString: "..." },
       ],
+      stripImages: true,
       children: [
         {
           type: ComponentType.V2Container,

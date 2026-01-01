@@ -180,9 +180,12 @@ const baseRules = {
     order: SimpleMarkdown.defaultRules.heading.order,
     match: SimpleMarkdown.blockRegex(/^(#{1,3})\s+([^\n]+?)(?:\n|$)/),
     parse(capture, parse, state) {
+      // Parse heading content in inline mode so links work inside headings
+      const inlineState = { ...state, inline: true };
+
       return {
         level: capture[1].length,
-        content: parse(capture[2].trim(), state),
+        content: parse(capture[2].trim(), inlineState),
       };
     },
     react(node, recurseOutput, state) {
@@ -200,8 +203,11 @@ const baseRules = {
       return /^(?:\n)*-#\s+([^\n]+?)(?:\n|$)/.exec(source);
     },
     parse(capture, parse, state) {
+      // Parse subtext content in inline mode so links work inside subtext
+      const inlineState = { ...state, inline: true };
+
       return {
-        content: parse(capture[1].trim(), state),
+        content: parse(capture[1].trim(), inlineState),
       };
     },
     react(node, recurseOutput, state) {
@@ -226,8 +232,11 @@ const baseRules = {
       return /^>(?:[ \t]*)([^\n]*?)(?:\n|$)/.exec(source);
     },
     parse(capture, parse, state) {
+      // Parse blockquote content in inline mode so links work inside quotes
+      const inlineState = { ...state, inline: true };
+
       return {
-        content: parse(capture[1].trim(), state),
+        content: parse(capture[1].trim(), inlineState),
       };
     },
     react(node, recurseOutput, state) {
@@ -248,6 +257,8 @@ const baseRules = {
     parse(capture, parse, state) {
       const content = capture[1];
       const lines = content.split("\n").filter((line) => /^[ \t]*[-*](?!#)[ \t]+/.test(line));
+      // Parse list item content in inline mode so links work inside list items
+      const inlineState = { ...state, inline: true };
 
       // Get indentation level for a line
       const getIndent = (line) => {
@@ -293,7 +304,7 @@ const baseRules = {
             }
 
             const item = {
-              content: parse(text, state),
+              content: parse(text, inlineState),
               children: nestedLines.length > 0 ? parseItems(nestedLines, indent + 1) : [],
             };
 

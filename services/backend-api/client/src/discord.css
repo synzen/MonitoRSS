@@ -805,12 +805,14 @@
   -webkit-box-flex: 1;
   -ms-flex: 1;
   flex: 1;
+  min-width: 0;
 }
 
 .embed.embed-rich {
   position: relative;
   display: flex;
   border-radius: 0 3px 3px 0;
+  max-width: 100%;
 }
 
 .embed.embed-rich .embed-rich-thumb {
