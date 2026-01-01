@@ -11,6 +11,10 @@ import {
   getDisabledReason,
 } from "./index";
 import { Template, TemplateRequiredField } from "../../types";
+import {
+  createEmptyDetectedFields,
+  createDetectedFields,
+} from "../../utils/detectedFieldsTestUtils";
 import { ComponentType } from "../../../../pages/MessageBuilder/types";
 import {
   createDiscordChannelConnectionPreview,
@@ -94,6 +98,15 @@ const TestWrapper = ({ children }: TestWrapperProps) => {
   );
 };
 
+const emptyDetectedFields = createEmptyDetectedFields();
+const fullDetectedFields = createDetectedFields({
+  [TemplateRequiredField.Image]: ["image"],
+  [TemplateRequiredField.Description]: ["description"],
+  [TemplateRequiredField.Title]: ["title"],
+  [TemplateRequiredField.Author]: ["author"],
+  [TemplateRequiredField.Link]: ["link"],
+});
+
 const defaultProps = {
   isOpen: true,
   onClose: vi.fn(),
@@ -101,16 +114,13 @@ const defaultProps = {
   selectedTemplateId: undefined,
   onTemplateSelect: vi.fn(),
   feedFields: ["title", "description", "link", "image"],
-  detectedFields: { image: ["image"], description: ["description"], title: ["title"] },
+  detectedFields: fullDetectedFields,
   articles: mockArticles,
   selectedArticleId: "article-1",
   onArticleChange: vi.fn(),
   feedId: "feed-123",
   connectionId: "connection-456",
 };
-
-const emptyDetectedFields = { image: [], description: [], title: [] };
-const fullDetectedFields = { image: ["image"], description: ["description"], title: ["title"] };
 
 describe("TemplateGalleryModal", () => {
   beforeEach(() => {
@@ -173,11 +183,14 @@ describe("TemplateGalleryModal", () => {
         }),
       };
       expect(
-        isTemplateCompatible(template, ["title", "description"], {
-          image: [],
-          description: ["description"],
-          title: ["title"],
-        })
+        isTemplateCompatible(
+          template,
+          ["title", "description"],
+          createDetectedFields({
+            [TemplateRequiredField.Description]: ["description"],
+            [TemplateRequiredField.Title]: ["title"],
+          })
+        )
       ).toBe(false);
     });
   });
@@ -231,11 +244,14 @@ describe("TemplateGalleryModal", () => {
         }),
       };
       expect(
-        getMissingFields(template, ["title", "description"], {
-          image: [],
-          description: ["description"],
-          title: ["title"],
-        })
+        getMissingFields(
+          template,
+          ["title", "description"],
+          createDetectedFields({
+            [TemplateRequiredField.Description]: ["description"],
+            [TemplateRequiredField.Title]: ["title"],
+          })
+        )
       ).toEqual(["image"]);
     });
 
@@ -278,7 +294,7 @@ describe("TemplateGalleryModal", () => {
 
       // Field in feedFields but not detectedFields - should still be compatible
       const feedFields = ["description"];
-      const detectedFields = { image: [], description: [], title: [] };
+      const detectedFields = createEmptyDetectedFields();
 
       expect(isTemplateCompatible(template, feedFields, detectedFields)).toBe(true);
       expect(getMissingFields(template, feedFields, detectedFields)).toEqual([]);
@@ -289,7 +305,9 @@ describe("TemplateGalleryModal", () => {
 
       // Field not in feedFields AND not in detectedFields - should be incompatible
       const feedFields = ["title"];
-      const detectedFields = { image: [], description: [], title: ["title"] };
+      const detectedFields = createDetectedFields({
+        [TemplateRequiredField.Title]: ["title"],
+      });
 
       expect(isTemplateCompatible(template, feedFields, detectedFields)).toBe(false);
       expect(getMissingFields(template, feedFields, detectedFields)).toContain("image");
@@ -301,7 +319,9 @@ describe("TemplateGalleryModal", () => {
 
       // description is in feedFields but detectedFields.description is empty
       const feedFields = ["title", "description", "link"];
-      const detectedFields = { image: [], description: [], title: ["title"] };
+      const detectedFields = createDetectedFields({
+        [TemplateRequiredField.Title]: ["title"],
+      });
 
       // Should be compatible because "description" is in feedFields
       expect(isTemplateCompatible(template, feedFields, detectedFields)).toBe(true);
@@ -314,7 +334,10 @@ describe("TemplateGalleryModal", () => {
 
       // image is in detectedFields but not in feedFields
       const feedFields = ["title", "link"];
-      const detectedFields = { image: ["imageUrl"], description: [], title: ["title"] };
+      const detectedFields = createDetectedFields({
+        [TemplateRequiredField.Image]: ["imageUrl"],
+        [TemplateRequiredField.Title]: ["title"],
+      });
 
       // Should be compatible because image is in detectedFields
       expect(isTemplateCompatible(template, feedFields, detectedFields)).toBe(true);
@@ -336,7 +359,9 @@ describe("TemplateGalleryModal", () => {
         },
         {
           feedFields: ["description"],
-          detectedFields: { image: ["img"], description: [], title: [] },
+          detectedFields: createDetectedFields({
+            [TemplateRequiredField.Image]: ["img"],
+          }),
           shouldBeCompatible: true,
         },
         {
@@ -346,7 +371,9 @@ describe("TemplateGalleryModal", () => {
         },
         {
           feedFields: ["title"],
-          detectedFields: { image: [], description: ["desc"], title: [] },
+          detectedFields: createDetectedFields({
+            [TemplateRequiredField.Description]: ["desc"],
+          }),
           shouldBeCompatible: false,
         },
         {
@@ -403,11 +430,14 @@ describe("TemplateGalleryModal", () => {
         }),
       };
       expect(
-        getDisabledReason(template, ["title", "description"], {
-          image: [],
-          description: ["description"],
-          title: ["title"],
-        })
+        getDisabledReason(
+          template,
+          ["title", "description"],
+          createDetectedFields({
+            [TemplateRequiredField.Description]: ["description"],
+            [TemplateRequiredField.Title]: ["title"],
+          })
+        )
       ).toBe("");
     });
 

@@ -10,10 +10,7 @@ import {
   ValidateIf,
   ValidateNested,
 } from "class-validator";
-import {
-  DiscordEmbed,
-  DiscordPlaceholderLimitOptions,
-} from "../../../common";
+import { DiscordEmbed, DiscordPlaceholderLimitOptions } from "../../../common";
 
 class Webhook {
   @IsString()

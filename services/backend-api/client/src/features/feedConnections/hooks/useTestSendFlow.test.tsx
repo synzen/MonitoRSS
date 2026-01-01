@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
 import { useTestSendFlow, getErrorMessageByStatus } from "./useTestSendFlow";
 import { useSendTestArticleDirect } from "./useSendTestArticleDirect";
 import { SendTestArticleDeliveryStatus } from "@/types";
+import { createEmptyDetectedFields } from "@/features/templates/utils/detectedFieldsTestUtils";
 
 vi.mock("./useSendTestArticleDirect");
 
@@ -58,7 +59,7 @@ describe("useTestSendFlow", () => {
     webhookIconUrl: undefined,
     selectedTemplateId: "template-1",
     selectedArticleId: "article-1",
-    detectedFields: { image: [], description: [], title: [] },
+    detectedFields: createEmptyDetectedFields(),
     isOpen: true,
     createConnection: vi.fn(),
     onSaveSuccess: vi.fn(),

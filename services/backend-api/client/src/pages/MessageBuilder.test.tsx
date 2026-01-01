@@ -1,6 +1,8 @@
 import React from "react";
 import { describe, it, expect, vi } from "vitest";
 import { TEMPLATES, getTemplateById, DEFAULT_TEMPLATE } from "../features/templates/constants";
+import { TemplateRequiredField } from "../features/templates/types";
+import { createDetectedFields } from "../features/templates/utils/detectedFieldsTestUtils";
 import { ComponentType } from "./MessageBuilder/types";
 
 vi.mock("../features/discordUser", () => ({
@@ -84,7 +86,13 @@ vi.mock("../features/templates/components/TemplateGalleryModal", () => ({
   }),
 }));
 
-const defaultDetectedFields = { image: ["image"], description: ["description"], title: ["title"] };
+const defaultDetectedFields = createDetectedFields({
+  [TemplateRequiredField.Image]: ["image"],
+  [TemplateRequiredField.Description]: ["description"],
+  [TemplateRequiredField.Title]: ["title"],
+  [TemplateRequiredField.Author]: ["author"],
+  [TemplateRequiredField.Link]: ["link"],
+});
 
 describe("MessageBuilder Template Application", () => {
   describe("handleApplyTemplate function", () => {
@@ -107,7 +115,7 @@ describe("MessageBuilder Template Application", () => {
       expect(setValue).toHaveBeenCalledWith(
         "messageComponent",
         expect.objectContaining({
-          type: ComponentType.LegacyRoot,
+          type: ComponentType.V2Root,
           id: expect.any(String),
         }),
         { shouldValidate: true, shouldDirty: true, shouldTouch: true }
@@ -168,11 +176,13 @@ describe("MessageBuilder Template Application", () => {
 
     it("passes detected image field to createMessageComponent", () => {
       const setValue = vi.fn();
-      const detectedFields = {
-        image: ["thumbnail_url"],
-        description: ["description"],
-        title: ["title"],
-      };
+      const detectedFields = createDetectedFields({
+        [TemplateRequiredField.Image]: ["thumbnail_url"],
+        [TemplateRequiredField.Description]: ["description"],
+        [TemplateRequiredField.Title]: ["title"],
+        [TemplateRequiredField.Author]: ["author"],
+        [TemplateRequiredField.Link]: ["link"],
+      });
 
       const handleApplyTemplate = (selectedId: string) => {
         const template = getTemplateById(selectedId) || DEFAULT_TEMPLATE;
@@ -239,11 +249,13 @@ describe("MessageBuilder Template Application", () => {
 
     it("templates with image use the passed imageField parameter", () => {
       const richEmbed = getTemplateById("rich-embed")!;
-      const customFields = {
-        image: ["custom_image_field"],
-        description: ["description"],
-        title: ["title"],
-      };
+      const customFields = createDetectedFields({
+        [TemplateRequiredField.Image]: ["custom_image_field"],
+        [TemplateRequiredField.Description]: ["description"],
+        [TemplateRequiredField.Title]: ["title"],
+        [TemplateRequiredField.Author]: ["author"],
+        [TemplateRequiredField.Link]: ["link"],
+      });
       const messageComponent = richEmbed.createMessageComponent(customFields);
 
       const jsonStr = JSON.stringify(messageComponent);

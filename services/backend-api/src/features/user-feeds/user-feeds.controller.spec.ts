@@ -375,7 +375,10 @@ describe("UserFeedsController", () => {
         content: "Test content",
         embeds: [{ title: "Test Embed" }],
         threadId: "thread-456",
-        webhook: { name: "Test Webhook", iconUrl: "https://example.com/icon.png" },
+        webhook: {
+          name: "Test Webhook",
+          iconUrl: "https://example.com/icon.png",
+        },
         placeholderLimits: [{ placeholder: "title", characterCount: 100 }],
         userFeedFormatOptions: { dateFormat: "YYYY-MM-DD" },
       };
@@ -395,7 +398,10 @@ describe("UserFeedsController", () => {
           embeds: [{ title: "Test Embed" }],
           componentsV2: undefined,
           placeholderLimits: [{ placeholder: "title", characterCount: 100 }],
-          webhook: { name: "Test Webhook", iconUrl: "https://example.com/icon.png" },
+          webhook: {
+            name: "Test Webhook",
+            iconUrl: "https://example.com/icon.png",
+          },
           threadId: "thread-456",
           userFeedFormatOptions: { dateFormat: "YYYY-MM-DD" },
         }
