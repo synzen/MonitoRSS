@@ -695,7 +695,6 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
       isOpen={isOpen}
       onClose={onClose}
       size={{ base: "full", md: "xl", lg: "6xl" }}
-      isCentered
       scrollBehavior="inside"
       closeOnOverlayClick
       closeOnEsc

@@ -147,7 +147,7 @@ export const RICH_EMBED_TEMPLATE: Template = {
 export const COMPACT_CARD_TEMPLATE: Template = {
   id: "compact-card",
   name: "Compact Card",
-  description: "Modern card layout with thumbnail and read button",
+  description: "Card layout with a minimal description, thumbnail and view button",
   ThumbnailComponent: CompactCardThumbnail,
   requiredFields: [TemplateRequiredField.Title],
   createMessageComponent: (fields?: DetectedFields): MessageComponentRoot => {
@@ -220,7 +220,7 @@ export const COMPACT_CARD_TEMPLATE: Template = {
 export const MEDIA_GALLERY_TEMPLATE: Template = {
   id: "media-gallery",
   name: "Media Gallery",
-  description: "Showcase images in a modern gallery layout",
+  description: "Showcase multiple images in a gallery layout",
   ThumbnailComponent: MediaGalleryThumbnail,
   requiredFields: [TemplateRequiredField.Image],
   createMessageComponent: (fields?: DetectedFields): MessageComponentRoot => {
