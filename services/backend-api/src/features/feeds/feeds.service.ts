@@ -182,7 +182,23 @@ export class FeedsService {
     userAccessToken: string;
     skipBotPermissionAssertions?: boolean;
   }) {
-    const channel = await this.discordApiService.getChannel(channelId);
+    let channel;
+
+    try {
+      channel = await this.discordApiService.getChannel(channelId);
+    } catch (err) {
+      if (err instanceof DiscordAPIError) {
+        if (err.statusCode === HttpStatus.NOT_FOUND) {
+          throw new MissingChannelException();
+        }
+
+        if (err.statusCode === HttpStatus.FORBIDDEN) {
+          throw new MissingChannelPermissionsException();
+        }
+      }
+
+      throw err;
+    }
 
     const { isManager } = await this.discordAuthService.userManagesGuild(
       userAccessToken,

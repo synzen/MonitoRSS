@@ -690,12 +690,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                   {testSendFeedback.status === "error" && (
                     <Alert status="error" borderRadius="md" size="sm">
                       <AlertIcon />
-                      <HStack justifyContent="space-between" flex={1}>
-                        <AlertDescription>{testSendFeedback.message}</AlertDescription>
-                        <Button size="sm" variant="outline" onClick={onTestSend}>
-                          Retry
-                        </Button>
-                      </HStack>
+                      <AlertDescription>{testSendFeedback.message}</AlertDescription>
                     </Alert>
                   )}
                 </Box>

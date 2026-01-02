@@ -5,6 +5,7 @@ import { StandardException } from "../../../common/exceptions/standard-exception
 import { StandardBaseExceptionFilter } from "../../../common/filters/standard-exception-filter";
 import { WebhookMissingPermissionsException } from "../../discord-webhooks/exceptions";
 import {
+  MissingChannelException,
   MissingChannelPermissionsException,
   UserMissingManageGuildException,
 } from "../../feeds/exceptions";
@@ -20,6 +21,10 @@ export const ADD_DISCORD_CHANNEL_CONNECTION_ERROR_CODES: Record<
   { status: HttpStatus; code: ApiErrorCode }
 > = {
   [MissingDiscordChannelException.name]: {
+    status: HttpStatus.BAD_REQUEST,
+    code: ApiErrorCode.FEED_MISSING_CHANNEL,
+  },
+  [MissingChannelException.name]: {
     status: HttpStatus.BAD_REQUEST,
     code: ApiErrorCode.FEED_MISSING_CHANNEL,
   },

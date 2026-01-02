@@ -137,9 +137,11 @@ export const useTestSendFlow = ({
         });
       }
     } catch (err) {
+      const errorMessage =
+        (err as Error).message || "Failed to send test article. Please try again.";
       setTestSendFeedback({
         status: "error",
-        message: "Failed to send test article. Please try again.",
+        message: errorMessage,
       });
     } finally {
       setIsTestSending(false);

@@ -23,10 +23,7 @@ import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
 import { FastifyReply, FastifyRequest } from "fastify";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
 
-import {
-  ADD_DISCORD_CHANNEL_CONNECTION_ERROR_CODES,
-  CreateDiscordChannelTestArticleFilter,
-} from "../feed-connections/filters";
+import { ADD_DISCORD_CHANNEL_CONNECTION_ERROR_CODES } from "../feed-connections/filters";
 import { FeedConnectionsDiscordChannelsService } from "../feed-connections/feed-connections-discord-channels.service";
 import { FeedsService } from "../feeds/feeds.service";
 import {
@@ -62,6 +59,7 @@ import {
 import {
   GetUserFeedArticlesExceptionFilter,
   RETRY_USER_FEED_ERROR_CODES,
+  SendTestArticleFilter,
 } from "./filters";
 import { RestoreLegacyUserFeedExceptionFilter } from "./filters/restore-legacy-user-feed-exception.filter";
 import { GetUserFeedsPipe, GetUserFeedsPipeOutput } from "./pipes";
@@ -241,7 +239,7 @@ export class UserFeedsController {
   }
 
   @Post("/:feedId/test-send")
-  @UseFilters(CreateDiscordChannelTestArticleFilter)
+  @UseFilters(SendTestArticleFilter)
   async sendTestArticle(
     @Param(
       "feedId",
