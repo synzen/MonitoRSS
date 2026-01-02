@@ -25,6 +25,7 @@ export const DEFAULT_TEMPLATE: Template = {
     id: "default-root",
     name: "Simple Text Template",
     stripImages: true,
+    ignoreNewLines: true,
     children: [
       {
         type: ComponentType.LegacyText,
@@ -84,6 +85,7 @@ export const RICH_EMBED_TEMPLATE: Template = {
         { placeholder: descriptionField, characterCount: 1750, appendString: "..." },
       ],
       stripImages: true,
+      ignoreNewLines: true,
       children: [
         {
           type: ComponentType.V2Container,
@@ -163,6 +165,7 @@ export const COMPACT_CARD_TEMPLATE: Template = {
         { placeholder: descriptionField, characterCount: 200, appendString: "..." },
       ],
       stripImages: true,
+      ignoreNewLines: true,
       children: [
         {
           type: ComponentType.V2Container,
@@ -247,6 +250,7 @@ export const MEDIA_GALLERY_TEMPLATE: Template = {
         { placeholder: descriptionField, characterCount: 150, appendString: "..." },
       ],
       stripImages: true,
+      ignoreNewLines: true,
       children: [
         {
           type: ComponentType.V2Container,
