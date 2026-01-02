@@ -734,7 +734,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
         aria-labelledby="template-gallery-modal-header"
       >
         <ModalHeader id="template-gallery-modal-header">
-          {modalTitle || "Choose a Template"}
+          {modalTitle || "Choose a Message Format Template"}
         </ModalHeader>
         <ModalCloseButton />
         <ModalBody>{renderModalBodyContent()}</ModalBody>
