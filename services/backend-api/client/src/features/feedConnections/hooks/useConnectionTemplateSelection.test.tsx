@@ -113,7 +113,25 @@ describe("useConnectionTemplateSelection", () => {
       expect(result.current.selectedTemplateId).toBeUndefined();
     });
 
-    it("has no selected article initially", () => {
+    it("has no selected article initially when no articles available", () => {
+      // Override mock to return no articles
+      mockUseUserFeedArticles.mockReturnValue({
+        data: {
+          result: {
+            articles: [],
+            totalArticles: 0,
+            selectedProperties: [],
+            requestStatus: UserFeedArticleRequestStatus.Success,
+            response: { statusCode: 200 },
+            filterStatuses: [],
+          },
+        },
+        status: "success",
+        error: null,
+        refetch: vi.fn(),
+        fetchStatus: "idle",
+      });
+
       const { result } = renderHook(
         () =>
           useConnectionTemplateSelection({
@@ -361,8 +379,8 @@ describe("useConnectionTemplateSelection", () => {
     });
   });
 
-  describe("empty feed auto-selection", () => {
-    it("auto-selects default template when feed is empty and only default is compatible", async () => {
+  describe("empty feed behavior", () => {
+    it("does not auto-select template when feed is empty", async () => {
       // Mock empty articles (empty feed)
       mockUseUserFeedArticles.mockReturnValue({
         data: {
@@ -395,12 +413,8 @@ describe("useConnectionTemplateSelection", () => {
         result.current.handleNextStep();
       });
 
-      // Wait for auto-selection to occur
-      await waitFor(() => {
-        // With empty feed, only default template is compatible (has no requiredFields)
-        // The hook should auto-select it
-        expect(result.current.selectedTemplateId).toBe("default");
-      });
+      // Should not auto-select any template - user must explicitly select
+      expect(result.current.selectedTemplateId).toBeUndefined();
     });
 
     it("does not auto-select when multiple templates are compatible", async () => {
@@ -506,7 +520,7 @@ describe("useConnectionTemplateSelection", () => {
   });
 
   describe("getTemplateUpdateDetails", () => {
-    it("returns default template details when no template selected", () => {
+    it("returns undefined when no template selected", () => {
       const { result } = renderHook(
         () =>
           useConnectionTemplateSelection({
@@ -518,9 +532,8 @@ describe("useConnectionTemplateSelection", () => {
 
       const details = result.current.getTemplateUpdateDetails();
 
-      // Default template (Simple Text) has content but no embeds
-      expect(details.content).toBe("**{{title}}**\n{{link}}");
-      expect(details.embeds).toBeUndefined();
+      // No template selected, should return undefined
+      expect(details).toBeUndefined();
     });
 
     it("returns selected template details when template is selected", () => {
@@ -534,14 +547,14 @@ describe("useConnectionTemplateSelection", () => {
       );
 
       act(() => {
-        result.current.setSelectedTemplateId("rich-embed");
+        result.current.setSelectedTemplateId("default");
       });
 
       const details = result.current.getTemplateUpdateDetails();
 
-      // Rich embed template has embeds
-      expect(details.embeds).toBeDefined();
-      expect(details.embeds?.length).toBeGreaterThan(0);
+      // Default/Simple Text template has content but no embeds
+      expect(details).toBeDefined();
+      expect(details?.content).toBe("**{{title}}**\n{{link}}");
     });
   });
 });

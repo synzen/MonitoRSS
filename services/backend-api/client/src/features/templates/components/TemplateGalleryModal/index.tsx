@@ -408,6 +408,19 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
     }
   };
 
+  // Handle save action with validation
+  const handleSave = () => {
+    if (!selectedTemplateId) {
+      setShowTemplateError(true);
+
+      return;
+    }
+
+    if (onSave) {
+      onSave();
+    }
+  };
+
   const renderModalBodyContent = () => {
     if (showErrorPanel) {
       return (
@@ -433,16 +446,15 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
 
     return (
       <>
+        <Text color="gray.400" mb={4}>
+          {TEMPLATE_GALLERY_HELPER_TEXT}
+        </Text>
         {hasNoFeedFields && (
           <Alert status="info" mb={4} borderRadius="md">
             <AlertIcon />
-            Some templates are unavailable until your feed has articles
+            Your feed has no articles yet. You can proceed with Simple Text now, or wait for
+            articles to unlock more template options.
           </Alert>
-        )}
-        {!hasNoFeedFields && (
-          <Text color="gray.400" mb={4}>
-            {TEMPLATE_GALLERY_HELPER_TEXT}
-          </Text>
         )}
         <TemplateGalleryLayout
           templateList={
@@ -593,7 +605,8 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                           borderRadius="md"
                           color="gray.500"
                         >
-                          Preview will appear when your feed has articles
+                          There are currently no articles in the feed to preview. You can save now -
+                          previews will be available once articles arrive.
                         </Box>
                       )}
                   </Box>
@@ -639,13 +652,16 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                     previewMessages.length === 0 &&
                     articles.length === 0 && (
                       <Text color="gray.500" textAlign="center" py={8}>
-                        Preview will appear when your feed has articles
+                        There are currently no articles in the feed to preview. You can save now -
+                        previews will be available once articles arrive.
                       </Text>
                     )}
-                  <Text fontSize="sm" color="gray.400" mt={2}>
-                    This is an approximate preview. Send to Discord to see the actual
-                    representation.
-                  </Text>
+                  {!!articles.length && (
+                    <Text fontSize="sm" color="gray.400" mt={2}>
+                      This is an approximate preview. Send to Discord to see the actual
+                      representation.
+                    </Text>
+                  )}
                 </Box>
               )}
               {onTestSend && hasArticles && (
@@ -746,12 +762,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                   <Button variant="ghost" onClick={onCancel || onClose}>
                     Cancel
                   </Button>
-                  <Button
-                    colorScheme="blue"
-                    onClick={onSave}
-                    isLoading={isSaveLoading}
-                    isDisabled={!selectedTemplateId}
-                  >
+                  <Button colorScheme="blue" onClick={handleSave} isLoading={isSaveLoading}>
                     Save
                   </Button>
                 </HStack>

@@ -777,9 +777,7 @@ describe("TemplateGalleryModal", () => {
           <TemplateGalleryModal {...defaultProps} feedFields={[]} />
         </TestWrapper>
       );
-      expect(
-        screen.getByText("Some templates are unavailable until your feed has articles")
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Your feed has no articles yet/i)).toBeInTheDocument();
     });
 
     it("disables ALL non-default templates when feedFields is empty (AC1)", () => {
@@ -879,7 +877,7 @@ describe("TemplateGalleryModal", () => {
       );
       // The preview area should show a skeleton, not the "no articles" message
       expect(
-        screen.queryByText("Preview will appear when your feed has articles")
+        screen.queryByText(/There are currently no articles in the feed to preview/i)
       ).not.toBeInTheDocument();
     });
   });
@@ -1406,10 +1404,10 @@ describe("TemplateGalleryModal", () => {
         </TestWrapper>
       );
       // The preview panel should show loading or preview content, not an error
-      // Since articles exist, we should not see the "Preview will appear when your feed has articles" message
+      // Since articles exist, we should not see the "no articles" message
       await waitFor(() => {
         expect(
-          screen.queryByText("Preview will appear when your feed has articles")
+          screen.queryByText(/There are currently no articles in the feed to preview/i)
         ).not.toBeInTheDocument();
       });
     });
@@ -1428,7 +1426,7 @@ describe("TemplateGalleryModal", () => {
       );
       await waitFor(() => {
         expect(
-          screen.getByText("Preview will appear when your feed has articles")
+          screen.getByText(/There are currently no articles in the feed to preview/i)
         ).toBeInTheDocument();
       });
     });

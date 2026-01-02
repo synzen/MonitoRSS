@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import RouteParams from "../../../types/RouteParams";
 import { useUserFeedArticles, useUserFeed } from "../../feed/hooks";
-import { TEMPLATES, DEFAULT_TEMPLATE, getTemplateById } from "../../templates/constants/templates";
+import { TEMPLATES, getTemplateById } from "../../templates/constants/templates";
 import convertMessageBuilderStateToConnectionUpdate from "../../../pages/MessageBuilder/utils/convertMessageBuilderStateToConnectionUpdate";
 import { detectFields } from "../../templates/utils";
 import { DetectedFields } from "../../templates/types";
@@ -25,7 +25,7 @@ export const useConnectionTemplateSelection = ({
   const [currentStep, setCurrentStep] = useState<ConnectionCreationStep>(
     ConnectionCreationStep.ServerChannel
   );
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(DEFAULT_TEMPLATE.id);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);
   const [selectedArticleId, setSelectedArticleId] = useState<string | undefined>();
 
   const { feedId } = useParams<RouteParams>();
@@ -72,7 +72,7 @@ export const useConnectionTemplateSelection = ({
   useEffect(() => {
     if (!isOpen) {
       setCurrentStep(ConnectionCreationStep.ServerChannel);
-      setSelectedTemplateId(DEFAULT_TEMPLATE.id);
+      setSelectedTemplateId(undefined);
       setSelectedArticleId(undefined);
     }
   }, [isOpen]);
@@ -90,10 +90,17 @@ export const useConnectionTemplateSelection = ({
   };
 
   const getTemplateUpdateDetails = () => {
-    const templateId = selectedTemplateId || DEFAULT_TEMPLATE.id;
+    if (!selectedTemplateId) {
+      return undefined;
+    }
 
     // Get template and create message component with detected fields
-    const template = getTemplateById(templateId) || DEFAULT_TEMPLATE;
+    const template = getTemplateById(selectedTemplateId);
+
+    if (!template) {
+      return undefined;
+    }
+
     const messageComponent = template.createMessageComponent(detectedFields);
 
     return convertMessageBuilderStateToConnectionUpdate(messageComponent);
