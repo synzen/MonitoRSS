@@ -162,6 +162,11 @@ const convertV2RootToTemplatePreviewInput = (
     content: null,
     embeds: undefined,
     componentsV2: componentsV2.length > 0 ? componentsV2 : null,
+    connectionFormatOptions: {
+      formatTables: messageComponent.formatTables,
+      stripImages: messageComponent.stripImages,
+      ignoreNewLines: messageComponent.ignoreNewLines,
+    },
     enablePlaceholderFallback: messageComponent.enablePlaceholderFallback,
     placeholderLimits: messageComponent.placeholderLimits,
   };
@@ -251,6 +256,11 @@ export const convertTemplateMessageComponentToPreviewInput = (
     content: content || null,
     embeds: embeds.length > 0 ? embeds : undefined,
     componentsV2: null,
+    connectionFormatOptions: {
+      formatTables: messageComponent.formatTables,
+      stripImages: messageComponent.stripImages,
+      ignoreNewLines: messageComponent.ignoreNewLines,
+    },
     enablePlaceholderFallback: messageComponent.enablePlaceholderFallback,
     placeholderLimits: messageComponent.placeholderLimits,
   };

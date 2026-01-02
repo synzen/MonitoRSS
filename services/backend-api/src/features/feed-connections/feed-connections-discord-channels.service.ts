@@ -159,6 +159,9 @@ interface CreateTemplatePreviewInput {
   content?: string;
   embeds?: DiscordPreviewEmbed[];
   feedFormatOptions: UserFeed["formatOptions"] | null;
+  connectionFormatOptions?:
+    | DiscordChannelConnection["details"]["formatter"]
+    | null;
   articleId?: string;
   placeholderLimits?:
     | DiscordChannelConnection["details"]["placeholderLimits"]
@@ -1281,6 +1284,7 @@ export class FeedConnectionsDiscordChannelsService {
     content,
     embeds,
     feedFormatOptions,
+    connectionFormatOptions,
     articleId,
     placeholderLimits,
     enablePlaceholderFallback,
@@ -1340,7 +1344,7 @@ export class FeedConnectionsDiscordChannelsService {
               ) || [],
           }))
         ),
-        formatter: undefined,
+        formatter: connectionFormatOptions || undefined,
         splitOptions: undefined,
         mentions: undefined,
         customPlaceholders: undefined,
@@ -1350,7 +1354,7 @@ export class FeedConnectionsDiscordChannelsService {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         componentsV2: (componentsV2 as any) ?? undefined,
       },
-    } as const;
+    };
 
     return this.feedHandlerService.createPreview({
       details: payload,

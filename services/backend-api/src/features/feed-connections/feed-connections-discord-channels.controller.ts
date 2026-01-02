@@ -305,6 +305,7 @@ export class FeedConnectionsDiscordChannelsController {
       content,
       embeds,
       userFeedFormatOptions,
+      connectionFormatOptions,
       placeholderLimits,
       enablePlaceholderFallback,
       componentsV2,
@@ -313,6 +314,7 @@ export class FeedConnectionsDiscordChannelsController {
     const result = await this.service.createTemplatePreview({
       userFeed: feed,
       feedFormatOptions: { ...feed.formatOptions, ...userFeedFormatOptions },
+      connectionFormatOptions,
       articleId: article?.id,
       content,
       embeds,

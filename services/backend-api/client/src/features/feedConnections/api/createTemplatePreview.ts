@@ -14,6 +14,11 @@ export interface CreateTemplatePreviewInput {
       dateFormat?: string | null;
       dateTimezone?: string | null;
     } | null;
+    connectionFormatOptions?: {
+      formatTables?: boolean;
+      stripImages?: boolean;
+      ignoreNewLines?: boolean;
+    } | null;
     placeholderLimits?: Array<{
       placeholder: string;
       characterCount: number;

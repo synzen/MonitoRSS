@@ -12,6 +12,7 @@ import {
 import {
   UserFeedFormatOptions,
   DiscordPlaceholderLimitOptions,
+  DiscordConnectionFormatterOptions,
 } from "../../../common";
 import { DiscordPreviewEmbed } from "../../../common/types/discord-preview-embed.type";
 
@@ -49,6 +50,13 @@ export class CreateTemplatePreviewInputDto {
   @IsObject()
   @ValidateIf((v) => v !== null)
   userFeedFormatOptions?: UserFeedFormatOptions | null;
+
+  @IsOptional()
+  @Type(() => DiscordConnectionFormatterOptions)
+  @ValidateNested()
+  @IsObject()
+  @ValidateIf((v) => v !== null)
+  connectionFormatOptions?: DiscordConnectionFormatterOptions | null;
 
   @IsOptional()
   @Type(() => Boolean)
