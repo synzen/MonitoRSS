@@ -26,6 +26,9 @@ export const UserMeSchema = object({
     feedListColumnOrder: object({
       columns: array(string().required()).required(),
     }).optional(),
+    feedListStatusFilters: object({
+      statuses: array(string().required()).required(),
+    }).optional(),
   }).default({}),
   subscription: object({
     product: object({

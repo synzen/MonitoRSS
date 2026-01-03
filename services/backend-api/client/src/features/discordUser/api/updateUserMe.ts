@@ -24,6 +24,9 @@ export interface UpdateUserMeInput {
       feedListColumnOrder?: {
         columns: string[];
       };
+      feedListStatusFilters?: {
+        statuses: string[];
+      };
     };
   };
 }

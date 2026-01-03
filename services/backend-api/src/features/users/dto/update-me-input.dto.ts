@@ -96,6 +96,15 @@ class FeedListColumnOrderDto {
   columns: string[];
 }
 
+class FeedListStatusFiltersDto {
+  @IsArray()
+  @IsString({ each: true })
+  @IsIn(["OK", "REQUIRES_ATTENTION", "MANUALLY_DISABLED", "RETRYING"], {
+    each: true,
+  })
+  statuses: string[];
+}
+
 class UpdateMeDtoPreferencesDto {
   @IsBoolean()
   @IsOptional()
@@ -133,6 +142,11 @@ class UpdateMeDtoPreferencesDto {
   @ValidateNested()
   @Type(() => FeedListColumnOrderDto)
   feedListColumnOrder?: FeedListColumnOrderDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => FeedListStatusFiltersDto)
+  feedListStatusFilters?: FeedListStatusFiltersDto;
 }
 
 export class UpdateMeDto {

@@ -63,6 +63,19 @@ export const UserFeedListColumnOrderSchema = SchemaFactory.createForClass(
   timestamps: false,
   _id: false,
 })
+export class UserFeedListStatusFilters {
+  @Prop({ type: [String] })
+  statuses: string[];
+}
+
+export const UserFeedListStatusFiltersSchema = SchemaFactory.createForClass(
+  UserFeedListStatusFilters
+);
+
+@Schema({
+  timestamps: false,
+  _id: false,
+})
 export class UserPreferences {
   @Prop()
   alertOnDisabledFeeds?: boolean;
@@ -84,6 +97,9 @@ export class UserPreferences {
 
   @Prop({ type: UserFeedListColumnOrderSchema })
   feedListColumnOrder?: UserFeedListColumnOrder;
+
+  @Prop({ type: UserFeedListStatusFiltersSchema })
+  feedListStatusFilters?: UserFeedListStatusFilters;
 }
 
 export const UserPreferencesSchema =
