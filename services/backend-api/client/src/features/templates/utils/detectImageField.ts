@@ -69,6 +69,7 @@ export function detectImageFields(articles: Array<Record<string, unknown>>): str
 
     for (const [field, value] of Object.entries(article)) {
       if (field === "id" || field === "idHash") continue;
+      if (field.includes("::anchor")) continue;
 
       if (isImageUrl(value)) {
         const url = value as string;

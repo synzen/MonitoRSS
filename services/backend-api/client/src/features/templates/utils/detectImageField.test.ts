@@ -53,6 +53,21 @@ describe("detectImageFields", () => {
       expect(detectImageFields(articles)).toEqual(["image"]);
     });
 
+    it("skips extracted anchor fields even if they contain image URLs", () => {
+      const articles = [
+        {
+          "extracted::description::anchor1":
+            "https://nelog.jp/smartnav-4-production-stoppage#comment-95840",
+          "extracted::description::anchor4":
+            "https://nelog.jp/wp-content/uploads/2025/03/image.png",
+          "extracted::description::image1":
+            "https://nelog.jp/wp-content/uploads/2025/03/photo.jpg",
+        },
+      ];
+      // Should only detect the image field, not the anchor fields
+      expect(detectImageFields(articles)).toEqual(["extracted::description::image1"]);
+    });
+
     it("skips values with whitespace (mixed content)", () => {
       const articles = [
         {

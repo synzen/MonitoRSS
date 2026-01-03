@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import RouteParams from "../../../types/RouteParams";
 import { useUserFeedArticles, useUserFeed } from "../../feed/hooks";
-import { TEMPLATES, getTemplateById } from "../../templates/constants/templates";
+import { TEMPLATES, getTemplateById, DEFAULT_TEMPLATE } from "../../templates/constants/templates";
 import convertMessageBuilderStateToConnectionUpdate from "../../../pages/MessageBuilder/utils/convertMessageBuilderStateToConnectionUpdate";
 import { detectFields } from "../../templates/utils";
 import { DetectedFields } from "../../templates/types";
@@ -33,6 +33,23 @@ export const useConnectionTemplateSelection = ({
   // Fetch user feed data for template preview
   const { feed: userFeed } = useUserFeed({ feedId });
 
+  // Get format options from the selected template (or default template as fallback)
+  const templateFormatOptions = useMemo(() => {
+    const template = selectedTemplateId ? getTemplateById(selectedTemplateId) : DEFAULT_TEMPLATE;
+    const messageComponent = template?.createMessageComponent({
+      image: [],
+      description: [],
+      author: [],
+      link: [],
+      title: [],
+    });
+
+    return {
+      stripImages: messageComponent?.stripImages ?? false,
+      ignoreNewLines: messageComponent?.ignoreNewLines ?? false,
+    };
+  }, [selectedTemplateId]);
+
   // Fetch articles for template compatibility and preview
   const { data: articlesData, fetchStatus } = useUserFeedArticles({
     feedId,
@@ -45,8 +62,8 @@ export const useConnectionTemplateSelection = ({
         dateTimezone: userFeed?.formatOptions?.dateTimezone,
         disableImageLinkPreviews: false,
         formatTables: false,
-        ignoreNewLines: false,
-        stripImages: false,
+        ignoreNewLines: templateFormatOptions.ignoreNewLines,
+        stripImages: templateFormatOptions.stripImages,
       },
     },
     disabled: !userFeed || currentStep !== ConnectionCreationStep.TemplateSelection,
