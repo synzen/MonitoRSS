@@ -28,6 +28,7 @@ import { useFormContext } from "react-hook-form";
 import type { Component, ComponentPropertiesPanelProps, LegacyEmbedComponent } from "./types";
 import { ComponentType, ROOT_COMPONENT_TYPES } from "./types";
 import { InputWithInsertPlaceholder } from "../../components/InputWithInsertPlaceholder";
+import { ConfirmModal } from "../../components/ConfirmModal";
 
 import { useMessageBuilderContext } from "./MessageBuilderContext";
 import { DiscordButtonStyle } from "./constants/DiscordButtonStyle";
@@ -56,7 +57,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   hideTitle,
   onDeleted,
 }) => {
-  const { deleteComponent, moveComponentUp, moveComponentDown } = useMessageBuilderContext();
+  const { deleteComponent, moveComponentUp, moveComponentDown, addChildComponent } =
+    useMessageBuilderContext();
   const { watch, formState, setValue } = useFormContext<MessageBuilderFormState>();
   const messageComponent = watch("messageComponent");
   const { target: selectedComponent } = findMessageBuilderComponentById(
@@ -917,6 +919,24 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     return findParentAndIndex(messageComponent, component.id);
   };
 
+  const countDescendants = (component: Component): number => {
+    let count = 0;
+
+    if (component.children) {
+      count += component.children.length;
+
+      for (const child of component.children) {
+        count += countDescendants(child);
+      }
+    }
+
+    if (component.type === ComponentType.V2Section && component.accessory) {
+      count += 1;
+    }
+
+    return count;
+  };
+
   const formPath = messageComponent
     ? getMessageBuilderComponentFormPathsById(messageComponent, selectedComponentId)
     : null;
@@ -940,6 +960,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     ? ROOT_COMPONENT_TYPES.includes(selectedComponent.type)
     : false;
 
+  const descendantCount = selectedComponent ? countDescendants(selectedComponent) : 0;
+
   if (!selectedComponent) {
     return null;
   }
@@ -953,35 +975,81 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
               {getMessageBuilderComponentLabel(selectedComponent.type)} Properties
             </Text>
           )}
-          {!isRootComponent && (
-            <Button
-              size="sm"
-              colorScheme="red"
-              variant="outline"
-              leftIcon={<DeleteIcon />}
-              onClick={() => {
-                deleteComponent(selectedComponent.id);
-                onDeleted?.();
-              }}
-            >
-              Delete Component
-            </Button>
-          )}
+          {!isRootComponent &&
+            (descendantCount > 0 ? (
+              <ConfirmModal
+                trigger={
+                  <Button size="sm" colorScheme="red" variant="outline" leftIcon={<DeleteIcon />}>
+                    Delete Component
+                  </Button>
+                }
+                title="Delete Component?"
+                description={`This will also delete ${descendantCount} nested component${
+                  descendantCount === 1 ? "" : "s"
+                }.`}
+                colorScheme="red"
+                okText="Delete"
+                onConfirm={() => {
+                  deleteComponent(selectedComponent.id);
+                  onDeleted?.();
+                }}
+              />
+            ) : (
+              <Button
+                size="sm"
+                colorScheme="red"
+                variant="outline"
+                leftIcon={<DeleteIcon />}
+                onClick={() => {
+                  deleteComponent(selectedComponent.id);
+                  onDeleted?.();
+                }}
+              >
+                Delete Component
+              </Button>
+            ))}
         </HStack>
       )}
       {(selectedComponent.type === ComponentType.LegacyActionRow ||
         selectedComponent.type === ComponentType.V2ActionRow) &&
         selectedComponent.children.length === 0 && (
-          <Alert status="error" borderRadius="md" role={undefined}>
+          <Alert status="info" borderRadius="md">
             <AlertIcon />
-            At least one child component is required for Action Rows.
+            <Box flex="1">
+              <Text>Add at least one button to your Action Row.</Text>
+              <Button
+                size="sm"
+                colorScheme="blue"
+                mt={2}
+                onClick={() =>
+                  addChildComponent(
+                    selectedComponent.id,
+                    selectedComponent.type === ComponentType.LegacyActionRow
+                      ? ComponentType.LegacyButton
+                      : ComponentType.V2Button
+                  )
+                }
+              >
+                Add Button
+              </Button>
+            </Box>
           </Alert>
         )}
       {selectedComponent.type === ComponentType.V2Section &&
         selectedComponent.children.length === 0 && (
-          <Alert status="error" borderRadius="md" role={undefined}>
+          <Alert status="info" borderRadius="md">
             <AlertIcon />
-            At least one child component is required for Sections.
+            <Box flex="1">
+              <Text>Add at least one text display to your Section.</Text>
+              <Button
+                size="sm"
+                colorScheme="blue"
+                mt={2}
+                onClick={() => addChildComponent(selectedComponent.id, ComponentType.V2TextDisplay)}
+              >
+                Add Text Display
+              </Button>
+            </Box>
           </Alert>
         )}
       {selectedComponent.type === ComponentType.V2Section && selectedComponent.children.length > 3 && (
@@ -992,9 +1060,31 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         </Alert>
       )}
       {selectedComponent.type === ComponentType.V2Section && !selectedComponent.accessory && (
-        <Alert status="error" borderRadius="md" role={undefined}>
+        <Alert status="info" borderRadius="md">
           <AlertIcon />
-          An accessory component is required for Sections.
+          <Box flex="1">
+            <Text>An accessory (thumbnail or button) is required for Sections.</Text>
+            <HStack mt={2} spacing={2}>
+              <Button
+                size="sm"
+                colorScheme="blue"
+                onClick={() =>
+                  addChildComponent(selectedComponent.id, ComponentType.V2Thumbnail, true)
+                }
+              >
+                Add Thumbnail
+              </Button>
+              <Button
+                size="sm"
+                colorScheme="blue"
+                onClick={() =>
+                  addChildComponent(selectedComponent.id, ComponentType.V2Button, true)
+                }
+              >
+                Add Button
+              </Button>
+            </HStack>
+          </Box>
         </Alert>
       )}
       {selectedComponent.type === ComponentType.V2ActionRow &&
@@ -1008,16 +1098,38 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         )}
       {selectedComponent.type === ComponentType.V2Container &&
         selectedComponent.children.length === 0 && (
-          <Alert status="error" borderRadius="md" role={undefined}>
+          <Alert status="info" borderRadius="md">
             <AlertIcon />
-            At least one child component is required for Containers.
+            <Box flex="1">
+              <Text>Add at least one component to your Container.</Text>
+              <Button
+                size="sm"
+                colorScheme="blue"
+                mt={2}
+                onClick={() => addChildComponent(selectedComponent.id, ComponentType.V2Section)}
+              >
+                Add Section
+              </Button>
+            </Box>
           </Alert>
         )}
       {selectedComponent.type === ComponentType.V2MediaGallery &&
         selectedComponent.children.length === 0 && (
-          <Alert status="error" borderRadius="md" role={undefined}>
+          <Alert status="info" borderRadius="md">
             <AlertIcon />
-            At least one item is required for Media Galleries.
+            <Box flex="1">
+              <Text>Add at least one item to your Media Gallery.</Text>
+              <Button
+                size="sm"
+                colorScheme="blue"
+                mt={2}
+                onClick={() =>
+                  addChildComponent(selectedComponent.id, ComponentType.V2MediaGalleryItem)
+                }
+              >
+                Add Gallery Item
+              </Button>
+            </Box>
           </Alert>
         )}
       {selectedComponent.type === ComponentType.V2MediaGallery &&

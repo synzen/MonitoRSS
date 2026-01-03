@@ -60,7 +60,11 @@ interface MessageBuilderContextType {
       | ComponentType.V2ActionRow
       | ComponentType.V2Button
       | ComponentType.V2Section
-      | ComponentType.V2Divider,
+      | ComponentType.V2Divider
+      | ComponentType.V2Container
+      | ComponentType.V2MediaGallery
+      | ComponentType.V2MediaGalleryItem
+      | ComponentType.V2Thumbnail,
     isAccessory?: boolean
   ) => Component | null;
   deleteComponent: (componentId: string) => void;
