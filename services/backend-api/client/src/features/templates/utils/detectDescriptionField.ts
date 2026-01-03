@@ -11,6 +11,13 @@ const DESCRIPTION_FIELD_PATTERNS = [
 const MIN_DESCRIPTION_LENGTH = 30;
 const MAX_DESCRIPTION_LENGTH = 10000;
 const SKIP_FIELDS = ["id", "idHash", "link", "guid", "title"];
+const SKIP_FIELD_PATTERNS = [/^processed::categories$/i, /^categories__\d+$/i];
+
+function shouldSkipField(field: string): boolean {
+  if (SKIP_FIELDS.includes(field)) return true;
+
+  return SKIP_FIELD_PATTERNS.some((pattern) => pattern.test(field));
+}
 
 function isValidDescriptionValue(value: unknown): boolean {
   if (!value || typeof value !== "string") return false;
@@ -28,7 +35,7 @@ function isValidDescriptionValue(value: unknown): boolean {
 export function detectDescriptionField(articleSample: Record<string, unknown>): string | null {
   for (const pattern of DESCRIPTION_FIELD_PATTERNS) {
     for (const [field, value] of Object.entries(articleSample)) {
-      if (SKIP_FIELDS.includes(field)) continue;
+      if (shouldSkipField(field)) continue;
 
       if (pattern.test(field) && isValidDescriptionValue(value)) {
         return field;
@@ -40,7 +47,7 @@ export function detectDescriptionField(articleSample: Record<string, unknown>): 
   let bestLength = MIN_DESCRIPTION_LENGTH;
 
   for (const [field, value] of Object.entries(articleSample)) {
-    if (SKIP_FIELDS.includes(field)) continue;
+    if (shouldSkipField(field)) continue;
 
     if (isValidDescriptionValue(value)) {
       const { length } = value as string;
