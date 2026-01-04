@@ -96,13 +96,19 @@ export function isTemplateCompatible(
   feedFields: string[],
   detectedFields: DetectedFields
 ): boolean {
-  if (!template.requiredFields || template.requiredFields.length === 0) {
-    return true;
-  }
+  const andFieldsSatisfied =
+    !template.requiredFields?.length ||
+    template.requiredFields.every((field) => {
+      return detectedFields[field].length > 0 || feedFields.includes(field);
+    });
 
-  return template.requiredFields.every((field) => {
-    return detectedFields[field].length > 0 || feedFields.includes(field);
-  });
+  const orFieldsSatisfied =
+    !template.requiredFieldsOr?.length ||
+    template.requiredFieldsOr.some((field) => {
+      return detectedFields[field].length > 0 || feedFields.includes(field);
+    });
+
+  return andFieldsSatisfied && orFieldsSatisfied;
 }
 
 export function getMissingFields(
@@ -110,13 +116,20 @@ export function getMissingFields(
   feedFields: string[],
   detectedFields: DetectedFields
 ): string[] {
-  if (!template.requiredFields || template.requiredFields.length === 0) {
-    return [];
-  }
-
-  return template.requiredFields.filter((field) => {
+  const missingAndFields = (template.requiredFields ?? []).filter((field) => {
     return detectedFields[field].length === 0 && !feedFields.includes(field);
   });
+
+  const orFields = template.requiredFieldsOr ?? [];
+  const orSatisfied =
+    orFields.length === 0 ||
+    orFields.some((field) => detectedFields[field].length > 0 || feedFields.includes(field));
+
+  if (!orSatisfied) {
+    return [...missingAndFields, orFields.join(" or ")];
+  }
+
+  return missingAndFields;
 }
 
 export function getDisabledReason(

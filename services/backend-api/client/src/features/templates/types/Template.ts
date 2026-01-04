@@ -8,5 +8,6 @@ export interface Template {
   thumbnail?: string;
   ThumbnailComponent?: React.FC;
   requiredFields: TemplateRequiredField[];
+  requiredFieldsOr?: TemplateRequiredField[];
   createMessageComponent: (fields?: DetectedFields) => MessageComponentRoot;
 }

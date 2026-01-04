@@ -20,21 +20,41 @@ export const DEFAULT_TEMPLATE: Template = {
   description: "Clean text format that works with any feed",
   ThumbnailComponent: SimpleTextThumbnail,
   requiredFields: [],
-  createMessageComponent: (): MessageComponentRoot => ({
-    type: ComponentType.LegacyRoot,
-    id: "default-root",
-    name: "Simple Text Template",
-    stripImages: true,
-    ignoreNewLines: true,
-    children: [
-      {
-        type: ComponentType.LegacyText,
-        id: "default-text",
-        name: "Message Content",
-        content: "**{{title}}**\n{{link}}",
-      },
-    ],
-  }),
+  createMessageComponent: (fields?: DetectedFields): MessageComponentRoot => {
+    const titleField = fields?.title[0];
+    const linkField = fields?.link[0];
+
+    let content = "";
+
+    if (titleField) {
+      content += `**{{${titleField}}}**`;
+    }
+
+    if (linkField) {
+      if (content) content += "\n";
+      content += `{{${linkField}}}`;
+    }
+
+    if (!content) {
+      content = `{{${titleField}}}`;
+    }
+
+    return {
+      type: ComponentType.LegacyRoot,
+      id: "default-root",
+      name: "Simple Text Template",
+      stripImages: true,
+      ignoreNewLines: true,
+      children: [
+        {
+          type: ComponentType.LegacyText,
+          id: "default-text",
+          name: "Message Content",
+          content,
+        },
+      ],
+    };
+  },
 };
 
 export const RICH_EMBED_TEMPLATE: Template = {
@@ -48,15 +68,18 @@ export const RICH_EMBED_TEMPLATE: Template = {
     const descriptionField = fields?.description[0] ?? "description";
     const authorField = fields?.author[0];
     const linkField = fields?.link[0];
+    const titleField = fields?.title[0];
 
     const hasImage = !!imageField;
+    const hasTitle = !!titleField;
+
     const titleComponent = {
       type: ComponentType.V2TextDisplay as const,
       id: "rich-embed-title",
       name: "Title",
       content: linkField
-        ? `### [{{title}}]({{${linkField}}})${authorField ? "\n**{{author}}**" : ""}`
-        : `### {{title}}${authorField ? "\n**{{author}}**" : ""}`,
+        ? `### [{{${titleField}}}]({{${linkField}}})${authorField ? "\n**{{author}}**" : ""}`
+        : `### {{${titleField}}}${authorField ? "\n**{{author}}**" : ""}`,
     };
 
     const headerComponent = hasImage
@@ -92,15 +115,19 @@ export const RICH_EMBED_TEMPLATE: Template = {
           id: "rich-embed-container",
           name: "Embed Container",
           children: [
-            ...headerComponent,
-            {
-              type: ComponentType.V2Divider,
-              id: "rich-embed-divider",
-              name: "Divider",
-              visual: true,
-              spacing: 1,
-              children: [],
-            },
+            ...(hasTitle ? headerComponent : []),
+            ...(hasTitle
+              ? [
+                  {
+                    type: ComponentType.V2Divider as const,
+                    id: "rich-embed-divider",
+                    name: "Divider",
+                    visual: true,
+                    spacing: 1 as const,
+                    children: [] as [],
+                  },
+                ]
+              : []),
             {
               type: ComponentType.V2TextDisplay,
               id: "rich-embed-desc",
@@ -151,11 +178,17 @@ export const COMPACT_CARD_TEMPLATE: Template = {
   name: "Compact Card",
   description: "Card layout with a minimal description, thumbnail and view button",
   ThumbnailComponent: CompactCardThumbnail,
-  requiredFields: [TemplateRequiredField.Title],
+  requiredFields: [],
+  requiredFieldsOr: [TemplateRequiredField.Title, TemplateRequiredField.Description],
   createMessageComponent: (fields?: DetectedFields): MessageComponentRoot => {
     const imageField = fields?.image[0] ?? "image";
     const descriptionField = fields?.description[0] ?? "description";
     const linkField = fields?.link[0];
+    const titleField = fields?.title[0];
+
+    const textContent = titleField
+      ? `**{{${titleField}}}**\n{{${descriptionField}}}`
+      : `{{${descriptionField}}}`;
 
     return {
       type: ComponentType.V2Root,
@@ -182,7 +215,7 @@ export const COMPACT_CARD_TEMPLATE: Template = {
                   type: ComponentType.V2TextDisplay,
                   id: "compact-card-text",
                   name: "Title & Description",
-                  content: `**{{title}}**\n{{${descriptionField}}}`,
+                  content: textContent,
                 },
               ],
               accessory: {
@@ -227,9 +260,10 @@ export const MEDIA_GALLERY_TEMPLATE: Template = {
   ThumbnailComponent: MediaGalleryThumbnail,
   requiredFields: [TemplateRequiredField.Image],
   createMessageComponent: (fields?: DetectedFields): MessageComponentRoot => {
-    const descriptionField = fields?.description[0] ?? "description";
+    const descriptionField = fields?.description[0];
     const imageFields = fields?.image ?? [];
     const linkField = fields?.link[0];
+    const titleField = fields?.title[0];
 
     const imagesToUse = imageFields.length > 0 ? imageFields.slice(0, 10) : ["image"];
 
@@ -238,17 +272,39 @@ export const MEDIA_GALLERY_TEMPLATE: Template = {
       id: `media-gallery-item-${index + 1}`,
       name: `Image ${index + 1}`,
       mediaUrl: `{{${imageField}}}`,
-      description: "{{title}}",
+      description: titleField ? `{{${titleField}}}` : "",
       children: [],
     }));
+
+    const headerComponents = [];
+
+    if (titleField) {
+      headerComponents.push({
+        type: ComponentType.V2TextDisplay as const,
+        id: "media-gallery-title",
+        name: "Title",
+        content: `**{{${titleField}}}**`,
+      });
+    }
+
+    if (descriptionField) {
+      headerComponents.push({
+        type: ComponentType.V2TextDisplay as const,
+        id: "media-gallery-desc",
+        name: "Description",
+        content: `{{${descriptionField}}}`,
+      });
+    }
+
+    const hasHeaderContent = headerComponents.length > 0;
 
     return {
       type: ComponentType.V2Root,
       id: "media-gallery-root",
       name: "Media Gallery Template",
-      placeholderLimits: [
-        { placeholder: descriptionField, characterCount: 150, appendString: "..." },
-      ],
+      placeholderLimits: descriptionField
+        ? [{ placeholder: descriptionField, characterCount: 150, appendString: "..." }]
+        : [],
       stripImages: true,
       ignoreNewLines: true,
       children: [
@@ -258,26 +314,19 @@ export const MEDIA_GALLERY_TEMPLATE: Template = {
           name: "Gallery Container",
           accentColor: 2895667,
           children: [
-            {
-              type: ComponentType.V2TextDisplay,
-              id: "media-gallery-title",
-              name: "Title",
-              content: "**{{title}}**",
-            },
-            {
-              type: ComponentType.V2TextDisplay,
-              id: "media-gallery-desc",
-              name: "Description",
-              content: `{{${descriptionField}}}`,
-            },
-            {
-              type: ComponentType.V2Divider,
-              id: "media-gallery-divider",
-              name: "Divider",
-              visual: true,
-              spacing: 1,
-              children: [],
-            },
+            ...headerComponents,
+            ...(hasHeaderContent
+              ? [
+                  {
+                    type: ComponentType.V2Divider as const,
+                    id: "media-gallery-divider",
+                    name: "Divider",
+                    visual: true,
+                    spacing: 1 as const,
+                    children: [] as [],
+                  },
+                ]
+              : []),
             {
               type: ComponentType.V2MediaGallery,
               id: "media-gallery-gallery",

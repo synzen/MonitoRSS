@@ -193,6 +193,81 @@ describe("TemplateGalleryModal", () => {
         )
       ).toBe(false);
     });
+
+    it("returns true when one of requiredFieldsOr is present (title)", () => {
+      const template: Template = {
+        id: "test",
+        name: "Test",
+        description: "Test",
+        requiredFields: [],
+        requiredFieldsOr: [TemplateRequiredField.Title, TemplateRequiredField.Description],
+        createMessageComponent: () => ({
+          type: ComponentType.LegacyRoot,
+          id: "root",
+          name: "Root",
+          children: [],
+        }),
+      };
+      expect(
+        isTemplateCompatible(
+          template,
+          ["title"],
+          createDetectedFields({
+            [TemplateRequiredField.Title]: ["title"],
+          })
+        )
+      ).toBe(true);
+    });
+
+    it("returns true when one of requiredFieldsOr is present (description)", () => {
+      const template: Template = {
+        id: "test",
+        name: "Test",
+        description: "Test",
+        requiredFields: [],
+        requiredFieldsOr: [TemplateRequiredField.Title, TemplateRequiredField.Description],
+        createMessageComponent: () => ({
+          type: ComponentType.LegacyRoot,
+          id: "root",
+          name: "Root",
+          children: [],
+        }),
+      };
+      expect(
+        isTemplateCompatible(
+          template,
+          ["description"],
+          createDetectedFields({
+            [TemplateRequiredField.Description]: ["description"],
+          })
+        )
+      ).toBe(true);
+    });
+
+    it("returns false when none of requiredFieldsOr is present", () => {
+      const template: Template = {
+        id: "test",
+        name: "Test",
+        description: "Test",
+        requiredFields: [],
+        requiredFieldsOr: [TemplateRequiredField.Title, TemplateRequiredField.Description],
+        createMessageComponent: () => ({
+          type: ComponentType.LegacyRoot,
+          id: "root",
+          name: "Root",
+          children: [],
+        }),
+      };
+      expect(
+        isTemplateCompatible(
+          template,
+          ["image"],
+          createDetectedFields({
+            [TemplateRequiredField.Image]: ["image"],
+          })
+        )
+      ).toBe(false);
+    });
   });
 
   describe("getMissingFields utility", () => {
@@ -271,6 +346,50 @@ describe("TemplateGalleryModal", () => {
       expect(getMissingFields(template, ["title"], emptyDetectedFields)).toEqual([
         "description",
         "image",
+      ]);
+    });
+
+    it("returns empty array when one of requiredFieldsOr is present", () => {
+      const template: Template = {
+        id: "test",
+        name: "Test",
+        description: "Test",
+        requiredFields: [],
+        requiredFieldsOr: [TemplateRequiredField.Title, TemplateRequiredField.Description],
+        createMessageComponent: () => ({
+          type: ComponentType.LegacyRoot,
+          id: "root",
+          name: "Root",
+          children: [],
+        }),
+      };
+      expect(
+        getMissingFields(
+          template,
+          ["title"],
+          createDetectedFields({
+            [TemplateRequiredField.Title]: ["title"],
+          })
+        )
+      ).toEqual([]);
+    });
+
+    it("returns OR fields joined with 'or' when none are present", () => {
+      const template: Template = {
+        id: "test",
+        name: "Test",
+        description: "Test",
+        requiredFields: [],
+        requiredFieldsOr: [TemplateRequiredField.Title, TemplateRequiredField.Description],
+        createMessageComponent: () => ({
+          type: ComponentType.LegacyRoot,
+          id: "root",
+          name: "Root",
+          children: [],
+        }),
+      };
+      expect(getMissingFields(template, ["image"], emptyDetectedFields)).toEqual([
+        "title or description",
       ]);
     });
   });

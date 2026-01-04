@@ -7,21 +7,19 @@ const FIELD_EXPLANATIONS: Record<string, string> = {
   image: "No images detected in recent articles",
   description: "No descriptions detected in recent articles",
   author: "No author info detected in recent articles",
-  default: "Required fields not detected in recent articles",
 };
 
+const DEFAULT_EXPLANATION = "Required fields not detected in recent articles";
 const NEEDS_ARTICLES_EXPLANATION = "Waiting for articles to check compatibility";
 
-const getExplanationForFields = (requiredFields: string[]): string => {
-  if (requiredFields.length === 0) {
-    return "";
+const getExplanationForMissingFields = (disabledReason: string): string => {
+  if (!disabledReason.startsWith("Needs: ")) {
+    return DEFAULT_EXPLANATION;
   }
 
-  if (requiredFields.length === 1) {
-    return FIELD_EXPLANATIONS[requiredFields[0]] || FIELD_EXPLANATIONS.default;
-  }
+  const missingFieldsStr = disabledReason.slice("Needs: ".length);
 
-  return `No ${requiredFields.join(", ")} detected in recent articles`;
+  return FIELD_EXPLANATIONS[missingFieldsStr] || DEFAULT_EXPLANATION;
 };
 
 export interface TemplateCardProps extends UseRadioProps {
@@ -68,7 +66,7 @@ const TemplateCardComponent = (props: TemplateCardProps) => {
   const needsArticles = disabledReason === "Needs articles";
   const explanation = needsArticles
     ? NEEDS_ARTICLES_EXPLANATION
-    : getExplanationForFields(template.requiredFields || []);
+    : getExplanationForMissingFields(disabledReason);
 
   return (
     <Box
@@ -140,7 +138,7 @@ const TemplateCardComponent = (props: TemplateCardProps) => {
             {getThumbnailContent(template)}
           </Box>
           <VStack align="start" spacing={1} flex={1} minW={0}>
-            <HStack spacing={2} w="100%">
+            <HStack spacing={2} w="100%" flexWrap="wrap">
               <Text fontWeight="medium" fontSize="sm" color={isDisabled ? "gray.400" : "white"}>
                 {template.name}
               </Text>
