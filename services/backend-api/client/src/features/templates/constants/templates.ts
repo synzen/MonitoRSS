@@ -181,14 +181,41 @@ export const COMPACT_CARD_TEMPLATE: Template = {
   requiredFields: [],
   requiredFieldsOr: [TemplateRequiredField.Title, TemplateRequiredField.Description],
   createMessageComponent: (fields?: DetectedFields): MessageComponentRoot => {
-    const imageField = fields?.image[0] ?? "image";
+    const imageField = fields?.image[0];
     const descriptionField = fields?.description[0] ?? "description";
     const linkField = fields?.link[0];
     const titleField = fields?.title[0];
 
+    const hasImage = !!imageField;
+
     const textContent = titleField
       ? `**{{${titleField}}}**\n{{${descriptionField}}}`
       : `{{${descriptionField}}}`;
+
+    const textDisplayComponent = {
+      type: ComponentType.V2TextDisplay as const,
+      id: "compact-card-text",
+      name: "Title & Description",
+      content: textContent,
+    };
+
+    const contentComponent = hasImage
+      ? [
+          {
+            type: ComponentType.V2Section as const,
+            id: "compact-card-section",
+            name: "Content Section",
+            children: [textDisplayComponent],
+            accessory: {
+              type: ComponentType.V2Thumbnail as const,
+              id: "compact-card-thumb",
+              name: "Thumbnail",
+              mediaUrl: `{{${imageField}}}`,
+              description: "Article thumbnail",
+            },
+          },
+        ]
+      : [textDisplayComponent];
 
     return {
       type: ComponentType.V2Root,
@@ -206,26 +233,7 @@ export const COMPACT_CARD_TEMPLATE: Template = {
           name: "Card Container",
           accentColor: 5814783,
           children: [
-            {
-              type: ComponentType.V2Section,
-              id: "compact-card-section",
-              name: "Content Section",
-              children: [
-                {
-                  type: ComponentType.V2TextDisplay,
-                  id: "compact-card-text",
-                  name: "Title & Description",
-                  content: textContent,
-                },
-              ],
-              accessory: {
-                type: ComponentType.V2Thumbnail,
-                id: "compact-card-thumb",
-                name: "Thumbnail",
-                mediaUrl: `{{${imageField}}}`,
-                description: "Article thumbnail",
-              },
-            },
+            ...contentComponent,
             ...(linkField
               ? [
                   {
