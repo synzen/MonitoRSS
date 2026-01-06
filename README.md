@@ -22,8 +22,11 @@ To use the publicly hosted instance for free, visit https://monitorss.xyz!
 
 Docker is required to easily coordinate and run multiple services at once.
 
-> [!NOTE]  
+> [!NOTE]
 >  General knowledge of how Docker, Docker volumes, and docker compose works is highly recommended to avoid accidental data loss
+
+> [!NOTE]
+> Request history and delivery logs stored in PostgreSQL are not meant to be persistent forever. They may be removed when PostgreSQL versions are upgraded.
 
 1. Install [Docker Engine](https://docs.docker.com/engine/install/)
 2. Install [Docker Compose](https://docs.docker.com/compose/install/)
