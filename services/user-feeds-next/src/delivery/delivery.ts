@@ -578,25 +578,14 @@ interface DeliverArticleContext {
 // Payload Generation Helper
 // ============================================================================
 
-function generatePayloadsForMedium(
-  article: Article,
+/**
+ * Generate Discord payloads for an already-formatted article.
+ * The article must have been formatted via formatArticleForDiscord before calling this.
+ */
+function generatePayloadsForFormattedArticle(
+  formattedArticle: Article,
   medium: DeliveryMedium
 ): DiscordMessageApiPayload[] {
-  // Convert custom placeholders to the proper format
-  const customPlaceholders = medium.details.customPlaceholders?.map((cp) => ({
-    ...cp,
-    steps: cp.steps.map((s) => ({
-      ...s,
-      type: s.type as CustomPlaceholderStepType,
-    })),
-  }));
-
-  // Format article for Discord (HTML to markdown conversion, custom placeholders)
-  const { article: formattedArticle } = formatArticleForDiscord(article, {
-    ...medium.details.formatter,
-    customPlaceholders,
-  });
-
   return generateDiscordPayloads(formattedArticle, {
     content: medium.details.content,
     embeds: medium.details.embeds?.map((e) => ({
@@ -665,7 +654,7 @@ async function deliverToWebhookForum(
     })),
   };
 
-  const initialBodies = generatePayloadsForMedium(article, medium);
+  const initialBodies = generatePayloadsForFormattedArticle(article, medium);
 
   const bodies = enhancePayloadsWithWebhookDetails(
     article,
@@ -765,7 +754,7 @@ async function deliverToChannelForum(
     })),
   };
 
-  const bodies = generatePayloadsForMedium(article, medium);
+  const bodies = generatePayloadsForFormattedArticle(article, medium);
 
   if (bodies.length === 0) {
     throw new Error("No payloads generated for channel forum delivery");
@@ -855,7 +844,7 @@ async function deliverToChannel(
     })),
   };
 
-  const bodies = generatePayloadsForMedium(article, medium);
+  const bodies = generatePayloadsForFormattedArticle(article, medium);
   let currentBodiesIndex = 0;
   const shouldCreateThread = channel.type === "new-thread";
 
@@ -1040,7 +1029,7 @@ async function deliverToWebhook(
     })),
   };
 
-  const initialBodies = generatePayloadsForMedium(article, medium);
+  const initialBodies = generatePayloadsForFormattedArticle(article, medium);
 
   const bodies = enhancePayloadsWithWebhookDetails(
     article,
@@ -1112,18 +1101,33 @@ async function sendArticleToMedium(
       ];
     }
 
+    // Format article FIRST (before filtering) - matches user-feeds behavior
+    // This ensures filters operate on formatted text (markdown) not raw HTML
+    const customPlaceholders = medium.details.customPlaceholders?.map((cp) => ({
+      ...cp,
+      steps: cp.steps.map((s) => ({
+        ...s,
+        type: s.type as CustomPlaceholderStepType,
+      })),
+    }));
+
+    const { article: formattedArticle } = formatArticleForDiscord(article, {
+      ...medium.details.formatter,
+      customPlaceholders,
+    });
+
     // Check medium filters and collect filter references
     const collectedFilterReferences =
       filterReferences ?? new Map<string, string>();
     if (medium.filters?.expression) {
       const filterResult = getArticleFilterResults(
         medium.filters.expression,
-        article
+        formattedArticle
       );
 
       // Record diagnostic for filter evaluation
       recordMediumFilterDiagnostic({
-        articleIdHash: article.flattened.idHash,
+        articleIdHash: formattedArticle.flattened.idHash,
         mediumId: medium.id,
         filterExpression: medium.filters.expression,
         filterResult: filterResult.result,
@@ -1137,11 +1141,11 @@ async function sendArticleToMedium(
             id: generateDeliveryId(),
             mediumId: medium.id,
             status: ArticleDeliveryStatus.FilteredOut,
-            articleIdHash: article.flattened.idHash,
+            articleIdHash: formattedArticle.flattened.idHash,
             externalDetail: filterResult.explainBlocked.length
               ? JSON.stringify({ explainBlocked: filterResult.explainBlocked })
               : null,
-            article,
+            article: formattedArticle,
           },
         ];
       }
@@ -1157,8 +1161,8 @@ async function sendArticleToMedium(
           status: ArticleDeliveryStatus.Failed,
           errorCode: ArticleDeliveryErrorCode.NoChannelOrWebhook,
           internalMessage: "No channel or webhook specified",
-          articleIdHash: article.flattened.idHash,
-          article,
+          articleIdHash: formattedArticle.flattened.idHash,
+          article: formattedArticle,
         },
       ];
     }
@@ -1193,15 +1197,27 @@ async function sendArticleToMedium(
     // Select delivery method based on channel/webhook type (matching user-feeds)
     if (webhook) {
       if (webhook.type === "forum") {
-        deliveryStates = await deliverToWebhookForum(article, medium, context);
+        deliveryStates = await deliverToWebhookForum(
+          formattedArticle,
+          medium,
+          context
+        );
       } else {
-        deliveryStates = await deliverToWebhook(article, medium, context);
+        deliveryStates = await deliverToWebhook(
+          formattedArticle,
+          medium,
+          context
+        );
       }
     } else if (channel) {
       if (channel.type === "forum") {
-        deliveryStates = await deliverToChannelForum(article, medium, context);
+        deliveryStates = await deliverToChannelForum(
+          formattedArticle,
+          medium,
+          context
+        );
       } else {
-        deliveryStates = await deliverToChannel(article, medium, context);
+        deliveryStates = await deliverToChannel(formattedArticle, medium, context);
       }
     } else {
       throw new Error("No channel or webhook specified for Discord medium");

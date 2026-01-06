@@ -800,6 +800,288 @@ describe("diagnostic recording during deliverArticles execution", () => {
   });
 });
 
+describe("filter execution order - filters should operate on formatted content", () => {
+  it("should match filter on formatted markdown content, not raw HTML", async () => {
+    const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+      await import("../delivery-preview");
+    const { deliverArticles } = await import(".");
+
+    const store = createInMemoryDeliveryRecordStore();
+    // Article with raw HTML that will be formatted to markdown
+    const article: Article = {
+      flattened: {
+        id: "article-html-1",
+        idHash: "hash-html-1",
+        description: "<strong>Important</strong> announcement",
+      },
+      raw: {},
+    };
+
+    // Filter looking for markdown bold syntax (after formatting)
+    const filterExpression: LogicalExpression = {
+      type: ExpressionType.Logical,
+      op: LogicalExpressionOperator.And,
+      children: [
+        {
+          type: ExpressionType.Relational,
+          op: RelationalExpressionOperator.Contains,
+          left: { type: RelationalExpressionLeft.Article, value: "description" },
+          right: { type: RelationalExpressionRight.String, value: "**Important**" },
+        },
+      ],
+    };
+
+    const mediumWithFilter = {
+      id: "medium-html-format-test",
+      filters: { expression: filterExpression },
+      details: {
+        guildId: "guild-123",
+        channel: { id: "channel-123" },
+      },
+    };
+
+    let previews: DeliveryPreviewStageResult[] = [];
+
+    await startDeliveryPreviewContext("hash-html-1", async () => {
+      await store.startContext(async () => {
+        await deliverArticles([article], [mediumWithFilter], {
+          feedId: "feed-1",
+          feedUrl: "https://example.com/feed.xml",
+          articleDayLimit: 100,
+          discordClient: createTestDiscordRestClient(),
+          deliveryRecordStore: store,
+        });
+      });
+      previews = getDeliveryPreviewResultsForArticle("hash-html-1");
+    });
+
+    const filterDiagnostic = previews.find(
+      (d) => d.stage === DeliveryPreviewStage.MediumFilter
+    );
+    assert.notStrictEqual(filterDiagnostic, undefined);
+    // Should PASS because HTML <strong> is converted to markdown ** before filtering
+    assert.strictEqual(
+      filterDiagnostic!.status,
+      DeliveryPreviewStageStatus.Passed,
+      "Filter should match on formatted markdown (**Important**), not raw HTML"
+    );
+  });
+
+  it("should NOT match raw HTML tags in filter after formatting", async () => {
+    const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+      await import("../delivery-preview");
+    const { deliverArticles } = await import(".");
+
+    const store = createInMemoryDeliveryRecordStore();
+    const article: Article = {
+      flattened: {
+        id: "article-html-2",
+        idHash: "hash-html-2",
+        description: "<strong>Text</strong>",
+      },
+      raw: {},
+    };
+
+    // Filter looking for literal HTML tag - should NOT match after formatting
+    const filterExpression: LogicalExpression = {
+      type: ExpressionType.Logical,
+      op: LogicalExpressionOperator.And,
+      children: [
+        {
+          type: ExpressionType.Relational,
+          op: RelationalExpressionOperator.Contains,
+          left: { type: RelationalExpressionLeft.Article, value: "description" },
+          right: { type: RelationalExpressionRight.String, value: "<strong>" },
+        },
+      ],
+    };
+
+    const mediumWithFilter = {
+      id: "medium-html-tag-test",
+      filters: { expression: filterExpression },
+      details: {
+        guildId: "guild-123",
+        channel: { id: "channel-123" },
+      },
+    };
+
+    let previews: DeliveryPreviewStageResult[] = [];
+
+    await startDeliveryPreviewContext("hash-html-2", async () => {
+      await store.startContext(async () => {
+        await deliverArticles([article], [mediumWithFilter], {
+          feedId: "feed-1",
+          feedUrl: "https://example.com/feed.xml",
+          articleDayLimit: 100,
+          discordClient: createTestDiscordRestClient(),
+          deliveryRecordStore: store,
+        });
+      });
+      previews = getDeliveryPreviewResultsForArticle("hash-html-2");
+    });
+
+    const filterDiagnostic = previews.find(
+      (d) => d.stage === DeliveryPreviewStage.MediumFilter
+    );
+    assert.notStrictEqual(filterDiagnostic, undefined);
+    // Should FAIL because <strong> tag no longer exists after formatting to **
+    assert.strictEqual(
+      filterDiagnostic!.status,
+      DeliveryPreviewStageStatus.Failed,
+      "Filter should NOT find raw HTML tags after formatting"
+    );
+  });
+
+  it("should allow filtering on custom placeholder values", async () => {
+    const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+      await import("../delivery-preview");
+    const { deliverArticles } = await import(".");
+
+    const store = createInMemoryDeliveryRecordStore();
+    const article: Article = {
+      flattened: {
+        id: "article-cp-1",
+        idHash: "hash-cp-1",
+        title: "Article about cats",
+      },
+      raw: {},
+    };
+
+    // Filter on custom placeholder value (uppercase version of title)
+    const filterExpression: LogicalExpression = {
+      type: ExpressionType.Logical,
+      op: LogicalExpressionOperator.And,
+      children: [
+        {
+          type: ExpressionType.Relational,
+          op: RelationalExpressionOperator.Contains,
+          left: { type: RelationalExpressionLeft.Article, value: "custom::upper" },
+          right: { type: RelationalExpressionRight.String, value: "CATS" },
+        },
+      ],
+    };
+
+    const mediumWithFilter = {
+      id: "medium-cp-test",
+      filters: { expression: filterExpression },
+      details: {
+        guildId: "guild-123",
+        channel: { id: "channel-123" },
+        customPlaceholders: [
+          {
+            id: "cp-1",
+            referenceName: "upper",
+            sourcePlaceholder: "title",
+            steps: [{ type: "UPPERCASE" }],
+          },
+        ],
+      },
+    };
+
+    let previews: DeliveryPreviewStageResult[] = [];
+
+    await startDeliveryPreviewContext("hash-cp-1", async () => {
+      await store.startContext(async () => {
+        await deliverArticles([article], [mediumWithFilter], {
+          feedId: "feed-1",
+          feedUrl: "https://example.com/feed.xml",
+          articleDayLimit: 100,
+          discordClient: createTestDiscordRestClient(),
+          deliveryRecordStore: store,
+        });
+      });
+      previews = getDeliveryPreviewResultsForArticle("hash-cp-1");
+    });
+
+    const filterDiagnostic = previews.find(
+      (d) => d.stage === DeliveryPreviewStage.MediumFilter
+    );
+    assert.notStrictEqual(filterDiagnostic, undefined);
+    // Should PASS because custom placeholder is processed before filtering
+    assert.strictEqual(
+      filterDiagnostic!.status,
+      DeliveryPreviewStageStatus.Passed,
+      "Filter should be able to match on custom placeholder values"
+    );
+  });
+
+  it("should show formatted content in explainBlocked diagnostic", async () => {
+    const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
+      await import("../delivery-preview");
+    const { deliverArticles } = await import(".");
+
+    const store = createInMemoryDeliveryRecordStore();
+    const article: Article = {
+      flattened: {
+        id: "article-explain-1",
+        idHash: "hash-explain-1",
+        author: '<a href="http://example.com">John Doe</a>',
+      },
+      raw: {},
+    };
+
+    // Filter that will NOT match (looking for "Jane")
+    const filterExpression: LogicalExpression = {
+      type: ExpressionType.Logical,
+      op: LogicalExpressionOperator.And,
+      children: [
+        {
+          type: ExpressionType.Relational,
+          op: RelationalExpressionOperator.Contains,
+          left: { type: RelationalExpressionLeft.Article, value: "author" },
+          right: { type: RelationalExpressionRight.String, value: "Jane" },
+        },
+      ],
+    };
+
+    const mediumWithFilter = {
+      id: "medium-explain-test",
+      filters: { expression: filterExpression },
+      details: {
+        guildId: "guild-123",
+        channel: { id: "channel-123" },
+      },
+    };
+
+    let previews: DeliveryPreviewStageResult[] = [];
+
+    await startDeliveryPreviewContext("hash-explain-1", async () => {
+      await store.startContext(async () => {
+        await deliverArticles([article], [mediumWithFilter], {
+          feedId: "feed-1",
+          feedUrl: "https://example.com/feed.xml",
+          articleDayLimit: 100,
+          discordClient: createTestDiscordRestClient(),
+          deliveryRecordStore: store,
+        });
+      });
+      previews = getDeliveryPreviewResultsForArticle("hash-explain-1");
+    });
+
+    const filterDiagnostic = previews.find(
+      (d) => d.stage === DeliveryPreviewStage.MediumFilter
+    );
+    assert.notStrictEqual(filterDiagnostic, undefined);
+    assert.strictEqual(filterDiagnostic!.status, DeliveryPreviewStageStatus.Failed);
+
+    const details = filterDiagnostic!.details as {
+      explainBlocked: Array<{ truncatedReferenceValue: string }>;
+    };
+    assert.ok(details.explainBlocked.length > 0);
+
+    // truncatedReferenceValue should show formatted markdown link, not raw HTML
+    const referenceValue = details.explainBlocked[0]?.truncatedReferenceValue ?? "";
+    assert.ok(
+      !referenceValue.includes("<a"),
+      `truncatedReferenceValue should not contain raw HTML tags, got: ${referenceValue}`
+    );
+    assert.ok(
+      referenceValue.includes("[John Doe]") || referenceValue.includes("John Doe"),
+      `truncatedReferenceValue should contain formatted text, got: ${referenceValue}`
+    );
+  });
+});
+
 // Helper to create a delivery state for testing
 function createDeliveryState(
   id: string,

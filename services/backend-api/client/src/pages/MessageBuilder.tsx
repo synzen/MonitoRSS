@@ -606,12 +606,7 @@ const MessageBuilderContent: React.FC = () => {
                   )}
                   {/* Problems Section - Mobile Tabs */}
                   {!isDesktop && (
-                    <Box
-                      borderTop="1px"
-                      borderColor="gray.600"
-                      transition="padding-bottom 0.3s ease"
-                      // flex={1}
-                    >
+                    <Box borderTop="1px" borderColor="gray.600">
                       <Tabs
                         colorScheme="blue"
                         variant="line"
