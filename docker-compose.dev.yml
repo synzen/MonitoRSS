@@ -189,6 +189,7 @@ services:
     build:
       context: services/user-feeds-next
       dockerfile: Dockerfile.dev
+    command: npx tsx ./src/scripts/run-migrations.ts
     env_file:
       - ./.env.local
     environment:

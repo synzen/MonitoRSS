@@ -303,26 +303,12 @@ export async function ensurePartitionsExist(pool: Pool): Promise<void> {
     },
   ];
 
-  let created = 0;
   for (const partition of partitions) {
-    if (await tableExists(pool, partition.tableName)) {
-      continue;
-    }
-
-    // Note: PostgreSQL does not support parameterized queries in DDL statements.
-    // These values are safe as they come from dayjs() date calculations, not user input.
     await pool.query(`
-      CREATE TABLE ${partition.tableName}
+      CREATE TABLE IF NOT EXISTS ${partition.tableName}
       PARTITION OF ${partition.parentTable}
       FOR VALUES FROM ('${partition.from}') TO ('${partition.to}')
     `);
-    created++;
-  }
-
-  if (created > 0) {
-    logger.debug(`Partition tables created`, {
-      count: created,
-    });
   }
 }
 
