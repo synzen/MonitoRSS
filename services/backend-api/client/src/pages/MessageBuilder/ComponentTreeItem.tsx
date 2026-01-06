@@ -1,6 +1,6 @@
-import React, { useEffect } from "react";
-import { Box, VStack, HStack, Text, IconButton, Icon } from "@chakra-ui/react";
-import { FaExclamationCircle } from "react-icons/fa";
+import React, { useEffect, useState } from "react";
+import { Box, VStack, HStack, Text, IconButton, Icon, Button } from "@chakra-ui/react";
+import { FaExclamationCircle, FaCog } from "react-icons/fa";
 import { ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import { AddComponentButton } from "./AddComponentButton";
 import type { Component, SectionComponent } from "./types";
@@ -12,6 +12,7 @@ import {
 } from "../../components/NavigableTree";
 import { useNavigableTreeItemContext } from "../../contexts/NavigableTreeItemContext";
 import { useMessageBuilderContext } from "./MessageBuilderContext";
+import { SlidingConfigPanel } from "./SlidingConfigPanel";
 
 import getChakraColor from "../../utils/getChakraColor";
 import getMessageBuilderComponentLabel from "./utils/getMessageBuilderComponentLabel";
@@ -38,6 +39,7 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
   const { onExpanded } = useNavigableTreeItemContext();
   const { addChildComponent } = useMessageBuilderContext();
   const isDesktop = useIsMessageBuilderDesktop();
+  const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
 
   const hasChildren = component.children && component.children.length > 0;
   const hasAccessory =
@@ -67,6 +69,8 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
   useEffect(() => {
     onExpanded();
   }, []);
+
+  const showMobileActions = isSelected;
 
   return (
     <VStack align="stretch" spacing={0} position="relative" ref={ref}>
@@ -132,6 +136,34 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
           </Box>
         )}
       </HStack>
+      {/* Mobile inline action buttons - only show on pointer interaction, not keyboard focus */}
+      {!isDesktop && showMobileActions && (
+        <HStack pl={2 + depth * 4 + 6} pr={2} py={2} spacing={2} bg="gray.750">
+          <AddComponentButton
+            component={component}
+            canHaveChildren={canHaveChildren}
+            onAddChild={handleAddChild}
+            buttonProps={{
+              size: "sm",
+              variant: "solid",
+            }}
+          />
+          <Button
+            leftIcon={<FaCog />}
+            size="sm"
+            variant="solid"
+            onClick={() => setIsConfigPanelOpen(true)}
+          >
+            Configure
+          </Button>
+        </HStack>
+      )}
+      {!isDesktop && (
+        <SlidingConfigPanel
+          isOpen={isConfigPanelOpen}
+          onClose={() => setIsConfigPanelOpen(false)}
+        />
+      )}
       {(hasChildren || hasAccessory) && isExpanded && (
         <VStack align="stretch" spacing={0}>
           <NavigableTreeItemGroup>

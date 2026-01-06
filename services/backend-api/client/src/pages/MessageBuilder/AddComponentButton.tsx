@@ -40,6 +40,7 @@ export const AddComponentButton: React.FC<AddComponentButtonProps> = ({
           colorScheme="twitter"
           aria-label={`Add new component under ${getMessageBuilderComponentLabel(component.type)}`}
           onClick={canHaveChildren ? undefined : (e) => e.preventDefault()}
+          onKeyDown={canHaveChildren ? undefined : (e) => e.preventDefault()}
           {...buttonProps}
         >
           New Component
