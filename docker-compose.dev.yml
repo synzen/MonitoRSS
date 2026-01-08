@@ -305,7 +305,7 @@ services:
 volumes:
   mongodb-dev-data:
   rabbitmq-data:
-  feed-requests-postgres16-data:
+  feed-requests-postgres17-data:
   feed-requests-redis-data:
   fs-s3-storage-data:
     driver: local

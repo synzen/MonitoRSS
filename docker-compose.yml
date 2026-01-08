@@ -135,7 +135,7 @@ services:
 volumes:
   mongodb-data:
   rabbitmq-data:
-  feed-requests-postgres16-data:
+  feed-requests-postgres17-data:
   feed-requests-redis-data:
     driver: local
 

@@ -47,7 +47,7 @@ services:
       driver: none
     image: postgres:17-alpine
     volumes:
-      - feed-requests-postgres16-data:/var/lib/postgresql/data
+      - feed-requests-postgres17-data:/var/lib/postgresql/data
       - ./services/feed-requests/sql/setup.sql:/docker-entrypoint-initdb.d/setup.sql
     networks:
       - monitorss-default
