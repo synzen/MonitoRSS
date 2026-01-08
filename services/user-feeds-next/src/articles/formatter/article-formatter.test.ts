@@ -88,6 +88,84 @@ describe("article-formatter", () => {
       );
       assert.strictEqual(result, "Third Value");
     });
+
+    it("applies placeholder limits with fallback syntax - first placeholder used", () => {
+      const result = replaceTemplateString(
+        { summary: "This is a long summary that should be truncated", description: "Description text" },
+        "{{summary||description}}",
+        {
+          supportFallbacks: true,
+          split: {
+            func: (str, opts) => str.substring(0, opts.limit) + (str.length > opts.limit ? (opts.appendString || "") : ""),
+            limits: [
+              { placeholder: "summary", characterCount: 15, appendString: "..." },
+              { placeholder: "description", characterCount: 20, appendString: "..." },
+            ],
+          },
+        }
+      );
+      // Should use summary limit (15) since summary was used
+      assert.ok(result!.startsWith("This is a long "));
+      assert.ok(result!.endsWith("..."));
+      assert.ok(result!.length <= 18); // 15 + 3 for "..."
+    });
+
+    it("applies placeholder limits with fallback syntax - falls back to second placeholder", () => {
+      const result = replaceTemplateString(
+        { description: "This is a long description that should be truncated" },
+        "{{summary||description}}",
+        {
+          supportFallbacks: true,
+          split: {
+            func: (str, opts) => str.substring(0, opts.limit) + (str.length > opts.limit ? (opts.appendString || "") : ""),
+            limits: [
+              { placeholder: "summary", characterCount: 10, appendString: " [sum]" },
+              { placeholder: "description", characterCount: 15, appendString: " [desc]" },
+            ],
+          },
+        }
+      );
+      // Should use description limit (15) since description was used as fallback
+      assert.ok(result!.startsWith("This is a long "));
+      assert.ok(result!.endsWith("[desc]"));
+      assert.ok(result!.length <= 22); // 15 + 7 for " [desc]"
+    });
+
+    it("does not apply placeholder limits when fallback resolves to literal text", () => {
+      const result = replaceTemplateString(
+        {},
+        "{{summary||text::No summary available}}",
+        {
+          supportFallbacks: true,
+          split: {
+            func: (str, opts) => str.substring(0, opts.limit) + (str.length > opts.limit ? (opts.appendString || "") : ""),
+            limits: [
+              { placeholder: "summary", characterCount: 5, appendString: "..." },
+            ],
+          },
+        }
+      );
+      // Literal text should not be truncated
+      assert.strictEqual(result, "No summary available");
+    });
+
+    it("supports limit on full accessor string as fallback", () => {
+      const result = replaceTemplateString(
+        { summary: "This is a long summary text" },
+        "{{summary||description}}",
+        {
+          supportFallbacks: true,
+          split: {
+            func: (str, opts) => str.substring(0, opts.limit) + (str.length > opts.limit ? (opts.appendString || "") : ""),
+            limits: [
+              { placeholder: "summary||description", characterCount: 10, appendString: "..." },
+            ],
+          },
+        }
+      );
+      // Should use the full accessor limit
+      assert.ok(result!.length <= 13); // 10 + 3 for "..."
+    });
   });
 
   describe("applySplit", () => {

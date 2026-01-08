@@ -591,4 +591,158 @@ describe("Discord Payload Placeholder Limits (e2e)", { concurrency: true }, () =
       }
     });
   });
+
+  describe("Fallback Syntax with Placeholder Limits", () => {
+    it("applies limit when using fallback syntax and first placeholder has value", async () => {
+      const ctx = createTestContext(stores);
+
+      const eventWithLimits = createEventWithPlaceholderLimits(
+        ctx.testFeedV2Event,
+        [
+          {
+            placeholder: "summary",
+            characterCount: 20,
+            appendString: "...",
+          },
+          {
+            placeholder: "description",
+            characterCount: 30,
+            appendString: "...",
+          },
+        ],
+        {
+          content: "{{summary||description}}",
+        }
+      );
+
+      try {
+        await ctx.seedArticles(eventWithLimits);
+
+        ctx.setFeedResponse(() => ({
+          body: getTestRssFeed(
+            [
+              {
+                guid: "fallback-limit-summary-test",
+                summary:
+                  "This is a long summary that should be truncated to 20 chars",
+                description: "This description should not be used",
+              },
+            ],
+            true
+          ),
+          hash: randomUUID(),
+        }));
+
+        const results = await ctx.handleEvent(eventWithLimits);
+
+        assert.notStrictEqual(results, null);
+
+        const payload = getDiscordPayload(ctx);
+        // Summary limit (20) + append string (3) = 23 max
+        assert.ok(payload.content.length <= 23);
+        assert.ok(payload.content.includes("..."));
+      } finally {
+        ctx.cleanup();
+      }
+    });
+
+    it("applies limit when using fallback syntax and falls back to second placeholder", async () => {
+      const ctx = createTestContext(stores);
+
+      const eventWithLimits = createEventWithPlaceholderLimits(
+        ctx.testFeedV2Event,
+        [
+          {
+            placeholder: "summary",
+            characterCount: 20,
+            appendString: " [sum]",
+          },
+          {
+            placeholder: "description",
+            characterCount: 25,
+            appendString: " [desc]",
+          },
+        ],
+        {
+          content: "{{summary||description}}",
+        }
+      );
+
+      try {
+        await ctx.seedArticles(eventWithLimits);
+
+        ctx.setFeedResponse(() => ({
+          body: getTestRssFeed(
+            [
+              {
+                guid: "fallback-limit-description-test",
+                // No summary - will fall back to description
+                description:
+                  "This is a long description that should be truncated to 25 chars",
+              },
+            ],
+            true
+          ),
+          hash: randomUUID(),
+        }));
+
+        const results = await ctx.handleEvent(eventWithLimits);
+
+        assert.notStrictEqual(results, null);
+
+        const payload = getDiscordPayload(ctx);
+        // Description limit (25) + append string (7) = 32 max
+        assert.ok(payload.content.length <= 32);
+        assert.ok(payload.content.includes("[desc]"));
+        assert.ok(!payload.content.includes("[sum]"));
+      } finally {
+        ctx.cleanup();
+      }
+    });
+
+    it("does not apply limit when fallback resolves to literal text", async () => {
+      const ctx = createTestContext(stores);
+
+      const eventWithLimits = createEventWithPlaceholderLimits(
+        ctx.testFeedV2Event,
+        [
+          {
+            placeholder: "summary",
+            characterCount: 10,
+            appendString: "...",
+          },
+        ],
+        {
+          content: "{{summary||text::No summary available}}",
+        }
+      );
+
+      try {
+        await ctx.seedArticles(eventWithLimits);
+
+        ctx.setFeedResponse(() => ({
+          body: getTestRssFeed(
+            [
+              {
+                guid: "fallback-literal-test",
+                // No summary - will fall back to literal text
+              },
+            ],
+            true
+          ),
+          hash: randomUUID(),
+        }));
+
+        const results = await ctx.handleEvent(eventWithLimits);
+
+        assert.notStrictEqual(results, null);
+
+        const payload = getDiscordPayload(ctx);
+        // Literal text should not be truncated
+        assert.strictEqual(payload.content, "No summary available");
+      } finally {
+        ctx.cleanup();
+      }
+    });
+  });
 });
