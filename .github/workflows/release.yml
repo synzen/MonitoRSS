@@ -1,0 +1,117 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-images:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    strategy:
+      matrix:
+        include:
+          - image: synzen/monitorss-user-feeds
+            context: services/user-feeds-next
+            target: ""
+            file: ""
+          - image: synzen/monitorss-feed-requests
+            context: services/feed-requests
+            target: build
+            file: ""
+          - image: synzen/monitorss-monolith
+            context: services/backend-api
+            target: prod
+            file: services/backend-api/dockerfiles/web/mixed.Dockerfile
+          - image: synzen/monitorss-bot-presence
+            context: services/bot-presence
+            target: prod
+            file: ""
+          - image: synzen/monitorss-discord-rest-listener
+            context: services/discord-rest-listener
+            target: prod
+            file: ""
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ matrix.image }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          platforms: linux/amd64,linux/arm64
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file || '' }}
+          target: ${{ matrix.target || '' }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ matrix.image }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+  upload-compose:
+    runs-on: ubuntu-latest
+    needs: build-images
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Generate merged docker-compose.yml
+        run: |
+          # Merge base + prod into single file, resolving all extends
+          docker compose -f docker-compose.yml config > docker-compose-merged.yml
+
+          # Replace :main with version tag
+          sed -i 's/:main/:${{ steps.version.outputs.VERSION }}/g' docker-compose-merged.yml
+
+          # Rename for release
+          mv docker-compose-merged.yml docker-compose-${{ steps.version.outputs.VERSION }}.yml
+
+      - name: Create release with compose file
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ github.ref_name }} \
+            docker-compose-${{ steps.version.outputs.VERSION }}.yml \
+            --generate-notes
