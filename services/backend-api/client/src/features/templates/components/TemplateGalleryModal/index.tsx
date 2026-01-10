@@ -737,7 +737,8 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
     >
       <ModalOverlay />
       <ModalContent
-        maxH={{ base: "100vh", lg: "90vh" }}
+        maxH={{ base: "100dvh", lg: "90vh" }}
+        height={{ base: "100dvh", md: "auto" }}
         data-testid={testId}
         aria-labelledby="template-gallery-modal-header"
       >
