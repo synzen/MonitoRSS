@@ -14,6 +14,7 @@ const MikroOrmConfig: Options = {
   forceUtcTimezone: true,
   timezone: 'UTC',
   dbName,
+  ensureDatabase: true,
 };
 
 export default MikroOrmConfig;
