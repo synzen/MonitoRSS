@@ -116,6 +116,18 @@ jobs:
           # Replace :main with version tag
           sed -i 's/:main/:${{ steps.version.outputs.VERSION }}/g' docker-compose-merged.yml
 
+          # Add env_file directive back to services that need it
+          # (docker compose config removes it, but users need to provide their own .env.prod)
+          sed -i '/^  bot-presence-service:$/a\    env_file:\n      - .env.prod' docker-compose-merged.yml
+          sed -i '/^  discord-rest-listener-service:$/a\    env_file:\n      - .env.prod' docker-compose-merged.yml
+          sed -i '/^  feed-requests-service:$/a\    env_file:\n      - .env.prod' docker-compose-merged.yml
+          sed -i '/^  feed-requests-postgres-migration:$/a\    env_file:\n      - .env.prod' docker-compose-merged.yml
+          sed -i '/^  user-feeds-service:$/a\    env_file:\n      - .env.prod' docker-compose-merged.yml
+          sed -i '/^  user-feeds-postgres-migration:$/a\    env_file:\n      - .env.prod' docker-compose-merged.yml
+          sed -i '/^  legacy-feed-bulk-converter-service:$/a\    env_file:\n      - .env.prod' docker-compose-merged.yml
+          sed -i '/^  schedule-emitter-service:$/a\    env_file:\n      - .env.prod' docker-compose-merged.yml
+          sed -i '/^  monolith:$/a\    env_file:\n      - .env.prod' docker-compose-merged.yml
+
           # Rename for release
           mv docker-compose-merged.yml docker-compose-${{ steps.version.outputs.VERSION }}.yml
 
