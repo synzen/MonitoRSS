@@ -82,6 +82,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v1
@@ -105,6 +107,9 @@ jobs:
 
       - name: Generate merged docker-compose.yml
         run: |
+          # Create empty env file to satisfy docker compose config
+          touch .env.prod
+
           # Merge base + prod into single file, resolving all extends
           docker compose -f docker-compose.yml config > docker-compose-merged.yml
 
