@@ -11,6 +11,7 @@ env:
 jobs:
   build-images:
     runs-on: ubuntu-latest
+    name: Build ${{ matrix.name }}
     permissions:
       contents: read
       packages: write
@@ -19,23 +20,28 @@ jobs:
     strategy:
       matrix:
         include:
-          - image: synzen/monitorss-user-feeds
+          - name: user-feeds
+            image: synzen/monitorss-user-feeds
             context: services/user-feeds-next
             target: ""
             file: ""
-          - image: synzen/monitorss-feed-requests
+          - name: feed-requests
+            image: synzen/monitorss-feed-requests
             context: services/feed-requests
             target: build
             file: ""
-          - image: synzen/monitorss-monolith
+          - name: monolith
+            image: synzen/monitorss-monolith
             context: services/backend-api
             target: prod
             file: services/backend-api/dockerfiles/web/mixed.Dockerfile
-          - image: synzen/monitorss-bot-presence
+          - name: bot-presence
+            image: synzen/monitorss-bot-presence
             context: services/bot-presence
             target: prod
             file: ""
-          - image: synzen/monitorss-discord-rest-listener
+          - name: discord-rest-listener
+            image: synzen/monitorss-discord-rest-listener
             context: services/discord-rest-listener
             target: prod
             file: ""
