@@ -30,7 +30,7 @@ Docker is required to easily coordinate and run multiple services at once.
 
 1. Install [Docker Engine](https://docs.docker.com/engine/install/)
 2. Install [Docker Compose](https://docs.docker.com/compose/install/)
-3. Go to the [Releases page](https://github.com/synzen/MonitoRSS/releases) and download the `docker-compose-<version>.yml` file from the latest release
+3. Go to the [Releases page](https://github.com/synzen/MonitoRSS/releases) and download the `monitorss-<version>.yml` file from the latest release
 4. Download the [`.env.example`](https://raw.githubusercontent.com/synzen/MonitoRSS/main/.env.example) file into the same directory as the compose file and rename it to `.env.prod`
 5. Create a Discord application through [Discord's developer portal](https://discord.com/developers/applications) if you do not already have one
 6. Replace all relevant values in the `.env.prod` file with your own values
@@ -42,7 +42,7 @@ Docker is required to easily coordinate and run multiple services at once.
    6. Set `BACKEND_API_SESSION_SECRET` to a random 64-character string
    7. Set `BACKEND_API_SESSION_SALT` to a random 16-character string
    8. Add `http://localhost:8000/api/v1/discord/callback-v2` to the list of redirect URIs in your Discord application in the OAuth2 page
-7. Run `docker compose -f docker-compose-<version>.yml up -d` (replace `<version>` with the version you downloaded)
+7. Run `docker compose -f monitorss-<version>.yml up -d` (replace `<version>` with the version you downloaded)
    - Make sure all containers, except those with "migration" in it, are running via `docker ps`
    - Any containers ending in `-migration` do not need to be running after initial setup
    - If any containers are failing to start, troubleshoot by getting the last few logs for the container with `docker logs <container_name or ID> --tail 100`
@@ -79,9 +79,9 @@ Make sure to opt into email notifications in the control panel's user settings p
 To update to a new release:
 
 1. Make a backup of your MongoDB data just in case since data migrations may occur
-2. Download the new `docker-compose-<version>.yml` file from the [Releases page](https://github.com/synzen/MonitoRSS/releases)
-3. Stop containers with `docker compose -f docker-compose-<old-version>.yml down`
-4. Start containers with `docker compose -f docker-compose-<new-version>.yml up -d`
+2. Download the new `monitorss-<version>.yml` file from the [Releases page](https://github.com/synzen/MonitoRSS/releases)
+3. Stop containers with `docker compose -f monitorss-<old-version>.yml down`
+4. Start containers with `docker compose -f monitorss-<new-version>.yml up -d`
 
 ## Migrating from v6
 
@@ -91,6 +91,6 @@ It's recommended that you don't delete your v6 files until you've confirmed that
 
 1. Follow the [Self Host](#self-host) instructions above. The [clone repo](https://github.com/synzen/MonitoRSS-Clone) is no longer used or maintained.
 2. In your `.env.prod` file, set `BACKEND_API_MONGODB_URI` to your existing MongoDB URI
-3. Run `docker compose -f docker-compose-<version>.yml up -d`
+3. Run `docker compose -f monitorss-<version>.yml up -d`
 4. Access the control panel via http://localhost:8000/servers and convert all your legacy feeds to personal feeds. Legacy feed articles will not be fetched/delivered until they are converted to personal feeds.
 5. After verifying that all is working as expected, you may delete your v6 files.

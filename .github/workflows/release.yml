@@ -134,7 +134,7 @@ jobs:
           sed -i '/^  monolith:$/a\    env_file:\n      - .env.prod' docker-compose-merged.yml
 
           # Rename for release
-          mv docker-compose-merged.yml docker-compose-${{ steps.version.outputs.VERSION }}.yml
+          mv docker-compose-merged.yml monitorss-${{ steps.version.outputs.VERSION }}.yml
 
       - name: Create release with compose file
         env:
@@ -145,6 +145,7 @@ jobs:
             PRERELEASE_FLAG="--prerelease"
           fi
           gh release create ${{ github.ref_name }} \
-            docker-compose-${{ steps.version.outputs.VERSION }}.yml \
+            monitorss-${{ steps.version.outputs.VERSION }}.yml \
             --generate-notes \
+            --draft \
             $PRERELEASE_FLAG
