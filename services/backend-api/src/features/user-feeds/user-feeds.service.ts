@@ -1487,6 +1487,9 @@ export class UserFeedsService {
           dateLocale: undefined,
         },
         customPlaceholders,
+        externalProperties: feed.externalProperties?.map((p) => ({
+          ...p,
+        })),
       },
     };
 
