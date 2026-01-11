@@ -7,6 +7,7 @@ import SimpleMarkdown from "simple-markdown";
 import Twemoji from "twemoji";
 import hljs from "highlight.js";
 import { uniqueId } from "lodash";
+import { getChannelIcon } from "../../../utils/getChannelIcon";
 import Emoji from "../../../constants/emojis";
 
 // this is mostly translated from discord's client,
@@ -445,7 +446,7 @@ const baseRules = {
             );
           }
 
-          const displayName = user?.username || "Unknown User";
+          const displayName = user?.displayName || "Unknown User";
 
           return (
             <span key={state.key} className="discord-mention discord-mention-user">
@@ -477,10 +478,14 @@ const baseRules = {
           mentionResolvers.requestChannelsFetch?.();
           const channel = mentionResolvers.getChannel?.(node.id);
           const displayName = channel?.name || "unknown-channel";
+          const channelIcon = getChannelIcon(channel?.type, {
+            className: "discord-channel-icon",
+          });
 
           return (
             <span key={state.key} className="discord-mention discord-mention-channel">
-              #{displayName}
+              {channelIcon}
+              {displayName}
             </span>
           );
         }

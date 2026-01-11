@@ -10,7 +10,7 @@ import { DiscordServerChannel } from "../features/discordServers/types/DiscordSe
 import { GetDiscordChannelType } from "../features/discordServers/constants";
 
 interface UserData {
-  username: string;
+  displayName: string;
   avatarUrl?: string | null;
 }
 
@@ -138,7 +138,7 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
 
           if (result?.result) {
             newCache.set(userId, {
-              username: result.result.username,
+              displayName: result.result.displayName,
               avatarUrl: result.result.avatarUrl,
             });
           } else {

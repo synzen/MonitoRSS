@@ -1259,6 +1259,7 @@
   font-weight: 500;
   cursor: pointer;
   unicode-bidi: plaintext;
+  vertical-align: baseline;
 }
 
 .discord-mention:hover {
@@ -1284,6 +1285,17 @@
 .discord-mention-channel {
   background-color: rgba(88, 101, 242, 0.3);
   color: #c9cdfb;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  vertical-align: bottom;
+}
+
+.discord-channel-icon {
+  flex-shrink: 0;
+  width: 1em;
+  height: 1em;
+  display: block;
 }
 
 .discord-mention-channel:hover {
@@ -1292,13 +1304,13 @@
 }
 
 .discord-mention-everyone {
-  background-color: rgba(250, 168, 26, 0.3);
-  color: #faa81a;
+  background-color: rgba(88, 101, 242, 0.3);
+  color: #c9cdfb;
 }
 
 .discord-mention-everyone:hover {
-  background-color: rgba(250, 168, 26, 0.5);
-  color: #faa81a;
+  background-color: #5865f2;
+  color: #ffffff;
 }
 
 .discord-mention-loading {
