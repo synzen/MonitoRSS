@@ -32,7 +32,7 @@ const FEATURE_CUTOFF_DATES = {
    * Before this: <i> and <b> tags were not converted, <em> used block formatting causing newlines.
    * After this: All use inline formatting without unwanted newlines.
    */
-  inlineItalicFormatting: new Date("2025-01-11T01:00:00.000Z"),
+  inlineItalicFormatting: new Date("2026-01-11T01:00:00.000Z"),
 } as const;
 
 type FeatureFlag = keyof typeof FEATURE_CUTOFF_DATES;
