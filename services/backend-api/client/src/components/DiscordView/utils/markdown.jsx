@@ -449,7 +449,7 @@ const baseRules = {
           const displayName = user?.displayName || "Unknown User";
 
           return (
-            <span key={state.key} className="discord-mention discord-mention-user">
+            <span key={state.key} className="discord-mention">
               @{displayName}
             </span>
           );
@@ -464,7 +464,7 @@ const baseRules = {
           return (
             <span
               key={state.key}
-              className="discord-mention discord-mention-role"
+              className="discord-mention"
               style={
                 roleColor ? { color: roleColor, backgroundColor: `${roleColor}20` } : undefined
               }
@@ -512,7 +512,7 @@ const baseRules = {
     },
     react(node, recurseOutput, state) {
       return (
-        <span key={state.key} className="discord-mention discord-mention-everyone">
+        <span key={state.key} className="discord-mention">
           @{node.mentionType}
         </span>
       );

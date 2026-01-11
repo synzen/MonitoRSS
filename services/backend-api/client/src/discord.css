@@ -1267,24 +1267,7 @@
   color: #ffffff;
 }
 
-.discord-mention-user {
-  background-color: rgba(88, 101, 242, 0.3);
-  color: #c9cdfb;
-}
-
-.discord-mention-user:hover {
-  background-color: #5865f2;
-  color: #ffffff;
-}
-
-.discord-mention-role {
-  background-color: rgba(88, 101, 242, 0.3);
-  color: #c9cdfb;
-}
-
 .discord-mention-channel {
-  background-color: rgba(88, 101, 242, 0.3);
-  color: #c9cdfb;
   display: inline-flex;
   align-items: center;
   gap: 2px;
@@ -1296,21 +1279,6 @@
   width: 1em;
   height: 1em;
   display: block;
-}
-
-.discord-mention-channel:hover {
-  background-color: #5865f2;
-  color: #ffffff;
-}
-
-.discord-mention-everyone {
-  background-color: rgba(88, 101, 242, 0.3);
-  color: #c9cdfb;
-}
-
-.discord-mention-everyone:hover {
-  background-color: #5865f2;
-  color: #ffffff;
 }
 
 .discord-mention-loading {
