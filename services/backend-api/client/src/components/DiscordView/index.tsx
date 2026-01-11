@@ -34,17 +34,31 @@ const MessageTimestamp = (
   return <span className="timestamp">{computed}</span>;
 };
 
+interface MentionResolvers {
+  getUser?: (userId: string) => { username: string; avatarUrl?: string | null } | null;
+  getRole?: (roleId: string) => { id: string; name?: string; color: string } | null;
+  getChannel?: (channelId: string) => { id: string; name: string } | null;
+  isUserLoading?: (userId: string) => boolean;
+  requestUserFetch?: (userId: string) => void;
+  requestRolesFetch?: () => void;
+  requestChannelsFetch?: () => void;
+}
+
 const MessageBody = ({
   compactMode,
   username,
   content,
   webhookMode,
+  mentionResolvers,
 }: {
   compactMode?: boolean;
   username?: string;
   content?: string | null;
   webhookMode?: boolean;
+  mentionResolvers?: MentionResolvers;
 }) => {
+  const parserState = mentionResolvers ? { mentionResolvers } : {};
+
   if (compactMode) {
     return (
       <div className="markup">
@@ -54,17 +68,19 @@ const MessageBody = ({
           <span className="bot-tag">BOT</span>
         </span>
         <span className="highlight-separator"> - </span>
-        <span className="message-content">{content && parse(content, true, {}, jumboify)}</span>
+        <span className="message-content">
+          {content && parse(content, true, parserState, jumboify)}
+        </span>
       </div>
     );
   }
 
   if (content) {
     if (webhookMode) {
-      return <div className="markup">{parseAllowLinks(content, true, {}, jumboify)}</div>;
+      return <div className="markup">{parseAllowLinks(content, true, parserState, jumboify)}</div>;
     }
 
-    return <div className="markup">{parse(content, true, {}, jumboify)}</div>;
+    return <div className="markup">{parse(content, true, parserState, jumboify)}</div>;
   }
 
   return null;
@@ -144,6 +160,7 @@ const DiscordView = ({
   error,
   messages,
   excludeHeader,
+  mentionResolvers,
 }: {
   excludeHeader?: boolean;
   compactMode?: boolean;
@@ -152,6 +169,7 @@ const DiscordView = ({
   username?: string;
   avatar_url?: string;
   error?: string;
+  mentionResolvers?: MentionResolvers;
   messages: Array<{
     content?: string | null;
     embeds?: DiscordViewEmbed[];
@@ -190,6 +208,7 @@ const DiscordView = ({
                     username={username}
                     compactMode={compactMode}
                     webhookMode
+                    mentionResolvers={mentionResolvers}
                   />
                   {thisEmbeds?.map((e, i) => (
                     <Embed key={i} {...e} />

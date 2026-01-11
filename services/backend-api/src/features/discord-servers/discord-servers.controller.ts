@@ -32,6 +32,7 @@ import { GetDiscordServerChannelsFilter } from "./filters";
 import { GetServerActiveThreadsInputDto } from "./dto/GetServerActiveThreadsInput.dto";
 import { GetServerMembersInputDto } from "./dto/GetServerMembersInput.dto";
 import { GetServerMembersOutputDto } from "./dto/GetServerMembersOutput.dto";
+import { GetServerMemberOutputDto } from "./dto/GetServerMemberOutput.dto";
 import { FeedsService } from "../feeds/feeds.service";
 import { LegacyFeedConversionService } from "../legacy-feed-conversion/legacy-feed-conversion.service";
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
@@ -240,6 +241,25 @@ export class DiscordServersController {
     const roles = await this.discordServersService.getRolesOfServer(serverId);
 
     return GetServerRolesOutputDto.fromEntities(roles);
+  }
+
+  @Get(":serverId/members/:memberId")
+  @UseGuards(BotHasServerGuard)
+  @UseGuards(UserManagesServerGuard)
+  async getServerMember(
+    @Param("serverId") serverId: string,
+    @Param("memberId") memberId: string
+  ): Promise<GetServerMemberOutputDto | null> {
+    const member = await this.discordServersService.getMemberOfServer(
+      serverId,
+      memberId
+    );
+
+    if (!member) {
+      return null;
+    }
+
+    return GetServerMemberOutputDto.fromEntity(member);
   }
 
   @Get(":serverId/members")

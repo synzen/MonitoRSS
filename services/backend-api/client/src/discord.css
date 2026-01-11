@@ -1249,3 +1249,70 @@
   text-indent: 0;
   white-space: pre;
 }
+
+/* Discord Mentions */
+.discord-mention {
+  background-color: rgba(88, 101, 242, 0.3);
+  color: #c9cdfb;
+  padding: 0 2px;
+  border-radius: 3px;
+  font-weight: 500;
+  cursor: pointer;
+  unicode-bidi: plaintext;
+}
+
+.discord-mention:hover {
+  background-color: #5865f2;
+  color: #ffffff;
+}
+
+.discord-mention-user {
+  background-color: rgba(88, 101, 242, 0.3);
+  color: #c9cdfb;
+}
+
+.discord-mention-user:hover {
+  background-color: #5865f2;
+  color: #ffffff;
+}
+
+.discord-mention-role {
+  background-color: rgba(88, 101, 242, 0.3);
+  color: #c9cdfb;
+}
+
+.discord-mention-channel {
+  background-color: rgba(88, 101, 242, 0.3);
+  color: #c9cdfb;
+}
+
+.discord-mention-channel:hover {
+  background-color: #5865f2;
+  color: #ffffff;
+}
+
+.discord-mention-everyone {
+  background-color: rgba(250, 168, 26, 0.3);
+  color: #faa81a;
+}
+
+.discord-mention-everyone:hover {
+  background-color: rgba(250, 168, 26, 0.5);
+  color: #faa81a;
+}
+
+.discord-mention-loading {
+  background-color: rgba(88, 101, 242, 0.2);
+  color: #8a8e94;
+  animation: mention-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes mention-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}

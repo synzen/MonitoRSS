@@ -1,3 +1,4 @@
+import React from "react";
 import { Box, Spinner, Text } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import DiscordView from "../../../../components/DiscordView";
@@ -8,9 +9,35 @@ import { useCreateConnectionPreview, useDiscordChannelConnection } from "../../h
 import { useDebounce } from "../../../../hooks";
 import { useDiscordBot } from "../../../discordUser";
 import { InlineErrorAlert } from "../../../../components";
+import { MentionDataProvider, useMentionData } from "../../../../contexts/MentionDataContext";
 
 type Props = CreateDiscordChannelConnectionPreviewInput & {
   hasErrors?: boolean;
+};
+
+interface DiscordViewWithMentionsProps {
+  username: string;
+  avatarUrl: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  messages: any[];
+}
+
+const DiscordViewWithMentions: React.FC<DiscordViewWithMentionsProps> = ({
+  username,
+  avatarUrl,
+  messages,
+}) => {
+  const mentionData = useMentionData();
+
+  return (
+    <DiscordView
+      darkTheme
+      username={username}
+      avatar_url={avatarUrl}
+      messages={messages}
+      mentionResolvers={mentionData}
+    />
+  );
 };
 
 export const DiscordChannelConnectionPreview = ({
@@ -112,31 +139,13 @@ export const DiscordChannelConnectionPreview = ({
           </Text>
         </Box>
       )}
-      <DiscordView
-        darkTheme
-        username={bot?.result.username || "MonitoRSS"}
-        avatar_url={bot?.result.avatar || "https://cdn.discordapp.com/embed/avatars/0.png"}
-        messages={
-          (connectionPreview?.result.messages || []) as Array<{
-            content?: string | null;
-            embeds?: Array<{
-              title?: string;
-              description?: string;
-              url?: string;
-              color?: number;
-            }>;
-            components?: Array<{
-              type: number;
-              components: Array<{
-                type: number;
-                style: number;
-                label: string;
-                url?: string;
-              }>;
-            }> | null;
-          }>
-        }
-      />
+      <MentionDataProvider serverId={connection?.details.channel?.guildId}>
+        <DiscordViewWithMentions
+          username={bot?.result.username || "MonitoRSS"}
+          avatarUrl={bot?.result.avatar || "https://cdn.discordapp.com/embed/avatars/0.png"}
+          messages={connectionPreview?.result.messages || []}
+        />
+      </MentionDataProvider>
     </Box>
   );
 };

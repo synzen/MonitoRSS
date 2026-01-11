@@ -289,6 +289,10 @@ export class DiscordServersService {
 
       const relevantChannels = channels.filter((c) => {
         if (options?.types) {
+          if (options.types.includes("*")) {
+            return true;
+          }
+
           if (
             options.types.includes("forum") &&
             c.type === DiscordChannelType.GUILD_FORUM
@@ -407,6 +411,24 @@ export class DiscordServersService {
       );
 
     return res;
+  }
+
+  async getMemberOfServer(
+    serverId: string,
+    memberId: string
+  ): Promise<DiscordGuildMember | null> {
+    try {
+      return await this.discordApiService.getGuildMember(serverId, memberId);
+    } catch (err) {
+      if (
+        err instanceof DiscordAPIError &&
+        [HttpStatus.NOT_FOUND, HttpStatus.FORBIDDEN].includes(err.statusCode)
+      ) {
+        return null;
+      }
+
+      throw err;
+    }
   }
 
   private getProfileSettingsWithDefaults(
