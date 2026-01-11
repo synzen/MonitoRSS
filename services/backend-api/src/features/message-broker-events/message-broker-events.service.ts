@@ -527,6 +527,7 @@ export class MessageBrokerEventsService {
             disableImageLinkPreviews:
               con.details.formatter?.disableImageLinkPreviews,
             ignoreNewLines: con.details.formatter?.ignoreNewLines,
+            connectionCreatedAt: con.createdAt?.toISOString(),
           },
           splitOptions: con.splitOptions?.isEnabled
             ? con.splitOptions

@@ -3,6 +3,23 @@ import {
   FeedConnectionDiscordComponentType,
 } from "../../features/feeds/constants";
 
+/**
+ * Shared formatter options for Discord medium.
+ * This is the single source of truth - all preview/test/delivery types should reference this.
+ */
+export interface DiscordMediumFormatterOptions {
+  stripImages?: boolean;
+  formatTables?: boolean;
+  disableImageLinkPreviews?: boolean;
+  ignoreNewLines?: boolean;
+  /**
+   * ISO datetime string of when the connection was created.
+   * Used for feature flag cutoffs to enable new formatting behavior
+   * for connections created after certain dates.
+   */
+  connectionCreatedAt?: string;
+}
+
 // V2 Component Types for DiscordMediumEvent
 export interface DiscordMediumEmojiV2 {
   id: string;
@@ -86,10 +103,7 @@ export interface DiscordMediumEvent {
       }>;
       timestamp?: "article" | "now";
     }>;
-    formatter: {
-      stripImages?: boolean;
-      formatTables?: boolean;
-    };
+    formatter: DiscordMediumFormatterOptions;
     splitOptions?: {
       splitChar?: string | null;
       appendChar?: string | null;

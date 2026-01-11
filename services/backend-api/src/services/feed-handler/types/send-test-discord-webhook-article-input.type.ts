@@ -1,4 +1,8 @@
-import { CustomPlaceholderDto, DiscordMediumEvent } from "../../../common";
+import {
+  CustomPlaceholderDto,
+  DiscordMediumEvent,
+  DiscordMediumFormatterOptions,
+} from "../../../common";
 import { FeedConnectionDiscordWebhookType } from "../../../features/feeds/constants";
 import { DiscordWebhookConnection } from "../../../features/feeds/entities/feed-connections";
 
@@ -25,15 +29,8 @@ export interface SendTestDiscordWebhookArticleInput {
       content?: string;
       forumThreadTitle?: DiscordWebhookConnection["details"]["forumThreadTitle"];
       embeds: DiscordMediumEvent["details"]["embeds"];
-      formatter?: {
-        stripImages?: boolean;
-        formatTables?: boolean;
-      };
-      splitOptions?: {
-        splitChar?: string | null;
-        appendChar?: string | null;
-        prependChar?: string | null;
-      };
+      formatter?: DiscordMediumFormatterOptions;
+      splitOptions?: DiscordMediumEvent["details"]["splitOptions"];
       mentions?: DiscordWebhookConnection["mentions"];
       customPlaceholders?: CustomPlaceholderDto[];
       placeholderLimits?: DiscordWebhookConnection["details"]["placeholderLimits"];

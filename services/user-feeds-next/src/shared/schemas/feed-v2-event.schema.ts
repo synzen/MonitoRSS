@@ -291,6 +291,7 @@ const discordMediumPayloadDetailsSchema = z.object({
       formatTables: z.boolean().optional().default(false),
       disableImageLinkPreviews: z.boolean().optional().default(false),
       ignoreNewLines: z.boolean().optional().default(true),
+      connectionCreatedAt: z.iso.datetime().optional(),
     })
     .optional(),
   splitOptions: z

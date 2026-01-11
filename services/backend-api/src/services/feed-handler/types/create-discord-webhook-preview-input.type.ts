@@ -1,4 +1,7 @@
-import { DiscordMediumEvent } from "../../../common";
+import {
+  DiscordMediumEvent,
+  DiscordMediumFormatterOptions,
+} from "../../../common";
 
 export interface CreateDiscordWebhookPreviewInput {
   details: {
@@ -22,15 +25,8 @@ export interface CreateDiscordWebhookPreviewInput {
       };
       content?: string;
       embeds: DiscordMediumEvent["details"]["embeds"];
-      formatter?: {
-        stripImages?: boolean;
-        formatTables?: boolean;
-      };
-      splitOptions?: {
-        splitChar?: string | null;
-        appendChar?: string | null;
-        prependChar?: string | null;
-      };
+      formatter?: DiscordMediumFormatterOptions;
+      splitOptions?: DiscordMediumEvent["details"]["splitOptions"];
     };
   };
 }

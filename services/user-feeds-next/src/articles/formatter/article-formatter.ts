@@ -21,6 +21,34 @@ dayjs.extend(utc);
 
 const ARTICLE_FIELD_DELIMITER = "__";
 
+/**
+ * Feature flags with their activation dates. Connections created after these dates
+ * will have the corresponding feature enabled. This allows gradual rollout of
+ * formatting fixes without breaking existing connections.
+ */
+const FEATURE_CUTOFF_DATES = {
+  /**
+   * Enables proper inline formatting for <i>, <em>, and <b> tags.
+   * Before this: <i> and <b> tags were not converted, <em> used block formatting causing newlines.
+   * After this: All use inline formatting without unwanted newlines.
+   */
+  inlineItalicFormatting: new Date("2025-01-11T01:00:00.000Z"),
+} as const;
+
+type FeatureFlag = keyof typeof FEATURE_CUTOFF_DATES;
+
+/**
+ * Check if a feature is enabled for a connection based on its creation date.
+ */
+function hasFeature(
+  feature: FeatureFlag,
+  connectionCreatedAt?: string
+): boolean {
+  if (!connectionCreatedAt) return false;
+  const cutoff = FEATURE_CUTOFF_DATES[feature];
+  return new Date(connectionCreatedAt) > cutoff;
+}
+
 // ============================================================================
 // Utilities
 // ============================================================================
@@ -110,6 +138,7 @@ export interface FormatOptions {
   disableImageLinkPreviews?: boolean;
   ignoreNewLines?: boolean;
   customPlaceholders?: CustomPlaceholder[];
+  connectionCreatedAt?: string;
 }
 
 // ============================================================================
@@ -124,6 +153,11 @@ export function formatValueForDiscord(
   value: string,
   options?: FormatOptions
 ): { value: string } {
+  const useInlineItalics = hasFeature(
+    "inlineItalicFormatting",
+    options?.connectionCreatedAt
+  );
+
   const tableSelector: SelectorDefinition = {
     selector: "table",
     format: "codedDataTable",
@@ -149,9 +183,23 @@ export function formatValueForDiscord(
     },
   };
 
+  const bSelector: SelectorDefinition = {
+    selector: "b",
+    format: "heading",
+    options: {
+      trailingLineBreaks: 0,
+      leadingLineBreaks: 0,
+    },
+  };
+
   const emSelector: SelectorDefinition = {
     selector: "em",
-    format: "italicize",
+    format: useInlineItalics ? "italicizeInline" : "italicize",
+  };
+
+  const iSelector: SelectorDefinition = {
+    selector: "i",
+    format: "italicizeInline",
   };
 
   const uSelector: SelectorDefinition = {
@@ -247,6 +295,11 @@ export function formatValueForDiscord(
         walk(elem.children, builder);
         builder.addInline("*");
         builder.closeBlock(formatOptions);
+      },
+      italicizeInline: (elem, walk, builder) => {
+        builder.addLiteral("*");
+        walk(elem.children, builder);
+        builder.addLiteral("*");
       },
       underline: (elem, walk, builder, formatOptions) => {
         builder.openBlock(formatOptions);
@@ -348,7 +401,9 @@ export function formatValueForDiscord(
     selectors: [
       imageSelector,
       strongSelector,
+      ...(useInlineItalics ? [bSelector] : []),
       emSelector,
+      ...(useInlineItalics ? [iSelector] : []),
       uSelector,
       anchorSelector,
       unorderedListSelector,

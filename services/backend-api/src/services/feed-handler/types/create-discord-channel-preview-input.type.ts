@@ -1,6 +1,7 @@
 import {
   CustomPlaceholderDto,
   DiscordMediumEvent,
+  DiscordMediumFormatterOptions,
   ExternalPropertyDto,
 } from "../../../common";
 import { DiscordChannelConnection } from "../../../features/feeds/entities/feed-connections";
@@ -39,15 +40,8 @@ export interface CreateDiscordChannelPreviewInput {
       };
       content?: string;
       embeds: DiscordMediumEvent["details"]["embeds"];
-      formatter?: {
-        stripImages?: boolean;
-        formatTables?: boolean;
-      };
-      splitOptions?: {
-        splitChar?: string | null;
-        appendChar?: string | null;
-        prependChar?: string | null;
-      };
+      formatter?: DiscordMediumFormatterOptions;
+      splitOptions?: DiscordMediumEvent["details"]["splitOptions"];
       mentions?: DiscordChannelConnection["mentions"];
       customPlaceholders?: CustomPlaceholderDto[] | null;
       placeholderLimits?:

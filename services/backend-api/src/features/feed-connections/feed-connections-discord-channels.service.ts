@@ -1136,8 +1136,11 @@ export class FeedConnectionsDiscordChannelsService {
         embeds: castDiscordEmbedsForMedium(
           cleanedPreviewEmbeds || connection.details.embeds
         ),
-        formatter:
-          previewInput?.connectionFormatOptions || connection.details.formatter,
+        formatter: {
+          ...(previewInput?.connectionFormatOptions ||
+            connection.details.formatter),
+          connectionCreatedAt: connection.createdAt?.toISOString(),
+        },
         mentions: previewInput?.mentions || connection.mentions,
         customPlaceholders: useCustomPlaceholders,
         splitOptions: previewInput?.splitOptions?.isEnabled
@@ -1262,7 +1265,10 @@ export class FeedConnectionsDiscordChannelsService {
               ) || [],
           }))
         ),
-        formatter: connectionFormatOptions || undefined,
+        formatter: {
+          ...connectionFormatOptions,
+          connectionCreatedAt: connection.createdAt?.toISOString(),
+        },
         splitOptions: splitOptions?.isEnabled ? splitOptions : undefined,
         mentions: mentions,
         customPlaceholders,
@@ -1344,7 +1350,10 @@ export class FeedConnectionsDiscordChannelsService {
               ) || [],
           }))
         ),
-        formatter: connectionFormatOptions || undefined,
+        formatter: {
+          ...connectionFormatOptions,
+          connectionCreatedAt: new Date().toISOString(),
+        },
         splitOptions: undefined,
         mentions: undefined,
         customPlaceholders: undefined,
@@ -1631,6 +1640,9 @@ export class FeedConnectionsDiscordChannelsService {
           input.content || input.embeds?.length
             ? undefined
             : (input.componentsV2 as SendTestDiscordChannelArticleInput["details"]["mediumDetails"]["componentsV2"]),
+        formatter: {
+          connectionCreatedAt: new Date().toISOString(),
+        },
       },
     } as const;
 
