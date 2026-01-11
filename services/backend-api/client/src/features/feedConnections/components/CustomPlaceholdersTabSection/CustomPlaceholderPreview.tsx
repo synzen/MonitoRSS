@@ -90,6 +90,7 @@ export const CustomPlaceholderPreview = ({
           formatTables: articleFormatOptions.formatTables,
           stripImages: articleFormatOptions.stripImages,
         },
+        externalProperties: articleFormatOptions.externalProperties,
       },
     },
   };
