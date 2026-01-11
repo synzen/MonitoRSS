@@ -246,6 +246,8 @@ export class DiscordServersController {
   @Get(":serverId/members/:memberId")
   @UseGuards(BotHasServerGuard)
   @UseGuards(UserManagesServerGuard)
+  @UseInterceptors(HttpCacheInterceptor)
+  @CacheTTL(60 * 5)
   async getServerMember(
     @Param("serverId") serverId: string,
     @Param("memberId") memberId: string

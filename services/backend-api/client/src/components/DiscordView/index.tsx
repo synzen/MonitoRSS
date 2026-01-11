@@ -14,6 +14,7 @@ import { parse, parseAllowLinks, jumboify } from "./utils/markdown";
 import { DiscordViewEmbed } from "../../types/DiscordViewEmbed";
 import Embed from "./Embed";
 import { ComponentRowView } from "./ComponentRowView";
+import { MentionResolvers } from "../../contexts/MentionDataContext";
 
 dayjs.extend(relativeTime);
 dayjs.extend(localizedFormat);
@@ -33,16 +34,6 @@ const MessageTimestamp = (
 
   return <span className="timestamp">{computed}</span>;
 };
-
-interface MentionResolvers {
-  getUser?: (userId: string) => { username: string; avatarUrl?: string | null } | null;
-  getRole?: (roleId: string) => { id: string; name?: string; color: string } | null;
-  getChannel?: (channelId: string) => { id: string; name: string } | null;
-  isUserLoading?: (userId: string) => boolean;
-  requestUserFetch?: (userId: string) => void;
-  requestRolesFetch?: () => void;
-  requestChannelsFetch?: () => void;
-}
 
 const MessageBody = ({
   compactMode,

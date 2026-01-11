@@ -18,6 +18,7 @@ import DiscordView from "../DiscordView";
 // @ts-ignore - markdown utils lack TypeScript definitions (established pattern)
 import { parseAllowLinks, jumboify } from "../DiscordView/utils/markdown";
 import { DiscordApiComponent } from "../../types/discord/DiscordApiPayload";
+import { MentionResolvers } from "../../contexts/MentionDataContext";
 
 // eslint-disable-next-line no-bitwise
 const DISCORD_COMPONENTS_V2_FLAG = 1 << 15;
@@ -106,16 +107,6 @@ interface DiscordMessage {
   }>;
   components?: DiscordApiComponent[] | null;
   flags?: number | null;
-}
-
-interface MentionResolvers {
-  getUser?: (userId: string) => { username: string; avatarUrl?: string | null } | null;
-  getRole?: (roleId: string) => { id: string; name?: string; color: string } | null;
-  getChannel?: (channelId: string) => { id: string; name: string } | null;
-  isUserLoading?: (userId: string) => boolean;
-  requestUserFetch?: (userId: string) => void;
-  requestRolesFetch?: () => void;
-  requestChannelsFetch?: () => void;
 }
 
 interface DiscordMessageDisplayProps {

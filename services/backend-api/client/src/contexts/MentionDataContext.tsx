@@ -1,26 +1,25 @@
-import React, { createContext, useContext, useMemo, useState, useCallback, ReactNode } from "react";
-import {
-  getServerMember,
-  GetServerMemberOutput,
-  getServerRoles,
-  getServerChannels,
-} from "../features/discordServers/api";
+import React, { createContext, useContext, useMemo, useCallback, ReactNode, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { getServerMember, getServerRoles, getServerChannels } from "../features/discordServers/api";
 import { DiscordRole } from "../features/discordServers/types/DiscordRole";
 import { DiscordServerChannel } from "../features/discordServers/types/DiscordServerChannel";
 import { GetDiscordChannelType } from "../features/discordServers/constants";
 
-interface UserData {
+export interface UserData {
   displayName: string;
   avatarUrl?: string | null;
 }
 
-interface MentionDataContextType {
+export interface MentionResolvers {
   getUser: (userId: string) => UserData | null;
   getRole: (roleId: string) => DiscordRole | null;
   getChannel: (channelId: string) => DiscordServerChannel | null;
   isUserLoading: (userId: string) => boolean;
   isRolesLoading: boolean;
   isChannelsLoading: boolean;
+}
+
+interface MentionDataContextType extends MentionResolvers {
   requestUserFetch: (userId: string) => void;
   requestRolesFetch: () => void;
   requestChannelsFetch: () => void;
@@ -43,165 +42,156 @@ interface MentionDataProviderProps {
   children: ReactNode;
 }
 
+interface RolesResponse {
+  results?: DiscordRole[];
+}
+
+interface ChannelsResponse {
+  results?: DiscordServerChannel[];
+}
+
 export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ serverId, children }) => {
-  const [userCache, setUserCache] = useState<Map<string, UserData | null>>(new Map());
-  const [loadingUsers, setLoadingUsers] = useState<Set<string>>(new Set());
-  const [fetchedUsers, setFetchedUsers] = useState<Set<string>>(new Set());
+  const queryClient = useQueryClient();
 
-  const [rolesMap, setRolesMap] = useState<Map<string, DiscordRole>>(new Map());
+  // Track loading states for users (React Query doesn't expose this for prefetch)
+  const [loadingUserIds, setLoadingUserIds] = useState<Set<string>>(new Set());
   const [isRolesLoading, setIsRolesLoading] = useState(false);
-  const [rolesFetched, setRolesFetched] = useState(false);
-
-  const [channelsMap, setChannelsMap] = useState<Map<string, DiscordServerChannel>>(new Map());
   const [isChannelsLoading, setIsChannelsLoading] = useState(false);
-  const [channelsFetched, setChannelsFetched] = useState(false);
 
-  const fetchRoles = useCallback(async () => {
-    if (!serverId || rolesFetched || isRolesLoading) {
+  const requestUserFetch = useCallback(
+    (userId: string) => {
+      if (!serverId) return;
+
+      const queryKey = ["server-member", { serverId, memberId: userId }];
+
+      // Check if already cached or loading
+      const existingData = queryClient.getQueryData(queryKey);
+      const existingState = queryClient.getQueryState(queryKey);
+
+      if (existingData !== undefined || existingState?.fetchStatus === "fetching") {
+        return;
+      }
+
+      setLoadingUserIds((prev) => new Set(prev).add(userId));
+
+      queryClient
+        .fetchQuery({
+          queryKey,
+          queryFn: async () => {
+            const result = await getServerMember({ serverId, memberId: userId });
+
+            return result?.result
+              ? { displayName: result.result.displayName, avatarUrl: result.result.avatarUrl }
+              : null;
+          },
+          staleTime: 5 * 60 * 1000,
+        })
+        .finally(() => {
+          setLoadingUserIds((prev) => {
+            const next = new Set(prev);
+            next.delete(userId);
+
+            return next;
+          });
+        });
+    },
+    [serverId, queryClient]
+  );
+
+  const requestRolesFetch = useCallback(() => {
+    if (!serverId) return;
+
+    const queryKey = ["server-roles", { serverId }];
+
+    const existingData = queryClient.getQueryData(queryKey);
+    const existingState = queryClient.getQueryState(queryKey);
+
+    if (existingData !== undefined || existingState?.fetchStatus === "fetching") {
       return;
     }
 
     setIsRolesLoading(true);
 
-    try {
-      const result = await getServerRoles({ serverId });
-      const map = new Map<string, DiscordRole>();
-
-      result?.results?.forEach((role: DiscordRole) => {
-        map.set(role.id, role);
+    queryClient
+      .fetchQuery({
+        queryKey,
+        queryFn: () => getServerRoles({ serverId }),
+        staleTime: 5 * 60 * 1000,
+      })
+      .finally(() => {
+        setIsRolesLoading(false);
       });
+  }, [serverId, queryClient]);
 
-      setRolesMap(map);
-    } catch {
-      // Silently fail - roles will show as unknown
-    } finally {
-      setIsRolesLoading(false);
-      setRolesFetched(true);
-    }
-  }, [serverId, rolesFetched, isRolesLoading]);
+  const requestChannelsFetch = useCallback(() => {
+    if (!serverId) return;
 
-  const fetchChannels = useCallback(async () => {
-    if (!serverId || channelsFetched || isChannelsLoading) {
+    const queryKey = ["server-channels-mentions", { serverId }];
+
+    const existingData = queryClient.getQueryData(queryKey);
+    const existingState = queryClient.getQueryState(queryKey);
+
+    if (existingData !== undefined || existingState?.fetchStatus === "fetching") {
       return;
     }
 
     setIsChannelsLoading(true);
 
-    try {
-      const result = await getServerChannels({
-        serverId,
-        types: [GetDiscordChannelType.All],
+    queryClient
+      .fetchQuery({
+        queryKey,
+        queryFn: () => getServerChannels({ serverId, types: [GetDiscordChannelType.All] }),
+        staleTime: 5 * 60 * 1000,
+      })
+      .finally(() => {
+        setIsChannelsLoading(false);
       });
-      const map = new Map<string, DiscordServerChannel>();
-
-      result?.results?.forEach((channel: DiscordServerChannel) => {
-        map.set(channel.id, channel);
-      });
-
-      setChannelsMap(map);
-    } catch {
-      // Silently fail - channels will show as unknown
-    } finally {
-      setIsChannelsLoading(false);
-      setChannelsFetched(true);
-    }
-  }, [serverId, channelsFetched, isChannelsLoading]);
-
-  const requestRolesFetch = useCallback(() => {
-    if (!rolesFetched && !isRolesLoading) {
-      fetchRoles();
-    }
-  }, [fetchRoles, rolesFetched, isRolesLoading]);
-
-  const requestChannelsFetch = useCallback(() => {
-    if (!channelsFetched && !isChannelsLoading) {
-      fetchChannels();
-    }
-  }, [fetchChannels, channelsFetched, isChannelsLoading]);
-
-  const fetchUser = useCallback(
-    async (userId: string) => {
-      if (!serverId || fetchedUsers.has(userId) || loadingUsers.has(userId)) {
-        return;
-      }
-
-      setLoadingUsers((prev) => new Set(prev).add(userId));
-
-      try {
-        const result: GetServerMemberOutput | null = await getServerMember({
-          serverId,
-          memberId: userId,
-        });
-
-        setUserCache((prev) => {
-          const newCache = new Map(prev);
-
-          if (result?.result) {
-            newCache.set(userId, {
-              displayName: result.result.displayName,
-              avatarUrl: result.result.avatarUrl,
-            });
-          } else {
-            newCache.set(userId, null);
-          }
-
-          return newCache;
-        });
-      } catch {
-        setUserCache((prev) => {
-          const newCache = new Map(prev);
-          newCache.set(userId, null);
-
-          return newCache;
-        });
-      } finally {
-        setLoadingUsers((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(userId);
-
-          return newSet;
-        });
-        setFetchedUsers((prev) => new Set(prev).add(userId));
-      }
-    },
-    [serverId, fetchedUsers, loadingUsers]
-  );
-
-  const requestUserFetch = useCallback(
-    (userId: string) => {
-      if (!fetchedUsers.has(userId) && !loadingUsers.has(userId)) {
-        fetchUser(userId);
-      }
-    },
-    [fetchUser, fetchedUsers, loadingUsers]
-  );
+  }, [serverId, queryClient]);
 
   const getUser = useCallback(
     (userId: string): UserData | null => {
-      return userCache.get(userId) ?? null;
+      if (!serverId) return null;
+
+      const data = queryClient.getQueryData<UserData | null>([
+        "server-member",
+        { serverId, memberId: userId },
+      ]);
+
+      return data ?? null;
     },
-    [userCache]
+    [serverId, queryClient]
   );
 
   const getRole = useCallback(
     (roleId: string): DiscordRole | null => {
-      return rolesMap.get(roleId) ?? null;
+      if (!serverId) return null;
+
+      const data = queryClient.getQueryData<RolesResponse>(["server-roles", { serverId }]);
+
+      return data?.results?.find((role) => role.id === roleId) ?? null;
     },
-    [rolesMap]
+    [serverId, queryClient]
   );
 
   const getChannel = useCallback(
     (channelId: string): DiscordServerChannel | null => {
-      return channelsMap.get(channelId) ?? null;
+      if (!serverId) return null;
+
+      const data = queryClient.getQueryData<ChannelsResponse>([
+        "server-channels-mentions",
+        { serverId },
+      ]);
+
+      return data?.results?.find((channel) => channel.id === channelId) ?? null;
     },
-    [channelsMap]
+    [serverId, queryClient]
   );
 
   const isUserLoading = useCallback(
     (userId: string): boolean => {
-      return loadingUsers.has(userId);
+      return loadingUserIds.has(userId);
     },
-    [loadingUsers]
+    [loadingUserIds]
   );
 
   const contextValue: MentionDataContextType = useMemo(
