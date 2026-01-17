@@ -8,9 +8,11 @@ import {
   FormLabel,
   FormErrorMessage,
   FormHelperText,
+  HStack,
 } from "@chakra-ui/react";
-import { AddIcon } from "@chakra-ui/icons";
+import { AddIcon, AtSignIcon } from "@chakra-ui/icons";
 import { InsertPlaceholderDialog } from "../../pages/MessageBuilder/InsertPlaceholderDialog";
+import { InsertMentionDialog } from "../../pages/MessageBuilder/InsertMentionDialog";
 
 interface Props {
   value: string;
@@ -23,6 +25,7 @@ interface Props {
   isInvalid?: boolean;
   as?: "input" | "textarea";
   isRequired?: boolean;
+  guildId?: string;
 }
 
 export const InputWithInsertPlaceholder: React.FC<Props> = ({
@@ -36,8 +39,10 @@ export const InputWithInsertPlaceholder: React.FC<Props> = ({
   isInvalid = false,
   as = "textarea",
   isRequired,
+  guildId,
 }) => {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [isMentionDialogOpen, setIsMentionDialogOpen] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
 
   const handleInsertPlaceholder = React.useCallback(
@@ -94,18 +99,30 @@ export const InputWithInsertPlaceholder: React.FC<Props> = ({
               fontFamily="mono"
             />
           )}
-          <Button
-            mt={2}
-            leftIcon={<AddIcon />}
-            size="sm"
-            variant="outline"
-            colorScheme="blue"
-            onClick={() => setIsDialogOpen(true)}
-            alignSelf="flex-start"
-            aria-label={`Insert placeholder into ${label}`}
-          >
-            Insert Placeholder
-          </Button>
+          <HStack mt={2} spacing={2}>
+            <Button
+              leftIcon={<AddIcon />}
+              size="sm"
+              variant="outline"
+              colorScheme="blue"
+              onClick={() => setIsDialogOpen(true)}
+              aria-label={`Insert placeholder into ${label}`}
+            >
+              Insert Placeholder
+            </Button>
+            {guildId && (
+              <Button
+                leftIcon={<AtSignIcon />}
+                size="sm"
+                variant="outline"
+                colorScheme="blue"
+                onClick={() => setIsMentionDialogOpen(true)}
+                aria-label={`Insert mention into ${label}`}
+              >
+                Insert Mention
+              </Button>
+            )}
+          </HStack>
           {helperText && (
             <FormHelperText fontSize="sm" color="gray.400">
               {helperText}
@@ -120,6 +137,15 @@ export const InputWithInsertPlaceholder: React.FC<Props> = ({
         onSelected={handleInsertPlaceholder}
         onCloseFocusRef={inputRef}
       />
+      {guildId && (
+        <InsertMentionDialog
+          isOpen={isMentionDialogOpen}
+          onClose={() => setIsMentionDialogOpen(false)}
+          onSelected={(mention) => handleInsertPlaceholder(mention.text)}
+          onCloseFocusRef={inputRef}
+          guildId={guildId}
+        />
+      )}
     </>
   );
 };

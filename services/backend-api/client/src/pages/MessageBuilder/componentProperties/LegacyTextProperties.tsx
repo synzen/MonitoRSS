@@ -16,6 +16,8 @@ import { Component, LegacyTextComponent } from "../types";
 import MessageBuilderFormState from "../types/MessageBuilderFormState";
 import getMessageBuilderFieldErrors from "../utils/getMessageBuilderFieldErrors";
 import MessagePlaceholderText from "../../../components/MessagePlaceholderText";
+import { useUserFeedConnectionContext } from "../../../contexts/UserFeedConnectionContext";
+import { FeedDiscordChannelConnection } from "../../../types";
 
 interface LegacyTextPropertiesProps {
   root?: Component;
@@ -28,6 +30,8 @@ export const LegacyTextProperties: React.FC<LegacyTextPropertiesProps> = ({
   component,
   onChange,
 }) => {
+  const { connection } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
+  const guildId = connection?.details.channel?.guildId || connection?.details.webhook?.guildId;
   const {
     formState: { errors },
   } = useFormContext<MessageBuilderFormState>();
@@ -49,6 +53,7 @@ export const LegacyTextProperties: React.FC<LegacyTextPropertiesProps> = ({
             as bold and etc. is available.
           </Text>
         }
+        guildId={guildId}
       />
       <FormControl>
         <HStack justify="space-between" align="center" mb={2}>
@@ -110,6 +115,7 @@ export const LegacyTextProperties: React.FC<LegacyTextPropertiesProps> = ({
                 placeholder="."
                 helperText='The text to split the text content with. Defaults to "." (a period).'
                 as="input"
+                guildId={guildId}
               />
               <InputWithInsertPlaceholder
                 value={component.splitOptions?.appendChar || ""}
@@ -126,6 +132,7 @@ export const LegacyTextProperties: React.FC<LegacyTextPropertiesProps> = ({
                 placeholder=""
                 helperText="The text to append to the end of the last message after the initial message has been split. Default is nothing."
                 as="input"
+                guildId={guildId}
               />
               <InputWithInsertPlaceholder
                 value={component.splitOptions?.prependChar || ""}
@@ -142,6 +149,7 @@ export const LegacyTextProperties: React.FC<LegacyTextPropertiesProps> = ({
                 placeholder=""
                 helperText="The text to prepend to the beginning of the first message after the initial message has been split. Default is nothing."
                 as="input"
+                guildId={guildId}
               />
             </VStack>
           </Box>

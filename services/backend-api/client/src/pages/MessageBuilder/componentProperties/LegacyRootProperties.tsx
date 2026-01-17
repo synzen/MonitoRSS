@@ -338,6 +338,7 @@ export const LegacyRootProperties: React.FC = () => {
                       <MessagePlaceholderText withoutCopy>title</MessagePlaceholderText>.
                     </>
                   }
+                  guildId={guildId}
                 />
               );
             }}
@@ -446,6 +447,7 @@ export const LegacyRootProperties: React.FC = () => {
                       .
                     </>
                   }
+                  guildId={guildId}
                 />
               );
             }}
