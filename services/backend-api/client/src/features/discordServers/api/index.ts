@@ -7,3 +7,4 @@ export * from "./updateServerSettings";
 export * from "./getServerBackup";
 export * from "./getServerActiveThreads";
 export * from "./getServerMembers";
+export * from "./getServerMember";

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 import { getServerChannels, GetServerChannelsOutput } from "../api";
 import { useDiscordServerAccessStatus } from "./useDiscordServerAccessStatus";
-import { GetDiscordChannelType } from "../constants";
+import { GetDiscordChannelType, discordServerQueryKeys } from "../constants";
 
 interface Props {
   serverId?: string;
@@ -15,13 +15,7 @@ export const useDiscordServerChannels = ({ serverId, types }: Props) => {
     serverId,
   });
   const [hadError, setHadError] = useState(false);
-  const queryKey = [
-    "server-channels",
-    {
-      serverId,
-      types,
-    },
-  ];
+  const queryKey = discordServerQueryKeys.serverChannels(serverId || "", types);
 
   const { data, status, error, isFetching, refetch } = useQuery<
     GetServerChannelsOutput,

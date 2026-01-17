@@ -18,6 +18,7 @@ import DiscordView from "../DiscordView";
 // @ts-ignore - markdown utils lack TypeScript definitions (established pattern)
 import { parseAllowLinks, jumboify } from "../DiscordView/utils/markdown";
 import { DiscordApiComponent } from "../../types/discord/DiscordApiPayload";
+import { MentionResolvers } from "../../contexts/MentionDataContext";
 
 // eslint-disable-next-line no-bitwise
 const DISCORD_COMPONENTS_V2_FLAG = 1 << 15;
@@ -113,6 +114,7 @@ interface DiscordMessageDisplayProps {
   maxHeight?: string | number | Record<string, number>;
   isLoading?: boolean;
   emptyMessage?: string;
+  mentionResolvers?: MentionResolvers;
 }
 
 // Shared button rendering logic to avoid duplication
@@ -226,8 +228,13 @@ const renderApiButton = (btn: DiscordApiComponent["accessory"], key: string): Re
   return renderButtonElement(btn, key);
 };
 
-const renderApiComponent = (comp: DiscordApiComponent, index: number): React.ReactNode => {
+const renderApiComponent = (
+  comp: DiscordApiComponent,
+  index: number,
+  mentionResolvers?: MentionResolvers
+): React.ReactNode => {
   const { type } = comp;
+  const parserState = mentionResolvers ? { mentionResolvers } : {};
 
   if (type === DISCORD_V2_COMPONENT_TYPE.Section) {
     return (
@@ -241,7 +248,9 @@ const renderApiComponent = (comp: DiscordApiComponent, index: number): React.Rea
         <VStack align="start" spacing={1} flex={1}>
           {comp.components?.map((td, i) => (
             <Box key={`text-${index}-${i}`} fontSize="sm" className="markup">
-              {td.content ? parseAllowLinks(td.content, false, {}, jumboify) : "[missing text]"}
+              {td.content
+                ? parseAllowLinks(td.content, false, parserState, jumboify)
+                : "[missing text]"}
             </Box>
           ))}
         </VStack>
@@ -276,7 +285,7 @@ const renderApiComponent = (comp: DiscordApiComponent, index: number): React.Rea
 
     return (
       <Box key={`textdisplay-${index}`} fontSize="sm" className="markup">
-        {content ? parseAllowLinks(content, false, {}, jumboify) : "[missing text]"}
+        {content ? parseAllowLinks(content, false, parserState, jumboify) : "[missing text]"}
       </Box>
     );
   }
@@ -559,7 +568,9 @@ const renderApiComponent = (comp: DiscordApiComponent, index: number): React.Rea
           </Box>
         )}
         <VStack align="stretch" spacing={2} pl={accentColor ? 2 : 0}>
-          {containerComp.components?.map((child, i) => renderApiComponent(child, i))}
+          {containerComp.components?.map((child, i) =>
+            renderApiComponent(child, i, mentionResolvers)
+          )}
         </VStack>
       </Box>
     );
@@ -573,6 +584,7 @@ export const DiscordMessageDisplay: React.FC<DiscordMessageDisplayProps> = ({
   maxHeight,
   isLoading,
   emptyMessage,
+  mentionResolvers,
 }) => {
   const bgColor = useColorModeValue("#36393f", "#36393f");
   const textColor = useColorModeValue("#dcddde", "#dcddde");
@@ -721,12 +733,13 @@ export const DiscordMessageDisplay: React.FC<DiscordMessageDisplayProps> = ({
                   avatar_url={MONITORSS_AVATAR_URL}
                   messages={legacyMessages}
                   excludeHeader
+                  mentionResolvers={mentionResolvers}
                 />
               )}
               {isV2Components && v2Components && v2Components.length > 0 && (
                 <Box width="fit-content" maxW="100%">
                   <VStack align="stretch" spacing={2}>
-                    {v2Components.map((comp, i) => renderApiComponent(comp, i))}
+                    {v2Components.map((comp, i) => renderApiComponent(comp, i, mentionResolvers))}
                   </VStack>
                 </Box>
               )}

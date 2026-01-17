@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 import { getServerRoles, GetServerRolesOutput } from "../api";
+import { discordServerQueryKeys } from "../constants";
 
 interface Props {
   serverId?: string;
@@ -9,12 +10,7 @@ interface Props {
 
 export const useDiscordServerRoles = ({ serverId, disabled }: Props) => {
   const { data, status, error, isFetching } = useQuery<GetServerRolesOutput, ApiAdapterError>(
-    [
-      "server-roles",
-      {
-        serverId,
-      },
-    ],
+    discordServerQueryKeys.serverRoles(serverId || ""),
     async () => {
       if (!serverId) {
         throw new Error("Missing server ID when getting server roles");

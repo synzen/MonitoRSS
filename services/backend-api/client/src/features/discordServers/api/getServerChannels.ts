@@ -18,16 +18,18 @@ export type GetServerChannelsOutput = InferType<typeof GetServersChannelsOutputS
 export const getServerChannels = async (
   options: GetServerChannelsInput
 ): Promise<GetServerChannelsOutput> => {
-  const searchParams = new URLSearchParams({
-    types: options.types?.join(",") || "",
-  });
+  const searchParams = new URLSearchParams();
 
-  const res = await fetchRest(
-    `/api/v1/discord-servers/${options.serverId}/channels?${searchParams}`,
-    {
-      validateSchema: GetServersChannelsOutputSchema,
-    }
-  );
+  if (options.types?.length) {
+    searchParams.set("types", options.types.join(","));
+  }
+
+  const queryString = searchParams.toString();
+  const url = `/api/v1/discord-servers/${options.serverId}/channels${queryString ? `?${queryString}` : ""}`;
+
+  const res = await fetchRest(url, {
+    validateSchema: GetServersChannelsOutputSchema,
+  });
 
   return res as GetServerChannelsOutput;
 };

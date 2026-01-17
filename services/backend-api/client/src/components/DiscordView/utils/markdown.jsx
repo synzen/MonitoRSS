@@ -7,6 +7,7 @@ import SimpleMarkdown from "simple-markdown";
 import Twemoji from "twemoji";
 import hljs from "highlight.js";
 import { uniqueId } from "lodash";
+import { getChannelIcon } from "../../../utils/getChannelIcon";
 import Emoji from "../../../constants/emojis";
 
 // this is mostly translated from discord's client,
@@ -80,7 +81,7 @@ function parserFor(rules, returnAst) {
       return ast;
     }
 
-    return renderer(ast);
+    return renderer(ast, state);
   };
 }
 
@@ -429,9 +430,102 @@ const baseRules = {
       };
     },
     react(node, recurseOutput, state) {
+      const { mentionResolvers } = state;
+
+      const renderLoadingMention = (key, raw) => (
+        <span key={key} className="discord-mention discord-mention-loading">
+          {raw}
+        </span>
+      );
+
+      if (mentionResolvers) {
+        if (node.mentionType === "user") {
+          mentionResolvers.requestUserFetch?.(node.id);
+          const isLoading = mentionResolvers.isUserLoading?.(node.id);
+
+          if (isLoading) {
+            return renderLoadingMention(state.key, node.raw);
+          }
+
+          const user = mentionResolvers.getUser?.(node.id);
+          const displayName = user?.displayName || "Unknown User";
+
+          return (
+            <span key={state.key} className="discord-mention">
+              @{displayName}
+            </span>
+          );
+        }
+
+        if (node.mentionType === "role") {
+          mentionResolvers.requestRolesFetch?.();
+
+          if (mentionResolvers.isRolesLoading) {
+            return renderLoadingMention(state.key, node.raw);
+          }
+
+          const role = mentionResolvers.getRole?.(node.id);
+          const displayName = role?.name || "Unknown Role";
+          const roleColor = role?.color && role.color !== "#000000" ? role.color : undefined;
+
+          return (
+            <span
+              key={state.key}
+              className="discord-mention"
+              style={
+                roleColor ? { color: roleColor, backgroundColor: `${roleColor}20` } : undefined
+              }
+            >
+              @{displayName}
+            </span>
+          );
+        }
+
+        if (node.mentionType === "channel") {
+          mentionResolvers.requestChannelsFetch?.();
+
+          if (mentionResolvers.isChannelsLoading) {
+            return renderLoadingMention(state.key, node.raw);
+          }
+
+          const channel = mentionResolvers.getChannel?.(node.id);
+          const displayName = channel?.name || "unknown-channel";
+          const channelIcon = getChannelIcon(channel?.type, {
+            className: "discord-channel-icon",
+          });
+
+          return (
+            <span key={state.key} className="discord-mention discord-mention-channel">
+              {channelIcon}
+              {displayName}
+            </span>
+          );
+        }
+      }
+
       return (
         <span key={state.key} className="discord-mention">
           {node.raw}
+        </span>
+      );
+    },
+  },
+  everyoneMention: {
+    order: SimpleMarkdown.defaultRules.escape.order,
+    match(source) {
+      // Match @everyone and @here
+      return /^@(everyone|here)\b/.exec(source);
+    },
+    parse(capture) {
+      return {
+        type: "everyoneMention",
+        mentionType: capture[1],
+      };
+    },
+    react(node, recurseOutput, state) {
+      return (
+        <span key={state.key} className="discord-mention">
+          @{node.mentionType}
         </span>
       );
     },
