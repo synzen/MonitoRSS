@@ -1,36 +1,41 @@
 import { DiscordGuildMember } from "../../../common";
 import { DISCORD_CDN_BASE_URL } from "../../../constants/discord";
 
-interface MemberSearchResult {
+export interface MemberResult {
   id: string;
   username: string;
+  displayName: string;
   avatarUrl: string | null;
 }
 
-export class GetServerMembersOutputDto {
-  results: MemberSearchResult[];
+function buildAvatarUrl(member: DiscordGuildMember): string | null {
+  if (!member.user.avatar) {
+    return null;
+  }
 
+  const extension = member.user.avatar.startsWith("a_") ? ".gif" : ".png";
+
+  return `${DISCORD_CDN_BASE_URL}/avatars/${member.user.id}/${member.user.avatar}${extension}`;
+}
+
+export function memberToResult(member: DiscordGuildMember): MemberResult {
+  return {
+    id: member.user.id,
+    username: member.user.username,
+    displayName: member.nick || member.user.username,
+    avatarUrl: buildAvatarUrl(member),
+  };
+}
+
+export class GetServerMembersOutputDto {
+  results: MemberResult[];
   total: number;
 
   static fromEntities(
     members: DiscordGuildMember[]
   ): GetServerMembersOutputDto {
     return {
-      results: members.map((member) => {
-        let extension = ".png";
-
-        if (member.user.avatar?.startsWith("a_")) {
-          extension = ".gif";
-        }
-
-        return {
-          id: member.user.id,
-          username: member.user.username,
-          avatarUrl: member.user.avatar
-            ? `${DISCORD_CDN_BASE_URL}/avatars/${member.user.id}/${member.user.avatar}${extension}`
-            : null,
-        };
-      }),
+      results: members.map(memberToResult),
       total: members.length,
     };
   }
