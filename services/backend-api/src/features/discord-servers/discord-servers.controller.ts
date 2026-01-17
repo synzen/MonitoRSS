@@ -252,6 +252,11 @@ export class DiscordServersController {
     @Param("serverId") serverId: string,
     @Param("memberId") memberId: string
   ): Promise<GetServerMemberOutputDto | null> {
+    // Validate Discord snowflake format (17-20 digit numeric string)
+    if (!/^\d{17,20}$/.test(memberId)) {
+      return null;
+    }
+
     const member = await this.discordServersService.getMemberOfServer(
       serverId,
       memberId

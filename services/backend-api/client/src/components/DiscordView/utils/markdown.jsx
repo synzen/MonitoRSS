@@ -432,20 +432,22 @@ const baseRules = {
     react(node, recurseOutput, state) {
       const { mentionResolvers } = state;
 
+      const renderLoadingMention = (key, raw) => (
+        <span key={key} className="discord-mention discord-mention-loading">
+          {raw}
+        </span>
+      );
+
       if (mentionResolvers) {
         if (node.mentionType === "user") {
           mentionResolvers.requestUserFetch?.(node.id);
-          const user = mentionResolvers.getUser?.(node.id);
           const isLoading = mentionResolvers.isUserLoading?.(node.id);
 
           if (isLoading) {
-            return (
-              <span key={state.key} className="discord-mention discord-mention-loading">
-                {node.raw}
-              </span>
-            );
+            return renderLoadingMention(state.key, node.raw);
           }
 
+          const user = mentionResolvers.getUser?.(node.id);
           const displayName = user?.displayName || "Unknown User";
 
           return (
@@ -457,6 +459,11 @@ const baseRules = {
 
         if (node.mentionType === "role") {
           mentionResolvers.requestRolesFetch?.();
+
+          if (mentionResolvers.isRolesLoading) {
+            return renderLoadingMention(state.key, node.raw);
+          }
+
           const role = mentionResolvers.getRole?.(node.id);
           const displayName = role?.name || "Unknown Role";
           const roleColor = role?.color && role.color !== "#000000" ? role.color : undefined;
@@ -476,6 +483,11 @@ const baseRules = {
 
         if (node.mentionType === "channel") {
           mentionResolvers.requestChannelsFetch?.();
+
+          if (mentionResolvers.isChannelsLoading) {
+            return renderLoadingMention(state.key, node.raw);
+          }
+
           const channel = mentionResolvers.getChannel?.(node.id);
           const displayName = channel?.name || "unknown-channel";
           const channelIcon = getChannelIcon(channel?.type, {

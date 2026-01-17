@@ -80,11 +80,8 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
           queryFn: async () => {
             const result = await getServerMember({ serverId, memberId: userId });
 
-            return result?.result
-              ? { displayName: result.result.displayName, avatarUrl: result.result.avatarUrl }
-              : null;
+            return result?.result ? { displayName: result.result.displayName } : null;
           },
-          staleTime: 5 * 60 * 1000,
         })
         .finally(() => {
           setLoadingUserIds((prev) => {
@@ -116,7 +113,6 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
       .fetchQuery({
         queryKey,
         queryFn: () => getServerRoles({ serverId }),
-        staleTime: 5 * 60 * 1000,
       })
       .finally(() => {
         setIsRolesLoading(false);
@@ -141,7 +137,6 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
       .fetchQuery({
         queryKey,
         queryFn: () => getServerChannels({ serverId, types: [GetDiscordChannelType.All] }),
-        staleTime: 5 * 60 * 1000,
       })
       .finally(() => {
         setIsChannelsLoading(false);
