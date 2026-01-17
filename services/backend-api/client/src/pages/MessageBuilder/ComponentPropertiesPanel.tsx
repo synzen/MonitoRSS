@@ -39,6 +39,8 @@ import findMessageBuilderComponentById from "./utils/findMessageBuilderComponent
 import getMessageBuilderComponentFormPathsById from "./utils/getMessageBuilderComponentFormPathsById";
 import getMessageBuilderFieldErrors from "./utils/getMessageBuilderFieldErrors";
 import getMessageBuilderComponentLabel from "./utils/getMessageBuilderComponentLabel";
+import { useUserFeedConnectionContext } from "../../contexts/UserFeedConnectionContext";
+import { FeedDiscordChannelConnection } from "../../types";
 
 const NON_REPOSITIONABLE_COMPONENTS = new Set([
   ComponentType.LegacyEmbedContainer,
@@ -61,6 +63,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     useMessageBuilderContext();
   const { watch, formState, setValue } = useFormContext<MessageBuilderFormState>();
   const messageComponent = watch("messageComponent");
+  const { connection } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
+  const guildId = connection?.details.channel?.guildId || connection?.details.webhook?.guildId;
   const { target: selectedComponent } = findMessageBuilderComponentById(
     messageComponent,
     selectedComponentId
@@ -243,6 +247,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             isInvalid={!!nameError}
             as="input"
             isRequired
+            guildId={guildId}
           />
           <InputWithInsertPlaceholder
             value={component.authorUrl || ""}
@@ -252,6 +257,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             error={urlError?.message}
             isInvalid={!!urlError}
             as="input"
+            guildId={guildId}
           />
           <InputWithInsertPlaceholder
             value={component.authorIconUrl || ""}
@@ -261,6 +267,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             error={iconUrlError?.message}
             isInvalid={!!iconUrlError}
             as="input"
+            guildId={guildId}
           />
         </VStack>
       );
@@ -285,6 +292,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             isInvalid={!!titleError}
             as="input"
             isRequired
+            guildId={guildId}
           />
           <InputWithInsertPlaceholder
             value={component.titleUrl || ""}
@@ -294,6 +302,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             error={titleUrlError?.message}
             isInvalid={!!titleUrlError}
             as="input"
+            guildId={guildId}
           />
         </VStack>
       );
@@ -319,6 +328,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             as="textarea"
             rows={3}
             isRequired
+            guildId={guildId}
           />
         </VStack>
       );
@@ -343,6 +353,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             isInvalid={!!imageUrlError}
             as="input"
             isRequired
+            guildId={guildId}
           />
         </VStack>
       );
@@ -367,6 +378,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             isInvalid={!!thumbnailUrlError}
             as="input"
             isRequired
+            guildId={guildId}
           />
         </VStack>
       );
@@ -390,6 +402,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             error={footerTextError?.message}
             isInvalid={!!footerTextError}
             as="input"
+            guildId={guildId}
           />
           <InputWithInsertPlaceholder
             value={component.footerIconUrl || ""}
@@ -399,6 +412,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             error={footerIconUrlError?.message}
             isInvalid={!!footerIconUrlError}
             as="input"
+            guildId={guildId}
           />
         </VStack>
       );
@@ -423,6 +437,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             isInvalid={!!fieldNameError}
             as="input"
             isRequired
+            guildId={guildId}
           />
           <InputWithInsertPlaceholder
             value={component.fieldValue}
@@ -434,6 +449,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             as="textarea"
             rows={2}
             isRequired
+            guildId={guildId}
           />
           <FormControl>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
@@ -525,6 +541,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
           error={contentError?.message}
           isInvalid={!!contentError}
           isRequired
+          guildId={guildId}
         />
       );
     }
@@ -548,6 +565,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             isInvalid={!!labelError}
             as="input"
             isRequired
+            guildId={guildId}
           />
           <FormControl isInvalid={!!styleError} isRequired>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
@@ -577,6 +595,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
               error={hrefError?.message}
               isInvalid={!!hrefError}
               as="input"
+              guildId={guildId}
             />
           )}
           <FormControl>
@@ -657,6 +676,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             isInvalid={!!mediaUrlError}
             as="input"
             isRequired
+            guildId={guildId}
           />
           <InputWithInsertPlaceholder
             value={component.description || ""}
@@ -666,6 +686,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             error={descriptionError?.message}
             isInvalid={!!descriptionError}
             as="input"
+            guildId={guildId}
           />
           <FormControl>
             <FormHelperText color="gray.400" fontSize="xs">
@@ -822,6 +843,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             as="input"
             isRequired
             helperText="Items with empty URLs are removed. If all items are empty, the gallery is omitted."
+            guildId={guildId}
           />
           <InputWithInsertPlaceholder
             value={(component as any).description || ""}
@@ -831,6 +853,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             error={descriptionError?.message}
             isInvalid={!!descriptionError}
             as="input"
+            guildId={guildId}
           />
           <FormControl>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
@@ -869,6 +892,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             isInvalid={!!labelError}
             as="input"
             isRequired
+            guildId={guildId}
           />
           {component.style === DiscordButtonStyle.Link && (
             <InputWithInsertPlaceholder
@@ -880,6 +904,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
               isInvalid={!!urlError}
               as="input"
               isRequired
+              guildId={guildId}
             />
           )}
         </VStack>
