@@ -3,7 +3,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getServerMember, getServerRoles, getServerChannels } from "../features/discordServers/api";
 import { DiscordRole } from "../features/discordServers/types/DiscordRole";
 import { DiscordServerChannel } from "../features/discordServers/types/DiscordServerChannel";
-import { GetDiscordChannelType } from "../features/discordServers/constants";
+import {
+  GetDiscordChannelType,
+  discordServerQueryKeys,
+} from "../features/discordServers/constants";
 
 export interface UserData {
   displayName: string;
@@ -62,7 +65,7 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
     (userId: string) => {
       if (!serverId) return;
 
-      const queryKey = ["server-member", { serverId, memberId: userId }];
+      const queryKey = discordServerQueryKeys.serverMember(serverId, userId);
 
       // Check if already cached or loading
       const existingData = queryClient.getQueryData(queryKey);
@@ -76,7 +79,7 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
 
       queryClient
         .fetchQuery({
-          queryKey,
+          queryKey: [...queryKey],
           queryFn: async () => {
             const result = await getServerMember({ serverId, memberId: userId });
 
@@ -98,7 +101,7 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
   const requestRolesFetch = useCallback(() => {
     if (!serverId) return;
 
-    const queryKey = ["server-roles", { serverId }];
+    const queryKey = discordServerQueryKeys.serverRoles(serverId);
 
     const existingData = queryClient.getQueryData(queryKey);
     const existingState = queryClient.getQueryState(queryKey);
@@ -111,7 +114,7 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
 
     queryClient
       .fetchQuery({
-        queryKey,
+        queryKey: [...queryKey],
         queryFn: () => getServerRoles({ serverId }),
       })
       .finally(() => {
@@ -122,7 +125,7 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
   const requestChannelsFetch = useCallback(() => {
     if (!serverId) return;
 
-    const queryKey = ["server-channels-mentions", { serverId }];
+    const queryKey = discordServerQueryKeys.allChannels(serverId);
 
     const existingData = queryClient.getQueryData(queryKey);
     const existingState = queryClient.getQueryState(queryKey);
@@ -135,7 +138,7 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
 
     queryClient
       .fetchQuery({
-        queryKey,
+        queryKey: [...queryKey],
         queryFn: () => getServerChannels({ serverId, types: [GetDiscordChannelType.All] }),
       })
       .finally(() => {
@@ -147,10 +150,9 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
     (userId: string): UserData | null => {
       if (!serverId) return null;
 
-      const data = queryClient.getQueryData<UserData | null>([
-        "server-member",
-        { serverId, memberId: userId },
-      ]);
+      const data = queryClient.getQueryData<UserData | null>(
+        discordServerQueryKeys.serverMember(serverId, userId)
+      );
 
       return data ?? null;
     },
@@ -161,7 +163,9 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
     (roleId: string): DiscordRole | null => {
       if (!serverId) return null;
 
-      const data = queryClient.getQueryData<RolesResponse>(["server-roles", { serverId }]);
+      const data = queryClient.getQueryData<RolesResponse>(
+        discordServerQueryKeys.serverRoles(serverId)
+      );
 
       return data?.results?.find((role) => role.id === roleId) ?? null;
     },
@@ -172,10 +176,9 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
     (channelId: string): DiscordServerChannel | null => {
       if (!serverId) return null;
 
-      const data = queryClient.getQueryData<ChannelsResponse>([
-        "server-channels-mentions",
-        { serverId },
-      ]);
+      const data = queryClient.getQueryData<ChannelsResponse>(
+        discordServerQueryKeys.allChannels(serverId)
+      );
 
       return data?.results?.find((channel) => channel.id === channelId) ?? null;
     },

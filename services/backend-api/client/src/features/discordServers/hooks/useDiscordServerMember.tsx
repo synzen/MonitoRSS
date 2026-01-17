@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 import { GetServerMemberOutput, getServerMember } from "../api";
+import { discordServerQueryKeys } from "../constants";
 
 interface Props {
   serverId?: string;
@@ -9,13 +10,7 @@ interface Props {
 }
 
 export const useDiscordServerMember = ({ serverId, memberId, disabled }: Props) => {
-  const queryKey = [
-    "server-member",
-    {
-      serverId,
-      memberId,
-    },
-  ];
+  const queryKey = discordServerQueryKeys.serverMember(serverId || "", memberId || "");
 
   const { data, status, error, isFetching } = useQuery<
     GetServerMemberOutput | null,
