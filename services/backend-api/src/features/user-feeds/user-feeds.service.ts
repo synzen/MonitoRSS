@@ -30,6 +30,7 @@ import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { MessageBrokerQueue } from "../../common/constants/message-broker-queue.constants";
 import { FeedFetcherApiService } from "../../services/feed-fetcher/feed-fetcher-api.service";
 import {
+  DeliveryPreviewMediumInput,
   GetArticlesInput,
   GetArticlesResponseRequestStatus,
 } from "../../services/feed-handler/types";
@@ -2336,13 +2337,11 @@ export class UserFeedsService {
 
   private mapConnectionsToMediums(
     feed: UserFeed
-  ): import("../../services/feed-handler/types").DeliveryPreviewMediumInput[] {
-    const mediums: import("../../services/feed-handler/types").DeliveryPreviewMediumInput[] =
-      [];
-    const SKIP_CONNECTION_TYPES = [FeedConnectionTypeEntityKey.DiscordWebhooks];
+  ): DeliveryPreviewMediumInput[] {
+    const mediums: DeliveryPreviewMediumInput[] = [];
 
     for (const connectionType of Object.values(FeedConnectionTypeEntityKey)) {
-      if (SKIP_CONNECTION_TYPES.includes(connectionType)) {
+      if (connectionType !== FeedConnectionTypeEntityKey.DiscordChannels) {
         continue;
       }
 

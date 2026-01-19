@@ -8,10 +8,7 @@ import { UserFeed, UserFeedModel } from "../user-feeds/entities";
 import { Types } from "mongoose";
 import { UsersService } from "../users/users.service";
 import logger from "../../utils/logger";
-import {
-  DiscordChannelConnection,
-  DiscordWebhookConnection,
-} from "../feeds/entities/feed-connections";
+import { DiscordChannelConnection } from "../feeds/entities/feed-connections";
 import Handlebars from "handlebars";
 import { UserFeedDisabledCode } from "../user-feeds/types";
 import { FeedConnectionDisabledCode } from "../feeds/constants";
@@ -264,7 +261,7 @@ export class NotificationsService {
 
   async sendDisabledFeedConnectionAlert(
     feed: UserFeed,
-    connection: DiscordChannelConnection | DiscordWebhookConnection,
+    connection: DiscordChannelConnection,
     {
       disabledCode,
       articleId,
@@ -342,10 +339,6 @@ export class NotificationsService {
       feed.connections.discordChannels.find((c) => c.id.equals(connection.id))
     ) {
       connectionPrefix = "discord-channel-connections";
-    } else if (
-      feed.connections.discordWebhooks.find((c) => c.id.equals(connection.id))
-    ) {
-      connectionPrefix = "discord-webhook-connections";
     }
 
     const templateData = {

@@ -3,8 +3,6 @@ import { FeedConnectionTypeEntityKey } from "../constants";
 import {
   DiscordChannelConnection,
   DiscordChannelConnectionSchema,
-  DiscordWebhookConnection,
-  DiscordWebhookConnectionSchema,
 } from "./feed-connections";
 
 @Schema({
@@ -18,12 +16,6 @@ export class FeedConnections {
     default: [],
   })
   [FeedConnectionTypeEntityKey.DiscordChannels]: DiscordChannelConnection[];
-
-  @Prop({
-    type: [DiscordWebhookConnectionSchema],
-    default: [],
-  })
-  [FeedConnectionTypeEntityKey.DiscordWebhooks]: DiscordWebhookConnection[];
 }
 
 export const FeedConnectionSchema =

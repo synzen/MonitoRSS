@@ -560,7 +560,6 @@ export class LegacyFeedConversionService {
       legacyFeedId: feed._id,
       connections: {
         discordChannels: [],
-        discordWebhooks: [],
       },
       createdAt: feed.createdAt || new Date(),
       updatedAt: feed.updatedAt || new Date(),

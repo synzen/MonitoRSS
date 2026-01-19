@@ -19,7 +19,9 @@ async function main() {
       })
       .cursor()
       .eachAsync(async (doc) => {
-        const discordWebhookConnections = doc.connections.discordWebhooks;
+        const discordWebhookConnections =
+          // @ts-ignore
+          doc.connections["discordWebhooks"];
 
         writeFileSync(
           `./updates/${doc._id}_backup.json`,
@@ -27,6 +29,7 @@ async function main() {
         );
 
         const channelConnectionsToSave: DiscordChannelConnection[] =
+          // @ts-ignore
           discordWebhookConnections.map((c) => {
             return {
               id: c.id,
@@ -57,8 +60,6 @@ async function main() {
           });
 
         doc.connections.discordChannels.push(...channelConnectionsToSave);
-
-        doc.connections.discordWebhooks = [];
 
         writeFileSync(
           `./updates/${doc._id}.json`,
