@@ -50,7 +50,7 @@ import { HandledByBulkConversionException } from "./exceptions/handled-by-bulk-c
 import { AlreadyConvertedToUserFeedException } from "../feeds/exceptions";
 import { CustomPlaceholderStepType } from "../../common/constants/custom-placeholder-step-type.constants";
 
-enum ConversionDisabledCode {
+export enum ConversionDisabledCode {
   ConvertSuccess = "CONVERTED_USER_FEED",
   ConvertPending = "CONVERT_PENDING",
 }

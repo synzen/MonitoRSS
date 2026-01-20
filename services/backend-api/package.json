@@ -17,6 +17,8 @@
     "start:script:prod": "cross-env NODE_ENV=production nest start --config script.nest-cli.json --watch",
     "start:enforce-limits:local": "cross-env NODE_ENV=local nest start --config enforce-limits.nest-cli.json --watch",
     "start:enforce-limits:prod": "cross-env NODE_ENV=production nest start --config enforce-limits.nest-cli.json --watch",
+    "start:migrate-legacy-feeds:local": "cross-env NODE_ENV=local nest start --config migrate-all-legacy-feeds.nest-cli.json",
+    "start:migrate-legacy-feeds:prod": "cross-env NODE_ENV=production nest start --config migrate-all-legacy-feeds.nest-cli.json",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "test": "jest --forceExit --detectOpenHandles",
     "test:watch": "jest --watch",
