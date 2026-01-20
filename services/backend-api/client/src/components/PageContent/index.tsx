@@ -19,7 +19,6 @@ import { HamburgerIcon } from "@chakra-ui/icons";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useState } from "react";
 import { SidebarDiscordServerLinks } from "@/features/discordServers";
-import { SidebarFeedLinks } from "@/features/feed";
 import { useDiscordBot, useDiscordUserMe, UserStatusTag } from "@/features/discordUser";
 import { DiscordUserDropdown } from "@/features/discordUser/components/DiscordUserDropdown";
 import { LogoutButton } from "@/features/auth";
@@ -115,12 +114,6 @@ export const PageContent = ({ requireFeed, children }: Props) => {
           currentPath={location.pathname}
           onChangePath={onPathChanged}
           serverId={serverId}
-        />
-        <SidebarFeedLinks
-          currentPath={location.pathname}
-          feedId={feedId}
-          serverId={serverId}
-          onChangePath={onPathChanged}
         />
       </Stack>
       <Divider />
