@@ -8,13 +8,8 @@ import {
   UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
-import { NestedQuery } from "../../common/decorators/NestedQuery";
 import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
-import { TransformValidationPipe } from "../../common/pipes/TransformValidationPipe";
 import { DiscordWebhooksService } from "./discord-webhooks.service";
-import { GetDiscordWebhooksInputDto } from "./dto/get-discord-webhooks.input.dto";
-import { GetDiscordWebhooksOutputDto } from "./dto/get-discord-webhooks.output.dto";
-import { UserManagesWebhookServerGuard } from "./guards/UserManagesWebhookServer.guard";
 import { HttpCacheInterceptor } from "../../common/interceptors/http-cache-interceptor";
 import { WebhookExceptionFilter } from "./filters/webhook-exception.filter";
 import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
@@ -31,23 +26,6 @@ export class DiscordWebhooksController {
     private readonly discordWebhooksService: DiscordWebhooksService,
     private readonly discordAuthService: DiscordAuthService
   ) {}
-
-  @Get()
-  @UseGuards(UserManagesWebhookServerGuard)
-  @UseInterceptors(HttpCacheInterceptor)
-  @CacheTTL(60)
-  @UseFilters(WebhookExceptionFilter)
-  async getWebhooks(
-    @NestedQuery(TransformValidationPipe)
-    getWebhooksInputDto: GetDiscordWebhooksInputDto
-  ): Promise<GetDiscordWebhooksOutputDto> {
-    const serverId = getWebhooksInputDto.filters.serverId;
-    const webhooks = await this.discordWebhooksService.getWebhooksOfServer(
-      serverId
-    );
-
-    return GetDiscordWebhooksOutputDto.fromEntities(webhooks);
-  }
 
   @Get(":id")
   @UseInterceptors(HttpCacheInterceptor)
