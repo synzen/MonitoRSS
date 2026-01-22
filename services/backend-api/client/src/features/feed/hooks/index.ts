@@ -13,7 +13,6 @@ export * from "./useDeleteUserFeeds";
 export * from "./useDisableUserFeeds";
 export * from "./useEnableUserFeeds";
 export * from "./useLegacyFeedCount";
-export * from "./useCreateUserFeedLegacyRestore";
 export * from "./useCreateUserFeedManagementInvite";
 export * from "./useDeleteUserFeedManagementInvite";
 export * from "./useUpdateUserFeedManagementInviteStatus";

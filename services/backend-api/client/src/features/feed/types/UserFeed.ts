@@ -6,7 +6,6 @@ import { UserFeedManagerInviteType, UserFeedManagerStatus } from "../../../const
 
 export const UserFeedSchema = object({
   id: string().required(),
-  allowLegacyReversion: bool(),
   title: string().required(),
   url: string().required(),
   inputUrl: string(),

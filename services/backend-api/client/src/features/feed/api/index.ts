@@ -11,7 +11,6 @@ export * from "./deleteUserFeeds";
 export * from "./disableUserFeeds";
 export * from "./enableUserFeeds";
 export * from "./getLegacyFeedCount";
-export * from "./createUserFeedLegacyRestore";
 export * from "./createUserFeedManagementInvite";
 export * from "./deleteUserFeedManagementInvite";
 export * from "./updateUserFeedManagementInviteStatus";
