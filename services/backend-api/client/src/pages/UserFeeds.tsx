@@ -215,11 +215,6 @@ const UserFeedsInner: React.FC = () => {
   return (
     <>
       <Stack spacing={4}>
-        {!userMeData?.result.migratedToPersonalFeeds && (
-          <Button marginTop={2} variant="outline" onClick={() => navigate("/")} size="sm">
-            Back to legacy feeds
-          </Button>
-        )}
         <Stack spacing={2}>
           <PageAlertContextOutlet
             containerProps={{
