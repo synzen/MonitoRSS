@@ -1,7 +1,6 @@
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { DISCORD_API_BASE_URL } from "../../../constants/discord";
-import { RESTHandler } from "@synzen/discord-rest";
 import { DiscordAPIError } from "../../../common/errors/DiscordAPIError";
 import {
   DiscordGuildMember,
@@ -10,7 +9,11 @@ import {
   DiscordWebhook,
 } from "../../../common";
 import { DiscordUser } from "../../../features/discord-users/types/DiscordUser.type";
-import { FetchResponse } from "@synzen/discord-rest/dist/types/FetchResponse";
+import {
+  DISCORD_REST_STRATEGY,
+  DiscordRestStrategy,
+  type DiscordRestResponse,
+} from "./strategies";
 
 interface RequestOptions {
   method: "GET" | "POST" | "PUT" | "DELETE";
@@ -21,19 +24,15 @@ interface RequestOptions {
 export class DiscordAPIService {
   API_URL = DISCORD_API_BASE_URL;
   BOT_TOKEN: string;
-  restHandler: RESTHandler;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    @Inject(DISCORD_REST_STRATEGY)
+    private readonly restStrategy: DiscordRestStrategy
+  ) {
     this.BOT_TOKEN = configService.get<string>(
       "BACKEND_API_DISCORD_BOT_TOKEN"
     ) as string;
-    this.restHandler = new RESTHandler({
-      /**
-       * RESTHandler creates a node interval behind the scenes with this boolean, stopping
-       * tests from tearing down gracefully.
-       */
-      delayOnInvalidThreshold: process.env.NODE_ENV === "test" ? false : true,
-    });
   }
 
   /**
@@ -47,8 +46,8 @@ export class DiscordAPIService {
     options?: RequestOptions
   ): Promise<T> {
     const url = `${this.API_URL}${endpoint}`;
-    const res = await this.restHandler.fetch(url, {
-      method: (options?.method as never) || "GET",
+    const res = await this.restStrategy.fetch(url, {
+      method: options?.method || "GET",
       headers: {
         Authorization: `Bot ${this.BOT_TOKEN}`,
         "Content-Type": "application/json",
@@ -79,8 +78,8 @@ export class DiscordAPIService {
     options?: RequestOptions
   ): Promise<T> {
     const url = `${this.API_URL}${endpoint}`;
-    const res = await this.restHandler.fetch(url, {
-      method: (options?.method as never) || "GET",
+    const res = await this.restStrategy.fetch(url, {
+      method: options?.method || "GET",
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
@@ -123,7 +122,7 @@ export class DiscordAPIService {
     res,
     url,
   }: {
-    res: FetchResponse;
+    res: DiscordRestResponse;
     url: string;
   }): Promise<void> {
     if (res.status >= 400 && res.status < 500) {
