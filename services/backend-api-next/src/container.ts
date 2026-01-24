@@ -25,7 +25,10 @@ import {
 import { DiscordApiService } from "./services/discord-api/discord-api.service";
 import { FeedFetcherApiService } from "./services/feed-fetcher-api/feed-fetcher-api.service";
 import { FeedHandlerService } from "./services/feed-handler/feed-handler.service";
+import { GuildSubscriptionsService } from "./services/guild-subscriptions/guild-subscriptions.service";
+import { MessageBrokerService } from "./services/message-broker/message-broker.service";
 import { PaddleService } from "./services/paddle/paddle.service";
+import { PatronsService } from "./services/patrons/patrons.service";
 import { RedditApiService } from "./services/reddit-api/reddit-api.service";
 
 export interface Container {
@@ -60,6 +63,11 @@ export interface Container {
   feedHandlerService: FeedHandlerService;
   paddleService: PaddleService;
   redditApiService: RedditApiService;
+
+  // Core Services
+  guildSubscriptionsService: GuildSubscriptionsService;
+  messageBrokerService: MessageBrokerService;
+  patronsService: PatronsService;
 }
 
 export function createContainer(deps: {
@@ -102,5 +110,10 @@ export function createContainer(deps: {
     feedHandlerService: new FeedHandlerService(deps.config),
     paddleService: new PaddleService(deps.config),
     redditApiService: new RedditApiService(deps.config),
+
+    // Core Services
+    guildSubscriptionsService: new GuildSubscriptionsService(deps.config),
+    messageBrokerService: new MessageBrokerService(publishMessage),
+    patronsService: new PatronsService(deps.config),
   };
 }
