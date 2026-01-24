@@ -4,7 +4,7 @@ import { Feed, FeedDocument, FeedModel } from "./entities/feed.entity";
 import { DetailedFeed } from "./types/detailed-feed.type";
 import { FilterQuery } from "mongoose";
 import _ from "lodash";
-import { FailRecord, FailRecordModel } from "./entities/fail-record.entity";
+import { FailRecord } from "./entities/fail-record.entity";
 import { FeedStatus } from "./types/FeedStatus.type";
 import dayjs from "dayjs";
 import { FeedSchedulingService } from "./feed-scheduling.service";
@@ -32,7 +32,6 @@ interface PopulatedFeed extends Feed {
 export class FeedsService {
   constructor(
     @InjectModel(Feed.name) private readonly feedModel: FeedModel,
-    @InjectModel(FailRecord.name) private readonly failRecord: FailRecordModel,
     @InjectModel(BannedFeed.name)
     private readonly bannedFeedModel: BannedFeedModel,
     private readonly feedSchedulingService: FeedSchedulingService,
