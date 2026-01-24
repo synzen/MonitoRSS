@@ -1,26 +1,25 @@
-import { Injectable } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { URLSearchParams } from "url";
-import { SubscriptionProductKey } from "../supporter-subscriptions/constants/subscription-product-key.constants";
-import { PaddleCustomerCreditBalanceResponse } from "../supporter-subscriptions/types/paddle-customer-credit-balance-response.type";
-import { PaddleCustomerResponse } from "../supporter-subscriptions/types/paddle-customer-response.type";
+import type { Config } from "../../config";
 import {
-  PaddleProductResponse,
+  TransactionBalanceTooLowException,
+  CannotRenewSubscriptionBeforeRenewal,
+  AddressLocationNotAllowedException,
+} from "../../shared/exceptions";
+import type {
+  SubscriptionProductKey,
+  PaddleCustomerCreditBalanceResponse,
+  PaddleCustomerResponse,
   PaddleProductsResponse,
-} from "../supporter-subscriptions/types/paddle-products-response.type";
-import { PaddleSubscriptionResponse } from "../supporter-subscriptions/types/paddle-subscription-response.type";
-import { TransactionBalanceTooLowException } from "./exceptions/transaction-balance-too-low.exception";
-import { CannotRenewSubscriptionBeforeRenewal } from "./exceptions/cannot-renew-subscription-before-renewal.exception";
-import { AddressLocationNotAllowedException } from "./exceptions/address-location-not-allowed.exception";
+  PaddleProductResponse,
+  PaddleSubscriptionResponse,
+} from "./types";
 
-@Injectable()
 export class PaddleService {
-  PADDLE_URL?: string;
-  PADDLE_KEY?: string;
+  private readonly PADDLE_URL?: string;
+  private readonly PADDLE_KEY?: string;
 
-  constructor(private readonly configService: ConfigService) {
-    this.PADDLE_URL = configService.get("BACKEND_API_PADDLE_URL");
-    this.PADDLE_KEY = configService.get("BACKEND_API_PADDLE_KEY");
+  constructor(private readonly config: Config) {
+    this.PADDLE_URL = config.BACKEND_API_PADDLE_URL;
+    this.PADDLE_KEY = config.BACKEND_API_PADDLE_KEY;
   }
 
   async getCustomerCreditBalanace(customerId: string) {
@@ -50,10 +49,10 @@ export class PaddleService {
           name: p.name,
           prices: p.prices
             .filter((s) => s.status === "active")
-            .map((p) => ({
-              id: p.id,
-              customData: p.custom_data,
-              billingCycle: p.billing_cycle,
+            .map((price) => ({
+              id: price.id,
+              customData: price.custom_data,
+              billingCycle: price.billing_cycle,
             })),
           customData: p.custom_data,
         })),
@@ -120,25 +119,37 @@ export class PaddleService {
     });
 
     if (!res.ok) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let responseJson: any | null = null;
+      let responseJson: Record<string, unknown> | null = null;
       let responseText = "";
 
-      responseJson = (await res.json()) as Record<string, unknown>;
-      responseText = JSON.stringify(responseJson);
+      try {
+        responseJson = (await res.json()) as Record<string, unknown>;
+        responseText = JSON.stringify(responseJson);
+      } catch {
+        responseText = await res.text().catch(() => "Unable to read response");
+        throw new Error(
+          `Failed to make Paddle request (${url}): ${res.status}. Response: ${responseText}`
+        );
+      }
 
       if (
-        responseJson?.error?.code ===
+        (responseJson?.error as Record<string, unknown>)?.code ===
         "subscription_update_transaction_balance_less_than_charge_limit"
       ) {
         throw new TransactionBalanceTooLowException();
       }
 
-      if (responseJson?.error?.code === "subscription_locked_renewal") {
+      if (
+        (responseJson?.error as Record<string, unknown>)?.code ===
+        "subscription_locked_renewal"
+      ) {
         throw new CannotRenewSubscriptionBeforeRenewal();
       }
 
-      if (responseJson?.error?.code === "address_location_not_allowed") {
+      if (
+        (responseJson?.error as Record<string, unknown>)?.code ===
+        "address_location_not_allowed"
+      ) {
         throw new AddressLocationNotAllowedException();
       }
 

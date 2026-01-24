@@ -1,6 +1,12 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import type { Config } from "../config";
 import logger from "./logger";
+import {
+  DISCORD_API_BASE_URL,
+  DISCORD_AUTH_ENDPOINT,
+  DISCORD_TOKEN_ENDPOINT,
+  DISCORD_TOKEN_REVOCATION_ENDPOINT,
+} from "../shared/constants";
 
 declare module "@fastify/secure-session" {
   interface SessionData {
@@ -8,11 +14,6 @@ declare module "@fastify/secure-session" {
     authState: string;
   }
 }
-
-export const DISCORD_API_BASE_URL = "https://discord.com/api/v9";
-export const DISCORD_AUTH_ENDPOINT = "/oauth2/authorize";
-export const DISCORD_TOKEN_ENDPOINT = "/oauth2/token";
-export const DISCORD_TOKEN_REVOCATION_ENDPOINT = "/oauth2/token/revoke";
 
 export interface DiscordAuthToken {
   access_token: string;

@@ -22,6 +22,11 @@ import {
   UserFeedMongooseRepository,
   UserFeedTagMongooseRepository,
 } from "./repositories/mongoose";
+import { DiscordApiService } from "./services/discord-api/discord-api.service";
+import { FeedFetcherApiService } from "./services/feed-fetcher-api/feed-fetcher-api.service";
+import { FeedHandlerService } from "./services/feed-handler/feed-handler.service";
+import { PaddleService } from "./services/paddle/paddle.service";
+import { RedditApiService } from "./services/reddit-api/reddit-api.service";
 
 export interface Container {
   config: Config;
@@ -48,6 +53,13 @@ export interface Container {
   supporterRepository: SupporterMongooseRepository;
   userFeedRepository: UserFeedMongooseRepository;
   userFeedTagRepository: UserFeedTagMongooseRepository;
+
+  // External API Services
+  discordApiService: DiscordApiService;
+  feedFetcherApiService: FeedFetcherApiService;
+  feedHandlerService: FeedHandlerService;
+  paddleService: PaddleService;
+  redditApiService: RedditApiService;
 }
 
 export function createContainer(deps: {
@@ -83,5 +95,12 @@ export function createContainer(deps: {
     supporterRepository: new SupporterMongooseRepository(deps.mongoConnection),
     userFeedRepository: new UserFeedMongooseRepository(deps.mongoConnection),
     userFeedTagRepository: new UserFeedTagMongooseRepository(deps.mongoConnection),
+
+    // External API Services
+    discordApiService: new DiscordApiService(deps.config),
+    feedFetcherApiService: new FeedFetcherApiService(deps.config),
+    feedHandlerService: new FeedHandlerService(deps.config),
+    paddleService: new PaddleService(deps.config),
+    redditApiService: new RedditApiService(deps.config),
   };
 }
