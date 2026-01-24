@@ -12,7 +12,6 @@ import {
   UserFeedLimitOverrideMongooseRepository,
   PatronMongooseRepository,
   NotificationDeliveryAttemptMongooseRepository,
-  LegacyFeedConversionJobMongooseRepository,
   FeedSubscriberMongooseRepository,
   UserMongooseRepository,
   CustomerMongooseRepository,
@@ -47,7 +46,6 @@ export interface Container {
   userFeedLimitOverrideRepository: UserFeedLimitOverrideMongooseRepository;
   patronRepository: PatronMongooseRepository;
   notificationDeliveryAttemptRepository: NotificationDeliveryAttemptMongooseRepository;
-  legacyFeedConversionJobRepository: LegacyFeedConversionJobMongooseRepository;
   feedSubscriberRepository: FeedSubscriberMongooseRepository;
   userRepository: UserMongooseRepository;
   customerRepository: CustomerMongooseRepository;
@@ -94,7 +92,6 @@ export function createContainer(deps: {
     userFeedLimitOverrideRepository: new UserFeedLimitOverrideMongooseRepository(deps.mongoConnection),
     patronRepository: new PatronMongooseRepository(deps.mongoConnection),
     notificationDeliveryAttemptRepository: new NotificationDeliveryAttemptMongooseRepository(deps.mongoConnection),
-    legacyFeedConversionJobRepository: new LegacyFeedConversionJobMongooseRepository(deps.mongoConnection),
     feedSubscriberRepository: new FeedSubscriberMongooseRepository(deps.mongoConnection),
     userRepository: new UserMongooseRepository(deps.mongoConnection),
     customerRepository: new CustomerMongooseRepository(deps.mongoConnection),

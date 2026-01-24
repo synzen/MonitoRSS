@@ -7,7 +7,6 @@ export { DiscordServerProfileMongooseRepository } from "./discord-server-profile
 export { UserFeedLimitOverrideMongooseRepository } from "./user-feed-limit-override.mongoose.repository";
 export { PatronMongooseRepository } from "./patron.mongoose.repository";
 export { NotificationDeliveryAttemptMongooseRepository } from "./notification-delivery-attempt.mongoose.repository";
-export { LegacyFeedConversionJobMongooseRepository } from "./legacy-feed-conversion-job.mongoose.repository";
 export { FeedSubscriberMongooseRepository } from "./feed-subscriber.mongoose.repository";
 export { UserMongooseRepository } from "./user.mongoose.repository";
 export { CustomerMongooseRepository } from "./customer.mongoose.repository";

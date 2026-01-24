@@ -8,7 +8,6 @@ export * from "./feed-filtered-format.types";
 export * from "./feed-schedule.types";
 export * from "./feed-subscriber.types";
 export * from "./feed.types";
-export * from "./legacy-feed-conversion-job.types";
 export * from "./mongo-migration.types";
 export * from "./notification-delivery-attempt.types";
 export * from "./patron.types";
