@@ -20,7 +20,6 @@ import {
   FeedLimitReachedException,
 } from "../feeds/exceptions";
 import { FeedsService } from "../feeds/feeds.service";
-import { LegacyFeedConversionJobFeature } from "../legacy-feed-conversion/entities/legacy-feed-conversion-job.entity";
 import {
   UserFeedLimitOverride,
   UserFeedLimitOverrideFeature,
@@ -116,7 +115,6 @@ describe("UserFeedsService", () => {
         MongooseModule.forFeature([
           FeedFeature,
           UserFeedTagFeature,
-          LegacyFeedConversionJobFeature,
           UserFeedFeature,
           UserFeedLimitOverrideFeature,
           UserFeature,

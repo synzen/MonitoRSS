@@ -14,7 +14,6 @@ import { UserFeedLimitOverrideModel } from "../supporters/entities/user-feed-lim
 import { SupportersService } from "../supporters/supporters.service";
 import { UserFeedModel } from "../user-feeds/entities";
 import { UserFeedHealthStatus } from "../user-feeds/types";
-import { LegacyFeedConversionJobModel } from "./entities/legacy-feed-conversion-job.entity";
 import { LegacyFeedConversionService } from "./legacy-feed-conversion.service";
 
 describe("LegacyFeedConversionService", () => {
@@ -46,9 +45,6 @@ describe("LegacyFeedConversionService", () => {
     findById: jest.fn(),
     create: jest.fn(),
   } as never;
-  const legacyFeedConversionJobModel: LegacyFeedConversionJobModel = {
-    insertMany: jest.fn(),
-  } as never;
 
   beforeEach(async () => {
     service = new LegacyFeedConversionService(
@@ -59,7 +55,6 @@ describe("LegacyFeedConversionService", () => {
       failRecordModel,
       userFeedModel,
       userFeedLimitOverrideModel,
-      legacyFeedConversionJobModel,
       discordApiService,
       supportersService
     );

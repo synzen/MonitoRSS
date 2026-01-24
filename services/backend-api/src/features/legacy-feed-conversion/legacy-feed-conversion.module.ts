@@ -10,7 +10,6 @@ import { FeedFeature } from "../feeds/entities/feed.entity";
 import { UserFeedLimitOverrideFeature } from "../supporters/entities/user-feed-limit-overrides.entity";
 import { SupportersModule } from "../supporters/supporters.module";
 import { UserFeedFeature } from "../user-feeds/entities";
-import { LegacyFeedConversionJobFeature } from "./entities/legacy-feed-conversion-job.entity";
 import { LegacyFeedConversionService } from "./legacy-feed-conversion.service";
 
 @Module({
@@ -24,7 +23,6 @@ import { LegacyFeedConversionService } from "./legacy-feed-conversion.service";
       FailRecordFeature,
       UserFeedFeature,
       UserFeedLimitOverrideFeature,
-      LegacyFeedConversionJobFeature,
     ]),
     DiscordApiModule,
     SupportersModule,

@@ -11,7 +11,6 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:watch": "nest start --watch",
-    "start:legacy-feed-converter": "nest start --config legacy-feed-bulk-converter.nest-cli.json --watch",
     "start:schedule-emitter": "nest start --config schedule-emitter.nest-cli.json --watch",
     "start:script:local": "cross-env NODE_ENV=local nest start --config script.nest-cli.json --watch",
     "start:script:prod": "cross-env NODE_ENV=production nest start --config script.nest-cli.json --watch",
