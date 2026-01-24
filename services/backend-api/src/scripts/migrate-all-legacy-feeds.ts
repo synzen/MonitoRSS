@@ -170,7 +170,6 @@ async function processFeed(
     } else {
       await conversionService.convertToUserFeed(feed, {
         discordUserId,
-        isBulkConversion: true,
       });
       logger.info(`Converted feed ${feed._id}`, {
         title: feed.title,
