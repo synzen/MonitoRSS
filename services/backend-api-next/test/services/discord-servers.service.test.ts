@@ -325,7 +325,7 @@ describe("DiscordServersService", () => {
       assert.deepStrictEqual(result, mockFeeds);
       const calls = deps.feedsService.getServerFeeds.mock.calls;
       assert.strictEqual(calls.length, 1);
-      assert.deepStrictEqual(calls[0].arguments, [serverId, options]);
+      assert.deepStrictEqual(calls[0]!.arguments, [serverId, options]);
     });
   });
 
@@ -341,7 +341,7 @@ describe("DiscordServersService", () => {
       assert.strictEqual(result, 5);
       const calls = deps.feedsService.countServerFeeds.mock.calls;
       assert.strictEqual(calls.length, 1);
-      assert.deepStrictEqual(calls[0].arguments, [serverId, { search: undefined }]);
+      assert.deepStrictEqual(calls[0]!.arguments, [serverId, { search: undefined }]);
     });
 
     it("calls the feed service with search correctly", async () => {
@@ -356,7 +356,7 @@ describe("DiscordServersService", () => {
       assert.strictEqual(result, 3);
       const calls = deps.feedsService.countServerFeeds.mock.calls;
       assert.strictEqual(calls.length, 1);
-      assert.deepStrictEqual(calls[0].arguments, [serverId, { search: "search" }]);
+      assert.deepStrictEqual(calls[0]!.arguments, [serverId, { search: "search" }]);
     });
   });
 
@@ -628,8 +628,8 @@ describe("DiscordServersService", () => {
         });
 
         assert.strictEqual(channels.length, 1);
-        assert.strictEqual(channels[0].id, "forum-1");
-        assert.strictEqual(channels[0].type, DiscordChannelType.GUILD_FORUM);
+        assert.strictEqual(channels[0]!.id, "forum-1");
+        assert.strictEqual(channels[0]!.type, DiscordChannelType.GUILD_FORUM);
       });
 
       it("returns only text channels when types includes 'text'", async () => {
@@ -642,8 +642,8 @@ describe("DiscordServersService", () => {
         });
 
         assert.strictEqual(channels.length, 1);
-        assert.strictEqual(channels[0].id, "text-1");
-        assert.strictEqual(channels[0].type, DiscordChannelType.GUILD_TEXT);
+        assert.strictEqual(channels[0]!.id, "text-1");
+        assert.strictEqual(channels[0]!.type, DiscordChannelType.GUILD_TEXT);
       });
 
       it("returns only announcement channels when types includes 'announcement'", async () => {
@@ -656,8 +656,8 @@ describe("DiscordServersService", () => {
         });
 
         assert.strictEqual(channels.length, 1);
-        assert.strictEqual(channels[0].id, "announcement-1");
-        assert.strictEqual(channels[0].type, DiscordChannelType.GUILD_ANNOUNCEMENT);
+        assert.strictEqual(channels[0]!.id, "announcement-1");
+        assert.strictEqual(channels[0]!.type, DiscordChannelType.GUILD_ANNOUNCEMENT);
       });
 
       it("returns multiple types when specified", async () => {
@@ -718,16 +718,16 @@ describe("DiscordServersService", () => {
         });
 
         assert.strictEqual(channels.length, 1);
-        assert.ok(channels[0].availableTags);
-        assert.strictEqual(channels[0].availableTags!.length, 2);
-        assert.deepStrictEqual(channels[0].availableTags![0], {
+        assert.ok(channels[0]!.availableTags);
+        assert.strictEqual(channels[0]!.availableTags!.length, 2);
+        assert.deepStrictEqual(channels[0]!.availableTags![0], {
           id: "tag-1",
           name: "Tag One",
           emojiId: null,
           emojiName: "🔥",
           hasPermissionToUse: true,
         });
-        assert.deepStrictEqual(channels[0].availableTags![1], {
+        assert.deepStrictEqual(channels[0]!.availableTags![1], {
           id: "tag-2",
           name: "Tag Two",
           emojiId: "123",
@@ -764,11 +764,11 @@ describe("DiscordServersService", () => {
 
         const permCalls = deps.discordPermissionsService.botHasPermissionInServer.mock.calls;
         assert.strictEqual(permCalls.length, 1);
-        assert.strictEqual(permCalls[0].arguments[0], serverId);
+        assert.strictEqual(permCalls[0]!.arguments[0], serverId);
 
-        assert.ok(channels[0].availableTags);
-        const moderatedTag = channels[0].availableTags!.find((t) => t.name === "Moderated Tag");
-        const normalTag = channels[0].availableTags!.find((t) => t.name === "Normal Tag");
+        assert.ok(channels[0]!.availableTags);
+        const moderatedTag = channels[0]!.availableTags!.find((t) => t.name === "Moderated Tag");
+        const normalTag = channels[0]!.availableTags!.find((t) => t.name === "Normal Tag");
         assert.strictEqual(moderatedTag!.hasPermissionToUse, true);
         assert.strictEqual(normalTag!.hasPermissionToUse, true);
       });
@@ -799,9 +799,9 @@ describe("DiscordServersService", () => {
           types: ["forum"],
         });
 
-        assert.ok(channels[0].availableTags);
-        const moderatedTag = channels[0].availableTags!.find((t) => t.name === "Moderated Tag");
-        const normalTag = channels[0].availableTags!.find((t) => t.name === "Normal Tag");
+        assert.ok(channels[0]!.availableTags);
+        const moderatedTag = channels[0]!.availableTags!.find((t) => t.name === "Moderated Tag");
+        const normalTag = channels[0]!.availableTags!.find((t) => t.name === "Normal Tag");
         assert.strictEqual(moderatedTag!.hasPermissionToUse, false);
         assert.strictEqual(normalTag!.hasPermissionToUse, true);
       });
@@ -830,10 +830,10 @@ describe("DiscordServersService", () => {
           types: ["forum"],
         });
 
-        assert.ok(channels[0].availableTags);
-        assert.strictEqual(channels[0].availableTags![0].name, "Apple");
-        assert.strictEqual(channels[0].availableTags![1].name, "Banana");
-        assert.strictEqual(channels[0].availableTags![2].name, "Zebra");
+        assert.ok(channels[0]!.availableTags);
+        assert.strictEqual(channels[0]!.availableTags![0]!.name, "Apple");
+        assert.strictEqual(channels[0]!.availableTags![1]!.name, "Banana");
+        assert.strictEqual(channels[0]!.availableTags![2]!.name, "Zebra");
       });
 
       it("does not check permissions when no moderated tags exist", async () => {

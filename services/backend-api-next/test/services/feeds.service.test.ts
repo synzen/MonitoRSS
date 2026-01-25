@@ -242,8 +242,8 @@ describe("FeedsService", { concurrency: false }, () => {
       const feeds = await service.getServerFeeds("guild-1", { limit: 10, offset: 0 });
 
       assert.strictEqual(feeds.length, 1);
-      assert.strictEqual(feeds[0].status, FeedStatus.OK);
-      assert.strictEqual(feeds[0].refreshRateSeconds, 15);
+      assert.strictEqual(feeds[0]!.status, FeedStatus.OK);
+      assert.strictEqual(feeds[0]!.refreshRateSeconds, 15);
     });
 
     it("returns DISABLED status when feed is disabled", async () => {
@@ -276,7 +276,7 @@ describe("FeedsService", { concurrency: false }, () => {
 
       const feeds = await service.getServerFeeds("guild-1", { limit: 10, offset: 0 });
 
-      assert.strictEqual(feeds[0].status, FeedStatus.DISABLED);
+      assert.strictEqual(feeds[0]!.status, FeedStatus.DISABLED);
     });
 
     it("returns CONVERTED_TO_USER status when disabled is CONVERTED_USER_FEED", async () => {
@@ -309,7 +309,7 @@ describe("FeedsService", { concurrency: false }, () => {
 
       const feeds = await service.getServerFeeds("guild-1", { limit: 10, offset: 0 });
 
-      assert.strictEqual(feeds[0].status, FeedStatus.CONVERTED_TO_USER);
+      assert.strictEqual(feeds[0]!.status, FeedStatus.CONVERTED_TO_USER);
     });
 
     it("transforms DISABLED_FOR_PERSONAL_ROLLOUT to descriptive message", async () => {
@@ -342,9 +342,9 @@ describe("FeedsService", { concurrency: false }, () => {
 
       const feeds = await service.getServerFeeds("guild-1", { limit: 10, offset: 0 });
 
-      assert.strictEqual(feeds[0].status, FeedStatus.DISABLED);
+      assert.strictEqual(feeds[0]!.status, FeedStatus.DISABLED);
       assert.strictEqual(
-        feeds[0].disabledReason,
+        feeds[0]!.disabledReason,
         "Deprecated for personal feeds. Must convert to personal feed to restore function."
       );
     });
@@ -387,8 +387,8 @@ describe("FeedsService", { concurrency: false }, () => {
 
       const feeds = await service.getServerFeeds("guild-1", { limit: 10, offset: 0 });
 
-      assert.strictEqual(feeds[0].status, FeedStatus.FAILING);
-      assert.strictEqual(feeds[0].failReason, "Connection timeout");
+      assert.strictEqual(feeds[0]!.status, FeedStatus.FAILING);
+      assert.strictEqual(feeds[0]!.failReason, "Connection timeout");
     });
 
     it("returns FAILED status when failRecord is older than 18 hours", async () => {
@@ -429,8 +429,8 @@ describe("FeedsService", { concurrency: false }, () => {
 
       const feeds = await service.getServerFeeds("guild-1", { limit: 10, offset: 0 });
 
-      assert.strictEqual(feeds[0].status, FeedStatus.FAILED);
-      assert.strictEqual(feeds[0].failReason, "Feed permanently unavailable");
+      assert.strictEqual(feeds[0]!.status, FeedStatus.FAILED);
+      assert.strictEqual(feeds[0]!.failReason, "Feed permanently unavailable");
     });
   });
 

@@ -52,6 +52,7 @@ describe("NotificationsService", () => {
       channel: { id: "channel-id", guildId: "guild-id" },
       embeds: [],
       componentRows: [],
+      formatter: {},
     },
     createdAt: new Date(),
     updatedAt: new Date(),

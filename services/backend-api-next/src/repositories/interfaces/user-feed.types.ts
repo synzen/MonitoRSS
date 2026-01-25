@@ -132,7 +132,22 @@ export type CustomPlaceholderStepTransform = (
   step: Record<string, unknown>
 ) => Record<string, unknown>;
 
+export interface CreateUserFeedInput {
+  title: string;
+  url: string;
+  user: { discordUserId: string };
+  shareManageOptions?: {
+    invites: Array<{
+      discordUserId: string;
+      connections?: Array<{ connectionId: string }>;
+    }>;
+  };
+}
+
 export interface IUserFeedRepository {
+  create(input: CreateUserFeedInput): Promise<IUserFeed>;
+  findById(id: string): Promise<IUserFeed | null>;
+  deleteAll(): Promise<void>;
   bulkUpdateLookupKeys(operations: LookupKeyOperation[]): Promise<void>;
   findByIdsForNotification(ids: string[]): Promise<UserFeedForNotification[]>;
   bulkAddConnectionsToInvites(

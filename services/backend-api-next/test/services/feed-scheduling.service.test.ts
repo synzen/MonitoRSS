@@ -43,7 +43,7 @@ describe("FeedSchedulingService", { concurrency: false }, () => {
     it("returns the refresh rates of the benefits when feeds are backed by supporter", async () => {
       const serverBenefits = [
         {
-          serverId: sampleFeedDetails[0].guild,
+          serverId: sampleFeedDetails[0]!.guild,
           hasSupporter: true,
           refreshRateSeconds: 100,
         },
@@ -65,7 +65,7 @@ describe("FeedSchedulingService", { concurrency: false }, () => {
 
       const refreshRates = await service.getRefreshRatesOfFeeds(sampleFeedDetails);
 
-      assert.strictEqual(refreshRates[0], serverBenefits[0].refreshRateSeconds);
+      assert.strictEqual(refreshRates[0]!, serverBenefits[0]!.refreshRateSeconds);
     });
 
     it("returns the default refresh rate if no schedule matches for non-supporters", async () => {
@@ -77,7 +77,7 @@ describe("FeedSchedulingService", { concurrency: false }, () => {
         getBenefitsOfServers: async () => [
           {
             hasSupporter: false,
-            serverId: sampleFeedDetails[0].guild,
+            serverId: sampleFeedDetails[0]!.guild,
           },
         ],
       } as unknown as SupportersService;
@@ -90,7 +90,7 @@ describe("FeedSchedulingService", { concurrency: false }, () => {
 
       const refreshRates = await service.getRefreshRatesOfFeeds(sampleFeedDetails);
 
-      assert.strictEqual(refreshRates[0], service.defaultRefreshRateSeconds);
+      assert.strictEqual(refreshRates[0]!, service.defaultRefreshRateSeconds);
     });
 
     it("returns the refresh rate of the schedule that matches the keywords", async () => {
@@ -98,7 +98,7 @@ describe("FeedSchedulingService", { concurrency: false }, () => {
         {
           id: "schedule-1",
           name: "test-schedule",
-          keywords: [sampleFeedDetails[0].url],
+          keywords: [sampleFeedDetails[0]!.url],
           feeds: [],
           refreshRateMinutes: 1,
         },
@@ -112,7 +112,7 @@ describe("FeedSchedulingService", { concurrency: false }, () => {
         getBenefitsOfServers: async () => [
           {
             hasSupporter: false,
-            serverId: sampleFeedDetails[0].guild,
+            serverId: sampleFeedDetails[0]!.guild,
           },
         ],
       } as unknown as SupportersService;
@@ -125,7 +125,7 @@ describe("FeedSchedulingService", { concurrency: false }, () => {
 
       const refreshRates = await service.getRefreshRatesOfFeeds(sampleFeedDetails);
 
-      assert.strictEqual(refreshRates[0], mockSchedules[0].refreshRateMinutes * 60);
+      assert.strictEqual(refreshRates[0]!, mockSchedules[0]!.refreshRateMinutes * 60);
     });
 
     it("returns the refresh rate of the schedule that matches the feed id", async () => {
@@ -134,7 +134,7 @@ describe("FeedSchedulingService", { concurrency: false }, () => {
           id: "schedule-1",
           name: "test-schedule",
           keywords: [],
-          feeds: [sampleFeedDetails[0].id],
+          feeds: [sampleFeedDetails[0]!.id],
           refreshRateMinutes: 1,
         },
       ];
@@ -147,7 +147,7 @@ describe("FeedSchedulingService", { concurrency: false }, () => {
         getBenefitsOfServers: async () => [
           {
             hasSupporter: false,
-            serverId: sampleFeedDetails[0].guild,
+            serverId: sampleFeedDetails[0]!.guild,
           },
         ],
       } as unknown as SupportersService;
@@ -160,7 +160,7 @@ describe("FeedSchedulingService", { concurrency: false }, () => {
 
       const refreshRates = await service.getRefreshRatesOfFeeds(sampleFeedDetails);
 
-      assert.strictEqual(refreshRates[0], mockSchedules[0].refreshRateMinutes * 60);
+      assert.strictEqual(refreshRates[0]!, mockSchedules[0]!.refreshRateMinutes * 60);
     });
 
     it("returns the default refresh rate if no schedules match keywords or feeds", async () => {
@@ -182,7 +182,7 @@ describe("FeedSchedulingService", { concurrency: false }, () => {
         getBenefitsOfServers: async () => [
           {
             hasSupporter: false,
-            serverId: sampleFeedDetails[0].guild,
+            serverId: sampleFeedDetails[0]!.guild,
           },
         ],
       } as unknown as SupportersService;
@@ -195,7 +195,7 @@ describe("FeedSchedulingService", { concurrency: false }, () => {
 
       const refreshRates = await service.getRefreshRatesOfFeeds(sampleFeedDetails);
 
-      assert.strictEqual(refreshRates[0], service.defaultRefreshRateSeconds);
+      assert.strictEqual(refreshRates[0]!, service.defaultRefreshRateSeconds);
     });
   });
 });

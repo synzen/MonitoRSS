@@ -139,7 +139,7 @@ describe("FeedMongooseRepository Integration", { concurrency: false }, () => {
       });
 
       assert.strictEqual(feeds.length, 1);
-      assert.strictEqual(feeds[0].title, "Guild 1 Feed");
+      assert.strictEqual(feeds[0]!.title, "Guild 1 Feed");
     });
 
     it("searches by title (case insensitive)", async () => {
@@ -169,7 +169,7 @@ describe("FeedMongooseRepository Integration", { concurrency: false }, () => {
       });
 
       assert.strictEqual(feeds.length, 1);
-      assert.strictEqual(feeds[0].title, "Google News");
+      assert.strictEqual(feeds[0]!.title, "Google News");
     });
 
     it("searches by URL (case insensitive)", async () => {
@@ -199,7 +199,7 @@ describe("FeedMongooseRepository Integration", { concurrency: false }, () => {
       });
 
       assert.strictEqual(feeds.length, 1);
-      assert.strictEqual(feeds[0].url, "https://google.com/feed");
+      assert.strictEqual(feeds[0]!.url, "https://google.com/feed");
     });
   });
 

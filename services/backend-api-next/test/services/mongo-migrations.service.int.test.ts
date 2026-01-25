@@ -136,7 +136,7 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
 
       await ctx.container.mongoMigrationsService.applyMigrations();
 
-      const feed = await userFeedModel.findOne({ title: "Feed with existing slotOffset" }).lean();
+      const feed = await userFeedModel.findOne({ title: "Feed with existing slotOffset" }).lean() as { slotOffsetMs?: number } | null;
       assert.strictEqual(feed?.slotOffsetMs, existingSlotOffset);
     });
   });
@@ -162,7 +162,7 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
 
       await ctx.container.mongoMigrationsService.applyMigrations();
 
-      const feed = await userFeedModel.findOne({ title: "Feed without user.id" }).lean();
+      const feed = await userFeedModel.findOne({ title: "Feed without user.id" }).lean() as { user?: { id?: { toString(): string } } } | null;
 
       assert.ok(feed?.user?.id, "user.id should be populated");
       assert.strictEqual(
@@ -188,7 +188,7 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
 
       await ctx.container.mongoMigrationsService.applyMigrations();
 
-      const feed = await userFeedModel.findOne({ title: "Feed with existing user.id" }).lean();
+      const feed = await userFeedModel.findOne({ title: "Feed with existing user.id" }).lean() as { user?: { id?: { toString(): string } } } | null;
 
       assert.strictEqual(
         feed?.user?.id?.toString(),
@@ -237,7 +237,7 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
 
       await ctx.container.mongoMigrationsService.applyMigrations();
 
-      const feed = await userFeedModel.findOne({ title: "Feed with custom placeholders" }).lean();
+      const feed = await userFeedModel.findOne({ title: "Feed with custom placeholders" }).lean() as { connections?: { discordChannels?: unknown[] } } | null;
       const channel = feed?.connections?.discordChannels?.[0] as {
         customPlaceholders?: Array<{
           steps: Array<{ id?: string; type?: string }>;
@@ -292,7 +292,7 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
 
       await ctx.container.mongoMigrationsService.applyMigrations();
 
-      const feed = await userFeedModel.findOne({ title: "Feed with typed step" }).lean();
+      const feed = await userFeedModel.findOne({ title: "Feed with typed step" }).lean() as { connections?: { discordChannels?: unknown[] } } | null;
       const channel = feed?.connections?.discordChannels?.[0] as {
         customPlaceholders?: Array<{
           steps: Array<{ type?: string }>;
@@ -362,7 +362,7 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
         "should not throw when user.id is already an ObjectId"
       );
 
-      const feed = await userFeedModel.findOne({ title: "Feed with ObjectId user.id" }).lean();
+      const feed = await userFeedModel.findOne({ title: "Feed with ObjectId user.id" }).lean() as { user?: { id?: { toHexString(): string } } } | null;
       assert.strictEqual(
         feed?.user?.id?.toHexString(),
         objectIdUserId.toHexString(),
