@@ -139,6 +139,7 @@ export interface CreateUserFeedInput {
   shareManageOptions?: {
     invites: Array<{
       discordUserId: string;
+      status?: UserFeedManagerStatus;
       connections?: Array<{ connectionId: string }>;
     }>;
   };
@@ -156,6 +157,22 @@ export interface IUserFeedRepository {
   removeConnectionsFromInvites(
     input: RemoveConnectionsFromInvitesInput
   ): Promise<void>;
+
+  // CRUD methods for UserFeedsService
+  countByOwnership(discordUserId: string): Promise<number>;
+  findByUrls(discordUserId: string, urls: string[]): Promise<{ url: string }[]>;
+  updateById(
+    id: string,
+    update: Record<string, unknown>
+  ): Promise<IUserFeed | null>;
+  deleteById(id: string): Promise<IUserFeed | null>;
+  deleteByIds(ids: string[]): Promise<number>;
+  updateManyByFilter(
+    filter: Record<string, unknown>,
+    update: Record<string, unknown>
+  ): Promise<number>;
+  findByIds(ids: string[]): Promise<IUserFeed[]>;
+  aggregate<T>(pipeline: Record<string, unknown>[]): Promise<T[]>;
 
   // Migration methods
   iterateFeedsMissingSlotOffset(): AsyncIterable<UserFeedForSlotOffsetMigration>;

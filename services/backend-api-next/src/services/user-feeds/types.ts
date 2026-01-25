@@ -1,0 +1,115 @@
+import type { Config } from "../../config";
+import type {
+  IUserFeed,
+  IUserFeedRepository,
+  IUserFeedFormatOptions,
+  IUserFeedDateCheckOptions,
+  IExternalFeedProperty,
+} from "../../repositories/interfaces/user-feed.types";
+import type { IUserRepository } from "../../repositories/interfaces/user.types";
+import type { UserFeedDisabledCode } from "../../repositories/shared/enums";
+import type { FeedsService } from "../feeds/feeds.service";
+import type { FeedFetcherApiService } from "../feed-fetcher-api/feed-fetcher-api.service";
+import type { FeedHandlerService } from "../feed-handler/feed-handler.service";
+import type { SupportersService } from "../supporters/supporters.service";
+import type { UsersService } from "../users/users.service";
+
+export interface IFeedConnectionsDiscordChannelsService {
+  deleteConnection(feedId: string, connectionId: string): Promise<void>;
+}
+
+export interface UserFeedsServiceDeps {
+  config: Config;
+  userFeedRepository: IUserFeedRepository;
+  userRepository: IUserRepository;
+  feedsService: FeedsService;
+  supportersService: SupportersService;
+  feedFetcherApiService: FeedFetcherApiService;
+  feedHandlerService: FeedHandlerService;
+  usersService: UsersService;
+  publishMessage: (queue: string, message: unknown) => Promise<void>;
+  feedConnectionsDiscordChannelsService?: IFeedConnectionsDiscordChannelsService;
+}
+
+export interface UpdateFeedInput {
+  title?: string;
+  url?: string;
+  disabledCode?: UserFeedDisabledCode | null;
+  passingComparisons?: string[];
+  blockingComparisons?: string[];
+  formatOptions?: Partial<IUserFeedFormatOptions>;
+  dateCheckOptions?: Partial<IUserFeedDateCheckOptions>;
+  shareManageOptions?: {
+    invites: Array<{ discordUserId: string }>;
+  };
+  userRefreshRateSeconds?: number | null;
+  externalProperties?: IExternalFeedProperty[];
+}
+
+export enum GetUserFeedsInputSortKey {
+  CreatedAtAscending = "createdAt",
+  CreatedAtDescending = "-createdAt",
+  TitleAscending = "title",
+  TitleDescending = "-title",
+  UrlAscending = "url",
+  UrlDescending = "-url",
+  ComputedStatusAscending = "computedStatus",
+  ComputedStatusDescending = "-computedStatus",
+  OwnedByUserAscending = "ownedByUser",
+  OwnedByUserDescending = "-ownedByUser",
+  RefreshRateAscending = "refreshRateSeconds",
+  RefreshRateDescending = "-refreshRateSeconds",
+}
+
+export enum UserFeedComputedStatus {
+  Ok = "ok",
+  RequiresAttention = "requires-attention",
+  ManuallyDisabled = "manually-disabled",
+  Retrying = "retrying",
+}
+
+export interface GetUserFeedsInputFilters {
+  disabledCodes?: (UserFeedDisabledCode | null)[];
+  connectionDisabledCodes?: (string | null)[];
+  computedStatuses?: UserFeedComputedStatus[];
+  ownedByUser?: boolean;
+  userTagIds?: string[];
+}
+
+export interface GetUserFeedsInput {
+  limit?: number;
+  offset?: number;
+  search?: string;
+  sort?: GetUserFeedsInputSortKey;
+  filters?: GetUserFeedsInputFilters;
+}
+
+export interface UserFeedListItem {
+  id: string;
+  title: string;
+  url: string;
+  inputUrl?: string;
+  healthStatus: string;
+  disabledCode?: UserFeedDisabledCode;
+  createdAt: Date;
+  computedStatus: UserFeedComputedStatus;
+  legacyFeedId?: string;
+  ownedByUser: boolean;
+  refreshRateSeconds?: number;
+}
+
+export interface CreateUserFeedInput {
+  title?: string;
+  url: string;
+}
+
+export interface ValidateFeedUrlOutput {
+  resolvedToUrl: string | null;
+  feedTitle?: string;
+}
+
+export interface CheckUrlIsValidOutput {
+  finalUrl: string;
+  enableDateChecks: boolean;
+  feedTitle?: string;
+}

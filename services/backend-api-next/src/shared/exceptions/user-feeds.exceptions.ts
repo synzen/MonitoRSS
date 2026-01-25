@@ -1,0 +1,18 @@
+import { StandardException } from "./standard.exception";
+
+export class FeedLimitReachedException extends StandardException {}
+export class BannedFeedException extends StandardException {}
+export class SourceFeedNotFoundException extends StandardException {}
+export class RefreshRateNotAllowedException extends StandardException {}
+export class FeedNotFailedException extends StandardException {}
+export class ManualRequestTooSoonException extends StandardException {}
+export class FeedFetchTimeoutException extends StandardException {}
+export class NoFeedOnHtmlPageException extends StandardException {}
+export class FeedParseException extends StandardException {}
+export class FeedRequestException extends StandardException {}
+export class FeedInvalidSslCertException extends StandardException {}
+export class FeedTooManyRequestsException extends StandardException {}
+export class FeedUnauthorizedException extends StandardException {}
+export class FeedForbiddenException extends StandardException {}
+export class FeedNotFoundException extends StandardException {}
+export class FeedInternalErrorException extends StandardException {}

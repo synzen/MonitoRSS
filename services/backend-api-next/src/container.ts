@@ -53,6 +53,7 @@ import { NotificationsService } from "./services/notifications/notifications.ser
 import { DiscordServersService } from "./services/discord-servers/discord-servers.service";
 import { UserFeedConnectionEventsService } from "./services/user-feed-connection-events/user-feed-connection-events.service";
 import { MongoMigrationsService } from "./services/mongo-migrations/mongo-migrations.service";
+import { UserFeedsService } from "./services/user-feeds/user-feeds.service";
 import { createSmtpTransport } from "./infra/smtp";
 
 export interface Container {
@@ -102,6 +103,7 @@ export interface Container {
   discordServersService: DiscordServersService;
   userFeedConnectionEventsService: UserFeedConnectionEventsService;
   mongoMigrationsService: MongoMigrationsService;
+  userFeedsService: UserFeedsService;
 }
 
 export function createContainer(deps: {
@@ -210,6 +212,18 @@ export function createContainer(deps: {
     userRepository,
   });
 
+  const userFeedsService = new UserFeedsService({
+    config: deps.config,
+    userFeedRepository,
+    userRepository,
+    feedsService,
+    supportersService,
+    feedFetcherApiService,
+    feedHandlerService,
+    usersService,
+    publishMessage,
+  });
+
   return {
     config: deps.config,
     mongoConnection: deps.mongoConnection,
@@ -257,5 +271,6 @@ export function createContainer(deps: {
     discordServersService,
     userFeedConnectionEventsService,
     mongoMigrationsService,
+    userFeedsService,
   };
 }

@@ -385,6 +385,7 @@ export class UserFeedMongooseRepository
     shareManageOptions?: {
       invites: Array<{
         discordUserId: string;
+        status?: string;
         connections?: Array<{ connectionId: string }>;
       }>;
     };
@@ -397,6 +398,7 @@ export class UserFeedMongooseRepository
         ? {
             invites: input.shareManageOptions.invites.map((invite) => ({
               discordUserId: invite.discordUserId,
+              status: invite.status,
               connections: invite.connections?.map((c) => ({
                 connectionId: this.stringToObjectId(c.connectionId),
               })),
@@ -414,6 +416,90 @@ export class UserFeedMongooseRepository
       return null;
     }
     return this.toEntity(doc as UserFeedDoc & { _id: Types.ObjectId });
+  }
+
+  async countByOwnership(discordUserId: string): Promise<number> {
+    return this.model.countDocuments({
+      $or: [
+        { "user.discordUserId": discordUserId },
+        {
+          "shareManageOptions.invites": {
+            $elemMatch: {
+              discordUserId,
+              status: UserFeedManagerStatus.Accepted,
+            },
+          },
+        },
+      ],
+    });
+  }
+
+  async findByUrls(
+    discordUserId: string,
+    urls: string[]
+  ): Promise<{ url: string }[]> {
+    const docs = await this.model
+      .find({
+        "user.discordUserId": discordUserId,
+        url: { $in: urls },
+      })
+      .select("url")
+      .lean();
+
+    return docs.map((doc) => ({ url: doc.url }));
+  }
+
+  async updateById(
+    id: string,
+    update: Record<string, unknown>
+  ): Promise<IUserFeed | null> {
+    const doc = await this.model
+      .findByIdAndUpdate(this.stringToObjectId(id), update, { new: true })
+      .lean();
+
+    if (!doc) {
+      return null;
+    }
+
+    return this.toEntity(doc as UserFeedDoc & { _id: Types.ObjectId });
+  }
+
+  async deleteById(id: string): Promise<IUserFeed | null> {
+    const doc = await this.model
+      .findByIdAndDelete(this.stringToObjectId(id))
+      .lean();
+
+    if (!doc) {
+      return null;
+    }
+
+    return this.toEntity(doc as UserFeedDoc & { _id: Types.ObjectId });
+  }
+
+  async deleteByIds(ids: string[]): Promise<number> {
+    const objectIds = ids.map((id) => this.stringToObjectId(id));
+    const result = await this.model.deleteMany({ _id: { $in: objectIds } });
+    return result.deletedCount;
+  }
+
+  async updateManyByFilter(
+    filter: Record<string, unknown>,
+    update: Record<string, unknown>
+  ): Promise<number> {
+    const result = await this.model.updateMany(filter, update);
+    return result.modifiedCount;
+  }
+
+  async findByIds(ids: string[]): Promise<IUserFeed[]> {
+    const objectIds = ids.map((id) => this.stringToObjectId(id));
+    const docs = await this.model.find({ _id: { $in: objectIds } }).lean();
+    return docs.map((doc) =>
+      this.toEntity(doc as UserFeedDoc & { _id: Types.ObjectId })
+    );
+  }
+
+  async aggregate<T>(pipeline: Record<string, unknown>[]): Promise<T[]> {
+    return this.model.aggregate(pipeline);
   }
 
   async deleteAll(): Promise<void> {
