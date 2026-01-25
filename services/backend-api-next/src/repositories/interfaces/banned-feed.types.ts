@@ -5,4 +5,6 @@ export interface IBannedFeed {
   guildIds: string[];
 }
 
-export interface IBannedFeedRepository {}
+export interface IBannedFeedRepository {
+  findByUrlForGuild(url: string, guildId: string): Promise<IBannedFeed | null>;
+}

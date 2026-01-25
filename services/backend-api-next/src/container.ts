@@ -31,6 +31,10 @@ import { PaddleService } from "./services/paddle/paddle.service";
 import { PatronsService } from "./services/patrons/patrons.service";
 import { RedditApiService } from "./services/reddit-api/reddit-api.service";
 import { SupportersService } from "./services/supporters/supporters.service";
+import { UsersService } from "./services/users/users.service";
+import { DiscordUsersService } from "./services/discord-users/discord-users.service";
+import { FeedSchedulingService } from "./services/feed-scheduling/feed-scheduling.service";
+import { FeedsService } from "./services/feeds/feeds.service";
 
 export interface Container {
   config: Config;
@@ -72,6 +76,10 @@ export interface Container {
   messageBrokerService: MessageBrokerService;
   patronsService: PatronsService;
   supportersService: SupportersService;
+  usersService: UsersService;
+  discordUsersService: DiscordUsersService;
+  feedSchedulingService: FeedSchedulingService;
+  feedsService: FeedsService;
 }
 
 export function createContainer(deps: {
@@ -123,6 +131,36 @@ export function createContainer(deps: {
     userFeedLimitOverrideRepository,
   });
 
+  const usersService = new UsersService({
+    config: deps.config,
+    userRepository,
+    userFeedRepository,
+    supporterRepository,
+    supportersService,
+    paddleService,
+  });
+
+  const discordUsersService = new DiscordUsersService({
+    config: deps.config,
+    discordApiService,
+    supportersService,
+  });
+
+  const feedSchedulingService = new FeedSchedulingService({
+    config: deps.config,
+    supportersService,
+    feedScheduleRepository,
+  });
+
+  const feedsService = new FeedsService({
+    feedRepository,
+    bannedFeedRepository,
+    feedSchedulingService,
+    discordApiService,
+    discordAuthService,
+    discordPermissionsService,
+  });
+
   return {
     config: deps.config,
     mongoConnection: deps.mongoConnection,
@@ -163,5 +201,9 @@ export function createContainer(deps: {
     messageBrokerService,
     patronsService,
     supportersService,
+    usersService,
+    discordUsersService,
+    feedSchedulingService,
+    feedsService,
   };
 }

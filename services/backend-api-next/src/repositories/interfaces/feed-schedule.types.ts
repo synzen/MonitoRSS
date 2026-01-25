@@ -6,4 +6,6 @@ export interface IFeedSchedule {
   refreshRateMinutes: number;
 }
 
-export interface IFeedScheduleRepository {}
+export interface IFeedScheduleRepository {
+  findAllExcludingDefault(): Promise<IFeedSchedule[]>;
+}

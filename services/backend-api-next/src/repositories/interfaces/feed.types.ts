@@ -56,4 +56,22 @@ export interface IFeed {
   updatedAt?: Date;
 }
 
-export interface IFeedRepository {}
+export interface IFeedWithFailRecord extends IFeed {
+  failRecord?: {
+    id: string;
+    reason?: string;
+    failedAt: Date;
+    alerted: boolean;
+  };
+}
+
+export interface IFeedRepository {
+  aggregateWithFailRecords(options: {
+    guildId: string;
+    search?: string;
+    skip: number;
+    limit: number;
+  }): Promise<IFeedWithFailRecord[]>;
+
+  countByGuild(guildId: string, search?: string): Promise<number>;
+}

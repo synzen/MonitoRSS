@@ -81,7 +81,15 @@ export interface IUserFeed {
   updatedAt: Date;
 }
 
-export interface IUserFeedRepository {}
+export interface LookupKeyOperation {
+  feedId: string;
+  action: "set" | "unset";
+  lookupKey?: string;
+}
+
+export interface IUserFeedRepository {
+  bulkUpdateLookupKeys(operations: LookupKeyOperation[]): Promise<void>;
+}
 
 // UserFeedTag
 export interface IUserFeedTag {

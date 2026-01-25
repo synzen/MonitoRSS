@@ -5,7 +5,11 @@ import {
   type Model,
   type InferSchemaType,
 } from "mongoose";
-import type { IUserFeed, IUserFeedRepository } from "../interfaces/user-feed.types";
+import type {
+  IUserFeed,
+  IUserFeedRepository,
+  LookupKeyOperation,
+} from "../interfaces/user-feed.types";
 import type { IDiscordChannelConnection, IConnectionDetails } from "../interfaces/feed-connection.types";
 import {
   UserFeedDisabledCode,
@@ -238,5 +242,37 @@ export class UserFeedMongooseRepository
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
     };
+  }
+
+  async bulkUpdateLookupKeys(operations: LookupKeyOperation[]): Promise<void> {
+    if (operations.length === 0) {
+      return;
+    }
+
+    const bulkOps = operations.map((op) => {
+      if (op.action === "set") {
+        return {
+          updateOne: {
+            filter: { _id: this.stringToObjectId(op.feedId) },
+            update: { $set: { feedRequestLookupKey: op.lookupKey } } as Record<
+              string,
+              unknown
+            >,
+          },
+        };
+      } else {
+        return {
+          updateOne: {
+            filter: { _id: this.stringToObjectId(op.feedId) },
+            update: { $unset: { feedRequestLookupKey: 1 } } as Record<
+              string,
+              unknown
+            >,
+          },
+        };
+      }
+    });
+
+    await this.model.bulkWrite(bulkOps as Parameters<typeof this.model.bulkWrite>[0]);
   }
 }

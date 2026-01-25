@@ -5,11 +5,15 @@ import {
   type Model,
   type InferSchemaType,
 } from "mongoose";
-import type { IFeed, IFeedRepository } from "../interfaces/feed.types";
+import type { IFeed, IFeedRepository, IFeedWithFailRecord } from "../interfaces/feed.types";
 import type { IDiscordChannelConnection, IConnectionDetails } from "../interfaces/feed-connection.types";
 import { FeedEmbedSchema, FeedWebhookSchema } from "./feed-embed.schemas";
 import { FeedConnectionsSchema, type DiscordChannelConnectionDoc } from "./feed-connection.schemas";
 import { BaseMongooseRepository } from "./base.mongoose.repository";
+
+function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 const FeedRegexOpSearchSchema = new Schema(
   {
@@ -142,5 +146,92 @@ export class FeedMongooseRepository
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
     };
+  }
+
+  async aggregateWithFailRecords(options: {
+    guildId: string;
+    search?: string;
+    skip: number;
+    limit: number;
+  }): Promise<IFeedWithFailRecord[]> {
+    const match: Record<string, unknown> = {
+      guild: options.guildId,
+    };
+
+    if (options.search) {
+      match.$or = [
+        { title: new RegExp(escapeRegExp(options.search), "i") },
+        { url: new RegExp(escapeRegExp(options.search), "i") },
+      ];
+    }
+
+    const feeds = await this.model.aggregate([
+      { $match: match },
+      { $sort: { addedAt: -1 } },
+      { $skip: options.skip },
+      { $limit: options.limit },
+      {
+        $lookup: {
+          from: "fail_records",
+          localField: "url",
+          foreignField: "_id",
+          as: "failRecord",
+        },
+      },
+      {
+        $addFields: {
+          failRecord: { $first: "$failRecord" },
+        },
+      },
+    ]);
+
+    return feeds.map((doc) => {
+      const feed = this.toEntity(doc) as IFeedWithFailRecord;
+
+      if (doc.failRecord) {
+        feed.failRecord = {
+          id: doc.failRecord._id?.toString() || doc.failRecord._id,
+          reason: doc.failRecord.reason,
+          failedAt: doc.failRecord.failedAt,
+          alerted: doc.failRecord.alerted,
+        };
+      }
+
+      return feed;
+    });
+  }
+
+  async countByGuild(guildId: string, search?: string): Promise<number> {
+    const query: Record<string, unknown> = {
+      guild: guildId,
+    };
+
+    if (search) {
+      query.$or = [
+        { title: new RegExp(escapeRegExp(search), "i") },
+        { url: new RegExp(escapeRegExp(search), "i") },
+      ];
+    }
+
+    return this.model.countDocuments(query);
+  }
+
+  async create(input: {
+    title: string;
+    url: string;
+    guild: string;
+    channel: string;
+    addedAt?: Date;
+  }): Promise<IFeed> {
+    const doc = await this.model.create({
+      ...input,
+      embeds: [],
+      addedAt: input.addedAt ?? new Date(),
+    });
+    return this.toEntity(doc.toObject());
+  }
+
+  async deleteAll(): Promise<void> {
+    await this.model.deleteMany({});
   }
 }

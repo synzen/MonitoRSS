@@ -60,4 +60,65 @@ export interface IUser {
   updatedAt: Date;
 }
 
-export interface IUserRepository {}
+export interface CreateUserInput {
+  discordUserId: string;
+  email?: string;
+}
+
+export interface UpdateUserPreferencesInput {
+  alertOnDisabledFeeds?: boolean | null;
+  dateFormat?: string | null;
+  dateTimezone?: string | null;
+  dateLocale?: string | null;
+  feedListSort?: IUserFeedListSort | null;
+  feedListColumnVisibility?: IUserFeedListColumnVisibility | null;
+  feedListColumnOrder?: IUserFeedListColumnOrder | null;
+  feedListStatusFilters?: IUserFeedListStatusFilters | null;
+}
+
+export interface SetExternalCredentialInput {
+  type: UserExternalCredentialType;
+  data: Record<string, string>;
+  expireAt?: Date;
+}
+
+export interface IUserRepository {
+  findByDiscordId(discordUserId: string): Promise<IUser | null>;
+  findIdByDiscordId(discordUserId: string): Promise<string | null>;
+  create(input: CreateUserInput): Promise<IUser>;
+  updateEmailByDiscordId(
+    discordUserId: string,
+    email: string
+  ): Promise<IUser | null>;
+  updatePreferencesByDiscordId(
+    discordUserId: string,
+    preferences: UpdateUserPreferencesInput
+  ): Promise<IUser | null>;
+  findEmailsByDiscordIdsWithAlertPreference(
+    discordUserIds: string[]
+  ): Promise<string[]>;
+  setExternalCredential(
+    userId: string,
+    credential: SetExternalCredentialInput
+  ): Promise<void>;
+  getExternalCredentials(
+    userId: string,
+    type: UserExternalCredentialType
+  ): Promise<IUserExternalCredential | null>;
+  removeExternalCredentials(
+    userId: string,
+    type: UserExternalCredentialType
+  ): Promise<void>;
+  revokeExternalCredential(
+    userId: string,
+    credentialId: string
+  ): Promise<void>;
+  aggregateUsersWithActiveRedditCredentials(options?: {
+    userIds?: string[];
+    feedIds?: string[];
+  }): AsyncIterable<{ discordUserId: string; feedId: string; lookupKey?: string }>;
+  aggregateUsersWithExpiredOrRevokedRedditCredentials(options?: {
+    userIds?: string[];
+    feedIds?: string[];
+  }): AsyncIterable<{ feedId: string }>;
+}

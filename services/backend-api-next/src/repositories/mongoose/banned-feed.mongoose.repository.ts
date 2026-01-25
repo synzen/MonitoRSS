@@ -38,4 +38,25 @@ export class BannedFeedMongooseRepository
       guildIds: doc.guildIds,
     };
   }
+
+  async findByUrlForGuild(url: string, guildId: string): Promise<IBannedFeed | null> {
+    const doc = await this.model.findOne({
+      url: url,
+      $or: [
+        { guildIds: guildId },
+        { guildIds: { $size: 0 } },
+      ],
+    }).lean();
+
+    return doc ? this.toEntity(doc as BannedFeedDoc & { _id: Types.ObjectId }) : null;
+  }
+
+  async create(input: Omit<IBannedFeed, "id">): Promise<IBannedFeed> {
+    const doc = await this.model.create(input);
+    return this.toEntity(doc.toObject());
+  }
+
+  async deleteAll(): Promise<void> {
+    await this.model.deleteMany({});
+  }
 }

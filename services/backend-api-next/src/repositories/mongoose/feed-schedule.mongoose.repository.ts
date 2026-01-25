@@ -43,4 +43,14 @@ export class FeedScheduleMongooseRepository
       refreshRateMinutes: doc.refreshRateMinutes,
     };
   }
+
+  async findAllExcludingDefault(): Promise<IFeedSchedule[]> {
+    const docs = await this.model
+      .find({
+        name: { $ne: "default" },
+      })
+      .lean();
+
+    return docs.map((doc) => this.toEntity(doc as FeedScheduleDoc & { _id: Types.ObjectId }));
+  }
 }
