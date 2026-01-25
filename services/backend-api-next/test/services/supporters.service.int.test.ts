@@ -17,6 +17,7 @@ import { PatronStatus } from "../../src/repositories/shared/enums";
 import { createTestSupporter } from "../helpers/test-data/supporter.test-data";
 import { createTestPatron } from "../helpers/test-data/patron.test-data";
 import type { Config } from "../../src/config";
+import type { DiscordApiService } from "../../src/services/discord-api/discord-api.service";
 
 describe("SupportersService Integration", { concurrency: false }, () => {
   let mongoConnection: Connection;
@@ -26,6 +27,7 @@ describe("SupportersService Integration", { concurrency: false }, () => {
   let supporterRepository: SupporterMongooseRepository;
   let patronRepository: PatronMongooseRepository;
   let userFeedLimitOverrideRepository: UserFeedLimitOverrideMongooseRepository;
+  let discordApiService: DiscordApiService;
 
   const userDiscordId = "user-discord-id";
   const defaultMaxFeeds = 5;
@@ -55,15 +57,20 @@ describe("SupportersService Integration", { concurrency: false }, () => {
 
     patronsService = new PatronsService(mockConfig);
     guildSubscriptionsService = new GuildSubscriptionsService(mockConfig);
+    discordApiService = {
+      getGuildMember: async () => ({ roles: [] }),
+      addGuildMemberRole: async () => {},
+      removeGuildMemberRole: async () => {},
+    } as unknown as DiscordApiService;
 
-    supportersService = new SupportersService(
-      mockConfig,
+    supportersService = new SupportersService({
+      config: mockConfig,
       patronsService,
       guildSubscriptionsService,
-      undefined,
+      discordApiService,
       supporterRepository,
-      userFeedLimitOverrideRepository
-    );
+      userFeedLimitOverrideRepository,
+    });
   });
 
   afterEach(async () => {

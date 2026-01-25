@@ -26,6 +26,15 @@ import type {
 import type { GuildSubscriptionFormatted } from "../guild-subscriptions/types";
 import logger from "../../infra/logger";
 
+export interface SupportersServiceDeps {
+  config: Config;
+  patronsService: PatronsService;
+  guildSubscriptionsService: GuildSubscriptionsService;
+  discordApiService: DiscordApiService;
+  supporterRepository: ISupporterRepository;
+  userFeedLimitOverrideRepository: IUserFeedLimitOverrideRepository;
+}
+
 export class SupportersService {
   readonly defaultMaxFeeds: number;
   readonly defaultRefreshRateSeconds: number;
@@ -43,14 +52,8 @@ export class SupportersService {
 
   static PAST_DUE_GRACE_PERIOD_DAYS = 10;
 
-  constructor(
-    private readonly config: Config,
-    private readonly patronsService: PatronsService,
-    private readonly guildSubscriptionsService: GuildSubscriptionsService,
-    private readonly discordApiService?: DiscordApiService,
-    private readonly supporterRepository?: ISupporterRepository,
-    private readonly userFeedLimitOverrideRepository?: IUserFeedLimitOverrideRepository
-  ) {
+  constructor(private readonly deps: SupportersServiceDeps) {
+    const { config } = deps;
     this.defaultMaxFeeds = Number(config.BACKEND_API_DEFAULT_MAX_FEEDS);
     this.defaultRefreshRateSeconds =
       config.BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES * 60;
@@ -127,7 +130,7 @@ export class SupportersService {
 
     if (patrons.length) {
       return patrons.some((patron) =>
-        this.patronsService.isValidPatron(patron)
+        this.deps.patronsService.isValidPatron(patron)
       );
     }
 
@@ -166,7 +169,7 @@ export class SupportersService {
       refreshRateSeconds: patronRefreshRateSeconds,
       allowCustomPlaceholders: patronAllowCustomPlaceholders,
       maxPatreonPledge,
-    } = this.patronsService.getMaxBenefitsFromPatrons(supporter.patrons);
+    } = this.deps.patronsService.getMaxBenefitsFromPatrons(supporter.patrons);
 
     let refreshRateSeconds = this.defaultRefreshRateSeconds;
     let isFromPatrons =
@@ -269,22 +272,13 @@ export class SupportersService {
   }
 
   async getBenefitsOfServers(serverIds: string[]): Promise<ServerBenefits[]> {
-    if (!this.supporterRepository) {
-      return serverIds.map((serverId) => ({
-        hasSupporter: false,
-        maxFeeds: this.defaultMaxFeeds,
-        serverId,
-        webhooks: false,
-      }));
-    }
-
     const subscriptions =
-      await this.guildSubscriptionsService.getAllSubscriptions({
+      await this.deps.guildSubscriptionsService.getAllSubscriptions({
         filters: { serverIds },
       });
 
     const allSupportersWithGuild =
-      await this.supporterRepository.aggregateSupportersForGuilds(serverIds);
+      await this.deps.supporterRepository.aggregateSupportersForGuilds(serverIds);
 
     const benefitsMappedByServerIds = new Map<string, BenefitsFromSupporter[]>();
 
@@ -374,30 +368,10 @@ export class SupportersService {
       };
     }
 
-    if (!this.supporterRepository || !this.userFeedLimitOverrideRepository) {
-      return {
-        isSupporter: false,
-        maxFeeds: this.defaultMaxFeeds,
-        guilds: [],
-        maxGuilds: 0,
-        refreshRateSeconds: this.defaultRefreshRateSeconds,
-        maxDailyArticles: this.maxDailyArticlesDefault,
-        maxUserFeeds: this.defaultMaxUserFeeds,
-        maxUserFeedsComposition: {
-          base: this.defaultMaxUserFeeds,
-          legacy: 0,
-        },
-        allowCustomPlaceholders: false,
-        articleRateLimits: this.defaultRateLimits,
-        subscription: undefined,
-        allowExternalProperties: false,
-      };
-    }
-
     const aggregate =
-      await this.supporterRepository.aggregateWithPatronsAndOverrides(discordId);
+      await this.deps.supporterRepository.aggregateWithPatronsAndOverrides(discordId);
 
-    const found = await this.userFeedLimitOverrideRepository.findById(discordId);
+    const found = await this.deps.userFeedLimitOverrideRepository.findById(discordId);
 
     const base = this.defaultMaxUserFeeds;
     const legacyAdd = found?.additionalUserFeeds || 0;
@@ -458,11 +432,11 @@ export class SupportersService {
     userId: string,
     guildIds: string[]
   ): Promise<ISupporter | null> {
-    if (!this.supporterRepository) {
+    if (!this.deps.supporterRepository) {
       throw new Error("Supporter repository not available");
     }
 
-    const updatedSupporter = await this.supporterRepository.updateGuilds(
+    const updatedSupporter = await this.deps.supporterRepository.updateGuilds(
       userId,
       guildIds
     );
@@ -482,20 +456,12 @@ export class SupportersService {
   }:
     | { billingEmail: string; discordUserId?: string }
     | { billingEmail?: string; discordUserId: string }): Promise<SupporterSubscriptionResult> {
-    if (!this.supporterRepository) {
-      return {
-        discordUserId: discordUserId,
-        customer: null,
-        subscription: null,
-      };
-    }
-
     let supporter: ISupporter | null = null;
 
     if (billingEmail) {
-      supporter = await this.supporterRepository.findByPaddleEmail(billingEmail);
+      supporter = await this.deps.supporterRepository.findByPaddleEmail(billingEmail);
     } else if (discordUserId) {
-      supporter = await this.supporterRepository.findById(discordUserId);
+      supporter = await this.deps.supporterRepository.findById(discordUserId);
     }
 
     if (!supporter?.paddleCustomer) {
@@ -559,8 +525,7 @@ export class SupportersService {
     if (
       !supporterGuildId ||
       !supporterRoleId ||
-      !supporterSubroleIds.length ||
-      !this.discordApiService
+      !supporterSubroleIds.length
     ) {
       return;
     }
@@ -569,7 +534,7 @@ export class SupportersService {
       discordUserId,
     });
 
-    const member = await this.discordApiService.getGuildMember(
+    const member = await this.deps.discordApiService.getGuildMember(
       supporterGuildId,
       discordUserId
     );
@@ -584,7 +549,7 @@ export class SupportersService {
           }
 
           try {
-            await this.discordApiService!.removeGuildMemberRole({
+            await this.deps.discordApiService.removeGuildMemberRole({
               guildId: supporterGuildId,
               userId: discordUserId,
               roleId,
@@ -605,7 +570,7 @@ export class SupportersService {
 
     if (!member.roles.includes(supporterRoleId)) {
       try {
-        await this.discordApiService.addGuildMemberRole({
+        await this.deps.discordApiService.addGuildMemberRole({
           guildId: supporterGuildId,
           userId: discordUserId,
           roleId: supporterRoleId,
@@ -641,7 +606,7 @@ export class SupportersService {
         }
 
         try {
-          await this.discordApiService!.removeGuildMemberRole({
+          await this.deps.discordApiService.removeGuildMemberRole({
             guildId: supporterGuildId,
             userId: discordUserId,
             roleId,
@@ -659,7 +624,7 @@ export class SupportersService {
 
     if (useRoleId && !member.roles.includes(useRoleId)) {
       try {
-        await this.discordApiService.addGuildMemberRole({
+        await this.deps.discordApiService.addGuildMemberRole({
           guildId: supporterGuildId,
           userId: discordUserId,
           roleId: useRoleId,
@@ -680,18 +645,14 @@ export class SupportersService {
       return [];
     }
 
-    if (!this.supporterRepository || !this.userFeedLimitOverrideRepository) {
-      return [];
-    }
-
     const aggregate =
-      await this.supporterRepository.aggregateAllSupportersWithPatrons();
+      await this.deps.supporterRepository.aggregateAllSupportersWithPatrons();
 
     const benefits = aggregate.map((agg) => this.getBenefitsFromSupporter(agg));
     const supporterIds = aggregate.map((agg) => agg.id);
 
     const nonSupporterOverrides =
-      await this.userFeedLimitOverrideRepository.findByIdsNotIn(supporterIds);
+      await this.deps.userFeedLimitOverrideRepository.findByIdsNotIn(supporterIds);
 
     const nonSupporterBenefits: DiscordUserBenefits[] = nonSupporterOverrides.map(
       (override) => ({
@@ -722,13 +683,9 @@ export class SupportersService {
 
   async getBenefitsOfAllServers(): Promise<ServerBenefits[]> {
     const subscriptions =
-      await this.guildSubscriptionsService.getAllSubscriptions();
+      await this.deps.guildSubscriptionsService.getAllSubscriptions();
 
     if (subscriptions.length === 0) {
-      return [];
-    }
-
-    if (!this.supporterRepository) {
       return [];
     }
 
@@ -737,7 +694,7 @@ export class SupportersService {
     );
 
     const allSupportersWithGuild =
-      await this.supporterRepository.aggregateAllSupportersWithGuilds();
+      await this.deps.supporterRepository.aggregateAllSupportersWithGuilds();
 
     const benefitsMappedByServerIds = new Map<string, BenefitsFromSupporter[]>();
 

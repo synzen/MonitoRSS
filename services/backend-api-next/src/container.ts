@@ -107,14 +107,14 @@ export function createContainer(deps: {
   const guildSubscriptionsService = new GuildSubscriptionsService(deps.config);
   const messageBrokerService = new MessageBrokerService(publishMessage);
   const patronsService = new PatronsService(deps.config);
-  const supportersService = new SupportersService(
-    deps.config,
+  const supportersService = new SupportersService({
+    config: deps.config,
     patronsService,
     guildSubscriptionsService,
     discordApiService,
     supporterRepository,
-    userFeedLimitOverrideRepository
-  );
+    userFeedLimitOverrideRepository,
+  });
 
   return {
     config: deps.config,

@@ -1,57 +1,88 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
 import dayjs from "dayjs";
-import { SupportersService } from "../../src/services/supporters/supporters.service";
+import { SupportersService, type SupportersServiceDeps } from "../../src/services/supporters/supporters.service";
 import { PatronStatus, SubscriptionProductKey } from "../../src/repositories/shared/enums";
 import type { Config } from "../../src/config";
-import type { PatronsService } from "../../src/services/patrons/patrons.service";
-import type { GuildSubscriptionsService } from "../../src/services/guild-subscriptions/guild-subscriptions.service";
+import type { SupportPatronAggregateResult, ISupporterRepository, IUserFeedLimitOverrideRepository } from "../../src/repositories/interfaces";
 import type { DiscordApiService } from "../../src/services/discord-api/discord-api.service";
-import type { ISupporterRepository, IUserFeedLimitOverrideRepository, SupportPatronAggregateResult } from "../../src/repositories/interfaces";
+
+const defaultMaxFeeds = 5;
+const defaultMaxUserFeeds = 6;
+const defaultRefreshRateSeconds = 60;
+
+const defaultConfig = {
+  BACKEND_API_DEFAULT_MAX_FEEDS: defaultMaxFeeds,
+  BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES: 1,
+  BACKEND_API_DEFAULT_MAX_USER_FEEDS: defaultMaxUserFeeds,
+  BACKEND_API_DEFAULT_MAX_SUPPORTER_USER_FEEDS: 1000,
+  BACKEND_API_MAX_DAILY_ARTICLES_SUPPORTER: 500,
+  BACKEND_API_MAX_DAILY_ARTICLES_DEFAULT: 50,
+  BACKEND_API_ENABLE_SUPPORTERS: true,
+} as Config;
+
+const defaultDeps: SupportersServiceDeps = {
+  config: defaultConfig,
+  patronsService: {
+    isValidPatron: () => true,
+    getMaxBenefitsFromPatrons: () => ({
+      existsAndIsValid: true,
+      maxFeeds: 10,
+      maxUserFeeds: 10,
+      allowWebhooks: true,
+      maxGuilds: 15,
+      refreshRateSeconds: 2,
+      allowCustomPlaceholders: true,
+      maxPatreonPledge: 500,
+    }),
+  } as unknown as SupportersServiceDeps["patronsService"],
+  guildSubscriptionsService: {
+    getAllSubscriptions: async () => [],
+  } as unknown as SupportersServiceDeps["guildSubscriptionsService"],
+  discordApiService: {
+    getGuildMember: async () => ({ roles: [] }),
+    addGuildMemberRole: async () => {},
+    removeGuildMemberRole: async () => {},
+  } as unknown as SupportersServiceDeps["discordApiService"],
+  supporterRepository: {
+    findById: async () => null,
+    findByPaddleEmail: async () => null,
+    create: async (supporter: any) => supporter,
+    updateGuilds: async () => null,
+    deleteAll: async () => {},
+    aggregateWithPatronsAndOverrides: async () => [],
+    aggregateSupportersForGuilds: async () => [],
+    aggregateAllSupportersWithPatrons: async () => [],
+    aggregateAllSupportersWithGuilds: async () => [],
+  } as unknown as SupportersServiceDeps["supporterRepository"],
+  userFeedLimitOverrideRepository: {
+    findById: async () => null,
+    findByIdsNotIn: async () => [],
+    deleteAll: async () => {},
+  } as unknown as SupportersServiceDeps["userFeedLimitOverrideRepository"],
+};
+
+function createSupportersService(overrides: Partial<SupportersServiceDeps> = {}) {
+  const deps: SupportersServiceDeps = {
+    ...defaultDeps,
+    ...overrides,
+    config: { ...defaultConfig, ...overrides.config } as Config,
+  };
+  return { service: new SupportersService(deps), deps };
+}
+
+const mockConfig = defaultConfig;
+const mockPatronsService = defaultDeps.patronsService;
+const mockGuildSubscriptionsService = defaultDeps.guildSubscriptionsService;
+const mockDiscordApiService = defaultDeps.discordApiService;
+const mockSupporterRepository = defaultDeps.supporterRepository;
+const mockUserFeedLimitOverrideRepository = defaultDeps.userFeedLimitOverrideRepository;
 
 describe("SupportersService", { concurrency: false }, () => {
   let supportersService: SupportersService;
-  const defaultMaxFeeds = 5;
-  const defaultMaxUserFeeds = 6;
-  const defaultRefreshRateSeconds = 60;
-
-  const mockConfig = {
-    BACKEND_API_DEFAULT_MAX_FEEDS: defaultMaxFeeds,
-    BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES: 1,
-    BACKEND_API_DEFAULT_MAX_USER_FEEDS: defaultMaxUserFeeds,
-    BACKEND_API_DEFAULT_MAX_SUPPORTER_USER_FEEDS: 1000,
-    BACKEND_API_MAX_DAILY_ARTICLES_SUPPORTER: 500,
-    BACKEND_API_MAX_DAILY_ARTICLES_DEFAULT: 50,
-    BACKEND_API_ENABLE_SUPPORTERS: true,
-  } as Config;
-
-  let mockPatronsService: PatronsService;
-  let mockGuildSubscriptionsService: GuildSubscriptionsService;
 
   beforeEach(() => {
-    mockPatronsService = {
-      isValidPatron: () => true,
-      getMaxBenefitsFromPatrons: () => ({
-        existsAndIsValid: true,
-        maxFeeds: 10,
-        maxUserFeeds: 10,
-        allowWebhooks: true,
-        maxGuilds: 15,
-        refreshRateSeconds: 2,
-        allowCustomPlaceholders: true,
-        maxPatreonPledge: 500,
-      }),
-    } as unknown as PatronsService;
-
-    mockGuildSubscriptionsService = {
-      getAllSubscriptions: async () => [],
-    } as unknown as GuildSubscriptionsService;
-
-    supportersService = new SupportersService(
-      mockConfig,
-      mockPatronsService,
-      mockGuildSubscriptionsService
-    );
+    supportersService = createSupportersService().service;
   });
 
   describe("serverCanUseWebhooks", () => {
@@ -476,51 +507,49 @@ describe("SupportersService", { concurrency: false }, () => {
     } as Config;
 
     it("returns early if supporterGuildId is missing", async () => {
-      const service = new SupportersService(
-        { ...mockConfig, BACKEND_API_SUPPORTER_GUILD_ID: undefined } as Config,
-        mockPatronsService,
-        mockGuildSubscriptionsService
-      );
+      const service = createSupportersService({
+        config: { ...mockConfig, BACKEND_API_SUPPORTER_GUILD_ID: undefined } as Config,
+        patronsService: mockPatronsService,
+        guildSubscriptionsService: mockGuildSubscriptionsService,
+        discordApiService: mockDiscordApiService,
+        supporterRepository: mockSupporterRepository,
+        userFeedLimitOverrideRepository: mockUserFeedLimitOverrideRepository,
+      }).service;
 
       await service.syncDiscordSupporterRoles("user-id");
     });
 
     it("returns early if supporterRoleId is missing", async () => {
-      const service = new SupportersService(
-        {
+      const service = createSupportersService({
+        config: {
           ...mockConfig,
           BACKEND_API_SUPPORTER_GUILD_ID: "guild-id",
           BACKEND_API_SUPPORTER_ROLE_ID: undefined,
         } as Config,
-        mockPatronsService,
-        mockGuildSubscriptionsService
-      );
+        patronsService: mockPatronsService,
+        guildSubscriptionsService: mockGuildSubscriptionsService,
+        discordApiService: mockDiscordApiService,
+        supporterRepository: mockSupporterRepository,
+        userFeedLimitOverrideRepository: mockUserFeedLimitOverrideRepository,
+      }).service;
 
       await service.syncDiscordSupporterRoles("user-id");
     });
 
     it("returns early if supporterSubroleIds is empty", async () => {
-      const service = new SupportersService(
-        {
+      const service = createSupportersService({
+        config: {
           ...mockConfig,
           BACKEND_API_SUPPORTER_GUILD_ID: "guild-id",
           BACKEND_API_SUPPORTER_ROLE_ID: "role-id",
           BACKEND_API_SUPPORTER_SUBROLE_IDS: "",
         } as Config,
-        mockPatronsService,
-        mockGuildSubscriptionsService
-      );
-
-      await service.syncDiscordSupporterRoles("user-id");
-    });
-
-    it("returns early if discordApiService is not provided", async () => {
-      const service = new SupportersService(
-        mockConfigWithRoles,
-        mockPatronsService,
-        mockGuildSubscriptionsService,
-        undefined
-      );
+        patronsService: mockPatronsService,
+        guildSubscriptionsService: mockGuildSubscriptionsService,
+        discordApiService: mockDiscordApiService,
+        supporterRepository: mockSupporterRepository,
+        userFeedLimitOverrideRepository: mockUserFeedLimitOverrideRepository,
+      }).service;
 
       await service.syncDiscordSupporterRoles("user-id");
     });
@@ -537,16 +566,18 @@ describe("SupportersService", { concurrency: false }, () => {
       } as unknown as DiscordApiService;
 
       const mockSupporterRepo = {
+        ...mockSupporterRepository,
         findById: async () => null,
       } as unknown as ISupporterRepository;
 
-      const service = new SupportersService(
-        mockConfigWithRoles,
-        mockPatronsService,
-        mockGuildSubscriptionsService,
-        mockDiscordApiService,
-        mockSupporterRepo
-      );
+      const service = createSupportersService({
+        config: mockConfigWithRoles,
+        patronsService: mockPatronsService,
+        guildSubscriptionsService: mockGuildSubscriptionsService,
+        discordApiService: mockDiscordApiService,
+        supporterRepository: mockSupporterRepo,
+        userFeedLimitOverrideRepository: mockUserFeedLimitOverrideRepository,
+      }).service;
 
       await service.syncDiscordSupporterRoles("user-id");
 
@@ -567,6 +598,7 @@ describe("SupportersService", { concurrency: false }, () => {
       } as unknown as DiscordApiService;
 
       const mockSupporterRepo = {
+        ...mockSupporterRepository,
         findById: async () => ({
           id: "user-id",
           guilds: [],
@@ -597,13 +629,14 @@ describe("SupportersService", { concurrency: false }, () => {
         }),
       } as unknown as ISupporterRepository;
 
-      const service = new SupportersService(
-        mockConfigWithRoles,
-        mockPatronsService,
-        mockGuildSubscriptionsService,
-        mockDiscordApiService,
-        mockSupporterRepo
-      );
+      const service = createSupportersService({
+        config: mockConfigWithRoles,
+        patronsService: mockPatronsService,
+        guildSubscriptionsService: mockGuildSubscriptionsService,
+        discordApiService: mockDiscordApiService,
+        supporterRepository: mockSupporterRepo,
+        userFeedLimitOverrideRepository: mockUserFeedLimitOverrideRepository,
+      }).service;
 
       await service.syncDiscordSupporterRoles("user-id");
 
@@ -614,23 +647,14 @@ describe("SupportersService", { concurrency: false }, () => {
 
   describe("getBenefitsOfAllDiscordUsers", () => {
     it("returns empty array when supporters disabled", async () => {
-      const service = new SupportersService(
-        { ...mockConfig, BACKEND_API_ENABLE_SUPPORTERS: false } as Config,
-        mockPatronsService,
-        mockGuildSubscriptionsService
-      );
-
-      const result = await service.getBenefitsOfAllDiscordUsers();
-
-      assert.deepStrictEqual(result, []);
-    });
-
-    it("returns empty array when repositories not provided", async () => {
-      const service = new SupportersService(
-        mockConfig,
-        mockPatronsService,
-        mockGuildSubscriptionsService
-      );
+      const service = createSupportersService({
+        config: { ...mockConfig, BACKEND_API_ENABLE_SUPPORTERS: false } as Config,
+        patronsService: mockPatronsService,
+        guildSubscriptionsService: mockGuildSubscriptionsService,
+        discordApiService: mockDiscordApiService,
+        supporterRepository: mockSupporterRepository,
+        userFeedLimitOverrideRepository: mockUserFeedLimitOverrideRepository,
+      }).service;
 
       const result = await service.getBenefitsOfAllDiscordUsers();
 
@@ -653,14 +677,14 @@ describe("SupportersService", { concurrency: false }, () => {
         findByIdsNotIn: async () => [],
       } as unknown as IUserFeedLimitOverrideRepository;
 
-      const service = new SupportersService(
-        mockConfig,
-        mockPatronsService,
-        mockGuildSubscriptionsService,
-        undefined,
-        mockSupporterRepo,
-        mockOverrideRepo
-      );
+      const service = createSupportersService({
+        config: mockConfig,
+        patronsService: mockPatronsService,
+        guildSubscriptionsService: mockGuildSubscriptionsService,
+        discordApiService: mockDiscordApiService,
+        supporterRepository: mockSupporterRepo,
+        userFeedLimitOverrideRepository: mockOverrideRepo,
+      }).service;
 
       const result = await service.getBenefitsOfAllDiscordUsers();
 
@@ -679,14 +703,14 @@ describe("SupportersService", { concurrency: false }, () => {
         ],
       } as unknown as IUserFeedLimitOverrideRepository;
 
-      const service = new SupportersService(
-        mockConfig,
-        mockPatronsService,
-        mockGuildSubscriptionsService,
-        undefined,
-        mockSupporterRepo,
-        mockOverrideRepo
-      );
+      const service = createSupportersService({
+        config: mockConfig,
+        patronsService: mockPatronsService,
+        guildSubscriptionsService: mockGuildSubscriptionsService,
+        discordApiService: mockDiscordApiService,
+        supporterRepository: mockSupporterRepo,
+        userFeedLimitOverrideRepository: mockOverrideRepo,
+      }).service;
 
       const result = await service.getBenefitsOfAllDiscordUsers();
 
@@ -699,27 +723,14 @@ describe("SupportersService", { concurrency: false }, () => {
 
   describe("getBenefitsOfAllServers", () => {
     it("returns empty array when no guild subscriptions", async () => {
-      const service = new SupportersService(
-        mockConfig,
-        mockPatronsService,
-        mockGuildSubscriptionsService
-      );
-
-      const result = await service.getBenefitsOfAllServers();
-
-      assert.deepStrictEqual(result, []);
-    });
-
-    it("returns empty array when repository not provided", async () => {
-      mockGuildSubscriptionsService.getAllSubscriptions = async () => [
-        { guildId: "guild-1", maxFeeds: 10, refreshRate: 120 },
-      ] as never;
-
-      const service = new SupportersService(
-        mockConfig,
-        mockPatronsService,
-        mockGuildSubscriptionsService
-      );
+      const service = createSupportersService({
+        config: mockConfig,
+        patronsService: mockPatronsService,
+        guildSubscriptionsService: mockGuildSubscriptionsService,
+        discordApiService: mockDiscordApiService,
+        supporterRepository: mockSupporterRepository,
+        userFeedLimitOverrideRepository: mockUserFeedLimitOverrideRepository,
+      }).service;
 
       const result = await service.getBenefitsOfAllServers();
 
@@ -742,13 +753,14 @@ describe("SupportersService", { concurrency: false }, () => {
         ],
       } as unknown as ISupporterRepository;
 
-      const service = new SupportersService(
-        mockConfig,
-        mockPatronsService,
-        mockGuildSubscriptionsService,
-        undefined,
-        mockSupporterRepo
-      );
+      const service = createSupportersService({
+        config: mockConfig,
+        patronsService: mockPatronsService,
+        guildSubscriptionsService: mockGuildSubscriptionsService,
+        discordApiService: mockDiscordApiService,
+        supporterRepository: mockSupporterRepo,
+        userFeedLimitOverrideRepository: mockUserFeedLimitOverrideRepository,
+      }).service;
 
       const result = await service.getBenefitsOfAllServers();
 
