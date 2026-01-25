@@ -8,6 +8,7 @@ import {
 import type {
   INotificationDeliveryAttempt,
   INotificationDeliveryAttemptRepository,
+  CreateNotificationDeliveryAttemptInput,
 } from "../interfaces/notification-delivery-attempt.types";
 import {
   NotificationDeliveryAttemptStatus,
@@ -66,5 +67,26 @@ export class NotificationDeliveryAttemptMongooseRepository
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
     };
+  }
+
+  async createMany(
+    inputs: CreateNotificationDeliveryAttemptInput[]
+  ): Promise<INotificationDeliveryAttempt[]> {
+    const docs = await this.model.create(inputs);
+    return docs.map((doc) => this.toEntity(doc.toObject()));
+  }
+
+  async updateManyByIds(
+    ids: string[],
+    update: {
+      status: NotificationDeliveryAttemptStatus;
+      failReasonInternal?: string;
+    }
+  ): Promise<void> {
+    const objectIds = ids.map((id) => this.stringToObjectId(id));
+    await this.model.updateMany(
+      { _id: { $in: objectIds } },
+      { $set: update }
+    );
   }
 }

@@ -15,4 +15,24 @@ export interface INotificationDeliveryAttempt {
   updatedAt: Date;
 }
 
-export interface INotificationDeliveryAttemptRepository {}
+export interface CreateNotificationDeliveryAttemptInput {
+  email: string;
+  status: NotificationDeliveryAttemptStatus;
+  type: NotificationDeliveryAttemptType;
+  feedId?: string;
+  connectionId?: string;
+}
+
+export interface INotificationDeliveryAttemptRepository {
+  createMany(
+    inputs: CreateNotificationDeliveryAttemptInput[]
+  ): Promise<INotificationDeliveryAttempt[]>;
+
+  updateManyByIds(
+    ids: string[],
+    update: {
+      status: NotificationDeliveryAttemptStatus;
+      failReasonInternal?: string;
+    }
+  ): Promise<void>;
+}

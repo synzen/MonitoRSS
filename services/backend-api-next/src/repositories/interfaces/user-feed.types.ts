@@ -87,19 +87,33 @@ export interface LookupKeyOperation {
   lookupKey?: string;
 }
 
+export interface UserFeedForNotification {
+  id: string;
+  title: string;
+  url: string;
+  user: IUserFeedUser;
+  shareManageOptions?: IUserFeedShareManageOptions;
+  connections: IFeedConnections;
+}
+
+export interface AddConnectionToInviteOperation {
+  feedId: string;
+  discordUserId: string;
+  connectionId: string;
+}
+
+export interface RemoveConnectionsFromInvitesInput {
+  feedId: string;
+  connectionIds: string[];
+}
+
 export interface IUserFeedRepository {
   bulkUpdateLookupKeys(operations: LookupKeyOperation[]): Promise<void>;
+  findByIdsForNotification(ids: string[]): Promise<UserFeedForNotification[]>;
+  bulkAddConnectionsToInvites(
+    operations: AddConnectionToInviteOperation[]
+  ): Promise<void>;
+  removeConnectionsFromInvites(
+    input: RemoveConnectionsFromInvitesInput
+  ): Promise<void>;
 }
-
-// UserFeedTag
-export interface IUserFeedTag {
-  id: string;
-  label: string;
-  color?: string;
-  feedIds: string[];
-  userId: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface IUserFeedTagRepository {}

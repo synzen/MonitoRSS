@@ -4,6 +4,8 @@
   "private": true,
   "dependencies": {
     "@fastify/compress": "^8.0.1",
+    "handlebars": "^4.7.8",
+    "nodemailer": "^6.9.16",
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^10.0.2",
     "@fastify/secure-session": "^8.1.1",
@@ -29,6 +31,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@types/nodemailer": "^6.4.17",
     "@types/qs": "^6.14.0",
     "prettier": "3.7.4",
     "tsx": "^4.19.0"

@@ -18,7 +18,6 @@ import { FeedMongooseRepository } from "./repositories/mongoose/feed.mongoose.re
 import { FeedFilteredFormatMongooseRepository } from "./repositories/mongoose/feed-filtered-format.mongoose.repository";
 import { SupporterMongooseRepository } from "./repositories/mongoose/supporter.mongoose.repository";
 import { UserFeedMongooseRepository } from "./repositories/mongoose/user-feed.mongoose.repository";
-import { UserFeedTagMongooseRepository } from "./repositories/mongoose/user-feed-tag.mongoose.repository";
 import { DiscordApiService } from "./services/discord-api/discord-api.service";
 import { DiscordAuthService } from "./services/discord-auth/discord-auth.service";
 import { DiscordPermissionsService } from "./services/discord-permissions/discord-permissions.service";
@@ -35,6 +34,10 @@ import { UsersService } from "./services/users/users.service";
 import { DiscordUsersService } from "./services/discord-users/discord-users.service";
 import { FeedSchedulingService } from "./services/feed-scheduling/feed-scheduling.service";
 import { FeedsService } from "./services/feeds/feeds.service";
+import { NotificationsService } from "./services/notifications/notifications.service";
+import { DiscordServersService } from "./services/discord-servers/discord-servers.service";
+import { UserFeedConnectionEventsService } from "./services/user-feed-connection-events/user-feed-connection-events.service";
+import { createSmtpTransport } from "./infra/smtp";
 
 export interface Container {
   config: Config;
@@ -59,7 +62,6 @@ export interface Container {
   feedFilteredFormatRepository: FeedFilteredFormatMongooseRepository;
   supporterRepository: SupporterMongooseRepository;
   userFeedRepository: UserFeedMongooseRepository;
-  userFeedTagRepository: UserFeedTagMongooseRepository;
 
   // External API Services
   discordApiService: DiscordApiService;
@@ -80,6 +82,9 @@ export interface Container {
   discordUsersService: DiscordUsersService;
   feedSchedulingService: FeedSchedulingService;
   feedsService: FeedsService;
+  notificationsService: NotificationsService;
+  discordServersService: DiscordServersService;
+  userFeedConnectionEventsService: UserFeedConnectionEventsService;
 }
 
 export function createContainer(deps: {
@@ -106,7 +111,6 @@ export function createContainer(deps: {
   const feedFilteredFormatRepository = new FeedFilteredFormatMongooseRepository(deps.mongoConnection);
   const supporterRepository = new SupporterMongooseRepository(deps.mongoConnection);
   const userFeedRepository = new UserFeedMongooseRepository(deps.mongoConnection);
-  const userFeedTagRepository = new UserFeedTagMongooseRepository(deps.mongoConnection);
 
   // External API Services
   const discordApiService = new DiscordApiService(deps.config);
@@ -161,6 +165,28 @@ export function createContainer(deps: {
     discordPermissionsService,
   });
 
+  const smtpTransport = createSmtpTransport(deps.config);
+
+  const notificationsService = new NotificationsService({
+    config: deps.config,
+    smtpTransport,
+    usersService,
+    userFeedRepository,
+    notificationDeliveryAttemptRepository,
+  });
+
+  const discordServersService = new DiscordServersService({
+    config: deps.config,
+    discordApiService,
+    feedsService,
+    discordPermissionsService,
+    discordServerProfileRepository,
+  });
+
+  const userFeedConnectionEventsService = new UserFeedConnectionEventsService({
+    userFeedRepository,
+  });
+
   return {
     config: deps.config,
     mongoConnection: deps.mongoConnection,
@@ -184,7 +210,6 @@ export function createContainer(deps: {
     feedFilteredFormatRepository,
     supporterRepository,
     userFeedRepository,
-    userFeedTagRepository,
 
     // External API Services
     discordApiService,
@@ -205,5 +230,8 @@ export function createContainer(deps: {
     discordUsersService,
     feedSchedulingService,
     feedsService,
+    notificationsService,
+    discordServersService,
+    userFeedConnectionEventsService,
   };
 }

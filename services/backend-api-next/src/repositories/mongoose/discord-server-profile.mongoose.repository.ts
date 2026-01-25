@@ -50,4 +50,34 @@ export class DiscordServerProfileMongooseRepository
       updatedAt: doc.updatedAt,
     };
   }
+
+  async findById(id: string): Promise<IDiscordServerProfile | null> {
+    const doc = await this.model.findById(id).lean();
+    return doc ? this.toEntity(doc as DiscordServerProfileDoc & { _id: string }) : null;
+  }
+
+  async findOneAndUpdate(
+    id: string,
+    updates: Partial<Pick<IDiscordServerProfile, "dateFormat" | "dateLanguage" | "timezone">>,
+    options: { upsert: boolean }
+  ): Promise<IDiscordServerProfile> {
+    const updateObj: Record<string, string> = {};
+    if (updates.dateFormat) {
+      updateObj.dateFormat = updates.dateFormat;
+    }
+    if (updates.dateLanguage) {
+      updateObj.dateLanguage = updates.dateLanguage;
+    }
+    if (updates.timezone) {
+      updateObj.timezone = updates.timezone;
+    }
+
+    const doc = await this.model.findOneAndUpdate(
+      { _id: id },
+      { $set: updateObj },
+      { upsert: options.upsert, new: true, lean: true }
+    );
+
+    return this.toEntity(doc as DiscordServerProfileDoc & { _id: string });
+  }
 }

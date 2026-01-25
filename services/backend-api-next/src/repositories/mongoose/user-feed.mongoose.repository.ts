@@ -9,6 +9,9 @@ import type {
   IUserFeed,
   IUserFeedRepository,
   LookupKeyOperation,
+  UserFeedForNotification,
+  AddConnectionToInviteOperation,
+  RemoveConnectionsFromInvitesInput,
 } from "../interfaces/user-feed.types";
 import type { IDiscordChannelConnection, IConnectionDetails } from "../interfaces/feed-connection.types";
 import {
@@ -274,5 +277,104 @@ export class UserFeedMongooseRepository
     });
 
     await this.model.bulkWrite(bulkOps as Parameters<typeof this.model.bulkWrite>[0]);
+  }
+
+  async findByIdsForNotification(ids: string[]): Promise<UserFeedForNotification[]> {
+    const objectIds = ids.map((id) => this.stringToObjectId(id));
+    const docs = await this.model
+      .find({ _id: { $in: objectIds } })
+      .select("_id title url user shareManageOptions connections")
+      .lean();
+
+    return docs.map((doc) => {
+      const docWithId = doc as UserFeedDoc & { _id: Types.ObjectId };
+      const discordChannels =
+        docWithId.connections.discordChannels as unknown as DiscordChannelConnectionDoc[];
+
+      return {
+        id: this.objectIdToString(docWithId._id),
+        title: docWithId.title,
+        url: docWithId.url,
+        user: {
+          id: this.objectIdToString(docWithId.user.id),
+          discordUserId: docWithId.user.discordUserId,
+        },
+        shareManageOptions: docWithId.shareManageOptions
+          ? {
+              invites: (
+                docWithId.shareManageOptions.invites as unknown as ShareManageUserDoc[]
+              ).map((invite) => ({
+                id: invite.id.toString(),
+                type: invite.type as UserFeedManagerInviteType,
+                discordUserId: invite.discordUserId,
+                status: invite.status as UserFeedManagerStatus,
+                connections: invite.connections?.map((c) => ({
+                  connectionId: c.connectionId.toString(),
+                })),
+                createdAt: invite.createdAt,
+                updatedAt: invite.updatedAt,
+              })),
+            }
+          : undefined,
+        connections: {
+          discordChannels: discordChannels.map((conn) =>
+            this.mapDiscordChannelConnection(conn)
+          ),
+        },
+      };
+    });
+  }
+
+  async bulkAddConnectionsToInvites(
+    operations: AddConnectionToInviteOperation[]
+  ): Promise<void> {
+    if (operations.length === 0) {
+      return;
+    }
+
+    const bulkOps = operations.map((op) => ({
+      updateOne: {
+        filter: {
+          _id: this.stringToObjectId(op.feedId),
+          "shareManageOptions.invites.discordUserId": op.discordUserId,
+        },
+        update: {
+          $push: {
+            "shareManageOptions.invites.$.connections": {
+              connectionId: this.stringToObjectId(op.connectionId),
+            },
+          },
+        } as Record<string, unknown>,
+      },
+    }));
+
+    await this.model.bulkWrite(
+      bulkOps as Parameters<typeof this.model.bulkWrite>[0]
+    );
+  }
+
+  async removeConnectionsFromInvites(
+    input: RemoveConnectionsFromInvitesInput
+  ): Promise<void> {
+    const { feedId, connectionIds } = input;
+
+    if (connectionIds.length === 0) {
+      return;
+    }
+
+    const connectionObjectIds = connectionIds.map((id) =>
+      this.stringToObjectId(id)
+    );
+
+    await this.model.updateOne(
+      { _id: this.stringToObjectId(feedId) },
+      {
+        $pull: {
+          "shareManageOptions.invites.$[].connections": {
+            connectionId: { $in: connectionObjectIds },
+          },
+        },
+      }
+    );
   }
 }
