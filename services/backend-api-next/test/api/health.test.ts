@@ -26,7 +26,7 @@ describe("Health API", { concurrency: true }, () => {
       const response = await ctx.fetch("/api/v1/health");
 
       assert.strictEqual(response.status, 200);
-      const body = await response.json();
+      const body = (await response.json()) as { status: string };
       assert.strictEqual(body.status, "ok");
     });
   });
@@ -36,7 +36,7 @@ describe("Health API", { concurrency: true }, () => {
       const response = await ctx.fetch("/unknown-route");
 
       assert.strictEqual(response.status, 404);
-      const body = await response.json();
+      const body = (await response.json()) as { error: string };
       assert.strictEqual(body.error, "Not Found");
     });
   });

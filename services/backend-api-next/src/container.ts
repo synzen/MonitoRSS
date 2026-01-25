@@ -22,6 +22,9 @@ import {
   UserFeedTagMongooseRepository,
 } from "./repositories/mongoose";
 import { DiscordApiService } from "./services/discord-api/discord-api.service";
+import { DiscordAuthService } from "./services/discord-auth/discord-auth.service";
+import { DiscordPermissionsService } from "./services/discord-permissions/discord-permissions.service";
+import { DiscordWebhooksService } from "./services/discord-webhooks/discord-webhooks.service";
 import { FeedFetcherApiService } from "./services/feed-fetcher-api/feed-fetcher-api.service";
 import { FeedHandlerService } from "./services/feed-handler/feed-handler.service";
 import { GuildSubscriptionsService } from "./services/guild-subscriptions/guild-subscriptions.service";
@@ -58,6 +61,9 @@ export interface Container {
 
   // External API Services
   discordApiService: DiscordApiService;
+  discordAuthService: DiscordAuthService;
+  discordPermissionsService: DiscordPermissionsService;
+  discordWebhooksService: DiscordWebhooksService;
   feedFetcherApiService: FeedFetcherApiService;
   feedHandlerService: FeedHandlerService;
   paddleService: PaddleService;
@@ -98,6 +104,9 @@ export function createContainer(deps: {
 
   // External API Services
   const discordApiService = new DiscordApiService(deps.config);
+  const discordAuthService = new DiscordAuthService(deps.config, discordApiService);
+  const discordPermissionsService = new DiscordPermissionsService(deps.config, discordApiService);
+  const discordWebhooksService = new DiscordWebhooksService(deps.config, discordApiService);
   const feedFetcherApiService = new FeedFetcherApiService(deps.config);
   const feedHandlerService = new FeedHandlerService(deps.config);
   const paddleService = new PaddleService(deps.config);
@@ -143,6 +152,9 @@ export function createContainer(deps: {
 
     // External API Services
     discordApiService,
+    discordAuthService,
+    discordPermissionsService,
+    discordWebhooksService,
     feedFetcherApiService,
     feedHandlerService,
     paddleService,

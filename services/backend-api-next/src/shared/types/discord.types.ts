@@ -86,3 +86,11 @@ export interface DiscordWebhook {
   application_id?: string | null;
   guild_id?: string;
 }
+
+export interface PartialUserGuild {
+  id: string;
+  name: string;
+  icon?: string;
+  owner: boolean;
+  permissions: string;
+}
