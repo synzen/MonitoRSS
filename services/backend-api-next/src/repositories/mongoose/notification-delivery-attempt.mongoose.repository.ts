@@ -8,7 +8,7 @@ import {
 import type {
   INotificationDeliveryAttempt,
   INotificationDeliveryAttemptRepository,
-} from "../interfaces";
+} from "../interfaces/notification-delivery-attempt.types";
 import {
   NotificationDeliveryAttemptStatus,
   NotificationDeliveryAttemptType,

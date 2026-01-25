@@ -5,7 +5,7 @@ import {
   type Model,
   type InferSchemaType,
 } from "mongoose";
-import type { IMongoMigration, IMongoMigrationRepository } from "../interfaces";
+import type { IMongoMigration, IMongoMigrationRepository } from "../interfaces/mongo-migration.types";
 import { BaseMongooseRepository } from "./base.mongoose.repository";
 
 const MongoMigrationSchema = new Schema(

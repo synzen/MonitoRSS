@@ -5,7 +5,7 @@ import {
   type Model,
   type InferSchemaType,
 } from "mongoose";
-import type { IBannedFeed, IBannedFeedRepository } from "../interfaces";
+import type { IBannedFeed, IBannedFeedRepository } from "../interfaces/banned-feed.types";
 import { BaseMongooseRepository } from "./base.mongoose.repository";
 
 const BannedFeedSchema = new Schema(

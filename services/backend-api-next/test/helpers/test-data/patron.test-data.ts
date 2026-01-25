@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { PatronStatus } from "../../../src/repositories/shared/enums";
-import type { IPatron } from "../../../src/repositories/interfaces";
+import type { IPatron } from "../../../src/repositories/interfaces/patron.types";
 
 const boilerplate: IPatron = {
   id: randomUUID(),

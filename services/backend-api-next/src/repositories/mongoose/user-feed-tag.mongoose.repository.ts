@@ -5,7 +5,7 @@ import {
   type Model,
   type InferSchemaType,
 } from "mongoose";
-import type { IUserFeedTag, IUserFeedTagRepository } from "../interfaces";
+import type { IUserFeedTag, IUserFeedTagRepository } from "../interfaces/user-feed.types";
 import { BaseMongooseRepository } from "./base.mongoose.repository";
 
 const UserFeedTagSchema = new Schema(

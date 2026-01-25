@@ -5,7 +5,7 @@ import {
   type Model,
   type InferSchemaType,
 } from "mongoose";
-import type { ICustomer, ICustomerRepository } from "../interfaces";
+import type { ICustomer, ICustomerRepository } from "../interfaces/customer.types";
 import { BaseMongooseRepository } from "./base.mongoose.repository";
 
 const DiscordConnectionBenefitsSchema = new Schema(

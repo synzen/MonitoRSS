@@ -4,7 +4,8 @@ import dayjs from "dayjs";
 import { SupportersService, type SupportersServiceDeps } from "../../src/services/supporters/supporters.service";
 import { PatronStatus, SubscriptionProductKey } from "../../src/repositories/shared/enums";
 import type { Config } from "../../src/config";
-import type { SupportPatronAggregateResult, ISupporterRepository, IUserFeedLimitOverrideRepository } from "../../src/repositories/interfaces";
+import type { SupportPatronAggregateResult, ISupporterRepository } from "../../src/repositories/interfaces/supporter.types";
+import type { IUserFeedLimitOverrideRepository } from "../../src/repositories/interfaces/user-feed-limit-override.types";
 import type { DiscordApiService } from "../../src/services/discord-api/discord-api.service";
 
 const defaultMaxFeeds = 5;

@@ -9,7 +9,7 @@ import type {
   ISupporterRepository,
   SupportPatronAggregateResult,
   SupporterGuildAggregateResult,
-} from "../interfaces";
+} from "../interfaces/supporter.types";
 import { SubscriptionStatus, SubscriptionProductKey } from "../shared/enums";
 import { BaseMongooseRepository } from "./base.mongoose.repository";
 

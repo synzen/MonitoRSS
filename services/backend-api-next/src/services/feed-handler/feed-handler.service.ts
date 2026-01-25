@@ -1,14 +1,14 @@
 import type { Config } from "../../config";
-import type { FeedRequestLookupDetails } from "../../shared/types";
+import type { FeedRequestLookupDetails } from "../../shared/types/feed-request-lookup-details.type";
 import {
   FeedArticleNotFoundException,
   FeedFetcherStatusException,
-  InvalidComponentsV2Exception,
   InvalidFiltersRegexException,
   InvalidPreviewCustomPlaceholdersRegexException,
-  StandardException,
   UnexpectedApiResponseException,
-} from "../../shared/exceptions";
+} from "../../shared/exceptions/feed-fetcher.exceptions";
+import { InvalidComponentsV2Exception } from "../../shared/exceptions/invalid-components-v2.exception";
+import { StandardException } from "../../shared/exceptions/standard.exception";
 import logger from "../../infra/logger";
 import type {
   FeedHandlerRateLimitsResponse,

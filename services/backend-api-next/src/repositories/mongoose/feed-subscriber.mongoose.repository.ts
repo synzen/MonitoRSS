@@ -8,7 +8,7 @@ import {
 import type {
   IFeedSubscriber,
   IFeedSubscriberRepository,
-} from "../interfaces";
+} from "../interfaces/feed-subscriber.types";
 import { FeedSubscriberType } from "../shared/enums";
 import { BaseMongooseRepository } from "./base.mongoose.repository";
 

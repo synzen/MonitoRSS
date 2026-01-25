@@ -6,7 +6,7 @@ import {
   DISCORD_AUTH_ENDPOINT,
   DISCORD_TOKEN_ENDPOINT,
   DISCORD_TOKEN_REVOCATION_ENDPOINT,
-} from "../shared/constants";
+} from "../shared/constants/discord";
 
 declare module "@fastify/secure-session" {
   interface SessionData {

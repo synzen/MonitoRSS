@@ -4,7 +4,7 @@ import {
   type Model,
   type InferSchemaType,
 } from "mongoose";
-import type { IPatron, IPatronRepository } from "../interfaces";
+import type { IPatron, IPatronRepository } from "../interfaces/patron.types";
 import { PatronStatus } from "../shared/enums";
 import { BaseMongooseRepository } from "./base.mongoose.repository";
 

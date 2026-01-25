@@ -1,4 +1,4 @@
-import type { ISupporter } from "../../../src/repositories/interfaces";
+import type { ISupporter } from "../../../src/repositories/interfaces/supporter.types";
 
 const boilerplate: ISupporter = {
   id: "discord-user-id",

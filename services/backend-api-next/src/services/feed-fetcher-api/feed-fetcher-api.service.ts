@@ -1,6 +1,6 @@
 import type { Config } from "../../config";
-import type { FeedRequestLookupDetails } from "../../shared/types";
-import { UnexpectedApiResponseException } from "../../shared/exceptions";
+import type { FeedRequestLookupDetails } from "../../shared/types/feed-request-lookup-details.type";
+import { UnexpectedApiResponseException } from "../../shared/exceptions/feed-fetcher.exceptions";
 import logger from "../../infra/logger";
 import type { FeedFetchOptions, FeedFetcherFetchFeedResponse } from "./types";
 import { FeedFetcherFetchFeedResponseSchema } from "./schemas";

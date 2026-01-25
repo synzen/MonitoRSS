@@ -4,7 +4,7 @@ import {
   type Model,
   type InferSchemaType,
 } from "mongoose";
-import type { IFailRecord, IFailRecordRepository } from "../interfaces";
+import type { IFailRecord, IFailRecordRepository } from "../interfaces/fail-record.types";
 import { BaseMongooseRepository } from "./base.mongoose.repository";
 
 const FailRecordSchema = new Schema(

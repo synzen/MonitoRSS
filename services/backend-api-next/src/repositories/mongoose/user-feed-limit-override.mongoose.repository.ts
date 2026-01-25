@@ -7,7 +7,7 @@ import {
 import type {
   IUserFeedLimitOverride,
   IUserFeedLimitOverrideRepository,
-} from "../interfaces";
+} from "../interfaces/user-feed-limit-override.types";
 import { BaseMongooseRepository } from "./base.mongoose.repository";
 
 const UserFeedLimitOverrideSchema = new Schema(

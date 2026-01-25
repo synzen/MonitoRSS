@@ -1,5 +1,5 @@
 import type { Config } from "../../config";
-import { RedditAppRevokedException } from "../../shared/exceptions";
+import { RedditAppRevokedException } from "../../shared/exceptions/reddit.exceptions";
 import type { RedditAccessToken } from "./types";
 
 export class RedditApiService {

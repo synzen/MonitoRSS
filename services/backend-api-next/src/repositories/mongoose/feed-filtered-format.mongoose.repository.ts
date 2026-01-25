@@ -8,7 +8,7 @@ import {
 import type {
   IFeedFilteredFormat,
   IFeedFilteredFormatRepository,
-} from "../interfaces";
+} from "../interfaces/feed-filtered-format.types";
 import { FeedEmbedSchema } from "./feed-embed.schemas";
 import { BaseMongooseRepository } from "./base.mongoose.repository";
 

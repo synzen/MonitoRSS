@@ -3,7 +3,7 @@ import {
   TransactionBalanceTooLowException,
   CannotRenewSubscriptionBeforeRenewal,
   AddressLocationNotAllowedException,
-} from "../../shared/exceptions";
+} from "../../shared/exceptions/paddle.exceptions";
 import type {
   SubscriptionProductKey,
   PaddleCustomerCreditBalanceResponse,

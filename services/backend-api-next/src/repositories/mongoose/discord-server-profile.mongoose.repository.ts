@@ -7,7 +7,7 @@ import {
 import type {
   IDiscordServerProfile,
   IDiscordServerProfileRepository,
-} from "../interfaces";
+} from "../interfaces/discord-server-profile.types";
 import { BaseMongooseRepository } from "./base.mongoose.repository";
 
 const DiscordServerProfileSchema = new Schema(

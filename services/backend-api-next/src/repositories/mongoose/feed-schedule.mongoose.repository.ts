@@ -5,7 +5,7 @@ import {
   type Model,
   type InferSchemaType,
 } from "mongoose";
-import type { IFeedSchedule, IFeedScheduleRepository } from "../interfaces";
+import type { IFeedSchedule, IFeedScheduleRepository } from "../interfaces/feed-schedule.types";
 import { BaseMongooseRepository } from "./base.mongoose.repository";
 
 const FeedScheduleSchema = new Schema(

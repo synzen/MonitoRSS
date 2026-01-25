@@ -1,4 +1,4 @@
-import type { FeedRequestLookupDetails } from "../../shared/types";
+import type { FeedRequestLookupDetails } from "../../shared/types/feed-request-lookup-details.type";
 
 export enum TestDeliveryStatus {
   Success = "SUCCESS",

@@ -7,9 +7,9 @@ import type {
   ISupporterRepository,
   SupportPatronAggregateResult,
   SupporterGuildAggregateResult,
-  IUserFeedLimitOverrideRepository,
   ISupporter,
-} from "../../repositories/interfaces";
+} from "../../repositories/interfaces/supporter.types";
+import type { IUserFeedLimitOverrideRepository } from "../../repositories/interfaces/user-feed-limit-override.types";
 import {
   SubscriptionStatus,
   SubscriptionProductKey,

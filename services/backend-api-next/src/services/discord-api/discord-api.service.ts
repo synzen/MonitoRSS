@@ -1,15 +1,15 @@
 import { RESTHandler } from "@synzen/discord-rest";
 import type { FetchResponse } from "@synzen/discord-rest/dist/types/FetchResponse";
 import { Environment, type Config } from "../../config";
-import { DiscordAPIError } from "../../shared/exceptions";
+import { DiscordAPIError } from "../../shared/exceptions/discord-api.error";
 import type {
   DiscordGuildMember,
   DiscordGuildChannel,
   DiscordGuild,
   DiscordWebhook,
   DiscordUser,
-} from "../../shared/types";
-import { DISCORD_API_BASE_URL } from "../../shared/constants";
+} from "../../shared/types/discord.types";
+import { DISCORD_API_BASE_URL } from "../../shared/constants/discord";
 import type { RequestOptions } from "./types";
 
 export class DiscordApiService {

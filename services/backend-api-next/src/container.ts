@@ -3,24 +3,22 @@ import type { Connection as RabbitConnection } from "rabbitmq-client";
 import type { Config } from "./config";
 import { createAuthService, type AuthService } from "./infra/auth";
 import { createPublisher } from "./infra/rabbitmq";
-import {
-  MongoMigrationMongooseRepository,
-  FailRecordMongooseRepository,
-  BannedFeedMongooseRepository,
-  FeedScheduleMongooseRepository,
-  DiscordServerProfileMongooseRepository,
-  UserFeedLimitOverrideMongooseRepository,
-  PatronMongooseRepository,
-  NotificationDeliveryAttemptMongooseRepository,
-  FeedSubscriberMongooseRepository,
-  UserMongooseRepository,
-  CustomerMongooseRepository,
-  FeedMongooseRepository,
-  FeedFilteredFormatMongooseRepository,
-  SupporterMongooseRepository,
-  UserFeedMongooseRepository,
-  UserFeedTagMongooseRepository,
-} from "./repositories/mongoose";
+import { MongoMigrationMongooseRepository } from "./repositories/mongoose/mongo-migration.mongoose.repository";
+import { FailRecordMongooseRepository } from "./repositories/mongoose/fail-record.mongoose.repository";
+import { BannedFeedMongooseRepository } from "./repositories/mongoose/banned-feed.mongoose.repository";
+import { FeedScheduleMongooseRepository } from "./repositories/mongoose/feed-schedule.mongoose.repository";
+import { DiscordServerProfileMongooseRepository } from "./repositories/mongoose/discord-server-profile.mongoose.repository";
+import { UserFeedLimitOverrideMongooseRepository } from "./repositories/mongoose/user-feed-limit-override.mongoose.repository";
+import { PatronMongooseRepository } from "./repositories/mongoose/patron.mongoose.repository";
+import { NotificationDeliveryAttemptMongooseRepository } from "./repositories/mongoose/notification-delivery-attempt.mongoose.repository";
+import { FeedSubscriberMongooseRepository } from "./repositories/mongoose/feed-subscriber.mongoose.repository";
+import { UserMongooseRepository } from "./repositories/mongoose/user.mongoose.repository";
+import { CustomerMongooseRepository } from "./repositories/mongoose/customer.mongoose.repository";
+import { FeedMongooseRepository } from "./repositories/mongoose/feed.mongoose.repository";
+import { FeedFilteredFormatMongooseRepository } from "./repositories/mongoose/feed-filtered-format.mongoose.repository";
+import { SupporterMongooseRepository } from "./repositories/mongoose/supporter.mongoose.repository";
+import { UserFeedMongooseRepository } from "./repositories/mongoose/user-feed.mongoose.repository";
+import { UserFeedTagMongooseRepository } from "./repositories/mongoose/user-feed-tag.mongoose.repository";
 import { DiscordApiService } from "./services/discord-api/discord-api.service";
 import { DiscordAuthService } from "./services/discord-auth/discord-auth.service";
 import { DiscordPermissionsService } from "./services/discord-permissions/discord-permissions.service";

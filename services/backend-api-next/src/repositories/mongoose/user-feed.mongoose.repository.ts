@@ -5,12 +5,8 @@ import {
   type Model,
   type InferSchemaType,
 } from "mongoose";
-import type {
-  IUserFeed,
-  IUserFeedRepository,
-  IDiscordChannelConnection,
-  IConnectionDetails,
-} from "../interfaces";
+import type { IUserFeed, IUserFeedRepository } from "../interfaces/user-feed.types";
+import type { IDiscordChannelConnection, IConnectionDetails } from "../interfaces/feed-connection.types";
 import {
   UserFeedDisabledCode,
   UserFeedHealthStatus,

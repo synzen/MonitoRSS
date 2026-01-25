@@ -5,7 +5,8 @@ import {
   type Model,
   type InferSchemaType,
 } from "mongoose";
-import type { IFeed, IFeedRepository, IDiscordChannelConnection, IConnectionDetails } from "../interfaces";
+import type { IFeed, IFeedRepository } from "../interfaces/feed.types";
+import type { IDiscordChannelConnection, IConnectionDetails } from "../interfaces/feed-connection.types";
 import { FeedEmbedSchema, FeedWebhookSchema } from "./feed-embed.schemas";
 import { FeedConnectionsSchema, type DiscordChannelConnectionDoc } from "./feed-connection.schemas";
 import { BaseMongooseRepository } from "./base.mongoose.repository";

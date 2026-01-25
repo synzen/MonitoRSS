@@ -5,7 +5,7 @@ import {
   type Model,
   type InferSchemaType,
 } from "mongoose";
-import type { IUser, IUserRepository } from "../interfaces";
+import type { IUser, IUserRepository } from "../interfaces/user.types";
 import {
   UserExternalCredentialStatus,
   UserExternalCredentialType,
