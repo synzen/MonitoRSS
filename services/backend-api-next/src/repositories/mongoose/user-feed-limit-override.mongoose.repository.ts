@@ -40,4 +40,22 @@ export class UserFeedLimitOverrideMongooseRepository
       additionalUserFeeds: doc.additionalUserFeeds,
     };
   }
+
+  async findById(id: string): Promise<IUserFeedLimitOverride | null> {
+    const doc = await this.model.findById(id).lean();
+    return doc ? this.toEntity(doc as UserFeedLimitOverrideDoc & { _id: string }) : null;
+  }
+
+  async findByIdsNotIn(excludeIds: string[]): Promise<IUserFeedLimitOverride[]> {
+    const docs = await this.model
+      .find({ _id: { $nin: excludeIds } })
+      .lean();
+    return docs.map((doc) =>
+      this.toEntity(doc as UserFeedLimitOverrideDoc & { _id: string })
+    );
+  }
+
+  async deleteAll(): Promise<void> {
+    await this.model.deleteMany({});
+  }
 }

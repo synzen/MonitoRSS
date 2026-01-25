@@ -1,6 +1,7 @@
 import type {
   SubscriptionStatus,
   SubscriptionProductKey,
+  PatronStatus,
 } from "../shared/enums";
 
 // Supporter entity
@@ -53,6 +54,72 @@ export interface ISupporter {
   guilds: string[];
   expireAt?: Date;
   paddleCustomer?: IPaddleCustomer;
+  slowRate?: boolean;
 }
 
-export interface ISupporterRepository {}
+export interface SupportPatronAggregateResult {
+  id: string;
+  patron?: boolean;
+  maxFeeds?: number;
+  maxUserFeeds?: number;
+  maxGuilds?: number;
+  slowRate?: boolean;
+  allowCustomPlaceholders?: boolean;
+  guilds: string[];
+  expireAt?: Date;
+  paddleCustomer?: IPaddleCustomer;
+  patrons: Array<{
+    id: string;
+    status: PatronStatus;
+    pledge: number;
+    pledgeLifetime: number;
+    pledgeOverride?: number;
+    lastCharge?: Date;
+  }>;
+  userFeedLimitOverrides?: Array<{
+    id: string;
+    additionalUserFeeds: number;
+  }>;
+}
+
+export interface SupporterGuildAggregateResult {
+  id: string;
+  patron?: boolean;
+  maxFeeds?: number;
+  maxUserFeeds?: number;
+  maxGuilds?: number;
+  slowRate?: boolean;
+  allowCustomPlaceholders?: boolean;
+  guildId: string;
+  guilds?: string[];
+  expireAt?: Date;
+  paddleCustomer?: IPaddleCustomer;
+  patrons: Array<{
+    id: string;
+    status: PatronStatus;
+    pledge: number;
+    pledgeLifetime: number;
+    pledgeOverride?: number;
+    lastCharge?: Date;
+  }>;
+  userFeedLimitOverrides?: Array<{
+    id: string;
+    additionalUserFeeds: number;
+  }>;
+}
+
+export interface ISupporterRepository {
+  findById(id: string): Promise<ISupporter | null>;
+  findByPaddleEmail(email: string): Promise<ISupporter | null>;
+  create(supporter: ISupporter): Promise<ISupporter>;
+  updateGuilds(userId: string, guildIds: string[]): Promise<ISupporter | null>;
+  deleteAll(): Promise<void>;
+  aggregateWithPatronsAndOverrides(
+    discordId: string
+  ): Promise<SupportPatronAggregateResult[]>;
+  aggregateSupportersForGuilds(
+    guildIds: string[]
+  ): Promise<SupporterGuildAggregateResult[]>;
+  aggregateAllSupportersWithPatrons(): Promise<SupportPatronAggregateResult[]>;
+  aggregateAllSupportersWithGuilds(): Promise<SupporterGuildAggregateResult[]>;
+}

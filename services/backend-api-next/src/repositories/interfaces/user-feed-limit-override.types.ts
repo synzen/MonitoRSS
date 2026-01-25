@@ -3,4 +3,8 @@ export interface IUserFeedLimitOverride {
   additionalUserFeeds: number;
 }
 
-export interface IUserFeedLimitOverrideRepository {}
+export interface IUserFeedLimitOverrideRepository {
+  findById(id: string): Promise<IUserFeedLimitOverride | null>;
+  findByIdsNotIn(excludeIds: string[]): Promise<IUserFeedLimitOverride[]>;
+  deleteAll(): Promise<void>;
+}

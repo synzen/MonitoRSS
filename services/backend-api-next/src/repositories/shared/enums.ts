@@ -140,3 +140,10 @@ export enum NotificationDeliveryAttemptType {
   DisabledConnection = "DISABLED_CONNECTION",
 }
 
+// Supporter enums
+export enum SupporterSource {
+  Paddle = "paddle",
+  Patron = "patron",
+  Manual = "manual",
+}
+

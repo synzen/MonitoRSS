@@ -55,4 +55,24 @@ export class PatronMongooseRepository
       email: doc.email,
     };
   }
+
+  async create(patron: IPatron): Promise<IPatron> {
+    const doc = await this.model.create({
+      _id: patron.id,
+      statusOverride: patron.statusOverride,
+      status: patron.status,
+      lastCharge: patron.lastCharge,
+      pledgeLifetime: patron.pledgeLifetime,
+      pledgeOverride: patron.pledgeOverride,
+      pledge: patron.pledge,
+      name: patron.name,
+      discord: patron.discord,
+      email: patron.email,
+    });
+    return this.toEntity(doc.toObject() as PatronDoc & { _id: string });
+  }
+
+  async deleteAll(): Promise<void> {
+    await this.model.deleteMany({});
+  }
 }

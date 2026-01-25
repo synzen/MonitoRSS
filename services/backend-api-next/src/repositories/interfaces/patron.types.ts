@@ -13,4 +13,7 @@ export interface IPatron {
   email: string;
 }
 
-export interface IPatronRepository {}
+export interface IPatronRepository {
+  create(patron: IPatron): Promise<IPatron>;
+  deleteAll(): Promise<void>;
+}

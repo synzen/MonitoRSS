@@ -29,6 +29,7 @@ import { MessageBrokerService } from "./services/message-broker/message-broker.s
 import { PaddleService } from "./services/paddle/paddle.service";
 import { PatronsService } from "./services/patrons/patrons.service";
 import { RedditApiService } from "./services/reddit-api/reddit-api.service";
+import { SupportersService } from "./services/supporters/supporters.service";
 
 export interface Container {
   config: Config;
@@ -66,6 +67,7 @@ export interface Container {
   guildSubscriptionsService: GuildSubscriptionsService;
   messageBrokerService: MessageBrokerService;
   patronsService: PatronsService;
+  supportersService: SupportersService;
 }
 
 export function createContainer(deps: {
@@ -76,6 +78,44 @@ export function createContainer(deps: {
   const authService = createAuthService(deps.config);
   const publishMessage = createPublisher(deps.rabbitmq);
 
+  // Repositories
+  const mongoMigrationRepository = new MongoMigrationMongooseRepository(deps.mongoConnection);
+  const failRecordRepository = new FailRecordMongooseRepository(deps.mongoConnection);
+  const bannedFeedRepository = new BannedFeedMongooseRepository(deps.mongoConnection);
+  const feedScheduleRepository = new FeedScheduleMongooseRepository(deps.mongoConnection);
+  const discordServerProfileRepository = new DiscordServerProfileMongooseRepository(deps.mongoConnection);
+  const userFeedLimitOverrideRepository = new UserFeedLimitOverrideMongooseRepository(deps.mongoConnection);
+  const patronRepository = new PatronMongooseRepository(deps.mongoConnection);
+  const notificationDeliveryAttemptRepository = new NotificationDeliveryAttemptMongooseRepository(deps.mongoConnection);
+  const feedSubscriberRepository = new FeedSubscriberMongooseRepository(deps.mongoConnection);
+  const userRepository = new UserMongooseRepository(deps.mongoConnection);
+  const customerRepository = new CustomerMongooseRepository(deps.mongoConnection);
+  const feedRepository = new FeedMongooseRepository(deps.mongoConnection);
+  const feedFilteredFormatRepository = new FeedFilteredFormatMongooseRepository(deps.mongoConnection);
+  const supporterRepository = new SupporterMongooseRepository(deps.mongoConnection);
+  const userFeedRepository = new UserFeedMongooseRepository(deps.mongoConnection);
+  const userFeedTagRepository = new UserFeedTagMongooseRepository(deps.mongoConnection);
+
+  // External API Services
+  const discordApiService = new DiscordApiService(deps.config);
+  const feedFetcherApiService = new FeedFetcherApiService(deps.config);
+  const feedHandlerService = new FeedHandlerService(deps.config);
+  const paddleService = new PaddleService(deps.config);
+  const redditApiService = new RedditApiService(deps.config);
+
+  // Core Services
+  const guildSubscriptionsService = new GuildSubscriptionsService(deps.config);
+  const messageBrokerService = new MessageBrokerService(publishMessage);
+  const patronsService = new PatronsService(deps.config);
+  const supportersService = new SupportersService(
+    deps.config,
+    patronsService,
+    guildSubscriptionsService,
+    discordApiService,
+    supporterRepository,
+    userFeedLimitOverrideRepository
+  );
+
   return {
     config: deps.config,
     mongoConnection: deps.mongoConnection,
@@ -84,33 +124,34 @@ export function createContainer(deps: {
     publishMessage,
 
     // Repositories
-    mongoMigrationRepository: new MongoMigrationMongooseRepository(deps.mongoConnection),
-    failRecordRepository: new FailRecordMongooseRepository(deps.mongoConnection),
-    bannedFeedRepository: new BannedFeedMongooseRepository(deps.mongoConnection),
-    feedScheduleRepository: new FeedScheduleMongooseRepository(deps.mongoConnection),
-    discordServerProfileRepository: new DiscordServerProfileMongooseRepository(deps.mongoConnection),
-    userFeedLimitOverrideRepository: new UserFeedLimitOverrideMongooseRepository(deps.mongoConnection),
-    patronRepository: new PatronMongooseRepository(deps.mongoConnection),
-    notificationDeliveryAttemptRepository: new NotificationDeliveryAttemptMongooseRepository(deps.mongoConnection),
-    feedSubscriberRepository: new FeedSubscriberMongooseRepository(deps.mongoConnection),
-    userRepository: new UserMongooseRepository(deps.mongoConnection),
-    customerRepository: new CustomerMongooseRepository(deps.mongoConnection),
-    feedRepository: new FeedMongooseRepository(deps.mongoConnection),
-    feedFilteredFormatRepository: new FeedFilteredFormatMongooseRepository(deps.mongoConnection),
-    supporterRepository: new SupporterMongooseRepository(deps.mongoConnection),
-    userFeedRepository: new UserFeedMongooseRepository(deps.mongoConnection),
-    userFeedTagRepository: new UserFeedTagMongooseRepository(deps.mongoConnection),
+    mongoMigrationRepository,
+    failRecordRepository,
+    bannedFeedRepository,
+    feedScheduleRepository,
+    discordServerProfileRepository,
+    userFeedLimitOverrideRepository,
+    patronRepository,
+    notificationDeliveryAttemptRepository,
+    feedSubscriberRepository,
+    userRepository,
+    customerRepository,
+    feedRepository,
+    feedFilteredFormatRepository,
+    supporterRepository,
+    userFeedRepository,
+    userFeedTagRepository,
 
     // External API Services
-    discordApiService: new DiscordApiService(deps.config),
-    feedFetcherApiService: new FeedFetcherApiService(deps.config),
-    feedHandlerService: new FeedHandlerService(deps.config),
-    paddleService: new PaddleService(deps.config),
-    redditApiService: new RedditApiService(deps.config),
+    discordApiService,
+    feedFetcherApiService,
+    feedHandlerService,
+    paddleService,
+    redditApiService,
 
     // Core Services
-    guildSubscriptionsService: new GuildSubscriptionsService(deps.config),
-    messageBrokerService: new MessageBrokerService(publishMessage),
-    patronsService: new PatronsService(deps.config),
+    guildSubscriptionsService,
+    messageBrokerService,
+    patronsService,
+    supportersService,
   };
 }
