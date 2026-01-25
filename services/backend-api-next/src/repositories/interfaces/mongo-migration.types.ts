@@ -5,4 +5,11 @@ export interface IMongoMigration {
   updatedAt: Date;
 }
 
-export interface IMongoMigrationRepository {}
+export interface CreateMongoMigrationInput {
+  migrationId: string;
+}
+
+export interface IMongoMigrationRepository {
+  find(): Promise<IMongoMigration[]>;
+  create(data: CreateMongoMigrationInput): Promise<IMongoMigration>;
+}

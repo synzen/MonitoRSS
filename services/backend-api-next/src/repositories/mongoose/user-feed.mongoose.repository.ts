@@ -377,4 +377,228 @@ export class UserFeedMongooseRepository
       }
     );
   }
+
+  async create(input: {
+    title: string;
+    url: string;
+    user: { discordUserId: string };
+    shareManageOptions?: {
+      invites: Array<{
+        discordUserId: string;
+        connections?: Array<{ connectionId: string }>;
+      }>;
+    };
+  }): Promise<IUserFeed> {
+    const doc = await this.model.create({
+      title: input.title,
+      url: input.url,
+      user: { discordUserId: input.user.discordUserId },
+      shareManageOptions: input.shareManageOptions
+        ? {
+            invites: input.shareManageOptions.invites.map((invite) => ({
+              discordUserId: invite.discordUserId,
+              connections: invite.connections?.map((c) => ({
+                connectionId: this.stringToObjectId(c.connectionId),
+              })),
+            })),
+          }
+        : undefined,
+    });
+
+    return this.toEntity(doc as unknown as UserFeedDoc & { _id: Types.ObjectId });
+  }
+
+  async findById(id: string): Promise<IUserFeed | null> {
+    const doc = await this.model.findById(this.stringToObjectId(id)).lean();
+    if (!doc) {
+      return null;
+    }
+    return this.toEntity(doc as UserFeedDoc & { _id: Types.ObjectId });
+  }
+
+  async deleteAll(): Promise<void> {
+    await this.model.deleteMany({});
+  }
+
+  // Migration methods
+  async *iterateFeedsMissingSlotOffset(): AsyncIterable<{
+    id: string;
+    url: string;
+    effectiveRefreshRateSeconds: number;
+  }> {
+    const cursor = this.model
+      .find({ slotOffsetMs: { $exists: false } })
+      .select("_id url refreshRateSeconds userRefreshRateSeconds")
+      .lean()
+      .cursor();
+
+    for await (const doc of cursor) {
+      const feedDoc = doc as {
+        _id: Types.ObjectId;
+        url?: string;
+        refreshRateSeconds?: number;
+        userRefreshRateSeconds?: number;
+      };
+      const effectiveRefreshRate =
+        feedDoc.userRefreshRateSeconds ?? feedDoc.refreshRateSeconds;
+
+      if (!effectiveRefreshRate || !feedDoc.url) {
+        continue;
+      }
+
+      yield {
+        id: feedDoc._id.toString(),
+        url: feedDoc.url,
+        effectiveRefreshRateSeconds: effectiveRefreshRate,
+      };
+    }
+  }
+
+  async bulkUpdateSlotOffsets(
+    operations: Array<{ feedId: string; slotOffsetMs: number }>
+  ): Promise<void> {
+    if (operations.length === 0) {
+      return;
+    }
+
+    const bulkOps = operations.map(({ feedId, slotOffsetMs }) => ({
+      updateOne: {
+        filter: { _id: this.stringToObjectId(feedId) },
+        update: { $set: { slotOffsetMs } },
+      },
+    }));
+
+    await this.model.bulkWrite(bulkOps);
+  }
+
+  async *iterateFeedsMissingUserId(): AsyncIterable<{
+    id: string;
+    userDiscordUserId: string;
+  }> {
+    const cursor = this.model
+      .find({ "user.id": { $exists: false } })
+      .select("_id user.discordUserId")
+      .lean()
+      .cursor();
+
+    for await (const doc of cursor) {
+      const feedDoc = doc as {
+        _id: Types.ObjectId;
+        user?: { discordUserId: string };
+      };
+
+      if (!feedDoc.user?.discordUserId) {
+        continue;
+      }
+
+      yield {
+        id: feedDoc._id.toString(),
+        userDiscordUserId: feedDoc.user.discordUserId,
+      };
+    }
+  }
+
+  async bulkUpdateUserIds(
+    operations: Array<{ feedId: string; userId: string }>
+  ): Promise<void> {
+    if (operations.length === 0) {
+      return;
+    }
+
+    const bulkOps = operations.map(({ feedId, userId }) => ({
+      updateOne: {
+        filter: { _id: this.stringToObjectId(feedId) },
+        update: { $set: { "user.id": this.stringToObjectId(userId) } },
+      },
+    }));
+
+    await this.model.bulkWrite(bulkOps);
+  }
+
+  async migrateCustomPlaceholderSteps(
+    addIdAndType: (step: Record<string, unknown>) => Record<string, unknown>
+  ): Promise<number> {
+    const cursor = this.model
+      .find({
+        "connections.discordChannels": {
+          $elemMatch: {
+            customPlaceholders: {
+              $elemMatch: {
+                id: { $exists: true },
+              },
+            },
+          },
+        },
+      })
+      .cursor();
+
+    let count = 0;
+    for await (const doc of cursor) {
+      const mongooseDoc = doc as unknown as {
+        _id: Types.ObjectId;
+        connections: {
+          discordChannels: Array<{
+            customPlaceholders?: Array<{
+              steps: Array<Record<string, unknown>>;
+            }>;
+          }>;
+        };
+        get: (path: string) => {
+          discordChannels: Array<{
+            customPlaceholders?: Array<{
+              steps: Array<Record<string, unknown>>;
+            }>;
+          }>;
+        };
+        save: () => Promise<unknown>;
+      };
+
+      const channels = mongooseDoc.get("connections").discordChannels;
+      const updatedChannels = channels.map((channel) => {
+        if (!channel.customPlaceholders) {
+          return channel;
+        }
+        return {
+          ...channel,
+          customPlaceholders: channel.customPlaceholders.map((placeholder) => ({
+            ...placeholder,
+            steps: placeholder.steps.map(addIdAndType),
+          })),
+        };
+      });
+
+      mongooseDoc.connections.discordChannels = updatedChannels;
+      await mongooseDoc.save();
+      count++;
+    }
+
+    return count;
+  }
+
+  async convertStringUserIdsToObjectIds(): Promise<number> {
+    const collection = this.model.collection;
+    const cursor = collection.find({
+      "user.id": { $type: "string" },
+    });
+
+    let converted = 0;
+    for await (const doc of cursor) {
+      const rawDoc = doc as {
+        _id: Types.ObjectId;
+        user?: { id?: string };
+      };
+
+      if (!rawDoc.user?.id || typeof rawDoc.user.id !== "string") {
+        continue;
+      }
+
+      await collection.updateOne(
+        { _id: rawDoc._id },
+        { $set: { "user.id": new Types.ObjectId(rawDoc.user.id) } }
+      );
+      converted++;
+    }
+
+    return converted;
+  }
 }

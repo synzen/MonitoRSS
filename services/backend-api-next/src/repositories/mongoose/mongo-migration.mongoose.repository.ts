@@ -15,6 +15,8 @@ const MongoMigrationSchema = new Schema(
   { timestamps: true }
 );
 
+MongoMigrationSchema.index({ id: 1 }, { unique: true });
+
 type MongoMigrationDoc = InferSchemaType<typeof MongoMigrationSchema>;
 
 export class MongoMigrationMongooseRepository
@@ -38,5 +40,21 @@ export class MongoMigrationMongooseRepository
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
     };
+  }
+
+  async find(): Promise<IMongoMigration[]> {
+    const docs = await this.model.find({}).lean();
+
+    return docs.map((doc) =>
+      this.toEntity(doc as MongoMigrationDoc & { _id: Types.ObjectId })
+    );
+  }
+
+  async create(data: { migrationId: string }): Promise<IMongoMigration> {
+    const doc = await this.model.create({ id: data.migrationId });
+
+    return this.toEntity(
+      doc.toObject() as MongoMigrationDoc & { _id: Types.ObjectId }
+    );
   }
 }

@@ -107,6 +107,31 @@ export interface RemoveConnectionsFromInvitesInput {
   connectionIds: string[];
 }
 
+export interface UserFeedForSlotOffsetMigration {
+  id: string;
+  url: string;
+  effectiveRefreshRateSeconds: number;
+}
+
+export interface SlotOffsetUpdateOperation {
+  feedId: string;
+  slotOffsetMs: number;
+}
+
+export interface UserFeedForUserIdMigration {
+  id: string;
+  userDiscordUserId: string;
+}
+
+export interface UserIdUpdateOperation {
+  feedId: string;
+  userId: string;
+}
+
+export type CustomPlaceholderStepTransform = (
+  step: Record<string, unknown>
+) => Record<string, unknown>;
+
 export interface IUserFeedRepository {
   bulkUpdateLookupKeys(operations: LookupKeyOperation[]): Promise<void>;
   findByIdsForNotification(ids: string[]): Promise<UserFeedForNotification[]>;
@@ -116,4 +141,12 @@ export interface IUserFeedRepository {
   removeConnectionsFromInvites(
     input: RemoveConnectionsFromInvitesInput
   ): Promise<void>;
+
+  // Migration methods
+  iterateFeedsMissingSlotOffset(): AsyncIterable<UserFeedForSlotOffsetMigration>;
+  bulkUpdateSlotOffsets(operations: SlotOffsetUpdateOperation[]): Promise<void>;
+  iterateFeedsMissingUserId(): AsyncIterable<UserFeedForUserIdMigration>;
+  bulkUpdateUserIds(operations: UserIdUpdateOperation[]): Promise<void>;
+  migrateCustomPlaceholderSteps(transform: CustomPlaceholderStepTransform): Promise<number>;
+  convertStringUserIdsToObjectIds(): Promise<number>;
 }

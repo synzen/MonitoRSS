@@ -3,6 +3,21 @@ import type { Connection as RabbitConnection } from "rabbitmq-client";
 import type { Config } from "./config";
 import { createAuthService, type AuthService } from "./infra/auth";
 import { createPublisher } from "./infra/rabbitmq";
+import type { IMongoMigrationRepository } from "./repositories/interfaces/mongo-migration.types";
+import type { IFailRecordRepository } from "./repositories/interfaces/fail-record.types";
+import type { IBannedFeedRepository } from "./repositories/interfaces/banned-feed.types";
+import type { IFeedScheduleRepository } from "./repositories/interfaces/feed-schedule.types";
+import type { IDiscordServerProfileRepository } from "./repositories/interfaces/discord-server-profile.types";
+import type { IUserFeedLimitOverrideRepository } from "./repositories/interfaces/user-feed-limit-override.types";
+import type { IPatronRepository } from "./repositories/interfaces/patron.types";
+import type { INotificationDeliveryAttemptRepository } from "./repositories/interfaces/notification-delivery-attempt.types";
+import type { IFeedSubscriberRepository } from "./repositories/interfaces/feed-subscriber.types";
+import type { IUserRepository } from "./repositories/interfaces/user.types";
+import type { ICustomerRepository } from "./repositories/interfaces/customer.types";
+import type { IFeedRepository } from "./repositories/interfaces/feed.types";
+import type { IFeedFilteredFormatRepository } from "./repositories/interfaces/feed-filtered-format.types";
+import type { ISupporterRepository } from "./repositories/interfaces/supporter.types";
+import type { IUserFeedRepository } from "./repositories/interfaces/user-feed.types";
 import { MongoMigrationMongooseRepository } from "./repositories/mongoose/mongo-migration.mongoose.repository";
 import { FailRecordMongooseRepository } from "./repositories/mongoose/fail-record.mongoose.repository";
 import { BannedFeedMongooseRepository } from "./repositories/mongoose/banned-feed.mongoose.repository";
@@ -37,6 +52,7 @@ import { FeedsService } from "./services/feeds/feeds.service";
 import { NotificationsService } from "./services/notifications/notifications.service";
 import { DiscordServersService } from "./services/discord-servers/discord-servers.service";
 import { UserFeedConnectionEventsService } from "./services/user-feed-connection-events/user-feed-connection-events.service";
+import { MongoMigrationsService } from "./services/mongo-migrations/mongo-migrations.service";
 import { createSmtpTransport } from "./infra/smtp";
 
 export interface Container {
@@ -46,22 +62,22 @@ export interface Container {
   authService: AuthService;
   publishMessage: (queue: string, message: unknown) => Promise<void>;
 
-  // Repositories
-  mongoMigrationRepository: MongoMigrationMongooseRepository;
-  failRecordRepository: FailRecordMongooseRepository;
-  bannedFeedRepository: BannedFeedMongooseRepository;
-  feedScheduleRepository: FeedScheduleMongooseRepository;
-  discordServerProfileRepository: DiscordServerProfileMongooseRepository;
-  userFeedLimitOverrideRepository: UserFeedLimitOverrideMongooseRepository;
-  patronRepository: PatronMongooseRepository;
-  notificationDeliveryAttemptRepository: NotificationDeliveryAttemptMongooseRepository;
-  feedSubscriberRepository: FeedSubscriberMongooseRepository;
-  userRepository: UserMongooseRepository;
-  customerRepository: CustomerMongooseRepository;
-  feedRepository: FeedMongooseRepository;
-  feedFilteredFormatRepository: FeedFilteredFormatMongooseRepository;
-  supporterRepository: SupporterMongooseRepository;
-  userFeedRepository: UserFeedMongooseRepository;
+  // Repositories (interface types for abstraction)
+  mongoMigrationRepository: IMongoMigrationRepository;
+  failRecordRepository: IFailRecordRepository;
+  bannedFeedRepository: IBannedFeedRepository;
+  feedScheduleRepository: IFeedScheduleRepository;
+  discordServerProfileRepository: IDiscordServerProfileRepository;
+  userFeedLimitOverrideRepository: IUserFeedLimitOverrideRepository;
+  patronRepository: IPatronRepository;
+  notificationDeliveryAttemptRepository: INotificationDeliveryAttemptRepository;
+  feedSubscriberRepository: IFeedSubscriberRepository;
+  userRepository: IUserRepository;
+  customerRepository: ICustomerRepository;
+  feedRepository: IFeedRepository;
+  feedFilteredFormatRepository: IFeedFilteredFormatRepository;
+  supporterRepository: ISupporterRepository;
+  userFeedRepository: IUserFeedRepository;
 
   // External API Services
   discordApiService: DiscordApiService;
@@ -85,6 +101,7 @@ export interface Container {
   notificationsService: NotificationsService;
   discordServersService: DiscordServersService;
   userFeedConnectionEventsService: UserFeedConnectionEventsService;
+  mongoMigrationsService: MongoMigrationsService;
 }
 
 export function createContainer(deps: {
@@ -187,6 +204,12 @@ export function createContainer(deps: {
     userFeedRepository,
   });
 
+  const mongoMigrationsService = new MongoMigrationsService({
+    mongoMigrationRepository,
+    userFeedRepository,
+    userRepository,
+  });
+
   return {
     config: deps.config,
     mongoConnection: deps.mongoConnection,
@@ -233,5 +256,6 @@ export function createContainer(deps: {
     notificationsService,
     discordServersService,
     userFeedConnectionEventsService,
+    mongoMigrationsService,
   };
 }
