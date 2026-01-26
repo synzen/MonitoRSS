@@ -1,398 +1,389 @@
-import { describe, it, beforeEach } from "node:test";
+import { describe, it, before, after } from "node:test";
 import assert from "node:assert";
 import dayjs from "dayjs";
-import { SupportersService, type SupportersServiceDeps } from "../../src/services/supporters/supporters.service";
 import { PatronStatus, SubscriptionProductKey } from "../../src/repositories/shared/enums";
-import type { Config } from "../../src/config";
-import type { SupportPatronAggregateResult, ISupporterRepository } from "../../src/repositories/interfaces/supporter.types";
-import type { IUserFeedLimitOverrideRepository } from "../../src/repositories/interfaces/user-feed-limit-override.types";
-import type { DiscordApiService } from "../../src/services/discord-api/discord-api.service";
+import {
+  createSupportersHarness,
+  TEST_DEFAULTS,
+} from "../helpers/supporters.harness";
 
-const defaultMaxFeeds = 5;
-const defaultMaxUserFeeds = 6;
-const defaultRefreshRateSeconds = 60;
+describe("SupportersService", { concurrency: true }, () => {
+  const harness = createSupportersHarness();
 
-const defaultConfig = {
-  BACKEND_API_DEFAULT_MAX_FEEDS: defaultMaxFeeds,
-  BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES: 1,
-  BACKEND_API_DEFAULT_MAX_USER_FEEDS: defaultMaxUserFeeds,
-  BACKEND_API_DEFAULT_MAX_SUPPORTER_USER_FEEDS: 1000,
-  BACKEND_API_MAX_DAILY_ARTICLES_SUPPORTER: 500,
-  BACKEND_API_MAX_DAILY_ARTICLES_DEFAULT: 50,
-  BACKEND_API_ENABLE_SUPPORTERS: true,
-} as Config;
+  before(() => harness.setup());
+  after(() => harness.teardown());
 
-const defaultDeps: SupportersServiceDeps = {
-  config: defaultConfig,
-  patronsService: {
-    isValidPatron: () => true,
-    getMaxBenefitsFromPatrons: () => ({
-      existsAndIsValid: true,
-      maxFeeds: 10,
-      maxUserFeeds: 10,
-      allowWebhooks: true,
-      maxGuilds: 15,
-      refreshRateSeconds: 2,
-      allowCustomPlaceholders: true,
-      maxPatreonPledge: 500,
-    }),
-  } as unknown as SupportersServiceDeps["patronsService"],
-  guildSubscriptionsService: {
-    getAllSubscriptions: async () => [],
-  } as unknown as SupportersServiceDeps["guildSubscriptionsService"],
-  discordApiService: {
-    getGuildMember: async () => ({ roles: [] }),
-    addGuildMemberRole: async () => {},
-    removeGuildMemberRole: async () => {},
-  } as unknown as SupportersServiceDeps["discordApiService"],
-  supporterRepository: {
-    findById: async () => null,
-    findByPaddleEmail: async () => null,
-    create: async (supporter: any) => supporter,
-    updateGuilds: async () => null,
-    deleteAll: async () => {},
-    aggregateWithPatronsAndOverrides: async () => [],
-    aggregateSupportersForGuilds: async () => [],
-    aggregateAllSupportersWithPatrons: async () => [],
-    aggregateAllSupportersWithGuilds: async () => [],
-  } as unknown as SupportersServiceDeps["supporterRepository"],
-  userFeedLimitOverrideRepository: {
-    findById: async () => null,
-    findByIdsNotIn: async () => [],
-    deleteAll: async () => {},
-  } as unknown as SupportersServiceDeps["userFeedLimitOverrideRepository"],
-};
+  describe("getBenefitsOfDiscordUser", () => {
+    it("returns defaults for all values if no supporter is found", async () => {
+      const ctx = harness.createContext();
 
-function createSupportersService(overrides: Partial<SupportersServiceDeps> = {}) {
-  const deps: SupportersServiceDeps = {
-    ...defaultDeps,
-    ...overrides,
-    config: { ...defaultConfig, ...overrides.config } as Config,
-  };
-  return { service: new SupportersService(deps), deps };
-}
+      const benefits = await ctx.service.getBenefitsOfDiscordUser(ctx.discordUserId);
 
-const mockConfig = defaultConfig;
-const mockPatronsService = defaultDeps.patronsService;
-const mockGuildSubscriptionsService = defaultDeps.guildSubscriptionsService;
-const mockDiscordApiService = defaultDeps.discordApiService;
-const mockSupporterRepository = defaultDeps.supporterRepository;
-const mockUserFeedLimitOverrideRepository = defaultDeps.userFeedLimitOverrideRepository;
+      assert.strictEqual(benefits.isSupporter, false);
+      assert.strictEqual(benefits.maxFeeds, TEST_DEFAULTS.maxFeeds);
+      assert.deepStrictEqual(benefits.guilds, []);
+      assert.strictEqual(benefits.maxGuilds, 0);
+      assert.deepStrictEqual(benefits.maxUserFeedsComposition, {
+        base: TEST_DEFAULTS.maxUserFeeds,
+        legacy: 0,
+      });
+      assert.strictEqual(benefits.maxDailyArticles, TEST_DEFAULTS.maxDailyArticlesDefault);
+      assert.strictEqual(benefits.maxUserFeeds, TEST_DEFAULTS.maxUserFeeds);
+    });
 
-describe("SupportersService", { concurrency: false }, () => {
-  let supportersService: SupportersService;
+    it("returns the correct benefits for a valid supporter", async () => {
+      const ctx = harness.createContext();
+      const supporter = await ctx.createValidSupporter({
+        maxGuilds: 10,
+        maxFeeds: 11,
+        guilds: ["guild-1", "guild-2"],
+      });
 
-  beforeEach(() => {
-    supportersService = createSupportersService().service;
+      const benefits = await ctx.service.getBenefitsOfDiscordUser(ctx.discordUserId);
+
+      assert.strictEqual(benefits.isSupporter, true);
+      assert.strictEqual(benefits.maxFeeds, supporter.maxFeeds);
+      assert.deepStrictEqual(benefits.guilds, supporter.guilds);
+      assert.strictEqual(benefits.maxGuilds, supporter.maxGuilds);
+      assert.strictEqual(benefits.refreshRateSeconds, 120);
+      assert.strictEqual(benefits.maxDailyArticles, TEST_DEFAULTS.maxDailyArticlesSupporter);
+    });
+  });
+
+  describe("getBenefitsOfServers", () => {
+    it("always returns results for every input server id", async () => {
+      const ctx = harness.createContext();
+      const serverIds = [ctx.generateServerId(), ctx.generateServerId(), ctx.generateServerId()];
+
+      const result = await ctx.service.getBenefitsOfServers(serverIds);
+
+      assert.strictEqual(result.length, 3);
+      assert.strictEqual(result[0]!.hasSupporter, false);
+      assert.strictEqual(result[0]!.maxFeeds, TEST_DEFAULTS.maxFeeds);
+      assert.strictEqual(result[0]!.serverId, serverIds[0]);
+      assert.strictEqual(result[0]!.webhooks, false);
+    });
+
+    describe("when there is no patron", () => {
+      it("returns the supporter max feeds if supporter is not expired", async () => {
+        const ctx = harness.createContext();
+        const serverId = ctx.generateServerId();
+        const supporter = await ctx.createSupporterWithGuild(serverId, {
+          maxFeeds: 10,
+          expireAt: dayjs().add(3, "day").toDate(),
+        });
+
+        const result = await ctx.service.getBenefitsOfServers([serverId]);
+
+        assert.strictEqual(result[0]!.maxFeeds, supporter.maxFeeds);
+      });
+
+      it("returns the default max feeds if supporter is expired", async () => {
+        const ctx = harness.createContext();
+        const serverId = ctx.generateServerId();
+        await ctx.createSupporterWithGuild(serverId, {
+          maxFeeds: 10,
+          expireAt: dayjs().subtract(1, "day").toDate(),
+        });
+
+        const result = await ctx.service.getBenefitsOfServers([serverId]);
+
+        assert.strictEqual(result[0]!.maxFeeds, TEST_DEFAULTS.maxFeeds);
+      });
+
+      it("returns the default max feeds if supporter is not found", async () => {
+        const ctx = harness.createContext();
+        const serverId = ctx.generateServerId();
+
+        const result = await ctx.service.getBenefitsOfServers([serverId]);
+
+        assert.strictEqual(result[0]!.maxFeeds, TEST_DEFAULTS.maxFeeds);
+      });
+
+      it("returns default max feeds if guild supporter has no expire at and no patrons", async () => {
+        const ctx = harness.createContext();
+        const serverId = ctx.generateServerId();
+        await ctx.createSupporterWithGuild(serverId, { maxFeeds: 10 });
+
+        const result = await ctx.service.getBenefitsOfServers([serverId]);
+
+        assert.strictEqual(result[0]!.maxFeeds, TEST_DEFAULTS.maxFeeds);
+      });
+
+      it("returns webhook and hasSupporter false for a supporter that expired", async () => {
+        const ctx = harness.createContext();
+        const serverId = ctx.generateServerId();
+        await ctx.createSupporterWithGuild(serverId, {
+          maxFeeds: 10,
+          expireAt: dayjs().subtract(10, "day").toDate(),
+        });
+
+        const result = await ctx.service.getBenefitsOfServers([serverId]);
+
+        assert.strictEqual(result[0]!.hasSupporter, false);
+        assert.strictEqual(result[0]!.webhooks, false);
+      });
+    });
+
+    describe("when there is a patron", () => {
+      it("returns hasSupporter: true and webhooks: true", async () => {
+        const ctx = harness.createContext();
+        const serverId = ctx.generateServerId();
+        await ctx.createSupporterWithGuild(serverId, { maxGuilds: 10, maxFeeds: 10 });
+        await ctx.createActivePatron();
+
+        const result = await ctx.service.getBenefitsOfServers([serverId]);
+
+        assert.strictEqual(result[0]!.hasSupporter, true);
+        assert.strictEqual(result[0]!.webhooks, true);
+      });
+
+      it("returns the max feeds of an active patron", async () => {
+        const ctx = harness.createContext();
+        const serverId = ctx.generateServerId();
+        await ctx.createSupporterWithGuild(serverId, { maxGuilds: 10, maxFeeds: 10 });
+        await ctx.createActivePatron();
+
+        const result = await ctx.service.getBenefitsOfServers([serverId]);
+
+        assert.strictEqual(result[0]!.maxFeeds, 10);
+      });
+
+      it("returns the max feeds of a declined patron within the grace period", async () => {
+        const ctx = harness.createContext();
+        const serverId = ctx.generateServerId();
+        await ctx.createSupporterWithGuild(serverId, { maxGuilds: 10, maxFeeds: 10 });
+        await ctx.createPatron({
+          status: PatronStatus.DECLINED,
+          pledge: 100,
+          lastCharge: dayjs().subtract(2, "days").toDate(),
+        });
+
+        const result = await ctx.service.getBenefitsOfServers([serverId]);
+
+        assert.strictEqual(result[0]!.maxFeeds, 10);
+      });
+
+      it("does not return the supporter max feeds of a long-expired declined patron", async () => {
+        const ctx = harness.createContext();
+        const serverId = ctx.generateServerId();
+        await ctx.createSupporterWithGuild(serverId, { maxGuilds: 10, maxFeeds: 10 });
+        await ctx.createPatron({
+          status: PatronStatus.DECLINED,
+          pledge: 100,
+          lastCharge: dayjs().subtract(6, "days").toDate(),
+        });
+
+        const result = await ctx.service.getBenefitsOfServers([serverId]);
+
+        assert.strictEqual(result[0]!.maxFeeds, TEST_DEFAULTS.maxFeeds);
+      });
+
+      it("does not return supporter max feeds of a former patron", async () => {
+        const ctx = harness.createContext();
+        const serverId = ctx.generateServerId();
+        await ctx.createSupporterWithGuild(serverId, { maxGuilds: 10, maxFeeds: 10 });
+        await ctx.createPatron({
+          status: PatronStatus.FORMER,
+          pledge: 100,
+        });
+
+        const result = await ctx.service.getBenefitsOfServers([serverId]);
+
+        assert.strictEqual(result[0]!.maxFeeds, TEST_DEFAULTS.maxFeeds);
+      });
+    });
+
+    describe("for multiple servers", () => {
+      it("returns the max feeds correctly", async () => {
+        const ctx1 = harness.createContext();
+        const ctx2 = harness.createContext();
+        const serverId1 = ctx1.generateServerId();
+        const serverId2 = ctx2.generateServerId();
+
+        await ctx1.createSupporterWithGuild(serverId1, {
+          maxGuilds: 10,
+          maxFeeds: 10,
+          expireAt: dayjs().add(1, "month").toDate(),
+        });
+        await ctx2.createSupporterWithGuild(serverId2, {
+          maxGuilds: 20,
+          maxFeeds: 20,
+          expireAt: dayjs().add(1, "month").toDate(),
+        });
+
+        const result = await ctx1.service.getBenefitsOfServers([serverId1, serverId2]);
+
+        assert.strictEqual(result.length, 2);
+        const server1 = result.find((r) => r.serverId === serverId1);
+        const server2 = result.find((r) => r.serverId === serverId2);
+        assert.strictEqual(server1?.maxFeeds, 10);
+        assert.strictEqual(server2?.maxFeeds, 20);
+      });
+
+      it("returns webhook for every valid supporter", async () => {
+        const ctx1 = harness.createContext();
+        const ctx2 = harness.createContext();
+        const serverId1 = ctx1.generateServerId();
+        const serverId2 = ctx2.generateServerId();
+
+        await ctx1.createValidSupporter({ guilds: [serverId1] });
+        await ctx2.createValidSupporter({ guilds: [serverId2] });
+
+        const result = await ctx1.service.getBenefitsOfServers([serverId1, serverId2]);
+
+        assert.strictEqual(result.length, 2);
+        assert.ok(result.every((r) => r.webhooks));
+      });
+
+      it("returns max feeds correctly when a single guild has multiple supporters", async () => {
+        const ctx1 = harness.createContext();
+        const ctx2 = harness.createContext();
+        const ctx3 = harness.createContext();
+        const serverId1 = ctx1.generateServerId();
+        const serverId2 = ctx2.generateServerId();
+
+        await ctx1.createValidSupporter({
+          guilds: [serverId1],
+          maxGuilds: 10,
+          maxFeeds: 10,
+        });
+        await ctx2.createValidSupporter({
+          guilds: [serverId1, serverId2],
+          maxGuilds: 20,
+          maxFeeds: 20,
+        });
+        await ctx3.createValidSupporter({
+          guilds: [serverId2],
+          maxGuilds: 30,
+          maxFeeds: 30,
+        });
+
+        const result = await ctx1.service.getBenefitsOfServers([serverId1, serverId2]);
+
+        assert.strictEqual(result.length, 2);
+        const server1 = result.find((r) => r.serverId === serverId1);
+        const server2 = result.find((r) => r.serverId === serverId2);
+        assert.strictEqual(server1?.maxFeeds, 20);
+        assert.strictEqual(server2?.maxFeeds, 30);
+      });
+    });
   });
 
   describe("serverCanUseWebhooks", () => {
-    it("returns true correctly", async () => {
-      const serverId = "server-id";
-      supportersService.getBenefitsOfServers = async () => [
-        {
-          hasSupporter: true,
-          serverId,
-          maxFeeds: 10,
-          webhooks: true,
-          refreshRateSeconds: undefined,
-        },
-      ];
+    it("returns true when server has valid supporter", async () => {
+      const ctx = harness.createContext();
+      const serverId = ctx.generateServerId();
+      await ctx.createValidSupporter({ guilds: [serverId] });
 
-      const result = await supportersService.serverCanUseWebhooks(serverId);
+      const result = await ctx.service.serverCanUseWebhooks(serverId);
+
       assert.strictEqual(result, true);
     });
 
-    it("returns false if the benefits have webhooks false", async () => {
-      const serverId = "server-id";
-      supportersService.getBenefitsOfServers = async () => [
-        {
-          hasSupporter: false,
-          serverId,
-          maxFeeds: 10,
-          webhooks: false,
-          refreshRateSeconds: undefined,
-        },
-      ];
+    it("returns false when server has expired supporter", async () => {
+      const ctx = harness.createContext();
+      const serverId = ctx.generateServerId();
+      await ctx.createExpiredSupporter({ guilds: [serverId] });
 
-      const result = await supportersService.serverCanUseWebhooks(serverId);
+      const result = await ctx.service.serverCanUseWebhooks(serverId);
+
       assert.strictEqual(result, false);
     });
 
-    it("returns false if the server has no benefits", async () => {
-      const serverId = "server-id";
-      supportersService.getBenefitsOfServers = async () => [];
+    it("returns false when server has no supporter", async () => {
+      const ctx = harness.createContext();
+      const serverId = ctx.generateServerId();
 
-      const result = await supportersService.serverCanUseWebhooks(serverId);
+      const result = await ctx.service.serverCanUseWebhooks(serverId);
+
       assert.strictEqual(result, false);
     });
   });
 
   describe("getBenefitsFromSupporter", () => {
-    const supporter: SupportPatronAggregateResult = {
-      id: "supporter-id",
-      maxFeeds: 10,
-      maxGuilds: 5,
-      patrons: [],
-      guilds: [],
-    };
-
-    const patronBenefits = {
-      existsAndIsValid: true,
-      maxFeeds: 10,
-      maxUserFeeds: 10,
-      allowWebhooks: true,
-      maxGuilds: 15,
-      refreshRateSeconds: 2,
-      allowCustomPlaceholders: true,
-      maxPatreonPledge: 500,
-    };
-
     it("returns the correct benefits if it is not a valid supporter", () => {
-      supportersService.isValidSupporter = () => false;
-
-      const result = supportersService.getBenefitsFromSupporter(supporter);
-
-      assert.deepStrictEqual(result, {
-        isSupporter: false,
-        maxFeeds: defaultMaxFeeds,
-        maxUserFeeds: defaultMaxUserFeeds,
-        maxUserFeedsComposition: {
-          base: defaultMaxUserFeeds,
-          legacy: 0,
-        },
-        maxGuilds: 0,
-        webhooks: false,
-        refreshRateSeconds: defaultRefreshRateSeconds,
-        allowCustomPlaceholders: false,
-        dailyArticleLimit: 50,
-        allowExternalProperties: false,
+      const ctx = harness.createContext();
+      const supporter = ctx.createSupporterObject({
+        expireAt: dayjs().subtract(1, "month").toDate(),
+        maxFeeds: 10,
+        maxGuilds: 5,
       });
+
+      const result = ctx.service.getBenefitsFromSupporter(supporter);
+
+      assert.strictEqual(result.isSupporter, false);
+      assert.strictEqual(result.maxFeeds, TEST_DEFAULTS.maxFeeds);
+      assert.strictEqual(result.maxUserFeeds, TEST_DEFAULTS.maxUserFeeds);
+      assert.strictEqual(result.maxGuilds, 0);
+      assert.strictEqual(result.webhooks, false);
+      assert.strictEqual(result.refreshRateSeconds, TEST_DEFAULTS.refreshRateSeconds);
+      assert.strictEqual(result.allowCustomPlaceholders, false);
+      assert.strictEqual(result.dailyArticleLimit, TEST_DEFAULTS.maxDailyArticlesDefault);
     });
 
     describe("if valid supporter", () => {
-      beforeEach(() => {
-        supportersService.isValidSupporter = () => true;
-        mockPatronsService.getMaxBenefitsFromPatrons = () => patronBenefits;
-      });
-
       it("returns isSupporter true", () => {
-        supportersService.isValidSupporter = () => true;
+        const ctx = harness.createContext();
+        const supporter = ctx.createValidSupporterObject({ maxFeeds: 10, maxGuilds: 5 });
 
-        const result = supportersService.getBenefitsFromSupporter(supporter);
+        const result = ctx.service.getBenefitsFromSupporter(supporter);
 
         assert.strictEqual(result.isSupporter, true);
       });
 
       it("returns webhooks true", () => {
-        supportersService.isValidSupporter = () => true;
+        const ctx = harness.createContext();
+        const supporter = ctx.createValidSupporterObject({ maxFeeds: 10, maxGuilds: 5 });
 
-        const result = supportersService.getBenefitsFromSupporter(supporter);
+        const result = ctx.service.getBenefitsFromSupporter(supporter);
 
         assert.strictEqual(result.webhooks, true);
       });
 
-      describe("maxFeeds", () => {
-        it("returns the patron max feeds if patron max feeds is larger", () => {
-          supportersService.isValidSupporter = () => true;
+      it("returns supporter max feeds when larger than default", () => {
+        const ctx = harness.createContext();
+        const supporter = ctx.createValidSupporterObject({ maxFeeds: 20 });
 
-          const result = supportersService.getBenefitsFromSupporter({
-            ...supporter,
-            maxFeeds: patronBenefits.maxFeeds - 5,
-          });
+        const result = ctx.service.getBenefitsFromSupporter(supporter);
 
-          assert.strictEqual(result.maxFeeds, patronBenefits.maxFeeds);
-        });
-
-        it("returns the patron max user feeds if patron max user feeds is larger", () => {
-          supportersService.isValidSupporter = () => true;
-
-          const result = supportersService.getBenefitsFromSupporter({
-            ...supporter,
-            maxFeeds: patronBenefits.maxUserFeeds - 5,
-          });
-
-          assert.strictEqual(result.maxFeeds, patronBenefits.maxUserFeeds);
-        });
-
-        it("returns the supporter max feeds if supporter max feeds is larger", () => {
-          supportersService.isValidSupporter = () => true;
-          mockPatronsService.getMaxBenefitsFromPatrons = () => ({
-            ...patronBenefits,
-            maxFeeds: 10,
-            maxUserFeeds: 10,
-          });
-
-          const result = supportersService.getBenefitsFromSupporter({
-            ...supporter,
-            maxFeeds: patronBenefits.maxFeeds + 5,
-          });
-
-          assert.strictEqual(result.maxFeeds, patronBenefits.maxFeeds + 5);
-        });
-
-        it("returns the supporter max user feeds if supporter max user feeds is larger", () => {
-          supportersService.isValidSupporter = () => true;
-          mockPatronsService.getMaxBenefitsFromPatrons = () => ({
-            ...patronBenefits,
-            maxFeeds: 10,
-            maxUserFeeds: 10,
-          });
-
-          const result = supportersService.getBenefitsFromSupporter({
-            ...supporter,
-            maxUserFeeds: patronBenefits.maxUserFeeds + 5,
-          });
-
-          assert.strictEqual(result.maxUserFeeds, patronBenefits.maxUserFeeds + 5);
-        });
-
-        it("returns default max feeds if supporter max feeds does not exist and is larger than patron max feeds", () => {
-          supportersService.isValidSupporter = () => true;
-          mockPatronsService.getMaxBenefitsFromPatrons = () => ({
-            ...patronBenefits,
-            maxFeeds: defaultMaxFeeds - 10,
-            maxUserFeeds: 10,
-          });
-
-          const result = supportersService.getBenefitsFromSupporter({
-            ...supporter,
-            maxFeeds: undefined,
-          });
-
-          assert.strictEqual(result.maxFeeds, defaultMaxFeeds);
-        });
-
-        it("returns default max user feeds if supporter max user feeds does not exist and is larger than patron max user feeds", () => {
-          supportersService.isValidSupporter = () => true;
-          mockPatronsService.getMaxBenefitsFromPatrons = () => ({
-            ...patronBenefits,
-            maxFeeds: defaultMaxFeeds - 10,
-            maxUserFeeds: defaultMaxUserFeeds - defaultMaxUserFeeds - 1,
-          });
-
-          const result = supportersService.getBenefitsFromSupporter({
-            ...supporter,
-            maxUserFeeds: undefined,
-          });
-
-          assert.strictEqual(result.maxUserFeeds, defaultMaxUserFeeds);
-        });
+        assert.strictEqual(result.maxFeeds, 20);
       });
 
-      describe("maxGuilds", () => {
-        it("returns the patron max guilds if patron max guilds is larger", () => {
-          supportersService.isValidSupporter = () => true;
-          mockPatronsService.getMaxBenefitsFromPatrons = () => ({
-            ...patronBenefits,
-            maxFeeds: 5,
-            maxGuilds: 10,
-          });
+      it("returns supporter max guilds when larger than default", () => {
+        const ctx = harness.createContext();
+        const supporter = ctx.createValidSupporterObject({ maxGuilds: 10 });
 
-          const result = supportersService.getBenefitsFromSupporter({
-            ...supporter,
-            maxGuilds: patronBenefits.maxGuilds - 5,
-          });
+        const result = ctx.service.getBenefitsFromSupporter(supporter);
 
-          assert.strictEqual(result.maxGuilds, 10);
-        });
-
-        it("returns the supporter max guilds if supporter max guilds is larger", () => {
-          supportersService.isValidSupporter = () => true;
-          mockPatronsService.getMaxBenefitsFromPatrons = () => ({
-            ...patronBenefits,
-            maxGuilds: 15,
-          });
-
-          const result = supportersService.getBenefitsFromSupporter({
-            ...supporter,
-            maxGuilds: patronBenefits.maxGuilds + 5,
-          });
-
-          assert.strictEqual(result.maxGuilds, patronBenefits.maxGuilds + 5);
-        });
-
-        it("returns default 1 if supporter max guilds does not exist and 1 is larger than patron max guilds", () => {
-          supportersService.isValidSupporter = () => true;
-          mockPatronsService.getMaxBenefitsFromPatrons = () => ({
-            ...patronBenefits,
-            maxGuilds: 0,
-          });
-
-          const result = supportersService.getBenefitsFromSupporter({
-            ...supporter,
-            maxGuilds: undefined,
-          });
-
-          assert.strictEqual(result.maxGuilds, 1);
-        });
+        assert.strictEqual(result.maxGuilds, 10);
       });
 
-      describe("refreshRateSeconds", () => {
-        it("returns patron refresh rate if supporter comes from patron rate exists", () => {
-          supportersService.isValidSupporter = () => true;
-          mockPatronsService.getMaxBenefitsFromPatrons = () => ({
-            ...patronBenefits,
-            maxFeeds: 5,
-            maxGuilds: 10,
-            refreshRateSeconds: 1,
-          });
+      it("returns default max guilds of 1 if supporter max guilds does not exist", () => {
+        const ctx = harness.createContext();
+        const supporter = ctx.createValidSupporterObject({ maxGuilds: undefined });
 
-          const result = supportersService.getBenefitsFromSupporter({
-            ...supporter,
-            patron: true,
-            patrons: [
-              {
-                id: "patron-1",
-                pledge: 500,
-                pledgeLifetime: 100,
-                status: PatronStatus.ACTIVE,
-              },
-            ],
-          });
+        const result = ctx.service.getBenefitsFromSupporter(supporter);
 
-          assert.strictEqual(result.refreshRateSeconds, 1);
-        });
+        assert.strictEqual(result.maxGuilds, 1);
+      });
 
-        it("returns default refresh rate if supporter is on slow rate", () => {
-          supportersService.isValidSupporter = () => true;
-          mockPatronsService.getMaxBenefitsFromPatrons = () => ({
-            ...patronBenefits,
-            refreshRateSeconds: 8,
-          });
+      it("returns 120 refresh rate if supporter has no patrons and is not slow rate", () => {
+        const ctx = harness.createContext();
+        const supporter = ctx.createValidSupporterObject({ patrons: [], slowRate: false });
 
-          const result = supportersService.getBenefitsFromSupporter({
-            ...supporter,
-            patron: true,
-            patrons: [
-              {
-                id: "patron-1",
-                pledge: 500,
-                pledgeLifetime: 100,
-                status: PatronStatus.ACTIVE,
-              },
-            ],
-            slowRate: true,
-          });
+        const result = ctx.service.getBenefitsFromSupporter(supporter);
 
-          assert.strictEqual(result.refreshRateSeconds, defaultRefreshRateSeconds);
-        });
+        assert.strictEqual(result.refreshRateSeconds, 120);
+      });
 
-        it("returns 120 if supporter does not have patrons and is not slow rate", () => {
-          supportersService.isValidSupporter = () => true;
-          mockPatronsService.getMaxBenefitsFromPatrons = () => ({
-            ...patronBenefits,
-            refreshRateSeconds: undefined,
-          });
+      it("returns default refresh rate if supporter is on slow rate", () => {
+        const ctx = harness.createContext();
+        const supporter = ctx.createSupporterWithPatronObject({ slowRate: true });
 
-          const result = supportersService.getBenefitsFromSupporter({
-            ...supporter,
-            slowRate: false,
-            patrons: [],
-          });
+        const result = ctx.service.getBenefitsFromSupporter(supporter);
 
-          assert.strictEqual(result.refreshRateSeconds, 120);
-        });
+        assert.strictEqual(result.refreshRateSeconds, TEST_DEFAULTS.refreshRateSeconds);
       });
     });
   });
@@ -400,187 +391,206 @@ describe("SupportersService", { concurrency: false }, () => {
   describe("isValidSupporter", () => {
     describe("when there are no patrons", () => {
       it("returns false if there is no expiration date and no patrons", () => {
-        const supporter: SupportPatronAggregateResult = {
-          id: "supporter-id",
-          patrons: [],
-          guilds: [],
-        };
+        const ctx = harness.createContext();
+        const supporter = ctx.createSupporterObject({ patrons: [], expireAt: undefined });
 
-        const result = supportersService.isValidSupporter(supporter);
+        const result = ctx.service.isValidSupporter(supporter);
 
         assert.strictEqual(result, false);
       });
 
       it("returns true if supporter is not expired yet", () => {
-        const supporter: SupportPatronAggregateResult = {
-          id: "supporter-id",
+        const ctx = harness.createContext();
+        const supporter = ctx.createSupporterObject({
           patrons: [],
-          guilds: [],
           expireAt: dayjs().add(1, "month").toDate(),
-        };
+        });
 
-        const result = supportersService.isValidSupporter(supporter);
+        const result = ctx.service.isValidSupporter(supporter);
 
         assert.strictEqual(result, true);
       });
 
       it("returns false if supporter is expired", () => {
-        const supporter: SupportPatronAggregateResult = {
-          id: "supporter-id",
+        const ctx = harness.createContext();
+        const supporter = ctx.createSupporterObject({
           patrons: [],
-          guilds: [],
           expireAt: dayjs().subtract(1, "month").toDate(),
-        };
+        });
 
-        const result = supportersService.isValidSupporter(supporter);
+        const result = ctx.service.isValidSupporter(supporter);
 
         assert.strictEqual(result, false);
       });
     });
 
     describe("when there are patrons", () => {
-      it("returns true if some patron is a valid patron", () => {
-        const supporter: SupportPatronAggregateResult = {
-          id: "supporter-id",
-          guilds: [],
+      it("returns true if there is one active patron with nonzero pledge", () => {
+        const ctx = harness.createContext();
+        const supporter = ctx.createSupporterObject({
           patrons: [
-            {
-              id: "patron-1",
-              status: PatronStatus.ACTIVE,
-              pledge: 1,
-              pledgeLifetime: 100,
-            },
-            {
-              id: "patron-2",
-              status: PatronStatus.FORMER,
-              pledge: 0,
-              pledgeLifetime: 100,
-            },
+            { id: ctx.generateId(), status: PatronStatus.ACTIVE, pledge: 1, pledgeLifetime: 100 },
           ],
-        };
+        });
 
-        let callCount = 0;
-        mockPatronsService.isValidPatron = () => {
-          callCount++;
-          return callCount === 1;
-        };
-
-        const result = supportersService.isValidSupporter(supporter);
+        const result = ctx.service.isValidSupporter(supporter);
 
         assert.strictEqual(result, true);
       });
 
-      it("returns false if all patrons are invalid", () => {
-        const supporter: SupportPatronAggregateResult = {
-          id: "supporter-id",
-          guilds: [],
+      it("returns true when declined but last charge is within the past 4 days", () => {
+        const ctx = harness.createContext();
+        const supporter = ctx.createSupporterObject({
           patrons: [
             {
-              id: "patron-1",
-              status: PatronStatus.ACTIVE,
-              pledge: 1,
+              id: ctx.generateId(),
+              status: PatronStatus.DECLINED,
+              pledge: 100,
               pledgeLifetime: 100,
-            },
-            {
-              id: "patron-2",
-              status: PatronStatus.FORMER,
-              pledge: 0,
-              pledgeLifetime: 100,
+              lastCharge: dayjs().subtract(2, "day").toDate(),
             },
           ],
-        };
+        });
 
-        mockPatronsService.isValidPatron = () => false;
+        const result = ctx.service.isValidSupporter(supporter);
 
-        const result = supportersService.isValidSupporter(supporter);
+        assert.strictEqual(result, true);
+      });
+
+      it("returns false when they are a former patron", () => {
+        const ctx = harness.createContext();
+        const supporter = ctx.createSupporterObject({
+          patrons: [
+            { id: ctx.generateId(), status: PatronStatus.FORMER, pledge: 0, pledgeLifetime: 100 },
+          ],
+        });
+
+        const result = ctx.service.isValidSupporter(supporter);
 
         assert.strictEqual(result, false);
+      });
+
+      it("returns false when declined and last charge is >4 days ago", () => {
+        const ctx = harness.createContext();
+        const supporter = ctx.createSupporterObject({
+          patrons: [
+            {
+              id: ctx.generateId(),
+              status: PatronStatus.DECLINED,
+              pledge: 0,
+              pledgeLifetime: 100,
+              lastCharge: dayjs().subtract(5, "day").toDate(),
+            },
+          ],
+        });
+
+        const result = ctx.service.isValidSupporter(supporter);
+
+        assert.strictEqual(result, false);
+      });
+
+      it("returns true when there is at least 1 active patron in an array", () => {
+        const ctx = harness.createContext();
+        const supporter = ctx.createSupporterObject({
+          patrons: [
+            { id: ctx.generateId(), status: PatronStatus.FORMER, pledge: 0, pledgeLifetime: 100 },
+            { id: ctx.generateId(), status: PatronStatus.ACTIVE, pledge: 1, pledgeLifetime: 100 },
+          ],
+        });
+
+        const result = ctx.service.isValidSupporter(supporter);
+
+        assert.strictEqual(result, true);
       });
     });
   });
 
+  describe("setGuilds", () => {
+    it("sets the guilds of the supporter", async () => {
+      const ctx = harness.createContext();
+      const guildIds = [ctx.generateServerId(), ctx.generateServerId()];
+      await ctx.createSupporter({
+        guilds: ["old-guild-1", "old-guild-2"],
+        maxGuilds: 10,
+        maxFeeds: 10,
+      });
+
+      await ctx.service.setGuilds(ctx.discordUserId, guildIds);
+
+      const found = await ctx.supporterRepository.findById(ctx.discordUserId);
+      assert.deepStrictEqual(found?.guilds, guildIds);
+    });
+
+    it("returns the supporter with new guilds", async () => {
+      const ctx = harness.createContext();
+      const guildIds = [ctx.generateServerId(), ctx.generateServerId()];
+      await ctx.createSupporter({
+        guilds: ["old-guild-1", "old-guild-2"],
+        maxGuilds: 10,
+        maxFeeds: 10,
+      });
+
+      const result = await ctx.service.setGuilds(ctx.discordUserId, guildIds);
+
+      assert.deepStrictEqual(result?.guilds, guildIds);
+    });
+  });
+
   describe("syncDiscordSupporterRoles", () => {
-    const mockConfigWithRoles = {
-      ...mockConfig,
+    const rolesConfig = {
       BACKEND_API_SUPPORTER_GUILD_ID: "supporter-guild-id",
       BACKEND_API_SUPPORTER_ROLE_ID: "supporter-role-id",
       BACKEND_API_SUPPORTER_SUBROLE_IDS: "tier1-role,tier2-role,tier3-role",
-    } as Config;
+    };
 
     it("returns early if supporterGuildId is missing", async () => {
-      const service = createSupportersService({
-        config: { ...mockConfig, BACKEND_API_SUPPORTER_GUILD_ID: undefined } as Config,
-        patronsService: mockPatronsService,
-        guildSubscriptionsService: mockGuildSubscriptionsService,
-        discordApiService: mockDiscordApiService,
-        supporterRepository: mockSupporterRepository,
-        userFeedLimitOverrideRepository: mockUserFeedLimitOverrideRepository,
-      }).service;
+      const ctx = harness.createContext({
+        config: { BACKEND_API_SUPPORTER_GUILD_ID: undefined },
+      });
 
-      await service.syncDiscordSupporterRoles("user-id");
+      await ctx.service.syncDiscordSupporterRoles(ctx.discordUserId);
+
+      assert.strictEqual(ctx.discordApiService.getGuildMember.mock.callCount(), 0);
     });
 
     it("returns early if supporterRoleId is missing", async () => {
-      const service = createSupportersService({
+      const ctx = harness.createContext({
         config: {
-          ...mockConfig,
           BACKEND_API_SUPPORTER_GUILD_ID: "guild-id",
           BACKEND_API_SUPPORTER_ROLE_ID: undefined,
-        } as Config,
-        patronsService: mockPatronsService,
-        guildSubscriptionsService: mockGuildSubscriptionsService,
-        discordApiService: mockDiscordApiService,
-        supporterRepository: mockSupporterRepository,
-        userFeedLimitOverrideRepository: mockUserFeedLimitOverrideRepository,
-      }).service;
+        },
+      });
 
-      await service.syncDiscordSupporterRoles("user-id");
+      await ctx.service.syncDiscordSupporterRoles(ctx.discordUserId);
+
+      assert.strictEqual(ctx.discordApiService.getGuildMember.mock.callCount(), 0);
     });
 
     it("returns early if supporterSubroleIds is empty", async () => {
-      const service = createSupportersService({
+      const ctx = harness.createContext({
         config: {
-          ...mockConfig,
           BACKEND_API_SUPPORTER_GUILD_ID: "guild-id",
           BACKEND_API_SUPPORTER_ROLE_ID: "role-id",
           BACKEND_API_SUPPORTER_SUBROLE_IDS: "",
-        } as Config,
-        patronsService: mockPatronsService,
-        guildSubscriptionsService: mockGuildSubscriptionsService,
-        discordApiService: mockDiscordApiService,
-        supporterRepository: mockSupporterRepository,
-        userFeedLimitOverrideRepository: mockUserFeedLimitOverrideRepository,
-      }).service;
+        },
+      });
 
-      await service.syncDiscordSupporterRoles("user-id");
+      await ctx.service.syncDiscordSupporterRoles(ctx.discordUserId);
+
+      assert.strictEqual(ctx.discordApiService.getGuildMember.mock.callCount(), 0);
     });
 
     it("removes all roles when no subscription", async () => {
       const removedRoles: string[] = [];
-      const mockDiscordApiService = {
-        getGuildMember: async () => ({
-          roles: ["supporter-role-id", "tier1-role"],
-        }),
-        removeGuildMemberRole: async (data: { roleId: string }) => {
-          removedRoles.push(data.roleId);
+      const ctx = harness.createContext({
+        config: rolesConfig,
+        discordApiService: {
+          guildMember: { roles: ["supporter-role-id", "tier1-role"] },
+          onRemoveRole: (data) => removedRoles.push(data.roleId),
         },
-      } as unknown as DiscordApiService;
+      });
 
-      const mockSupporterRepo = {
-        ...mockSupporterRepository,
-        findById: async () => null,
-      } as unknown as ISupporterRepository;
-
-      const service = createSupportersService({
-        config: mockConfigWithRoles,
-        patronsService: mockPatronsService,
-        guildSubscriptionsService: mockGuildSubscriptionsService,
-        discordApiService: mockDiscordApiService,
-        supporterRepository: mockSupporterRepo,
-        userFeedLimitOverrideRepository: mockUserFeedLimitOverrideRepository,
-      }).service;
-
-      await service.syncDiscordSupporterRoles("user-id");
+      await ctx.service.syncDiscordSupporterRoles(ctx.discordUserId);
 
       assert.ok(removedRoles.includes("supporter-role-id"));
       assert.ok(removedRoles.includes("tier1-role"));
@@ -588,58 +598,16 @@ describe("SupportersService", { concurrency: false }, () => {
 
     it("adds base role and tier role when subscription exists", async () => {
       const addedRoles: string[] = [];
-      const mockDiscordApiService = {
-        getGuildMember: async () => ({
-          roles: [],
-        }),
-        addGuildMemberRole: async (data: { roleId: string }) => {
-          addedRoles.push(data.roleId);
+      const ctx = harness.createContext({
+        config: rolesConfig,
+        discordApiService: {
+          guildMember: { roles: [] },
+          onAddRole: (data) => addedRoles.push(data.roleId),
         },
-        removeGuildMemberRole: async () => {},
-      } as unknown as DiscordApiService;
+      });
+      await ctx.createSupporterWithSubscription();
 
-      const mockSupporterRepo = {
-        ...mockSupporterRepository,
-        findById: async () => ({
-          id: "user-id",
-          guilds: [],
-          paddleCustomer: {
-            customerId: "customer-id",
-            email: "test@test.com",
-            lastCurrencyCodeUsed: "USD",
-            subscription: {
-              id: "sub-id",
-              productKey: SubscriptionProductKey.Tier2,
-              status: "active",
-              currencyCode: "USD",
-              billingPeriodStart: new Date(),
-              billingPeriodEnd: new Date(),
-              billingInterval: "month",
-              benefits: {
-                maxUserFeeds: 10,
-                allowWebhooks: true,
-                dailyArticleLimit: 500,
-                refreshRateSeconds: 120,
-              },
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          },
-        }),
-      } as unknown as ISupporterRepository;
-
-      const service = createSupportersService({
-        config: mockConfigWithRoles,
-        patronsService: mockPatronsService,
-        guildSubscriptionsService: mockGuildSubscriptionsService,
-        discordApiService: mockDiscordApiService,
-        supporterRepository: mockSupporterRepo,
-        userFeedLimitOverrideRepository: mockUserFeedLimitOverrideRepository,
-      }).service;
-
-      await service.syncDiscordSupporterRoles("user-id");
+      await ctx.service.syncDiscordSupporterRoles(ctx.discordUserId);
 
       assert.ok(addedRoles.includes("supporter-role-id"));
       assert.ok(addedRoles.includes("tier2-role"));
@@ -648,125 +616,73 @@ describe("SupportersService", { concurrency: false }, () => {
 
   describe("getBenefitsOfAllDiscordUsers", () => {
     it("returns empty array when supporters disabled", async () => {
-      const service = createSupportersService({
-        config: { ...mockConfig, BACKEND_API_ENABLE_SUPPORTERS: false } as Config,
-        patronsService: mockPatronsService,
-        guildSubscriptionsService: mockGuildSubscriptionsService,
-        discordApiService: mockDiscordApiService,
-        supporterRepository: mockSupporterRepository,
-        userFeedLimitOverrideRepository: mockUserFeedLimitOverrideRepository,
-      }).service;
+      const ctx = harness.createContext({
+        config: { BACKEND_API_ENABLE_SUPPORTERS: false },
+      });
 
-      const result = await service.getBenefitsOfAllDiscordUsers();
+      const result = await ctx.service.getBenefitsOfAllDiscordUsers();
 
       assert.deepStrictEqual(result, []);
     });
 
     it("returns benefits for all supporters", async () => {
-      const mockSupporterRepo = {
-        aggregateAllSupportersWithPatrons: async () => [
-          {
-            id: "supporter-1",
-            guilds: [],
-            patrons: [],
-            expireAt: dayjs().add(1, "month").toDate(),
-          },
-        ],
-      } as unknown as ISupporterRepository;
+      const ctx = harness.createContext();
+      await ctx.createValidSupporter();
 
-      const mockOverrideRepo = {
-        findByIdsNotIn: async () => [],
-      } as unknown as IUserFeedLimitOverrideRepository;
+      const result = await ctx.service.getBenefitsOfAllDiscordUsers();
 
-      const service = createSupportersService({
-        config: mockConfig,
-        patronsService: mockPatronsService,
-        guildSubscriptionsService: mockGuildSubscriptionsService,
-        discordApiService: mockDiscordApiService,
-        supporterRepository: mockSupporterRepo,
-        userFeedLimitOverrideRepository: mockOverrideRepo,
-      }).service;
-
-      const result = await service.getBenefitsOfAllDiscordUsers();
-
-      assert.strictEqual(result.length, 1);
-      assert.strictEqual(result[0]?.discordUserId, "supporter-1");
+      const found = result.find((r) => r.discordUserId === ctx.discordUserId);
+      assert.ok(found);
+      assert.strictEqual(found.isSupporter, true);
     });
 
     it("includes non-supporter users with feed limit overrides", async () => {
-      const mockSupporterRepo = {
-        aggregateAllSupportersWithPatrons: async () => [],
-      } as unknown as ISupporterRepository;
+      const ctx = harness.createContext();
+      await ctx.createUserFeedLimitOverride({ additionalUserFeeds: 5 });
 
-      const mockOverrideRepo = {
-        findByIdsNotIn: async () => [
-          { id: "non-supporter-1", additionalUserFeeds: 5 },
-        ],
-      } as unknown as IUserFeedLimitOverrideRepository;
+      const result = await ctx.service.getBenefitsOfAllDiscordUsers();
 
-      const service = createSupportersService({
-        config: mockConfig,
-        patronsService: mockPatronsService,
-        guildSubscriptionsService: mockGuildSubscriptionsService,
-        discordApiService: mockDiscordApiService,
-        supporterRepository: mockSupporterRepo,
-        userFeedLimitOverrideRepository: mockOverrideRepo,
-      }).service;
-
-      const result = await service.getBenefitsOfAllDiscordUsers();
-
-      assert.strictEqual(result.length, 1);
-      assert.strictEqual(result[0]?.discordUserId, "non-supporter-1");
-      assert.strictEqual(result[0]?.isSupporter, false);
-      assert.strictEqual(result[0]?.maxUserFeeds, defaultMaxUserFeeds + 5);
+      const found = result.find((r) => r.discordUserId === ctx.discordUserId);
+      assert.ok(found);
+      assert.strictEqual(found.isSupporter, false);
+      assert.strictEqual(found.maxUserFeeds, TEST_DEFAULTS.maxUserFeeds + 5);
     });
   });
 
   describe("getBenefitsOfAllServers", () => {
     it("returns empty array when no guild subscriptions", async () => {
-      const service = createSupportersService({
-        config: mockConfig,
-        patronsService: mockPatronsService,
-        guildSubscriptionsService: mockGuildSubscriptionsService,
-        discordApiService: mockDiscordApiService,
-        supporterRepository: mockSupporterRepository,
-        userFeedLimitOverrideRepository: mockUserFeedLimitOverrideRepository,
-      }).service;
+      const ctx = harness.createContext({
+        guildSubscriptionsService: { subscriptions: [] },
+      });
 
-      const result = await service.getBenefitsOfAllServers();
+      const result = await ctx.service.getBenefitsOfAllServers();
 
       assert.deepStrictEqual(result, []);
     });
 
-    it("returns correct benefits for servers with supporters", async () => {
-      mockGuildSubscriptionsService.getAllSubscriptions = async () => [
-        { guildId: "guild-1", maxFeeds: 10, refreshRate: 120 },
-      ] as never;
+    it("returns benefits for servers with guild subscriptions", async () => {
+      const ctx = harness.createContext();
+      const guildId = ctx.generateServerId();
+      await ctx.createValidSupporter({ guilds: [guildId] });
+      const mockCtx = harness.createContext({
+        guildSubscriptionsService: {
+          subscriptions: [
+            {
+              guildId,
+              maxFeeds: 10,
+              refreshRateSeconds: 120,
+              slowRate: false,
+              expireAt: dayjs().add(1, "month").toDate(),
+            },
+          ],
+        },
+      });
 
-      const mockSupporterRepo = {
-        aggregateAllSupportersWithGuilds: async () => [
-          {
-            id: "supporter-1",
-            guildId: "guild-1",
-            patrons: [],
-            expireAt: dayjs().add(1, "month").toDate(),
-          },
-        ],
-      } as unknown as ISupporterRepository;
+      const result = await mockCtx.service.getBenefitsOfAllServers();
 
-      const service = createSupportersService({
-        config: mockConfig,
-        patronsService: mockPatronsService,
-        guildSubscriptionsService: mockGuildSubscriptionsService,
-        discordApiService: mockDiscordApiService,
-        supporterRepository: mockSupporterRepo,
-        userFeedLimitOverrideRepository: mockUserFeedLimitOverrideRepository,
-      }).service;
-
-      const result = await service.getBenefitsOfAllServers();
-
-      assert.strictEqual(result.length, 1);
-      assert.strictEqual(result[0]?.serverId, "guild-1");
+      const found = result.find((r) => r.serverId === guildId);
+      assert.ok(found);
+      assert.strictEqual(found.maxFeeds, 10);
     });
   });
 });

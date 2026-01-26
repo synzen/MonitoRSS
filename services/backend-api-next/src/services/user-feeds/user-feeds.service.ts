@@ -23,6 +23,7 @@ import {
   FeedNotFoundException,
   FeedInternalErrorException,
   RefreshRateNotAllowedException,
+  SourceFeedNotFoundException,
 } from "../../shared/exceptions/user-feeds.exceptions";
 import type {
   UserFeedsServiceDeps,
@@ -297,12 +298,24 @@ export class UserFeedsService {
     input: CreateUserFeedInput
   ): Promise<IUserFeed> {
     const { discordUserId } = opts;
-    const { url, title } = input;
+    const { url, title, sourceFeedId } = input;
 
-    const [benefits, user] = await Promise.all([
+    const [benefits, user, sourceFeed] = await Promise.all([
       this.deps.supportersService.getBenefitsOfDiscordUser(discordUserId),
       this.deps.usersService.getOrCreateUserByDiscordId(discordUserId),
+      sourceFeedId
+        ? this.deps.userFeedRepository.findByIdAndOwnership(
+            sourceFeedId,
+            discordUserId
+          )
+        : null,
     ]);
+
+    if (sourceFeedId && !sourceFeed) {
+      throw new SourceFeedNotFoundException(
+        `Feed with ID ${sourceFeedId} not found for user ${discordUserId}`
+      );
+    }
 
     const currentFeedCount =
       await this.calculateCurrentFeedCountOfDiscordUser(discordUserId);
@@ -311,8 +324,10 @@ export class UserFeedsService {
       throw new FeedLimitReachedException("Max feeds reached");
     }
 
+    const feedRequestLookupKey = this.generateFeedRequestLookupKey();
+
     const lookupDetails = getFeedRequestLookupDetails({
-      feed: { url, feedRequestLookupKey: undefined },
+      feed: { url, feedRequestLookupKey },
       user: {
         externalCredentials: user.externalCredentials?.map((c) => ({
           type: c.type,
@@ -335,30 +350,50 @@ export class UserFeedsService {
       user: { discordUserId },
     });
 
-    const updates: Record<string, unknown> = {
-      $set: {
-        refreshRateSeconds: benefits.refreshRateSeconds,
-        maxDailyArticles: benefits.maxDailyArticles,
-        slotOffsetMs,
-      },
+    const $set: Record<string, unknown> = {
+      refreshRateSeconds: benefits.refreshRateSeconds,
+      maxDailyArticles: benefits.maxDailyArticles,
+      slotOffsetMs,
+      feedRequestLookupKey,
     };
 
     if (url !== finalUrl) {
-      (updates.$set as Record<string, unknown>).inputUrl = url;
+      $set.inputUrl = url;
     }
 
     if (enableDateChecks) {
-      (updates.$set as Record<string, unknown>).dateCheckOptions = {
+      $set.dateCheckOptions = {
         oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24,
       };
     }
 
-    const updatedFeed = await this.deps.userFeedRepository.updateById(
-      feed.id,
-      updates
-    );
+    if (sourceFeed) {
+      if (sourceFeed.passingComparisons?.length) {
+        $set.passingComparisons = sourceFeed.passingComparisons;
+      }
+      if (sourceFeed.blockingComparisons?.length) {
+        $set.blockingComparisons = sourceFeed.blockingComparisons;
+      }
+      if (sourceFeed.formatOptions) {
+        $set.formatOptions = sourceFeed.formatOptions;
+      }
+      if (sourceFeed.dateCheckOptions) {
+        $set.dateCheckOptions = sourceFeed.dateCheckOptions;
+      }
+      if (sourceFeed.externalProperties?.length) {
+        $set.externalProperties = sourceFeed.externalProperties;
+      }
+    }
+
+    const updatedFeed = await this.deps.userFeedRepository.updateById(feed.id, {
+      $set,
+    });
 
     return updatedFeed || feed;
+  }
+
+  private generateFeedRequestLookupKey(): string {
+    return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
   }
 
   async updateFeedById(
@@ -418,6 +453,22 @@ export class UserFeedsService {
           feed.disabledCode as UserFeedDisabledCode
         )
       ) {
+        if (feed.disabledCode === UserFeedDisabledCode.ExceededFeedLimit) {
+          const benefits =
+            await this.deps.supportersService.getBenefitsOfDiscordUser(
+              discordUserId
+            );
+          const enabledFeedCount = await this.deps.userFeedRepository.countByOwnershipExcludingDisabled(
+            discordUserId,
+            DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS
+          );
+
+          if (enabledFeedCount >= benefits.maxUserFeeds) {
+            throw new FeedLimitReachedException(
+              `Cannot enable feed ${id} because user ${discordUserId} has reached the feed limit`
+            );
+          }
+        }
         $unset.disabledCode = "";
       }
     }

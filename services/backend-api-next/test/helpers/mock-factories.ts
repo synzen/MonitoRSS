@@ -1,0 +1,209 @@
+import { mock, type Mock } from "node:test";
+import type { UserFeedsServiceDeps } from "../../src/services/user-feeds/types";
+import type { SupportersServiceDeps } from "../../src/services/supporters/supporters.service";
+import type { PatronBenefits } from "../../src/services/patrons/patrons.service";
+import { GetArticlesResponseRequestStatus } from "../../src/services/feed-handler/types";
+import { generateTestId } from "./test-id";
+
+export interface MockFeedHandlerOptions {
+  url?: string;
+  articles?: Array<{ date?: string }>;
+  feedTitle?: string;
+  requestStatus?: GetArticlesResponseRequestStatus;
+}
+
+export function createMockFeedHandlerService(
+  options: MockFeedHandlerOptions = {}
+): UserFeedsServiceDeps["feedHandlerService"] {
+  return {
+    getArticles: async () => ({
+      requestStatus:
+        options.requestStatus ?? GetArticlesResponseRequestStatus.Success,
+      url: options.url ?? "https://example.com/feed.xml",
+      articles: options.articles ?? [],
+      feedTitle: options.feedTitle ?? "Test Feed",
+    }),
+  } as unknown as UserFeedsServiceDeps["feedHandlerService"];
+}
+
+export function createMockFeedsService(
+  bannedFeedDetails: unknown = null
+): UserFeedsServiceDeps["feedsService"] {
+  return {
+    getBannedFeedDetails: async () => bannedFeedDetails,
+  } as unknown as UserFeedsServiceDeps["feedsService"];
+}
+
+export interface MockSupportersOptions {
+  maxUserFeeds?: number;
+  maxDailyArticles?: number;
+  refreshRateSeconds?: number;
+}
+
+export function createMockSupportersService(
+  options: MockSupportersOptions = {}
+): UserFeedsServiceDeps["supportersService"] {
+  return {
+    getBenefitsOfDiscordUser: async () => ({
+      maxUserFeeds: options.maxUserFeeds ?? 5,
+      maxDailyArticles: options.maxDailyArticles ?? 100,
+      refreshRateSeconds: options.refreshRateSeconds ?? 600,
+    }),
+  } as unknown as UserFeedsServiceDeps["supportersService"];
+}
+
+export function createMockUsersService(
+  userId?: string
+): UserFeedsServiceDeps["usersService"] {
+  return {
+    getOrCreateUserByDiscordId: async () => ({
+      id: userId ?? generateTestId(),
+      discordUserId: "test-user",
+    }),
+  } as unknown as UserFeedsServiceDeps["usersService"];
+}
+
+export const DEFAULT_PATRON_BENEFITS: PatronBenefits = {
+  existsAndIsValid: true,
+  maxFeeds: 10,
+  maxUserFeeds: 10,
+  allowWebhooks: true,
+  maxGuilds: 15,
+  refreshRateSeconds: 2,
+  allowCustomPlaceholders: true,
+  maxPatreonPledge: 500,
+};
+
+export interface MockPatronsServiceOptions {
+  isValidPatron?: boolean | (() => boolean);
+  maxBenefits?: Partial<PatronBenefits>;
+}
+
+export interface MockPatronsService {
+  isValidPatron: Mock<() => boolean>;
+  getMaxBenefitsFromPatrons: Mock<() => PatronBenefits>;
+}
+
+export function createMockPatronsService(
+  options: MockPatronsServiceOptions = {}
+): MockPatronsService {
+  const isValidFn =
+    typeof options.isValidPatron === "function"
+      ? options.isValidPatron
+      : () => options.isValidPatron ?? true;
+
+  return {
+    isValidPatron: mock.fn(isValidFn),
+    getMaxBenefitsFromPatrons: mock.fn(() => ({
+      ...DEFAULT_PATRON_BENEFITS,
+      ...options.maxBenefits,
+    })),
+  };
+}
+
+export interface MockGuildSubscriptionsServiceOptions {
+  subscriptions?: unknown[];
+}
+
+export interface MockGuildSubscriptionsService {
+  getAllSubscriptions: Mock<() => Promise<unknown[]>>;
+}
+
+export function createMockGuildSubscriptionsService(
+  options: MockGuildSubscriptionsServiceOptions = {}
+): MockGuildSubscriptionsService {
+  return {
+    getAllSubscriptions: mock.fn(async () => options.subscriptions ?? []),
+  };
+}
+
+export interface MockDiscordApiServiceOptions {
+  guildMember?: { roles: string[] } | null;
+  addRoleError?: Error;
+  removeRoleError?: Error;
+}
+
+export interface MockDiscordApiServiceForSupporters {
+  getGuildMember: Mock<() => Promise<{ roles: string[] } | null>>;
+  addGuildMemberRole: Mock<() => Promise<void>>;
+  removeGuildMemberRole: Mock<() => Promise<void>>;
+}
+
+export function createMockDiscordApiServiceForSupporters(
+  options: MockDiscordApiServiceOptions = {}
+): MockDiscordApiServiceForSupporters {
+  return {
+    getGuildMember: mock.fn(async () => options.guildMember ?? { roles: [] }),
+    addGuildMemberRole: mock.fn(async () => {
+      if (options.addRoleError) throw options.addRoleError;
+    }),
+    removeGuildMemberRole: mock.fn(async () => {
+      if (options.removeRoleError) throw options.removeRoleError;
+    }),
+  };
+}
+
+export interface MockSupporterRepositoryOptions {
+  findByIdResult?: unknown;
+  aggregateWithPatronsResult?: unknown[];
+  aggregateSupportersForGuildsResult?: unknown[];
+  aggregateAllSupportersWithPatronsResult?: unknown[];
+  aggregateAllSupportersWithGuildsResult?: unknown[];
+}
+
+export interface MockSupporterRepository {
+  findById: Mock<() => Promise<unknown>>;
+  findByPaddleEmail: Mock<() => Promise<unknown>>;
+  create: Mock<(supporter: unknown) => Promise<unknown>>;
+  updateGuilds: Mock<() => Promise<unknown>>;
+  deleteAll: Mock<() => Promise<void>>;
+  aggregateWithPatronsAndOverrides: Mock<() => Promise<unknown[]>>;
+  aggregateSupportersForGuilds: Mock<() => Promise<unknown[]>>;
+  aggregateAllSupportersWithPatrons: Mock<() => Promise<unknown[]>>;
+  aggregateAllSupportersWithGuilds: Mock<() => Promise<unknown[]>>;
+}
+
+export function createMockSupporterRepository(
+  options: MockSupporterRepositoryOptions = {}
+): MockSupporterRepository {
+  return {
+    findById: mock.fn(async () => options.findByIdResult ?? null),
+    findByPaddleEmail: mock.fn(async () => null),
+    create: mock.fn(async (supporter: unknown) => supporter),
+    updateGuilds: mock.fn(async () => null),
+    deleteAll: mock.fn(async () => {}),
+    aggregateWithPatronsAndOverrides: mock.fn(
+      async () => options.aggregateWithPatronsResult ?? []
+    ),
+    aggregateSupportersForGuilds: mock.fn(
+      async () => options.aggregateSupportersForGuildsResult ?? []
+    ),
+    aggregateAllSupportersWithPatrons: mock.fn(
+      async () => options.aggregateAllSupportersWithPatronsResult ?? []
+    ),
+    aggregateAllSupportersWithGuilds: mock.fn(
+      async () => options.aggregateAllSupportersWithGuildsResult ?? []
+    ),
+  };
+}
+
+export interface MockUserFeedLimitOverrideRepositoryOptions {
+  findByIdResult?: unknown;
+  findByIdsNotInResult?: unknown[];
+}
+
+export interface MockUserFeedLimitOverrideRepository {
+  findById: Mock<() => Promise<unknown>>;
+  findByIdsNotIn: Mock<() => Promise<unknown[]>>;
+  deleteAll: Mock<() => Promise<void>>;
+}
+
+export function createMockUserFeedLimitOverrideRepository(
+  options: MockUserFeedLimitOverrideRepositoryOptions = {}
+): MockUserFeedLimitOverrideRepository {
+  return {
+    findById: mock.fn(async () => options.findByIdResult ?? null),
+    findByIdsNotIn: mock.fn(async () => options.findByIdsNotInResult ?? []),
+    deleteAll: mock.fn(async () => {}),
+  };
+}

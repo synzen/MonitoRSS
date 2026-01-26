@@ -101,6 +101,7 @@ export interface UserFeedListItem {
 export interface CreateUserFeedInput {
   title?: string;
   url: string;
+  sourceFeedId?: string;
 }
 
 export interface ValidateFeedUrlOutput {

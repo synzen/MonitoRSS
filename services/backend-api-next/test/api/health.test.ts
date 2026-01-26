@@ -1,24 +1,19 @@
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert";
 import {
-  setupTestDatabase,
-  teardownTestDatabase,
-} from "../helpers/setup-test-database";
-import { createTestContext, type TestContext } from "../helpers/test-context";
-import type { Connection } from "mongoose";
+  createAppTestContext,
+  type AppTestContext,
+} from "../helpers/test-context";
 
 describe("Health API", { concurrency: true }, () => {
-  let mongoConnection: Connection;
-  let ctx: TestContext;
+  let ctx: AppTestContext;
 
   before(async () => {
-    mongoConnection = await setupTestDatabase();
-    ctx = await createTestContext({ mongoConnection });
+    ctx = await createAppTestContext();
   });
 
   after(async () => {
-    await ctx.close();
-    await teardownTestDatabase();
+    await ctx.teardown();
   });
 
   describe("GET /api/v1/health", () => {

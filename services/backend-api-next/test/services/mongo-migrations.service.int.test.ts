@@ -3,34 +3,29 @@ import assert from "node:assert";
 import { Types } from "mongoose";
 import { randomUUID } from "crypto";
 import {
-  setupTestDatabase,
-  teardownTestDatabase,
-  getTestConnection,
-} from "../helpers/setup-test-database";
-import { createTestContext, type TestContext } from "../helpers/test-context";
+  createAppTestContext,
+  type AppTestContext,
+} from "../helpers/test-context";
 import { CustomPlaceholderStepType } from "../../src/repositories/shared/enums";
 
 describe("MongoMigrationsService Integration", { concurrency: false }, () => {
-  let ctx: TestContext;
+  let ctx: AppTestContext;
 
   before(async () => {
-    const mongoConnection = await setupTestDatabase();
-    ctx = await createTestContext({ mongoConnection });
+    ctx = await createAppTestContext();
   });
 
   beforeEach(async () => {
-    const connection = getTestConnection();
-    const migrationModel = connection.model("MongoMigration");
-    const userFeedModel = connection.model("UserFeed");
-    const userModel = connection.model("User");
+    const migrationModel = ctx.connection.model("MongoMigration");
+    const userFeedModel = ctx.connection.model("UserFeed");
+    const userModel = ctx.connection.model("User");
     await migrationModel.deleteMany({});
     await userFeedModel.deleteMany({});
     await userModel.deleteMany({});
   });
 
   after(async () => {
-    await ctx.close();
-    await teardownTestDatabase();
+    await ctx.teardown();
   });
 
   describe("applyMigrations", () => {
@@ -64,7 +59,7 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
     });
 
     it("applies only unapplied migrations when some exist", async () => {
-      const connection = getTestConnection();
+      const connection = ctx.connection;
       const migrationModel = connection.model("MongoMigration");
       await migrationModel.create({ id: "custom-placeholder-steps" });
       await migrationModel.create({ id: "add-user-ids-to-user-feeds" });
@@ -78,7 +73,7 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
 
   describe("backfill-slot-offset-ms migration", () => {
     it("calculates and sets slotOffsetMs for feeds missing it", async () => {
-      const connection = getTestConnection();
+      const connection = ctx.connection;
       const migrationModel = connection.model("MongoMigration");
       await migrationModel.create({ id: "custom-placeholder-steps" });
       await migrationModel.create({ id: "add-user-ids-to-user-feeds" });
@@ -117,7 +112,7 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
     });
 
     it("does not modify feeds that already have slotOffsetMs", async () => {
-      const connection = getTestConnection();
+      const connection = ctx.connection;
       const migrationModel = connection.model("MongoMigration");
       await migrationModel.create({ id: "custom-placeholder-steps" });
       await migrationModel.create({ id: "add-user-ids-to-user-feeds" });
@@ -143,7 +138,7 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
 
   describe("add-user-ids-to-user-feeds migration", () => {
     it("populates user.id from User collection when missing", async () => {
-      const connection = getTestConnection();
+      const connection = ctx.connection;
       const migrationModel = connection.model("MongoMigration");
       await migrationModel.create({ id: "custom-placeholder-steps" });
 
@@ -173,7 +168,7 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
     });
 
     it("skips feeds that already have user.id", async () => {
-      const connection = getTestConnection();
+      const connection = ctx.connection;
       const migrationModel = connection.model("MongoMigration");
       await migrationModel.create({ id: "custom-placeholder-steps" });
 
@@ -200,7 +195,7 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
 
   describe("custom-placeholder-steps migration", () => {
     it("adds id and type fields to custom placeholder steps", async () => {
-      const connection = getTestConnection();
+      const connection = ctx.connection;
       const userFeedModel = connection.model("UserFeed");
 
       const stepWithoutIdAndType = {
@@ -254,7 +249,7 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
     });
 
     it("preserves existing type if already set", async () => {
-      const connection = getTestConnection();
+      const connection = ctx.connection;
       const userFeedModel = connection.model("UserFeed");
 
       const stepWithType = {
@@ -310,7 +305,7 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
 
   describe("convert-user-feed-user-ids-t-mongo-ids migration", () => {
     it("converts string user.id to ObjectId", async () => {
-      const connection = getTestConnection();
+      const connection = ctx.connection;
       const migrationModel = connection.model("MongoMigration");
       await migrationModel.create({ id: "custom-placeholder-steps" });
       await migrationModel.create({ id: "add-user-ids-to-user-feeds" });
@@ -342,7 +337,7 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
     });
 
     it("handles user.id that is already an ObjectId without error", async () => {
-      const connection = getTestConnection();
+      const connection = ctx.connection;
       const migrationModel = connection.model("MongoMigration");
       await migrationModel.create({ id: "custom-placeholder-steps" });
       await migrationModel.create({ id: "add-user-ids-to-user-feeds" });
@@ -373,7 +368,7 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
 
   describe("duplicate migration prevention (Issue 3: unique index)", () => {
     it("prevents duplicate migration records via unique index", async () => {
-      const connection = getTestConnection();
+      const connection = ctx.connection;
       const migrationModel = connection.model("MongoMigration");
 
       await migrationModel.create({ id: "test-migration" });

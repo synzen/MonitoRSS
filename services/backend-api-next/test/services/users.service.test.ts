@@ -1,255 +1,185 @@
-import { describe, it, beforeEach, mock } from "node:test";
+import { describe, it } from "node:test";
 import assert from "node:assert";
+import { createUsersHarness } from "../helpers/users.harness";
 import { UsersService } from "../../src/services/users/users.service";
+import { SubscriptionStatus } from "../../src/repositories/shared/enums";
 import type { Config } from "../../src/config";
 import type { IUserRepository } from "../../src/repositories/interfaces/user.types";
 import type { IUserFeedRepository } from "../../src/repositories/interfaces/user-feed.types";
 import type { ISupporterRepository } from "../../src/repositories/interfaces/supporter.types";
 import type { SupportersService } from "../../src/services/supporters/supporters.service";
 import type { PaddleService } from "../../src/services/paddle/paddle.service";
-import { SubscriptionStatus } from "../../src/repositories/shared/enums";
 
-describe("UsersService", () => {
-  let service: UsersService;
-  let userRepository: {
-    findByDiscordId: ReturnType<typeof mock.fn>;
-    findIdByDiscordId: ReturnType<typeof mock.fn>;
-    create: ReturnType<typeof mock.fn>;
-    updateEmailByDiscordId: ReturnType<typeof mock.fn>;
-    updatePreferencesByDiscordId: ReturnType<typeof mock.fn>;
-    findEmailsByDiscordIdsWithAlertPreference: ReturnType<typeof mock.fn>;
-    setExternalCredential: ReturnType<typeof mock.fn>;
-    getExternalCredentials: ReturnType<typeof mock.fn>;
-    removeExternalCredentials: ReturnType<typeof mock.fn>;
-    revokeExternalCredential: ReturnType<typeof mock.fn>;
-    aggregateUsersWithActiveRedditCredentials: ReturnType<typeof mock.fn>;
-    aggregateUsersWithExpiredOrRevokedRedditCredentials: ReturnType<typeof mock.fn>;
-  };
-  let userFeedRepository: {
-    bulkUpdateLookupKeys: ReturnType<typeof mock.fn>;
-  };
-  let supporterRepository: {
-    findById: ReturnType<typeof mock.fn>;
-  };
-  let supportersService: {
-    getBenefitsOfDiscordUser: ReturnType<typeof mock.fn>;
-    getSupporterSubscription: ReturnType<typeof mock.fn>;
-  };
-  let paddleService: {
-    updateCustomer: ReturnType<typeof mock.fn>;
-    getCustomerCreditBalanace: ReturnType<typeof mock.fn>;
-  };
+describe("UsersService", { concurrency: true }, () => {
+  const harness = createUsersHarness();
 
-  const mockConfig = {
-    BACKEND_API_ENABLE_SUPPORTERS: true,
-    BACKEND_API_ENCRYPTION_KEY_HEX: "0".repeat(64),
-  } as Config;
-
-  const defaultUser = {
-    id: "user-id",
-    discordUserId: "discord-user-id",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
-  beforeEach(() => {
-    userRepository = {
-      findByDiscordId: mock.fn(() => Promise.resolve(null)),
-      findIdByDiscordId: mock.fn(() => Promise.resolve(null)),
-      create: mock.fn(() => Promise.resolve(defaultUser)),
-      updateEmailByDiscordId: mock.fn(() => Promise.resolve(defaultUser)),
-      updatePreferencesByDiscordId: mock.fn(() => Promise.resolve(defaultUser)),
-      findEmailsByDiscordIdsWithAlertPreference: mock.fn(() => Promise.resolve([])),
-      setExternalCredential: mock.fn(() => Promise.resolve()),
-      getExternalCredentials: mock.fn(() => Promise.resolve(null)),
-      removeExternalCredentials: mock.fn(() => Promise.resolve()),
-      revokeExternalCredential: mock.fn(() => Promise.resolve()),
-      aggregateUsersWithActiveRedditCredentials: mock.fn(async function* () {}),
-      aggregateUsersWithExpiredOrRevokedRedditCredentials: mock.fn(async function* () {}),
-    };
-    userFeedRepository = {
-      bulkUpdateLookupKeys: mock.fn(() => Promise.resolve()),
-    };
-    supporterRepository = {
-      findById: mock.fn(() => Promise.resolve(null)),
-    };
-    supportersService = {
-      getBenefitsOfDiscordUser: mock.fn(() =>
-        Promise.resolve({
-          maxFeeds: 5,
-          maxUserFeeds: 5,
-          maxUserFeedsComposition: { base: 5, legacy: 0 },
-          allowExternalProperties: false,
-          maxPatreonPledge: undefined,
-        })
-      ),
-      getSupporterSubscription: mock.fn(() =>
-        Promise.resolve({ customer: null, subscription: null })
-      ),
-    };
-    paddleService = {
-      updateCustomer: mock.fn(() => Promise.resolve()),
-      getCustomerCreditBalanace: mock.fn(() =>
-        Promise.resolve({ data: [] })
-      ),
-    };
-
-    service = new UsersService({
-      config: mockConfig,
-      userRepository: userRepository as unknown as IUserRepository,
-      userFeedRepository: userFeedRepository as unknown as IUserFeedRepository,
-      supporterRepository: supporterRepository as unknown as ISupporterRepository,
-      supportersService: supportersService as unknown as SupportersService,
-      paddleService: paddleService as unknown as PaddleService,
-    });
-  });
-
-  describe("initDiscordUser", () => {
+  describe("initDiscordUser", { concurrency: true }, () => {
     it("creates a new user if not found", async () => {
-      userRepository.findByDiscordId.mock.mockImplementation(() => Promise.resolve(null));
+      const ctx = harness.createContext({
+        userRepository: {
+          findByDiscordId: () => Promise.resolve(null),
+        },
+      });
 
-      await service.initDiscordUser("discord-user-id", { email: "test@test.com" });
+      await ctx.service.initDiscordUser("discord-user-id", { email: "test@test.com" });
 
-      assert.strictEqual(userRepository.create.mock.calls.length, 1);
-      assert.deepStrictEqual(userRepository.create.mock.calls[0]?.arguments[0], {
+      assert.strictEqual(ctx.userRepository.create.mock.calls.length, 1);
+      assert.deepStrictEqual(ctx.userRepository.create.mock.calls[0]?.arguments[0], {
         discordUserId: "discord-user-id",
         email: "test@test.com",
       });
     });
 
     it("returns existing user if found and no email update needed", async () => {
-      const existingUser = { ...defaultUser, email: "test@test.com" };
-      userRepository.findByDiscordId.mock.mockImplementation(() =>
-        Promise.resolve(existingUser)
-      );
+      const existingUser = { ...harness.createContext().defaultUser, email: "test@test.com" };
+      const ctx = harness.createContext({
+        userRepository: {
+          findByDiscordId: () => Promise.resolve(existingUser),
+        },
+      });
 
-      const result = await service.initDiscordUser("discord-user-id", {
+      const result = await ctx.service.initDiscordUser("discord-user-id", {
         email: "test@test.com",
       });
 
-      assert.strictEqual(userRepository.create.mock.calls.length, 0);
+      assert.strictEqual(ctx.userRepository.create.mock.calls.length, 0);
       assert.deepStrictEqual(result, existingUser);
     });
 
     it("updates email if different from existing", async () => {
+      const defaultUser = harness.createContext().defaultUser;
       const existingUser = { ...defaultUser, email: "old@test.com" };
       const updatedUser = { ...defaultUser, email: "new@test.com" };
-      userRepository.findByDiscordId.mock.mockImplementation(() =>
-        Promise.resolve(existingUser)
-      );
-      userRepository.updateEmailByDiscordId.mock.mockImplementation(() =>
-        Promise.resolve(updatedUser)
-      );
+      const ctx = harness.createContext({
+        userRepository: {
+          findByDiscordId: () => Promise.resolve(existingUser),
+          updateEmailByDiscordId: () => Promise.resolve(updatedUser),
+        },
+      });
 
-      await service.initDiscordUser("discord-user-id", { email: "new@test.com" });
+      await ctx.service.initDiscordUser("discord-user-id", { email: "new@test.com" });
 
-      assert.strictEqual(userRepository.updateEmailByDiscordId.mock.calls.length, 1);
+      assert.strictEqual(ctx.userRepository.updateEmailByDiscordId.mock.calls.length, 1);
     });
 
     it("syncs email with Paddle when email changes and user has paddle customer", async () => {
+      const defaultUser = harness.createContext().defaultUser;
       const existingUser = { ...defaultUser, email: "old@test.com" };
       const updatedUser = { ...defaultUser, email: "new@test.com" };
-      userRepository.findByDiscordId.mock.mockImplementation(() =>
-        Promise.resolve(existingUser)
-      );
-      userRepository.updateEmailByDiscordId.mock.mockImplementation(() =>
-        Promise.resolve(updatedUser)
-      );
-      supporterRepository.findById.mock.mockImplementation(() =>
-        Promise.resolve({
-          paddleCustomer: { customerId: "paddle-cust-123" },
-        })
-      );
+      const ctx = harness.createContext({
+        userRepository: {
+          findByDiscordId: () => Promise.resolve(existingUser),
+          updateEmailByDiscordId: () => Promise.resolve(updatedUser),
+        },
+        supporterRepository: {
+          findById: () => Promise.resolve({
+            paddleCustomer: { customerId: "paddle-cust-123" },
+          }),
+        },
+      });
 
-      await service.initDiscordUser("discord-user-id", { email: "new@test.com" });
+      await ctx.service.initDiscordUser("discord-user-id", { email: "new@test.com" });
 
-      assert.strictEqual(paddleService.updateCustomer.mock.calls.length, 1);
+      assert.strictEqual(ctx.paddleService.updateCustomer.mock.calls.length, 1);
       assert.strictEqual(
-        paddleService.updateCustomer.mock.calls[0]?.arguments[0],
+        ctx.paddleService.updateCustomer.mock.calls[0]?.arguments[0],
         "paddle-cust-123"
       );
       assert.deepStrictEqual(
-        paddleService.updateCustomer.mock.calls[0]?.arguments[1],
+        ctx.paddleService.updateCustomer.mock.calls[0]?.arguments[1],
         { email: "new@test.com" }
       );
     });
 
     it("does not throw when Paddle update fails", async () => {
+      const defaultUser = harness.createContext().defaultUser;
       const existingUser = { ...defaultUser, email: "old@test.com" };
       const updatedUser = { ...defaultUser, email: "new@test.com" };
-      userRepository.findByDiscordId.mock.mockImplementation(() =>
-        Promise.resolve(existingUser)
-      );
-      userRepository.updateEmailByDiscordId.mock.mockImplementation(() =>
-        Promise.resolve(updatedUser)
-      );
-      supporterRepository.findById.mock.mockImplementation(() =>
-        Promise.resolve({
-          paddleCustomer: { customerId: "paddle-cust-123" },
-        })
-      );
-      paddleService.updateCustomer.mock.mockImplementation(() =>
-        Promise.reject(new Error("Paddle API error"))
-      );
+      const ctx = harness.createContext({
+        userRepository: {
+          findByDiscordId: () => Promise.resolve(existingUser),
+          updateEmailByDiscordId: () => Promise.resolve(updatedUser),
+        },
+        supporterRepository: {
+          findById: () => Promise.resolve({
+            paddleCustomer: { customerId: "paddle-cust-123" },
+          }),
+        },
+        paddleService: {
+          updateCustomer: () => Promise.reject(new Error("Paddle API error")),
+        },
+      });
 
       await assert.doesNotReject(async () => {
-        await service.initDiscordUser("discord-user-id", { email: "new@test.com" });
+        await ctx.service.initDiscordUser("discord-user-id", { email: "new@test.com" });
       });
     });
   });
 
-  describe("getOrCreateUserByDiscordId", () => {
+  describe("getOrCreateUserByDiscordId", { concurrency: true }, () => {
     it("returns existing user if found", async () => {
-      const existingUser = { ...defaultUser };
-      userRepository.findByDiscordId.mock.mockImplementation(() =>
-        Promise.resolve(existingUser)
-      );
+      const existingUser = { ...harness.createContext().defaultUser };
+      const ctx = harness.createContext({
+        userRepository: {
+          findByDiscordId: () => Promise.resolve(existingUser),
+        },
+      });
 
-      const result = await service.getOrCreateUserByDiscordId("discord-user-id");
+      const result = await ctx.service.getOrCreateUserByDiscordId("discord-user-id");
 
       assert.deepStrictEqual(result, existingUser);
-      assert.strictEqual(userRepository.create.mock.calls.length, 0);
+      assert.strictEqual(ctx.userRepository.create.mock.calls.length, 0);
     });
 
     it("creates new user if not found", async () => {
-      userRepository.findByDiscordId.mock.mockImplementation(() => Promise.resolve(null));
+      const ctx = harness.createContext({
+        userRepository: {
+          findByDiscordId: () => Promise.resolve(null),
+        },
+      });
 
-      await service.getOrCreateUserByDiscordId("discord-user-id");
+      await ctx.service.getOrCreateUserByDiscordId("discord-user-id");
 
-      assert.strictEqual(userRepository.create.mock.calls.length, 1);
+      assert.strictEqual(ctx.userRepository.create.mock.calls.length, 1);
     });
   });
 
-  describe("getIdByDiscordId", () => {
+  describe("getIdByDiscordId", { concurrency: true }, () => {
     it("returns the user ID if found", async () => {
-      userRepository.findIdByDiscordId.mock.mockImplementation(() =>
-        Promise.resolve("user-id-123")
-      );
+      const ctx = harness.createContext({
+        userRepository: {
+          findIdByDiscordId: () => Promise.resolve("user-id-123"),
+        },
+      });
 
-      const result = await service.getIdByDiscordId("discord-user-id");
+      const result = await ctx.service.getIdByDiscordId("discord-user-id");
 
       assert.strictEqual(result, "user-id-123");
     });
 
     it("returns null if not found", async () => {
-      userRepository.findIdByDiscordId.mock.mockImplementation(() =>
-        Promise.resolve(null)
-      );
+      const ctx = harness.createContext({
+        userRepository: {
+          findIdByDiscordId: () => Promise.resolve(null),
+        },
+      });
 
-      const result = await service.getIdByDiscordId("discord-user-id");
+      const result = await ctx.service.getIdByDiscordId("discord-user-id");
 
       assert.strictEqual(result, null);
     });
   });
 
-  describe("getByDiscordId", () => {
+  describe("getByDiscordId", { concurrency: true }, () => {
     it("returns user with free subscription when no email", async () => {
-      const existingUser = { ...defaultUser };
-      userRepository.findByDiscordId.mock.mockImplementation(() =>
-        Promise.resolve(existingUser)
-      );
+      const existingUser = { ...harness.createContext().defaultUser };
+      const ctx = harness.createContext({
+        userRepository: {
+          findByDiscordId: () => Promise.resolve(existingUser),
+        },
+      });
 
-      const result = await service.getByDiscordId("discord-user-id");
+      const result = await ctx.service.getByDiscordId("discord-user-id");
 
       assert.ok(result);
       assert.strictEqual(result.user.discordUserId, "discord-user-id");
@@ -259,32 +189,34 @@ describe("UsersService", () => {
     });
 
     it("returns subscription details when user has active subscription", async () => {
-      const existingUser = { ...defaultUser, email: "test@test.com" };
-      userRepository.findByDiscordId.mock.mockImplementation(() =>
-        Promise.resolve(existingUser)
-      );
-      supportersService.getSupporterSubscription.mock.mockImplementation(() =>
-        Promise.resolve({
-          customer: { id: "cust-id", currencyCode: "USD" },
-          subscription: {
-            id: "sub-id",
-            product: { key: "tier1" },
-            status: SubscriptionStatus.Active,
-            billingInterval: "month",
-            billingPeriod: {
-              start: new Date(),
-              end: new Date(),
+      const existingUser = { ...harness.createContext().defaultUser, email: "test@test.com" };
+      const ctx = harness.createContext({
+        userRepository: {
+          findByDiscordId: () => Promise.resolve(existingUser),
+        },
+        supportersService: {
+          getSupporterSubscription: () => Promise.resolve({
+            customer: { id: "cust-id", currencyCode: "USD" },
+            subscription: {
+              id: "sub-id",
+              product: { key: "tier1" },
+              status: SubscriptionStatus.Active,
+              billingInterval: "month",
+              billingPeriod: {
+                start: new Date(),
+                end: new Date(),
+              },
+              updatedAt: new Date(),
+              addons: [],
             },
-            updatedAt: new Date(),
-            addons: [],
-          },
-        })
-      );
-      paddleService.getCustomerCreditBalanace.mock.mockImplementation(() =>
-        Promise.resolve({ data: [] })
-      );
+          }),
+        },
+        paddleService: {
+          getCustomerCreditBalanace: () => Promise.resolve({ data: [] }),
+        },
+      });
 
-      const result = await service.getByDiscordId("discord-user-id");
+      const result = await ctx.service.getByDiscordId("discord-user-id");
 
       assert.ok(result);
       assert.strictEqual(result.subscription.product.key, "tier1");
@@ -293,50 +225,52 @@ describe("UsersService", () => {
     });
   });
 
-  describe("getEmailsForAlerts", () => {
+  describe("getEmailsForAlerts", { concurrency: true }, () => {
     it("returns emails from repository", async () => {
       const emails = ["test1@test.com", "test2@test.com"];
-      userRepository.findEmailsByDiscordIdsWithAlertPreference.mock.mockImplementation(
-        () => Promise.resolve(emails)
-      );
+      const ctx = harness.createContext({
+        userRepository: {
+          findEmailsByDiscordIdsWithAlertPreference: () => Promise.resolve(emails),
+        },
+      });
 
-      const result = await service.getEmailsForAlerts(["user1", "user2"]);
+      const result = await ctx.service.getEmailsForAlerts(["user1", "user2"]);
 
       assert.deepStrictEqual(result, emails);
     });
   });
 
-  describe("updateUserByDiscordId", () => {
+  describe("updateUserByDiscordId", { concurrency: true }, () => {
     it("updates user preferences", async () => {
-      const updatedUser = { ...defaultUser, preferences: { dateFormat: "YYYY-MM-DD" } };
-      userRepository.findByDiscordId.mock.mockImplementation(() =>
-        Promise.resolve(updatedUser)
-      );
-      userRepository.updatePreferencesByDiscordId.mock.mockImplementation(() =>
-        Promise.resolve(updatedUser)
-      );
+      const updatedUser = { ...harness.createContext().defaultUser, preferences: { dateFormat: "YYYY-MM-DD" } };
+      const ctx = harness.createContext({
+        userRepository: {
+          findByDiscordId: () => Promise.resolve(updatedUser),
+          updatePreferencesByDiscordId: () => Promise.resolve(updatedUser),
+        },
+      });
 
-      const result = await service.updateUserByDiscordId("discord-user-id", {
+      const result = await ctx.service.updateUserByDiscordId("discord-user-id", {
         preferences: { dateFormat: "YYYY-MM-DD" },
       });
 
       assert.ok(result);
       assert.strictEqual(
-        userRepository.updatePreferencesByDiscordId.mock.calls.length,
+        ctx.userRepository.updatePreferencesByDiscordId.mock.calls.length,
         1
       );
     });
 
     it("returns full user data after update", async () => {
-      const existingUser = { ...defaultUser };
-      userRepository.findByDiscordId.mock.mockImplementation(() =>
-        Promise.resolve(existingUser)
-      );
-      userRepository.updatePreferencesByDiscordId.mock.mockImplementation(() =>
-        Promise.resolve(existingUser)
-      );
+      const existingUser = { ...harness.createContext().defaultUser };
+      const ctx = harness.createContext({
+        userRepository: {
+          findByDiscordId: () => Promise.resolve(existingUser),
+          updatePreferencesByDiscordId: () => Promise.resolve(existingUser),
+        },
+      });
 
-      const result = await service.updateUserByDiscordId("discord-user-id", {
+      const result = await ctx.service.updateUserByDiscordId("discord-user-id", {
         preferences: { dateFormat: "YYYY-MM-DD" },
       });
 
@@ -347,11 +281,13 @@ describe("UsersService", () => {
     });
 
     it("returns null when user does not exist", async () => {
-      userRepository.updatePreferencesByDiscordId.mock.mockImplementation(() =>
-        Promise.resolve(null)
-      );
+      const ctx = harness.createContext({
+        userRepository: {
+          updatePreferencesByDiscordId: () => Promise.resolve(null),
+        },
+      });
 
-      const result = await service.updateUserByDiscordId("non-existent-user", {
+      const result = await ctx.service.updateUserByDiscordId("non-existent-user", {
         preferences: { dateFormat: "YYYY-MM-DD" },
       });
 
@@ -359,17 +295,19 @@ describe("UsersService", () => {
     });
   });
 
-  describe("setRedditCredentials", () => {
+  describe("setRedditCredentials", { concurrency: true }, () => {
     it("encrypts and stores credentials", async () => {
-      await service.setRedditCredentials({
+      const ctx = harness.createContext();
+
+      await ctx.service.setRedditCredentials({
         userId: "user-id",
         accessToken: "access-token",
         refreshToken: "refresh-token",
         expiresIn: 3600,
       });
 
-      assert.strictEqual(userRepository.setExternalCredential.mock.calls.length, 1);
-      const callArgs = userRepository.setExternalCredential.mock.calls[0]?.arguments as [
+      assert.strictEqual(ctx.userRepository.setExternalCredential.mock.calls.length, 1);
+      const callArgs = ctx.userRepository.setExternalCredential.mock.calls[0]?.arguments as [
         string,
         { type: string; data: Record<string, string>; expireAt: Date }
       ];
@@ -381,13 +319,17 @@ describe("UsersService", () => {
     });
 
     it("throws error when encryption key is not set", async () => {
+      const ctx = harness.createContext({
+        config: { BACKEND_API_ENCRYPTION_KEY_HEX: undefined },
+      });
+
       const serviceWithoutKey = new UsersService({
-        config: { ...mockConfig, BACKEND_API_ENCRYPTION_KEY_HEX: undefined } as Config,
-        userRepository: userRepository as unknown as IUserRepository,
-        userFeedRepository: userFeedRepository as unknown as IUserFeedRepository,
-        supporterRepository: supporterRepository as unknown as ISupporterRepository,
-        supportersService: supportersService as unknown as SupportersService,
-        paddleService: paddleService as unknown as PaddleService,
+        config: { ...ctx.config, BACKEND_API_ENCRYPTION_KEY_HEX: undefined } as Config,
+        userRepository: ctx.userRepository as unknown as IUserRepository,
+        userFeedRepository: ctx.userFeedRepository as unknown as IUserFeedRepository,
+        supporterRepository: ctx.supporterRepository as unknown as ISupporterRepository,
+        supportersService: ctx.supportersService as unknown as SupportersService,
+        paddleService: ctx.paddleService as unknown as PaddleService,
       });
 
       await assert.rejects(
@@ -403,53 +345,59 @@ describe("UsersService", () => {
     });
   });
 
-  describe("removeRedditCredentials", () => {
+  describe("removeRedditCredentials", { concurrency: true }, () => {
     it("removes credentials from repository", async () => {
-      await service.removeRedditCredentials("user-id");
+      const ctx = harness.createContext();
+
+      await ctx.service.removeRedditCredentials("user-id");
 
       assert.strictEqual(
-        userRepository.removeExternalCredentials.mock.calls.length,
+        ctx.userRepository.removeExternalCredentials.mock.calls.length,
         1
       );
       assert.strictEqual(
-        userRepository.removeExternalCredentials.mock.calls[0]?.arguments[0],
+        ctx.userRepository.removeExternalCredentials.mock.calls[0]?.arguments[0],
         "user-id"
       );
     });
   });
 
-  describe("revokeRedditCredentials", () => {
+  describe("revokeRedditCredentials", { concurrency: true }, () => {
     it("revokes specific credential", async () => {
-      await service.revokeRedditCredentials("user-id", "credential-id");
+      const ctx = harness.createContext();
+
+      await ctx.service.revokeRedditCredentials("user-id", "credential-id");
 
       assert.strictEqual(
-        userRepository.revokeExternalCredential.mock.calls.length,
+        ctx.userRepository.revokeExternalCredential.mock.calls.length,
         1
       );
       assert.strictEqual(
-        userRepository.revokeExternalCredential.mock.calls[0]?.arguments[0],
+        ctx.userRepository.revokeExternalCredential.mock.calls[0]?.arguments[0],
         "user-id"
       );
       assert.strictEqual(
-        userRepository.revokeExternalCredential.mock.calls[0]?.arguments[1],
+        ctx.userRepository.revokeExternalCredential.mock.calls[0]?.arguments[1],
         "credential-id"
       );
     });
   });
 
-  describe("syncLookupKeys", () => {
+  describe("syncLookupKeys", { concurrency: true }, () => {
     it("adds lookup keys for feeds with active Reddit credentials", async () => {
-      userRepository.aggregateUsersWithActiveRedditCredentials.mock.mockImplementation(
-        async function* () {
-          yield { discordUserId: "discord-1", feedId: "feed-1", lookupKey: undefined };
-          yield { discordUserId: "discord-2", feedId: "feed-2", lookupKey: undefined };
-        }
-      );
+      const ctx = harness.createContext({
+        userRepository: {
+          aggregateUsersWithActiveRedditCredentials: async function* () {
+            yield { discordUserId: "discord-1", feedId: "feed-1", lookupKey: undefined };
+            yield { discordUserId: "discord-2", feedId: "feed-2", lookupKey: undefined };
+          },
+        },
+      });
 
-      await service.syncLookupKeys();
+      await ctx.service.syncLookupKeys();
 
-      assert.strictEqual(userFeedRepository.bulkUpdateLookupKeys.mock.calls.length, 1);
-      const ops = userFeedRepository.bulkUpdateLookupKeys.mock.calls[0]?.arguments[0] as Array<{
+      assert.strictEqual(ctx.userFeedRepository.bulkUpdateLookupKeys.mock.calls.length, 1);
+      const ops = ctx.userFeedRepository.bulkUpdateLookupKeys.mock.calls[0]?.arguments[0] as Array<{
         feedId: string;
         action: string;
         lookupKey?: string;
@@ -463,28 +411,32 @@ describe("UsersService", () => {
     });
 
     it("skips feeds that already have lookup keys", async () => {
-      userRepository.aggregateUsersWithActiveRedditCredentials.mock.mockImplementation(
-        async function* () {
-          yield { discordUserId: "discord-1", feedId: "feed-1", lookupKey: "existing-key" };
-        }
-      );
+      const ctx = harness.createContext({
+        userRepository: {
+          aggregateUsersWithActiveRedditCredentials: async function* () {
+            yield { discordUserId: "discord-1", feedId: "feed-1", lookupKey: "existing-key" };
+          },
+        },
+      });
 
-      await service.syncLookupKeys();
+      await ctx.service.syncLookupKeys();
 
-      assert.strictEqual(userFeedRepository.bulkUpdateLookupKeys.mock.calls.length, 0);
+      assert.strictEqual(ctx.userFeedRepository.bulkUpdateLookupKeys.mock.calls.length, 0);
     });
 
     it("removes lookup keys for feeds with expired/revoked credentials", async () => {
-      userRepository.aggregateUsersWithExpiredOrRevokedRedditCredentials.mock.mockImplementation(
-        async function* () {
-          yield { feedId: "feed-expired" };
-        }
-      );
+      const ctx = harness.createContext({
+        userRepository: {
+          aggregateUsersWithExpiredOrRevokedRedditCredentials: async function* () {
+            yield { feedId: "feed-expired" };
+          },
+        },
+      });
 
-      await service.syncLookupKeys();
+      await ctx.service.syncLookupKeys();
 
-      assert.strictEqual(userFeedRepository.bulkUpdateLookupKeys.mock.calls.length, 1);
-      const ops = userFeedRepository.bulkUpdateLookupKeys.mock.calls[0]?.arguments[0] as Array<{
+      assert.strictEqual(ctx.userFeedRepository.bulkUpdateLookupKeys.mock.calls.length, 1);
+      const ops = ctx.userFeedRepository.bulkUpdateLookupKeys.mock.calls[0]?.arguments[0] as Array<{
         feedId: string;
         action: string;
       }>;
@@ -494,31 +446,35 @@ describe("UsersService", () => {
     });
 
     it("passes userIds and feedIds to repository methods", async () => {
-      await service.syncLookupKeys({ userIds: ["user-1"], feedIds: ["feed-1"] });
+      const ctx = harness.createContext();
+
+      await ctx.service.syncLookupKeys({ userIds: ["user-1"], feedIds: ["feed-1"] });
 
       assert.strictEqual(
-        userRepository.aggregateUsersWithActiveRedditCredentials.mock.calls.length,
+        ctx.userRepository.aggregateUsersWithActiveRedditCredentials.mock.calls.length,
         1
       );
-      const activeArgs = userRepository.aggregateUsersWithActiveRedditCredentials.mock.calls[0]
+      const activeArgs = ctx.userRepository.aggregateUsersWithActiveRedditCredentials.mock.calls[0]
         ?.arguments[0] as { userIds?: string[]; feedIds?: string[] };
       assert.deepStrictEqual(activeArgs?.userIds, ["user-1"]);
       assert.deepStrictEqual(activeArgs?.feedIds, ["feed-1"]);
 
       assert.strictEqual(
-        userRepository.aggregateUsersWithExpiredOrRevokedRedditCredentials.mock.calls.length,
+        ctx.userRepository.aggregateUsersWithExpiredOrRevokedRedditCredentials.mock.calls.length,
         1
       );
-      const expiredArgs = userRepository.aggregateUsersWithExpiredOrRevokedRedditCredentials.mock
+      const expiredArgs = ctx.userRepository.aggregateUsersWithExpiredOrRevokedRedditCredentials.mock
         .calls[0]?.arguments[0] as { userIds?: string[]; feedIds?: string[] };
       assert.deepStrictEqual(expiredArgs?.userIds, ["user-1"]);
       assert.deepStrictEqual(expiredArgs?.feedIds, ["feed-1"]);
     });
 
     it("does not call bulkUpdateLookupKeys when there are no operations", async () => {
-      await service.syncLookupKeys();
+      const ctx = harness.createContext();
 
-      assert.strictEqual(userFeedRepository.bulkUpdateLookupKeys.mock.calls.length, 0);
+      await ctx.service.syncLookupKeys();
+
+      assert.strictEqual(ctx.userFeedRepository.bulkUpdateLookupKeys.mock.calls.length, 0);
     });
   });
 });

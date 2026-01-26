@@ -5,7 +5,7 @@ import type { Config } from "../../src/config";
 import type { IFeedScheduleRepository } from "../../src/repositories/interfaces/feed-schedule.types";
 import type { SupportersService } from "../../src/services/supporters/supporters.service";
 
-describe("FeedSchedulingService", { concurrency: false }, () => {
+describe("FeedSchedulingService", { concurrency: true }, () => {
   const defaultRefreshRateMinutes = 10;
   const mockConfig = {
     BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES: defaultRefreshRateMinutes,

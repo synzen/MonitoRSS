@@ -16,7 +16,7 @@ import {
 import { DiscordChannelType } from "../../src/shared/types/discord.types";
 import { FeedStatus } from "../../src/services/feeds/types";
 
-describe("FeedsService", { concurrency: false }, () => {
+describe("FeedsService", { concurrency: true }, () => {
   describe("canUseChannel", () => {
     it("throws MissingChannelException when channel is not found", async () => {
       const service = new FeedsService({

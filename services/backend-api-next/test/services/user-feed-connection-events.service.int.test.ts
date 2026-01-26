@@ -2,10 +2,9 @@ import { describe, it, before, after } from "node:test";
 import assert from "node:assert";
 import { Types } from "mongoose";
 import {
-  setupTestDatabase,
-  teardownTestDatabase,
-} from "../helpers/setup-test-database";
-import { createTestContext, type TestContext } from "../helpers/test-context";
+  createAppTestContext,
+  type AppTestContext,
+} from "../helpers/test-context";
 import type { IUserFeed } from "../../src/repositories/interfaces/user-feed.types";
 
 function objectId(): string {
@@ -19,7 +18,7 @@ interface TestFeedOptions {
   }>;
 }
 
-async function createFeed(ctx: TestContext, options: TestFeedOptions = {}): Promise<IUserFeed> {
+async function createFeed(ctx: AppTestContext, options: TestFeedOptions = {}): Promise<IUserFeed> {
   return ctx.container.userFeedRepository.create({
     title: "Test Feed",
     url: `https://example.com/feed/${objectId()}`,
@@ -35,7 +34,7 @@ async function createFeed(ctx: TestContext, options: TestFeedOptions = {}): Prom
   });
 }
 
-async function getFeed(ctx: TestContext, id: string): Promise<IUserFeed | null> {
+async function getFeed(ctx: AppTestContext, id: string): Promise<IUserFeed | null> {
   return ctx.container.userFeedRepository.findById(id);
 }
 
@@ -46,16 +45,14 @@ function getInvite(feed: IUserFeed | null, discordUserId: string) {
 }
 
 describe("UserFeedConnectionEventsService Integration", { concurrency: true }, () => {
-  let ctx: TestContext;
+  let ctx: AppTestContext;
 
   before(async () => {
-    const mongoConnection = await setupTestDatabase();
-    ctx = await createTestContext({ mongoConnection });
+    ctx = await createAppTestContext();
   });
 
   after(async () => {
-    await ctx.close();
-    await teardownTestDatabase();
+    await ctx.teardown();
   });
 
   describe("handleCreatedEvents", { concurrency: true }, () => {

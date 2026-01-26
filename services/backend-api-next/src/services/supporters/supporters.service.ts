@@ -72,7 +72,7 @@ export class SupportersService {
     this.supporterGuildId = config.BACKEND_API_SUPPORTER_GUILD_ID;
     this.supporterRoleId = config.BACKEND_API_SUPPORTER_ROLE_ID;
     this.supporterSubroleIds =
-      config.BACKEND_API_SUPPORTER_SUBROLE_IDS?.split(",") || [];
+      config.BACKEND_API_SUPPORTER_SUBROLE_IDS?.split(",").filter(Boolean) || [];
 
     this.defaultRateLimits = [
       {

@@ -434,6 +434,48 @@ export class UserFeedMongooseRepository
     });
   }
 
+  async countByOwnershipExcludingDisabled(
+    discordUserId: string,
+    excludeDisabledCodes: UserFeedDisabledCode[]
+  ): Promise<number> {
+    return this.model.countDocuments({
+      "user.discordUserId": discordUserId,
+      $or: [
+        { disabledCode: { $exists: false } },
+        { disabledCode: null },
+        { disabledCode: { $nin: excludeDisabledCodes } },
+      ],
+    });
+  }
+
+  async findByIdAndOwnership(
+    id: string,
+    discordUserId: string
+  ): Promise<IUserFeed | null> {
+    const doc = await this.model
+      .findOne({
+        _id: this.stringToObjectId(id),
+        $or: [
+          { "user.discordUserId": discordUserId },
+          {
+            "shareManageOptions.invites": {
+              $elemMatch: {
+                discordUserId,
+                status: UserFeedManagerStatus.Accepted,
+              },
+            },
+          },
+        ],
+      })
+      .lean();
+
+    if (!doc) {
+      return null;
+    }
+
+    return this.toEntity(doc as UserFeedDoc & { _id: Types.ObjectId });
+  }
+
   async findByUrls(
     discordUserId: string,
     urls: string[]

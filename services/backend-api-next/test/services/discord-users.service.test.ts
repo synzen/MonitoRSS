@@ -1,64 +1,25 @@
-import { describe, it, beforeEach, mock } from "node:test";
+import { describe, it } from "node:test";
 import assert from "node:assert";
-import { DiscordUsersService } from "../../src/services/discord-users/discord-users.service";
-import type { Config } from "../../src/config";
-import type { DiscordApiService } from "../../src/services/discord-api/discord-api.service";
-import type { SupportersService } from "../../src/services/supporters/supporters.service";
+import { createDiscordUsersHarness } from "../helpers/discord-users.harness";
 import { MANAGE_CHANNEL } from "../../src/shared/constants/permissions";
 
-describe("DiscordUsersService", () => {
-  let service: DiscordUsersService;
-  let discordApiService: {
-    executeBearerRequest: ReturnType<typeof mock.fn>;
-    getBot: ReturnType<typeof mock.fn>;
-    executeBotRequest: ReturnType<typeof mock.fn>;
-  };
-  let supportersService: {
-    getBenefitsOfServers: ReturnType<typeof mock.fn>;
-    getBenefitsOfDiscordUser: ReturnType<typeof mock.fn>;
-    setGuilds: ReturnType<typeof mock.fn>;
-  };
-  const mockConfig = {} as Config;
+describe("DiscordUsersService", { concurrency: true }, () => {
+  const harness = createDiscordUsersHarness();
 
-  beforeEach(() => {
-    discordApiService = {
-      executeBearerRequest: mock.fn(() => Promise.resolve([])),
-      getBot: mock.fn(),
-      executeBotRequest: mock.fn(),
-    };
-    supportersService = {
-      getBenefitsOfServers: mock.fn(() => Promise.resolve([])),
-      getBenefitsOfDiscordUser: mock.fn(() =>
-        Promise.resolve({
-          maxFeeds: 0,
-          maxGuilds: 0,
-          guilds: [],
-          maxUserFeeds: 0,
-          maxUserFeedsComposition: { base: 0, legacy: 0 },
-        })
-      ),
-      setGuilds: mock.fn(),
-    };
-
-    service = new DiscordUsersService({
-      config: mockConfig,
-      discordApiService: discordApiService as unknown as DiscordApiService,
-      supportersService: supportersService as unknown as SupportersService,
-    });
-  });
-
-  describe("getBot", () => {
+  describe("getBot", { concurrency: true }, () => {
     it("returns the bot with avatar URL", async () => {
       const getBotResponse = {
         username: "bot",
         id: "bot-id",
         avatar: "bot-avatar",
       };
-      discordApiService.getBot.mock.mockImplementation(() =>
-        Promise.resolve(getBotResponse)
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          getBot: () => Promise.resolve(getBotResponse),
+        },
+      });
 
-      const bot = await service.getBot();
+      const bot = await ctx.service.getBot();
 
       assert.deepStrictEqual(bot, {
         username: getBotResponse.username,
@@ -73,11 +34,13 @@ describe("DiscordUsersService", () => {
         id: "bot-id",
         avatar: null,
       };
-      discordApiService.getBot.mock.mockImplementation(() =>
-        Promise.resolve(getBotResponse)
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          getBot: () => Promise.resolve(getBotResponse),
+        },
+      });
 
-      const bot = await service.getBot();
+      const bot = await ctx.service.getBot();
 
       assert.deepStrictEqual(bot, {
         username: getBotResponse.username,
@@ -87,7 +50,7 @@ describe("DiscordUsersService", () => {
     });
   });
 
-  describe("getUserById", () => {
+  describe("getUserById", { concurrency: true }, () => {
     it("returns user with static avatar URL (png) for non-animated avatar", async () => {
       const userResponse = {
         id: "user-123",
@@ -95,14 +58,16 @@ describe("DiscordUsersService", () => {
         discriminator: "0001",
         avatar: "abc123",
       };
-      discordApiService.executeBotRequest.mock.mockImplementation(() =>
-        Promise.resolve(userResponse)
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          executeBotRequest: () => Promise.resolve(userResponse),
+        },
+      });
 
-      const user = await service.getUserById("user-123");
+      const user = await ctx.service.getUserById("user-123");
 
       assert.strictEqual(
-        discordApiService.executeBotRequest.mock.calls[0]?.arguments[0],
+        ctx.discordApiService.executeBotRequest.mock.calls[0]?.arguments[0],
         "/users/user-123"
       );
       assert.deepStrictEqual(user, {
@@ -120,11 +85,13 @@ describe("DiscordUsersService", () => {
         discriminator: "1234",
         avatar: "a_def789",
       };
-      discordApiService.executeBotRequest.mock.mockImplementation(() =>
-        Promise.resolve(userResponse)
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          executeBotRequest: () => Promise.resolve(userResponse),
+        },
+      });
 
-      const user = await service.getUserById("user-456");
+      const user = await ctx.service.getUserById("user-456");
 
       assert.deepStrictEqual(user, {
         id: userResponse.id,
@@ -141,11 +108,13 @@ describe("DiscordUsersService", () => {
         discriminator: "5678",
         avatar: null,
       };
-      discordApiService.executeBotRequest.mock.mockImplementation(() =>
-        Promise.resolve(userResponse)
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          executeBotRequest: () => Promise.resolve(userResponse),
+        },
+      });
 
-      const user = await service.getUserById("user-789");
+      const user = await ctx.service.getUserById("user-789");
 
       assert.deepStrictEqual(user, {
         id: userResponse.id,
@@ -156,18 +125,20 @@ describe("DiscordUsersService", () => {
     });
   });
 
-  describe("getGuilds", () => {
+  describe("getGuilds", { concurrency: true }, () => {
     it("calls the correct api endpoint", async () => {
       const accessToken = "abc";
-      await service.getGuilds(accessToken);
+      const ctx = harness.createContext();
 
-      assert.strictEqual(discordApiService.executeBearerRequest.mock.calls.length, 1);
+      await ctx.service.getGuilds(accessToken);
+
+      assert.strictEqual(ctx.discordApiService.executeBearerRequest.mock.calls.length, 1);
       assert.strictEqual(
-        discordApiService.executeBearerRequest.mock.calls[0]?.arguments[0],
+        ctx.discordApiService.executeBearerRequest.mock.calls[0]?.arguments[0],
         accessToken
       );
       assert.strictEqual(
-        discordApiService.executeBearerRequest.mock.calls[0]?.arguments[1],
+        ctx.discordApiService.executeBearerRequest.mock.calls[0]?.arguments[1],
         "/users/@me/guilds"
       );
     });
@@ -183,14 +154,16 @@ describe("DiscordUsersService", () => {
           permissions: "123",
         },
       ];
-      discordApiService.executeBearerRequest.mock.mockImplementation(() =>
-        Promise.resolve(guilds)
-      );
-      supportersService.getBenefitsOfServers.mock.mockImplementation(() =>
-        Promise.resolve([{ maxFeeds: 10, webhooks: true }])
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          executeBearerRequest: () => Promise.resolve(guilds),
+        },
+        supportersService: {
+          getBenefitsOfServers: () => Promise.resolve([{ maxFeeds: 10, webhooks: true }]),
+        },
+      });
 
-      const result = await service.getGuilds(accessToken);
+      const result = await ctx.service.getGuilds(accessToken);
 
       assert.strictEqual(result.length, 1);
       assert.strictEqual(
@@ -217,18 +190,20 @@ describe("DiscordUsersService", () => {
           permissions: "123",
         },
       ];
-      discordApiService.executeBearerRequest.mock.mockImplementation(() =>
-        Promise.resolve(guilds)
-      );
       const benefitsResponse = [
         { maxFeeds: 10, webhooks: true },
         { maxFeeds: 20, webhooks: false },
       ];
-      supportersService.getBenefitsOfServers.mock.mockImplementation(() =>
-        Promise.resolve(benefitsResponse)
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          executeBearerRequest: () => Promise.resolve(guilds),
+        },
+        supportersService: {
+          getBenefitsOfServers: () => Promise.resolve(benefitsResponse),
+        },
+      });
 
-      const result = await service.getGuilds(accessToken);
+      const result = await ctx.service.getGuilds(accessToken);
 
       assert.strictEqual(result.length, 2);
       assert.deepStrictEqual(result[0]?.benefits, {
@@ -252,14 +227,16 @@ describe("DiscordUsersService", () => {
           permissions: "0",
         },
       ];
-      discordApiService.executeBearerRequest.mock.mockImplementation(() =>
-        Promise.resolve(guilds)
-      );
-      supportersService.getBenefitsOfServers.mock.mockImplementation(() =>
-        Promise.resolve([{ maxFeeds: 10, webhooks: true }])
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          executeBearerRequest: () => Promise.resolve(guilds),
+        },
+        supportersService: {
+          getBenefitsOfServers: () => Promise.resolve([{ maxFeeds: 10, webhooks: true }]),
+        },
+      });
 
-      const result = await service.getGuilds(accessToken);
+      const result = await ctx.service.getGuilds(accessToken);
 
       assert.strictEqual(result.length, 0);
     });
@@ -275,35 +252,39 @@ describe("DiscordUsersService", () => {
           permissions: MANAGE_CHANNEL.toString(),
         },
       ];
-      discordApiService.executeBearerRequest.mock.mockImplementation(() =>
-        Promise.resolve(guilds)
-      );
-      supportersService.getBenefitsOfServers.mock.mockImplementation(() =>
-        Promise.resolve([{ maxFeeds: 10, webhooks: true }])
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          executeBearerRequest: () => Promise.resolve(guilds),
+        },
+        supportersService: {
+          getBenefitsOfServers: () => Promise.resolve([{ maxFeeds: 10, webhooks: true }]),
+        },
+      });
 
-      const result = await service.getGuilds(accessToken);
+      const result = await ctx.service.getGuilds(accessToken);
 
       assert.strictEqual(result.length, 1);
     });
   });
 
-  describe("getUser", () => {
+  describe("getUser", { concurrency: true }, () => {
     it("calls the correct api endpoint", async () => {
       const accessToken = "abc";
-      discordApiService.executeBearerRequest.mock.mockImplementation(() =>
-        Promise.resolve({ id: "user_id", username: "test", avatar: null })
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          executeBearerRequest: () => Promise.resolve({ id: "user_id", username: "test", avatar: null }),
+        },
+      });
 
-      await service.getUser(accessToken);
+      await ctx.service.getUser(accessToken);
 
-      assert.strictEqual(discordApiService.executeBearerRequest.mock.calls.length, 1);
+      assert.strictEqual(ctx.discordApiService.executeBearerRequest.mock.calls.length, 1);
       assert.strictEqual(
-        discordApiService.executeBearerRequest.mock.calls[0]?.arguments[0],
+        ctx.discordApiService.executeBearerRequest.mock.calls[0]?.arguments[0],
         accessToken
       );
       assert.strictEqual(
-        discordApiService.executeBearerRequest.mock.calls[0]?.arguments[1],
+        ctx.discordApiService.executeBearerRequest.mock.calls[0]?.arguments[1],
         "/users/@me"
       );
     });
@@ -326,14 +307,16 @@ describe("DiscordUsersService", () => {
         expireAt: new Date("2025-01-01"),
         allowCustomPlaceholders: true,
       };
-      discordApiService.executeBearerRequest.mock.mockImplementation(() =>
-        Promise.resolve(user)
-      );
-      supportersService.getBenefitsOfDiscordUser.mock.mockImplementation(() =>
-        Promise.resolve(supporterBenefits)
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          executeBearerRequest: () => Promise.resolve(user),
+        },
+        supportersService: {
+          getBenefitsOfDiscordUser: () => Promise.resolve(supporterBenefits),
+        },
+      });
 
-      const result = await service.getUser(accessToken);
+      const result = await ctx.service.getUser(accessToken);
 
       assert.strictEqual(result.id, user.id);
       assert.strictEqual(result.username, user.username);
@@ -368,14 +351,16 @@ describe("DiscordUsersService", () => {
         maxUserFeeds: 5,
         maxUserFeedsComposition: { base: 5, legacy: 0 },
       };
-      discordApiService.executeBearerRequest.mock.mockImplementation(() =>
-        Promise.resolve(user)
-      );
-      supportersService.getBenefitsOfDiscordUser.mock.mockImplementation(() =>
-        Promise.resolve(supporterBenefits)
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          executeBearerRequest: () => Promise.resolve(user),
+        },
+        supportersService: {
+          getBenefitsOfDiscordUser: () => Promise.resolve(supporterBenefits),
+        },
+      });
 
-      const result = await service.getUser(accessToken);
+      const result = await ctx.service.getUser(accessToken);
 
       assert.strictEqual(result.id, user.id);
       assert.strictEqual(result.username, user.username);
@@ -383,30 +368,32 @@ describe("DiscordUsersService", () => {
     });
   });
 
-  describe("updateSupporter", () => {
+  describe("updateSupporter", { concurrency: true }, () => {
     it("calls supportersService to set the guilds if guild ids is inputted", async () => {
       const guildIds = ["1", "2"];
       const userId = "user-id";
+      const ctx = harness.createContext();
 
-      await service.updateSupporter(userId, { guildIds });
+      await ctx.service.updateSupporter(userId, { guildIds });
 
-      assert.strictEqual(supportersService.setGuilds.mock.calls.length, 1);
+      assert.strictEqual(ctx.supportersService.setGuilds.mock.calls.length, 1);
       assert.strictEqual(
-        supportersService.setGuilds.mock.calls[0]?.arguments[0],
+        ctx.supportersService.setGuilds.mock.calls[0]?.arguments[0],
         userId
       );
       assert.deepStrictEqual(
-        supportersService.setGuilds.mock.calls[0]?.arguments[1],
+        ctx.supportersService.setGuilds.mock.calls[0]?.arguments[1],
         guildIds
       );
     });
 
     it("does not call setGuilds if guildIds is not provided", async () => {
       const userId = "user-id";
+      const ctx = harness.createContext();
 
-      await service.updateSupporter(userId, {});
+      await ctx.service.updateSupporter(userId, {});
 
-      assert.strictEqual(supportersService.setGuilds.mock.calls.length, 0);
+      assert.strictEqual(ctx.supportersService.setGuilds.mock.calls.length, 0);
     });
   });
 });

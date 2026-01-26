@@ -55,6 +55,14 @@ export class UserFeedLimitOverrideMongooseRepository
     );
   }
 
+  async create(input: IUserFeedLimitOverride): Promise<IUserFeedLimitOverride> {
+    const doc = await this.model.create({
+      _id: input.id,
+      additionalUserFeeds: input.additionalUserFeeds,
+    });
+    return this.toEntity(doc.toObject() as UserFeedLimitOverrideDoc & { _id: string });
+  }
+
   async deleteAll(): Promise<void> {
     await this.model.deleteMany({});
   }

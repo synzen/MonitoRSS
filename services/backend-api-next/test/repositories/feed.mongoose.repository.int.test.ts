@@ -1,67 +1,24 @@
-import { describe, it, before, after, afterEach } from "node:test";
+import { describe, it, before, after } from "node:test";
 import assert from "node:assert";
-import type { Connection } from "mongoose";
-import {
-  setupTestDatabase,
-  teardownTestDatabase,
-} from "../helpers/setup-test-database";
-import { FeedMongooseRepository } from "../../src/repositories/mongoose/feed.mongoose.repository";
+import { createFeedRepositoryHarness } from "../helpers/feed.repository.int.harness";
 
-describe("FeedMongooseRepository Integration", { concurrency: false }, () => {
-  let mongoConnection: Connection;
-  let repository: FeedMongooseRepository;
+describe("FeedMongooseRepository Integration", { concurrency: true }, () => {
+  const harness = createFeedRepositoryHarness();
 
-  before(async () => {
-    mongoConnection = await setupTestDatabase();
-    repository = new FeedMongooseRepository(mongoConnection);
-  });
+  before(() => harness.setup());
+  after(() => harness.teardown());
 
-  afterEach(async () => {
-    await repository.deleteAll();
-  });
-
-  after(async () => {
-    await teardownTestDatabase();
-  });
-
-  describe("aggregateWithFailRecords", () => {
+  describe("aggregateWithFailRecords", { concurrency: true }, () => {
     it("returns feeds sorted by addedAt descending", async () => {
-      const guildId = "guild-1";
+      const ctx = harness.createContext();
 
-      await repository.create({
-        title: "Feed 2020",
-        url: "https://example.com/2020",
-        guild: guildId,
-        channel: "channel-1",
-        addedAt: new Date("2020-01-01"),
-      });
+      await ctx.createFeed({ title: "Feed 2020", addedAt: new Date("2020-01-01") });
+      await ctx.createFeed({ title: "Feed 2022", addedAt: new Date("2022-01-01") });
+      await ctx.createFeed({ title: "Feed 2019", addedAt: new Date("2019-01-01") });
+      await ctx.createFeed({ title: "Feed 2021", addedAt: new Date("2021-01-01") });
 
-      await repository.create({
-        title: "Feed 2022",
-        url: "https://example.com/2022",
-        guild: guildId,
-        channel: "channel-1",
-        addedAt: new Date("2022-01-01"),
-      });
-
-      await repository.create({
-        title: "Feed 2019",
-        url: "https://example.com/2019",
-        guild: guildId,
-        channel: "channel-1",
-        addedAt: new Date("2019-01-01"),
-      });
-
-      await repository.create({
-        title: "Feed 2021",
-        url: "https://example.com/2021",
-        guild: guildId,
-        channel: "channel-1",
-        addedAt: new Date("2021-01-01"),
-      });
-
-      const feeds = await repository.aggregateWithFailRecords({
-        guildId,
+      const feeds = await ctx.repository.aggregateWithFailRecords({
+        guildId: ctx.guildId,
         skip: 0,
         limit: 10,
       });
@@ -71,42 +28,15 @@ describe("FeedMongooseRepository Integration", { concurrency: false }, () => {
     });
 
     it("respects limit and offset (skip)", async () => {
-      const guildId = "guild-1";
+      const ctx = harness.createContext();
 
-      await repository.create({
-        title: "Feed 2022",
-        url: "https://example.com/2022",
-        guild: guildId,
-        channel: "channel-1",
-        addedAt: new Date("2022-01-01"),
-      });
+      await ctx.createFeed({ title: "Feed 2022", addedAt: new Date("2022-01-01") });
+      await ctx.createFeed({ title: "Feed 2021", addedAt: new Date("2021-01-01") });
+      await ctx.createFeed({ title: "Feed 2020", addedAt: new Date("2020-01-01") });
+      await ctx.createFeed({ title: "Feed 2019", addedAt: new Date("2019-01-01") });
 
-      await repository.create({
-        title: "Feed 2021",
-        url: "https://example.com/2021",
-        guild: guildId,
-        channel: "channel-1",
-        addedAt: new Date("2021-01-01"),
-      });
-
-      await repository.create({
-        title: "Feed 2020",
-        url: "https://example.com/2020",
-        guild: guildId,
-        channel: "channel-1",
-        addedAt: new Date("2020-01-01"),
-      });
-
-      await repository.create({
-        title: "Feed 2019",
-        url: "https://example.com/2019",
-        guild: guildId,
-        channel: "channel-1",
-        addedAt: new Date("2019-01-01"),
-      });
-
-      const feeds = await repository.aggregateWithFailRecords({
-        guildId,
+      const feeds = await ctx.repository.aggregateWithFailRecords({
+        guildId: ctx.guildId,
         skip: 1,
         limit: 2,
       });
@@ -116,24 +46,14 @@ describe("FeedMongooseRepository Integration", { concurrency: false }, () => {
     });
 
     it("filters by guild", async () => {
-      await repository.create({
-        title: "Guild 1 Feed",
-        url: "https://example.com/g1",
-        guild: "guild-1",
-        channel: "channel-1",
-        addedAt: new Date("2022-01-01"),
-      });
+      const ctx1 = harness.createContext();
+      const ctx2 = harness.createContext();
 
-      await repository.create({
-        title: "Guild 2 Feed",
-        url: "https://example.com/g2",
-        guild: "guild-2",
-        channel: "channel-1",
-        addedAt: new Date("2022-01-01"),
-      });
+      await ctx1.createFeed({ title: "Guild 1 Feed" });
+      await ctx2.createFeed({ title: "Guild 2 Feed" });
 
-      const feeds = await repository.aggregateWithFailRecords({
-        guildId: "guild-1",
+      const feeds = await ctx1.repository.aggregateWithFailRecords({
+        guildId: ctx1.guildId,
         skip: 0,
         limit: 10,
       });
@@ -143,26 +63,13 @@ describe("FeedMongooseRepository Integration", { concurrency: false }, () => {
     });
 
     it("searches by title (case insensitive)", async () => {
-      const guildId = "guild-1";
+      const ctx = harness.createContext();
 
-      await repository.create({
-        title: "Google News",
-        url: "https://news.google.com",
-        guild: guildId,
-        channel: "channel-1",
-        addedAt: new Date("2022-01-01"),
-      });
+      await ctx.createFeed({ title: "Google News", url: "https://news.google.com" });
+      await ctx.createFeed({ title: "Yahoo Finance", url: "https://finance.yahoo.com" });
 
-      await repository.create({
-        title: "Yahoo Finance",
-        url: "https://finance.yahoo.com",
-        guild: guildId,
-        channel: "channel-1",
-        addedAt: new Date("2022-01-01"),
-      });
-
-      const feeds = await repository.aggregateWithFailRecords({
-        guildId,
+      const feeds = await ctx.repository.aggregateWithFailRecords({
+        guildId: ctx.guildId,
         search: "google",
         skip: 0,
         limit: 10,
@@ -173,26 +80,13 @@ describe("FeedMongooseRepository Integration", { concurrency: false }, () => {
     });
 
     it("searches by URL (case insensitive)", async () => {
-      const guildId = "guild-1";
+      const ctx = harness.createContext();
 
-      await repository.create({
-        title: "Some Feed",
-        url: "https://google.com/feed",
-        guild: guildId,
-        channel: "channel-1",
-        addedAt: new Date("2022-01-01"),
-      });
+      await ctx.createFeed({ title: "Some Feed", url: "https://google.com/feed" });
+      await ctx.createFeed({ title: "Other Feed", url: "https://yahoo.com/feed" });
 
-      await repository.create({
-        title: "Other Feed",
-        url: "https://yahoo.com/feed",
-        guild: guildId,
-        channel: "channel-1",
-        addedAt: new Date("2022-01-01"),
-      });
-
-      const feeds = await repository.aggregateWithFailRecords({
-        guildId,
+      const feeds = await ctx.repository.aggregateWithFailRecords({
+        guildId: ctx.guildId,
         search: "GOOGLE",
         skip: 0,
         limit: 10,
@@ -203,73 +97,29 @@ describe("FeedMongooseRepository Integration", { concurrency: false }, () => {
     });
   });
 
-  describe("countByGuild", () => {
+  describe("countByGuild", { concurrency: true }, () => {
     it("returns correct count for guild", async () => {
-      await repository.create({
-        title: "Feed 1",
-        url: "https://example.com/1",
-        guild: "guild-1",
-        channel: "channel-1",
-        addedAt: new Date(),
-      });
+      const ctx1 = harness.createContext();
+      const ctx2 = harness.createContext();
 
-      await repository.create({
-        title: "Feed 2",
-        url: "https://example.com/2",
-        guild: "guild-1",
-        channel: "channel-1",
-        addedAt: new Date(),
-      });
+      await ctx1.createFeed({ title: "Feed 1" });
+      await ctx1.createFeed({ title: "Feed 2" });
+      await ctx2.createFeed({ title: "Feed 3" });
 
-      await repository.create({
-        title: "Feed 3",
-        url: "https://example.com/3",
-        guild: "guild-2",
-        channel: "channel-1",
-        addedAt: new Date(),
-      });
-
-      const count = await repository.countByGuild("guild-1");
+      const count = await ctx1.repository.countByGuild(ctx1.guildId);
 
       assert.strictEqual(count, 2);
     });
 
     it("returns correct count with search filter", async () => {
-      const guildId = "guild-1";
+      const ctx = harness.createContext();
 
-      await repository.create({
-        title: "google news",
-        url: "https://other.com",
-        guild: guildId,
-        channel: "channel-1",
-        addedAt: new Date(),
-      });
+      await ctx.createFeed({ title: "google news", url: "https://other.com" });
+      await ctx.createFeed({ title: "yahoo news", url: "https://other.com/2" });
+      await ctx.createFeed({ title: "other", url: "https://google.com/feed" });
+      await ctx.createFeed({ title: "bing", url: "https://bing.com" });
 
-      await repository.create({
-        title: "yahoo news",
-        url: "https://other.com/2",
-        guild: guildId,
-        channel: "channel-1",
-        addedAt: new Date(),
-      });
-
-      await repository.create({
-        title: "other",
-        url: "https://google.com/feed",
-        guild: guildId,
-        channel: "channel-1",
-        addedAt: new Date(),
-      });
-
-      await repository.create({
-        title: "bing",
-        url: "https://bing.com",
-        guild: guildId,
-        channel: "channel-1",
-        addedAt: new Date(),
-      });
-
-      const count = await repository.countByGuild(guildId, "goo");
+      const count = await ctx.repository.countByGuild(ctx.guildId, "goo");
 
       assert.strictEqual(count, 2);
     });

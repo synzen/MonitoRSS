@@ -1,66 +1,12 @@
-import { describe, it, beforeEach, mock, Mock } from "node:test";
+import { describe, it } from "node:test";
 import assert from "node:assert";
-import { DiscordServersService } from "../../src/services/discord-servers/discord-servers.service";
-import type { DiscordServersServiceDeps } from "../../src/services/discord-servers/discord-servers.service";
-import type { Config } from "../../src/config";
+import { createDiscordServersHarness } from "../helpers/discord-servers.harness";
 import { DiscordChannelType } from "../../src/shared/types/discord.types";
 import { DiscordAPIError } from "../../src/shared/exceptions/discord-api.error";
 import { DiscordServerNotFoundException } from "../../src/shared/exceptions/discord-servers.exceptions";
 
-function createMockConfig(): Config {
-  return {
-    BACKEND_API_DEFAULT_DATE_FORMAT: "YYYY-MM-DD",
-    BACKEND_API_DEFAULT_TIMEZONE: "UTC",
-    BACKEND_API_DEFAULT_DATE_LANGUAGE: "en",
-  } as Config;
-}
-
-function createMockDeps(): DiscordServersServiceDeps & {
-  discordApiService: { executeBotRequest: Mock<(...args: unknown[]) => Promise<unknown>>; getGuild: Mock<(...args: unknown[]) => Promise<unknown>>; getGuildMember: Mock<(...args: unknown[]) => Promise<unknown>> };
-  feedsService: { getServerFeeds: Mock<(...args: unknown[]) => Promise<unknown>>; countServerFeeds: Mock<(...args: unknown[]) => Promise<unknown>> };
-  discordPermissionsService: { botHasPermissionInServer: Mock<(...args: unknown[]) => Promise<boolean>> };
-  discordServerProfileRepository: {
-    findById: Mock<(...args: unknown[]) => Promise<unknown>>;
-    findOneAndUpdate: Mock<(...args: unknown[]) => Promise<unknown>>;
-  };
-} {
-  return {
-    config: createMockConfig(),
-    discordApiService: {
-      executeBotRequest: mock.fn(async () => ({})),
-      getGuild: mock.fn(async () => ({})),
-      getGuildMember: mock.fn(async () => ({})),
-    },
-    feedsService: {
-      getServerFeeds: mock.fn(async () => []),
-      countServerFeeds: mock.fn(async () => 0),
-    },
-    discordPermissionsService: {
-      botHasPermissionInServer: mock.fn(async () => true),
-    },
-    discordServerProfileRepository: {
-      findById: mock.fn(async () => null),
-      findOneAndUpdate: mock.fn(async () => ({})),
-    },
-  } as unknown as DiscordServersServiceDeps & {
-    discordApiService: { executeBotRequest: Mock<(...args: unknown[]) => Promise<unknown>>; getGuild: Mock<(...args: unknown[]) => Promise<unknown>>; getGuildMember: Mock<(...args: unknown[]) => Promise<unknown>> };
-    feedsService: { getServerFeeds: Mock<(...args: unknown[]) => Promise<unknown>>; countServerFeeds: Mock<(...args: unknown[]) => Promise<unknown>> };
-    discordPermissionsService: { botHasPermissionInServer: Mock<(...args: unknown[]) => Promise<boolean>> };
-    discordServerProfileRepository: {
-      findById: Mock<(...args: unknown[]) => Promise<unknown>>;
-      findOneAndUpdate: Mock<(...args: unknown[]) => Promise<unknown>>;
-    };
-  };
-}
-
-describe("DiscordServersService", () => {
-  let service: DiscordServersService;
-  let deps: ReturnType<typeof createMockDeps>;
-
-  beforeEach(() => {
-    deps = createMockDeps();
-    service = new DiscordServersService(deps);
-  });
+describe("DiscordServersService", { concurrency: true }, () => {
+  const harness = createDiscordServersHarness();
 
   describe("getActiveThreads", () => {
     const guildId = "guildId";
@@ -86,11 +32,13 @@ describe("DiscordServersService", () => {
     };
 
     it("should return active threads, excluding private by default", async () => {
-      deps.discordApiService.executeBotRequest.mock.mockImplementation(
-        async () => ({ ...threadsResponse })
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          executeBotRequest: async () => ({ ...threadsResponse }),
+        },
+      });
 
-      const result = await service.getActiveThreads(guildId);
+      const result = await ctx.service.getActiveThreads(guildId);
 
       assert.deepStrictEqual(result, [
         {
@@ -105,11 +53,13 @@ describe("DiscordServersService", () => {
     });
 
     it("should return active threads, including private if specified", async () => {
-      deps.discordApiService.executeBotRequest.mock.mockImplementation(
-        async () => threadsResponse
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          executeBotRequest: async () => threadsResponse,
+        },
+      });
 
-      const result = await service.getActiveThreads(guildId, {
+      const result = await ctx.service.getActiveThreads(guildId, {
         includePrivate: true,
       });
 
@@ -155,11 +105,13 @@ describe("DiscordServersService", () => {
           },
         ],
       };
-      deps.discordApiService.executeBotRequest.mock.mockImplementation(
-        async () => thisResponse
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          executeBotRequest: async () => thisResponse,
+        },
+      });
 
-      const result = await service.getActiveThreads(guildId, {
+      const result = await ctx.service.getActiveThreads(guildId, {
         parentChannelId,
       });
 
@@ -186,11 +138,13 @@ describe("DiscordServersService", () => {
         dateLanguage: "date-language",
         timezone: "timezone",
       };
-      deps.discordServerProfileRepository.findById.mock.mockImplementation(
-        async () => mockProfile
-      );
+      const ctx = harness.createContext({
+        discordServerProfileRepository: {
+          findById: async () => mockProfile,
+        },
+      });
 
-      const profile = await service.getServerProfile(serverId);
+      const profile = await ctx.service.getServerProfile(serverId);
 
       assert.deepStrictEqual(profile, {
         dateFormat: "date-format",
@@ -200,11 +154,13 @@ describe("DiscordServersService", () => {
     });
 
     it("returns defaults if no profile is found", async () => {
-      deps.discordServerProfileRepository.findById.mock.mockImplementation(
-        async () => null
-      );
+      const ctx = harness.createContext({
+        discordServerProfileRepository: {
+          findById: async () => null,
+        },
+      });
 
-      const profile = await service.getServerProfile(serverId);
+      const profile = await ctx.service.getServerProfile(serverId);
 
       assert.deepStrictEqual(profile, {
         dateFormat: "YYYY-MM-DD",
@@ -220,11 +176,13 @@ describe("DiscordServersService", () => {
         dateLanguage: "date-language",
         timezone: undefined,
       };
-      deps.discordServerProfileRepository.findById.mock.mockImplementation(
-        async () => mockProfile
-      );
+      const ctx = harness.createContext({
+        discordServerProfileRepository: {
+          findById: async () => mockProfile,
+        },
+      });
 
-      const profile = await service.getServerProfile(serverId);
+      const profile = await ctx.service.getServerProfile(serverId);
 
       assert.deepStrictEqual(profile, {
         dateFormat: "date-format",
@@ -244,11 +202,13 @@ describe("DiscordServersService", () => {
         dateLanguage: "date-language",
         timezone: "timezone",
       };
-      deps.discordServerProfileRepository.findOneAndUpdate.mock.mockImplementation(
-        async () => updatedProfile
-      );
+      const ctx = harness.createContext({
+        discordServerProfileRepository: {
+          findOneAndUpdate: async () => updatedProfile,
+        },
+      });
 
-      const result = await service.updateServerProfile(serverId, {
+      const result = await ctx.service.updateServerProfile(serverId, {
         dateFormat: "new-date-format",
       });
 
@@ -266,11 +226,13 @@ describe("DiscordServersService", () => {
         dateLanguage: "new-date-language",
         timezone: "new-timezone",
       };
-      deps.discordServerProfileRepository.findOneAndUpdate.mock.mockImplementation(
-        async () => updatedProfile
-      );
+      const ctx = harness.createContext({
+        discordServerProfileRepository: {
+          findOneAndUpdate: async () => updatedProfile,
+        },
+      });
 
-      const result = await service.updateServerProfile(serverId, {
+      const result = await ctx.service.updateServerProfile(serverId, {
         dateFormat: "new-date-format",
         timezone: "new-timezone",
         dateLanguage: "new-date-language",
@@ -290,11 +252,13 @@ describe("DiscordServersService", () => {
         dateLanguage: "new-date-language",
         timezone: "new-timezone",
       };
-      deps.discordServerProfileRepository.findOneAndUpdate.mock.mockImplementation(
-        async () => updatedProfile
-      );
+      const ctx = harness.createContext({
+        discordServerProfileRepository: {
+          findOneAndUpdate: async () => updatedProfile,
+        },
+      });
 
-      const result = await service.updateServerProfile(serverId, {
+      const result = await ctx.service.updateServerProfile(serverId, {
         dateFormat: "new-date-format",
         timezone: "new-timezone",
         dateLanguage: "new-date-language",
@@ -306,7 +270,7 @@ describe("DiscordServersService", () => {
         dateLanguage: "new-date-language",
       });
 
-      const calls = deps.discordServerProfileRepository.findOneAndUpdate.mock.calls;
+      const calls = ctx.discordServerProfileRepository.findOneAndUpdate.mock.calls;
       assert.strictEqual(calls.length, 1);
     });
   });
@@ -316,14 +280,16 @@ describe("DiscordServersService", () => {
       const serverId = "server-id";
       const options = { limit: 10, offset: 20 };
       const mockFeeds = [{ id: "feed-1" }];
-      deps.feedsService.getServerFeeds.mock.mockImplementation(
-        async () => mockFeeds
-      );
+      const ctx = harness.createContext({
+        feedsService: {
+          getServerFeeds: async () => mockFeeds,
+        },
+      });
 
-      const result = await service.getServerFeeds(serverId, options);
+      const result = await ctx.service.getServerFeeds(serverId, options);
 
       assert.deepStrictEqual(result, mockFeeds);
-      const calls = deps.feedsService.getServerFeeds.mock.calls;
+      const calls = ctx.feedsService.getServerFeeds.mock.calls;
       assert.strictEqual(calls.length, 1);
       assert.deepStrictEqual(calls[0]!.arguments, [serverId, options]);
     });
@@ -332,14 +298,16 @@ describe("DiscordServersService", () => {
   describe("countServerFeeds", () => {
     it("calls the feeds service correctly", async () => {
       const serverId = "server-id";
-      deps.feedsService.countServerFeeds.mock.mockImplementation(
-        async () => 5
-      );
+      const ctx = harness.createContext({
+        feedsService: {
+          countServerFeeds: async () => 5,
+        },
+      });
 
-      const result = await service.countServerFeeds(serverId);
+      const result = await ctx.service.countServerFeeds(serverId);
 
       assert.strictEqual(result, 5);
-      const calls = deps.feedsService.countServerFeeds.mock.calls;
+      const calls = ctx.feedsService.countServerFeeds.mock.calls;
       assert.strictEqual(calls.length, 1);
       assert.deepStrictEqual(calls[0]!.arguments, [serverId, { search: undefined }]);
     });
@@ -347,14 +315,16 @@ describe("DiscordServersService", () => {
     it("calls the feed service with search correctly", async () => {
       const serverId = "server-id";
       const options = { search: "search" };
-      deps.feedsService.countServerFeeds.mock.mockImplementation(
-        async () => 3
-      );
+      const ctx = harness.createContext({
+        feedsService: {
+          countServerFeeds: async () => 3,
+        },
+      });
 
-      const result = await service.countServerFeeds(serverId, options);
+      const result = await ctx.service.countServerFeeds(serverId, options);
 
       assert.strictEqual(result, 3);
-      const calls = deps.feedsService.countServerFeeds.mock.calls;
+      const calls = ctx.feedsService.countServerFeeds.mock.calls;
       assert.strictEqual(calls.length, 1);
       assert.deepStrictEqual(calls[0]!.arguments, [serverId, { search: "search" }]);
     });
@@ -363,48 +333,56 @@ describe("DiscordServersService", () => {
   describe("getServer", () => {
     it("returns the guild", async () => {
       const mockGuild = { id: "server-1", name: "Test Server" };
-      deps.discordApiService.executeBotRequest.mock.mockImplementation(
-        async () => mockGuild
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          executeBotRequest: async () => mockGuild,
+        },
+      });
 
-      const guild = await service.getServer("server-1");
+      const guild = await ctx.service.getServer("server-1");
 
       assert.deepStrictEqual(guild, mockGuild);
     });
 
     it("returns null if the bot was forbidden", async () => {
-      deps.discordApiService.executeBotRequest.mock.mockImplementation(
-        async () => {
-          throw new DiscordAPIError("Forbidden", 403);
-        }
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          executeBotRequest: async () => {
+            throw new DiscordAPIError("Forbidden", 403);
+          },
+        },
+      });
 
-      const guild = await service.getServer("server-1");
+      const guild = await ctx.service.getServer("server-1");
 
       assert.strictEqual(guild, null);
     });
 
     it("returns null if 404 is returned", async () => {
-      deps.discordApiService.executeBotRequest.mock.mockImplementation(
-        async () => {
-          throw new DiscordAPIError("Not Found", 404);
-        }
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          executeBotRequest: async () => {
+            throw new DiscordAPIError("Not Found", 404);
+          },
+        },
+      });
 
-      const guild = await service.getServer("server-1");
+      const guild = await ctx.service.getServer("server-1");
 
       assert.strictEqual(guild, null);
     });
 
     it("throws for an unhandled error", async () => {
-      deps.discordApiService.executeBotRequest.mock.mockImplementation(
-        async () => {
-          throw new Error("Unhandled error");
-        }
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          executeBotRequest: async () => {
+            throw new Error("Unhandled error");
+          },
+        },
+      });
 
       await assert.rejects(
-        () => service.getServer("server-1"),
+        () => ctx.service.getServer("server-1"),
         { message: "Unhandled error" }
       );
     });
@@ -412,36 +390,42 @@ describe("DiscordServersService", () => {
 
   describe("getGuild", () => {
     it("returns { exists: true } when guild exists", async () => {
-      deps.discordApiService.getGuild.mock.mockImplementation(
-        async () => ({ id: "guild-1" })
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          getGuild: async () => ({ id: "guild-1" }),
+        },
+      });
 
-      const result = await service.getGuild("guild-1");
+      const result = await ctx.service.getGuild("guild-1");
 
       assert.deepStrictEqual(result, { exists: true });
     });
 
     it("returns { exists: false } when 404 from Discord", async () => {
-      deps.discordApiService.getGuild.mock.mockImplementation(
-        async () => {
-          throw new DiscordAPIError("Not Found", 404);
-        }
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          getGuild: async () => {
+            throw new DiscordAPIError("Not Found", 404);
+          },
+        },
+      });
 
-      const result = await service.getGuild("guild-1");
+      const result = await ctx.service.getGuild("guild-1");
 
       assert.deepStrictEqual(result, { exists: false });
     });
 
     it("throws for other errors", async () => {
-      deps.discordApiService.getGuild.mock.mockImplementation(
-        async () => {
-          throw new Error("Some other error");
-        }
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          getGuild: async () => {
+            throw new Error("Some other error");
+          },
+        },
+      });
 
       await assert.rejects(
-        () => service.getGuild("guild-1"),
+        () => ctx.service.getGuild("guild-1"),
         { message: "Some other error" }
       );
     });
@@ -500,11 +484,13 @@ describe("DiscordServersService", () => {
           parent_id: "",
         },
       ];
-      deps.discordApiService.executeBotRequest.mock.mockImplementation(
-        async () => mockChannels
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          executeBotRequest: async () => mockChannels,
+        },
+      });
 
-      const channels = await service.getTextChannelsOfServer(serverId);
+      const channels = await ctx.service.getTextChannelsOfServer(serverId);
 
       assert.deepStrictEqual(channels, [
         {
@@ -539,27 +525,31 @@ describe("DiscordServersService", () => {
     });
 
     it("throws DiscordServerNotFoundException on 404", async () => {
-      deps.discordApiService.executeBotRequest.mock.mockImplementation(
-        async () => {
-          throw new DiscordAPIError("Not Found", 404);
-        }
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          executeBotRequest: async () => {
+            throw new DiscordAPIError("Not Found", 404);
+          },
+        },
+      });
 
       await assert.rejects(
-        () => service.getTextChannelsOfServer("server-id"),
+        () => ctx.service.getTextChannelsOfServer("server-id"),
         DiscordServerNotFoundException
       );
     });
 
     it("throws DiscordServerNotFoundException on 403", async () => {
-      deps.discordApiService.executeBotRequest.mock.mockImplementation(
-        async () => {
-          throw new DiscordAPIError("Forbidden", 403);
-        }
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          executeBotRequest: async () => {
+            throw new DiscordAPIError("Forbidden", 403);
+          },
+        },
+      });
 
       await assert.rejects(
-        () => service.getTextChannelsOfServer("server-id"),
+        () => ctx.service.getTextChannelsOfServer("server-id"),
         DiscordServerNotFoundException
       );
     });
@@ -602,11 +592,13 @@ describe("DiscordServersService", () => {
       ];
 
       it("returns all channel types when types includes '*'", async () => {
-        deps.discordApiService.executeBotRequest.mock.mockImplementation(
-          async () => mockChannels
-        );
+        const ctx = harness.createContext({
+          discordApiService: {
+            executeBotRequest: async () => mockChannels,
+          },
+        });
 
-        const channels = await service.getTextChannelsOfServer(serverId, {
+        const channels = await ctx.service.getTextChannelsOfServer(serverId, {
           types: ["*"],
         });
 
@@ -619,11 +611,13 @@ describe("DiscordServersService", () => {
       });
 
       it("returns only forum channels when types includes 'forum'", async () => {
-        deps.discordApiService.executeBotRequest.mock.mockImplementation(
-          async () => mockChannels
-        );
+        const ctx = harness.createContext({
+          discordApiService: {
+            executeBotRequest: async () => mockChannels,
+          },
+        });
 
-        const channels = await service.getTextChannelsOfServer(serverId, {
+        const channels = await ctx.service.getTextChannelsOfServer(serverId, {
           types: ["forum"],
         });
 
@@ -633,11 +627,13 @@ describe("DiscordServersService", () => {
       });
 
       it("returns only text channels when types includes 'text'", async () => {
-        deps.discordApiService.executeBotRequest.mock.mockImplementation(
-          async () => mockChannels
-        );
+        const ctx = harness.createContext({
+          discordApiService: {
+            executeBotRequest: async () => mockChannels,
+          },
+        });
 
-        const channels = await service.getTextChannelsOfServer(serverId, {
+        const channels = await ctx.service.getTextChannelsOfServer(serverId, {
           types: ["text"],
         });
 
@@ -647,11 +643,13 @@ describe("DiscordServersService", () => {
       });
 
       it("returns only announcement channels when types includes 'announcement'", async () => {
-        deps.discordApiService.executeBotRequest.mock.mockImplementation(
-          async () => mockChannels
-        );
+        const ctx = harness.createContext({
+          discordApiService: {
+            executeBotRequest: async () => mockChannels,
+          },
+        });
 
-        const channels = await service.getTextChannelsOfServer(serverId, {
+        const channels = await ctx.service.getTextChannelsOfServer(serverId, {
           types: ["announcement"],
         });
 
@@ -661,11 +659,13 @@ describe("DiscordServersService", () => {
       });
 
       it("returns multiple types when specified", async () => {
-        deps.discordApiService.executeBotRequest.mock.mockImplementation(
-          async () => mockChannels
-        );
+        const ctx = harness.createContext({
+          discordApiService: {
+            executeBotRequest: async () => mockChannels,
+          },
+        });
 
-        const channels = await service.getTextChannelsOfServer(serverId, {
+        const channels = await ctx.service.getTextChannelsOfServer(serverId, {
           types: ["text", "forum"],
         });
 
@@ -676,11 +676,13 @@ describe("DiscordServersService", () => {
       });
 
       it("returns text and announcement by default when no types specified", async () => {
-        deps.discordApiService.executeBotRequest.mock.mockImplementation(
-          async () => mockChannels
-        );
+        const ctx = harness.createContext({
+          discordApiService: {
+            executeBotRequest: async () => mockChannels,
+          },
+        });
 
-        const channels = await service.getTextChannelsOfServer(serverId);
+        const channels = await ctx.service.getTextChannelsOfServer(serverId);
 
         assert.strictEqual(channels.length, 2);
         const ids = channels.map((c) => c.id);
@@ -709,11 +711,13 @@ describe("DiscordServersService", () => {
             ],
           },
         ];
-        deps.discordApiService.executeBotRequest.mock.mockImplementation(
-          async () => mockChannels
-        );
+        const ctx = harness.createContext({
+          discordApiService: {
+            executeBotRequest: async () => mockChannels,
+          },
+        });
 
-        const channels = await service.getTextChannelsOfServer(serverId, {
+        const channels = await ctx.service.getTextChannelsOfServer(serverId, {
           types: ["forum"],
         });
 
@@ -751,18 +755,20 @@ describe("DiscordServersService", () => {
             ],
           },
         ];
-        deps.discordApiService.executeBotRequest.mock.mockImplementation(
-          async () => mockChannels
-        );
-        deps.discordPermissionsService.botHasPermissionInServer.mock.mockImplementation(
-          async () => true
-        );
+        const ctx = harness.createContext({
+          discordApiService: {
+            executeBotRequest: async () => mockChannels,
+          },
+          discordPermissionsService: {
+            botHasPermissionInServer: async () => true,
+          },
+        });
 
-        const channels = await service.getTextChannelsOfServer(serverId, {
+        const channels = await ctx.service.getTextChannelsOfServer(serverId, {
           types: ["forum"],
         });
 
-        const permCalls = deps.discordPermissionsService.botHasPermissionInServer.mock.calls;
+        const permCalls = ctx.discordPermissionsService.botHasPermissionInServer.mock.calls;
         assert.strictEqual(permCalls.length, 1);
         assert.strictEqual(permCalls[0]!.arguments[0], serverId);
 
@@ -788,14 +794,16 @@ describe("DiscordServersService", () => {
             ],
           },
         ];
-        deps.discordApiService.executeBotRequest.mock.mockImplementation(
-          async () => mockChannels
-        );
-        deps.discordPermissionsService.botHasPermissionInServer.mock.mockImplementation(
-          async () => false
-        );
+        const ctx = harness.createContext({
+          discordApiService: {
+            executeBotRequest: async () => mockChannels,
+          },
+          discordPermissionsService: {
+            botHasPermissionInServer: async () => false,
+          },
+        });
 
-        const channels = await service.getTextChannelsOfServer(serverId, {
+        const channels = await ctx.service.getTextChannelsOfServer(serverId, {
           types: ["forum"],
         });
 
@@ -822,11 +830,13 @@ describe("DiscordServersService", () => {
             ],
           },
         ];
-        deps.discordApiService.executeBotRequest.mock.mockImplementation(
-          async () => mockChannels
-        );
+        const ctx = harness.createContext({
+          discordApiService: {
+            executeBotRequest: async () => mockChannels,
+          },
+        });
 
-        const channels = await service.getTextChannelsOfServer(serverId, {
+        const channels = await ctx.service.getTextChannelsOfServer(serverId, {
           types: ["forum"],
         });
 
@@ -850,13 +860,15 @@ describe("DiscordServersService", () => {
             ],
           },
         ];
-        deps.discordApiService.executeBotRequest.mock.mockImplementation(
-          async () => mockChannels
-        );
+        const ctx = harness.createContext({
+          discordApiService: {
+            executeBotRequest: async () => mockChannels,
+          },
+        });
 
-        await service.getTextChannelsOfServer(serverId, { types: ["forum"] });
+        await ctx.service.getTextChannelsOfServer(serverId, { types: ["forum"] });
 
-        const permCalls = deps.discordPermissionsService.botHasPermissionInServer.mock.calls;
+        const permCalls = ctx.discordPermissionsService.botHasPermissionInServer.mock.calls;
         assert.strictEqual(permCalls.length, 0);
       });
     });
@@ -869,11 +881,13 @@ describe("DiscordServersService", () => {
         { id: "id-1", name: "role-1" },
         { id: "id-2", name: "role-2" },
       ];
-      deps.discordApiService.executeBotRequest.mock.mockImplementation(
-        async () => mockRoles
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          executeBotRequest: async () => mockRoles,
+        },
+      });
 
-      const roles = await service.getRolesOfServer(serverId);
+      const roles = await ctx.service.getRolesOfServer(serverId);
 
       assert.deepStrictEqual(roles, mockRoles);
     });
@@ -886,11 +900,13 @@ describe("DiscordServersService", () => {
         { user: { id: "user-1", username: "User1" }, roles: [] },
         { user: { id: "user-2", username: "User2" }, roles: [] },
       ];
-      deps.discordApiService.executeBotRequest.mock.mockImplementation(
-        async () => mockMembers
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          executeBotRequest: async () => mockMembers,
+        },
+      });
 
-      const members = await service.searchMembersOfServer(serverId, {
+      const members = await ctx.service.searchMembersOfServer(serverId, {
         search: "User",
         limit: 10,
       });
@@ -902,48 +918,56 @@ describe("DiscordServersService", () => {
   describe("getMemberOfServer", () => {
     it("returns member when found", async () => {
       const mockMember = { user: { id: "user-1", username: "User1" }, roles: [] };
-      deps.discordApiService.getGuildMember.mock.mockImplementation(
-        async () => mockMember
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          getGuildMember: async () => mockMember,
+        },
+      });
 
-      const member = await service.getMemberOfServer("server-1", "user-1");
+      const member = await ctx.service.getMemberOfServer("server-1", "user-1");
 
       assert.deepStrictEqual(member, mockMember);
     });
 
     it("returns null on 404", async () => {
-      deps.discordApiService.getGuildMember.mock.mockImplementation(
-        async () => {
-          throw new DiscordAPIError("Not Found", 404);
-        }
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          getGuildMember: async () => {
+            throw new DiscordAPIError("Not Found", 404);
+          },
+        },
+      });
 
-      const member = await service.getMemberOfServer("server-1", "user-1");
+      const member = await ctx.service.getMemberOfServer("server-1", "user-1");
 
       assert.strictEqual(member, null);
     });
 
     it("returns null on 403", async () => {
-      deps.discordApiService.getGuildMember.mock.mockImplementation(
-        async () => {
-          throw new DiscordAPIError("Forbidden", 403);
-        }
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          getGuildMember: async () => {
+            throw new DiscordAPIError("Forbidden", 403);
+          },
+        },
+      });
 
-      const member = await service.getMemberOfServer("server-1", "user-1");
+      const member = await ctx.service.getMemberOfServer("server-1", "user-1");
 
       assert.strictEqual(member, null);
     });
 
     it("throws for other errors", async () => {
-      deps.discordApiService.getGuildMember.mock.mockImplementation(
-        async () => {
-          throw new Error("Network error");
-        }
-      );
+      const ctx = harness.createContext({
+        discordApiService: {
+          getGuildMember: async () => {
+            throw new Error("Network error");
+          },
+        },
+      });
 
       await assert.rejects(
-        () => service.getMemberOfServer("server-1", "user-1"),
+        () => ctx.service.getMemberOfServer("server-1", "user-1"),
         { message: "Network error" }
       );
     });

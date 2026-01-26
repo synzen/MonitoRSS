@@ -160,7 +160,15 @@ export interface IUserFeedRepository {
 
   // CRUD methods for UserFeedsService
   countByOwnership(discordUserId: string): Promise<number>;
+  countByOwnershipExcludingDisabled(
+    discordUserId: string,
+    excludeDisabledCodes: UserFeedDisabledCode[]
+  ): Promise<number>;
   findByUrls(discordUserId: string, urls: string[]): Promise<{ url: string }[]>;
+  findByIdAndOwnership(
+    id: string,
+    discordUserId: string
+  ): Promise<IUserFeed | null>;
   updateById(
     id: string,
     update: Record<string, unknown>
