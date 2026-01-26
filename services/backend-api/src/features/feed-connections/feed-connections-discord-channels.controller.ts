@@ -412,6 +412,31 @@ export class FeedConnectionsDiscordChannelsController {
             );
           }
         }
+      } else if (
+        connection.disabledCode === FeedConnectionDisabledCode.MissingMedium
+      ) {
+        // Clear disabled code when explicitly enabling OR when updating to a new channel
+        if (disabledCode === null || channelId) {
+          if (connection.details.channel) {
+            useChannelId = channelId || connection.details.channel.id;
+            useDisableCode = null;
+          } else if (
+            connection.details.webhook?.channelId &&
+            connection.details.webhook.name
+          ) {
+            useApplicationWebhook = {
+              channelId: connection.details.webhook?.channelId,
+              name: connection.details.webhook?.name,
+              iconUrl: connection.details.webhook?.iconUrl,
+              threadId: connection.details.webhook?.threadId,
+            };
+            useDisableCode = null;
+          } else {
+            throw new Error(
+              `Unhandled case when attempting to enable connection due to missing medium`
+            );
+          }
+        }
       } else if (disabledCode === null) {
         throw new CannotEnableAutoDisabledConnection();
       }

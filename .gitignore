@@ -138,3 +138,4 @@ __pycache__
 !.env.example
 CLAUDE.md
 nul
+dist
