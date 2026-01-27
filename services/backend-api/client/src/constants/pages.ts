@@ -46,6 +46,5 @@ export const pages = {
     `/feeds/${data.feedId}${getConnectionPathByType(data.connectionType)}/${data.connectionId}${
       opts?.tab ? opts.tab : ""
     }`,
-  userFeedsFaq: () => "/feeds/faq",
   loginReddit: () => "/api/v1/reddit/login",
 };

@@ -5,9 +5,7 @@ import {
   Get,
   Param,
   Patch,
-  Post,
   Query,
-  StreamableFile,
   UseFilters,
   UseGuards,
   UseInterceptors,
@@ -33,21 +31,12 @@ import { GetServerActiveThreadsInputDto } from "./dto/GetServerActiveThreadsInpu
 import { GetServerMembersInputDto } from "./dto/GetServerMembersInput.dto";
 import { GetServerMembersOutputDto } from "./dto/GetServerMembersOutput.dto";
 import { GetServerMemberOutputDto } from "./dto/GetServerMemberOutput.dto";
-import { FeedsService } from "../feeds/feeds.service";
-import { LegacyFeedConversionService } from "../legacy-feed-conversion/legacy-feed-conversion.service";
-import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
-import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
-import { ConvertServerLegacyFeedsFilter } from "./filters/convert-server-legacy-feeds.filter";
 import { CacheTTL } from "@nestjs/cache-manager";
 
 @Controller("discord-servers")
 @UseGuards(DiscordOAuth2Guard)
 export class DiscordServersController {
-  constructor(
-    private readonly discordServersService: DiscordServersService,
-    private readonly feedsService: FeedsService,
-    private readonly legacyFeedConversionService: LegacyFeedConversionService
-  ) {}
+  constructor(private readonly discordServersService: DiscordServersService) {}
 
   @Get(":serverId")
   @UseGuards(BotHasServerGuard)
@@ -70,49 +59,6 @@ export class DiscordServersController {
         includesBot: exists,
       },
     };
-  }
-
-  @Post(":serverId/legacy-conversion")
-  @UseGuards(BotHasServerGuard)
-  @UseGuards(UserManagesServerGuard)
-  @UseFilters(ConvertServerLegacyFeedsFilter)
-  async createLegacyConversion(
-    @Param("serverId") serverId: string,
-    @DiscordAccessToken()
-    { discord: { id: discordUserId } }: SessionAccessToken
-  ) {
-    return this.legacyFeedConversionService.createBulkConversionJob(
-      discordUserId,
-      serverId
-    );
-  }
-
-  @Get(":serverId/legacy-conversion")
-  @UseGuards(BotHasServerGuard)
-  @UseGuards(UserManagesServerGuard)
-  @UseFilters(ConvertServerLegacyFeedsFilter)
-  async getLegacyConversionStatus(
-    @Param("serverId") serverId: string,
-    @DiscordAccessToken()
-    { discord: { id: discordUserId } }: SessionAccessToken
-  ) {
-    return this.legacyFeedConversionService.getBulkConversionJobStatus(
-      discordUserId,
-      serverId
-    );
-  }
-
-  @Get(":serverId/backup")
-  @UseGuards(BotHasServerGuard)
-  @UseGuards(UserManagesServerGuard)
-  async getBackup(
-    @Param("serverId") serverId: string
-  ): Promise<StreamableFile> {
-    const backupJson = await this.discordServersService.createBackup(serverId);
-
-    const buffer = Buffer.from(JSON.stringify(backupJson, null, 2));
-
-    return new StreamableFile(buffer);
   }
 
   @Get(":serverId/active-threads")
@@ -162,19 +108,6 @@ export class DiscordServersController {
     return {
       result: {
         authorized: !!result,
-      },
-    };
-  }
-
-  @Get(":serverId/legacy-feed-count")
-  @UseGuards(BotHasServerGuard)
-  @UseGuards(UserManagesServerGuard)
-  async getServerLegacyFeedCount(@Param("serverId") serverId: string) {
-    const total = await this.feedsService.countLegacyServerFeeds(serverId);
-
-    return {
-      result: {
-        total,
       },
     };
   }

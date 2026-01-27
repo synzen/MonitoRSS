@@ -245,16 +245,6 @@ const handlers = [
     })
   ),
 
-  http.get("/api/v1/discord-servers/:serverId/legacy-feed-count", async () => {
-    await delay(700);
-
-    return HttpResponse.json<GetLegacyFeedCountOutput>({
-      result: {
-        total: 5,
-      },
-    });
-  }),
-
   http.get("/api/v1/discord-servers/:serverId/feeds", async ({ request }) => {
     const url = new URL(request.url);
 

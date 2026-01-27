@@ -16,9 +16,6 @@ import { UserFeedTagsController } from "./user-feed-tags.controller";
 import { FeedHandlerModule } from "../../services/feed-handler/feed-fetcher.module";
 import { MessageBrokerModule } from "../message-broker/message-broker.module";
 import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
-import { FeedFeature } from "../feeds/entities/feed.entity";
-import { UserFeedLimitOverrideFeature } from "../supporters/entities/user-feed-limit-overrides.entity";
-import { LegacyFeedConversionJobFeature } from "../legacy-feed-conversion/entities/legacy-feed-conversion-job.entity";
 import { FeedConnectionsDiscordChannelsModule } from "../feed-connections/feed-connections-discord-channels.module";
 import { UserFeature } from "../users/entities/user.entity";
 import { UsersModule } from "../users/users.module";
@@ -31,9 +28,6 @@ import { UsersModule } from "../users/users.module";
     MongooseModule.forFeature([
       UserFeedFeature,
       UserFeedTagFeature,
-      FeedFeature,
-      UserFeedLimitOverrideFeature,
-      LegacyFeedConversionJobFeature,
       UserFeature,
     ]),
     FeedFetcherModule,

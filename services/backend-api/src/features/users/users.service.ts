@@ -55,7 +55,6 @@ export interface GetUserByDiscordIdOutput {
   creditBalance: CreditBalanceDetails;
   subscription: SubscriptionDetails;
   isOnPatreon?: boolean;
-  migratedToPersonalFeeds: boolean;
   supporterFeatures: {
     exrternalProperties: {
       enabled: boolean;
@@ -198,7 +197,6 @@ export class UsersService {
           availableFormatted: "0",
         },
         subscription: freeSubscription,
-        migratedToPersonalFeeds: true,
         supporterFeatures: {
           exrternalProperties: {
             enabled: allowExternalProperties,
@@ -241,7 +239,6 @@ export class UsersService {
         externalAccounts,
         subscription: freeSubscription,
         isOnPatreon,
-        migratedToPersonalFeeds: true,
         supporterFeatures: {
           exrternalProperties: {
             enabled: allowExternalProperties,
@@ -277,7 +274,6 @@ export class UsersService {
         pastDueGracePeriodEndDate: subscription.pastDueGracePeriodEndDate,
       },
       isOnPatreon,
-      migratedToPersonalFeeds: true,
       supporterFeatures: {
         exrternalProperties: {
           enabled: allowExternalProperties,

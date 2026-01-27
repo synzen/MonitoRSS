@@ -59,7 +59,6 @@ export const UserMeSchema = object({
   }).required(),
   isOnPatreon: bool(),
   enableBilling: bool(),
-  migratedToPersonalFeeds: bool(),
   featureFlags: object({
     externalProperties: bool(),
   }),

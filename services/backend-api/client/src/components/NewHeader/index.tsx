@@ -14,14 +14,14 @@ import {
   chakra,
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FaRightFromBracket } from "react-icons/fa6";
 import { SettingsIcon, InfoIcon } from "@chakra-ui/icons";
 
 import { pages } from "../../constants";
 import { LogoutButton } from "../../features/auth";
 
-import { useDiscordBot, useDiscordUserMe, useUserMe } from "../../features/discordUser";
+import { useDiscordBot, useDiscordUserMe } from "../../features/discordUser";
 import { Loading } from "../Loading";
 import { SearchFeedsModal } from "../SearchFeedsModal";
 
@@ -32,10 +32,8 @@ interface Props {
 export const NewHeader = ({ invertBackground }: Props) => {
   const { data: discordBotData, status, error } = useDiscordBot();
   const { data: discordUserMe } = useDiscordUserMe();
-  const { data: userMe } = useUserMe();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
 
   return (
     <chakra.header width="full" borderBottom="solid 1px" borderColor="gray.700">
@@ -84,15 +82,6 @@ export const NewHeader = ({ invertBackground }: Props) => {
               {error && <Alert status="error">{error.message}</Alert>}
             </Flex>
             <HStack>
-              {userMe && !userMe?.result.migratedToPersonalFeeds && (
-                <Button
-                  variant="ghost"
-                  colorScheme={pathname === pages.userFeedsFaq() ? "blue" : undefined}
-                  onClick={() => navigate(pages.userFeedsFaq())}
-                >
-                  FAQ
-                </Button>
-              )}
               <SearchFeedsModal />
             </HStack>
           </HStack>

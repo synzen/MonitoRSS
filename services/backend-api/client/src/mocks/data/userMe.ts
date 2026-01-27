@@ -26,7 +26,6 @@ const mockUserMe: UserMe = {
     nextBillDate: "2021-02-01T00:00:00.000Z",
   },
   enableBilling: true,
-  migratedToPersonalFeeds: true,
   featureFlags: {
     externalProperties: true,
   },

@@ -131,7 +131,6 @@ const mockUserFeeds: UserFeed[] = [
     ],
     blockingComparisons: ["title", "description"],
     passingComparisons: ["author"],
-    isLegacyFeed: true,
     formatOptions: {
       dateFormat: undefined,
       dateTimezone: "UTC",

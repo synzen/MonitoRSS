@@ -260,21 +260,6 @@ services:
       - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
       - LOG_LEVEL=debug
 
-  # Schedule emitter
-  legacy-feed-bulk-converter-service:
-    extends:
-      file: docker-compose.base.yml
-      service: legacy-feed-bulk-converter-service
-    volumes:
-      - ./services/backend-api:/usr/src/app
-      - /usr/src/app/node_modules/
-    env_file:
-      - ./.env.local
-    environment:
-      - NODE_ENV=local
-      - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
-    command: npm run start:legacy-feed-converter
-
   # Web - Backend api
   web-api:
     extends:
