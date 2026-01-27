@@ -10,6 +10,7 @@ Delivers highly-customized news feeds to Discord!
       - [Enable Email Notifications](#enable-email-notifications)
       - [Enable Reddit Authorizations](#enable-reddit-authorizations)
       - [Updating](#updating)
+        - [Major Version Updates](#major-version-updates)
   - [Migrating from v6](#migrating-from-v6)
 
 ## Get Started
@@ -32,8 +33,8 @@ Docker is required to easily coordinate and run multiple services at once.
 2. Install [Docker Compose](https://docs.docker.com/compose/install/)
 3. Clone this repo's `main` (the default) branch - `git clone https://github.com/synzen/MonitoRSS.git`
 4. Create a Discord application through [Discord's developer portal](https://discord.com/developers/applications) if you do not already have one
-5. Create a copy of the existing `.env.example` file and rename it to `.env.prod`
-6. Replace all relevant values in the `.env.prod` file with your own values
+5. Create a copy of the existing `.env.example` file and rename it to `.env`
+6. Replace all relevant values in the `.env` file with your own values
    1. If you have your own MongoDB instance, set `BACKEND_API_MONGODB_URI` to your MongoDB URI
    2. Add your email at the end of `FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT` for feed hosts to be able to contact you if you violate their usage policies. For example, `MonitoRSS [Self-Hosted]/1.0 youremail@email.com`.
    3. Replace all instances of "BOT_TOKEN_HERE" with your Discord bot application token
@@ -51,7 +52,7 @@ Docker is required to easily coordinate and run multiple services at once.
 #### Customize Site Domain
 
 1. Set up your domain to point to the server running the control panel on localhost
-2. Update all references to `http://localhost:8000` in your `.env.prod` to your desired domain. For example, `https://mynewdomain.com`.
+2. Update all references to `http://localhost:8000` in your `.env` to your desired domain. For example, `https://mynewdomain.com`.
 3. Add `{DOMAIN_HERE}/api/v1/discord/callback-v2` to the list of redirect URIs in your Discord application in the OAuth2 page, replacing `{DOMAIN_HERE}` with the value you set in step 1
 
 #### Enable Email Notifications
@@ -69,19 +70,24 @@ Make sure to opt into email notifications in the control panel's user settings p
 
 1. Create a Reddit application at https://www.reddit.com/prefs/apps as a "web app".
 2. Add `{DOMAIN_HERE}/api/v1/reddit/callback` to the list of redirect URIs in your Reddit application settings, replacing `{DOMAIN_HERE}` with your domain that you're using to access the control panel.
-3. Copy the redirect URI you just added and set it as `BACKEND_API_REDDIT_REDIRECT_URI` in your `.env.prod` file.
-4. Copy the Reddit application's client ID (under "web app" label) and set it as `BACKEND_API_REDDIT_CLIENT_ID` in your `.env.prod` file.
-5. Copy the Reddit application's secret and set it as `BACKEND_API_REDDIT_CLIENT_SECRET` in your `.env.prod` file.
-6. Generate a random 64-digit hexadecimal string and set it as `BACKEND_API_ENCRYPTION_KEY_HEX` in your `.env.prod` file. One option is to use an online generator such as [this one](https://www.browserling.com/tools/random-hex).
+3. Copy the redirect URI you just added and set it as `BACKEND_API_REDDIT_REDIRECT_URI` in your `.env` file.
+4. Copy the Reddit application's client ID (under "web app" label) and set it as `BACKEND_API_REDDIT_CLIENT_ID` in your `.env` file.
+5. Copy the Reddit application's secret and set it as `BACKEND_API_REDDIT_CLIENT_SECRET` in your `.env` file.
+6. Generate a random 64-digit hexadecimal string and set it as `BACKEND_API_ENCRYPTION_KEY_HEX` in your `.env` file. One option is to use an online generator such as [this one](https://www.browserling.com/tools/random-hex).
 
 #### Updating
 
-Images are automatically built and pushed to Docker Hub on every commit to the `main` branch, so there is technically no need to pull the latest files in. To update your local instance:
+Releases follow [semantic versioning](https://semver.org/) and are published on the [Releases page](../../releases). To update:
 
-1. Make a backup of your MongoDB data just in case since data migrations may occur
+1. Back up your MongoDB data as a precaution (regular backups are a good idea regardless)
 2. Stop containers with `docker compose rm --stop -f`
-3. Pull latest images with `docker compose pull`
-4. Start containers with `docker compose up -d`
+3. Set your desired version in the `.env` file by updating `MONITORSS_VERSION` (e.g., `MONITORSS_VERSION=7` for version 7)
+4. Pull latest images with `docker compose pull`
+5. Start containers with `docker compose up -d`
+
+##### Major Version Updates
+
+Breaking changes to either the application and Docker compose files may happen between major versions. Check the [Releases page](../../releases) for instructons on upgrading major versions.
 
 ## Migrating from v6
 
@@ -90,7 +96,7 @@ If you've been using MonitoRSS v6 (used by the repo https://github.com/synzen/Mo
 It's recommended that you don't delete your v6 files until you've confirmed that all your feeds are working as expected post-migration.
 
 1. Follow the instructions above to self host. Be sure to clone this repo - the [clone repo](https://github.com/synzen/MonitoRSS-Clone) is no longer used or maintained.
-2. In your `.env.prod` file, set `BACKEND_API_MONGODB_URI` to your MongoDB URI
+2. In your `.env` file, set `BACKEND_API_MONGODB_URI` to your MongoDB URI
 3. Run `docker compose --parallel 1 up -d --build`
    - If you run into issues with network timeouts, pass the parallel flag to only build 1 container at once: `docker compose --parallel 1 up -d`
 4. Access the control panel via http://localhost:8000/servers and convert all your legacy feeds to personal feeds. Legacy feed articles will not be fetched/delivered until they are converted to personal feeds.
