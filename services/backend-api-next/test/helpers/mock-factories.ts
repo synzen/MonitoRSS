@@ -3,6 +3,8 @@ import type { UserFeedsServiceDeps } from "../../src/services/user-feeds/types";
 import type { SupportersServiceDeps } from "../../src/services/supporters/supporters.service";
 import type { PatronBenefits } from "../../src/services/patrons/patrons.service";
 import { GetArticlesResponseRequestStatus } from "../../src/services/feed-handler/types";
+import type { IDiscordChannelConnection } from "../../src/repositories/interfaces/feed-connection.types";
+import type { FeedConnectionDisabledCode } from "../../src/repositories/shared/enums";
 import { generateTestId } from "./test-id";
 
 export interface MockFeedHandlerOptions {
@@ -38,16 +40,24 @@ export interface MockSupportersOptions {
   maxUserFeeds?: number;
   maxDailyArticles?: number;
   refreshRateSeconds?: number;
+  isSupporter?: boolean;
+  defaultMaxUserFeeds?: number;
+  defaultRefreshRateSeconds?: number;
+  defaultSupporterRefreshRateSeconds?: number;
 }
 
 export function createMockSupportersService(
   options: MockSupportersOptions = {}
 ): UserFeedsServiceDeps["supportersService"] {
   return {
+    defaultMaxUserFeeds: options.defaultMaxUserFeeds ?? 5,
+    defaultRefreshRateSeconds: options.defaultRefreshRateSeconds ?? 600,
+    defaultSupporterRefreshRateSeconds: options.defaultSupporterRefreshRateSeconds ?? 120,
     getBenefitsOfDiscordUser: async () => ({
       maxUserFeeds: options.maxUserFeeds ?? 5,
       maxDailyArticles: options.maxDailyArticles ?? 100,
       refreshRateSeconds: options.refreshRateSeconds ?? 600,
+      isSupporter: options.isSupporter ?? false,
     }),
   } as unknown as UserFeedsServiceDeps["supportersService"];
 }
@@ -206,4 +216,33 @@ export function createMockUserFeedLimitOverrideRepository(
     findByIdsNotIn: mock.fn(async () => options.findByIdsNotInResult ?? []),
     deleteAll: mock.fn(async () => {}),
   };
+}
+
+export interface MockDiscordChannelConnectionOptions {
+  disabledCode?: FeedConnectionDisabledCode;
+  details?: {
+    webhook?: {
+      id: string;
+      guildId: string;
+      token: string;
+    };
+  };
+}
+
+export function createMockDiscordChannelConnection(
+  options: MockDiscordChannelConnectionOptions = {}
+): Partial<IDiscordChannelConnection> {
+  const id = generateTestId();
+  return {
+    id,
+    name: `Connection ${id}`,
+    disabledCode: options.disabledCode,
+    details: {
+      embeds: [],
+      formatter: {},
+      ...options.details,
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  } as Partial<IDiscordChannelConnection>;
 }

@@ -1,5 +1,9 @@
 import type { Connection } from "mongoose";
-import type { IUserFeed } from "../../src/repositories/interfaces/user-feed.types";
+import type {
+  IUserFeed,
+  UserFeedBulkWriteOperation,
+} from "../../src/repositories/interfaces/user-feed.types";
+import type { IDiscordChannelConnection } from "../../src/repositories/interfaces/feed-connection.types";
 import { UserFeedMongooseRepository } from "../../src/repositories/mongoose/user-feed.mongoose.repository";
 import { UserMongooseRepository } from "../../src/repositories/mongoose/user.mongoose.repository";
 import {
@@ -30,9 +34,22 @@ export interface TestContextOptions {
   maxUserFeeds?: number;
   maxDailyArticles?: number;
   refreshRateSeconds?: number;
+  isSupporter?: boolean;
+  defaultMaxUserFeeds?: number;
+  defaultRefreshRateSeconds?: number;
+  defaultSupporterRefreshRateSeconds?: number;
   feedHandler?: MockFeedHandlerOptions;
   bannedFeedDetails?: unknown;
   publishMessage?: (queue: string, message: unknown) => Promise<void>;
+}
+
+export interface CreateFeedWithConnectionsInput {
+  discordUserId?: string;
+  title?: string;
+  url?: string;
+  connections?: {
+    discordChannels?: Partial<IDiscordChannelConnection>[];
+  };
 }
 
 export interface TestContext {
@@ -40,15 +57,20 @@ export interface TestContext {
   userId: string;
   service: UserFeedsService;
   createFeed(overrides?: { title?: string; url?: string }): Promise<IUserFeed>;
+  createFeedForUser(discordUserId: string, overrides?: { title?: string; url?: string }): Promise<IUserFeed>;
+  createFeedWithConnections(input: CreateFeedWithConnectionsInput): Promise<IUserFeed>;
   createMany(count: number): Promise<IUserFeed[]>;
   createDisabled(code: UserFeedDisabledCode): Promise<IUserFeed>;
+  createDisabledForUser(discordUserId: string, code: UserFeedDisabledCode): Promise<IUserFeed>;
   createSharedFeed(
     ownerDiscordUserId: string,
     status?: UserFeedManagerStatus
   ): Promise<IUserFeed>;
   setDisabledCode(id: string, code: UserFeedDisabledCode | null): Promise<void>;
   setFields(id: string, fields: Record<string, unknown>): Promise<void>;
+  setCreatedAt(id: string, date: Date): Promise<void>;
   findById(id: string): Promise<IUserFeed | null>;
+  bulkWrite(operations: UserFeedBulkWriteOperation[]): Promise<void>;
   generateId(): string;
 }
 
@@ -89,6 +111,10 @@ export function createUserFeedsHarness(): UserFeedsHarness {
           maxUserFeeds: options.maxUserFeeds ?? DEFAULT_MAX_USER_FEEDS,
           maxDailyArticles: options.maxDailyArticles ?? DEFAULT_MAX_DAILY_ARTICLES,
           refreshRateSeconds: options.refreshRateSeconds ?? DEFAULT_REFRESH_RATE_SECONDS,
+          isSupporter: options.isSupporter ?? false,
+          defaultMaxUserFeeds: options.defaultMaxUserFeeds ?? DEFAULT_MAX_USER_FEEDS,
+          defaultRefreshRateSeconds: options.defaultRefreshRateSeconds ?? DEFAULT_REFRESH_RATE_SECONDS,
+          defaultSupporterRefreshRateSeconds: options.defaultSupporterRefreshRateSeconds ?? 120,
         }),
         feedFetcherApiService: {} as UserFeedsServiceDeps["feedFetcherApiService"],
         feedHandlerService: createMockFeedHandlerService(options.feedHandler),
@@ -113,6 +139,33 @@ export function createUserFeedsHarness(): UserFeedsHarness {
           });
         },
 
+        async createFeedForUser(feedDiscordUserId: string, overrides = {}) {
+          return userFeedRepository.create({
+            title: overrides.title ?? "Test Feed",
+            url: overrides.url ?? `https://example.com/${generateTestId()}.xml`,
+            user: { discordUserId: feedDiscordUserId },
+          });
+        },
+
+        async createFeedWithConnections(input: CreateFeedWithConnectionsInput) {
+          const feedDiscordUserId = input.discordUserId ?? discordUserId;
+          const feed = await userFeedRepository.create({
+            title: input.title ?? "Test Feed",
+            url: input.url ?? `https://example.com/${generateTestId()}.xml`,
+            user: { discordUserId: feedDiscordUserId },
+          });
+
+          if (input.connections?.discordChannels) {
+            await userFeedRepository.updateById(feed.id, {
+              $set: {
+                "connections.discordChannels": input.connections.discordChannels,
+              },
+            });
+          }
+
+          return userFeedRepository.findById(feed.id) as Promise<IUserFeed>;
+        },
+
         async createMany(count) {
           const feeds: IUserFeed[] = [];
           for (let i = 0; i < count; i++) {
@@ -129,6 +182,14 @@ export function createUserFeedsHarness(): UserFeedsHarness {
 
         async createDisabled(code) {
           const feed = await this.createFeed({});
+          await userFeedRepository.updateById(feed.id, {
+            $set: { disabledCode: code },
+          });
+          return { ...feed, disabledCode: code };
+        },
+
+        async createDisabledForUser(feedDiscordUserId: string, code: UserFeedDisabledCode) {
+          const feed = await this.createFeedForUser(feedDiscordUserId, {});
           await userFeedRepository.updateById(feed.id, {
             $set: { disabledCode: code },
           });
@@ -158,8 +219,16 @@ export function createUserFeedsHarness(): UserFeedsHarness {
           await userFeedRepository.updateById(id, { $set: fields });
         },
 
+        async setCreatedAt(id, date) {
+          await userFeedRepository.updateById(id, { $set: { createdAt: date } });
+        },
+
         async findById(id) {
           return userFeedRepository.findById(id);
+        },
+
+        async bulkWrite(operations) {
+          return userFeedRepository.bulkWrite(operations);
         },
       };
     },

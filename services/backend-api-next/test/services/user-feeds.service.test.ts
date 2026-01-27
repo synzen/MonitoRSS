@@ -1,12 +1,16 @@
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert";
-import { UserFeedDisabledCode } from "../../src/repositories/shared/enums";
+import {
+  FeedConnectionDisabledCode,
+  UserFeedDisabledCode,
+} from "../../src/repositories/shared/enums";
 import { GetArticlesResponseRequestStatus } from "../../src/services/feed-handler/types";
 import {
   FeedLimitReachedException,
   SourceFeedNotFoundException,
 } from "../../src/shared/exceptions/user-feeds.exceptions";
 import { createUserFeedsHarness } from "../helpers/user-feeds.harness";
+import { createMockDiscordChannelConnection } from "../helpers/mock-factories";
 
 const TEST_MAX_USER_FEEDS = 5;
 const TEST_REFRESH_RATE_SECONDS = 600;
@@ -437,7 +441,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       assert.deepStrictEqual(result.blockingComparisons, ["author"]);
     });
 
-    it("merges formatOptions with existing", async () => {
+    it("replaces formatOptions entirely", async () => {
       const ctx = harness.createContext();
       const feed = await ctx.createFeed({});
       await ctx.setFields(feed.id, {
@@ -451,7 +455,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       assert.ok(result);
       assert.strictEqual(result.formatOptions?.dateFormat, "MM-DD-YYYY");
-      assert.strictEqual(result.formatOptions?.dateTimezone, "UTC");
+      assert.strictEqual(result.formatOptions?.dateTimezone, undefined);
     });
 
     it("disables feed manually", async () => {
@@ -499,16 +503,18 @@ describe("UserFeedsService", { concurrency: true }, () => {
       );
     });
 
-    it("returns null when feed not found", async () => {
+    it("throws error when feed not found", async () => {
       const ctx = harness.createContext();
       const fakeId = ctx.generateId();
 
-      const result = await ctx.service.updateFeedById(
-        { id: fakeId, discordUserId: ctx.discordUserId },
-        { title: "New Title" }
+      await assert.rejects(
+        () =>
+          ctx.service.updateFeedById(
+            { id: fakeId, discordUserId: ctx.discordUserId },
+            { title: "New Title" }
+          ),
+        /not found/
       );
-
-      assert.strictEqual(result, null);
     });
 
     it("updates URL and recalculates slotOffsetMs", async () => {
@@ -608,18 +614,387 @@ describe("UserFeedsService", { concurrency: true }, () => {
   });
 
   describe("enforceUserFeedLimit", () => {
-    it("re-enables feeds when user deletes feeds and is under limit", async () => {
-      const ctx = harness.createContext();
+    describe("supporter limits", () => {
+      it("disables feeds when supporter exceeds their limit", async () => {
+        const ctx = harness.createContext({
+          isSupporter: true,
+          maxUserFeeds: 2,
+        });
 
-      const feeds = await ctx.createMany(TEST_MAX_USER_FEEDS);
-      const disabledFeed = await ctx.createDisabled(
-        UserFeedDisabledCode.ExceededFeedLimit
-      );
+        const feed1 = await ctx.createFeed({ title: "Feed 1" });
+        const feed2 = await ctx.createFeed({ title: "Feed 2" });
+        const feed3 = await ctx.createFeed({ title: "Feed 3" });
 
-      await ctx.service.deleteFeedById(feeds[0]!.id);
+        await ctx.setCreatedAt(feed1.id, new Date("2020-01-01"));
+        await ctx.setCreatedAt(feed2.id, new Date("2021-01-01"));
+        await ctx.setCreatedAt(feed3.id, new Date("2022-01-01"));
 
-      const updated = await ctx.findById(disabledFeed.id);
-      assert.strictEqual(updated?.disabledCode, undefined);
+        await ctx.service.deleteFeedById(feed3.id);
+
+        const updated1 = await ctx.findById(feed1.id);
+        const updated2 = await ctx.findById(feed2.id);
+
+        assert.strictEqual(updated1?.disabledCode, undefined);
+        assert.strictEqual(updated2?.disabledCode, undefined);
+      });
+
+      it("disables oldest feeds first when over limit", async () => {
+        const ctx = harness.createContext({
+          isSupporter: true,
+          maxUserFeeds: 2,
+        });
+
+        const feed1 = await ctx.createFeed({ title: "Oldest Feed" });
+        const feed2 = await ctx.createFeed({ title: "Middle Feed" });
+        const feed3 = await ctx.createFeed({ title: "Newest Feed" });
+
+        await ctx.setCreatedAt(feed1.id, new Date("2020-01-01"));
+        await ctx.setCreatedAt(feed2.id, new Date("2021-01-01"));
+        await ctx.setCreatedAt(feed3.id, new Date("2022-01-01"));
+
+        await ctx.service.bulkDisable([feed1.id]);
+
+        const updated1 = await ctx.findById(feed1.id);
+        const updated2 = await ctx.findById(feed2.id);
+        const updated3 = await ctx.findById(feed3.id);
+
+        assert.strictEqual(updated1?.disabledCode, UserFeedDisabledCode.Manual);
+        assert.strictEqual(updated2?.disabledCode, undefined);
+        assert.strictEqual(updated3?.disabledCode, undefined);
+      });
+
+      it("does not disable feeds when at or under limit", async () => {
+        const ctx = harness.createContext({
+          isSupporter: true,
+          maxUserFeeds: 3,
+        });
+
+        const feed1 = await ctx.createFeed({ title: "Feed 1" });
+        const feed2 = await ctx.createFeed({ title: "Feed 2" });
+
+        await ctx.service.bulkDisable([feed1.id]);
+        await ctx.service.bulkEnable([feed1.id]);
+
+        const updated1 = await ctx.findById(feed1.id);
+        const updated2 = await ctx.findById(feed2.id);
+
+        assert.strictEqual(updated1?.disabledCode, undefined);
+        assert.strictEqual(updated2?.disabledCode, undefined);
+      });
+
+      it("does not enable manually disabled feeds when under limit", async () => {
+        const ctx = harness.createContext({
+          isSupporter: true,
+          maxUserFeeds: 5,
+        });
+
+        const feed1 = await ctx.createFeed({ title: "Feed 1" });
+        await ctx.setDisabledCode(feed1.id, UserFeedDisabledCode.Manual);
+
+        await ctx.service.bulkDisable([feed1.id]);
+
+        const updated = await ctx.findById(feed1.id);
+        assert.strictEqual(updated?.disabledCode, UserFeedDisabledCode.Manual);
+      });
+
+      it("does not enable feeds disabled for other reasons when under limit", async () => {
+        const ctx = harness.createContext({
+          isSupporter: true,
+          maxUserFeeds: 5,
+        });
+
+        const feed = await ctx.createFeed({ title: "Bad Format Feed" });
+        await ctx.setDisabledCode(feed.id, UserFeedDisabledCode.BadFormat);
+
+        await ctx.service.deleteFeedById((await ctx.createFeed({})).id);
+
+        const updated = await ctx.findById(feed.id);
+        assert.strictEqual(updated?.disabledCode, UserFeedDisabledCode.BadFormat);
+      });
+
+      it("re-enables ExceededFeedLimit feeds when deleting brings user under limit", async () => {
+        const ctx = harness.createContext({
+          isSupporter: true,
+          maxUserFeeds: TEST_MAX_USER_FEEDS,
+        });
+
+        const feeds = await ctx.createMany(TEST_MAX_USER_FEEDS);
+        const disabledFeed = await ctx.createDisabled(
+          UserFeedDisabledCode.ExceededFeedLimit
+        );
+
+        await ctx.service.deleteFeedById(feeds[0]!.id);
+
+        const updated = await ctx.findById(disabledFeed.id);
+        assert.strictEqual(updated?.disabledCode, undefined);
+      });
+
+      it("re-enables newest disabled feeds first when under limit", async () => {
+        const ctx = harness.createContext({
+          isSupporter: true,
+          maxUserFeeds: 2,
+        });
+
+        const oldDisabled = await ctx.createDisabled(UserFeedDisabledCode.ExceededFeedLimit);
+        const newDisabled = await ctx.createDisabled(UserFeedDisabledCode.ExceededFeedLimit);
+
+        await ctx.setCreatedAt(oldDisabled.id, new Date("2020-01-01"));
+        await ctx.setCreatedAt(newDisabled.id, new Date("2022-01-01"));
+
+        await ctx.service.bulkEnable([oldDisabled.id]);
+
+        const updatedOld = await ctx.findById(oldDisabled.id);
+        const updatedNew = await ctx.findById(newDisabled.id);
+
+        assert.strictEqual(updatedOld?.disabledCode, undefined);
+        assert.strictEqual(updatedNew?.disabledCode, undefined);
+      });
+    });
+
+    describe("non-supporter (default) limits", () => {
+      it("disables feeds when non-supporter exceeds default limit", async () => {
+        const ctx = harness.createContext({
+          isSupporter: false,
+          maxUserFeeds: 2,
+          defaultMaxUserFeeds: 2,
+        });
+
+        const feed1 = await ctx.createFeed({ title: "Feed 1" });
+        const feed2 = await ctx.createFeed({ title: "Feed 2" });
+        const feed3 = await ctx.createFeed({ title: "Feed 3" });
+
+        await ctx.setCreatedAt(feed1.id, new Date("2020-01-01"));
+        await ctx.setCreatedAt(feed2.id, new Date("2021-01-01"));
+        await ctx.setCreatedAt(feed3.id, new Date("2022-01-01"));
+
+        await ctx.service.bulkDisable([feed3.id]);
+        await ctx.service.bulkEnable([feed3.id]);
+
+        const updated1 = await ctx.findById(feed1.id);
+        const updated2 = await ctx.findById(feed2.id);
+        const updated3 = await ctx.findById(feed3.id);
+
+        assert.strictEqual(updated1?.disabledCode, UserFeedDisabledCode.ExceededFeedLimit);
+        assert.strictEqual(updated2?.disabledCode, undefined);
+        assert.strictEqual(updated3?.disabledCode, undefined);
+      });
+
+      it("enables feeds when non-supporter is under default limit", async () => {
+        const ctx = harness.createContext({
+          isSupporter: false,
+          maxUserFeeds: 3,
+          defaultMaxUserFeeds: 3,
+        });
+
+        const feed1 = await ctx.createFeed({ title: "Enabled Feed" });
+        const feed2 = await ctx.createDisabled(UserFeedDisabledCode.ExceededFeedLimit);
+        const feed3 = await ctx.createDisabled(UserFeedDisabledCode.ExceededFeedLimit);
+
+        await ctx.setCreatedAt(feed2.id, new Date("2020-01-01"));
+        await ctx.setCreatedAt(feed3.id, new Date("2022-01-01"));
+
+        await ctx.service.deleteFeedById(feed1.id);
+
+        const updated2 = await ctx.findById(feed2.id);
+        const updated3 = await ctx.findById(feed3.id);
+
+        assert.strictEqual(updated2?.disabledCode, undefined);
+        assert.strictEqual(updated3?.disabledCode, undefined);
+      });
+
+      it("does not enable feeds disabled for other reasons when under limit", async () => {
+        const ctx = harness.createContext({
+          isSupporter: false,
+          maxUserFeeds: 5,
+          defaultMaxUserFeeds: 5,
+        });
+
+        const feed = await ctx.createFeed({});
+        await ctx.setDisabledCode(feed.id, UserFeedDisabledCode.FailedRequests);
+
+        await ctx.service.deleteFeedById((await ctx.createFeed({})).id);
+
+        const updated = await ctx.findById(feed.id);
+        assert.strictEqual(updated?.disabledCode, UserFeedDisabledCode.FailedRequests);
+      });
+
+      it("treats manually disabled feeds as not counting against limit", async () => {
+        const ctx = harness.createContext({
+          isSupporter: false,
+          maxUserFeeds: 2,
+          defaultMaxUserFeeds: 2,
+        });
+
+        const feed1 = await ctx.createFeed({ title: "Feed 1" });
+        const feed2 = await ctx.createFeed({ title: "Feed 2" });
+        await ctx.setDisabledCode(feed2.id, UserFeedDisabledCode.Manual);
+        const feed3 = await ctx.createFeed({ title: "Feed 3" });
+
+        await ctx.service.bulkDisable([feed3.id]);
+        await ctx.service.bulkEnable([feed3.id]);
+
+        const updated1 = await ctx.findById(feed1.id);
+        const updated2 = await ctx.findById(feed2.id);
+        const updated3 = await ctx.findById(feed3.id);
+
+        assert.strictEqual(updated1?.disabledCode, undefined);
+        assert.strictEqual(updated2?.disabledCode, UserFeedDisabledCode.Manual);
+        assert.strictEqual(updated3?.disabledCode, undefined);
+      });
+
+      it("does not enable manually disabled feeds when under limit", async () => {
+        const ctx = harness.createContext({
+          isSupporter: false,
+          maxUserFeeds: 5,
+          defaultMaxUserFeeds: 5,
+        });
+
+        const feed = await ctx.createDisabled(UserFeedDisabledCode.Manual);
+
+        await ctx.service.deleteFeedById((await ctx.createFeed({})).id);
+
+        const updated = await ctx.findById(feed.id);
+        assert.strictEqual(updated?.disabledCode, UserFeedDisabledCode.Manual);
+      });
+    });
+
+    describe("integration through various methods", () => {
+      it("enforces limits after updateFeedById when disabledCode changes", async () => {
+        const ctx = harness.createContext({
+          isSupporter: false,
+          maxUserFeeds: 2,
+          defaultMaxUserFeeds: 2,
+        });
+
+        const feed1 = await ctx.createFeed({ title: "Feed 1" });
+        const feed2 = await ctx.createFeed({ title: "Feed 2" });
+        const feed3 = await ctx.createDisabled(UserFeedDisabledCode.ExceededFeedLimit);
+
+        await ctx.setCreatedAt(feed1.id, new Date("2020-01-01"));
+        await ctx.setCreatedAt(feed2.id, new Date("2021-01-01"));
+        await ctx.setCreatedAt(feed3.id, new Date("2022-01-01"));
+
+        await ctx.service.updateFeedById(
+          { id: feed2.id, discordUserId: ctx.discordUserId },
+          { disabledCode: UserFeedDisabledCode.Manual }
+        );
+
+        const updated3 = await ctx.findById(feed3.id);
+        assert.strictEqual(updated3?.disabledCode, undefined);
+      });
+
+      it("enforces limits after deleteFeedById", async () => {
+        const ctx = harness.createContext({
+          isSupporter: false,
+          maxUserFeeds: 2,
+          defaultMaxUserFeeds: 2,
+        });
+
+        const feed1 = await ctx.createFeed({ title: "Feed 1" });
+        const feed2 = await ctx.createFeed({ title: "Feed 2" });
+        const feed3 = await ctx.createDisabled(UserFeedDisabledCode.ExceededFeedLimit);
+
+        await ctx.service.deleteFeedById(feed1.id);
+
+        const updated3 = await ctx.findById(feed3.id);
+        assert.strictEqual(updated3?.disabledCode, undefined);
+      });
+
+      it("enforces limits after bulkDelete", async () => {
+        const ctx = harness.createContext({
+          isSupporter: false,
+          maxUserFeeds: 2,
+          defaultMaxUserFeeds: 2,
+        });
+
+        const feed1 = await ctx.createFeed({ title: "Feed 1" });
+        const feed2 = await ctx.createFeed({ title: "Feed 2" });
+        const feed3 = await ctx.createDisabled(UserFeedDisabledCode.ExceededFeedLimit);
+
+        await ctx.service.bulkDelete([feed1.id]);
+
+        const updated3 = await ctx.findById(feed3.id);
+        assert.strictEqual(updated3?.disabledCode, undefined);
+      });
+
+      it("enforces limits after bulkDisable", async () => {
+        const ctx = harness.createContext({
+          isSupporter: false,
+          maxUserFeeds: 2,
+          defaultMaxUserFeeds: 2,
+        });
+
+        const feed1 = await ctx.createFeed({ title: "Feed 1" });
+        const feed2 = await ctx.createFeed({ title: "Feed 2" });
+        const feed3 = await ctx.createDisabled(UserFeedDisabledCode.ExceededFeedLimit);
+
+        await ctx.setCreatedAt(feed3.id, new Date("2022-01-01"));
+
+        await ctx.service.bulkDisable([feed1.id]);
+
+        const updated3 = await ctx.findById(feed3.id);
+        assert.strictEqual(updated3?.disabledCode, undefined);
+      });
+
+      it("enforces limits after bulkEnable", async () => {
+        const ctx = harness.createContext({
+          isSupporter: false,
+          maxUserFeeds: 2,
+          defaultMaxUserFeeds: 2,
+        });
+
+        const feed1 = await ctx.createFeed({ title: "Feed 1" });
+        const feed2 = await ctx.createFeed({ title: "Feed 2" });
+        const feed3 = await ctx.createDisabled(UserFeedDisabledCode.Manual);
+
+        await ctx.setCreatedAt(feed1.id, new Date("2020-01-01"));
+        await ctx.setCreatedAt(feed2.id, new Date("2021-01-01"));
+        await ctx.setCreatedAt(feed3.id, new Date("2022-01-01"));
+
+        await ctx.service.bulkEnable([feed3.id]);
+
+        const updated1 = await ctx.findById(feed1.id);
+        assert.strictEqual(updated1?.disabledCode, UserFeedDisabledCode.ExceededFeedLimit);
+      });
+    });
+
+    describe("refresh rate enforcement", () => {
+      it("unsets userRefreshRateSeconds when non-supporter has supporter rate set", async () => {
+        const supporterRefreshRate = 120;
+        const ctx = harness.createContext({
+          isSupporter: false,
+          maxUserFeeds: 5,
+          defaultMaxUserFeeds: 5,
+          refreshRateSeconds: 600,
+          defaultSupporterRefreshRateSeconds: supporterRefreshRate,
+        });
+
+        const feed = await ctx.createFeed({ title: "Feed 1" });
+        await ctx.setFields(feed.id, { userRefreshRateSeconds: supporterRefreshRate });
+
+        await ctx.service.deleteFeedById((await ctx.createFeed({})).id);
+
+        const updated = await ctx.findById(feed.id);
+        assert.strictEqual(updated?.userRefreshRateSeconds, undefined);
+      });
+
+      it("does not unset userRefreshRateSeconds for supporter at supporter rate", async () => {
+        const supporterRefreshRate = 120;
+        const ctx = harness.createContext({
+          isSupporter: true,
+          maxUserFeeds: 5,
+          refreshRateSeconds: supporterRefreshRate,
+          defaultSupporterRefreshRateSeconds: supporterRefreshRate,
+        });
+
+        const feed = await ctx.createFeed({ title: "Feed 1" });
+        await ctx.setFields(feed.id, { userRefreshRateSeconds: supporterRefreshRate });
+
+        await ctx.service.deleteFeedById((await ctx.createFeed({})).id);
+
+        const updated = await ctx.findById(feed.id);
+        assert.strictEqual(updated?.userRefreshRateSeconds, supporterRefreshRate);
+      });
     });
   });
 
@@ -657,6 +1032,207 @@ describe("UserFeedsService", { concurrency: true }, () => {
       const ctx = harness.createContext();
 
       await assert.rejects(() => ctx.service.getFeedById("not-a-valid-id"));
+    });
+  });
+
+  describe("getEnforceWebhookWrites", () => {
+    it("disables webhooks if the user is not a supporter", async () => {
+      const ctx = harness.createContext();
+      const secondDiscordUserId = ctx.discordUserId + "2";
+      const thirdDiscordUserId = ctx.discordUserId + "3";
+
+      const feed1 = await ctx.createFeedWithConnections({
+        discordUserId: ctx.discordUserId,
+        title: "title1",
+        connections: {
+          discordChannels: [
+            {
+              ...createMockDiscordChannelConnection({
+                details: {
+                  webhook: {
+                    id: "1",
+                    guildId: "1",
+                    token: "1",
+                  },
+                },
+              }),
+              disabledCode: FeedConnectionDisabledCode.MissingMedium,
+            },
+            {
+              ...createMockDiscordChannelConnection({
+                details: {
+                  webhook: {
+                    id: "1",
+                    guildId: "1",
+                    token: "1",
+                  },
+                },
+              }),
+            },
+            {
+              ...createMockDiscordChannelConnection(),
+            },
+          ],
+        },
+      });
+
+      const feed2 = await ctx.createFeedWithConnections({
+        discordUserId: secondDiscordUserId,
+        title: "title2",
+        connections: {
+          discordChannels: [
+            {
+              ...createMockDiscordChannelConnection({
+                details: {
+                  webhook: {
+                    id: "1",
+                    guildId: "1",
+                    token: "1",
+                  },
+                },
+              }),
+            },
+          ],
+        },
+      });
+
+      const feed3 = await ctx.createFeedWithConnections({
+        discordUserId: thirdDiscordUserId,
+        title: "title3",
+        connections: {
+          discordChannels: [
+            {
+              ...createMockDiscordChannelConnection({
+                details: {
+                  webhook: {
+                    id: "1",
+                    guildId: "1",
+                    token: "1",
+                  },
+                },
+              }),
+            },
+          ],
+        },
+      });
+
+      const writes = ctx.service.getEnforceWebhookWrites({
+        enforcementType: "all-users",
+        supporterDiscordUserIds: [secondDiscordUserId],
+      });
+
+      await ctx.bulkWrite(writes);
+
+      const updated1 = await ctx.findById(feed1.id);
+      const updated2 = await ctx.findById(feed2.id);
+      const updated3 = await ctx.findById(feed3.id);
+
+      assert.ok(updated1);
+      assert.ok(updated2);
+      assert.ok(updated3);
+
+      assert.strictEqual(
+        updated1.connections?.discordChannels[0]?.disabledCode,
+        FeedConnectionDisabledCode.NotPaidSubscriber
+      );
+      assert.strictEqual(
+        updated1.connections?.discordChannels[1]?.disabledCode,
+        FeedConnectionDisabledCode.NotPaidSubscriber
+      );
+      assert.strictEqual(
+        updated1.connections?.discordChannels[2]?.disabledCode,
+        FeedConnectionDisabledCode.NotPaidSubscriber
+      );
+
+      assert.strictEqual(
+        updated2.connections?.discordChannels[0]?.disabledCode,
+        undefined
+      );
+
+      assert.strictEqual(
+        updated3.connections?.discordChannels[0]?.disabledCode,
+        FeedConnectionDisabledCode.NotPaidSubscriber
+      );
+    });
+
+    it("does not disable manually-disabled webhook connections if user is not a supporter", async () => {
+      const ctx = harness.createContext();
+
+      const feed = await ctx.createFeedWithConnections({
+        discordUserId: ctx.discordUserId,
+        title: "title1",
+        connections: {
+          discordChannels: [
+            {
+              ...createMockDiscordChannelConnection({
+                disabledCode: FeedConnectionDisabledCode.Manual,
+                details: {
+                  webhook: {
+                    id: "1",
+                    guildId: "1",
+                    token: "1",
+                  },
+                },
+              }),
+            },
+          ],
+        },
+      });
+
+      const writes = ctx.service.getEnforceWebhookWrites({
+        enforcementType: "all-users",
+        supporterDiscordUserIds: [],
+      });
+
+      await ctx.bulkWrite(writes);
+
+      const updated = await ctx.findById(feed.id);
+
+      assert.ok(updated);
+      assert.strictEqual(
+        updated.connections?.discordChannels[0]?.disabledCode,
+        FeedConnectionDisabledCode.Manual
+      );
+    });
+
+    it("enables webhooks if the user is a supporter", async () => {
+      const ctx = harness.createContext();
+
+      const feed = await ctx.createFeedWithConnections({
+        discordUserId: ctx.discordUserId,
+        title: "title1",
+        connections: {
+          discordChannels: [
+            {
+              ...createMockDiscordChannelConnection({
+                disabledCode: FeedConnectionDisabledCode.NotPaidSubscriber,
+                details: {
+                  webhook: {
+                    id: "1",
+                    guildId: "1",
+                    token: "1",
+                  },
+                },
+              }),
+            },
+          ],
+        },
+      });
+
+      const writes = ctx.service.getEnforceWebhookWrites({
+        enforcementType: "all-users",
+        supporterDiscordUserIds: [ctx.discordUserId],
+      });
+
+      await ctx.bulkWrite(writes);
+
+      const updated = await ctx.findById(feed.id);
+
+      assert.ok(updated);
+      assert.strictEqual(
+        updated.connections?.discordChannels[0]?.disabledCode,
+        undefined
+      );
     });
   });
 });

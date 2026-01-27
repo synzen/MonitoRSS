@@ -13,6 +13,10 @@ export class StandardException extends Error {
       super();
     }
 
-    this.subErrors = options?.subErrors ?? [];
+    if (options?.subErrors) {
+      this.subErrors = options.subErrors;
+    } else {
+      this.subErrors = [];
+    }
   }
 }

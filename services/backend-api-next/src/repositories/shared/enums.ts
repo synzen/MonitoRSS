@@ -34,6 +34,11 @@ export enum LegacySubscriptionProductKey {
 }
 
 // Feed connection enums
+export enum FeedConnectionType {
+  DiscordChannel = "DISCORD_CHANNEL",
+  DiscordWebhook = "DISCORD_WEBHOOK",
+}
+
 export enum FeedConnectionDisabledCode {
   Manual = "MANUAL",
   BadFormat = "BAD_FORMAT",

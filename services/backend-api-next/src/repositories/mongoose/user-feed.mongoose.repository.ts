@@ -4,6 +4,7 @@ import {
   type Connection,
   type Model,
   type InferSchemaType,
+  type PipelineStage,
 } from "mongoose";
 import type {
   IUserFeed,
@@ -12,9 +13,17 @@ import type {
   UserFeedForNotification,
   AddConnectionToInviteOperation,
   RemoveConnectionsFromInvitesInput,
+  UserFeedBulkWriteOperation,
+  UserFeedListingInput,
+  UserFeedListItem,
+} from "../interfaces/user-feed.types";
+import {
+  UserFeedComputedStatus,
 } from "../interfaces/user-feed.types";
 import type { IDiscordChannelConnection, IConnectionDetails } from "../interfaces/feed-connection.types";
 import {
+  FeedConnectionDisabledCode,
+  FeedConnectionType,
   UserFeedDisabledCode,
   UserFeedHealthStatus,
   UserFeedManagerInviteType,
@@ -418,8 +427,8 @@ export class UserFeedMongooseRepository
     return this.toEntity(doc as UserFeedDoc & { _id: Types.ObjectId });
   }
 
-  async countByOwnership(discordUserId: string): Promise<number> {
-    return this.model.countDocuments({
+  private getOwnershipFilter(discordUserId: string) {
+    return {
       $or: [
         { "user.discordUserId": discordUserId },
         {
@@ -431,7 +440,196 @@ export class UserFeedMongooseRepository
           },
         },
       ],
-    });
+    };
+  }
+
+  private escapeRegExp(string: string): string {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  private getSearchFilter(search: string) {
+    return {
+      $or: [
+        { title: new RegExp(this.escapeRegExp(search), "i") },
+        { url: new RegExp(this.escapeRegExp(search), "i") },
+      ],
+    };
+  }
+
+  private buildListingPipeline(input: UserFeedListingInput): PipelineStage[] {
+    const { discordUserId, search, filters } = input;
+
+    const badUserFeedCodes = Object.values(UserFeedDisabledCode).filter(
+      (c) => c !== UserFeedDisabledCode.Manual
+    );
+    const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
+      (c) => c !== FeedConnectionDisabledCode.Manual
+    );
+    const feedConnectionTypeKeys = Object.values(FeedConnectionType);
+
+    const pipeline: PipelineStage[] = [
+      { $match: this.getOwnershipFilter(discordUserId) },
+      {
+        $addFields: {
+          ownedByUser: { $eq: ["$user.discordUserId", discordUserId] },
+          computedStatus: {
+            $cond: {
+              if: {
+                $or: [
+                  ...feedConnectionTypeKeys.map((key) => ({
+                    $anyElementTrue: {
+                      $map: {
+                        input: `$connections.${key}`,
+                        as: "c",
+                        in: { $in: [`$$c.disabledCode`, badConnectionCodes] },
+                      },
+                    },
+                  })),
+                  { $in: ["$disabledCode", badUserFeedCodes] },
+                ],
+              },
+              then: UserFeedComputedStatus.RequiresAttention,
+              else: {
+                $cond: {
+                  if: { $eq: ["$disabledCode", UserFeedDisabledCode.Manual] },
+                  then: UserFeedComputedStatus.ManuallyDisabled,
+                  else: {
+                    $cond: {
+                      if: { $eq: ["$healthStatus", UserFeedHealthStatus.Failing] },
+                      then: UserFeedComputedStatus.Retrying,
+                      else: UserFeedComputedStatus.Ok,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    ];
+
+    const $match: Record<string, unknown> = {};
+
+    if (filters?.ownedByUser !== undefined) {
+      $match.ownedByUser = filters.ownedByUser;
+    }
+
+    if (filters?.computedStatuses?.length) {
+      $match.computedStatus = { $in: filters.computedStatuses };
+    }
+
+    if (search) {
+      $match.$or = this.getSearchFilter(search).$or;
+    }
+
+    if (filters?.disabledCodes) {
+      $match.disabledCode = {
+        $in: filters.disabledCodes.map((c) => c || null),
+      };
+    }
+
+    if (Object.keys($match).length) {
+      pipeline.push({ $match });
+    }
+
+    if (filters?.connectionDisabledCodes) {
+      const codesToSearchFor = filters.connectionDisabledCodes.map((c) =>
+        c === "" ? null : c
+      );
+
+      const $or: Record<string, unknown>[] = Object.values(FeedConnectionType).map((key) => ({
+        [`connections.${key}.disabledCode`]: { $in: codesToSearchFor },
+      }));
+
+      if (codesToSearchFor.includes(null)) {
+        $or.push({ [`connections.0`]: { $exists: false } });
+      }
+
+      pipeline.push({ $match: { $or } } as PipelineStage);
+    }
+
+    return pipeline;
+  }
+
+  async getUserFeedsListing(input: UserFeedListingInput): Promise<UserFeedListItem[]> {
+    const { limit = 10, offset = 0, sort } = input;
+    const useSort = sort || "-createdAt";
+
+    const sortSplit = useSort.split("-");
+    const sortDirection = useSort.startsWith("-") ? -1 : 1;
+    const sortKey = sortSplit[sortSplit.length - 1] as string;
+
+    const pipeline = this.buildListingPipeline(input);
+
+    pipeline.push(
+      {
+        $addFields: {
+          refreshRateSeconds: {
+            $ifNull: ["$userRefreshRateSeconds", "$refreshRateSeconds"],
+          },
+        },
+      },
+      { $sort: { [sortKey]: sortDirection } },
+      { $skip: offset },
+      { $limit: limit },
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          url: 1,
+          inputUrl: 1,
+          healthStatus: 1,
+          disabledCode: 1,
+          createdAt: 1,
+          computedStatus: 1,
+          legacyFeedId: 1,
+          ownedByUser: 1,
+          refreshRateSeconds: 1,
+        },
+      }
+    );
+
+    const results = await this.model.aggregate<{
+      _id: Types.ObjectId;
+      title: string;
+      url: string;
+      inputUrl?: string;
+      healthStatus: string;
+      disabledCode?: UserFeedDisabledCode;
+      createdAt: Date;
+      computedStatus: UserFeedComputedStatus;
+      legacyFeedId?: Types.ObjectId;
+      ownedByUser: boolean;
+      refreshRateSeconds?: number;
+    }>(pipeline);
+
+    return results.map((r) => ({
+      id: r._id.toString(),
+      title: r.title,
+      url: r.url,
+      inputUrl: r.inputUrl,
+      healthStatus: r.healthStatus,
+      disabledCode: r.disabledCode,
+      createdAt: r.createdAt,
+      computedStatus: r.computedStatus,
+      legacyFeedId: r.legacyFeedId?.toString(),
+      ownedByUser: r.ownedByUser,
+      refreshRateSeconds: r.refreshRateSeconds,
+    }));
+  }
+
+  async getUserFeedsCount(
+    input: Omit<UserFeedListingInput, "limit" | "offset" | "sort">
+  ): Promise<number> {
+    const pipeline = this.buildListingPipeline(input as UserFeedListingInput);
+    pipeline.push({ $count: "count" });
+
+    const results = await this.model.aggregate<{ count: number }>(pipeline);
+    return results[0]?.count || 0;
+  }
+
+  async countByOwnership(discordUserId: string): Promise<number> {
+    return this.model.countDocuments(this.getOwnershipFilter(discordUserId));
   }
 
   async countByOwnershipExcludingDisabled(
@@ -455,17 +653,7 @@ export class UserFeedMongooseRepository
     const doc = await this.model
       .findOne({
         _id: this.stringToObjectId(id),
-        $or: [
-          { "user.discordUserId": discordUserId },
-          {
-            "shareManageOptions.invites": {
-              $elemMatch: {
-                discordUserId,
-                status: UserFeedManagerStatus.Accepted,
-              },
-            },
-          },
-        ],
+        ...this.getOwnershipFilter(discordUserId),
       })
       .lean();
 
@@ -497,6 +685,65 @@ export class UserFeedMongooseRepository
   ): Promise<IUserFeed | null> {
     const doc = await this.model
       .findByIdAndUpdate(this.stringToObjectId(id), update, { new: true })
+      .lean();
+
+    if (!doc) {
+      return null;
+    }
+
+    return this.toEntity(doc as UserFeedDoc & { _id: Types.ObjectId });
+  }
+
+  async findOneAndUpdate(
+    filter: Record<string, unknown>,
+    update: Record<string, unknown>,
+    options?: { new?: boolean }
+  ): Promise<IUserFeed | null> {
+    const doc = await this.model
+      .findOneAndUpdate(filter, update, { new: options?.new ?? false })
+      .lean();
+
+    if (!doc) {
+      return null;
+    }
+
+    return this.toEntity(doc as UserFeedDoc & { _id: Types.ObjectId });
+  }
+
+  async updateWithConnectionFilter(
+    feedId: string,
+    connectionId: string,
+    update: Record<string, unknown>
+  ): Promise<IUserFeed | null> {
+    const doc = await this.model
+      .findOneAndUpdate(
+        {
+          _id: this.stringToObjectId(feedId),
+          "connections.discordChannels.id": this.stringToObjectId(connectionId),
+        },
+        update,
+        { new: true }
+      )
+      .lean();
+
+    if (!doc) {
+      return null;
+    }
+
+    return this.toEntity(doc as UserFeedDoc & { _id: Types.ObjectId });
+  }
+
+  async countByWebhookId(webhookId: string): Promise<number> {
+    return this.model.countDocuments({
+      "connections.discordChannels.details.webhook.id": webhookId,
+    });
+  }
+
+  async findOneByWebhookId(webhookId: string): Promise<IUserFeed | null> {
+    const doc = await this.model
+      .findOne({
+        "connections.discordChannels.details.webhook.id": webhookId,
+      })
       .lean();
 
     if (!doc) {
@@ -541,7 +788,29 @@ export class UserFeedMongooseRepository
   }
 
   async aggregate<T>(pipeline: Record<string, unknown>[]): Promise<T[]> {
-    return this.model.aggregate(pipeline);
+    return this.model.aggregate(
+      pipeline as unknown as Parameters<typeof this.model.aggregate>[0]
+    );
+  }
+
+  async *aggregateCursor<T>(
+    pipeline: Record<string, unknown>[]
+  ): AsyncIterable<T> {
+    const cursor = this.model
+      .aggregate(pipeline as unknown as Parameters<typeof this.model.aggregate>[0])
+      .cursor();
+    for await (const doc of cursor) {
+      yield doc as T;
+    }
+  }
+
+  async bulkWrite(operations: UserFeedBulkWriteOperation[]): Promise<void> {
+    if (operations.length === 0) {
+      return;
+    }
+    await this.model.bulkWrite(
+      operations as Parameters<typeof this.model.bulkWrite>[0]
+    );
   }
 
   async deleteAll(): Promise<void> {

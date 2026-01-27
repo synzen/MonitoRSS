@@ -145,6 +145,50 @@ export interface CreateUserFeedInput {
   };
 }
 
+export interface UserFeedBulkWriteOperation {
+  updateMany: {
+    filter: Record<string, unknown>;
+    update: Record<string, unknown>;
+  };
+}
+
+export enum UserFeedComputedStatus {
+  Ok = "ok",
+  RequiresAttention = "requires-attention",
+  ManuallyDisabled = "manually-disabled",
+  Retrying = "retrying",
+}
+
+export interface UserFeedListingFilters {
+  disabledCodes?: (UserFeedDisabledCode | null)[];
+  connectionDisabledCodes?: (string | null)[];
+  computedStatuses?: UserFeedComputedStatus[];
+  ownedByUser?: boolean;
+}
+
+export interface UserFeedListingInput {
+  discordUserId: string;
+  limit?: number;
+  offset?: number;
+  search?: string;
+  sort?: string;
+  filters?: UserFeedListingFilters;
+}
+
+export interface UserFeedListItem {
+  id: string;
+  title: string;
+  url: string;
+  inputUrl?: string;
+  healthStatus: string;
+  disabledCode?: UserFeedDisabledCode;
+  createdAt: Date;
+  computedStatus: UserFeedComputedStatus;
+  legacyFeedId?: string;
+  ownedByUser: boolean;
+  refreshRateSeconds?: number;
+}
+
 export interface IUserFeedRepository {
   create(input: CreateUserFeedInput): Promise<IUserFeed>;
   findById(id: string): Promise<IUserFeed | null>;
@@ -157,6 +201,26 @@ export interface IUserFeedRepository {
   removeConnectionsFromInvites(
     input: RemoveConnectionsFromInvitesInput
   ): Promise<void>;
+
+  findOneAndUpdate(
+    filter: Record<string, unknown>,
+    update: Record<string, unknown>,
+    options?: { new?: boolean }
+  ): Promise<IUserFeed | null>;
+
+  updateWithConnectionFilter(
+    feedId: string,
+    connectionId: string,
+    update: Record<string, unknown>
+  ): Promise<IUserFeed | null>;
+
+  countByWebhookId(webhookId: string): Promise<number>;
+
+  findOneByWebhookId(webhookId: string): Promise<IUserFeed | null>;
+
+  // Listing methods
+  getUserFeedsListing(input: UserFeedListingInput): Promise<UserFeedListItem[]>;
+  getUserFeedsCount(input: Omit<UserFeedListingInput, "limit" | "offset" | "sort">): Promise<number>;
 
   // CRUD methods for UserFeedsService
   countByOwnership(discordUserId: string): Promise<number>;
@@ -181,6 +245,8 @@ export interface IUserFeedRepository {
   ): Promise<number>;
   findByIds(ids: string[]): Promise<IUserFeed[]>;
   aggregate<T>(pipeline: Record<string, unknown>[]): Promise<T[]>;
+  aggregateCursor<T>(pipeline: Record<string, unknown>[]): AsyncIterable<T>;
+  bulkWrite(operations: UserFeedBulkWriteOperation[]): Promise<void>;
 
   // Migration methods
   iterateFeedsMissingSlotOffset(): AsyncIterable<UserFeedForSlotOffsetMigration>;

@@ -14,8 +14,35 @@ import type { FeedHandlerService } from "../feed-handler/feed-handler.service";
 import type { SupportersService } from "../supporters/supporters.service";
 import type { UsersService } from "../users/users.service";
 
+import type { IDiscordChannelConnection } from "../../repositories/interfaces/feed-connection.types";
+import type {
+  CreateDiscordChannelConnectionInput,
+  UpdateDiscordChannelConnectionInput,
+  CloneConnectionInput,
+  CopySettingsInput,
+} from "../feed-connections-discord-channels/types";
+
 export interface IFeedConnectionsDiscordChannelsService {
   deleteConnection(feedId: string, connectionId: string): Promise<void>;
+  createDiscordChannelConnection(
+    input: CreateDiscordChannelConnectionInput
+  ): Promise<IDiscordChannelConnection>;
+  updateDiscordChannelConnection(
+    feedId: string,
+    connectionId: string,
+    input: UpdateDiscordChannelConnectionInput
+  ): Promise<IDiscordChannelConnection>;
+  cloneConnection(
+    connection: IDiscordChannelConnection,
+    input: CloneConnectionInput,
+    userAccessToken: string,
+    userDiscordUserId: string
+  ): Promise<{ ids: string[] }>;
+  copySettings(
+    userFeed: IUserFeed,
+    sourceConnection: IDiscordChannelConnection,
+    input: CopySettingsInput
+  ): Promise<void>;
 }
 
 export interface UserFeedsServiceDeps {
