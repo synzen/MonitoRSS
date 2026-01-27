@@ -1921,7 +1921,7 @@ export class UserFeedsService {
         const numberOfFeedsToEnable = defaultMaxUserFeeds - enabledFeedCount;
         // Enable the newest ones first
         const toEnable = disabledFeedIds.slice(
-          disabledFeedIds.length - numberOfFeedsToEnable
+          Math.max(0, disabledFeedIds.length - numberOfFeedsToEnable)
         );
 
         arrayOfFeedIdsToEnable.push(...toEnable);
@@ -2083,7 +2083,7 @@ export class UserFeedsService {
         const numberOfFeedsToEnable = limit - enabledFeedCount;
         // Enable the newest ones first
         const toEnable = disabledFeedIds.slice(
-          disabledFeedIds.length - numberOfFeedsToEnable
+          Math.max(0, disabledFeedIds.length - numberOfFeedsToEnable)
         );
 
         arrayOfFeedIdsToEnable.push(...toEnable);
@@ -2181,7 +2181,7 @@ export class UserFeedsService {
       bulkWriteDocs.push({
         updateMany: {
           filter: {
-            userRefreshRateSeconds: refreshRateSeconds,
+            userRefreshRateSeconds: supporterRefreshRate,
             "user.discordUserId": discordUserId,
           },
           update: {
