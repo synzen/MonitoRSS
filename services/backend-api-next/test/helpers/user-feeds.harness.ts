@@ -57,14 +57,22 @@ export interface TestContext {
   userId: string;
   service: UserFeedsService;
   createFeed(overrides?: { title?: string; url?: string }): Promise<IUserFeed>;
-  createFeedForUser(discordUserId: string, overrides?: { title?: string; url?: string }): Promise<IUserFeed>;
-  createFeedWithConnections(input: CreateFeedWithConnectionsInput): Promise<IUserFeed>;
+  createFeedForUser(
+    discordUserId: string,
+    overrides?: { title?: string; url?: string },
+  ): Promise<IUserFeed>;
+  createFeedWithConnections(
+    input: CreateFeedWithConnectionsInput,
+  ): Promise<IUserFeed>;
   createMany(count: number): Promise<IUserFeed[]>;
   createDisabled(code: UserFeedDisabledCode): Promise<IUserFeed>;
-  createDisabledForUser(discordUserId: string, code: UserFeedDisabledCode): Promise<IUserFeed>;
+  createDisabledForUser(
+    discordUserId: string,
+    code: UserFeedDisabledCode,
+  ): Promise<IUserFeed>;
   createSharedFeed(
     ownerDiscordUserId: string,
-    status?: UserFeedManagerStatus
+    status?: UserFeedManagerStatus,
   ): Promise<IUserFeed>;
   setDisabledCode(id: string, code: UserFeedDisabledCode | null): Promise<void>;
   setFields(id: string, fields: Record<string, unknown>): Promise<void>;
@@ -88,7 +96,9 @@ export function createUserFeedsHarness(): UserFeedsHarness {
   return {
     async setup() {
       testContext = await createServiceTestContext();
-      userFeedRepository = new UserFeedMongooseRepository(testContext.connection);
+      userFeedRepository = new UserFeedMongooseRepository(
+        testContext.connection,
+      );
       userRepository = new UserMongooseRepository(testContext.connection);
     },
 
@@ -109,14 +119,20 @@ export function createUserFeedsHarness(): UserFeedsHarness {
         feedsService: createMockFeedsService(options.bannedFeedDetails ?? null),
         supportersService: createMockSupportersService({
           maxUserFeeds: options.maxUserFeeds ?? DEFAULT_MAX_USER_FEEDS,
-          maxDailyArticles: options.maxDailyArticles ?? DEFAULT_MAX_DAILY_ARTICLES,
-          refreshRateSeconds: options.refreshRateSeconds ?? DEFAULT_REFRESH_RATE_SECONDS,
+          maxDailyArticles:
+            options.maxDailyArticles ?? DEFAULT_MAX_DAILY_ARTICLES,
+          refreshRateSeconds:
+            options.refreshRateSeconds ?? DEFAULT_REFRESH_RATE_SECONDS,
           isSupporter: options.isSupporter ?? false,
-          defaultMaxUserFeeds: options.defaultMaxUserFeeds ?? DEFAULT_MAX_USER_FEEDS,
-          defaultRefreshRateSeconds: options.defaultRefreshRateSeconds ?? DEFAULT_REFRESH_RATE_SECONDS,
-          defaultSupporterRefreshRateSeconds: options.defaultSupporterRefreshRateSeconds ?? 120,
+          defaultMaxUserFeeds:
+            options.defaultMaxUserFeeds ?? DEFAULT_MAX_USER_FEEDS,
+          defaultRefreshRateSeconds:
+            options.defaultRefreshRateSeconds ?? DEFAULT_REFRESH_RATE_SECONDS,
+          defaultSupporterRefreshRateSeconds:
+            options.defaultSupporterRefreshRateSeconds ?? 120,
         }),
-        feedFetcherApiService: {} as UserFeedsServiceDeps["feedFetcherApiService"],
+        feedFetcherApiService:
+          {} as UserFeedsServiceDeps["feedFetcherApiService"],
         feedHandlerService: createMockFeedHandlerService(options.feedHandler),
         usersService: createMockUsersService(userId),
         publishMessage: options.publishMessage ?? (async () => {}),
@@ -158,7 +174,8 @@ export function createUserFeedsHarness(): UserFeedsHarness {
           if (input.connections?.discordChannels) {
             await userFeedRepository.updateById(feed.id, {
               $set: {
-                "connections.discordChannels": input.connections.discordChannels,
+                "connections.discordChannels":
+                  input.connections.discordChannels,
               },
             });
           }
@@ -174,7 +191,7 @@ export function createUserFeedsHarness(): UserFeedsHarness {
                 title: `Feed ${i}`,
                 url: `https://example.com/${generateTestId()}.xml`,
                 user: { discordUserId },
-              })
+              }),
             );
           }
           return feeds;
@@ -188,7 +205,10 @@ export function createUserFeedsHarness(): UserFeedsHarness {
           return { ...feed, disabledCode: code };
         },
 
-        async createDisabledForUser(feedDiscordUserId: string, code: UserFeedDisabledCode) {
+        async createDisabledForUser(
+          feedDiscordUserId: string,
+          code: UserFeedDisabledCode,
+        ) {
           const feed = await this.createFeedForUser(feedDiscordUserId, {});
           await userFeedRepository.updateById(feed.id, {
             $set: { disabledCode: code },
@@ -196,7 +216,10 @@ export function createUserFeedsHarness(): UserFeedsHarness {
           return { ...feed, disabledCode: code };
         },
 
-        async createSharedFeed(ownerDiscordUserId, status = UserFeedManagerStatus.Accepted) {
+        async createSharedFeed(
+          ownerDiscordUserId,
+          status = UserFeedManagerStatus.Accepted,
+        ) {
           return userFeedRepository.create({
             title: "Shared Feed",
             url: `https://example.com/${generateTestId()}.xml`,
@@ -209,9 +232,13 @@ export function createUserFeedsHarness(): UserFeedsHarness {
 
         async setDisabledCode(id, code) {
           if (code === null) {
-            await userFeedRepository.updateById(id, { $unset: { disabledCode: 1 } });
+            await userFeedRepository.updateById(id, {
+              $unset: { disabledCode: 1 },
+            });
           } else {
-            await userFeedRepository.updateById(id, { $set: { disabledCode: code } });
+            await userFeedRepository.updateById(id, {
+              $set: { disabledCode: code },
+            });
           }
         },
 
@@ -220,7 +247,9 @@ export function createUserFeedsHarness(): UserFeedsHarness {
         },
 
         async setCreatedAt(id, date) {
-          await userFeedRepository.updateById(id, { $set: { createdAt: date } });
+          await userFeedRepository.updateById(id, {
+            $set: { createdAt: date },
+          });
         },
 
         async findById(id) {

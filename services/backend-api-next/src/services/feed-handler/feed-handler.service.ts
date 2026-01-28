@@ -51,12 +51,12 @@ export class FeedHandlerService {
             "Content-Type": "application/json",
             "api-key": this.apiKey,
           },
-        }
+        },
       );
 
       if (response.status >= 500) {
         throw new Error(
-          `User feeds api responded with >= 500 status: ${response.status})`
+          `User feeds api responded with >= 500 status: ${response.status})`,
         );
       }
 
@@ -66,7 +66,7 @@ export class FeedHandlerService {
         throw new Error(
           `User feeds api responded with non-ok status: ${
             response.status
-          }, response: ${JSON.stringify(responseBody)}`
+          }, response: ${JSON.stringify(responseBody)}`,
         );
       }
 
@@ -76,7 +76,7 @@ export class FeedHandlerService {
         `Failed to execute fetch with User feeds api (${(error as Error).message})`,
         {
           stack: (error as Error).stack,
-        }
+        },
       );
 
       throw error;
@@ -96,7 +96,7 @@ export class FeedHandlerService {
             "Content-Type": "application/json",
             "api-key": this.apiKey,
           },
-        }
+        },
       );
 
       await this.validateResponseStatus(
@@ -104,7 +104,7 @@ export class FeedHandlerService {
         "Failed to get delivery count",
         {
           requestBody: data,
-        }
+        },
       );
 
       const json = await response.json();
@@ -115,7 +115,7 @@ export class FeedHandlerService {
         `Failed to execute fetch with User feeds api (${(error as Error).message})`,
         {
           stack: (error as Error).stack,
-        }
+        },
       );
 
       throw error;
@@ -142,8 +142,10 @@ export class FeedHandlerService {
         `Failed to send test article request through user feeds API: ${
           (err as Error).constructor.name
         }: ${(err as Error).message}. Cause: ${
-          (err as Error & { cause?: { message?: string } })["cause"]?.["message"]
-        }. Body: ${body}`
+          (err as Error & { cause?: { message?: string } })["cause"]?.[
+            "message"
+          ]
+        }. Body: ${body}`,
       );
     }
 
@@ -156,7 +158,7 @@ export class FeedHandlerService {
       "Failed to send test article request",
       {
         requestBody: details as unknown as Record<string, unknown>,
-      }
+      },
     );
 
     const json = await res.json();
@@ -183,7 +185,7 @@ export class FeedHandlerService {
       throw new Error(
         `Failed to create preview through user feeds API: ${
           (err as Error).constructor.name
-        }: ${(err as Error).message}`
+        }: ${(err as Error).message}`,
       );
     }
 
@@ -215,7 +217,7 @@ export class FeedHandlerService {
       executeFetchIfStale,
       includeHtmlInErrors,
     }: GetArticlesInput,
-    lookupDetails: FeedRequestLookupDetails | null
+    lookupDetails: FeedRequestLookupDetails | null,
   ): Promise<GetArticlesResponse["result"]> {
     const body = {
       url,
@@ -281,7 +283,7 @@ export class FeedHandlerService {
     const json = await res.json();
     const validated = this.validateResponse(
       CreateFilterValidationResponseSchema,
-      json
+      json,
     );
 
     return {
@@ -305,7 +307,7 @@ export class FeedHandlerService {
           "api-key": this.apiKey,
         },
         body: JSON.stringify({ data }),
-      }
+      },
     );
 
     await this.validateResponseStatus(
@@ -313,7 +315,7 @@ export class FeedHandlerService {
       "Failed to validate discord payload",
       {
         requestBody: { data },
-      }
+      },
     );
 
     const json = (await res.json()) as
@@ -336,7 +338,7 @@ export class FeedHandlerService {
           "api-key": this.apiKey,
         },
         body: JSON.stringify(input),
-      }
+      },
     );
 
     await this.validateResponseStatus(
@@ -344,7 +346,7 @@ export class FeedHandlerService {
       "Failed to get delivery preview",
       {
         requestBody: input as unknown as Record<string, unknown>,
-      }
+      },
     );
 
     return response.json();
@@ -352,7 +354,7 @@ export class FeedHandlerService {
 
   async getDeliveryLogs(
     feedId: string,
-    { limit, skip }: { limit: number; skip: number }
+    { limit, skip }: { limit: number; skip: number },
   ): Promise<unknown> {
     const urlParams = new URLSearchParams({
       limit: limit.toString(),
@@ -368,7 +370,7 @@ export class FeedHandlerService {
           "Content-Type": "application/json",
           "api-key": this.apiKey,
         },
-      }
+      },
     );
 
     await this.validateResponseStatus(response, "Failed to get delivery logs", {
@@ -387,7 +389,7 @@ export class FeedHandlerService {
     contextMessage: string,
     meta: {
       requestBody: Record<string, unknown>;
-    }
+    },
   ) {
     if (res.ok) {
       return;
@@ -399,7 +401,7 @@ export class FeedHandlerService {
       throw new FeedFetcherStatusException(
         `${contextMessage}: >= 500 status code (${
           res.status
-        }) from User feeds api. Meta: ${JSON.stringify(meta)}`
+        }) from User feeds api. Meta: ${JSON.stringify(meta)}`,
       );
     }
 
@@ -412,8 +414,8 @@ export class FeedHandlerService {
         if (Array.isArray(json.message)) {
           throw new InvalidComponentsV2Exception(
             json.message.map(
-              (e) => new InvalidComponentsV2Exception(e.message, e.path)
-            )
+              (e) => new InvalidComponentsV2Exception(e.message, e.path),
+            ),
           );
         }
       } catch (err) {
@@ -436,7 +438,7 @@ export class FeedHandlerService {
             "Invalid preview input",
             {
               subErrors: json.errors,
-            }
+            },
           );
         } else if (code === "FILTERS_REGEX_EVAL") {
           throw new InvalidFiltersRegexException("Invalid preview input", {
@@ -445,8 +447,8 @@ export class FeedHandlerService {
         } else {
           throw new Error(
             `${contextMessage}: Unprocessable entity status code from User feeds api. Meta: ${JSON.stringify(
-              meta
-            )}`
+              meta,
+            )}`,
           );
         }
       } catch (err) {
@@ -459,8 +461,8 @@ export class FeedHandlerService {
 
         throw new Error(
           `${contextMessage}: Unprocessable entity status code from User feeds api. Meta: ${JSON.stringify(
-            meta
-          )}`
+            meta,
+          )}`,
         );
       }
     }
@@ -468,19 +470,19 @@ export class FeedHandlerService {
     throw new FeedFetcherStatusException(
       `${contextMessage}: non-ok status code (${
         res.status
-      }) from User feeds api, response text: ${JSON.stringify(bodyText)}`
+      }) from User feeds api, response text: ${JSON.stringify(bodyText)}`,
     );
   }
 
   private validateResponse<T>(
     schema: { parse: (data: unknown) => T },
-    json: unknown
+    json: unknown,
   ): T {
     try {
       return schema.parse(json);
     } catch (error) {
       throw new UnexpectedApiResponseException(
-        `Unexpected response from User feeds api: ${(error as Error).message}. Response: ${JSON.stringify(json)}`
+        `Unexpected response from User feeds api: ${(error as Error).message}. Response: ${JSON.stringify(json)}`,
       );
     }
   }

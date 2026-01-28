@@ -25,7 +25,7 @@ export interface CreateNotificationDeliveryAttemptInput {
 
 export interface INotificationDeliveryAttemptRepository {
   createMany(
-    inputs: CreateNotificationDeliveryAttemptInput[]
+    inputs: CreateNotificationDeliveryAttemptInput[],
   ): Promise<INotificationDeliveryAttempt[]>;
 
   updateManyByIds(
@@ -33,6 +33,6 @@ export interface INotificationDeliveryAttemptRepository {
     update: {
       status: NotificationDeliveryAttemptStatus;
       failReasonInternal?: string;
-    }
+    },
   ): Promise<void>;
 }

@@ -21,17 +21,25 @@ describe("UsersService", { concurrency: true }, () => {
         },
       });
 
-      await ctx.service.initDiscordUser("discord-user-id", { email: "test@test.com" });
-
-      assert.strictEqual(ctx.userRepository.create.mock.calls.length, 1);
-      assert.deepStrictEqual(ctx.userRepository.create.mock.calls[0]?.arguments[0], {
-        discordUserId: "discord-user-id",
+      await ctx.service.initDiscordUser("discord-user-id", {
         email: "test@test.com",
       });
+
+      assert.strictEqual(ctx.userRepository.create.mock.calls.length, 1);
+      assert.deepStrictEqual(
+        ctx.userRepository.create.mock.calls[0]?.arguments[0],
+        {
+          discordUserId: "discord-user-id",
+          email: "test@test.com",
+        },
+      );
     });
 
     it("returns existing user if found and no email update needed", async () => {
-      const existingUser = { ...harness.createContext().defaultUser, email: "test@test.com" };
+      const existingUser = {
+        ...harness.createContext().defaultUser,
+        email: "test@test.com",
+      };
       const ctx = harness.createContext({
         userRepository: {
           findByDiscordId: () => Promise.resolve(existingUser),
@@ -57,9 +65,14 @@ describe("UsersService", { concurrency: true }, () => {
         },
       });
 
-      await ctx.service.initDiscordUser("discord-user-id", { email: "new@test.com" });
+      await ctx.service.initDiscordUser("discord-user-id", {
+        email: "new@test.com",
+      });
 
-      assert.strictEqual(ctx.userRepository.updateEmailByDiscordId.mock.calls.length, 1);
+      assert.strictEqual(
+        ctx.userRepository.updateEmailByDiscordId.mock.calls.length,
+        1,
+      );
     });
 
     it("syncs email with Paddle when email changes and user has paddle customer", async () => {
@@ -72,22 +85,25 @@ describe("UsersService", { concurrency: true }, () => {
           updateEmailByDiscordId: () => Promise.resolve(updatedUser),
         },
         supporterRepository: {
-          findById: () => Promise.resolve({
-            paddleCustomer: { customerId: "paddle-cust-123" },
-          }),
+          findById: () =>
+            Promise.resolve({
+              paddleCustomer: { customerId: "paddle-cust-123" },
+            }),
         },
       });
 
-      await ctx.service.initDiscordUser("discord-user-id", { email: "new@test.com" });
+      await ctx.service.initDiscordUser("discord-user-id", {
+        email: "new@test.com",
+      });
 
       assert.strictEqual(ctx.paddleService.updateCustomer.mock.calls.length, 1);
       assert.strictEqual(
         ctx.paddleService.updateCustomer.mock.calls[0]?.arguments[0],
-        "paddle-cust-123"
+        "paddle-cust-123",
       );
       assert.deepStrictEqual(
         ctx.paddleService.updateCustomer.mock.calls[0]?.arguments[1],
-        { email: "new@test.com" }
+        { email: "new@test.com" },
       );
     });
 
@@ -101,9 +117,10 @@ describe("UsersService", { concurrency: true }, () => {
           updateEmailByDiscordId: () => Promise.resolve(updatedUser),
         },
         supporterRepository: {
-          findById: () => Promise.resolve({
-            paddleCustomer: { customerId: "paddle-cust-123" },
-          }),
+          findById: () =>
+            Promise.resolve({
+              paddleCustomer: { customerId: "paddle-cust-123" },
+            }),
         },
         paddleService: {
           updateCustomer: () => Promise.reject(new Error("Paddle API error")),
@@ -111,7 +128,9 @@ describe("UsersService", { concurrency: true }, () => {
       });
 
       await assert.doesNotReject(async () => {
-        await ctx.service.initDiscordUser("discord-user-id", { email: "new@test.com" });
+        await ctx.service.initDiscordUser("discord-user-id", {
+          email: "new@test.com",
+        });
       });
     });
   });
@@ -125,7 +144,8 @@ describe("UsersService", { concurrency: true }, () => {
         },
       });
 
-      const result = await ctx.service.getOrCreateUserByDiscordId("discord-user-id");
+      const result =
+        await ctx.service.getOrCreateUserByDiscordId("discord-user-id");
 
       assert.deepStrictEqual(result, existingUser);
       assert.strictEqual(ctx.userRepository.create.mock.calls.length, 0);
@@ -189,27 +209,31 @@ describe("UsersService", { concurrency: true }, () => {
     });
 
     it("returns subscription details when user has active subscription", async () => {
-      const existingUser = { ...harness.createContext().defaultUser, email: "test@test.com" };
+      const existingUser = {
+        ...harness.createContext().defaultUser,
+        email: "test@test.com",
+      };
       const ctx = harness.createContext({
         userRepository: {
           findByDiscordId: () => Promise.resolve(existingUser),
         },
         supportersService: {
-          getSupporterSubscription: () => Promise.resolve({
-            customer: { id: "cust-id", currencyCode: "USD" },
-            subscription: {
-              id: "sub-id",
-              product: { key: "tier1" },
-              status: SubscriptionStatus.Active,
-              billingInterval: "month",
-              billingPeriod: {
-                start: new Date(),
-                end: new Date(),
+          getSupporterSubscription: () =>
+            Promise.resolve({
+              customer: { id: "cust-id", currencyCode: "USD" },
+              subscription: {
+                id: "sub-id",
+                product: { key: "tier1" },
+                status: SubscriptionStatus.Active,
+                billingInterval: "month",
+                billingPeriod: {
+                  start: new Date(),
+                  end: new Date(),
+                },
+                updatedAt: new Date(),
+                addons: [],
               },
-              updatedAt: new Date(),
-              addons: [],
-            },
-          }),
+            }),
         },
         paddleService: {
           getCustomerCreditBalanace: () => Promise.resolve({ data: [] }),
@@ -230,7 +254,8 @@ describe("UsersService", { concurrency: true }, () => {
       const emails = ["test1@test.com", "test2@test.com"];
       const ctx = harness.createContext({
         userRepository: {
-          findEmailsByDiscordIdsWithAlertPreference: () => Promise.resolve(emails),
+          findEmailsByDiscordIdsWithAlertPreference: () =>
+            Promise.resolve(emails),
         },
       });
 
@@ -242,7 +267,10 @@ describe("UsersService", { concurrency: true }, () => {
 
   describe("updateUserByDiscordId", { concurrency: true }, () => {
     it("updates user preferences", async () => {
-      const updatedUser = { ...harness.createContext().defaultUser, preferences: { dateFormat: "YYYY-MM-DD" } };
+      const updatedUser = {
+        ...harness.createContext().defaultUser,
+        preferences: { dateFormat: "YYYY-MM-DD" },
+      };
       const ctx = harness.createContext({
         userRepository: {
           findByDiscordId: () => Promise.resolve(updatedUser),
@@ -250,14 +278,17 @@ describe("UsersService", { concurrency: true }, () => {
         },
       });
 
-      const result = await ctx.service.updateUserByDiscordId("discord-user-id", {
-        preferences: { dateFormat: "YYYY-MM-DD" },
-      });
+      const result = await ctx.service.updateUserByDiscordId(
+        "discord-user-id",
+        {
+          preferences: { dateFormat: "YYYY-MM-DD" },
+        },
+      );
 
       assert.ok(result);
       assert.strictEqual(
         ctx.userRepository.updatePreferencesByDiscordId.mock.calls.length,
-        1
+        1,
       );
     });
 
@@ -270,9 +301,12 @@ describe("UsersService", { concurrency: true }, () => {
         },
       });
 
-      const result = await ctx.service.updateUserByDiscordId("discord-user-id", {
-        preferences: { dateFormat: "YYYY-MM-DD" },
-      });
+      const result = await ctx.service.updateUserByDiscordId(
+        "discord-user-id",
+        {
+          preferences: { dateFormat: "YYYY-MM-DD" },
+        },
+      );
 
       assert.ok(result);
       assert.ok(result.user);
@@ -287,9 +321,12 @@ describe("UsersService", { concurrency: true }, () => {
         },
       });
 
-      const result = await ctx.service.updateUserByDiscordId("non-existent-user", {
-        preferences: { dateFormat: "YYYY-MM-DD" },
-      });
+      const result = await ctx.service.updateUserByDiscordId(
+        "non-existent-user",
+        {
+          preferences: { dateFormat: "YYYY-MM-DD" },
+        },
+      );
 
       assert.strictEqual(result, null);
     });
@@ -306,10 +343,14 @@ describe("UsersService", { concurrency: true }, () => {
         expiresIn: 3600,
       });
 
-      assert.strictEqual(ctx.userRepository.setExternalCredential.mock.calls.length, 1);
-      const callArgs = ctx.userRepository.setExternalCredential.mock.calls[0]?.arguments as [
+      assert.strictEqual(
+        ctx.userRepository.setExternalCredential.mock.calls.length,
+        1,
+      );
+      const callArgs = ctx.userRepository.setExternalCredential.mock.calls[0]
+        ?.arguments as [
         string,
-        { type: string; data: Record<string, string>; expireAt: Date }
+        { type: string; data: Record<string, string>; expireAt: Date },
       ];
       assert.strictEqual(callArgs?.[0], "user-id");
       assert.strictEqual(callArgs?.[1].type, "reddit");
@@ -324,11 +365,17 @@ describe("UsersService", { concurrency: true }, () => {
       });
 
       const serviceWithoutKey = new UsersService({
-        config: { ...ctx.config, BACKEND_API_ENCRYPTION_KEY_HEX: undefined } as Config,
+        config: {
+          ...ctx.config,
+          BACKEND_API_ENCRYPTION_KEY_HEX: undefined,
+        } as Config,
         userRepository: ctx.userRepository as unknown as IUserRepository,
-        userFeedRepository: ctx.userFeedRepository as unknown as IUserFeedRepository,
-        supporterRepository: ctx.supporterRepository as unknown as ISupporterRepository,
-        supportersService: ctx.supportersService as unknown as SupportersService,
+        userFeedRepository:
+          ctx.userFeedRepository as unknown as IUserFeedRepository,
+        supporterRepository:
+          ctx.supporterRepository as unknown as ISupporterRepository,
+        supportersService:
+          ctx.supportersService as unknown as SupportersService,
         paddleService: ctx.paddleService as unknown as PaddleService,
       });
 
@@ -340,7 +387,7 @@ describe("UsersService", { concurrency: true }, () => {
             refreshToken: "refresh-token",
             expiresIn: 3600,
           }),
-        { message: "Encryption key not set while encrypting object values" }
+        { message: "Encryption key not set while encrypting object values" },
       );
     });
   });
@@ -353,11 +400,12 @@ describe("UsersService", { concurrency: true }, () => {
 
       assert.strictEqual(
         ctx.userRepository.removeExternalCredentials.mock.calls.length,
-        1
+        1,
       );
       assert.strictEqual(
-        ctx.userRepository.removeExternalCredentials.mock.calls[0]?.arguments[0],
-        "user-id"
+        ctx.userRepository.removeExternalCredentials.mock.calls[0]
+          ?.arguments[0],
+        "user-id",
       );
     });
   });
@@ -370,15 +418,15 @@ describe("UsersService", { concurrency: true }, () => {
 
       assert.strictEqual(
         ctx.userRepository.revokeExternalCredential.mock.calls.length,
-        1
+        1,
       );
       assert.strictEqual(
         ctx.userRepository.revokeExternalCredential.mock.calls[0]?.arguments[0],
-        "user-id"
+        "user-id",
       );
       assert.strictEqual(
         ctx.userRepository.revokeExternalCredential.mock.calls[0]?.arguments[1],
-        "credential-id"
+        "credential-id",
       );
     });
   });
@@ -388,16 +436,28 @@ describe("UsersService", { concurrency: true }, () => {
       const ctx = harness.createContext({
         userRepository: {
           aggregateUsersWithActiveRedditCredentials: async function* () {
-            yield { discordUserId: "discord-1", feedId: "feed-1", lookupKey: undefined };
-            yield { discordUserId: "discord-2", feedId: "feed-2", lookupKey: undefined };
+            yield {
+              discordUserId: "discord-1",
+              feedId: "feed-1",
+              lookupKey: undefined,
+            };
+            yield {
+              discordUserId: "discord-2",
+              feedId: "feed-2",
+              lookupKey: undefined,
+            };
           },
         },
       });
 
       await ctx.service.syncLookupKeys();
 
-      assert.strictEqual(ctx.userFeedRepository.bulkUpdateLookupKeys.mock.calls.length, 1);
-      const ops = ctx.userFeedRepository.bulkUpdateLookupKeys.mock.calls[0]?.arguments[0] as Array<{
+      assert.strictEqual(
+        ctx.userFeedRepository.bulkUpdateLookupKeys.mock.calls.length,
+        1,
+      );
+      const ops = ctx.userFeedRepository.bulkUpdateLookupKeys.mock.calls[0]
+        ?.arguments[0] as Array<{
         feedId: string;
         action: string;
         lookupKey?: string;
@@ -414,29 +474,41 @@ describe("UsersService", { concurrency: true }, () => {
       const ctx = harness.createContext({
         userRepository: {
           aggregateUsersWithActiveRedditCredentials: async function* () {
-            yield { discordUserId: "discord-1", feedId: "feed-1", lookupKey: "existing-key" };
+            yield {
+              discordUserId: "discord-1",
+              feedId: "feed-1",
+              lookupKey: "existing-key",
+            };
           },
         },
       });
 
       await ctx.service.syncLookupKeys();
 
-      assert.strictEqual(ctx.userFeedRepository.bulkUpdateLookupKeys.mock.calls.length, 0);
+      assert.strictEqual(
+        ctx.userFeedRepository.bulkUpdateLookupKeys.mock.calls.length,
+        0,
+      );
     });
 
     it("removes lookup keys for feeds with expired/revoked credentials", async () => {
       const ctx = harness.createContext({
         userRepository: {
-          aggregateUsersWithExpiredOrRevokedRedditCredentials: async function* () {
-            yield { feedId: "feed-expired" };
-          },
+          aggregateUsersWithExpiredOrRevokedRedditCredentials:
+            async function* () {
+              yield { feedId: "feed-expired" };
+            },
         },
       });
 
       await ctx.service.syncLookupKeys();
 
-      assert.strictEqual(ctx.userFeedRepository.bulkUpdateLookupKeys.mock.calls.length, 1);
-      const ops = ctx.userFeedRepository.bulkUpdateLookupKeys.mock.calls[0]?.arguments[0] as Array<{
+      assert.strictEqual(
+        ctx.userFeedRepository.bulkUpdateLookupKeys.mock.calls.length,
+        1,
+      );
+      const ops = ctx.userFeedRepository.bulkUpdateLookupKeys.mock.calls[0]
+        ?.arguments[0] as Array<{
         feedId: string;
         action: string;
       }>;
@@ -448,23 +520,30 @@ describe("UsersService", { concurrency: true }, () => {
     it("passes userIds and feedIds to repository methods", async () => {
       const ctx = harness.createContext();
 
-      await ctx.service.syncLookupKeys({ userIds: ["user-1"], feedIds: ["feed-1"] });
+      await ctx.service.syncLookupKeys({
+        userIds: ["user-1"],
+        feedIds: ["feed-1"],
+      });
 
       assert.strictEqual(
-        ctx.userRepository.aggregateUsersWithActiveRedditCredentials.mock.calls.length,
-        1
+        ctx.userRepository.aggregateUsersWithActiveRedditCredentials.mock.calls
+          .length,
+        1,
       );
-      const activeArgs = ctx.userRepository.aggregateUsersWithActiveRedditCredentials.mock.calls[0]
+      const activeArgs = ctx.userRepository
+        .aggregateUsersWithActiveRedditCredentials.mock.calls[0]
         ?.arguments[0] as { userIds?: string[]; feedIds?: string[] };
       assert.deepStrictEqual(activeArgs?.userIds, ["user-1"]);
       assert.deepStrictEqual(activeArgs?.feedIds, ["feed-1"]);
 
       assert.strictEqual(
-        ctx.userRepository.aggregateUsersWithExpiredOrRevokedRedditCredentials.mock.calls.length,
-        1
+        ctx.userRepository.aggregateUsersWithExpiredOrRevokedRedditCredentials
+          .mock.calls.length,
+        1,
       );
-      const expiredArgs = ctx.userRepository.aggregateUsersWithExpiredOrRevokedRedditCredentials.mock
-        .calls[0]?.arguments[0] as { userIds?: string[]; feedIds?: string[] };
+      const expiredArgs = ctx.userRepository
+        .aggregateUsersWithExpiredOrRevokedRedditCredentials.mock.calls[0]
+        ?.arguments[0] as { userIds?: string[]; feedIds?: string[] };
       assert.deepStrictEqual(expiredArgs?.userIds, ["user-1"]);
       assert.deepStrictEqual(expiredArgs?.feedIds, ["feed-1"]);
     });
@@ -474,7 +553,10 @@ describe("UsersService", { concurrency: true }, () => {
 
       await ctx.service.syncLookupKeys();
 
-      assert.strictEqual(ctx.userFeedRepository.bulkUpdateLookupKeys.mock.calls.length, 0);
+      assert.strictEqual(
+        ctx.userFeedRepository.bulkUpdateLookupKeys.mock.calls.length,
+        0,
+      );
     });
   });
 });

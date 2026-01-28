@@ -5,7 +5,7 @@ export class InvalidComponentsV2Exception extends StandardException {
 
   constructor(
     messageOrSubErrors?: string | InvalidComponentsV2Exception[],
-    path?: (string | number)[]
+    path?: (string | number)[],
   ) {
     if (typeof messageOrSubErrors === "string") {
       super(`${path?.join(".")}: ${messageOrSubErrors}`.trim());

@@ -5,7 +5,7 @@ import { PatronsService } from "../../src/services/patrons/patrons.service";
 import { PatronStatus } from "../../src/repositories/shared/enums";
 import type { Config } from "../../src/config";
 
-describe("PatronsService", {concurrency: true}, () => {
+describe("PatronsService", { concurrency: true }, () => {
   let patronsService: PatronsService;
   const defaultMaxFeeds = 5;
   const defaultMaxUserFeeds = 10;
@@ -236,7 +236,7 @@ describe("PatronsService", {concurrency: true}, () => {
     it("returns defaultMaxFeeds when pledge < 250", () => {
       assert.strictEqual(
         patronsService.getMaxFeedsFromPledge(100),
-        defaultMaxFeeds
+        defaultMaxFeeds,
       );
     });
   });
@@ -245,35 +245,35 @@ describe("PatronsService", {concurrency: true}, () => {
     it("returns 140 when pledge >= 2000", () => {
       assert.strictEqual(
         patronsService.getMaxUserFeedsFromPledge("123", 2000),
-        140
+        140,
       );
     });
 
     it("returns 105 when pledge >= 1500", () => {
       assert.strictEqual(
         patronsService.getMaxUserFeedsFromPledge("123", 1500),
-        105
+        105,
       );
     });
 
     it("returns 70 when pledge >= 1000", () => {
       assert.strictEqual(
         patronsService.getMaxUserFeedsFromPledge("123", 1000),
-        70
+        70,
       );
     });
 
     it("returns 35 when pledge >= 500", () => {
       assert.strictEqual(
         patronsService.getMaxUserFeedsFromPledge("123", 500),
-        35
+        35,
       );
     });
 
     it("returns 15 when pledge >= 250", () => {
       assert.strictEqual(
         patronsService.getMaxUserFeedsFromPledge("123", 250),
-        15
+        15,
       );
     });
 
@@ -281,45 +281,60 @@ describe("PatronsService", {concurrency: true}, () => {
       const legacyPatronId = "72337020";
       assert.strictEqual(
         patronsService.getMaxUserFeedsFromPledge(legacyPatronId, 100),
-        5
+        5,
       );
     });
 
     it("returns defaultMaxUserFeeds for non-legacy with pledge < 250", () => {
       assert.strictEqual(
         patronsService.getMaxUserFeedsFromPledge("123", 100),
-        defaultMaxUserFeeds
+        defaultMaxUserFeeds,
       );
     });
   });
 
   describe("getMaxServersFromPledgeLifetime", () => {
     it("returns 4 when lifetime pledge is >= 2500", () => {
-      assert.strictEqual(patronsService.getMaxServersFromPledgeLifetime(2500), 4);
+      assert.strictEqual(
+        patronsService.getMaxServersFromPledgeLifetime(2500),
+        4,
+      );
     });
 
     it("returns 3 when lifetime pledge is >= 1500", () => {
-      assert.strictEqual(patronsService.getMaxServersFromPledgeLifetime(1500), 3);
+      assert.strictEqual(
+        patronsService.getMaxServersFromPledgeLifetime(1500),
+        3,
+      );
     });
 
     it("returns 2 when lifetime pledge is >= 500", () => {
-      assert.strictEqual(patronsService.getMaxServersFromPledgeLifetime(500), 2);
+      assert.strictEqual(
+        patronsService.getMaxServersFromPledgeLifetime(500),
+        2,
+      );
     });
 
     it("returns 1 when lifetime pledge is < 500", () => {
-      assert.strictEqual(patronsService.getMaxServersFromPledgeLifetime(100), 1);
+      assert.strictEqual(
+        patronsService.getMaxServersFromPledgeLifetime(100),
+        1,
+      );
     });
   });
 
   describe("getRefreshRateSecondsFromPledge", () => {
     it("returns 120 if >= 500", () => {
-      assert.strictEqual(patronsService.getRefreshRateSecondsFromPledge(500), 120);
+      assert.strictEqual(
+        patronsService.getRefreshRateSecondsFromPledge(500),
+        120,
+      );
     });
 
     it("returns undefined if <500", () => {
       assert.strictEqual(
         patronsService.getRefreshRateSecondsFromPledge(499),
-        undefined
+        undefined,
       );
     });
   });

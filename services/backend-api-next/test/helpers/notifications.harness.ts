@@ -2,7 +2,10 @@ import { mock } from "node:test";
 import { NotificationsService } from "../../src/services/notifications/notifications.service";
 import type { Config } from "../../src/config";
 import type { SmtpTransport } from "../../src/infra/smtp";
-import type { IUserFeedRepository, UserFeedForNotification } from "../../src/repositories/interfaces/user-feed.types";
+import type {
+  IUserFeedRepository,
+  UserFeedForNotification,
+} from "../../src/repositories/interfaces/user-feed.types";
 import type { INotificationDeliveryAttemptRepository } from "../../src/repositories/interfaces/notification-delivery-attempt.types";
 import type { UsersService } from "../../src/services/users/users.service";
 import type { IDiscordChannelConnection } from "../../src/repositories/interfaces/feed-connection.types";
@@ -31,15 +34,17 @@ export interface UserFeedRepositoryMockOptions {
 }
 
 export interface NotificationDeliveryAttemptRepositoryMockOptions {
-  createMany?: (inputs: Array<{ feedId: string; email: string }>) => Promise<Array<{
-    id: string;
-    email: string;
-    status: NotificationDeliveryAttemptStatus;
-    type: NotificationDeliveryAttemptType;
-    feedId: string;
-    createdAt: Date;
-    updatedAt: Date;
-  }>>;
+  createMany?: (inputs: Array<{ feedId: string; email: string }>) => Promise<
+    Array<{
+      id: string;
+      email: string;
+      status: NotificationDeliveryAttemptStatus;
+      type: NotificationDeliveryAttemptType;
+      feedId: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>
+  >;
   updateManyByIds?: () => Promise<void>;
 }
 
@@ -75,8 +80,12 @@ export interface NotificationsContext {
   userFeedRepository: MockUserFeedRepository;
   notificationDeliveryAttemptRepository: MockNotificationDeliveryAttemptRepository;
   generateId(): string;
-  createMockFeed(overrides?: Partial<UserFeedForNotification>): UserFeedForNotification;
-  createMockConnection(overrides?: Partial<IDiscordChannelConnection>): IDiscordChannelConnection;
+  createMockFeed(
+    overrides?: Partial<UserFeedForNotification>,
+  ): UserFeedForNotification;
+  createMockConnection(
+    overrides?: Partial<IDiscordChannelConnection>,
+  ): IDiscordChannelConnection;
 }
 
 export interface NotificationsHarness {
@@ -97,46 +106,57 @@ function createDefaultDeliveryAttempt(feedId: string, email: string) {
 
 export function createNotificationsHarness(): NotificationsHarness {
   return {
-    createContext(options: NotificationsContextOptions = {}): NotificationsContext {
+    createContext(
+      options: NotificationsContextOptions = {},
+    ): NotificationsContext {
       const config = { ...DEFAULT_CONFIG, ...options.config } as Config;
 
-      const smtpTransport: MockSmtpTransport | null = options.smtpTransport === null
-        ? null
-        : {
-            sendMail: mock.fn(
-              options.smtpTransport?.sendMail ?? (() => Promise.resolve({ messageId: generateTestId() }))
-            ),
-          };
+      const smtpTransport: MockSmtpTransport | null =
+        options.smtpTransport === null
+          ? null
+          : {
+              sendMail: mock.fn(
+                options.smtpTransport?.sendMail ??
+                  (() => Promise.resolve({ messageId: generateTestId() })),
+              ),
+            };
 
       const usersService: MockUsersService = {
         getEmailsForAlerts: mock.fn(() =>
-          Promise.resolve(options.usersService?.emails ?? ["user@test.com"])
+          Promise.resolve(options.usersService?.emails ?? ["user@test.com"]),
         ),
       };
 
       const defaultFeed = createMockFeed();
       const userFeedRepository: MockUserFeedRepository = {
         findByIdsForNotification: mock.fn(() =>
-          Promise.resolve(options.userFeedRepository?.feeds ?? [defaultFeed])
+          Promise.resolve(options.userFeedRepository?.feeds ?? [defaultFeed]),
         ),
       };
 
-      const notificationDeliveryAttemptRepository: MockNotificationDeliveryAttemptRepository = {
-        createMany: mock.fn(
-          options.notificationDeliveryAttemptRepository?.createMany ??
-            ((inputs: Array<{ feedId: string; email: string }>) =>
-              Promise.resolve(inputs.map((input) => createDefaultDeliveryAttempt(input.feedId, input.email))))
-        ),
-        updateManyByIds: mock.fn(
-          options.notificationDeliveryAttemptRepository?.updateManyByIds ?? (() => Promise.resolve())
-        ),
-      };
+      const notificationDeliveryAttemptRepository: MockNotificationDeliveryAttemptRepository =
+        {
+          createMany: mock.fn(
+            options.notificationDeliveryAttemptRepository?.createMany ??
+              ((inputs: Array<{ feedId: string; email: string }>) =>
+                Promise.resolve(
+                  inputs.map((input) =>
+                    createDefaultDeliveryAttempt(input.feedId, input.email),
+                  ),
+                )),
+          ),
+          updateManyByIds: mock.fn(
+            options.notificationDeliveryAttemptRepository?.updateManyByIds ??
+              (() => Promise.resolve()),
+          ),
+        };
 
       const service = new NotificationsService({
         config,
         smtpTransport: smtpTransport as unknown as SmtpTransport,
         usersService: usersService as unknown as UsersService,
-        userFeedRepository: userFeedRepository as unknown as IUserFeedRepository,
+        userFeedRepository:
+          userFeedRepository as unknown as IUserFeedRepository,
         notificationDeliveryAttemptRepository:
           notificationDeliveryAttemptRepository as unknown as INotificationDeliveryAttemptRepository,
       });
@@ -155,7 +175,9 @@ export function createNotificationsHarness(): NotificationsHarness {
   };
 }
 
-export function createMockFeed(overrides?: Partial<UserFeedForNotification>): UserFeedForNotification {
+export function createMockFeed(
+  overrides?: Partial<UserFeedForNotification>,
+): UserFeedForNotification {
   return {
     id: overrides?.id ?? generateTestId(),
     title: overrides?.title ?? "Test Feed",
@@ -166,7 +188,9 @@ export function createMockFeed(overrides?: Partial<UserFeedForNotification>): Us
   };
 }
 
-export function createMockConnection(overrides?: Partial<IDiscordChannelConnection>): IDiscordChannelConnection {
+export function createMockConnection(
+  overrides?: Partial<IDiscordChannelConnection>,
+): IDiscordChannelConnection {
   return {
     id: overrides?.id ?? generateTestId(),
     name: overrides?.name ?? "Test Connection",

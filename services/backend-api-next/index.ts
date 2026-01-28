@@ -19,10 +19,10 @@ async function main() {
 
   // Initialize infrastructure
   const mongoConnection = await createMongoConnection(
-    config.BACKEND_API_MONGODB_URI
+    config.BACKEND_API_MONGODB_URI,
   );
   const rabbitmq = await createRabbitConnection(
-    config.BACKEND_API_RABBITMQ_BROKER_URL
+    config.BACKEND_API_RABBITMQ_BROKER_URL,
   );
 
   // Create container with dependencies

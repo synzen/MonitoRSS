@@ -4,8 +4,8 @@ export class MessageBrokerService {
   constructor(
     private readonly publishMessage: (
       queue: string,
-      message: unknown
-    ) => Promise<void>
+      message: unknown,
+    ) => Promise<void>,
   ) {}
 
   async publishSyncSupporterDiscordRoles(data: {

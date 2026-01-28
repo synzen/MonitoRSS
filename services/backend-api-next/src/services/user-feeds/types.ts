@@ -25,23 +25,23 @@ import type {
 export interface IFeedConnectionsDiscordChannelsService {
   deleteConnection(feedId: string, connectionId: string): Promise<void>;
   createDiscordChannelConnection(
-    input: CreateDiscordChannelConnectionInput
+    input: CreateDiscordChannelConnectionInput,
   ): Promise<IDiscordChannelConnection>;
   updateDiscordChannelConnection(
     feedId: string,
     connectionId: string,
-    input: UpdateDiscordChannelConnectionInput
+    input: UpdateDiscordChannelConnectionInput,
   ): Promise<IDiscordChannelConnection>;
   cloneConnection(
     connection: IDiscordChannelConnection,
     input: CloneConnectionInput,
     userAccessToken: string,
-    userDiscordUserId: string
+    userDiscordUserId: string,
   ): Promise<{ ids: string[] }>;
   copySettings(
     userFeed: IUserFeed,
     sourceConnection: IDiscordChannelConnection,
-    input: CopySettingsInput
+    input: CopySettingsInput,
   ): Promise<void>;
 }
 

@@ -25,7 +25,7 @@ export class RedditApiService {
     return `https://www.reddit.com/api/v1/authorize?client_id=${
       this.clientId
     }&response_type=code&state=${state}&redirect_uri=${encodeURIComponent(
-      this.redirectUri
+      this.redirectUri,
     )}&duration=permanent&scope=${scopes}`;
   }
 
@@ -62,7 +62,7 @@ export class RedditApiService {
       }
 
       throw new Error(
-        `Failed to get reddit access token from auth code. Status: ${res.status}. Body: ${body}`
+        `Failed to get reddit access token from auth code. Status: ${res.status}. Body: ${body}`,
       );
     }
 
@@ -94,7 +94,7 @@ export class RedditApiService {
     if (!res.ok) {
       if (res.status === 400) {
         throw new RedditAppRevokedException(
-          "Reddit application has been revoked by user"
+          "Reddit application has been revoked by user",
         );
       }
 
@@ -107,7 +107,7 @@ export class RedditApiService {
       }
 
       throw new Error(
-        `Failed to refresh reddit access token. Status: ${res.status}. Body: ${body}`
+        `Failed to refresh reddit access token. Status: ${res.status}. Body: ${body}`,
       );
     }
 
@@ -131,7 +131,7 @@ export class RedditApiService {
       }
 
       throw new Error(
-        `Failed to revoke reddit refresh token. Status: ${res.status}. Body: ${body}`
+        `Failed to revoke reddit refresh token. Status: ${res.status}. Body: ${body}`,
       );
     }
   }

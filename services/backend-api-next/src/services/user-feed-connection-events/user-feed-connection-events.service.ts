@@ -16,7 +16,7 @@ export class UserFeedConnectionEventsService {
           feedId: e.feedId,
           connectionId: e.connectionId,
           discordUserId: e.creator.discordUserId,
-        }))
+        })),
       );
     } catch (err) {
       logger.error("Failed to handle connection created event", {
@@ -40,9 +40,12 @@ export class UserFeedConnectionEventsService {
         connectionIds: deletedConnectionIds,
       });
     } catch (err) {
-      logger.error(`Failed to handle connection deleted event for feed ${feedId}`, {
-        stack: (err as Error).stack,
-      });
+      logger.error(
+        `Failed to handle connection deleted event for feed ${feedId}`,
+        {
+          stack: (err as Error).stack,
+        },
+      );
     }
   }
 }

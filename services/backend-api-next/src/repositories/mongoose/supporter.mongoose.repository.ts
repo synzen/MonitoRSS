@@ -20,7 +20,7 @@ const PaddleCustomerBenefitsSchema = new Schema(
     dailyArticleLimit: { type: Number, required: true },
     refreshRateSeconds: { type: Number, required: true },
   },
-  { _id: false, versionKey: false, timestamps: false }
+  { _id: false, versionKey: false, timestamps: false },
 );
 
 const PaddleCustomerSubscriptionAddonSchema = new Schema(
@@ -32,7 +32,7 @@ const PaddleCustomerSubscriptionAddonSchema = new Schema(
     },
     quantity: { type: Number, required: true },
   },
-  { _id: false, versionKey: false, timestamps: false }
+  { _id: false, versionKey: false, timestamps: false },
 );
 
 const PaddleCustomerSubscriptionSchema = new Schema(
@@ -59,7 +59,7 @@ const PaddleCustomerSubscriptionSchema = new Schema(
     createdAt: { type: Date, required: true },
     updatedAt: { type: Date, required: true },
   },
-  { _id: false, versionKey: false, timestamps: false }
+  { _id: false, versionKey: false, timestamps: false },
 );
 
 const PaddleCustomerSchema = new Schema(
@@ -69,7 +69,7 @@ const PaddleCustomerSchema = new Schema(
     lastCurrencyCodeUsed: { type: String, required: true },
     email: { type: String, required: true },
   },
-  { _id: false, versionKey: false, timestamps: true }
+  { _id: false, versionKey: false, timestamps: true },
 );
 
 const SupporterSchema = new Schema(
@@ -87,7 +87,7 @@ const SupporterSchema = new Schema(
     paddleCustomer: { type: PaddleCustomerSchema },
     slowRate: { type: Boolean },
   },
-  { collection: "supporters", _id: false }
+  { collection: "supporters", _id: false },
 );
 
 type SupporterDoc = InferSchemaType<typeof SupporterSchema>;
@@ -151,13 +151,13 @@ export class SupporterMongooseRepository
 
   async updateGuilds(
     userId: string,
-    guildIds: string[]
+    guildIds: string[],
   ): Promise<ISupporter | null> {
     const doc = await this.model
       .findOneAndUpdate(
         { _id: userId },
         { $set: { guilds: guildIds } },
-        { new: true }
+        { new: true },
       )
       .lean();
     return doc ? this.toEntity(doc as SupporterDoc & { _id: string }) : null;
@@ -168,7 +168,7 @@ export class SupporterMongooseRepository
   }
 
   async aggregateWithPatronsAndOverrides(
-    discordId: string
+    discordId: string,
   ): Promise<SupportPatronAggregateResult[]> {
     const results = await this.model.aggregate([
       { $match: { _id: discordId } },
@@ -213,13 +213,13 @@ export class SupporterMongooseRepository
         (u: Record<string, unknown>) => ({
           id: u._id as string,
           additionalUserFeeds: u.additionalUserFeeds as number,
-        })
+        }),
       ),
     }));
   }
 
   async aggregateSupportersForGuilds(
-    guildIds: string[]
+    guildIds: string[],
   ): Promise<SupporterGuildAggregateResult[]> {
     const results = await this.model.aggregate([
       { $match: { guilds: { $in: guildIds } } },
@@ -267,12 +267,14 @@ export class SupporterMongooseRepository
         (u: Record<string, unknown>) => ({
           id: u._id as string,
           additionalUserFeeds: u.additionalUserFeeds as number,
-        })
+        }),
       ),
     }));
   }
 
-  async aggregateAllSupportersWithPatrons(): Promise<SupportPatronAggregateResult[]> {
+  async aggregateAllSupportersWithPatrons(): Promise<
+    SupportPatronAggregateResult[]
+  > {
     const results = await this.model.aggregate([
       {
         $lookup: {
@@ -315,12 +317,14 @@ export class SupporterMongooseRepository
         (u: Record<string, unknown>) => ({
           id: u._id as string,
           additionalUserFeeds: u.additionalUserFeeds as number,
-        })
+        }),
       ),
     }));
   }
 
-  async aggregateAllSupportersWithGuilds(): Promise<SupporterGuildAggregateResult[]> {
+  async aggregateAllSupportersWithGuilds(): Promise<
+    SupporterGuildAggregateResult[]
+  > {
     const results = await this.model.aggregate([
       {
         $lookup: {
@@ -365,7 +369,7 @@ export class SupporterMongooseRepository
         (u: Record<string, unknown>) => ({
           id: u._id as string,
           additionalUserFeeds: u.additionalUserFeeds as number,
-        })
+        }),
       ),
     }));
   }

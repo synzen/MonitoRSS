@@ -48,12 +48,14 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
     it("does not re-apply migrations that are already recorded", async () => {
       await ctx.container.mongoMigrationsService.applyMigrations();
 
-      const migrationsAfterFirst = await ctx.container.mongoMigrationRepository.find();
+      const migrationsAfterFirst =
+        await ctx.container.mongoMigrationRepository.find();
       const firstRunCount = migrationsAfterFirst.length;
 
       await ctx.container.mongoMigrationsService.applyMigrations();
 
-      const migrationsAfterSecond = await ctx.container.mongoMigrationRepository.find();
+      const migrationsAfterSecond =
+        await ctx.container.mongoMigrationRepository.find();
 
       assert.strictEqual(migrationsAfterSecond.length, firstRunCount);
     });
@@ -77,7 +79,9 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
       const migrationModel = connection.model("MongoMigration");
       await migrationModel.create({ id: "custom-placeholder-steps" });
       await migrationModel.create({ id: "add-user-ids-to-user-feeds" });
-      await migrationModel.create({ id: "convert-user-feed-user-ids-t-mongo-ids" });
+      await migrationModel.create({
+        id: "convert-user-feed-user-ids-t-mongo-ids",
+      });
 
       const userFeedModel = connection.model("UserFeed");
       await userFeedModel.create({
@@ -102,11 +106,11 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
       for (const feed of feeds) {
         assert.ok(
           typeof feed.slotOffsetMs === "number",
-          `Feed ${feed.title} should have slotOffsetMs set`
+          `Feed ${feed.title} should have slotOffsetMs set`,
         );
         assert.ok(
           feed.slotOffsetMs >= 0,
-          `slotOffsetMs should be non-negative`
+          `slotOffsetMs should be non-negative`,
         );
       }
     });
@@ -116,7 +120,9 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
       const migrationModel = connection.model("MongoMigration");
       await migrationModel.create({ id: "custom-placeholder-steps" });
       await migrationModel.create({ id: "add-user-ids-to-user-feeds" });
-      await migrationModel.create({ id: "convert-user-feed-user-ids-t-mongo-ids" });
+      await migrationModel.create({
+        id: "convert-user-feed-user-ids-t-mongo-ids",
+      });
 
       const userFeedModel = connection.model("UserFeed");
       const existingSlotOffset = 12345;
@@ -131,7 +137,9 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
 
       await ctx.container.mongoMigrationsService.applyMigrations();
 
-      const feed = await userFeedModel.findOne({ title: "Feed with existing slotOffset" }).lean() as { slotOffsetMs?: number } | null;
+      const feed = (await userFeedModel
+        .findOne({ title: "Feed with existing slotOffset" })
+        .lean()) as { slotOffsetMs?: number } | null;
       assert.strictEqual(feed?.slotOffsetMs, existingSlotOffset);
     });
   });
@@ -157,13 +165,15 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
 
       await ctx.container.mongoMigrationsService.applyMigrations();
 
-      const feed = await userFeedModel.findOne({ title: "Feed without user.id" }).lean() as { user?: { id?: { toString(): string } } } | null;
+      const feed = (await userFeedModel
+        .findOne({ title: "Feed without user.id" })
+        .lean()) as { user?: { id?: { toString(): string } } } | null;
 
       assert.ok(feed?.user?.id, "user.id should be populated");
       assert.strictEqual(
         feed?.user?.id?.toString(),
         user._id.toString(),
-        "user.id should match the User document's _id"
+        "user.id should match the User document's _id",
       );
     });
 
@@ -183,12 +193,14 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
 
       await ctx.container.mongoMigrationsService.applyMigrations();
 
-      const feed = await userFeedModel.findOne({ title: "Feed with existing user.id" }).lean() as { user?: { id?: { toString(): string } } } | null;
+      const feed = (await userFeedModel
+        .findOne({ title: "Feed with existing user.id" })
+        .lean()) as { user?: { id?: { toString(): string } } } | null;
 
       assert.strictEqual(
         feed?.user?.id?.toString(),
         existingUserId.toString(),
-        "existing user.id should not be changed"
+        "existing user.id should not be changed",
       );
     });
   });
@@ -232,7 +244,9 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
 
       await ctx.container.mongoMigrationsService.applyMigrations();
 
-      const feed = await userFeedModel.findOne({ title: "Feed with custom placeholders" }).lean() as { connections?: { discordChannels?: unknown[] } } | null;
+      const feed = (await userFeedModel
+        .findOne({ title: "Feed with custom placeholders" })
+        .lean()) as { connections?: { discordChannels?: unknown[] } } | null;
       const channel = feed?.connections?.discordChannels?.[0] as {
         customPlaceholders?: Array<{
           steps: Array<{ id?: string; type?: string }>;
@@ -244,7 +258,7 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
       assert.strictEqual(
         step?.type,
         CustomPlaceholderStepType.Regex,
-        "step should have type set to Regex"
+        "step should have type set to Regex",
       );
     });
 
@@ -287,7 +301,9 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
 
       await ctx.container.mongoMigrationsService.applyMigrations();
 
-      const feed = await userFeedModel.findOne({ title: "Feed with typed step" }).lean() as { connections?: { discordChannels?: unknown[] } } | null;
+      const feed = (await userFeedModel
+        .findOne({ title: "Feed with typed step" })
+        .lean()) as { connections?: { discordChannels?: unknown[] } } | null;
       const channel = feed?.connections?.discordChannels?.[0] as {
         customPlaceholders?: Array<{
           steps: Array<{ type?: string }>;
@@ -298,7 +314,7 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
       assert.strictEqual(
         step?.type,
         CustomPlaceholderStepType.UrlEncode,
-        "existing type should be preserved"
+        "existing type should be preserved",
       );
     });
   });
@@ -322,17 +338,19 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
 
       await ctx.container.mongoMigrationsService.applyMigrations();
 
-      const rawDoc = await userFeedModel.collection.findOne({ title: "Feed with string user.id" });
+      const rawDoc = await userFeedModel.collection.findOne({
+        title: "Feed with string user.id",
+      });
       const userId = rawDoc?.user?.id;
 
       assert.ok(
         typeof userId !== "string" && userId?.constructor?.name === "ObjectId",
-        `user.id should be stored as ObjectId in database, got: ${typeof userId} (${userId?.constructor?.name})`
+        `user.id should be stored as ObjectId in database, got: ${typeof userId} (${userId?.constructor?.name})`,
       );
       assert.strictEqual(
         userId?.toHexString?.() ?? String(userId),
         stringUserId,
-        "ObjectId value should match original string"
+        "ObjectId value should match original string",
       );
     });
 
@@ -354,14 +372,16 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
 
       await assert.doesNotReject(
         async () => ctx.container.mongoMigrationsService.applyMigrations(),
-        "should not throw when user.id is already an ObjectId"
+        "should not throw when user.id is already an ObjectId",
       );
 
-      const feed = await userFeedModel.findOne({ title: "Feed with ObjectId user.id" }).lean() as { user?: { id?: { toHexString(): string } } } | null;
+      const feed = (await userFeedModel
+        .findOne({ title: "Feed with ObjectId user.id" })
+        .lean()) as { user?: { id?: { toHexString(): string } } } | null;
       assert.strictEqual(
         feed?.user?.id?.toHexString(),
         objectIdUserId.toHexString(),
-        "ObjectId value should be preserved"
+        "ObjectId value should be preserved",
       );
     });
   });
@@ -376,9 +396,12 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
       await assert.rejects(
         async () => migrationModel.create({ id: "test-migration" }),
         (error: Error) => {
-          return error.message.includes("duplicate key") || error.message.includes("E11000");
+          return (
+            error.message.includes("duplicate key") ||
+            error.message.includes("E11000")
+          );
         },
-        "should reject duplicate migration id with unique constraint error"
+        "should reject duplicate migration id with unique constraint error",
       );
     });
   });

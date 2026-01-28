@@ -13,39 +13,41 @@ export class DiscordWebhooksService {
 
   constructor(
     private readonly config: Config,
-    private readonly discordApiService: DiscordApiService
+    private readonly discordApiService: DiscordApiService,
   ) {
     this.clientId = config.BACKEND_API_DISCORD_CLIENT_ID;
   }
 
   async createWebhook(
     channelId: string,
-    details: CreateWebhookDetails
+    details: CreateWebhookDetails,
   ): Promise<DiscordWebhook> {
-    const webhook = await this.discordApiService.executeBotRequest<DiscordWebhook>(
-      `/channels/${channelId}/webhooks`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          name: details.name,
-        }),
-      }
-    );
+    const webhook =
+      await this.discordApiService.executeBotRequest<DiscordWebhook>(
+        `/channels/${channelId}/webhooks`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            name: details.name,
+          }),
+        },
+      );
 
     return webhook;
   }
 
   async getWebhooksOfChannel(
     channelId: string,
-    filters?: GetWebhooksFilters
+    filters?: GetWebhooksFilters,
   ): Promise<DiscordWebhook[]> {
     try {
-      const webhooks =
-        await this.discordApiService.executeBotRequest<DiscordWebhook[]>(
-          `/channels/${channelId}/webhooks`
-        );
+      const webhooks = await this.discordApiService.executeBotRequest<
+        DiscordWebhook[]
+      >(`/channels/${channelId}/webhooks`);
 
-      return webhooks.filter((webhook) => this.canBeUsedByBot(webhook, filters));
+      return webhooks.filter((webhook) =>
+        this.canBeUsedByBot(webhook, filters),
+      );
     } catch (err) {
       if (err instanceof DiscordAPIError && err.statusCode === 403) {
         throw new WebhookMissingPermissionsException();
@@ -59,7 +61,7 @@ export class DiscordWebhooksService {
     try {
       const webhook =
         await this.discordApiService.executeBotRequest<DiscordWebhook>(
-          `/webhooks/${webhookId}`
+          `/webhooks/${webhookId}`,
         );
 
       return webhook;
@@ -86,7 +88,10 @@ export class DiscordWebhooksService {
     }
   }
 
-  canBeUsedByBot(webhook: DiscordWebhook, filters?: GetWebhooksFilters): boolean {
+  canBeUsedByBot(
+    webhook: DiscordWebhook,
+    filters?: GetWebhooksFilters,
+  ): boolean {
     const base = webhook.type === DiscordWebhookType.INCOMING;
 
     if (!filters?.onlyApplicationOwned) {

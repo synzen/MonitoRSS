@@ -27,15 +27,20 @@ describe("NotificationsService", { concurrency: true }, () => {
         disabledCode: UserFeedDisabledCode.FailedRequests,
       });
 
-      assert.strictEqual(ctx.userFeedRepository.findByIdsForNotification.mock.calls.length, 1);
+      assert.strictEqual(
+        ctx.userFeedRepository.findByIdsForNotification.mock.calls.length,
+        1,
+      );
       assert.deepStrictEqual(
-        ctx.userFeedRepository.findByIdsForNotification.mock.calls[0]?.arguments[0],
-        ["feed-id"]
+        ctx.userFeedRepository.findByIdsForNotification.mock.calls[0]
+          ?.arguments[0],
+        ["feed-id"],
       );
       assert.strictEqual(ctx.smtpTransport!.sendMail.mock.calls.length, 1);
       assert.strictEqual(
-        ctx.notificationDeliveryAttemptRepository.updateManyByIds.mock.calls.length,
-        1
+        ctx.notificationDeliveryAttemptRepository.updateManyByIds.mock.calls
+          .length,
+        1,
       );
     });
 
@@ -49,7 +54,10 @@ describe("NotificationsService", { concurrency: true }, () => {
       });
 
       assert.strictEqual(ctx.smtpTransport!.sendMail.mock.calls.length, 0);
-      assert.strictEqual(ctx.notificationDeliveryAttemptRepository.createMany.mock.calls.length, 0);
+      assert.strictEqual(
+        ctx.notificationDeliveryAttemptRepository.createMany.mock.calls.length,
+        0,
+      );
     });
 
     it("handles null SMTP transport gracefully", async () => {
@@ -62,12 +70,17 @@ describe("NotificationsService", { concurrency: true }, () => {
       });
 
       assert.strictEqual(
-        ctx.notificationDeliveryAttemptRepository.updateManyByIds.mock.calls.length,
-        1
+        ctx.notificationDeliveryAttemptRepository.updateManyByIds.mock.calls
+          .length,
+        1,
       );
       assert.deepStrictEqual(
-        ctx.notificationDeliveryAttemptRepository.updateManyByIds.mock.calls[0]?.arguments[1],
-        { status: NotificationDeliveryAttemptStatus.Success, failReasonInternal: undefined }
+        ctx.notificationDeliveryAttemptRepository.updateManyByIds.mock.calls[0]
+          ?.arguments[1],
+        {
+          status: NotificationDeliveryAttemptStatus.Success,
+          failReasonInternal: undefined,
+        },
       );
     });
 
@@ -83,10 +96,13 @@ describe("NotificationsService", { concurrency: true }, () => {
       });
 
       assert.strictEqual(
-        ctx.notificationDeliveryAttemptRepository.updateManyByIds.mock.calls.length,
-        1
+        ctx.notificationDeliveryAttemptRepository.updateManyByIds.mock.calls
+          .length,
+        1,
       );
-      const updateArgs = ctx.notificationDeliveryAttemptRepository.updateManyByIds.mock.calls[0]?.arguments;
+      const updateArgs =
+        ctx.notificationDeliveryAttemptRepository.updateManyByIds.mock.calls[0]
+          ?.arguments;
       assert.ok(Array.isArray(updateArgs?.[0]));
       assert.strictEqual(updateArgs?.[0]?.length, 1);
       assert.deepStrictEqual(updateArgs?.[1], {
@@ -157,8 +173,12 @@ describe("NotificationsService", { concurrency: true }, () => {
         disabledCode: UserFeedDisabledCode.FailedRequests,
       });
 
-      assert.strictEqual(ctx.usersService.getEmailsForAlerts.mock.calls.length, 1);
-      const calledWithUserIds = ctx.usersService.getEmailsForAlerts.mock.calls[0]?.arguments[0] as string[];
+      assert.strictEqual(
+        ctx.usersService.getEmailsForAlerts.mock.calls.length,
+        1,
+      );
+      const calledWithUserIds = ctx.usersService.getEmailsForAlerts.mock
+        .calls[0]?.arguments[0] as string[];
       assert.ok(calledWithUserIds.includes("invited-user-1"));
       assert.ok(calledWithUserIds.includes("owner-discord-id"));
       assert.ok(!calledWithUserIds.includes("invited-user-2"));
@@ -174,7 +194,8 @@ describe("NotificationsService", { concurrency: true }, () => {
         disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
       });
 
-      const sendMailCall = ctx.smtpTransport!.sendMail.mock.calls[0]?.arguments[0] as {
+      const sendMailCall = ctx.smtpTransport!.sendMail.mock.calls[0]
+        ?.arguments[0] as {
         subject: string;
         html: string;
       };
@@ -191,8 +212,12 @@ describe("NotificationsService", { concurrency: true }, () => {
         disabledCode: UserFeedDisabledCode.FailedRequests,
       });
 
-      const sendMailCall = ctx.smtpTransport!.sendMail.mock.calls[0]?.arguments[0] as { from: string };
-      assert.strictEqual(sendMailCall.from, '"MonitoRSS Alerts" <alerts@monitorss.xyz>');
+      const sendMailCall = ctx.smtpTransport!.sendMail.mock.calls[0]
+        ?.arguments[0] as { from: string };
+      assert.strictEqual(
+        sendMailCall.from,
+        '"MonitoRSS Alerts" <alerts@monitorss.xyz>',
+      );
     });
 
     it("handles delivery attempt creation failure gracefully", async () => {
@@ -210,15 +235,17 @@ describe("NotificationsService", { concurrency: true }, () => {
 
       assert.strictEqual(ctx.smtpTransport!.sendMail.mock.calls.length, 1);
       assert.strictEqual(
-        ctx.notificationDeliveryAttemptRepository.updateManyByIds.mock.calls.length,
-        0
+        ctx.notificationDeliveryAttemptRepository.updateManyByIds.mock.calls
+          .length,
+        0,
       );
     });
 
     it("handles delivery attempt update failure gracefully", async () => {
       const ctx = harness.createContext({
         notificationDeliveryAttemptRepository: {
-          updateManyByIds: () => Promise.reject(new Error("DB connection failed")),
+          updateManyByIds: () =>
+            Promise.reject(new Error("DB connection failed")),
         },
       });
 
@@ -241,7 +268,8 @@ describe("NotificationsService", { concurrency: true }, () => {
         disabledCode: UserFeedDisabledCode.FailedRequests,
       });
 
-      const sendMailCall = ctx.smtpTransport!.sendMail.mock.calls[0]?.arguments[0] as {
+      const sendMailCall = ctx.smtpTransport!.sendMail.mock.calls[0]
+        ?.arguments[0] as {
         html: string;
       };
       assert.ok(sendMailCall.html.includes("A".repeat(50) + "..."));
@@ -262,7 +290,8 @@ describe("NotificationsService", { concurrency: true }, () => {
       });
 
       assert.strictEqual(ctx.smtpTransport!.sendMail.mock.calls.length, 1);
-      const sendMailCall = ctx.smtpTransport!.sendMail.mock.calls[0]?.arguments[0] as {
+      const sendMailCall = ctx.smtpTransport!.sendMail.mock.calls[0]
+        ?.arguments[0] as {
         subject: string;
         html: string;
       };
@@ -298,15 +327,16 @@ describe("NotificationsService", { concurrency: true }, () => {
           ctx.service.sendDisabledFeedConnectionAlert(feed, connection, {
             disabledCode: FeedConnectionDisabledCode.Unknown,
           }),
-        { message: "SMTP failed" }
+        { message: "SMTP failed" },
       );
 
       assert.deepStrictEqual(
-        ctx.notificationDeliveryAttemptRepository.updateManyByIds.mock.calls[0]?.arguments[1],
+        ctx.notificationDeliveryAttemptRepository.updateManyByIds.mock.calls[0]
+          ?.arguments[1],
         {
           status: NotificationDeliveryAttemptStatus.Failure,
           failReasonInternal: "SMTP failed",
-        }
+        },
       );
     });
 
@@ -322,11 +352,12 @@ describe("NotificationsService", { concurrency: true }, () => {
         disabledCode: FeedConnectionDisabledCode.MissingMedium,
       });
 
-      const sendMailCall = ctx.smtpTransport!.sendMail.mock.calls[0]?.arguments[0] as { html: string };
+      const sendMailCall = ctx.smtpTransport!.sendMail.mock.calls[0]
+        ?.arguments[0] as { html: string };
       assert.ok(
         sendMailCall.html.includes(
-          "https://my.test.com/feeds/feed-456/discord-channel-connections/conn-123"
-        )
+          "https://my.test.com/feeds/feed-456/discord-channel-connections/conn-123",
+        ),
       );
     });
 
@@ -342,8 +373,11 @@ describe("NotificationsService", { concurrency: true }, () => {
         disabledCode: FeedConnectionDisabledCode.BadFormat,
       });
 
-      const sendMailCall = ctx.smtpTransport!.sendMail.mock.calls[0]?.arguments[0] as { html: string };
-      assert.ok(sendMailCall.html.includes("https://my.test.com/feeds/feed-789"));
+      const sendMailCall = ctx.smtpTransport!.sendMail.mock.calls[0]
+        ?.arguments[0] as { html: string };
+      assert.ok(
+        sendMailCall.html.includes("https://my.test.com/feeds/feed-789"),
+      );
       assert.ok(!sendMailCall.html.includes("discord-channel-connections"));
     });
 
@@ -358,8 +392,12 @@ describe("NotificationsService", { concurrency: true }, () => {
         rejectedMessage: "Invalid embed structure",
       });
 
-      const sendMailCall = ctx.smtpTransport!.sendMail.mock.calls[0]?.arguments[0] as { html: string };
-      assert.ok(sendMailCall.html.includes("article-123") || sendMailCall.html.includes("Invalid embed structure"));
+      const sendMailCall = ctx.smtpTransport!.sendMail.mock.calls[0]
+        ?.arguments[0] as { html: string };
+      assert.ok(
+        sendMailCall.html.includes("article-123") ||
+          sendMailCall.html.includes("Invalid embed structure"),
+      );
     });
 
     it("creates delivery attempt with DisabledConnection type", async () => {
@@ -371,10 +409,18 @@ describe("NotificationsService", { concurrency: true }, () => {
         disabledCode: FeedConnectionDisabledCode.Unknown,
       });
 
-      assert.strictEqual(ctx.notificationDeliveryAttemptRepository.createMany.mock.calls.length, 1);
-      const createCall = ctx.notificationDeliveryAttemptRepository.createMany.mock.calls[0]
-        ?.arguments[0] as Array<{ type: NotificationDeliveryAttemptType }>;
-      assert.strictEqual(createCall[0]?.type, NotificationDeliveryAttemptType.DisabledConnection);
+      assert.strictEqual(
+        ctx.notificationDeliveryAttemptRepository.createMany.mock.calls.length,
+        1,
+      );
+      const createCall = ctx.notificationDeliveryAttemptRepository.createMany
+        .mock.calls[0]?.arguments[0] as Array<{
+        type: NotificationDeliveryAttemptType;
+      }>;
+      assert.strictEqual(
+        createCall[0]?.type,
+        NotificationDeliveryAttemptType.DisabledConnection,
+      );
     });
 
     it("sends to multiple emails when multiple users have alert preferences", async () => {
@@ -388,8 +434,12 @@ describe("NotificationsService", { concurrency: true }, () => {
         disabledCode: FeedConnectionDisabledCode.MissingPermissions,
       });
 
-      const sendMailCall = ctx.smtpTransport!.sendMail.mock.calls[0]?.arguments[0] as { to: string[] };
-      assert.deepStrictEqual(sendMailCall.to, ["user1@test.com", "user2@test.com"]);
+      const sendMailCall = ctx.smtpTransport!.sendMail.mock.calls[0]
+        ?.arguments[0] as { to: string[] };
+      assert.deepStrictEqual(sendMailCall.to, [
+        "user1@test.com",
+        "user2@test.com",
+      ]);
     });
 
     it("uses correct reason from constants for each disabled code", async () => {
@@ -401,8 +451,13 @@ describe("NotificationsService", { concurrency: true }, () => {
         disabledCode: FeedConnectionDisabledCode.MissingMedium,
       });
 
-      const sendMailCall = ctx.smtpTransport!.sendMail.mock.calls[0]?.arguments[0] as { html: string };
-      assert.ok(sendMailCall.html.includes("channel with the service provider is missing"));
+      const sendMailCall = ctx.smtpTransport!.sendMail.mock.calls[0]
+        ?.arguments[0] as { html: string };
+      assert.ok(
+        sendMailCall.html.includes(
+          "channel with the service provider is missing",
+        ),
+      );
     });
 
     it("falls back to disabled code when reason not in constants", async () => {
@@ -414,7 +469,8 @@ describe("NotificationsService", { concurrency: true }, () => {
         disabledCode: FeedConnectionDisabledCode.Manual,
       });
 
-      const sendMailCall = ctx.smtpTransport!.sendMail.mock.calls[0]?.arguments[0] as { html: string };
+      const sendMailCall = ctx.smtpTransport!.sendMail.mock.calls[0]
+        ?.arguments[0] as { html: string };
       assert.ok(sendMailCall.html.includes("MANUAL"));
     });
   });

@@ -25,7 +25,7 @@ export class PaddleService {
   async getCustomerCreditBalanace(customerId: string) {
     const response =
       await this.executeApiCall<PaddleCustomerCreditBalanceResponse>(
-        `/customers/${customerId}/credit-balances`
+        `/customers/${customerId}/credit-balances`,
       );
 
     return response;
@@ -38,7 +38,7 @@ export class PaddleService {
     });
 
     const response = await this.executeApiCall<PaddleProductsResponse>(
-      `/products?${searchParams.toString()}`
+      `/products?${searchParams.toString()}`,
     );
 
     return {
@@ -61,12 +61,12 @@ export class PaddleService {
 
   async getProduct(productId: string) {
     const response = await this.executeApiCall<PaddleProductResponse>(
-      `/products/${productId}`
+      `/products/${productId}`,
     );
 
     if (!response.data.custom_data?.key) {
       throw new Error(
-        `Paddle Product ${productId} does not have a custom_data.key set`
+        `Paddle Product ${productId} does not have a custom_data.key set`,
       );
     }
 
@@ -78,7 +78,7 @@ export class PaddleService {
 
   async getCustomer(id: string) {
     const response = await this.executeApiCall<PaddleCustomerResponse>(
-      `/customers/${id}`
+      `/customers/${id}`,
     );
 
     return {
@@ -95,14 +95,14 @@ export class PaddleService {
 
   async getSubscription(subscriptionId: string) {
     return this.executeApiCall<PaddleSubscriptionResponse>(
-      `/subscriptions/${subscriptionId}`
+      `/subscriptions/${subscriptionId}`,
     );
   }
 
   async executeApiCall<T>(endpoint: string, data?: RequestInit): Promise<T> {
     if (!this.PADDLE_KEY || !this.PADDLE_URL) {
       throw new Error(
-        "Paddle key or paddle URL not set when executing api request to paddle products"
+        "Paddle key or paddle URL not set when executing api request to paddle products",
       );
     }
 
@@ -128,7 +128,7 @@ export class PaddleService {
       } catch {
         responseText = await res.text().catch(() => "Unable to read response");
         throw new Error(
-          `Failed to make Paddle request (${url}): ${res.status}. Response: ${responseText}`
+          `Failed to make Paddle request (${url}): ${res.status}. Response: ${responseText}`,
         );
       }
 
@@ -154,7 +154,7 @@ export class PaddleService {
       }
 
       throw new Error(
-        `Failed to make Paddle request (${url}) due to bad status code: ${res.status}. Response: ${responseText}`
+        `Failed to make Paddle request (${url}) due to bad status code: ${res.status}. Response: ${responseText}`,
       );
     }
 

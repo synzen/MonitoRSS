@@ -129,7 +129,7 @@ export interface UserIdUpdateOperation {
 }
 
 export type CustomPlaceholderStepTransform = (
-  step: Record<string, unknown>
+  step: Record<string, unknown>,
 ) => Record<string, unknown>;
 
 export interface CreateUserFeedInput {
@@ -207,22 +207,22 @@ export interface IUserFeedRepository {
   bulkUpdateLookupKeys(operations: LookupKeyOperation[]): Promise<void>;
   findByIdsForNotification(ids: string[]): Promise<UserFeedForNotification[]>;
   bulkAddConnectionsToInvites(
-    operations: AddConnectionToInviteOperation[]
+    operations: AddConnectionToInviteOperation[],
   ): Promise<void>;
   removeConnectionsFromInvites(
-    input: RemoveConnectionsFromInvitesInput
+    input: RemoveConnectionsFromInvitesInput,
   ): Promise<void>;
 
   findOneAndUpdate(
     filter: Record<string, unknown>,
     update: Record<string, unknown>,
-    options?: { new?: boolean }
+    options?: { new?: boolean },
   ): Promise<IUserFeed | null>;
 
   updateWithConnectionFilter(
     feedId: string,
     connectionId: string,
-    update: Record<string, unknown>
+    update: Record<string, unknown>,
   ): Promise<IUserFeed | null>;
 
   countByWebhookId(webhookId: string): Promise<number>;
@@ -231,32 +231,34 @@ export interface IUserFeedRepository {
 
   // Listing methods
   getUserFeedsListing(input: UserFeedListingInput): Promise<UserFeedListItem[]>;
-  getUserFeedsCount(input: Omit<UserFeedListingInput, "limit" | "offset" | "sort">): Promise<number>;
+  getUserFeedsCount(
+    input: Omit<UserFeedListingInput, "limit" | "offset" | "sort">,
+  ): Promise<number>;
 
   // CRUD methods for UserFeedsService
   countByOwnership(discordUserId: string): Promise<number>;
   countByOwnershipExcludingDisabled(
     discordUserId: string,
-    excludeDisabledCodes: UserFeedDisabledCode[]
+    excludeDisabledCodes: UserFeedDisabledCode[],
   ): Promise<number>;
   findByUrls(discordUserId: string, urls: string[]): Promise<{ url: string }[]>;
   findByIdAndOwnership(
     id: string,
-    discordUserId: string
+    discordUserId: string,
   ): Promise<IUserFeed | null>;
   updateById(
     id: string,
-    update: Record<string, unknown>
+    update: Record<string, unknown>,
   ): Promise<IUserFeed | null>;
   deleteById(id: string): Promise<IUserFeed | null>;
   deleteByIds(ids: string[]): Promise<number>;
   updateManyByFilter(
     filter: Record<string, unknown>,
-    update: Record<string, unknown>
+    update: Record<string, unknown>,
   ): Promise<number>;
   findByIds(ids: string[]): Promise<IUserFeed[]>;
   getFeedsGroupedByUserForLimitEnforcement(
-    query: UserFeedLimitEnforcementQuery
+    query: UserFeedLimitEnforcementQuery,
   ): AsyncIterable<UserFeedLimitEnforcementResult>;
   bulkWrite(operations: UserFeedBulkWriteOperation[]): Promise<void>;
 
@@ -265,6 +267,8 @@ export interface IUserFeedRepository {
   bulkUpdateSlotOffsets(operations: SlotOffsetUpdateOperation[]): Promise<void>;
   iterateFeedsMissingUserId(): AsyncIterable<UserFeedForUserIdMigration>;
   bulkUpdateUserIds(operations: UserIdUpdateOperation[]): Promise<void>;
-  migrateCustomPlaceholderSteps(transform: CustomPlaceholderStepTransform): Promise<number>;
+  migrateCustomPlaceholderSteps(
+    transform: CustomPlaceholderStepTransform,
+  ): Promise<number>;
   convertStringUserIdsToObjectIds(): Promise<number>;
 }

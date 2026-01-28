@@ -28,7 +28,7 @@ export class DiscordApiService {
 
   async executeBotRequest<T>(
     endpoint: string,
-    options?: RequestOptions
+    options?: RequestOptions,
   ): Promise<T> {
     const url = `${this.API_URL}${endpoint}`;
     const res = await this.restHandler.fetch(url, {
@@ -52,7 +52,7 @@ export class DiscordApiService {
   async executeBearerRequest<T>(
     accessToken: string,
     endpoint: string,
-    options?: RequestOptions
+    options?: RequestOptions,
   ): Promise<T> {
     const url = `${this.API_URL}${endpoint}`;
     const res = await this.restHandler.fetch(url, {
@@ -86,7 +86,7 @@ export class DiscordApiService {
 
   async getGuildMember(
     guildId: string,
-    userId: string
+    userId: string,
   ): Promise<DiscordGuildMember> {
     return this.executeBotRequest(`/guilds/${guildId}/members/${userId}`);
   }
@@ -102,7 +102,7 @@ export class DiscordApiService {
       `/guilds/${guildId}/members/${userId}/roles/${roleId}`,
       {
         method: "PUT",
-      }
+      },
     );
   }
 
@@ -117,7 +117,7 @@ export class DiscordApiService {
       `/guilds/${guildId}/members/${userId}/roles/${roleId}`,
       {
         method: "DELETE",
-      }
+      },
     );
   }
 
@@ -131,16 +131,16 @@ export class DiscordApiService {
     if (res.status >= 400 && res.status < 500) {
       throw new DiscordAPIError(
         `Discord API request to ${url} failed (${JSON.stringify(
-          await res.json()
+          await res.json(),
         )})`,
-        res.status
+        res.status,
       );
     }
 
     if (res.status >= 500) {
       throw new DiscordAPIError(
         `Discord API request to ${url} failed (${res.status} - Discord internal error)`,
-        res.status
+        res.status,
       );
     }
   }

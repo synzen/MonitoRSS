@@ -28,7 +28,7 @@ export class PatronsService {
 
     const maxPatreonPledge = Math.max(
       ...patrons.map((patron) => patron.pledgeOverride || patron.pledge),
-      0
+      0,
     );
 
     if (allBenefits.length === 0) {
@@ -50,10 +50,10 @@ export class PatronsService {
       maxGuilds: Math.max(...allBenefits.map((b) => b.maxGuilds)),
       allowWebhooks: allBenefits.some((b) => b.allowWebhooks),
       refreshRateSeconds: allBenefits.find(
-        (b) => b.refreshRateSeconds !== undefined
+        (b) => b.refreshRateSeconds !== undefined,
       )?.refreshRateSeconds,
       allowCustomPlaceholders: allBenefits.some(
-        (b) => b.allowCustomPlaceholders
+        (b) => b.allowCustomPlaceholders,
       ),
       maxPatreonPledge,
     };

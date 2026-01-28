@@ -57,7 +57,7 @@ export class UserFeedsService {
   async getFeedsByUser(
     _userId: string,
     discordUserId: string,
-    input: GetUserFeedsInput
+    input: GetUserFeedsInput,
   ): Promise<UserFeedListItem[]> {
     return this.deps.userFeedRepository.getUserFeedsListing({
       discordUserId,
@@ -72,7 +72,7 @@ export class UserFeedsService {
   async getFeedCountByUser(
     _userId: string,
     discordUserId: string,
-    input: Omit<GetUserFeedsInput, "offset" | "limit" | "sort">
+    input: Omit<GetUserFeedsInput, "offset" | "limit" | "sort">,
   ): Promise<number> {
     return this.deps.userFeedRepository.getUserFeedsCount({
       discordUserId,
@@ -83,7 +83,7 @@ export class UserFeedsService {
 
   async addFeed(
     opts: { discordUserId: string; userAccessToken: string },
-    input: CreateUserFeedInput
+    input: CreateUserFeedInput,
   ): Promise<IUserFeed> {
     const { discordUserId } = opts;
     const { url, title, sourceFeedId } = input;
@@ -94,14 +94,14 @@ export class UserFeedsService {
       sourceFeedId
         ? this.deps.userFeedRepository.findByIdAndOwnership(
             sourceFeedId,
-            discordUserId
+            discordUserId,
           )
         : null,
     ]);
 
     if (sourceFeedId && !sourceFeed) {
       throw new SourceFeedNotFoundException(
-        `Feed with ID ${sourceFeedId} not found for user ${discordUserId}`
+        `Feed with ID ${sourceFeedId} not found for user ${discordUserId}`,
       );
     }
 
@@ -125,12 +125,13 @@ export class UserFeedsService {
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
     });
 
-    const { finalUrl, enableDateChecks, feedTitle } = await this.checkUrlIsValid(
-      url,
-      lookupDetails
-    );
+    const { finalUrl, enableDateChecks, feedTitle } =
+      await this.checkUrlIsValid(url, lookupDetails);
 
-    const slotOffsetMs = calculateSlotOffsetMs(finalUrl, benefits.refreshRateSeconds);
+    const slotOffsetMs = calculateSlotOffsetMs(
+      finalUrl,
+      benefits.refreshRateSeconds,
+    );
 
     const feed = await this.deps.userFeedRepository.create({
       title: title || feedTitle || "Untitled Feed",
@@ -183,7 +184,7 @@ export class UserFeedsService {
 
   async updateFeedById(
     opts: { id: string; discordUserId: string },
-    updates: UpdateFeedInput
+    updates: UpdateFeedInput,
   ): Promise<IUserFeed | null> {
     const { id, discordUserId } = opts;
 
@@ -234,22 +235,23 @@ export class UserFeedsService {
       } else if (
         wantToEnable &&
         DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS.includes(
-          feed.disabledCode as UserFeedDisabledCode
+          feed.disabledCode as UserFeedDisabledCode,
         )
       ) {
         if (feed.disabledCode === UserFeedDisabledCode.ExceededFeedLimit) {
           const benefits =
             await this.deps.supportersService.getBenefitsOfDiscordUser(
-              discordUserId
+              discordUserId,
             );
-          const enabledFeedCount = await this.deps.userFeedRepository.countByOwnershipExcludingDisabled(
-            discordUserId,
-            DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS
-          );
+          const enabledFeedCount =
+            await this.deps.userFeedRepository.countByOwnershipExcludingDisabled(
+              discordUserId,
+              DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
+            );
 
           if (enabledFeedCount >= benefits.maxUserFeeds) {
             throw new FeedLimitReachedException(
-              `Cannot enable feed ${id} because user ${discordUserId} has reached the feed limit`
+              `Cannot enable feed ${id} because user ${discordUserId} has reached the feed limit`,
             );
           }
         }
@@ -260,7 +262,7 @@ export class UserFeedsService {
     if (updates.userRefreshRateSeconds !== undefined) {
       const benefits =
         await this.deps.supportersService.getBenefitsOfDiscordUser(
-          discordUserId
+          discordUserId,
         );
 
       if (
@@ -274,28 +276,30 @@ export class UserFeedsService {
         $set.slotOffsetMs = calculateSlotOffsetMs(feed.url, newEffectiveRate);
       } else if (updates.userRefreshRateSeconds > 86400) {
         throw new RefreshRateNotAllowedException(
-          `Refresh rate is too high. Maximum is 86400 seconds (24 hours).`
+          `Refresh rate is too high. Maximum is 86400 seconds (24 hours).`,
         );
       } else if (updates.userRefreshRateSeconds < benefits.refreshRateSeconds) {
         throw new RefreshRateNotAllowedException(
-          `Refresh rate is too low. Must be at least ${benefits.refreshRateSeconds} seconds.`
+          `Refresh rate is too low. Must be at least ${benefits.refreshRateSeconds} seconds.`,
         );
       } else {
         $set.userRefreshRateSeconds = updates.userRefreshRateSeconds;
         $set.slotOffsetMs = calculateSlotOffsetMs(
           feed.url,
-          updates.userRefreshRateSeconds
+          updates.userRefreshRateSeconds,
         );
       }
     }
 
     if (updates.url !== undefined && updates.url !== feed.url) {
-      const user = await this.deps.usersService.getOrCreateUserByDiscordId(
-        discordUserId
-      );
+      const user =
+        await this.deps.usersService.getOrCreateUserByDiscordId(discordUserId);
 
       const lookupDetails = getFeedRequestLookupDetails({
-        feed: { url: updates.url, feedRequestLookupKey: feed.feedRequestLookupKey },
+        feed: {
+          url: updates.url,
+          feedRequestLookupKey: feed.feedRequestLookupKey,
+        },
         user: {
           externalCredentials: user.externalCredentials?.map((c) => ({
             type: c.type,
@@ -307,7 +311,7 @@ export class UserFeedsService {
 
       const { finalUrl, enableDateChecks } = await this.checkUrlIsValid(
         updates.url,
-        lookupDetails
+        lookupDetails,
       );
 
       $set.url = finalUrl;
@@ -322,7 +326,7 @@ export class UserFeedsService {
         feed.userRefreshRateSeconds ||
         (
           await this.deps.supportersService.getBenefitsOfDiscordUser(
-            discordUserId
+            discordUserId,
           )
         ).refreshRateSeconds;
 
@@ -347,7 +351,7 @@ export class UserFeedsService {
 
     const updatedFeed = await this.deps.userFeedRepository.updateById(
       id,
-      updateDoc
+      updateDoc,
     );
 
     if (updates.disabledCode !== undefined) {
@@ -369,9 +373,9 @@ export class UserFeedsService {
         feed.connections.discordChannels.map((conn) =>
           this.deps.feedConnectionsDiscordChannelsService!.deleteConnection(
             id,
-            conn.id
-          )
-        )
+            conn.id,
+          ),
+        ),
       );
     }
 
@@ -395,7 +399,7 @@ export class UserFeedsService {
   }
 
   async bulkDelete(
-    feedIds: string[]
+    feedIds: string[],
   ): Promise<Array<{ id: string; deleted: boolean }>> {
     const feeds = await this.deps.userFeedRepository.findByIds(feedIds);
     const foundIds = new Set(feeds.map((f) => f.id));
@@ -406,16 +410,19 @@ export class UserFeedsService {
           this.deps
             .feedConnectionsDiscordChannelsService!.deleteConnection(
               feed.id,
-              conn.id
+              conn.id,
             )
             .catch((err) => {
-              logger.error("Failed to delete feed connection during bulk delete", {
-                feedId: feed.id,
-                connectionId: conn.id,
-                error: (err as Error).stack,
-              });
-            })
-        )
+              logger.error(
+                "Failed to delete feed connection during bulk delete",
+                {
+                  feedId: feed.id,
+                  connectionId: conn.id,
+                  error: (err as Error).stack,
+                },
+              );
+            }),
+        ),
       );
       await Promise.all(deletePromises);
     }
@@ -450,22 +457,22 @@ export class UserFeedsService {
   }
 
   async bulkDisable(
-    feedIds: string[]
+    feedIds: string[],
   ): Promise<Array<{ id: string; disabled: boolean }>> {
     const feeds = await this.deps.userFeedRepository.findByIds(feedIds);
     const eligibleFeeds = feeds.filter(
       (f) =>
         !f.disabledCode ||
         DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS.includes(
-          f.disabledCode as UserFeedDisabledCode
-        )
+          f.disabledCode as UserFeedDisabledCode,
+        ),
     );
     const eligibleIds = new Set(eligibleFeeds.map((f) => f.id));
 
     if (eligibleIds.size > 0) {
       await this.deps.userFeedRepository.updateManyByFilter(
         { _id: { $in: Array.from(eligibleIds) } },
-        { $set: { disabledCode: UserFeedDisabledCode.Manual } }
+        { $set: { disabledCode: UserFeedDisabledCode.Manual } },
       );
     }
 
@@ -488,18 +495,18 @@ export class UserFeedsService {
   }
 
   async bulkEnable(
-    feedIds: string[]
+    feedIds: string[],
   ): Promise<Array<{ id: string; enabled: boolean }>> {
     const feeds = await this.deps.userFeedRepository.findByIds(feedIds);
     const eligibleFeeds = feeds.filter(
-      (f) => f.disabledCode === UserFeedDisabledCode.Manual
+      (f) => f.disabledCode === UserFeedDisabledCode.Manual,
     );
     const eligibleIds = new Set(eligibleFeeds.map((f) => f.id));
 
     if (eligibleIds.size > 0) {
       await this.deps.userFeedRepository.updateManyByFilter(
         { _id: { $in: Array.from(eligibleIds) } },
-        { $unset: { disabledCode: 1 } }
+        { $unset: { disabledCode: 1 } },
       );
     }
 
@@ -523,7 +530,7 @@ export class UserFeedsService {
 
   async validateFeedUrl(
     opts: { discordUserId: string },
-    input: { url: string }
+    input: { url: string },
   ): Promise<ValidateFeedUrlOutput> {
     const { discordUserId } = opts;
     const { url } = input;
@@ -542,7 +549,10 @@ export class UserFeedsService {
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
     });
 
-    const { finalUrl, feedTitle } = await this.checkUrlIsValid(url, lookupDetails);
+    const { finalUrl, feedTitle } = await this.checkUrlIsValid(
+      url,
+      lookupDetails,
+    );
 
     const urlChanged = finalUrl !== url;
 
@@ -554,11 +564,11 @@ export class UserFeedsService {
 
   async deduplicateFeedUrls(
     discordUserId: string,
-    urls: string[]
+    urls: string[],
   ): Promise<string[]> {
     const existingFeeds = await this.deps.userFeedRepository.findByUrls(
       discordUserId,
-      urls
+      urls,
     );
     const existingUrls = new Set(existingFeeds.map((f) => f.url));
 
@@ -566,7 +576,7 @@ export class UserFeedsService {
   }
 
   async calculateCurrentFeedCountOfDiscordUser(
-    discordUserId: string
+    discordUserId: string,
   ): Promise<number> {
     return this.deps.userFeedRepository.countByOwnership(discordUserId);
   }
@@ -615,10 +625,10 @@ export class UserFeedsService {
       discordUserId: string;
       maxUserFeeds: number;
       refreshRateSeconds: number;
-    }>
+    }>,
   ) {
     const supporterDiscordUserIds = supporterLimits.map(
-      ({ discordUserId }) => discordUserId
+      ({ discordUserId }) => discordUserId,
     );
     const enforceWebhookDocs = this.getEnforceWebhookWrites({
       enforcementType: "all-users",
@@ -656,7 +666,7 @@ export class UserFeedsService {
 
   private async checkUrlIsValid(
     url: string,
-    lookupDetails: FeedRequestLookupDetails | null
+    lookupDetails: FeedRequestLookupDetails | null,
   ): Promise<CheckUrlIsValidOutput> {
     const getArticlesResponse = await this.deps.feedHandlerService.getArticles(
       {
@@ -677,7 +687,7 @@ export class UserFeedsService {
         findRssFromHtml: true,
         executeFetchIfStale: true,
       },
-      lookupDetails
+      lookupDetails,
     );
 
     const {
@@ -691,7 +701,7 @@ export class UserFeedsService {
     if (requestStatus === GetArticlesResponseRequestStatus.Success) {
       const bannedRecord = await this.deps.feedsService.getBannedFeedDetails(
         finalUrl || url,
-        ""
+        "",
       );
 
       if (bannedRecord) {
@@ -711,7 +721,7 @@ export class UserFeedsService {
       }
 
       throw new FeedParseException(
-        `Feed host failed to return a valid, parseable feed`
+        `Feed host failed to return a valid, parseable feed`,
       );
     } else if (
       requestStatus === GetArticlesResponseRequestStatus.BadStatusCode
@@ -729,7 +739,7 @@ export class UserFeedsService {
       requestStatus === GetArticlesResponseRequestStatus.InvalidSslCertificate
     ) {
       throw new FeedInvalidSslCertException(
-        "Issue encountered with SSL certificate"
+        "Issue encountered with SSL certificate",
       );
     }
 
@@ -766,7 +776,7 @@ export class UserFeedsService {
           enforcementType: "single-user";
           allowWebhooks: boolean;
           discordUserId: string;
-        }
+        },
   ): UserFeedBulkWriteOperation[] {
     const bulkWriteOps: UserFeedBulkWriteOperation[] = [];
 
@@ -850,7 +860,7 @@ export class UserFeedsService {
           enforcementType: "single-user";
           discordUserId: string;
           maxUserFeeds: number;
-        }
+        },
   ) {
     const userIds =
       opts.enforcementType === "all-users"
@@ -867,7 +877,7 @@ export class UserFeedsService {
             opts.supporterLimits.map(({ discordUserId, maxUserFeeds }) => [
               discordUserId,
               maxUserFeeds,
-            ])
+            ]),
           )
         : {
             [opts.discordUserId]: opts.maxUserFeeds,
@@ -889,7 +899,7 @@ export class UserFeedsService {
 
       if (!limit) {
         throw new Error(
-          `No feed limit found for user ${discordUserId} while enforcing limits`
+          `No feed limit found for user ${discordUserId} while enforcing limits`,
         );
       }
 
@@ -901,7 +911,7 @@ export class UserFeedsService {
       } else if (enabledFeedCount < limit && disabledFeedIds.length > 0) {
         const numberOfFeedsToEnable = limit - enabledFeedCount;
         const toEnable = disabledFeedIds.slice(
-          Math.max(0, disabledFeedIds.length - numberOfFeedsToEnable)
+          Math.max(0, disabledFeedIds.length - numberOfFeedsToEnable),
         );
         feedIdsToEnable.push(...toEnable);
       }
@@ -949,20 +959,24 @@ export class UserFeedsService {
       | {
           enforcementType: "single-user";
           discordUserId: string;
-        }
+        },
   ) {
     const defaultMaxUserFeeds = this.deps.supportersService.defaultMaxUserFeeds;
 
     const results =
       opts.enforcementType === "single-user"
-        ? this.deps.userFeedRepository.getFeedsGroupedByUserForLimitEnforcement({
-            type: "include",
-            discordUserIds: [opts.discordUserId],
-          })
-        : this.deps.userFeedRepository.getFeedsGroupedByUserForLimitEnforcement({
-            type: "exclude",
-            discordUserIds: opts.supporterDiscordUserIds,
-          });
+        ? this.deps.userFeedRepository.getFeedsGroupedByUserForLimitEnforcement(
+            {
+              type: "include",
+              discordUserIds: [opts.discordUserId],
+            },
+          )
+        : this.deps.userFeedRepository.getFeedsGroupedByUserForLimitEnforcement(
+            {
+              type: "exclude",
+              discordUserIds: opts.supporterDiscordUserIds,
+            },
+          );
 
     const feedIdsToDisable: string[] = [];
     const feedIdsToEnable: string[] = [];
@@ -975,7 +989,7 @@ export class UserFeedsService {
       if (enabledFeedCount > defaultMaxUserFeeds) {
         const toDisable = enabledFeedIds.slice(
           0,
-          enabledFeedCount - defaultMaxUserFeeds
+          enabledFeedCount - defaultMaxUserFeeds,
         );
         feedIdsToDisable.push(...toDisable);
       } else if (
@@ -984,7 +998,7 @@ export class UserFeedsService {
       ) {
         const numberOfFeedsToEnable = defaultMaxUserFeeds - enabledFeedCount;
         const toEnable = disabledFeedIds.slice(
-          Math.max(0, disabledFeedIds.length - numberOfFeedsToEnable)
+          Math.max(0, disabledFeedIds.length - numberOfFeedsToEnable),
         );
         feedIdsToEnable.push(...toEnable);
       }
@@ -1039,7 +1053,7 @@ export class UserFeedsService {
           enforcementType: "single-user";
           discordUserId: string;
           refreshRateSeconds: number;
-        }
+        },
   ): UserFeedBulkWriteOperation[] {
     const bulkWriteDocs: UserFeedBulkWriteOperation[] = [];
     // Unset the lower user refresh rate seconds for users who are not supporters
@@ -1050,7 +1064,7 @@ export class UserFeedsService {
       const supporterDiscordUserIds = opts.supporterLimits
         .filter(
           ({ refreshRateSeconds }) =>
-            refreshRateSeconds === supporterRefreshRate
+            refreshRateSeconds === supporterRefreshRate,
         )
         .map(({ discordUserId }) => discordUserId);
       bulkWriteDocs.push({

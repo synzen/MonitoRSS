@@ -63,9 +63,13 @@ describe("FeedSchedulingService", { concurrency: true }, () => {
         feedScheduleRepository: mockFeedScheduleRepository,
       });
 
-      const refreshRates = await service.getRefreshRatesOfFeeds(sampleFeedDetails);
+      const refreshRates =
+        await service.getRefreshRatesOfFeeds(sampleFeedDetails);
 
-      assert.strictEqual(refreshRates[0]!, serverBenefits[0]!.refreshRateSeconds);
+      assert.strictEqual(
+        refreshRates[0]!,
+        serverBenefits[0]!.refreshRateSeconds,
+      );
     });
 
     it("returns the default refresh rate if no schedule matches for non-supporters", async () => {
@@ -88,7 +92,8 @@ describe("FeedSchedulingService", { concurrency: true }, () => {
         feedScheduleRepository: mockFeedScheduleRepository,
       });
 
-      const refreshRates = await service.getRefreshRatesOfFeeds(sampleFeedDetails);
+      const refreshRates =
+        await service.getRefreshRatesOfFeeds(sampleFeedDetails);
 
       assert.strictEqual(refreshRates[0]!, service.defaultRefreshRateSeconds);
     });
@@ -123,9 +128,13 @@ describe("FeedSchedulingService", { concurrency: true }, () => {
         feedScheduleRepository: mockFeedScheduleRepository,
       });
 
-      const refreshRates = await service.getRefreshRatesOfFeeds(sampleFeedDetails);
+      const refreshRates =
+        await service.getRefreshRatesOfFeeds(sampleFeedDetails);
 
-      assert.strictEqual(refreshRates[0]!, mockSchedules[0]!.refreshRateMinutes * 60);
+      assert.strictEqual(
+        refreshRates[0]!,
+        mockSchedules[0]!.refreshRateMinutes * 60,
+      );
     });
 
     it("returns the refresh rate of the schedule that matches the feed id", async () => {
@@ -158,9 +167,13 @@ describe("FeedSchedulingService", { concurrency: true }, () => {
         feedScheduleRepository: mockFeedScheduleRepository,
       });
 
-      const refreshRates = await service.getRefreshRatesOfFeeds(sampleFeedDetails);
+      const refreshRates =
+        await service.getRefreshRatesOfFeeds(sampleFeedDetails);
 
-      assert.strictEqual(refreshRates[0]!, mockSchedules[0]!.refreshRateMinutes * 60);
+      assert.strictEqual(
+        refreshRates[0]!,
+        mockSchedules[0]!.refreshRateMinutes * 60,
+      );
     });
 
     it("returns the default refresh rate if no schedules match keywords or feeds", async () => {
@@ -193,7 +206,8 @@ describe("FeedSchedulingService", { concurrency: true }, () => {
         feedScheduleRepository: mockFeedScheduleRepository,
       });
 
-      const refreshRates = await service.getRefreshRatesOfFeeds(sampleFeedDetails);
+      const refreshRates =
+        await service.getRefreshRatesOfFeeds(sampleFeedDetails);
 
       assert.strictEqual(refreshRates[0]!, service.defaultRefreshRateSeconds);
     });

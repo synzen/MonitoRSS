@@ -8,7 +8,7 @@ export const FeedWebhookSchema = new Schema(
     disabled: { type: Boolean },
     url: { type: String },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const FeedEmbedFieldSchema = new Schema(
@@ -17,7 +17,7 @@ const FeedEmbedFieldSchema = new Schema(
     value: { type: String, required: true },
     inline: { type: Boolean },
   },
-  { _id: false }
+  { _id: false },
 );
 
 export const FeedEmbedSchema = new Schema(
@@ -37,5 +37,5 @@ export const FeedEmbedSchema = new Schema(
     fields: { type: [FeedEmbedFieldSchema], default: [] },
     webhook: { type: FeedWebhookSchema },
   },
-  { _id: false }
+  { _id: false },
 );

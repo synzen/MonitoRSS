@@ -5,7 +5,10 @@ import {
   type Model,
   type InferSchemaType,
 } from "mongoose";
-import type { IFeedSchedule, IFeedScheduleRepository } from "../interfaces/feed-schedule.types";
+import type {
+  IFeedSchedule,
+  IFeedScheduleRepository,
+} from "../interfaces/feed-schedule.types";
 import { BaseMongooseRepository } from "./base.mongoose.repository";
 
 const FeedScheduleSchema = new Schema(
@@ -15,7 +18,7 @@ const FeedScheduleSchema = new Schema(
     feeds: { type: [String], default: [] },
     refreshRateMinutes: { type: Number, required: true },
   },
-  { collection: "schedules" }
+  { collection: "schedules" },
 );
 
 type FeedScheduleDoc = InferSchemaType<typeof FeedScheduleSchema>;
@@ -30,11 +33,13 @@ export class FeedScheduleMongooseRepository
     super();
     this.model = connection.model<FeedScheduleDoc>(
       "FeedSchedule",
-      FeedScheduleSchema
+      FeedScheduleSchema,
     );
   }
 
-  protected toEntity(doc: FeedScheduleDoc & { _id: Types.ObjectId }): IFeedSchedule {
+  protected toEntity(
+    doc: FeedScheduleDoc & { _id: Types.ObjectId },
+  ): IFeedSchedule {
     return {
       id: this.objectIdToString(doc._id),
       name: doc.name,
@@ -51,6 +56,8 @@ export class FeedScheduleMongooseRepository
       })
       .lean();
 
-    return docs.map((doc) => this.toEntity(doc as FeedScheduleDoc & { _id: Types.ObjectId }));
+    return docs.map((doc) =>
+      this.toEntity(doc as FeedScheduleDoc & { _id: Types.ObjectId }),
+    );
   }
 }

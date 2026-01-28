@@ -53,9 +53,10 @@ export class NotificationsService {
 
   async sendDisabledFeedsAlert(
     feedIds: string[],
-    data: { disabledCode: UserFeedDisabledCode }
+    data: { disabledCode: UserFeedDisabledCode },
   ): Promise<void> {
-    const feeds = await this.deps.userFeedRepository.findByIdsForNotification(feedIds);
+    const feeds =
+      await this.deps.userFeedRepository.findByIdsForNotification(feedIds);
 
     await Promise.all(
       feeds.map(async (feed) => {
@@ -64,29 +65,33 @@ export class NotificationsService {
         } catch (err) {
           logger.error(
             `Failed to send disabled feed alert email for feed ${feed.id}`,
-            { stack: (err as Error).stack }
+            { stack: (err as Error).stack },
           );
         }
-      })
+      }),
     );
   }
 
   private async sendDisabledFeedAlertForFeed(
     feed: UserFeedForNotification,
-    disabledCode: UserFeedDisabledCode
+    disabledCode: UserFeedDisabledCode,
   ): Promise<void> {
     const discordUserIdsToAlert = this.getDiscordUserIdsToAlert(feed);
-    const emails = await this.deps.usersService.getEmailsForAlerts(discordUserIdsToAlert);
+    const emails = await this.deps.usersService.getEmailsForAlerts(
+      discordUserIdsToAlert,
+    );
 
     if (!emails.length) {
-      logger.debug(`No emails found to send disabled feed alert for feed ${feed.id}`);
+      logger.debug(
+        `No emails found to send disabled feed alert for feed ${feed.id}`,
+      );
       return;
     }
 
     const attemptIds = await this.createDeliveryAttempts(
       emails,
       NotificationDeliveryAttemptType.DisabledFeed,
-      feed.id
+      feed.id,
     );
 
     const reason = USER_FEED_DISABLED_REASONS[disabledCode];
@@ -110,13 +115,13 @@ export class NotificationsService {
 
       await this.updateDeliveryAttemptStatus(
         attemptIds,
-        NotificationDeliveryAttemptStatus.Success
+        NotificationDeliveryAttemptStatus.Success,
       );
     } catch (err) {
       await this.updateDeliveryAttemptStatus(
         attemptIds,
         NotificationDeliveryAttemptStatus.Failure,
-        (err as Error).message
+        (err as Error).message,
       );
       throw err;
     }
@@ -129,14 +134,16 @@ export class NotificationsService {
       disabledCode: FeedConnectionDisabledCode;
       articleId?: string;
       rejectedMessage?: string;
-    }
+    },
   ): Promise<void> {
     const discordUserIdsToAlert = this.getDiscordUserIdsToAlert(feed);
-    const emails = await this.deps.usersService.getEmailsForAlerts(discordUserIdsToAlert);
+    const emails = await this.deps.usersService.getEmailsForAlerts(
+      discordUserIdsToAlert,
+    );
 
     if (!emails.length) {
       logger.debug(
-        `No emails found to send disabled feed connection alert for feed ${feed.id}`
+        `No emails found to send disabled feed connection alert for feed ${feed.id}`,
       );
       return;
     }
@@ -144,7 +151,7 @@ export class NotificationsService {
     const attemptIds = await this.createDeliveryAttempts(
       emails,
       NotificationDeliveryAttemptType.DisabledConnection,
-      feed.id
+      feed.id,
     );
 
     const reason = USER_FEED_CONNECTION_DISABLED_REASONS[options.disabledCode];
@@ -175,13 +182,13 @@ export class NotificationsService {
 
       await this.updateDeliveryAttemptStatus(
         attemptIds,
-        NotificationDeliveryAttemptStatus.Success
+        NotificationDeliveryAttemptStatus.Success,
       );
     } catch (err) {
       await this.updateDeliveryAttemptStatus(
         attemptIds,
         NotificationDeliveryAttemptStatus.Failure,
-        (err as Error).message
+        (err as Error).message,
       );
       throw err;
     }
@@ -198,10 +205,10 @@ export class NotificationsService {
 
   private getConnectionPrefix(
     feed: UserFeedForNotification,
-    connection: IDiscordChannelConnection
+    connection: IDiscordChannelConnection,
   ): string {
     const isDiscordChannel = feed.connections.discordChannels.some(
-      (c) => c.id === connection.id
+      (c) => c.id === connection.id,
     );
 
     if (isDiscordChannel) {
@@ -214,22 +221,23 @@ export class NotificationsService {
   private async createDeliveryAttempts(
     emails: string[],
     type: NotificationDeliveryAttemptType,
-    feedId: string
+    feedId: string,
   ): Promise<string[]> {
     try {
-      const attempts = await this.deps.notificationDeliveryAttemptRepository.createMany(
-        emails.map((email) => ({
-          email,
-          status: NotificationDeliveryAttemptStatus.Pending,
-          type,
-          feedId,
-        }))
-      );
+      const attempts =
+        await this.deps.notificationDeliveryAttemptRepository.createMany(
+          emails.map((email) => ({
+            email,
+            status: NotificationDeliveryAttemptStatus.Pending,
+            type,
+            feedId,
+          })),
+        );
       return attempts.map((a) => a.id);
     } catch (err) {
       logger.error(
         `Failed to create notification delivery attempts for feed ${feedId}`,
-        { stack: (err as Error).stack }
+        { stack: (err as Error).stack },
       );
       return [];
     }
@@ -238,7 +246,7 @@ export class NotificationsService {
   private async updateDeliveryAttemptStatus(
     attemptIds: string[],
     status: NotificationDeliveryAttemptStatus,
-    failReason?: string
+    failReason?: string,
   ): Promise<void> {
     if (attemptIds.length === 0) {
       return;
@@ -247,7 +255,7 @@ export class NotificationsService {
     try {
       await this.deps.notificationDeliveryAttemptRepository.updateManyByIds(
         attemptIds,
-        { status, failReasonInternal: failReason }
+        { status, failReasonInternal: failReason },
       );
     } catch (err) {
       logger.error(`Failed to update notification delivery attempt status`, {

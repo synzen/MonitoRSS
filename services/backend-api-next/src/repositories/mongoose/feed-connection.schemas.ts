@@ -15,7 +15,7 @@ export const FiltersSchema = new Schema(
   {
     expression: { type: Schema.Types.Mixed },
   },
-  { _id: false, versionKey: false, timestamps: false }
+  { _id: false, versionKey: false, timestamps: false },
 );
 
 // ForumThreadTag
@@ -24,7 +24,7 @@ export const ForumThreadTagSchema = new Schema(
     id: { type: String, required: true },
     filters: { type: FiltersSchema },
   },
-  { _id: false, timestamps: false }
+  { _id: false, timestamps: false },
 );
 
 // DiscordFormatter
@@ -35,7 +35,7 @@ export const DiscordFormatterSchema = new Schema(
     disableImageLinkPreviews: { type: Boolean, default: false },
     ignoreNewLines: { type: Boolean, default: false },
   },
-  { _id: false, versionKey: false, timestamps: false }
+  { _id: false, versionKey: false, timestamps: false },
 );
 
 // DiscordWebhook (connection version)
@@ -54,7 +54,7 @@ export const ConnectionDiscordWebhookSchema = new Schema(
     channelId: { type: String },
     isApplicationOwned: { type: Boolean },
   },
-  { _id: false, versionKey: false, timestamps: false }
+  { _id: false, versionKey: false, timestamps: false },
 );
 
 // CustomRateLimit
@@ -68,7 +68,7 @@ export const CustomRateLimitSchema = new Schema(
     timeWindowSeconds: { type: Number, required: true },
     limit: { type: Number, required: true },
   },
-  { _id: false, versionKey: false, timestamps: false }
+  { _id: false, versionKey: false, timestamps: false },
 );
 
 // CustomPlaceholder base step
@@ -85,7 +85,12 @@ const CustomPlaceholderBaseStepSchema = new Schema(
       enum: Object.values(CustomPlaceholderStepType),
     },
   },
-  { discriminatorKey: "type", _id: false, versionKey: false, timestamps: false }
+  {
+    discriminatorKey: "type",
+    _id: false,
+    versionKey: false,
+    timestamps: false,
+  },
 );
 
 // CustomPlaceholder step discriminator schemas
@@ -95,22 +100,22 @@ const CustomPlaceholderRegexStepSchema = new Schema(
     regexSearchFlags: { type: String },
     replacementString: { type: String },
   },
-  { _id: false, versionKey: false, timestamps: false }
+  { _id: false, versionKey: false, timestamps: false },
 );
 
 const CustomPlaceholderUrlEncodeStepSchema = new Schema(
   {},
-  { _id: false, versionKey: false, timestamps: false }
+  { _id: false, versionKey: false, timestamps: false },
 );
 
 const CustomPlaceholderUppercaseStepSchema = new Schema(
   {},
-  { _id: false, versionKey: false, timestamps: false }
+  { _id: false, versionKey: false, timestamps: false },
 );
 
 const CustomPlaceholderLowercaseStepSchema = new Schema(
   {},
-  { _id: false, versionKey: false, timestamps: false }
+  { _id: false, versionKey: false, timestamps: false },
 );
 
 const CustomPlaceholderDateFormatStepSchema = new Schema(
@@ -119,7 +124,7 @@ const CustomPlaceholderDateFormatStepSchema = new Schema(
     timezone: { type: String },
     locale: { type: String },
   },
-  { _id: false, versionKey: false, timestamps: false }
+  { _id: false, versionKey: false, timestamps: false },
 );
 
 // CustomPlaceholder
@@ -134,32 +139,32 @@ export const CustomPlaceholderSchema = new Schema(
     sourcePlaceholder: { type: String, required: true },
     steps: { type: [CustomPlaceholderBaseStepSchema], required: true },
   },
-  { _id: false, versionKey: false, timestamps: false }
+  { _id: false, versionKey: false, timestamps: false },
 );
 
 // Apply discriminators for CustomPlaceholder steps
 const stepsArray = CustomPlaceholderSchema.path(
-  "steps"
+  "steps",
 ) as Schema.Types.DocumentArray;
 stepsArray.discriminator(
   CustomPlaceholderStepType.Regex,
-  CustomPlaceholderRegexStepSchema
+  CustomPlaceholderRegexStepSchema,
 );
 stepsArray.discriminator(
   CustomPlaceholderStepType.UrlEncode,
-  CustomPlaceholderUrlEncodeStepSchema
+  CustomPlaceholderUrlEncodeStepSchema,
 );
 stepsArray.discriminator(
   CustomPlaceholderStepType.Uppercase,
-  CustomPlaceholderUppercaseStepSchema
+  CustomPlaceholderUppercaseStepSchema,
 );
 stepsArray.discriminator(
   CustomPlaceholderStepType.Lowercase,
-  CustomPlaceholderLowercaseStepSchema
+  CustomPlaceholderLowercaseStepSchema,
 );
 stepsArray.discriminator(
   CustomPlaceholderStepType.DateFormat,
-  CustomPlaceholderDateFormatStepSchema
+  CustomPlaceholderDateFormatStepSchema,
 );
 
 // Discord component base
@@ -172,7 +177,12 @@ const DiscordBaseComponentSchema = new Schema(
       enum: Object.values(FeedConnectionDiscordComponentType),
     },
   },
-  { discriminatorKey: "type", _id: false, versionKey: false, timestamps: false }
+  {
+    discriminatorKey: "type",
+    _id: false,
+    versionKey: false,
+    timestamps: false,
+  },
 );
 
 // Discord button component
@@ -187,7 +197,7 @@ const DiscordButtonComponentSchema = new Schema(
       max: FeedConnectionDiscordComponentButtonStyle.Link,
     },
   },
-  { _id: false, versionKey: false, timestamps: false }
+  { _id: false, versionKey: false, timestamps: false },
 );
 
 // DiscordComponentRow
@@ -196,16 +206,16 @@ export const DiscordComponentRowSchema = new Schema(
     id: { type: String, required: true },
     components: { type: [DiscordBaseComponentSchema] },
   },
-  { _id: false, versionKey: false, timestamps: false }
+  { _id: false, versionKey: false, timestamps: false },
 );
 
 // Apply discriminator for DiscordComponentRow components
 const componentsArray = DiscordComponentRowSchema.path(
-  "components"
+  "components",
 ) as Schema.Types.DocumentArray;
 componentsArray.discriminator(
   FeedConnectionDiscordComponentType.Button,
-  DiscordButtonComponentSchema
+  DiscordButtonComponentSchema,
 );
 
 // Channel
@@ -219,7 +229,7 @@ const ChannelSchema = new Schema(
     guildId: { type: String, required: true },
     parentChannelId: { type: String },
   },
-  { _id: false, versionKey: false, timestamps: false }
+  { _id: false, versionKey: false, timestamps: false },
 );
 
 // SplitOptions
@@ -230,7 +240,7 @@ const SplitOptionsSchema = new Schema(
     appendChar: { type: String, default: null },
     prependChar: { type: String, default: null },
   },
-  { _id: false, timestamps: false }
+  { _id: false, timestamps: false },
 );
 
 // PlaceholderLimit
@@ -240,7 +250,7 @@ const PlaceholderLimitSchema = new Schema(
     characterCount: { type: Number, required: true },
     appendString: { type: String },
   },
-  { _id: false, timestamps: false }
+  { _id: false, timestamps: false },
 );
 
 // MentionTarget
@@ -254,7 +264,7 @@ const MentionTargetSchema = new Schema(
     },
     filters: { type: FiltersSchema },
   },
-  { _id: false, versionKey: false, timestamps: false }
+  { _id: false, versionKey: false, timestamps: false },
 );
 
 // Mentions
@@ -262,7 +272,7 @@ const MentionsSchema = new Schema(
   {
     targets: { type: [MentionTargetSchema] },
   },
-  { _id: false, versionKey: false, timestamps: false }
+  { _id: false, versionKey: false, timestamps: false },
 );
 
 // Details
@@ -282,7 +292,7 @@ const DetailsSchema = new Schema(
     enablePlaceholderFallback: { type: Boolean },
     componentsV2: { type: Schema.Types.Mixed },
   },
-  { _id: false, versionKey: false, timestamps: false }
+  { _id: false, versionKey: false, timestamps: false },
 );
 
 // DiscordChannelConnection
@@ -302,7 +312,7 @@ export const DiscordChannelConnectionSchema = new Schema(
     splitOptions: { type: SplitOptionsSchema },
     customPlaceholders: { type: [CustomPlaceholderSchema] },
   },
-  { _id: false, timestamps: true, versionKey: false }
+  { _id: false, timestamps: true, versionKey: false },
 );
 
 // FeedConnections wrapper
@@ -310,7 +320,7 @@ export const FeedConnectionsSchema = new Schema(
   {
     discordChannels: { type: [DiscordChannelConnectionSchema], default: [] },
   },
-  { _id: false, timestamps: false, versionKey: false }
+  { _id: false, timestamps: false, versionKey: false },
 );
 
 // Exported types derived from schemas

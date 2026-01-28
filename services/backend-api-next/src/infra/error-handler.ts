@@ -6,7 +6,7 @@ export class HttpError extends Error {
   constructor(
     public readonly statusCode: number,
     message: string,
-    public readonly details?: unknown
+    public readonly details?: unknown,
   ) {
     super(message);
     this.name = "HttpError";
@@ -56,7 +56,10 @@ export class UnprocessableEntityError extends HttpError {
 }
 
 export class TooManyRequestsError extends HttpError {
-  constructor(message = "Too Many Requests", public readonly retryAfter?: number) {
+  constructor(
+    message = "Too Many Requests",
+    public readonly retryAfter?: number,
+  ) {
     super(429, message);
     this.name = "TooManyRequestsError";
   }
@@ -79,7 +82,7 @@ export class InternalServerError extends HttpError {
 export function errorHandler(
   error: FastifyError,
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const discordId = getAccessTokenFromRequest(request)?.discord?.id;
 

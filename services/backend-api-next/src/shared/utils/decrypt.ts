@@ -6,7 +6,7 @@ export function decrypt(input: string, hexKey: string): string {
   const decipher = createDecipheriv(
     "aes-256-gcm",
     key,
-    Buffer.from(iv, "base64")
+    Buffer.from(iv, "base64"),
   );
   decipher.setAuthTag(Buffer.from(authtag, "base64"));
   const decrypted =

@@ -20,7 +20,7 @@ const FeedFilteredFormatSchema = new Schema(
     priority: { type: Number, required: true },
     filters: { type: Map, of: [String] },
   },
-  { collection: "filtered_formats" }
+  { collection: "filtered_formats" },
 );
 
 type FeedFilteredFormatDoc = InferSchemaType<typeof FeedFilteredFormatSchema>;
@@ -35,12 +35,12 @@ export class FeedFilteredFormatMongooseRepository
     super();
     this.model = connection.model<FeedFilteredFormatDoc>(
       "FeedFilteredFormat",
-      FeedFilteredFormatSchema
+      FeedFilteredFormatSchema,
     );
   }
 
   protected toEntity(
-    doc: FeedFilteredFormatDoc & { _id: Types.ObjectId }
+    doc: FeedFilteredFormatDoc & { _id: Types.ObjectId },
   ): IFeedFilteredFormat {
     return {
       id: this.objectIdToString(doc._id),

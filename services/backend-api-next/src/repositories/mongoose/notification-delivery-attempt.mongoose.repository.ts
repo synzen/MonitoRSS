@@ -34,13 +34,18 @@ const NotificationDeliveryAttemptSchema = new Schema(
     connectionId: { type: String },
     failReasonInternal: { type: String },
   },
-  { collection: "notification_delivery_attempts", timestamps: true }
+  { collection: "notification_delivery_attempts", timestamps: true },
 );
 
-type NotificationDeliveryAttemptDoc = InferSchemaType<typeof NotificationDeliveryAttemptSchema>;
+type NotificationDeliveryAttemptDoc = InferSchemaType<
+  typeof NotificationDeliveryAttemptSchema
+>;
 
 export class NotificationDeliveryAttemptMongooseRepository
-  extends BaseMongooseRepository<INotificationDeliveryAttempt, NotificationDeliveryAttemptDoc>
+  extends BaseMongooseRepository<
+    INotificationDeliveryAttempt,
+    NotificationDeliveryAttemptDoc
+  >
   implements INotificationDeliveryAttemptRepository
 {
   private model: Model<NotificationDeliveryAttemptDoc>;
@@ -49,12 +54,12 @@ export class NotificationDeliveryAttemptMongooseRepository
     super();
     this.model = connection.model<NotificationDeliveryAttemptDoc>(
       "NotificationDeliveryAttempt",
-      NotificationDeliveryAttemptSchema
+      NotificationDeliveryAttemptSchema,
     );
   }
 
   protected toEntity(
-    doc: NotificationDeliveryAttemptDoc & { _id: Types.ObjectId }
+    doc: NotificationDeliveryAttemptDoc & { _id: Types.ObjectId },
   ): INotificationDeliveryAttempt {
     return {
       id: this.objectIdToString(doc._id),
@@ -70,7 +75,7 @@ export class NotificationDeliveryAttemptMongooseRepository
   }
 
   async createMany(
-    inputs: CreateNotificationDeliveryAttemptInput[]
+    inputs: CreateNotificationDeliveryAttemptInput[],
   ): Promise<INotificationDeliveryAttempt[]> {
     const docs = await this.model.create(inputs);
     return docs.map((doc) => this.toEntity(doc.toObject()));
@@ -81,12 +86,9 @@ export class NotificationDeliveryAttemptMongooseRepository
     update: {
       status: NotificationDeliveryAttemptStatus;
       failReasonInternal?: string;
-    }
+    },
   ): Promise<void> {
     const objectIds = ids.map((id) => this.stringToObjectId(id));
-    await this.model.updateMany(
-      { _id: { $in: objectIds } },
-      { $set: update }
-    );
+    await this.model.updateMany({ _id: { $in: objectIds } }, { $set: update });
   }
 }

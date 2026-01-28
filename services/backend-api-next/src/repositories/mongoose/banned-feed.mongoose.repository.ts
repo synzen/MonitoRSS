@@ -5,7 +5,10 @@ import {
   type Model,
   type InferSchemaType,
 } from "mongoose";
-import type { IBannedFeed, IBannedFeedRepository } from "../interfaces/banned-feed.types";
+import type {
+  IBannedFeed,
+  IBannedFeedRepository,
+} from "../interfaces/banned-feed.types";
 import { BaseMongooseRepository } from "./base.mongoose.repository";
 
 const BannedFeedSchema = new Schema(
@@ -14,7 +17,7 @@ const BannedFeedSchema = new Schema(
     reason: { type: String },
     guildIds: { type: [String], default: [] },
   },
-  { collection: "banned_feeds" }
+  { collection: "banned_feeds" },
 );
 
 type BannedFeedDoc = InferSchemaType<typeof BannedFeedSchema>;
@@ -27,10 +30,15 @@ export class BannedFeedMongooseRepository
 
   constructor(connection: Connection) {
     super();
-    this.model = connection.model<BannedFeedDoc>("BannedFeed", BannedFeedSchema);
+    this.model = connection.model<BannedFeedDoc>(
+      "BannedFeed",
+      BannedFeedSchema,
+    );
   }
 
-  protected toEntity(doc: BannedFeedDoc & { _id: Types.ObjectId }): IBannedFeed {
+  protected toEntity(
+    doc: BannedFeedDoc & { _id: Types.ObjectId },
+  ): IBannedFeed {
     return {
       id: this.objectIdToString(doc._id),
       url: doc.url,
@@ -39,16 +47,20 @@ export class BannedFeedMongooseRepository
     };
   }
 
-  async findByUrlForGuild(url: string, guildId: string): Promise<IBannedFeed | null> {
-    const doc = await this.model.findOne({
-      url: url,
-      $or: [
-        { guildIds: guildId },
-        { guildIds: { $size: 0 } },
-      ],
-    }).lean();
+  async findByUrlForGuild(
+    url: string,
+    guildId: string,
+  ): Promise<IBannedFeed | null> {
+    const doc = await this.model
+      .findOne({
+        url: url,
+        $or: [{ guildIds: guildId }, { guildIds: { $size: 0 } }],
+      })
+      .lean();
 
-    return doc ? this.toEntity(doc as BannedFeedDoc & { _id: Types.ObjectId }) : null;
+    return doc
+      ? this.toEntity(doc as BannedFeedDoc & { _id: Types.ObjectId })
+      : null;
   }
 
   async create(input: Omit<IBannedFeed, "id">): Promise<IBannedFeed> {

@@ -36,7 +36,7 @@ export function getFeedRequestLookupDetails({
   }
 
   const encryptedToken = externalCredentials?.find(
-    (cred) => cred.type === UserExternalCredentialType.Reddit
+    (cred) => cred.type === UserExternalCredentialType.Reddit,
   )?.data?.accessToken;
 
   if (!encryptedToken) {

@@ -151,4 +151,3 @@ export enum SupporterSource {
   Patron = "patron",
   Manual = "manual",
 }
-

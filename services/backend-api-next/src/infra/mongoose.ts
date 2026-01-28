@@ -16,7 +16,7 @@ export async function createMongoConnection(uri: string): Promise<Connection> {
 }
 
 export async function closeMongoConnection(
-  connection: Connection
+  connection: Connection,
 ): Promise<void> {
   await connection.close();
   logger.info("MongoDB connection closed");

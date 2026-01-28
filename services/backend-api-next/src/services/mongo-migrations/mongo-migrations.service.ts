@@ -28,9 +28,11 @@ export class MongoMigrationsService {
               ...step,
               id: step.id || randomUUID(),
               type: step.type || CustomPlaceholderStepType.Regex,
-            })
+            }),
           );
-        logger.info(`Custom placeholder steps migration: ${count} feeds updated`);
+        logger.info(
+          `Custom placeholder steps migration: ${count} feeds updated`,
+        );
       },
     },
     {
@@ -42,7 +44,7 @@ export class MongoMigrationsService {
         for await (const feed of this.deps.userFeedRepository.iterateFeedsMissingUserId()) {
           try {
             const userId = await this.deps.userRepository.findIdByDiscordId(
-              feed.userDiscordUserId
+              feed.userDiscordUserId,
             );
 
             if (!userId) {
@@ -89,7 +91,7 @@ export class MongoMigrationsService {
         for await (const feed of this.deps.userFeedRepository.iterateFeedsMissingSlotOffset()) {
           const slotOffsetMs = calculateSlotOffsetMs(
             feed.url,
-            feed.effectiveRefreshRateSeconds
+            feed.effectiveRefreshRateSeconds,
           );
 
           batch.push({ feedId: feed.id, slotOffsetMs });
@@ -102,7 +104,7 @@ export class MongoMigrationsService {
 
             if (processed % 10000 === 0) {
               logger.info(
-                `slotOffsetMs migration progress: ${processed} feeds processed, ${updated} updated`
+                `slotOffsetMs migration progress: ${processed} feeds processed, ${updated} updated`,
               );
             }
           }
@@ -114,7 +116,7 @@ export class MongoMigrationsService {
         }
 
         logger.info(
-          `slotOffsetMs migration complete. Processed: ${processed}, Updated: ${updated}`
+          `slotOffsetMs migration complete. Processed: ${processed}, Updated: ${updated}`,
         );
       },
     },
@@ -127,7 +129,7 @@ export class MongoMigrationsService {
 
     const migrationsToApply = this.MIGRATIONS_LIST.filter(
       (migration) =>
-        !appliedMigrations.some((m) => m.migrationId === migration.id)
+        !appliedMigrations.some((m) => m.migrationId === migration.id),
     );
 
     for (const migration of migrationsToApply) {
@@ -139,5 +141,4 @@ export class MongoMigrationsService {
       logger.info(`Migration applied: ${migration.id}`);
     }
   }
-
 }

@@ -29,7 +29,7 @@ export async function createRabbitConnection(url: string): Promise<Connection> {
 }
 
 export async function closeRabbitConnection(
-  connection: Connection
+  connection: Connection,
 ): Promise<void> {
   try {
     await connection.close();
@@ -78,7 +78,7 @@ export function createConsumer(connection: Connection) {
             error: (err as Error).stack,
           });
         }
-      }
+      },
     );
   };
 }

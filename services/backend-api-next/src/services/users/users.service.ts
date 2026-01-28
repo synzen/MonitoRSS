@@ -1,7 +1,10 @@
 import { randomUUID } from "crypto";
 import dayjs from "dayjs";
 import type { Config } from "../../config";
-import type { IUserRepository, IUser } from "../../repositories/interfaces/user.types";
+import type {
+  IUserRepository,
+  IUser,
+} from "../../repositories/interfaces/user.types";
 import type { IUserFeedRepository } from "../../repositories/interfaces/user-feed.types";
 import type { ISupporterRepository } from "../../repositories/interfaces/supporter.types";
 import type { SupportersService } from "../supporters/supporters.service";
@@ -48,7 +51,7 @@ export class UsersService {
 
   async initDiscordUser(
     discordUserId: string,
-    data?: { email?: string }
+    data?: { email?: string },
   ): Promise<IUser> {
     const found = await this.deps.userRepository.findByDiscordId(discordUserId);
 
@@ -62,22 +65,23 @@ export class UsersService {
     if (data?.email && (!found.email || found.email !== data.email)) {
       const updated = await this.deps.userRepository.updateEmailByDiscordId(
         discordUserId,
-        data.email
+        data.email,
       );
 
       if (found.email !== data.email) {
-        const supporter = await this.deps.supporterRepository.findById(discordUserId);
+        const supporter =
+          await this.deps.supporterRepository.findById(discordUserId);
 
         if (supporter?.paddleCustomer?.customerId) {
           try {
             await this.deps.paddleService.updateCustomer(
               supporter.paddleCustomer.customerId,
-              { email: data.email }
+              { email: data.email },
             );
           } catch (e) {
             logger.error(
               "Failed to update paddle customer email after email change",
-              { error: (e as Error).stack }
+              { error: (e as Error).stack },
             );
           }
         }
@@ -104,7 +108,7 @@ export class UsersService {
   }
 
   async getByDiscordId(
-    discordUserId: string
+    discordUserId: string,
   ): Promise<GetUserByDiscordIdOutput | null> {
     const user = await this.getOrCreateUserByDiscordId(discordUserId);
 
@@ -118,10 +122,11 @@ export class UsersService {
       updatedAt: new Date(2020, 1, 1),
     };
 
-    const externalAccounts = user.externalCredentials?.map((c) => ({
-      type: c.type as "reddit",
-      status: c.status,
-    })) || [];
+    const externalAccounts =
+      user.externalCredentials?.map((c) => ({
+        type: c.type as "reddit",
+        status: c.status,
+      })) || [];
 
     const { maxPatreonPledge, allowExternalProperties } =
       await this.deps.supportersService.getBenefitsOfDiscordUser(discordUserId);
@@ -159,12 +164,13 @@ export class UsersService {
         await this.deps.paddleService.getCustomerCreditBalanace(customer.id);
 
       const creditBalanceInCurrency = creditBalances.find(
-        (d: { currency_code: string }) => d.currency_code === customer.currencyCode
+        (d: { currency_code: string }) =>
+          d.currency_code === customer.currencyCode,
       );
 
       creditAvailableBalanceFormatted = formatCurrency(
         creditBalanceInCurrency?.balance.available || "0",
-        customer.currencyCode
+        customer.currencyCode,
       );
     }
 
@@ -225,13 +231,13 @@ export class UsersService {
 
   async getEmailsForAlerts(discordUserIds: string[]): Promise<string[]> {
     return this.deps.userRepository.findEmailsByDiscordIdsWithAlertPreference(
-      discordUserIds
+      discordUserIds,
     );
   }
 
   async updateUserByDiscordId(
     discordUserId: string,
-    data: { preferences?: UpdateUserPreferencesInput }
+    data: { preferences?: UpdateUserPreferencesInput },
   ): Promise<GetUserByDiscordIdOutput | null> {
     if (!data.preferences || Object.keys(data.preferences).length === 0) {
       return this.getByDiscordId(discordUserId);
@@ -239,7 +245,7 @@ export class UsersService {
 
     const user = await this.deps.userRepository.updatePreferencesByDiscordId(
       discordUserId,
-      data.preferences
+      data.preferences,
     );
 
     if (!user) {
@@ -271,24 +277,24 @@ export class UsersService {
   async getRedditCredentials(userId: string) {
     return this.deps.userRepository.getExternalCredentials(
       userId,
-      UserExternalCredentialType.Reddit
+      UserExternalCredentialType.Reddit,
     );
   }
 
   async removeRedditCredentials(userId: string): Promise<void> {
     await this.deps.userRepository.removeExternalCredentials(
       userId,
-      UserExternalCredentialType.Reddit
+      UserExternalCredentialType.Reddit,
     );
   }
 
   async revokeRedditCredentials(
     userId: string,
-    credentialId: string
+    credentialId: string,
   ): Promise<void> {
     await this.deps.userRepository.revokeExternalCredential(
       userId,
-      credentialId
+      credentialId,
     );
   }
 
@@ -302,9 +308,13 @@ export class UsersService {
       lookupKey?: string;
     }> = [];
 
-    for await (const { feedId, lookupKey } of this.deps.userRepository.aggregateUsersWithActiveRedditCredentials(
-      { userIds: data?.userIds, feedIds: data?.feedIds }
-    )) {
+    for await (const {
+      feedId,
+      lookupKey,
+    } of this.deps.userRepository.aggregateUsersWithActiveRedditCredentials({
+      userIds: data?.userIds,
+      feedIds: data?.feedIds,
+    })) {
       if (lookupKey) {
         logger.debug(`Feed ${feedId} already has a lookup key, skipping`);
         continue;
@@ -319,8 +329,10 @@ export class UsersService {
       });
     }
 
-    for await (const { feedId } of this.deps.userRepository.aggregateUsersWithExpiredOrRevokedRedditCredentials(
-      { userIds: data?.userIds, feedIds: data?.feedIds }
+    for await (const {
+      feedId,
+    } of this.deps.userRepository.aggregateUsersWithExpiredOrRevokedRedditCredentials(
+      { userIds: data?.userIds, feedIds: data?.feedIds },
     )) {
       logger.info(`Removing lookup key for feed ${feedId}`);
       bulkWriteOps.push({
@@ -335,15 +347,18 @@ export class UsersService {
   }
 
   private encryptObjectValues(
-    input: Record<string, string>
+    input: Record<string, string>,
   ): Record<string, string> {
     if (!this.encryptionKeyHex) {
       throw new Error("Encryption key not set while encrypting object values");
     }
 
-    return Object.entries(input).reduce((acc, [key, value]) => {
-      acc[key] = encrypt(value, this.encryptionKeyHex!);
-      return acc;
-    }, {} as Record<string, string>);
+    return Object.entries(input).reduce(
+      (acc, [key, value]) => {
+        acc[key] = encrypt(value, this.encryptionKeyHex!);
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
   }
 }

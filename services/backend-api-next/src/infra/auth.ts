@@ -72,7 +72,7 @@ export interface AuthService {
   getUser(accessToken: string): Promise<DiscordUser>;
   userManagesGuild(
     userAccessToken: string,
-    guildId: string
+    guildId: string,
   ): Promise<UserManagesGuildResult>;
 }
 
@@ -98,7 +98,7 @@ export function createAuthService(config: Config): AuthService {
   }
 
   async function attachExtraDetailsToToken(
-    tokenObject: DiscordAuthToken
+    tokenObject: DiscordAuthToken,
   ): Promise<{ newToken: SessionAccessToken; user: DiscordUser }> {
     const user = await getUser(tokenObject.access_token);
     const now = new Date();
@@ -118,13 +118,12 @@ export function createAuthService(config: Config): AuthService {
 
   async function revokeAccessOrRefreshToken(
     token: DiscordAuthToken,
-    tokenType: "access" | "refresh"
+    tokenType: "access" | "refresh",
   ): Promise<void> {
     const url = `${DISCORD_API_BASE_URL}${DISCORD_TOKEN_REVOCATION_ENDPOINT}`;
 
     const revokeParams = new URLSearchParams({
-      token:
-        tokenType === "access" ? token.access_token : token.refresh_token,
+      token: tokenType === "access" ? token.access_token : token.refresh_token,
       client_id: CLIENT_ID,
       client_secret: CLIENT_SECRET,
     });
@@ -140,8 +139,8 @@ export function createAuthService(config: Config): AuthService {
     if (!res.ok) {
       throw new Error(
         `Failed to revoke ${tokenType} token (${res.status}): ${JSON.stringify(
-          await res.json()
-        )}`
+          await res.json(),
+        )}`,
       );
     }
   }
@@ -180,14 +179,14 @@ export function createAuthService(config: Config): AuthService {
       if (!res.ok && res.status < 500) {
         throw new Error(
           `Failed to create access token (${res.status}): ${JSON.stringify(
-            await res.json()
-          )}`
+            await res.json(),
+          )}`,
         );
       }
 
       if (!res.ok) {
         throw new Error(
-          `Failed to create access token (${res.status} - Discord internal error)`
+          `Failed to create access token (${res.status} - Discord internal error)`,
         );
       }
 
@@ -220,14 +219,14 @@ export function createAuthService(config: Config): AuthService {
       if (!res.ok && res.status < 500) {
         throw new Error(
           `Failed to refresh access token (${res.status}): ${JSON.stringify(
-            await res.json()
-          )}`
+            await res.json(),
+          )}`,
         );
       }
 
       if (!res.ok) {
         throw new Error(
-          `Failed to refresh access token (${res.status} - Discord internal error)`
+          `Failed to refresh access token (${res.status} - Discord internal error)`,
         );
       }
 
@@ -251,7 +250,7 @@ export function createAuthService(config: Config): AuthService {
 
     async userManagesGuild(
       userAccessToken: string,
-      guildId: string
+      guildId: string,
     ): Promise<UserManagesGuildResult> {
       const url = `${DISCORD_API_BASE_URL}/users/@me/guilds`;
       const res = await fetch(url, {
@@ -291,7 +290,7 @@ export function createAuthService(config: Config): AuthService {
 }
 
 export function getAccessTokenFromRequest(
-  request: FastifyRequest
+  request: FastifyRequest,
 ): SessionAccessToken | undefined {
   return request.session.get("accessToken") as SessionAccessToken | undefined;
 }
@@ -299,7 +298,7 @@ export function getAccessTokenFromRequest(
 export async function requireAuth(
   request: FastifyRequest,
   reply: FastifyReply,
-  authService: AuthService
+  authService: AuthService,
 ): Promise<SessionAccessToken | null> {
   let token = getAccessTokenFromRequest(request);
 
@@ -329,11 +328,11 @@ export async function requireAuth(
  * @param guildIdExtractor - Function to extract guild ID from request (e.g., from params or body)
  */
 export function requireServerPermission(
-  guildIdExtractor: (request: FastifyRequest) => string | undefined
+  guildIdExtractor: (request: FastifyRequest) => string | undefined,
 ) {
   return async (
     request: FastifyRequest,
-    reply: FastifyReply
+    reply: FastifyReply,
   ): Promise<void> => {
     const token = getAccessTokenFromRequest(request);
 
@@ -352,7 +351,7 @@ export function requireServerPermission(
     const authService = request.container.authService;
     const result = await authService.userManagesGuild(
       token.access_token,
-      guildId
+      guildId,
     );
 
     if (!result.isManager) {

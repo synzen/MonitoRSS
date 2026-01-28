@@ -40,12 +40,12 @@ export class DiscordServersService {
     options?: {
       includePrivate?: boolean;
       parentChannelId?: string;
-    }
+    },
   ): Promise<DiscordGuildChannelFormatted[]> {
     const { threads }: { threads: DiscordGuildChannel[] } =
       await this.deps.discordApiService.executeBotRequest(
         `/guilds/${guildId}/threads/active`,
-        { method: "GET" }
+        { method: "GET" },
       );
 
     return threads
@@ -71,7 +71,8 @@ export class DiscordServersService {
   }
 
   async getServerProfile(serverId: string): Promise<ProfileSettings> {
-    const profile = await this.deps.discordServerProfileRepository.findById(serverId);
+    const profile =
+      await this.deps.discordServerProfileRepository.findById(serverId);
     return this.getProfileSettingsWithDefaults(profile);
   }
 
@@ -93,13 +94,14 @@ export class DiscordServersService {
       dateFormat?: string;
       dateLanguage?: string;
       timezone?: string;
-    }
+    },
   ): Promise<ProfileSettings> {
-    const updated = await this.deps.discordServerProfileRepository.findOneAndUpdate(
-      serverId,
-      updates,
-      { upsert: true }
-    );
+    const updated =
+      await this.deps.discordServerProfileRepository.findOneAndUpdate(
+        serverId,
+        updates,
+        { upsert: true },
+      );
     return this.getProfileSettingsWithDefaults(updated);
   }
 
@@ -109,7 +111,7 @@ export class DiscordServersService {
       search?: string;
       limit: number;
       offset: number;
-    }
+    },
   ): Promise<DetailedFeed[]> {
     return this.deps.feedsService.getServerFeeds(serverId, options);
   }
@@ -118,7 +120,7 @@ export class DiscordServersService {
     serverId: string,
     options?: {
       search?: string;
-    }
+    },
   ): Promise<number> {
     return this.deps.feedsService.countServerFeeds(serverId, {
       search: options?.search,
@@ -127,13 +129,17 @@ export class DiscordServersService {
 
   async getServer(serverId: string): Promise<DiscordGuild | null> {
     try {
-      const guild: DiscordGuild = await this.deps.discordApiService.executeBotRequest(
-        `/guilds/${serverId}`
-      );
+      const guild: DiscordGuild =
+        await this.deps.discordApiService.executeBotRequest(
+          `/guilds/${serverId}`,
+        );
       return guild;
     } catch (err) {
       const statusCodeForNull = [404, 403];
-      if (err instanceof DiscordAPIError && statusCodeForNull.includes(err.statusCode)) {
+      if (
+        err instanceof DiscordAPIError &&
+        statusCodeForNull.includes(err.statusCode)
+      ) {
         return null;
       }
       throw err;
@@ -144,25 +150,35 @@ export class DiscordServersService {
     serverId: string,
     options?: {
       types?: Array<string>;
-    }
+    },
   ): Promise<DiscordGuildChannelFormatted[]> {
     try {
-      const channels: DiscordGuildChannel[] = await this.deps.discordApiService.executeBotRequest(
-        `/guilds/${serverId}/channels`
-      );
+      const channels: DiscordGuildChannel[] =
+        await this.deps.discordApiService.executeBotRequest(
+          `/guilds/${serverId}/channels`,
+        );
 
       const relevantChannels = channels.filter((c) => {
         if (options?.types) {
           if (options.types.includes("*")) {
             return true;
           }
-          if (options.types.includes("forum") && c.type === DiscordChannelType.GUILD_FORUM) {
+          if (
+            options.types.includes("forum") &&
+            c.type === DiscordChannelType.GUILD_FORUM
+          ) {
             return true;
           }
-          if (options.types.includes("text") && c.type === DiscordChannelType.GUILD_TEXT) {
+          if (
+            options.types.includes("text") &&
+            c.type === DiscordChannelType.GUILD_TEXT
+          ) {
             return true;
           }
-          if (options.types.includes("announcement") && c.type === DiscordChannelType.GUILD_ANNOUNCEMENT) {
+          if (
+            options.types.includes("announcement") &&
+            c.type === DiscordChannelType.GUILD_ANNOUNCEMENT
+          ) {
             return true;
           }
           return false;
@@ -176,17 +192,22 @@ export class DiscordServersService {
 
       let botCanUseModeratedTags = true;
 
-      if (relevantChannels.some((c) => c.available_tags?.some((t) => t.moderated))) {
-        botCanUseModeratedTags = await this.deps.discordPermissionsService.botHasPermissionInServer(
-          serverId,
-          [MANAGE_THREADS]
-        );
+      if (
+        relevantChannels.some((c) => c.available_tags?.some((t) => t.moderated))
+      ) {
+        botCanUseModeratedTags =
+          await this.deps.discordPermissionsService.botHasPermissionInServer(
+            serverId,
+            [MANAGE_THREADS],
+          );
       }
 
       const formattedChannels = relevantChannels.map((channel) => {
         const parentChannel =
           channel.parent_id &&
-          (channels.find((c) => c.id === channel.parent_id) as DiscordGuildChannel | undefined);
+          (channels.find((c) => c.id === channel.parent_id) as
+            | DiscordGuildChannel
+            | undefined);
 
         const formatted: DiscordGuildChannelFormatted = {
           id: channel.id,
@@ -218,17 +239,23 @@ export class DiscordServersService {
 
       return formattedChannels;
     } catch (err) {
-      if (err instanceof DiscordAPIError && [404, 403].includes(err.statusCode)) {
-        throw new DiscordServerNotFoundException(`Discord server ${serverId} does not exist`);
+      if (
+        err instanceof DiscordAPIError &&
+        [404, 403].includes(err.statusCode)
+      ) {
+        throw new DiscordServerNotFoundException(
+          `Discord server ${serverId} does not exist`,
+        );
       }
       throw err;
     }
   }
 
   async getRolesOfServer(serverId: string): Promise<DiscordGuildRole[]> {
-    const roles: DiscordGuildRole[] = await this.deps.discordApiService.executeBotRequest(
-      `/guilds/${serverId}/roles`
-    );
+    const roles: DiscordGuildRole[] =
+      await this.deps.discordApiService.executeBotRequest(
+        `/guilds/${serverId}/roles`,
+      );
     return roles;
   }
 
@@ -237,28 +264,35 @@ export class DiscordServersService {
     data: {
       search?: string;
       limit?: number;
-    }
+    },
   ): Promise<DiscordGuildMember[]> {
     const params = new URLSearchParams();
     params.set("query", data.search || "");
     params.set("limit", String(data.limit || 10));
 
-    const res: DiscordGuildMember[] = await this.deps.discordApiService.executeBotRequest(
-      `/guilds/${serverId}/members/search?${params.toString()}`,
-      { method: "GET" }
-    );
+    const res: DiscordGuildMember[] =
+      await this.deps.discordApiService.executeBotRequest(
+        `/guilds/${serverId}/members/search?${params.toString()}`,
+        { method: "GET" },
+      );
 
     return res;
   }
 
   async getMemberOfServer(
     serverId: string,
-    memberId: string
+    memberId: string,
   ): Promise<DiscordGuildMember | null> {
     try {
-      return await this.deps.discordApiService.getGuildMember(serverId, memberId);
+      return await this.deps.discordApiService.getGuildMember(
+        serverId,
+        memberId,
+      );
     } catch (err) {
-      if (err instanceof DiscordAPIError && [404, 403].includes(err.statusCode)) {
+      if (
+        err instanceof DiscordAPIError &&
+        [404, 403].includes(err.statusCode)
+      ) {
         return null;
       }
       throw err;
@@ -266,7 +300,11 @@ export class DiscordServersService {
   }
 
   private getProfileSettingsWithDefaults(
-    profile?: { dateFormat?: string; timezone?: string; dateLanguage?: string } | null
+    profile?: {
+      dateFormat?: string;
+      timezone?: string;
+      dateLanguage?: string;
+    } | null,
   ): ProfileSettings {
     return {
       dateFormat: profile?.dateFormat || this.defaultDateFormat,

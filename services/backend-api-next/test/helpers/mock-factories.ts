@@ -15,7 +15,7 @@ export interface MockFeedHandlerOptions {
 }
 
 export function createMockFeedHandlerService(
-  options: MockFeedHandlerOptions = {}
+  options: MockFeedHandlerOptions = {},
 ): UserFeedsServiceDeps["feedHandlerService"] {
   return {
     getArticles: async () => ({
@@ -29,7 +29,7 @@ export function createMockFeedHandlerService(
 }
 
 export function createMockFeedsService(
-  bannedFeedDetails: unknown = null
+  bannedFeedDetails: unknown = null,
 ): UserFeedsServiceDeps["feedsService"] {
   return {
     getBannedFeedDetails: async () => bannedFeedDetails,
@@ -47,12 +47,13 @@ export interface MockSupportersOptions {
 }
 
 export function createMockSupportersService(
-  options: MockSupportersOptions = {}
+  options: MockSupportersOptions = {},
 ): UserFeedsServiceDeps["supportersService"] {
   return {
     defaultMaxUserFeeds: options.defaultMaxUserFeeds ?? 5,
     defaultRefreshRateSeconds: options.defaultRefreshRateSeconds ?? 600,
-    defaultSupporterRefreshRateSeconds: options.defaultSupporterRefreshRateSeconds ?? 120,
+    defaultSupporterRefreshRateSeconds:
+      options.defaultSupporterRefreshRateSeconds ?? 120,
     getBenefitsOfDiscordUser: async () => ({
       maxUserFeeds: options.maxUserFeeds ?? 5,
       maxDailyArticles: options.maxDailyArticles ?? 100,
@@ -63,7 +64,7 @@ export function createMockSupportersService(
 }
 
 export function createMockUsersService(
-  userId?: string
+  userId?: string,
 ): UserFeedsServiceDeps["usersService"] {
   return {
     getOrCreateUserByDiscordId: async () => ({
@@ -95,7 +96,7 @@ export interface MockPatronsService {
 }
 
 export function createMockPatronsService(
-  options: MockPatronsServiceOptions = {}
+  options: MockPatronsServiceOptions = {},
 ): MockPatronsService {
   const isValidFn =
     typeof options.isValidPatron === "function"
@@ -120,7 +121,7 @@ export interface MockGuildSubscriptionsService {
 }
 
 export function createMockGuildSubscriptionsService(
-  options: MockGuildSubscriptionsServiceOptions = {}
+  options: MockGuildSubscriptionsServiceOptions = {},
 ): MockGuildSubscriptionsService {
   return {
     getAllSubscriptions: mock.fn(async () => options.subscriptions ?? []),
@@ -140,7 +141,7 @@ export interface MockDiscordApiServiceForSupporters {
 }
 
 export function createMockDiscordApiServiceForSupporters(
-  options: MockDiscordApiServiceOptions = {}
+  options: MockDiscordApiServiceOptions = {},
 ): MockDiscordApiServiceForSupporters {
   return {
     getGuildMember: mock.fn(async () => options.guildMember ?? { roles: [] }),
@@ -174,7 +175,7 @@ export interface MockSupporterRepository {
 }
 
 export function createMockSupporterRepository(
-  options: MockSupporterRepositoryOptions = {}
+  options: MockSupporterRepositoryOptions = {},
 ): MockSupporterRepository {
   return {
     findById: mock.fn(async () => options.findByIdResult ?? null),
@@ -183,16 +184,16 @@ export function createMockSupporterRepository(
     updateGuilds: mock.fn(async () => null),
     deleteAll: mock.fn(async () => {}),
     aggregateWithPatronsAndOverrides: mock.fn(
-      async () => options.aggregateWithPatronsResult ?? []
+      async () => options.aggregateWithPatronsResult ?? [],
     ),
     aggregateSupportersForGuilds: mock.fn(
-      async () => options.aggregateSupportersForGuildsResult ?? []
+      async () => options.aggregateSupportersForGuildsResult ?? [],
     ),
     aggregateAllSupportersWithPatrons: mock.fn(
-      async () => options.aggregateAllSupportersWithPatronsResult ?? []
+      async () => options.aggregateAllSupportersWithPatronsResult ?? [],
     ),
     aggregateAllSupportersWithGuilds: mock.fn(
-      async () => options.aggregateAllSupportersWithGuildsResult ?? []
+      async () => options.aggregateAllSupportersWithGuildsResult ?? [],
     ),
   };
 }
@@ -209,7 +210,7 @@ export interface MockUserFeedLimitOverrideRepository {
 }
 
 export function createMockUserFeedLimitOverrideRepository(
-  options: MockUserFeedLimitOverrideRepositoryOptions = {}
+  options: MockUserFeedLimitOverrideRepositoryOptions = {},
 ): MockUserFeedLimitOverrideRepository {
   return {
     findById: mock.fn(async () => options.findByIdResult ?? null),
@@ -230,7 +231,7 @@ export interface MockDiscordChannelConnectionOptions {
 }
 
 export function createMockDiscordChannelConnection(
-  options: MockDiscordChannelConnectionOptions = {}
+  options: MockDiscordChannelConnectionOptions = {},
 ): Partial<IDiscordChannelConnection> {
   const id = generateTestId();
   return {

@@ -74,44 +74,50 @@ export interface DiscordServersHarness {
 
 export function createDiscordServersHarness(): DiscordServersHarness {
   return {
-    createContext(options: DiscordServersContextOptions = {}): DiscordServersContext {
+    createContext(
+      options: DiscordServersContextOptions = {},
+    ): DiscordServersContext {
       const config = { ...DEFAULT_CONFIG, ...options.config } as Config;
 
       const discordApiService: MockDiscordApiService = {
         executeBotRequest: mock.fn(
-          options.discordApiService?.executeBotRequest ?? (async () => ({}))
+          options.discordApiService?.executeBotRequest ?? (async () => ({})),
         ),
         getGuild: mock.fn(
-          options.discordApiService?.getGuild ?? (async () => ({}))
+          options.discordApiService?.getGuild ?? (async () => ({})),
         ),
         getGuildMember: mock.fn(
-          options.discordApiService?.getGuildMember ?? (async () => ({}))
+          options.discordApiService?.getGuildMember ?? (async () => ({})),
         ),
       };
 
       const feedsService: MockFeedsService = {
         getServerFeeds: mock.fn(
-          options.feedsService?.getServerFeeds ?? (async () => [])
+          options.feedsService?.getServerFeeds ?? (async () => []),
         ),
         countServerFeeds: mock.fn(
-          options.feedsService?.countServerFeeds ?? (async () => 0)
+          options.feedsService?.countServerFeeds ?? (async () => 0),
         ),
       };
 
       const discordPermissionsService: MockDiscordPermissionsService = {
         botHasPermissionInServer: mock.fn(
-          options.discordPermissionsService?.botHasPermissionInServer ?? (async () => true)
+          options.discordPermissionsService?.botHasPermissionInServer ??
+            (async () => true),
         ),
       };
 
-      const discordServerProfileRepository: MockDiscordServerProfileRepository = {
-        findById: mock.fn(
-          options.discordServerProfileRepository?.findById ?? (async () => null)
-        ),
-        findOneAndUpdate: mock.fn(
-          options.discordServerProfileRepository?.findOneAndUpdate ?? (async () => ({}))
-        ),
-      };
+      const discordServerProfileRepository: MockDiscordServerProfileRepository =
+        {
+          findById: mock.fn(
+            options.discordServerProfileRepository?.findById ??
+              (async () => null),
+          ),
+          findOneAndUpdate: mock.fn(
+            options.discordServerProfileRepository?.findOneAndUpdate ??
+              (async () => ({})),
+          ),
+        };
 
       const deps = {
         config,

@@ -4,7 +4,10 @@ import {
   type Model,
   type InferSchemaType,
 } from "mongoose";
-import type { IFailRecord, IFailRecordRepository } from "../interfaces/fail-record.types";
+import type {
+  IFailRecord,
+  IFailRecordRepository,
+} from "../interfaces/fail-record.types";
 import { BaseMongooseRepository } from "./base.mongoose.repository";
 
 const FailRecordSchema = new Schema(
@@ -14,7 +17,7 @@ const FailRecordSchema = new Schema(
     failedAt: { type: Date, required: true, default: Date.now },
     alerted: { type: Boolean, required: true, default: false },
   },
-  { collection: "fail_records", _id: false }
+  { collection: "fail_records", _id: false },
 );
 
 type FailRecordDoc = InferSchemaType<typeof FailRecordSchema>;
@@ -27,7 +30,10 @@ export class FailRecordMongooseRepository
 
   constructor(connection: Connection) {
     super();
-    this.model = connection.model<FailRecordDoc>("FailRecord", FailRecordSchema);
+    this.model = connection.model<FailRecordDoc>(
+      "FailRecord",
+      FailRecordSchema,
+    );
   }
 
   protected toEntity(doc: FailRecordDoc & { _id: string }): IFailRecord {

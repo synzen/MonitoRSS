@@ -1,5 +1,8 @@
 import type { Config } from "../../config";
-import type { IFeedSchedule, IFeedScheduleRepository } from "../../repositories/interfaces/feed-schedule.types";
+import type {
+  IFeedSchedule,
+  IFeedScheduleRepository,
+} from "../../repositories/interfaces/feed-schedule.types";
 import type { SupportersService } from "../supporters/supporters.service";
 import type { FeedDetails } from "./types";
 
@@ -26,7 +29,7 @@ export class FeedSchedulingService {
 
     return feeds.map((feed) => {
       const feedServerBenefits = serverBenefits.find(
-        (serverBenefit) => serverBenefit.serverId === feed.guild
+        (serverBenefit) => serverBenefit.serverId === feed.guild,
       );
 
       if (!feedServerBenefits) {
@@ -47,7 +50,7 @@ export class FeedSchedulingService {
 
   private getRefreshRateOfFeedFromSchedules(
     feed: FeedDetails,
-    schedules: IFeedSchedule[]
+    schedules: IFeedSchedule[],
   ): number {
     for (const schedule of schedules) {
       if (schedule.feeds?.includes(feed.id)) {
@@ -55,7 +58,7 @@ export class FeedSchedulingService {
       }
 
       const someKeywordMatch = schedule.keywords?.some((word) =>
-        feed.url.includes(word)
+        feed.url.includes(word),
       );
 
       if (someKeywordMatch) {

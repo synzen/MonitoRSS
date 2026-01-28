@@ -1,7 +1,10 @@
 import { describe, it, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import { FeedsService } from "../../src/services/feeds/feeds.service";
-import type { IFeedRepository, IFeedWithFailRecord } from "../../src/repositories/interfaces/feed.types";
+import type {
+  IFeedRepository,
+  IFeedWithFailRecord,
+} from "../../src/repositories/interfaces/feed.types";
 import type { IBannedFeedRepository } from "../../src/repositories/interfaces/banned-feed.types";
 import type { DiscordApiService } from "../../src/services/discord-api/discord-api.service";
 import type { DiscordAuthService } from "../../src/services/discord-auth/discord-auth.service";
@@ -33,8 +36,12 @@ describe("FeedsService", { concurrency: true }, () => {
       });
 
       await assert.rejects(
-        () => service.canUseChannel({ channelId: "channel-1", userAccessToken: "token" }),
-        MissingChannelException
+        () =>
+          service.canUseChannel({
+            channelId: "channel-1",
+            userAccessToken: "token",
+          }),
+        MissingChannelException,
       );
     });
 
@@ -53,8 +60,12 @@ describe("FeedsService", { concurrency: true }, () => {
       });
 
       await assert.rejects(
-        () => service.canUseChannel({ channelId: "channel-1", userAccessToken: "token" }),
-        MissingChannelPermissionsException
+        () =>
+          service.canUseChannel({
+            channelId: "channel-1",
+            userAccessToken: "token",
+          }),
+        MissingChannelPermissionsException,
       );
     });
 
@@ -80,8 +91,12 @@ describe("FeedsService", { concurrency: true }, () => {
       });
 
       await assert.rejects(
-        () => service.canUseChannel({ channelId: "channel-1", userAccessToken: "token" }),
-        UserMissingManageGuildException
+        () =>
+          service.canUseChannel({
+            channelId: "channel-1",
+            userAccessToken: "token",
+          }),
+        UserMissingManageGuildException,
       );
     });
 
@@ -133,7 +148,9 @@ describe("FeedsService", { concurrency: true }, () => {
             name: "test-channel",
             guild_id: "guild-1",
             type: DiscordChannelType.GUILD_TEXT,
-            permission_overwrites: [{ id: "role-1", type: "role", allow: "0", deny: "0" }],
+            permission_overwrites: [
+              { id: "role-1", type: "role", allow: "0", deny: "0" },
+            ],
             parent_id: null,
           }),
         } as unknown as DiscordApiService,
@@ -146,8 +163,12 @@ describe("FeedsService", { concurrency: true }, () => {
       });
 
       await assert.rejects(
-        () => service.canUseChannel({ channelId: "channel-1", userAccessToken: "token" }),
-        MissingChannelPermissionsException
+        () =>
+          service.canUseChannel({
+            channelId: "channel-1",
+            userAccessToken: "token",
+          }),
+        MissingChannelPermissionsException,
       );
     });
 
@@ -162,7 +183,9 @@ describe("FeedsService", { concurrency: true }, () => {
             name: "test-channel",
             guild_id: "guild-1",
             type: DiscordChannelType.GUILD_TEXT,
-            permission_overwrites: [{ id: "role-1", type: "role", allow: "0", deny: "0" }],
+            permission_overwrites: [
+              { id: "role-1", type: "role", allow: "0", deny: "0" },
+            ],
             parent_id: null,
           }),
         } as unknown as DiscordApiService,
@@ -185,7 +208,9 @@ describe("FeedsService", { concurrency: true }, () => {
 
   describe("getServerFeeds", () => {
     it("passes correct skip and limit to repository", async () => {
-      let calledOptions: { guildId: string; search?: string; skip: number; limit: number } | undefined;
+      let calledOptions:
+        | { guildId: string; search?: string; skip: number; limit: number }
+        | undefined;
 
       const service = new FeedsService({
         feedRepository: {
@@ -204,7 +229,11 @@ describe("FeedsService", { concurrency: true }, () => {
         discordPermissionsService: {} as DiscordPermissionsService,
       });
 
-      await service.getServerFeeds("guild-1", { limit: 10, offset: 5, search: "test" });
+      await service.getServerFeeds("guild-1", {
+        limit: 10,
+        offset: 5,
+        search: "test",
+      });
 
       assert.strictEqual(calledOptions?.guildId, "guild-1");
       assert.strictEqual(calledOptions?.skip, 5);
@@ -239,7 +268,10 @@ describe("FeedsService", { concurrency: true }, () => {
         discordPermissionsService: {} as DiscordPermissionsService,
       });
 
-      const feeds = await service.getServerFeeds("guild-1", { limit: 10, offset: 0 });
+      const feeds = await service.getServerFeeds("guild-1", {
+        limit: 10,
+        offset: 0,
+      });
 
       assert.strictEqual(feeds.length, 1);
       assert.strictEqual(feeds[0]!.status, FeedStatus.OK);
@@ -274,7 +306,10 @@ describe("FeedsService", { concurrency: true }, () => {
         discordPermissionsService: {} as DiscordPermissionsService,
       });
 
-      const feeds = await service.getServerFeeds("guild-1", { limit: 10, offset: 0 });
+      const feeds = await service.getServerFeeds("guild-1", {
+        limit: 10,
+        offset: 0,
+      });
 
       assert.strictEqual(feeds[0]!.status, FeedStatus.DISABLED);
     });
@@ -307,7 +342,10 @@ describe("FeedsService", { concurrency: true }, () => {
         discordPermissionsService: {} as DiscordPermissionsService,
       });
 
-      const feeds = await service.getServerFeeds("guild-1", { limit: 10, offset: 0 });
+      const feeds = await service.getServerFeeds("guild-1", {
+        limit: 10,
+        offset: 0,
+      });
 
       assert.strictEqual(feeds[0]!.status, FeedStatus.CONVERTED_TO_USER);
     });
@@ -340,12 +378,15 @@ describe("FeedsService", { concurrency: true }, () => {
         discordPermissionsService: {} as DiscordPermissionsService,
       });
 
-      const feeds = await service.getServerFeeds("guild-1", { limit: 10, offset: 0 });
+      const feeds = await service.getServerFeeds("guild-1", {
+        limit: 10,
+        offset: 0,
+      });
 
       assert.strictEqual(feeds[0]!.status, FeedStatus.DISABLED);
       assert.strictEqual(
         feeds[0]!.disabledReason,
-        "Deprecated for personal feeds. Must convert to personal feed to restore function."
+        "Deprecated for personal feeds. Must convert to personal feed to restore function.",
       );
     });
 
@@ -385,7 +426,10 @@ describe("FeedsService", { concurrency: true }, () => {
         discordPermissionsService: {} as DiscordPermissionsService,
       });
 
-      const feeds = await service.getServerFeeds("guild-1", { limit: 10, offset: 0 });
+      const feeds = await service.getServerFeeds("guild-1", {
+        limit: 10,
+        offset: 0,
+      });
 
       assert.strictEqual(feeds[0]!.status, FeedStatus.FAILING);
       assert.strictEqual(feeds[0]!.failReason, "Connection timeout");
@@ -427,7 +471,10 @@ describe("FeedsService", { concurrency: true }, () => {
         discordPermissionsService: {} as DiscordPermissionsService,
       });
 
-      const feeds = await service.getServerFeeds("guild-1", { limit: 10, offset: 0 });
+      const feeds = await service.getServerFeeds("guild-1", {
+        limit: 10,
+        offset: 0,
+      });
 
       assert.strictEqual(feeds[0]!.status, FeedStatus.FAILED);
       assert.strictEqual(feeds[0]!.failReason, "Feed permanently unavailable");
@@ -471,7 +518,9 @@ describe("FeedsService", { concurrency: true }, () => {
         discordPermissionsService: {} as DiscordPermissionsService,
       });
 
-      const count = await service.countServerFeeds("guild-1", { search: "test" });
+      const count = await service.countServerFeeds("guild-1", {
+        search: "test",
+      });
 
       assert.strictEqual(count, 2);
       assert.strictEqual(calledSearch, "test");
@@ -491,7 +540,10 @@ describe("FeedsService", { concurrency: true }, () => {
         discordPermissionsService: {} as DiscordPermissionsService,
       });
 
-      const result = await service.getBannedFeedDetails("https://example.com", "guild-1");
+      const result = await service.getBannedFeedDetails(
+        "https://example.com",
+        "guild-1",
+      );
 
       assert.strictEqual(result, null);
     });
@@ -515,7 +567,10 @@ describe("FeedsService", { concurrency: true }, () => {
         discordPermissionsService: {} as DiscordPermissionsService,
       });
 
-      const result = await service.getBannedFeedDetails("https://example.com", "guild-1");
+      const result = await service.getBannedFeedDetails(
+        "https://example.com",
+        "guild-1",
+      );
 
       assert.deepStrictEqual(result, bannedFeed);
     });
@@ -539,7 +594,10 @@ describe("FeedsService", { concurrency: true }, () => {
         discordPermissionsService: {} as DiscordPermissionsService,
       });
 
-      await service.getBannedFeedDetails("https://reddit.com/r/test", "guild-456");
+      await service.getBannedFeedDetails(
+        "https://reddit.com/r/test",
+        "guild-456",
+      );
 
       assert.strictEqual(calledUrl, "https://reddit.com/r/test");
       assert.strictEqual(calledGuildId, "guild-456");

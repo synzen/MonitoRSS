@@ -16,9 +16,7 @@ import type {
   IForumThreadTag,
 } from "../../repositories/interfaces/feed-connection.types";
 import type { IFeedEmbed } from "../../repositories/interfaces/feed-embed.types";
-import type {
-  FeedConnectionDisabledCode,
-} from "../../repositories/shared/enums";
+import type { FeedConnectionDisabledCode } from "../../repositories/shared/enums";
 import type { FeedsService } from "../feeds/feeds.service";
 import type { FeedHandlerService } from "../feed-handler/feed-handler.service";
 import type { SupportersService } from "../supporters/supporters.service";

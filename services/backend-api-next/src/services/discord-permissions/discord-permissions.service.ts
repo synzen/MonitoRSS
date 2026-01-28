@@ -1,5 +1,8 @@
 import type { Config } from "../../config";
-import { ADMINISTRATOR, NONE } from "../../shared/constants/discord-permissions";
+import {
+  ADMINISTRATOR,
+  NONE,
+} from "../../shared/constants/discord-permissions";
 import type { DiscordApiService } from "../discord-api/discord-api.service";
 import type {
   ChannelPermissionDetails,
@@ -12,25 +15,25 @@ export class DiscordPermissionsService {
 
   constructor(
     private readonly config: Config,
-    private readonly discordApiService: DiscordApiService
+    private readonly discordApiService: DiscordApiService,
   ) {
     this.botUserId = config.BACKEND_API_DISCORD_CLIENT_ID;
   }
 
   async botHasPermissionInChannel(
     channel: ChannelPermissionDetails,
-    permissions: bigint[]
+    permissions: bigint[],
   ): Promise<boolean> {
     return this.userHasPermissionInChannel(
       this.botUserId,
       channel,
-      permissions
+      permissions,
     );
   }
 
   async botHasPermissionInServer(
     guildId: string,
-    permissions: bigint[]
+    permissions: bigint[],
   ): Promise<boolean> {
     const [guild, guildMember] = await Promise.all([
       this.discordApiService.getGuild(guildId),
@@ -44,14 +47,14 @@ export class DiscordPermissionsService {
     }
 
     return permissions.every(
-      (permission) => (basePermissions & permission) === permission
+      (permission) => (basePermissions & permission) === permission,
     );
   }
 
   async userHasPermissionInChannel(
     userId: string,
     channel: ChannelPermissionDetails,
-    permsToCheck: bigint[]
+    permsToCheck: bigint[],
   ): Promise<boolean> {
     const permissions = await this.computePermissions(userId, channel);
 
@@ -60,20 +63,20 @@ export class DiscordPermissionsService {
 
   computedPermissionsHasPermissions(
     permissions: bigint,
-    permissionsToCheck: bigint[]
+    permissionsToCheck: bigint[],
   ): boolean {
     if ((permissions & ADMINISTRATOR) === ADMINISTRATOR) {
       return true;
     }
 
     return permissionsToCheck.every(
-      (permission) => (permissions & permission) === permission
+      (permission) => (permissions & permission) === permission,
     );
   }
 
   async computePermissions(
     userId: string,
-    channel: ChannelPermissionDetails
+    channel: ChannelPermissionDetails,
   ): Promise<bigint> {
     const [guild, guildMember] = await Promise.all([
       this.discordApiService.getGuild(channel.guild_id),
@@ -85,20 +88,20 @@ export class DiscordPermissionsService {
     return this.computeOverwritePermissions(
       basePermissions,
       guildMember,
-      channel
+      channel,
     );
   }
 
   computeBasePermissions(
     guildMember: MemberPermissionDetails,
-    guild: GuildPermissionDetails
+    guild: GuildPermissionDetails,
   ): bigint {
     if (guild.owner_id === guildMember.user.id) {
       return ADMINISTRATOR;
     }
 
     const everyoneRole = guild.roles.find(
-      (role) => role.id === guild.id
+      (role) => role.id === guild.id,
     ) as GuildPermissionDetails["roles"][number];
 
     let everyoneRolePermissions = BigInt(everyoneRole.permissions);
@@ -109,7 +112,7 @@ export class DiscordPermissionsService {
 
     for (const roleId of guildMember.roles) {
       const role = guild.roles.find(
-        (role) => role.id === roleId
+        (role) => role.id === roleId,
       ) as GuildPermissionDetails["roles"][number];
 
       everyoneRolePermissions |= BigInt(role.permissions);
@@ -121,7 +124,7 @@ export class DiscordPermissionsService {
   computeOverwritePermissions(
     basePermissions: bigint,
     member: MemberPermissionDetails,
-    channel: ChannelPermissionDetails
+    channel: ChannelPermissionDetails,
   ): bigint {
     if (basePermissions & ADMINISTRATOR) {
       return ADMINISTRATOR;
@@ -131,7 +134,7 @@ export class DiscordPermissionsService {
     const channelOverwrites = channel.permission_overwrites;
 
     const overwriteEveryone = channelOverwrites.find(
-      (overwrite) => overwrite.id === channel.guild_id
+      (overwrite) => overwrite.id === channel.guild_id,
     );
 
     if (overwriteEveryone) {
@@ -144,7 +147,7 @@ export class DiscordPermissionsService {
 
     for (const roleId of member.roles) {
       const overwriteRole = channelOverwrites.find(
-        (overwrite) => overwrite.id === roleId
+        (overwrite) => overwrite.id === roleId,
       );
 
       if (overwriteRole) {
@@ -157,7 +160,7 @@ export class DiscordPermissionsService {
     permissions |= allow;
 
     const overwriteMember = channelOverwrites.find(
-      (overwrite) => overwrite.id === member.user.id
+      (overwrite) => overwrite.id === member.user.id,
     );
 
     if (overwriteMember) {

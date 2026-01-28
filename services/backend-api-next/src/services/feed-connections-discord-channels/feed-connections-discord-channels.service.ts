@@ -23,20 +23,40 @@ import {
   DiscordWebhookMissingUserPermException,
   InvalidDiscordChannelException,
 } from "../../shared/exceptions/feed-connections.exceptions";
-import { DiscordChannelType, DiscordGuildChannel, DiscordWebhook } from "../../shared/types/discord.types";
-import { FeedConnectionDiscordChannelType, FeedConnectionDiscordWebhookType, FeedConnectionType } from "../../repositories/shared/enums";
+import {
+  DiscordChannelType,
+  DiscordGuildChannel,
+  DiscordWebhook,
+} from "../../shared/types/discord.types";
+import {
+  FeedConnectionDiscordChannelType,
+  FeedConnectionDiscordWebhookType,
+  FeedConnectionType,
+} from "../../repositories/shared/enums";
 import { WebhookMissingPermissionsException } from "../../shared/exceptions/discord-webhooks.exceptions";
 import { InvalidComponentsV2Exception } from "../../shared/exceptions/invalid-components-v2.exception";
 import logger from "../../infra/logger";
 
 export class FeedConnectionsDiscordChannelsService {
-  constructor(private readonly deps: FeedConnectionsDiscordChannelsServiceDeps) {}
+  constructor(
+    private readonly deps: FeedConnectionsDiscordChannelsServiceDeps,
+  ) {}
 
   async createDiscordChannelConnection(
-    input: CreateDiscordChannelConnectionInput
+    input: CreateDiscordChannelConnectionInput,
   ): Promise<IDiscordChannelConnection> {
-    const { feed, name, channelId, userAccessToken, userDiscordUserId, applicationWebhook, templateData, threadCreationMethod, webhook: inputWebhook } = input;
-const connectionId = new Types.ObjectId();
+    const {
+      feed,
+      name,
+      channelId,
+      userAccessToken,
+      userDiscordUserId,
+      applicationWebhook,
+      templateData,
+      threadCreationMethod,
+      webhook: inputWebhook,
+    } = input;
+    const connectionId = new Types.ObjectId();
     let channelToAdd: IDiscordChannelConnection["details"]["channel"];
     let webhookToAdd: IDiscordChannelConnection["details"]["webhook"];
 
@@ -45,7 +65,7 @@ const connectionId = new Types.ObjectId();
         await this.assertDiscordChannelCanBeUsed(
           userAccessToken,
           channelId,
-          applicationWebhook ? true : false
+          applicationWebhook ? true : false,
         );
 
       channelToAdd = {
@@ -58,13 +78,14 @@ const connectionId = new Types.ObjectId();
         parentChannelId: parentChannel?.id,
       };
     } else if (inputWebhook?.id || applicationWebhook?.channelId) {
-      const benefits = await this.deps.supportersService.getBenefitsOfDiscordUser(
-        feed.user.discordUserId
-      );
+      const benefits =
+        await this.deps.supportersService.getBenefitsOfDiscordUser(
+          feed.user.discordUserId,
+        );
 
       if (!benefits.isSupporter) {
         throw new InsufficientSupporterLevelException(
-          "User must be a supporter to add webhooks"
+          "User must be a supporter to add webhooks",
         );
       }
 
@@ -77,14 +98,14 @@ const connectionId = new Types.ObjectId();
       if (inputWebhook) {
         ({ webhook, channel } = await this.assertDiscordWebhookCanBeUsed(
           inputWebhook.id,
-          userAccessToken
+          userAccessToken,
         ));
       } else if (applicationWebhook) {
         const { channel: fetchedChannel } =
           await this.assertDiscordChannelCanBeUsed(
             userAccessToken,
             applicationWebhook.channelId,
-            true
+            true,
           );
 
         channel = fetchedChannel;
@@ -96,7 +117,7 @@ const connectionId = new Types.ObjectId();
         });
       } else {
         throw new Error(
-          "Missing input webhook or application webhook in webhook condition"
+          "Missing input webhook or application webhook in webhook condition",
         );
       }
 
@@ -109,7 +130,7 @@ const connectionId = new Types.ObjectId();
       if (threadId) {
         const { type: detectedType } = await this.assertDiscordChannelCanBeUsed(
           userAccessToken,
-          threadId
+          threadId,
         );
 
         if (detectedType === FeedConnectionDiscordChannelType.Thread) {
@@ -152,8 +173,8 @@ const connectionId = new Types.ObjectId();
       if (!validationResult.valid) {
         throw new InvalidComponentsV2Exception(
           validationResult.errors.map(
-            (e) => new InvalidComponentsV2Exception(e.message, e.path)
-          )
+            (e) => new InvalidComponentsV2Exception(e.message, e.path),
+          ),
         );
       }
 
@@ -187,16 +208,16 @@ const connectionId = new Types.ObjectId();
         },
         {
           new: true,
-        }
+        },
       );
 
       const createdConnection = updated?.connections.discordChannels.find(
-        (connection) => connection.id === connectionId.toHexString()
+        (connection) => connection.id === connectionId.toHexString(),
       );
 
       if (!createdConnection) {
         throw new Error(
-          "Connection was not successfuly created. Check insertion statement and schemas are correct."
+          "Connection was not successfuly created. Check insertion statement and schemas are correct.",
         );
       }
 
@@ -224,17 +245,19 @@ const connectionId = new Types.ObjectId();
     feedId: string,
     connectionId: string,
     {
-      accessToken,feed,oldConnection,updates
-    }: UpdateDiscordChannelConnectionInput
+      accessToken,
+      feed,
+      oldConnection,
+      updates,
+    }: UpdateDiscordChannelConnectionInput,
   ): Promise<IDiscordChannelConnection> {
-    
     const setRecordDetails: Partial<IDiscordChannelConnection["details"]> =
       Object.entries(updates.details || {}).reduce(
         (acc, [key, value]) => ({
           ...acc,
           [`connections.discordChannels.$.details.${key}`]: value,
         }),
-        {}
+        {},
       );
 
     let createdApplicationWebhookId: string | undefined = undefined;
@@ -243,7 +266,7 @@ const connectionId = new Types.ObjectId();
       const { channel, type, parentChannel } =
         await this.assertDiscordChannelCanBeUsed(
           accessToken,
-          updates.details.channel.id
+          updates.details.channel.id,
         );
 
       // @ts-ignore
@@ -271,13 +294,14 @@ const connectionId = new Types.ObjectId();
       const iconUrl =
         updates.details.webhook?.iconUrl ||
         updates.details.applicationWebhook?.iconUrl;
-      const benefits = await this.deps.supportersService.getBenefitsOfDiscordUser(
-        feed.user.discordUserId
-      );
+      const benefits =
+        await this.deps.supportersService.getBenefitsOfDiscordUser(
+          feed.user.discordUserId,
+        );
 
       if (!benefits.isSupporter) {
         throw new InsufficientSupporterLevelException(
-          "User must be a supporter to add webhooks"
+          "User must be a supporter to add webhooks",
         );
       }
 
@@ -287,7 +311,7 @@ const connectionId = new Types.ObjectId();
       if (updates.details.webhook) {
         ({ webhook, channel } = await this.assertDiscordWebhookCanBeUsed(
           updates.details.webhook.id,
-          accessToken
+          accessToken,
         ));
       } else if (updates.details.applicationWebhook) {
         // When converting a regular webhook to application webhook
@@ -295,7 +319,7 @@ const connectionId = new Types.ObjectId();
           await this.assertDiscordChannelCanBeUsed(
             accessToken,
             updates.details.applicationWebhook.channelId,
-            true
+            true,
           );
         channel = fetchedChannel;
 
@@ -309,7 +333,7 @@ const connectionId = new Types.ObjectId();
         createdApplicationWebhookId = webhook.id;
       } else {
         throw new Error(
-          "Missing input webhook or application webhook in webhook condition when updating connection"
+          "Missing input webhook or application webhook in webhook condition when updating connection",
         );
       }
 
@@ -319,7 +343,7 @@ const connectionId = new Types.ObjectId();
         const { type: detectedType } = await this.assertDiscordChannelCanBeUsed(
           accessToken,
           threadId,
-          true
+          true,
         );
 
         if (detectedType === FeedConnectionDiscordChannelType.Thread) {
@@ -358,7 +382,9 @@ const connectionId = new Types.ObjectId();
 
       if (errors.length) {
         throw new InvalidFilterExpressionException(
-          errors.map((message) => new InvalidFilterExpressionException(message))
+          errors.map(
+            (message) => new InvalidFilterExpressionException(message),
+          ),
         );
       }
     }
@@ -372,8 +398,8 @@ const connectionId = new Types.ObjectId();
       if (!validationResult.valid) {
         throw new InvalidComponentsV2Exception(
           validationResult.errors.map(
-            (e) => new InvalidComponentsV2Exception(e.message, e.path)
-          )
+            (e) => new InvalidComponentsV2Exception(e.message, e.path),
+          ),
         );
       }
 
@@ -402,7 +428,7 @@ const connectionId = new Types.ObjectId();
           const step = steps[j];
 
           if (!step) {
-            continue
+            continue;
           }
 
           if (step.id && Object.keys(step).length === 1) {
@@ -462,17 +488,17 @@ const connectionId = new Types.ObjectId();
         updateQuery,
         {
           new: true,
-        }
+        },
       );
 
       const updatedConnection = updated?.connections.discordChannels.find(
-        (connection) => connection.id === connectionId
+        (connection) => connection.id === connectionId,
       );
 
       if (!updatedConnection) {
         throw new Error(
           "Connection was not successfully updated." +
-            " Check insertion statement and schemas are correct."
+            " Check insertion statement and schemas are correct.",
         );
       }
 
@@ -488,7 +514,7 @@ const connectionId = new Types.ObjectId();
             `Failed to cleanup application webhook ${oldConnection.details.webhook.id} on feed ${feedId}, discord channel connection ${connectionId}  after update`,
             {
               error: err,
-            }
+            },
           );
         }
       }
@@ -510,11 +536,13 @@ const connectionId = new Types.ObjectId();
       throw new FeedConnectionNotFoundException(`Feed ${feedId} not found`);
     }
 
-    const connection = feed.connections.discordChannels.find((c) => c.id === connectionId);
+    const connection = feed.connections.discordChannels.find(
+      (c) => c.id === connectionId,
+    );
 
     if (!connection) {
       throw new FeedConnectionNotFoundException(
-        `Connection ${connectionId} not found in feed ${feedId}`
+        `Connection ${connectionId} not found in feed ${feedId}`,
       );
     }
 
@@ -525,7 +553,9 @@ const connectionId = new Types.ObjectId();
     });
 
     if (!result) {
-      throw new Error(`Failed to delete connection ${connectionId} from feed ${feedId}`);
+      throw new Error(
+        `Failed to delete connection ${connectionId} from feed ${feedId}`,
+      );
     }
 
     await this.deps.connectionEventsService.handleDeletedEvent({
@@ -543,7 +573,7 @@ const connectionId = new Types.ObjectId();
     connection: IDiscordChannelConnection,
     input: CloneConnectionInput,
     userAccessToken: string,
-    userDiscordUserId: string
+    userDiscordUserId: string,
   ): Promise<{ ids: string[] }> {
     const { name, targetFeedIds, channelId } = input;
 
@@ -578,7 +608,11 @@ const connectionId = new Types.ObjectId();
     }
 
     const createdIds: string[] = [];
-    const createdEvents: Array<{ feedId: string; connectionId: string; creator: { discordUserId: string } }> = [];
+    const createdEvents: Array<{
+      feedId: string;
+      connectionId: string;
+      creator: { discordUserId: string };
+    }> = [];
 
     for (const targetFeedId of targetFeedIds) {
       const newConnectionId = new Types.ObjectId();
@@ -601,11 +635,14 @@ const connectionId = new Types.ObjectId();
         updatedAt: new Date(),
       };
 
-      const result = await this.deps.userFeedRepository.updateById(targetFeedId, {
-        $push: {
-          "connections.discordChannels": clonedConnection,
+      const result = await this.deps.userFeedRepository.updateById(
+        targetFeedId,
+        {
+          $push: {
+            "connections.discordChannels": clonedConnection,
+          },
         },
-      });
+      );
 
       if (result) {
         createdIds.push(newConnectionIdStr);
@@ -618,7 +655,9 @@ const connectionId = new Types.ObjectId();
     }
 
     if (createdEvents.length > 0) {
-      await this.deps.connectionEventsService.handleCreatedEvents(createdEvents);
+      await this.deps.connectionEventsService.handleCreatedEvents(
+        createdEvents,
+      );
     }
 
     return { ids: createdIds };
@@ -627,26 +666,22 @@ const connectionId = new Types.ObjectId();
   async copySettings(
     userFeed: IUserFeed,
     sourceConnection: IDiscordChannelConnection,
-    {
-      targetDiscordChannelConnectionIds,
-      properties
-    }: CopySettingsInput
+    { targetDiscordChannelConnectionIds, properties }: CopySettingsInput,
   ): Promise<void> {
-    const foundFeed = await this.deps.userFeedRepository
-      .findById(userFeed.id)
+    const foundFeed = await this.deps.userFeedRepository.findById(userFeed.id);
 
     if (!foundFeed) {
       throw new Error(`Could not find feed ${userFeed.id}`);
     }
 
     const relevantConnections = targetDiscordChannelConnectionIds.map((id) => {
-      const connection = foundFeed?.connections.discordChannels.find((c) =>
-        c.id === id
+      const connection = foundFeed?.connections.discordChannels.find(
+        (c) => c.id === id,
       );
 
       if (!connection) {
         throw new Error(
-          `Could not find connection ${id} on feed ${userFeed.id}`
+          `Could not find connection ${id} on feed ${userFeed.id}`,
         );
       }
 
@@ -657,7 +692,7 @@ const connectionId = new Types.ObjectId();
       const currentConnection = relevantConnections[i];
 
       if (!currentConnection) {
-        continue
+        continue;
       }
 
       if (properties.includes(CopyableSetting.Embeds)) {
@@ -778,84 +813,82 @@ const connectionId = new Types.ObjectId();
   }
 
   private async assertDiscordChannelCanBeUsed(
-      accessToken: string,
-      channelId: string,
-      skipBotPermissionAssertions = false
-    ) {
-      try {
-        let parentChannel: DiscordGuildChannel | undefined = undefined;
-        const channel = await this.deps.feedsService.canUseChannel({
-          channelId,
-          userAccessToken: accessToken,
-          skipBotPermissionAssertions,
-        });
-  
-        let type: FeedConnectionDiscordChannelType | undefined = undefined;
-  
-        if (channel.type === DiscordChannelType.GUILD_FORUM) {
-          type = FeedConnectionDiscordChannelType.Forum;
-        } else if (
-          channel.type === DiscordChannelType.PUBLIC_THREAD ||
-          channel.type === DiscordChannelType.ANNOUNCEMENT_THREAD
-        ) {
-          type = FeedConnectionDiscordChannelType.Thread;
-  
-          const parentChannelId = channel.parent_id;
-  
-          if (parentChannelId) {
-            parentChannel = await this.deps.discordApiService.getChannel(
-              parentChannelId
-            );
-  
-            if (parentChannel.type === DiscordChannelType.GUILD_FORUM) {
-              type = FeedConnectionDiscordChannelType.ForumThread;
-            }
-          }
-        }
-  
-        return {
-          channel,
-          parentChannel,
-          type,
-        };
-      } catch (err) {
-        if (err instanceof DiscordAPIError) {
-          if (err.statusCode === 404) {
-            throw new MissingDiscordChannelException();
-          }
-  
-          if (err.statusCode === 403) {
-            if (skipBotPermissionAssertions) {
-              // triggers a permission error around just viewing. Required for getting discord channels.
-              throw new DiscordChannelMissingViewPermissionsException();
-            } else {
-              // triggers a permission error around viewing AND sending messages in the channel
-              throw new DiscordChannelPermissionsException();
-            }
-          }
-        }
-  
-        throw err;
-      }
-    }
+    accessToken: string,
+    channelId: string,
+    skipBotPermissionAssertions = false,
+  ) {
+    try {
+      let parentChannel: DiscordGuildChannel | undefined = undefined;
+      const channel = await this.deps.feedsService.canUseChannel({
+        channelId,
+        userAccessToken: accessToken,
+        skipBotPermissionAssertions,
+      });
 
-    
+      let type: FeedConnectionDiscordChannelType | undefined = undefined;
+
+      if (channel.type === DiscordChannelType.GUILD_FORUM) {
+        type = FeedConnectionDiscordChannelType.Forum;
+      } else if (
+        channel.type === DiscordChannelType.PUBLIC_THREAD ||
+        channel.type === DiscordChannelType.ANNOUNCEMENT_THREAD
+      ) {
+        type = FeedConnectionDiscordChannelType.Thread;
+
+        const parentChannelId = channel.parent_id;
+
+        if (parentChannelId) {
+          parentChannel =
+            await this.deps.discordApiService.getChannel(parentChannelId);
+
+          if (parentChannel.type === DiscordChannelType.GUILD_FORUM) {
+            type = FeedConnectionDiscordChannelType.ForumThread;
+          }
+        }
+      }
+
+      return {
+        channel,
+        parentChannel,
+        type,
+      };
+    } catch (err) {
+      if (err instanceof DiscordAPIError) {
+        if (err.statusCode === 404) {
+          throw new MissingDiscordChannelException();
+        }
+
+        if (err.statusCode === 403) {
+          if (skipBotPermissionAssertions) {
+            // triggers a permission error around just viewing. Required for getting discord channels.
+            throw new DiscordChannelMissingViewPermissionsException();
+          } else {
+            // triggers a permission error around viewing AND sending messages in the channel
+            throw new DiscordChannelPermissionsException();
+          }
+        }
+      }
+
+      throw err;
+    }
+  }
+
   private async assertDiscordWebhookCanBeUsed(
     id: string,
-    accessToken: string
+    accessToken: string,
   ): Promise<{ webhook: DiscordWebhook; channel: DiscordGuildChannel }> {
     try {
       const webhook = await this.deps.discordWebhooksService.getWebhook(id);
 
       if (!webhook) {
         throw new DiscordWebhookNonexistentException(
-          `Discord webohok ${id} does not exist`
+          `Discord webohok ${id} does not exist`,
         );
       }
 
       if (!this.deps.discordWebhooksService.canBeUsedByBot(webhook)) {
         throw new DiscordWebhookInvalidTypeException(
-          `Discord webhook ${id} is a different type and is not operable by bot to send messages`
+          `Discord webhook ${id} is a different type and is not operable by bot to send messages`,
         );
       }
 
@@ -864,74 +897,65 @@ const connectionId = new Types.ObjectId();
         !(
           await this.deps.discordAuthService.userManagesGuild(
             accessToken,
-            webhook.guild_id
+            webhook.guild_id,
           )
         ).isManager
       ) {
         throw new DiscordWebhookMissingUserPermException(
-          `User does not manage guild of webhook webhook ${id}`
+          `User does not manage guild of webhook webhook ${id}`,
         );
       }
 
       const channel = await this.deps.discordApiService.getChannel(
-        webhook.channel_id
+        webhook.channel_id,
       );
 
       return { webhook, channel };
     } catch (err) {
-      if (
-        err instanceof DiscordAPIError &&
-        err.statusCode === 403
-      ) {
-        throw new WebhookMissingPermissionsException(
-        );
+      if (err instanceof DiscordAPIError && err.statusCode === 403) {
+        throw new WebhookMissingPermissionsException();
       }
 
       throw err;
     }
   }
 
-  
-    private async getOrCreateApplicationWebhook({
-      channelId,
-      webhook: { name },
-    }: {
-      channelId: string;
-      webhook: {
-        name: string;
-      };
-    }) {
-      try {
-        const channelWebhooks =
-          await this.deps.discordWebhooksService.getWebhooksOfChannel(channelId, {
-            onlyApplicationOwned: true,
-          });
-  
-        if (channelWebhooks[0]) {
-          // Use an existing application-owned webhook if it exists
-          return channelWebhooks[0];
-        } else {
-          // Otherwise create a new one
-          return await this.deps.discordWebhooksService.createWebhook(channelId, {
-            name,
-          });
-        }
-      } catch (err) {
-        if (
-          err instanceof DiscordAPIError &&
-          err.statusCode === 403
-        ) {
-          throw new WebhookMissingPermissionsException(
-            
-          );
-        }
-  
-        throw err;
+  private async getOrCreateApplicationWebhook({
+    channelId,
+    webhook: { name },
+  }: {
+    channelId: string;
+    webhook: {
+      name: string;
+    };
+  }) {
+    try {
+      const channelWebhooks =
+        await this.deps.discordWebhooksService.getWebhooksOfChannel(channelId, {
+          onlyApplicationOwned: true,
+        });
+
+      if (channelWebhooks[0]) {
+        // Use an existing application-owned webhook if it exists
+        return channelWebhooks[0];
+      } else {
+        // Otherwise create a new one
+        return await this.deps.discordWebhooksService.createWebhook(channelId, {
+          name,
+        });
       }
+    } catch (err) {
+      if (err instanceof DiscordAPIError && err.statusCode === 403) {
+        throw new WebhookMissingPermissionsException();
+      }
+
+      throw err;
     }
-  
+  }
+
   private async cleanupWebhook(webhookId: string) {
-    const existingFeedUseCount = await this.deps.userFeedRepository.countByWebhookId(webhookId);
+    const existingFeedUseCount =
+      await this.deps.userFeedRepository.countByWebhookId(webhookId);
 
     if (existingFeedUseCount === 0) {
       await this.deps.discordWebhooksService.deleteWebhook(webhookId);
@@ -943,14 +967,15 @@ const connectionId = new Types.ObjectId();
       return;
     }
 
-    const found = await this.deps.userFeedRepository.findOneByWebhookId(webhookId);
+    const found =
+      await this.deps.userFeedRepository.findOneByWebhookId(webhookId);
 
     if (!found) {
       return;
     }
 
     const connectionUseCount = found.connections.discordChannels.filter(
-      (c) => c.details.webhook?.id === webhookId
+      (c) => c.details.webhook?.id === webhookId,
     ).length;
 
     if (connectionUseCount === 0) {

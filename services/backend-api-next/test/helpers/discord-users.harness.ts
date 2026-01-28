@@ -50,36 +50,43 @@ export interface DiscordUsersHarness {
 
 export function createDiscordUsersHarness(): DiscordUsersHarness {
   return {
-    createContext(options: DiscordUsersContextOptions = {}): DiscordUsersContext {
+    createContext(
+      options: DiscordUsersContextOptions = {},
+    ): DiscordUsersContext {
       const config = { ...DEFAULT_CONFIG, ...options.config } as Config;
 
       const discordApiService: MockDiscordApiService = {
         executeBearerRequest: mock.fn(
-          options.discordApiService?.executeBearerRequest ?? (() => Promise.resolve([]))
+          options.discordApiService?.executeBearerRequest ??
+            (() => Promise.resolve([])),
         ),
         getBot: mock.fn(
-          options.discordApiService?.getBot ?? (() => Promise.resolve({}))
+          options.discordApiService?.getBot ?? (() => Promise.resolve({})),
         ),
         executeBotRequest: mock.fn(
-          options.discordApiService?.executeBotRequest ?? (() => Promise.resolve({}))
+          options.discordApiService?.executeBotRequest ??
+            (() => Promise.resolve({})),
         ),
       };
 
       const supportersService: MockSupportersService = {
         getBenefitsOfServers: mock.fn(
-          options.supportersService?.getBenefitsOfServers ?? (() => Promise.resolve([]))
+          options.supportersService?.getBenefitsOfServers ??
+            (() => Promise.resolve([])),
         ),
         getBenefitsOfDiscordUser: mock.fn(
-          options.supportersService?.getBenefitsOfDiscordUser ?? (() => Promise.resolve({
-            maxFeeds: 0,
-            maxGuilds: 0,
-            guilds: [],
-            maxUserFeeds: 0,
-            maxUserFeedsComposition: { base: 0, legacy: 0 },
-          }))
+          options.supportersService?.getBenefitsOfDiscordUser ??
+            (() =>
+              Promise.resolve({
+                maxFeeds: 0,
+                maxGuilds: 0,
+                guilds: [],
+                maxUserFeeds: 0,
+                maxUserFeedsComposition: { base: 0, legacy: 0 },
+              })),
         ),
         setGuilds: mock.fn(
-          options.supportersService?.setGuilds ?? (() => Promise.resolve())
+          options.supportersService?.setGuilds ?? (() => Promise.resolve()),
         ),
       };
 

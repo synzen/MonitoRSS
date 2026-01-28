@@ -145,7 +145,7 @@ describe("GuildSubscriptionsService", { concurrency: true }, () => {
         assert.strictEqual(requests.length, 1);
         assert.strictEqual(
           requests[0]!.headers.authorization,
-          "test-access-token"
+          "test-access-token",
         );
       } finally {
         await ctx.close();
@@ -201,7 +201,7 @@ describe("GuildSubscriptionsService", { concurrency: true }, () => {
             refreshRate: sub.refresh_rate,
             expireAt: sub.expire_at,
             slowRate: sub.ignore_refresh_rate_benefit,
-          }))
+          })),
         );
       } finally {
         await ctx.close();
@@ -221,7 +221,7 @@ describe("GuildSubscriptionsService", { concurrency: true }, () => {
         assert.strictEqual(requests.length, 1);
         assert.strictEqual(
           requests[0]!.headers.authorization,
-          "test-access-token"
+          "test-access-token",
         );
         assert.ok(requests[0]!.url.includes("filters"));
       } finally {

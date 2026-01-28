@@ -61,5 +61,5 @@ export const FeedFetcherFetchFeedResponseSchema = z.discriminatedUnion(
     FeedFetchResponseInvalidSslCertificateSchema,
     FeedFetchResponseFetchErrorSchema,
     FeedFetchResponseInternalErrorSchema,
-  ]
+  ],
 );

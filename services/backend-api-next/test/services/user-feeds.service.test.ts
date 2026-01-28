@@ -50,7 +50,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       await ctx.createMany(2);
 
       const count = await ctx.service.calculateCurrentFeedCountOfDiscordUser(
-        ctx.discordUserId
+        ctx.discordUserId,
       );
 
       assert.strictEqual(count, 2);
@@ -64,7 +64,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       await ctx.createSharedFeed(ownerId);
 
       const count = await ctx.service.calculateCurrentFeedCountOfDiscordUser(
-        ctx.discordUserId
+        ctx.discordUserId,
       );
 
       assert.strictEqual(count, 2);
@@ -213,7 +213,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       const result = await ctx.service.getFeedsByUser(
         ctx.userId,
         ctx.discordUserId,
-        { limit: 2, offset: 0 }
+        { limit: 2, offset: 0 },
       );
 
       assert.strictEqual(result.length, 2);
@@ -229,7 +229,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       const result = await ctx.service.getFeedsByUser(
         ctx.userId,
         ctx.discordUserId,
-        { limit: 10, offset: 0 }
+        { limit: 10, offset: 0 },
       );
 
       assert.strictEqual(result.length, 2);
@@ -247,7 +247,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       const result = await ctx.service.getFeedsByUser(
         ctx.userId,
         ctx.discordUserId,
-        { limit: 10, offset: 0 }
+        { limit: 10, offset: 0 },
       );
 
       assert.strictEqual(result.length, 2);
@@ -262,7 +262,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       const count = await ctx.service.getFeedCountByUser(
         ctx.userId,
         ctx.discordUserId,
-        {}
+        {},
       );
 
       assert.strictEqual(count, 2);
@@ -281,7 +281,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       const result = await ctx.service.addFeed(
         { discordUserId: ctx.discordUserId, userAccessToken: "token" },
-        { url: "https://example.com/feed.xml" }
+        { url: "https://example.com/feed.xml" },
       );
 
       assert.ok(result);
@@ -299,7 +299,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       const result = await ctx.service.addFeed(
         { discordUserId: ctx.discordUserId, userAccessToken: "token" },
-        { url: "https://example.com/feed.xml" }
+        { url: "https://example.com/feed.xml" },
       );
 
       assert.ok(result.feedRequestLookupKey);
@@ -316,15 +316,18 @@ describe("UserFeedsService", { concurrency: true }, () => {
         () =>
           ctx.service.addFeed(
             { discordUserId: ctx.discordUserId, userAccessToken: "token" },
-            { url: "https://example.com/new.xml" }
+            { url: "https://example.com/new.xml" },
           ),
-        FeedLimitReachedException
+        FeedLimitReachedException,
       );
     });
 
     it("copies settings from source feed when sourceFeedId is provided", async () => {
       const ctx = harness.createContext({
-        feedHandler: { url: "https://example.com/new.xml", feedTitle: "New Feed" },
+        feedHandler: {
+          url: "https://example.com/new.xml",
+          feedTitle: "New Feed",
+        },
       });
 
       const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
@@ -337,15 +340,18 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       const result = await ctx.service.addFeed(
         { discordUserId: ctx.discordUserId, userAccessToken: "token" },
-        { url: "https://example.com/new.xml", sourceFeedId: sourceFeed.id }
+        { url: "https://example.com/new.xml", sourceFeedId: sourceFeed.id },
       );
 
-      assert.deepStrictEqual(result.passingComparisons, ["title", "description"]);
+      assert.deepStrictEqual(result.passingComparisons, [
+        "title",
+        "description",
+      ]);
       assert.deepStrictEqual(result.blockingComparisons, ["author"]);
       assert.strictEqual(result.formatOptions?.dateFormat, "YYYY-MM-DD");
       assert.strictEqual(
         result.dateCheckOptions?.oldArticleDateDiffMsThreshold,
-        86400000
+        86400000,
       );
     });
 
@@ -360,9 +366,9 @@ describe("UserFeedsService", { concurrency: true }, () => {
         () =>
           ctx.service.addFeed(
             { discordUserId: ctx.discordUserId, userAccessToken: "token" },
-            { url: "https://example.com/new.xml", sourceFeedId: fakeSourceId }
+            { url: "https://example.com/new.xml", sourceFeedId: fakeSourceId },
           ),
-        SourceFeedNotFoundException
+        SourceFeedNotFoundException,
       );
     });
 
@@ -377,7 +383,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       const result = await ctx.service.addFeed(
         { discordUserId: ctx.discordUserId, userAccessToken: "token" },
-        { url: "https://example.com/feed.xml" }
+        { url: "https://example.com/feed.xml" },
       );
 
       assert.ok(result.dateCheckOptions?.oldArticleDateDiffMsThreshold);
@@ -393,7 +399,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       const result = await ctx.service.addFeed(
         { discordUserId: ctx.discordUserId, userAccessToken: "token" },
-        { url: inputUrl }
+        { url: inputUrl },
       );
 
       assert.strictEqual(result.url, resolvedUrl);
@@ -408,7 +414,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       const result = await ctx.service.updateFeedById(
         { id: feed.id, discordUserId: ctx.discordUserId },
-        { title: "New Title" }
+        { title: "New Title" },
       );
 
       assert.ok(result);
@@ -421,11 +427,14 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       const result = await ctx.service.updateFeedById(
         { id: feed.id, discordUserId: ctx.discordUserId },
-        { passingComparisons: ["title", "description"] }
+        { passingComparisons: ["title", "description"] },
       );
 
       assert.ok(result);
-      assert.deepStrictEqual(result.passingComparisons, ["title", "description"]);
+      assert.deepStrictEqual(result.passingComparisons, [
+        "title",
+        "description",
+      ]);
     });
 
     it("updates blockingComparisons", async () => {
@@ -434,7 +443,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       const result = await ctx.service.updateFeedById(
         { id: feed.id, discordUserId: ctx.discordUserId },
-        { blockingComparisons: ["author"] }
+        { blockingComparisons: ["author"] },
       );
 
       assert.ok(result);
@@ -450,7 +459,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       const result = await ctx.service.updateFeedById(
         { id: feed.id, discordUserId: ctx.discordUserId },
-        { formatOptions: { dateFormat: "MM-DD-YYYY" } }
+        { formatOptions: { dateFormat: "MM-DD-YYYY" } },
       );
 
       assert.ok(result);
@@ -464,7 +473,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       const result = await ctx.service.updateFeedById(
         { id: feed.id, discordUserId: ctx.discordUserId },
-        { disabledCode: UserFeedDisabledCode.Manual }
+        { disabledCode: UserFeedDisabledCode.Manual },
       );
 
       assert.ok(result);
@@ -478,7 +487,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       const result = await ctx.service.updateFeedById(
         { id: feed.id, discordUserId: ctx.discordUserId },
-        { disabledCode: null }
+        { disabledCode: null },
       );
 
       assert.ok(result);
@@ -490,16 +499,16 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       await ctx.createMany(TEST_MAX_USER_FEEDS);
       const disabledFeed = await ctx.createDisabled(
-        UserFeedDisabledCode.ExceededFeedLimit
+        UserFeedDisabledCode.ExceededFeedLimit,
       );
 
       await assert.rejects(
         () =>
           ctx.service.updateFeedById(
             { id: disabledFeed.id, discordUserId: ctx.discordUserId },
-            { disabledCode: null }
+            { disabledCode: null },
           ),
-        FeedLimitReachedException
+        FeedLimitReachedException,
       );
     });
 
@@ -511,16 +520,19 @@ describe("UserFeedsService", { concurrency: true }, () => {
         () =>
           ctx.service.updateFeedById(
             { id: fakeId, discordUserId: ctx.discordUserId },
-            { title: "New Title" }
+            { title: "New Title" },
           ),
-        /not found/
+        /not found/,
       );
     });
 
     it("updates URL and recalculates slotOffsetMs", async () => {
       let publishedMessage: unknown = null;
       const ctx = harness.createContext({
-        feedHandler: { url: "https://example.com/new.xml", feedTitle: "New Feed" },
+        feedHandler: {
+          url: "https://example.com/new.xml",
+          feedTitle: "New Feed",
+        },
         publishMessage: async (_queue, msg) => {
           publishedMessage = msg;
         },
@@ -530,7 +542,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       const result = await ctx.service.updateFeedById(
         { id: feed.id, discordUserId: ctx.discordUserId },
-        { url: "https://example.com/new.xml" }
+        { url: "https://example.com/new.xml" },
       );
 
       assert.ok(result);
@@ -554,7 +566,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       await ctx.service.updateFeedById(
         { id: feed.id, discordUserId: ctx.discordUserId },
-        { url: "https://example.com/new.xml" }
+        { url: "https://example.com/new.xml" },
       );
 
       assert.strictEqual(publishedQueue, "feed-deleted");
@@ -575,7 +587,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       const result = await ctx.service.validateFeedUrl(
         { discordUserId: ctx.discordUserId },
-        { url: inputUrl }
+        { url: inputUrl },
       );
 
       assert.strictEqual(result.resolvedToUrl, resolvedUrl);
@@ -590,7 +602,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       const result = await ctx.service.validateFeedUrl(
         { discordUserId: ctx.discordUserId },
-        { url }
+        { url },
       );
 
       assert.strictEqual(result.resolvedToUrl, null);
@@ -606,7 +618,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       const result = await ctx.service.validateFeedUrl(
         { discordUserId: ctx.discordUserId },
-        { url: "https://example.com/feed.xml" }
+        { url: "https://example.com/feed.xml" },
       );
 
       assert.strictEqual(result.feedTitle, "My Awesome Feed");
@@ -709,7 +721,10 @@ describe("UserFeedsService", { concurrency: true }, () => {
         await ctx.service.deleteFeedById((await ctx.createFeed({})).id);
 
         const updated = await ctx.findById(feed.id);
-        assert.strictEqual(updated?.disabledCode, UserFeedDisabledCode.BadFormat);
+        assert.strictEqual(
+          updated?.disabledCode,
+          UserFeedDisabledCode.BadFormat,
+        );
       });
 
       it("re-enables ExceededFeedLimit feeds when deleting brings user under limit", async () => {
@@ -720,7 +735,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
         const feeds = await ctx.createMany(TEST_MAX_USER_FEEDS);
         const disabledFeed = await ctx.createDisabled(
-          UserFeedDisabledCode.ExceededFeedLimit
+          UserFeedDisabledCode.ExceededFeedLimit,
         );
 
         await ctx.service.deleteFeedById(feeds[0]!.id);
@@ -735,8 +750,12 @@ describe("UserFeedsService", { concurrency: true }, () => {
           maxUserFeeds: 2,
         });
 
-        const oldDisabled = await ctx.createDisabled(UserFeedDisabledCode.ExceededFeedLimit);
-        const newDisabled = await ctx.createDisabled(UserFeedDisabledCode.ExceededFeedLimit);
+        const oldDisabled = await ctx.createDisabled(
+          UserFeedDisabledCode.ExceededFeedLimit,
+        );
+        const newDisabled = await ctx.createDisabled(
+          UserFeedDisabledCode.ExceededFeedLimit,
+        );
 
         await ctx.setCreatedAt(oldDisabled.id, new Date("2020-01-01"));
         await ctx.setCreatedAt(newDisabled.id, new Date("2022-01-01"));
@@ -774,7 +793,10 @@ describe("UserFeedsService", { concurrency: true }, () => {
         const updated2 = await ctx.findById(feed2.id);
         const updated3 = await ctx.findById(feed3.id);
 
-        assert.strictEqual(updated1?.disabledCode, UserFeedDisabledCode.ExceededFeedLimit);
+        assert.strictEqual(
+          updated1?.disabledCode,
+          UserFeedDisabledCode.ExceededFeedLimit,
+        );
         assert.strictEqual(updated2?.disabledCode, undefined);
         assert.strictEqual(updated3?.disabledCode, undefined);
       });
@@ -787,8 +809,12 @@ describe("UserFeedsService", { concurrency: true }, () => {
         });
 
         const feed1 = await ctx.createFeed({ title: "Enabled Feed" });
-        const feed2 = await ctx.createDisabled(UserFeedDisabledCode.ExceededFeedLimit);
-        const feed3 = await ctx.createDisabled(UserFeedDisabledCode.ExceededFeedLimit);
+        const feed2 = await ctx.createDisabled(
+          UserFeedDisabledCode.ExceededFeedLimit,
+        );
+        const feed3 = await ctx.createDisabled(
+          UserFeedDisabledCode.ExceededFeedLimit,
+        );
 
         await ctx.setCreatedAt(feed2.id, new Date("2020-01-01"));
         await ctx.setCreatedAt(feed3.id, new Date("2022-01-01"));
@@ -815,7 +841,10 @@ describe("UserFeedsService", { concurrency: true }, () => {
         await ctx.service.deleteFeedById((await ctx.createFeed({})).id);
 
         const updated = await ctx.findById(feed.id);
-        assert.strictEqual(updated?.disabledCode, UserFeedDisabledCode.FailedRequests);
+        assert.strictEqual(
+          updated?.disabledCode,
+          UserFeedDisabledCode.FailedRequests,
+        );
       });
 
       it("treats manually disabled feeds as not counting against limit", async () => {
@@ -868,7 +897,9 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
         const feed1 = await ctx.createFeed({ title: "Feed 1" });
         const feed2 = await ctx.createFeed({ title: "Feed 2" });
-        const feed3 = await ctx.createDisabled(UserFeedDisabledCode.ExceededFeedLimit);
+        const feed3 = await ctx.createDisabled(
+          UserFeedDisabledCode.ExceededFeedLimit,
+        );
 
         await ctx.setCreatedAt(feed1.id, new Date("2020-01-01"));
         await ctx.setCreatedAt(feed2.id, new Date("2021-01-01"));
@@ -876,7 +907,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
         await ctx.service.updateFeedById(
           { id: feed2.id, discordUserId: ctx.discordUserId },
-          { disabledCode: UserFeedDisabledCode.Manual }
+          { disabledCode: UserFeedDisabledCode.Manual },
         );
 
         const updated3 = await ctx.findById(feed3.id);
@@ -892,7 +923,9 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
         const feed1 = await ctx.createFeed({ title: "Feed 1" });
         const feed2 = await ctx.createFeed({ title: "Feed 2" });
-        const feed3 = await ctx.createDisabled(UserFeedDisabledCode.ExceededFeedLimit);
+        const feed3 = await ctx.createDisabled(
+          UserFeedDisabledCode.ExceededFeedLimit,
+        );
 
         await ctx.service.deleteFeedById(feed1.id);
 
@@ -909,7 +942,9 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
         const feed1 = await ctx.createFeed({ title: "Feed 1" });
         const feed2 = await ctx.createFeed({ title: "Feed 2" });
-        const feed3 = await ctx.createDisabled(UserFeedDisabledCode.ExceededFeedLimit);
+        const feed3 = await ctx.createDisabled(
+          UserFeedDisabledCode.ExceededFeedLimit,
+        );
 
         await ctx.service.bulkDelete([feed1.id]);
 
@@ -926,7 +961,9 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
         const feed1 = await ctx.createFeed({ title: "Feed 1" });
         const feed2 = await ctx.createFeed({ title: "Feed 2" });
-        const feed3 = await ctx.createDisabled(UserFeedDisabledCode.ExceededFeedLimit);
+        const feed3 = await ctx.createDisabled(
+          UserFeedDisabledCode.ExceededFeedLimit,
+        );
 
         await ctx.setCreatedAt(feed3.id, new Date("2022-01-01"));
 
@@ -954,7 +991,10 @@ describe("UserFeedsService", { concurrency: true }, () => {
         await ctx.service.bulkEnable([feed3.id]);
 
         const updated1 = await ctx.findById(feed1.id);
-        assert.strictEqual(updated1?.disabledCode, UserFeedDisabledCode.ExceededFeedLimit);
+        assert.strictEqual(
+          updated1?.disabledCode,
+          UserFeedDisabledCode.ExceededFeedLimit,
+        );
       });
     });
 
@@ -970,7 +1010,9 @@ describe("UserFeedsService", { concurrency: true }, () => {
         });
 
         const feed = await ctx.createFeed({ title: "Feed 1" });
-        await ctx.setFields(feed.id, { userRefreshRateSeconds: supporterRefreshRate });
+        await ctx.setFields(feed.id, {
+          userRefreshRateSeconds: supporterRefreshRate,
+        });
 
         await ctx.service.deleteFeedById((await ctx.createFeed({})).id);
 
@@ -988,12 +1030,17 @@ describe("UserFeedsService", { concurrency: true }, () => {
         });
 
         const feed = await ctx.createFeed({ title: "Feed 1" });
-        await ctx.setFields(feed.id, { userRefreshRateSeconds: supporterRefreshRate });
+        await ctx.setFields(feed.id, {
+          userRefreshRateSeconds: supporterRefreshRate,
+        });
 
         await ctx.service.deleteFeedById((await ctx.createFeed({})).id);
 
         const updated = await ctx.findById(feed.id);
-        assert.strictEqual(updated?.userRefreshRateSeconds, supporterRefreshRate);
+        assert.strictEqual(
+          updated?.userRefreshRateSeconds,
+          supporterRefreshRate,
+        );
       });
     });
   });
@@ -1009,8 +1056,8 @@ describe("UserFeedsService", { concurrency: true }, () => {
       await assert.rejects(() =>
         ctx.service.addFeed(
           { discordUserId: ctx.discordUserId, userAccessToken: "token" },
-          { url: "https://invalid.com/feed.xml" }
-        )
+          { url: "https://invalid.com/feed.xml" },
+        ),
       );
     });
 
@@ -1023,8 +1070,8 @@ describe("UserFeedsService", { concurrency: true }, () => {
       await assert.rejects(() =>
         ctx.service.addFeed(
           { discordUserId: ctx.discordUserId, userAccessToken: "token" },
-          { url: "https://banned.com/feed.xml" }
-        )
+          { url: "https://banned.com/feed.xml" },
+        ),
       );
     });
 
@@ -1133,25 +1180,25 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       assert.strictEqual(
         updated1.connections?.discordChannels[0]?.disabledCode,
-        FeedConnectionDisabledCode.NotPaidSubscriber
+        FeedConnectionDisabledCode.NotPaidSubscriber,
       );
       assert.strictEqual(
         updated1.connections?.discordChannels[1]?.disabledCode,
-        FeedConnectionDisabledCode.NotPaidSubscriber
+        FeedConnectionDisabledCode.NotPaidSubscriber,
       );
       assert.strictEqual(
         updated1.connections?.discordChannels[2]?.disabledCode,
-        FeedConnectionDisabledCode.NotPaidSubscriber
+        FeedConnectionDisabledCode.NotPaidSubscriber,
       );
 
       assert.strictEqual(
         updated2.connections?.discordChannels[0]?.disabledCode,
-        undefined
+        undefined,
       );
 
       assert.strictEqual(
         updated3.connections?.discordChannels[0]?.disabledCode,
-        FeedConnectionDisabledCode.NotPaidSubscriber
+        FeedConnectionDisabledCode.NotPaidSubscriber,
       );
     });
 
@@ -1191,7 +1238,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       assert.ok(updated);
       assert.strictEqual(
         updated.connections?.discordChannels[0]?.disabledCode,
-        FeedConnectionDisabledCode.Manual
+        FeedConnectionDisabledCode.Manual,
       );
     });
 
@@ -1231,7 +1278,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       assert.ok(updated);
       assert.strictEqual(
         updated.connections?.discordChannels[0]?.disabledCode,
-        undefined
+        undefined,
       );
     });
   });

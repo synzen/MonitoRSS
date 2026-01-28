@@ -12,10 +12,22 @@ describe("FeedMongooseRepository Integration", { concurrency: true }, () => {
     it("returns feeds sorted by addedAt descending", async () => {
       const ctx = harness.createContext();
 
-      await ctx.createFeed({ title: "Feed 2020", addedAt: new Date("2020-01-01") });
-      await ctx.createFeed({ title: "Feed 2022", addedAt: new Date("2022-01-01") });
-      await ctx.createFeed({ title: "Feed 2019", addedAt: new Date("2019-01-01") });
-      await ctx.createFeed({ title: "Feed 2021", addedAt: new Date("2021-01-01") });
+      await ctx.createFeed({
+        title: "Feed 2020",
+        addedAt: new Date("2020-01-01"),
+      });
+      await ctx.createFeed({
+        title: "Feed 2022",
+        addedAt: new Date("2022-01-01"),
+      });
+      await ctx.createFeed({
+        title: "Feed 2019",
+        addedAt: new Date("2019-01-01"),
+      });
+      await ctx.createFeed({
+        title: "Feed 2021",
+        addedAt: new Date("2021-01-01"),
+      });
 
       const feeds = await ctx.repository.aggregateWithFailRecords({
         guildId: ctx.guildId,
@@ -24,16 +36,33 @@ describe("FeedMongooseRepository Integration", { concurrency: true }, () => {
       });
 
       const titles = feeds.map((f) => f.title);
-      assert.deepStrictEqual(titles, ["Feed 2022", "Feed 2021", "Feed 2020", "Feed 2019"]);
+      assert.deepStrictEqual(titles, [
+        "Feed 2022",
+        "Feed 2021",
+        "Feed 2020",
+        "Feed 2019",
+      ]);
     });
 
     it("respects limit and offset (skip)", async () => {
       const ctx = harness.createContext();
 
-      await ctx.createFeed({ title: "Feed 2022", addedAt: new Date("2022-01-01") });
-      await ctx.createFeed({ title: "Feed 2021", addedAt: new Date("2021-01-01") });
-      await ctx.createFeed({ title: "Feed 2020", addedAt: new Date("2020-01-01") });
-      await ctx.createFeed({ title: "Feed 2019", addedAt: new Date("2019-01-01") });
+      await ctx.createFeed({
+        title: "Feed 2022",
+        addedAt: new Date("2022-01-01"),
+      });
+      await ctx.createFeed({
+        title: "Feed 2021",
+        addedAt: new Date("2021-01-01"),
+      });
+      await ctx.createFeed({
+        title: "Feed 2020",
+        addedAt: new Date("2020-01-01"),
+      });
+      await ctx.createFeed({
+        title: "Feed 2019",
+        addedAt: new Date("2019-01-01"),
+      });
 
       const feeds = await ctx.repository.aggregateWithFailRecords({
         guildId: ctx.guildId,
@@ -65,8 +94,14 @@ describe("FeedMongooseRepository Integration", { concurrency: true }, () => {
     it("searches by title (case insensitive)", async () => {
       const ctx = harness.createContext();
 
-      await ctx.createFeed({ title: "Google News", url: "https://news.google.com" });
-      await ctx.createFeed({ title: "Yahoo Finance", url: "https://finance.yahoo.com" });
+      await ctx.createFeed({
+        title: "Google News",
+        url: "https://news.google.com",
+      });
+      await ctx.createFeed({
+        title: "Yahoo Finance",
+        url: "https://finance.yahoo.com",
+      });
 
       const feeds = await ctx.repository.aggregateWithFailRecords({
         guildId: ctx.guildId,
@@ -82,8 +117,14 @@ describe("FeedMongooseRepository Integration", { concurrency: true }, () => {
     it("searches by URL (case insensitive)", async () => {
       const ctx = harness.createContext();
 
-      await ctx.createFeed({ title: "Some Feed", url: "https://google.com/feed" });
-      await ctx.createFeed({ title: "Other Feed", url: "https://yahoo.com/feed" });
+      await ctx.createFeed({
+        title: "Some Feed",
+        url: "https://google.com/feed",
+      });
+      await ctx.createFeed({
+        title: "Other Feed",
+        url: "https://yahoo.com/feed",
+      });
 
       const feeds = await ctx.repository.aggregateWithFailRecords({
         guildId: ctx.guildId,

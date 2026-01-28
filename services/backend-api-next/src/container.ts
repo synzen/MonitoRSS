@@ -117,27 +117,57 @@ export function createContainer(deps: {
   const publishMessage = createPublisher(deps.rabbitmq);
 
   // Repositories
-  const mongoMigrationRepository = new MongoMigrationMongooseRepository(deps.mongoConnection);
-  const failRecordRepository = new FailRecordMongooseRepository(deps.mongoConnection);
-  const bannedFeedRepository = new BannedFeedMongooseRepository(deps.mongoConnection);
-  const feedScheduleRepository = new FeedScheduleMongooseRepository(deps.mongoConnection);
-  const discordServerProfileRepository = new DiscordServerProfileMongooseRepository(deps.mongoConnection);
-  const userFeedLimitOverrideRepository = new UserFeedLimitOverrideMongooseRepository(deps.mongoConnection);
+  const mongoMigrationRepository = new MongoMigrationMongooseRepository(
+    deps.mongoConnection,
+  );
+  const failRecordRepository = new FailRecordMongooseRepository(
+    deps.mongoConnection,
+  );
+  const bannedFeedRepository = new BannedFeedMongooseRepository(
+    deps.mongoConnection,
+  );
+  const feedScheduleRepository = new FeedScheduleMongooseRepository(
+    deps.mongoConnection,
+  );
+  const discordServerProfileRepository =
+    new DiscordServerProfileMongooseRepository(deps.mongoConnection);
+  const userFeedLimitOverrideRepository =
+    new UserFeedLimitOverrideMongooseRepository(deps.mongoConnection);
   const patronRepository = new PatronMongooseRepository(deps.mongoConnection);
-  const notificationDeliveryAttemptRepository = new NotificationDeliveryAttemptMongooseRepository(deps.mongoConnection);
-  const feedSubscriberRepository = new FeedSubscriberMongooseRepository(deps.mongoConnection);
+  const notificationDeliveryAttemptRepository =
+    new NotificationDeliveryAttemptMongooseRepository(deps.mongoConnection);
+  const feedSubscriberRepository = new FeedSubscriberMongooseRepository(
+    deps.mongoConnection,
+  );
   const userRepository = new UserMongooseRepository(deps.mongoConnection);
-  const customerRepository = new CustomerMongooseRepository(deps.mongoConnection);
+  const customerRepository = new CustomerMongooseRepository(
+    deps.mongoConnection,
+  );
   const feedRepository = new FeedMongooseRepository(deps.mongoConnection);
-  const feedFilteredFormatRepository = new FeedFilteredFormatMongooseRepository(deps.mongoConnection);
-  const supporterRepository = new SupporterMongooseRepository(deps.mongoConnection);
-  const userFeedRepository = new UserFeedMongooseRepository(deps.mongoConnection);
+  const feedFilteredFormatRepository = new FeedFilteredFormatMongooseRepository(
+    deps.mongoConnection,
+  );
+  const supporterRepository = new SupporterMongooseRepository(
+    deps.mongoConnection,
+  );
+  const userFeedRepository = new UserFeedMongooseRepository(
+    deps.mongoConnection,
+  );
 
   // External API Services
   const discordApiService = new DiscordApiService(deps.config);
-  const discordAuthService = new DiscordAuthService(deps.config, discordApiService);
-  const discordPermissionsService = new DiscordPermissionsService(deps.config, discordApiService);
-  const discordWebhooksService = new DiscordWebhooksService(deps.config, discordApiService);
+  const discordAuthService = new DiscordAuthService(
+    deps.config,
+    discordApiService,
+  );
+  const discordPermissionsService = new DiscordPermissionsService(
+    deps.config,
+    discordApiService,
+  );
+  const discordWebhooksService = new DiscordWebhooksService(
+    deps.config,
+    discordApiService,
+  );
   const feedFetcherApiService = new FeedFetcherApiService(deps.config);
   const feedHandlerService = new FeedHandlerService(deps.config);
   const paddleService = new PaddleService(deps.config);
@@ -214,18 +244,19 @@ export function createContainer(deps: {
     userRepository,
   });
 
-  const feedConnectionsDiscordChannelsService = new FeedConnectionsDiscordChannelsService({
-    config: deps.config,
-    feedsService,
-    userFeedRepository,
-    feedHandlerService,
-    supportersService,
-    discordWebhooksService,
-    discordApiService,
-    discordAuthService,
-    connectionEventsService: userFeedConnectionEventsService,
-    usersService,
-  });
+  const feedConnectionsDiscordChannelsService =
+    new FeedConnectionsDiscordChannelsService({
+      config: deps.config,
+      feedsService,
+      userFeedRepository,
+      feedHandlerService,
+      supportersService,
+      discordWebhooksService,
+      discordApiService,
+      discordAuthService,
+      connectionEventsService: userFeedConnectionEventsService,
+      usersService,
+    });
 
   const userFeedsService = new UserFeedsService({
     config: deps.config,

@@ -17,7 +17,7 @@ export class InvalidFilterExpressionException extends StandardException {
     message?: string | StandardException[],
     options?: {
       subErrors?: StandardException[];
-    }
+    },
   ) {
     if (typeof message === "string") {
       super(message, options);
@@ -49,7 +49,9 @@ export class DiscordWebhookInvalidTypeException extends StandardException {
 
 export class DiscordWebhookMissingUserPermException extends StandardException {
   constructor(message?: string) {
-    super(message ?? "User does not have permission to manage this webhook's guild");
+    super(
+      message ?? "User does not have permission to manage this webhook's guild",
+    );
   }
 }
 

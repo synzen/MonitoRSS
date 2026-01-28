@@ -7,7 +7,7 @@ const boilerplate: ISupporter = {
 };
 
 export function createTestSupporter(
-  overrides: Partial<ISupporter> = {}
+  overrides: Partial<ISupporter> = {},
 ): ISupporter {
   return {
     ...boilerplate,

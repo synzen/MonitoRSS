@@ -25,7 +25,7 @@ const PatronSchema = new Schema(
     discord: { type: String },
     email: { type: String, required: true },
   },
-  { collection: "patrons", _id: false }
+  { collection: "patrons", _id: false },
 );
 
 type PatronDoc = InferSchemaType<typeof PatronSchema>;

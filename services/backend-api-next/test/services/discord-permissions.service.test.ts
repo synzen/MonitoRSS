@@ -15,17 +15,23 @@ describe("DiscordPermissionsService", { concurrency: true }, () => {
     BACKEND_API_DISCORD_CLIENT_ID: botUserId,
   } as Config;
 
-  const createMockDiscordApiService = (overrides: Record<string, unknown> = {}) => ({
-    getGuild: mock.fn(),
-    getGuildMember: mock.fn(),
-    ...overrides,
-  }) as unknown as DiscordApiService;
+  const createMockDiscordApiService = (
+    overrides: Record<string, unknown> = {},
+  ) =>
+    ({
+      getGuild: mock.fn(),
+      getGuildMember: mock.fn(),
+      ...overrides,
+    }) as unknown as DiscordApiService;
 
   describe("computeBasePermissions", () => {
     let service: DiscordPermissionsService;
 
     beforeEach(() => {
-      service = new DiscordPermissionsService(mockConfig, createMockDiscordApiService());
+      service = new DiscordPermissionsService(
+        mockConfig,
+        createMockDiscordApiService(),
+      );
     });
 
     it("returns ADMINISTRATOR when user is guild owner", () => {
@@ -55,7 +61,10 @@ describe("DiscordPermissionsService", { concurrency: true }, () => {
     });
 
     it("combines permissions from all member roles", () => {
-      const guildMember = { roles: ["role-1", "role-2"], user: { id: "user-123" } };
+      const guildMember = {
+        roles: ["role-1", "role-2"],
+        user: { id: "user-123" },
+      };
       const guild = {
         id: "guild-123",
         owner_id: "other-owner",
@@ -77,14 +86,21 @@ describe("DiscordPermissionsService", { concurrency: true }, () => {
     let service: DiscordPermissionsService;
 
     beforeEach(() => {
-      service = new DiscordPermissionsService(mockConfig, createMockDiscordApiService());
+      service = new DiscordPermissionsService(
+        mockConfig,
+        createMockDiscordApiService(),
+      );
     });
 
     it("returns ADMINISTRATOR when base permissions include ADMINISTRATOR", () => {
       const member = { roles: [], user: { id: "user-123" } };
       const channel = { guild_id: "guild-123", permission_overwrites: [] };
 
-      const result = service.computeOverwritePermissions(ADMINISTRATOR, member, channel);
+      const result = service.computeOverwritePermissions(
+        ADMINISTRATOR,
+        member,
+        channel,
+      );
 
       assert.strictEqual(result, ADMINISTRATOR);
     });
@@ -99,7 +115,11 @@ describe("DiscordPermissionsService", { concurrency: true }, () => {
         ],
       };
 
-      const result = service.computeOverwritePermissions(basePermissions, member, channel);
+      const result = service.computeOverwritePermissions(
+        basePermissions,
+        member,
+        channel,
+      );
 
       assert.strictEqual((result & VIEW_CHANNEL) === VIEW_CHANNEL, true);
       assert.strictEqual((result & MANAGE_CHANNEL) === MANAGE_CHANNEL, false);
@@ -116,7 +136,11 @@ describe("DiscordPermissionsService", { concurrency: true }, () => {
         ],
       };
 
-      const result = service.computeOverwritePermissions(basePermissions, member, channel);
+      const result = service.computeOverwritePermissions(
+        basePermissions,
+        member,
+        channel,
+      );
 
       assert.strictEqual((result & VIEW_CHANNEL) === VIEW_CHANNEL, true);
     });
@@ -132,7 +156,11 @@ describe("DiscordPermissionsService", { concurrency: true }, () => {
         ],
       };
 
-      const result = service.computeOverwritePermissions(basePermissions, member, channel);
+      const result = service.computeOverwritePermissions(
+        basePermissions,
+        member,
+        channel,
+      );
 
       assert.strictEqual((result & VIEW_CHANNEL) === VIEW_CHANNEL, true);
     });
@@ -142,11 +170,17 @@ describe("DiscordPermissionsService", { concurrency: true }, () => {
     let service: DiscordPermissionsService;
 
     beforeEach(() => {
-      service = new DiscordPermissionsService(mockConfig, createMockDiscordApiService());
+      service = new DiscordPermissionsService(
+        mockConfig,
+        createMockDiscordApiService(),
+      );
     });
 
     it("returns true when user has ADMINISTRATOR", () => {
-      const result = service.computedPermissionsHasPermissions(ADMINISTRATOR, [VIEW_CHANNEL, MANAGE_CHANNEL]);
+      const result = service.computedPermissionsHasPermissions(ADMINISTRATOR, [
+        VIEW_CHANNEL,
+        MANAGE_CHANNEL,
+      ]);
 
       assert.strictEqual(result, true);
     });
@@ -154,7 +188,10 @@ describe("DiscordPermissionsService", { concurrency: true }, () => {
     it("returns true when user has all required permissions", () => {
       const permissions = VIEW_CHANNEL | MANAGE_CHANNEL;
 
-      const result = service.computedPermissionsHasPermissions(permissions, [VIEW_CHANNEL, MANAGE_CHANNEL]);
+      const result = service.computedPermissionsHasPermissions(permissions, [
+        VIEW_CHANNEL,
+        MANAGE_CHANNEL,
+      ]);
 
       assert.strictEqual(result, true);
     });
@@ -162,7 +199,10 @@ describe("DiscordPermissionsService", { concurrency: true }, () => {
     it("returns false when user is missing some permissions", () => {
       const permissions = VIEW_CHANNEL;
 
-      const result = service.computedPermissionsHasPermissions(permissions, [VIEW_CHANNEL, MANAGE_CHANNEL]);
+      const result = service.computedPermissionsHasPermissions(permissions, [
+        VIEW_CHANNEL,
+        MANAGE_CHANNEL,
+      ]);
 
       assert.strictEqual(result, false);
     });
@@ -177,16 +217,34 @@ describe("DiscordPermissionsService", { concurrency: true }, () => {
             name: "Test Guild",
             icon: "icon-hash",
             owner_id: "owner-123",
-            roles: [{ id: "guild-123", name: "@everyone", permissions: (VIEW_CHANNEL | MANAGE_CHANNEL).toString(), position: 0, color: 0, hoist: false, mentionable: false }],
-          })
+            roles: [
+              {
+                id: "guild-123",
+                name: "@everyone",
+                permissions: (VIEW_CHANNEL | MANAGE_CHANNEL).toString(),
+                position: 0,
+                color: 0,
+                hoist: false,
+                mentionable: false,
+              },
+            ],
+          }),
         ),
         getGuildMember: mock.fn(() =>
-          Promise.resolve({ roles: [], user: { id: botUserId, username: "bot" } })
+          Promise.resolve({
+            roles: [],
+            user: { id: botUserId, username: "bot" },
+          }),
         ),
       });
-      const service = new DiscordPermissionsService(mockConfig, mockDiscordApiService);
+      const service = new DiscordPermissionsService(
+        mockConfig,
+        mockDiscordApiService,
+      );
 
-      const result = await service.botHasPermissionInServer("guild-123", [VIEW_CHANNEL]);
+      const result = await service.botHasPermissionInServer("guild-123", [
+        VIEW_CHANNEL,
+      ]);
 
       assert.strictEqual(result, true);
     });
@@ -199,16 +257,35 @@ describe("DiscordPermissionsService", { concurrency: true }, () => {
             name: "Test Guild",
             icon: "icon-hash",
             owner_id: "owner-123",
-            roles: [{ id: "guild-123", name: "@everyone", permissions: ADMINISTRATOR.toString(), position: 0, color: 0, hoist: false, mentionable: false }],
-          })
+            roles: [
+              {
+                id: "guild-123",
+                name: "@everyone",
+                permissions: ADMINISTRATOR.toString(),
+                position: 0,
+                color: 0,
+                hoist: false,
+                mentionable: false,
+              },
+            ],
+          }),
         ),
         getGuildMember: mock.fn(() =>
-          Promise.resolve({ roles: [], user: { id: botUserId, username: "bot" } })
+          Promise.resolve({
+            roles: [],
+            user: { id: botUserId, username: "bot" },
+          }),
         ),
       });
-      const service = new DiscordPermissionsService(mockConfig, mockDiscordApiService);
+      const service = new DiscordPermissionsService(
+        mockConfig,
+        mockDiscordApiService,
+      );
 
-      const result = await service.botHasPermissionInServer("guild-123", [VIEW_CHANNEL, MANAGE_CHANNEL]);
+      const result = await service.botHasPermissionInServer("guild-123", [
+        VIEW_CHANNEL,
+        MANAGE_CHANNEL,
+      ]);
 
       assert.strictEqual(result, true);
     });
@@ -221,16 +298,35 @@ describe("DiscordPermissionsService", { concurrency: true }, () => {
             name: "Test Guild",
             icon: "icon-hash",
             owner_id: "owner-123",
-            roles: [{ id: "guild-123", name: "@everyone", permissions: VIEW_CHANNEL.toString(), position: 0, color: 0, hoist: false, mentionable: false }],
-          })
+            roles: [
+              {
+                id: "guild-123",
+                name: "@everyone",
+                permissions: VIEW_CHANNEL.toString(),
+                position: 0,
+                color: 0,
+                hoist: false,
+                mentionable: false,
+              },
+            ],
+          }),
         ),
         getGuildMember: mock.fn(() =>
-          Promise.resolve({ roles: [], user: { id: botUserId, username: "bot" } })
+          Promise.resolve({
+            roles: [],
+            user: { id: botUserId, username: "bot" },
+          }),
         ),
       });
-      const service = new DiscordPermissionsService(mockConfig, mockDiscordApiService);
+      const service = new DiscordPermissionsService(
+        mockConfig,
+        mockDiscordApiService,
+      );
 
-      const result = await service.botHasPermissionInServer("guild-123", [VIEW_CHANNEL, MANAGE_CHANNEL]);
+      const result = await service.botHasPermissionInServer("guild-123", [
+        VIEW_CHANNEL,
+        MANAGE_CHANNEL,
+      ]);
 
       assert.strictEqual(result, false);
     });

@@ -118,7 +118,7 @@ const configSchema = z.object({
             .split(",")
             .map((id) => id.trim())
             .filter(Boolean)
-        : []
+        : [],
     )
     .default(""),
 });

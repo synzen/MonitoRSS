@@ -3,7 +3,10 @@ import type {
   IUserPreferences,
   IUserExternalCredential,
 } from "../../repositories/interfaces/user.types";
-import type { SubscriptionStatus, UserExternalCredentialStatus } from "../../repositories/shared/enums";
+import type {
+  SubscriptionStatus,
+  UserExternalCredentialStatus,
+} from "../../repositories/shared/enums";
 
 export interface CreditBalanceDetails {
   availableFormatted: string;
@@ -60,7 +63,9 @@ export interface UpdateUserPreferencesInput {
   dateTimezone?: string | null;
   dateLocale?: string | null;
   feedListSort?: IUserPreferences["feedListSort"] | null;
-  feedListColumnVisibility?: IUserPreferences["feedListColumnVisibility"] | null;
+  feedListColumnVisibility?:
+    | IUserPreferences["feedListColumnVisibility"]
+    | null;
   feedListColumnOrder?: IUserPreferences["feedListColumnOrder"] | null;
   feedListStatusFilters?: IUserPreferences["feedListStatusFilters"] | null;
 }

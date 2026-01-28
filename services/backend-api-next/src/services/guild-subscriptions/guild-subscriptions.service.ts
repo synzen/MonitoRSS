@@ -21,7 +21,7 @@ export class GuildSubscriptionsService {
   }
 
   async getSubscription(
-    guildId: string
+    guildId: string,
   ): Promise<GuildSubscriptionFormatted | null> {
     if (!this.enabled) {
       return null;
@@ -46,7 +46,7 @@ export class GuildSubscriptionsService {
       }
 
       throw new Error(
-        `Unexpected status code ${res.status} when getting subscription for guild ${guildId}`
+        `Unexpected status code ${res.status} when getting subscription for guild ${guildId}`,
       );
     } catch (err) {
       logger.error("Failed to get guild subscription", {
@@ -58,7 +58,7 @@ export class GuildSubscriptionsService {
   }
 
   async getAllSubscriptions(
-    options?: GetAllSubscriptionsOptions
+    options?: GetAllSubscriptionsOptions,
   ): Promise<GuildSubscriptionFormatted[]> {
     if (!this.enabled) {
       return [];
@@ -85,7 +85,7 @@ export class GuildSubscriptionsService {
       }
 
       throw new Error(
-        `Unexpected status code ${res.status} when getting all subscriptions`
+        `Unexpected status code ${res.status} when getting all subscriptions`,
       );
     } catch (err) {
       logger.error("Failed to get all guild subscriptions", {
@@ -96,7 +96,7 @@ export class GuildSubscriptionsService {
   }
 
   private mapApiResponse(
-    response: GuildSubscription
+    response: GuildSubscription,
   ): GuildSubscriptionFormatted {
     return {
       guildId: response.guild_id,

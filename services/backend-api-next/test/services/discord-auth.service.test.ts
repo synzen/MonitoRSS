@@ -16,16 +16,22 @@ describe("DiscordAuthService", { concurrency: true }, () => {
     BACKEND_API_DISCORD_REDIRECT_URI: redirectUri,
   } as Config;
 
-  const createMockDiscordApiService = (overrides: Record<string, unknown> = {}) => ({
-    executeBearerRequest: mock.fn(),
-    ...overrides,
-  }) as unknown as DiscordApiService;
+  const createMockDiscordApiService = (
+    overrides: Record<string, unknown> = {},
+  ) =>
+    ({
+      executeBearerRequest: mock.fn(),
+      ...overrides,
+    }) as unknown as DiscordApiService;
 
   describe("getAuthorizationUrl", () => {
     let service: DiscordAuthService;
 
     beforeEach(() => {
-      service = new DiscordAuthService(mockConfig, createMockDiscordApiService());
+      service = new DiscordAuthService(
+        mockConfig,
+        createMockDiscordApiService(),
+      );
     });
 
     it("returns the correct URL with default scopes", () => {
@@ -55,7 +61,10 @@ describe("DiscordAuthService", { concurrency: true }, () => {
     let service: DiscordAuthService;
 
     beforeEach(() => {
-      service = new DiscordAuthService(mockConfig, createMockDiscordApiService());
+      service = new DiscordAuthService(
+        mockConfig,
+        createMockDiscordApiService(),
+      );
     });
 
     it("returns true when token is expired", () => {
@@ -82,13 +91,18 @@ describe("DiscordAuthService", { concurrency: true }, () => {
   describe("userManagesGuild", () => {
     it("returns isManager false when user is not in guild", async () => {
       const mockDiscordApiService = createMockDiscordApiService({
-        executeBearerRequest: mock.fn(() => Promise.resolve([
-          { id: "other-guild", owner: false, permissions: "0" },
-        ])),
+        executeBearerRequest: mock.fn(() =>
+          Promise.resolve([
+            { id: "other-guild", owner: false, permissions: "0" },
+          ]),
+        ),
       });
       const service = new DiscordAuthService(mockConfig, mockDiscordApiService);
 
-      const result = await service.userManagesGuild("access-token", "target-guild");
+      const result = await service.userManagesGuild(
+        "access-token",
+        "target-guild",
+      );
 
       assert.strictEqual(result.isManager, false);
       assert.strictEqual(result.permissions, null);
@@ -96,13 +110,18 @@ describe("DiscordAuthService", { concurrency: true }, () => {
 
     it("returns isManager true when user is guild owner", async () => {
       const mockDiscordApiService = createMockDiscordApiService({
-        executeBearerRequest: mock.fn(() => Promise.resolve([
-          { id: "target-guild", owner: true, permissions: "0" },
-        ])),
+        executeBearerRequest: mock.fn(() =>
+          Promise.resolve([
+            { id: "target-guild", owner: true, permissions: "0" },
+          ]),
+        ),
       });
       const service = new DiscordAuthService(mockConfig, mockDiscordApiService);
 
-      const result = await service.userManagesGuild("access-token", "target-guild");
+      const result = await service.userManagesGuild(
+        "access-token",
+        "target-guild",
+      );
 
       assert.strictEqual(result.isManager, true);
       assert.strictEqual(result.permissions, "0");
@@ -110,26 +129,40 @@ describe("DiscordAuthService", { concurrency: true }, () => {
 
     it("returns isManager true when user has MANAGE_CHANNEL permission", async () => {
       const mockDiscordApiService = createMockDiscordApiService({
-        executeBearerRequest: mock.fn(() => Promise.resolve([
-          { id: "target-guild", owner: false, permissions: MANAGE_CHANNEL.toString() },
-        ])),
+        executeBearerRequest: mock.fn(() =>
+          Promise.resolve([
+            {
+              id: "target-guild",
+              owner: false,
+              permissions: MANAGE_CHANNEL.toString(),
+            },
+          ]),
+        ),
       });
       const service = new DiscordAuthService(mockConfig, mockDiscordApiService);
 
-      const result = await service.userManagesGuild("access-token", "target-guild");
+      const result = await service.userManagesGuild(
+        "access-token",
+        "target-guild",
+      );
 
       assert.strictEqual(result.isManager, true);
     });
 
     it("returns isManager false when user lacks MANAGE_CHANNEL permission", async () => {
       const mockDiscordApiService = createMockDiscordApiService({
-        executeBearerRequest: mock.fn(() => Promise.resolve([
-          { id: "target-guild", owner: false, permissions: "0" },
-        ])),
+        executeBearerRequest: mock.fn(() =>
+          Promise.resolve([
+            { id: "target-guild", owner: false, permissions: "0" },
+          ]),
+        ),
       });
       const service = new DiscordAuthService(mockConfig, mockDiscordApiService);
 
-      const result = await service.userManagesGuild("access-token", "target-guild");
+      const result = await service.userManagesGuild(
+        "access-token",
+        "target-guild",
+      );
 
       assert.strictEqual(result.isManager, false);
     });
@@ -137,7 +170,12 @@ describe("DiscordAuthService", { concurrency: true }, () => {
 
   describe("getUser", () => {
     it("returns user from Discord API", async () => {
-      const user = { id: "user-123", username: "testuser", discriminator: "0001", avatar: null };
+      const user = {
+        id: "user-123",
+        username: "testuser",
+        discriminator: "0001",
+        avatar: null,
+      };
       const mockDiscordApiService = createMockDiscordApiService({
         executeBearerRequest: mock.fn(() => Promise.resolve(user)),
       });
@@ -168,13 +206,18 @@ describe("DiscordAuthService", { concurrency: true }, () => {
         refresh_token: "new-refresh-token",
         scope: "identify guilds",
       };
-      const user = { id: "user-123", username: "testuser", discriminator: "0001", avatar: null };
+      const user = {
+        id: "user-123",
+        username: "testuser",
+        discriminator: "0001",
+        avatar: null,
+      };
 
       globalThis.fetch = mock.fn(() =>
         Promise.resolve({
           ok: true,
           json: () => Promise.resolve(tokenResponse),
-        } as Response)
+        } as Response),
       ) as typeof fetch;
 
       const mockDiscordApiService = createMockDiscordApiService({
@@ -196,14 +239,17 @@ describe("DiscordAuthService", { concurrency: true }, () => {
           ok: false,
           status: 400,
           json: () => Promise.resolve({ error: "invalid_grant" }),
-        } as Response)
+        } as Response),
       ) as typeof fetch;
 
-      const service = new DiscordAuthService(mockConfig, createMockDiscordApiService());
+      const service = new DiscordAuthService(
+        mockConfig,
+        createMockDiscordApiService(),
+      );
 
       await assert.rejects(
         () => service.createAccessToken("bad-auth-code"),
-        /Failed to create access token \(400\)/
+        /Failed to create access token \(400\)/,
       );
     });
 
@@ -212,14 +258,17 @@ describe("DiscordAuthService", { concurrency: true }, () => {
         Promise.resolve({
           ok: false,
           status: 500,
-        } as Response)
+        } as Response),
       ) as typeof fetch;
 
-      const service = new DiscordAuthService(mockConfig, createMockDiscordApiService());
+      const service = new DiscordAuthService(
+        mockConfig,
+        createMockDiscordApiService(),
+      );
 
       await assert.rejects(
         () => service.createAccessToken("auth-code"),
-        /Discord internal error/
+        /Discord internal error/,
       );
     });
   });
@@ -243,13 +292,18 @@ describe("DiscordAuthService", { concurrency: true }, () => {
         refresh_token: "new-refresh-token",
         scope: "identify guilds",
       };
-      const user = { id: "user-123", username: "testuser", discriminator: "0001", avatar: null };
+      const user = {
+        id: "user-123",
+        username: "testuser",
+        discriminator: "0001",
+        avatar: null,
+      };
 
       globalThis.fetch = mock.fn(() =>
         Promise.resolve({
           ok: true,
           json: () => Promise.resolve(tokenResponse),
-        } as Response)
+        } as Response),
       ) as typeof fetch;
 
       const mockDiscordApiService = createMockDiscordApiService({
@@ -283,11 +337,14 @@ describe("DiscordAuthService", { concurrency: true }, () => {
 
     it("revokes both access and refresh tokens", async () => {
       const fetchMock = mock.fn(() =>
-        Promise.resolve({ ok: true } as Response)
+        Promise.resolve({ ok: true } as Response),
       );
       globalThis.fetch = fetchMock as typeof fetch;
 
-      const service = new DiscordAuthService(mockConfig, createMockDiscordApiService());
+      const service = new DiscordAuthService(
+        mockConfig,
+        createMockDiscordApiService(),
+      );
 
       await service.revokeToken({
         access_token: "access-token",
@@ -306,20 +363,24 @@ describe("DiscordAuthService", { concurrency: true }, () => {
           ok: false,
           status: 400,
           json: () => Promise.resolve({ error: "invalid_token" }),
-        } as Response)
+        } as Response),
       ) as typeof fetch;
 
-      const service = new DiscordAuthService(mockConfig, createMockDiscordApiService());
+      const service = new DiscordAuthService(
+        mockConfig,
+        createMockDiscordApiService(),
+      );
 
       await assert.rejects(
-        () => service.revokeToken({
-          access_token: "access-token",
-          token_type: "Bearer",
-          expires_in: 604800,
-          refresh_token: "refresh-token",
-          scope: "identify guilds",
-        }),
-        /Failed to revoke/
+        () =>
+          service.revokeToken({
+            access_token: "access-token",
+            token_type: "Bearer",
+            expires_in: 604800,
+            refresh_token: "refresh-token",
+            scope: "identify guilds",
+          }),
+        /Failed to revoke/,
       );
     });
   });

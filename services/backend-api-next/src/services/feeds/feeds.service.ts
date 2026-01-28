@@ -1,18 +1,30 @@
 import dayjs from "dayjs";
-import type { IFeedRepository, IFeedWithFailRecord } from "../../repositories/interfaces/feed.types";
-import type { IBannedFeed, IBannedFeedRepository } from "../../repositories/interfaces/banned-feed.types";
+import type {
+  IFeedRepository,
+  IFeedWithFailRecord,
+} from "../../repositories/interfaces/feed.types";
+import type {
+  IBannedFeed,
+  IBannedFeedRepository,
+} from "../../repositories/interfaces/banned-feed.types";
 import type { DiscordApiService } from "../discord-api/discord-api.service";
 import type { DiscordAuthService } from "../discord-auth/discord-auth.service";
 import type { DiscordPermissionsService } from "../discord-permissions/discord-permissions.service";
 import type { FeedSchedulingService } from "../feed-scheduling/feed-scheduling.service";
-import { DiscordChannelType, type DiscordGuildChannel } from "../../shared/types/discord.types";
+import {
+  DiscordChannelType,
+  type DiscordGuildChannel,
+} from "../../shared/types/discord.types";
 import { DiscordAPIError } from "../../shared/exceptions/discord-api.error";
 import {
   MissingChannelException,
   MissingChannelPermissionsException,
   UserMissingManageGuildException,
 } from "../../shared/exceptions/feeds.exceptions";
-import { SEND_CHANNEL_MESSAGE, VIEW_CHANNEL } from "../../shared/constants/discord-permissions";
+import {
+  SEND_CHANNEL_MESSAGE,
+  VIEW_CHANNEL,
+} from "../../shared/constants/discord-permissions";
 import { FeedStatus, type DetailedFeed } from "./types";
 
 export interface FeedsServiceDeps {
@@ -53,7 +65,7 @@ export class FeedsService {
 
     const { isManager } = await this.deps.discordAuthService.userManagesGuild(
       userAccessToken,
-      channel.guild_id
+      channel.guild_id,
     );
 
     if (!isManager) {
@@ -69,7 +81,7 @@ export class FeedsService {
       !skipBotPermissionAssertions &&
       !(await this.deps.discordPermissionsService.botHasPermissionInChannel(
         channel,
-        [SEND_CHANNEL_MESSAGE, VIEW_CHANNEL]
+        [SEND_CHANNEL_MESSAGE, VIEW_CHANNEL],
       ))
     ) {
       throw new MissingChannelPermissionsException();
@@ -84,7 +96,7 @@ export class FeedsService {
       search?: string;
       limit: number;
       offset: number;
-    }
+    },
   ): Promise<DetailedFeed[]> {
     const feeds = await this.deps.feedRepository.aggregateWithFailRecords({
       guildId: serverId,
@@ -93,13 +105,14 @@ export class FeedsService {
       limit: options.limit,
     });
 
-    const refreshRates = await this.deps.feedSchedulingService.getRefreshRatesOfFeeds(
-      feeds.map((feed) => ({
-        id: feed.id,
-        guild: feed.guild,
-        url: feed.url,
-      }))
-    );
+    const refreshRates =
+      await this.deps.feedSchedulingService.getRefreshRatesOfFeeds(
+        feeds.map((feed) => ({
+          id: feed.id,
+          guild: feed.guild,
+          url: feed.url,
+        })),
+      );
 
     return this.mapFeedsToDetailedFeeds(feeds, refreshRates);
   }
@@ -108,18 +121,21 @@ export class FeedsService {
     serverId: string,
     options?: {
       search?: string;
-    }
+    },
   ): Promise<number> {
     return this.deps.feedRepository.countByGuild(serverId, options?.search);
   }
 
-  async getBannedFeedDetails(url: string, guildId: string): Promise<IBannedFeed | null> {
+  async getBannedFeedDetails(
+    url: string,
+    guildId: string,
+  ): Promise<IBannedFeed | null> {
     return this.deps.bannedFeedRepository.findByUrlForGuild(url, guildId);
   }
 
   private mapFeedsToDetailedFeeds(
     feeds: IFeedWithFailRecord[],
-    refreshRates: number[]
+    refreshRates: number[],
   ): DetailedFeed[] {
     return feeds.map((feed, index) => {
       let feedStatus: FeedStatus;
@@ -143,7 +159,8 @@ export class FeedsService {
           "Deprecated for personal feeds. Must convert to personal feed to restore function.";
       }
 
-      const { failRecord, ...feedWithoutFailRecord } = feed as IFeedWithFailRecord & { failRecord?: unknown };
+      const { failRecord, ...feedWithoutFailRecord } =
+        feed as IFeedWithFailRecord & { failRecord?: unknown };
 
       return {
         ...feedWithoutFailRecord,
@@ -157,7 +174,7 @@ export class FeedsService {
 
   private isValidFailRecord(
     failRecord: IFeedWithFailRecord["failRecord"] | null,
-    requiredLifetimeHours = 18
+    requiredLifetimeHours = 18,
   ): boolean {
     if (!failRecord) {
       return false;

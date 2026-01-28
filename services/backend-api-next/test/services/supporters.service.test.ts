@@ -1,7 +1,10 @@
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert";
 import dayjs from "dayjs";
-import { PatronStatus, SubscriptionProductKey } from "../../src/repositories/shared/enums";
+import {
+  PatronStatus,
+  SubscriptionProductKey,
+} from "../../src/repositories/shared/enums";
 import {
   createSupportersHarness,
   TEST_DEFAULTS,
@@ -17,7 +20,9 @@ describe("SupportersService", { concurrency: true }, () => {
     it("returns defaults for all values if no supporter is found", async () => {
       const ctx = harness.createContext();
 
-      const benefits = await ctx.service.getBenefitsOfDiscordUser(ctx.discordUserId);
+      const benefits = await ctx.service.getBenefitsOfDiscordUser(
+        ctx.discordUserId,
+      );
 
       assert.strictEqual(benefits.isSupporter, false);
       assert.strictEqual(benefits.maxFeeds, TEST_DEFAULTS.maxFeeds);
@@ -27,7 +32,10 @@ describe("SupportersService", { concurrency: true }, () => {
         base: TEST_DEFAULTS.maxUserFeeds,
         legacy: 0,
       });
-      assert.strictEqual(benefits.maxDailyArticles, TEST_DEFAULTS.maxDailyArticlesDefault);
+      assert.strictEqual(
+        benefits.maxDailyArticles,
+        TEST_DEFAULTS.maxDailyArticlesDefault,
+      );
       assert.strictEqual(benefits.maxUserFeeds, TEST_DEFAULTS.maxUserFeeds);
     });
 
@@ -39,21 +47,30 @@ describe("SupportersService", { concurrency: true }, () => {
         guilds: ["guild-1", "guild-2"],
       });
 
-      const benefits = await ctx.service.getBenefitsOfDiscordUser(ctx.discordUserId);
+      const benefits = await ctx.service.getBenefitsOfDiscordUser(
+        ctx.discordUserId,
+      );
 
       assert.strictEqual(benefits.isSupporter, true);
       assert.strictEqual(benefits.maxFeeds, supporter.maxFeeds);
       assert.deepStrictEqual(benefits.guilds, supporter.guilds);
       assert.strictEqual(benefits.maxGuilds, supporter.maxGuilds);
       assert.strictEqual(benefits.refreshRateSeconds, 120);
-      assert.strictEqual(benefits.maxDailyArticles, TEST_DEFAULTS.maxDailyArticlesSupporter);
+      assert.strictEqual(
+        benefits.maxDailyArticles,
+        TEST_DEFAULTS.maxDailyArticlesSupporter,
+      );
     });
   });
 
   describe("getBenefitsOfServers", () => {
     it("always returns results for every input server id", async () => {
       const ctx = harness.createContext();
-      const serverIds = [ctx.generateServerId(), ctx.generateServerId(), ctx.generateServerId()];
+      const serverIds = [
+        ctx.generateServerId(),
+        ctx.generateServerId(),
+        ctx.generateServerId(),
+      ];
 
       const result = await ctx.service.getBenefitsOfServers(serverIds);
 
@@ -129,7 +146,10 @@ describe("SupportersService", { concurrency: true }, () => {
       it("returns hasSupporter: true and webhooks: true", async () => {
         const ctx = harness.createContext();
         const serverId = ctx.generateServerId();
-        await ctx.createSupporterWithGuild(serverId, { maxGuilds: 10, maxFeeds: 10 });
+        await ctx.createSupporterWithGuild(serverId, {
+          maxGuilds: 10,
+          maxFeeds: 10,
+        });
         await ctx.createActivePatron();
 
         const result = await ctx.service.getBenefitsOfServers([serverId]);
@@ -141,7 +161,10 @@ describe("SupportersService", { concurrency: true }, () => {
       it("returns the max feeds of an active patron", async () => {
         const ctx = harness.createContext();
         const serverId = ctx.generateServerId();
-        await ctx.createSupporterWithGuild(serverId, { maxGuilds: 10, maxFeeds: 10 });
+        await ctx.createSupporterWithGuild(serverId, {
+          maxGuilds: 10,
+          maxFeeds: 10,
+        });
         await ctx.createActivePatron();
 
         const result = await ctx.service.getBenefitsOfServers([serverId]);
@@ -152,7 +175,10 @@ describe("SupportersService", { concurrency: true }, () => {
       it("returns the max feeds of a declined patron within the grace period", async () => {
         const ctx = harness.createContext();
         const serverId = ctx.generateServerId();
-        await ctx.createSupporterWithGuild(serverId, { maxGuilds: 10, maxFeeds: 10 });
+        await ctx.createSupporterWithGuild(serverId, {
+          maxGuilds: 10,
+          maxFeeds: 10,
+        });
         await ctx.createPatron({
           status: PatronStatus.DECLINED,
           pledge: 100,
@@ -167,7 +193,10 @@ describe("SupportersService", { concurrency: true }, () => {
       it("does not return the supporter max feeds of a long-expired declined patron", async () => {
         const ctx = harness.createContext();
         const serverId = ctx.generateServerId();
-        await ctx.createSupporterWithGuild(serverId, { maxGuilds: 10, maxFeeds: 10 });
+        await ctx.createSupporterWithGuild(serverId, {
+          maxGuilds: 10,
+          maxFeeds: 10,
+        });
         await ctx.createPatron({
           status: PatronStatus.DECLINED,
           pledge: 100,
@@ -182,7 +211,10 @@ describe("SupportersService", { concurrency: true }, () => {
       it("does not return supporter max feeds of a former patron", async () => {
         const ctx = harness.createContext();
         const serverId = ctx.generateServerId();
-        await ctx.createSupporterWithGuild(serverId, { maxGuilds: 10, maxFeeds: 10 });
+        await ctx.createSupporterWithGuild(serverId, {
+          maxGuilds: 10,
+          maxFeeds: 10,
+        });
         await ctx.createPatron({
           status: PatronStatus.FORMER,
           pledge: 100,
@@ -212,7 +244,10 @@ describe("SupportersService", { concurrency: true }, () => {
           expireAt: dayjs().add(1, "month").toDate(),
         });
 
-        const result = await ctx1.service.getBenefitsOfServers([serverId1, serverId2]);
+        const result = await ctx1.service.getBenefitsOfServers([
+          serverId1,
+          serverId2,
+        ]);
 
         assert.strictEqual(result.length, 2);
         const server1 = result.find((r) => r.serverId === serverId1);
@@ -230,7 +265,10 @@ describe("SupportersService", { concurrency: true }, () => {
         await ctx1.createValidSupporter({ guilds: [serverId1] });
         await ctx2.createValidSupporter({ guilds: [serverId2] });
 
-        const result = await ctx1.service.getBenefitsOfServers([serverId1, serverId2]);
+        const result = await ctx1.service.getBenefitsOfServers([
+          serverId1,
+          serverId2,
+        ]);
 
         assert.strictEqual(result.length, 2);
         assert.ok(result.every((r) => r.webhooks));
@@ -259,7 +297,10 @@ describe("SupportersService", { concurrency: true }, () => {
           maxFeeds: 30,
         });
 
-        const result = await ctx1.service.getBenefitsOfServers([serverId1, serverId2]);
+        const result = await ctx1.service.getBenefitsOfServers([
+          serverId1,
+          serverId2,
+        ]);
 
         assert.strictEqual(result.length, 2);
         const server1 = result.find((r) => r.serverId === serverId1);
@@ -317,15 +358,24 @@ describe("SupportersService", { concurrency: true }, () => {
       assert.strictEqual(result.maxUserFeeds, TEST_DEFAULTS.maxUserFeeds);
       assert.strictEqual(result.maxGuilds, 0);
       assert.strictEqual(result.webhooks, false);
-      assert.strictEqual(result.refreshRateSeconds, TEST_DEFAULTS.refreshRateSeconds);
+      assert.strictEqual(
+        result.refreshRateSeconds,
+        TEST_DEFAULTS.refreshRateSeconds,
+      );
       assert.strictEqual(result.allowCustomPlaceholders, false);
-      assert.strictEqual(result.dailyArticleLimit, TEST_DEFAULTS.maxDailyArticlesDefault);
+      assert.strictEqual(
+        result.dailyArticleLimit,
+        TEST_DEFAULTS.maxDailyArticlesDefault,
+      );
     });
 
     describe("if valid supporter", () => {
       it("returns isSupporter true", () => {
         const ctx = harness.createContext();
-        const supporter = ctx.createValidSupporterObject({ maxFeeds: 10, maxGuilds: 5 });
+        const supporter = ctx.createValidSupporterObject({
+          maxFeeds: 10,
+          maxGuilds: 5,
+        });
 
         const result = ctx.service.getBenefitsFromSupporter(supporter);
 
@@ -334,7 +384,10 @@ describe("SupportersService", { concurrency: true }, () => {
 
       it("returns webhooks true", () => {
         const ctx = harness.createContext();
-        const supporter = ctx.createValidSupporterObject({ maxFeeds: 10, maxGuilds: 5 });
+        const supporter = ctx.createValidSupporterObject({
+          maxFeeds: 10,
+          maxGuilds: 5,
+        });
 
         const result = ctx.service.getBenefitsFromSupporter(supporter);
 
@@ -361,7 +414,9 @@ describe("SupportersService", { concurrency: true }, () => {
 
       it("returns default max guilds of 1 if supporter max guilds does not exist", () => {
         const ctx = harness.createContext();
-        const supporter = ctx.createValidSupporterObject({ maxGuilds: undefined });
+        const supporter = ctx.createValidSupporterObject({
+          maxGuilds: undefined,
+        });
 
         const result = ctx.service.getBenefitsFromSupporter(supporter);
 
@@ -370,7 +425,10 @@ describe("SupportersService", { concurrency: true }, () => {
 
       it("returns 120 refresh rate if supporter has no patrons and is not slow rate", () => {
         const ctx = harness.createContext();
-        const supporter = ctx.createValidSupporterObject({ patrons: [], slowRate: false });
+        const supporter = ctx.createValidSupporterObject({
+          patrons: [],
+          slowRate: false,
+        });
 
         const result = ctx.service.getBenefitsFromSupporter(supporter);
 
@@ -379,11 +437,16 @@ describe("SupportersService", { concurrency: true }, () => {
 
       it("returns default refresh rate if supporter is on slow rate", () => {
         const ctx = harness.createContext();
-        const supporter = ctx.createSupporterWithPatronObject({ slowRate: true });
+        const supporter = ctx.createSupporterWithPatronObject({
+          slowRate: true,
+        });
 
         const result = ctx.service.getBenefitsFromSupporter(supporter);
 
-        assert.strictEqual(result.refreshRateSeconds, TEST_DEFAULTS.refreshRateSeconds);
+        assert.strictEqual(
+          result.refreshRateSeconds,
+          TEST_DEFAULTS.refreshRateSeconds,
+        );
       });
     });
   });
@@ -392,7 +455,10 @@ describe("SupportersService", { concurrency: true }, () => {
     describe("when there are no patrons", () => {
       it("returns false if there is no expiration date and no patrons", () => {
         const ctx = harness.createContext();
-        const supporter = ctx.createSupporterObject({ patrons: [], expireAt: undefined });
+        const supporter = ctx.createSupporterObject({
+          patrons: [],
+          expireAt: undefined,
+        });
 
         const result = ctx.service.isValidSupporter(supporter);
 
@@ -429,7 +495,12 @@ describe("SupportersService", { concurrency: true }, () => {
         const ctx = harness.createContext();
         const supporter = ctx.createSupporterObject({
           patrons: [
-            { id: ctx.generateId(), status: PatronStatus.ACTIVE, pledge: 1, pledgeLifetime: 100 },
+            {
+              id: ctx.generateId(),
+              status: PatronStatus.ACTIVE,
+              pledge: 1,
+              pledgeLifetime: 100,
+            },
           ],
         });
 
@@ -461,7 +532,12 @@ describe("SupportersService", { concurrency: true }, () => {
         const ctx = harness.createContext();
         const supporter = ctx.createSupporterObject({
           patrons: [
-            { id: ctx.generateId(), status: PatronStatus.FORMER, pledge: 0, pledgeLifetime: 100 },
+            {
+              id: ctx.generateId(),
+              status: PatronStatus.FORMER,
+              pledge: 0,
+              pledgeLifetime: 100,
+            },
           ],
         });
 
@@ -493,8 +569,18 @@ describe("SupportersService", { concurrency: true }, () => {
         const ctx = harness.createContext();
         const supporter = ctx.createSupporterObject({
           patrons: [
-            { id: ctx.generateId(), status: PatronStatus.FORMER, pledge: 0, pledgeLifetime: 100 },
-            { id: ctx.generateId(), status: PatronStatus.ACTIVE, pledge: 1, pledgeLifetime: 100 },
+            {
+              id: ctx.generateId(),
+              status: PatronStatus.FORMER,
+              pledge: 0,
+              pledgeLifetime: 100,
+            },
+            {
+              id: ctx.generateId(),
+              status: PatronStatus.ACTIVE,
+              pledge: 1,
+              pledgeLifetime: 100,
+            },
           ],
         });
 
@@ -550,7 +636,10 @@ describe("SupportersService", { concurrency: true }, () => {
 
       await ctx.service.syncDiscordSupporterRoles(ctx.discordUserId);
 
-      assert.strictEqual(ctx.discordApiService.getGuildMember.mock.callCount(), 0);
+      assert.strictEqual(
+        ctx.discordApiService.getGuildMember.mock.callCount(),
+        0,
+      );
     });
 
     it("returns early if supporterRoleId is missing", async () => {
@@ -563,7 +652,10 @@ describe("SupportersService", { concurrency: true }, () => {
 
       await ctx.service.syncDiscordSupporterRoles(ctx.discordUserId);
 
-      assert.strictEqual(ctx.discordApiService.getGuildMember.mock.callCount(), 0);
+      assert.strictEqual(
+        ctx.discordApiService.getGuildMember.mock.callCount(),
+        0,
+      );
     });
 
     it("returns early if supporterSubroleIds is empty", async () => {
@@ -577,7 +669,10 @@ describe("SupportersService", { concurrency: true }, () => {
 
       await ctx.service.syncDiscordSupporterRoles(ctx.discordUserId);
 
-      assert.strictEqual(ctx.discordApiService.getGuildMember.mock.callCount(), 0);
+      assert.strictEqual(
+        ctx.discordApiService.getGuildMember.mock.callCount(),
+        0,
+      );
     });
 
     it("removes all roles when no subscription", async () => {

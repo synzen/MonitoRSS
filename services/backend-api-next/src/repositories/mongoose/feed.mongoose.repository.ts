@@ -5,10 +5,20 @@ import {
   type Model,
   type InferSchemaType,
 } from "mongoose";
-import type { IFeed, IFeedRepository, IFeedWithFailRecord } from "../interfaces/feed.types";
-import type { IDiscordChannelConnection, IConnectionDetails } from "../interfaces/feed-connection.types";
+import type {
+  IFeed,
+  IFeedRepository,
+  IFeedWithFailRecord,
+} from "../interfaces/feed.types";
+import type {
+  IDiscordChannelConnection,
+  IConnectionDetails,
+} from "../interfaces/feed-connection.types";
 import { FeedEmbedSchema, FeedWebhookSchema } from "./feed-embed.schemas";
-import { FeedConnectionsSchema, type DiscordChannelConnectionDoc } from "./feed-connection.schemas";
+import {
+  FeedConnectionsSchema,
+  type DiscordChannelConnectionDoc,
+} from "./feed-connection.schemas";
 import { BaseMongooseRepository } from "./base.mongoose.repository";
 
 function escapeRegExp(str: string): string {
@@ -22,7 +32,7 @@ const FeedRegexOpSearchSchema = new Schema(
     match: { type: Number },
     group: { type: Number },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const FeedRegexOpSchema = new Schema(
@@ -33,7 +43,7 @@ const FeedRegexOpSchema = new Schema(
     replacement: { type: String },
     replacementDirect: { type: String },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const FeedSplitOptionsSchema = new Schema(
@@ -44,7 +54,7 @@ const FeedSplitOptionsSchema = new Schema(
     append: { type: Boolean },
     maxLength: { type: Boolean },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const FeedSchema = new Schema(
@@ -73,7 +83,7 @@ const FeedSchema = new Schema(
     isFeedv2: { type: Boolean },
     connections: { type: FeedConnectionsSchema, default: {} },
   },
-  { collection: "feeds", timestamps: true }
+  { collection: "feeds", timestamps: true },
 );
 
 type FeedDoc = InferSchemaType<typeof FeedSchema>;
@@ -90,7 +100,7 @@ export class FeedMongooseRepository
   }
 
   private mapDiscordChannelConnection(
-    conn: DiscordChannelConnectionDoc
+    conn: DiscordChannelConnectionDoc,
   ): IDiscordChannelConnection {
     return {
       id: conn.id.toString(),
@@ -109,8 +119,9 @@ export class FeedMongooseRepository
   }
 
   protected toEntity(doc: FeedDoc & { _id: Types.ObjectId }): IFeed {
-    const discordChannels = doc.connections
-      ?.discordChannels as unknown as DiscordChannelConnectionDoc[] | undefined;
+    const discordChannels = doc.connections?.discordChannels as unknown as
+      | DiscordChannelConnectionDoc[]
+      | undefined;
 
     return {
       id: this.objectIdToString(doc._id),
@@ -139,7 +150,7 @@ export class FeedMongooseRepository
       connections: discordChannels
         ? {
             discordChannels: discordChannels.map((conn) =>
-              this.mapDiscordChannelConnection(conn)
+              this.mapDiscordChannelConnection(conn),
             ),
           }
         : undefined,

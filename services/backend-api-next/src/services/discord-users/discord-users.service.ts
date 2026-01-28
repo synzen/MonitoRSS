@@ -40,10 +40,10 @@ export class DiscordUsersService {
 
   async getUserById(userId: string): Promise<DiscordUser> {
     const url = `${this.BASE_ENDPOINT}/${userId}`;
-    const user = await this.deps.discordApiService.executeBotRequest<DiscordUser>(
-      url,
-      { method: "GET" }
-    );
+    const user =
+      await this.deps.discordApiService.executeBotRequest<DiscordUser>(url, {
+        method: "GET",
+      });
 
     let avatarUrl: string | null = null;
 
@@ -62,7 +62,7 @@ export class DiscordUsersService {
 
   async getGuilds(
     accessToken: string,
-    options?: GetGuildsOptions
+    options?: GetGuildsOptions,
   ): Promise<PartialUserGuildFormatted[]> {
     const iconSize = options?.guildIconSize || "128";
     const iconFormat = options?.guildIconFormat || "png";
@@ -75,13 +75,12 @@ export class DiscordUsersService {
     const guildsWithPermission = guilds.filter(
       (guild) =>
         guild.owner ||
-        (BigInt(guild.permissions) & MANAGE_CHANNEL) === MANAGE_CHANNEL
+        (BigInt(guild.permissions) & MANAGE_CHANNEL) === MANAGE_CHANNEL,
     );
 
     const guildIds = guildsWithPermission.map((guild) => guild.id);
-    const guildBenefits = await this.deps.supportersService.getBenefitsOfServers(
-      guildIds
-    );
+    const guildBenefits =
+      await this.deps.supportersService.getBenefitsOfServers(guildIds);
 
     return guildsWithPermission.map((guild, index) => {
       const benefits = guildBenefits[index]!;
@@ -102,13 +101,14 @@ export class DiscordUsersService {
   async getUser(accessToken: string): Promise<DiscordUserFormatted> {
     const endpoint = `${this.BASE_ENDPOINT}/@me`;
 
-    const user = await this.deps.discordApiService.executeBearerRequest<DiscordUser>(
-      accessToken,
-      endpoint
-    );
+    const user =
+      await this.deps.discordApiService.executeBearerRequest<DiscordUser>(
+        accessToken,
+        endpoint,
+      );
 
     const benefits = await this.deps.supportersService.getBenefitsOfDiscordUser(
-      user.id
+      user.id,
     );
 
     const toReturn: DiscordUserFormatted = {
@@ -140,7 +140,7 @@ export class DiscordUsersService {
 
   async updateSupporter(
     userId: string,
-    data: UpdateSupporterInput
+    data: UpdateSupporterInput,
   ): Promise<void> {
     if (data.guildIds) {
       await this.deps.supportersService.setGuilds(userId, data.guildIds);

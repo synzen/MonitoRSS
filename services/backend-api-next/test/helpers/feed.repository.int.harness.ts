@@ -18,7 +18,9 @@ export interface FeedRepositoryContext {
   repository: FeedMongooseRepository;
   guildId: string;
   generateId(): string;
-  createFeed(data?: Partial<FeedTestData>): Promise<{ id: string; title: string; url: string; guild: string }>;
+  createFeed(
+    data?: Partial<FeedTestData>,
+  ): Promise<{ id: string; title: string; url: string; guild: string }>;
 }
 
 export interface FeedRepositoryHarness {

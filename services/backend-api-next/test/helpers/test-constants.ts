@@ -1,5 +1,4 @@
-export const DEFAULT_MONGODB_URI =
-  "mongodb://localhost:27017/backendapi_test";
+export const DEFAULT_MONGODB_URI = "mongodb://localhost:27017/backendapi_test";
 
 export function getBaseUri(): string {
   return process.env.BACKEND_API_MONGODB_URI || DEFAULT_MONGODB_URI;

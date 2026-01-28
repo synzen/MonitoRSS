@@ -24,7 +24,7 @@ const FeedSubscriberSchema = new Schema(
     filters: { type: Map, of: [String] },
     rfilters: { type: Map, of: String },
   },
-  { collection: "subscribers", timestamps: true }
+  { collection: "subscribers", timestamps: true },
 );
 
 type FeedSubscriberDoc = InferSchemaType<typeof FeedSubscriberSchema>;
@@ -39,12 +39,12 @@ export class FeedSubscriberMongooseRepository
     super();
     this.model = connection.model<FeedSubscriberDoc>(
       "FeedSubscriber",
-      FeedSubscriberSchema
+      FeedSubscriberSchema,
     );
   }
 
   protected toEntity(
-    doc: FeedSubscriberDoc & { _id: Types.ObjectId }
+    doc: FeedSubscriberDoc & { _id: Types.ObjectId },
   ): IFeedSubscriber {
     return {
       id: this.objectIdToString(doc._id),

@@ -13,7 +13,9 @@ declare module "fastify" {
   }
 }
 
-export async function createApp(container: Container): Promise<FastifyInstance> {
+export async function createApp(
+  container: Container,
+): Promise<FastifyInstance> {
   const isProduction = container.config.NODE_ENV === "production";
 
   const app = Fastify({
@@ -28,10 +30,8 @@ export async function createApp(container: Container): Promise<FastifyInstance> 
   });
 
   // Parse any content type as buffer (matches current backend-api behavior)
-  app.addContentTypeParser(
-    "*",
-    { parseAs: "buffer" },
-    (_req, body, done) => done(null, body)
+  app.addContentTypeParser("*", { parseAs: "buffer" }, (_req, body, done) =>
+    done(null, body),
   );
 
   // CORS
@@ -74,7 +74,7 @@ export async function createApp(container: Container): Promise<FastifyInstance> 
 
       // Additional routes will be registered here in later phases
     },
-    { prefix: "/api/v1" }
+    { prefix: "/api/v1" },
   );
 
   // Error handlers
@@ -86,7 +86,7 @@ export async function createApp(container: Container): Promise<FastifyInstance> 
 
 export async function startApp(
   app: FastifyInstance,
-  port: number
+  port: number,
 ): Promise<void> {
   await app.listen({ port, host: "0.0.0.0" });
   logger.info(`HTTP server listening on port ${port}`);

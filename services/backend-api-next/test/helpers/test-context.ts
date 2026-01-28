@@ -143,7 +143,7 @@ function createMockRabbitConnection() {
 }
 
 export async function createAppTestContext(
-  options: CreateAppTestContextOptions = {}
+  options: CreateAppTestContextOptions = {},
 ): Promise<AppTestContext> {
   const connection = await setupDatabase();
   const config = createTestConfig(options.configOverrides);
@@ -177,4 +177,3 @@ export async function createAppTestContext(
     },
   };
 }
-

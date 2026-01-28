@@ -24,23 +24,30 @@ export interface UserFeedConnectionEventsContext {
 }
 
 export interface UserFeedConnectionEventsHarness {
-  createContext(options?: UserFeedConnectionEventsContextOptions): UserFeedConnectionEventsContext;
+  createContext(
+    options?: UserFeedConnectionEventsContextOptions,
+  ): UserFeedConnectionEventsContext;
 }
 
 export function createUserFeedConnectionEventsHarness(): UserFeedConnectionEventsHarness {
   return {
-    createContext(options: UserFeedConnectionEventsContextOptions = {}): UserFeedConnectionEventsContext {
+    createContext(
+      options: UserFeedConnectionEventsContextOptions = {},
+    ): UserFeedConnectionEventsContext {
       const userFeedRepository: MockUserFeedRepository = {
         bulkAddConnectionsToInvites: mock.fn(
-          options.userFeedRepository?.bulkAddConnectionsToInvites ?? (() => Promise.resolve())
+          options.userFeedRepository?.bulkAddConnectionsToInvites ??
+            (() => Promise.resolve()),
         ),
         removeConnectionsFromInvites: mock.fn(
-          options.userFeedRepository?.removeConnectionsFromInvites ?? (() => Promise.resolve())
+          options.userFeedRepository?.removeConnectionsFromInvites ??
+            (() => Promise.resolve()),
         ),
       };
 
       const service = new UserFeedConnectionEventsService({
-        userFeedRepository: userFeedRepository as unknown as IUserFeedRepository,
+        userFeedRepository:
+          userFeedRepository as unknown as IUserFeedRepository,
       });
 
       return {

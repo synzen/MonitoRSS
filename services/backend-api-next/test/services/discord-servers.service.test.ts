@@ -270,7 +270,8 @@ describe("DiscordServersService", { concurrency: true }, () => {
         dateLanguage: "new-date-language",
       });
 
-      const calls = ctx.discordServerProfileRepository.findOneAndUpdate.mock.calls;
+      const calls =
+        ctx.discordServerProfileRepository.findOneAndUpdate.mock.calls;
       assert.strictEqual(calls.length, 1);
     });
   });
@@ -309,7 +310,10 @@ describe("DiscordServersService", { concurrency: true }, () => {
       assert.strictEqual(result, 5);
       const calls = ctx.feedsService.countServerFeeds.mock.calls;
       assert.strictEqual(calls.length, 1);
-      assert.deepStrictEqual(calls[0]!.arguments, [serverId, { search: undefined }]);
+      assert.deepStrictEqual(calls[0]!.arguments, [
+        serverId,
+        { search: undefined },
+      ]);
     });
 
     it("calls the feed service with search correctly", async () => {
@@ -326,7 +330,10 @@ describe("DiscordServersService", { concurrency: true }, () => {
       assert.strictEqual(result, 3);
       const calls = ctx.feedsService.countServerFeeds.mock.calls;
       assert.strictEqual(calls.length, 1);
-      assert.deepStrictEqual(calls[0]!.arguments, [serverId, { search: "search" }]);
+      assert.deepStrictEqual(calls[0]!.arguments, [
+        serverId,
+        { search: "search" },
+      ]);
     });
   });
 
@@ -381,10 +388,9 @@ describe("DiscordServersService", { concurrency: true }, () => {
         },
       });
 
-      await assert.rejects(
-        () => ctx.service.getServer("server-1"),
-        { message: "Unhandled error" }
-      );
+      await assert.rejects(() => ctx.service.getServer("server-1"), {
+        message: "Unhandled error",
+      });
     });
   });
 
@@ -424,10 +430,9 @@ describe("DiscordServersService", { concurrency: true }, () => {
         },
       });
 
-      await assert.rejects(
-        () => ctx.service.getGuild("guild-1"),
-        { message: "Some other error" }
-      );
+      await assert.rejects(() => ctx.service.getGuild("guild-1"), {
+        message: "Some other error",
+      });
     });
   });
 
@@ -535,7 +540,7 @@ describe("DiscordServersService", { concurrency: true }, () => {
 
       await assert.rejects(
         () => ctx.service.getTextChannelsOfServer("server-id"),
-        DiscordServerNotFoundException
+        DiscordServerNotFoundException,
       );
     });
 
@@ -550,7 +555,7 @@ describe("DiscordServersService", { concurrency: true }, () => {
 
       await assert.rejects(
         () => ctx.service.getTextChannelsOfServer("server-id"),
-        DiscordServerNotFoundException
+        DiscordServerNotFoundException,
       );
     });
 
@@ -655,7 +660,10 @@ describe("DiscordServersService", { concurrency: true }, () => {
 
         assert.strictEqual(channels.length, 1);
         assert.strictEqual(channels[0]!.id, "announcement-1");
-        assert.strictEqual(channels[0]!.type, DiscordChannelType.GUILD_ANNOUNCEMENT);
+        assert.strictEqual(
+          channels[0]!.type,
+          DiscordChannelType.GUILD_ANNOUNCEMENT,
+        );
       });
 
       it("returns multiple types when specified", async () => {
@@ -706,8 +714,20 @@ describe("DiscordServersService", { concurrency: true }, () => {
             parent_id: null,
             permission_overwrites: [],
             available_tags: [
-              { id: "tag-1", name: "Tag One", moderated: false, emoji_id: null, emoji_name: "🔥" },
-              { id: "tag-2", name: "Tag Two", moderated: false, emoji_id: "123", emoji_name: null },
+              {
+                id: "tag-1",
+                name: "Tag One",
+                moderated: false,
+                emoji_id: null,
+                emoji_name: "🔥",
+              },
+              {
+                id: "tag-2",
+                name: "Tag Two",
+                moderated: false,
+                emoji_id: "123",
+                emoji_name: null,
+              },
             ],
           },
         ];
@@ -750,8 +770,20 @@ describe("DiscordServersService", { concurrency: true }, () => {
             parent_id: null,
             permission_overwrites: [],
             available_tags: [
-              { id: "tag-1", name: "Moderated Tag", moderated: true, emoji_id: null, emoji_name: null },
-              { id: "tag-2", name: "Normal Tag", moderated: false, emoji_id: null, emoji_name: null },
+              {
+                id: "tag-1",
+                name: "Moderated Tag",
+                moderated: true,
+                emoji_id: null,
+                emoji_name: null,
+              },
+              {
+                id: "tag-2",
+                name: "Normal Tag",
+                moderated: false,
+                emoji_id: null,
+                emoji_name: null,
+              },
             ],
           },
         ];
@@ -768,13 +800,18 @@ describe("DiscordServersService", { concurrency: true }, () => {
           types: ["forum"],
         });
 
-        const permCalls = ctx.discordPermissionsService.botHasPermissionInServer.mock.calls;
+        const permCalls =
+          ctx.discordPermissionsService.botHasPermissionInServer.mock.calls;
         assert.strictEqual(permCalls.length, 1);
         assert.strictEqual(permCalls[0]!.arguments[0], serverId);
 
         assert.ok(channels[0]!.availableTags);
-        const moderatedTag = channels[0]!.availableTags!.find((t) => t.name === "Moderated Tag");
-        const normalTag = channels[0]!.availableTags!.find((t) => t.name === "Normal Tag");
+        const moderatedTag = channels[0]!.availableTags!.find(
+          (t) => t.name === "Moderated Tag",
+        );
+        const normalTag = channels[0]!.availableTags!.find(
+          (t) => t.name === "Normal Tag",
+        );
         assert.strictEqual(moderatedTag!.hasPermissionToUse, true);
         assert.strictEqual(normalTag!.hasPermissionToUse, true);
       });
@@ -789,8 +826,20 @@ describe("DiscordServersService", { concurrency: true }, () => {
             parent_id: null,
             permission_overwrites: [],
             available_tags: [
-              { id: "tag-1", name: "Moderated Tag", moderated: true, emoji_id: null, emoji_name: null },
-              { id: "tag-2", name: "Normal Tag", moderated: false, emoji_id: null, emoji_name: null },
+              {
+                id: "tag-1",
+                name: "Moderated Tag",
+                moderated: true,
+                emoji_id: null,
+                emoji_name: null,
+              },
+              {
+                id: "tag-2",
+                name: "Normal Tag",
+                moderated: false,
+                emoji_id: null,
+                emoji_name: null,
+              },
             ],
           },
         ];
@@ -808,8 +857,12 @@ describe("DiscordServersService", { concurrency: true }, () => {
         });
 
         assert.ok(channels[0]!.availableTags);
-        const moderatedTag = channels[0]!.availableTags!.find((t) => t.name === "Moderated Tag");
-        const normalTag = channels[0]!.availableTags!.find((t) => t.name === "Normal Tag");
+        const moderatedTag = channels[0]!.availableTags!.find(
+          (t) => t.name === "Moderated Tag",
+        );
+        const normalTag = channels[0]!.availableTags!.find(
+          (t) => t.name === "Normal Tag",
+        );
         assert.strictEqual(moderatedTag!.hasPermissionToUse, false);
         assert.strictEqual(normalTag!.hasPermissionToUse, true);
       });
@@ -824,9 +877,27 @@ describe("DiscordServersService", { concurrency: true }, () => {
             parent_id: null,
             permission_overwrites: [],
             available_tags: [
-              { id: "tag-c", name: "Zebra", moderated: false, emoji_id: null, emoji_name: null },
-              { id: "tag-a", name: "Apple", moderated: false, emoji_id: null, emoji_name: null },
-              { id: "tag-b", name: "Banana", moderated: false, emoji_id: null, emoji_name: null },
+              {
+                id: "tag-c",
+                name: "Zebra",
+                moderated: false,
+                emoji_id: null,
+                emoji_name: null,
+              },
+              {
+                id: "tag-a",
+                name: "Apple",
+                moderated: false,
+                emoji_id: null,
+                emoji_name: null,
+              },
+              {
+                id: "tag-b",
+                name: "Banana",
+                moderated: false,
+                emoji_id: null,
+                emoji_name: null,
+              },
             ],
           },
         ];
@@ -856,7 +927,13 @@ describe("DiscordServersService", { concurrency: true }, () => {
             parent_id: null,
             permission_overwrites: [],
             available_tags: [
-              { id: "tag-1", name: "Tag One", moderated: false, emoji_id: null, emoji_name: null },
+              {
+                id: "tag-1",
+                name: "Tag One",
+                moderated: false,
+                emoji_id: null,
+                emoji_name: null,
+              },
             ],
           },
         ];
@@ -866,9 +943,12 @@ describe("DiscordServersService", { concurrency: true }, () => {
           },
         });
 
-        await ctx.service.getTextChannelsOfServer(serverId, { types: ["forum"] });
+        await ctx.service.getTextChannelsOfServer(serverId, {
+          types: ["forum"],
+        });
 
-        const permCalls = ctx.discordPermissionsService.botHasPermissionInServer.mock.calls;
+        const permCalls =
+          ctx.discordPermissionsService.botHasPermissionInServer.mock.calls;
         assert.strictEqual(permCalls.length, 0);
       });
     });
@@ -917,7 +997,10 @@ describe("DiscordServersService", { concurrency: true }, () => {
 
   describe("getMemberOfServer", () => {
     it("returns member when found", async () => {
-      const mockMember = { user: { id: "user-1", username: "User1" }, roles: [] };
+      const mockMember = {
+        user: { id: "user-1", username: "User1" },
+        roles: [],
+      };
       const ctx = harness.createContext({
         discordApiService: {
           getGuildMember: async () => mockMember,
@@ -968,7 +1051,7 @@ describe("DiscordServersService", { concurrency: true }, () => {
 
       await assert.rejects(
         () => ctx.service.getMemberOfServer("server-1", "user-1"),
-        { message: "Network error" }
+        { message: "Network error" },
       );
     });
   });

@@ -1,7 +1,10 @@
 import { mock, type Mock } from "node:test";
 import dayjs from "dayjs";
 import type { Config } from "../../src/config";
-import type { ISupporter, SupportPatronAggregateResult } from "../../src/repositories/interfaces/supporter.types";
+import type {
+  ISupporter,
+  SupportPatronAggregateResult,
+} from "../../src/repositories/interfaces/supporter.types";
 import type { IPatron } from "../../src/repositories/interfaces/patron.types";
 import type { IUserFeedLimitOverride } from "../../src/repositories/interfaces/user-feed-limit-override.types";
 import { SupportersService } from "../../src/services/supporters/supporters.service";
@@ -10,7 +13,11 @@ import { GuildSubscriptionsService } from "../../src/services/guild-subscription
 import { SupporterMongooseRepository } from "../../src/repositories/mongoose/supporter.mongoose.repository";
 import { PatronMongooseRepository } from "../../src/repositories/mongoose/patron.mongoose.repository";
 import { UserFeedLimitOverrideMongooseRepository } from "../../src/repositories/mongoose/user-feed-limit-override.mongoose.repository";
-import { PatronStatus, SubscriptionProductKey, SubscriptionStatus } from "../../src/repositories/shared/enums";
+import {
+  PatronStatus,
+  SubscriptionProductKey,
+  SubscriptionStatus,
+} from "../../src/repositories/shared/enums";
 import type { DiscordApiService } from "../../src/services/discord-api/discord-api.service";
 import type { GuildSubscriptionFormatted } from "../../src/services/guild-subscriptions/types";
 import {
@@ -46,8 +53,16 @@ export const TEST_DEFAULTS = {
 
 export interface DiscordApiServiceMockOptions {
   guildMember?: { roles: string[] } | null;
-  onAddRole?: (data: { guildId: string; userId: string; roleId: string }) => void;
-  onRemoveRole?: (data: { guildId: string; userId: string; roleId: string }) => void;
+  onAddRole?: (data: {
+    guildId: string;
+    userId: string;
+    roleId: string;
+  }) => void;
+  onRemoveRole?: (data: {
+    guildId: string;
+    userId: string;
+    roleId: string;
+  }) => void;
 }
 
 export interface GuildSubscriptionsServiceMockOptions {
@@ -62,8 +77,12 @@ export interface SupportersContextOptions {
 
 export interface MockDiscordApiService {
   getGuildMember: Mock<() => Promise<{ roles: string[] } | null>>;
-  addGuildMemberRole: Mock<(data: { guildId: string; userId: string; roleId: string }) => Promise<void>>;
-  removeGuildMemberRole: Mock<(data: { guildId: string; userId: string; roleId: string }) => Promise<void>>;
+  addGuildMemberRole: Mock<
+    (data: { guildId: string; userId: string; roleId: string }) => Promise<void>
+  >;
+  removeGuildMemberRole: Mock<
+    (data: { guildId: string; userId: string; roleId: string }) => Promise<void>
+  >;
 }
 
 export interface SupportersContext {
@@ -78,14 +97,27 @@ export interface SupportersContext {
   createSupporter(overrides?: Partial<ISupporter>): Promise<ISupporter>;
   createValidSupporter(overrides?: Partial<ISupporter>): Promise<ISupporter>;
   createExpiredSupporter(overrides?: Partial<ISupporter>): Promise<ISupporter>;
-  createSupporterWithGuild(serverId: string, overrides?: Partial<ISupporter>): Promise<ISupporter>;
+  createSupporterWithGuild(
+    serverId: string,
+    overrides?: Partial<ISupporter>,
+  ): Promise<ISupporter>;
   createPatron(overrides?: Partial<IPatron>): Promise<IPatron>;
   createActivePatron(overrides?: Partial<IPatron>): Promise<IPatron>;
-  createUserFeedLimitOverride(overrides?: Partial<IUserFeedLimitOverride>): Promise<IUserFeedLimitOverride>;
-  createSupporterObject(overrides?: Partial<SupportPatronAggregateResult>): SupportPatronAggregateResult;
-  createValidSupporterObject(overrides?: Partial<SupportPatronAggregateResult>): SupportPatronAggregateResult;
-  createSupporterWithPatronObject(overrides?: Partial<SupportPatronAggregateResult>): SupportPatronAggregateResult;
-  createSupporterWithSubscription(overrides?: Partial<ISupporter>): Promise<ISupporter>;
+  createUserFeedLimitOverride(
+    overrides?: Partial<IUserFeedLimitOverride>,
+  ): Promise<IUserFeedLimitOverride>;
+  createSupporterObject(
+    overrides?: Partial<SupportPatronAggregateResult>,
+  ): SupportPatronAggregateResult;
+  createValidSupporterObject(
+    overrides?: Partial<SupportPatronAggregateResult>,
+  ): SupportPatronAggregateResult;
+  createSupporterWithPatronObject(
+    overrides?: Partial<SupportPatronAggregateResult>,
+  ): SupportPatronAggregateResult;
+  createSupporterWithSubscription(
+    overrides?: Partial<ISupporter>,
+  ): Promise<ISupporter>;
 }
 
 export interface SupportersHarness {
@@ -95,22 +127,26 @@ export interface SupportersHarness {
 }
 
 function createMockDiscordApiService(
-  options: DiscordApiServiceMockOptions = {}
+  options: DiscordApiServiceMockOptions = {},
 ): MockDiscordApiService {
   return {
     getGuildMember: mock.fn(async () => options.guildMember ?? { roles: [] }),
-    addGuildMemberRole: mock.fn(async (data: { guildId: string; userId: string; roleId: string }) => {
-      options.onAddRole?.(data);
-    }),
-    removeGuildMemberRole: mock.fn(async (data: { guildId: string; userId: string; roleId: string }) => {
-      options.onRemoveRole?.(data);
-    }),
+    addGuildMemberRole: mock.fn(
+      async (data: { guildId: string; userId: string; roleId: string }) => {
+        options.onAddRole?.(data);
+      },
+    ),
+    removeGuildMemberRole: mock.fn(
+      async (data: { guildId: string; userId: string; roleId: string }) => {
+        options.onRemoveRole?.(data);
+      },
+    ),
   };
 }
 
 function createMockGuildSubscriptionsService(
   config: Config,
-  options: GuildSubscriptionsServiceMockOptions = {}
+  options: GuildSubscriptionsServiceMockOptions = {},
 ): GuildSubscriptionsService {
   const service = new GuildSubscriptionsService(config);
 
@@ -131,11 +167,12 @@ export function createSupportersHarness(): SupportersHarness {
   return {
     async setup() {
       testContext = await createServiceTestContext();
-      supporterRepository = new SupporterMongooseRepository(testContext.connection);
-      patronRepository = new PatronMongooseRepository(testContext.connection);
-      userFeedLimitOverrideRepository = new UserFeedLimitOverrideMongooseRepository(
-        testContext.connection
+      supporterRepository = new SupporterMongooseRepository(
+        testContext.connection,
       );
+      patronRepository = new PatronMongooseRepository(testContext.connection);
+      userFeedLimitOverrideRepository =
+        new UserFeedLimitOverrideMongooseRepository(testContext.connection);
       patronsService = new PatronsService(DEFAULT_CONFIG);
     },
 
@@ -147,10 +184,12 @@ export function createSupportersHarness(): SupportersHarness {
       const discordUserId = generateTestId();
       const config = { ...DEFAULT_CONFIG, ...options.config } as Config;
 
-      const discordApiService = createMockDiscordApiService(options.discordApiService);
+      const discordApiService = createMockDiscordApiService(
+        options.discordApiService,
+      );
       const guildSubscriptionsService = createMockGuildSubscriptionsService(
         config,
-        options.guildSubscriptionsService
+        options.guildSubscriptionsService,
       );
 
       const service = new SupportersService({

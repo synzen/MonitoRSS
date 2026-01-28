@@ -45,7 +45,7 @@ export function fnv1aHash(str: string): number {
  */
 export function calculateSlotOffsetMs(
   url: string,
-  refreshRateSeconds: number
+  refreshRateSeconds: number,
 ): number {
   const refreshRateMs = refreshRateSeconds * 1000;
 

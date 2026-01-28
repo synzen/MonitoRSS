@@ -5,7 +5,7 @@ export class StandardException extends Error {
     message?: string | StandardException[],
     options?: {
       subErrors?: StandardException[];
-    }
+    },
   ) {
     if (typeof message === "string") {
       super(message);

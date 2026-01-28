@@ -16,7 +16,9 @@ export interface BannedFeedRepositoryContext {
   guildId: string;
   generateId(): string;
   generateUrl(): string;
-  createBannedFeed(data?: Partial<BannedFeedTestData>): Promise<{ id: string; url: string; reason?: string; guildIds: string[] }>;
+  createBannedFeed(
+    data?: Partial<BannedFeedTestData>,
+  ): Promise<{ id: string; url: string; reason?: string; guildIds: string[] }>;
 }
 
 export interface BannedFeedRepositoryHarness {

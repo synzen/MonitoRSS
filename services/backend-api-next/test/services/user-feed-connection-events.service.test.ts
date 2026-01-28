@@ -25,14 +25,15 @@ describe("UserFeedConnectionEventsService", { concurrency: true }, () => {
 
       assert.strictEqual(
         ctx.userFeedRepository.bulkAddConnectionsToInvites.mock.calls.length,
-        1
+        1,
       );
       assert.deepStrictEqual(
-        ctx.userFeedRepository.bulkAddConnectionsToInvites.mock.calls[0]?.arguments[0],
+        ctx.userFeedRepository.bulkAddConnectionsToInvites.mock.calls[0]
+          ?.arguments[0],
         [
           { feedId: "feed-1", connectionId: "conn-1", discordUserId: "user-1" },
           { feedId: "feed-2", connectionId: "conn-2", discordUserId: "user-2" },
-        ]
+        ],
       );
     });
 
@@ -43,18 +44,20 @@ describe("UserFeedConnectionEventsService", { concurrency: true }, () => {
 
       assert.strictEqual(
         ctx.userFeedRepository.bulkAddConnectionsToInvites.mock.calls.length,
-        1
+        1,
       );
       assert.deepStrictEqual(
-        ctx.userFeedRepository.bulkAddConnectionsToInvites.mock.calls[0]?.arguments[0],
-        []
+        ctx.userFeedRepository.bulkAddConnectionsToInvites.mock.calls[0]
+          ?.arguments[0],
+        [],
       );
     });
 
     it("does not throw when repository throws", async () => {
       const ctx = harness.createContext({
         userFeedRepository: {
-          bulkAddConnectionsToInvites: () => Promise.reject(new Error("DB error")),
+          bulkAddConnectionsToInvites: () =>
+            Promise.reject(new Error("DB error")),
         },
       });
 
@@ -78,17 +81,23 @@ describe("UserFeedConnectionEventsService", { concurrency: true }, () => {
         feedId: "feed-1",
         deletedConnectionIds: ["conn-1", "conn-2"],
         shareManageOptions: {
-          invites: [{ discordUserId: "user-1", connections: [{ connectionId: "conn-1" }] }],
+          invites: [
+            {
+              discordUserId: "user-1",
+              connections: [{ connectionId: "conn-1" }],
+            },
+          ],
         },
       });
 
       assert.strictEqual(
         ctx.userFeedRepository.removeConnectionsFromInvites.mock.calls.length,
-        1
+        1,
       );
       assert.deepStrictEqual(
-        ctx.userFeedRepository.removeConnectionsFromInvites.mock.calls[0]?.arguments[0],
-        { feedId: "feed-1", connectionIds: ["conn-1", "conn-2"] }
+        ctx.userFeedRepository.removeConnectionsFromInvites.mock.calls[0]
+          ?.arguments[0],
+        { feedId: "feed-1", connectionIds: ["conn-1", "conn-2"] },
       );
     });
 
@@ -105,11 +114,12 @@ describe("UserFeedConnectionEventsService", { concurrency: true }, () => {
 
       assert.strictEqual(
         ctx.userFeedRepository.removeConnectionsFromInvites.mock.calls.length,
-        1
+        1,
       );
       assert.deepStrictEqual(
-        ctx.userFeedRepository.removeConnectionsFromInvites.mock.calls[0]?.arguments[0],
-        { feedId: "feed-1", connectionIds: [] }
+        ctx.userFeedRepository.removeConnectionsFromInvites.mock.calls[0]
+          ?.arguments[0],
+        { feedId: "feed-1", connectionIds: [] },
       );
     });
 
@@ -124,7 +134,7 @@ describe("UserFeedConnectionEventsService", { concurrency: true }, () => {
 
       assert.strictEqual(
         ctx.userFeedRepository.removeConnectionsFromInvites.mock.calls.length,
-        0
+        0,
       );
     });
 
@@ -139,7 +149,7 @@ describe("UserFeedConnectionEventsService", { concurrency: true }, () => {
 
       assert.strictEqual(
         ctx.userFeedRepository.removeConnectionsFromInvites.mock.calls.length,
-        0
+        0,
       );
     });
 
@@ -154,14 +164,15 @@ describe("UserFeedConnectionEventsService", { concurrency: true }, () => {
 
       assert.strictEqual(
         ctx.userFeedRepository.removeConnectionsFromInvites.mock.calls.length,
-        1
+        1,
       );
     });
 
     it("does not throw when repository throws", async () => {
       const ctx = harness.createContext({
         userFeedRepository: {
-          removeConnectionsFromInvites: () => Promise.reject(new Error("DB error")),
+          removeConnectionsFromInvites: () =>
+            Promise.reject(new Error("DB error")),
         },
       });
 

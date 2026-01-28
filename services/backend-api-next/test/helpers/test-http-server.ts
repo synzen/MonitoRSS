@@ -24,7 +24,7 @@ export interface TestHttpServer {
   registerRoute(
     method: string,
     path: string,
-    response: MockResponse | ResponseProvider
+    response: MockResponse | ResponseProvider,
   ): void;
   getRequests(): RecordedRequest[];
   getRequestsForPath(path: string): RecordedRequest[];
@@ -94,7 +94,7 @@ export function createTestHttpServer(): TestHttpServer {
         res.end(
           typeof mockResponse.body === "string"
             ? mockResponse.body
-            : JSON.stringify(mockResponse.body)
+            : JSON.stringify(mockResponse.body),
         );
       } else {
         res.end();
@@ -118,7 +118,7 @@ export function createTestHttpServer(): TestHttpServer {
     registerRoute(
       method: string,
       path: string,
-      response: MockResponse | ResponseProvider
+      response: MockResponse | ResponseProvider,
     ) {
       routes.set(makeRouteKey(method, path), response);
     },
@@ -159,7 +159,7 @@ export interface CreateServiceTestContextOptions {
 
 function createTestConfig(
   serverHost: string,
-  overrides?: Partial<Config>
+  overrides?: Partial<Config>,
 ): Config {
   return {
     NODE_ENV: Environment.Test,
@@ -215,7 +215,7 @@ function createTestConfig(
 }
 
 export function createServiceTestContext(
-  options?: CreateServiceTestContextOptions
+  options?: CreateServiceTestContextOptions,
 ): ServiceTestContext {
   const server = createTestHttpServer();
   const config = createTestConfig(server.host, options?.configOverrides);

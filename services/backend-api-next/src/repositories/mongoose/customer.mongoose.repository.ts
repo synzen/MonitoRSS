@@ -5,14 +5,17 @@ import {
   type Model,
   type InferSchemaType,
 } from "mongoose";
-import type { ICustomer, ICustomerRepository } from "../interfaces/customer.types";
+import type {
+  ICustomer,
+  ICustomerRepository,
+} from "../interfaces/customer.types";
 import { BaseMongooseRepository } from "./base.mongoose.repository";
 
 const DiscordConnectionBenefitsSchema = new Schema(
   {
     maxUserFeeds: { type: Number, required: true },
   },
-  { _id: false, timestamps: false }
+  { _id: false, timestamps: false },
 );
 
 const DiscordConnectionSchema = new Schema(
@@ -20,14 +23,14 @@ const DiscordConnectionSchema = new Schema(
     id: { type: String, required: true },
     benefits: { type: DiscordConnectionBenefitsSchema, required: true },
   },
-  { _id: false, timestamps: false }
+  { _id: false, timestamps: false },
 );
 
 const StripeConnectionSchema = new Schema(
   {
     id: { type: String, required: true },
   },
-  { _id: false, timestamps: false }
+  { _id: false, timestamps: false },
 );
 
 const ConnectionsSchema = new Schema(
@@ -35,7 +38,7 @@ const ConnectionsSchema = new Schema(
     discord: { type: DiscordConnectionSchema, required: true },
     stripe: { type: StripeConnectionSchema, required: true },
   },
-  { _id: false, timestamps: false }
+  { _id: false, timestamps: false },
 );
 
 const CustomerSchema = new Schema(
@@ -43,7 +46,7 @@ const CustomerSchema = new Schema(
     connections: { type: ConnectionsSchema, required: true },
     expireAt: { type: Date },
   },
-  { collection: "customers" }
+  { collection: "customers" },
 );
 
 type CustomerDoc = InferSchemaType<typeof CustomerSchema>;

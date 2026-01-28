@@ -20,7 +20,7 @@ export const CreatePreviewOutputSchema = z.object({
       z.object({
         content: z.string().optional(),
         embeds: z.array(z.unknown()).optional(),
-      })
+      }),
     )
     .optional(),
   customPlaceholderPreviews: z.array(z.array(z.string())),

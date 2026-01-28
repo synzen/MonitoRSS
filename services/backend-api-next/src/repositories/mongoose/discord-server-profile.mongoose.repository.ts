@@ -19,13 +19,19 @@ const DiscordServerProfileSchema = new Schema(
     locale: { type: String },
     name: { type: String, default: "Name" },
   },
-  { collection: "profiles", timestamps: true, _id: false }
+  { collection: "profiles", timestamps: true, _id: false },
 );
 
-type DiscordServerProfileDoc = InferSchemaType<typeof DiscordServerProfileSchema>;
+type DiscordServerProfileDoc = InferSchemaType<
+  typeof DiscordServerProfileSchema
+>;
 
 export class DiscordServerProfileMongooseRepository
-  extends BaseMongooseRepository<IDiscordServerProfile, DiscordServerProfileDoc, string>
+  extends BaseMongooseRepository<
+    IDiscordServerProfile,
+    DiscordServerProfileDoc,
+    string
+  >
   implements IDiscordServerProfileRepository
 {
   private model: Model<DiscordServerProfileDoc>;
@@ -34,11 +40,13 @@ export class DiscordServerProfileMongooseRepository
     super();
     this.model = connection.model<DiscordServerProfileDoc>(
       "DiscordServerProfile",
-      DiscordServerProfileSchema
+      DiscordServerProfileSchema,
     );
   }
 
-  protected toEntity(doc: DiscordServerProfileDoc & { _id: string }): IDiscordServerProfile {
+  protected toEntity(
+    doc: DiscordServerProfileDoc & { _id: string },
+  ): IDiscordServerProfile {
     return {
       id: doc._id,
       dateFormat: doc.dateFormat,
@@ -53,13 +61,17 @@ export class DiscordServerProfileMongooseRepository
 
   async findById(id: string): Promise<IDiscordServerProfile | null> {
     const doc = await this.model.findById(id).lean();
-    return doc ? this.toEntity(doc as DiscordServerProfileDoc & { _id: string }) : null;
+    return doc
+      ? this.toEntity(doc as DiscordServerProfileDoc & { _id: string })
+      : null;
   }
 
   async findOneAndUpdate(
     id: string,
-    updates: Partial<Pick<IDiscordServerProfile, "dateFormat" | "dateLanguage" | "timezone">>,
-    options: { upsert: boolean }
+    updates: Partial<
+      Pick<IDiscordServerProfile, "dateFormat" | "dateLanguage" | "timezone">
+    >,
+    options: { upsert: boolean },
   ): Promise<IDiscordServerProfile> {
     const updateObj: Record<string, string> = {};
     if (updates.dateFormat) {
@@ -75,7 +87,7 @@ export class DiscordServerProfileMongooseRepository
     const doc = await this.model.findOneAndUpdate(
       { _id: id },
       { $set: updateObj },
-      { upsert: options.upsert, new: true, lean: true }
+      { upsert: options.upsert, new: true, lean: true },
     );
 
     return this.toEntity(doc as DiscordServerProfileDoc & { _id: string });

@@ -115,10 +115,10 @@ export interface ISupporterRepository {
   updateGuilds(userId: string, guildIds: string[]): Promise<ISupporter | null>;
   deleteAll(): Promise<void>;
   aggregateWithPatronsAndOverrides(
-    discordId: string
+    discordId: string,
   ): Promise<SupportPatronAggregateResult[]>;
   aggregateSupportersForGuilds(
-    guildIds: string[]
+    guildIds: string[],
   ): Promise<SupporterGuildAggregateResult[]>;
   aggregateAllSupportersWithPatrons(): Promise<SupportPatronAggregateResult[]>;
   aggregateAllSupportersWithGuilds(): Promise<SupporterGuildAggregateResult[]>;

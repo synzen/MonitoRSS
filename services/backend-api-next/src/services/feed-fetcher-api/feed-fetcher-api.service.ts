@@ -17,12 +17,12 @@ export class FeedFetcherApiService {
   async fetchAndSave(
     url: string,
     lookupDetails: FeedRequestLookupDetails | null,
-    options?: FeedFetchOptions
+    options?: FeedFetchOptions,
   ): Promise<FeedFetcherFetchFeedResponse> {
     if (!this.host) {
       throw new Error(
         "BACKEND_API_FEED_REQUESTS_API_HOST config variable must be defined" +
-          " for use before executing a request"
+          " for use before executing a request",
       );
     }
 
@@ -43,7 +43,7 @@ export class FeedFetcherApiService {
 
       if (response.status >= 500) {
         throw new Error(
-          `Feed fetcher api responded with >= 500 status: ${response.status})`
+          `Feed fetcher api responded with >= 500 status: ${response.status})`,
         );
       }
 
@@ -53,20 +53,20 @@ export class FeedFetcherApiService {
         throw new Error(
           `Feed fetcher api responded with non-ok status: ${
             response.status
-          }, response: ${JSON.stringify(responseBody)}`
+          }, response: ${JSON.stringify(responseBody)}`,
         );
       }
 
       return this.validateResponse(
         FeedFetcherFetchFeedResponseSchema,
-        responseBody
+        responseBody,
       );
     } catch (error) {
       logger.error(
         `Failed to execute fetch with feed fetcher api (${(error as Error).message})`,
         {
           stack: (error as Error).stack,
-        }
+        },
       );
 
       throw error;
@@ -91,7 +91,7 @@ export class FeedFetcherApiService {
           "Content-Type": "application/json",
           "api-key": this.apiKey,
         },
-      }
+      },
     );
 
     await this.validateResponseStatus(response);
@@ -101,7 +101,9 @@ export class FeedFetcherApiService {
 
   private async validateResponseStatus(res: Response) {
     if (res.status >= 500) {
-      throw new Error(`>= 500 status code (${res.status}) from feed fetcher api`);
+      throw new Error(
+        `>= 500 status code (${res.status}) from feed fetcher api`,
+      );
     }
 
     if (!res.ok) {
@@ -116,20 +118,20 @@ export class FeedFetcherApiService {
       throw new Error(
         `Bad status code (${
           res.status
-        }) from feed fetcher api, response: ${JSON.stringify(body)}`
+        }) from feed fetcher api, response: ${JSON.stringify(body)}`,
       );
     }
   }
 
   private validateResponse<T>(
     schema: { parse: (data: unknown) => T },
-    json: unknown
+    json: unknown,
   ): T {
     try {
       return schema.parse(json);
     } catch (error) {
       throw new UnexpectedApiResponseException(
-        `Unexpected response from feed fetcher api: ${(error as Error).message}. Response: ${JSON.stringify(json)}`
+        `Unexpected response from feed fetcher api: ${(error as Error).message}. Response: ${JSON.stringify(json)}`,
       );
     }
   }

@@ -15,13 +15,19 @@ const UserFeedLimitOverrideSchema = new Schema(
     _id: { type: String, required: true },
     additionalUserFeeds: { type: Number, required: true, default: 0 },
   },
-  { collection: "userfeedlimitoverride", _id: false }
+  { collection: "userfeedlimitoverride", _id: false },
 );
 
-type UserFeedLimitOverrideDoc = InferSchemaType<typeof UserFeedLimitOverrideSchema>;
+type UserFeedLimitOverrideDoc = InferSchemaType<
+  typeof UserFeedLimitOverrideSchema
+>;
 
 export class UserFeedLimitOverrideMongooseRepository
-  extends BaseMongooseRepository<IUserFeedLimitOverride, UserFeedLimitOverrideDoc, string>
+  extends BaseMongooseRepository<
+    IUserFeedLimitOverride,
+    UserFeedLimitOverrideDoc,
+    string
+  >
   implements IUserFeedLimitOverrideRepository
 {
   private model: Model<UserFeedLimitOverrideDoc>;
@@ -30,11 +36,13 @@ export class UserFeedLimitOverrideMongooseRepository
     super();
     this.model = connection.model<UserFeedLimitOverrideDoc>(
       "UserFeedLimitOverride",
-      UserFeedLimitOverrideSchema
+      UserFeedLimitOverrideSchema,
     );
   }
 
-  protected toEntity(doc: UserFeedLimitOverrideDoc & { _id: string }): IUserFeedLimitOverride {
+  protected toEntity(
+    doc: UserFeedLimitOverrideDoc & { _id: string },
+  ): IUserFeedLimitOverride {
     return {
       id: doc._id,
       additionalUserFeeds: doc.additionalUserFeeds,
@@ -43,15 +51,17 @@ export class UserFeedLimitOverrideMongooseRepository
 
   async findById(id: string): Promise<IUserFeedLimitOverride | null> {
     const doc = await this.model.findById(id).lean();
-    return doc ? this.toEntity(doc as UserFeedLimitOverrideDoc & { _id: string }) : null;
+    return doc
+      ? this.toEntity(doc as UserFeedLimitOverrideDoc & { _id: string })
+      : null;
   }
 
-  async findByIdsNotIn(excludeIds: string[]): Promise<IUserFeedLimitOverride[]> {
-    const docs = await this.model
-      .find({ _id: { $nin: excludeIds } })
-      .lean();
+  async findByIdsNotIn(
+    excludeIds: string[],
+  ): Promise<IUserFeedLimitOverride[]> {
+    const docs = await this.model.find({ _id: { $nin: excludeIds } }).lean();
     return docs.map((doc) =>
-      this.toEntity(doc as UserFeedLimitOverrideDoc & { _id: string })
+      this.toEntity(doc as UserFeedLimitOverrideDoc & { _id: string }),
     );
   }
 
@@ -60,7 +70,9 @@ export class UserFeedLimitOverrideMongooseRepository
       _id: input.id,
       additionalUserFeeds: input.additionalUserFeeds,
     });
-    return this.toEntity(doc.toObject() as UserFeedLimitOverrideDoc & { _id: string });
+    return this.toEntity(
+      doc.toObject() as UserFeedLimitOverrideDoc & { _id: string },
+    );
   }
 
   async deleteAll(): Promise<void> {

@@ -19,10 +19,11 @@ import type {
   UserFeedLimitEnforcementResult,
   UserFeedLimitEnforcementQuery,
 } from "../interfaces/user-feed.types";
-import {
-  UserFeedComputedStatus,
-} from "../interfaces/user-feed.types";
-import type { IDiscordChannelConnection, IConnectionDetails } from "../interfaces/feed-connection.types";
+import { UserFeedComputedStatus } from "../interfaces/user-feed.types";
+import type {
+  IDiscordChannelConnection,
+  IConnectionDetails,
+} from "../interfaces/feed-connection.types";
 import {
   FeedConnectionDisabledCode,
   FeedConnectionType,
@@ -31,7 +32,10 @@ import {
   UserFeedManagerInviteType,
   UserFeedManagerStatus,
 } from "../shared/enums";
-import { FeedConnectionsSchema, type DiscordChannelConnectionDoc } from "./feed-connection.schemas";
+import {
+  FeedConnectionsSchema,
+  type DiscordChannelConnectionDoc,
+} from "./feed-connection.schemas";
 import { BaseMongooseRepository } from "./base.mongoose.repository";
 
 interface ShareInviteConnectionDoc {
@@ -53,7 +57,7 @@ const UserFeedUserSchema = new Schema(
     id: { type: Schema.Types.ObjectId },
     discordUserId: { type: String, required: true },
   },
-  { _id: false, timestamps: false }
+  { _id: false, timestamps: false },
 );
 
 const UserFeedFormatOptionsSchema = new Schema(
@@ -62,14 +66,14 @@ const UserFeedFormatOptionsSchema = new Schema(
     dateTimezone: { type: String },
     dateLocale: { type: String },
   },
-  { _id: false, timestamps: false }
+  { _id: false, timestamps: false },
 );
 
 const UserFeedDateCheckOptionsSchema = new Schema(
   {
     oldArticleDateDiffMsThreshold: { type: Number },
   },
-  { _id: false, timestamps: false }
+  { _id: false, timestamps: false },
 );
 
 const ExternalFeedPropertySchema = new Schema(
@@ -83,14 +87,14 @@ const ExternalFeedPropertySchema = new Schema(
     cssSelector: { type: String, required: true },
     label: { type: String, required: true },
   },
-  { _id: false, timestamps: false, versionKey: false }
+  { _id: false, timestamps: false, versionKey: false },
 );
 
 const UserFeedShareInviteConnectionSchema = new Schema(
   {
     connectionId: { type: Schema.Types.ObjectId, required: true },
   },
-  { _id: false, timestamps: false }
+  { _id: false, timestamps: false },
 );
 
 const UserFeedUserShareManageUserSchema = new Schema(
@@ -110,14 +114,14 @@ const UserFeedUserShareManageUserSchema = new Schema(
     },
     connections: { type: [UserFeedShareInviteConnectionSchema] },
   },
-  { _id: false, timestamps: true }
+  { _id: false, timestamps: true },
 );
 
 const UserFeedShareManageOptionsSchema = new Schema(
   {
     invites: { type: [UserFeedUserShareManageUserSchema], required: true },
   },
-  { _id: false, timestamps: false }
+  { _id: false, timestamps: false },
 );
 
 const UserFeedSchema = new Schema(
@@ -149,11 +153,14 @@ const UserFeedSchema = new Schema(
     feedRequestLookupKey: { type: String },
     lastManualRequestAt: { type: Date },
   },
-  { timestamps: true, autoIndex: true }
+  { timestamps: true, autoIndex: true },
 );
 
 // Indexes
-UserFeedSchema.index({ feedRequestLookupKey: 1 }, { unique: true, sparse: true });
+UserFeedSchema.index(
+  { feedRequestLookupKey: 1 },
+  { unique: true, sparse: true },
+);
 UserFeedSchema.index({ feedRequestLookupKey: 1, healthStatus: 1 });
 UserFeedSchema.index({ url: 1, healthStatus: 1 });
 UserFeedSchema.index({
@@ -164,7 +171,11 @@ UserFeedSchema.index({
 });
 UserFeedSchema.index({ userRefreshRateSeconds: 1, refreshRateSeconds: 1 });
 UserFeedSchema.index({ "user.discordUserId": 1 });
-UserFeedSchema.index({ refreshRateSeconds: 1, slotOffsetMs: 1, disabledCode: 1 });
+UserFeedSchema.index({
+  refreshRateSeconds: 1,
+  slotOffsetMs: 1,
+  disabledCode: 1,
+});
 UserFeedSchema.index({
   userRefreshRateSeconds: 1,
   slotOffsetMs: 1,
@@ -185,7 +196,7 @@ export class UserFeedMongooseRepository
   }
 
   private mapDiscordChannelConnection(
-    conn: DiscordChannelConnectionDoc
+    conn: DiscordChannelConnectionDoc,
   ): IDiscordChannelConnection {
     return {
       id: conn.id.toString(),
@@ -219,7 +230,7 @@ export class UserFeedMongooseRepository
       healthStatus: doc.healthStatus,
       connections: {
         discordChannels: discordChannels.map((conn) =>
-          this.mapDiscordChannelConnection(conn)
+          this.mapDiscordChannelConnection(conn),
         ),
       },
       user: {
@@ -287,10 +298,14 @@ export class UserFeedMongooseRepository
       }
     });
 
-    await this.model.bulkWrite(bulkOps as Parameters<typeof this.model.bulkWrite>[0]);
+    await this.model.bulkWrite(
+      bulkOps as Parameters<typeof this.model.bulkWrite>[0],
+    );
   }
 
-  async findByIdsForNotification(ids: string[]): Promise<UserFeedForNotification[]> {
+  async findByIdsForNotification(
+    ids: string[],
+  ): Promise<UserFeedForNotification[]> {
     const objectIds = ids.map((id) => this.stringToObjectId(id));
     const docs = await this.model
       .find({ _id: { $in: objectIds } })
@@ -299,8 +314,8 @@ export class UserFeedMongooseRepository
 
     return docs.map((doc) => {
       const docWithId = doc as UserFeedDoc & { _id: Types.ObjectId };
-      const discordChannels =
-        docWithId.connections.discordChannels as unknown as DiscordChannelConnectionDoc[];
+      const discordChannels = docWithId.connections
+        .discordChannels as unknown as DiscordChannelConnectionDoc[];
 
       return {
         id: this.objectIdToString(docWithId._id),
@@ -313,7 +328,8 @@ export class UserFeedMongooseRepository
         shareManageOptions: docWithId.shareManageOptions
           ? {
               invites: (
-                docWithId.shareManageOptions.invites as unknown as ShareManageUserDoc[]
+                docWithId.shareManageOptions
+                  .invites as unknown as ShareManageUserDoc[]
               ).map((invite) => ({
                 id: invite.id.toString(),
                 type: invite.type as UserFeedManagerInviteType,
@@ -329,7 +345,7 @@ export class UserFeedMongooseRepository
           : undefined,
         connections: {
           discordChannels: discordChannels.map((conn) =>
-            this.mapDiscordChannelConnection(conn)
+            this.mapDiscordChannelConnection(conn),
           ),
         },
       };
@@ -337,7 +353,7 @@ export class UserFeedMongooseRepository
   }
 
   async bulkAddConnectionsToInvites(
-    operations: AddConnectionToInviteOperation[]
+    operations: AddConnectionToInviteOperation[],
   ): Promise<void> {
     if (operations.length === 0) {
       return;
@@ -360,12 +376,12 @@ export class UserFeedMongooseRepository
     }));
 
     await this.model.bulkWrite(
-      bulkOps as Parameters<typeof this.model.bulkWrite>[0]
+      bulkOps as Parameters<typeof this.model.bulkWrite>[0],
     );
   }
 
   async removeConnectionsFromInvites(
-    input: RemoveConnectionsFromInvitesInput
+    input: RemoveConnectionsFromInvitesInput,
   ): Promise<void> {
     const { feedId, connectionIds } = input;
 
@@ -374,7 +390,7 @@ export class UserFeedMongooseRepository
     }
 
     const connectionObjectIds = connectionIds.map((id) =>
-      this.stringToObjectId(id)
+      this.stringToObjectId(id),
     );
 
     await this.model.updateOne(
@@ -385,7 +401,7 @@ export class UserFeedMongooseRepository
             connectionId: { $in: connectionObjectIds },
           },
         },
-      }
+      },
     );
   }
 
@@ -418,7 +434,9 @@ export class UserFeedMongooseRepository
         : undefined,
     });
 
-    return this.toEntity(doc as unknown as UserFeedDoc & { _id: Types.ObjectId });
+    return this.toEntity(
+      doc as unknown as UserFeedDoc & { _id: Types.ObjectId },
+    );
   }
 
   async findById(id: string): Promise<IUserFeed | null> {
@@ -462,10 +480,10 @@ export class UserFeedMongooseRepository
     const { discordUserId, search, filters } = input;
 
     const badUserFeedCodes = Object.values(UserFeedDisabledCode).filter(
-      (c) => c !== UserFeedDisabledCode.Manual
+      (c) => c !== UserFeedDisabledCode.Manual,
     );
     const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
-      (c) => c !== FeedConnectionDisabledCode.Manual
+      (c) => c !== FeedConnectionDisabledCode.Manual,
     );
     const feedConnectionTypeKeys = Object.values(FeedConnectionType);
 
@@ -497,7 +515,9 @@ export class UserFeedMongooseRepository
                   then: UserFeedComputedStatus.ManuallyDisabled,
                   else: {
                     $cond: {
-                      if: { $eq: ["$healthStatus", UserFeedHealthStatus.Failing] },
+                      if: {
+                        $eq: ["$healthStatus", UserFeedHealthStatus.Failing],
+                      },
                       then: UserFeedComputedStatus.Retrying,
                       else: UserFeedComputedStatus.Ok,
                     },
@@ -536,10 +556,12 @@ export class UserFeedMongooseRepository
 
     if (filters?.connectionDisabledCodes) {
       const codesToSearchFor = filters.connectionDisabledCodes.map((c) =>
-        c === "" ? null : c
+        c === "" ? null : c,
       );
 
-      const $or: Record<string, unknown>[] = Object.values(FeedConnectionType).map((key) => ({
+      const $or: Record<string, unknown>[] = Object.values(
+        FeedConnectionType,
+      ).map((key) => ({
         [`connections.${key}.disabledCode`]: { $in: codesToSearchFor },
       }));
 
@@ -553,7 +575,9 @@ export class UserFeedMongooseRepository
     return pipeline;
   }
 
-  async getUserFeedsListing(input: UserFeedListingInput): Promise<UserFeedListItem[]> {
+  async getUserFeedsListing(
+    input: UserFeedListingInput,
+  ): Promise<UserFeedListItem[]> {
     const { limit = 10, offset = 0, sort } = input;
     const useSort = sort || "-createdAt";
 
@@ -588,7 +612,7 @@ export class UserFeedMongooseRepository
           ownedByUser: 1,
           refreshRateSeconds: 1,
         },
-      }
+      },
     );
 
     const results = await this.model.aggregate<{
@@ -621,7 +645,7 @@ export class UserFeedMongooseRepository
   }
 
   async getUserFeedsCount(
-    input: Omit<UserFeedListingInput, "limit" | "offset" | "sort">
+    input: Omit<UserFeedListingInput, "limit" | "offset" | "sort">,
   ): Promise<number> {
     const pipeline = this.buildListingPipeline(input as UserFeedListingInput);
     pipeline.push({ $count: "count" });
@@ -636,7 +660,7 @@ export class UserFeedMongooseRepository
 
   async countByOwnershipExcludingDisabled(
     discordUserId: string,
-    excludeDisabledCodes: UserFeedDisabledCode[]
+    excludeDisabledCodes: UserFeedDisabledCode[],
   ): Promise<number> {
     return this.model.countDocuments({
       "user.discordUserId": discordUserId,
@@ -650,7 +674,7 @@ export class UserFeedMongooseRepository
 
   async findByIdAndOwnership(
     id: string,
-    discordUserId: string
+    discordUserId: string,
   ): Promise<IUserFeed | null> {
     const doc = await this.model
       .findOne({
@@ -668,7 +692,7 @@ export class UserFeedMongooseRepository
 
   async findByUrls(
     discordUserId: string,
-    urls: string[]
+    urls: string[],
   ): Promise<{ url: string }[]> {
     const docs = await this.model
       .find({
@@ -683,7 +707,7 @@ export class UserFeedMongooseRepository
 
   async updateById(
     id: string,
-    update: Record<string, unknown>
+    update: Record<string, unknown>,
   ): Promise<IUserFeed | null> {
     const doc = await this.model
       .findByIdAndUpdate(this.stringToObjectId(id), update, { new: true })
@@ -699,7 +723,7 @@ export class UserFeedMongooseRepository
   async findOneAndUpdate(
     filter: Record<string, unknown>,
     update: Record<string, unknown>,
-    options?: { new?: boolean }
+    options?: { new?: boolean },
   ): Promise<IUserFeed | null> {
     const doc = await this.model
       .findOneAndUpdate(filter, update, { new: options?.new ?? false })
@@ -715,7 +739,7 @@ export class UserFeedMongooseRepository
   async updateWithConnectionFilter(
     feedId: string,
     connectionId: string,
-    update: Record<string, unknown>
+    update: Record<string, unknown>,
   ): Promise<IUserFeed | null> {
     const doc = await this.model
       .findOneAndUpdate(
@@ -724,7 +748,7 @@ export class UserFeedMongooseRepository
           "connections.discordChannels.id": this.stringToObjectId(connectionId),
         },
         update,
-        { new: true }
+        { new: true },
       )
       .lean();
 
@@ -775,7 +799,7 @@ export class UserFeedMongooseRepository
 
   async updateManyByFilter(
     filter: Record<string, unknown>,
-    update: Record<string, unknown>
+    update: Record<string, unknown>,
   ): Promise<number> {
     const result = await this.model.updateMany(filter, update);
     return result.modifiedCount;
@@ -785,12 +809,12 @@ export class UserFeedMongooseRepository
     const objectIds = ids.map((id) => this.stringToObjectId(id));
     const docs = await this.model.find({ _id: { $in: objectIds } }).lean();
     return docs.map((doc) =>
-      this.toEntity(doc as UserFeedDoc & { _id: Types.ObjectId })
+      this.toEntity(doc as UserFeedDoc & { _id: Types.ObjectId }),
     );
   }
 
   async *getFeedsGroupedByUserForLimitEnforcement(
-    query: UserFeedLimitEnforcementQuery
+    query: UserFeedLimitEnforcementQuery,
   ): AsyncIterable<UserFeedLimitEnforcementResult> {
     const matchFilter =
       query.type === "include"
@@ -817,7 +841,12 @@ export class UserFeedMongooseRepository
             disabledFeedIds: {
               $push: {
                 $cond: [
-                  { $eq: ["$disabledCode", UserFeedDisabledCode.ExceededFeedLimit] },
+                  {
+                    $eq: [
+                      "$disabledCode",
+                      UserFeedDisabledCode.ExceededFeedLimit,
+                    ],
+                  },
                   "$_id",
                   "$$REMOVE",
                 ],
@@ -869,7 +898,7 @@ export class UserFeedMongooseRepository
       return;
     }
     await this.model.bulkWrite(
-      operations as Parameters<typeof this.model.bulkWrite>[0]
+      operations as Parameters<typeof this.model.bulkWrite>[0],
     );
   }
 
@@ -912,7 +941,7 @@ export class UserFeedMongooseRepository
   }
 
   async bulkUpdateSlotOffsets(
-    operations: Array<{ feedId: string; slotOffsetMs: number }>
+    operations: Array<{ feedId: string; slotOffsetMs: number }>,
   ): Promise<void> {
     if (operations.length === 0) {
       return;
@@ -956,7 +985,7 @@ export class UserFeedMongooseRepository
   }
 
   async bulkUpdateUserIds(
-    operations: Array<{ feedId: string; userId: string }>
+    operations: Array<{ feedId: string; userId: string }>,
   ): Promise<void> {
     if (operations.length === 0) {
       return;
@@ -973,7 +1002,7 @@ export class UserFeedMongooseRepository
   }
 
   async migrateCustomPlaceholderSteps(
-    addIdAndType: (step: Record<string, unknown>) => Record<string, unknown>
+    addIdAndType: (step: Record<string, unknown>) => Record<string, unknown>,
   ): Promise<number> {
     const cursor = this.model
       .find({
@@ -1051,7 +1080,7 @@ export class UserFeedMongooseRepository
 
       await collection.updateOne(
         { _id: rawDoc._id },
-        { $set: { "user.id": new Types.ObjectId(rawDoc.user.id) } }
+        { $set: { "user.id": new Types.ObjectId(rawDoc.user.id) } },
       );
       converted++;
     }

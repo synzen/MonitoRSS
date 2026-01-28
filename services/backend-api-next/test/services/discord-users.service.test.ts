@@ -68,7 +68,7 @@ describe("DiscordUsersService", { concurrency: true }, () => {
 
       assert.strictEqual(
         ctx.discordApiService.executeBotRequest.mock.calls[0]?.arguments[0],
-        "/users/user-123"
+        "/users/user-123",
       );
       assert.deepStrictEqual(user, {
         id: userResponse.id,
@@ -132,14 +132,17 @@ describe("DiscordUsersService", { concurrency: true }, () => {
 
       await ctx.service.getGuilds(accessToken);
 
-      assert.strictEqual(ctx.discordApiService.executeBearerRequest.mock.calls.length, 1);
+      assert.strictEqual(
+        ctx.discordApiService.executeBearerRequest.mock.calls.length,
+        1,
+      );
       assert.strictEqual(
         ctx.discordApiService.executeBearerRequest.mock.calls[0]?.arguments[0],
-        accessToken
+        accessToken,
       );
       assert.strictEqual(
         ctx.discordApiService.executeBearerRequest.mock.calls[0]?.arguments[1],
-        "/users/@me/guilds"
+        "/users/@me/guilds",
       );
     });
 
@@ -159,7 +162,8 @@ describe("DiscordUsersService", { concurrency: true }, () => {
           executeBearerRequest: () => Promise.resolve(guilds),
         },
         supportersService: {
-          getBenefitsOfServers: () => Promise.resolve([{ maxFeeds: 10, webhooks: true }]),
+          getBenefitsOfServers: () =>
+            Promise.resolve([{ maxFeeds: 10, webhooks: true }]),
         },
       });
 
@@ -168,7 +172,7 @@ describe("DiscordUsersService", { concurrency: true }, () => {
       assert.strictEqual(result.length, 1);
       assert.strictEqual(
         result[0]?.iconUrl,
-        `https://cdn.discordapp.com/icons/${guilds[0]?.id}/${guilds[0]?.icon}.png?size=128`
+        `https://cdn.discordapp.com/icons/${guilds[0]?.id}/${guilds[0]?.icon}.png?size=128`,
       );
     });
 
@@ -232,7 +236,8 @@ describe("DiscordUsersService", { concurrency: true }, () => {
           executeBearerRequest: () => Promise.resolve(guilds),
         },
         supportersService: {
-          getBenefitsOfServers: () => Promise.resolve([{ maxFeeds: 10, webhooks: true }]),
+          getBenefitsOfServers: () =>
+            Promise.resolve([{ maxFeeds: 10, webhooks: true }]),
         },
       });
 
@@ -257,7 +262,8 @@ describe("DiscordUsersService", { concurrency: true }, () => {
           executeBearerRequest: () => Promise.resolve(guilds),
         },
         supportersService: {
-          getBenefitsOfServers: () => Promise.resolve([{ maxFeeds: 10, webhooks: true }]),
+          getBenefitsOfServers: () =>
+            Promise.resolve([{ maxFeeds: 10, webhooks: true }]),
         },
       });
 
@@ -272,20 +278,24 @@ describe("DiscordUsersService", { concurrency: true }, () => {
       const accessToken = "abc";
       const ctx = harness.createContext({
         discordApiService: {
-          executeBearerRequest: () => Promise.resolve({ id: "user_id", username: "test", avatar: null }),
+          executeBearerRequest: () =>
+            Promise.resolve({ id: "user_id", username: "test", avatar: null }),
         },
       });
 
       await ctx.service.getUser(accessToken);
 
-      assert.strictEqual(ctx.discordApiService.executeBearerRequest.mock.calls.length, 1);
+      assert.strictEqual(
+        ctx.discordApiService.executeBearerRequest.mock.calls.length,
+        1,
+      );
       assert.strictEqual(
         ctx.discordApiService.executeBearerRequest.mock.calls[0]?.arguments[0],
-        accessToken
+        accessToken,
       );
       assert.strictEqual(
         ctx.discordApiService.executeBearerRequest.mock.calls[0]?.arguments[1],
-        "/users/@me"
+        "/users/@me",
       );
     });
 
@@ -323,7 +333,7 @@ describe("DiscordUsersService", { concurrency: true }, () => {
       assert.strictEqual(result.avatar, user.avatar);
       assert.strictEqual(
         result.avatarUrl,
-        `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
+        `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`,
       );
       assert.strictEqual(result.maxFeeds, supporterBenefits.maxFeeds);
       assert.strictEqual(result.maxUserFeeds, supporterBenefits.maxUserFeeds);
@@ -379,11 +389,11 @@ describe("DiscordUsersService", { concurrency: true }, () => {
       assert.strictEqual(ctx.supportersService.setGuilds.mock.calls.length, 1);
       assert.strictEqual(
         ctx.supportersService.setGuilds.mock.calls[0]?.arguments[0],
-        userId
+        userId,
       );
       assert.deepStrictEqual(
         ctx.supportersService.setGuilds.mock.calls[0]?.arguments[1],
-        guildIds
+        guildIds,
       );
     });
 

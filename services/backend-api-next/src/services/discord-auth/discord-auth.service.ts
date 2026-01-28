@@ -28,7 +28,7 @@ export class DiscordAuthService {
 
   constructor(
     private readonly config: Config,
-    private readonly discordApiService: DiscordApiService
+    private readonly discordApiService: DiscordApiService,
   ) {
     this.clientId = config.BACKEND_API_DISCORD_CLIENT_ID;
     this.clientSecret = config.BACKEND_API_DISCORD_CLIENT_SECRET;
@@ -48,7 +48,7 @@ export class DiscordAuthService {
   }
 
   async createAccessToken(
-    authorizationCode: string
+    authorizationCode: string,
   ): Promise<CreateAccessTokenResult> {
     const url = `${DISCORD_API_BASE_URL}${DISCORD_TOKEN_ENDPOINT}`;
 
@@ -72,20 +72,21 @@ export class DiscordAuthService {
     if (!res.ok && res.status < 500) {
       throw new Error(
         `Failed to create access token (${res.status}): ${JSON.stringify(
-          await res.json()
-        )}`
+          await res.json(),
+        )}`,
       );
     }
 
     if (!res.ok) {
       throw new Error(
-        `Failed to create access token (${res.status} - Discord internal error)`
+        `Failed to create access token (${res.status} - Discord internal error)`,
       );
     }
 
     const tokenObject = (await res.json()) as DiscordAuthToken;
 
-    const { newToken, user } = await this.attachExtraDetailsToToken(tokenObject);
+    const { newToken, user } =
+      await this.attachExtraDetailsToToken(tokenObject);
 
     return { token: newToken, user };
   }
@@ -113,14 +114,14 @@ export class DiscordAuthService {
     if (!res.ok && res.status < 500) {
       throw new Error(
         `Failed to refresh access token (${res.status}): ${JSON.stringify(
-          await res.json()
-        )}`
+          await res.json(),
+        )}`,
       );
     }
 
     if (!res.ok) {
       throw new Error(
-        `Failed to refresh access token (${res.status} - Discord internal error)`
+        `Failed to refresh access token (${res.status} - Discord internal error)`,
       );
     }
 
@@ -147,7 +148,7 @@ export class DiscordAuthService {
 
   async userManagesGuild(
     userAccessToken: string,
-    guildId: string
+    guildId: string,
   ): Promise<UserManagesGuildResult> {
     const endpoint = `/users/@me/guilds`;
     const guilds = await this.discordApiService.executeBearerRequest<
@@ -177,7 +178,7 @@ export class DiscordAuthService {
     const endpoint = `/users/@me`;
     const user = await this.discordApiService.executeBearerRequest<DiscordUser>(
       accessToken,
-      endpoint
+      endpoint,
     );
 
     return user;
@@ -185,7 +186,7 @@ export class DiscordAuthService {
 
   private async revokeAccessOrRefreshToken(
     token: DiscordAuthToken,
-    tokenType: "access" | "refresh"
+    tokenType: "access" | "refresh",
   ): Promise<void> {
     const url = `${DISCORD_API_BASE_URL}${DISCORD_TOKEN_REVOCATION_ENDPOINT}`;
 
@@ -206,14 +207,14 @@ export class DiscordAuthService {
     if (!res.ok) {
       throw new Error(
         `Failed to revoke ${tokenType} token (${res.status}): ${JSON.stringify(
-          await res.json()
-        )}`
+          await res.json(),
+        )}`,
       );
     }
   }
 
   private async attachExtraDetailsToToken(
-    tokenObject: DiscordAuthToken
+    tokenObject: DiscordAuthToken,
   ): Promise<{ newToken: SessionAccessToken; user: DiscordUser }> {
     const user = await this.getUser(tokenObject.access_token);
     const now = new Date();

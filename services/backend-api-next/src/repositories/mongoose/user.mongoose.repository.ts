@@ -27,7 +27,7 @@ const UserFeedListSortSchema = new Schema(
     key: { type: String, required: true },
     direction: { type: String, required: true, enum: ["asc", "desc"] },
   },
-  { _id: false, timestamps: false }
+  { _id: false, timestamps: false },
 );
 
 const UserFeedListColumnVisibilitySchema = new Schema(
@@ -39,21 +39,21 @@ const UserFeedListColumnVisibilitySchema = new Schema(
     ownedByUser: { type: Boolean },
     refreshRateSeconds: { type: Boolean },
   },
-  { _id: false, timestamps: false }
+  { _id: false, timestamps: false },
 );
 
 const UserFeedListColumnOrderSchema = new Schema(
   {
     columns: { type: [String] },
   },
-  { _id: false, timestamps: false }
+  { _id: false, timestamps: false },
 );
 
 const UserFeedListStatusFiltersSchema = new Schema(
   {
     statuses: { type: [String] },
   },
-  { _id: false, timestamps: false }
+  { _id: false, timestamps: false },
 );
 
 const UserPreferencesSchema = new Schema(
@@ -67,14 +67,14 @@ const UserPreferencesSchema = new Schema(
     feedListColumnOrder: { type: UserFeedListColumnOrderSchema },
     feedListStatusFilters: { type: UserFeedListStatusFiltersSchema },
   },
-  { _id: false, timestamps: false }
+  { _id: false, timestamps: false },
 );
 
 const UserFeatureFlagsSchema = new Schema(
   {
     externalProperties: { type: Boolean },
   },
-  { _id: false, timestamps: false }
+  { _id: false, timestamps: false },
 );
 
 const UserExternalCredentialSchema = new Schema(
@@ -93,7 +93,7 @@ const UserExternalCredentialSchema = new Schema(
     data: { type: Map, of: Schema.Types.Mixed },
     expireAt: { type: Date },
   },
-  { timestamps: false, }
+  { timestamps: false },
 );
 
 const UserSchema = new Schema(
@@ -105,7 +105,7 @@ const UserSchema = new Schema(
     enableBilling: { type: Boolean },
     externalCredentials: { type: [UserExternalCredentialSchema] },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 UserSchema.index({
@@ -186,21 +186,17 @@ export class UserMongooseRepository
 
   async updateEmailByDiscordId(
     discordUserId: string,
-    email: string
+    email: string,
   ): Promise<IUser | null> {
     const doc = await this.model
-      .findOneAndUpdate(
-        { discordUserId },
-        { $set: { email } },
-        { new: true }
-      )
+      .findOneAndUpdate({ discordUserId }, { $set: { email } }, { new: true })
       .lean();
     return doc ? this.toEntity(doc as UserDoc & { _id: Types.ObjectId }) : null;
   }
 
   async updatePreferencesByDiscordId(
     discordUserId: string,
-    preferences: UpdateUserPreferencesInput
+    preferences: UpdateUserPreferencesInput,
   ): Promise<IUser | null> {
     const updateQuery: UpdateQuery<UserDoc> = {
       $set: {},
@@ -229,7 +225,7 @@ export class UserMongooseRepository
   }
 
   async findEmailsByDiscordIdsWithAlertPreference(
-    discordUserIds: string[]
+    discordUserIds: string[],
   ): Promise<string[]> {
     const emails = await this.model
       .find({
@@ -243,14 +239,14 @@ export class UserMongooseRepository
 
   async setExternalCredential(
     userId: string,
-    credential: SetExternalCredentialInput
+    credential: SetExternalCredentialInput,
   ): Promise<void> {
     const setQueries = Object.entries(credential.data).reduce(
       (acc, [key, value]) => {
         acc[`externalCredentials.$.data.${key}`] = value;
         return acc;
       },
-      {} as Record<string, string>
+      {} as Record<string, string>,
     );
 
     const finalSetQuery = {
@@ -267,7 +263,7 @@ export class UserMongooseRepository
           $elemMatch: { type: credential.type },
         },
       },
-      { $set: finalSetQuery }
+      { $set: finalSetQuery },
     );
 
     if (!result.modifiedCount) {
@@ -282,17 +278,20 @@ export class UserMongooseRepository
               status: UserExternalCredentialStatus.Active,
             },
           },
-        }
+        },
       );
     }
   }
 
   async getExternalCredentials(
     userId: string,
-    type: UserExternalCredentialType
+    type: UserExternalCredentialType,
   ): Promise<IUserExternalCredential | null> {
     const doc = await this.model
-      .findOne({ _id: this.stringToObjectId(userId) }, { externalCredentials: 1 })
+      .findOne(
+        { _id: this.stringToObjectId(userId) },
+        { externalCredentials: 1 },
+      )
       .lean();
 
     if (!doc) {
@@ -324,17 +323,17 @@ export class UserMongooseRepository
 
   async removeExternalCredentials(
     userId: string,
-    type: UserExternalCredentialType
+    type: UserExternalCredentialType,
   ): Promise<void> {
     await this.model.updateOne(
       { _id: this.stringToObjectId(userId) },
-      { $pull: { externalCredentials: { type } } }
+      { $pull: { externalCredentials: { type } } },
     );
   }
 
   async revokeExternalCredential(
     userId: string,
-    credentialId: string
+    credentialId: string,
   ): Promise<void> {
     await this.model.updateOne(
       {
@@ -345,7 +344,7 @@ export class UserMongooseRepository
         $set: {
           "externalCredentials.$.status": UserExternalCredentialStatus.Revoked,
         },
-      }
+      },
     );
   }
 
@@ -357,47 +356,53 @@ export class UserMongooseRepository
     feedId: string;
     lookupKey?: string;
   }> {
-    const cursor = this.model.aggregate([
-      {
-        $match: {
-          ...(options?.userIds?.length && {
-            _id: { $in: options.userIds.map((id) => this.stringToObjectId(id)) },
-          }),
-          externalCredentials: {
-            $elemMatch: {
-              expireAt: { $gt: new Date() },
-              status: UserExternalCredentialStatus.Active,
-              type: UserExternalCredentialType.Reddit,
+    const cursor = this.model
+      .aggregate([
+        {
+          $match: {
+            ...(options?.userIds?.length && {
+              _id: {
+                $in: options.userIds.map((id) => this.stringToObjectId(id)),
+              },
+            }),
+            externalCredentials: {
+              $elemMatch: {
+                expireAt: { $gt: new Date() },
+                status: UserExternalCredentialStatus.Active,
+                type: UserExternalCredentialType.Reddit,
+              },
             },
           },
         },
-      },
-      {
-        $lookup: {
-          from: "userfeeds",
-          localField: "discordUserId",
-          foreignField: "user.discordUserId",
-          as: "feeds",
+        {
+          $lookup: {
+            from: "userfeeds",
+            localField: "discordUserId",
+            foreignField: "user.discordUserId",
+            as: "feeds",
+          },
         },
-      },
-      { $unwind: { path: "$feeds" } },
-      {
-        $match: {
-          "feeds.url": REDDIT_URL_REGEX,
-          ...(options?.feedIds?.length && {
-            "feeds._id": { $in: options.feedIds.map((id) => this.stringToObjectId(id)) },
-          }),
+        { $unwind: { path: "$feeds" } },
+        {
+          $match: {
+            "feeds.url": REDDIT_URL_REGEX,
+            ...(options?.feedIds?.length && {
+              "feeds._id": {
+                $in: options.feedIds.map((id) => this.stringToObjectId(id)),
+              },
+            }),
+          },
         },
-      },
-      {
-        $project: {
-          discordUserId: 1,
-          feedId: "$feeds._id",
-          lookupKey: "$feeds.feedRequestLookupKey",
-          _id: 0,
+        {
+          $project: {
+            discordUserId: 1,
+            feedId: "$feeds._id",
+            lookupKey: "$feeds.feedRequestLookupKey",
+            _id: 0,
+          },
         },
-      },
-    ]).cursor();
+      ])
+      .cursor();
 
     for await (const doc of cursor) {
       yield {
@@ -412,60 +417,66 @@ export class UserMongooseRepository
     userIds?: string[];
     feedIds?: string[];
   }): AsyncIterable<{ feedId: string }> {
-    const cursor = this.model.aggregate([
-      {
-        $match: {
-          ...(options?.userIds?.length && {
-            _id: { $in: options.userIds.map((id) => this.stringToObjectId(id)) },
-          }),
-          $or: [
-            {
-              externalCredentials: {
-                $elemMatch: {
-                  type: UserExternalCredentialType.Reddit,
-                  expireAt: { $lte: new Date() },
+    const cursor = this.model
+      .aggregate([
+        {
+          $match: {
+            ...(options?.userIds?.length && {
+              _id: {
+                $in: options.userIds.map((id) => this.stringToObjectId(id)),
+              },
+            }),
+            $or: [
+              {
+                externalCredentials: {
+                  $elemMatch: {
+                    type: UserExternalCredentialType.Reddit,
+                    expireAt: { $lte: new Date() },
+                  },
                 },
               },
-            },
-            {
-              externalCredentials: {
-                $elemMatch: {
-                  type: UserExternalCredentialType.Reddit,
-                  status: UserExternalCredentialStatus.Revoked,
+              {
+                externalCredentials: {
+                  $elemMatch: {
+                    type: UserExternalCredentialType.Reddit,
+                    status: UserExternalCredentialStatus.Revoked,
+                  },
                 },
               },
-            },
-            {
-              "externalCredentials.0": { $exists: false },
-            },
-          ],
+              {
+                "externalCredentials.0": { $exists: false },
+              },
+            ],
+          },
         },
-      },
-      {
-        $lookup: {
-          from: "userfeeds",
-          localField: "discordUserId",
-          foreignField: "user.discordUserId",
-          as: "feeds",
+        {
+          $lookup: {
+            from: "userfeeds",
+            localField: "discordUserId",
+            foreignField: "user.discordUserId",
+            as: "feeds",
+          },
         },
-      },
-      { $unwind: { path: "$feeds" } },
-      {
-        $match: {
-          "feeds.url": REDDIT_URL_REGEX,
-          "feeds.feedRequestLookupKey": { $exists: true },
-          ...(options?.feedIds?.length && {
-            "feeds._id": { $in: options.feedIds.map((id) => this.stringToObjectId(id)) },
-          }),
+        { $unwind: { path: "$feeds" } },
+        {
+          $match: {
+            "feeds.url": REDDIT_URL_REGEX,
+            "feeds.feedRequestLookupKey": { $exists: true },
+            ...(options?.feedIds?.length && {
+              "feeds._id": {
+                $in: options.feedIds.map((id) => this.stringToObjectId(id)),
+              },
+            }),
+          },
         },
-      },
-      {
-        $project: {
-          feedId: "$feeds._id",
-          _id: 0,
+        {
+          $project: {
+            feedId: "$feeds._id",
+            _id: 0,
+          },
         },
-      },
-    ]).cursor();
+      ])
+      .cursor();
 
     for await (const doc of cursor) {
       yield {

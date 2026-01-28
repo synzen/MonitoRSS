@@ -88,35 +88,36 @@ export interface IUserRepository {
   create(input: CreateUserInput): Promise<IUser>;
   updateEmailByDiscordId(
     discordUserId: string,
-    email: string
+    email: string,
   ): Promise<IUser | null>;
   updatePreferencesByDiscordId(
     discordUserId: string,
-    preferences: UpdateUserPreferencesInput
+    preferences: UpdateUserPreferencesInput,
   ): Promise<IUser | null>;
   findEmailsByDiscordIdsWithAlertPreference(
-    discordUserIds: string[]
+    discordUserIds: string[],
   ): Promise<string[]>;
   setExternalCredential(
     userId: string,
-    credential: SetExternalCredentialInput
+    credential: SetExternalCredentialInput,
   ): Promise<void>;
   getExternalCredentials(
     userId: string,
-    type: UserExternalCredentialType
+    type: UserExternalCredentialType,
   ): Promise<IUserExternalCredential | null>;
   removeExternalCredentials(
     userId: string,
-    type: UserExternalCredentialType
+    type: UserExternalCredentialType,
   ): Promise<void>;
-  revokeExternalCredential(
-    userId: string,
-    credentialId: string
-  ): Promise<void>;
+  revokeExternalCredential(userId: string, credentialId: string): Promise<void>;
   aggregateUsersWithActiveRedditCredentials(options?: {
     userIds?: string[];
     feedIds?: string[];
-  }): AsyncIterable<{ discordUserId: string; feedId: string; lookupKey?: string }>;
+  }): AsyncIterable<{
+    discordUserId: string;
+    feedId: string;
+    lookupKey?: string;
+  }>;
   aggregateUsersWithExpiredOrRevokedRedditCredentials(options?: {
     userIds?: string[];
     feedIds?: string[];

@@ -13,16 +13,22 @@ describe("DiscordWebhooksService", { concurrency: true }, () => {
     BACKEND_API_DISCORD_CLIENT_ID: clientId,
   } as Config;
 
-  const createMockDiscordApiService = (overrides: Record<string, unknown> = {}) => ({
-    executeBotRequest: mock.fn(),
-    ...overrides,
-  }) as unknown as DiscordApiService;
+  const createMockDiscordApiService = (
+    overrides: Record<string, unknown> = {},
+  ) =>
+    ({
+      executeBotRequest: mock.fn(),
+      ...overrides,
+    }) as unknown as DiscordApiService;
 
   describe("canBeUsedByBot", () => {
     let service: DiscordWebhooksService;
 
     beforeEach(() => {
-      service = new DiscordWebhooksService(mockConfig, createMockDiscordApiService());
+      service = new DiscordWebhooksService(
+        mockConfig,
+        createMockDiscordApiService(),
+      );
     });
 
     it("returns true for INCOMING webhook with null application_id", () => {
@@ -90,7 +96,9 @@ describe("DiscordWebhooksService", { concurrency: true }, () => {
         application_id: clientId,
       };
 
-      const result = service.canBeUsedByBot(webhook, { onlyApplicationOwned: true });
+      const result = service.canBeUsedByBot(webhook, {
+        onlyApplicationOwned: true,
+      });
 
       assert.strictEqual(result, true);
     });
@@ -104,7 +112,9 @@ describe("DiscordWebhooksService", { concurrency: true }, () => {
         application_id: null,
       };
 
-      const result = service.canBeUsedByBot(webhook, { onlyApplicationOwned: true });
+      const result = service.canBeUsedByBot(webhook, {
+        onlyApplicationOwned: true,
+      });
 
       assert.strictEqual(result, false);
     });
@@ -121,9 +131,14 @@ describe("DiscordWebhooksService", { concurrency: true }, () => {
       const mockDiscordApiService = createMockDiscordApiService({
         executeBotRequest: mock.fn(() => Promise.resolve(createdWebhook)),
       });
-      const service = new DiscordWebhooksService(mockConfig, mockDiscordApiService);
+      const service = new DiscordWebhooksService(
+        mockConfig,
+        mockDiscordApiService,
+      );
 
-      const result = await service.createWebhook("channel-123", { name: "Test Webhook" });
+      const result = await service.createWebhook("channel-123", {
+        name: "Test Webhook",
+      });
 
       assert.deepStrictEqual(result, createdWebhook);
     });
@@ -150,7 +165,10 @@ describe("DiscordWebhooksService", { concurrency: true }, () => {
       const mockDiscordApiService = createMockDiscordApiService({
         executeBotRequest: mock.fn(() => Promise.resolve(webhooks)),
       });
-      const service = new DiscordWebhooksService(mockConfig, mockDiscordApiService);
+      const service = new DiscordWebhooksService(
+        mockConfig,
+        mockDiscordApiService,
+      );
 
       const result = await service.getWebhooksOfChannel("channel-123");
 
@@ -160,23 +178,36 @@ describe("DiscordWebhooksService", { concurrency: true }, () => {
 
     it("throws WebhookMissingPermissionsException on 403", async () => {
       const mockDiscordApiService = createMockDiscordApiService({
-        executeBotRequest: mock.fn(() => Promise.reject(new DiscordAPIError("Forbidden", 403))),
+        executeBotRequest: mock.fn(() =>
+          Promise.reject(new DiscordAPIError("Forbidden", 403)),
+        ),
       });
-      const service = new DiscordWebhooksService(mockConfig, mockDiscordApiService);
+      const service = new DiscordWebhooksService(
+        mockConfig,
+        mockDiscordApiService,
+      );
 
       await assert.rejects(
         () => service.getWebhooksOfChannel("channel-123"),
-        WebhookMissingPermissionsException
+        WebhookMissingPermissionsException,
       );
     });
 
     it("rethrows other errors", async () => {
       const mockDiscordApiService = createMockDiscordApiService({
-        executeBotRequest: mock.fn(() => Promise.reject(new DiscordAPIError("Server Error", 500))),
+        executeBotRequest: mock.fn(() =>
+          Promise.reject(new DiscordAPIError("Server Error", 500)),
+        ),
       });
-      const service = new DiscordWebhooksService(mockConfig, mockDiscordApiService);
+      const service = new DiscordWebhooksService(
+        mockConfig,
+        mockDiscordApiService,
+      );
 
-      await assert.rejects(() => service.getWebhooksOfChannel("channel-123"), DiscordAPIError);
+      await assert.rejects(
+        () => service.getWebhooksOfChannel("channel-123"),
+        DiscordAPIError,
+      );
     });
   });
 
@@ -191,7 +222,10 @@ describe("DiscordWebhooksService", { concurrency: true }, () => {
       const mockDiscordApiService = createMockDiscordApiService({
         executeBotRequest: mock.fn(() => Promise.resolve(webhook)),
       });
-      const service = new DiscordWebhooksService(mockConfig, mockDiscordApiService);
+      const service = new DiscordWebhooksService(
+        mockConfig,
+        mockDiscordApiService,
+      );
 
       const result = await service.getWebhook("webhook-123");
 
@@ -200,9 +234,14 @@ describe("DiscordWebhooksService", { concurrency: true }, () => {
 
     it("returns null on 404", async () => {
       const mockDiscordApiService = createMockDiscordApiService({
-        executeBotRequest: mock.fn(() => Promise.reject(new DiscordAPIError("Not Found", 404))),
+        executeBotRequest: mock.fn(() =>
+          Promise.reject(new DiscordAPIError("Not Found", 404)),
+        ),
       });
-      const service = new DiscordWebhooksService(mockConfig, mockDiscordApiService);
+      const service = new DiscordWebhooksService(
+        mockConfig,
+        mockDiscordApiService,
+      );
 
       const result = await service.getWebhook("webhook-123");
 
@@ -211,11 +250,19 @@ describe("DiscordWebhooksService", { concurrency: true }, () => {
 
     it("rethrows other errors", async () => {
       const mockDiscordApiService = createMockDiscordApiService({
-        executeBotRequest: mock.fn(() => Promise.reject(new DiscordAPIError("Server Error", 500))),
+        executeBotRequest: mock.fn(() =>
+          Promise.reject(new DiscordAPIError("Server Error", 500)),
+        ),
       });
-      const service = new DiscordWebhooksService(mockConfig, mockDiscordApiService);
+      const service = new DiscordWebhooksService(
+        mockConfig,
+        mockDiscordApiService,
+      );
 
-      await assert.rejects(() => service.getWebhook("webhook-123"), DiscordAPIError);
+      await assert.rejects(
+        () => service.getWebhook("webhook-123"),
+        DiscordAPIError,
+      );
     });
   });
 
@@ -224,30 +271,49 @@ describe("DiscordWebhooksService", { concurrency: true }, () => {
       const mockDiscordApiService = createMockDiscordApiService({
         executeBotRequest: mock.fn(() => Promise.resolve(undefined)),
       });
-      const service = new DiscordWebhooksService(mockConfig, mockDiscordApiService);
+      const service = new DiscordWebhooksService(
+        mockConfig,
+        mockDiscordApiService,
+      );
 
       await service.deleteWebhook("webhook-123");
 
-      const mockFn = mockDiscordApiService.executeBotRequest as unknown as ReturnType<typeof mock.fn>;
+      const mockFn =
+        mockDiscordApiService.executeBotRequest as unknown as ReturnType<
+          typeof mock.fn
+        >;
       assert.strictEqual(mockFn.mock.calls.length, 1);
     });
 
     it("silently succeeds on 404", async () => {
       const mockDiscordApiService = createMockDiscordApiService({
-        executeBotRequest: mock.fn(() => Promise.reject(new DiscordAPIError("Not Found", 404))),
+        executeBotRequest: mock.fn(() =>
+          Promise.reject(new DiscordAPIError("Not Found", 404)),
+        ),
       });
-      const service = new DiscordWebhooksService(mockConfig, mockDiscordApiService);
+      const service = new DiscordWebhooksService(
+        mockConfig,
+        mockDiscordApiService,
+      );
 
       await service.deleteWebhook("webhook-123");
     });
 
     it("rethrows other errors", async () => {
       const mockDiscordApiService = createMockDiscordApiService({
-        executeBotRequest: mock.fn(() => Promise.reject(new DiscordAPIError("Server Error", 500))),
+        executeBotRequest: mock.fn(() =>
+          Promise.reject(new DiscordAPIError("Server Error", 500)),
+        ),
       });
-      const service = new DiscordWebhooksService(mockConfig, mockDiscordApiService);
+      const service = new DiscordWebhooksService(
+        mockConfig,
+        mockDiscordApiService,
+      );
 
-      await assert.rejects(() => service.deleteWebhook("webhook-123"), DiscordAPIError);
+      await assert.rejects(
+        () => service.deleteWebhook("webhook-123"),
+        DiscordAPIError,
+      );
     });
   });
 });
