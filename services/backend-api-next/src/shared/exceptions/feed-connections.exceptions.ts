@@ -13,8 +13,6 @@ export class DiscordChannelPermissionsException extends StandardException {
 }
 
 export class InvalidFilterExpressionException extends StandardException {
-  override subErrors: StandardException[];
-
   constructor(
     message?: string | StandardException[],
     options?: {
@@ -22,15 +20,11 @@ export class InvalidFilterExpressionException extends StandardException {
     }
   ) {
     if (typeof message === "string") {
+      super(message, options);
+    } else if (Array.isArray(message)) {
       super(message);
     } else {
-      super();
-    }
-
-    if (options?.subErrors) {
-      this.subErrors = options.subErrors;
-    } else {
-      this.subErrors = [];
+      super("Invalid filter expression", options);
     }
   }
 }

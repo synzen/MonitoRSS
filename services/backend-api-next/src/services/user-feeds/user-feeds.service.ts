@@ -40,7 +40,6 @@ import type {
   ValidateFeedUrlOutput,
   CheckUrlIsValidOutput,
 } from "./types";
-import { Types } from "mongoose";
 const MESSAGE_BROKER_QUEUE_FEED_DELETED = "feed-deleted";
 
 const DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS = [
@@ -874,71 +873,18 @@ export class UserFeedsService {
             [opts.discordUserId]: opts.maxUserFeeds,
           };
 
-    const aggregateResult = await this.deps.userFeedRepository
-      .aggregateCursor([
-        {
-          $match: {
-            "user.discordUserId": {
-              $in: userIds,
-            },
-          },
-        },
-        {
-          $sort: {
-            createdAt: 1,
-          },
-        },
-        {
-          $group: {
-            _id: "$user.discordUserId",
-            disabledFeedIds: {
-              $push: {
-                $cond: [
-                  {
-                    $in: [
-                      "$disabledCode",
-                      [UserFeedDisabledCode.ExceededFeedLimit],
-                    ],
-                  },
-                  "$_id",
-                  "$$REMOVE",
-                ],
-              },
-            },
-            enabledFeedIds: {
-              $push: {
-                $cond: [
-                  {
-                    $not: [
-                      {
-                        $in: [
-                          "$disabledCode",
-                          DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
-                        ],
-                      },
-                    ],
-                  },
-                  "$_id",
-                  "$$REMOVE",
-                ],
-              },
-            },
-          },
-        },
-      ]) as AsyncIterable<{
-        _id: string;
-        disabledFeedIds: Types.ObjectId[];
-        enabledFeedIds: Types.ObjectId[];
-      }>;
-
-    const arrayOfFeedIdsToDisable: Types.ObjectId[] = [];
-    const arrayOfFeedIdsToEnable: Types.ObjectId[] = [];
+    const feedIdsToDisable: string[] = [];
+    const feedIdsToEnable: string[] = [];
     const bulkWriteDocs = [];
 
-    for await (const res of aggregateResult) {
-      const discordUserId = res._id as string;
-      const enabledFeedIds = res.enabledFeedIds as Types.ObjectId[];
-      const disabledFeedIds = res.disabledFeedIds as Types.ObjectId[];
+    const results =
+      this.deps.userFeedRepository.getFeedsGroupedByUserForLimitEnforcement({
+        type: "include",
+        discordUserIds: userIds,
+      });
+
+    for await (const res of results) {
+      const { discordUserId, enabledFeedIds, disabledFeedIds } = res;
       const limit = feedLimitsByUserId[discordUserId];
 
       if (!limit) {
@@ -951,26 +897,21 @@ export class UserFeedsService {
 
       if (enabledFeedCount > limit) {
         const toDisable = enabledFeedIds.slice(0, enabledFeedCount - limit);
-
-        arrayOfFeedIdsToDisable.push(...toDisable);
+        feedIdsToDisable.push(...toDisable);
       } else if (enabledFeedCount < limit && disabledFeedIds.length > 0) {
         const numberOfFeedsToEnable = limit - enabledFeedCount;
-        // Enable the newest ones first
         const toEnable = disabledFeedIds.slice(
           Math.max(0, disabledFeedIds.length - numberOfFeedsToEnable)
         );
-
-        arrayOfFeedIdsToEnable.push(...toEnable);
+        feedIdsToEnable.push(...toEnable);
       }
     }
 
-    if (arrayOfFeedIdsToDisable.length > 0) {
+    if (feedIdsToDisable.length > 0) {
       bulkWriteDocs.push({
         updateMany: {
           filter: {
-            _id: {
-              $in: arrayOfFeedIdsToDisable,
-            },
+            _id: { $in: feedIdsToDisable },
           },
           update: {
             $set: {
@@ -981,13 +922,11 @@ export class UserFeedsService {
       });
     }
 
-    if (arrayOfFeedIdsToEnable.length > 0) {
+    if (feedIdsToEnable.length > 0) {
       bulkWriteDocs.push({
         updateMany: {
           filter: {
-            _id: {
-              $in: arrayOfFeedIdsToEnable,
-            },
+            _id: { $in: feedIdsToEnable },
           },
           update: {
             $unset: {
@@ -1014,72 +953,22 @@ export class UserFeedsService {
   ) {
     const defaultMaxUserFeeds = this.deps.supportersService.defaultMaxUserFeeds;
 
-    const usersWithPotentialFeedsToDisable = await this.deps.userFeedRepository
-      .aggregateCursor([
-        {
-          $match: {
-            "user.discordUserId":
-              opts.enforcementType === "all-users"
-                ? {
-                    $nin: opts.supporterDiscordUserIds,
-                  }
-                : opts.discordUserId,
-          },
-        },
-        {
-          $sort: {
-            createdAt: 1,
-          },
-        },
-        {
-          $group: {
-            _id: "$user.discordUserId",
-            disabledFeedIds: {
-              $push: {
-                $cond: [
-                  {
-                    $in: [
-                      "$disabledCode",
-                      [UserFeedDisabledCode.ExceededFeedLimit],
-                    ],
-                  },
-                  "$_id",
-                  "$$REMOVE",
-                ],
-              },
-            },
-            enabledFeedIds: {
-              $push: {
-                $cond: [
-                  {
-                    $not: [
-                      {
-                        $in: [
-                          "$disabledCode",
-                          DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
-                        ],
-                      },
-                    ],
-                  },
-                  "$_id",
-                  "$$REMOVE",
-                ],
-              },
-            },
-          },
-        },
-      ]) as AsyncIterable<{
-        _id: string;
-        disabledFeedIds: Types.ObjectId[];
-        enabledFeedIds: Types.ObjectId[];
-      }>;
+    const results =
+      opts.enforcementType === "single-user"
+        ? this.deps.userFeedRepository.getFeedsGroupedByUserForLimitEnforcement({
+            type: "include",
+            discordUserIds: [opts.discordUserId],
+          })
+        : this.deps.userFeedRepository.getFeedsGroupedByUserForLimitEnforcement({
+            type: "exclude",
+            discordUserIds: opts.supporterDiscordUserIds,
+          });
 
-    const arrayOfFeedIdsToDisable: Types.ObjectId[] = [];
-    const arrayOfFeedIdsToEnable: Types.ObjectId[] = [];
+    const feedIdsToDisable: string[] = [];
+    const feedIdsToEnable: string[] = [];
 
-    for await (const res of usersWithPotentialFeedsToDisable) {
-      const disabledFeedIds = res.disabledFeedIds as Types.ObjectId[];
-      const enabledFeedIds = res.enabledFeedIds as Types.ObjectId[];
+    for await (const res of results) {
+      const { enabledFeedIds, disabledFeedIds } = res;
 
       const enabledFeedCount = enabledFeedIds.length;
 
@@ -1088,31 +977,26 @@ export class UserFeedsService {
           0,
           enabledFeedCount - defaultMaxUserFeeds
         );
-
-        arrayOfFeedIdsToDisable.push(...toDisable);
+        feedIdsToDisable.push(...toDisable);
       } else if (
         enabledFeedCount < defaultMaxUserFeeds &&
         disabledFeedIds.length > 0
       ) {
         const numberOfFeedsToEnable = defaultMaxUserFeeds - enabledFeedCount;
-        // Enable the newest ones first
         const toEnable = disabledFeedIds.slice(
           Math.max(0, disabledFeedIds.length - numberOfFeedsToEnable)
         );
-
-        arrayOfFeedIdsToEnable.push(...toEnable);
+        feedIdsToEnable.push(...toEnable);
       }
     }
 
     const bulkWriteDocs = [];
 
-    if (arrayOfFeedIdsToDisable.length > 0) {
+    if (feedIdsToDisable.length > 0) {
       bulkWriteDocs.push({
         updateMany: {
           filter: {
-            _id: {
-              $in: arrayOfFeedIdsToDisable,
-            },
+            _id: { $in: feedIdsToDisable },
           },
           update: {
             $set: {
@@ -1123,13 +1007,11 @@ export class UserFeedsService {
       });
     }
 
-    if (arrayOfFeedIdsToEnable.length > 0) {
+    if (feedIdsToEnable.length > 0) {
       bulkWriteDocs.push({
         updateMany: {
           filter: {
-            _id: {
-              $in: arrayOfFeedIdsToEnable,
-            },
+            _id: { $in: feedIdsToEnable },
           },
           update: {
             $unset: {
@@ -1203,125 +1085,6 @@ export class UserFeedsService {
           update: {
             $unset: {
               userRefreshRateSeconds: "",
-            },
-          },
-        },
-      });
-    }
-
-    return bulkWriteDocs;
-  }
-
-  private async getFeedLimitEnforcementWrites(opts: {
-    discordUserId: string;
-    maxUserFeeds: number;
-  }): Promise<UserFeedBulkWriteOperation[]> {
-    const bulkWriteDocs: UserFeedBulkWriteOperation[] = [];
-
-    const aggregateResult = this.deps.userFeedRepository.aggregateCursor<{
-      _id: string;
-      disabledFeedIds: string[];
-      enabledFeedIds: string[];
-    }>([
-      {
-        $match: {
-          "user.discordUserId": opts.discordUserId,
-        },
-      },
-      {
-        $sort: {
-          createdAt: 1,
-        },
-      },
-      {
-        $group: {
-          _id: "$user.discordUserId",
-          disabledFeedIds: {
-            $push: {
-              $cond: [
-                {
-                  $in: [
-                    "$disabledCode",
-                    [UserFeedDisabledCode.ExceededFeedLimit],
-                  ],
-                },
-                "$_id",
-                "$$REMOVE",
-              ],
-            },
-          },
-          enabledFeedIds: {
-            $push: {
-              $cond: [
-                {
-                  $not: [
-                    {
-                      $in: [
-                        "$disabledCode",
-                        DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
-                      ],
-                    },
-                  ],
-                },
-                "$_id",
-                "$$REMOVE",
-              ],
-            },
-          },
-        },
-      },
-    ]);
-
-    const feedIdsToDisable: string[] = [];
-    const feedIdsToEnable: string[] = [];
-
-    for await (const res of aggregateResult) {
-      const disabledFeedIds = res.disabledFeedIds;
-      const enabledFeedIds = res.enabledFeedIds;
-      const enabledFeedCount = enabledFeedIds.length;
-
-      if (enabledFeedCount > opts.maxUserFeeds) {
-        const toDisable = enabledFeedIds.slice(
-          0,
-          enabledFeedCount - opts.maxUserFeeds
-        );
-        feedIdsToDisable.push(...toDisable);
-      } else if (
-        enabledFeedCount < opts.maxUserFeeds &&
-        disabledFeedIds.length > 0
-      ) {
-        const numberOfFeedsToEnable = opts.maxUserFeeds - enabledFeedCount;
-        const toEnable = disabledFeedIds.slice(
-          Math.max(0, disabledFeedIds.length - numberOfFeedsToEnable)
-        );
-        feedIdsToEnable.push(...toEnable);
-      }
-    }
-
-    if (feedIdsToDisable.length > 0) {
-      bulkWriteDocs.push({
-        updateMany: {
-          filter: {
-            _id: { $in: feedIdsToDisable },
-          },
-          update: {
-            $set: {
-              disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
-            },
-          },
-        },
-      });
-    }
-
-    if (feedIdsToEnable.length > 0) {
-      bulkWriteDocs.push({
-        updateMany: {
-          filter: {
-            _id: { $in: feedIdsToEnable },
-          },
-          update: {
-            $unset: {
-              disabledCode: "",
             },
           },
         },

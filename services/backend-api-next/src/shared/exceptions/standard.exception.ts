@@ -9,14 +9,17 @@ export class StandardException extends Error {
   ) {
     if (typeof message === "string") {
       super(message);
+      this.subErrors = options?.subErrors ?? [];
+    } else if (Array.isArray(message)) {
+      const subErrorMessages = message
+        .map((e) => e.message)
+        .filter(Boolean)
+        .join("; ");
+      super(subErrorMessages || "Multiple errors occurred");
+      this.subErrors = message;
     } else {
       super();
-    }
-
-    if (options?.subErrors) {
-      this.subErrors = options.subErrors;
-    } else {
-      this.subErrors = [];
+      this.subErrors = options?.subErrors ?? [];
     }
   }
 }

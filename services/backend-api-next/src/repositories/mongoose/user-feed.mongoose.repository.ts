@@ -16,6 +16,8 @@ import type {
   UserFeedBulkWriteOperation,
   UserFeedListingInput,
   UserFeedListItem,
+  UserFeedLimitEnforcementResult,
+  UserFeedLimitEnforcementQuery,
 } from "../interfaces/user-feed.types";
 import {
   UserFeedComputedStatus,
@@ -479,7 +481,7 @@ export class UserFeedMongooseRepository
                   ...feedConnectionTypeKeys.map((key) => ({
                     $anyElementTrue: {
                       $map: {
-                        input: `$connections.${key}`,
+                        input: { $ifNull: [`$connections.${key}`, []] },
                         as: "c",
                         in: { $in: [`$$c.disabledCode`, badConnectionCodes] },
                       },
@@ -787,20 +789,78 @@ export class UserFeedMongooseRepository
     );
   }
 
-  async aggregate<T>(pipeline: Record<string, unknown>[]): Promise<T[]> {
-    return this.model.aggregate(
-      pipeline as unknown as Parameters<typeof this.model.aggregate>[0]
-    );
-  }
+  async *getFeedsGroupedByUserForLimitEnforcement(
+    query: UserFeedLimitEnforcementQuery
+  ): AsyncIterable<UserFeedLimitEnforcementResult> {
+    const matchFilter =
+      query.type === "include"
+        ? { "user.discordUserId": { $in: query.discordUserIds } }
+        : query.discordUserIds.length > 0
+          ? { "user.discordUserId": { $nin: query.discordUserIds } }
+          : {};
 
-  async *aggregateCursor<T>(
-    pipeline: Record<string, unknown>[]
-  ): AsyncIterable<T> {
+    if (query.type === "include" && query.discordUserIds.length === 0) {
+      return;
+    }
+
     const cursor = this.model
-      .aggregate(pipeline as unknown as Parameters<typeof this.model.aggregate>[0])
+      .aggregate([
+        {
+          $match: matchFilter,
+        },
+        {
+          $sort: { createdAt: 1 },
+        },
+        {
+          $group: {
+            _id: "$user.discordUserId",
+            disabledFeedIds: {
+              $push: {
+                $cond: [
+                  { $eq: ["$disabledCode", UserFeedDisabledCode.ExceededFeedLimit] },
+                  "$_id",
+                  "$$REMOVE",
+                ],
+              },
+            },
+            enabledFeedIds: {
+              $push: {
+                $cond: [
+                  {
+                    $not: [
+                      {
+                        $in: [
+                          "$disabledCode",
+                          [
+                            UserFeedDisabledCode.ExceededFeedLimit,
+                            UserFeedDisabledCode.Manual,
+                          ],
+                        ],
+                      },
+                    ],
+                  },
+                  "$_id",
+                  "$$REMOVE",
+                ],
+              },
+            },
+          },
+        },
+      ])
       .cursor();
+
     for await (const doc of cursor) {
-      yield doc as T;
+      const result = doc as {
+        _id: string;
+        disabledFeedIds: Types.ObjectId[];
+        enabledFeedIds: Types.ObjectId[];
+      };
+
+      yield {
+        discordUserId: result._id,
+        disabledFeedIds: result.disabledFeedIds.map((id) => id.toString()),
+        enabledFeedIds: result.enabledFeedIds.map((id) => id.toString()),
+      };
     }
   }
 

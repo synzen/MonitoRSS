@@ -133,7 +133,7 @@ async function getFeed(ctx: AppTestContext, id: string): Promise<IUserFeed | nul
   return ctx.container.userFeedRepository.findById(id);
 }
 
-describe("FeedConnectionsDiscordChannelsService Integration", { concurrency: true }, () => {
+describe("FeedConnectionsDiscordChannelsService Integration", { concurrency: false }, () => {
   let ctx: AppTestContext;
   let mockFeedsService: {
     canUseChannel: ReturnType<typeof mock.fn>;
@@ -185,7 +185,7 @@ describe("FeedConnectionsDiscordChannelsService Integration", { concurrency: tru
     );
   });
 
-  describe("createDiscordChannelConnection", { concurrency: true }, () => {
+  describe("createDiscordChannelConnection", { concurrency: false }, () => {
     const guildId = "guild-id";
     const channelId = "channel-id";
 
@@ -227,7 +227,7 @@ describe("FeedConnectionsDiscordChannelsService Integration", { concurrency: tru
     });
   });
 
-  describe("cloneConnection", { concurrency: true }, () => {
+  describe("cloneConnection", { concurrency: false }, () => {
     it("clones the connection and returns the new id", async () => {
       const guildId = "guild-id";
       const connectionIdToUse = objectId();
@@ -313,7 +313,7 @@ describe("FeedConnectionsDiscordChannelsService Integration", { concurrency: tru
     });
   });
 
-  describe("updateDiscordChannelConnection", { concurrency: true }, () => {
+  describe("updateDiscordChannelConnection", { concurrency: false }, () => {
     const guildId = "guild-id";
 
     it("updates the connection", async () => {
@@ -668,7 +668,7 @@ describe("FeedConnectionsDiscordChannelsService Integration", { concurrency: tru
     });
   });
 
-  describe("copySettings", { concurrency: true }, () => {
+  describe("copySettings", { concurrency: false }, () => {
     it("copies settings correctly", async () => {
       const guildId = "guild-id";
       const sourceConnectionId = objectId();
@@ -821,7 +821,7 @@ describe("FeedConnectionsDiscordChannelsService Integration", { concurrency: tru
     });
   });
 
-  describe("deleteConnection", { concurrency: true }, () => {
+  describe("deleteConnection", { concurrency: false }, () => {
     it("removes the discord channel connection by id", async () => {
       const connectionIdToUse = objectId();
 

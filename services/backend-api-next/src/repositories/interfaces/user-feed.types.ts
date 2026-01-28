@@ -149,6 +149,7 @@ export interface UserFeedBulkWriteOperation {
   updateMany: {
     filter: Record<string, unknown>;
     update: Record<string, unknown>;
+    arrayFilters?: Record<string, unknown>[];
   };
 }
 
@@ -188,6 +189,16 @@ export interface UserFeedListItem {
   ownedByUser: boolean;
   refreshRateSeconds?: number;
 }
+
+export interface UserFeedLimitEnforcementResult {
+  discordUserId: string;
+  disabledFeedIds: string[];
+  enabledFeedIds: string[];
+}
+
+export type UserFeedLimitEnforcementQuery =
+  | { type: "include"; discordUserIds: string[] }
+  | { type: "exclude"; discordUserIds: string[] };
 
 export interface IUserFeedRepository {
   create(input: CreateUserFeedInput): Promise<IUserFeed>;
@@ -244,8 +255,9 @@ export interface IUserFeedRepository {
     update: Record<string, unknown>
   ): Promise<number>;
   findByIds(ids: string[]): Promise<IUserFeed[]>;
-  aggregate<T>(pipeline: Record<string, unknown>[]): Promise<T[]>;
-  aggregateCursor<T>(pipeline: Record<string, unknown>[]): AsyncIterable<T>;
+  getFeedsGroupedByUserForLimitEnforcement(
+    query: UserFeedLimitEnforcementQuery
+  ): AsyncIterable<UserFeedLimitEnforcementResult>;
   bulkWrite(operations: UserFeedBulkWriteOperation[]): Promise<void>;
 
   // Migration methods
