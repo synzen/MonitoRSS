@@ -6,12 +6,15 @@ import type {
 import {
   FeedConnectionDisabledCode,
   UserFeedDisabledCode,
-  UserFeedManagerStatus,
 } from "../../repositories/shared/enums";
 import { calculateSlotOffsetMs } from "../../shared/utils/fnv1a-hash";
 import { getFeedRequestLookupDetails } from "../../shared/utils/get-feed-request-lookup-details";
 import type { FeedRequestLookupDetails } from "../../shared/types/feed-request-lookup-details.type";
-import { GetArticlesResponseRequestStatus } from "../feed-handler/types";
+import {
+  GetArticlesResponseRequestStatus,
+  DeliveryPreviewMediumInput,
+} from "../feed-handler/types";
+import { getEffectiveRefreshRateSeconds } from "../../shared/utils/get-effective-refresh-rate";
 import {
   BannedFeedException,
   FeedFetchTimeoutException,
@@ -27,19 +30,24 @@ import {
   FeedInternalErrorException,
   RefreshRateNotAllowedException,
   SourceFeedNotFoundException,
-  FeedNotFoundException as UserFeedNotFoundException,
 } from "../../shared/exceptions/user-feeds.exceptions";
 import logger from "../../infra/logger";
 import type {
   UserFeedsServiceDeps,
   GetUserFeedsInput,
-  GetUserFeedsInputSortKey,
   UserFeedListItem,
   UpdateFeedInput,
   CreateUserFeedInput,
   ValidateFeedUrlOutput,
   CheckUrlIsValidOutput,
 } from "./types";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
 const MESSAGE_BROKER_QUEUE_FEED_DELETED = "feed-deleted";
 
 const DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS = [
@@ -54,6 +62,29 @@ export class UserFeedsService {
     return this.deps.userFeedRepository.findById(id);
   }
 
+  getDatePreview({
+    dateFormat,
+    dateLocale,
+    dateTimezone,
+  }: {
+    dateFormat?: string;
+    dateTimezone?: string;
+    dateLocale?: string;
+  }) {
+    try {
+      return {
+        output: dayjs()
+          .tz(dateTimezone || "UTC")
+          .locale(dateLocale || "en")
+          .format(dateFormat || undefined),
+        valid: true,
+      };
+    } catch (err) {
+      return {
+        valid: false,
+      };
+    }
+  }
   async getFeedsByUser(
     _userId: string,
     discordUserId: string,
@@ -664,6 +695,63 @@ export class UserFeedsService {
     }
   }
 
+  async getDeliveryPreview({
+    feed,
+    skip,
+    limit,
+  }: {
+    feed: IUserFeed;
+    skip: number;
+    limit: number;
+  }) {
+    const [user, { maxDailyArticles }] = await Promise.all([
+      this.deps.usersService.getOrCreateUserByDiscordId(
+        feed.user.discordUserId,
+      ),
+      this.deps.supportersService.getBenefitsOfDiscordUser(
+        feed.user.discordUserId,
+      ),
+    ]);
+
+    const lookupDetails = getFeedRequestLookupDetails({
+      feed,
+      user,
+      decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
+    });
+
+    const mediums = this.mapConnectionsToMediums(feed);
+
+    const result = await this.deps.feedHandlerService.getDeliveryPreview({
+      feed: {
+        id: feed.id,
+        url: feed.url,
+        blockingComparisons: feed.blockingComparisons || [],
+        passingComparisons: feed.passingComparisons || [],
+        dateChecks: feed.dateCheckOptions,
+        formatOptions: feed.formatOptions,
+        externalProperties: feed.externalProperties?.map((ep) => ({
+          sourceField: ep.sourceField,
+          label: ep.label,
+          cssSelector: ep.cssSelector,
+        })),
+        requestLookupDetails: lookupDetails
+          ? {
+              key: lookupDetails.key,
+              url: lookupDetails.url,
+              headers: lookupDetails.headers,
+            }
+          : null,
+        refreshRateSeconds: getEffectiveRefreshRateSeconds(feed),
+      },
+      mediums,
+      articleDayLimit: feed.maxDailyArticles ?? maxDailyArticles,
+      skip,
+      limit,
+    });
+
+    return { result };
+  }
+
   private async checkUrlIsValid(
     url: string,
     lookupDetails: FeedRequestLookupDetails | null,
@@ -1106,5 +1194,32 @@ export class UserFeedsService {
     }
 
     return bulkWriteDocs;
+  }
+
+  private mapConnectionsToMediums(
+    feed: IUserFeed,
+  ): DeliveryPreviewMediumInput[] {
+    const mediums: DeliveryPreviewMediumInput[] = [];
+
+    const connections = feed.connections?.discordChannels || [];
+
+    for (const conn of connections) {
+      if (conn.disabledCode) {
+        continue;
+      }
+
+      mediums.push({
+        id: conn.id,
+        rateLimits: conn.rateLimits?.map((rl) => ({
+          limit: rl.limit,
+          timeWindowSeconds: rl.timeWindowSeconds,
+        })),
+        filters: conn.filters?.expression
+          ? { expression: conn.filters.expression }
+          : undefined,
+      });
+    }
+
+    return mediums;
   }
 }
