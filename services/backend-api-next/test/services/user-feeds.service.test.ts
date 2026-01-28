@@ -1082,7 +1082,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
   });
 
-  describe("getEnforceWebhookWrites", () => {
+  describe("enforceWebhookConnections", () => {
     it("disables webhooks if the user is not a supporter", async () => {
       const ctx = harness.createContext();
       const secondDiscordUserId = ctx.discordUserId + "2";
@@ -1163,12 +1163,10 @@ describe("UserFeedsService", { concurrency: true }, () => {
         },
       });
 
-      const writes = ctx.service.getEnforceWebhookWrites({
-        enforcementType: "all-users",
+      await ctx.enforceWebhookConnections({
+        type: "all-users",
         supporterDiscordUserIds: [secondDiscordUserId],
       });
-
-      await ctx.bulkWrite(writes);
 
       const updated1 = await ctx.findById(feed1.id);
       const updated2 = await ctx.findById(feed2.id);
@@ -1226,12 +1224,10 @@ describe("UserFeedsService", { concurrency: true }, () => {
         },
       });
 
-      const writes = ctx.service.getEnforceWebhookWrites({
-        enforcementType: "all-users",
+      await ctx.enforceWebhookConnections({
+        type: "all-users",
         supporterDiscordUserIds: [],
       });
-
-      await ctx.bulkWrite(writes);
 
       const updated = await ctx.findById(feed.id);
 
@@ -1266,12 +1262,10 @@ describe("UserFeedsService", { concurrency: true }, () => {
         },
       });
 
-      const writes = ctx.service.getEnforceWebhookWrites({
-        enforcementType: "all-users",
+      await ctx.enforceWebhookConnections({
+        type: "all-users",
         supporterDiscordUserIds: [ctx.discordUserId],
       });
-
-      await ctx.bulkWrite(writes);
 
       const updated = await ctx.findById(feed.id);
 

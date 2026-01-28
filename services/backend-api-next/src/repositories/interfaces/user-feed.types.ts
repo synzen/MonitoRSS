@@ -1,4 +1,4 @@
-import type {
+import {
   UserFeedDisabledCode,
   UserFeedHealthStatus,
   UserFeedManagerInviteType,
@@ -145,13 +145,23 @@ export interface CreateUserFeedInput {
   };
 }
 
-export interface UserFeedBulkWriteOperation {
-  updateMany: {
-    filter: Record<string, unknown>;
-    update: Record<string, unknown>;
-    arrayFilters?: Record<string, unknown>[];
-  };
-}
+export type WebhookEnforcementTarget =
+  | { type: "all-users"; supporterDiscordUserIds: string[] }
+  | { type: "single-user"; discordUserId: string; allowWebhooks: boolean };
+
+export type RefreshRateEnforcementTarget =
+  | {
+      type: "all-users";
+      supporterLimits: Array<{
+        discordUserId: string;
+        refreshRateSeconds: number;
+      }>;
+    }
+  | {
+      type: "single-user";
+      discordUserId: string;
+      refreshRateSeconds: number;
+    };
 
 export enum UserFeedComputedStatus {
   Ok = "ok",
@@ -260,7 +270,17 @@ export interface IUserFeedRepository {
   getFeedsGroupedByUserForLimitEnforcement(
     query: UserFeedLimitEnforcementQuery,
   ): AsyncIterable<UserFeedLimitEnforcementResult>;
-  bulkWrite(operations: UserFeedBulkWriteOperation[]): Promise<void>;
+
+  disableFeedsByIds(
+    feedIds: string[],
+    disabledCode: UserFeedDisabledCode,
+  ): Promise<void>;
+  enableFeedsByIds(feedIds: string[]): Promise<void>;
+  enforceWebhookConnections(target: WebhookEnforcementTarget): Promise<void>;
+  enforceRefreshRates(
+    target: RefreshRateEnforcementTarget,
+    supporterRefreshRateSeconds: number,
+  ): Promise<void>;
 
   // Migration methods
   iterateFeedsMissingSlotOffset(): AsyncIterable<UserFeedForSlotOffsetMigration>;

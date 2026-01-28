@@ -1,7 +1,7 @@
 import type { Connection } from "mongoose";
 import type {
   IUserFeed,
-  UserFeedBulkWriteOperation,
+  WebhookEnforcementTarget,
 } from "../../src/repositories/interfaces/user-feed.types";
 import type { IDiscordChannelConnection } from "../../src/repositories/interfaces/feed-connection.types";
 import { UserFeedMongooseRepository } from "../../src/repositories/mongoose/user-feed.mongoose.repository";
@@ -78,7 +78,7 @@ export interface TestContext {
   setFields(id: string, fields: Record<string, unknown>): Promise<void>;
   setCreatedAt(id: string, date: Date): Promise<void>;
   findById(id: string): Promise<IUserFeed | null>;
-  bulkWrite(operations: UserFeedBulkWriteOperation[]): Promise<void>;
+  enforceWebhookConnections(target: WebhookEnforcementTarget): Promise<void>;
   generateId(): string;
 }
 
@@ -256,8 +256,8 @@ export function createUserFeedsHarness(): UserFeedsHarness {
           return userFeedRepository.findById(id);
         },
 
-        async bulkWrite(operations) {
-          return userFeedRepository.bulkWrite(operations);
+        async enforceWebhookConnections(target) {
+          return userFeedRepository.enforceWebhookConnections(target);
         },
       };
     },

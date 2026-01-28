@@ -13,11 +13,12 @@ import type {
   UserFeedForNotification,
   AddConnectionToInviteOperation,
   RemoveConnectionsFromInvitesInput,
-  UserFeedBulkWriteOperation,
   UserFeedListingInput,
   UserFeedListItem,
   UserFeedLimitEnforcementResult,
   UserFeedLimitEnforcementQuery,
+  WebhookEnforcementTarget,
+  RefreshRateEnforcementTarget,
 } from "../interfaces/user-feed.types";
 import { UserFeedComputedStatus } from "../interfaces/user-feed.types";
 import type {
@@ -893,13 +894,123 @@ export class UserFeedMongooseRepository
     }
   }
 
-  async bulkWrite(operations: UserFeedBulkWriteOperation[]): Promise<void> {
-    if (operations.length === 0) {
+  async disableFeedsByIds(
+    feedIds: string[],
+    disabledCode: UserFeedDisabledCode,
+  ): Promise<void> {
+    if (feedIds.length === 0) {
       return;
     }
-    await this.model.bulkWrite(
-      operations as Parameters<typeof this.model.bulkWrite>[0],
+
+    const objectIds = feedIds.map((id) => this.stringToObjectId(id));
+    await this.model.updateMany(
+      { _id: { $in: objectIds } },
+      { $set: { disabledCode } },
     );
+  }
+
+  async enableFeedsByIds(feedIds: string[]): Promise<void> {
+    if (feedIds.length === 0) {
+      return;
+    }
+
+    const objectIds = feedIds.map((id) => this.stringToObjectId(id));
+    await this.model.updateMany(
+      { _id: { $in: objectIds } },
+      { $unset: { disabledCode: "" } },
+    );
+  }
+
+  async enforceWebhookConnections(
+    target: WebhookEnforcementTarget,
+  ): Promise<void> {
+    if (target.type === "all-users" || !target.allowWebhooks) {
+      const userFilter =
+        target.type === "all-users"
+          ? { $nin: target.supporterDiscordUserIds }
+          : target.discordUserId;
+
+      await this.model.updateMany(
+        {
+          "user.discordUserId": userFilter,
+          "connections.discordChannels": {
+            $elemMatch: {
+              "details.webhook.id": { $exists: true },
+              disabledCode: {
+                $nin: [
+                  FeedConnectionDisabledCode.NotPaidSubscriber,
+                  FeedConnectionDisabledCode.Manual,
+                ],
+              },
+            },
+          },
+        },
+        {
+          $set: {
+            "connections.discordChannels.$[].disabledCode":
+              FeedConnectionDisabledCode.NotPaidSubscriber,
+          },
+        },
+      );
+    }
+
+    if (target.type === "all-users" || target.allowWebhooks) {
+      const userFilter =
+        target.type === "all-users"
+          ? { $in: target.supporterDiscordUserIds }
+          : target.discordUserId;
+
+      await this.model.updateMany(
+        {
+          "user.discordUserId": userFilter,
+          "connections.discordChannels": {
+            $elemMatch: {
+              "details.webhook.id": { $exists: true },
+              disabledCode: {
+                $eq: FeedConnectionDisabledCode.NotPaidSubscriber,
+              },
+            },
+          },
+        },
+        {
+          $unset: { "connections.discordChannels.$[].disabledCode": "" },
+        },
+      );
+    }
+  }
+
+  async enforceRefreshRates(
+    target: RefreshRateEnforcementTarget,
+    supporterRefreshRateSeconds: number,
+  ): Promise<void> {
+    if (target.type === "all-users") {
+      const supporterDiscordUserIds = target.supporterLimits
+        .filter(
+          ({ refreshRateSeconds }) =>
+            refreshRateSeconds === supporterRefreshRateSeconds,
+        )
+        .map(({ discordUserId }) => discordUserId);
+
+      await this.model.updateMany(
+        {
+          userRefreshRateSeconds: supporterRefreshRateSeconds,
+          "user.discordUserId": { $nin: supporterDiscordUserIds },
+        },
+        { $unset: { userRefreshRateSeconds: "" } },
+      );
+    } else {
+      if (target.refreshRateSeconds === supporterRefreshRateSeconds) {
+        return;
+      }
+
+      await this.model.updateMany(
+        {
+          userRefreshRateSeconds: supporterRefreshRateSeconds,
+          "user.discordUserId": target.discordUserId,
+        },
+        { $unset: { userRefreshRateSeconds: "" } },
+      );
+    }
   }
 
   async deleteAll(): Promise<void> {
