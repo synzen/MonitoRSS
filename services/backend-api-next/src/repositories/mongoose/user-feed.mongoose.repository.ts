@@ -19,6 +19,8 @@ import type {
   UserFeedLimitEnforcementQuery,
   WebhookEnforcementTarget,
   RefreshRateEnforcementTarget,
+  CloneConnectionToFeedsInput,
+  CloneConnectionToFeedsResult,
 } from "../interfaces/user-feed.types";
 import { UserFeedComputedStatus } from "../interfaces/user-feed.types";
 import type {
@@ -184,6 +186,9 @@ UserFeedSchema.index({
 });
 
 type UserFeedDoc = InferSchemaType<typeof UserFeedSchema>;
+
+export { UserFeedSchema };
+export type UserFeedModel = Model<UserFeedDoc>;
 
 export class UserFeedMongooseRepository
   extends BaseMongooseRepository<IUserFeed, UserFeedDoc>
@@ -1190,5 +1195,70 @@ export class UserFeedMongooseRepository
     }
 
     return converted;
+  }
+
+  async cloneConnectionToFeeds(
+    input: CloneConnectionToFeedsInput,
+  ): Promise<CloneConnectionToFeedsResult> {
+    const { targetFeedIds, ownershipDiscordUserId, search, connectionData } =
+      input;
+
+    const useSelectedFeeds = targetFeedIds && targetFeedIds.length > 0;
+
+    let feedQuery: Record<string, unknown>;
+
+    if (useSelectedFeeds) {
+      feedQuery = {
+        _id: {
+          $in: targetFeedIds.map((id) => this.stringToObjectId(id)),
+        },
+      };
+    } else if (ownershipDiscordUserId) {
+      feedQuery = {
+        $and: [
+          this.getOwnershipFilter(ownershipDiscordUserId),
+          ...(search ? [this.getSearchFilter(search)] : []),
+        ],
+      };
+    } else {
+      feedQuery = {};
+    }
+
+    const feedsToUpdate = this.model.find(feedQuery).cursor();
+    const bulkWriteDocs: Parameters<typeof this.model.bulkWrite>[0] = [];
+    const feedIdToConnectionId: Array<{
+      feedId: string;
+      connectionId: string;
+    }> = [];
+
+    for await (const feed of feedsToUpdate) {
+      const feedDoc = feed as { _id: Types.ObjectId };
+      const newConnectionId = this.generateId();
+
+      feedIdToConnectionId.push({
+        feedId: feedDoc._id.toString(),
+        connectionId: newConnectionId,
+      });
+
+      bulkWriteDocs.push({
+        updateOne: {
+          filter: { _id: feedDoc._id },
+          update: {
+            $push: {
+              "connections.discordChannels": {
+                ...connectionData,
+                id: this.stringToObjectId(newConnectionId),
+              },
+            },
+          } as Record<string, unknown>,
+        },
+      });
+    }
+
+    if (bulkWriteDocs.length > 0) {
+      await this.model.bulkWrite(bulkWriteDocs);
+    }
+
+    return { feedIdToConnectionId };
   }
 }

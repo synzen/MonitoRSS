@@ -142,8 +142,8 @@ import "dayjs/locale/zh-tw";
 import "dayjs/locale/zh";
 import "dayjs/locale/rw";
 import "dayjs/locale/ru";
-import dayjs from 'dayjs';
+import dayjs from "dayjs";
 
 // Optionally, set a default locale
-dayjs.extend(require('dayjs/plugin/utc'));
-dayjs.extend(require('dayjs/plugin/timezone'));
+dayjs.extend(require("dayjs/plugin/utc"));
+dayjs.extend(require("dayjs/plugin/timezone"));

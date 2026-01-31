@@ -23,6 +23,9 @@
     },
     {
       "path": "services/user-feeds"
+    },
+    {
+      "path": "services/backend-api-next"
     }
   ],
   "settings": {}

@@ -1,5 +1,5 @@
 import { Types } from "mongoose";
-import type {
+import {
   FeedConnectionsDiscordChannelsServiceDeps,
   CreateDiscordChannelConnectionInput,
   UpdateDiscordChannelConnectionInput,
@@ -186,7 +186,7 @@ export class FeedConnectionsDiscordChannelsService {
     try {
       const updated = await this.deps.userFeedRepository.findOneAndUpdate(
         {
-          _id: feed.id,
+          _id: new Types.ObjectId(feed.id),
         },
         {
           $push: {
@@ -575,92 +575,101 @@ export class FeedConnectionsDiscordChannelsService {
     userAccessToken: string,
     userDiscordUserId: string,
   ): Promise<{ ids: string[] }> {
-    const { name, targetFeedIds, channelId } = input;
+    const {
+      name,
+      targetFeedIds,
+      channelId: newChannelId,
+      targetFeedSearch,
+      targetFeedSelectionType,
+    } = input;
 
-    let newChannelDetails = connection.details.channel;
+    let channelDetailsToUse: IDiscordChannelConnection["details"]["channel"] =
+      connection.details.channel;
 
-    if (channelId) {
-      try {
-        const discordChannel = await this.deps.feedsService.canUseChannel({
-          channelId,
-          userAccessToken,
-        });
+    if (newChannelId) {
+      const channel = await this.assertDiscordChannelCanBeUsed(
+        userAccessToken,
+        newChannelId,
+        connection.details.webhook?.id ? true : false,
+      );
 
-        newChannelDetails = {
-          id: channelId,
-          guildId: discordChannel.guild_id,
-        };
-      } catch (err) {
-        if (err instanceof DiscordAPIError) {
-          if (err.statusCode === 404) {
-            throw new MissingDiscordChannelException();
-          }
-          if (err.statusCode === 403) {
-            throw new DiscordChannelPermissionsException();
-          }
-        }
-        throw err;
-      }
-    }
-
-    if (!targetFeedIds || targetFeedIds.length === 0) {
-      return { ids: [] };
-    }
-
-    const createdIds: string[] = [];
-    const createdEvents: Array<{
-      feedId: string;
-      connectionId: string;
-      creator: { discordUserId: string };
-    }> = [];
-
-    for (const targetFeedId of targetFeedIds) {
-      const newConnectionId = new Types.ObjectId();
-      const newConnectionIdStr = newConnectionId.toHexString();
-
-      const clonedConnection = {
-        id: newConnectionId,
-        name,
-        disabledCode: connection.disabledCode,
-        filters: connection.filters,
-        splitOptions: connection.splitOptions,
-        rateLimits: connection.rateLimits,
-        mentions: connection.mentions,
-        customPlaceholders: connection.customPlaceholders,
-        details: {
-          ...connection.details,
-          channel: newChannelDetails,
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
+      channelDetailsToUse = {
+        id: newChannelId,
+        type: channel.type,
+        guildId: channel.channel.guild_id,
+        parentChannelId: channel.parentChannel?.id,
       };
+    }
 
-      const result = await this.deps.userFeedRepository.updateById(
-        targetFeedId,
-        {
-          $push: {
-            "connections.discordChannels": clonedConnection,
-          },
+    let newWebhookId: string | undefined = undefined;
+    let newWebhookToken: string | undefined = undefined;
+
+    if (connection.details.webhook?.isApplicationOwned) {
+      const newWebhook = await this.getOrCreateApplicationWebhook({
+        channelId: connection.details.webhook.channelId as string,
+        webhook: {
+          name: `monitorss-managed-connection`,
         },
-      );
+      });
 
-      if (result) {
-        createdIds.push(newConnectionIdStr);
-        createdEvents.push({
-          feedId: targetFeedId,
-          connectionId: newConnectionIdStr,
-          creator: { discordUserId: userDiscordUserId },
-        });
+      newWebhookId = newWebhook.id;
+      newWebhookToken = newWebhook.token as string;
+    }
+
+    const useSelectedFeeds =
+      targetFeedSelectionType === UserFeedTargetFeedSelectionType.Selected ||
+      (targetFeedIds && targetFeedIds.length > 0);
+
+    const connectionData = {
+      ...connection,
+      name,
+      details: {
+        ...connection.details,
+        channel: channelDetailsToUse,
+        webhook: connection.details.webhook
+          ? {
+              ...connection.details.webhook,
+              id: newWebhookId || connection.details.webhook.id,
+              token: newWebhookToken || connection.details.webhook.token,
+            }
+          : null,
+      },
+    };
+
+    try {
+      const result = await this.deps.userFeedRepository.cloneConnectionToFeeds({
+        targetFeedIds: useSelectedFeeds ? targetFeedIds : undefined,
+        ownershipDiscordUserId: useSelectedFeeds
+          ? undefined
+          : userDiscordUserId,
+        search: useSelectedFeeds ? undefined : targetFeedSearch,
+        connectionData,
+      });
+
+      if (result.feedIdToConnectionId.length) {
+        await this.deps.connectionEventsService.handleCreatedEvents(
+          result.feedIdToConnectionId.map(({ feedId, connectionId }) => ({
+            connectionId,
+            creator: {
+              discordUserId: userDiscordUserId,
+            },
+            feedId,
+          })),
+        );
       }
-    }
 
-    if (createdEvents.length > 0) {
-      await this.deps.connectionEventsService.handleCreatedEvents(
-        createdEvents,
-      );
-    }
+      return {
+        ids: result.feedIdToConnectionId.map(
+          ({ connectionId }) => connectionId,
+        ),
+      };
+    } catch (err) {
+      if (newWebhookId) {
+        await this.cleanupWebhook(newWebhookId);
+      }
 
-    return { ids: createdIds };
+      throw err;
+    }
   }
 
   async copySettings(

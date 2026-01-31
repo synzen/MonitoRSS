@@ -26,4 +26,8 @@ export abstract class BaseMongooseRepository<
   ): Types.ObjectId | undefined {
     return id ? new Types.ObjectId(id) : undefined;
   }
+
+  protected generateId(): string {
+    return new Types.ObjectId().toHexString();
+  }
 }

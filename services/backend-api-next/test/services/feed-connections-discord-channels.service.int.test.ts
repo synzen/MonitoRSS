@@ -2,23 +2,21 @@ import { describe, it, before, after, beforeEach, mock } from "node:test";
 import assert from "node:assert";
 import { Types } from "mongoose";
 
-function assertMatchesObject(
-  actual: Record<string, unknown>,
-  expected: Record<string, unknown>,
-): void {
+function assertMatchesObject<T extends object>(actual: T, expected: T): void {
   for (const [key, value] of Object.entries(expected)) {
+    const actualValue = (actual as Record<string, unknown>)[key];
     if (value && typeof value === "object" && !Array.isArray(value)) {
       assert.ok(
-        actual[key] !== undefined,
+        actualValue !== undefined,
         `Expected property "${key}" to exist`,
       );
       assertMatchesObject(
-        actual[key] as Record<string, unknown>,
+        actualValue as Record<string, unknown>,
         value as Record<string, unknown>,
       );
     } else {
       assert.deepStrictEqual(
-        actual[key],
+        actualValue,
         value,
         `Expected property "${key}" to match`,
       );
@@ -38,7 +36,10 @@ import {
   FeedConnectionMentionType,
   CustomPlaceholderStepType,
 } from "../../src/repositories/shared/enums";
-import { CopyableSetting } from "../../src/services/feed-connections-discord-channels/types";
+import {
+  CopyableSetting,
+  UserFeedTargetFeedSelectionType,
+} from "../../src/services/feed-connections-discord-channels/types";
 import {
   MissingDiscordChannelException,
   DiscordChannelPermissionsException,
@@ -54,67 +55,14 @@ function randomUUID(): string {
   return crypto.randomUUID();
 }
 
+type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
+
 interface TestFeedOptions {
   discordUserId?: string;
   connections?: {
-    discordChannels?: Array<{
-      id?: string;
-      name?: string;
-      disabledCode?: FeedConnectionDisabledCode;
-      filters?: { expression: Record<string, unknown> };
-      rateLimits?: Array<{
-        id: string;
-        timeWindowSeconds: number;
-        limit: number;
-      }>;
-      splitOptions?: {
-        splitChar?: string;
-        appendChar?: string;
-        prependChar?: string;
-      };
-      mentions?: {
-        targets?: Array<{
-          id: string;
-          type: FeedConnectionMentionType;
-          filters?: { expression: Record<string, unknown> };
-        }>;
-      };
-      details?: {
-        channel?: { id: string; guildId: string };
-        webhook?: {
-          id: string;
-          channel?: string;
-          guildId: string;
-          token: string;
-          iconUrl?: string;
-          name?: string;
-          isApplicationOwned?: boolean;
-          threadId?: string;
-        };
-        embeds?: Array<Record<string, unknown>>;
-        content?: string;
-        formatter?: {
-          formatTables?: boolean;
-          stripImages?: boolean;
-          disableImageLinkPreviews?: boolean;
-        };
-        componentRows?: Array<{
-          id: string;
-          components: Array<Record<string, unknown>>;
-        }>;
-        enablePlaceholderFallback?: boolean;
-        forumThreadTags?: Array<{
-          id: string;
-          filters?: { expression: Record<string, unknown> };
-        }>;
-        forumThreadTitle?: string;
-        placeholderLimits?: Array<{
-          characterCount: number;
-          placeholder: string;
-          appendString?: string;
-        }>;
-      };
-    }>;
+    discordChannels?: Array<DeepPartial<IDiscordChannelConnection>>;
   };
 }
 
@@ -369,21 +317,398 @@ describe(
           clonedConnection.disabledCode,
           connection.disabledCode,
         );
+        assertMatchesObject(clonedConnection.filters!, connection.filters!);
         assertMatchesObject(
-          clonedConnection.filters as Record<string, unknown>,
-          connection.filters as Record<string, unknown>,
+          clonedConnection.splitOptions!,
+          connection.splitOptions!,
         );
         assertMatchesObject(
-          clonedConnection.splitOptions as Record<string, unknown>,
-          connection.splitOptions as Record<string, unknown>,
-        );
-        assertMatchesObject(
-          clonedConnection.details.channel as Record<string, unknown>,
-          connection.details.channel as Record<string, unknown>,
+          clonedConnection.details.channel!,
+          connection.details.channel!,
         );
         assert.strictEqual(
           clonedConnection.details.content,
           connection.details.content,
+        );
+      });
+
+      it("clones connection to multiple target feeds", async () => {
+        const guildId = "guild-id";
+        const connectionIdToUse = objectId();
+        const discordUserId = objectId();
+
+        const connection: IDiscordChannelConnection = {
+          id: connectionIdToUse,
+          name: "source-connection",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          details: {
+            channel: { id: "channel-id", guildId },
+            embeds: [],
+            content: "test content",
+            formatter: { formatTables: false, stripImages: false },
+          },
+        };
+
+        const feed1 = await createFeed(ctx, {
+          discordUserId,
+          connections: {
+            discordChannels: [
+              {
+                id: connectionIdToUse,
+                name: connection.name,
+                details: connection.details,
+              },
+            ],
+          },
+        });
+        const feed2 = await createFeed(ctx, { discordUserId });
+        const feed3 = await createFeed(ctx, { discordUserId });
+
+        const { ids } =
+          await ctx.container.feedConnectionsDiscordChannelsService.cloneConnection(
+            connection,
+            {
+              name: "cloned-connection",
+              targetFeedIds: [feed1.id, feed2.id, feed3.id],
+            },
+            "token",
+            discordUserId,
+          );
+
+        assert.strictEqual(ids.length, 3);
+
+        const updatedFeed1 = await getFeed(ctx, feed1.id);
+        const updatedFeed2 = await getFeed(ctx, feed2.id);
+        const updatedFeed3 = await getFeed(ctx, feed3.id);
+
+        assert.strictEqual(updatedFeed1?.connections.discordChannels.length, 2);
+        assert.strictEqual(updatedFeed2?.connections.discordChannels.length, 1);
+        assert.strictEqual(updatedFeed3?.connections.discordChannels.length, 1);
+
+        for (const feed of [updatedFeed1, updatedFeed2, updatedFeed3]) {
+          const clonedConn = feed?.connections.discordChannels.find(
+            (c) => c.name === "cloned-connection",
+          );
+          assert.ok(clonedConn);
+          assert.strictEqual(clonedConn.details.content, "test content");
+        }
+      });
+
+      it("clones connection with new channel id", async () => {
+        const guildId = "guild-id";
+        const newGuildId = "new-guild-id";
+        const connectionIdToUse = objectId();
+        const newChannelId = "new-channel-id";
+
+        mockFeedsService.canUseChannel.mock.mockImplementation(() =>
+          Promise.resolve({ guild_id: newGuildId }),
+        );
+
+        const connection: IDiscordChannelConnection = {
+          id: connectionIdToUse,
+          name: "source-connection",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          details: {
+            channel: { id: "original-channel-id", guildId },
+            embeds: [],
+            content: "test content",
+            formatter: { formatTables: false, stripImages: false },
+          },
+        };
+
+        const createdFeed = await createFeed(ctx, {
+          connections: {
+            discordChannels: [
+              {
+                id: connectionIdToUse,
+                name: connection.name,
+                details: connection.details,
+              },
+            ],
+          },
+        });
+
+        const { ids } =
+          await ctx.container.feedConnectionsDiscordChannelsService.cloneConnection(
+            connection,
+            {
+              name: "cloned-with-new-channel",
+              targetFeedIds: [createdFeed.id],
+              channelId: newChannelId,
+            },
+            "token",
+            "user-id",
+          );
+
+        const updatedFeed = await getFeed(ctx, createdFeed.id);
+        const clonedConnection = updatedFeed?.connections.discordChannels.find(
+          (c) => c.id === ids[0],
+        );
+
+        assert.ok(clonedConnection);
+        assert.strictEqual(clonedConnection.details.channel?.id, newChannelId);
+        assert.strictEqual(
+          clonedConnection.details.channel?.guildId,
+          newGuildId,
+        );
+      });
+
+      it("clones connection to feeds matching search filter", async () => {
+        const guildId = "guild-id";
+        const connectionIdToUse = objectId();
+        const discordUserId = objectId();
+
+        const connection: IDiscordChannelConnection = {
+          id: connectionIdToUse,
+          name: "source-connection",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          details: {
+            channel: { id: "channel-id", guildId },
+            embeds: [],
+            content: "test content",
+            formatter: { formatTables: false, stripImages: false },
+          },
+        };
+
+        const matchingFeed1 = await createFeed(ctx, { discordUserId });
+        await ctx.container.userFeedRepository.updateById(matchingFeed1.id, {
+          $set: { title: "My Awesome Feed" },
+        });
+
+        const matchingFeed2 = await createFeed(ctx, { discordUserId });
+        await ctx.container.userFeedRepository.updateById(matchingFeed2.id, {
+          $set: { title: "Another Awesome Feed" },
+        });
+
+        const nonMatchingFeed = await createFeed(ctx, { discordUserId });
+        await ctx.container.userFeedRepository.updateById(nonMatchingFeed.id, {
+          $set: { title: "Unrelated Feed" },
+        });
+
+        const { ids } =
+          await ctx.container.feedConnectionsDiscordChannelsService.cloneConnection(
+            connection,
+            {
+              name: "cloned-via-search",
+              targetFeedSelectionType: UserFeedTargetFeedSelectionType.All,
+              targetFeedSearch: "Awesome",
+            },
+            "token",
+            discordUserId,
+          );
+
+        assert.strictEqual(ids.length, 2);
+
+        const updatedMatchingFeed1 = await getFeed(ctx, matchingFeed1.id);
+        const updatedMatchingFeed2 = await getFeed(ctx, matchingFeed2.id);
+        const updatedNonMatchingFeed = await getFeed(ctx, nonMatchingFeed.id);
+
+        assert.strictEqual(
+          updatedMatchingFeed1?.connections.discordChannels.length,
+          1,
+        );
+        assert.strictEqual(
+          updatedMatchingFeed2?.connections.discordChannels.length,
+          1,
+        );
+        assert.strictEqual(
+          updatedNonMatchingFeed?.connections.discordChannels.length,
+          0,
+        );
+      });
+
+      it("clones connection to all feeds owned by user", async () => {
+        const guildId = "guild-id";
+        const connectionIdToUse = objectId();
+        const ownerDiscordUserId = objectId();
+        const otherDiscordUserId = objectId();
+
+        const connection: IDiscordChannelConnection = {
+          id: connectionIdToUse,
+          name: "source-connection",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          details: {
+            channel: { id: "channel-id", guildId },
+            embeds: [],
+            content: "test content",
+            formatter: { formatTables: false, stripImages: false },
+          },
+        };
+
+        const ownedFeed1 = await createFeed(ctx, {
+          discordUserId: ownerDiscordUserId,
+        });
+        const ownedFeed2 = await createFeed(ctx, {
+          discordUserId: ownerDiscordUserId,
+        });
+        const otherUserFeed = await createFeed(ctx, {
+          discordUserId: otherDiscordUserId,
+        });
+
+        const { ids } =
+          await ctx.container.feedConnectionsDiscordChannelsService.cloneConnection(
+            connection,
+            {
+              name: "cloned-to-all-owned",
+              targetFeedSelectionType: UserFeedTargetFeedSelectionType.All,
+            },
+            "token",
+            ownerDiscordUserId,
+          );
+
+        assert.strictEqual(ids.length, 2);
+
+        const updatedOwnedFeed1 = await getFeed(ctx, ownedFeed1.id);
+        const updatedOwnedFeed2 = await getFeed(ctx, ownedFeed2.id);
+        const updatedOtherUserFeed = await getFeed(ctx, otherUserFeed.id);
+
+        assert.strictEqual(
+          updatedOwnedFeed1?.connections.discordChannels.length,
+          1,
+        );
+        assert.strictEqual(
+          updatedOwnedFeed2?.connections.discordChannels.length,
+          1,
+        );
+        assert.strictEqual(
+          updatedOtherUserFeed?.connections.discordChannels.length,
+          0,
+        );
+      });
+
+      it("clones connection with all properties preserved", async () => {
+        const guildId = "guild-id";
+        const connectionIdToUse = objectId();
+
+        const connection: IDiscordChannelConnection = {
+          id: connectionIdToUse,
+          name: "full-connection",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          disabledCode: FeedConnectionDisabledCode.BadFormat,
+          filters: { expression: { type: "article" } },
+          splitOptions: { splitChar: "|", appendChar: "...", prependChar: ">" },
+          rateLimits: [{ id: "rl1", timeWindowSeconds: 60, limit: 5 }],
+          mentions: {
+            targets: [
+              {
+                id: "m1",
+                type: FeedConnectionMentionType.Role,
+                filters: { expression: { important: true } },
+              },
+            ],
+          },
+          details: {
+            channel: { id: "channel-id", guildId },
+            embeds: [{ title: "Test Embed" }],
+            content: "{{title}}",
+            formatter: {
+              formatTables: true,
+              stripImages: true,
+              disableImageLinkPreviews: true,
+            },
+            componentRows: [
+              {
+                id: "row1",
+                components: [
+                  {
+                    id: "btn1",
+                    type: FeedConnectionDiscordComponentType.Button,
+                    label: "Click",
+                    url: "https://example.com",
+                    style: FeedConnectionDiscordComponentButtonStyle.Link,
+                  },
+                ],
+              },
+            ],
+            enablePlaceholderFallback: true,
+            forumThreadTags: [{ id: "tag1" }],
+            forumThreadTitle: "Thread: {{title}}",
+            placeholderLimits: [
+              { characterCount: 100, placeholder: "description" },
+            ],
+          },
+        };
+
+        const createdFeed = await createFeed(ctx, {
+          connections: {
+            discordChannels: [
+              {
+                id: connectionIdToUse,
+                name: connection.name,
+                disabledCode: connection.disabledCode,
+                filters: connection.filters,
+                splitOptions: connection.splitOptions,
+                rateLimits: connection.rateLimits,
+                mentions: connection.mentions,
+                details: {
+                  channel: connection.details.channel,
+                  embeds: connection.details.embeds,
+                  content: connection.details.content,
+                  formatter: connection.details.formatter,
+                  componentRows: connection.details.componentRows,
+                  enablePlaceholderFallback:
+                    connection.details.enablePlaceholderFallback,
+                  forumThreadTags: connection.details.forumThreadTags,
+                  forumThreadTitle: connection.details.forumThreadTitle,
+                  placeholderLimits: connection.details.placeholderLimits,
+                },
+              },
+            ],
+          },
+        });
+
+        const { ids } =
+          await ctx.container.feedConnectionsDiscordChannelsService.cloneConnection(
+            connection,
+            {
+              name: "cloned-full",
+              targetFeedIds: [createdFeed.id],
+            },
+            "token",
+            "user-id",
+          );
+
+        const updatedFeed = await getFeed(ctx, createdFeed.id);
+        const clonedConnection = updatedFeed?.connections.discordChannels.find(
+          (c) => c.id === ids[0],
+        );
+
+        assert.ok(clonedConnection);
+        assert.strictEqual(clonedConnection.name, "cloned-full");
+        assert.strictEqual(
+          clonedConnection.disabledCode,
+          connection.disabledCode,
+        );
+        assertMatchesObject(clonedConnection.filters!, connection.filters!);
+        assertMatchesObject(
+          clonedConnection.splitOptions!,
+          connection.splitOptions!,
+        );
+        assertMatchesObject(
+          clonedConnection.rateLimits!,
+          connection.rateLimits!,
+        );
+        assertMatchesObject(clonedConnection.mentions!, connection.mentions!);
+        assert.strictEqual(
+          clonedConnection.details.content,
+          connection.details.content,
+        );
+        assertMatchesObject(
+          clonedConnection.details.formatter as Record<string, unknown>,
+          connection.details.formatter as Record<string, unknown>,
+        );
+        assert.strictEqual(
+          clonedConnection.details.enablePlaceholderFallback,
+          connection.details.enablePlaceholderFallback,
+        );
+        assert.strictEqual(
+          clonedConnection.details.forumThreadTitle,
+          connection.details.forumThreadTitle,
         );
       });
     });

@@ -209,6 +209,17 @@ export type UserFeedLimitEnforcementQuery =
   | { type: "include"; discordUserIds: string[] }
   | { type: "exclude"; discordUserIds: string[] };
 
+export interface CloneConnectionToFeedsInput {
+  targetFeedIds?: string[];
+  ownershipDiscordUserId?: string;
+  search?: string;
+  connectionData: Record<string, unknown>;
+}
+
+export interface CloneConnectionToFeedsResult {
+  feedIdToConnectionId: Array<{ feedId: string; connectionId: string }>;
+}
+
 export interface IUserFeedRepository {
   create(input: CreateUserFeedInput): Promise<IUserFeed>;
   findById(id: string): Promise<IUserFeed | null>;
@@ -276,6 +287,11 @@ export interface IUserFeedRepository {
   ): Promise<void>;
   enableFeedsByIds(feedIds: string[]): Promise<void>;
   enforceWebhookConnections(target: WebhookEnforcementTarget): Promise<void>;
+
+  // Connection cloning
+  cloneConnectionToFeeds(
+    input: CloneConnectionToFeedsInput,
+  ): Promise<CloneConnectionToFeedsResult>;
   enforceRefreshRates(
     target: RefreshRateEnforcementTarget,
     supporterRefreshRateSeconds: number,
