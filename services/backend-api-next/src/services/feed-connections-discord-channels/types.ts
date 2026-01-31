@@ -155,3 +155,82 @@ export interface FeedConnectionsDiscordChannelsServiceDeps {
   connectionEventsService: UserFeedConnectionEventsService;
   usersService: UsersService;
 }
+
+export interface DiscordPreviewEmbed {
+  title?: string | null;
+  description?: string | null;
+  url?: string | null;
+  color?: string | null;
+  timestamp?: string | null;
+  image?: { url?: string | null } | null;
+  thumbnail?: { url?: string | null } | null;
+  author?: {
+    name?: string | null;
+    url?: string | null;
+    iconUrl?: string | null;
+  } | null;
+  footer?: { text?: string | null; iconUrl?: string | null } | null;
+  fields?: Array<{
+    name?: string | null;
+    value?: string | null;
+    inline?: boolean | null;
+  }> | null;
+}
+
+export interface SendTestArticlePreviewInput {
+  content?: string;
+  embeds?: DiscordPreviewEmbed[];
+  customPlaceholders?: ICustomPlaceholder[] | null;
+  externalProperties?: Array<{
+    sourceField: string;
+    label: string;
+    cssSelector: string;
+  }> | null;
+  feedFormatOptions?: {
+    dateFormat?: string;
+    dateTimezone?: string;
+    dateLocale?: string;
+  };
+  connectionFormatOptions?: IDiscordFormatter;
+  splitOptions?: ISplitOptions & { isEnabled?: boolean };
+  mentions?: IMentions | null;
+  placeholderLimits?: IPlaceholderLimit[];
+  enablePlaceholderFallback?: boolean;
+  componentRows?: IDiscordComponentRow[];
+  componentsV2?: Array<Record<string, unknown>> | null;
+  forumThreadTitle?: string;
+  forumThreadTags?: IForumThreadTag[];
+  channelNewThreadTitle?: string;
+  channelNewThreadExcludesPreview?: boolean;
+}
+
+export interface CreatePreviewFunctionInput {
+  userFeed: IUserFeed;
+  connection: IDiscordChannelConnection;
+  splitOptions?: ISplitOptions | null;
+  content?: string;
+  embeds?: DiscordPreviewEmbed[];
+  feedFormatOptions?: {
+    dateFormat?: string;
+    dateTimezone?: string;
+    dateLocale?: string;
+  } | null;
+  connectionFormatOptions?: IDiscordFormatter | null;
+  articleId?: string;
+  mentions?: IMentions | null;
+  customPlaceholders?: ICustomPlaceholder[] | null;
+  externalProperties?: Array<{
+    sourceField: string;
+    label: string;
+    cssSelector: string;
+  }> | null;
+  placeholderLimits?: IPlaceholderLimit[] | null;
+  forumThreadTitle?: string;
+  forumThreadTags?: IForumThreadTag[];
+  enablePlaceholderFallback?: boolean;
+  componentRows?: IDiscordComponentRow[] | null;
+  componentsV2?: Array<Record<string, unknown>> | null;
+  includeCustomPlaceholderPreviews?: boolean;
+  channelNewThreadTitle?: string;
+  channelNewThreadExcludesPreview?: boolean;
+}

@@ -6,8 +6,20 @@ import {
   CloneConnectionInput,
   CopySettingsInput,
   UserFeedTargetFeedSelectionType,
+  SendTestArticlePreviewInput,
+  CreatePreviewFunctionInput,
+  DiscordPreviewEmbed,
 } from "./types";
 import { CopyableSetting } from "./types";
+import type {
+  SendTestArticleResult,
+  SendTestArticleInput,
+  CreatePreviewInput,
+  CreatePreviewOutput,
+} from "../feed-handler/types";
+import { castDiscordContentForMedium } from "../../shared/utils/cast-discord-content-for-medium";
+import { castDiscordEmbedsForMedium } from "../../shared/utils/cast-discord-embeds-for-medium";
+import { castDiscordComponentRowsForMedium } from "../../shared/utils/cast-discord-component-rows-for-medium";
 import type { IDiscordChannelConnection } from "../../repositories/interfaces/feed-connection.types";
 import type { IUserFeed } from "../../repositories/interfaces/user-feed.types";
 import { DiscordAPIError } from "../../shared/exceptions/discord-api.error";
@@ -36,6 +48,8 @@ import {
 import { WebhookMissingPermissionsException } from "../../shared/exceptions/discord-webhooks.exceptions";
 import { InvalidComponentsV2Exception } from "../../shared/exceptions/invalid-components-v2.exception";
 import logger from "../../infra/logger";
+import { IUser } from "../../repositories/interfaces/user.types";
+import { getFeedRequestLookupDetails } from "../../shared/utils/get-feed-request-lookup-details";
 
 export class FeedConnectionsDiscordChannelsService {
   constructor(
@@ -818,6 +832,492 @@ export class FeedConnectionsDiscordChannelsService {
       $set: {
         "connections.discordChannels": foundFeed.connections.discordChannels,
       },
+    });
+  }
+
+  async sendTestArticle(
+    userFeed: IUserFeed,
+    connection: IDiscordChannelConnection,
+    details?: {
+      article?: {
+        id: string;
+      };
+      previewInput?: SendTestArticlePreviewInput;
+    },
+  ): Promise<SendTestArticleResult> {
+    const previewInput = details?.previewInput;
+
+    let useCustomPlaceholders =
+      previewInput?.customPlaceholders || connection.customPlaceholders;
+    let useExternalProperties =
+      previewInput?.externalProperties || userFeed.externalProperties;
+    const hasPremiumFeatures =
+      previewInput?.customPlaceholders?.length ||
+      previewInput?.externalProperties?.length;
+
+    if (hasPremiumFeatures) {
+      const { allowCustomPlaceholders, allowExternalProperties } =
+        await this.deps.supportersService.getBenefitsOfDiscordUser(
+          userFeed.user.discordUserId,
+        );
+
+      if (!allowCustomPlaceholders) {
+        useCustomPlaceholders = [];
+      }
+
+      if (!allowExternalProperties) {
+        useExternalProperties = [];
+      }
+    }
+
+    const cleanedPreviewEmbeds = previewInput?.embeds
+      ? previewInput.embeds.map((e: DiscordPreviewEmbed) => ({
+          title: e.title || undefined,
+          description: e.description || undefined,
+          url: e.url || undefined,
+          imageURL: e.image?.url || undefined,
+          thumbnailURL: e.thumbnail?.url || undefined,
+          authorIconURL: e.author?.iconUrl || undefined,
+          authorName: e.author?.name || undefined,
+          authorURL: e.author?.url || undefined,
+          color: e.color || undefined,
+          footerIconURL: e.footer?.iconUrl || undefined,
+          footerText: e.footer?.text || undefined,
+          timestamp: e.timestamp || undefined,
+          fields:
+            e.fields?.filter(
+              (f: {
+                name?: string | null;
+                value?: string | null;
+                inline?: boolean | null;
+              }): f is { name: string; value: string; inline?: boolean } =>
+                !!f.name && !!f.value,
+            ) || [],
+        }))
+      : undefined;
+
+    const user = await this.deps.usersService.getOrCreateUserByDiscordId(
+      userFeed.user.discordUserId,
+    );
+
+    const requestLookupDetails = getFeedRequestLookupDetails({
+      feed: userFeed,
+      decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
+      user,
+    });
+
+    const payload: SendTestArticleInput["details"] = {
+      type: "discord",
+      feed: {
+        url: userFeed.url,
+        formatOptions: {
+          ...userFeed.formatOptions,
+          ...previewInput?.feedFormatOptions,
+          dateFormat:
+            previewInput?.feedFormatOptions?.dateFormat ||
+            userFeed.formatOptions?.dateFormat ||
+            user?.preferences?.dateFormat,
+          dateTimezone:
+            previewInput?.feedFormatOptions?.dateTimezone ||
+            userFeed.formatOptions?.dateTimezone ||
+            user?.preferences?.dateTimezone,
+          dateLocale:
+            previewInput?.feedFormatOptions?.dateLocale ||
+            userFeed.formatOptions?.dateLocale ||
+            user?.preferences?.dateLocale,
+        },
+        externalProperties: useExternalProperties,
+        requestLookupDetails: requestLookupDetails || undefined,
+      },
+      article: details?.article ? details.article : undefined,
+      mediumDetails: {
+        ...connection.details,
+        channel: connection.details.channel
+          ? {
+              id: connection.details.channel.id,
+              type: connection.details.channel.type,
+            }
+          : undefined,
+        webhook: connection.details.webhook
+          ? {
+              id: connection.details.webhook.id,
+              token: connection.details.webhook.token,
+              name: connection.details.webhook.name,
+              iconUrl: connection.details.webhook.iconUrl,
+              type: connection.details.webhook.type,
+              threadId: connection.details.webhook.threadId,
+            }
+          : undefined,
+        forumThreadTitle:
+          previewInput?.forumThreadTitle || connection.details.forumThreadTitle,
+        forumThreadTags:
+          previewInput?.forumThreadTags || connection.details.forumThreadTags,
+        content: castDiscordContentForMedium(
+          previewInput?.content ?? connection.details.content,
+        ),
+        embeds: castDiscordEmbedsForMedium(
+          cleanedPreviewEmbeds || connection.details.embeds,
+        ),
+        formatter: {
+          ...(previewInput?.connectionFormatOptions ||
+            connection.details.formatter),
+          connectionCreatedAt: connection.createdAt?.toISOString(),
+        },
+        mentions: previewInput?.mentions || connection.mentions,
+        customPlaceholders: useCustomPlaceholders,
+        splitOptions: previewInput?.splitOptions?.isEnabled
+          ? previewInput.splitOptions
+          : connection.splitOptions?.isEnabled
+            ? connection.splitOptions
+            : undefined,
+        placeholderLimits:
+          previewInput?.placeholderLimits ||
+          connection.details.placeholderLimits,
+        enablePlaceholderFallback:
+          previewInput?.enablePlaceholderFallback ??
+          connection.details.enablePlaceholderFallback,
+        components: castDiscordComponentRowsForMedium(
+          previewInput?.componentRows || connection.details.componentRows,
+        ),
+        componentsV2:
+          previewInput?.content ||
+          previewInput?.embeds?.length ||
+          previewInput?.componentsV2 === null
+            ? undefined
+            : previewInput?.componentsV2 || connection.details.componentsV2,
+        channelNewThreadTitle:
+          previewInput?.channelNewThreadTitle ||
+          connection.details.channelNewThreadTitle,
+        channelNewThreadExcludesPreview:
+          previewInput?.channelNewThreadExcludesPreview ??
+          connection.details.channelNewThreadExcludesPreview,
+      },
+    } as const;
+
+    return this.deps.feedHandlerService.sendTestArticle({
+      details: payload,
+    });
+  }
+
+  async sendTestArticleDirect(
+    userFeed: IUserFeed,
+    input: {
+      article: {
+        id: string;
+      };
+      channelId: string;
+      content?: string;
+      embeds?: DiscordPreviewEmbed[];
+      componentsV2?: Array<Record<string, unknown>>;
+      placeholderLimits?: {
+        placeholder: string;
+        characterCount: number;
+        appendString?: string;
+      }[];
+      webhook?: {
+        name: string;
+        iconUrl?: string;
+      } | null;
+      threadId?: string;
+      userFeedFormatOptions?: IUserFeed["formatOptions"] | null;
+    }
+  ): Promise<SendTestArticleResult> {
+    const user = await this.deps.usersService.getOrCreateUserByDiscordId(
+      userFeed.user.discordUserId
+    );
+
+    const requestLookupDetails = getFeedRequestLookupDetails({
+      feed: userFeed,
+      decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
+      user,
+    });
+
+    const cleanedEmbeds = input.embeds
+      ? input.embeds.map((e) => ({
+          title: e.title || undefined,
+          description: e.description || undefined,
+          url: e.url || undefined,
+          imageURL: e.image?.url || undefined,
+          thumbnailURL: e.thumbnail?.url || undefined,
+          authorIconURL: e.author?.iconUrl || undefined,
+          authorName: e.author?.name || undefined,
+          authorURL: e.author?.url || undefined,
+          color: e.color || undefined,
+          footerIconURL: e.footer?.iconUrl || undefined,
+          footerText: e.footer?.text || undefined,
+          timestamp: e.timestamp || undefined,
+          fields:
+            e.fields?.filter(
+              (f): f is { name: string; value: string; inline?: boolean } =>
+                !!f.name && !!f.value
+            ) || [],
+        }))
+      : undefined;
+
+    const { isSupporter } =
+      await this.deps.supportersService.getBenefitsOfDiscordUser(
+        userFeed.user.discordUserId
+      );
+
+    let webhookDetails:
+      | SendTestArticleInput["details"]["mediumDetails"]["webhook"]
+      | undefined;
+
+    if (input.webhook && isSupporter) {
+      const webhook = await this.getOrCreateApplicationWebhook({
+        channelId: input.threadId || input.channelId,
+        webhook: { name: `test-send-${userFeed.id}` },
+      });
+
+      webhookDetails = {
+        id: webhook.id,
+        token: webhook.token as string,
+        name: input.webhook.name,
+        iconUrl: input.webhook.iconUrl,
+        threadId: input.threadId,
+      };
+    }
+
+    const payload: SendTestArticleInput["details"] = {
+      type: "discord",
+      feed: {
+        url: userFeed.url,
+        formatOptions: {
+          ...userFeed.formatOptions,
+          ...input.userFeedFormatOptions,
+          dateFormat:
+            input.userFeedFormatOptions?.dateFormat ||
+            userFeed.formatOptions?.dateFormat ||
+            user?.preferences?.dateFormat,
+          dateTimezone:
+            input.userFeedFormatOptions?.dateTimezone ||
+            userFeed.formatOptions?.dateTimezone ||
+            user?.preferences?.dateTimezone,
+          dateLocale:
+            input.userFeedFormatOptions?.dateLocale ||
+            userFeed.formatOptions?.dateLocale ||
+            user?.preferences?.dateLocale,
+        },
+        externalProperties: userFeed.externalProperties,
+        requestLookupDetails: requestLookupDetails || undefined,
+      },
+      article: input.article,
+      mediumDetails: {
+        components: [],
+        channel: webhookDetails
+          ? undefined
+          : {
+              id: input.threadId || input.channelId,
+            },
+        webhook: webhookDetails,
+        content: castDiscordContentForMedium(input.content),
+        embeds: castDiscordEmbedsForMedium(cleanedEmbeds || []),
+        placeholderLimits: input.placeholderLimits,
+        componentsV2:
+          input.content || input.embeds?.length
+            ? undefined
+            : (input.componentsV2 as SendTestArticleInput["details"]["mediumDetails"]["componentsV2"]),
+        formatter: {
+          connectionCreatedAt: new Date().toISOString(),
+        },
+      },
+    } as const;
+
+    return this.deps.feedHandlerService.sendTestArticle({
+      details: payload,
+    });
+  }
+
+  async createPreview({
+    connection,
+    userFeed,
+    content,
+    embeds,
+    feedFormatOptions,
+    connectionFormatOptions,
+    splitOptions,
+    articleId,
+    mentions,
+    placeholderLimits,
+    enablePlaceholderFallback,
+    customPlaceholders,
+    componentRows,
+    componentsV2,
+    includeCustomPlaceholderPreviews,
+    externalProperties,
+    channelNewThreadTitle,
+  }: CreatePreviewFunctionInput): Promise<CreatePreviewOutput> {
+    const user = await this.deps.usersService.getOrCreateUserByDiscordId(
+      userFeed.user.discordUserId,
+    );
+
+    const payload: CreatePreviewInput["details"] = {
+      type: "discord",
+      includeCustomPlaceholderPreviews,
+      feed: {
+        requestLookupDetails:
+          getFeedRequestLookupDetails({
+            feed: userFeed,
+            user,
+            decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
+          }) || undefined,
+        url: userFeed.url,
+        formatOptions: {
+          ...feedFormatOptions,
+          dateFormat:
+            feedFormatOptions?.dateFormat || user?.preferences?.dateFormat,
+          dateTimezone:
+            feedFormatOptions?.dateTimezone || user?.preferences?.dateTimezone,
+          dateLocale:
+            feedFormatOptions?.dateLocale || user?.preferences?.dateLocale,
+        },
+        externalProperties,
+      },
+      article: articleId ? { id: articleId } : undefined,
+      mediumDetails: {
+        channelNewThreadTitle,
+        channel: connection.details.channel
+          ? {
+              id: connection.details.channel.id,
+            }
+          : undefined,
+        webhook: connection.details.webhook
+          ? {
+              id: connection.details.webhook.id,
+              token: connection.details.webhook.token,
+              name: connection.details.webhook.name,
+              iconUrl: connection.details.webhook.iconUrl,
+            }
+          : undefined,
+        guildId:
+          connection.details.channel?.guildId ||
+          connection.details.webhook?.guildId ||
+          "",
+        content: castDiscordContentForMedium(content),
+        embeds: castDiscordEmbedsForMedium(
+          embeds?.map((e: DiscordPreviewEmbed) => ({
+            title: e.title || undefined,
+            description: e.description || undefined,
+            url: e.url || undefined,
+            imageURL: e.image?.url || undefined,
+            thumbnailURL: e.thumbnail?.url || undefined,
+            authorIconURL: e.author?.iconUrl || undefined,
+            authorName: e.author?.name || undefined,
+            authorURL: e.author?.url || undefined,
+            color: e.color || undefined,
+            footerIconURL: e.footer?.iconUrl || undefined,
+            footerText: e.footer?.text || undefined,
+            timestamp: e.timestamp || undefined,
+            fields:
+              e.fields?.filter(
+                (f: {
+                  name?: string | null;
+                  value?: string | null;
+                  inline?: boolean | null;
+                }): f is { name: string; value: string; inline?: boolean } =>
+                  !!f.name && !!f.value,
+              ) || [],
+          })),
+        ),
+        formatter: {
+          ...connectionFormatOptions,
+          connectionCreatedAt: connection.createdAt?.toISOString(),
+        },
+        splitOptions: splitOptions?.isEnabled ? splitOptions : undefined,
+        mentions: mentions,
+        customPlaceholders,
+        placeholderLimits,
+        enablePlaceholderFallback: enablePlaceholderFallback,
+        components: castDiscordComponentRowsForMedium(componentRows),
+        componentsV2: (componentsV2 as Record<string, unknown>[]) ?? undefined,
+      },
+    } as const;
+
+    return this.deps.feedHandlerService.createPreview({
+      details: payload,
+    });
+  }
+
+  async createTemplatePreview({
+    userFeed,
+    content,
+    embeds,
+    feedFormatOptions,
+    connectionFormatOptions,
+    articleId,
+    placeholderLimits,
+    enablePlaceholderFallback,
+    componentsV2,
+  }: CreatePreviewFunctionInput) {
+    const user = await this.deps.usersService.getOrCreateUserByDiscordId(
+      userFeed.user.discordUserId
+    );
+
+    const payload: CreatePreviewInput["details"] = {
+      type: "discord",
+      includeCustomPlaceholderPreviews: false,
+      feed: {
+        requestLookupDetails: getFeedRequestLookupDetails({
+          feed: userFeed,
+          user,
+          decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
+        }) || undefined,
+        url: userFeed.url,
+        formatOptions: {
+          ...feedFormatOptions,
+          dateFormat:
+            feedFormatOptions?.dateFormat || user?.preferences?.dateFormat,
+          dateTimezone:
+            feedFormatOptions?.dateTimezone || user?.preferences?.dateTimezone,
+          dateLocale:
+            feedFormatOptions?.dateLocale || user?.preferences?.dateLocale,
+        },
+        externalProperties: undefined,
+      },
+      article: articleId ? { id: articleId } : undefined,
+      mediumDetails: {
+        channel: undefined,
+        webhook: undefined,
+        guildId: "",
+        content: castDiscordContentForMedium(content),
+        embeds: castDiscordEmbedsForMedium(
+          embeds?.map((e: DiscordPreviewEmbed) => ({
+            title: e.title || undefined,
+            description: e.description || undefined,
+            url: e.url || undefined,
+            imageURL: e.image?.url || undefined,
+            thumbnailURL: e.thumbnail?.url || undefined,
+            authorIconURL: e.author?.iconUrl || undefined,
+            authorName: e.author?.name || undefined,
+            authorURL: e.author?.url || undefined,
+            color: e.color || undefined,
+            footerIconURL: e.footer?.iconUrl || undefined,
+            footerText: e.footer?.text || undefined,
+            timestamp: e.timestamp || undefined,
+            fields:
+              e.fields?.filter(
+                (f): f is { name: string; value: string; inline?: boolean } =>
+                  !!f.name && !!f.value
+              ) || [],
+          }))
+        ),
+        formatter: {
+          ...connectionFormatOptions,
+          connectionCreatedAt: new Date().toISOString(),
+        },
+        splitOptions: undefined,
+        mentions: undefined,
+        customPlaceholders: undefined,
+        placeholderLimits,
+        enablePlaceholderFallback: enablePlaceholderFallback,
+        components: [],
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        componentsV2: (componentsV2 as any) ?? undefined,
+      },
+    };
+
+    return this.deps.feedHandlerService.createPreview({
+      details: payload,
     });
   }
 

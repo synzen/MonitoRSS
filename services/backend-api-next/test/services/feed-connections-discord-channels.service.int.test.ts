@@ -46,6 +46,7 @@ import {
   InvalidFilterExpressionException,
 } from "../../src/shared/exceptions/feed-connections.exceptions";
 import { DiscordAPIError } from "../../src/shared/exceptions/discord-api.error";
+import { TestDeliveryStatus } from "../../src/services/feed-handler/types";
 
 function objectId(): string {
   return new Types.ObjectId().toHexString();
@@ -141,9 +142,13 @@ describe(
     };
     let mockFeedHandlerService: {
       validateFilters: ReturnType<typeof mock.fn>;
+      sendTestArticle: ReturnType<typeof mock.fn>;
     };
     let mockSupportersService: {
       getBenefitsOfDiscordUser: ReturnType<typeof mock.fn>;
+    };
+    let mockUsersService: {
+      getOrCreateUserByDiscordId: ReturnType<typeof mock.fn>;
     };
 
     before(async () => {
@@ -154,10 +159,18 @@ describe(
       };
       mockFeedHandlerService = {
         validateFilters: mock.fn(() => Promise.resolve({ errors: [] })),
+        sendTestArticle: mock.fn(() =>
+          Promise.resolve({ status: TestDeliveryStatus.Success }),
+        ),
       };
       mockSupportersService = {
         getBenefitsOfDiscordUser: mock.fn(() =>
           Promise.resolve({ allowCustomPlaceholders: true }),
+        ),
+      };
+      mockUsersService = {
+        getOrCreateUserByDiscordId: mock.fn(() =>
+          Promise.resolve({ preferences: {} }),
         ),
       };
 
@@ -165,8 +178,12 @@ describe(
         mockFeedsService.canUseChannel;
       (ctx.container.feedHandlerService as any).validateFilters =
         mockFeedHandlerService.validateFilters;
+      (ctx.container.feedHandlerService as any).sendTestArticle =
+        mockFeedHandlerService.sendTestArticle;
       (ctx.container.supportersService as any).getBenefitsOfDiscordUser =
         mockSupportersService.getBenefitsOfDiscordUser;
+      (ctx.container.usersService as any).getOrCreateUserByDiscordId =
+        mockUsersService.getOrCreateUserByDiscordId;
     });
 
     after(async () => {
@@ -176,7 +193,9 @@ describe(
     beforeEach(() => {
       mockFeedsService.canUseChannel.mock.resetCalls();
       mockFeedHandlerService.validateFilters.mock.resetCalls();
+      mockFeedHandlerService.sendTestArticle.mock.resetCalls();
       mockSupportersService.getBenefitsOfDiscordUser.mock.resetCalls();
+      mockUsersService.getOrCreateUserByDiscordId.mock.resetCalls();
 
       mockFeedsService.canUseChannel.mock.mockImplementation(() =>
         Promise.resolve({ guild_id: "guild-id" }),
@@ -184,8 +203,14 @@ describe(
       mockFeedHandlerService.validateFilters.mock.mockImplementation(() =>
         Promise.resolve({ errors: [] }),
       );
+      mockFeedHandlerService.sendTestArticle.mock.mockImplementation(() =>
+        Promise.resolve({ status: TestDeliveryStatus.Success }),
+      );
       mockSupportersService.getBenefitsOfDiscordUser.mock.mockImplementation(
         () => Promise.resolve({ allowCustomPlaceholders: true }),
+      );
+      mockUsersService.getOrCreateUserByDiscordId.mock.mockImplementation(() =>
+        Promise.resolve({ preferences: {} }),
       );
     });
 
@@ -1379,6 +1404,344 @@ describe(
         const updatedFeed = await getFeed(ctx, createdFeed.id);
 
         assert.strictEqual(updatedFeed?.connections.discordChannels.length, 0);
+      });
+    });
+
+    describe("sendTestArticle", { concurrency: false }, () => {
+      it("calls feedHandlerService.sendTestArticle with correct args", async () => {
+        const connectionIdToUse = objectId();
+        const guildId = "guild-id";
+
+        const createdFeed = await createFeed(ctx, {
+          connections: {
+            discordChannels: [
+              {
+                id: connectionIdToUse,
+                name: "name",
+                details: {
+                  channel: { id: "channel-id", guildId },
+                  embeds: [],
+                },
+              },
+            ],
+          },
+        });
+
+        const targetConnection = createdFeed.connections.discordChannels[0];
+        assert.ok(targetConnection, "Target connection should exist");
+
+        await ctx.container.feedConnectionsDiscordChannelsService.sendTestArticle(
+          createdFeed,
+          targetConnection,
+        );
+
+        assert.strictEqual(
+          mockFeedHandlerService.sendTestArticle.mock.calls.length,
+          1,
+        );
+
+        const callArg = mockFeedHandlerService.sendTestArticle.mock.calls[0]
+          .arguments[0] as {
+          details: {
+            type: string;
+            feed: { url: string };
+            article?: { id: string };
+            mediumDetails: { channel: { id: string }; content: string };
+          };
+        };
+        assert.strictEqual(callArg.details.type, "discord");
+        assert.strictEqual(callArg.details.feed.url, createdFeed.url);
+        assert.strictEqual(callArg.details.article, undefined);
+        assert.strictEqual(
+          callArg.details.mediumDetails.channel.id,
+          targetConnection.details.channel!.id,
+        );
+        assert.ok(typeof callArg.details.mediumDetails.content === "string");
+      });
+
+      it("calls sendTestArticle with specific article if field exists", async () => {
+        const connectionIdToUse = objectId();
+        const guildId = "guild-id";
+
+        const createdFeed = await createFeed(ctx, {
+          connections: {
+            discordChannels: [
+              {
+                id: connectionIdToUse,
+                name: "name",
+                details: {
+                  channel: { id: "channel-id", guildId },
+                  embeds: [],
+                },
+              },
+            ],
+          },
+        });
+
+        const targetConnection = createdFeed.connections.discordChannels[0];
+        assert.ok(targetConnection, "Target connection should exist");
+
+        await ctx.container.feedConnectionsDiscordChannelsService.sendTestArticle(
+          createdFeed,
+          targetConnection,
+          {
+            article: {
+              id: "article-1",
+            },
+          },
+        );
+
+        assert.strictEqual(
+          mockFeedHandlerService.sendTestArticle.mock.calls.length,
+          1,
+        );
+
+        const callArg = mockFeedHandlerService.sendTestArticle.mock.calls[0]
+          .arguments[0] as {
+          details: { article?: { id: string } };
+        };
+        assert.deepStrictEqual(callArg.details.article, { id: "article-1" });
+      });
+
+      it("returns the result from feedHandlerService", async () => {
+        const connectionIdToUse = objectId();
+        const guildId = "guild-id";
+        const testResult = {
+          status: TestDeliveryStatus.Success,
+          apiResponse: { messageId: "123" },
+        };
+
+        mockFeedHandlerService.sendTestArticle.mock.mockImplementation(() =>
+          Promise.resolve(testResult),
+        );
+
+        const createdFeed = await createFeed(ctx, {
+          connections: {
+            discordChannels: [
+              {
+                id: connectionIdToUse,
+                name: "name",
+                details: {
+                  channel: { id: "channel-id", guildId },
+                  embeds: [],
+                },
+              },
+            ],
+          },
+        });
+
+        const targetConnection = createdFeed.connections.discordChannels[0];
+        assert.ok(targetConnection, "Target connection should exist");
+
+        const result =
+          await ctx.container.feedConnectionsDiscordChannelsService.sendTestArticle(
+            createdFeed,
+            targetConnection,
+          );
+
+        assert.deepStrictEqual(result, testResult);
+      });
+
+      it("strips custom placeholders when user is not allowed", async () => {
+        const connectionIdToUse = objectId();
+        const guildId = "guild-id";
+
+        mockSupportersService.getBenefitsOfDiscordUser.mock.mockImplementation(
+          () =>
+            Promise.resolve({
+              allowCustomPlaceholders: false,
+              allowExternalProperties: true,
+            }),
+        );
+
+        const createdFeed = await createFeed(ctx, {
+          connections: {
+            discordChannels: [
+              {
+                id: connectionIdToUse,
+                name: "name",
+                details: {
+                  channel: { id: "channel-id", guildId },
+                  embeds: [],
+                },
+              },
+            ],
+          },
+        });
+
+        const targetConnection = createdFeed.connections.discordChannels[0];
+        assert.ok(targetConnection, "Target connection should exist");
+
+        await ctx.container.feedConnectionsDiscordChannelsService.sendTestArticle(
+          createdFeed,
+          targetConnection,
+          {
+            previewInput: {
+              customPlaceholders: [
+                {
+                  id: "placeholder-1",
+                  referenceName: "test",
+                  sourcePlaceholder: "title",
+                  steps: [],
+                },
+              ],
+            },
+          },
+        );
+
+        assert.strictEqual(
+          mockFeedHandlerService.sendTestArticle.mock.calls.length,
+          1,
+        );
+
+        const callArg = mockFeedHandlerService.sendTestArticle.mock.calls[0]
+          .arguments[0] as {
+          details: {
+            mediumDetails: {
+              customPlaceholders: Array<unknown>;
+            };
+          };
+        };
+        assert.deepStrictEqual(
+          callArg.details.mediumDetails.customPlaceholders,
+          [],
+        );
+      });
+
+      it("strips external properties when user is not allowed", async () => {
+        const connectionIdToUse = objectId();
+        const guildId = "guild-id";
+
+        mockSupportersService.getBenefitsOfDiscordUser.mock.mockImplementation(
+          () =>
+            Promise.resolve({
+              allowCustomPlaceholders: true,
+              allowExternalProperties: false,
+            }),
+        );
+
+        const createdFeed = await createFeed(ctx, {
+          connections: {
+            discordChannels: [
+              {
+                id: connectionIdToUse,
+                name: "name",
+                details: {
+                  channel: { id: "channel-id", guildId },
+                  embeds: [],
+                },
+              },
+            ],
+          },
+        });
+
+        const targetConnection = createdFeed.connections.discordChannels[0];
+        assert.ok(targetConnection, "Target connection should exist");
+
+        await ctx.container.feedConnectionsDiscordChannelsService.sendTestArticle(
+          createdFeed,
+          targetConnection,
+          {
+            previewInput: {
+              externalProperties: [
+                {
+                  sourceField: "field1",
+                  label: "Label 1",
+                  cssSelector: ".selector",
+                },
+              ],
+            },
+          },
+        );
+
+        assert.strictEqual(
+          mockFeedHandlerService.sendTestArticle.mock.calls.length,
+          1,
+        );
+
+        const callArg = mockFeedHandlerService.sendTestArticle.mock.calls[0]
+          .arguments[0] as {
+          details: {
+            feed: {
+              externalProperties: Array<unknown>;
+            };
+          };
+        };
+        assert.deepStrictEqual(callArg.details.feed.externalProperties, []);
+      });
+
+      it("filters out embed fields without name or value", async () => {
+        const connectionIdToUse = objectId();
+        const guildId = "guild-id";
+
+        const createdFeed = await createFeed(ctx, {
+          connections: {
+            discordChannels: [
+              {
+                id: connectionIdToUse,
+                name: "name",
+                details: {
+                  channel: { id: "channel-id", guildId },
+                  embeds: [],
+                },
+              },
+            ],
+          },
+        });
+
+        const targetConnection = createdFeed.connections.discordChannels[0];
+        assert.ok(targetConnection, "Target connection should exist");
+
+        await ctx.container.feedConnectionsDiscordChannelsService.sendTestArticle(
+          createdFeed,
+          targetConnection,
+          {
+            previewInput: {
+              embeds: [
+                {
+                  title: "Test Embed",
+                  fields: [
+                    { name: "Valid", value: "Field" },
+                    { name: "", value: "Missing name" },
+                    { name: "Missing value", value: "" },
+                    { name: null, value: "Null name" },
+                    { name: "Null value", value: null },
+                  ],
+                },
+              ],
+            },
+          },
+        );
+
+        assert.strictEqual(
+          mockFeedHandlerService.sendTestArticle.mock.calls.length,
+          1,
+        );
+
+        const callArg = mockFeedHandlerService.sendTestArticle.mock.calls[0]
+          .arguments[0] as {
+          details: {
+            mediumDetails: {
+              embeds: Array<{
+                fields: Array<{ name: string; value: string }>;
+              }>;
+            };
+          };
+        };
+
+        assert.strictEqual(callArg.details.mediumDetails.embeds.length, 1);
+        assert.strictEqual(
+          callArg.details.mediumDetails.embeds[0].fields.length,
+          1,
+        );
+        assert.deepStrictEqual(
+          callArg.details.mediumDetails.embeds[0].fields[0],
+          {
+            name: "Valid",
+            value: "Field",
+            inline: undefined,
+          },
+        );
       });
     });
   },
