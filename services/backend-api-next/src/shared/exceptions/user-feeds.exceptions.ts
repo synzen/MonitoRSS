@@ -5,7 +5,17 @@ export class BannedFeedException extends StandardException {}
 export class SourceFeedNotFoundException extends StandardException {}
 export class RefreshRateNotAllowedException extends StandardException {}
 export class FeedNotFailedException extends StandardException {}
-export class ManualRequestTooSoonException extends StandardException {}
+export class ManualRequestTooSoonException extends StandardException {
+  secondsUntilNextRequest?: number;
+
+  constructor(
+    message?: string,
+    options?: { secondsUntilNextRequest?: number },
+  ) {
+    super(message);
+    this.secondsUntilNextRequest = options?.secondsUntilNextRequest;
+  }
+}
 export class FeedFetchTimeoutException extends StandardException {}
 export class FeedTooLargeException extends StandardException {}
 export class NoFeedOnHtmlPageException extends StandardException {}

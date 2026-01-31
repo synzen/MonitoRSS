@@ -20,6 +20,32 @@ export enum GetArticlesResponseRequestStatus {
   InvalidSslCertificate = "INVALID_SSL_CERTIFICATE",
 }
 
+export interface CustomPlaceholderStep {
+  id: string;
+  type: string;
+  regexSearch?: string;
+  regexSearchFlags?: string;
+  replacementString?: string;
+  regexFallback?: string;
+  fallbackValue?: string;
+  characterCount?: number;
+  appendValue?: string;
+  prependValue?: string;
+  dateFormat?: string;
+  dateTimezone?: string;
+  dateLocale?: string;
+  cssSelector?: string;
+  takeFirst?: string;
+  uppercaseTitle?: boolean;
+}
+
+export interface CustomPlaceholder {
+  id: string;
+  referenceName: string;
+  sourcePlaceholder: string;
+  steps: CustomPlaceholderStep[];
+}
+
 export interface FeedHandlerRateLimitsResponse {
   results: {
     limits: Array<{
@@ -133,29 +159,7 @@ export interface GetArticlesInput {
       label: string;
       cssSelector: string;
     }> | null;
-    customPlaceholders?: Array<{
-      id: string;
-      referenceName: string;
-      sourcePlaceholder: string;
-      steps: Array<{
-        id: string;
-        type: string;
-        regexSearch?: string;
-        regexSearchFlags?: string;
-        replacementString?: string;
-        regexFallback?: string;
-        fallbackValue?: string;
-        characterCount?: number;
-        appendValue?: string;
-        prependValue?: string;
-        dateFormat?: string;
-        dateTimezone?: string;
-        dateLocale?: string;
-        cssSelector?: string;
-        takeFirst?: string;
-        uppercaseTitle?: boolean;
-      }>;
-    }> | null;
+    customPlaceholders?: CustomPlaceholder[] | null;
   };
 }
 

@@ -6,6 +6,12 @@ import type {
   IUserFeedDateCheckOptions,
   IExternalFeedProperty,
 } from "../../repositories/interfaces/user-feed.types";
+import type {
+  GetArticlesResponseRequestStatus,
+  GetArticlesResponse,
+  GetFeedArticlesFilterReturnType,
+  CustomPlaceholder,
+} from "../feed-handler/types";
 import type { IUserRepository } from "../../repositories/interfaces/user.types";
 import type { UserFeedDisabledCode } from "../../repositories/shared/enums";
 import type { FeedsService } from "../feeds/feeds.service";
@@ -143,3 +149,49 @@ export interface CheckUrlIsValidOutput {
   enableDateChecks: boolean;
   feedTitle?: string;
 }
+
+export interface GetFeedArticlePropertiesInput {
+  feed: IUserFeed;
+  url: string;
+  customPlaceholders?: CustomPlaceholder[] | null;
+}
+
+export interface GetFeedArticlePropertiesOutput {
+  properties: string[];
+  requestStatus: GetArticlesResponseRequestStatus;
+}
+
+export interface GetFeedArticlesInput {
+  feed: IUserFeed;
+  limit: number;
+  url: string;
+  random?: boolean;
+  selectProperties?: string[];
+  selectPropertyTypes?: string[];
+  skip?: number;
+  discordUserId: string;
+  includeHtmlInErrors?: boolean;
+  filters?: {
+    returnType: GetFeedArticlesFilterReturnType.IncludeEvaluationResults;
+    expression?: Record<string, unknown>;
+    search?: string;
+  };
+  formatter: {
+    customPlaceholders?: CustomPlaceholder[] | null;
+    externalProperties?: Array<{
+      sourceField: string;
+      label: string;
+      cssSelector: string;
+    }> | null;
+    options: {
+      stripImages: boolean;
+      formatTables: boolean;
+      dateFormat: string | undefined;
+      dateTimezone: string | undefined;
+      dateLocale: string | undefined;
+      disableImageLinkPreviews: boolean;
+    };
+  };
+}
+
+export type GetFeedArticlesOutput = GetArticlesResponse["result"];

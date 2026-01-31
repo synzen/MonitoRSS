@@ -8,6 +8,7 @@ import { GetArticlesResponseRequestStatus } from "../../src/services/feed-handle
 import {
   FeedLimitReachedException,
   FeedNotFailedException,
+  ManualRequestTooSoonException,
   SourceFeedNotFoundException,
 } from "../../src/shared/exceptions/user-feeds.exceptions";
 import {
@@ -1325,6 +1326,205 @@ describe("UserFeedsService", { concurrency: true }, () => {
         updated.connections?.discordChannels[0]?.disabledCode,
         undefined,
       );
+    });
+  });
+
+  describe("manuallyRequest", () => {
+    it("throws ManualRequestTooSoonException when called too soon after last request", async () => {
+      const ctx = harness.createContext({
+        feedFetcherApiService: { requestStatus: "SUCCESS" },
+      });
+      const feed = await ctx.createFeed({});
+      await ctx.setFields(feed.id, {
+        lastManualRequestAt: new Date(),
+      });
+
+      const updatedFeed = await ctx.findById(feed.id);
+      assert.ok(updatedFeed);
+
+      await assert.rejects(
+        () => ctx.service.manuallyRequest(updatedFeed),
+        ManualRequestTooSoonException,
+      );
+    });
+
+    it("updates lastManualRequestAt on successful request", async () => {
+      const ctx = harness.createContext({
+        feedFetcherApiService: { requestStatus: "SUCCESS" },
+      });
+      const feed = await ctx.createFeed({});
+      const beforeRequest = new Date();
+
+      await ctx.service.manuallyRequest(feed);
+
+      const updated = await ctx.findById(feed.id);
+      assert.ok(updated);
+      assert.ok(updated.lastManualRequestAt);
+      assert.ok(updated.lastManualRequestAt >= beforeRequest);
+    });
+
+    it("sets health status to Ok on successful request", async () => {
+      const ctx = harness.createContext({
+        feedFetcherApiService: { requestStatus: "SUCCESS" },
+      });
+      const feed = await ctx.createFeed({});
+      await ctx.setFields(feed.id, {
+        healthStatus: UserFeedHealthStatus.Failed,
+      });
+
+      const feedToRequest = await ctx.findById(feed.id);
+      assert.ok(feedToRequest);
+
+      await ctx.service.manuallyRequest(feedToRequest);
+
+      const updated = await ctx.findById(feed.id);
+      assert.ok(updated);
+      assert.strictEqual(updated.healthStatus, UserFeedHealthStatus.Ok);
+    });
+
+    it("returns requestStatus from the result", async () => {
+      const ctx = harness.createContext({
+        feedFetcherApiService: { requestStatus: "SUCCESS" },
+      });
+      const feed = await ctx.createFeed({});
+
+      const result = await ctx.service.manuallyRequest(feed);
+
+      assert.strictEqual(result.requestStatus, "SUCCESS");
+    });
+
+    it("returns statusCode when request fails with bad status code", async () => {
+      const ctx = harness.createContext({
+        feedFetcherApiService: { requestStatus: "BAD_STATUS_CODE", statusCode: 404 },
+      });
+      const feed = await ctx.createFeed({});
+
+      const result = await ctx.service.manuallyRequest(feed);
+
+      assert.strictEqual(result.requestStatus, "BAD_STATUS_CODE");
+      assert.strictEqual(result.requestStatusCode, 404);
+    });
+
+    it("clears disabledCode when feed was disabled with InvalidFeed and request succeeds", async () => {
+      const ctx = harness.createContext({
+        feedFetcherApiService: { requestStatus: "SUCCESS" },
+        feedHandler: {
+          requestStatus: GetArticlesResponseRequestStatus.Success,
+        },
+      });
+      const feed = await ctx.createFeed({});
+      await ctx.setFields(feed.id, {
+        disabledCode: RepoUserFeedDisabledCode.InvalidFeed,
+      });
+
+      const feedToRequest = await ctx.findById(feed.id);
+      assert.ok(feedToRequest);
+
+      await ctx.service.manuallyRequest(feedToRequest);
+
+      const updated = await ctx.findById(feed.id);
+      assert.ok(updated);
+      assert.strictEqual(updated.disabledCode, undefined);
+    });
+
+    it("does not clear disabledCode when article properties check fails", async () => {
+      const ctx = harness.createContext({
+        feedFetcherApiService: { requestStatus: "SUCCESS" },
+        feedHandler: {
+          requestStatus: GetArticlesResponseRequestStatus.ParseError,
+        },
+      });
+      const feed = await ctx.createFeed({});
+      await ctx.setFields(feed.id, {
+        disabledCode: RepoUserFeedDisabledCode.InvalidFeed,
+      });
+
+      const feedToRequest = await ctx.findById(feed.id);
+      assert.ok(feedToRequest);
+
+      await ctx.service.manuallyRequest(feedToRequest);
+
+      const updated = await ctx.findById(feed.id);
+      assert.ok(updated);
+      assert.strictEqual(updated.disabledCode, RepoUserFeedDisabledCode.InvalidFeed);
+    });
+  });
+
+  describe("getFeedArticleProperties", () => {
+    it("returns properties from articles", async () => {
+      const ctx = harness.createContext({
+        feedHandler: {
+          requestStatus: GetArticlesResponseRequestStatus.Success,
+          articles: [
+            { title: "Test", description: "Desc" },
+            { title: "Test 2", author: "Someone" },
+          ],
+        },
+      });
+      const feed = await ctx.createFeed({});
+
+      const result = await ctx.service.getFeedArticleProperties({
+        feed,
+        url: feed.url,
+      });
+
+      assert.ok(result.properties.includes("title"));
+      assert.ok(result.properties.includes("description"));
+      assert.ok(result.properties.includes("author"));
+    });
+
+    it("returns sorted unique properties", async () => {
+      const ctx = harness.createContext({
+        feedHandler: {
+          requestStatus: GetArticlesResponseRequestStatus.Success,
+          articles: [
+            { zebra: "z", apple: "a" },
+            { apple: "a2", banana: "b" },
+          ],
+        },
+      });
+      const feed = await ctx.createFeed({});
+
+      const result = await ctx.service.getFeedArticleProperties({
+        feed,
+        url: feed.url,
+      });
+
+      assert.deepStrictEqual(result.properties, ["apple", "banana", "zebra"]);
+    });
+
+    it("returns requestStatus from feed handler", async () => {
+      const ctx = harness.createContext({
+        feedHandler: {
+          requestStatus: GetArticlesResponseRequestStatus.Success,
+          articles: [],
+        },
+      });
+      const feed = await ctx.createFeed({});
+
+      const result = await ctx.service.getFeedArticleProperties({
+        feed,
+        url: feed.url,
+      });
+
+      assert.strictEqual(result.requestStatus, GetArticlesResponseRequestStatus.Success);
+    });
+
+    it("returns empty properties when no articles", async () => {
+      const ctx = harness.createContext({
+        feedHandler: {
+          requestStatus: GetArticlesResponseRequestStatus.Success,
+          articles: [],
+        },
+      });
+      const feed = await ctx.createFeed({});
+
+      const result = await ctx.service.getFeedArticleProperties({
+        feed,
+        url: feed.url,
+      });
+
+      assert.deepStrictEqual(result.properties, []);
     });
   });
 });

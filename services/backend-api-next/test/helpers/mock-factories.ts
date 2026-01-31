@@ -71,6 +71,7 @@ export function createMockUsersService(
       id: userId ?? generateTestId(),
       discordUserId: "test-user",
     }),
+    syncLookupKeys: async () => {},
   } as unknown as UserFeedsServiceDeps["usersService"];
 }
 
@@ -231,6 +232,22 @@ export function createMockFeedFetcherService(
       if (options.fetchFeedError) throw options.fetchFeedError;
     }),
   } as unknown as UserFeedsServiceDeps["feedFetcherService"];
+}
+
+export interface MockFeedFetcherApiServiceOptions {
+  requestStatus?: string;
+  statusCode?: number;
+}
+
+export function createMockFeedFetcherApiService(
+  options: MockFeedFetcherApiServiceOptions = {},
+): UserFeedsServiceDeps["feedFetcherApiService"] {
+  return {
+    fetchAndSave: mock.fn(async () => ({
+      requestStatus: options.requestStatus ?? "SUCCESS",
+      response: options.statusCode ? { statusCode: options.statusCode } : undefined,
+    })),
+  } as unknown as UserFeedsServiceDeps["feedFetcherApiService"];
 }
 
 export interface MockDiscordChannelConnectionOptions {
