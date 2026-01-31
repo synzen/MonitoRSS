@@ -965,14 +965,13 @@ export class UserFeedsService {
   async bulkDisable(
     feedIds: string[],
   ): Promise<Array<{ id: string; disabled: boolean }>> {
-    const feeds = await this.deps.userFeedRepository.findByIds(feedIds);
-    const eligibleFeeds = feeds.filter(
-      (f) =>
-        !f.disabledCode ||
-        DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS.includes(
-          f.disabledCode as UserFeedDisabledCode,
-        ),
-    );
+    const [eligibleFeeds, userIds] = await Promise.all([
+      this.deps.userFeedRepository.findEligibleFeedsForDisable(
+        feedIds,
+        DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
+      ),
+      this.deps.userFeedRepository.findUserIdsByFeedIds(feedIds),
+    ]);
     const eligibleIds = new Set(eligibleFeeds.map((f) => f.id));
 
     if (eligibleIds.size > 0) {
@@ -982,7 +981,6 @@ export class UserFeedsService {
       );
     }
 
-    const userIds = [...new Set(feeds.map((f) => f.user.discordUserId))];
     try {
       for (const userId of userIds) {
         await this.enforceUserFeedLimit(userId);
@@ -1003,10 +1001,10 @@ export class UserFeedsService {
   async bulkEnable(
     feedIds: string[],
   ): Promise<Array<{ id: string; enabled: boolean }>> {
-    const feeds = await this.deps.userFeedRepository.findByIds(feedIds);
-    const eligibleFeeds = feeds.filter(
-      (f) => f.disabledCode === UserFeedDisabledCode.Manual,
-    );
+    const [eligibleFeeds, userIds] = await Promise.all([
+      this.deps.userFeedRepository.findEligibleFeedsForEnable(feedIds),
+      this.deps.userFeedRepository.findUserIdsByFeedIds(feedIds),
+    ]);
     const eligibleIds = new Set(eligibleFeeds.map((f) => f.id));
 
     if (eligibleIds.size > 0) {
@@ -1016,7 +1014,6 @@ export class UserFeedsService {
       );
     }
 
-    const userIds = [...new Set(feeds.map((f) => f.user.discordUserId))];
     try {
       for (const userId of userIds) {
         await this.enforceUserFeedLimit(userId);

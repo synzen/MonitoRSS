@@ -242,6 +242,11 @@ export interface CloneConnectionToFeedsResult {
   feedIdToConnectionId: Array<{ feedId: string; connectionId: string }>;
 }
 
+export interface UserFeedForBulkOperation {
+  id: string;
+  discordUserId: string;
+}
+
 export interface UserFeedWithConnections {
   id: string;
   connections: IFeedConnections;
@@ -331,6 +336,14 @@ export interface IUserFeedRepository {
     update: Record<string, unknown>,
   ): Promise<number>;
   findByIds(ids: string[]): Promise<IUserFeed[]>;
+  findEligibleFeedsForDisable(
+    feedIds: string[],
+    eligibleDisabledCodes: UserFeedDisabledCode[],
+  ): Promise<UserFeedForBulkOperation[]>;
+  findEligibleFeedsForEnable(
+    feedIds: string[],
+  ): Promise<UserFeedForBulkOperation[]>;
+  findUserIdsByFeedIds(feedIds: string[]): Promise<string[]>;
   getFeedsGroupedByUserForLimitEnforcement(
     query: UserFeedLimitEnforcementQuery,
   ): AsyncIterable<UserFeedLimitEnforcementResult>;

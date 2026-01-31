@@ -26,6 +26,7 @@ import type {
   UserFeedWithConnections,
   CopySettingsToFeedsInput,
   CopySettingsTarget,
+  UserFeedForBulkOperation,
 } from "../interfaces/user-feed.types";
 import { calculateSlotOffsetMs } from "../../shared/utils/fnv1a-hash";
 import { getEffectiveRefreshRateSeconds } from "../../shared/utils/get-effective-refresh-rate";
@@ -855,6 +856,71 @@ export class UserFeedMongooseRepository
     return docs.map((doc) =>
       this.toEntity(doc as UserFeedDoc & { _id: Types.ObjectId }),
     );
+  }
+
+  async findEligibleFeedsForDisable(
+    feedIds: string[],
+    eligibleDisabledCodes: UserFeedDisabledCode[],
+  ): Promise<UserFeedForBulkOperation[]> {
+    if (feedIds.length === 0) return [];
+
+    const objectIds = feedIds.map((id) => this.stringToObjectId(id));
+    const docs = await this.model
+      .find({
+        $and: [
+          { _id: { $in: objectIds } },
+          {
+            $or: [
+              { disabledCode: { $exists: false } },
+              { disabledCode: { $in: eligibleDisabledCodes } },
+            ],
+          },
+        ],
+      })
+      .select("_id user.discordUserId")
+      .lean();
+
+    return docs.map((doc) => ({
+      id: (doc._id as Types.ObjectId).toString(),
+      discordUserId: (doc as { user: { discordUserId: string } }).user
+        .discordUserId,
+    }));
+  }
+
+  async findEligibleFeedsForEnable(
+    feedIds: string[],
+  ): Promise<UserFeedForBulkOperation[]> {
+    if (feedIds.length === 0) return [];
+
+    const objectIds = feedIds.map((id) => this.stringToObjectId(id));
+    const docs = await this.model
+      .find({
+        _id: { $in: objectIds },
+        disabledCode: UserFeedDisabledCode.Manual,
+      })
+      .select("_id user.discordUserId")
+      .lean();
+
+    return docs.map((doc) => ({
+      id: (doc._id as Types.ObjectId).toString(),
+      discordUserId: (doc as { user: { discordUserId: string } }).user
+        .discordUserId,
+    }));
+  }
+
+  async findUserIdsByFeedIds(feedIds: string[]): Promise<string[]> {
+    if (feedIds.length === 0) return [];
+
+    const objectIds = feedIds.map((id) => this.stringToObjectId(id));
+    const docs = await this.model
+      .find({ _id: { $in: objectIds } })
+      .select("user.discordUserId")
+      .lean();
+
+    const userIds = docs.map(
+      (doc) => (doc as { user: { discordUserId: string } }).user.discordUserId,
+    );
+    return [...new Set(userIds)];
   }
 
   async findManyWithConnectionsByFilter(
