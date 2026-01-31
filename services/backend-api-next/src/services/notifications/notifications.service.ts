@@ -3,6 +3,7 @@ import type { Config } from "../../config";
 import type { SmtpTransport } from "../../infra/smtp";
 import type { INotificationDeliveryAttemptRepository } from "../../repositories/interfaces/notification-delivery-attempt.types";
 import type {
+  IUserFeed,
   IUserFeedRepository,
   UserFeedForNotification,
 } from "../../repositories/interfaces/user-feed.types";
@@ -128,7 +129,7 @@ export class NotificationsService {
   }
 
   async sendDisabledFeedConnectionAlert(
-    feed: UserFeedForNotification,
+    feed: IUserFeed,
     connection: IDiscordChannelConnection,
     options: {
       disabledCode: FeedConnectionDisabledCode;
@@ -204,7 +205,7 @@ export class NotificationsService {
   }
 
   private getConnectionPrefix(
-    feed: UserFeedForNotification,
+    feed: IUserFeed,
     connection: IDiscordChannelConnection,
   ): string {
     const isDiscordChannel = feed.connections.discordChannels.some(

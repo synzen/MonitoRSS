@@ -93,7 +93,6 @@ export interface UserFeedForNotification {
   url: string;
   user: IUserFeedUser;
   shareManageOptions?: IUserFeedShareManageOptions;
-  connections: IFeedConnections;
 }
 
 export interface AddConnectionToInviteOperation {

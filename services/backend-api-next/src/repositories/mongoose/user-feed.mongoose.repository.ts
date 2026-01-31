@@ -310,13 +310,11 @@ export class UserFeedMongooseRepository
     const objectIds = ids.map((id) => this.stringToObjectId(id));
     const docs = await this.model
       .find({ _id: { $in: objectIds } })
-      .select("_id title url user shareManageOptions connections")
+      .select("_id title url user shareManageOptions")
       .lean();
 
     return docs.map((doc) => {
       const docWithId = doc as UserFeedDoc & { _id: Types.ObjectId };
-      const discordChannels = docWithId.connections
-        .discordChannels as unknown as DiscordChannelConnectionDoc[];
 
       return {
         id: this.objectIdToString(docWithId._id),
@@ -344,11 +342,6 @@ export class UserFeedMongooseRepository
               })),
             }
           : undefined,
-        connections: {
-          discordChannels: discordChannels.map((conn) =>
-            this.mapDiscordChannelConnection(conn),
-          ),
-        },
       };
     });
   }

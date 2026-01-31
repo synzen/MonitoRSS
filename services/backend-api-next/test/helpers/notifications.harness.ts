@@ -3,6 +3,7 @@ import { NotificationsService } from "../../src/services/notifications/notificat
 import type { Config } from "../../src/config";
 import type { SmtpTransport } from "../../src/infra/smtp";
 import type {
+  IUserFeed,
   IUserFeedRepository,
   UserFeedForNotification,
 } from "../../src/repositories/interfaces/user-feed.types";
@@ -80,9 +81,7 @@ export interface NotificationsContext {
   userFeedRepository: MockUserFeedRepository;
   notificationDeliveryAttemptRepository: MockNotificationDeliveryAttemptRepository;
   generateId(): string;
-  createMockFeed(
-    overrides?: Partial<UserFeedForNotification>,
-  ): UserFeedForNotification;
+  createMockFeed(overrides?: Partial<IUserFeed>): IUserFeed;
   createMockConnection(
     overrides?: Partial<IDiscordChannelConnection>,
   ): IDiscordChannelConnection;
@@ -175,15 +174,17 @@ export function createNotificationsHarness(): NotificationsHarness {
   };
 }
 
-export function createMockFeed(
-  overrides?: Partial<UserFeedForNotification>,
-): UserFeedForNotification {
+export function createMockFeed(overrides?: Partial<IUserFeed>): IUserFeed {
   return {
     id: overrides?.id ?? generateTestId(),
     title: overrides?.title ?? "Test Feed",
     url: overrides?.url ?? "https://example.com/feed.xml",
     user: overrides?.user ?? { discordUserId: generateTestId() },
     connections: overrides?.connections ?? { discordChannels: [] },
+    healthStatus:
+      overrides?.healthStatus ?? ("ok" as IUserFeed["healthStatus"]),
+    createdAt: overrides?.createdAt ?? new Date(),
+    updatedAt: overrides?.updatedAt ?? new Date(),
     ...overrides,
   };
 }
