@@ -266,6 +266,7 @@ export interface MockDiscordChannelConnectionOptions {
       id: string;
       guildId: string;
       token: string;
+      isApplicationOwned?: boolean;
     };
   };
 }

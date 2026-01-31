@@ -18,7 +18,7 @@ import {
 } from "./exceptions";
 import { Readable } from "node:stream";
 import FeedParser from "feedparser";
-import Article from '../../shared/utils/Article';
+import Article from "../../shared/utils/Article";
 import ArticleIDResolver from "../../shared/utils/ArticleIDResolver";
 
 interface FetchFeedOptions {
@@ -36,7 +36,7 @@ export interface FeedFetcherServiceDeps {
   feedFetcherApiService: FeedFetcherApiService;
 }
 
- interface FeedData {
+interface FeedData {
   articleList: FeedParser.Item[];
   idType?: string;
 }
@@ -65,7 +65,7 @@ export class FeedFetcherService {
         {
           getCachedResponse: options.fetchOptions.useServiceApiCache,
           debug: options.fetchOptions.debug,
-        }
+        },
       );
     }
 
@@ -101,8 +101,8 @@ export class FeedFetcherService {
           reject(
             new InvalidFeedException(
               "That is a not a valid feed. Note that you cannot add just any link. " +
-                "You may check if it is a valid feed by using online RSS feed validators"
-            )
+                "You may check if it is a valid feed by using online RSS feed validators",
+            ),
           );
         } else {
           reject(new FeedParseException(err.message));
@@ -150,12 +150,12 @@ export class FeedFetcherService {
     options?: {
       getCachedResponse?: boolean;
       debug?: boolean;
-    }
+    },
   ): Promise<NodeJS.ReadableStream> {
     const result = await this.deps.feedFetcherApiService.fetchAndSave(
       url,
       lookupDetails,
-      options
+      options,
     );
 
     if (result.requestStatus === FeedFetcherFetchStatus.BadStatusCode) {
@@ -168,7 +168,7 @@ export class FeedFetcherService {
 
     if (result.requestStatus === FeedFetcherFetchStatus.ParseError) {
       throw new FeedParseException(
-        `Feed host failed to return a valid, parseable feed`
+        `Feed host failed to return a valid, parseable feed`,
       );
     }
 
@@ -182,7 +182,7 @@ export class FeedFetcherService {
 
     if (result.requestStatus === FeedFetcherFetchStatus.InvalidSslCertificate) {
       throw new FeedInvalidSslCertException(
-        `Feed host has an invalid SSL certificate`
+        `Feed host has an invalid SSL certificate`,
       );
     }
 
@@ -207,13 +207,15 @@ export class FeedFetcherService {
     }
 
     if (result.requestStatus === FeedFetcherFetchStatus.InteralError) {
-      throw new FeedInternalErrorException(`Internal error while fetching feed`);
+      throw new FeedInternalErrorException(
+        `Internal error while fetching feed`,
+      );
     }
 
     throw new Error(`Unhandled request status: ${result["requestStatus"]}`);
   }
-  
-  private handleStatusCode(code: number): void {
+
+  handleStatusCode(code: number): void {
     if (code === 200) return;
     if (code === 429) throw new FeedTooManyRequestsException();
     if (code === 401) throw new FeedUnauthorizedException();
@@ -223,10 +225,9 @@ export class FeedFetcherService {
     throw new FeedRequestException(`Non-200 status code (${code})`);
   }
 
-  
   private convertRawObjectsToArticles(
     feedparserItems: FeedParser.Item[],
-    feedOptions?: FetchFeedOptions
+    feedOptions?: FetchFeedOptions,
   ): Article[] {
     return feedparserItems.map(
       (item) =>
@@ -243,8 +244,8 @@ export class FeedFetcherService {
             imgLinksExistence: true,
             imgPreviews: true,
             timezone: "UTC",
-          }
-        )
+          },
+        ),
     );
   }
 }

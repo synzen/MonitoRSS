@@ -21,11 +21,6 @@ import {
   FeedRequestException,
   FeedInvalidSslCertException,
   FeedLimitReachedException,
-  FeedTooManyRequestsException,
-  FeedUnauthorizedException,
-  FeedForbiddenException,
-  FeedNotFoundException,
-  FeedInternalErrorException,
   RefreshRateNotAllowedException,
   SourceFeedNotFoundException,
   FeedNotFailedException,
@@ -1065,12 +1060,13 @@ export class UserFeedsService {
       lookupDetails,
     );
 
-    const urlChanged = finalUrl !== url;
+    if (finalUrl !== url) {
+      return {
+        resolvedToUrl: finalUrl,
+      };
+    }
 
-    return {
-      resolvedToUrl: urlChanged ? finalUrl : null,
-      feedTitle: !urlChanged ? feedTitle || undefined : undefined,
-    };
+    return { resolvedToUrl: null, feedTitle };
   }
 
   async deduplicateFeedUrls(
@@ -1309,7 +1305,7 @@ export class UserFeedsService {
         throw new FeedRequestException(`Non-200 status code returned`);
       }
 
-      this.handleStatusCode(statusCode);
+      this.deps.feedFetcherService.handleStatusCode(statusCode);
     } else if (requestStatus === GetArticlesResponseRequestStatus.FetchError) {
       throw new FeedRequestException(`Feed fetch failed`);
     } else if (
@@ -1321,26 +1317,6 @@ export class UserFeedsService {
     }
 
     throw new Error(`Unhandled request status ${requestStatus}`);
-  }
-
-  private handleStatusCode(code: number): void {
-    if (code === 200) {
-      return;
-    }
-
-    if (code === 429) {
-      throw new FeedTooManyRequestsException();
-    } else if (code === 401) {
-      throw new FeedUnauthorizedException();
-    } else if (code === 403) {
-      throw new FeedForbiddenException();
-    } else if (code === 404) {
-      throw new FeedNotFoundException();
-    } else if (code >= 500) {
-      throw new FeedInternalErrorException();
-    } else {
-      throw new FeedRequestException(`Non-200 status code (${code})`);
-    }
   }
 
   private async collectFeedIdsForSupporterLimits(
