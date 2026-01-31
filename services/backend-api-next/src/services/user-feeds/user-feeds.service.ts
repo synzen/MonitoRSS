@@ -384,6 +384,30 @@ export class UserFeedsService {
     });
   }
 
+  async getFeedRequests({
+    feed,
+    url,
+    query,
+  }: {
+    feed: IUserFeed;
+    url: string;
+    query: Record<string, string>;
+  }) {
+    const lookupDetails = getFeedRequestLookupDetails({
+      feed,
+      user: await this.deps.usersService.getOrCreateUserByDiscordId(
+        feed.user.discordUserId,
+      ),
+      decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
+    });
+
+    return this.deps.feedFetcherApiService.getRequests({
+      query,
+      url: lookupDetails?.url || url,
+      requestLookupKey: lookupDetails?.key,
+    });
+  }
+
   async getDeliveryLogs(
     feedId: string,
     {
@@ -401,182 +425,184 @@ export class UserFeedsService {
   }
 
   async updateFeedById(
-    opts: { id: string; discordUserId: string },
+    { id, disabledCode }: { id: string; disabledCode?: UserFeedDisabledCode },
     updates: UpdateFeedInput,
   ): Promise<IUserFeed | null> {
-    const { id, discordUserId } = opts;
+    let userBenefits: Awaited<
+      ReturnType<typeof this.deps.supportersService.getBenefitsOfDiscordUser>
+    > | null = null;
 
     const feed = await this.deps.userFeedRepository.findById(id);
+
     if (!feed) {
       throw new Error(`Feed ${id} not found while updating feed`);
     }
 
-    const $set: Record<string, unknown> = {};
-    const $unset: Record<string, unknown> = {};
+    const user = await this.deps.usersService.getOrCreateUserByDiscordId(
+      feed.user.discordUserId,
+    );
 
-    if (updates.title !== undefined) {
-      $set.title = updates.title;
+    const useUpdateObject: Record<string, Record<string, unknown>> = {
+      $set: {},
+      $unset: {},
+    };
+
+    if (updates.title) {
+      useUpdateObject.$set!.title = updates.title;
     }
 
-    if (updates.passingComparisons !== undefined) {
-      $set.passingComparisons = updates.passingComparisons;
-    }
+    if (updates.url) {
+      const { finalUrl } = await this.checkUrlIsValid(
+        updates.url,
+        getFeedRequestLookupDetails({
+          feed,
+          user,
+          decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
+        }),
+      );
+      useUpdateObject.$set!.url = finalUrl;
+      useUpdateObject.$set!.inputUrl = updates.url;
 
-    if (updates.blockingComparisons !== undefined) {
-      $set.blockingComparisons = updates.blockingComparisons;
-    }
-
-    if (updates.externalProperties !== undefined) {
-      $set.externalProperties = updates.externalProperties;
-    }
-
-    if (updates.formatOptions !== undefined) {
-      $set.formatOptions = updates.formatOptions;
-    }
-
-    if (updates.dateCheckOptions !== undefined) {
-      $set.dateCheckOptions = updates.dateCheckOptions;
-    }
-
-    if (updates.shareManageOptions !== undefined) {
-      $set.shareManageOptions = updates.shareManageOptions;
+      // Recalculate slot offset when URL changes to maintain even distribution
+      const effectiveRefreshRate =
+        feed.userRefreshRateSeconds ??
+        feed.refreshRateSeconds ??
+        this.deps.supportersService.defaultRefreshRateSeconds;
+      useUpdateObject.$set!.slotOffsetMs = calculateSlotOffsetMs(
+        finalUrl,
+        effectiveRefreshRate,
+      );
     }
 
     if (updates.disabledCode !== undefined) {
-      const currentlyDisabled = !!feed.disabledCode;
-      const wantToDisable =
-        updates.disabledCode === UserFeedDisabledCode.Manual;
-      const wantToEnable = updates.disabledCode === null;
+      if (!userBenefits) {
+        userBenefits =
+          await this.deps.supportersService.getBenefitsOfDiscordUser(
+            user.discordUserId,
+          );
+      }
 
-      if (wantToDisable && !currentlyDisabled) {
-        $set.disabledCode = UserFeedDisabledCode.Manual;
-      } else if (
-        wantToEnable &&
-        DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS.includes(
-          feed.disabledCode as UserFeedDisabledCode,
-        )
+      if (
+        updates.disabledCode === null &&
+        disabledCode &&
+        DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS.includes(disabledCode)
       ) {
-        if (feed.disabledCode === UserFeedDisabledCode.ExceededFeedLimit) {
-          const benefits =
-            await this.deps.supportersService.getBenefitsOfDiscordUser(
-              discordUserId,
-            );
-          const enabledFeedCount =
-            await this.deps.userFeedRepository.countByOwnershipExcludingDisabled(
-              discordUserId,
-              DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
-            );
+        const currentFeedCount =
+          await this.deps.userFeedRepository.countByOwnershipExcludingDisabled(
+            user.discordUserId,
+            DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
+          );
 
-          if (enabledFeedCount >= benefits.maxUserFeeds) {
-            throw new FeedLimitReachedException(
-              `Cannot enable feed ${id} because user ${discordUserId} has reached the feed limit`,
-            );
-          }
+        if (userBenefits.maxUserFeeds <= currentFeedCount) {
+          throw new FeedLimitReachedException(
+            `Cannot enable feed ${id} because user ${user.discordUserId} has reached the feed limit`,
+          );
         }
-        $unset.disabledCode = "";
+      }
+
+      if (updates.disabledCode !== null) {
+        useUpdateObject.$set!.disabledCode = updates.disabledCode;
+      } else {
+        useUpdateObject.$unset!.disabledCode = "";
       }
     }
 
-    if (updates.userRefreshRateSeconds !== undefined) {
-      const benefits =
-        await this.deps.supportersService.getBenefitsOfDiscordUser(
-          discordUserId,
-        );
+    if (updates.passingComparisons) {
+      useUpdateObject.$set!.passingComparisons = updates.passingComparisons;
+    }
+
+    if (updates.blockingComparisons) {
+      useUpdateObject.$set!.blockingComparisons = updates.blockingComparisons;
+    }
+
+    if (updates.formatOptions) {
+      useUpdateObject.$set!.formatOptions = updates.formatOptions;
+    }
+
+    if (updates.dateCheckOptions) {
+      useUpdateObject.$set!.dateCheckOptions = updates.dateCheckOptions;
+    }
+
+    if (updates.shareManageOptions) {
+      useUpdateObject.$set!.shareManageOptions = updates.shareManageOptions;
+    }
+
+    if (updates.externalProperties) {
+      useUpdateObject.$set!.externalProperties = updates.externalProperties;
+    }
+
+    if (updates.userRefreshRateSeconds) {
+      if (!userBenefits) {
+        userBenefits =
+          await this.deps.supportersService.getBenefitsOfDiscordUser(
+            user.discordUserId,
+          );
+      }
+
+      const { refreshRateSeconds: fastestPossibleRate } = userBenefits;
 
       if (
         updates.userRefreshRateSeconds === null ||
-        updates.userRefreshRateSeconds === benefits.refreshRateSeconds
+        updates.userRefreshRateSeconds === fastestPossibleRate
       ) {
-        $unset.userRefreshRateSeconds = "";
+        useUpdateObject.$unset!.userRefreshRateSeconds = "";
+
+        // Recalculate slot offset based on the new effective rate
         const newEffectiveRate =
           feed.refreshRateSeconds ??
           this.deps.supportersService.defaultRefreshRateSeconds;
-        $set.slotOffsetMs = calculateSlotOffsetMs(feed.url, newEffectiveRate);
+        useUpdateObject.$set!.slotOffsetMs = calculateSlotOffsetMs(
+          feed.url,
+          newEffectiveRate,
+        );
       } else if (updates.userRefreshRateSeconds > 86400) {
         throw new RefreshRateNotAllowedException(
           `Refresh rate is too high. Maximum is 86400 seconds (24 hours).`,
         );
-      } else if (updates.userRefreshRateSeconds < benefits.refreshRateSeconds) {
+      } else if (updates.userRefreshRateSeconds < fastestPossibleRate) {
         throw new RefreshRateNotAllowedException(
-          `Refresh rate is too low. Must be at least ${benefits.refreshRateSeconds} seconds.`,
+          `Refresh rate is too low. Must be at least ${fastestPossibleRate} seconds.`,
         );
       } else {
-        $set.userRefreshRateSeconds = updates.userRefreshRateSeconds;
-        $set.slotOffsetMs = calculateSlotOffsetMs(
+        useUpdateObject.$set!.userRefreshRateSeconds =
+          updates.userRefreshRateSeconds;
+
+        // Recalculate slot offset based on the new user refresh rate
+        useUpdateObject.$set!.slotOffsetMs = calculateSlotOffsetMs(
           feed.url,
           updates.userRefreshRateSeconds,
         );
       }
     }
 
-    if (updates.url !== undefined && updates.url !== feed.url) {
-      const user =
-        await this.deps.usersService.getOrCreateUserByDiscordId(discordUserId);
+    const u = await this.deps.userFeedRepository.findOneAndUpdate(
+      {
+        _id: new Types.ObjectId(id),
+      },
+      useUpdateObject,
+      {
+        new: true,
+      },
+    );
 
-      const lookupDetails = getFeedRequestLookupDetails({
-        feed: {
-          url: updates.url,
-          feedRequestLookupKey: feed.feedRequestLookupKey,
-        },
-        user: {
-          externalCredentials: user.externalCredentials?.map((c) => ({
-            type: c.type,
-            data: c.data,
-          })),
-        },
-        decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-      });
-
-      const { finalUrl, enableDateChecks } = await this.checkUrlIsValid(
-        updates.url,
-        lookupDetails,
-      );
-
-      $set.url = finalUrl;
-
-      if (updates.url !== finalUrl) {
-        $set.inputUrl = updates.url;
-      } else {
-        $unset.inputUrl = "";
-      }
-
-      const effectiveRefreshRate =
-        feed.userRefreshRateSeconds ||
-        (
-          await this.deps.supportersService.getBenefitsOfDiscordUser(
-            discordUserId,
-          )
-        ).refreshRateSeconds;
-
-      $set.slotOffsetMs = calculateSlotOffsetMs(finalUrl, effectiveRefreshRate);
-
+    if (updates.url) {
       await this.deps.publishMessage(MESSAGE_BROKER_QUEUE_FEED_DELETED, {
         data: { feed: { id } },
       });
     }
 
-    const updateDoc: Record<string, unknown> = {};
-    if (Object.keys($set).length > 0) {
-      updateDoc.$set = $set;
-    }
-    if (Object.keys($unset).length > 0) {
-      updateDoc.$unset = $unset;
-    }
-
-    if (Object.keys(updateDoc).length === 0) {
-      return feed;
-    }
-
-    const updatedFeed = await this.deps.userFeedRepository.updateById(
-      id,
-      updateDoc,
-    );
-
-    if (updates.disabledCode !== undefined) {
-      await this.enforceUserFeedLimit(discordUserId);
+    if (
+      u &&
+      (updates.disabledCode === null ||
+        (updates.disabledCode &&
+          DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS.includes(
+            updates.disabledCode,
+          )))
+    ) {
+      await this.enforceUserFeedLimit(u.user.discordUserId);
     }
 
-    return updatedFeed;
+    return u;
   }
 
   async deleteFeedById(id: string): Promise<IUserFeed | null> {

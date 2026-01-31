@@ -10,6 +10,7 @@ import {
   FeedLimitReachedException,
   FeedNotFailedException,
   ManualRequestTooSoonException,
+  RefreshRateNotAllowedException,
   SourceFeedNotFoundException,
 } from "../../src/shared/exceptions/user-feeds.exceptions";
 import {
@@ -457,7 +458,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       const feed = await ctx.createFeed({ title: "Original Title" });
 
       const result = await ctx.service.updateFeedById(
-        { id: feed.id, discordUserId: ctx.discordUserId },
+        { id: feed.id },
         { title: "New Title" },
       );
 
@@ -470,7 +471,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       const feed = await ctx.createFeed({});
 
       const result = await ctx.service.updateFeedById(
-        { id: feed.id, discordUserId: ctx.discordUserId },
+        { id: feed.id },
         { passingComparisons: ["title", "description"] },
       );
 
@@ -486,7 +487,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       const feed = await ctx.createFeed({});
 
       const result = await ctx.service.updateFeedById(
-        { id: feed.id, discordUserId: ctx.discordUserId },
+        { id: feed.id },
         { blockingComparisons: ["author"] },
       );
 
@@ -502,7 +503,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       });
 
       const result = await ctx.service.updateFeedById(
-        { id: feed.id, discordUserId: ctx.discordUserId },
+        { id: feed.id },
         { formatOptions: { dateFormat: "MM-DD-YYYY" } },
       );
 
@@ -516,7 +517,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       const feed = await ctx.createFeed({});
 
       const result = await ctx.service.updateFeedById(
-        { id: feed.id, discordUserId: ctx.discordUserId },
+        { id: feed.id },
         { disabledCode: UserFeedDisabledCode.Manual },
       );
 
@@ -530,7 +531,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       await ctx.setDisabledCode(feed.id, UserFeedDisabledCode.Manual);
 
       const result = await ctx.service.updateFeedById(
-        { id: feed.id, discordUserId: ctx.discordUserId },
+        { id: feed.id },
         { disabledCode: null },
       );
 
@@ -549,7 +550,10 @@ describe("UserFeedsService", { concurrency: true }, () => {
       await assert.rejects(
         () =>
           ctx.service.updateFeedById(
-            { id: disabledFeed.id, discordUserId: ctx.discordUserId },
+            {
+              id: disabledFeed.id,
+              disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+            },
             { disabledCode: null },
           ),
         FeedLimitReachedException,
@@ -562,10 +566,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       await assert.rejects(
         () =>
-          ctx.service.updateFeedById(
-            { id: fakeId, discordUserId: ctx.discordUserId },
-            { title: "New Title" },
-          ),
+          ctx.service.updateFeedById({ id: fakeId }, { title: "New Title" }),
         /not found/,
       );
     });
@@ -585,7 +586,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       const feed = await ctx.createFeed({});
 
       const result = await ctx.service.updateFeedById(
-        { id: feed.id, discordUserId: ctx.discordUserId },
+        { id: feed.id },
         { url: "https://example.com/new.xml" },
       );
 
@@ -609,7 +610,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       const feed = await ctx.createFeed({});
 
       await ctx.service.updateFeedById(
-        { id: feed.id, discordUserId: ctx.discordUserId },
+        { id: feed.id },
         { url: "https://example.com/new.xml" },
       );
 
@@ -617,6 +618,111 @@ describe("UserFeedsService", { concurrency: true }, () => {
       assert.deepStrictEqual(publishedMessage, {
         data: { feed: { id: feed.id } },
       });
+    });
+
+    it("throws BannedFeedException if URL resolves to a banned feed", async () => {
+      const ctx = harness.createContext({
+        bannedFeedDetails: { reason: "spam" },
+        feedHandler: { url: "https://banned.com/feed.xml" },
+      });
+      const feed = await ctx.createFeed({});
+
+      await assert.rejects(
+        () =>
+          ctx.service.updateFeedById(
+            { id: feed.id },
+            { url: "https://banned.com/feed.xml" },
+          ),
+        BannedFeedException,
+      );
+    });
+
+    it("throws if fetch feed throws when updating URL", async () => {
+      const testError = new Error("feed fetch error");
+      const ctx = harness.createContext({
+        feedHandler: { getArticlesError: testError },
+      });
+      const feed = await ctx.createFeed({});
+
+      await assert.rejects(
+        () =>
+          ctx.service.updateFeedById(
+            { id: feed.id },
+            { url: "https://example.com/new.xml" },
+          ),
+        (err: Error) => {
+          assert.strictEqual(err.message, testError.message);
+          return true;
+        },
+      );
+    });
+
+    it("unsets userRefreshRateSeconds if it equals the user's default rate", async () => {
+      const userDefaultRate = 600;
+      const ctx = harness.createContext({
+        refreshRateSeconds: userDefaultRate,
+      });
+      const feed = await ctx.createFeed({});
+      await ctx.setFields(feed.id, { userRefreshRateSeconds: 1200 });
+
+      const result = await ctx.service.updateFeedById(
+        { id: feed.id },
+        { userRefreshRateSeconds: userDefaultRate },
+      );
+
+      assert.ok(result);
+      assert.strictEqual(result.userRefreshRateSeconds, undefined);
+    });
+
+    it("sets userRefreshRateSeconds if it is slower than the user's default rate", async () => {
+      const userDefaultRate = 600;
+      const slowerRate = 1200;
+      const ctx = harness.createContext({
+        refreshRateSeconds: userDefaultRate,
+      });
+      const feed = await ctx.createFeed({});
+
+      const result = await ctx.service.updateFeedById(
+        { id: feed.id },
+        { userRefreshRateSeconds: slowerRate },
+      );
+
+      assert.ok(result);
+      assert.strictEqual(result.userRefreshRateSeconds, slowerRate);
+    });
+
+    it("throws RefreshRateNotAllowedException if refresh rate is faster than allowed", async () => {
+      const userDefaultRate = 600;
+      const fasterRate = 300;
+      const ctx = harness.createContext({
+        refreshRateSeconds: userDefaultRate,
+      });
+      const feed = await ctx.createFeed({});
+
+      await assert.rejects(
+        () =>
+          ctx.service.updateFeedById(
+            { id: feed.id },
+            { userRefreshRateSeconds: fasterRate },
+          ),
+        RefreshRateNotAllowedException,
+      );
+    });
+
+    it("does not update anything if no updates are provided", async () => {
+      const ctx = harness.createContext();
+      const feed = await ctx.createFeed({ title: "Original Title" });
+      await ctx.setFields(feed.id, {
+        passingComparisons: ["original"],
+        formatOptions: { dateFormat: "YYYY" },
+      });
+
+      const result = await ctx.service.updateFeedById({ id: feed.id }, {});
+
+      assert.ok(result);
+      assert.strictEqual(result.title, "Original Title");
+      assert.deepStrictEqual(result.passingComparisons, ["original"]);
+      assert.strictEqual(result.formatOptions?.dateFormat, "YYYY");
     });
   });
 
@@ -950,7 +1056,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
         await ctx.setCreatedAt(feed3.id, new Date("2022-01-01"));
 
         await ctx.service.updateFeedById(
-          { id: feed2.id, discordUserId: ctx.discordUserId },
+          { id: feed2.id },
           { disabledCode: UserFeedDisabledCode.Manual },
         );
 

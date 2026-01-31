@@ -154,7 +154,7 @@ export function createUserFeedsHarness(): UserFeedsHarness {
           options.feedFetcherService,
         ),
         feedHandlerService: createMockFeedHandlerService(options.feedHandler),
-        usersService: createMockUsersService(userId),
+        usersService: createMockUsersService(userId, discordUserId),
         publishMessage: options.publishMessage ?? (async () => {}),
         feedConnectionsDiscordChannelsService,
       };

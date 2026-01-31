@@ -71,11 +71,12 @@ export function createMockSupportersService(
 
 export function createMockUsersService(
   userId?: string,
+  discordUserId?: string,
 ): UserFeedsServiceDeps["usersService"] {
   return {
-    getOrCreateUserByDiscordId: async () => ({
+    getOrCreateUserByDiscordId: async (inputDiscordUserId: string) => ({
       id: userId ?? generateTestId(),
-      discordUserId: "test-user",
+      discordUserId: discordUserId ?? inputDiscordUserId ?? "test-user",
     }),
     syncLookupKeys: async () => {},
   } as unknown as UserFeedsServiceDeps["usersService"];
@@ -251,7 +252,9 @@ export function createMockFeedFetcherApiService(
   return {
     fetchAndSave: mock.fn(async () => ({
       requestStatus: options.requestStatus ?? "SUCCESS",
-      response: options.statusCode ? { statusCode: options.statusCode } : undefined,
+      response: options.statusCode
+        ? { statusCode: options.statusCode }
+        : undefined,
     })),
   } as unknown as UserFeedsServiceDeps["feedFetcherApiService"];
 }
@@ -291,8 +294,12 @@ export interface MockFeedConnectionsDiscordChannelsServiceOptions {
 
 export interface MockFeedConnectionsDiscordChannelsService {
   deleteConnection: Mock<() => Promise<void>>;
-  createDiscordChannelConnection: Mock<() => Promise<IDiscordChannelConnection>>;
-  updateDiscordChannelConnection: Mock<() => Promise<IDiscordChannelConnection>>;
+  createDiscordChannelConnection: Mock<
+    () => Promise<IDiscordChannelConnection>
+  >;
+  updateDiscordChannelConnection: Mock<
+    () => Promise<IDiscordChannelConnection>
+  >;
   cloneConnection: Mock<() => Promise<{ ids: string[] }>>;
   copySettings: Mock<() => Promise<void>>;
 }
