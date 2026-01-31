@@ -63,7 +63,7 @@ export interface UserFeedsServiceDeps {
   feedHandlerService: FeedHandlerService;
   usersService: UsersService;
   publishMessage: (queue: string, message: unknown) => Promise<void>;
-  feedConnectionsDiscordChannelsService?: IFeedConnectionsDiscordChannelsService;
+  feedConnectionsDiscordChannelsService: IFeedConnectionsDiscordChannelsService;
 }
 
 export interface UpdateFeedInput {

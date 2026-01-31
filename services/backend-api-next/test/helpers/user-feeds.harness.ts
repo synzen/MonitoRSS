@@ -23,9 +23,12 @@ import {
   createMockFeedFetcherApiService,
   createMockSupportersService,
   createMockUsersService,
+  createMockFeedConnectionsDiscordChannelsService,
   type MockFeedHandlerOptions,
   type MockFeedFetcherServiceOptions,
   type MockFeedFetcherApiServiceOptions,
+  type MockFeedConnectionsDiscordChannelsServiceOptions,
+  type MockFeedConnectionsDiscordChannelsService,
 } from "./mock-factories";
 import { generateTestId } from "./test-id";
 
@@ -45,6 +48,7 @@ export interface TestContextOptions {
   feedHandler?: MockFeedHandlerOptions;
   feedFetcherService?: MockFeedFetcherServiceOptions;
   feedFetcherApiService?: MockFeedFetcherApiServiceOptions;
+  feedConnectionsDiscordChannelsService?: MockFeedConnectionsDiscordChannelsServiceOptions;
   bannedFeedDetails?: unknown;
   publishMessage?: (queue: string, message: unknown) => Promise<void>;
 }
@@ -62,6 +66,7 @@ export interface TestContext {
   discordUserId: string;
   userId: string;
   service: UserFeedsService;
+  feedConnectionsDiscordChannelsService: MockFeedConnectionsDiscordChannelsService;
   createFeed(overrides?: { title?: string; url?: string }): Promise<IUserFeed>;
   createFeedForUser(
     discordUserId: string,
@@ -116,6 +121,11 @@ export function createUserFeedsHarness(): UserFeedsHarness {
       const discordUserId = generateTestId();
       const userId = generateTestId();
 
+      const feedConnectionsDiscordChannelsService =
+        createMockFeedConnectionsDiscordChannelsService(
+          options.feedConnectionsDiscordChannelsService,
+        );
+
       const serviceDeps: UserFeedsServiceDeps = {
         config: {
           BACKEND_API_ENCRYPTION_KEY_HEX: DEFAULT_ENCRYPTION_KEY,
@@ -146,6 +156,7 @@ export function createUserFeedsHarness(): UserFeedsHarness {
         feedHandlerService: createMockFeedHandlerService(options.feedHandler),
         usersService: createMockUsersService(userId),
         publishMessage: options.publishMessage ?? (async () => {}),
+        feedConnectionsDiscordChannelsService,
       };
 
       const service = new UserFeedsService(serviceDeps);
@@ -154,6 +165,7 @@ export function createUserFeedsHarness(): UserFeedsHarness {
         discordUserId,
         userId,
         service,
+        feedConnectionsDiscordChannelsService,
 
         generateId: generateTestId,
 

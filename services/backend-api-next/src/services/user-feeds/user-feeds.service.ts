@@ -47,6 +47,7 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import { Types } from "mongoose";
 import { FeedFetcherFetchStatus } from "../feed-fetcher-api/types";
+import { UserFeedTargetFeedSelectionType } from "../feed-connections-discord-channels/types";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -212,8 +213,93 @@ export class UserFeedsService {
     return updatedFeed || feed;
   }
 
-  private generateFeedRequestLookupKey(): string {
-    return randomUUID();
+
+  async clone(
+    feedId: string,
+    userAccessToken: string,
+    data?: {
+      title?: string;
+      url?: string;
+    }
+  ) {
+    const sourceFeed = await this.deps.userFeedRepository.findById(feedId);
+
+    if (!sourceFeed) {
+      throw new Error(`Feed ${feedId} not found while cloning`);
+    }
+
+    const { maxUserFeeds } =
+      await this.deps.supportersService.getBenefitsOfDiscordUser(
+        sourceFeed.user.discordUserId
+      );
+
+    const feedCount = await this.calculateCurrentFeedCountOfDiscordUser(
+      sourceFeed.user.discordUserId
+    );
+
+    if (feedCount >= maxUserFeeds) {
+      throw new FeedLimitReachedException("Max feeds reached");
+    }
+
+    let inputUrl = sourceFeed.inputUrl;
+    let finalUrl = sourceFeed.url;
+
+    if (data?.url && data.url !== sourceFeed.url) {
+      const user = await this.deps.usersService.getOrCreateUserByDiscordId(
+        sourceFeed.user.discordUserId
+      );
+
+      finalUrl = (
+        await this.checkUrlIsValid(
+          data.url,
+          getFeedRequestLookupDetails({
+            feed: sourceFeed,
+            user,
+            decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
+          })
+        )
+      ).finalUrl;
+      inputUrl = data.url;
+    }
+
+    const created = await this.deps.userFeedRepository.clone({
+      sourceFeed,
+      overrides: {
+        title: data?.title,
+        url: finalUrl,
+        inputUrl,
+      },
+    });
+
+    await this.deps.usersService.syncLookupKeys({ feedIds: [created.id] });
+
+    for (const c of sourceFeed.connections.discordChannels) {
+      await this.deps.feedConnectionsDiscordChannelsService.cloneConnection(
+        c,
+        {
+          targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
+          name: c.name,
+          targetFeedIds: [created.id],
+        },
+        userAccessToken,
+        sourceFeed.user.discordUserId
+      );
+    }
+
+    return { id: created.id };
+  }
+
+  async getDeliveryLogs(
+    feedId: string,
+    {
+      limit,
+      skip,
+    }: {
+      limit: number;
+      skip: number;
+    }
+  ) {
+    return this.deps.feedHandlerService.getDeliveryLogs(feedId, { limit, skip });
   }
 
   async updateFeedById(
@@ -1024,6 +1110,10 @@ export class UserFeedsService {
     });
 
     return { result };
+  }
+
+  private generateFeedRequestLookupKey(): string {
+    return randomUUID();
   }
 
   private async checkUrlIsValid(

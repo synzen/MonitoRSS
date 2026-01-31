@@ -278,3 +278,33 @@ export function createMockDiscordChannelConnection(
     updatedAt: new Date(),
   } as Partial<IDiscordChannelConnection>;
 }
+
+export interface MockFeedConnectionsDiscordChannelsServiceOptions {
+  cloneConnectionIds?: string[];
+}
+
+export interface MockFeedConnectionsDiscordChannelsService {
+  deleteConnection: Mock<() => Promise<void>>;
+  createDiscordChannelConnection: Mock<() => Promise<IDiscordChannelConnection>>;
+  updateDiscordChannelConnection: Mock<() => Promise<IDiscordChannelConnection>>;
+  cloneConnection: Mock<() => Promise<{ ids: string[] }>>;
+  copySettings: Mock<() => Promise<void>>;
+}
+
+export function createMockFeedConnectionsDiscordChannelsService(
+  options: MockFeedConnectionsDiscordChannelsServiceOptions = {},
+): MockFeedConnectionsDiscordChannelsService {
+  return {
+    deleteConnection: mock.fn(async () => {}),
+    createDiscordChannelConnection: mock.fn(
+      async () => ({}) as IDiscordChannelConnection,
+    ),
+    updateDiscordChannelConnection: mock.fn(
+      async () => ({}) as IDiscordChannelConnection,
+    ),
+    cloneConnection: mock.fn(async () => ({
+      ids: options.cloneConnectionIds ?? [generateTestId()],
+    })),
+    copySettings: mock.fn(async () => {}),
+  };
+}

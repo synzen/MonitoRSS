@@ -135,6 +135,10 @@ export interface CreateUserFeedInput {
   title: string;
   url: string;
   user: { discordUserId: string };
+  inputUrl?: string;
+  connections?: IFeedConnections;
+  feedRequestLookupKey?: string;
+  createdAt?: Date;
   shareManageOptions?: {
     invites: Array<{
       discordUserId: string;
@@ -216,6 +220,15 @@ export interface CloneConnectionToFeedsInput {
   connectionData: Record<string, unknown>;
 }
 
+export interface CloneUserFeedInput {
+  sourceFeed: IUserFeed;
+  overrides: {
+    title?: string;
+    url: string;
+    inputUrl?: string;
+  };
+}
+
 export interface CloneConnectionToFeedsResult {
   feedIdToConnectionId: Array<{ feedId: string; connectionId: string }>;
 }
@@ -288,7 +301,8 @@ export interface IUserFeedRepository {
   enableFeedsByIds(feedIds: string[]): Promise<void>;
   enforceWebhookConnections(target: WebhookEnforcementTarget): Promise<void>;
 
-  // Connection cloning
+  // Cloning
+  clone(input: CloneUserFeedInput): Promise<IUserFeed>;
   cloneConnectionToFeeds(
     input: CloneConnectionToFeedsInput,
   ): Promise<CloneConnectionToFeedsResult>;

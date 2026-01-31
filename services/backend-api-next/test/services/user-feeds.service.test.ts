@@ -1507,7 +1507,10 @@ describe("UserFeedsService", { concurrency: true }, () => {
         url: feed.url,
       });
 
-      assert.strictEqual(result.requestStatus, GetArticlesResponseRequestStatus.Success);
+      assert.strictEqual(
+        result.requestStatus,
+        GetArticlesResponseRequestStatus.Success,
+      );
     });
 
     it("returns empty properties when no articles", async () => {
@@ -1525,6 +1528,135 @@ describe("UserFeedsService", { concurrency: true }, () => {
       });
 
       assert.deepStrictEqual(result.properties, []);
+    });
+  });
+
+  describe("clone", () => {
+    it("throws error when source feed not found", async () => {
+      const ctx = harness.createContext();
+      const fakeId = ctx.generateId();
+
+      await assert.rejects(
+        () => ctx.service.clone(fakeId, "token"),
+        /not found/,
+      );
+    });
+
+    it("throws FeedLimitReachedException when user at max feeds", async () => {
+      const ctx = harness.createContext();
+
+      const feeds = await ctx.createMany(TEST_MAX_USER_FEEDS);
+
+      await assert.rejects(
+        () => ctx.service.clone(feeds[0]!.id, "token"),
+        FeedLimitReachedException,
+      );
+    });
+
+    it("successfully clones feed with same URL", async () => {
+      const ctx = harness.createContext();
+      const sourceFeed = await ctx.createFeed({
+        title: "Original Feed",
+        url: "https://example.com/original.xml",
+      });
+
+      const result = await ctx.service.clone(sourceFeed.id, "token");
+
+      assert.ok(result.id);
+      const clonedFeed = await ctx.findById(result.id);
+      assert.ok(clonedFeed);
+      assert.strictEqual(clonedFeed.url, sourceFeed.url);
+      assert.strictEqual(clonedFeed.title, sourceFeed.title);
+    });
+
+    it("successfully clones feed with custom title", async () => {
+      const ctx = harness.createContext();
+      const sourceFeed = await ctx.createFeed({ title: "Original" });
+
+      const result = await ctx.service.clone(sourceFeed.id, "token", {
+        title: "Cloned Feed",
+      });
+
+      const clonedFeed = await ctx.findById(result.id);
+      assert.ok(clonedFeed);
+      assert.strictEqual(clonedFeed.title, "Cloned Feed");
+    });
+
+    it("successfully clones feed with different URL", async () => {
+      const newUrl = "https://example.com/new-feed.xml";
+      const ctx = harness.createContext({
+        feedHandler: { url: newUrl, feedTitle: "New Feed" },
+      });
+      const sourceFeed = await ctx.createFeed({
+        url: "https://example.com/original.xml",
+      });
+
+      const result = await ctx.service.clone(sourceFeed.id, "token", {
+        url: newUrl,
+      });
+
+      const clonedFeed = await ctx.findById(result.id);
+      assert.ok(clonedFeed);
+      assert.strictEqual(clonedFeed.url, newUrl);
+      assert.strictEqual(clonedFeed.inputUrl, newUrl);
+    });
+
+    it("cloned feed inherits settings from source", async () => {
+      const ctx = harness.createContext();
+      const sourceFeed = await ctx.createFeed({});
+      await ctx.setFields(sourceFeed.id, {
+        passingComparisons: ["title", "description"],
+        blockingComparisons: ["author"],
+        formatOptions: { dateFormat: "YYYY-MM-DD" },
+        dateCheckOptions: { oldArticleDateDiffMsThreshold: 86400000 },
+      });
+
+      const result = await ctx.service.clone(sourceFeed.id, "token");
+
+      const clonedFeed = await ctx.findById(result.id);
+      assert.ok(clonedFeed);
+      assert.deepStrictEqual(clonedFeed.passingComparisons, [
+        "title",
+        "description",
+      ]);
+      assert.deepStrictEqual(clonedFeed.blockingComparisons, ["author"]);
+      assert.strictEqual(clonedFeed.formatOptions?.dateFormat, "YYYY-MM-DD");
+      assert.strictEqual(
+        clonedFeed.dateCheckOptions?.oldArticleDateDiffMsThreshold,
+        86400000,
+      );
+    });
+
+    it("clones discord channel connections from source feed", async () => {
+      const ctx = harness.createContext();
+      const sourceFeed = await ctx.createFeedWithConnections({
+        title: "Source Feed",
+        connections: {
+          discordChannels: [
+            createMockDiscordChannelConnection(),
+            createMockDiscordChannelConnection(),
+          ],
+        },
+      });
+
+      await ctx.service.clone(sourceFeed.id, "token");
+
+      assert.strictEqual(
+        ctx.feedConnectionsDiscordChannelsService.cloneConnection.mock
+          .callCount(),
+        2,
+      );
+    });
+
+    it("returns the new feed ID", async () => {
+      const ctx = harness.createContext();
+      const sourceFeed = await ctx.createFeed({});
+
+      const result = await ctx.service.clone(sourceFeed.id, "token");
+
+      assert.ok(result.id);
+      assert.ok(typeof result.id === "string");
+      assert.ok(result.id.length > 0);
     });
   });
 });

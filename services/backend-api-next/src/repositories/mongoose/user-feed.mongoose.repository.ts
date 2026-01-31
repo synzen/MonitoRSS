@@ -21,7 +21,11 @@ import type {
   RefreshRateEnforcementTarget,
   CloneConnectionToFeedsInput,
   CloneConnectionToFeedsResult,
+  CreateUserFeedInput,
+  CloneUserFeedInput,
 } from "../interfaces/user-feed.types";
+import { calculateSlotOffsetMs } from "../../shared/utils/fnv1a-hash";
+import { getEffectiveRefreshRateSeconds } from "../../shared/utils/get-effective-refresh-rate";
 import { UserFeedComputedStatus } from "../interfaces/user-feed.types";
 import type {
   IDiscordChannelConnection,
@@ -404,21 +408,14 @@ export class UserFeedMongooseRepository
     );
   }
 
-  async create(input: {
-    title: string;
-    url: string;
-    user: { discordUserId: string };
-    shareManageOptions?: {
-      invites: Array<{
-        discordUserId: string;
-        status?: string;
-        connections?: Array<{ connectionId: string }>;
-      }>;
-    };
-  }): Promise<IUserFeed> {
+  async create(input: CreateUserFeedInput): Promise<IUserFeed> {
     const doc = await this.model.create({
       title: input.title,
       url: input.url,
+      inputUrl: input.inputUrl,
+      connections: input.connections,
+      createdAt: input.createdAt,
+      feedRequestLookupKey: input.feedRequestLookupKey,
       user: { discordUserId: input.user.discordUserId },
       shareManageOptions: input.shareManageOptions
         ? {
@@ -430,6 +427,38 @@ export class UserFeedMongooseRepository
               })),
             })),
           }
+        : undefined,
+    });
+
+    return this.toEntity(
+      doc as unknown as UserFeedDoc & { _id: Types.ObjectId },
+    );
+  }
+
+  async clone(input: CloneUserFeedInput): Promise<IUserFeed> {
+    const { sourceFeed, overrides } = input;
+
+    const {
+      id,
+      connections,
+      createdAt,
+      updatedAt,
+      feedRequestLookupKey,
+      slotOffsetMs,
+      ...cloneableFields
+    } = sourceFeed;
+
+    const url = overrides.url;
+    const effectiveRefreshRate = getEffectiveRefreshRateSeconds(cloneableFields);
+
+    const doc = await this.model.create({
+      ...cloneableFields,
+      title: overrides.title || cloneableFields.title,
+      url,
+      inputUrl: overrides.inputUrl,
+      connections: { discordChannels: [] },
+      slotOffsetMs: effectiveRefreshRate
+        ? calculateSlotOffsetMs(url, effectiveRefreshRate)
         : undefined,
     });
 
