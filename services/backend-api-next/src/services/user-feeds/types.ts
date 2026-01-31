@@ -10,6 +10,7 @@ import type { IUserRepository } from "../../repositories/interfaces/user.types";
 import type { UserFeedDisabledCode } from "../../repositories/shared/enums";
 import type { FeedsService } from "../feeds/feeds.service";
 import type { FeedFetcherApiService } from "../feed-fetcher-api/feed-fetcher-api.service";
+import type { FeedFetcherService } from "../feed-fetcher";
 import type { FeedHandlerService } from "../feed-handler/feed-handler.service";
 import type { SupportersService } from "../supporters/supporters.service";
 import type { UsersService } from "../users/users.service";
@@ -52,6 +53,7 @@ export interface UserFeedsServiceDeps {
   feedsService: FeedsService;
   supportersService: SupportersService;
   feedFetcherApiService: FeedFetcherApiService;
+  feedFetcherService: FeedFetcherService;
   feedHandlerService: FeedHandlerService;
   usersService: UsersService;
   publishMessage: (queue: string, message: unknown) => Promise<void>;

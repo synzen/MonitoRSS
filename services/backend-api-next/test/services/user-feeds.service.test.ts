@@ -7,8 +7,13 @@ import {
 import { GetArticlesResponseRequestStatus } from "../../src/services/feed-handler/types";
 import {
   FeedLimitReachedException,
+  FeedNotFailedException,
   SourceFeedNotFoundException,
 } from "../../src/shared/exceptions/user-feeds.exceptions";
+import {
+  UserFeedDisabledCode as RepoUserFeedDisabledCode,
+  UserFeedHealthStatus,
+} from "../../src/repositories/shared/enums";
 import { createUserFeedsHarness } from "../helpers/user-feeds.harness";
 import { createMockDiscordChannelConnection } from "../helpers/mock-factories";
 
@@ -1079,6 +1084,52 @@ describe("UserFeedsService", { concurrency: true }, () => {
       const ctx = harness.createContext();
 
       await assert.rejects(() => ctx.service.getFeedById("not-a-valid-id"));
+    });
+  });
+
+  describe("retryFailedFeed", () => {
+    it("throws an error if the feed is not found", async () => {
+      const ctx = harness.createContext();
+      await assert.rejects(
+        () => ctx.service.retryFailedFeed(ctx.generateId()),
+        /not found/,
+      );
+    });
+
+    it("throws FeedNotFailedException if feed is not failed", async () => {
+      const ctx = harness.createContext();
+      const feed = await ctx.createFeed({});
+      await assert.rejects(
+        () => ctx.service.retryFailedFeed(feed.id),
+        FeedNotFailedException,
+      );
+    });
+
+    it("sets health status to ok if fetch succeeds", async () => {
+      const ctx = harness.createContext();
+      const feed = await ctx.createFeed({});
+      await ctx.setFields(feed.id, {
+        healthStatus: UserFeedHealthStatus.Failed,
+        disabledCode: RepoUserFeedDisabledCode.FailedRequests,
+      });
+
+      await ctx.service.retryFailedFeed(feed.id);
+
+      const updated = await ctx.findById(feed.id);
+      assert.strictEqual(updated?.healthStatus, UserFeedHealthStatus.Ok);
+      assert.strictEqual(updated?.disabledCode, undefined);
+    });
+
+    it("returns the updated feed", async () => {
+      const ctx = harness.createContext();
+      const feed = await ctx.createFeed({});
+      await ctx.setFields(feed.id, { healthStatus: UserFeedHealthStatus.Failed });
+
+      const result = await ctx.service.retryFailedFeed(feed.id);
+
+      assert.ok(result);
+      assert.strictEqual(result.id, feed.id);
+      assert.strictEqual(result.healthStatus, UserFeedHealthStatus.Ok);
     });
   });
 

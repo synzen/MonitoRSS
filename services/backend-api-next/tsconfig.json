@@ -15,7 +15,8 @@
     "noImplicitOverride": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noPropertyAccessFromIndexSignature": false
+    "noPropertyAccessFromIndexSignature": false,
+    "allowJs": true
   },
   "include": ["index.ts", "src/**/*"],
   "exclude": ["dist", "src/**/*.test.ts", "test/**/*"]

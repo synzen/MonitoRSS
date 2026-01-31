@@ -219,6 +219,20 @@ export function createMockUserFeedLimitOverrideRepository(
   };
 }
 
+export interface MockFeedFetcherServiceOptions {
+  fetchFeedError?: Error;
+}
+
+export function createMockFeedFetcherService(
+  options: MockFeedFetcherServiceOptions = {},
+): UserFeedsServiceDeps["feedFetcherService"] {
+  return {
+    fetchFeed: mock.fn(async () => {
+      if (options.fetchFeedError) throw options.fetchFeedError;
+    }),
+  } as unknown as UserFeedsServiceDeps["feedFetcherService"];
+}
+
 export interface MockDiscordChannelConnectionOptions {
   disabledCode?: FeedConnectionDisabledCode;
   details?: {

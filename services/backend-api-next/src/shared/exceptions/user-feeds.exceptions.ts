@@ -7,6 +7,7 @@ export class RefreshRateNotAllowedException extends StandardException {}
 export class FeedNotFailedException extends StandardException {}
 export class ManualRequestTooSoonException extends StandardException {}
 export class FeedFetchTimeoutException extends StandardException {}
+export class FeedTooLargeException extends StandardException {}
 export class NoFeedOnHtmlPageException extends StandardException {}
 export class FeedParseException extends StandardException {}
 export class FeedRequestException extends StandardException {}

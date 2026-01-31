@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import type { IUserFeed } from "../../repositories/interfaces/user-feed.types";
-import { UserFeedDisabledCode } from "../../repositories/shared/enums";
+import { UserFeedDisabledCode, UserFeedHealthStatus } from "../../repositories/shared/enums";
 import { calculateSlotOffsetMs } from "../../shared/utils/fnv1a-hash";
 import { getFeedRequestLookupDetails } from "../../shared/utils/get-feed-request-lookup-details";
 import type { FeedRequestLookupDetails } from "../../shared/types/feed-request-lookup-details.type";
@@ -24,6 +24,8 @@ import {
   FeedInternalErrorException,
   RefreshRateNotAllowedException,
   SourceFeedNotFoundException,
+  FeedNotFailedException,
+  ManualRequestTooSoonException,
 } from "../../shared/exceptions/user-feeds.exceptions";
 import logger from "../../infra/logger";
 import type {
@@ -38,6 +40,8 @@ import type {
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import { Types } from "mongoose";
+import { FeedFetcherFetchStatus } from "../feed-fetcher-api/types";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -422,6 +426,220 @@ export class UserFeedsService {
 
     return feed;
   }
+
+  async retryFailedFeed(feedId: string) {
+    await this.deps.usersService.syncLookupKeys({
+      feedIds: [(feedId)],
+    });
+    const feed = await this.deps.userFeedRepository.findById(feedId);
+
+    if (!feed) {
+      throw new Error(
+        `Feed ${feedId} not found while attempting to retry failed feed`
+      );
+    }
+
+    if (
+      feed.healthStatus !== UserFeedHealthStatus.Failed &&
+      feed.disabledCode !== UserFeedDisabledCode.InvalidFeed
+    ) {
+      throw new FeedNotFailedException(
+        `Feed ${feedId} is not in a failed state, cannot retry it`
+      );
+    }
+
+    const user = await this.deps.usersService.getOrCreateUserByDiscordId(
+      feed.user.discordUserId
+    );
+
+    const lookupDetails = getFeedRequestLookupDetails({
+      feed,
+      user,
+      decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
+    });
+
+    await this.deps.feedFetcherService.fetchFeed(
+      lookupDetails?.url || feed.url,
+      lookupDetails,
+      {
+        fetchOptions: {
+          useServiceApi: true,
+          useServiceApiCache: false,
+          debug: feed.debug,
+        },
+      },
+    );
+
+    return this.deps.userFeedRepository.updateById(feedId, {
+      $set: { healthStatus: UserFeedHealthStatus.Ok },
+      $unset: { disabledCode: "" },
+    });
+  }
+
+  // async manuallyRequest(feed: IUserFeed) {
+  //   const lastRequestTime = feed.lastManualRequestAt || new Date(0);
+  //   const waitDurationSeconds = getEffectiveRefreshRateSeconds(feed, 10 * 60)!;
+  //   const secondsSinceLastRequest = dayjs().diff(
+  //     dayjs(lastRequestTime),
+  //     "seconds"
+  //   );
+
+  //   if (secondsSinceLastRequest < waitDurationSeconds) {
+  //     throw new ManualRequestTooSoonException(
+  //       `Feed ${feed.id} was manually requested too soon after the last request`,
+  //       {
+  //         secondsUntilNextRequest:
+  //           waitDurationSeconds - secondsSinceLastRequest,
+  //       }
+  //     );
+  //   }
+
+  //   const requestDate = new Date();
+  //   const user = await this.deps.usersService.getOrCreateUserByDiscordId(
+  //     feed.user.discordUserId
+  //   );
+
+  //   await this.deps.usersService.syncLookupKeys({
+  //     feedIds: [feed.id],
+  //   });
+  //   const lookupDetails = getFeedRequestLookupDetails({
+  //     feed,
+  //     user,
+  //     decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
+  //   });
+
+  //   const res = await this.deps.feedFetcherApiService.fetchAndSave(
+  //     lookupDetails?.url || feed.url,
+  //     lookupDetails,
+  //     {
+  //       getCachedResponse: false,
+  //     }
+  //   );
+
+  //   const isRequestSuccessful =
+  //     res.requestStatus === FeedFetcherFetchStatus.Success;
+  //   let canBeEnabled = isRequestSuccessful;
+
+  //   let getArticlesRequestStatus: GetArticlesResponseRequestStatus | null =
+  //     null;
+
+  //   if (
+  //     isRequestSuccessful &&
+  //     feed.disabledCode === UserFeedDisabledCode.InvalidFeed
+  //   ) {
+  //     const res2 = await this.getFeedArticleProperties({
+  //       feed,
+  //       url: feed.url,
+  //     });
+
+  //     getArticlesRequestStatus = res2.requestStatus;
+
+  //     canBeEnabled =
+  //       isRequestSuccessful &&
+  //       res2.requestStatus === GetArticlesResponseRequestStatus.Success;
+  //   }
+
+  //   await this.userFeedModel
+  //     .findByIdAndUpdate(feed._id, {
+  //       $set: {
+  //         lastManualRequestAt: requestDate,
+  //         healthStatus: isRequestSuccessful
+  //           ? UserFeedHealthStatus.Ok
+  //           : feed.healthStatus,
+  //       },
+  //       ...(canBeEnabled && {
+  //         $unset: {
+  //           disabledCode: "",
+  //         },
+  //       }),
+  //     })
+  //     .lean();
+
+  //   return {
+  //     requestStatus: res.requestStatus,
+  //     requestStatusCode:
+  //       res.requestStatus === FeedFetcherFetchStatus.BadStatusCode
+  //         ? res.response?.statusCode
+  //         : undefined,
+  //     getArticlesRequestStatus,
+  //     hasEnabledFeed: canBeEnabled,
+  //   };
+  // }
+
+  async getFeedDailyLimit(feed: IUserFeed) {
+    const { articleRateLimits } =
+      await this.deps.supportersService.getBenefitsOfDiscordUser(
+        feed.user.discordUserId
+      );
+
+    const dailyLimit = articleRateLimits.find(
+      (limit) => limit.timeWindowSeconds === 86400
+    );
+
+    if (!dailyLimit) {
+      throw new Error(
+        `Daily limit was not found for feed ${feed.id} whose owner is ${feed.user.discordUserId}`
+      );
+    }
+
+    const currentProgress = await this.deps.feedHandlerService.getDeliveryCount({
+      feedId: feed.id,
+      timeWindowSec: 86400,
+    });
+
+    return {
+      progress: currentProgress.result.count,
+      max: dailyLimit?.max,
+    };
+  }
+
+  // async getFeedArticles({
+  //   limit,
+  //   url,
+  //   random,
+  //   filters,
+  //   selectProperties,
+  //   selectPropertyTypes,
+  //   skip,
+  //   formatter,
+  //   discordUserId,
+  //   feed,
+  //   includeHtmlInErrors,
+  // }: GetFeedArticlesInput): Promise<GetFeedArticlesOutput> {
+  //   const user = await this.deps.usersService.getOrCreateUserByDiscordId(
+  //     discordUserId
+  //   );
+
+  //   return this.deps.feedHandlerService.getArticles(
+  //     {
+  //       url,
+  //       limit,
+  //       random,
+  //       filters,
+  //       skip: skip || 0,
+  //       selectProperties,
+  //       selectPropertyTypes,
+  //       includeHtmlInErrors,
+  //       formatter: {
+  //         ...formatter,
+  //         options: {
+  //           ...formatter?.options,
+  //           dateFormat:
+  //             formatter.options.dateFormat || user?.preferences?.dateFormat,
+  //           dateTimezone:
+  //             formatter.options.dateTimezone || user?.preferences?.dateTimezone,
+  //           dateLocale:
+  //             formatter.options.dateLocale || user?.preferences?.dateLocale,
+  //         },
+  //       },
+  //     },
+  //     getFeedRequestLookupDetails({
+  //       feed,
+  //       user,
+  //       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
+  //     })
+  //   );
+  // }
 
   async bulkDelete(
     feedIds: string[],

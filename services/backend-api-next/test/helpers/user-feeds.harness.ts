@@ -19,9 +19,11 @@ import {
 import {
   createMockFeedHandlerService,
   createMockFeedsService,
+  createMockFeedFetcherService,
   createMockSupportersService,
   createMockUsersService,
   type MockFeedHandlerOptions,
+  type MockFeedFetcherServiceOptions,
 } from "./mock-factories";
 import { generateTestId } from "./test-id";
 
@@ -39,6 +41,7 @@ export interface TestContextOptions {
   defaultRefreshRateSeconds?: number;
   defaultSupporterRefreshRateSeconds?: number;
   feedHandler?: MockFeedHandlerOptions;
+  feedFetcherService?: MockFeedFetcherServiceOptions;
   bannedFeedDetails?: unknown;
   publishMessage?: (queue: string, message: unknown) => Promise<void>;
 }
@@ -133,6 +136,9 @@ export function createUserFeedsHarness(): UserFeedsHarness {
         }),
         feedFetcherApiService:
           {} as UserFeedsServiceDeps["feedFetcherApiService"],
+        feedFetcherService: createMockFeedFetcherService(
+          options.feedFetcherService,
+        ),
         feedHandlerService: createMockFeedHandlerService(options.feedHandler),
         usersService: createMockUsersService(userId),
         publishMessage: options.publishMessage ?? (async () => {}),

@@ -55,6 +55,7 @@ import { UserFeedConnectionEventsService } from "./services/user-feed-connection
 import { MongoMigrationsService } from "./services/mongo-migrations/mongo-migrations.service";
 import { UserFeedsService } from "./services/user-feeds/user-feeds.service";
 import { FeedConnectionsDiscordChannelsService } from "./services/feed-connections-discord-channels/feed-connections-discord-channels.service";
+import { FeedFetcherService } from "./services/feed-fetcher";
 import { createSmtpTransport } from "./infra/smtp";
 
 export interface Container {
@@ -87,6 +88,7 @@ export interface Container {
   discordPermissionsService: DiscordPermissionsService;
   discordWebhooksService: DiscordWebhooksService;
   feedFetcherApiService: FeedFetcherApiService;
+  feedFetcherService: FeedFetcherService;
   feedHandlerService: FeedHandlerService;
   paddleService: PaddleService;
   redditApiService: RedditApiService;
@@ -169,6 +171,7 @@ export function createContainer(deps: {
     discordApiService,
   );
   const feedFetcherApiService = new FeedFetcherApiService(deps.config);
+  const feedFetcherService = new FeedFetcherService({ feedFetcherApiService });
   const feedHandlerService = new FeedHandlerService(deps.config);
   const paddleService = new PaddleService(deps.config);
   const redditApiService = new RedditApiService(deps.config);
@@ -265,6 +268,7 @@ export function createContainer(deps: {
     feedsService,
     supportersService,
     feedFetcherApiService,
+    feedFetcherService,
     feedHandlerService,
     usersService,
     publishMessage,
@@ -301,6 +305,7 @@ export function createContainer(deps: {
     discordPermissionsService,
     discordWebhooksService,
     feedFetcherApiService,
+    feedFetcherService,
     feedHandlerService,
     paddleService,
     redditApiService,
