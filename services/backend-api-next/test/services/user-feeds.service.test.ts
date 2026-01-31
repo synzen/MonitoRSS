@@ -2182,5 +2182,218 @@ describe("UserFeedsService", { concurrency: true }, () => {
       assert.ok(updated);
       assert.deepStrictEqual(updated.passingComparisons, ["original"]);
     });
+
+    it("copies connections to target feed with new IDs", async () => {
+      const ctx = harness.createContext();
+      const sourceConnection = createMockDiscordChannelConnection();
+      const sourceFeed = await ctx.createFeedWithConnections({
+        connections: { discordChannels: [sourceConnection] },
+      });
+
+      const targetFeed = await ctx.createFeed({});
+      const updatedSource = await ctx.findById(sourceFeed.id);
+      assert.ok(updatedSource);
+
+      await ctx.service.copySettings({
+        sourceFeed: updatedSource,
+        dto: {
+          settings: [UserFeedCopyableSetting.Connections],
+          targetFeedIds: [targetFeed.id],
+          targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
+        },
+        discordUserId: ctx.discordUserId,
+      });
+
+      const updated = await ctx.findById(targetFeed.id);
+      assert.ok(updated);
+      assert.strictEqual(updated.connections?.discordChannels.length, 1);
+      assert.notStrictEqual(
+        updated.connections?.discordChannels[0]?.id,
+        sourceConnection.id,
+      );
+      assert.strictEqual(
+        updated.connections?.discordChannels[0]?.name,
+        sourceConnection.name,
+      );
+    });
+
+    it("copies multiple connections with unique IDs for each", async () => {
+      const ctx = harness.createContext();
+      const conn1 = createMockDiscordChannelConnection();
+      const conn2 = createMockDiscordChannelConnection();
+      const sourceFeed = await ctx.createFeedWithConnections({
+        connections: { discordChannels: [conn1, conn2] },
+      });
+
+      const targetFeed = await ctx.createFeed({});
+      const updatedSource = await ctx.findById(sourceFeed.id);
+      assert.ok(updatedSource);
+
+      await ctx.service.copySettings({
+        sourceFeed: updatedSource,
+        dto: {
+          settings: [UserFeedCopyableSetting.Connections],
+          targetFeedIds: [targetFeed.id],
+          targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
+        },
+        discordUserId: ctx.discordUserId,
+      });
+
+      const updated = await ctx.findById(targetFeed.id);
+      assert.ok(updated);
+      assert.strictEqual(updated.connections?.discordChannels.length, 2);
+      const targetIds = updated.connections?.discordChannels.map((c) => c.id);
+      assert.notStrictEqual(targetIds[0], conn1.id);
+      assert.notStrictEqual(targetIds[1], conn2.id);
+      assert.notStrictEqual(targetIds[0], targetIds[1]);
+    });
+
+    it("deletes application-owned webhooks from target feeds before copying", async () => {
+      const ctx = harness.createContext();
+      const sourceFeed = await ctx.createFeedWithConnections({
+        connections: {
+          discordChannels: [createMockDiscordChannelConnection()],
+        },
+      });
+
+      const targetFeed = await ctx.createFeedWithConnections({
+        connections: {
+          discordChannels: [
+            createMockDiscordChannelConnection({
+              details: {
+                webhook: {
+                  id: "wh-1",
+                  guildId: "g-1",
+                  token: "t-1",
+                  isApplicationOwned: true,
+                },
+              },
+            }),
+          ],
+        },
+      });
+
+      const updatedSource = await ctx.findById(sourceFeed.id);
+      assert.ok(updatedSource);
+
+      await ctx.service.copySettings({
+        sourceFeed: updatedSource,
+        dto: {
+          settings: [UserFeedCopyableSetting.Connections],
+          targetFeedIds: [targetFeed.id],
+          targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
+        },
+        discordUserId: ctx.discordUserId,
+      });
+
+      assert.strictEqual(
+        ctx.feedConnectionsDiscordChannelsService.deleteConnection.mock.callCount(),
+        1,
+      );
+    });
+
+    it("does not delete non-application-owned webhooks from target feeds", async () => {
+      const ctx = harness.createContext();
+      const sourceFeed = await ctx.createFeedWithConnections({
+        connections: {
+          discordChannels: [createMockDiscordChannelConnection()],
+        },
+      });
+
+      const targetFeed = await ctx.createFeedWithConnections({
+        connections: {
+          discordChannels: [
+            createMockDiscordChannelConnection({
+              details: {
+                webhook: { id: "wh-1", guildId: "g-1", token: "t-1" },
+              },
+            }),
+          ],
+        },
+      });
+
+      const updatedSource = await ctx.findById(sourceFeed.id);
+      assert.ok(updatedSource);
+
+      await ctx.service.copySettings({
+        sourceFeed: updatedSource,
+        dto: {
+          settings: [UserFeedCopyableSetting.Connections],
+          targetFeedIds: [targetFeed.id],
+          targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
+        },
+        discordUserId: ctx.discordUserId,
+      });
+
+      assert.strictEqual(
+        ctx.feedConnectionsDiscordChannelsService.deleteConnection.mock.callCount(),
+        0,
+      );
+    });
+
+    it("copies connections to all matching feeds in All mode", async () => {
+      const ctx = harness.createContext();
+      const sourceConn = createMockDiscordChannelConnection();
+      const sourceFeed = await ctx.createFeedWithConnections({
+        connections: { discordChannels: [sourceConn] },
+      });
+
+      const targetFeed1 = await ctx.createFeed({});
+      const targetFeed2 = await ctx.createFeed({});
+
+      const updatedSource = await ctx.findById(sourceFeed.id);
+      assert.ok(updatedSource);
+
+      await ctx.service.copySettings({
+        sourceFeed: updatedSource,
+        dto: {
+          settings: [UserFeedCopyableSetting.Connections],
+          targetFeedSelectionType: UserFeedTargetFeedSelectionType.All,
+        },
+        discordUserId: ctx.discordUserId,
+      });
+
+      const updated1 = await ctx.findById(targetFeed1.id);
+      const updated2 = await ctx.findById(targetFeed2.id);
+      assert.ok(updated1);
+      assert.ok(updated2);
+      assert.strictEqual(updated1.connections?.discordChannels.length, 1);
+      assert.strictEqual(updated2.connections?.discordChannels.length, 1);
+
+      const sourceAfter = await ctx.findById(sourceFeed.id);
+      assert.ok(sourceAfter);
+      assert.strictEqual(
+        sourceAfter.connections?.discordChannels[0]?.id,
+        sourceConn.id,
+      );
+    });
+
+    it("replaces target connections with empty array when source has none", async () => {
+      const ctx = harness.createContext();
+      const sourceFeed = await ctx.createFeed({});
+
+      const targetFeed = await ctx.createFeedWithConnections({
+        connections: {
+          discordChannels: [createMockDiscordChannelConnection()],
+        },
+      });
+
+      const updatedSource = await ctx.findById(sourceFeed.id);
+      assert.ok(updatedSource);
+
+      await ctx.service.copySettings({
+        sourceFeed: updatedSource,
+        dto: {
+          settings: [UserFeedCopyableSetting.Connections],
+          targetFeedIds: [targetFeed.id],
+          targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
+        },
+        discordUserId: ctx.discordUserId,
+      });
+
+      const updated = await ctx.findById(targetFeed.id);
+      assert.ok(updated);
+      assert.strictEqual(updated.connections?.discordChannels.length, 0);
+    });
   });
 });
