@@ -416,7 +416,10 @@ export class UserFeedMongooseRepository
       connections: input.connections,
       createdAt: input.createdAt,
       feedRequestLookupKey: input.feedRequestLookupKey,
-      user: { discordUserId: input.user.discordUserId },
+      user: { id: new Types.ObjectId(input.user.id), discordUserId: input.user.discordUserId },
+      refreshRateSeconds: input.refreshRateSeconds,
+      maxDailyArticles: input.maxDailyArticles,
+      dateCheckOptions: input.dateCheckOptions,
       shareManageOptions: input.shareManageOptions
         ? {
             invites: input.shareManageOptions.invites.map((invite) => ({

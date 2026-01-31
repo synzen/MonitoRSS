@@ -134,11 +134,15 @@ export type CustomPlaceholderStepTransform = (
 export interface CreateUserFeedInput {
   title: string;
   url: string;
-  user: { discordUserId: string };
+  user: { id: string, discordUserId: string };
   inputUrl?: string;
   connections?: IFeedConnections;
   feedRequestLookupKey?: string;
   createdAt?: Date;
+  refreshRateSeconds?: number;
+  slotOffsetMs?: number;
+  maxDailyArticles?: number;
+  dateCheckOptions?: IUserFeedDateCheckOptions;
   shareManageOptions?: {
     invites: Array<{
       discordUserId: string;

@@ -9,22 +9,28 @@ import { generateTestId } from "./test-id";
 
 export interface MockFeedHandlerOptions {
   url?: string;
-  articles?: Array<{ date?: string }>;
+  articles?: Array<Record<string, unknown>>;
   feedTitle?: string;
   requestStatus?: GetArticlesResponseRequestStatus;
+  getArticlesError?: Error;
 }
 
 export function createMockFeedHandlerService(
   options: MockFeedHandlerOptions = {},
 ): UserFeedsServiceDeps["feedHandlerService"] {
   return {
-    getArticles: async () => ({
-      requestStatus:
-        options.requestStatus ?? GetArticlesResponseRequestStatus.Success,
-      url: options.url ?? "https://example.com/feed.xml",
-      articles: options.articles ?? [],
-      feedTitle: options.feedTitle ?? "Test Feed",
-    }),
+    getArticles: async () => {
+      if (options.getArticlesError) {
+        throw options.getArticlesError;
+      }
+      return {
+        requestStatus:
+          options.requestStatus ?? GetArticlesResponseRequestStatus.Success,
+        url: options.url ?? "https://example.com/feed.xml",
+        articles: options.articles ?? [],
+        feedTitle: options.feedTitle ?? "Test Feed",
+      };
+    },
   } as unknown as UserFeedsServiceDeps["feedHandlerService"];
 }
 

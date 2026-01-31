@@ -117,100 +117,90 @@ export class UserFeedsService {
   }
 
   async addFeed(
-    opts: { discordUserId: string; userAccessToken: string },
-    input: CreateUserFeedInput,
+    {discordUserId, userAccessToken}: { discordUserId: string; userAccessToken: string },
+    {title, url, sourceFeedId}: CreateUserFeedInput,
   ): Promise<IUserFeed> {
-    const { discordUserId } = opts;
-    const { url, title, sourceFeedId } = input;
-
-    const [benefits, user, sourceFeed] = await Promise.all([
+    const [
+      { maxUserFeeds, maxDailyArticles, refreshRateSeconds },
+      user,
+      sourceFeedToCopyFrom,
+    ] = await Promise.all([
       this.deps.supportersService.getBenefitsOfDiscordUser(discordUserId),
       this.deps.usersService.getOrCreateUserByDiscordId(discordUserId),
       sourceFeedId
         ? this.deps.userFeedRepository.findByIdAndOwnership(
-            sourceFeedId,
-            discordUserId,
-          )
+              sourceFeedId,
+              discordUserId,
+        )
         : null,
     ]);
 
-    if (sourceFeedId && !sourceFeed) {
+    if (sourceFeedId && !sourceFeedToCopyFrom) {
       throw new SourceFeedNotFoundException(
-        `Feed with ID ${sourceFeedId} not found for user ${discordUserId}`,
+        `Feed with ID ${sourceFeedId} not found for user ${discordUserId}`
       );
     }
 
-    const currentFeedCount =
-      await this.calculateCurrentFeedCountOfDiscordUser(discordUserId);
+    const userId = user.id;
 
-    if (currentFeedCount >= benefits.maxUserFeeds) {
+    const feedCount = await this.calculateCurrentFeedCountOfDiscordUser(
+      discordUserId
+    );
+
+    if (feedCount >= maxUserFeeds) {
       throw new FeedLimitReachedException("Max feeds reached");
     }
 
-    const feedRequestLookupKey = this.generateFeedRequestLookupKey();
-
-    const lookupDetails = getFeedRequestLookupDetails({
-      feed: { url, feedRequestLookupKey },
-      user: {
-        externalCredentials: user.externalCredentials?.map((c) => ({
-          type: c.type,
-          data: c.data,
-        })),
-      },
+    const tempLookupDetails = getFeedRequestLookupDetails({
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
+      feed: {
+        url,
+        feedRequestLookupKey: randomUUID(),
+      },
+      user,
     });
 
     const { finalUrl, enableDateChecks, feedTitle } =
-      await this.checkUrlIsValid(url, lookupDetails);
+      await this.checkUrlIsValid(url, tempLookupDetails);
 
-    const slotOffsetMs = calculateSlotOffsetMs(
-      finalUrl,
-      benefits.refreshRateSeconds,
-    );
+    const { connections, ...propertiesToCopy } = sourceFeedToCopyFrom || {};
 
-    const feed = await this.deps.userFeedRepository.create({
+    const created = await this.deps.userFeedRepository.create({
+      ...propertiesToCopy,
       title: title || feedTitle || "Untitled Feed",
       url: finalUrl,
-      user: { discordUserId },
-    });
-
-    const $set: Record<string, unknown> = {
       inputUrl: url,
-      refreshRateSeconds: benefits.refreshRateSeconds,
-      maxDailyArticles: benefits.maxDailyArticles,
-      slotOffsetMs,
-      feedRequestLookupKey,
-    };
-
-    if (enableDateChecks) {
-      $set.dateCheckOptions = {
-        oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24,
-      };
-    }
-
-    if (sourceFeed) {
-      if (sourceFeed.passingComparisons?.length) {
-        $set.passingComparisons = sourceFeed.passingComparisons;
-      }
-      if (sourceFeed.blockingComparisons?.length) {
-        $set.blockingComparisons = sourceFeed.blockingComparisons;
-      }
-      if (sourceFeed.formatOptions) {
-        $set.formatOptions = sourceFeed.formatOptions;
-      }
-      if (sourceFeed.dateCheckOptions) {
-        $set.dateCheckOptions = sourceFeed.dateCheckOptions;
-      }
-      if (sourceFeed.externalProperties?.length) {
-        $set.externalProperties = sourceFeed.externalProperties;
-      }
-    }
-
-    const updatedFeed = await this.deps.userFeedRepository.updateById(feed.id, {
-      $set,
+      user: {
+        id: userId,
+        discordUserId,
+      },
+      refreshRateSeconds,
+      slotOffsetMs: calculateSlotOffsetMs(finalUrl, refreshRateSeconds),
+      maxDailyArticles,
+      feedRequestLookupKey: tempLookupDetails?.key,
+      dateCheckOptions: enableDateChecks
+        ? {
+            oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24, // 1 day
+          }
+        : undefined,
     });
 
-    return updatedFeed || feed;
+    if (connections) {
+      for (const c of connections.discordChannels) {
+        await this.deps.feedConnectionsDiscordChannelsService.cloneConnection(
+          c,
+          {
+            targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
+            name: c.name,
+            targetFeedIds: [created.id],
+          },
+          userAccessToken,
+          discordUserId
+        );
+      }
+    }
+
+    return created;
   }
 
 

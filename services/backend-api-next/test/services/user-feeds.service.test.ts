@@ -6,6 +6,7 @@ import {
 } from "../../src/repositories/shared/enums";
 import { GetArticlesResponseRequestStatus } from "../../src/services/feed-handler/types";
 import {
+  BannedFeedException,
   FeedLimitReachedException,
   FeedNotFailedException,
   ManualRequestTooSoonException,
@@ -410,6 +411,41 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       assert.strictEqual(result.url, resolvedUrl);
       assert.strictEqual(result.inputUrl, inputUrl);
+    });
+
+    it("throws BannedFeedException if feed is banned", async () => {
+      const ctx = harness.createContext({
+        bannedFeedDetails: { reason: "spam" },
+        feedHandler: { url: "https://banned.com/feed.xml" },
+      });
+
+      await assert.rejects(
+        () =>
+          ctx.service.addFeed(
+            { discordUserId: ctx.discordUserId, userAccessToken: "token" },
+            { url: "https://banned.com/feed.xml" },
+          ),
+        BannedFeedException,
+      );
+    });
+
+    it("throws if getArticles throws an error", async () => {
+      const testError = new Error("feed fetch error");
+      const ctx = harness.createContext({
+        feedHandler: { getArticlesError: testError },
+      });
+
+      await assert.rejects(
+        () =>
+          ctx.service.addFeed(
+            { discordUserId: ctx.discordUserId, userAccessToken: "token" },
+            { url: "https://example.com/feed.xml" },
+          ),
+        (err: Error) => {
+          assert.strictEqual(err.message, testError.message);
+          return true;
+        },
+      );
     });
   });
 
@@ -1052,35 +1088,6 @@ describe("UserFeedsService", { concurrency: true }, () => {
   });
 
   describe("error handling", () => {
-    it("handles feedHandlerService failure gracefully", async () => {
-      const ctx = harness.createContext({
-        feedHandler: {
-          requestStatus: GetArticlesResponseRequestStatus.BadStatusCode,
-        },
-      });
-
-      await assert.rejects(() =>
-        ctx.service.addFeed(
-          { discordUserId: ctx.discordUserId, userAccessToken: "token" },
-          { url: "https://invalid.com/feed.xml" },
-        ),
-      );
-    });
-
-    it("rejects banned feeds", async () => {
-      const ctx = harness.createContext({
-        bannedFeedDetails: { reason: "spam" },
-        feedHandler: { url: "https://banned.com/feed.xml" },
-      });
-
-      await assert.rejects(() =>
-        ctx.service.addFeed(
-          { discordUserId: ctx.discordUserId, userAccessToken: "token" },
-          { url: "https://banned.com/feed.xml" },
-        ),
-      );
-    });
-
     it("throws error for invalid ObjectId format in getFeedById", async () => {
       const ctx = harness.createContext();
 
