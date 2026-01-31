@@ -33,7 +33,8 @@ export default defineConfig({
     project: process.env.SENTRY_PROJECT,
     release: {
       name: process.env.SENTRY_RELEASE
-    }
+    },
+    telemetry: !process.env.CI
   })],
   publicDir: "./public",
   resolve: {

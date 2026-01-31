@@ -64,6 +64,7 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -90,7 +91,7 @@ jobs:
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
 
-  upload-compose:
+  release:
     runs-on: ubuntu-latest
     needs: build-images
     permissions:
@@ -110,33 +111,7 @@ jobs:
             echo "PRERELEASE=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Generate merged docker-compose.yml
-        run: |
-          # Create empty env file to satisfy docker compose config
-          touch .env.prod
-
-          # Merge base + prod into single file, resolving all extends
-          docker compose -f docker-compose.yml config > docker-compose-merged.yml
-
-          # Replace :main with version tag
-          sed -i 's/:main/:${{ steps.version.outputs.VERSION }}/g' docker-compose-merged.yml
-
-          # Add env_file directive back to services that need it
-          # (docker compose config removes it, but users need to provide their own .env.prod)
-          sed -i '/^  bot-presence-service:$/a\    env_file:\n      - .env.prod' docker-compose-merged.yml
-          sed -i '/^  discord-rest-listener-service:$/a\    env_file:\n      - .env.prod' docker-compose-merged.yml
-          sed -i '/^  feed-requests-service:$/a\    env_file:\n      - .env.prod' docker-compose-merged.yml
-          sed -i '/^  feed-requests-postgres-migration:$/a\    env_file:\n      - .env.prod' docker-compose-merged.yml
-          sed -i '/^  user-feeds-service:$/a\    env_file:\n      - .env.prod' docker-compose-merged.yml
-          sed -i '/^  user-feeds-postgres-migration:$/a\    env_file:\n      - .env.prod' docker-compose-merged.yml
-          sed -i '/^  legacy-feed-bulk-converter-service:$/a\    env_file:\n      - .env.prod' docker-compose-merged.yml
-          sed -i '/^  schedule-emitter-service:$/a\    env_file:\n      - .env.prod' docker-compose-merged.yml
-          sed -i '/^  monolith:$/a\    env_file:\n      - .env.prod' docker-compose-merged.yml
-
-          # Rename for release
-          mv docker-compose-merged.yml monitorss-${{ steps.version.outputs.VERSION }}.yml
-
-      - name: Create release with compose file
+      - name: Create release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -145,7 +120,6 @@ jobs:
             PRERELEASE_FLAG="--prerelease"
           fi
           gh release create ${{ github.ref_name }} \
-            monitorss-${{ steps.version.outputs.VERSION }}.yml \
             --generate-notes \
             --draft \
             $PRERELEASE_FLAG
