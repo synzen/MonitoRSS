@@ -1394,8 +1394,9 @@ describe("UserFeedsService", { concurrency: true }, () => {
       });
 
       await ctx.enforceWebhookConnections({
-        type: "all-users",
-        supporterDiscordUserIds: [],
+        type: "single-user",
+        discordUserId: ctx.discordUserId,
+        allowWebhooks: false,
       });
 
       const updated = await ctx.findById(feed.id);
