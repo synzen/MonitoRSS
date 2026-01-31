@@ -10,25 +10,14 @@ import {
 } from "@/features/discordUser";
 import { GetServersOutput } from "../features/discordServers/api/getServer";
 import {
-  CloneFeedOutput,
-  CreateFeedSubscriberOutput,
-  CreateServerLegacyFeedBulkConversionOutput,
   CreateUserFeedCloneOutput,
   CreateUserFeedDatePreviewOutput,
   CreateUserFeedInput,
-  CreateUserFeedLegacyRestoreOutput,
   CreateUserFeedManagementInviteOutput,
   CreateUserFeedManualRequestOutput,
   CreateUserFeedOutput,
   DeleteUserFeedsInput,
   DeleteUserFeedsOutput,
-  FeedSummary,
-  GetFeedArticlesOutput,
-  GetFeedOutput,
-  GetFeedsOutput,
-  GetFeedSubscribersOutput,
-  GetLegacyFeedCountOutput,
-  GetServerLegacyFeedBulkConversionOutput,
   GetUserFeedArticlePropertiesOutput,
   GetUserFeedArticlesOutput,
   GetUserFeedDeliveryLogsOutput,
@@ -36,14 +25,11 @@ import {
   GetUserFeedManagementInvitesOutput,
   GetUserFeedOutput,
   GetUserFeedsOutput,
-  UpdateFeedSubscriberOutput,
   UpdateUserFeedOutput,
   UserFeedArticleRequestStatus,
   UserFeedHealthStatus,
 } from "../features/feed";
 import mockDiscordServers from "./data/discordServers";
-import mockFeeds from "./data/feed";
-import mockFeedArticles from "./data/feedArticles";
 import mockDiscordUserMe from "./data/discordUserMe";
 import {
   GetServerActiveThreadsOutput,
@@ -56,7 +42,6 @@ import {
 } from "@/features/discordServers";
 import mockDiscordChannels from "./data/discordChannels";
 import mockDiscordRoles from "./data/discordRoles";
-import mockFeedSubscribers from "./data/feedSubscribers";
 import { GetDiscordWebhooksOutput } from "@/features/discordWebhooks";
 import mockDiscordWebhooks from "./data/discordWebhooks";
 import { generateMockApiErrorResponse } from "./generateMockApiErrorResponse";
@@ -70,7 +55,6 @@ import {
 } from "../features/feedConnections";
 import { mockFeedChannelConnections } from "./data/feedConnection";
 import mockUserFeeds, { getMockUserFeeds } from "./data/userFeeds";
-import mockFeedSummaries from "./data/feeds";
 import { mockSendTestArticleResult } from "./data/testArticleResult";
 import { mockUserFeedArticles } from "./data/userFeedArticles";
 import { GetUserFeedRequestsOutput } from "../features/feed/api/getUserFeedRequests";
@@ -80,7 +64,6 @@ import mockDiscordThreads from "./data/discordThreads";
 import mockDiscordServerMembers from "./data/discordServerMembers";
 import mockDiscordUser from "./data/discordUser";
 import mockUserFeedSummary from "./data/userFeedSummary";
-import { legacyFeedBulkConversion } from "./data/legacyFeedBulkConversion";
 import { UserFeedManagerStatus } from "../constants";
 import mockUserFeedManagementInvites from "./data/userFeedManagementInvites";
 import mockUserMe from "./data/userMe";
@@ -200,26 +183,6 @@ const handlers = [
     });
   }),
 
-  http.get("/api/v1/discord-servers/:serverId/legacy-conversion", async () => {
-    await delay(500);
-
-    return HttpResponse.json<GetServerLegacyFeedBulkConversionOutput>(legacyFeedBulkConversion);
-  }),
-
-  http.post("/api/v1/discord-servers/:serverId/legacy-conversion", async () => {
-    if (legacyFeedBulkConversion.status !== "IN_PROGRESS") {
-      legacyFeedBulkConversion.status = "IN_PROGRESS";
-    } else {
-      legacyFeedBulkConversion.status = "COMPLETED";
-      legacyFeedBulkConversion.failedFeeds = [];
-    }
-
-    await delay(500);
-
-    return HttpResponse.json<CreateServerLegacyFeedBulkConversionOutput>({
-      total: 5,
-    });
-  }),
   http.get("/api/v1/discord-servers/:serverId", async () =>
     HttpResponse.json<GetServerSettingsOutput>({
       result: {
@@ -244,36 +207,6 @@ const handlers = [
       },
     })
   ),
-
-  http.get("/api/v1/discord-servers/:serverId/feeds", async ({ request }) => {
-    const url = new URL(request.url);
-
-    const limit = Number(url.searchParams.get("limit") || "10");
-    const offset = Number(url.searchParams.get("offset") || "0");
-    const search = url.searchParams.get("search");
-
-    const theseMockSummariesTotal = mockFeedSummaries.length * 5;
-    const theseMockSummaries: FeedSummary[] = new Array(theseMockSummariesTotal)
-      .fill(0)
-      .map((_, i) => ({
-        ...mockFeedSummaries[i % mockFeedSummaries.length],
-        id: i.toString(),
-      }))
-      .filter((feed) =>
-        !search
-          ? true
-          : feed.title.toLowerCase().includes(search) || feed.url.toLowerCase().includes(search)
-      );
-
-    const results = theseMockSummaries.slice(offset, offset + limit);
-
-    await delay(700);
-
-    return HttpResponse.json<GetFeedsOutput>({
-      total: theseMockSummariesTotal,
-      results,
-    });
-  }),
 
   http.get("/api/v1/discord-servers/:serverId/active-threads", async () =>
     HttpResponse.json<GetServerActiveThreadsOutput>({
@@ -502,16 +435,6 @@ const handlers = [
         getArticlesRequestStatus: null,
         hasEnabledFeed: null,
         requestStatusCode: 404,
-      },
-    });
-  }),
-
-  http.post("/api/v1/user-feeds/:id/restore-to-legacy", async () => {
-    await delay(500);
-
-    return HttpResponse.json<CreateUserFeedLegacyRestoreOutput>({
-      result: {
-        status: "success",
       },
     });
   }),
@@ -899,38 +822,6 @@ const handlers = [
     });
   }),
 
-  http.get("/api/v1/feeds/:feedId", async () => {
-    // await delay(500);
-
-    return HttpResponse.json<GetFeedOutput>({
-      result: mockFeeds[0],
-    });
-  }),
-
-  http.get("/api/v1/feeds/:feedId", async () => {
-    await delay(500);
-
-    return HttpResponse.json<GetFeedOutput>({
-      result: mockFeeds[0],
-    });
-  }),
-
-  http.delete("/api/v1/feeds/:feedId", async () => {
-    await delay(500);
-
-    return new HttpResponse(null, {
-      status: 204,
-    });
-  }),
-
-  http.post("/api/v1/feeds/:feedId/clone", async () => {
-    await delay(500);
-
-    return HttpResponse.json<CloneFeedOutput>({
-      results: mockFeeds,
-    });
-  }),
-
   http.post("/api/v1/user-feeds/:feedId/connections/discord-channels", async () => {
     await delay(500);
 
@@ -1018,68 +909,6 @@ const handlers = [
 
     return new HttpResponse(null, {
       status: 204,
-    });
-  }),
-
-  http.get("/api/v1/feeds/:feedId/subscribers", async () => {
-    return HttpResponse.json<GetFeedSubscribersOutput>({
-      results: mockFeedSubscribers,
-      total: mockFeedSubscribers.length,
-    });
-  }),
-
-  http.post("/api/v1/feeds/:feedId/subscribers", async () => {
-    await delay(500);
-
-    return HttpResponse.json<CreateFeedSubscriberOutput>({
-      result: {
-        id: "3",
-        discordId: mockDiscordRoles[2].id,
-        feed: mockFeeds[0].id,
-        filters: [],
-        type: "role",
-      },
-    });
-  }),
-
-  http.patch("/api/v1/feeds/:feedId/subscribers/:subscriberId", async () => {
-    await delay(500);
-
-    return HttpResponse.json<UpdateFeedSubscriberOutput>({
-      result: mockFeedSubscribers[0],
-    });
-  }),
-
-  http.delete("/api/v1/feeds/:feedId/subscribers/:subscriberId", async () => {
-    await delay(500);
-
-    return new HttpResponse(null, {
-      status: 204,
-    });
-  }),
-
-  http.patch("/api/v1/feeds/:feedId", async () => {
-    await delay(500);
-
-    return HttpResponse.json(
-      generateMockApiErrorResponse({
-        code: "WEBHOOK_INVALID",
-      }),
-      {
-        status: 400,
-      }
-    );
-  }),
-
-  http.get("/api/v1/feeds/:feedId/articles", async () => {
-    return HttpResponse.json<GetFeedArticlesOutput>({
-      result: mockFeedArticles,
-    });
-  }),
-
-  http.get("/api/v1/feeds/:feedId/refresh", async () => {
-    return HttpResponse.json<GetFeedOutput>({
-      result: mockFeeds[0],
     });
   }),
 ];

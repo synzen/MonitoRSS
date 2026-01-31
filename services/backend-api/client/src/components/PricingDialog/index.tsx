@@ -350,7 +350,9 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                     userSubscription.billingInterval === "year");
                                 const isUpdate =
                                   isOnThisTier &&
-                                  userSubscriptionAdditionalFeeds !== additionalFeedsQuantity;
+                                  productId === ProductKey.Tier3 &&
+                                  (userSubscriptionAdditionalFeeds ?? 0) !==
+                                    additionalFeedsQuantity;
 
                                 return (
                                   <Card size="lg" shadow="lg" key={product?.name} role="listitem">
