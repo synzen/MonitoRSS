@@ -61,7 +61,6 @@ import {
   RETRY_USER_FEED_ERROR_CODES,
   SendTestArticleFilter,
 } from "./filters";
-import { RestoreLegacyUserFeedExceptionFilter } from "./filters/restore-legacy-user-feed-exception.filter";
 import { GetUserFeedsPipe, GetUserFeedsPipeOutput } from "./pipes";
 import { GetFeedArticlePropertiesInput, GetFeedArticlesInput } from "./types";
 import { UserFeedsService } from "./user-feeds.service";
@@ -572,25 +571,6 @@ export class UserFeedsController {
     });
   }
 
-  @Post("/:feedId/restore-to-legacy")
-  @UseFilters(RestoreLegacyUserFeedExceptionFilter)
-  async restoreToLegacy(
-    @Param("feedId", GetUserFeedsPipe())
-    [{ feed }]: GetUserFeedsPipeOutput
-  ) {
-    if (!feed.legacyFeedId) {
-      throw new BadRequestException("Feed is not related to a legacy feed");
-    }
-
-    await this.userFeedsService.restoreToLegacyFeed(feed);
-
-    return {
-      result: {
-        status: "success",
-      },
-    };
-  }
-
   @Get()
   async getFeeds(
     @DiscordAccessToken()
@@ -616,7 +596,7 @@ export class UserFeedsController {
         disabledCode: feed.disabledCode,
         createdAt: feed.createdAt.toISOString(),
         computedStatus: feed.computedStatus,
-        isLegacyFeed: !!feed.legacyFeedId,
+        isLegacyFeed: false,
         ownedByUser: feed.ownedByUser,
         refreshRateSeconds: feed.refreshRateSeconds,
       })),

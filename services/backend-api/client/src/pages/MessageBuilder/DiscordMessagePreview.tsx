@@ -16,10 +16,38 @@ import convertMessageBuilderStateToConnectionPreviewInput, {
 import { useUserFeedConnectionContext } from "../../contexts/UserFeedConnectionContext";
 import { DiscordServerName, DiscordChannelName } from "../../features/discordServers";
 import { CreateDiscordChannelConnectionPreviewInput } from "../../features/feedConnections/api";
+import { MentionDataProvider, useMentionData } from "../../contexts/MentionDataContext";
 
 interface DiscordMessagePreviewProps {
   maxHeight?: string | number;
 }
+
+interface DiscordMessageDisplayWithMentionsProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  messages: any[];
+  maxHeight?: string | number;
+  isLoading?: boolean;
+  emptyMessage?: string;
+}
+
+const DiscordMessageDisplayWithMentions: React.FC<DiscordMessageDisplayWithMentionsProps> = ({
+  messages,
+  maxHeight,
+  isLoading,
+  emptyMessage,
+}) => {
+  const mentionData = useMentionData();
+
+  return (
+    <DiscordMessageDisplay
+      messages={messages}
+      maxHeight={maxHeight}
+      isLoading={isLoading}
+      emptyMessage={emptyMessage}
+      mentionResolvers={mentionData}
+    />
+  );
+};
 
 export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ maxHeight }) => {
   const {
@@ -162,12 +190,14 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
             </Text>
           )}
         </HStack>
-        <DiscordMessageDisplay
-          messages={messages}
-          maxHeight={maxHeight}
-          isLoading={isFetching || !currentArticle}
-          emptyMessage={showEmptyState ? "No components added yet" : undefined}
-        />
+        <MentionDataProvider serverId={connection.details.channel?.guildId}>
+          <DiscordMessageDisplayWithMentions
+            messages={messages}
+            maxHeight={maxHeight}
+            isLoading={isFetching || !currentArticle}
+            emptyMessage={showEmptyState ? "No components added yet" : undefined}
+          />
+        </MentionDataProvider>
         <Text fontSize="sm" color="gray.400" mt={2} textAlign="left">
           This is an approximate preview. Send to Discord to see the actual representation.
         </Text>

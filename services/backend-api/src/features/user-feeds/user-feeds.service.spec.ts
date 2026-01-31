@@ -13,17 +13,13 @@ import {
 } from "../../utils/integration-tests";
 import { MongooseTestModule } from "../../utils/mongoose-test.module";
 import { FeedConnectionDisabledCode } from "../feeds/constants";
-import {
-  DiscordChannelConnection,
-  DiscordWebhookConnection,
-} from "../feeds/entities/feed-connections";
+import { DiscordChannelConnection } from "../feeds/entities/feed-connections";
 import { FeedFeature } from "../feeds/entities/feed.entity";
 import {
   BannedFeedException,
   FeedLimitReachedException,
 } from "../feeds/exceptions";
 import { FeedsService } from "../feeds/feeds.service";
-import { LegacyFeedConversionJobFeature } from "../legacy-feed-conversion/entities/legacy-feed-conversion-job.entity";
 import {
   UserFeedLimitOverride,
   UserFeedLimitOverrideFeature,
@@ -65,22 +61,6 @@ const createMockDiscordChannelConnection: (
     ...overrideDetails?.details,
   },
 });
-
-const mockDiscordWebhookConnection: DiscordWebhookConnection = {
-  id: new Types.ObjectId(),
-  name: "name",
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  details: {
-    webhook: {
-      id: "1",
-      guildId: "guild",
-      token: "1",
-    },
-    embeds: [],
-    formatter: {},
-  },
-};
 
 describe("UserFeedsService", () => {
   let service: UserFeedsService;
@@ -135,7 +115,6 @@ describe("UserFeedsService", () => {
         MongooseModule.forFeature([
           FeedFeature,
           UserFeedTagFeature,
-          LegacyFeedConversionJobFeature,
           UserFeedFeature,
           UserFeedLimitOverrideFeature,
           UserFeature,
@@ -811,19 +790,6 @@ describe("UserFeedsService", () => {
               {
                 ...createMockDiscordChannelConnection(),
                 disabledCode: FeedConnectionDisabledCode.MissingMedium,
-              },
-            ],
-          },
-        },
-        {
-          title: "title5",
-          url: "url",
-          user,
-          connections: {
-            discordWebhooks: [
-              {
-                ...mockDiscordWebhookConnection,
-                disabledCode: FeedConnectionDisabledCode.MissingPermissions,
               },
             ],
           },

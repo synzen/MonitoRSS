@@ -12,6 +12,7 @@ Delivers highly-customized news feeds to Discord!
       - [Updating](#updating)
         - [Major Version Updates](#major-version-updates)
   - [Migrating from v6](#migrating-from-v6)
+    - [Converting Legacy Feeds](#converting-legacy-feeds)
 
 ## Get Started
 
@@ -99,5 +100,26 @@ It's recommended that you don't delete your v6 files until you've confirmed that
 2. In your `.env` file, set `BACKEND_API_MONGODB_URI` to your MongoDB URI
 3. Run `docker compose --parallel 1 up -d --build`
    - If you run into issues with network timeouts, pass the parallel flag to only build 1 container at once: `docker compose --parallel 1 up -d`
-4. Access the control panel via http://localhost:8000/servers and convert all your legacy feeds to personal feeds. Legacy feed articles will not be fetched/delivered until they are converted to personal feeds.
+4. Convert legacy feeds to personal feeds using the migration script below. Legacy feed articles will not be fetched/delivered until they are converted.
 5. After verifying that all is working as expected, you may delete your v6 files.
+
+### Converting Legacy Feeds
+
+Legacy feeds must be converted to personal feeds before they will deliver articles. After starting up all containers, run the migration script:
+
+```bash
+# Enter the monolith container
+docker compose exec monolith sh
+
+# Dry run first to preview (replace YOUR_DISCORD_USER_ID)
+node dist/scripts/migrate-all-legacy-feeds.js --user YOUR_DISCORD_USER_ID --guild "*" --dry-run
+
+# Run the actual migration
+node dist/scripts/migrate-all-legacy-feeds.js --user YOUR_DISCORD_USER_ID --guild "*"
+```
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `--user <id>` | Yes | Discord user ID to own all converted feeds |
+| `--guild <ids>` | Yes | Comma-separated guild IDs, or `*` for all guilds |
+| `--dry-run` | No | Preview without database changes |

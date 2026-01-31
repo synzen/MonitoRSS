@@ -52,7 +52,6 @@ export class UsersController {
     subscription,
     creditBalance,
     isOnPatreon,
-    migratedToPersonalFeeds,
     supporterFeatures,
     externalAccounts,
   }: GetUserByDiscordIdOutput) {
@@ -66,7 +65,6 @@ export class UsersController {
         creditBalance,
         isOnPatreon,
         enableBilling: user.enableBilling,
-        migratedToPersonalFeeds,
         featureFlags: user.featureFlags || {},
         supporterFeatures,
         externalAccounts,

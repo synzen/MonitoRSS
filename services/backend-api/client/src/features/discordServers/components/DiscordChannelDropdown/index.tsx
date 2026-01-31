@@ -1,7 +1,6 @@
 import { Box, FormErrorMessage, FormHelperText } from "@chakra-ui/react";
-import { FiHash, FiMessageCircle } from "react-icons/fi";
-import { BsMegaphoneFill } from "react-icons/bs";
 import { ThemedSelect } from "@/components";
+import { getChannelIcon } from "@/utils/getChannelIcon";
 import { useDiscordServerChannels } from "../../hooks";
 import { GetDiscordChannelType } from "../../constants";
 
@@ -16,12 +15,6 @@ interface Props {
   ariaLabelledBy: string;
   types?: GetDiscordChannelType[];
 }
-
-const iconsByChannelType: Record<GetDiscordChannelType, React.ReactNode> = {
-  text: <FiHash />,
-  forum: <FiMessageCircle />,
-  announcement: <BsMegaphoneFill />,
-};
 
 export const DiscordChannelDropdown: React.FC<Props> = ({
   serverId,
@@ -41,7 +34,7 @@ export const DiscordChannelDropdown: React.FC<Props> = ({
       label: `${channel.category ? `[${channel.category.name}] ` : ""}${channel.name}`,
       value: channel.id,
       data: channel,
-      icon: channel.type ? iconsByChannelType[channel.type] : iconsByChannelType.text,
+      icon: getChannelIcon(channel.type),
     })) || [];
 
   return (

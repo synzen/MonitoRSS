@@ -11,7 +11,6 @@ const boilerplate: Feed = {
   addedAt: new Date(),
   connections: {
     discordChannels: [],
-    discordWebhooks: [],
   },
   embeds: [
     {

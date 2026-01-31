@@ -1,13 +1,27 @@
-import { Avatar, Flex, HStack, IconButton, Spinner, Stack, Tag, Text } from "@chakra-ui/react";
+import {
+  Avatar,
+  Button,
+  Flex,
+  HStack,
+  IconButton,
+  Spinner,
+  Stack,
+  Tag,
+  Text,
+  useDisclosure,
+} from "@chakra-ui/react";
 import { Controller, useFormContext } from "react-hook-form";
-import { SettingsIcon } from "@chakra-ui/icons";
+import { AddIcon, SettingsIcon } from "@chakra-ui/icons";
 import { DiscordMessageFormData } from "@/types/discord";
 import { LogicalFilterExpression } from "../../types";
-import { MentionSelectDialog } from "../MentionSelectDialog";
 import { useDiscordServerRoles } from "../../../discordServers";
 import { DiscordMentionSettingsDialog } from "./DiscordMentionSettingsDialog";
 import { useDiscordUser } from "../../../discordUser";
 import MessagePlaceholderText from "../../../../components/MessagePlaceholderText";
+import {
+  InsertMentionDialog,
+  SelectedMention,
+} from "../../../../pages/MessageBuilder/InsertMentionDialog";
 
 interface Props {
   guildId: string | undefined;
@@ -102,6 +116,7 @@ export const DiscordMessageMentionForm = ({
   path = "mentions",
 }: Props) => {
   const { control } = useFormContext<DiscordMessageFormData>();
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   return (
     <Stack spacing={4}>
@@ -118,6 +133,22 @@ export const DiscordMessageMentionForm = ({
         control={control}
         render={({ field }) => {
           const mentionsValue = field.value as DiscordMessageFormData["mentions"];
+
+          const handleMentionSelected = (mention: SelectedMention) => {
+            if (mention.type === "channel") return;
+
+            field.onChange({
+              ...field.value,
+              targets: [
+                ...(field.value?.targets || []),
+                {
+                  id: mention.id,
+                  type: mention.type,
+                  filters: null,
+                },
+              ],
+            });
+          };
 
           return (
             <Flex gap={4} flexWrap="wrap">
@@ -160,23 +191,22 @@ export const DiscordMessageMentionForm = ({
                   />
                 );
               })}
-              <MentionSelectDialog
-                smallButton={smallButton}
-                guildId={guildId}
-                onAdded={(added) => {
-                  field.onChange({
-                    ...field.value,
-                    targets: [
-                      ...(field.value?.targets || []),
-                      {
-                        id: added.id,
-                        type: added.type,
-                        filters: null,
-                      },
-                    ],
-                  });
-                }}
-              />
+              <Button
+                onClick={onOpen}
+                leftIcon={<AddIcon fontSize="sm" />}
+                size={smallButton ? "sm" : undefined}
+              >
+                Add Mention
+              </Button>
+              {guildId && (
+                <InsertMentionDialog
+                  isOpen={isOpen}
+                  onClose={onClose}
+                  onSelected={handleMentionSelected}
+                  guildId={guildId}
+                  excludeChannels
+                />
+              )}
             </Flex>
           );
         }}

@@ -95,7 +95,8 @@ async function main() {
         );
 
         await Promise.all(
-          doc.connections.discordWebhooks.map(async (c) => {
+          // @ts-ignore
+          doc.connections?.["discordWebhooks"]?.map(async (c) => {
             if (
               !c.filters?.expression ||
               !DEPRECATED_OPERATORS.some((op) =>

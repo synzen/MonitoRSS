@@ -3,7 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { InjectModel } from "@nestjs/mongoose";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
 import { DiscordAPIService } from "../../services/apis/discord/discord-api.service";
-import { Feed, FeedModel } from "../feeds/entities/feed.entity";
+import { Feed } from "../feeds/entities/feed.entity";
 import { FeedsService } from "../feeds/feeds.service";
 import { FeedStatus } from "../feeds/types/FeedStatus.type";
 import {
@@ -17,19 +17,8 @@ import {
   DiscordChannelType,
   DiscordGuildMember,
 } from "../../common";
-import {
-  FeedSubscriber,
-  FeedSubscriberModel,
-} from "../feeds/entities/feed-subscriber.entity";
-import {
-  FeedFilteredFormat,
-  FeedFilteredFormatModel,
-} from "../feeds/entities/feed-filtered-format.entity";
-import {
-  DiscordGuildChannelFormatted,
-  ProfileSettings,
-  ServerBackup,
-} from "./types";
+
+import { DiscordGuildChannelFormatted, ProfileSettings } from "./types";
 import { DiscordServerNotFoundException } from "./exceptions";
 import { DiscordPermissionsService } from "../discord-auth/discord-permissions.service";
 import { MANAGE_THREADS } from "../discord-auth/constants/permissions";
@@ -44,12 +33,6 @@ export class DiscordServersService {
   constructor(
     @InjectModel(DiscordServerProfile.name)
     private readonly profileModel: DiscordServerProfileModel,
-    @InjectModel(Feed.name)
-    private readonly feedModel: FeedModel,
-    @InjectModel(FeedSubscriber.name)
-    private readonly feedSubscriberModel: FeedSubscriberModel,
-    @InjectModel(FeedFilteredFormat.name)
-    private readonly feedFilteredFormatModel: FeedFilteredFormatModel,
     private readonly configService: ConfigService,
     private readonly discordApiService: DiscordAPIService,
     private readonly feedsService: FeedsService,
@@ -99,82 +82,6 @@ export class DiscordServersService {
         type: channel.type,
         availableTags: [],
       }));
-  }
-
-  async createBackup(serverId: string): Promise<ServerBackup> {
-    const [profile, feeds] = await Promise.all([
-      this.getServerProfile(serverId),
-      this.feedModel
-        .find({
-          guild: serverId,
-        })
-        .lean(),
-    ]);
-
-    const filteredFormats = await this.feedFilteredFormatModel
-      .find({
-        feed: {
-          $in: feeds.map((feed) => feed._id),
-        },
-      })
-      .lean();
-    const subscribers = await this.feedSubscriberModel
-      .find({
-        feed: {
-          $in: feeds.map((feed) => feed._id),
-        },
-      })
-      .lean();
-
-    return {
-      profile: {
-        ...profile,
-        _id: serverId,
-      },
-      feeds,
-      filteredFormats,
-      subscribers,
-      backupVersion: "1",
-    };
-  }
-
-  async restoreBackup(backup: ServerBackup) {
-    if (backup.backupVersion !== "1") {
-      throw new Error(`Backup version ${backup.backupVersion} not supported`);
-    }
-
-    await this.profileModel.deleteOne({
-      _id: backup.profile._id,
-    });
-
-    const allCurrentFeeds = await this.feedModel
-      .find({
-        guild: backup.profile._id,
-      })
-      .lean();
-
-    const feedIds = allCurrentFeeds.map((feed) => feed._id);
-
-    await this.feedFilteredFormatModel.deleteMany({
-      feed: {
-        $in: feedIds.map((id) => id),
-      },
-    });
-
-    await this.feedSubscriberModel.deleteMany({
-      feed: {
-        $in: feedIds.map((id) => id),
-      },
-    });
-
-    await this.feedModel.deleteMany({
-      guild: backup.profile._id,
-    });
-
-    await this.profileModel.create([backup.profile]);
-    await this.feedModel.create(backup.feeds);
-    await this.feedSubscriberModel.create(backup.subscribers);
-    await this.feedFilteredFormatModel.create(backup.filteredFormats);
   }
 
   async getServerProfile(serverId: string): Promise<ProfileSettings> {
@@ -289,6 +196,10 @@ export class DiscordServersService {
 
       const relevantChannels = channels.filter((c) => {
         if (options?.types) {
+          if (options.types.includes("*")) {
+            return true;
+          }
+
           if (
             options.types.includes("forum") &&
             c.type === DiscordChannelType.GUILD_FORUM
@@ -407,6 +318,24 @@ export class DiscordServersService {
       );
 
     return res;
+  }
+
+  async getMemberOfServer(
+    serverId: string,
+    memberId: string
+  ): Promise<DiscordGuildMember | null> {
+    try {
+      return await this.discordApiService.getGuildMember(serverId, memberId);
+    } catch (err) {
+      if (
+        err instanceof DiscordAPIError &&
+        [HttpStatus.NOT_FOUND, HttpStatus.FORBIDDEN].includes(err.statusCode)
+      ) {
+        return null;
+      }
+
+      throw err;
+    }
   }
 
   private getProfileSettingsWithDefaults(

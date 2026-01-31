@@ -1249,3 +1249,50 @@
   text-indent: 0;
   white-space: pre;
 }
+
+/* Discord Mentions */
+.discord-mention {
+  background-color: rgba(88, 101, 242, 0.3);
+  color: #c9cdfb;
+  padding: 0 2px;
+  border-radius: 3px;
+  font-weight: 500;
+  cursor: pointer;
+  unicode-bidi: plaintext;
+  vertical-align: baseline;
+}
+
+.discord-mention:hover {
+  background-color: #5865f2;
+  color: #ffffff;
+}
+
+.discord-mention-channel {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  vertical-align: bottom;
+}
+
+.discord-channel-icon {
+  flex-shrink: 0;
+  width: 1em;
+  height: 1em;
+  display: block;
+}
+
+.discord-mention-loading {
+  background-color: rgba(88, 101, 242, 0.2);
+  color: #8a8e94;
+  animation: mention-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes mention-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}

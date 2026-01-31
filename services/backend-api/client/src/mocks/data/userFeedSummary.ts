@@ -14,7 +14,6 @@ const mockUserFeedSummary: UserFeedSummary[] = [
     createdAt: new Date().toISOString(),
     computedStatus: UserFeedComputedStatus.Ok,
     healthStatus: UserFeedHealthStatus.Ok,
-    isLegacyFeed: false,
     ownedByUser: true,
   },
   {
@@ -24,7 +23,6 @@ const mockUserFeedSummary: UserFeedSummary[] = [
     createdAt: new Date().toISOString(),
     computedStatus: UserFeedComputedStatus.RequiresAttention,
     healthStatus: UserFeedHealthStatus.Ok,
-    isLegacyFeed: false,
     ownedByUser: true,
   },
   {
@@ -35,7 +33,6 @@ const mockUserFeedSummary: UserFeedSummary[] = [
     healthStatus: UserFeedHealthStatus.Failed,
     disabledCode: UserFeedDisabledCode.Manual,
     computedStatus: UserFeedComputedStatus.Ok,
-    isLegacyFeed: true,
     ownedByUser: false,
   },
   {
@@ -46,7 +43,6 @@ const mockUserFeedSummary: UserFeedSummary[] = [
     healthStatus: UserFeedHealthStatus.Failing,
     disabledCode: undefined,
     computedStatus: UserFeedComputedStatus.Retrying,
-    isLegacyFeed: false,
     ownedByUser: true,
   },
 ];
@@ -60,7 +56,6 @@ for (let i = 0; i < 100; i += 1) {
     healthStatus: UserFeedHealthStatus.Ok,
     disabledCode: undefined,
     computedStatus: UserFeedComputedStatus.Ok,
-    isLegacyFeed: false,
     ownedByUser: true,
   });
 }

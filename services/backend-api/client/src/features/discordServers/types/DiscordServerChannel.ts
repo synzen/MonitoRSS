@@ -3,7 +3,7 @@ import { InferType, array, bool, object, string } from "yup";
 export const DiscordServerChannelSchema = object({
   id: string().required(),
   name: string().required(),
-  type: string().optional().oneOf(["text", "forum", "announcement"]).nullable(),
+  type: string().optional().nullable(),
   category: object({
     name: string().required(),
   })

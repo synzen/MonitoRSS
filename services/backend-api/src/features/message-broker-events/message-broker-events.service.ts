@@ -13,10 +13,7 @@ import {
 import { castDiscordComponentRowsForMedium } from "../../common/utils/cast-discord-component-rows-from-connection";
 import { FeedFetcherFetchStatus } from "../../services/feed-fetcher/types";
 import logger from "../../utils/logger";
-import {
-  DiscordChannelConnection,
-  DiscordWebhookConnection,
-} from "../feeds/entities/feed-connections";
+import { DiscordChannelConnection } from "../feeds/entities/feed-connections";
 import { NotificationsService } from "../notifications/notifications.service";
 import {
   ArticleRejectCode,
@@ -161,9 +158,9 @@ export class MessageBrokerEventsService {
           });
         }
 
-        const cons = Object.values(feed.connections).flat() as Array<
-          DiscordChannelConnection | DiscordWebhookConnection
-        >;
+        const cons = Object.values(
+          feed.connections
+        ).flat() as Array<DiscordChannelConnection>;
 
         const hasCustomPlaceholders = cons.find(
           (c) => !c.customPlaceholders?.length

@@ -88,16 +88,6 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-production}
 
-  legacy-feed-bulk-converter-service:
-    extends:
-      file: ./docker-compose.base.yml
-      service: legacy-feed-bulk-converter-service
-    image: ghcr.io/synzen/monitorss-monolith:${MONITORSS_VERSION:-7}
-    command: ["node", "dist/scripts/legacy-feed-bulk-converter.js"]
-    env_file: *env-files
-    environment:
-      - NODE_ENV=${NODE_ENV:-production}
-
   schedule-emitter-service:
     extends:
       file: ./docker-compose.base.yml

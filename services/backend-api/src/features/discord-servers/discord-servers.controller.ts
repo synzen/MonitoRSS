@@ -5,9 +5,7 @@ import {
   Get,
   Param,
   Patch,
-  Post,
   Query,
-  StreamableFile,
   UseFilters,
   UseGuards,
   UseInterceptors,
@@ -32,21 +30,13 @@ import { GetDiscordServerChannelsFilter } from "./filters";
 import { GetServerActiveThreadsInputDto } from "./dto/GetServerActiveThreadsInput.dto";
 import { GetServerMembersInputDto } from "./dto/GetServerMembersInput.dto";
 import { GetServerMembersOutputDto } from "./dto/GetServerMembersOutput.dto";
-import { FeedsService } from "../feeds/feeds.service";
-import { LegacyFeedConversionService } from "../legacy-feed-conversion/legacy-feed-conversion.service";
-import { DiscordAccessToken } from "../discord-auth/decorators/DiscordAccessToken";
-import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
-import { ConvertServerLegacyFeedsFilter } from "./filters/convert-server-legacy-feeds.filter";
+import { GetServerMemberOutputDto } from "./dto/GetServerMemberOutput.dto";
 import { CacheTTL } from "@nestjs/cache-manager";
 
 @Controller("discord-servers")
 @UseGuards(DiscordOAuth2Guard)
 export class DiscordServersController {
-  constructor(
-    private readonly discordServersService: DiscordServersService,
-    private readonly feedsService: FeedsService,
-    private readonly legacyFeedConversionService: LegacyFeedConversionService
-  ) {}
+  constructor(private readonly discordServersService: DiscordServersService) {}
 
   @Get(":serverId")
   @UseGuards(BotHasServerGuard)
@@ -69,49 +59,6 @@ export class DiscordServersController {
         includesBot: exists,
       },
     };
-  }
-
-  @Post(":serverId/legacy-conversion")
-  @UseGuards(BotHasServerGuard)
-  @UseGuards(UserManagesServerGuard)
-  @UseFilters(ConvertServerLegacyFeedsFilter)
-  async createLegacyConversion(
-    @Param("serverId") serverId: string,
-    @DiscordAccessToken()
-    { discord: { id: discordUserId } }: SessionAccessToken
-  ) {
-    return this.legacyFeedConversionService.createBulkConversionJob(
-      discordUserId,
-      serverId
-    );
-  }
-
-  @Get(":serverId/legacy-conversion")
-  @UseGuards(BotHasServerGuard)
-  @UseGuards(UserManagesServerGuard)
-  @UseFilters(ConvertServerLegacyFeedsFilter)
-  async getLegacyConversionStatus(
-    @Param("serverId") serverId: string,
-    @DiscordAccessToken()
-    { discord: { id: discordUserId } }: SessionAccessToken
-  ) {
-    return this.legacyFeedConversionService.getBulkConversionJobStatus(
-      discordUserId,
-      serverId
-    );
-  }
-
-  @Get(":serverId/backup")
-  @UseGuards(BotHasServerGuard)
-  @UseGuards(UserManagesServerGuard)
-  async getBackup(
-    @Param("serverId") serverId: string
-  ): Promise<StreamableFile> {
-    const backupJson = await this.discordServersService.createBackup(serverId);
-
-    const buffer = Buffer.from(JSON.stringify(backupJson, null, 2));
-
-    return new StreamableFile(buffer);
   }
 
   @Get(":serverId/active-threads")
@@ -161,19 +108,6 @@ export class DiscordServersController {
     return {
       result: {
         authorized: !!result,
-      },
-    };
-  }
-
-  @Get(":serverId/legacy-feed-count")
-  @UseGuards(BotHasServerGuard)
-  @UseGuards(UserManagesServerGuard)
-  async getServerLegacyFeedCount(@Param("serverId") serverId: string) {
-    const total = await this.feedsService.countLegacyServerFeeds(serverId);
-
-    return {
-      result: {
-        total,
       },
     };
   }
@@ -240,6 +174,32 @@ export class DiscordServersController {
     const roles = await this.discordServersService.getRolesOfServer(serverId);
 
     return GetServerRolesOutputDto.fromEntities(roles);
+  }
+
+  @Get(":serverId/members/:memberId")
+  @UseGuards(BotHasServerGuard)
+  @UseGuards(UserManagesServerGuard)
+  @UseInterceptors(HttpCacheInterceptor)
+  @CacheTTL(60 * 5)
+  async getServerMember(
+    @Param("serverId") serverId: string,
+    @Param("memberId") memberId: string
+  ): Promise<GetServerMemberOutputDto | null> {
+    // Validate Discord snowflake format (17-20 digit numeric string)
+    if (!/^\d{17,20}$/.test(memberId)) {
+      return null;
+    }
+
+    const member = await this.discordServersService.getMemberOfServer(
+      serverId,
+      memberId
+    );
+
+    if (!member) {
+      return null;
+    }
+
+    return GetServerMemberOutputDto.fromEntity(member);
   }
 
   @Get(":serverId/members")

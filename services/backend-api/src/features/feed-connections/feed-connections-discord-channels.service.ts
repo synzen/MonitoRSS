@@ -1155,7 +1155,7 @@ export class FeedConnectionsDiscordChannelsService {
           previewInput?.enablePlaceholderFallback ??
           connection.details.enablePlaceholderFallback,
         components: castDiscordComponentRowsForMedium(
-          previewInput?.componentRows
+          previewInput?.componentRows || connection.details.componentRows
         ),
         componentsV2:
           previewInput?.content ||

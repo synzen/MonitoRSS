@@ -30,6 +30,7 @@ import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import { MessageBrokerQueue } from "../../common/constants/message-broker-queue.constants";
 import { FeedFetcherApiService } from "../../services/feed-fetcher/feed-fetcher-api.service";
 import {
+  DeliveryPreviewMediumInput,
   GetArticlesInput,
   GetArticlesResponseRequestStatus,
 } from "../../services/feed-handler/types";
@@ -46,19 +47,7 @@ import {
   FeedConnectionTypeEntityKey,
 } from "../feeds/constants";
 import { UserFeedComputedStatus } from "./constants/user-feed-computed-status.type";
-import { Feed, FeedModel } from "../feeds/entities/feed.entity";
-import {
-  UserFeedLimitOverride,
-  UserFeedLimitOverrideModel,
-} from "../supporters/entities/user-feed-limit-overrides.entity";
-import {
-  IneligibleForRestorationException,
-  ManualRequestTooSoonException,
-} from "./exceptions";
-import {
-  LegacyFeedConversionJob,
-  LegacyFeedConversionJobModel,
-} from "../legacy-feed-conversion/entities/legacy-feed-conversion-job.entity";
+import { ManualRequestTooSoonException } from "./exceptions";
 import { UserFeedManagerStatus } from "../user-feed-management-invites/constants";
 import { FeedConnectionsDiscordChannelsService } from "../feed-connections/feed-connections-discord-channels.service";
 import dayjs from "dayjs";
@@ -124,11 +113,6 @@ export class UserFeedsService {
   constructor(
     @InjectModel(User.name) private readonly userModel: UserModel,
     @InjectModel(UserFeed.name) private readonly userFeedModel: UserFeedModel,
-    @InjectModel(Feed.name) private readonly feedModel: FeedModel,
-    @InjectModel(UserFeedLimitOverride.name)
-    private readonly limitOverrideModel: UserFeedLimitOverrideModel,
-    @InjectModel(LegacyFeedConversionJob.name)
-    private readonly legacyFeedConversionJobModel: LegacyFeedConversionJobModel,
     private readonly configService: ConfigService,
     private readonly feedsService: FeedsService,
     private readonly feedFetcherService: FeedFetcherService,
@@ -226,7 +210,6 @@ export class UserFeedsService {
     return {
       result: {
         id: feed._id.toHexString(),
-        allowLegacyReversion: feed.allowLegacyReversion,
         sharedAccessDetails: userInviteId
           ? {
               inviteId: userInviteId.toHexString(),
@@ -235,7 +218,6 @@ export class UserFeedsService {
         title: feed.title,
         url: feed.url,
         inputUrl: feed.inputUrl,
-        isLegacyFeed: !!feed.legacyFeedId,
         connections: [...discordChannelConnections],
         disabledCode: feed.disabledCode,
         healthStatus: feed.healthStatus,
@@ -259,50 +241,6 @@ export class UserFeedsService {
         refreshRateOptions,
       },
     };
-  }
-
-  async restoreToLegacyFeed(userFeed: UserFeed) {
-    if (!userFeed.legacyFeedId) {
-      throw new IneligibleForRestorationException(
-        `User feed ${userFeed._id} is not related to a legacy feed for restoration`
-      );
-    }
-
-    if (userFeed.disabledCode === UserFeedDisabledCode.ExcessivelyActive) {
-      throw new IneligibleForRestorationException(
-        `User feed ${userFeed._id} is excessively active and cannot be restored`
-      );
-    }
-
-    await this.feedModel.updateOne(
-      {
-        _id: userFeed.legacyFeedId,
-      },
-      {
-        $unset: {
-          disabled: "",
-        },
-      }
-    );
-
-    await this.userFeedModel.deleteOne({
-      _id: userFeed._id,
-    });
-
-    await this.limitOverrideModel.updateOne(
-      {
-        _id: userFeed.user.discordUserId,
-      },
-      {
-        $inc: {
-          additionalUserFeeds: -1,
-        },
-      }
-    );
-
-    await this.legacyFeedConversionJobModel.deleteOne({
-      legacyFeedId: userFeed.legacyFeedId,
-    });
   }
 
   getDatePreview({
@@ -690,13 +628,10 @@ export class UserFeedsService {
           $in: feedIds.map((id) => new Types.ObjectId(id)),
         },
       })
-      .select("_id legacyFeedId connections user")
+      .select("_id connections user")
       .lean();
 
     const foundIds = new Set(found.map((doc) => doc._id.toHexString()));
-    const legacyFeedIds = new Set(
-      found.filter((d) => d.legacyFeedId).map((d) => d._id.toHexString())
-    );
 
     if (found.length > 0) {
       try {
@@ -757,7 +692,6 @@ export class UserFeedsService {
     return feedIds.map((id) => ({
       id,
       deleted: foundIds.has(id),
-      isLegacy: legacyFeedIds.has(id),
     }));
   }
 
@@ -1920,7 +1854,7 @@ export class UserFeedsService {
         const numberOfFeedsToEnable = defaultMaxUserFeeds - enabledFeedCount;
         // Enable the newest ones first
         const toEnable = disabledFeedIds.slice(
-          disabledFeedIds.length - numberOfFeedsToEnable
+          Math.max(0, disabledFeedIds.length - numberOfFeedsToEnable)
         );
 
         arrayOfFeedIdsToEnable.push(...toEnable);
@@ -2082,7 +2016,7 @@ export class UserFeedsService {
         const numberOfFeedsToEnable = limit - enabledFeedCount;
         // Enable the newest ones first
         const toEnable = disabledFeedIds.slice(
-          disabledFeedIds.length - numberOfFeedsToEnable
+          Math.max(0, disabledFeedIds.length - numberOfFeedsToEnable)
         );
 
         arrayOfFeedIdsToEnable.push(...toEnable);
@@ -2180,7 +2114,7 @@ export class UserFeedsService {
       bulkWriteDocs.push({
         updateMany: {
           filter: {
-            userRefreshRateSeconds: refreshRateSeconds,
+            userRefreshRateSeconds: supporterRefreshRate,
             "user.discordUserId": discordUserId,
           },
           update: {
@@ -2336,13 +2270,11 @@ export class UserFeedsService {
 
   private mapConnectionsToMediums(
     feed: UserFeed
-  ): import("../../services/feed-handler/types").DeliveryPreviewMediumInput[] {
-    const mediums: import("../../services/feed-handler/types").DeliveryPreviewMediumInput[] =
-      [];
-    const SKIP_CONNECTION_TYPES = [FeedConnectionTypeEntityKey.DiscordWebhooks];
+  ): DeliveryPreviewMediumInput[] {
+    const mediums: DeliveryPreviewMediumInput[] = [];
 
     for (const connectionType of Object.values(FeedConnectionTypeEntityKey)) {
-      if (SKIP_CONNECTION_TYPES.includes(connectionType)) {
+      if (connectionType !== FeedConnectionTypeEntityKey.DiscordChannels) {
         continue;
       }
 
