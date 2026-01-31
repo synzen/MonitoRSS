@@ -14,6 +14,7 @@ import {
   FeedInternalErrorException,
   FeedTooLargeException,
   InvalidFeedException,
+  FeedFetchErrorException,
 } from "./exceptions";
 import { Readable } from "node:stream";
 import FeedParser from "feedparser";
@@ -90,10 +91,12 @@ export class FeedFetcherService {
 
       inputStream.on("error", (err: Error) => {
         // feedparser may not handle all errors such as incorrect headers. (feedparser v2.2.9)
+        clearTimeout(timeout);
         reject(new FeedParseException(err.message));
       });
 
       feedparser.on("error", (err: Error) => {
+        clearTimeout(timeout);
         if (err.message === "Not a feed") {
           reject(
             new InvalidFeedException(
@@ -126,7 +129,6 @@ export class FeedFetcherService {
           return resolve({ articleList });
         }
 
-        clearTimeout(timeout);
         const idType = idResolver.getIDType();
 
         for (const article of articleList) {
@@ -198,6 +200,14 @@ export class FeedFetcherService {
       readable.push(null);
 
       return readable;
+    }
+
+    if (result.requestStatus === FeedFetcherFetchStatus.FetchError) {
+      throw new FeedFetchErrorException(`Failed to fetch feed`);
+    }
+
+    if (result.requestStatus === FeedFetcherFetchStatus.InteralError) {
+      throw new FeedInternalErrorException(`Internal error while fetching feed`);
     }
 
     throw new Error(`Unhandled request status: ${result["requestStatus"]}`);
