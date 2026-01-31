@@ -18,6 +18,8 @@ import {
 } from "../../src/repositories/shared/enums";
 import { createUserFeedsHarness } from "../helpers/user-feeds.harness";
 import { createMockDiscordChannelConnection } from "../helpers/mock-factories";
+import { UserFeedCopyableSetting } from "../../src/services/user-feeds/types";
+import { UserFeedTargetFeedSelectionType } from "../../src/services/feed-connections-discord-channels/types";
 
 const TEST_MAX_USER_FEEDS = 5;
 const TEST_REFRESH_RATE_SECONDS = 600;
@@ -299,7 +301,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       assert.ok(typeof result.slotOffsetMs === "number");
     });
 
-    it("saves feedRequestLookupKey when creating a feed", async () => {
+    it("does not set feedRequestLookupKey for non-Reddit feeds", async () => {
       const ctx = harness.createContext({
         feedHandler: { url: "https://example.com/feed.xml" },
       });
@@ -309,7 +311,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
         { url: "https://example.com/feed.xml" },
       );
 
-      assert.ok(result.feedRequestLookupKey);
+      assert.strictEqual(result.feedRequestLookupKey, undefined);
     });
 
     it("throws FeedLimitReachedException when user has reached max feeds", async () => {
@@ -1131,7 +1133,9 @@ describe("UserFeedsService", { concurrency: true }, () => {
     it("returns the updated feed", async () => {
       const ctx = harness.createContext();
       const feed = await ctx.createFeed({});
-      await ctx.setFields(feed.id, { healthStatus: UserFeedHealthStatus.Failed });
+      await ctx.setFields(feed.id, {
+        healthStatus: UserFeedHealthStatus.Failed,
+      });
 
       const result = await ctx.service.retryFailedFeed(feed.id);
 
@@ -1402,7 +1406,10 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
     it("returns statusCode when request fails with bad status code", async () => {
       const ctx = harness.createContext({
-        feedFetcherApiService: { requestStatus: "BAD_STATUS_CODE", statusCode: 404 },
+        feedFetcherApiService: {
+          requestStatus: "BAD_STATUS_CODE",
+          statusCode: 404,
+        },
       });
       const feed = await ctx.createFeed({});
 
@@ -1453,7 +1460,10 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       const updated = await ctx.findById(feed.id);
       assert.ok(updated);
-      assert.strictEqual(updated.disabledCode, RepoUserFeedDisabledCode.InvalidFeed);
+      assert.strictEqual(
+        updated.disabledCode,
+        RepoUserFeedDisabledCode.InvalidFeed,
+      );
     });
   });
 
@@ -1649,8 +1659,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       await ctx.service.clone(sourceFeed.id, "token");
 
       assert.strictEqual(
-        ctx.feedConnectionsDiscordChannelsService.cloneConnection.mock
-          .callCount(),
+        ctx.feedConnectionsDiscordChannelsService.cloneConnection.mock.callCount(),
         2,
       );
     });
@@ -1664,6 +1673,408 @@ describe("UserFeedsService", { concurrency: true }, () => {
       assert.ok(result.id);
       assert.ok(typeof result.id === "string");
       assert.ok(result.id.length > 0);
+    });
+  });
+
+  describe("copySettings", () => {
+    it("copies PassingComparisons to target feeds", async () => {
+      const ctx = harness.createContext();
+
+      const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
+      await ctx.setFields(sourceFeed.id, {
+        passingComparisons: ["title", "description"],
+      });
+
+      const targetFeed = await ctx.createFeed({ title: "Target Feed" });
+
+      const updatedSource = await ctx.findById(sourceFeed.id);
+      assert.ok(updatedSource);
+
+      await ctx.service.copySettings({
+        sourceFeed: updatedSource,
+        dto: {
+          settings: [UserFeedCopyableSetting.PassingComparisons],
+          targetFeedIds: [targetFeed.id],
+          targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
+        },
+        discordUserId: ctx.discordUserId,
+      });
+
+      const updated = await ctx.findById(targetFeed.id);
+      assert.ok(updated);
+      assert.deepStrictEqual(updated.passingComparisons, [
+        "title",
+        "description",
+      ]);
+    });
+
+    it("copies BlockingComparisons to target feeds", async () => {
+      const ctx = harness.createContext();
+
+      const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
+      await ctx.setFields(sourceFeed.id, {
+        blockingComparisons: ["author", "link"],
+      });
+
+      const targetFeed = await ctx.createFeed({ title: "Target Feed" });
+
+      const updatedSource = await ctx.findById(sourceFeed.id);
+      assert.ok(updatedSource);
+
+      await ctx.service.copySettings({
+        sourceFeed: updatedSource,
+        dto: {
+          settings: [UserFeedCopyableSetting.BlockingComparisons],
+          targetFeedIds: [targetFeed.id],
+          targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
+        },
+        discordUserId: ctx.discordUserId,
+      });
+
+      const updated = await ctx.findById(targetFeed.id);
+      assert.ok(updated);
+      assert.deepStrictEqual(updated.blockingComparisons, ["author", "link"]);
+    });
+
+    it("copies ExternalProperties with new IDs", async () => {
+      const ctx = harness.createContext();
+
+      const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
+      const sourcePropertyId = ctx.generateId();
+      await ctx.setFields(sourceFeed.id, {
+        externalProperties: [
+          {
+            id: sourcePropertyId,
+            sourceField: "description",
+            cssSelector: ".content",
+            label: "Content",
+          },
+        ],
+      });
+
+      const targetFeed = await ctx.createFeed({ title: "Target Feed" });
+
+      const updatedSource = await ctx.findById(sourceFeed.id);
+      assert.ok(updatedSource);
+
+      await ctx.service.copySettings({
+        sourceFeed: updatedSource,
+        dto: {
+          settings: [UserFeedCopyableSetting.ExternalProperties],
+          targetFeedIds: [targetFeed.id],
+          targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
+        },
+        discordUserId: ctx.discordUserId,
+      });
+
+      const updated = await ctx.findById(targetFeed.id);
+      assert.ok(updated);
+      assert.ok(updated.externalProperties);
+      assert.strictEqual(updated.externalProperties.length, 1);
+      assert.strictEqual(
+        updated.externalProperties[0]!.sourceField,
+        "description",
+      );
+      assert.strictEqual(
+        updated.externalProperties[0]!.cssSelector,
+        ".content",
+      );
+      assert.strictEqual(updated.externalProperties[0]!.label, "Content");
+      assert.ok(updated.externalProperties[0]!.id !== sourcePropertyId);
+    });
+
+    it("copies DateChecks settings", async () => {
+      const ctx = harness.createContext();
+
+      const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
+      await ctx.setFields(sourceFeed.id, {
+        dateCheckOptions: { oldArticleDateDiffMsThreshold: 86400000 },
+      });
+
+      const targetFeed = await ctx.createFeed({ title: "Target Feed" });
+
+      const updatedSource = await ctx.findById(sourceFeed.id);
+      assert.ok(updatedSource);
+
+      await ctx.service.copySettings({
+        sourceFeed: updatedSource,
+        dto: {
+          settings: [UserFeedCopyableSetting.DateChecks],
+          targetFeedIds: [targetFeed.id],
+          targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
+        },
+        discordUserId: ctx.discordUserId,
+      });
+
+      const updated = await ctx.findById(targetFeed.id);
+      assert.ok(updated);
+      assert.strictEqual(
+        updated.dateCheckOptions?.oldArticleDateDiffMsThreshold,
+        86400000,
+      );
+    });
+
+    it("copies DatePlaceholderSettings (formatOptions)", async () => {
+      const ctx = harness.createContext();
+
+      const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
+      await ctx.setFields(sourceFeed.id, {
+        formatOptions: {
+          dateFormat: "YYYY-MM-DD",
+          dateTimezone: "America/New_York",
+          dateLocale: "en-US",
+        },
+      });
+
+      const targetFeed = await ctx.createFeed({ title: "Target Feed" });
+
+      const updatedSource = await ctx.findById(sourceFeed.id);
+      assert.ok(updatedSource);
+
+      await ctx.service.copySettings({
+        sourceFeed: updatedSource,
+        dto: {
+          settings: [UserFeedCopyableSetting.DatePlaceholderSettings],
+          targetFeedIds: [targetFeed.id],
+          targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
+        },
+        discordUserId: ctx.discordUserId,
+      });
+
+      const updated = await ctx.findById(targetFeed.id);
+      assert.ok(updated);
+      assert.strictEqual(updated.formatOptions?.dateFormat, "YYYY-MM-DD");
+      assert.strictEqual(
+        updated.formatOptions?.dateTimezone,
+        "America/New_York",
+      );
+      assert.strictEqual(updated.formatOptions?.dateLocale, "en-US");
+    });
+
+    it("copies RefreshRate when present", async () => {
+      const ctx = harness.createContext();
+
+      const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
+      await ctx.setFields(sourceFeed.id, {
+        userRefreshRateSeconds: 900,
+      });
+
+      const targetFeed = await ctx.createFeed({ title: "Target Feed" });
+
+      const updatedSource = await ctx.findById(sourceFeed.id);
+      assert.ok(updatedSource);
+
+      await ctx.service.copySettings({
+        sourceFeed: updatedSource,
+        dto: {
+          settings: [UserFeedCopyableSetting.RefreshRate],
+          targetFeedIds: [targetFeed.id],
+          targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
+        },
+        discordUserId: ctx.discordUserId,
+      });
+
+      const updated = await ctx.findById(targetFeed.id);
+      assert.ok(updated);
+      assert.strictEqual(updated.userRefreshRateSeconds, 900);
+    });
+
+    it("unsets RefreshRate when source has none", async () => {
+      const ctx = harness.createContext();
+
+      const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
+
+      const targetFeed = await ctx.createFeed({ title: "Target Feed" });
+      await ctx.setFields(targetFeed.id, {
+        userRefreshRateSeconds: 1800,
+      });
+
+      const updatedSource = await ctx.findById(sourceFeed.id);
+      assert.ok(updatedSource);
+
+      await ctx.service.copySettings({
+        sourceFeed: updatedSource,
+        dto: {
+          settings: [UserFeedCopyableSetting.RefreshRate],
+          targetFeedIds: [targetFeed.id],
+          targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
+        },
+        discordUserId: ctx.discordUserId,
+      });
+
+      const updated = await ctx.findById(targetFeed.id);
+      assert.ok(updated);
+      assert.strictEqual(updated.userRefreshRateSeconds, undefined);
+    });
+
+    it("only updates feeds in targetFeedIds when using Selected mode", async () => {
+      const ctx = harness.createContext();
+
+      const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
+      await ctx.setFields(sourceFeed.id, {
+        passingComparisons: ["title"],
+      });
+
+      const targetFeed1 = await ctx.createFeed({ title: "Target 1" });
+      const targetFeed2 = await ctx.createFeed({ title: "Target 2" });
+
+      const updatedSource = await ctx.findById(sourceFeed.id);
+      assert.ok(updatedSource);
+
+      await ctx.service.copySettings({
+        sourceFeed: updatedSource,
+        dto: {
+          settings: [UserFeedCopyableSetting.PassingComparisons],
+          targetFeedIds: [targetFeed1.id],
+          targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
+        },
+        discordUserId: ctx.discordUserId,
+      });
+
+      const updated1 = await ctx.findById(targetFeed1.id);
+      const updated2 = await ctx.findById(targetFeed2.id);
+
+      assert.ok(updated1);
+      assert.ok(updated2);
+      assert.deepStrictEqual(updated1.passingComparisons, ["title"]);
+      assert.deepStrictEqual(updated2.passingComparisons, []);
+    });
+
+    it("updates all feeds matching search except source when using All mode", async () => {
+      const ctx = harness.createContext();
+
+      const sourceFeed = await ctx.createFeed({ title: "NewsSource" });
+      await ctx.setFields(sourceFeed.id, {
+        passingComparisons: ["title"],
+      });
+
+      const targetFeed1 = await ctx.createFeed({ title: "NewsTarget1" });
+      const targetFeed2 = await ctx.createFeed({ title: "NewsTarget2" });
+      const nonMatchingFeed = await ctx.createFeed({ title: "OtherFeed" });
+
+      const updatedSource = await ctx.findById(sourceFeed.id);
+      assert.ok(updatedSource);
+
+      await ctx.service.copySettings({
+        sourceFeed: updatedSource,
+        dto: {
+          settings: [UserFeedCopyableSetting.PassingComparisons],
+          targetFeedSelectionType: UserFeedTargetFeedSelectionType.All,
+          targetFeedSearch: "News",
+        },
+        discordUserId: ctx.discordUserId,
+      });
+
+      const source = await ctx.findById(sourceFeed.id);
+      const updated1 = await ctx.findById(targetFeed1.id);
+      const updated2 = await ctx.findById(targetFeed2.id);
+      const nonMatching = await ctx.findById(nonMatchingFeed.id);
+
+      assert.ok(source);
+      assert.ok(updated1);
+      assert.ok(updated2);
+      assert.ok(nonMatching);
+
+      assert.deepStrictEqual(updated1.passingComparisons, ["title"]);
+      assert.deepStrictEqual(updated2.passingComparisons, ["title"]);
+      assert.deepStrictEqual(nonMatching.passingComparisons, []);
+    });
+
+    it("only updates feeds owned by the user", async () => {
+      const ctx = harness.createContext();
+
+      const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
+      await ctx.setFields(sourceFeed.id, {
+        passingComparisons: ["title"],
+      });
+
+      const ownedFeed = await ctx.createFeed({ title: "Owned Feed" });
+      const otherUserId = ctx.generateId();
+      const otherUserFeed = await ctx.createFeedForUser(otherUserId, {
+        title: "Other User Feed",
+      });
+
+      const updatedSource = await ctx.findById(sourceFeed.id);
+      assert.ok(updatedSource);
+
+      await ctx.service.copySettings({
+        sourceFeed: updatedSource,
+        dto: {
+          settings: [UserFeedCopyableSetting.PassingComparisons],
+          targetFeedIds: [ownedFeed.id, otherUserFeed.id],
+          targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
+        },
+        discordUserId: ctx.discordUserId,
+      });
+
+      const updatedOwned = await ctx.findById(ownedFeed.id);
+      const updatedOther = await ctx.findById(otherUserFeed.id);
+
+      assert.ok(updatedOwned);
+      assert.ok(updatedOther);
+      assert.deepStrictEqual(updatedOwned.passingComparisons, ["title"]);
+      assert.deepStrictEqual(updatedOther.passingComparisons, []);
+    });
+
+    it("includes feeds where user has accepted share invite", async () => {
+      const ctx = harness.createContext();
+
+      const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
+      await ctx.setFields(sourceFeed.id, {
+        passingComparisons: ["title"],
+      });
+
+      const ownerId = ctx.generateId();
+      const sharedFeed = await ctx.createSharedFeed(ownerId);
+
+      const updatedSource = await ctx.findById(sourceFeed.id);
+      assert.ok(updatedSource);
+
+      await ctx.service.copySettings({
+        sourceFeed: updatedSource,
+        dto: {
+          settings: [UserFeedCopyableSetting.PassingComparisons],
+          targetFeedIds: [sharedFeed.id],
+          targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
+        },
+        discordUserId: ctx.discordUserId,
+      });
+
+      const updated = await ctx.findById(sharedFeed.id);
+      assert.ok(updated);
+      assert.deepStrictEqual(updated.passingComparisons, ["title"]);
+    });
+
+    it("does nothing when settings array is empty", async () => {
+      const ctx = harness.createContext();
+
+      const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
+      await ctx.setFields(sourceFeed.id, {
+        passingComparisons: ["title"],
+        blockingComparisons: ["author"],
+      });
+
+      const targetFeed = await ctx.createFeed({ title: "Target Feed" });
+      await ctx.setFields(targetFeed.id, {
+        passingComparisons: ["original"],
+      });
+
+      const updatedSource = await ctx.findById(sourceFeed.id);
+      assert.ok(updatedSource);
+
+      await ctx.service.copySettings({
+        sourceFeed: updatedSource,
+        dto: {
+          settings: [],
+          targetFeedIds: [targetFeed.id],
+          targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
+        },
+        discordUserId: ctx.discordUserId,
+      });
+
+      const updated = await ctx.findById(targetFeed.id);
+      assert.ok(updated);
+      assert.deepStrictEqual(updated.passingComparisons, ["original"]);
     });
   });
 });

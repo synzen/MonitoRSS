@@ -1,6 +1,9 @@
 import { randomUUID } from "crypto";
 import type { IUserFeed } from "../../repositories/interfaces/user-feed.types";
-import { UserFeedDisabledCode, UserFeedHealthStatus } from "../../repositories/shared/enums";
+import {
+  UserFeedDisabledCode,
+  UserFeedHealthStatus,
+} from "../../repositories/shared/enums";
 import { calculateSlotOffsetMs } from "../../shared/utils/fnv1a-hash";
 import { getFeedRequestLookupDetails } from "../../shared/utils/get-feed-request-lookup-details";
 import type { FeedRequestLookupDetails } from "../../shared/types/feed-request-lookup-details.type";
@@ -41,7 +44,13 @@ import type {
   GetFeedArticlePropertiesOutput,
   GetFeedArticlesInput,
   GetFeedArticlesOutput,
+  CopyUserFeedSettingsInput,
 } from "./types";
+import { UserFeedCopyableSetting } from "./types";
+import type {
+  CopySettingsTarget,
+  CopyableSettings,
+} from "../../repositories/interfaces/user-feed.types";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -117,8 +126,11 @@ export class UserFeedsService {
   }
 
   async addFeed(
-    {discordUserId, userAccessToken}: { discordUserId: string; userAccessToken: string },
-    {title, url, sourceFeedId}: CreateUserFeedInput,
+    {
+      discordUserId,
+      userAccessToken,
+    }: { discordUserId: string; userAccessToken: string },
+    { title, url, sourceFeedId }: CreateUserFeedInput,
   ): Promise<IUserFeed> {
     const [
       { maxUserFeeds, maxDailyArticles, refreshRateSeconds },
@@ -129,23 +141,22 @@ export class UserFeedsService {
       this.deps.usersService.getOrCreateUserByDiscordId(discordUserId),
       sourceFeedId
         ? this.deps.userFeedRepository.findByIdAndOwnership(
-              sourceFeedId,
-              discordUserId,
-        )
+            sourceFeedId,
+            discordUserId,
+          )
         : null,
     ]);
 
     if (sourceFeedId && !sourceFeedToCopyFrom) {
       throw new SourceFeedNotFoundException(
-        `Feed with ID ${sourceFeedId} not found for user ${discordUserId}`
+        `Feed with ID ${sourceFeedId} not found for user ${discordUserId}`,
       );
     }
 
     const userId = user.id;
 
-    const feedCount = await this.calculateCurrentFeedCountOfDiscordUser(
-      discordUserId
-    );
+    const feedCount =
+      await this.calculateCurrentFeedCountOfDiscordUser(discordUserId);
 
     if (feedCount >= maxUserFeeds) {
       throw new FeedLimitReachedException("Max feeds reached");
@@ -178,11 +189,13 @@ export class UserFeedsService {
       slotOffsetMs: calculateSlotOffsetMs(finalUrl, refreshRateSeconds),
       maxDailyArticles,
       feedRequestLookupKey: tempLookupDetails?.key,
-      dateCheckOptions: enableDateChecks
-        ? {
-            oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24, // 1 day
-          }
-        : undefined,
+      dateCheckOptions:
+        sourceFeedToCopyFrom?.dateCheckOptions ??
+        (enableDateChecks
+          ? {
+              oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24, // 1 day
+            }
+          : undefined),
     });
 
     if (connections) {
@@ -195,7 +208,7 @@ export class UserFeedsService {
             targetFeedIds: [created.id],
           },
           userAccessToken,
-          discordUserId
+          discordUserId,
         );
       }
     }
@@ -203,14 +216,13 @@ export class UserFeedsService {
     return created;
   }
 
-
   async clone(
     feedId: string,
     userAccessToken: string,
     data?: {
       title?: string;
       url?: string;
-    }
+    },
   ) {
     const sourceFeed = await this.deps.userFeedRepository.findById(feedId);
 
@@ -220,11 +232,11 @@ export class UserFeedsService {
 
     const { maxUserFeeds } =
       await this.deps.supportersService.getBenefitsOfDiscordUser(
-        sourceFeed.user.discordUserId
+        sourceFeed.user.discordUserId,
       );
 
     const feedCount = await this.calculateCurrentFeedCountOfDiscordUser(
-      sourceFeed.user.discordUserId
+      sourceFeed.user.discordUserId,
     );
 
     if (feedCount >= maxUserFeeds) {
@@ -236,7 +248,7 @@ export class UserFeedsService {
 
     if (data?.url && data.url !== sourceFeed.url) {
       const user = await this.deps.usersService.getOrCreateUserByDiscordId(
-        sourceFeed.user.discordUserId
+        sourceFeed.user.discordUserId,
       );
 
       finalUrl = (
@@ -246,7 +258,7 @@ export class UserFeedsService {
             feed: sourceFeed,
             user,
             decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-          })
+          }),
         )
       ).finalUrl;
       inputUrl = data.url;
@@ -272,11 +284,104 @@ export class UserFeedsService {
           targetFeedIds: [created.id],
         },
         userAccessToken,
-        sourceFeed.user.discordUserId
+        sourceFeed.user.discordUserId,
       );
     }
 
     return { id: created.id };
+  }
+
+  async copySettings({
+    sourceFeed,
+    dto: {
+      targetFeedIds: inputTargetFeedIds,
+      settings: settingsToCopy,
+      targetFeedSearch,
+      targetFeedSelectionType,
+    },
+    discordUserId,
+  }: {
+    sourceFeed: IUserFeed;
+    dto: CopyUserFeedSettingsInput;
+    discordUserId: string;
+  }) {
+    const target: CopySettingsTarget = {
+      type:
+        targetFeedSelectionType === UserFeedTargetFeedSelectionType.All
+          ? "all"
+          : "selected",
+      feedIds: inputTargetFeedIds,
+      search: targetFeedSearch,
+      excludeFeedId: sourceFeed.id,
+      ownerDiscordUserId: discordUserId,
+    };
+
+    const copyableSettings: CopyableSettings = {};
+
+    if (settingsToCopy.includes(UserFeedCopyableSetting.PassingComparisons)) {
+      copyableSettings.passingComparisons = sourceFeed.passingComparisons;
+    }
+
+    if (settingsToCopy.includes(UserFeedCopyableSetting.BlockingComparisons)) {
+      copyableSettings.blockingComparisons = sourceFeed.blockingComparisons;
+    }
+
+    if (settingsToCopy.includes(UserFeedCopyableSetting.ExternalProperties)) {
+      copyableSettings.externalProperties = sourceFeed.externalProperties;
+    }
+
+    if (settingsToCopy.includes(UserFeedCopyableSetting.DateChecks)) {
+      copyableSettings.dateCheckOptions = sourceFeed.dateCheckOptions;
+    }
+
+    if (
+      settingsToCopy.includes(UserFeedCopyableSetting.DatePlaceholderSettings)
+    ) {
+      copyableSettings.formatOptions = {
+        ...sourceFeed.formatOptions,
+        dateFormat: sourceFeed.formatOptions?.dateFormat,
+        dateTimezone: sourceFeed.formatOptions?.dateTimezone,
+        dateLocale: sourceFeed.formatOptions?.dateLocale,
+      };
+    }
+
+    if (settingsToCopy.includes(UserFeedCopyableSetting.RefreshRate)) {
+      if (sourceFeed.userRefreshRateSeconds) {
+        copyableSettings.userRefreshRateSeconds =
+          sourceFeed.userRefreshRateSeconds;
+      } else {
+        copyableSettings.userRefreshRateSeconds = null;
+      }
+    }
+
+    if (settingsToCopy.includes(UserFeedCopyableSetting.Connections)) {
+      const feedsWithApplicationWebhooks =
+        await this.deps.userFeedRepository.findFeedsWithApplicationOwnedWebhooks(
+          target,
+        );
+
+      await Promise.all(
+        feedsWithApplicationWebhooks.map(async (f) => {
+          await Promise.all(
+            f.connections.discordChannels.map(async (c) => {
+              if (c.details.webhook?.isApplicationOwned === true) {
+                await this.deps.feedConnectionsDiscordChannelsService.deleteConnection(
+                  f.id,
+                  c.id,
+                );
+              }
+            }),
+          );
+        }),
+      );
+
+      copyableSettings.connections = sourceFeed.connections;
+    }
+
+    await this.deps.userFeedRepository.copySettingsToFeeds({
+      target,
+      settings: copyableSettings,
+    });
   }
 
   async getDeliveryLogs(
@@ -287,9 +392,12 @@ export class UserFeedsService {
     }: {
       limit: number;
       skip: number;
-    }
+    },
   ) {
-    return this.deps.feedHandlerService.getDeliveryLogs(feedId, { limit, skip });
+    return this.deps.feedHandlerService.getDeliveryLogs(feedId, {
+      limit,
+      skip,
+    });
   }
 
   async updateFeedById(
@@ -510,13 +618,13 @@ export class UserFeedsService {
 
   async retryFailedFeed(feedId: string) {
     await this.deps.usersService.syncLookupKeys({
-      feedIds: [(feedId)],
+      feedIds: [feedId],
     });
     const feed = await this.deps.userFeedRepository.findById(feedId);
 
     if (!feed) {
       throw new Error(
-        `Feed ${feedId} not found while attempting to retry failed feed`
+        `Feed ${feedId} not found while attempting to retry failed feed`,
       );
     }
 
@@ -525,12 +633,12 @@ export class UserFeedsService {
       feed.disabledCode !== UserFeedDisabledCode.InvalidFeed
     ) {
       throw new FeedNotFailedException(
-        `Feed ${feedId} is not in a failed state, cannot retry it`
+        `Feed ${feedId} is not in a failed state, cannot retry it`,
       );
     }
 
     const user = await this.deps.usersService.getOrCreateUserByDiscordId(
-      feed.user.discordUserId
+      feed.user.discordUserId,
     );
 
     const lookupDetails = getFeedRequestLookupDetails({
@@ -562,7 +670,7 @@ export class UserFeedsService {
     const waitDurationSeconds = getEffectiveRefreshRateSeconds(feed, 10 * 60)!;
     const secondsSinceLastRequest = dayjs().diff(
       dayjs(lastRequestTime),
-      "seconds"
+      "seconds",
     );
 
     if (secondsSinceLastRequest < waitDurationSeconds) {
@@ -571,13 +679,13 @@ export class UserFeedsService {
         {
           secondsUntilNextRequest:
             waitDurationSeconds - secondsSinceLastRequest,
-        }
+        },
       );
     }
 
     const requestDate = new Date();
     const user = await this.deps.usersService.getOrCreateUserByDiscordId(
-      feed.user.discordUserId
+      feed.user.discordUserId,
     );
 
     await this.deps.usersService.syncLookupKeys({
@@ -594,7 +702,7 @@ export class UserFeedsService {
       lookupDetails,
       {
         getCachedResponse: false,
-      }
+      },
     );
 
     const isRequestSuccessful =
@@ -635,7 +743,7 @@ export class UserFeedsService {
 
     await this.deps.userFeedRepository.findOneAndUpdate(
       { _id: new Types.ObjectId(feed.id) },
-      updateDoc
+      updateDoc,
     );
 
     return {
@@ -677,7 +785,7 @@ export class UserFeedsService {
     };
 
     const user = await this.deps.usersService.getOrCreateUserByDiscordId(
-      feed.user.discordUserId
+      feed.user.discordUserId,
     );
 
     const { articles, requestStatus } =
@@ -687,11 +795,11 @@ export class UserFeedsService {
           feed,
           user,
           decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-        })
+        }),
       );
 
     const properties = Array.from(
-      new Set(articles.map((article) => Object.keys(article)).flat())
+      new Set(articles.map((article) => Object.keys(article)).flat()),
     ).sort();
 
     return {
@@ -702,23 +810,25 @@ export class UserFeedsService {
   async getFeedDailyLimit(feed: IUserFeed) {
     const { articleRateLimits } =
       await this.deps.supportersService.getBenefitsOfDiscordUser(
-        feed.user.discordUserId
+        feed.user.discordUserId,
       );
 
     const dailyLimit = articleRateLimits.find(
-      (limit) => limit.timeWindowSeconds === 86400
+      (limit) => limit.timeWindowSeconds === 86400,
     );
 
     if (!dailyLimit) {
       throw new Error(
-        `Daily limit was not found for feed ${feed.id} whose owner is ${feed.user.discordUserId}`
+        `Daily limit was not found for feed ${feed.id} whose owner is ${feed.user.discordUserId}`,
       );
     }
 
-    const currentProgress = await this.deps.feedHandlerService.getDeliveryCount({
-      feedId: feed.id,
-      timeWindowSec: 86400,
-    });
+    const currentProgress = await this.deps.feedHandlerService.getDeliveryCount(
+      {
+        feedId: feed.id,
+        timeWindowSec: 86400,
+      },
+    );
 
     return {
       progress: currentProgress.result.count,
@@ -739,9 +849,8 @@ export class UserFeedsService {
     feed,
     includeHtmlInErrors,
   }: GetFeedArticlesInput): Promise<GetFeedArticlesOutput> {
-    const user = await this.deps.usersService.getOrCreateUserByDiscordId(
-      discordUserId
-    );
+    const user =
+      await this.deps.usersService.getOrCreateUserByDiscordId(discordUserId);
 
     return this.deps.feedHandlerService.getArticles(
       {
@@ -770,7 +879,7 @@ export class UserFeedsService {
         feed,
         user,
         decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-      })
+      }),
     );
   }
 

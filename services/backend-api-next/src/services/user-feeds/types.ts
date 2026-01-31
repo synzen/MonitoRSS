@@ -27,6 +27,7 @@ import type {
   UpdateDiscordChannelConnectionInput,
   CloneConnectionInput,
   CopySettingsInput,
+  UserFeedTargetFeedSelectionType,
 } from "../feed-connections-discord-channels/types";
 
 export interface IFeedConnectionsDiscordChannelsService {
@@ -195,3 +196,20 @@ export interface GetFeedArticlesInput {
 }
 
 export type GetFeedArticlesOutput = GetArticlesResponse["result"];
+
+export enum UserFeedCopyableSetting {
+  Connections = "connections",
+  PassingComparisons = "passingComparisons",
+  BlockingComparisons = "blockingComparisons",
+  ExternalProperties = "externalProperties",
+  RefreshRate = "refreshRate",
+  DateChecks = "dateChecks",
+  DatePlaceholderSettings = "datePlaceholderSettings",
+}
+
+export interface CopyUserFeedSettingsInput {
+  targetFeedIds?: string[];
+  settings: UserFeedCopyableSetting[];
+  targetFeedSelectionType?: UserFeedTargetFeedSelectionType;
+  targetFeedSearch?: string;
+}

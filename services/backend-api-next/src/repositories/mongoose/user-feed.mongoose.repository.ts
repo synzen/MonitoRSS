@@ -23,6 +23,9 @@ import type {
   CloneConnectionToFeedsResult,
   CreateUserFeedInput,
   CloneUserFeedInput,
+  UserFeedWithConnections,
+  CopySettingsToFeedsInput,
+  CopySettingsTarget,
 } from "../interfaces/user-feed.types";
 import { calculateSlotOffsetMs } from "../../shared/utils/fnv1a-hash";
 import { getEffectiveRefreshRateSeconds } from "../../shared/utils/get-effective-refresh-rate";
@@ -416,7 +419,11 @@ export class UserFeedMongooseRepository
       connections: input.connections,
       createdAt: input.createdAt,
       feedRequestLookupKey: input.feedRequestLookupKey,
-      user: { id: new Types.ObjectId(input.user.id), discordUserId: input.user.discordUserId },
+      slotOffsetMs: input.slotOffsetMs,
+      user: {
+        id: new Types.ObjectId(input.user.id),
+        discordUserId: input.user.discordUserId,
+      },
       refreshRateSeconds: input.refreshRateSeconds,
       maxDailyArticles: input.maxDailyArticles,
       dateCheckOptions: input.dateCheckOptions,
@@ -431,6 +438,11 @@ export class UserFeedMongooseRepository
             })),
           }
         : undefined,
+      passingComparisons: input.passingComparisons,
+      blockingComparisons: input.blockingComparisons,
+      externalProperties: input.externalProperties,
+      formatOptions: input.formatOptions,
+      userRefreshRateSeconds: input.userRefreshRateSeconds,
     });
 
     return this.toEntity(
@@ -452,7 +464,8 @@ export class UserFeedMongooseRepository
     } = sourceFeed;
 
     const url = overrides.url;
-    const effectiveRefreshRate = getEffectiveRefreshRateSeconds(cloneableFields);
+    const effectiveRefreshRate =
+      getEffectiveRefreshRateSeconds(cloneableFields);
 
     const doc = await this.model.create({
       ...cloneableFields,
@@ -842,6 +855,25 @@ export class UserFeedMongooseRepository
     return docs.map((doc) =>
       this.toEntity(doc as UserFeedDoc & { _id: Types.ObjectId }),
     );
+  }
+
+  async findManyWithConnectionsByFilter(
+    filter: Record<string, unknown>,
+  ): Promise<UserFeedWithConnections[]> {
+    const docs = await this.model.find(filter).select("_id connections").lean();
+    return docs.map((doc) => {
+      const docWithId = doc as UserFeedDoc & { _id: Types.ObjectId };
+      const discordChannels = docWithId.connections
+        .discordChannels as unknown as DiscordChannelConnectionDoc[];
+      return {
+        id: this.objectIdToString(docWithId._id),
+        connections: {
+          discordChannels: discordChannels.map((conn) =>
+            this.mapDiscordChannelConnection(conn),
+          ),
+        },
+      };
+    });
   }
 
   async *getFeedsGroupedByUserForLimitEnforcement(
@@ -1292,5 +1324,125 @@ export class UserFeedMongooseRepository
     }
 
     return { feedIdToConnectionId };
+  }
+
+  private buildCopySettingsFilter(target: CopySettingsTarget) {
+    const ownershipFilter = this.getOwnershipFilter(target.ownerDiscordUserId);
+
+    if (target.type === "selected" && target.feedIds) {
+      return {
+        _id: {
+          $in: target.feedIds.map((id) => this.stringToObjectId(id)),
+        },
+        ...ownershipFilter,
+      };
+    }
+
+    const andConditions: Record<string, unknown>[] = [ownershipFilter];
+
+    if (target.search) {
+      andConditions.push(this.getSearchFilter(target.search));
+    }
+
+    return {
+      _id: {
+        $ne: this.stringToObjectId(target.excludeFeedId),
+      },
+      $and: andConditions,
+    };
+  }
+
+  async copySettingsToFeeds(input: CopySettingsToFeedsInput): Promise<number> {
+    const { target, settings } = input;
+
+    const filter = this.buildCopySettingsFilter(target);
+
+    const setQuery: Record<string, unknown> = {};
+    const unsetQuery: Record<string, unknown> = {};
+
+    if (settings.passingComparisons !== undefined) {
+      setQuery.passingComparisons = settings.passingComparisons;
+    }
+
+    if (settings.blockingComparisons !== undefined) {
+      setQuery.blockingComparisons = settings.blockingComparisons;
+    }
+
+    if (settings.externalProperties !== undefined) {
+      setQuery.externalProperties = settings.externalProperties?.map((p) => ({
+        ...p,
+        id: new Types.ObjectId().toHexString(),
+      }));
+    }
+
+    if (settings.dateCheckOptions !== undefined) {
+      setQuery.dateCheckOptions = settings.dateCheckOptions;
+    }
+
+    if (settings.formatOptions !== undefined) {
+      setQuery.formatOptions = settings.formatOptions;
+    }
+
+    if (settings.userRefreshRateSeconds !== undefined) {
+      if (settings.userRefreshRateSeconds === null) {
+        unsetQuery.userRefreshRateSeconds = "";
+      } else {
+        setQuery.userRefreshRateSeconds = settings.userRefreshRateSeconds;
+      }
+    }
+
+    if (settings.connections !== undefined) {
+      setQuery.connections = {
+        discordChannels: settings.connections.discordChannels.map((c) => ({
+          ...c,
+          id: new Types.ObjectId().toHexString(),
+        })),
+      };
+    }
+
+    const updateDoc: Record<string, unknown> = {};
+
+    if (Object.keys(setQuery).length > 0) {
+      updateDoc.$set = setQuery;
+    }
+
+    if (Object.keys(unsetQuery).length > 0) {
+      updateDoc.$unset = unsetQuery;
+    }
+
+    if (Object.keys(updateDoc).length === 0) {
+      return 0;
+    }
+
+    const result = await this.model.updateMany(filter, updateDoc);
+
+    return result.modifiedCount;
+  }
+
+  async findFeedsWithApplicationOwnedWebhooks(
+    target: CopySettingsTarget,
+  ): Promise<UserFeedWithConnections[]> {
+    const baseFilter = this.buildCopySettingsFilter(target);
+
+    const filter = {
+      ...baseFilter,
+      "connections.discordChannels.details.webhook.isApplicationOwned": true,
+    };
+
+    const docs = await this.model.find(filter).select("_id connections").lean();
+
+    return docs.map((doc) => {
+      const docWithId = doc as UserFeedDoc & { _id: Types.ObjectId };
+      const discordChannels = docWithId.connections
+        .discordChannels as unknown as DiscordChannelConnectionDoc[];
+      return {
+        id: this.objectIdToString(docWithId._id),
+        connections: {
+          discordChannels: discordChannels.map((conn) =>
+            this.mapDiscordChannelConnection(conn),
+          ),
+        },
+      };
+    });
   }
 }

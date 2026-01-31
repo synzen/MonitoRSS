@@ -134,7 +134,7 @@ export type CustomPlaceholderStepTransform = (
 export interface CreateUserFeedInput {
   title: string;
   url: string;
-  user: { id: string, discordUserId: string };
+  user: { id: string; discordUserId: string };
   inputUrl?: string;
   connections?: IFeedConnections;
   feedRequestLookupKey?: string;
@@ -150,6 +150,11 @@ export interface CreateUserFeedInput {
       connections?: Array<{ connectionId: string }>;
     }>;
   };
+  passingComparisons?: string[];
+  blockingComparisons?: string[];
+  externalProperties?: IExternalFeedProperty[];
+  formatOptions?: IUserFeedFormatOptions;
+  userRefreshRateSeconds?: number;
 }
 
 export type WebhookEnforcementTarget =
@@ -237,6 +242,38 @@ export interface CloneConnectionToFeedsResult {
   feedIdToConnectionId: Array<{ feedId: string; connectionId: string }>;
 }
 
+export interface UserFeedWithConnections {
+  id: string;
+  connections: IFeedConnections;
+}
+
+export interface CopySettingsTarget {
+  type: "selected" | "all";
+  feedIds?: string[];
+  search?: string;
+  excludeFeedId: string;
+  ownerDiscordUserId: string;
+}
+
+export type CopyableSettings = Partial<
+  Pick<
+    IUserFeed,
+    | "passingComparisons"
+    | "blockingComparisons"
+    | "externalProperties"
+    | "dateCheckOptions"
+    | "formatOptions"
+    | "connections"
+  >
+> & {
+  userRefreshRateSeconds?: number | null;
+};
+
+export interface CopySettingsToFeedsInput {
+  target: CopySettingsTarget;
+  settings: CopyableSettings;
+}
+
 export interface IUserFeedRepository {
   create(input: CreateUserFeedInput): Promise<IUserFeed>;
   findById(id: string): Promise<IUserFeed | null>;
@@ -310,10 +347,19 @@ export interface IUserFeedRepository {
   cloneConnectionToFeeds(
     input: CloneConnectionToFeedsInput,
   ): Promise<CloneConnectionToFeedsResult>;
+  findManyWithConnectionsByFilter(
+    filter: Record<string, unknown>,
+  ): Promise<UserFeedWithConnections[]>;
   enforceRefreshRates(
     target: RefreshRateEnforcementTarget,
     supporterRefreshRateSeconds: number,
   ): Promise<void>;
+
+  // Copy settings
+  copySettingsToFeeds(input: CopySettingsToFeedsInput): Promise<number>;
+  findFeedsWithApplicationOwnedWebhooks(
+    target: CopySettingsTarget,
+  ): Promise<UserFeedWithConnections[]>;
 
   // Migration methods
   iterateFeedsMissingSlotOffset(): AsyncIterable<UserFeedForSlotOffsetMigration>;
