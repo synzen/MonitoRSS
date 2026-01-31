@@ -102,7 +102,6 @@
     "userFeeds": {
       "title": "Feeds",
       "newBadge": "NEW",
-      "backToLegacyFeedsButton": "Back to legacy feeds",
       "tabLogs": "Logs",
       "settings": "Misc Settings",
       "tabComparisons": "Comparisons",

@@ -14,7 +14,6 @@ export const UserFeedSummarySchema = object({
   disabledCode: string().oneOf(Object.values(UserFeedDisabledCode)).optional(),
   healthStatus: string().oneOf(Object.values(UserFeedHealthStatus)).required(),
   computedStatus: string().oneOf(Object.values(UserFeedComputedStatus)).required(),
-  isLegacyFeed: bool().required(),
   ownedByUser: bool().required(),
   refreshRateSeconds: number().optional(),
 });

@@ -119,14 +119,9 @@ const createGetUserFeedsPipe = (
       const filtered = (
         await Promise.all(
           allFound.map(async (found) => {
-            const allowLegacyReversion =
-              !!this.configService.get("BACKEND_API_ALLOW_LEGACY_REVERSION") ||
-              found.allowLegacyReversion;
-
             if (isAdmin) {
               return {
                 ...found,
-                allowLegacyReversion,
               };
             }
 
@@ -176,7 +171,6 @@ const createGetUserFeedsPipe = (
 
             return {
               ...found,
-              allowLegacyReversion,
             };
           })
         )

@@ -38,23 +38,6 @@ export class DiscordWebhooksService {
     return webhook;
   }
 
-  async getWebhooksOfServer(serverId: string): Promise<DiscordWebhook[]> {
-    try {
-      const webhooks: DiscordWebhook[] =
-        await this.discordApiService.executeBotRequest(
-          `/guilds/${serverId}/webhooks`
-        );
-
-      return webhooks.filter((webhook) => this.canBeUsedByBot(webhook));
-    } catch (err) {
-      if (err instanceof DiscordAPIError && err.statusCode === 403) {
-        throw new WebhookMissingPermissionsException();
-      }
-
-      throw err;
-    }
-  }
-
   async getWebhooksOfChannel(
     channelId: string,
     filters?: {

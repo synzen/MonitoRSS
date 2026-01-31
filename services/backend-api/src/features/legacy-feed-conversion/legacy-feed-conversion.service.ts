@@ -37,20 +37,13 @@ import {
   UserFeedDisabledCode,
   UserFeedHealthStatus,
 } from "../user-feeds/types";
-import { LegacyFeedConversionStatus } from "./constants/legacy-feed-conversion-status.constants";
-import {
-  LegacyFeedConversionJob,
-  LegacyFeedConversionJobModel,
-} from "./entities/legacy-feed-conversion-job.entity";
-import { NoLegacyFeedsToConvertException } from "./exceptions/no-legacy-feeds-to-convert.exception";
 import { FeedRegexOp } from "../feeds/entities/feed-regexop.entity";
 import { randomUUID } from "crypto";
 import { escapeRegExp } from "lodash";
-import { HandledByBulkConversionException } from "./exceptions/handled-by-bulk-conversion.exception";
 import { AlreadyConvertedToUserFeedException } from "../feeds/exceptions";
 import { CustomPlaceholderStepType } from "../../common/constants/custom-placeholder-step-type.constants";
 
-enum ConversionDisabledCode {
+export enum ConversionDisabledCode {
   ConvertSuccess = "CONVERTED_USER_FEED",
   ConvertPending = "CONVERT_PENDING",
 }
@@ -161,211 +154,17 @@ export class LegacyFeedConversionService {
     private readonly userFeedModel: UserFeedModel,
     @InjectModel(UserFeedLimitOverride.name)
     private readonly userFeedLimitOverrideModel: UserFeedLimitOverrideModel,
-    @InjectModel(LegacyFeedConversionJob.name)
-    private readonly legacyFeedConversionJobModel: LegacyFeedConversionJobModel,
     private readonly discordApiService: DiscordAPIService,
     private readonly supportersService: SupportersService
   ) {}
-
-  async createBulkConversionJob(discordUserId: string, guildId: string) {
-    const existingJobCount =
-      await this.legacyFeedConversionJobModel.countDocuments({
-        guildId,
-      });
-
-    const unconvertedFeeds = await this.feedModel
-      .find({
-        guild: guildId,
-        disabled: {
-          $nin: [
-            ConversionDisabledCode.ConvertSuccess,
-            ConversionDisabledCode.ConvertPending,
-          ],
-        },
-      })
-      .select("_id")
-      .lean();
-
-    if (existingJobCount > 0) {
-      const failedCount =
-        await this.legacyFeedConversionJobModel.countDocuments({
-          discordUserId,
-          guildId,
-          status: LegacyFeedConversionStatus.Failed,
-        });
-
-      if (failedCount > 0) {
-        await this.legacyFeedConversionJobModel.updateMany(
-          {
-            discordUserId,
-            guildId,
-            status: LegacyFeedConversionStatus.Failed,
-          },
-          {
-            $set: {
-              status: LegacyFeedConversionStatus.NotStarted,
-            },
-            $unset: {
-              failReasonPublic: "",
-              failReasonInternal: "",
-            },
-          }
-        );
-
-        return {
-          total: existingJobCount,
-        };
-      }
-    }
-
-    if (unconvertedFeeds.length === 0) {
-      throw new NoLegacyFeedsToConvertException(
-        `Cannot create a new conversion job for server ${guildId}, user ${discordUserId}` +
-          ` because there are no unconverted feeds`
-      );
-    }
-
-    const jobsToCreate: LegacyFeedConversionJob[] = unconvertedFeeds.map(
-      (f) => ({
-        _id: new Types.ObjectId(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        guildId,
-        discordUserId,
-        legacyFeedId: f._id,
-        status: LegacyFeedConversionStatus.NotStarted,
-      })
-    );
-
-    await this.userFeedModel.updateMany(
-      {
-        _id: {
-          $in: unconvertedFeeds.map((f) => f._id),
-        },
-      },
-      {
-        $set: {
-          disabled: ConversionDisabledCode.ConvertPending,
-          disabledReason: "Pending conversion to user feed",
-        },
-      }
-    );
-    await this.legacyFeedConversionJobModel.insertMany(jobsToCreate);
-
-    return {
-      total: unconvertedFeeds.length,
-    };
-  }
-
-  async getBulkConversionJobStatus(discordUserId: string, guildId: string) {
-    const totalUnconverted = await this.feedModel.countDocuments({
-      guild: guildId,
-      disabled: {
-        $nin: [
-          ConversionDisabledCode.ConvertSuccess,
-          ConversionDisabledCode.ConvertPending,
-        ],
-      },
-    });
-    const [notStarted, inProgress, completed, failed] = await Promise.all([
-      this.legacyFeedConversionJobModel.countDocuments({
-        discordUserId,
-        guildId,
-        status: LegacyFeedConversionStatus.NotStarted,
-      }),
-
-      this.legacyFeedConversionJobModel.countDocuments({
-        discordUserId,
-        guildId,
-        status: LegacyFeedConversionStatus.InProgress,
-      }),
-
-      this.legacyFeedConversionJobModel.countDocuments({
-        discordUserId,
-        guildId,
-        status: LegacyFeedConversionStatus.Completed,
-      }),
-      this.legacyFeedConversionJobModel.countDocuments({
-        discordUserId,
-        guildId,
-        status: LegacyFeedConversionStatus.Failed,
-      }),
-    ]);
-
-    let failedJobs: LegacyFeedConversionJob[] = [];
-    let failedFeeds: Feed[] = [];
-
-    if (failed > 0) {
-      failedJobs = await this.legacyFeedConversionJobModel
-        .find({
-          discordUserId,
-          guildId,
-          status: LegacyFeedConversionStatus.Failed,
-        })
-        .select("_id failReasonPublic legacyFeedId")
-        .lean();
-
-      failedFeeds = await this.feedModel
-        .find({
-          _id: {
-            $in: failedJobs.map((j) => j.legacyFeedId),
-          },
-        })
-        .select("_id title url")
-        .lean();
-    }
-
-    const allJobCounts = notStarted + inProgress + completed + failed;
-
-    const hasStarted = allJobCounts > 0;
-    const hasNotStarted = allJobCounts === 0;
-    const hasCompleted = notStarted === 0 && inProgress === 0;
-    const someUnconverted = totalUnconverted > 0;
-
-    let status = "NOT_STARTED";
-
-    if (hasNotStarted) {
-      status = "NOT_STARTED";
-    } else if (hasCompleted) {
-      if (failed > 0) {
-        status = "COMPLETED_WITH_FAILED";
-      } else if (someUnconverted) {
-        status = "PARTIALLY_COMPLETED"; // some user feeds were restored to legacy feeds
-      } else {
-        status = "COMPLETED";
-      }
-    } else if (hasStarted) {
-      status = "IN_PROGRESS";
-    }
-
-    return {
-      status,
-      failedFeeds: failedFeeds.map((feed) => ({
-        _id: feed._id,
-        title: feed.title,
-        url: feed.url,
-        failReasonPublic: failedJobs.find((j) =>
-          j.legacyFeedId.equals(feed._id)
-        )?.failReasonPublic,
-      })),
-      counts: {
-        notStarted,
-        inProgress,
-        completed,
-        failed,
-      },
-    };
-  }
 
   async convertToUserFeed(
     feed: Feed,
     {
       discordUserId,
-      isBulkConversion,
       doNotSave,
     }: {
       discordUserId: string;
-      isBulkConversion?: boolean;
       doNotSave?: boolean;
     }
   ) {
@@ -374,20 +173,6 @@ export class LegacyFeedConversionService {
         throw new AlreadyConvertedToUserFeedException(
           `Cannot convert feed ${feed._id} to user feed for user` +
             ` ${discordUserId} because it is has already been converted`
-        );
-      }
-
-      const conversionJob =
-        await this.legacyFeedConversionJobModel.countDocuments({
-          discordUserId,
-          guildId: feed.guild,
-          legacyFeedId: feed._id,
-        });
-
-      if (!isBulkConversion && conversionJob) {
-        throw new HandledByBulkConversionException(
-          `Cannot convert feed ${feed._id} to user feed for user` +
-            ` ${discordUserId} because it is pending a bulk conversion`
         );
       }
 

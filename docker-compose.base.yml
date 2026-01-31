@@ -258,29 +258,6 @@ services:
       - monitorss-default
     command: npm run start:schedule-emitter
 
-  legacy-feed-bulk-converter-service:
-    build:
-      context: services/backend-api
-      dockerfile: dockerfiles/web/mixed.Dockerfile
-      target: build
-    restart: on-failure:10
-    depends_on:
-      - mongo
-    environment:
-      - NODE_ENV=local
-      - BACKEND_API_USER_FEEDS_API_HOST=----IRRELEVANT----
-      - BACKEND_API_USER_FEEDS_API_KEY=----IRRELEVANT----
-      - BACKEND_API_FEED_REQUESTS_API_HOST=----IRRELEVANT----
-      - BACKEND_API_FEED_REQUESTS_API_KEY=----IRRELEVANT----
-      - BACKEND_API_LOGIN_REDIRECT_URI=----IRRELEVANT----
-      - BACKEND_API_DISCORD_REDIRECT_URI=----IRRELEVANT----
-      - BACKEND_API_DEFAULT_MAX_FEEDS=10
-      - BACKEND_API_FEED_USER_AGENT=----IRRELEVANT----
-      - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672/
-    networks:
-      - monitorss-default
-    command: ["node", "dist/scripts/legacy-feed-bulk-converter.js"]
-
   # Web - Backend api
   web-api:
     build:
