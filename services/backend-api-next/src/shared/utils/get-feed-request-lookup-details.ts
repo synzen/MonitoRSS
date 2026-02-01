@@ -10,7 +10,7 @@ interface FeedInput {
 
 interface UserInput {
   externalCredentials?: Array<{
-    type: UserExternalCredentialType;
+    type: UserExternalCredentialType | string;
     data: Record<string, string>;
   }>;
 }

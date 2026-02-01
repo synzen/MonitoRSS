@@ -163,7 +163,7 @@ export class MessageBrokerEventsService {
         ).flat() as Array<DiscordChannelConnection>;
 
         const hasCustomPlaceholders = cons.find(
-          (c) => !c.customPlaceholders?.length
+          (c) => !!c.customPlaceholders?.length
         );
         const hasExternalProperties = !!feed.externalProperties?.length;
         const hasPremiumFeatures =

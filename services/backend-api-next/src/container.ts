@@ -62,6 +62,7 @@ import { PaddleWebhooksService } from "./services/paddle-webhooks/paddle-webhook
 import { SupporterSubscriptionsService } from "./services/supporter-subscriptions/supporter-subscriptions.service";
 import { LegacyFeedConversionService } from "./services/legacy-feed-conversion/legacy-feed-conversion.service";
 import { ScheduleHandlerService } from "./services/schedule-handler/schedule-handler.service";
+import { MessageBrokerEventsService } from "./services/message-broker-events/message-broker-events.service";
 
 export interface Container {
   config: Config;
@@ -122,6 +123,7 @@ export interface Container {
   supporterSubscriptionsService: SupporterSubscriptionsService;
   legacyFeedConversionService: LegacyFeedConversionService;
   scheduleHandlerService: ScheduleHandlerService;
+  messageBrokerEventsService: MessageBrokerEventsService;
 }
 
 export function createContainer(deps: {
@@ -335,6 +337,14 @@ export function createContainer(deps: {
     messageBrokerService,
   });
 
+  const messageBrokerEventsService = new MessageBrokerEventsService({
+    config: deps.config,
+    userFeedRepository,
+    supportersService,
+    notificationsService,
+    publishMessage,
+  });
+
   return {
     config: deps.config,
     mongoConnection: deps.mongoConnection,
@@ -390,5 +400,6 @@ export function createContainer(deps: {
     supporterSubscriptionsService,
     legacyFeedConversionService,
     scheduleHandlerService,
+    messageBrokerEventsService,
   };
 }

@@ -1,5 +1,6 @@
 import {
   UserExternalCredentialType,
+  FeedConnectionDisabledCode,
   UserFeedDisabledCode,
   UserFeedHealthStatus,
   UserFeedManagerInviteType,
@@ -339,6 +340,36 @@ export interface MaxDailyArticlesSyncInput {
   defaultMaxDailyArticles: number;
 }
 
+export interface UserForDelivery {
+  externalCredentials?: Array<{
+    type: string;
+    data: Record<string, string>;
+  }>;
+  preferences?: {
+    dateFormat?: string;
+    dateTimezone?: string;
+    dateLocale?: string;
+  };
+}
+
+export interface UserFeedForDelivery {
+  id: string;
+  url: string;
+  debug?: boolean;
+  maxDailyArticles?: number;
+  connections: IFeedConnections;
+  passingComparisons?: string[];
+  blockingComparisons?: string[];
+  formatOptions?: IUserFeedFormatOptions;
+  externalProperties?: IExternalFeedProperty[];
+  dateCheckOptions?: IUserFeedDateCheckOptions;
+  feedRequestLookupKey?: string;
+  user: {
+    discordUserId: string;
+  };
+  users: Array<UserForDelivery>;
+}
+
 export interface IUserFeedRepository {
   create(input: CreateUserFeedInput): Promise<IUserFeed>;
   findById(id: string): Promise<IUserFeed | null>;
@@ -491,4 +522,60 @@ export interface IUserFeedRepository {
     refreshRateSeconds: number,
     slotWindow: SlotWindow,
   ): AsyncIterable<ScheduledFeedWithLookupKey>;
+
+  // Message broker events methods
+  updateHealthStatusByFilter(
+    filter: { url?: string; lookupKey?: string },
+    healthStatus: UserFeedHealthStatus,
+    excludeStatus?: UserFeedHealthStatus,
+  ): Promise<number>;
+
+  countWithHealthStatusFilter(
+    filter: { url?: string; lookupKey?: string },
+    excludeHealthStatus: UserFeedHealthStatus,
+  ): Promise<number>;
+
+  iterateFeedsForDelivery(params: {
+    url: string;
+    refreshRateSeconds: number;
+    debug?: boolean;
+  }): AsyncIterable<UserFeedForDelivery>;
+
+  iterateFeedsWithLookupKeysForDelivery(params: {
+    lookupKey: string;
+    refreshRateSeconds: number;
+    debug?: boolean;
+  }): AsyncIterable<UserFeedForDelivery>;
+
+  findIdsWithoutDisabledCode(filter: {
+    url?: string;
+    lookupKey?: string;
+  }): Promise<string[]>;
+
+  setConnectionDisabledCode(
+    feedId: string,
+    connectionKey: string,
+    connectionIndex: number,
+    disabledCode: FeedConnectionDisabledCode,
+    disabledDetail?: string,
+  ): Promise<void>;
+
+  // Atomic disable + health status update for handleUrlRequestFailureEvent
+  disableFeedsAndSetHealthStatus(
+    feedIds: string[],
+    disabledCode: UserFeedDisabledCode,
+    healthStatus: UserFeedHealthStatus,
+  ): Promise<void>;
+
+  // Atomic disable for feeds without existing disabledCode
+  disableFeedByIdIfNotDisabled(
+    feedId: string,
+    disabledCode: UserFeedDisabledCode,
+  ): Promise<boolean>;
+
+  // Atomic bulk disable for feeds without existing disabledCode
+  disableFeedsByFilterIfNotDisabled(
+    filter: { url?: string; lookupKey?: string },
+    disabledCode: UserFeedDisabledCode,
+  ): Promise<number>;
 }

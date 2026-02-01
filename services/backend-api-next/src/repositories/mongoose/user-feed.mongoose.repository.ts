@@ -34,6 +34,7 @@ import type {
   FeedForSlotOffsetRecalculation,
   RefreshRateSyncInput,
   MaxDailyArticlesSyncInput,
+  UserFeedForDelivery,
 } from "../interfaces/user-feed.types";
 import type { SlotWindow } from "../../shared/types/slot-window.types";
 import { getCommonFeedAggregateStages } from "../../shared/utils/get-common-feed-aggregate-stages";
@@ -1926,5 +1927,218 @@ export class UserFeedMongooseRepository
         users: doc.users || [],
       };
     }
+  }
+
+  async updateHealthStatusByFilter(
+    filter: { url?: string; lookupKey?: string },
+    healthStatus: UserFeedHealthStatus,
+    excludeStatus?: UserFeedHealthStatus,
+  ): Promise<number> {
+    const queryFilter: Record<string, unknown> = filter.lookupKey
+      ? { feedRequestLookupKey: filter.lookupKey }
+      : { url: filter.url };
+
+    if (excludeStatus) {
+      queryFilter.healthStatus = { $ne: excludeStatus };
+    }
+
+    const result = await this.model.updateMany(queryFilter, {
+      $set: { healthStatus },
+    });
+
+    return result.modifiedCount;
+  }
+
+  async countWithHealthStatusFilter(
+    filter: { url?: string; lookupKey?: string },
+    excludeHealthStatus: UserFeedHealthStatus,
+  ): Promise<number> {
+    const queryFilter: Record<string, unknown> = filter.lookupKey
+      ? { feedRequestLookupKey: filter.lookupKey }
+      : { url: filter.url };
+
+    queryFilter.healthStatus = { $ne: excludeHealthStatus };
+
+    return this.model.countDocuments(queryFilter);
+  }
+
+  async *iterateFeedsForDelivery(params: {
+    url: string;
+    refreshRateSeconds: number;
+    debug?: boolean;
+  }): AsyncIterable<UserFeedForDelivery> {
+    const pipeline = getCommonFeedAggregateStages({
+      url: params.url,
+      refreshRateSeconds: params.refreshRateSeconds,
+    });
+
+    const cursor = this.model.aggregate(pipeline).cursor();
+
+    for await (const doc of cursor) {
+      yield this.mapToUserFeedForDelivery(doc);
+    }
+  }
+
+  async *iterateFeedsWithLookupKeysForDelivery(params: {
+    lookupKey: string;
+    refreshRateSeconds: number;
+    debug?: boolean;
+  }): AsyncIterable<UserFeedForDelivery> {
+    const pipeline = getCommonFeedAggregateStages({
+      feedRequestLookupKey: params.lookupKey,
+      refreshRateSeconds: params.refreshRateSeconds,
+    });
+
+    const cursor = this.model.aggregate(pipeline).cursor();
+
+    for await (const doc of cursor) {
+      yield this.mapToUserFeedForDelivery(doc);
+    }
+  }
+
+  private mapToUserFeedForDelivery(
+    doc: Record<string, unknown>,
+  ): UserFeedForDelivery {
+    const typedDoc = doc as {
+      _id: Types.ObjectId;
+      url: string;
+      debug?: boolean;
+      maxDailyArticles?: number;
+      connections: { discordChannels: DiscordChannelConnectionDoc[] };
+      passingComparisons?: string[];
+      blockingComparisons?: string[];
+      formatOptions?: Record<string, unknown>;
+      externalProperties?: Array<Record<string, unknown>>;
+      dateCheckOptions?: Record<string, unknown>;
+      feedRequestLookupKey?: string;
+      user: { discordUserId: string };
+      users?: Array<{
+        externalCredentials?: Array<{
+          type: string;
+          data: Record<string, string>;
+        }>;
+        preferences?: Record<string, unknown>;
+      }>;
+    };
+
+    return {
+      id: typedDoc._id.toString(),
+      url: typedDoc.url,
+      debug: typedDoc.debug,
+      maxDailyArticles: typedDoc.maxDailyArticles,
+      connections: {
+        discordChannels: typedDoc.connections.discordChannels.map((conn) =>
+          this.mapDiscordChannelConnection(conn),
+        ),
+      },
+      passingComparisons: typedDoc.passingComparisons,
+      blockingComparisons: typedDoc.blockingComparisons,
+      formatOptions:
+        typedDoc.formatOptions as UserFeedForDelivery["formatOptions"],
+      externalProperties:
+        typedDoc.externalProperties as UserFeedForDelivery["externalProperties"],
+      dateCheckOptions:
+        typedDoc.dateCheckOptions as UserFeedForDelivery["dateCheckOptions"],
+      feedRequestLookupKey: typedDoc.feedRequestLookupKey,
+      user: { discordUserId: typedDoc.user.discordUserId },
+      users: typedDoc.users || [],
+    };
+  }
+
+  async findIdsWithoutDisabledCode(filter: {
+    url?: string;
+    lookupKey?: string;
+  }): Promise<string[]> {
+    const queryFilter: Record<string, unknown> = filter.lookupKey
+      ? { feedRequestLookupKey: filter.lookupKey }
+      : { url: filter.url };
+
+    queryFilter.disabledCode = { $exists: false };
+
+    const docs = await this.model.find(queryFilter).select("_id").lean();
+
+    return docs.map((doc) => (doc._id as Types.ObjectId).toString());
+  }
+
+  async setConnectionDisabledCode(
+    feedId: string,
+    connectionKey: string,
+    connectionIndex: number,
+    disabledCode: FeedConnectionDisabledCode,
+    disabledDetail?: string,
+  ): Promise<void> {
+    const updateDoc: Record<string, unknown> = {
+      [`connections.${connectionKey}.${connectionIndex}.disabledCode`]:
+        disabledCode,
+    };
+
+    if (disabledDetail !== undefined) {
+      updateDoc[
+        `connections.${connectionKey}.${connectionIndex}.disabledDetail`
+      ] = disabledDetail;
+    }
+
+    await this.model.updateOne(
+      {
+        _id: this.stringToObjectId(feedId),
+        [`connections.${connectionKey}.${connectionIndex}.disabledCode`]: {
+          $exists: false,
+        },
+      },
+      { $set: updateDoc },
+    );
+  }
+
+  async disableFeedsAndSetHealthStatus(
+    feedIds: string[],
+    disabledCode: UserFeedDisabledCode,
+    healthStatus: UserFeedHealthStatus,
+  ): Promise<void> {
+    if (feedIds.length === 0) {
+      return;
+    }
+
+    const objectIds = feedIds.map((id) => this.stringToObjectId(id));
+    await this.model.updateMany(
+      { _id: { $in: objectIds } },
+      {
+        $set: {
+          disabledCode,
+          healthStatus,
+        },
+      },
+    );
+  }
+
+  async disableFeedByIdIfNotDisabled(
+    feedId: string,
+    disabledCode: UserFeedDisabledCode,
+  ): Promise<boolean> {
+    const result = await this.model.updateOne(
+      {
+        _id: this.stringToObjectId(feedId),
+        disabledCode: { $exists: false },
+      },
+      { $set: { disabledCode } },
+    );
+
+    return result.modifiedCount > 0;
+  }
+
+  async disableFeedsByFilterIfNotDisabled(
+    filter: { url?: string; lookupKey?: string },
+    disabledCode: UserFeedDisabledCode,
+  ): Promise<number> {
+    const queryFilter: Record<string, unknown> = filter.lookupKey
+      ? { feedRequestLookupKey: filter.lookupKey }
+      : { url: filter.url };
+
+    queryFilter.disabledCode = { $exists: false };
+
+    const result = await this.model.updateMany(queryFilter, {
+      $set: { disabledCode },
+    });
+
+    return result.modifiedCount;
   }
 }
