@@ -1,4 +1,5 @@
 import { mock } from "node:test";
+import type { Connection } from "rabbitmq-client";
 import {
   MessageBrokerEventsService,
   type MessageBrokerEventsServiceDeps,
@@ -160,8 +161,11 @@ export function createMessageBrokerEventsHarness(): MessageBrokerEventsHarness {
         options.publishMessageFn ?? (() => Promise.resolve()),
       );
 
+      const connection = {} as Connection;
+
       const service = new MessageBrokerEventsService({
         config,
+        connection,
         userFeedRepository:
           userFeedRepository as unknown as IUserFeedRepository,
         supportersService: supportersService as unknown as SupportersService,

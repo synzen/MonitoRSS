@@ -32,6 +32,9 @@ async function main() {
     rabbitmq,
   });
 
+  // Initialize message broker consumers
+  await container.messageBrokerEventsService.initialize();
+
   // Create and start the Fastify app
   const app = await createApp(container);
   await startApp(app, config.BACKEND_API_PORT);
@@ -45,6 +48,14 @@ async function main() {
       logger.info("HTTP server stopped");
     } catch (err) {
       logger.error("Error stopping HTTP server", {
+        error: (err as Error).stack,
+      });
+    }
+
+    try {
+      await container.messageBrokerEventsService.close();
+    } catch (err) {
+      logger.error("Error closing message broker consumers", {
         error: (err as Error).stack,
       });
     }

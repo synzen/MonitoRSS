@@ -1,6 +1,7 @@
+import type { Connection, Consumer } from "rabbitmq-client";
 import type { Config } from "../../config";
 import logger from "../../infra/logger";
-import { MessageBrokerQueue } from "../../infra/rabbitmq";
+import { createConsumer, MessageBrokerQueue } from "../../infra/rabbitmq";
 import type {
   IUserFeed,
   IUserFeedRepository,
@@ -26,6 +27,7 @@ import type { DiscordMediumEvent, UserForDelivery } from "./types";
 
 export interface MessageBrokerEventsServiceDeps {
   config: Config;
+  connection: Connection;
   userFeedRepository: IUserFeedRepository;
   supportersService: SupportersService;
   notificationsService: NotificationsService;
@@ -37,7 +39,89 @@ export interface MessageBrokerEventsServiceDeps {
 }
 
 export class MessageBrokerEventsService {
+  private consumers: Consumer[] = [];
+
   constructor(private readonly deps: MessageBrokerEventsServiceDeps) {}
+
+  async initialize(): Promise<void> {
+    const createQueueConsumer = createConsumer(this.deps.connection);
+
+    logger.info("Registering message broker consumers...");
+
+    this.consumers.push(
+      createQueueConsumer(MessageBrokerQueue.SyncSupporterDiscordRoles, (msg) =>
+        this.handleSyncSupporterDiscordRoles(
+          msg as { data: { userId: string } },
+        ),
+      ),
+    );
+
+    this.consumers.push(
+      createQueueConsumer(MessageBrokerQueue.UrlFailing, (msg) =>
+        this.handleUrlFailing(
+          msg as { data: { lookupKey?: string; url: string } },
+        ),
+      ),
+    );
+
+    this.consumers.push(
+      createQueueConsumer(MessageBrokerQueue.UrlFetchCompleted, (msg) =>
+        this.handleUrlFetchCompletedEvent(
+          msg as {
+            data: {
+              url: string;
+              lookupKey?: string;
+              rateSeconds: number;
+              debug?: boolean;
+            };
+          },
+        ),
+      ),
+    );
+
+    this.consumers.push(
+      createQueueConsumer(MessageBrokerQueue.UrlRejectedDisableFeeds, (msg) =>
+        this.handleUrlRejectedDisableFeedsEvent(msg as any),
+      ),
+    );
+
+    this.consumers.push(
+      createQueueConsumer(MessageBrokerQueue.UrlFailedDisableFeeds, (msg) =>
+        this.handleUrlRequestFailureEvent(
+          msg as { data: { url: string; lookupKey?: string } },
+        ),
+      ),
+    );
+
+    this.consumers.push(
+      createQueueConsumer(MessageBrokerQueue.FeedRejectedDisableFeed, (msg) =>
+        this.handleFeedRejectedDisableFeed(msg as any),
+      ),
+    );
+
+    this.consumers.push(
+      createQueueConsumer(
+        MessageBrokerQueue.FeedRejectedArticleDisableConnection,
+        (msg) => this.handleRejectedArticleDisableConnection(msg as any),
+      ),
+    );
+
+    logger.info(
+      `Registered ${this.consumers.length} message broker consumers for queues: ` +
+        `${MessageBrokerQueue.SyncSupporterDiscordRoles}, ` +
+        `${MessageBrokerQueue.UrlFailing}, ` +
+        `${MessageBrokerQueue.UrlFetchCompleted}, ` +
+        `${MessageBrokerQueue.UrlRejectedDisableFeeds}, ` +
+        `${MessageBrokerQueue.UrlFailedDisableFeeds}, ` +
+        `${MessageBrokerQueue.FeedRejectedDisableFeed}, ` +
+        `${MessageBrokerQueue.FeedRejectedArticleDisableConnection}`,
+    );
+  }
+
+  async close(): Promise<void> {
+    await Promise.all(this.consumers.map((c) => c.close()));
+    logger.info("Message broker consumers closed");
+  }
 
   async handleSyncSupporterDiscordRoles({
     data: { userId },
@@ -115,8 +199,10 @@ export class MessageBrokerEventsService {
           });
         }
 
-        const cons = feed.connections.discordChannels;
-        const hasCustomPlaceholders = cons.some(
+        const allConnections = Object.values(feed.connections).flat() as Array<{
+          customPlaceholders?: unknown[];
+        }>;
+        const hasCustomPlaceholders = allConnections.some(
           (c) => !!c.customPlaceholders?.length,
         );
         const hasExternalProperties =
@@ -232,15 +318,10 @@ export class MessageBrokerEventsService {
 
     const disabledCode = getUserFeedDisableCodeByFeedRejectCode(rejectedCode);
 
-    const wasDisabled =
-      await this.deps.userFeedRepository.disableFeedByIdIfNotDisabled(
-        feedId,
-        disabledCode,
-      );
-
-    if (!wasDisabled) {
-      return;
-    }
+    await this.deps.userFeedRepository.disableFeedByIdIfNotDisabled(
+      feedId,
+      disabledCode,
+    );
 
     try {
       logger.info(

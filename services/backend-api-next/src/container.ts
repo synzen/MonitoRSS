@@ -339,6 +339,7 @@ export function createContainer(deps: {
 
   const messageBrokerEventsService = new MessageBrokerEventsService({
     config: deps.config,
+    connection: deps.rabbitmq,
     userFeedRepository,
     supportersService,
     notificationsService,
