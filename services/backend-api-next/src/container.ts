@@ -57,6 +57,7 @@ import { UserFeedsService } from "./services/user-feeds/user-feeds.service";
 import { FeedConnectionsDiscordChannelsService } from "./services/feed-connections-discord-channels/feed-connections-discord-channels.service";
 import { FeedFetcherService } from "./services/feed-fetcher";
 import { createSmtpTransport } from "./infra/smtp";
+import { UserFeedManagementInvitesService } from "./services/user-feed-management-invites/user-feed-management-invites.service";
 
 export interface Container {
   config: Config;
@@ -108,6 +109,7 @@ export interface Container {
   mongoMigrationsService: MongoMigrationsService;
   userFeedsService: UserFeedsService;
   feedConnectionsDiscordChannelsService: FeedConnectionsDiscordChannelsService;
+  userFeedManagementInvitesService: UserFeedManagementInvitesService;
 }
 
 export function createContainer(deps: {
@@ -275,6 +277,14 @@ export function createContainer(deps: {
     feedConnectionsDiscordChannelsService,
   });
 
+  const userFeedManagementInvitesService = new UserFeedManagementInvitesService(
+    {
+      userFeedRepository,
+      userFeedsService,
+      supportersService,
+    },
+  );
+
   return {
     config: deps.config,
     mongoConnection: deps.mongoConnection,
@@ -325,5 +335,6 @@ export function createContainer(deps: {
     mongoMigrationsService,
     userFeedsService,
     feedConnectionsDiscordChannelsService,
+    userFeedManagementInvitesService,
   };
 }

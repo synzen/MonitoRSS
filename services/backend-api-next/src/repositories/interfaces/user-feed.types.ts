@@ -146,6 +146,7 @@ export interface CreateUserFeedInput {
   shareManageOptions?: {
     invites: Array<{
       discordUserId: string;
+      type?: UserFeedManagerInviteType;
       status?: UserFeedManagerStatus;
       connections?: Array<{ connectionId: string }>;
     }>;
@@ -279,6 +280,26 @@ export interface CopySettingsToFeedsInput {
   settings: CopyableSettings;
 }
 
+export interface AddInviteToFeedInput {
+  discordUserId: string;
+  type: UserFeedManagerInviteType;
+  status: UserFeedManagerStatus;
+  connections?: Array<{ connectionId: string }>;
+}
+
+export interface UpdateInviteRepoInput {
+  status?: UserFeedManagerStatus;
+  connections?: Array<{ connectionId: string }> | null;
+}
+
+export interface UserFeedForPendingInvites {
+  id: string;
+  title: string;
+  url: string;
+  user: { discordUserId: string };
+  shareManageOptions: IUserFeedShareManageOptions;
+}
+
 export interface IUserFeedRepository {
   create(input: CreateUserFeedInput): Promise<IUserFeed>;
   findById(id: string): Promise<IUserFeed | null>;
@@ -373,6 +394,36 @@ export interface IUserFeedRepository {
   findFeedsWithApplicationOwnedWebhooks(
     target: CopySettingsTarget,
   ): Promise<UserFeedWithConnections[]>;
+
+  // Invite management methods
+  findByInviteIdAndOwner(
+    inviteId: string,
+    ownerDiscordUserId: string,
+  ): Promise<IUserFeed | null>;
+  findByInviteIdAndInvitee(
+    inviteId: string,
+    inviteeDiscordUserId: string,
+  ): Promise<IUserFeed | null>;
+  deleteInviteFromFeed(feedId: string, inviteId: string): Promise<void>;
+  updateInviteStatus(
+    feedId: string,
+    inviteId: string,
+    status: UserFeedManagerStatus,
+  ): Promise<IUserFeed | null>;
+  addInviteToFeed(feedId: string, invite: AddInviteToFeedInput): Promise<void>;
+  updateInvite(
+    feedId: string,
+    inviteIndex: number,
+    updates: UpdateInviteRepoInput,
+  ): Promise<void>;
+  transferFeedOwnership(
+    feedId: string,
+    newOwnerDiscordUserId: string,
+  ): Promise<void>;
+  findFeedsWithPendingInvitesForUser(
+    discordUserId: string,
+  ): Promise<UserFeedForPendingInvites[]>;
+  countPendingInvitesForUser(discordUserId: string): Promise<number>;
 
   // Migration methods
   iterateFeedsMissingSlotOffset(): AsyncIterable<UserFeedForSlotOffsetMigration>;

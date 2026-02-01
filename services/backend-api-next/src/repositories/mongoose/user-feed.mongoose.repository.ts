@@ -27,6 +27,9 @@ import type {
   CopySettingsToFeedsInput,
   CopySettingsTarget,
   UserFeedForBulkOperation,
+  AddInviteToFeedInput,
+  UpdateInviteRepoInput,
+  UserFeedForPendingInvites,
 } from "../interfaces/user-feed.types";
 import { calculateSlotOffsetMs } from "../../shared/utils/fnv1a-hash";
 import { getEffectiveRefreshRateSeconds } from "../../shared/utils/get-effective-refresh-rate";
@@ -432,6 +435,7 @@ export class UserFeedMongooseRepository
         ? {
             invites: input.shareManageOptions.invites.map((invite) => ({
               discordUserId: invite.discordUserId,
+              type: invite.type,
               status: invite.status,
               connections: invite.connections?.map((c) => ({
                 connectionId: this.stringToObjectId(c.connectionId),
@@ -1509,6 +1513,238 @@ export class UserFeedMongooseRepository
           ),
         },
       };
+    });
+  }
+
+  async findByInviteIdAndOwner(
+    inviteId: string,
+    ownerDiscordUserId: string,
+  ): Promise<IUserFeed | null> {
+    const doc = await this.model
+      .findOne({
+        "user.discordUserId": ownerDiscordUserId,
+        "shareManageOptions.invites.id": this.stringToObjectId(inviteId),
+      })
+      .lean();
+
+    if (!doc) {
+      return null;
+    }
+
+    return this.toEntity(doc as UserFeedDoc & { _id: Types.ObjectId });
+  }
+
+  async findByInviteIdAndInvitee(
+    inviteId: string,
+    inviteeDiscordUserId: string,
+  ): Promise<IUserFeed | null> {
+    const doc = await this.model
+      .findOne({
+        "shareManageOptions.invites": {
+          $elemMatch: {
+            id: this.stringToObjectId(inviteId),
+            discordUserId: inviteeDiscordUserId,
+          },
+        },
+      })
+      .lean();
+
+    if (!doc) {
+      return null;
+    }
+
+    return this.toEntity(doc as UserFeedDoc & { _id: Types.ObjectId });
+  }
+
+  async deleteInviteFromFeed(feedId: string, inviteId: string): Promise<void> {
+    await this.model.updateOne(
+      { _id: this.stringToObjectId(feedId) },
+      {
+        $pull: {
+          "shareManageOptions.invites": {
+            id: this.stringToObjectId(inviteId),
+          },
+        },
+      },
+    );
+  }
+
+  async updateInviteStatus(
+    feedId: string,
+    inviteId: string,
+    status: UserFeedManagerStatus,
+  ): Promise<IUserFeed | null> {
+    const doc = await this.model
+      .findOneAndUpdate(
+        {
+          _id: this.stringToObjectId(feedId),
+          "shareManageOptions.invites.id": this.stringToObjectId(inviteId),
+        },
+        {
+          $set: {
+            "shareManageOptions.invites.$.status": status,
+          },
+        },
+        { new: true },
+      )
+      .lean();
+
+    if (!doc) {
+      return null;
+    }
+
+    return this.toEntity(doc as UserFeedDoc & { _id: Types.ObjectId });
+  }
+
+  async addInviteToFeed(
+    feedId: string,
+    invite: AddInviteToFeedInput,
+  ): Promise<void> {
+    const inviteDoc = {
+      id: new Types.ObjectId(),
+      discordUserId: invite.discordUserId,
+      type: invite.type,
+      status: invite.status,
+      connections: invite.connections?.map((c) => ({
+        connectionId: this.stringToObjectId(c.connectionId),
+      })),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const feed = await this.model
+      .findById(this.stringToObjectId(feedId))
+      .lean();
+
+    if (!feed) {
+      throw new Error(`Feed ${feedId} not found`);
+    }
+
+    if (!feed.shareManageOptions) {
+      await this.model.updateOne(
+        { _id: this.stringToObjectId(feedId) },
+        {
+          $set: {
+            shareManageOptions: { invites: [inviteDoc] },
+          },
+        },
+      );
+    } else {
+      await this.model.updateOne(
+        { _id: this.stringToObjectId(feedId) },
+        {
+          $push: {
+            "shareManageOptions.invites": inviteDoc,
+          },
+        },
+      );
+    }
+  }
+
+  async updateInvite(
+    feedId: string,
+    inviteIndex: number,
+    updates: UpdateInviteRepoInput,
+  ): Promise<void> {
+    const setUpdates: Record<string, unknown> = {};
+    const unsetUpdates: Record<string, unknown> = {};
+
+    if (updates.status !== undefined) {
+      setUpdates[`shareManageOptions.invites.${inviteIndex}.status`] =
+        updates.status;
+    }
+
+    if (updates.connections !== undefined) {
+      if (updates.connections === null) {
+        unsetUpdates[`shareManageOptions.invites.${inviteIndex}.connections`] =
+          "";
+      } else {
+        setUpdates[`shareManageOptions.invites.${inviteIndex}.connections`] =
+          updates.connections.map((c) => ({
+            connectionId: this.stringToObjectId(c.connectionId),
+          }));
+      }
+    }
+
+    const updateDoc: Record<string, unknown> = {};
+
+    if (Object.keys(setUpdates).length > 0) {
+      updateDoc.$set = setUpdates;
+    }
+
+    if (Object.keys(unsetUpdates).length > 0) {
+      updateDoc.$unset = unsetUpdates;
+    }
+
+    if (Object.keys(updateDoc).length > 0) {
+      await this.model.updateOne(
+        { _id: this.stringToObjectId(feedId) },
+        updateDoc,
+      );
+    }
+  }
+
+  async transferFeedOwnership(
+    feedId: string,
+    newOwnerDiscordUserId: string,
+  ): Promise<void> {
+    await this.model.updateOne(
+      { _id: this.stringToObjectId(feedId) },
+      {
+        $set: {
+          "user.discordUserId": newOwnerDiscordUserId,
+          "shareManageOptions.invites": [],
+        },
+      },
+    );
+  }
+
+  async findFeedsWithPendingInvitesForUser(
+    discordUserId: string,
+  ): Promise<UserFeedForPendingInvites[]> {
+    const docs = await this.model
+      .find({
+        "shareManageOptions.invites": {
+          $elemMatch: {
+            discordUserId,
+            status: UserFeedManagerStatus.Pending,
+          },
+        },
+      })
+      .select("_id title url user shareManageOptions")
+      .lean();
+
+    return docs.map((doc) => ({
+      id: (doc._id as Types.ObjectId).toString(),
+      title: doc.title,
+      url: doc.url,
+      user: { discordUserId: doc.user.discordUserId },
+      shareManageOptions: {
+        invites: (
+          doc.shareManageOptions!.invites as unknown as ShareManageUserDoc[]
+        ).map((invite) => ({
+          id: invite.id.toString(),
+          type: invite.type as UserFeedManagerInviteType,
+          discordUserId: invite.discordUserId,
+          status: invite.status as UserFeedManagerStatus,
+          connections: invite.connections?.map((c) => ({
+            connectionId: c.connectionId.toString(),
+          })),
+          createdAt: invite.createdAt,
+          updatedAt: invite.updatedAt,
+        })),
+      },
+    }));
+  }
+
+  async countPendingInvitesForUser(discordUserId: string): Promise<number> {
+    return this.model.countDocuments({
+      "shareManageOptions.invites": {
+        $elemMatch: {
+          discordUserId,
+          status: UserFeedManagerStatus.Pending,
+        },
+      },
     });
   }
 }
