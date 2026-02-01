@@ -61,13 +61,18 @@ import { UserFeedManagementInvitesService } from "./services/user-feed-managemen
 import { PaddleWebhooksService } from "./services/paddle-webhooks/paddle-webhooks.service";
 import { SupporterSubscriptionsService } from "./services/supporter-subscriptions/supporter-subscriptions.service";
 import { LegacyFeedConversionService } from "./services/legacy-feed-conversion/legacy-feed-conversion.service";
+import { ScheduleHandlerService } from "./services/schedule-handler/schedule-handler.service";
 
 export interface Container {
   config: Config;
   mongoConnection: MongoConnection;
   rabbitmq: RabbitConnection;
   authService: AuthService;
-  publishMessage: (queue: string, message: unknown) => Promise<void>;
+  publishMessage: (
+    queue: string,
+    message: unknown,
+    options?: { expiration?: number },
+  ) => Promise<void>;
 
   // Repositories (interface types for abstraction)
   mongoMigrationRepository: IMongoMigrationRepository;
@@ -116,6 +121,7 @@ export interface Container {
   paddleWebhooksService: PaddleWebhooksService;
   supporterSubscriptionsService: SupporterSubscriptionsService;
   legacyFeedConversionService: LegacyFeedConversionService;
+  scheduleHandlerService: ScheduleHandlerService;
 }
 
 export function createContainer(deps: {
@@ -320,6 +326,15 @@ export function createContainer(deps: {
     userFeedLimitOverrideRepository,
   });
 
+  const scheduleHandlerService = new ScheduleHandlerService({
+    config: deps.config,
+    supportersService,
+    userFeedsService,
+    usersService,
+    userFeedRepository,
+    messageBrokerService,
+  });
+
   return {
     config: deps.config,
     mongoConnection: deps.mongoConnection,
@@ -374,5 +389,6 @@ export function createContainer(deps: {
     paddleWebhooksService,
     supporterSubscriptionsService,
     legacyFeedConversionService,
+    scheduleHandlerService,
   };
 }

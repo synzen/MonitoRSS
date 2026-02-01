@@ -30,7 +30,13 @@ import type {
   AddInviteToFeedInput,
   UpdateInviteRepoInput,
   UserFeedForPendingInvites,
+  ScheduledFeedWithLookupKey,
+  FeedForSlotOffsetRecalculation,
+  RefreshRateSyncInput,
+  MaxDailyArticlesSyncInput,
 } from "../interfaces/user-feed.types";
+import type { SlotWindow } from "../../shared/types/slot-window.types";
+import { getCommonFeedAggregateStages } from "../../shared/utils/get-common-feed-aggregate-stages";
 import { calculateSlotOffsetMs } from "../../shared/utils/fnv1a-hash";
 import { getEffectiveRefreshRateSeconds } from "../../shared/utils/get-effective-refresh-rate";
 import { UserFeedComputedStatus } from "../interfaces/user-feed.types";
@@ -1746,5 +1752,179 @@ export class UserFeedMongooseRepository
         },
       },
     });
+  }
+
+  async findDebugFeedUrls(): Promise<Set<string>> {
+    const docs = await this.model.find({ debug: true }).select("url").lean();
+
+    return new Set(docs.map((d) => d.url));
+  }
+
+  async syncRefreshRates(input: RefreshRateSyncInput): Promise<void> {
+    const { supporterLimits, defaultRefreshRateSeconds } = input;
+
+    const allSupporterUserIds = supporterLimits.flatMap(
+      (s) => s.discordUserIds,
+    );
+
+    const bulkOps: Parameters<typeof this.model.bulkWrite>[0] = [
+      ...supporterLimits.map(({ discordUserIds, refreshRateSeconds }) => ({
+        updateMany: {
+          filter: {
+            "user.discordUserId": { $in: discordUserIds },
+            refreshRateSeconds: { $ne: refreshRateSeconds },
+          },
+          update: { $set: { refreshRateSeconds } },
+        },
+      })),
+      {
+        updateMany: {
+          filter: {
+            "user.discordUserId": { $nin: allSupporterUserIds },
+            refreshRateSeconds: { $ne: defaultRefreshRateSeconds },
+          },
+          update: { $set: { refreshRateSeconds: defaultRefreshRateSeconds } },
+        },
+      },
+    ];
+
+    if (bulkOps.length > 0) {
+      await this.model.bulkWrite(bulkOps);
+    }
+  }
+
+  async syncMaxDailyArticles(input: MaxDailyArticlesSyncInput): Promise<void> {
+    const { supporterLimits, defaultMaxDailyArticles } = input;
+
+    const allSupporterUserIds = supporterLimits.flatMap(
+      (s) => s.discordUserIds,
+    );
+
+    const bulkOps: Parameters<typeof this.model.bulkWrite>[0] = [
+      ...supporterLimits.map(({ discordUserIds, maxDailyArticles }) => ({
+        updateMany: {
+          filter: {
+            "user.discordUserId": { $in: discordUserIds },
+            maxDailyArticles: { $ne: maxDailyArticles },
+          },
+          update: { $set: { maxDailyArticles } },
+        },
+      })),
+      {
+        updateMany: {
+          filter: {
+            "user.discordUserId": { $nin: allSupporterUserIds },
+            maxDailyArticles: { $ne: defaultMaxDailyArticles },
+          },
+          update: { $set: { maxDailyArticles: defaultMaxDailyArticles } },
+        },
+      },
+    ];
+
+    if (bulkOps.length > 0) {
+      await this.model.bulkWrite(bulkOps);
+    }
+  }
+
+  async *iterateFeedsForRefreshRateSync(
+    input: RefreshRateSyncInput,
+  ): AsyncIterable<
+    FeedForSlotOffsetRecalculation & { newRefreshRateSeconds: number }
+  > {
+    const { supporterLimits, defaultRefreshRateSeconds } = input;
+    const allSupporterUserIds = supporterLimits.flatMap(
+      (s) => s.discordUserIds,
+    );
+
+    for (const { discordUserIds, refreshRateSeconds } of supporterLimits) {
+      const cursor = this.model
+        .find({
+          "user.discordUserId": { $in: discordUserIds },
+          refreshRateSeconds: { $ne: refreshRateSeconds },
+        })
+        .select("_id url userRefreshRateSeconds")
+        .lean()
+        .cursor();
+
+      for await (const feed of cursor) {
+        yield {
+          id: (feed._id as Types.ObjectId).toString(),
+          url: feed.url as string,
+          userRefreshRateSeconds: feed.userRefreshRateSeconds as
+            | number
+            | undefined,
+          newRefreshRateSeconds: refreshRateSeconds,
+        };
+      }
+    }
+
+    const cursor = this.model
+      .find({
+        "user.discordUserId": { $nin: allSupporterUserIds },
+        refreshRateSeconds: { $ne: defaultRefreshRateSeconds },
+      })
+      .select("_id url userRefreshRateSeconds")
+      .lean()
+      .cursor();
+
+    for await (const feed of cursor) {
+      yield {
+        id: (feed._id as Types.ObjectId).toString(),
+        url: feed.url as string,
+        userRefreshRateSeconds: feed.userRefreshRateSeconds as
+          | number
+          | undefined,
+        newRefreshRateSeconds: defaultRefreshRateSeconds,
+      };
+    }
+  }
+
+  async *iterateUrlsForRefreshRate(
+    refreshRateSeconds: number,
+    slotWindow: SlotWindow,
+  ): AsyncIterable<{ url: string }> {
+    const pipeline = getCommonFeedAggregateStages({
+      refreshRateSeconds,
+      slotWindow,
+    });
+    pipeline.push({ $group: { _id: "$url" } });
+
+    const cursor = this.model
+      .aggregate(pipeline, {
+        readPreference: "secondaryPreferred",
+      })
+      .cursor();
+
+    for await (const doc of cursor) {
+      if (doc._id) {
+        yield { url: doc._id };
+      }
+    }
+  }
+
+  async *iterateFeedsWithLookupKeysForRefreshRate(
+    refreshRateSeconds: number,
+    slotWindow: SlotWindow,
+  ): AsyncIterable<ScheduledFeedWithLookupKey> {
+    const pipeline = getCommonFeedAggregateStages({
+      refreshRateSeconds,
+      slotWindow,
+      withLookupKeys: true,
+    });
+    pipeline.push({ $project: { url: 1, feedRequestLookupKey: 1, users: 1 } });
+
+    const cursor = this.model
+      .aggregate(pipeline, {
+        readPreference: "secondaryPreferred",
+      })
+      .cursor();
+
+    for await (const doc of cursor) {
+      yield {
+        url: doc.url,
+        feedRequestLookupKey: doc.feedRequestLookupKey,
+        users: doc.users || [],
+      };
+    }
   }
 }

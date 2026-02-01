@@ -42,12 +42,22 @@ export async function closeRabbitConnection(
 }
 
 export function createPublisher(connection: Connection) {
-  return async (queue: string, message: unknown): Promise<void> => {
+  return async (
+    queue: string,
+    message: unknown,
+    options?: { expiration?: number },
+  ): Promise<void> => {
     const pub = connection.createPublisher({
       confirm: true,
       maxAttempts: 3,
     });
-    await pub.send(queue, message);
+    const envelope = {
+      routingKey: queue,
+      ...(options?.expiration !== undefined
+        ? { expiration: String(options.expiration) }
+        : {}),
+    };
+    await pub.send(envelope, message);
     await pub.close();
   };
 }

@@ -1,0 +1,1 @@
+export const SCHEDULER_WINDOW_SIZE_MS = 30_000;

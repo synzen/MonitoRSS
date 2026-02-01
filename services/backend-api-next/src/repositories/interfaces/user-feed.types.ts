@@ -1,10 +1,12 @@
 import {
+  UserExternalCredentialType,
   UserFeedDisabledCode,
   UserFeedHealthStatus,
   UserFeedManagerInviteType,
   UserFeedManagerStatus,
 } from "../shared/enums";
 import type { IFeedConnections } from "./feed-connection.types";
+import type { SlotWindow } from "../../shared/types/slot-window.types";
 
 // UserFeedUser
 export interface IUserFeedUser {
@@ -300,6 +302,43 @@ export interface UserFeedForPendingInvites {
   shareManageOptions: IUserFeedShareManageOptions;
 }
 
+export interface ScheduledFeedUrl {
+  url: string;
+}
+
+export interface ScheduledFeedWithLookupKey {
+  url: string;
+  feedRequestLookupKey?: string;
+  users: Array<{
+    externalCredentials?: Array<{
+      type: UserExternalCredentialType;
+      data: Record<string, string>;
+    }>;
+  }>;
+}
+
+export interface FeedForSlotOffsetRecalculation {
+  id: string;
+  url: string;
+  userRefreshRateSeconds?: number;
+}
+
+export interface RefreshRateSyncInput {
+  supporterLimits: Array<{
+    discordUserIds: string[];
+    refreshRateSeconds: number;
+  }>;
+  defaultRefreshRateSeconds: number;
+}
+
+export interface MaxDailyArticlesSyncInput {
+  supporterLimits: Array<{
+    discordUserIds: string[];
+    maxDailyArticles: number;
+  }>;
+  defaultMaxDailyArticles: number;
+}
+
 export interface IUserFeedRepository {
   create(input: CreateUserFeedInput): Promise<IUserFeed>;
   findById(id: string): Promise<IUserFeed | null>;
@@ -434,4 +473,22 @@ export interface IUserFeedRepository {
     transform: CustomPlaceholderStepTransform,
   ): Promise<number>;
   convertStringUserIdsToObjectIds(): Promise<number>;
+
+  // Schedule handler methods
+  findDebugFeedUrls(): Promise<Set<string>>;
+  syncRefreshRates(input: RefreshRateSyncInput): Promise<void>;
+  syncMaxDailyArticles(input: MaxDailyArticlesSyncInput): Promise<void>;
+  iterateFeedsForRefreshRateSync(
+    input: RefreshRateSyncInput,
+  ): AsyncIterable<
+    FeedForSlotOffsetRecalculation & { newRefreshRateSeconds: number }
+  >;
+  iterateUrlsForRefreshRate(
+    refreshRateSeconds: number,
+    slotWindow: SlotWindow,
+  ): AsyncIterable<{ url: string }>;
+  iterateFeedsWithLookupKeysForRefreshRate(
+    refreshRateSeconds: number,
+    slotWindow: SlotWindow,
+  ): AsyncIterable<ScheduledFeedWithLookupKey>;
 }

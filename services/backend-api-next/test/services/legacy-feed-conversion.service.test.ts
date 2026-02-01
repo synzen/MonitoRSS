@@ -399,7 +399,7 @@ describe("LegacyFeedConversionService", { concurrency: true }, () => {
         const connection = result.connections.discordChannels[0];
 
         assert.deepStrictEqual(connection?.mentions?.targets?.[0], {
-          id: "1",
+          id: "sub-1",
           type: "role",
           filters: {
             expression: {
