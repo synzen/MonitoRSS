@@ -245,4 +245,19 @@ export class FeedMongooseRepository
   async deleteAll(): Promise<void> {
     await this.model.deleteMany({});
   }
+
+  async findById(id: string): Promise<IFeed | null> {
+    const doc = await this.model.findById(id).lean();
+    return doc ? this.toEntity(doc as FeedDoc & { _id: Types.ObjectId }) : null;
+  }
+
+  async updateById(
+    id: string,
+    update: Record<string, unknown>,
+  ): Promise<IFeed | null> {
+    const doc = await this.model
+      .findByIdAndUpdate(id, update, { new: true })
+      .lean();
+    return doc ? this.toEntity(doc as FeedDoc & { _id: Types.ObjectId }) : null;
+  }
 }

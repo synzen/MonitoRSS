@@ -60,6 +60,7 @@ import { createSmtpTransport } from "./infra/smtp";
 import { UserFeedManagementInvitesService } from "./services/user-feed-management-invites/user-feed-management-invites.service";
 import { PaddleWebhooksService } from "./services/paddle-webhooks/paddle-webhooks.service";
 import { SupporterSubscriptionsService } from "./services/supporter-subscriptions/supporter-subscriptions.service";
+import { LegacyFeedConversionService } from "./services/legacy-feed-conversion/legacy-feed-conversion.service";
 
 export interface Container {
   config: Config;
@@ -114,6 +115,7 @@ export interface Container {
   userFeedManagementInvitesService: UserFeedManagementInvitesService;
   paddleWebhooksService: PaddleWebhooksService;
   supporterSubscriptionsService: SupporterSubscriptionsService;
+  legacyFeedConversionService: LegacyFeedConversionService;
 }
 
 export function createContainer(deps: {
@@ -306,6 +308,18 @@ export function createContainer(deps: {
     paddleService,
   });
 
+  const legacyFeedConversionService = new LegacyFeedConversionService({
+    discordApiService,
+    supportersService,
+    feedRepository,
+    feedSubscriberRepository,
+    feedFilteredFormatRepository,
+    failRecordRepository,
+    discordServerProfileRepository,
+    userFeedRepository,
+    userFeedLimitOverrideRepository,
+  });
+
   return {
     config: deps.config,
     mongoConnection: deps.mongoConnection,
@@ -359,5 +373,6 @@ export function createContainer(deps: {
     userFeedManagementInvitesService,
     paddleWebhooksService,
     supporterSubscriptionsService,
+    legacyFeedConversionService,
   };
 }

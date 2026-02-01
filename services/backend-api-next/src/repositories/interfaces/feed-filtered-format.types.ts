@@ -9,4 +9,6 @@ export interface IFeedFilteredFormat {
   filters?: Record<string, string[]>;
 }
 
-export interface IFeedFilteredFormatRepository {}
+export interface IFeedFilteredFormatRepository {
+  findByFeedId(feedId: string): Promise<IFeedFilteredFormat[]>;
+}

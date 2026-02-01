@@ -78,4 +78,18 @@ export class UserFeedLimitOverrideMongooseRepository
   async deleteAll(): Promise<void> {
     await this.model.deleteMany({});
   }
+
+  async upsertIncrement(
+    id: string,
+    incrementAmount: number,
+  ): Promise<IUserFeedLimitOverride> {
+    const doc = await this.model
+      .findOneAndUpdate(
+        { _id: id },
+        { $inc: { additionalUserFeeds: incrementAmount } },
+        { upsert: true, new: true },
+      )
+      .lean();
+    return this.toEntity(doc as UserFeedLimitOverrideDoc & { _id: string });
+  }
 }

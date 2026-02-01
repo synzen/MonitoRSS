@@ -57,4 +57,13 @@ export class FeedSubscriberMongooseRepository
       updatedAt: doc.updatedAt,
     };
   }
+
+  async findByFeedId(feedId: string): Promise<IFeedSubscriber[]> {
+    const docs = await this.model
+      .find({ feed: this.stringToObjectId(feedId) })
+      .lean();
+    return docs.map((doc) =>
+      this.toEntity(doc as FeedSubscriberDoc & { _id: Types.ObjectId }),
+    );
+  }
 }

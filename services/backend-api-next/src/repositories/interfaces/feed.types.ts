@@ -74,4 +74,11 @@ export interface IFeedRepository {
   }): Promise<IFeedWithFailRecord[]>;
 
   countByGuild(guildId: string, search?: string): Promise<number>;
+
+  findById(id: string): Promise<IFeed | null>;
+
+  updateById(
+    id: string,
+    update: Record<string, unknown>,
+  ): Promise<IFeed | null>;
 }

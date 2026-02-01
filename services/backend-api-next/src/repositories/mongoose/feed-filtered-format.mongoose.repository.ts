@@ -51,4 +51,13 @@ export class FeedFilteredFormatMongooseRepository
       filters: doc.filters ? Object.fromEntries(doc.filters) : undefined,
     };
   }
+
+  async findByFeedId(feedId: string): Promise<IFeedFilteredFormat[]> {
+    const docs = await this.model
+      .find({ feed: this.stringToObjectId(feedId) })
+      .lean();
+    return docs.map((doc) =>
+      this.toEntity(doc as FeedFilteredFormatDoc & { _id: Types.ObjectId }),
+    );
+  }
 }

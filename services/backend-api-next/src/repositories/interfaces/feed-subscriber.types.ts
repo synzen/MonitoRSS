@@ -9,4 +9,6 @@ export interface IFeedSubscriber {
   updatedAt?: Date;
 }
 
-export interface IFeedSubscriberRepository {}
+export interface IFeedSubscriberRepository {
+  findByFeedId(feedId: string): Promise<IFeedSubscriber[]>;
+}

@@ -5,4 +5,6 @@ export interface IFailRecord {
   alerted: boolean;
 }
 
-export interface IFailRecordRepository {}
+export interface IFailRecordRepository {
+  findByUrl(url: string): Promise<IFailRecord | null>;
+}

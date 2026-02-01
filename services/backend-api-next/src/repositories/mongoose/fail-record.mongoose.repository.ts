@@ -44,4 +44,9 @@ export class FailRecordMongooseRepository
       alerted: doc.alerted,
     };
   }
+
+  async findByUrl(url: string): Promise<IFailRecord | null> {
+    const doc = await this.model.findById(url).lean();
+    return doc ? this.toEntity(doc as FailRecordDoc & { _id: string }) : null;
+  }
 }
