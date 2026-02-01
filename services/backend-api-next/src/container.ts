@@ -58,6 +58,7 @@ import { FeedConnectionsDiscordChannelsService } from "./services/feed-connectio
 import { FeedFetcherService } from "./services/feed-fetcher";
 import { createSmtpTransport } from "./infra/smtp";
 import { UserFeedManagementInvitesService } from "./services/user-feed-management-invites/user-feed-management-invites.service";
+import { PaddleWebhooksService } from "./services/paddle-webhooks/paddle-webhooks.service";
 
 export interface Container {
   config: Config;
@@ -110,6 +111,7 @@ export interface Container {
   userFeedsService: UserFeedsService;
   feedConnectionsDiscordChannelsService: FeedConnectionsDiscordChannelsService;
   userFeedManagementInvitesService: UserFeedManagementInvitesService;
+  paddleWebhooksService: PaddleWebhooksService;
 }
 
 export function createContainer(deps: {
@@ -285,6 +287,15 @@ export function createContainer(deps: {
     },
   );
 
+  const paddleWebhooksService = new PaddleWebhooksService({
+    config: deps.config,
+    paddleService,
+    supportersService,
+    userFeedsService,
+    supporterRepository,
+    userRepository,
+  });
+
   return {
     config: deps.config,
     mongoConnection: deps.mongoConnection,
@@ -336,5 +347,6 @@ export function createContainer(deps: {
     userFeedsService,
     feedConnectionsDiscordChannelsService,
     userFeedManagementInvitesService,
+    paddleWebhooksService,
   };
 }

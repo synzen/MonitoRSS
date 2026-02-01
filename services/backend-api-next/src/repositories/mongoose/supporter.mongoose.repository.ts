@@ -373,4 +373,32 @@ export class SupporterMongooseRepository
       ),
     }));
   }
+
+  async upsertPaddleCustomer(
+    discordUserId: string,
+    paddleCustomer: ISupporter["paddleCustomer"],
+  ): Promise<ISupporter> {
+    const doc = await this.model
+      .findOneAndUpdate(
+        { _id: discordUserId },
+        { $set: { paddleCustomer } },
+        { upsert: true, new: true },
+      )
+      .lean();
+
+    return this.toEntity(doc as SupporterDoc & { _id: string });
+  }
+
+  async nullifySubscriptionBySubscriptionId(
+    subscriptionId: string,
+  ): Promise<ISupporter | null> {
+    const doc = await this.model
+      .findOneAndUpdate(
+        { "paddleCustomer.subscription.id": subscriptionId },
+        { $set: { "paddleCustomer.subscription": null } },
+      )
+      .lean();
+
+    return doc ? this.toEntity(doc as SupporterDoc & { _id: string }) : null;
+  }
 }

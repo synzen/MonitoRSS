@@ -122,4 +122,11 @@ export interface ISupporterRepository {
   ): Promise<SupporterGuildAggregateResult[]>;
   aggregateAllSupportersWithPatrons(): Promise<SupportPatronAggregateResult[]>;
   aggregateAllSupportersWithGuilds(): Promise<SupporterGuildAggregateResult[]>;
+  upsertPaddleCustomer(
+    discordUserId: string,
+    paddleCustomer: IPaddleCustomer,
+  ): Promise<ISupporter>;
+  nullifySubscriptionBySubscriptionId(
+    subscriptionId: string,
+  ): Promise<ISupporter | null>;
 }

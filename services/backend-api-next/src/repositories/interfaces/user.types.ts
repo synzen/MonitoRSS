@@ -83,6 +83,7 @@ export interface SetExternalCredentialInput {
 }
 
 export interface IUserRepository {
+  findById(id: string): Promise<IUser | null>;
   findByDiscordId(discordUserId: string): Promise<IUser | null>;
   findIdByDiscordId(discordUserId: string): Promise<string | null>;
   create(input: CreateUserInput): Promise<IUser>;
