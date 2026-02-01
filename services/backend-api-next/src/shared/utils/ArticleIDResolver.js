@@ -46,7 +46,7 @@ class ArticleIDResolver {
   }
 
   static get ID_TYPE_NAMES() {
-    return ['guid', 'pubdate', 'title'];
+    return ["guid", "pubdate", "title"];
   }
 
   /**
@@ -93,9 +93,9 @@ class ArticleIDResolver {
    * @param {string} idType - The ID type
    */
   static getIDTypeValue(article, idType) {
-    const properties = idType.split(',');
+    const properties = idType.split(",");
 
-    return properties.map((property) => article[property]).join('');
+    return properties.map((property) => article[property]).join("");
   }
 }
 

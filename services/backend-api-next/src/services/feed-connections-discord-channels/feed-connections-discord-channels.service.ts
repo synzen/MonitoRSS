@@ -1020,10 +1020,10 @@ export class FeedConnectionsDiscordChannelsService {
       } | null;
       threadId?: string;
       userFeedFormatOptions?: IUserFeed["formatOptions"] | null;
-    }
+    },
   ): Promise<SendTestArticleResult> {
     const user = await this.deps.usersService.getOrCreateUserByDiscordId(
-      userFeed.user.discordUserId
+      userFeed.user.discordUserId,
     );
 
     const requestLookupDetails = getFeedRequestLookupDetails({
@@ -1049,14 +1049,14 @@ export class FeedConnectionsDiscordChannelsService {
           fields:
             e.fields?.filter(
               (f): f is { name: string; value: string; inline?: boolean } =>
-                !!f.name && !!f.value
+                !!f.name && !!f.value,
             ) || [],
         }))
       : undefined;
 
     const { isSupporter } =
       await this.deps.supportersService.getBenefitsOfDiscordUser(
-        userFeed.user.discordUserId
+        userFeed.user.discordUserId,
       );
 
     let webhookDetails:
@@ -1250,18 +1250,19 @@ export class FeedConnectionsDiscordChannelsService {
     componentsV2,
   }: CreatePreviewFunctionInput) {
     const user = await this.deps.usersService.getOrCreateUserByDiscordId(
-      userFeed.user.discordUserId
+      userFeed.user.discordUserId,
     );
 
     const payload: CreatePreviewInput["details"] = {
       type: "discord",
       includeCustomPlaceholderPreviews: false,
       feed: {
-        requestLookupDetails: getFeedRequestLookupDetails({
-          feed: userFeed,
-          user,
-          decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-        }) || undefined,
+        requestLookupDetails:
+          getFeedRequestLookupDetails({
+            feed: userFeed,
+            user,
+            decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
+          }) || undefined,
         url: userFeed.url,
         formatOptions: {
           ...feedFormatOptions,
@@ -1297,9 +1298,9 @@ export class FeedConnectionsDiscordChannelsService {
             fields:
               e.fields?.filter(
                 (f): f is { name: string; value: string; inline?: boolean } =>
-                  !!f.name && !!f.value
+                  !!f.name && !!f.value,
               ) || [],
-          }))
+          })),
         ),
         formatter: {
           ...connectionFormatOptions,

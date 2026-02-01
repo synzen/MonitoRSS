@@ -16,7 +16,7 @@ class FilterRegex {
    * @param {string} string
    */
   passes(string) {
-    const regex = new RegExp(this.content, 'i');
+    const regex = new RegExp(this.content, "i");
 
     return string.search(regex) !== -1;
   }

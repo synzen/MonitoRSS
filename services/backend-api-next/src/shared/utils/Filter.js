@@ -20,7 +20,7 @@ class Filter {
    * @param {string} string
    */
   static escapeRegex(string) {
-    return string.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&');
+    return string.replace(/[-[\]/{}()*+?.\\^$|]/g, "\\$&");
   }
 
   /**
@@ -30,11 +30,11 @@ class Filter {
   parseWord() {
     const { content } = this;
 
-    if (content.startsWith('\\~') || content.startsWith('\\!')) {
+    if (content.startsWith("\\~") || content.startsWith("\\!")) {
       return content.slice(1, content.length);
     }
 
-    return content.replace(/^(~!|!~|!|~)/, '');
+    return content.replace(/^(~!|!~|!|~)/, "");
   }
 
   /**
@@ -45,9 +45,9 @@ class Filter {
     const { content } = this;
 
     return (
-      content.startsWith('~') ||
-      content.startsWith('!~') ||
-      content.startsWith('~!')
+      content.startsWith("~") ||
+      content.startsWith("!~") ||
+      content.startsWith("~!")
     );
   }
 
@@ -59,9 +59,9 @@ class Filter {
     const { content } = this;
 
     return (
-      content.startsWith('!') ||
-      content.startsWith('!~') ||
-      content.startsWith('~!')
+      content.startsWith("!") ||
+      content.startsWith("!~") ||
+      content.startsWith("~!")
     );
   }
 
@@ -75,7 +75,7 @@ class Filter {
     } else {
       const regex = new RegExp(
         `(\\s|^)${Filter.escapeRegex(this.searchTerm)}(\\s|$)`,
-        'i',
+        "i",
       );
 
       return string.search(regex) !== -1;

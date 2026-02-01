@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-const htmlConvert = require('html-to-text');
+const htmlConvert = require("html-to-text");
 const EXCLUDED_KEYS = [
-  'title',
-  'description',
-  'summary',
-  'author',
-  'pubDate',
-  'pubdate',
-  'date',
+  "title",
+  "description",
+  "summary",
+  "author",
+  "pubDate",
+  "pubdate",
+  "date",
 ];
 
 /**
@@ -19,19 +19,19 @@ const EXCLUDED_KEYS = [
  */
 function cleanup(feed, text, defaultOptions) {
   if (!text) {
-    return '';
+    return "";
   }
 
   let newText = text;
   newText = newText
-    .replace(/\*/gi, '')
-    .replace(/<(strong|b)>(.*?)<\/(strong|b)>/gi, '**$2**') // Bolded markdown
-    .replace(/<(em|i)>(.*?)<(\/(em|i))>/gi, '*$2*') // Italicized markdown
-    .replace(/<(u)>(.*?)<(\/(u))>/gi, '__$2__'); // Underlined markdown
+    .replace(/\*/gi, "")
+    .replace(/<(strong|b)>(.*?)<\/(strong|b)>/gi, "**$2**") // Bolded markdown
+    .replace(/<(em|i)>(.*?)<(\/(em|i))>/gi, "*$2*") // Italicized markdown
+    .replace(/<(u)>(.*?)<(\/(u))>/gi, "__$2__"); // Underlined markdown
 
   newText = htmlConvert.fromString(newText, {
     tables:
-      (feed.formatTables !== undefined && typeof feed.formatTables === 'boolean'
+      (feed.formatTables !== undefined && typeof feed.formatTables === "boolean"
         ? feed.formatTables
         : defaultOptions.formatTables) === true
         ? true
@@ -41,17 +41,17 @@ function cleanup(feed, text, defaultOptions) {
     noLinkBrackets: true,
     format: {
       image: (node) => {
-        const isStr = typeof node.attribs.src === 'string';
+        const isStr = typeof node.attribs.src === "string";
         let link = isStr ? node.attribs.src.trim() : node.attribs.src;
 
-        if (isStr && link.startsWith('//')) {
-          link = 'http:' + link;
+        if (isStr && link.startsWith("//")) {
+          link = "http:" + link;
         } else if (
           isStr &&
-          !link.startsWith('http://') &&
-          !link.startsWith('https://')
+          !link.startsWith("http://") &&
+          !link.startsWith("https://")
         ) {
-          link = 'http://' + link;
+          link = "http://" + link;
         }
 
         let exist = true;
@@ -59,43 +59,43 @@ function cleanup(feed, text, defaultOptions) {
         exist = globalExistOption;
         const specificExistOption = feed.imgLinksExistence;
         exist =
-          typeof specificExistOption !== 'boolean'
+          typeof specificExistOption !== "boolean"
             ? exist
             : specificExistOption;
 
         if (!exist) {
-          return '';
+          return "";
         }
 
-        let image = '';
+        let image = "";
         const globalPreviewOption = defaultOptions.imgPreviews;
         image = globalPreviewOption ? link : `<${link}>`;
         const specificPreviewOption = feed.imgPreviews;
         image =
-          typeof specificPreviewOption !== 'boolean'
+          typeof specificPreviewOption !== "boolean"
             ? image
             : specificPreviewOption === true
-            ? link
-            : `<${link}>`;
+              ? link
+              : `<${link}>`;
 
         return image;
       },
       blockquote: (node, fn, options) => {
         const orig = fn(node.children, options).trim();
 
-        return '> ' + orig.replace(/(?:\n)/g, '\n> ') + '\n';
+        return "> " + orig.replace(/(?:\n)/g, "\n> ") + "\n";
       },
     },
   });
 
-  newText = newText.replace(/\n\s*\n\s*\n/g, '\n\n'); // Replace triple line breaks with double
-  const arr = newText.split('\n');
+  newText = newText.replace(/\n\s*\n\s*\n/g, "\n\n"); // Replace triple line breaks with double
+  const arr = newText.split("\n");
 
   for (var q = 0; q < arr.length; ++q) {
-    arr[q] = arr[q].replace(/\s+$/, '');
+    arr[q] = arr[q].replace(/\s+$/, "");
   } // Remove trailing spaces
 
-  return arr.join('\n');
+  return arr.join("\n");
 }
 
 class FlattenedJSON {
@@ -110,7 +110,7 @@ class FlattenedJSON {
     this.data = data;
     this.defaultOptions = defaultOptions;
     this.results = {};
-    this.text = '';
+    this.text = "";
     // Populate this.results with a trampoline to avoid stack call exceeded
     this._trampolineIteration(this._iterateOverObject.bind(this), data);
     // Generate the text from this.results
@@ -118,18 +118,18 @@ class FlattenedJSON {
   }
 
   static isObject(value) {
-    return Object.prototype.toString.call(value) === '[object Object]';
+    return Object.prototype.toString.call(value) === "[object Object]";
   }
 
   static isDateObject(value) {
-    return Object.prototype.toString.call(value) === '[object Date]';
+    return Object.prototype.toString.call(value) === "[object Date]";
   }
 
   _trampolineIteration(fun, obj, previousKeyNames) {
     for (var key in obj) {
       let val = fun.bind(this)(obj[key], key, previousKeyNames);
 
-      while (typeof val === 'function') {
+      while (typeof val === "function") {
         val = val();
       }
     }
@@ -138,7 +138,7 @@ class FlattenedJSON {
   _iterateOverObject(item, keyName, previousKeyNames) {
     const keyNameWithPrevious = (
       previousKeyNames ? `${previousKeyNames}_${keyName}` : keyName
-    ).replace(':', '-'); // Replace colons to avoid emoji conflicts
+    ).replace(":", "-"); // Replace colons to avoid emoji conflicts
 
     if (
       !item ||
@@ -179,8 +179,8 @@ class FlattenedJSON {
   }
 
   _generateText() {
-    let nameHeader = 'PROPERTY NAME';
-    let valueHeader = 'VALUE';
+    let nameHeader = "PROPERTY NAME";
+    let valueHeader = "VALUE";
     let longestNameLen = 0;
     let longestValLen = 0;
 
@@ -207,49 +207,49 @@ class FlattenedJSON {
     longestNameLen += 10;
 
     while (nameHeader.length < longestNameLen) {
-      nameHeader += ' ';
+      nameHeader += " ";
     }
 
     while (valueHeader.length < longestValLen) {
-      valueHeader += ' ';
+      valueHeader += " ";
     }
 
-    nameHeader += '|  ';
+    nameHeader += "|  ";
     const header = nameHeader + valueHeader;
-    let bar = '';
+    let bar = "";
 
     while (bar.length < header.length) {
-      bar += '-';
+      bar += "-";
     }
 
-    this.text = header + '\r\n' + bar + '\r\n';
+    this.text = header + "\r\n" + bar + "\r\n";
 
     // Add in the key/values
     for (const key in this.results) {
       let curStr = key;
 
       while (curStr.length < longestNameLen) {
-        curStr += ' ';
+        curStr += " ";
       }
 
       const propNameLength = curStr.length;
       const valueLines = FlattenedJSON.isDateObject(this.results[key])
-        ? [this.results[key].toString() + ' [DATE OBJECT]']
+        ? [this.results[key].toString() + " [DATE OBJECT]"]
         : cleanup(
             this.feed,
             this.results[key].toString(),
             this.defaultOptions,
-          ).split('\n');
+          ).split("\n");
 
       for (let u = 0; u < valueLines.length; ++u) {
         curStr +=
           u === 0 ? `|  ${valueLines[u]}\r\n` : `   ${valueLines[u]}\r\n`;
 
         if (u < valueLines.length - 1) {
-          let emptyPropName = '';
+          let emptyPropName = "";
 
           while (emptyPropName.length < propNameLength) {
-            emptyPropName += ' ';
+            emptyPropName += " ";
           }
 
           curStr += emptyPropName;
@@ -261,7 +261,7 @@ class FlattenedJSON {
   }
 
   getValue(str) {
-    return this.results[str] || '';
+    return this.results[str] || "";
   }
 }
 

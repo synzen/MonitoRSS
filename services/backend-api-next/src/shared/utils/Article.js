@@ -1,21 +1,21 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-const moment = require('moment-timezone');
-const htmlConvert = require('html-to-text');
-const htmlDecoder = require('html-to-text/lib/formatter.js').text;
-const FlattenedJSON = require('./FlattenedJSON.js');
-const FilterResults = require('./FilterResults.js');
-const Filter = require('./Filter.js');
-const FilterRegex = require('./FilterRegex.js');
-const VALID_PH_IMGS = ['title', 'description', 'summary'];
-const VALID_PH_ANCHORS = ['title', 'description', 'summary'];
+const moment = require("moment-timezone");
+const htmlConvert = require("html-to-text");
+const htmlDecoder = require("html-to-text/lib/formatter.js").text;
+const FlattenedJSON = require("./FlattenedJSON.js");
+const FilterResults = require("./FilterResults.js");
+const Filter = require("./Filter.js");
+const FilterRegex = require("./FilterRegex.js");
+const VALID_PH_IMGS = ["title", "description", "summary"];
+const VALID_PH_ANCHORS = ["title", "description", "summary"];
 const BASE_REGEX_PHS = [
-  'title',
-  'author',
-  'summary',
-  'description',
-  'guid',
-  'date',
-  'link',
+  "title",
+  "author",
+  "summary",
+  "description",
+  "guid",
+  "date",
+  "link",
 ];
 
 /**
@@ -84,19 +84,19 @@ function setCurrentTime(momentObj) {
 
 // To avoid stack call exceeded
 function checkObjType(item, results) {
-  if (Object.prototype.toString.call(item) === '[object Object]') {
+  if (Object.prototype.toString.call(item) === "[object Object]") {
     return () => findImages(item, results);
   } else if (
-    typeof item === 'string' &&
+    typeof item === "string" &&
     item.match(/\.(jpg|jpeg|png|gif|bmp|webp|php)$/i) &&
     !results.includes(item) &&
     results.length < 9
   ) {
-    if (item.startsWith('//')) {
-      item = 'http:' + item;
+    if (item.startsWith("//")) {
+      item = "http:" + item;
     }
 
-    results.push(item.replace(/\s/g, '%20'));
+    results.push(item.replace(/\s/g, "%20"));
   }
 }
 
@@ -105,14 +105,14 @@ function findImages(obj, results) {
   for (var key in obj) {
     let value = checkObjType(obj[key], results);
 
-    while (typeof value === 'function') {
+    while (typeof value === "function") {
       value = value();
     }
   }
 }
 
 function escapeRegExp(str) {
-  return str.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&');
+  return str.replace(/[-[\]/{}()*+?.\\^$|]/g, "\\$&");
 }
 
 function regexReplace(
@@ -122,7 +122,7 @@ function regexReplace(
   replacementDirect,
   fallbackValue,
 ) {
-  if (typeof searchOptions !== 'object') {
+  if (typeof searchOptions !== "object") {
     throw new TypeError(
       `Expected RegexOp search key to have an object value, found ${typeof searchOptions} instead`,
     );
@@ -138,11 +138,11 @@ function regexReplace(
   }
 
   const flags = !searchOptions.flags
-    ? 'g'
-    : searchOptions.flags.includes('g')
-    ? searchOptions.flags
-    : // Global flag must be included to prevent infinite loop during .exec
-      searchOptions.flags + 'g';
+    ? "g"
+    : searchOptions.flags.includes("g")
+      ? searchOptions.flags
+      : // Global flag must be included to prevent infinite loop during .exec
+        searchOptions.flags + "g";
   const matchIndex =
     searchOptions.match !== undefined
       ? parseInt(searchOptions.match, 10)
@@ -230,7 +230,7 @@ function evalRegexConfig(feed, text, placeholderName) {
       // Looping through each regexOp for a placeholder
       const regexOp = phRegexOps[regexOpIndex];
 
-      if (regexOp.disabled === true || typeof regexOp.name !== 'string') {
+      if (regexOp.disabled === true || typeof regexOp.name !== "string") {
         continue;
       }
 
@@ -248,7 +248,7 @@ function evalRegexConfig(feed, text, placeholderName) {
       );
       customPlaceholders[regexOp.name] =
         replacement === clone[regexOp.name] && regexOp.emptyOnNoMatch === true
-          ? '\u200b'
+          ? "\u200b"
           : replacement;
     }
   } else {
@@ -260,18 +260,18 @@ function evalRegexConfig(feed, text, placeholderName) {
 
 function cleanup(feed, text, imgSrcs, anchorLinks, defaultOptions) {
   if (!text) {
-    return '';
+    return "";
   }
 
   text = htmlDecoder({ data: text }, {})
-    .replace(/\*/gi, '')
-    .replace(/<(strong|b)>(.*?)<\/(strong|b)>/gi, '**$2**') // Bolded markdown
-    .replace(/<(em|i)>(.*?)<(\/(em|i))>/gi, '*$2*') // Italicized markdown
-    .replace(/<(u)>(.*?)<(\/(u))>/gi, '__$2__'); // Underlined markdown
+    .replace(/\*/gi, "")
+    .replace(/<(strong|b)>(.*?)<\/(strong|b)>/gi, "**$2**") // Bolded markdown
+    .replace(/<(em|i)>(.*?)<(\/(em|i))>/gi, "*$2*") // Italicized markdown
+    .replace(/<(u)>(.*?)<(\/(u))>/gi, "__$2__"); // Underlined markdown
 
   text = htmlConvert.fromString(text, {
     tables:
-      (feed.formatTables !== undefined && typeof feed.formatTables === 'boolean'
+      (feed.formatTables !== undefined && typeof feed.formatTables === "boolean"
         ? feed.formatTables
         : defaultOptions.formatTables) === true
         ? true
@@ -281,19 +281,19 @@ function cleanup(feed, text, imgSrcs, anchorLinks, defaultOptions) {
     noLinkBrackets: true,
     format: {
       image: (node) => {
-        const isStr = typeof node.attribs.src === 'string';
+        const isStr = typeof node.attribs.src === "string";
         let link = isStr
-          ? node.attribs.src.trim().replace(/\s/g, '%20')
+          ? node.attribs.src.trim().replace(/\s/g, "%20")
           : node.attribs.src;
 
-        if (isStr && link.startsWith('//')) {
-          link = 'http:' + link;
+        if (isStr && link.startsWith("//")) {
+          link = "http:" + link;
         } else if (
           isStr &&
-          !link.startsWith('http://') &&
-          !link.startsWith('https://')
+          !link.startsWith("http://") &&
+          !link.startsWith("https://")
         ) {
-          link = 'http://' + link;
+          link = "http://" + link;
         }
 
         if (Array.isArray(imgSrcs) && imgSrcs.length < 9 && isStr && link) {
@@ -305,24 +305,24 @@ function cleanup(feed, text, imgSrcs, anchorLinks, defaultOptions) {
         exist = globalExistOption;
         const specificExistOption = feed.imgLinksExistence;
         exist =
-          typeof specificExistOption !== 'boolean'
+          typeof specificExistOption !== "boolean"
             ? exist
             : specificExistOption;
 
         if (!exist) {
-          return '';
+          return "";
         }
 
-        let image = '';
+        let image = "";
         const globalPreviewOption = defaultOptions.imgPreviews;
         image = globalPreviewOption ? link : `<${link}>`;
         const specificPreviewOption = feed.imgPreviews;
         image =
-          typeof specificPreviewOption !== 'boolean'
+          typeof specificPreviewOption !== "boolean"
             ? image
             : specificPreviewOption === true
-            ? link
-            : `<${link}>`;
+              ? link
+              : `<${link}>`;
 
         return image;
       },
@@ -333,7 +333,7 @@ function cleanup(feed, text, imgSrcs, anchorLinks, defaultOptions) {
           return orig;
         }
 
-        const href = node.attribs.href ? node.attribs.href.trim() : '';
+        const href = node.attribs.href ? node.attribs.href.trim() : "";
 
         if (anchorLinks.length < 5 && href) {
           anchorLinks.push(href);
@@ -344,24 +344,24 @@ function cleanup(feed, text, imgSrcs, anchorLinks, defaultOptions) {
       blockquote: (node, fn, options) => {
         const orig = fn(node.children, options).trim();
 
-        return '> ' + orig.replace(/(?:\n)/g, '\n> ') + '\n';
+        return "> " + orig.replace(/(?:\n)/g, "\n> ") + "\n";
       },
     },
   });
 
   text = text
     // Replace triple line breaks with double
-    .replace(/\n\s*\n\s*\n/g, '\n\n')
+    .replace(/\n\s*\n\s*\n/g, "\n\n")
     // Sanitize mentions with zero-width character "\u200b", does not affect subscribed roles or
     // modify anything outside the scope of sanitizing Discord mentions in the raw RSS feed content
-    .replace(/@/g, '@' + String.fromCharCode(8203));
-  const arr = text.split('\n');
+    .replace(/@/g, "@" + String.fromCharCode(8203));
+  const arr = text.split("\n");
 
   for (var q = 0; q < arr.length; ++q) {
-    arr[q] = arr[q].replace(/\s+$/, '');
+    arr[q] = arr[q].replace(/\s+$/, "");
   } // Remove trailing spaces
 
-  return arr.join('\n').trim();
+  return arr.join("\n").trim();
 }
 
 module.exports = class Article {
@@ -381,23 +381,23 @@ module.exports = class Article {
     this.feed = feed;
     this.profile = profile;
     this.raw = raw;
-    this.reddit = raw.meta.link && raw.meta.link.includes('www.reddit.com');
+    this.reddit = raw.meta.link && raw.meta.link.includes("www.reddit.com");
     this.youtube = !!(
       raw.guid &&
-      raw.guid.startsWith('yt:video') &&
-      raw['media:group'] &&
-      raw['media:group']['media:description'] &&
-      raw['media:group']['media:description']['#']
+      raw.guid.startsWith("yt:video") &&
+      raw["media:group"] &&
+      raw["media:group"]["media:description"] &&
+      raw["media:group"]["media:description"]["#"]
     );
     this.enabledRegex =
-      typeof feed.regexOps === 'object' && feed.regexOps.disabled !== true;
+      typeof feed.regexOps === "object" && feed.regexOps.disabled !== true;
     this.placeholdersForRegex = BASE_REGEX_PHS.slice();
     this.privatePlaceholders = [
-      'id',
-      'fullDescription',
-      'fullSummary',
-      'fullTitle',
-      'fullDate',
+      "id",
+      "fullDescription",
+      "fullSummary",
+      "fullTitle",
+      "fullDate",
     ];
     this.placeholders = [];
     this.meta = raw.meta;
@@ -405,22 +405,22 @@ module.exports = class Article {
     // Author
     this.author = raw.author
       ? cleanup(feed, raw.author, undefined, undefined, defaultOptions)
-      : '';
+      : "";
 
     if (this.author) {
-      this.placeholders.push('author');
+      this.placeholders.push("author");
     }
 
     // Link
     // Sometimes HTML is appended at the end of links for some reason
-    this.link = raw.link ? raw.link.split(' ')[0].trim() : '';
+    this.link = raw.link ? raw.link.split(" ")[0].trim() : "";
 
     if (this.link) {
-      this.placeholders.push('link');
+      this.placeholders.push("link");
     }
 
-    if (this.reddit && this.link.startsWith('/r/')) {
-      this.link = 'https://www.reddit.com' + this.link;
+    if (this.reddit && this.link.startsWith("/r/")) {
+      this.link = "https://www.reddit.com" + this.link;
     }
 
     // Title
@@ -439,7 +439,7 @@ module.exports = class Article {
         : this.fullTitle;
 
     if (this.title) {
-      this.placeholders.push('title');
+      this.placeholders.push("title");
     }
 
     for (var titleImgNum in this.titleImages) {
@@ -463,10 +463,10 @@ module.exports = class Article {
     }
 
     // guid - Raw exposure, no cleanup. Not meant for use by most feeds.
-    this.guid = raw.guid ? raw.guid : '';
+    this.guid = raw.guid ? raw.guid : "";
 
     if (this.guid) {
-      this.placeholders.push('guid');
+      this.placeholders.push("guid");
     }
 
     // Date
@@ -478,14 +478,14 @@ module.exports = class Article {
     );
 
     if (this.date) {
-      this.placeholders.push('date');
+      this.placeholders.push("date");
     }
 
     // Description and reddit-specific placeholders
     this.descriptionImages = [];
     this.descriptionAnchors = [];
     this.fullDescription = this.youtube
-      ? raw['media:group']['media:description']['#']
+      ? raw["media:group"]["media:description"]["#"]
       : cleanup(
           feed,
           raw.description,
@@ -500,7 +500,7 @@ module.exports = class Article {
         : this.description;
 
     if (this.description) {
-      this.placeholders.push('description');
+      this.placeholders.push("description");
     }
 
     for (var desImgNum in this.descriptionImages) {
@@ -526,10 +526,10 @@ module.exports = class Article {
     if (this.reddit) {
       // Truncate the useless end of reddit description after anchors are removed
       this.fullDescription = this.fullDescription.replace(
-        '\n[link] [comments]',
-        '',
+        "\n[link] [comments]",
+        "",
       );
-      this.description = this.description.replace('\n[link] [comments]', '');
+      this.description = this.description.replace("\n[link] [comments]", "");
     }
 
     // Summary
@@ -548,7 +548,7 @@ module.exports = class Article {
         : this.fullSummary;
 
     if (this.summary && raw.summary !== raw.description) {
-      this.placeholders.push('summary');
+      this.placeholders.push("summary");
     }
 
     for (var sumImgNum in this.summaryImages) {
@@ -596,18 +596,18 @@ module.exports = class Article {
 
     // Categories/Tags
     if (raw.categories) {
-      let categoryList = '';
+      let categoryList = "";
       const cats = raw.categories;
 
       for (var category in cats) {
-        if (typeof cats[category] !== 'string') {
+        if (typeof cats[category] !== "string") {
           continue;
         }
 
         categoryList += cats[category].trim();
 
         if (parseInt(category, 10) !== cats.length - 1) {
-          categoryList += '\n';
+          categoryList += "\n";
         }
       }
 
@@ -620,7 +620,7 @@ module.exports = class Article {
       );
 
       if (this.tags) {
-        this.placeholders.push('tags');
+        this.placeholders.push("tags");
       }
     }
 
@@ -643,7 +643,7 @@ module.exports = class Article {
 
     // Finally subscriptions - this MUST be done last after all variables have been defined for
     // filter testing
-    this.subscribers = '';
+    this.subscribers = "";
 
     // Get filtered subscriptions
     const subscribers = feedData.subscribers;
@@ -652,12 +652,12 @@ module.exports = class Article {
       for (const subscriber of subscribers) {
         const type = subscriber.type;
 
-        if (type !== 'role' && type !== 'user') {
+        if (type !== "role" && type !== "user") {
           continue;
         }
 
         const mentionText =
-          type === 'role' ? `<@&${subscriber.id}> ` : `<@${subscriber.id}> `;
+          type === "role" ? `<@&${subscriber.id}> ` : `<@${subscriber.id}> `;
 
         if (subscriber.filters && this.testFilters(subscriber.filters).passed) {
           this.subscribers += mentionText;
@@ -671,15 +671,15 @@ module.exports = class Article {
     }
 
     if (this.subscribers) {
-      this.placeholders.push('subscriptions');
-      this.placeholders.push('subscribers');
+      this.placeholders.push("subscriptions");
+      this.placeholders.push("subscribers");
     }
   }
 
   // List all {imageX} to string
   listImages() {
     const images = this.images;
-    let imageList = '';
+    let imageList = "";
 
     for (var image in images) {
       imageList += `[Image${parseInt(image, 10) + 1} URL]: {image${
@@ -687,7 +687,7 @@ module.exports = class Article {
       }}\n${images[image]}`;
 
       if (parseInt(image, 10) !== images.length - 1) {
-        imageList += '\n';
+        imageList += "\n";
       }
     }
 
@@ -695,28 +695,28 @@ module.exports = class Article {
   }
 
   resolvePlaceholderImg(input) {
-    const inputArr = input.split('||');
-    let img = '';
+    const inputArr = input.split("||");
+    let img = "";
 
     for (var x = inputArr.length - 1; x >= 0; x--) {
       const term = inputArr[x];
 
-      if (term.startsWith('http')) {
+      if (term.startsWith("http")) {
         img = term;
         continue;
       }
 
-      const arr = term.split(':');
+      const arr = term.split(":");
 
-      if (term.startsWith('{image')) {
+      if (term.startsWith("{image")) {
         img = this.convertImgs(term);
         continue;
       } else if (arr.length === 1 || arr[1].search(/image[1-9]/) === -1) {
         continue;
       }
 
-      const placeholder = arr[0].replace(/{|}/, '');
-      const placeholderImgs = this[placeholder + 'Images'];
+      const placeholder = arr[0].replace(/{|}/, "");
+      const placeholderImgs = this[placeholder + "Images"];
 
       if (
         !VALID_PH_IMGS.includes(placeholder) ||
@@ -754,7 +754,7 @@ module.exports = class Article {
     if (imgLocs) {
       for (var loc in imgLocs) {
         const term = imgLocs[loc];
-        const termList = term.split('||');
+        const termList = term.split("||");
 
         if (termList.length === 1) {
           const imgNum = parseInt(term[term.search(/[1-9]/)], 10);
@@ -764,10 +764,10 @@ module.exports = class Article {
           }
           // key is {imageX}, value is article image URL
           else {
-            imgDictionary[term] = '';
+            imgDictionary[term] = "";
           }
         } else {
-          let decidedImage = '';
+          let decidedImage = "";
 
           for (var p = termList.length - 1; p >= 0; p--) {
             // Work though fallback images backwards - not very efficient but it works
@@ -775,8 +775,8 @@ module.exports = class Article {
               p === 0
                 ? `${termList[p]}}`
                 : p === termList.length - 1
-                ? `{${termList[p]}`
-                : `{${termList[p]}}`; // Format for use in convertImgs
+                  ? `{${termList[p]}`
+                  : `{${termList[p]}}`; // Format for use in convertImgs
             const subImg = this.convertImgs(subTerm);
 
             if (subImg) {
@@ -790,7 +790,7 @@ module.exports = class Article {
 
       for (var imgKeyword in imgDictionary) {
         content = content.replace(
-          new RegExp(escapeRegExp(imgKeyword), 'g'),
+          new RegExp(escapeRegExp(imgKeyword), "g"),
           imgDictionary[imgKeyword],
         );
       }
@@ -801,7 +801,7 @@ module.exports = class Article {
               phImageLocs[h],
               this.resolvePlaceholderImg(phImageLocs[h]),
             )
-          : content.replace(phImageLocs[h], '');
+          : content.replace(phImageLocs[h], "");
       }
     }
 
@@ -809,27 +809,27 @@ module.exports = class Article {
   }
 
   resolvePlaceholderAnchor(input) {
-    const arr = input.split(':');
+    const arr = input.split(":");
 
     if (arr.length === 1 || arr[1].search(/anchor[1-5]/) === -1) {
-      return '';
+      return "";
     }
 
-    const placeholder = arr[0].replace(/{|}/, '');
-    const placeholderAnchors = this[placeholder + 'Anchors'];
+    const placeholder = arr[0].replace(/{|}/, "");
+    const placeholderAnchors = this[placeholder + "Anchors"];
 
     if (
       !VALID_PH_ANCHORS.includes(placeholder) ||
       !placeholderAnchors ||
       placeholderAnchors.length < 1
     ) {
-      return '';
+      return "";
     }
 
     const num = parseInt(arr[1].substr(arr[1].search(/[1-5]/), 1), 10) - 1;
 
     if (isNaN(num) || num > 4 || num < 0) {
-      return '';
+      return "";
     }
 
     return placeholderAnchors[num];
@@ -850,7 +850,7 @@ module.exports = class Article {
             phAnchorLocs[h],
             this.resolvePlaceholderAnchor(phAnchorLocs[h]),
           )
-        : content.replace(phAnchorLocs[h], '');
+        : content.replace(phAnchorLocs[h], "");
     }
 
     return content;
@@ -859,7 +859,7 @@ module.exports = class Article {
   convertRawPlaceholders(content, defaultOptions) {
     let result;
     const matches = {};
-    const regex = new RegExp('{raw:([^{}]+)}', 'g');
+    const regex = new RegExp("{raw:([^{}]+)}", "g");
 
     do {
       result = regex.exec(content);
@@ -878,11 +878,11 @@ module.exports = class Article {
 
       const fullMatch = result[0];
       const matchName = result[1];
-      matches[fullMatch] = this.flattenedJSON.results[matchName] || '';
+      matches[fullMatch] = this.flattenedJSON.results[matchName] || "";
 
       // Format the date if it is one
       if (
-        Object.prototype.toString.call(matches[fullMatch]) === '[object Date]'
+        Object.prototype.toString.call(matches[fullMatch]) === "[object Date]"
       ) {
         const guildTimezone = this.profile.timezone;
         const timezone =
@@ -900,7 +900,7 @@ module.exports = class Article {
 
         const useTimeFallback =
           defaultOptions.timeFallback === true &&
-          matches[fullMatch].toString() !== 'Invalid Date' &&
+          matches[fullMatch].toString() !== "Invalid Date" &&
           dateHasNoTime(matches[fullMatch]);
         matches[fullMatch] = useTimeFallback
           ? setCurrentTime(localMoment).tz(timezone).format(dateFormat)
@@ -910,7 +910,7 @@ module.exports = class Article {
 
     for (var phName in matches) {
       content = content.replace(
-        new RegExp(escapeRegExp(phName), 'g'),
+        new RegExp(escapeRegExp(phName), "g"),
         matches[phName],
       );
     }
@@ -931,21 +931,21 @@ module.exports = class Article {
   }
 
   getRawPlaceholderContent(phName) {
-    if (!phName.startsWith('raw:')) {
-      return '';
+    if (!phName.startsWith("raw:")) {
+      return "";
     }
 
     if (this.flattenedJSON) {
-      return this.flattenedJSON.results[phName.replace(/raw:/, '')] || '';
+      return this.flattenedJSON.results[phName.replace(/raw:/, "")] || "";
     } else {
       this.flattenedJSON = new FlattenedJSON(this.raw, this.feed);
 
-      return this.flattenedJSON.results[phName.replace(/raw:/, '')] || '';
+      return this.flattenedJSON.results[phName.replace(/raw:/, "")] || "";
     }
   }
 
   formatDate(date, tz, defaultOptions) {
-    if (date && date.toString() !== 'Invalid Date') {
+    if (date && date.toString() !== "Invalid Date") {
       const timezone = tz && moment.tz.zone(tz) ? tz : defaultOptions.timezone;
       const dateFormat = this.profile.dateFormat
         ? this.profile.dateFormat
@@ -953,10 +953,10 @@ module.exports = class Article {
 
       const useDateFallback =
         defaultOptions.dateFallback === true &&
-        (!date || date.toString() === 'Invalid Date');
+        (!date || date.toString() === "Invalid Date");
       const useTimeFallback =
         defaultOptions.timeFallback === true &&
-        date.toString() !== 'Invalid Date' &&
+        date.toString() !== "Invalid Date" &&
         dateHasNoTime(date);
       const useDate = useDateFallback ? new Date() : date;
       const localMoment = moment(useDate);
@@ -969,10 +969,10 @@ module.exports = class Article {
         ? setCurrentTime(localMoment).tz(timezone).format(dateFormat)
         : localMoment.tz(timezone).format(dateFormat);
 
-      return vanityDate === 'Invalid Date' ? '' : vanityDate;
+      return vanityDate === "Invalid Date" ? "" : vanityDate;
     }
 
-    return '';
+    return "";
   }
 
   /**
@@ -1078,12 +1078,12 @@ module.exports = class Article {
       title: this.fullTitle,
     };
 
-    if (type.startsWith('raw:')) {
+    if (type.startsWith("raw:")) {
       return this.getRawPlaceholderContent(type);
     } else {
       return (
-        referenceOverrides[type.replace('other:', '')] ||
-        this[type.replace('other:', '')]
+        referenceOverrides[type.replace("other:", "")] ||
+        this[type.replace("other:", "")]
       );
     }
   }
@@ -1170,7 +1170,7 @@ module.exports = class Article {
   }
 
   // replace simple keywords
-  convertKeywords(word = '', ignoreCharLimits, defaultOptions) {
+  convertKeywords(word = "", ignoreCharLimits, defaultOptions) {
     if (word.length === 0) {
       return word;
     }
@@ -1187,9 +1187,9 @@ module.exports = class Article {
       )
       .replace(/{tags}/g, this.tags)
       .replace(/{guid}/g, this.guid)
-      .replace(/\\u200b/g, '\u200b');
+      .replace(/\\u200b/g, "\u200b");
 
-    const dateRegex = new RegExp('{date(:[a-zA-Z_/]*)?}');
+    const dateRegex = new RegExp("{date(:[a-zA-Z_/]*)?}");
 
     let result = dateRegex.exec(content);
 
@@ -1197,7 +1197,7 @@ module.exports = class Article {
       // timezone within placeholder, e.g. {date:UTC}
       const zone = result[1] ? result[1].slice(1, result[1].length) : undefined;
       const fullLength = result[0].length; // full match
-      let convertedDate = '';
+      let convertedDate = "";
 
       if (zone === undefined) {
         // no custom timezone was defined after date within the placeholder
@@ -1219,7 +1219,7 @@ module.exports = class Article {
       for (var customName in regexPlaceholders[placeholder]) {
         const replacementQuery = new RegExp(
           `{${placeholder}:${escapeRegExp(customName)}}`,
-          'g',
+          "g",
         );
         const replacementContent = regexPlaceholders[placeholder][customName];
         content = content.replace(replacementQuery, replacementContent);
@@ -1238,8 +1238,8 @@ module.exports = class Article {
    */
   toJSON() {
     const data = {
-      id: this.id || '',
-      title: this.title || '',
+      id: this.id || "",
+      title: this.title || "",
       placeholders: {
         public: [],
         private: [],

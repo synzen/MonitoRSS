@@ -15,17 +15,17 @@ class FilterResults {
 
   listMatches(inverted) {
     const matchList = inverted ? this.invertedMatches : this.matches;
-    let str = '';
+    let str = "";
 
     for (var type in matchList) {
-      let list = '';
+      let list = "";
       const typeMatches = matchList[type];
 
       for (var x in typeMatches) {
         list += ` ${typeMatches[x]}`;
 
         if (parseInt(x, 10) !== typeMatches.length - 1) {
-          list += ' |';
+          list += " |";
         }
       }
 
