@@ -9,10 +9,6 @@ import {
   PartialUserGuildFormatted,
 } from "./types/PartialUserGuild.type";
 
-interface UpdateSupporterInput {
-  guildIds?: string[];
-}
-
 @Injectable()
 export class DiscordUsersService {
   BASE_ENDPOINT = "/users";
@@ -157,11 +153,5 @@ export class DiscordUsersService {
     }
 
     return toReturn;
-  }
-
-  async updateSupporter(userId: string, data: UpdateSupporterInput) {
-    if (data.guildIds) {
-      await this.supportersService.setGuilds(userId, data.guildIds);
-    }
   }
 }
