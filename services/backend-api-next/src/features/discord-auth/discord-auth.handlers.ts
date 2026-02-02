@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { SessionAccessToken } from "../../services/discord-auth/types";
+import { sendError, ApiErrorCode } from "../../infra/error-handler";
 
 interface CallbackQuery {
   code?: string;
@@ -61,7 +62,7 @@ export async function loginV2Handler(
       const json = JSON.parse(decodeURIComponent(jsonState));
       authState.path = json.path;
     } catch {
-      return reply.status(400).send({ message: "Invalid jsonState format" });
+      return sendError(reply, 400, ApiErrorCode.INVALID_JSON_STATE);
     }
   }
 
@@ -100,14 +101,14 @@ export async function callbackV2Handler(
   }
 
   if (!code) {
-    return reply.status(400).send("Invalid code");
+    return sendError(reply, 400, ApiErrorCode.INVALID_AUTH_CODE);
   }
 
   const storedState = request.session.get("authState");
   const providedStateEncoded = encodeURIComponent(state || "");
 
   if (!providedStateEncoded || providedStateEncoded !== storedState) {
-    return reply.status(400).send("Invalid state");
+    return sendError(reply, 400, ApiErrorCode.INVALID_AUTH_STATE);
   }
 
   const { path }: { id: string; path?: string } = JSON.parse(
@@ -138,7 +139,7 @@ export async function logoutHandler(
     | undefined;
 
   if (!accessToken) {
-    return reply.status(401).send({ message: "Unauthorized" });
+    return sendError(reply, 401, ApiErrorCode.UNAUTHORIZED);
   }
 
   const { discordAuthService } = request.container;

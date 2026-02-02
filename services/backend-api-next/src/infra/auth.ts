@@ -6,6 +6,7 @@ import {
   DISCORD_TOKEN_ENDPOINT,
   DISCORD_TOKEN_REVOCATION_ENDPOINT,
 } from "../shared/constants/discord";
+import { sendError, ApiErrorCode } from "./error-handler";
 
 declare module "@fastify/secure-session" {
   interface SessionData {
@@ -303,7 +304,7 @@ export async function requireAuth(
   let token = getAccessTokenFromRequest(request);
 
   if (!token) {
-    reply.status(401).send({ message: "Unauthorized" });
+    sendError(reply, 401, ApiErrorCode.UNAUTHORIZED);
     return null;
   }
 
@@ -313,7 +314,7 @@ export async function requireAuth(
       request.session.set("accessToken", token);
     } catch (err) {
       logger.error("Failed to refresh token", { error: (err as Error).stack });
-      reply.status(401).send({ message: "Token refresh failed" });
+      sendError(reply, 401, ApiErrorCode.TOKEN_REFRESH_FAILED);
       return null;
     }
   }
@@ -333,7 +334,7 @@ export async function requireAuthHook(
   let token = getAccessTokenFromRequest(request);
 
   if (!token) {
-    reply.status(401).send({ message: "Unauthorized" });
+    sendError(reply, 401, ApiErrorCode.UNAUTHORIZED);
     return;
   }
 
@@ -343,7 +344,7 @@ export async function requireAuthHook(
       request.session.set("accessToken", token);
     } catch (err) {
       logger.error("Failed to refresh token", { error: (err as Error).stack });
-      reply.status(401).send({ message: "Token refresh failed" });
+      sendError(reply, 401, ApiErrorCode.TOKEN_REFRESH_FAILED);
       return;
     }
   }
@@ -365,7 +366,7 @@ export function requireBotInServer(
     const serverId = serverIdExtractor(request);
 
     if (!serverId) {
-      reply.status(400).send({ message: "Server ID is required" });
+      sendError(reply, 400, ApiErrorCode.SERVER_ID_REQUIRED);
       return;
     }
 
@@ -373,7 +374,7 @@ export function requireBotInServer(
     const server = await discordServersService.getServer(serverId);
 
     if (!server) {
-      reply.status(404).send({ message: "Server not found" });
+      sendError(reply, 404, ApiErrorCode.DISCORD_SERVER_NOT_FOUND);
       return;
     }
   };
@@ -395,14 +396,14 @@ export function requireServerPermission(
     const token = getAccessTokenFromRequest(request);
 
     if (!token) {
-      reply.status(401).send({ message: "Unauthorized" });
+      sendError(reply, 401, ApiErrorCode.UNAUTHORIZED);
       return;
     }
 
     const guildId = guildIdExtractor(request);
 
     if (!guildId) {
-      reply.status(400).send({ message: "Guild ID is required" });
+      sendError(reply, 400, ApiErrorCode.GUILD_ID_REQUIRED);
       return;
     }
 
@@ -413,9 +414,7 @@ export function requireServerPermission(
     );
 
     if (!result.isManager) {
-      reply.status(403).send({
-        message: "You do not have permission to manage this server",
-      });
+      sendError(reply, 403, ApiErrorCode.FEED_USER_MISSING_MANAGE_GUILD);
       return;
     }
   };

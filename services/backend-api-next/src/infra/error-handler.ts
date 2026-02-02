@@ -1,82 +1,121 @@
 import type { FastifyError, FastifyRequest, FastifyReply } from "fastify";
 import { getAccessTokenFromRequest } from "./auth";
 import logger from "./logger";
+import {
+  ApiErrorCode,
+  API_ERROR_MESSAGES,
+} from "../shared/constants/api-errors";
+import type { ApiErrorResponse } from "../shared/types/api-error.type";
 
 export class HttpError extends Error {
   constructor(
     public readonly statusCode: number,
-    message: string,
+    public readonly code: ApiErrorCode,
+    message?: string,
     public readonly details?: unknown,
   ) {
-    super(message);
+    super(message ?? API_ERROR_MESSAGES[code]);
     this.name = "HttpError";
   }
 }
 
 export class UnauthorizedError extends HttpError {
-  constructor(message = "Unauthorized") {
-    super(401, message);
+  constructor(
+    code: ApiErrorCode = ApiErrorCode.UNAUTHORIZED,
+    message?: string,
+  ) {
+    super(401, code, message);
     this.name = "UnauthorizedError";
   }
 }
 
 export class ForbiddenError extends HttpError {
-  constructor(message = "Forbidden") {
-    super(403, message);
+  constructor(code: ApiErrorCode, message?: string) {
+    super(403, code, message);
     this.name = "ForbiddenError";
   }
 }
 
 export class NotFoundError extends HttpError {
-  constructor(message = "Not Found") {
-    super(404, message);
+  constructor(code: ApiErrorCode, message?: string) {
+    super(404, code, message);
     this.name = "NotFoundError";
   }
 }
 
 export class BadRequestError extends HttpError {
-  constructor(message: string, details?: unknown) {
-    super(400, message, details);
+  constructor(code: ApiErrorCode, message?: string, details?: unknown) {
+    super(400, code, message, details);
     this.name = "BadRequestError";
   }
 }
 
 export class ConflictError extends HttpError {
-  constructor(message: string) {
-    super(409, message);
+  constructor(code: ApiErrorCode, message?: string) {
+    super(409, code, message);
     this.name = "ConflictError";
   }
 }
 
 export class UnprocessableEntityError extends HttpError {
-  constructor(message: string, details?: unknown) {
-    super(422, message, details);
+  constructor(code: ApiErrorCode, message?: string, details?: unknown) {
+    super(422, code, message, details);
     this.name = "UnprocessableEntityError";
   }
 }
 
 export class TooManyRequestsError extends HttpError {
   constructor(
-    message = "Too Many Requests",
+    code: ApiErrorCode,
+    message?: string,
     public readonly retryAfter?: number,
   ) {
-    super(429, message);
+    super(429, code, message);
     this.name = "TooManyRequestsError";
   }
 }
 
 export class ServiceUnavailableError extends HttpError {
-  constructor(message = "Service Unavailable") {
-    super(503, message);
+  constructor(
+    code: ApiErrorCode = ApiErrorCode.INTERNAL_ERROR,
+    message?: string,
+  ) {
+    super(503, code, message);
     this.name = "ServiceUnavailableError";
   }
 }
 
 export class InternalServerError extends HttpError {
-  constructor(message = "Internal Server Error") {
-    super(500, message);
+  constructor(
+    code: ApiErrorCode = ApiErrorCode.INTERNAL_ERROR,
+    message?: string,
+  ) {
+    super(500, code, message);
     this.name = "InternalServerError";
   }
+}
+
+function createErrorResponse(
+  code: ApiErrorCode,
+  message?: string,
+  errors: Array<{ message: string }> = [],
+): ApiErrorResponse {
+  return {
+    code,
+    message: message ?? API_ERROR_MESSAGES[code],
+    timestamp: Date.now(),
+    errors,
+    isStandardized: true,
+  };
+}
+
+export function sendError(
+  reply: FastifyReply,
+  statusCode: number,
+  code: ApiErrorCode,
+  message?: string,
+): FastifyReply {
+  return reply.status(statusCode).send(createErrorResponse(code, message));
 }
 
 export function errorHandler(
@@ -97,16 +136,6 @@ export function errorHandler(
       statusCode: error.statusCode,
     });
 
-    const response: Record<string, unknown> = {
-      statusCode: error.statusCode,
-      message: error.message,
-    };
-
-    if (error.details) {
-      response.details = error.details;
-    }
-
-    // Add Retry-After header for rate limit errors
     if (
       error instanceof TooManyRequestsError &&
       (error as TooManyRequestsError).retryAfter
@@ -114,10 +143,24 @@ export function errorHandler(
       reply.header("Retry-After", (error as TooManyRequestsError).retryAfter);
     }
 
-    return reply.status(error.statusCode).send(response);
+    const errors: Array<{ message: string }> = [];
+    if (error.details && Array.isArray(error.details)) {
+      for (const detail of error.details) {
+        if (
+          typeof detail === "object" &&
+          detail !== null &&
+          "message" in detail
+        ) {
+          errors.push({ message: String(detail.message) });
+        }
+      }
+    }
+
+    return reply
+      .status(error.statusCode)
+      .send(createErrorResponse(error.code, error.message, errors));
   }
 
-  // Handle Fastify validation errors
   if (error.validation) {
     logger.warn("Validation error", {
       discordId,
@@ -128,14 +171,14 @@ export function errorHandler(
       validation: error.validation,
     });
 
-    return reply.status(400).send({
-      statusCode: 400,
-      message: "Validation failed",
-      details: error.validation,
-    });
+    const errors = error.validation.map((v) => ({ message: v.message ?? "" }));
+    return reply
+      .status(400)
+      .send(
+        createErrorResponse(ApiErrorCode.VALIDATION_FAILED, undefined, errors),
+      );
   }
 
-  // Unhandled error
   logger.error(`Unhandled error - ${error.message}`, {
     exception: error.stack,
     discordId,
@@ -145,12 +188,13 @@ export function errorHandler(
     },
   });
 
-  return reply.status(500).send({
-    statusCode: 500,
-    message: "Internal Server Error",
-  });
+  return reply
+    .status(500)
+    .send(createErrorResponse(ApiErrorCode.INTERNAL_ERROR));
 }
 
 export function notFoundHandler(request: FastifyRequest, reply: FastifyReply) {
-  reply.status(404).send({ error: "Not Found" });
+  sendError(reply, 404, ApiErrorCode.FEED_NOT_FOUND, "Not Found");
 }
+
+export { ApiErrorCode } from "../shared/constants/api-errors";
