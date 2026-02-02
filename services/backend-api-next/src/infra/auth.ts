@@ -2,7 +2,6 @@ import type { FastifyRequest, FastifyReply } from "fastify";
 import type { Config } from "../config";
 import logger from "./logger";
 import {
-  DISCORD_API_BASE_URL,
   DISCORD_AUTH_ENDPOINT,
   DISCORD_TOKEN_ENDPOINT,
   DISCORD_TOKEN_REVOCATION_ENDPOINT,
@@ -81,9 +80,10 @@ export function createAuthService(config: Config): AuthService {
   const CLIENT_ID = config.BACKEND_API_DISCORD_CLIENT_ID;
   const CLIENT_SECRET = config.BACKEND_API_DISCORD_CLIENT_SECRET;
   const OAUTH_REDIRECT_URI = config.BACKEND_API_DISCORD_REDIRECT_URI;
+  const API_BASE_URL = config.BACKEND_API_DISCORD_API_BASE_URL;
 
   async function getUser(accessToken: string): Promise<DiscordUser> {
-    const url = `${DISCORD_API_BASE_URL}/users/@me`;
+    const url = `${API_BASE_URL}/users/@me`;
     const res = await fetch(url, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -120,7 +120,7 @@ export function createAuthService(config: Config): AuthService {
     token: DiscordAuthToken,
     tokenType: "access" | "refresh",
   ): Promise<void> {
-    const url = `${DISCORD_API_BASE_URL}${DISCORD_TOKEN_REVOCATION_ENDPOINT}`;
+    const url = `${API_BASE_URL}${DISCORD_TOKEN_REVOCATION_ENDPOINT}`;
 
     const revokeParams = new URLSearchParams({
       token: tokenType === "access" ? token.access_token : token.refresh_token,
@@ -148,7 +148,7 @@ export function createAuthService(config: Config): AuthService {
   return {
     getAuthorizationUrl(options) {
       return (
-        `${DISCORD_API_BASE_URL}${DISCORD_AUTH_ENDPOINT}?response_type=code` +
+        `${API_BASE_URL}${DISCORD_AUTH_ENDPOINT}?response_type=code` +
         `&client_id=${CLIENT_ID}` +
         `&scope=${OAUTH_SCOPES}${options?.additionalScopes || ""}` +
         `&redirect_uri=${OAUTH_REDIRECT_URI}` +
@@ -157,7 +157,7 @@ export function createAuthService(config: Config): AuthService {
     },
 
     async createAccessToken(authorizationCode: string) {
-      const url = `${DISCORD_API_BASE_URL}${DISCORD_TOKEN_ENDPOINT}`;
+      const url = `${API_BASE_URL}${DISCORD_TOKEN_ENDPOINT}`;
 
       const searchParams = new URLSearchParams({
         client_id: CLIENT_ID,
@@ -197,7 +197,7 @@ export function createAuthService(config: Config): AuthService {
     },
 
     async refreshToken(token: DiscordAuthToken) {
-      const url = `${DISCORD_API_BASE_URL}${DISCORD_TOKEN_ENDPOINT}`;
+      const url = `${API_BASE_URL}${DISCORD_TOKEN_ENDPOINT}`;
 
       const searchParams = new URLSearchParams({
         client_id: CLIENT_ID,
@@ -252,7 +252,7 @@ export function createAuthService(config: Config): AuthService {
       userAccessToken: string,
       guildId: string,
     ): Promise<UserManagesGuildResult> {
-      const url = `${DISCORD_API_BASE_URL}/users/@me/guilds`;
+      const url = `${API_BASE_URL}/users/@me/guilds`;
       const res = await fetch(url, {
         headers: {
           Authorization: `Bearer ${userAccessToken}`,
@@ -322,8 +322,66 @@ export async function requireAuth(
 }
 
 /**
+ * PreHandler hook that requires authentication.
+ * Refreshes the token if expired and stores the refreshed token in session.
+ */
+export async function requireAuthHook(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const authService = request.container.authService;
+  let token = getAccessTokenFromRequest(request);
+
+  if (!token) {
+    reply.status(401).send({ message: "Unauthorized" });
+    return;
+  }
+
+  if (authService.isTokenExpired(token)) {
+    try {
+      token = await authService.refreshToken(token);
+      request.session.set("accessToken", token);
+    } catch (err) {
+      logger.error("Failed to refresh token", { error: (err as Error).stack });
+      reply.status(401).send({ message: "Token refresh failed" });
+      return;
+    }
+  }
+}
+
+/**
+ * PreHandler hook that checks if the bot is in the specified server.
+ * Must be used after requireAuthHook.
+ *
+ * @param serverIdExtractor - Function to extract server ID from request (e.g., from params)
+ */
+export function requireBotInServer(
+  serverIdExtractor: (request: FastifyRequest) => string | undefined,
+) {
+  return async (
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> => {
+    const serverId = serverIdExtractor(request);
+
+    if (!serverId) {
+      reply.status(400).send({ message: "Server ID is required" });
+      return;
+    }
+
+    const { discordServersService } = request.container;
+    const server = await discordServersService.getServer(serverId);
+
+    if (!server) {
+      reply.status(404).send({ message: "Server not found" });
+      return;
+    }
+  };
+}
+
+/**
  * PreHandler hook that checks if the user has MANAGE_CHANNEL permission on the specified guild.
- * Must be used after requireAuth.
+ * Must be used after requireAuthHook.
  *
  * @param guildIdExtractor - Function to extract guild ID from request (e.g., from params or body)
  */

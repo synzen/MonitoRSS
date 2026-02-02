@@ -8,6 +8,7 @@ import { errorHandler, notFoundHandler } from "./infra/error-handler";
 import logger from "./infra/logger";
 import { discordAuthRoutes } from "./features/discord-auth/discord-auth.routes";
 import { discordUsersRoutes } from "./features/discord-users/discord-users.routes";
+import { discordServersRoutes } from "./features/discord-servers/discord-servers.routes";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -79,6 +80,11 @@ export async function createApp(
 
       // Discord users routes
       await instance.register(discordUsersRoutes, { prefix: "/discord-users" });
+
+      // Discord servers routes
+      await instance.register(discordServersRoutes, {
+        prefix: "/discord-servers",
+      });
     },
     { prefix: "/api/v1" },
   );

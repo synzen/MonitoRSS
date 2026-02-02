@@ -76,3 +76,23 @@ export async function getAuthStatusHandler(
     throw err;
   }
 }
+
+export async function getUserByIdHandler(
+  request: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { discordUsersService, authService } = request.container;
+
+  const token = await requireAuth(request, reply, authService);
+  if (!token) return;
+
+  const user = await discordUsersService.getUserById(request.params.id);
+
+  return reply.send({
+    result: {
+      id: user.id,
+      username: user.username,
+      avatarUrl: user.avatar,
+    },
+  });
+}
