@@ -169,6 +169,7 @@ function createTestConfig(
     BACKEND_API_DISCORD_CLIENT_SECRET: "test-client-secret",
     BACKEND_API_DISCORD_REDIRECT_URI: "http://localhost:3000/callback",
     BACKEND_API_LOGIN_REDIRECT_URI: "http://localhost:3000",
+    BACKEND_API_DISCORD_API_BASE_URL: "https://discord.com/api/v9",
     BACKEND_API_MONGODB_URI: "mongodb://localhost:27017/test",
     BACKEND_API_SESSION_SECRET: "test-secret-key-32-chars-long!!!",
     BACKEND_API_SESSION_SALT: "test-salt-16-ch!",

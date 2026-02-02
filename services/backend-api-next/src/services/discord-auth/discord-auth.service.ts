@@ -1,7 +1,6 @@
 import { URLSearchParams } from "url";
 import type { Config } from "../../config";
 import {
-  DISCORD_API_BASE_URL,
   DISCORD_AUTH_ENDPOINT,
   DISCORD_TOKEN_ENDPOINT,
   DISCORD_TOKEN_REVOCATION_ENDPOINT,
@@ -25,6 +24,7 @@ export class DiscordAuthService {
   private readonly clientId: string;
   private readonly clientSecret: string;
   private readonly redirectUri: string;
+  private readonly apiBaseUrl: string;
 
   constructor(
     private readonly config: Config,
@@ -33,11 +33,12 @@ export class DiscordAuthService {
     this.clientId = config.BACKEND_API_DISCORD_CLIENT_ID;
     this.clientSecret = config.BACKEND_API_DISCORD_CLIENT_SECRET;
     this.redirectUri = config.BACKEND_API_DISCORD_REDIRECT_URI;
+    this.apiBaseUrl = config.BACKEND_API_DISCORD_API_BASE_URL;
   }
 
   getAuthorizationUrl(options?: GetAuthorizationUrlOptions): string {
     return (
-      `${DISCORD_API_BASE_URL}/${DISCORD_AUTH_ENDPOINT}?response_type=code` +
+      `${this.apiBaseUrl}${DISCORD_AUTH_ENDPOINT}?response_type=code` +
       `&client_id=${this.clientId}&scope=${`${this.OAUTH_SCOPES}${
         options?.additionalScopes || ""
       }`}&` +
@@ -50,7 +51,7 @@ export class DiscordAuthService {
   async createAccessToken(
     authorizationCode: string,
   ): Promise<CreateAccessTokenResult> {
-    const url = `${DISCORD_API_BASE_URL}${DISCORD_TOKEN_ENDPOINT}`;
+    const url = `${this.apiBaseUrl}${DISCORD_TOKEN_ENDPOINT}`;
 
     const searchParams = new URLSearchParams({
       client_id: this.clientId,
@@ -92,7 +93,7 @@ export class DiscordAuthService {
   }
 
   async refreshToken(token: DiscordAuthToken): Promise<SessionAccessToken> {
-    const url = `${DISCORD_API_BASE_URL}${DISCORD_TOKEN_ENDPOINT}`;
+    const url = `${this.apiBaseUrl}${DISCORD_TOKEN_ENDPOINT}`;
 
     const searchParams = new URLSearchParams({
       client_id: this.clientId,
@@ -188,7 +189,7 @@ export class DiscordAuthService {
     token: DiscordAuthToken,
     tokenType: "access" | "refresh",
   ): Promise<void> {
-    const url = `${DISCORD_API_BASE_URL}${DISCORD_TOKEN_REVOCATION_ENDPOINT}`;
+    const url = `${this.apiBaseUrl}${DISCORD_TOKEN_REVOCATION_ENDPOINT}`;
 
     const revokeAccessParams = new URLSearchParams({
       token: tokenType === "access" ? token.access_token : token.refresh_token,

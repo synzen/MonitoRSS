@@ -9,16 +9,16 @@ import type {
   DiscordWebhook,
   DiscordUser,
 } from "../../shared/types/discord.types";
-import { DISCORD_API_BASE_URL } from "../../shared/constants/discord";
 import type { RequestOptions } from "./types";
 
 export class DiscordApiService {
-  private readonly API_URL = DISCORD_API_BASE_URL;
+  private readonly API_URL: string;
   private readonly BOT_TOKEN: string;
   private readonly CLIENT_ID: string;
   private readonly restHandler: RESTHandler;
 
   constructor(private readonly config: Config) {
+    this.API_URL = config.BACKEND_API_DISCORD_API_BASE_URL;
     this.BOT_TOKEN = config.BACKEND_API_DISCORD_BOT_TOKEN;
     this.CLIENT_ID = config.BACKEND_API_DISCORD_CLIENT_ID;
     this.restHandler = new RESTHandler({

@@ -20,6 +20,10 @@ const configSchema = z.object({
   BACKEND_API_DISCORD_CLIENT_SECRET: z.string().min(1),
   BACKEND_API_DISCORD_REDIRECT_URI: z.string().min(1),
   BACKEND_API_LOGIN_REDIRECT_URI: z.string().min(1),
+  BACKEND_API_DISCORD_API_BASE_URL: z
+    .string()
+    .url()
+    .default("https://discord.com/api/v9"),
 
   // MongoDB
   BACKEND_API_MONGODB_URI: z.string().min(1),

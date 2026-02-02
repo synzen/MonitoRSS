@@ -6,6 +6,8 @@ import compression from "@fastify/compress";
 import type { Container } from "./container";
 import { errorHandler, notFoundHandler } from "./infra/error-handler";
 import logger from "./infra/logger";
+import { discordAuthRoutes } from "./features/discord-auth/discord-auth.routes";
+import { discordUsersRoutes } from "./features/discord-users/discord-users.routes";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -72,7 +74,11 @@ export async function createApp(
       // Health check endpoint
       instance.get("/health", async () => ({ status: "ok" }));
 
-      // Additional routes will be registered here in later phases
+      // Discord auth routes
+      await instance.register(discordAuthRoutes, { prefix: "/discord" });
+
+      // Discord users routes
+      await instance.register(discordUsersRoutes, { prefix: "/discord-users" });
     },
     { prefix: "/api/v1" },
   );

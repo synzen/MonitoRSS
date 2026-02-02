@@ -6,6 +6,8 @@ import { createContainer, type Container } from "../../src/container";
 import type { Config } from "../../src/config";
 import { Environment } from "../../src/config";
 import { getTestDbUri } from "./test-constants";
+import type { SessionAccessToken } from "../../src/services/discord-auth/types";
+import { createTestHttpServer, type TestHttpServer } from "./test-http-server";
 
 let testConnection: Connection | null = null;
 let currentDatabaseName: string | null = null;
@@ -43,17 +45,31 @@ export async function createServiceTestContext(): Promise<ServiceTestContext> {
   };
 }
 
+export interface CreateSupporterData {
+  id: string;
+  guilds?: string[];
+  expireAt?: Date;
+  maxFeeds?: number;
+  maxUserFeeds?: number;
+  maxGuilds?: number;
+  allowCustomPlaceholders?: boolean;
+}
+
 export interface AppTestContext {
   connection: Connection;
   app: FastifyInstance;
   container: Container;
   baseUrl: string;
+  discordMockServer: TestHttpServer;
   fetch(path: string, options?: RequestInit): Promise<Response>;
+  setSession(accessToken: SessionAccessToken): Promise<string>;
+  createSupporter(data: CreateSupporterData): Promise<void>;
   teardown(): Promise<void>;
 }
 
 export interface CreateAppTestContextOptions {
   configOverrides?: Partial<Config>;
+  beforeListen?: (app: FastifyInstance) => Promise<void> | void;
 }
 
 function createTestConfig(overrides?: Partial<Config>): Config {
@@ -66,6 +82,7 @@ function createTestConfig(overrides?: Partial<Config>): Config {
     BACKEND_API_DISCORD_CLIENT_SECRET: "test-client-secret",
     BACKEND_API_DISCORD_REDIRECT_URI: "http://localhost:3000/callback",
     BACKEND_API_LOGIN_REDIRECT_URI: "http://localhost:3000",
+    BACKEND_API_DISCORD_API_BASE_URL: "https://discord.com/api/v9",
 
     BACKEND_API_MONGODB_URI: "mongodb://localhost:27017/test",
 
@@ -146,7 +163,12 @@ export async function createAppTestContext(
   options: CreateAppTestContextOptions = {},
 ): Promise<AppTestContext> {
   const connection = await setupDatabase();
-  const config = createTestConfig(options.configOverrides);
+  const discordMockServer = createTestHttpServer();
+
+  const config = createTestConfig({
+    BACKEND_API_DISCORD_API_BASE_URL: discordMockServer.host,
+    ...options.configOverrides,
+  });
 
   const container = createContainer({
     config,
@@ -155,6 +177,17 @@ export async function createAppTestContext(
   });
 
   const app = await createApp(container);
+
+  app.post("/__test__/set-session", async (request, reply) => {
+    const { accessToken } = request.body as { accessToken: SessionAccessToken };
+    request.session.set("accessToken", accessToken);
+    return reply.send({ ok: true });
+  });
+
+  if (options.beforeListen) {
+    await options.beforeListen(app);
+  }
+
   await app.listen({ port: 0 });
 
   const address = app.server.address();
@@ -166,13 +199,41 @@ export async function createAppTestContext(
     app,
     container,
     baseUrl,
+    discordMockServer,
 
     async fetch(path: string, init?: RequestInit) {
       return fetch(`${baseUrl}${path}`, init);
     },
 
+    async setSession(accessToken: SessionAccessToken) {
+      const response = await fetch(`${baseUrl}/__test__/set-session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accessToken }),
+      });
+      const cookie = response.headers.get("set-cookie");
+      if (!cookie) {
+        throw new Error("Failed to set session: no cookie returned");
+      }
+      return cookie;
+    },
+
+    async createSupporter(data: CreateSupporterData) {
+      await container.supporterRepository.create({
+        id: data.id,
+        guilds: data.guilds ?? [],
+        expireAt: data.expireAt,
+        maxFeeds: data.maxFeeds,
+        maxUserFeeds: data.maxUserFeeds,
+        maxGuilds: data.maxGuilds,
+        allowCustomPlaceholders: data.allowCustomPlaceholders,
+        patron: false,
+      });
+    },
+
     async teardown() {
       await app.close();
+      await discordMockServer.stop();
       await teardownDatabase();
     },
   };

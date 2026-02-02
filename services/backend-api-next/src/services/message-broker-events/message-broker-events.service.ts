@@ -318,10 +318,15 @@ export class MessageBrokerEventsService {
 
     const disabledCode = getUserFeedDisableCodeByFeedRejectCode(rejectedCode);
 
-    await this.deps.userFeedRepository.disableFeedByIdIfNotDisabled(
-      feedId,
-      disabledCode,
-    );
+    const wasDisabled =
+      await this.deps.userFeedRepository.disableFeedByIdIfNotDisabled(
+        feedId,
+        disabledCode,
+      );
+
+    if (!wasDisabled) {
+      return;
+    }
 
     try {
       logger.info(
