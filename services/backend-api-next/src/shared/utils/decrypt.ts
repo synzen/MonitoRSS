@@ -2,6 +2,9 @@ import { createDecipheriv } from "crypto";
 
 export function decrypt(input: string, hexKey: string): string {
   const [iv, text, authtag] = input.split(".");
+  if (!iv || !text || !authtag) {
+    throw new Error("Invalid encrypted input format");
+  }
   const key = Buffer.from(hexKey, "hex");
   const decipher = createDecipheriv(
     "aes-256-gcm",

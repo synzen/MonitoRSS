@@ -22,16 +22,17 @@ async function createFeed(
   ctx: AppTestContext,
   options: TestFeedOptions = {},
 ): Promise<IUserFeed> {
+  const id = objectId();
   return ctx.container.userFeedRepository.create({
     title: "Test Feed",
-    url: `https://example.com/feed/${objectId()}`,
-    user: { discordUserId: objectId() },
+    url: `https://example.com/feed/${id}`,
+    user: { id, discordUserId: objectId() },
     shareManageOptions: options.invites
       ? {
           invites: options.invites.map((invite) => ({
             discordUserId: invite.discordUserId,
-            connections: invite.connections?.map((id) => ({
-              connectionId: id,
+            connections: invite.connections?.map((conId) => ({
+              connectionId: conId,
             })),
           })),
         }

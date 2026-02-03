@@ -132,8 +132,9 @@ describe("Discord Auth API", { concurrency: true }, () => {
     it("returns 400 when code is missing", async () => {
       const response = await ctx.fetch("/api/v1/discord/callback-v2");
       assert.strictEqual(response.status, 400);
-      const text = await response.text();
-      assert.strictEqual(text, "Invalid code");
+      const body = (await response.json()) as { code: string; message: string };
+      assert.strictEqual(body.code, "INVALID_AUTH_CODE");
+      assert.strictEqual(body.message, "Invalid code");
     });
 
     it("returns 400 when state is missing", async () => {
@@ -141,8 +142,9 @@ describe("Discord Auth API", { concurrency: true }, () => {
         "/api/v1/discord/callback-v2?code=test-code",
       );
       assert.strictEqual(response.status, 400);
-      const text = await response.text();
-      assert.strictEqual(text, "Invalid state");
+      const body = (await response.json()) as { code: string; message: string };
+      assert.strictEqual(body.code, "INVALID_AUTH_STATE");
+      assert.strictEqual(body.message, "Invalid state");
     });
 
     it("returns 400 when state does not match stored state", async () => {
@@ -158,8 +160,9 @@ describe("Discord Auth API", { concurrency: true }, () => {
         },
       );
       assert.strictEqual(response.status, 400);
-      const text = await response.text();
-      assert.strictEqual(text, "Invalid state");
+      const body = (await response.json()) as { code: string; message: string };
+      assert.strictEqual(body.code, "INVALID_AUTH_STATE");
+      assert.strictEqual(body.message, "Invalid state");
     });
   });
 

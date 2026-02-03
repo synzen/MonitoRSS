@@ -31,8 +31,9 @@ describe("Health API", { concurrency: true }, () => {
       const response = await ctx.fetch("/unknown-route");
 
       assert.strictEqual(response.status, 404);
-      const body = (await response.json()) as { error: string };
-      assert.strictEqual(body.error, "Not Found");
+      const body = (await response.json()) as { code: string; message: string };
+      assert.strictEqual(body.code, "FEED_NOT_FOUND");
+      assert.strictEqual(body.message, "Not Found");
     });
   });
 });

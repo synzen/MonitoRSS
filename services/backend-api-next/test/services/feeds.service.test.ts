@@ -219,6 +219,8 @@ describe("FeedsService", { concurrency: true }, () => {
             return [];
           },
           countByGuild: async () => 0,
+          findById: async () => null,
+          updateById: async () => null,
         },
         bannedFeedRepository: {} as IBannedFeedRepository,
         feedSchedulingService: {
@@ -258,6 +260,8 @@ describe("FeedsService", { concurrency: true }, () => {
         feedRepository: {
           aggregateWithFailRecords: async () => mockFeeds,
           countByGuild: async () => 0,
+          findById: async () => null,
+          updateById: async () => null,
         },
         bannedFeedRepository: {} as IBannedFeedRepository,
         feedSchedulingService: {
@@ -296,6 +300,8 @@ describe("FeedsService", { concurrency: true }, () => {
         feedRepository: {
           aggregateWithFailRecords: async () => mockFeeds,
           countByGuild: async () => 0,
+          findById: async () => null,
+          updateById: async () => null,
         },
         bannedFeedRepository: {} as IBannedFeedRepository,
         feedSchedulingService: {
@@ -332,6 +338,8 @@ describe("FeedsService", { concurrency: true }, () => {
         feedRepository: {
           aggregateWithFailRecords: async () => mockFeeds,
           countByGuild: async () => 0,
+          findById: async () => null,
+          updateById: async () => null,
         },
         bannedFeedRepository: {} as IBannedFeedRepository,
         feedSchedulingService: {
@@ -368,6 +376,8 @@ describe("FeedsService", { concurrency: true }, () => {
         feedRepository: {
           aggregateWithFailRecords: async () => mockFeeds,
           countByGuild: async () => 0,
+          findById: async () => null,
+          updateById: async () => null,
         },
         bannedFeedRepository: {} as IBannedFeedRepository,
         feedSchedulingService: {
@@ -416,6 +426,8 @@ describe("FeedsService", { concurrency: true }, () => {
         feedRepository: {
           aggregateWithFailRecords: async () => mockFeeds,
           countByGuild: async () => 0,
+          findById: async () => null,
+          updateById: async () => null,
         },
         bannedFeedRepository: {} as IBannedFeedRepository,
         feedSchedulingService: {
@@ -461,6 +473,8 @@ describe("FeedsService", { concurrency: true }, () => {
         feedRepository: {
           aggregateWithFailRecords: async () => mockFeeds,
           countByGuild: async () => 0,
+          findById: async () => null,
+          updateById: async () => null,
         },
         bannedFeedRepository: {} as IBannedFeedRepository,
         feedSchedulingService: {
@@ -487,6 +501,8 @@ describe("FeedsService", { concurrency: true }, () => {
         feedRepository: {
           aggregateWithFailRecords: async () => [],
           countByGuild: async () => 5,
+          findById: async () => null,
+          updateById: async () => null,
         },
         bannedFeedRepository: {} as IBannedFeedRepository,
         feedSchedulingService: {} as FeedSchedulingService,
@@ -510,6 +526,8 @@ describe("FeedsService", { concurrency: true }, () => {
             calledSearch = search;
             return 2;
           },
+          findById: async () => null,
+          updateById: async () => null,
         },
         bannedFeedRepository: {} as IBannedFeedRepository,
         feedSchedulingService: {} as FeedSchedulingService,

@@ -11,7 +11,6 @@ export interface FeedTestData {
   guild?: string;
   channel?: string;
   addedAt?: Date;
-  disabled?: string;
 }
 
 export interface FeedRepositoryContext {
@@ -60,7 +59,6 @@ export function createFeedRepositoryHarness(): FeedRepositoryHarness {
             guild: data.guild ?? guildId,
             channel: data.channel ?? `channel-${testId}`,
             addedAt: data.addedAt ?? new Date(),
-            disabled: data.disabled,
           });
 
           return {

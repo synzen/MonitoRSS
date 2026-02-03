@@ -765,9 +765,9 @@ describe("SupportersService", { concurrency: true }, () => {
             {
               guildId,
               maxFeeds: 10,
-              refreshRateSeconds: 120,
+              refreshRate: 120,
               slowRate: false,
-              expireAt: dayjs().add(1, "month").toDate(),
+              expireAt: dayjs().add(1, "month").toISOString(),
             },
           ],
         },

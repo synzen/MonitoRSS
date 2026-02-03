@@ -173,7 +173,7 @@ export function createUserFeedsHarness(): UserFeedsHarness {
           return userFeedRepository.create({
             title: overrides.title ?? "Test Feed",
             url: overrides.url ?? `https://example.com/${generateTestId()}.xml`,
-            user: { discordUserId },
+            user: { id: userId, discordUserId },
           });
         },
 
@@ -181,7 +181,7 @@ export function createUserFeedsHarness(): UserFeedsHarness {
           return userFeedRepository.create({
             title: overrides.title ?? "Test Feed",
             url: overrides.url ?? `https://example.com/${generateTestId()}.xml`,
-            user: { discordUserId: feedDiscordUserId },
+            user: { id: feedDiscordUserId, discordUserId: feedDiscordUserId },
           });
         },
 
@@ -190,7 +190,7 @@ export function createUserFeedsHarness(): UserFeedsHarness {
           const feed = await userFeedRepository.create({
             title: input.title ?? "Test Feed",
             url: input.url ?? `https://example.com/${generateTestId()}.xml`,
-            user: { discordUserId: feedDiscordUserId },
+            user: { id: userId, discordUserId: feedDiscordUserId },
           });
 
           if (input.connections?.discordChannels) {
@@ -212,7 +212,7 @@ export function createUserFeedsHarness(): UserFeedsHarness {
               await userFeedRepository.create({
                 title: `Feed ${i}`,
                 url: `https://example.com/${generateTestId()}.xml`,
-                user: { discordUserId },
+                user: { id: userId, discordUserId },
               }),
             );
           }
@@ -245,7 +245,7 @@ export function createUserFeedsHarness(): UserFeedsHarness {
           return userFeedRepository.create({
             title: "Shared Feed",
             url: `https://example.com/${generateTestId()}.xml`,
-            user: { discordUserId: ownerDiscordUserId },
+            user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
             shareManageOptions: {
               invites: [{ discordUserId, status }],
             },

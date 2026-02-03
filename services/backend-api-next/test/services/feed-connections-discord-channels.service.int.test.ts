@@ -78,7 +78,7 @@ async function createFeed(
   >[0] = {
     title: "Test Feed",
     url: `https://example.com/feed/${objectId()}`,
-    user: { discordUserId },
+    user: { id: discordUserId, discordUserId },
   };
 
   const feed = await ctx.container.userFeedRepository.create(feedData);
@@ -759,7 +759,7 @@ describe(
                 },
                 details: {
                   channel: { id: "channel-id", guildId },
-                  embeds: [{ author: { name: "hi" } }],
+                  embeds: [{ authorName: "hi" }],
                 },
               },
             ],
@@ -770,7 +770,7 @@ describe(
           Promise.resolve({ guild_id: guildId }),
         );
 
-        const oldConnection = createdFeed.connections.discordChannels[0];
+        const oldConnection = createdFeed.connections.discordChannels[0]!;
         const customPlaceholderId = randomUUID();
         const customPlaceholderStepId = randomUUID();
 
@@ -794,7 +794,7 @@ describe(
                     id: customPlaceholderStepId,
                     regexSearch: "regex-search",
                     replacementString: "replacement",
-                    type: CustomPlaceholderStepType.Regex,
+                    type: CustomPlaceholderStepType.Regex as const,
                   },
                 ],
               },
@@ -818,7 +818,8 @@ describe(
                   id: "row1",
                   components: [
                     {
-                      type: FeedConnectionDiscordComponentType.Button,
+                      id: "btn1",
+                      type: FeedConnectionDiscordComponentType.Button as const,
                       label: "label",
                       url: "url",
                       style: FeedConnectionDiscordComponentButtonStyle.Link,
@@ -845,24 +846,24 @@ describe(
         assert.strictEqual(updatedConnection.id, connectionIdToUse);
         assert.strictEqual(updatedConnection.name, updateInput.updates.name);
         assertMatchesObject(
-          updatedConnection.filters as Record<string, unknown>,
-          updateInput.updates.filters as Record<string, unknown>,
+          updatedConnection.filters as unknown as Record<string, unknown>,
+          updateInput.updates.filters as unknown as Record<string, unknown>,
         );
         assert.strictEqual(updatedConnection.customPlaceholders?.length, 1);
         assert.strictEqual(
-          updatedConnection.customPlaceholders?.[0].id,
+          updatedConnection.customPlaceholders![0]!.id,
           customPlaceholderId,
         );
         assert.strictEqual(
-          updatedConnection.customPlaceholders?.[0].referenceName,
+          updatedConnection.customPlaceholders![0]!.referenceName,
           "refe",
         );
         assert.strictEqual(
-          updatedConnection.customPlaceholders?.[0].sourcePlaceholder,
+          updatedConnection.customPlaceholders![0]!.sourcePlaceholder,
           "title",
         );
         assert.strictEqual(
-          updatedConnection.customPlaceholders?.[0].steps?.[0].id,
+          updatedConnection.customPlaceholders![0]!.steps![0]!.id,
           customPlaceholderStepId,
         );
         assertMatchesObject(
@@ -911,7 +912,7 @@ describe(
           },
         });
 
-        const oldConnection = createdFeed.connections.discordChannels[0];
+        const oldConnection = createdFeed.connections.discordChannels[0]!;
 
         await ctx.container.feedConnectionsDiscordChannelsService.updateDiscordChannelConnection(
           createdFeed.id,
@@ -930,7 +931,7 @@ describe(
 
         assert.strictEqual(updatedFeed?.connections.discordChannels.length, 1);
         assert.strictEqual(
-          updatedFeed?.connections.discordChannels[0].disabledCode,
+          updatedFeed?.connections.discordChannels[0]!.disabledCode,
           FeedConnectionDisabledCode.BadFormat,
         );
       });
@@ -950,7 +951,7 @@ describe(
           },
         });
 
-        const oldConnection = createdFeed.connections.discordChannels[0];
+        const oldConnection = createdFeed.connections.discordChannels[0]!;
         const splitOptions = { splitChar: "s", appendChar: "a" };
 
         await ctx.container.feedConnectionsDiscordChannelsService.updateDiscordChannelConnection(
@@ -968,7 +969,7 @@ describe(
 
         assert.strictEqual(updatedFeed?.connections.discordChannels.length, 1);
         assertMatchesObject(
-          updatedFeed?.connections.discordChannels[0].splitOptions as Record<
+          updatedFeed?.connections.discordChannels[0]!.splitOptions as Record<
             string,
             unknown
           >,
@@ -998,7 +999,7 @@ describe(
           },
         });
 
-        const oldConnection = createdFeed.connections.discordChannels[0];
+        const oldConnection = createdFeed.connections.discordChannels[0]!;
 
         await ctx.container.feedConnectionsDiscordChannelsService.updateDiscordChannelConnection(
           createdFeed.id,
@@ -1019,15 +1020,15 @@ describe(
 
         assert.strictEqual(updatedFeed?.connections.discordChannels.length, 1);
         assert.strictEqual(
-          updatedFeed?.connections.discordChannels[0].filters,
+          updatedFeed?.connections.discordChannels[0]!.filters,
           undefined,
         );
         assert.strictEqual(
-          updatedFeed?.connections.discordChannels[0].disabledCode,
+          updatedFeed?.connections.discordChannels[0]!.disabledCode,
           undefined,
         );
         assert.strictEqual(
-          updatedFeed?.connections.discordChannels[0].splitOptions,
+          updatedFeed?.connections.discordChannels[0]!.splitOptions,
           undefined,
         );
       });
@@ -1051,7 +1052,7 @@ describe(
           throw new DiscordAPIError("Not found", 404);
         });
 
-        const oldConnection = createdFeed.connections.discordChannels[0];
+        const oldConnection = createdFeed.connections.discordChannels[0]!;
 
         await assert.rejects(
           () =>
@@ -1090,7 +1091,7 @@ describe(
           throw new DiscordAPIError("Forbidden", 403);
         });
 
-        const oldConnection = createdFeed.connections.discordChannels[0];
+        const oldConnection = createdFeed.connections.discordChannels[0]!;
 
         await assert.rejects(
           () =>
@@ -1129,7 +1130,7 @@ describe(
           Promise.resolve({ errors: ["1", "2"] }),
         );
 
-        const oldConnection = createdFeed.connections.discordChannels[0];
+        const oldConnection = createdFeed.connections.discordChannels[0]!;
 
         await assert.rejects(
           () =>
@@ -1159,7 +1160,7 @@ describe(
         const targetConnectionId1 = objectId();
         const targetConnectionId2 = objectId();
 
-        const sourceConnection = {
+        const sourceConnection: DeepPartial<IDiscordChannelConnection> = {
           id: sourceConnectionId,
           name: "source",
           disabledCode: FeedConnectionDisabledCode.BadFormat,
@@ -1178,7 +1179,7 @@ describe(
           details: {
             webhook: {
               id: "webhook-id-1",
-              channel: "channel-id",
+              channelId: "channel-id",
               guildId: "guild-id",
               token: "token",
               iconUrl: "icon-url",
@@ -1201,7 +1202,7 @@ describe(
                   {
                     id: "1",
                     label: "label",
-                    style: 5,
+                    style: FeedConnectionDiscordComponentButtonStyle.Link,
                     type: FeedConnectionDiscordComponentType.Button,
                     url: "url",
                   },
@@ -1235,7 +1236,7 @@ describe(
                   channel: { id: "channel-id2", guildId },
                   webhook: {
                     id: "webhook-id-2",
-                    channel: "channel-id",
+                    channelId: "channel-id",
                     guildId: "guild-id",
                     token: "token",
                     iconUrl: "icon-url2",
@@ -1257,7 +1258,7 @@ describe(
                   channel: { id: "channel-id3", guildId },
                   webhook: {
                     id: "webhook-id-3",
-                    channel: "channel-id",
+                    channelId: "channel-id",
                     guildId: "guild-id",
                     token: "token",
                     iconUrl: "icon-url3",
@@ -1300,8 +1301,8 @@ describe(
 
         for (const c of targetConnections!) {
           assertMatchesObject(
-            c.filters as Record<string, unknown>,
-            sourceConnection.filters as Record<string, unknown>,
+            c.filters as unknown as Record<string, unknown>,
+            sourceConnection.filters as unknown as Record<string, unknown>,
           );
           assertMatchesObject(
             c.splitOptions as Record<string, unknown>,
@@ -1317,62 +1318,62 @@ describe(
           );
           assertMatchesObject(
             c.details.embeds as unknown as Record<string, unknown>,
-            sourceConnection.details.embeds as unknown as Record<
+            sourceConnection.details!.embeds as unknown as Record<
               string,
               unknown
             >,
           );
           assertMatchesObject(
             c.details.formatter as unknown as Record<string, unknown>,
-            sourceConnection.details.formatter as unknown as Record<
+            sourceConnection.details!.formatter as unknown as Record<
               string,
               unknown
             >,
           );
           assert.strictEqual(
             c.details.content,
-            sourceConnection.details.content,
+            sourceConnection.details!.content,
           );
           assertMatchesObject(
             c.details.componentRows as unknown as Record<string, unknown>,
-            sourceConnection.details.componentRows as unknown as Record<
+            sourceConnection.details!.componentRows as unknown as Record<
               string,
               unknown
             >,
           );
           assert.strictEqual(
             c.details.enablePlaceholderFallback,
-            sourceConnection.details.enablePlaceholderFallback,
+            sourceConnection.details!.enablePlaceholderFallback,
           );
           assertMatchesObject(
             c.details.forumThreadTags as unknown as Record<string, unknown>,
-            sourceConnection.details.forumThreadTags as unknown as Record<
+            sourceConnection.details!.forumThreadTags as unknown as Record<
               string,
               unknown
             >,
           );
           assert.strictEqual(
             c.details.forumThreadTitle,
-            sourceConnection.details.forumThreadTitle,
+            sourceConnection.details!.forumThreadTitle,
           );
           assertMatchesObject(
             c.details.placeholderLimits as unknown as Record<string, unknown>,
-            sourceConnection.details.placeholderLimits as unknown as Record<
+            sourceConnection.details!.placeholderLimits as unknown as Record<
               string,
               unknown
             >,
           );
           assert.strictEqual(
             c.details.webhook?.iconUrl,
-            sourceConnection.details.webhook?.iconUrl,
+            sourceConnection.details!.webhook?.iconUrl,
           );
           assert.strictEqual(
             c.details.webhook?.name,
-            sourceConnection.details.webhook?.name,
+            sourceConnection.details!.webhook?.name,
           );
           assert.strictEqual(
             c.details.webhook?.threadId,
-            sourceConnection.details.webhook?.threadId,
+            sourceConnection.details!.webhook?.threadId,
           );
         }
       });
@@ -1440,7 +1441,7 @@ describe(
           1,
         );
 
-        const callArg = mockFeedHandlerService.sendTestArticle.mock.calls[0]
+        const callArg = mockFeedHandlerService.sendTestArticle.mock.calls[0]!
           .arguments[0] as {
           details: {
             type: string;
@@ -1496,7 +1497,7 @@ describe(
           1,
         );
 
-        const callArg = mockFeedHandlerService.sendTestArticle.mock.calls[0]
+        const callArg = mockFeedHandlerService.sendTestArticle.mock.calls[0]!
           .arguments[0] as {
           details: { article?: { id: string } };
         };
@@ -1594,7 +1595,7 @@ describe(
           1,
         );
 
-        const callArg = mockFeedHandlerService.sendTestArticle.mock.calls[0]
+        const callArg = mockFeedHandlerService.sendTestArticle.mock.calls[0]!
           .arguments[0] as {
           details: {
             mediumDetails: {
@@ -1659,7 +1660,7 @@ describe(
           1,
         );
 
-        const callArg = mockFeedHandlerService.sendTestArticle.mock.calls[0]
+        const callArg = mockFeedHandlerService.sendTestArticle.mock.calls[0]!
           .arguments[0] as {
           details: {
             feed: {
@@ -1718,7 +1719,7 @@ describe(
           1,
         );
 
-        const callArg = mockFeedHandlerService.sendTestArticle.mock.calls[0]
+        const callArg = mockFeedHandlerService.sendTestArticle.mock.calls[0]!
           .arguments[0] as {
           details: {
             mediumDetails: {
@@ -1731,11 +1732,11 @@ describe(
 
         assert.strictEqual(callArg.details.mediumDetails.embeds.length, 1);
         assert.strictEqual(
-          callArg.details.mediumDetails.embeds[0].fields.length,
+          callArg.details.mediumDetails.embeds[0]!.fields.length,
           1,
         );
         assert.deepStrictEqual(
-          callArg.details.mediumDetails.embeds[0].fields[0],
+          callArg.details.mediumDetails.embeds[0]!.fields[0],
           {
             name: "Valid",
             value: "Field",

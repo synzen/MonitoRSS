@@ -1,7 +1,7 @@
 import { mock, type Mock } from "node:test";
 import type { UserFeedsServiceDeps } from "../../src/services/user-feeds/types";
 import type { SupportersServiceDeps } from "../../src/services/supporters/supporters.service";
-import type { PatronBenefits } from "../../src/services/patrons/patrons.service";
+import type { PatronBenefits } from "../../src/services/patrons/types";
 import { GetArticlesResponseRequestStatus } from "../../src/services/feed-handler/types";
 import type { IDiscordChannelConnection } from "../../src/repositories/interfaces/feed-connection.types";
 import type { FeedConnectionDisabledCode } from "../../src/repositories/shared/enums";
@@ -106,10 +106,10 @@ export interface MockPatronsService {
 export function createMockPatronsService(
   options: MockPatronsServiceOptions = {},
 ): MockPatronsService {
-  const isValidFn =
+  const isValidFn = () =>
     typeof options.isValidPatron === "function"
-      ? options.isValidPatron
-      : () => options.isValidPatron ?? true;
+      ? options.isValidPatron()
+      : (options.isValidPatron ?? true);
 
   return {
     isValidPatron: mock.fn(isValidFn),
