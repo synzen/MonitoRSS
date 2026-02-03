@@ -54,6 +54,16 @@ export async function getServerHandler(
   });
 }
 
+export async function getServerStatusHandler(
+  request: FastifyRequest<{ Params: ServerParams }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { discordServersService } = request.container;
+  const { serverId } = request.params;
+  const result = await discordServersService.getServer(serverId);
+  return reply.send({ result: { authorized: !!result } });
+}
+
 export async function getActiveThreadsHandler(
   request: FastifyRequest<{
     Params: ServerParams;

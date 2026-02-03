@@ -9,26 +9,14 @@ import { getTestDbUri } from "./test-constants";
 import type { SessionAccessToken } from "../../src/services/discord-auth/types";
 import { createTestHttpServer, type TestHttpServer } from "./test-http-server";
 
-let testConnection: Connection | null = null;
-let currentDatabaseName: string | null = null;
-
 async function setupDatabase(): Promise<Connection> {
-  currentDatabaseName = `test_${randomUUID().replace(/-/g, "")}`;
-  const uri = getTestDbUri(currentDatabaseName);
+  const databaseName = `test_${randomUUID().replace(/-/g, "")}`;
+  const uri = getTestDbUri(databaseName);
 
-  testConnection = mongoose.createConnection(uri);
-  await testConnection.asPromise();
+  const connection = mongoose.createConnection(uri);
+  await connection.asPromise();
 
-  return testConnection;
-}
-
-async function teardownDatabase(): Promise<void> {
-  if (testConnection) {
-    await testConnection.dropDatabase();
-    await testConnection.close();
-    testConnection = null;
-  }
-  currentDatabaseName = null;
+  return connection;
 }
 
 export interface ServiceTestContext {
@@ -41,7 +29,10 @@ export async function createServiceTestContext(): Promise<ServiceTestContext> {
 
   return {
     connection,
-    teardown: teardownDatabase,
+    async teardown() {
+      await connection.dropDatabase();
+      await connection.close();
+    },
   };
 }
 
@@ -234,7 +225,8 @@ export async function createAppTestContext(
     async teardown() {
       await app.close();
       await discordMockServer.stop();
-      await teardownDatabase();
+      await connection.dropDatabase();
+      await connection.close();
     },
   };
 }

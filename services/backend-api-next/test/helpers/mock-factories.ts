@@ -5,7 +5,20 @@ import type { PatronBenefits } from "../../src/services/patrons/types";
 import { GetArticlesResponseRequestStatus } from "../../src/services/feed-handler/types";
 import type { IDiscordChannelConnection } from "../../src/repositories/interfaces/feed-connection.types";
 import type { FeedConnectionDisabledCode } from "../../src/repositories/shared/enums";
+import type { SessionAccessToken } from "../../src/services/discord-auth/types";
 import { generateTestId } from "./test-id";
+
+export function createMockAccessToken(userId: string): SessionAccessToken {
+  return {
+    access_token: `token-${userId}`,
+    token_type: "Bearer",
+    expires_in: 604800,
+    refresh_token: "mock-refresh-token",
+    scope: "identify guilds",
+    expiresAt: Math.floor(Date.now() / 1000) + 604800,
+    discord: { id: userId },
+  };
+}
 
 export interface MockFeedHandlerOptions {
   url?: string;

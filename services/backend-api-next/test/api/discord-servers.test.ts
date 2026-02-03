@@ -4,21 +4,9 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../helpers/test-context";
-import type { SessionAccessToken } from "../../src/services/discord-auth/types";
+import { createMockAccessToken } from "../helpers/mock-factories";
 
 const MANAGE_CHANNEL_PERMISSION = "16";
-
-function createMockAccessToken(userId: string): SessionAccessToken {
-  return {
-    access_token: "mock-access-token",
-    token_type: "Bearer",
-    expires_in: 604800,
-    refresh_token: "mock-refresh-token",
-    scope: "identify guilds",
-    expiresAt: Math.floor(Date.now() / 1000) + 604800,
-    discord: { id: userId },
-  };
-}
 
 let ctx: AppTestContext;
 
@@ -31,54 +19,44 @@ after(async () => {
 });
 
 describe("GET /api/v1/discord-servers/:serverId", { concurrency: true }, () => {
-  const serverId = "server-unauth-100";
-
   it("returns 401 without authentication", async () => {
+    const serverId = "server-unauth-100";
     const response = await ctx.fetch(`/api/v1/discord-servers/${serverId}`);
     assert.strictEqual(response.status, 401);
   });
-});
 
-describe(
-  "GET /api/v1/discord-servers/:serverId - Bot not in server",
-  { concurrency: true },
-  () => {
+  it("returns 404 when bot is not in the server", async () => {
     const serverId = "server-bot-missing-101";
     const mockAccessToken = createMockAccessToken("user-101");
 
-    before(() => {
-      ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
-        status: 404,
-        body: { message: "Unknown Guild" },
-      });
+    ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
+      status: 404,
+      body: { message: "Unknown Guild" },
     });
 
-    it("returns 404 when bot is not in the server", async () => {
-      const cookies = await ctx.setSession(mockAccessToken);
+    const cookies = await ctx.setSession(mockAccessToken);
 
-      const response = await ctx.fetch(`/api/v1/discord-servers/${serverId}`, {
-        headers: { cookie: cookies },
-      });
-
-      assert.strictEqual(response.status, 404);
+    const response = await ctx.fetch(`/api/v1/discord-servers/${serverId}`, {
+      headers: { cookie: cookies },
     });
-  },
-);
 
-describe(
-  "GET /api/v1/discord-servers/:serverId - User lacks permission",
-  { concurrency: true },
-  () => {
+    assert.strictEqual(response.status, 404);
+  });
+
+  it("returns 403 when user lacks permission to manage server", async () => {
     const serverId = "server-no-perm-102";
     const mockAccessToken = createMockAccessToken("user-102");
 
-    before(() => {
-      ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
-        status: 200,
-        body: { id: serverId, name: "Test Server" },
-      });
+    ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
+      status: 200,
+      body: { id: serverId, name: "Test Server" },
+    });
 
-      ctx.discordMockServer.registerRoute("GET", "/users/@me/guilds", {
+    ctx.discordMockServer.registerRouteForToken(
+      "GET",
+      "/users/@me/guilds",
+      mockAccessToken.access_token,
+      {
         status: 200,
         body: [
           {
@@ -88,35 +66,32 @@ describe(
             permissions: "0",
           },
         ],
-      });
+      },
+    );
+
+    const cookies = await ctx.setSession(mockAccessToken);
+
+    const response = await ctx.fetch(`/api/v1/discord-servers/${serverId}`, {
+      headers: { cookie: cookies },
     });
 
-    it("returns 403 when user lacks permission to manage server", async () => {
-      const cookies = await ctx.setSession(mockAccessToken);
+    assert.strictEqual(response.status, 403);
+  });
 
-      const response = await ctx.fetch(`/api/v1/discord-servers/${serverId}`, {
-        headers: { cookie: cookies },
-      });
-
-      assert.strictEqual(response.status, 403);
-    });
-  },
-);
-
-describe(
-  "GET /api/v1/discord-servers/:serverId - Success",
-  { concurrency: true },
-  () => {
+  it("returns 200 with profile and includesBot when all checks pass", async () => {
     const serverId = "server-success-103";
     const mockAccessToken = createMockAccessToken("user-103");
 
-    before(() => {
-      ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
-        status: 200,
-        body: { id: serverId, name: "Test Server" },
-      });
+    ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
+      status: 200,
+      body: { id: serverId, name: "Test Server" },
+    });
 
-      ctx.discordMockServer.registerRoute("GET", "/users/@me/guilds", {
+    ctx.discordMockServer.registerRouteForToken(
+      "GET",
+      "/users/@me/guilds",
+      mockAccessToken.access_token,
+      {
         status: 200,
         body: [
           {
@@ -126,33 +101,162 @@ describe(
             permissions: MANAGE_CHANNEL_PERMISSION,
           },
         ],
-      });
+      },
+    );
+
+    const cookies = await ctx.setSession(mockAccessToken);
+
+    const response = await ctx.fetch(`/api/v1/discord-servers/${serverId}`, {
+      headers: { cookie: cookies },
     });
 
-    it("returns 200 with profile and includesBot when all checks pass", async () => {
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as {
+      result: {
+        profile: {
+          dateFormat: string;
+          timezone: string;
+          dateLanguage: string;
+        };
+        includesBot: boolean;
+      };
+    };
+    assert.ok(body.result);
+    assert.ok(body.result.profile);
+    assert.strictEqual(typeof body.result.profile.dateFormat, "string");
+    assert.strictEqual(typeof body.result.profile.timezone, "string");
+    assert.strictEqual(typeof body.result.profile.dateLanguage, "string");
+    assert.strictEqual(body.result.includesBot, true);
+  });
+});
+
+describe(
+  "GET /api/v1/discord-servers/:serverId/status",
+  { concurrency: true },
+  () => {
+    it("returns 401 without authentication", async () => {
+      const serverId = "server-status-unauth-300";
+      const response = await ctx.fetch(
+        `/api/v1/discord-servers/${serverId}/status`,
+      );
+      assert.strictEqual(response.status, 401);
+    });
+
+    it("returns 403 when user lacks permission", async () => {
+      const serverId = "server-status-no-perm-301";
+      const mockAccessToken = createMockAccessToken("user-301");
+
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        mockAccessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: serverId,
+              name: "Test Server",
+              owner: false,
+              permissions: "0",
+            },
+          ],
+        },
+      );
+
       const cookies = await ctx.setSession(mockAccessToken);
 
-      const response = await ctx.fetch(`/api/v1/discord-servers/${serverId}`, {
-        headers: { cookie: cookies },
+      const response = await ctx.fetch(
+        `/api/v1/discord-servers/${serverId}/status`,
+        {
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 403);
+    });
+
+    it("returns 200 with authorized=true when bot is in server", async () => {
+      const serverId = "server-status-auth-302";
+      const mockAccessToken = createMockAccessToken("user-302");
+
+      ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
+        status: 200,
+        body: { id: serverId, name: "Test Server" },
       });
+
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        mockAccessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: serverId,
+              name: "Test Server",
+              owner: false,
+              permissions: MANAGE_CHANNEL_PERMISSION,
+            },
+          ],
+        },
+      );
+
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        `/api/v1/discord-servers/${serverId}/status`,
+        {
+          headers: { cookie: cookies },
+        },
+      );
 
       assert.strictEqual(response.status, 200);
       const body = (await response.json()) as {
-        result: {
-          profile: {
-            dateFormat: string;
-            timezone: string;
-            dateLanguage: string;
-          };
-          includesBot: boolean;
-        };
+        result: { authorized: boolean };
       };
-      assert.ok(body.result);
-      assert.ok(body.result.profile);
-      assert.strictEqual(typeof body.result.profile.dateFormat, "string");
-      assert.strictEqual(typeof body.result.profile.timezone, "string");
-      assert.strictEqual(typeof body.result.profile.dateLanguage, "string");
-      assert.strictEqual(body.result.includesBot, true);
+      assert.strictEqual(body.result.authorized, true);
+    });
+
+    it("returns 200 with authorized=false when bot is not in server", async () => {
+      const serverId = "server-status-noauth-303";
+      const mockAccessToken = createMockAccessToken("user-303");
+
+      ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
+        status: 404,
+        body: { message: "Unknown Guild" },
+      });
+
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        mockAccessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: serverId,
+              name: "Test Server",
+              owner: false,
+              permissions: MANAGE_CHANNEL_PERMISSION,
+            },
+          ],
+        },
+      );
+
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        `/api/v1/discord-servers/${serverId}/status`,
+        {
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { authorized: boolean };
+      };
+      assert.strictEqual(body.result.authorized, false);
     });
   },
 );
@@ -161,32 +265,23 @@ describe(
   "GET /api/v1/discord-servers/:serverId/active-threads",
   { concurrency: true },
   () => {
-    const serverId = "server-threads-unauth-200";
-
     it("returns 401 without authentication", async () => {
+      const serverId = "server-threads-unauth-200";
       const response = await ctx.fetch(
         `/api/v1/discord-servers/${serverId}/active-threads`,
       );
       assert.strictEqual(response.status, 401);
     });
-  },
-);
 
-describe(
-  "GET /api/v1/discord-servers/:serverId/active-threads - Bot not in server",
-  { concurrency: true },
-  () => {
-    const serverId = "server-threads-bot-missing-201";
-    const mockAccessToken = createMockAccessToken("user-201");
+    it("returns 404 when bot is not in the server", async () => {
+      const serverId = "server-threads-bot-missing-201";
+      const mockAccessToken = createMockAccessToken("user-201");
 
-    before(() => {
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 404,
         body: { message: "Unknown Guild" },
       });
-    });
 
-    it("returns 404 when bot is not in the server", async () => {
       const cookies = await ctx.setSession(mockAccessToken);
 
       const response = await ctx.fetch(
@@ -198,36 +293,33 @@ describe(
 
       assert.strictEqual(response.status, 404);
     });
-  },
-);
 
-describe(
-  "GET /api/v1/discord-servers/:serverId/active-threads - User lacks permission",
-  { concurrency: true },
-  () => {
-    const serverId = "server-threads-no-perm-202";
-    const mockAccessToken = createMockAccessToken("user-202");
+    it("returns 403 when user lacks permission", async () => {
+      const serverId = "server-threads-no-perm-202";
+      const mockAccessToken = createMockAccessToken("user-202");
 
-    before(() => {
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 200,
         body: { id: serverId, name: "Test Server" },
       });
 
-      ctx.discordMockServer.registerRoute("GET", "/users/@me/guilds", {
-        status: 200,
-        body: [
-          {
-            id: serverId,
-            name: "Test Server",
-            owner: false,
-            permissions: "0",
-          },
-        ],
-      });
-    });
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        mockAccessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: serverId,
+              name: "Test Server",
+              owner: false,
+              permissions: "0",
+            },
+          ],
+        },
+      );
 
-    it("returns 403 when user lacks permission", async () => {
       const cookies = await ctx.setSession(mockAccessToken);
 
       const response = await ctx.fetch(
@@ -239,33 +331,32 @@ describe(
 
       assert.strictEqual(response.status, 403);
     });
-  },
-);
 
-describe(
-  "GET /api/v1/discord-servers/:serverId/active-threads - Success",
-  { concurrency: true },
-  () => {
-    const serverId = "server-threads-success-203";
-    const mockAccessToken = createMockAccessToken("user-203");
+    it("returns 200 with threads list", async () => {
+      const serverId = "server-threads-success-203";
+      const mockAccessToken = createMockAccessToken("user-203");
 
-    before(() => {
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 200,
         body: { id: serverId, name: "Test Server" },
       });
 
-      ctx.discordMockServer.registerRoute("GET", "/users/@me/guilds", {
-        status: 200,
-        body: [
-          {
-            id: serverId,
-            name: "Test Server",
-            owner: false,
-            permissions: MANAGE_CHANNEL_PERMISSION,
-          },
-        ],
-      });
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        mockAccessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: serverId,
+              name: "Test Server",
+              owner: false,
+              permissions: MANAGE_CHANNEL_PERMISSION,
+            },
+          ],
+        },
+      );
 
       ctx.discordMockServer.registerRoute(
         "GET",
@@ -278,7 +369,7 @@ describe(
                 id: "thread-1",
                 name: "Test Thread",
                 guild_id: serverId,
-                type: 11, // PUBLIC_THREAD
+                type: 11,
                 parent_id: "channel-1",
               },
               {
@@ -293,9 +384,7 @@ describe(
           },
         },
       );
-    });
 
-    it("returns 200 with threads list", async () => {
       const cookies = await ctx.setSession(mockAccessToken);
 
       const response = await ctx.fetch(
@@ -322,34 +411,33 @@ describe(
       assert.strictEqual(firstResult.name, "Test Thread");
       assert.strictEqual(firstResult.type, "public_thread");
     });
-  },
-);
 
-describe(
-  "GET /api/v1/discord-servers/:serverId/active-threads - Filter by parentChannelId",
-  { concurrency: true },
-  () => {
-    const serverId = "server-threads-filter-204";
-    const parentChannelId = "channel-1";
-    const mockAccessToken = createMockAccessToken("user-204");
+    it("filters threads by parentChannelId", async () => {
+      const serverId = "server-threads-filter-204";
+      const parentChannelId = "channel-1";
+      const mockAccessToken = createMockAccessToken("user-204");
 
-    before(() => {
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 200,
         body: { id: serverId, name: "Test Server" },
       });
 
-      ctx.discordMockServer.registerRoute("GET", "/users/@me/guilds", {
-        status: 200,
-        body: [
-          {
-            id: serverId,
-            name: "Test Server",
-            owner: false,
-            permissions: MANAGE_CHANNEL_PERMISSION,
-          },
-        ],
-      });
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        mockAccessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: serverId,
+              name: "Test Server",
+              owner: false,
+              permissions: MANAGE_CHANNEL_PERMISSION,
+            },
+          ],
+        },
+      );
 
       ctx.discordMockServer.registerRoute(
         "GET",
@@ -377,9 +465,7 @@ describe(
           },
         },
       );
-    });
 
-    it("filters threads by parentChannelId", async () => {
       const cookies = await ctx.setSession(mockAccessToken);
 
       const response = await ctx.fetch(

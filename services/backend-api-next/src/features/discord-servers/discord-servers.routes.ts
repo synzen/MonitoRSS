@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import {
   getServerHandler,
+  getServerStatusHandler,
   getActiveThreadsHandler,
 } from "./discord-servers.handlers";
 import {
@@ -30,6 +31,11 @@ export async function discordServersRoutes(
       requireServerPermission(extractServerId),
     ],
     handler: getServerHandler,
+  });
+
+  app.get<{ Params: ServerParams }>("/:serverId/status", {
+    preHandler: [requireAuthHook, requireServerPermission(extractServerId)],
+    handler: getServerStatusHandler,
   });
 
   app.get<{ Params: ServerParams; Querystring: ActiveThreadsQuerystring }>(

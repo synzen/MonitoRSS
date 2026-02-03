@@ -26,6 +26,12 @@ export interface TestHttpServer {
     path: string,
     response: MockResponse | ResponseProvider,
   ): void;
+  registerRouteForToken(
+    method: string,
+    path: string,
+    token: string,
+    response: MockResponse,
+  ): void;
   getRequests(): RecordedRequest[];
   getRequestsForPath(path: string): RecordedRequest[];
   clear(): void;
@@ -35,6 +41,7 @@ export interface TestHttpServer {
 export function createTestHttpServer(): TestHttpServer {
   const requests: RecordedRequest[] = [];
   const routes = new Map<string, MockResponse | ResponseProvider>();
+  const tokenRoutes = new Map<string, Map<string, MockResponse>>();
 
   function makeRouteKey(method: string, path: string): string {
     return `${method.toUpperCase()}:${path}`;
@@ -69,17 +76,33 @@ export function createTestHttpServer(): TestHttpServer {
       requests.push(recorded);
 
       const routeKey = makeRouteKey(recorded.method, recorded.path);
-      const handler = routes.get(routeKey);
 
-      if (!handler) {
-        res.statusCode = 404;
-        res.setHeader("Content-Type", "application/json");
-        res.end(JSON.stringify({ error: "Not found" }));
-        return;
+      const tokenHandlers = tokenRoutes.get(routeKey);
+      let mockResponse: MockResponse | undefined;
+
+      if (tokenHandlers) {
+        const auth = recorded.headers["authorization"];
+        const token =
+          typeof auth === "string" ? auth.replace("Bearer ", "") : undefined;
+
+        if (token) {
+          mockResponse = tokenHandlers.get(token);
+        }
       }
 
-      const mockResponse =
-        typeof handler === "function" ? handler(recorded) : handler;
+      if (!mockResponse) {
+        const handler = routes.get(routeKey);
+
+        if (!handler) {
+          res.statusCode = 404;
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify({ error: "Not found" }));
+          return;
+        }
+
+        mockResponse =
+          typeof handler === "function" ? handler(recorded) : handler;
+      }
 
       res.statusCode = mockResponse.status ?? 200;
       res.setHeader("Content-Type", "application/json");
@@ -123,6 +146,23 @@ export function createTestHttpServer(): TestHttpServer {
       routes.set(makeRouteKey(method, path), response);
     },
 
+    registerRouteForToken(
+      method: string,
+      path: string,
+      token: string,
+      response: MockResponse,
+    ) {
+      const key = makeRouteKey(method, path);
+      let handlers = tokenRoutes.get(key);
+
+      if (!handlers) {
+        handlers = new Map();
+        tokenRoutes.set(key, handlers);
+      }
+
+      handlers.set(token, response);
+    },
+
     getRequests() {
       return [...requests];
     },
@@ -134,6 +174,7 @@ export function createTestHttpServer(): TestHttpServer {
     clear() {
       requests.length = 0;
       routes.clear();
+      tokenRoutes.clear();
     },
 
     stop() {
