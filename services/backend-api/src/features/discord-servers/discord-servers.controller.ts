@@ -1,10 +1,8 @@
 /* eslint-disable max-len */
 import {
-  Body,
   Controller,
   Get,
   Param,
-  Patch,
   Query,
   UseFilters,
   UseGuards,
@@ -24,8 +22,6 @@ import { HttpCacheInterceptor } from "../../common/interceptors/http-cache-inter
 import { GetServerRolesOutputDto } from "./dto/GetServerRolesOutput.dto";
 import { GetServerStatusOutputDto } from "./dto/GetServerStatusOutput.dto";
 import { GetServerOutputDto } from "./dto/GetServerOutput.dto";
-import { UpdateServerOutputDto } from "./dto/UpdateServerOutput.dto";
-import { UpdateServerInputDto } from "./dto/UpdateServerInput.dto";
 import { GetDiscordServerChannelsFilter } from "./filters";
 import { GetServerActiveThreadsInputDto } from "./dto/GetServerActiveThreadsInput.dto";
 import { GetServerMembersInputDto } from "./dto/GetServerMembersInput.dto";
@@ -77,25 +73,6 @@ export class DiscordServersController {
     );
 
     return GetServerChannelsOutputDto.fromEntities(channels);
-  }
-
-  @Patch(":serverId")
-  @UseGuards(BotHasServerGuard)
-  @UseGuards(UserManagesServerGuard)
-  async updateServer(
-    @Param("serverId") serverId: string,
-    @Body(ValidationPipe) updateServerInputDto: UpdateServerInputDto
-  ): Promise<UpdateServerOutputDto> {
-    const profile = await this.discordServersService.updateServerProfile(
-      serverId,
-      updateServerInputDto
-    );
-
-    return {
-      result: {
-        profile,
-      },
-    };
   }
 
   @Get(":serverId/status")

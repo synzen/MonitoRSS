@@ -4,7 +4,6 @@ export * from "./useDiscordServerChannels";
 export * from "./useDiscordServerRoles";
 export * from "./useDiscordServerAccessStatus";
 export * from "./useDiscordServerSettings";
-export * from "./useUpdateDiscordServerSettings";
 export * from "./useDiscordServerActiveThreads";
 export * from "./useDiscordServerMembers";
 export * from "./useDiscordServerMember";
