@@ -1,11 +1,20 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import type { DiscordGuildChannelFormatted } from "../../services/discord-servers/types";
-import { DiscordChannelType } from "../../shared/types/discord.types";
+import {
+  DiscordChannelType,
+  type DiscordGuildMember,
+} from "../../shared/types/discord.types";
+import { DISCORD_CDN_BASE_URL } from "../../shared/constants/discord";
 import { DiscordServerNotFoundException } from "../../shared/exceptions/discord-servers.exceptions";
 import { NotFoundError, ApiErrorCode } from "../../infra/error-handler";
 
 interface ServerParams {
   serverId: string;
+}
+
+interface MemberParams {
+  serverId: string;
+  memberId: string;
 }
 
 interface ActiveThreadsQuerystring {
@@ -132,4 +141,50 @@ export async function getServerChannelsHandler(
 
     throw err;
   }
+}
+
+function buildAvatarUrl(member: DiscordGuildMember): string | null {
+  const avatar = member.user.avatar;
+
+  if (!avatar) {
+    return null;
+  }
+
+  const ext = avatar.startsWith("a_") ? ".gif" : ".png";
+
+  return `${DISCORD_CDN_BASE_URL}/avatars/${member.user.id}/${avatar}${ext}`;
+}
+
+function memberToResult(member: DiscordGuildMember) {
+  return {
+    id: member.user.id,
+    username: member.user.username,
+    displayName: member.nick || member.user.username,
+    avatarUrl: buildAvatarUrl(member),
+  };
+}
+
+const DISCORD_SNOWFLAKE_REGEX = /^\d{17,20}$/;
+
+export async function getServerMemberHandler(
+  request: FastifyRequest<{ Params: MemberParams }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { discordServersService } = request.container;
+  const { serverId, memberId } = request.params;
+
+  if (!DISCORD_SNOWFLAKE_REGEX.test(memberId)) {
+    return reply.send({ result: null });
+  }
+
+  const member = await discordServersService.getMemberOfServer(
+    serverId,
+    memberId,
+  );
+
+  if (!member) {
+    return reply.send({ result: null });
+  }
+
+  return reply.send({ result: memberToResult(member) });
 }

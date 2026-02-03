@@ -5,6 +5,7 @@ import {
   getActiveThreadsHandler,
   getServerChannelsHandler,
   getServerRolesHandler,
+  getServerMemberHandler,
 } from "./discord-servers.handlers";
 import {
   requireAuthHook,
@@ -14,6 +15,11 @@ import {
 
 interface ServerParams {
   serverId: string;
+}
+
+interface MemberParams {
+  serverId: string;
+  memberId: string;
 }
 
 interface ActiveThreadsQuerystring {
@@ -71,5 +77,14 @@ export async function discordServersRoutes(
       requireServerPermission(extractServerId),
     ],
     handler: getServerRolesHandler,
+  });
+
+  app.get<{ Params: MemberParams }>("/:serverId/members/:memberId", {
+    preHandler: [
+      requireAuthHook,
+      requireBotInServer(extractServerId),
+      requireServerPermission(extractServerId),
+    ],
+    handler: getServerMemberHandler,
   });
 }

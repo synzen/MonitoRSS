@@ -897,3 +897,360 @@ describe(
     });
   },
 );
+
+describe(
+  "GET /api/v1/discord-servers/:serverId/members/:memberId",
+  { concurrency: true },
+  () => {
+    it("returns 401 without authentication", async () => {
+      const serverId = "server-member-unauth-600";
+      const memberId = "12345678901234567";
+      const response = await ctx.fetch(
+        `/api/v1/discord-servers/${serverId}/members/${memberId}`,
+      );
+      assert.strictEqual(response.status, 401);
+    });
+
+    it("returns 404 when bot is not in the server", async () => {
+      const serverId = "server-member-bot-missing-601";
+      const memberId = "12345678901234567";
+      const mockAccessToken = createMockAccessToken("user-601");
+
+      ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
+        status: 404,
+        body: { message: "Unknown Guild" },
+      });
+
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        `/api/v1/discord-servers/${serverId}/members/${memberId}`,
+        {
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 404);
+    });
+
+    it("returns 403 when user lacks permission", async () => {
+      const serverId = "server-member-no-perm-602";
+      const memberId = "12345678901234567";
+      const mockAccessToken = createMockAccessToken("user-602");
+
+      ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
+        status: 200,
+        body: { id: serverId, name: "Test Server" },
+      });
+
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        mockAccessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: serverId,
+              name: "Test Server",
+              owner: false,
+              permissions: "0",
+            },
+          ],
+        },
+      );
+
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        `/api/v1/discord-servers/${serverId}/members/${memberId}`,
+        {
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 403);
+    });
+
+    it("returns 200 with null result for invalid memberId", async () => {
+      const serverId = "server-member-invalid-603";
+      const memberId = "not-a-snowflake";
+      const mockAccessToken = createMockAccessToken("user-603");
+
+      ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
+        status: 200,
+        body: { id: serverId, name: "Test Server" },
+      });
+
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        mockAccessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: serverId,
+              name: "Test Server",
+              owner: false,
+              permissions: MANAGE_CHANNEL_PERMISSION,
+            },
+          ],
+        },
+      );
+
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        `/api/v1/discord-servers/${serverId}/members/${memberId}`,
+        {
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as { result: null };
+      assert.strictEqual(body.result, null);
+    });
+
+    it("returns 200 with null result when member not found", async () => {
+      const serverId = "server-member-notfound-604";
+      const memberId = "12345678901234567";
+      const mockAccessToken = createMockAccessToken("user-604");
+
+      ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
+        status: 200,
+        body: { id: serverId, name: "Test Server" },
+      });
+
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        mockAccessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: serverId,
+              name: "Test Server",
+              owner: false,
+              permissions: MANAGE_CHANNEL_PERMISSION,
+            },
+          ],
+        },
+      );
+
+      ctx.discordMockServer.registerRoute(
+        "GET",
+        `/guilds/${serverId}/members/${memberId}`,
+        {
+          status: 404,
+          body: { message: "Unknown Member" },
+        },
+      );
+
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        `/api/v1/discord-servers/${serverId}/members/${memberId}`,
+        {
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as { result: null };
+      assert.strictEqual(body.result, null);
+    });
+
+    it("returns 200 with null result when member forbidden", async () => {
+      const serverId = "server-member-forbidden-607";
+      const memberId = "12345678901234567";
+      const mockAccessToken = createMockAccessToken("user-607");
+
+      ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
+        status: 200,
+        body: { id: serverId, name: "Test Server" },
+      });
+
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        mockAccessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: serverId,
+              name: "Test Server",
+              owner: false,
+              permissions: MANAGE_CHANNEL_PERMISSION,
+            },
+          ],
+        },
+      );
+
+      ctx.discordMockServer.registerRoute(
+        "GET",
+        `/guilds/${serverId}/members/${memberId}`,
+        {
+          status: 403,
+          body: { message: "Missing Access" },
+        },
+      );
+
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        `/api/v1/discord-servers/${serverId}/members/${memberId}`,
+        {
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as { result: null };
+      assert.strictEqual(body.result, null);
+    });
+
+    it("returns 200 with formatted member data", async () => {
+      const serverId = "server-member-success-605";
+      const memberId = "98765432109876543";
+      const mockAccessToken = createMockAccessToken("user-605");
+
+      ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
+        status: 200,
+        body: { id: serverId, name: "Test Server" },
+      });
+
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        mockAccessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: serverId,
+              name: "Test Server",
+              owner: false,
+              permissions: MANAGE_CHANNEL_PERMISSION,
+            },
+          ],
+        },
+      );
+
+      ctx.discordMockServer.registerRoute(
+        "GET",
+        `/guilds/${serverId}/members/${memberId}`,
+        {
+          status: 200,
+          body: {
+            roles: ["role-1"],
+            nick: "Cool Nick",
+            user: {
+              id: memberId,
+              username: "testuser",
+              avatar: "a_abc123def456",
+            },
+          },
+        },
+      );
+
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        `/api/v1/discord-servers/${serverId}/members/${memberId}`,
+        {
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: {
+          id: string;
+          username: string;
+          displayName: string;
+          avatarUrl: string;
+        };
+      };
+      assert.ok(body.result);
+      assert.strictEqual(body.result.id, memberId);
+      assert.strictEqual(body.result.username, "testuser");
+      assert.strictEqual(body.result.displayName, "Cool Nick");
+      assert.strictEqual(
+        body.result.avatarUrl,
+        `https://cdn.discordapp.com/avatars/${memberId}/a_abc123def456.gif`,
+      );
+    });
+
+    it("returns 200 with null avatarUrl when member has no avatar", async () => {
+      const serverId = "server-member-noavatar-606";
+      const memberId = "11111111111111111";
+      const mockAccessToken = createMockAccessToken("user-606");
+
+      ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
+        status: 200,
+        body: { id: serverId, name: "Test Server" },
+      });
+
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        mockAccessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: serverId,
+              name: "Test Server",
+              owner: false,
+              permissions: MANAGE_CHANNEL_PERMISSION,
+            },
+          ],
+        },
+      );
+
+      ctx.discordMockServer.registerRoute(
+        "GET",
+        `/guilds/${serverId}/members/${memberId}`,
+        {
+          status: 200,
+          body: {
+            roles: [],
+            nick: null,
+            user: {
+              id: memberId,
+              username: "noavataruser",
+            },
+          },
+        },
+      );
+
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        `/api/v1/discord-servers/${serverId}/members/${memberId}`,
+        {
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: {
+          id: string;
+          username: string;
+          displayName: string;
+          avatarUrl: string | null;
+        };
+      };
+      assert.ok(body.result);
+      assert.strictEqual(body.result.id, memberId);
+      assert.strictEqual(body.result.username, "noavataruser");
+      assert.strictEqual(body.result.displayName, "noavataruser");
+      assert.strictEqual(body.result.avatarUrl, null);
+    });
+  },
+);
