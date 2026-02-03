@@ -4,6 +4,7 @@ import {
   getServerStatusHandler,
   getActiveThreadsHandler,
   getServerChannelsHandler,
+  getServerRolesHandler,
 } from "./discord-servers.handlers";
 import {
   requireAuthHook,
@@ -62,4 +63,13 @@ export async function discordServersRoutes(
       handler: getServerChannelsHandler,
     },
   );
+
+  app.get<{ Params: ServerParams }>("/:serverId/roles", {
+    preHandler: [
+      requireAuthHook,
+      requireBotInServer(extractServerId),
+      requireServerPermission(extractServerId),
+    ],
+    handler: getServerRolesHandler,
+  });
 }

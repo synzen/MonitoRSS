@@ -105,7 +105,6 @@ export class DiscordServersService {
     return this.getProfileSettingsWithDefaults(updated);
   }
 
-
   async getServer(serverId: string): Promise<DiscordGuild | null> {
     try {
       const guild: DiscordGuild =

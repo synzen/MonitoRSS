@@ -88,6 +88,25 @@ export async function getActiveThreadsHandler(
   return reply.send(mapChannelsToOutput(threads));
 }
 
+export async function getServerRolesHandler(
+  request: FastifyRequest<{ Params: ServerParams }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { discordServersService } = request.container;
+  const { serverId } = request.params;
+
+  const roles = await discordServersService.getRolesOfServer(serverId);
+
+  return reply.send({
+    results: roles.map((role) => ({
+      id: role.id,
+      name: role.name,
+      color: "#" + role.color.toString(16).padStart(6, "0"),
+    })),
+    total: roles.length,
+  });
+}
+
 export async function getServerChannelsHandler(
   request: FastifyRequest<{
     Params: ServerParams;

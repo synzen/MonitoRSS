@@ -741,3 +741,159 @@ describe(
     });
   },
 );
+
+describe(
+  "GET /api/v1/discord-servers/:serverId/roles",
+  { concurrency: true },
+  () => {
+    it("returns 401 without authentication", async () => {
+      const serverId = "server-roles-unauth-500";
+      const response = await ctx.fetch(
+        `/api/v1/discord-servers/${serverId}/roles`,
+      );
+      assert.strictEqual(response.status, 401);
+    });
+
+    it("returns 404 when bot is not in the server", async () => {
+      const serverId = "server-roles-bot-missing-501";
+      const mockAccessToken = createMockAccessToken("user-501");
+
+      ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
+        status: 404,
+        body: { message: "Unknown Guild" },
+      });
+
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        `/api/v1/discord-servers/${serverId}/roles`,
+        {
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 404);
+    });
+
+    it("returns 403 when user lacks permission", async () => {
+      const serverId = "server-roles-no-perm-502";
+      const mockAccessToken = createMockAccessToken("user-502");
+
+      ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
+        status: 200,
+        body: { id: serverId, name: "Test Server" },
+      });
+
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        mockAccessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: serverId,
+              name: "Test Server",
+              owner: false,
+              permissions: "0",
+            },
+          ],
+        },
+      );
+
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        `/api/v1/discord-servers/${serverId}/roles`,
+        {
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 403);
+    });
+
+    it("returns 200 with roles list and hex colors", async () => {
+      const serverId = "server-roles-success-503";
+      const mockAccessToken = createMockAccessToken("user-503");
+
+      ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
+        status: 200,
+        body: { id: serverId, name: "Test Server" },
+      });
+
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        mockAccessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: serverId,
+              name: "Test Server",
+              owner: false,
+              permissions: MANAGE_CHANNEL_PERMISSION,
+            },
+          ],
+        },
+      );
+
+      ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}/roles`, {
+        status: 200,
+        body: [
+          {
+            id: "role-1",
+            name: "Admin",
+            color: 16711680,
+            permissions: "8",
+            position: 1,
+            hoist: true,
+            mentionable: true,
+          },
+          {
+            id: "role-2",
+            name: "Member",
+            color: 0,
+            permissions: "0",
+            position: 0,
+            hoist: false,
+            mentionable: false,
+          },
+        ],
+      });
+
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        `/api/v1/discord-servers/${serverId}/roles`,
+        {
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        results: Array<{
+          id: string;
+          name: string;
+          color: string;
+        }>;
+        total: number;
+      };
+      assert.strictEqual(body.total, 2);
+
+      const adminRole = body.results[0];
+      assert.ok(adminRole);
+      assert.strictEqual(adminRole.id, "role-1");
+      assert.strictEqual(adminRole.name, "Admin");
+      assert.strictEqual(adminRole.color, "#ff0000");
+
+      const memberRole = body.results[1];
+      assert.ok(memberRole);
+      assert.strictEqual(memberRole.id, "role-2");
+      assert.strictEqual(memberRole.name, "Member");
+      assert.strictEqual(memberRole.color, "#000000");
+    });
+  },
+);
