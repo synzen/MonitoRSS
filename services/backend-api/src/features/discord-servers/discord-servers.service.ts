@@ -3,9 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { InjectModel } from "@nestjs/mongoose";
 import { DiscordAPIError } from "../../common/errors/DiscordAPIError";
 import { DiscordAPIService } from "../../services/apis/discord/discord-api.service";
-import { Feed } from "../feeds/entities/feed.entity";
 import { FeedsService } from "../feeds/feeds.service";
-import { FeedStatus } from "../feeds/types/FeedStatus.type";
 import {
   DiscordServerProfile,
   DiscordServerProfileModel,
@@ -138,28 +136,6 @@ export class DiscordServersService {
     );
 
     return this.getProfileSettingsWithDefaults(updated);
-  }
-
-  async getServerFeeds(
-    serverId: string,
-    options: {
-      search?: string;
-      limit: number;
-      offset: number;
-    }
-  ): Promise<(Feed & { status: FeedStatus })[]> {
-    return this.feedsService.getServerFeeds(serverId, options);
-  }
-
-  async countServerFeeds(
-    serverId: string,
-    options?: {
-      search?: string;
-    }
-  ): Promise<number> {
-    return this.feedsService.countServerFeeds(serverId, {
-      search: options?.search,
-    });
   }
 
   async getServer(serverId: string) {

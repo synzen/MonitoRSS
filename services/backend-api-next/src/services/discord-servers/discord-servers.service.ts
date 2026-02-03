@@ -105,27 +105,6 @@ export class DiscordServersService {
     return this.getProfileSettingsWithDefaults(updated);
   }
 
-  async getServerFeeds(
-    serverId: string,
-    options: {
-      search?: string;
-      limit: number;
-      offset: number;
-    },
-  ): Promise<DetailedFeed[]> {
-    return this.deps.feedsService.getServerFeeds(serverId, options);
-  }
-
-  async countServerFeeds(
-    serverId: string,
-    options?: {
-      search?: string;
-    },
-  ): Promise<number> {
-    return this.deps.feedsService.countServerFeeds(serverId, {
-      search: options?.search,
-    });
-  }
 
   async getServer(serverId: string): Promise<DiscordGuild | null> {
     try {

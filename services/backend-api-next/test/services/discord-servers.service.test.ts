@@ -276,67 +276,6 @@ describe("DiscordServersService", { concurrency: true }, () => {
     });
   });
 
-  describe("getServerFeeds", () => {
-    it("calls the feeds service correctly", async () => {
-      const serverId = "server-id";
-      const options = { limit: 10, offset: 20 };
-      const mockFeeds = [{ id: "feed-1" }];
-      const ctx = harness.createContext({
-        feedsService: {
-          getServerFeeds: async () => mockFeeds,
-        },
-      });
-
-      const result = await ctx.service.getServerFeeds(serverId, options);
-
-      assert.deepStrictEqual(result, mockFeeds);
-      const calls = ctx.feedsService.getServerFeeds.mock.calls;
-      assert.strictEqual(calls.length, 1);
-      assert.deepStrictEqual(calls[0]!.arguments, [serverId, options]);
-    });
-  });
-
-  describe("countServerFeeds", () => {
-    it("calls the feeds service correctly", async () => {
-      const serverId = "server-id";
-      const ctx = harness.createContext({
-        feedsService: {
-          countServerFeeds: async () => 5,
-        },
-      });
-
-      const result = await ctx.service.countServerFeeds(serverId);
-
-      assert.strictEqual(result, 5);
-      const calls = ctx.feedsService.countServerFeeds.mock.calls;
-      assert.strictEqual(calls.length, 1);
-      assert.deepStrictEqual(calls[0]!.arguments, [
-        serverId,
-        { search: undefined },
-      ]);
-    });
-
-    it("calls the feed service with search correctly", async () => {
-      const serverId = "server-id";
-      const options = { search: "search" };
-      const ctx = harness.createContext({
-        feedsService: {
-          countServerFeeds: async () => 3,
-        },
-      });
-
-      const result = await ctx.service.countServerFeeds(serverId, options);
-
-      assert.strictEqual(result, 3);
-      const calls = ctx.feedsService.countServerFeeds.mock.calls;
-      assert.strictEqual(calls.length, 1);
-      assert.deepStrictEqual(calls[0]!.arguments, [
-        serverId,
-        { search: "search" },
-      ]);
-    });
-  });
-
   describe("getServer", () => {
     it("returns the guild", async () => {
       const mockGuild = { id: "server-1", name: "Test Server" };
