@@ -491,3 +491,253 @@ describe(
     });
   },
 );
+
+describe(
+  "GET /api/v1/discord-servers/:serverId/channels",
+  { concurrency: true },
+  () => {
+    it("returns 401 without authentication", async () => {
+      const serverId = "server-channels-unauth-400";
+      const response = await ctx.fetch(
+        `/api/v1/discord-servers/${serverId}/channels`,
+      );
+      assert.strictEqual(response.status, 401);
+    });
+
+    it("returns 403 when user lacks permission", async () => {
+      const serverId = "server-channels-no-perm-401";
+      const mockAccessToken = createMockAccessToken("user-401");
+
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        mockAccessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: serverId,
+              name: "Test Server",
+              owner: false,
+              permissions: "0",
+            },
+          ],
+        },
+      );
+
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        `/api/v1/discord-servers/${serverId}/channels`,
+        {
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 403);
+    });
+
+    it("returns 200 with channels list", async () => {
+      const serverId = "server-channels-success-402";
+      const mockAccessToken = createMockAccessToken("user-402");
+
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        mockAccessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: serverId,
+              name: "Test Server",
+              owner: false,
+              permissions: MANAGE_CHANNEL_PERMISSION,
+            },
+          ],
+        },
+      );
+
+      ctx.discordMockServer.registerRoute(
+        "GET",
+        `/guilds/${serverId}/channels`,
+        {
+          status: 200,
+          body: [
+            {
+              id: "category-1",
+              name: "General",
+              type: 4,
+              guild_id: serverId,
+              position: 0,
+            },
+            {
+              id: "channel-1",
+              name: "general",
+              type: 0,
+              guild_id: serverId,
+              parent_id: "category-1",
+              position: 1,
+            },
+            {
+              id: "channel-2",
+              name: "announcements",
+              type: 5,
+              guild_id: serverId,
+              parent_id: "category-1",
+              position: 2,
+            },
+          ],
+        },
+      );
+
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        `/api/v1/discord-servers/${serverId}/channels`,
+        {
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        results: Array<{
+          id: string;
+          name: string;
+          type: string;
+          category: { id: string; name: string } | null;
+        }>;
+        total: number;
+      };
+      assert.strictEqual(body.total, 2);
+      const firstResult = body.results[0];
+      assert.ok(firstResult);
+      assert.strictEqual(firstResult.id, "channel-1");
+      assert.strictEqual(firstResult.name, "general");
+      assert.strictEqual(firstResult.type, "text");
+      assert.ok(firstResult.category);
+      assert.strictEqual(firstResult.category.id, "category-1");
+      assert.strictEqual(firstResult.category.name, "General");
+    });
+
+    it("filters channels by types query parameter", async () => {
+      const serverId = "server-channels-filter-403";
+      const mockAccessToken = createMockAccessToken("user-403");
+
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        mockAccessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: serverId,
+              name: "Test Server",
+              owner: false,
+              permissions: MANAGE_CHANNEL_PERMISSION,
+            },
+          ],
+        },
+      );
+
+      ctx.discordMockServer.registerRoute(
+        "GET",
+        `/guilds/${serverId}/channels`,
+        {
+          status: 200,
+          body: [
+            {
+              id: "channel-1",
+              name: "general",
+              type: 0,
+              guild_id: serverId,
+              position: 0,
+            },
+            {
+              id: "channel-2",
+              name: "forum-channel",
+              type: 15,
+              guild_id: serverId,
+              position: 1,
+            },
+            {
+              id: "channel-3",
+              name: "announcements",
+              type: 5,
+              guild_id: serverId,
+              position: 2,
+            },
+          ],
+        },
+      );
+
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        `/api/v1/discord-servers/${serverId}/channels?types=forum`,
+        {
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        results: Array<{
+          id: string;
+          name: string;
+          type: string;
+        }>;
+        total: number;
+      };
+      assert.strictEqual(body.total, 1);
+      const firstResult = body.results[0];
+      assert.ok(firstResult);
+      assert.strictEqual(firstResult.id, "channel-2");
+      assert.strictEqual(firstResult.type, "forum");
+    });
+
+    it("returns 404 when server not found", async () => {
+      const serverId = "server-channels-notfound-404";
+      const mockAccessToken = createMockAccessToken("user-404");
+
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        mockAccessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: serverId,
+              name: "Test Server",
+              owner: false,
+              permissions: MANAGE_CHANNEL_PERMISSION,
+            },
+          ],
+        },
+      );
+
+      ctx.discordMockServer.registerRoute(
+        "GET",
+        `/guilds/${serverId}/channels`,
+        {
+          status: 404,
+          body: { message: "Unknown Guild" },
+        },
+      );
+
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        `/api/v1/discord-servers/${serverId}/channels`,
+        {
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 404);
+    });
+  },
+);

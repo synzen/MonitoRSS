@@ -3,6 +3,7 @@ import {
   getServerHandler,
   getServerStatusHandler,
   getActiveThreadsHandler,
+  getServerChannelsHandler,
 } from "./discord-servers.handlers";
 import {
   requireAuthHook,
@@ -16,6 +17,10 @@ interface ServerParams {
 
 interface ActiveThreadsQuerystring {
   parentChannelId?: string;
+}
+
+interface ChannelsQuerystring {
+  types?: string;
 }
 
 const extractServerId = (request: FastifyRequest) =>
@@ -47,6 +52,14 @@ export async function discordServersRoutes(
         requireServerPermission(extractServerId),
       ],
       handler: getActiveThreadsHandler,
+    },
+  );
+
+  app.get<{ Params: ServerParams; Querystring: ChannelsQuerystring }>(
+    "/:serverId/channels",
+    {
+      preHandler: [requireAuthHook, requireServerPermission(extractServerId)],
+      handler: getServerChannelsHandler,
     },
   );
 }

@@ -1,6 +1,8 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import type { DiscordGuildChannelFormatted } from "../../services/discord-servers/types";
 import { DiscordChannelType } from "../../shared/types/discord.types";
+import { DiscordServerNotFoundException } from "../../shared/exceptions/discord-servers.exceptions";
+import { NotFoundError, ApiErrorCode } from "../../infra/error-handler";
 
 interface ServerParams {
   serverId: string;
@@ -8,6 +10,10 @@ interface ServerParams {
 
 interface ActiveThreadsQuerystring {
   parentChannelId?: string;
+}
+
+interface ChannelsQuerystring {
+  types?: string;
 }
 
 const mappedTypes: Partial<Record<DiscordChannelType, string>> = {
@@ -80,4 +86,31 @@ export async function getActiveThreadsHandler(
   });
 
   return reply.send(mapChannelsToOutput(threads));
+}
+
+export async function getServerChannelsHandler(
+  request: FastifyRequest<{
+    Params: ServerParams;
+    Querystring: ChannelsQuerystring;
+  }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { discordServersService } = request.container;
+  const { serverId } = request.params;
+  const { types } = request.query;
+
+  try {
+    const channels = await discordServersService.getTextChannelsOfServer(
+      serverId,
+      { types: types?.split(",") },
+    );
+
+    return reply.send(mapChannelsToOutput(channels));
+  } catch (err) {
+    if (err instanceof DiscordServerNotFoundException) {
+      throw new NotFoundError(ApiErrorCode.DISCORD_SERVER_NOT_FOUND);
+    }
+
+    throw err;
+  }
 }
