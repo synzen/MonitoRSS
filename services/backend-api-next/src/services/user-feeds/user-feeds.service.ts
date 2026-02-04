@@ -171,6 +171,12 @@ export class UserFeedsService {
 
     const { connections, ...propertiesToCopy } = sourceFeedToCopyFrom || {};
 
+    const dateCheckOptions = propertiesToCopy.dateCheckOptions
+      ? propertiesToCopy.dateCheckOptions
+      : enableDateChecks
+        ? { oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24 }
+        : undefined;
+
     const created = await this.deps.userFeedRepository.create({
       ...propertiesToCopy,
       title: title || feedTitle || "Untitled Feed",
@@ -184,11 +190,7 @@ export class UserFeedsService {
       slotOffsetMs: calculateSlotOffsetMs(finalUrl, refreshRateSeconds),
       maxDailyArticles,
       feedRequestLookupKey: tempLookupDetails?.key,
-      dateCheckOptions: enableDateChecks
-        ? {
-            oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24, // 1 day
-          }
-        : undefined,
+      dateCheckOptions,
     });
 
     if (connections) {

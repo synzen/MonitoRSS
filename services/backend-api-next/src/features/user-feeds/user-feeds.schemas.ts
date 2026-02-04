@@ -13,3 +13,18 @@ export const createUserFeedBodySchema = {
     sourceFeedId: { type: "string" },
   },
 };
+
+export interface DeduplicateFeedUrlsBody {
+  urls: string[];
+}
+
+export const deduplicateFeedUrlsBodySchema = {
+  type: "object",
+  required: ["urls"],
+  properties: {
+    urls: {
+      type: "array",
+      items: { type: "string", minLength: 1 },
+    },
+  },
+};

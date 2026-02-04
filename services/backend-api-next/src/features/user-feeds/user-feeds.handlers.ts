@@ -20,7 +20,26 @@ import {
 import type { IUserFeed } from "../../repositories/interfaces/user-feed.types";
 import { CustomPlaceholderStepType } from "../../repositories/shared/enums";
 import { UserFeedManagerStatus } from "../../repositories/shared/enums";
-import type { CreateUserFeedBody } from "./user-feeds.schemas";
+import type {
+  CreateUserFeedBody,
+  DeduplicateFeedUrlsBody,
+} from "./user-feeds.schemas";
+
+export async function deduplicateFeedUrlsHandler(
+  request: FastifyRequest<{ Body: DeduplicateFeedUrlsBody }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { userFeedsService } = request.container;
+  const token = getAccessTokenFromRequest(request);
+  const discordUserId = token!.discord.id;
+
+  const urls = await userFeedsService.deduplicateFeedUrls(
+    discordUserId,
+    request.body.urls,
+  );
+
+  return reply.status(200).send({ result: { urls } });
+}
 
 export async function createUserFeedHandler(
   request: FastifyRequest<{ Body: CreateUserFeedBody }>,
