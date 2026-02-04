@@ -9,6 +9,7 @@ import logger from "./infra/logger";
 import { discordAuthRoutes } from "./features/discord-auth/discord-auth.routes";
 import { discordUsersRoutes } from "./features/discord-users/discord-users.routes";
 import { discordServersRoutes } from "./features/discord-servers/discord-servers.routes";
+import { discordWebhooksRoutes } from "./features/discord-webhooks/discord-webhooks.routes";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -84,6 +85,11 @@ export async function createApp(
       // Discord servers routes
       await instance.register(discordServersRoutes, {
         prefix: "/discord-servers",
+      });
+
+      // Discord webhooks routes
+      await instance.register(discordWebhooksRoutes, {
+        prefix: "/discord-webhooks",
       });
     },
     { prefix: "/api/v1" },
