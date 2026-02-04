@@ -2,9 +2,13 @@ import type { FeedFetcherApiService } from "../feed-fetcher-api/feed-fetcher-api
 import type { FeedRequestLookupDetails } from "../../shared/types/feed-request-lookup-details.type";
 import { FeedFetcherFetchStatus } from "../feed-fetcher-api/types";
 import {
+  FeedParseTimeoutException,
+  InvalidFeedException,
+  FeedFetchErrorException,
+} from "./exceptions";
+import {
   FeedFetchTimeoutException,
   FeedParseException,
-  FeedParseTimeoutException,
   FeedInvalidSslCertException,
   FeedRequestException,
   FeedTooManyRequestsException,
@@ -13,9 +17,7 @@ import {
   FeedNotFoundException,
   FeedInternalErrorException,
   FeedTooLargeException,
-  InvalidFeedException,
-  FeedFetchErrorException,
-} from "./exceptions";
+} from "../../shared/exceptions/user-feeds.exceptions";
 import { Readable } from "node:stream";
 import FeedParser from "feedparser";
 import Article from "../../shared/utils/Article";

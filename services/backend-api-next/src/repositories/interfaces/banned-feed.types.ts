@@ -7,4 +7,6 @@ export interface IBannedFeed {
 
 export interface IBannedFeedRepository {
   findByUrlForGuild(url: string, guildId: string): Promise<IBannedFeed | null>;
+  create(input: Omit<IBannedFeed, "id">): Promise<IBannedFeed>;
+  deleteAll(): Promise<void>;
 }

@@ -10,6 +10,7 @@ import { discordAuthRoutes } from "./features/discord-auth/discord-auth.routes";
 import { discordUsersRoutes } from "./features/discord-users/discord-users.routes";
 import { discordServersRoutes } from "./features/discord-servers/discord-servers.routes";
 import { discordWebhooksRoutes } from "./features/discord-webhooks/discord-webhooks.routes";
+import { userFeedsRoutes } from "./features/user-feeds/user-feeds.routes";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -91,6 +92,9 @@ export async function createApp(
       await instance.register(discordWebhooksRoutes, {
         prefix: "/discord-webhooks",
       });
+
+      // User feeds routes
+      await instance.register(userFeedsRoutes, { prefix: "/user-feeds" });
     },
     { prefix: "/api/v1" },
   );

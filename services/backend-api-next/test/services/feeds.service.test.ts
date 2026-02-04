@@ -5,7 +5,10 @@ import type {
   IFeedRepository,
   IFeedWithFailRecord,
 } from "../../src/repositories/interfaces/feed.types";
-import type { IBannedFeedRepository } from "../../src/repositories/interfaces/banned-feed.types";
+import type {
+  IBannedFeed,
+  IBannedFeedRepository,
+} from "../../src/repositories/interfaces/banned-feed.types";
 import type { DiscordApiService } from "../../src/services/discord-api/discord-api.service";
 import type { DiscordAuthService } from "../../src/services/discord-auth/discord-auth.service";
 import type { DiscordPermissionsService } from "../../src/services/discord-permissions/discord-permissions.service";
@@ -551,6 +554,8 @@ describe("FeedsService", { concurrency: true }, () => {
         feedRepository: {} as IFeedRepository,
         bannedFeedRepository: {
           findByUrlForGuild: async () => null,
+          create: async () => ({}) as IBannedFeed,
+          deleteAll: async () => {},
         },
         feedSchedulingService: {} as FeedSchedulingService,
         discordApiService: {} as DiscordApiService,
@@ -578,6 +583,8 @@ describe("FeedsService", { concurrency: true }, () => {
         feedRepository: {} as IFeedRepository,
         bannedFeedRepository: {
           findByUrlForGuild: async () => bannedFeed,
+          create: async () => ({}) as IBannedFeed,
+          deleteAll: async () => {},
         },
         feedSchedulingService: {} as FeedSchedulingService,
         discordApiService: {} as DiscordApiService,
@@ -605,6 +612,8 @@ describe("FeedsService", { concurrency: true }, () => {
             calledGuildId = guildId;
             return null;
           },
+          create: async () => ({}) as IBannedFeed,
+          deleteAll: async () => {},
         },
         feedSchedulingService: {} as FeedSchedulingService,
         discordApiService: {} as DiscordApiService,

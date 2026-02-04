@@ -184,13 +184,11 @@ export class UserFeedsService {
       slotOffsetMs: calculateSlotOffsetMs(finalUrl, refreshRateSeconds),
       maxDailyArticles,
       feedRequestLookupKey: tempLookupDetails?.key,
-      dateCheckOptions:
-        sourceFeedToCopyFrom?.dateCheckOptions ??
-        (enableDateChecks
-          ? {
-              oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24, // 1 day
-            }
-          : undefined),
+      dateCheckOptions: enableDateChecks
+        ? {
+            oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24, // 1 day
+          }
+        : undefined,
     });
 
     if (connections) {
