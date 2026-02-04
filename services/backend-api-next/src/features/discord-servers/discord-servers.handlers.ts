@@ -17,6 +17,11 @@ interface MemberParams {
   memberId: string;
 }
 
+interface MembersQuerystring {
+  search: string;
+  limit: number;
+}
+
 interface ActiveThreadsQuerystring {
   parentChannelId?: string;
 }
@@ -162,6 +167,28 @@ function memberToResult(member: DiscordGuildMember) {
     displayName: member.nick || member.user.username,
     avatarUrl: buildAvatarUrl(member),
   };
+}
+
+export async function getServerMembersHandler(
+  request: FastifyRequest<{
+    Params: ServerParams;
+    Querystring: MembersQuerystring;
+  }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { discordServersService } = request.container;
+  const { serverId } = request.params;
+  const { search, limit } = request.query;
+
+  const members = await discordServersService.searchMembersOfServer(serverId, {
+    search,
+    limit,
+  });
+
+  return reply.send({
+    results: members.map(memberToResult),
+    total: members.length,
+  });
 }
 
 const DISCORD_SNOWFLAKE_REGEX = /^\d{17,20}$/;

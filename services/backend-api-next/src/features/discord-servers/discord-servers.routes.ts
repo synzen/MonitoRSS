@@ -5,6 +5,7 @@ import {
   getActiveThreadsHandler,
   getServerChannelsHandler,
   getServerRolesHandler,
+  getServerMembersHandler,
   getServerMemberHandler,
 } from "./discord-servers.handlers";
 import {
@@ -28,6 +29,11 @@ interface ActiveThreadsQuerystring {
 
 interface ChannelsQuerystring {
   types?: string;
+}
+
+interface MembersQuerystring {
+  search: string;
+  limit: number;
 }
 
 const extractServerId = (request: FastifyRequest) =>
@@ -78,6 +84,28 @@ export async function discordServersRoutes(
     ],
     handler: getServerRolesHandler,
   });
+
+  app.get<{ Params: ServerParams; Querystring: MembersQuerystring }>(
+    "/:serverId/members",
+    {
+      preHandler: [
+        requireAuthHook,
+        requireBotInServer(extractServerId),
+        requireServerPermission(extractServerId),
+      ],
+      schema: {
+        querystring: {
+          type: "object",
+          required: ["search", "limit"],
+          properties: {
+            search: { type: "string", minLength: 1 },
+            limit: { type: "integer", minimum: 1 },
+          },
+        },
+      },
+      handler: getServerMembersHandler,
+    },
+  );
 
   app.get<{ Params: MemberParams }>("/:serverId/members/:memberId", {
     preHandler: [
