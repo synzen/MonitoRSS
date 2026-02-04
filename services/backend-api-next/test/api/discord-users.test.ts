@@ -5,6 +5,7 @@ import {
   type AppTestContext,
 } from "../helpers/test-context";
 import { createMockAccessToken } from "../helpers/mock-factories";
+import { generateSnowflake } from "../helpers/test-id";
 
 let ctx: AppTestContext;
 
@@ -23,7 +24,7 @@ describe("GET /api/v1/discord-users/bot", { concurrency: true }, () => {
   });
 
   it("returns 200 with bot info when authenticated", async () => {
-    const mockAccessToken = createMockAccessToken("user-bot-100");
+    const mockAccessToken = createMockAccessToken(generateSnowflake());
 
     ctx.discordMockServer.registerRoute("GET", "/users/test-client-id", {
       status: 200,
@@ -77,7 +78,8 @@ describe(
     });
 
     it("returns authenticated: true when token is valid", async () => {
-      const mockAccessToken = createMockAccessToken("user-auth-valid-300");
+      const userId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(userId);
 
       ctx.discordMockServer.registerRouteForToken(
         "GET",
@@ -86,7 +88,7 @@ describe(
         {
           status: 200,
           body: {
-            id: "user-auth-valid-300",
+            id: userId,
             username: "TestUser",
             discriminator: "0",
             avatar: "abc123",
@@ -109,7 +111,7 @@ describe(
     });
 
     it("returns authenticated: false and clears session when Discord returns 401", async () => {
-      const mockAccessToken = createMockAccessToken("user-auth-401-301");
+      const mockAccessToken = createMockAccessToken(generateSnowflake());
 
       ctx.discordMockServer.registerRouteForToken(
         "GET",
@@ -136,7 +138,7 @@ describe(
     });
 
     it("returns authenticated: false and clears session when Discord returns 403", async () => {
-      const mockAccessToken = createMockAccessToken("user-auth-403-302");
+      const mockAccessToken = createMockAccessToken(generateSnowflake());
 
       ctx.discordMockServer.registerRouteForToken(
         "GET",
@@ -163,7 +165,7 @@ describe(
     });
 
     it("propagates unexpected errors from Discord API", async () => {
-      const mockAccessToken = createMockAccessToken("user-auth-500-303");
+      const mockAccessToken = createMockAccessToken(generateSnowflake());
 
       ctx.discordMockServer.registerRouteForToken(
         "GET",
@@ -196,12 +198,13 @@ describe("GET /api/v1/discord-users/:id", { concurrency: true }, () => {
   });
 
   it("returns user info when authenticated", async () => {
-    const mockAccessToken = createMockAccessToken("user-getid-400");
+    const userId = generateSnowflake();
+    const mockAccessToken = createMockAccessToken(generateSnowflake());
 
-    ctx.discordMockServer.registerRoute("GET", "/users/target-user-456", {
+    ctx.discordMockServer.registerRoute("GET", `/users/${userId}`, {
       status: 200,
       body: {
-        id: "target-user-456",
+        id: userId,
         username: "TargetUser",
         discriminator: "0",
         avatar: "def456",
@@ -210,7 +213,7 @@ describe("GET /api/v1/discord-users/:id", { concurrency: true }, () => {
 
     const cookies = await ctx.setSession(mockAccessToken);
 
-    const response = await ctx.fetch("/api/v1/discord-users/target-user-456", {
+    const response = await ctx.fetch(`/api/v1/discord-users/${userId}`, {
       headers: { cookie: cookies },
     });
 
@@ -223,21 +226,22 @@ describe("GET /api/v1/discord-users/:id", { concurrency: true }, () => {
       };
     };
     assert.ok(body.result);
-    assert.strictEqual(body.result.id, "target-user-456");
+    assert.strictEqual(body.result.id, userId);
     assert.strictEqual(body.result.username, "TargetUser");
     assert.strictEqual(
       body.result.avatarUrl,
-      "https://cdn.discordapp.com/avatars/target-user-456/def456.png",
+      `https://cdn.discordapp.com/avatars/${userId}/def456.png`,
     );
   });
 
   it("returns animated gif avatar URL for animated avatars", async () => {
-    const mockAccessToken = createMockAccessToken("user-getid-401");
+    const userId = generateSnowflake();
+    const mockAccessToken = createMockAccessToken(generateSnowflake());
 
-    ctx.discordMockServer.registerRoute("GET", "/users/animated-avatar-user", {
+    ctx.discordMockServer.registerRoute("GET", `/users/${userId}`, {
       status: 200,
       body: {
-        id: "animated-avatar-user",
+        id: userId,
         username: "AnimatedUser",
         discriminator: "0",
         avatar: "a_animated123",
@@ -246,12 +250,9 @@ describe("GET /api/v1/discord-users/:id", { concurrency: true }, () => {
 
     const cookies = await ctx.setSession(mockAccessToken);
 
-    const response = await ctx.fetch(
-      "/api/v1/discord-users/animated-avatar-user",
-      {
-        headers: { cookie: cookies },
-      },
-    );
+    const response = await ctx.fetch(`/api/v1/discord-users/${userId}`, {
+      headers: { cookie: cookies },
+    });
 
     assert.strictEqual(response.status, 200);
     const body = (await response.json()) as {
@@ -262,10 +263,10 @@ describe("GET /api/v1/discord-users/:id", { concurrency: true }, () => {
       };
     };
     assert.ok(body.result);
-    assert.strictEqual(body.result.id, "animated-avatar-user");
+    assert.strictEqual(body.result.id, userId);
     assert.strictEqual(
       body.result.avatarUrl,
-      "https://cdn.discordapp.com/avatars/animated-avatar-user/a_animated123.gif",
+      `https://cdn.discordapp.com/avatars/${userId}/a_animated123.gif`,
     );
   });
 });
@@ -289,7 +290,8 @@ describe(
     });
 
     it("returns user profile and supporter benefits", async () => {
-      const mockAccessToken = createMockAccessToken("user-supporter-200");
+      const userId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(userId);
 
       supporterCtx.discordMockServer.registerRouteForToken(
         "GET",
@@ -298,7 +300,7 @@ describe(
         {
           status: 200,
           body: {
-            id: "user-supporter-200",
+            id: userId,
             username: "TestUser",
             discriminator: "0",
             avatar: "abc123",
@@ -307,7 +309,7 @@ describe(
       );
 
       await supporterCtx.createSupporter({
-        id: "user-supporter-200",
+        id: userId,
         guilds: ["guild-1", "guild-2"],
         expireAt: new Date("2030-12-31"),
         maxFeeds: 100,
@@ -338,11 +340,11 @@ describe(
           expireAt?: string;
         };
       };
-      assert.strictEqual(body.id, "user-supporter-200");
+      assert.strictEqual(body.id, userId);
       assert.strictEqual(body.username, "TestUser");
       assert.strictEqual(
         body.iconUrl,
-        "https://cdn.discordapp.com/avatars/user-supporter-200/abc123.png",
+        `https://cdn.discordapp.com/avatars/${userId}/abc123.png`,
       );
       assert.strictEqual(body.maxFeeds, 100);
       assert.strictEqual(body.maxUserFeeds, 50);
@@ -358,7 +360,8 @@ describe(
     });
 
     it("returns user profile without supporter object when user has no supporter record", async () => {
-      const mockAccessToken = createMockAccessToken("non-supporter-user");
+      const userId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(userId);
 
       supporterCtx.discordMockServer.registerRouteForToken(
         "GET",
@@ -367,7 +370,7 @@ describe(
         {
           status: 200,
           body: {
-            id: "non-supporter-user",
+            id: userId,
             username: "RegularUser",
             discriminator: "0",
             avatar: "regular123",
@@ -392,11 +395,11 @@ describe(
         allowCustomPlaceholders?: boolean;
         supporter?: unknown;
       };
-      assert.strictEqual(body.id, "non-supporter-user");
+      assert.strictEqual(body.id, userId);
       assert.strictEqual(body.username, "RegularUser");
       assert.strictEqual(
         body.iconUrl,
-        "https://cdn.discordapp.com/avatars/non-supporter-user/regular123.png",
+        `https://cdn.discordapp.com/avatars/${userId}/regular123.png`,
       );
       assert.strictEqual(body.supporter, undefined);
       assert.ok(body.maxFeeds > 0);
