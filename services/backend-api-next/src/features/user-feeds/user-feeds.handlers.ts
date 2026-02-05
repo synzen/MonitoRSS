@@ -1,6 +1,9 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
-import { getAccessTokenFromRequest } from "../../infra/auth";
-import { BadRequestError, ApiErrorCode } from "../../infra/error-handler";
+import {
+  BadRequestError,
+  NotFoundError,
+  ApiErrorCode,
+} from "../../infra/error-handler";
 import {
   FeedLimitReachedException,
   SourceFeedNotFoundException,
@@ -24,15 +27,16 @@ import type {
   CreateUserFeedBody,
   DeduplicateFeedUrlsBody,
   ValidateUrlBody,
+  UpdateUserFeedsBody,
 } from "./user-feeds.schemas";
+import { UpdateUserFeedsOp } from "./user-feeds.schemas";
 
 export async function deduplicateFeedUrlsHandler(
   request: FastifyRequest<{ Body: DeduplicateFeedUrlsBody }>,
   reply: FastifyReply,
 ): Promise<void> {
   const { userFeedsService } = request.container;
-  const token = getAccessTokenFromRequest(request);
-  const discordUserId = token!.discord.id;
+  const { discordUserId } = request;
 
   const urls = await userFeedsService.deduplicateFeedUrls(
     discordUserId,
@@ -47,14 +51,13 @@ export async function createUserFeedHandler(
   reply: FastifyReply,
 ): Promise<void> {
   const { userFeedsService, supportersService } = request.container;
-  const token = getAccessTokenFromRequest(request);
-  const discordUserId = token!.discord.id;
+  const { discordUserId, accessToken } = request;
 
   try {
     const feed = await userFeedsService.addFeed(
       {
         discordUserId,
-        userAccessToken: token!.access_token,
+        userAccessToken: accessToken.access_token,
       },
       {
         url: request.body.url,
@@ -245,8 +248,7 @@ export async function validateFeedUrlHandler(
   reply: FastifyReply,
 ): Promise<void> {
   const { userFeedsService } = request.container;
-  const token = getAccessTokenFromRequest(request);
-  const discordUserId = token!.discord.id;
+  const { discordUserId } = request;
 
   try {
     const result = await userFeedsService.validateFeedUrl(
@@ -295,4 +297,52 @@ export async function validateFeedUrlHandler(
 
     throw err;
   }
+}
+
+export async function updateUserFeedsHandler(
+  request: FastifyRequest<{ Body: UpdateUserFeedsBody }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { userFeedsService, userFeedRepository, usersService, config } =
+    request.container;
+  const { discordUserId } = request;
+  const { op, data } = request.body;
+  const requestedFeedIds = [...new Set(data.feeds.map((f) => f.id))];
+
+  if (!userFeedRepository.areAllValidIds(requestedFeedIds)) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const existingCount = await userFeedRepository.countByIds(requestedFeedIds);
+
+  if (existingCount !== requestedFeedIds.length) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
+  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
+
+  const authorizedFeedIds = isAdmin
+    ? requestedFeedIds
+    : await userFeedRepository.filterFeedIdsByOwnership(
+        requestedFeedIds,
+        discordUserId,
+      );
+
+  if (op === UpdateUserFeedsOp.BulkDelete) {
+    const results = await userFeedsService.bulkDelete(authorizedFeedIds);
+    return reply.status(200).send({ results });
+  }
+
+  if (op === UpdateUserFeedsOp.BulkDisable) {
+    const results = await userFeedsService.bulkDisable(authorizedFeedIds);
+    return reply.status(200).send({ results });
+  }
+
+  if (op === UpdateUserFeedsOp.BulkEnable) {
+    const results = await userFeedsService.bulkEnable(authorizedFeedIds);
+    return reply.status(200).send({ results });
+  }
+
+  throw new BadRequestError(ApiErrorCode.INVALID_REQUEST);
 }

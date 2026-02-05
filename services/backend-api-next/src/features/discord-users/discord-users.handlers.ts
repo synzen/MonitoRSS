@@ -1,17 +1,16 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
-import { requireAuth, getAccessTokenFromRequest } from "../../infra/auth";
+import { getAccessTokenFromRequest } from "../../infra/auth";
 import { DiscordAPIError } from "../../shared/exceptions/discord-api.error";
 
 export async function getMeHandler(
   request: FastifyRequest,
   reply: FastifyReply,
 ): Promise<void> {
-  const { discordUsersService, authService } = request.container;
+  const { discordUsersService } = request.container;
 
-  const token = await requireAuth(request, reply, authService);
-  if (!token) return;
-
-  const user = await discordUsersService.getUser(token.access_token);
+  const user = await discordUsersService.getUser(
+    request.accessToken.access_token,
+  );
 
   return reply.send({
     id: user.id,
@@ -29,10 +28,7 @@ export async function getBotHandler(
   request: FastifyRequest,
   reply: FastifyReply,
 ): Promise<void> {
-  const { discordUsersService, config, authService } = request.container;
-
-  const token = await requireAuth(request, reply, authService);
-  if (!token) return;
+  const { discordUsersService, config } = request.container;
 
   const bot = await discordUsersService.getBot();
 
@@ -81,10 +77,7 @@ export async function getUserByIdHandler(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { discordUsersService, authService } = request.container;
-
-  const token = await requireAuth(request, reply, authService);
-  if (!token) return;
+  const { discordUsersService } = request.container;
 
   const user = await discordUsersService.getUserById(request.params.id);
 

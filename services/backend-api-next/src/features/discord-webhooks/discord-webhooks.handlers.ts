@@ -1,5 +1,4 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
-import { getAccessTokenFromRequest } from "../../infra/auth";
 import {
   NotFoundError,
   ForbiddenError,
@@ -17,7 +16,6 @@ export async function getWebhookHandler(
 ): Promise<void> {
   const { discordWebhooksService, discordAuthService } = request.container;
   const { id } = request.params;
-  const token = getAccessTokenFromRequest(request);
 
   try {
     const webhook = await discordWebhooksService.getWebhook(id);
@@ -27,7 +25,7 @@ export async function getWebhookHandler(
     }
 
     const { isManager } = await discordAuthService.userManagesGuild(
-      token!.access_token,
+      request.accessToken.access_token,
       webhook.guild_id,
     );
 

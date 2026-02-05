@@ -42,9 +42,10 @@ const extractServerId = (request: FastifyRequest) =>
 export async function discordServersRoutes(
   app: FastifyInstance,
 ): Promise<void> {
+  app.addHook("onRequest", requireAuthHook);
+
   app.get<{ Params: ServerParams }>("/:serverId", {
     preHandler: [
-      requireAuthHook,
       requireBotInServer(extractServerId),
       requireServerPermission(extractServerId),
     ],
@@ -52,7 +53,7 @@ export async function discordServersRoutes(
   });
 
   app.get<{ Params: ServerParams }>("/:serverId/status", {
-    preHandler: [requireAuthHook, requireServerPermission(extractServerId)],
+    preHandler: [requireServerPermission(extractServerId)],
     handler: getServerStatusHandler,
   });
 
@@ -60,7 +61,6 @@ export async function discordServersRoutes(
     "/:serverId/active-threads",
     {
       preHandler: [
-        requireAuthHook,
         requireBotInServer(extractServerId),
         requireServerPermission(extractServerId),
       ],
@@ -71,14 +71,13 @@ export async function discordServersRoutes(
   app.get<{ Params: ServerParams; Querystring: ChannelsQuerystring }>(
     "/:serverId/channels",
     {
-      preHandler: [requireAuthHook, requireServerPermission(extractServerId)],
+      preHandler: [requireServerPermission(extractServerId)],
       handler: getServerChannelsHandler,
     },
   );
 
   app.get<{ Params: ServerParams }>("/:serverId/roles", {
     preHandler: [
-      requireAuthHook,
       requireBotInServer(extractServerId),
       requireServerPermission(extractServerId),
     ],
@@ -89,7 +88,6 @@ export async function discordServersRoutes(
     "/:serverId/members",
     {
       preHandler: [
-        requireAuthHook,
         requireBotInServer(extractServerId),
         requireServerPermission(extractServerId),
       ],
@@ -109,7 +107,6 @@ export async function discordServersRoutes(
 
   app.get<{ Params: MemberParams }>("/:serverId/members/:memberId", {
     preHandler: [
-      requireAuthHook,
       requireBotInServer(extractServerId),
       requireServerPermission(extractServerId),
     ],

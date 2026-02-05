@@ -296,32 +296,6 @@ export function getAccessTokenFromRequest(
   return request.session.get("accessToken") as SessionAccessToken | undefined;
 }
 
-export async function requireAuth(
-  request: FastifyRequest,
-  reply: FastifyReply,
-  authService: AuthService,
-): Promise<SessionAccessToken | null> {
-  let token = getAccessTokenFromRequest(request);
-
-  if (!token) {
-    sendError(reply, 401, ApiErrorCode.UNAUTHORIZED);
-    return null;
-  }
-
-  if (authService.isTokenExpired(token)) {
-    try {
-      token = await authService.refreshToken(token);
-      request.session.set("accessToken", token);
-    } catch (err) {
-      logger.error("Failed to refresh token", { error: (err as Error).stack });
-      sendError(reply, 401, ApiErrorCode.TOKEN_REFRESH_FAILED);
-      return null;
-    }
-  }
-
-  return token;
-}
-
 /**
  * PreHandler hook that requires authentication.
  * Refreshes the token if expired and stores the refreshed token in session.
@@ -348,6 +322,9 @@ export async function requireAuthHook(
       return;
     }
   }
+
+  request.accessToken = token;
+  request.discordUserId = token.discord.id;
 }
 
 /**

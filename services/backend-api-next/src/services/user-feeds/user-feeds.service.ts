@@ -171,12 +171,6 @@ export class UserFeedsService {
 
     const { connections, ...propertiesToCopy } = sourceFeedToCopyFrom || {};
 
-    const dateCheckOptions = propertiesToCopy.dateCheckOptions
-      ? propertiesToCopy.dateCheckOptions
-      : enableDateChecks
-        ? { oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24 }
-        : undefined;
-
     const created = await this.deps.userFeedRepository.create({
       ...propertiesToCopy,
       title: title || feedTitle || "Untitled Feed",
@@ -190,7 +184,9 @@ export class UserFeedsService {
       slotOffsetMs: calculateSlotOffsetMs(finalUrl, refreshRateSeconds),
       maxDailyArticles,
       feedRequestLookupKey: tempLookupDetails?.key,
-      dateCheckOptions,
+      dateCheckOptions: enableDateChecks
+        ? { oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24 }
+        : undefined,
     });
 
     if (connections) {
@@ -940,9 +936,9 @@ export class UserFeedsService {
     const userIds = [...new Set(feeds.map((f) => f.user.discordUserId))];
 
     try {
-      for (const userId of userIds) {
-        await this.enforceUserFeedLimit(userId);
-      }
+      await Promise.all(
+        userIds.map((userId) => this.enforceUserFeedLimit(userId)),
+      );
     } catch (err) {
       logger.error("Failed to enforce user feed limits after bulk delete", {
         userIds,
@@ -970,7 +966,7 @@ export class UserFeedsService {
         feedIds,
         DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
       ),
-      this.deps.userFeedRepository.findUserIdsByFeedIds(feedIds),
+      this.deps.userFeedRepository.findDiscordUserIdsByFeedIds(feedIds),
     ]);
     const eligibleIds = new Set(eligibleFeeds.map((f) => f.id));
 
@@ -982,9 +978,9 @@ export class UserFeedsService {
     }
 
     try {
-      for (const userId of userIds) {
-        await this.enforceUserFeedLimit(userId);
-      }
+      await Promise.all(
+        userIds.map((userId) => this.enforceUserFeedLimit(userId)),
+      );
     } catch (err) {
       logger.error("Failed to enforce user feed limits after bulk disable", {
         userIds,
@@ -1003,7 +999,7 @@ export class UserFeedsService {
   ): Promise<Array<{ id: string; enabled: boolean }>> {
     const [eligibleFeeds, userIds] = await Promise.all([
       this.deps.userFeedRepository.findEligibleFeedsForEnable(feedIds),
-      this.deps.userFeedRepository.findUserIdsByFeedIds(feedIds),
+      this.deps.userFeedRepository.findDiscordUserIdsByFeedIds(feedIds),
     ]);
     const eligibleIds = new Set(eligibleFeeds.map((f) => f.id));
 
@@ -1015,9 +1011,9 @@ export class UserFeedsService {
     }
 
     try {
-      for (const userId of userIds) {
-        await this.enforceUserFeedLimit(userId);
-      }
+      await Promise.all(
+        userIds.map((userId) => this.enforceUserFeedLimit(userId)),
+      );
     } catch (err) {
       logger.error("Failed to enforce user feed limits after bulk enable", {
         userIds,

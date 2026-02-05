@@ -9,8 +9,9 @@ interface WebhookParams {
 export async function discordWebhooksRoutes(
   app: FastifyInstance,
 ): Promise<void> {
+  app.addHook("onRequest", requireAuthHook);
+
   app.get<{ Params: WebhookParams }>("/:id", {
-    preHandler: [requireAuthHook],
     handler: getWebhookHandler,
   });
 }

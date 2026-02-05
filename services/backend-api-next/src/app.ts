@@ -4,6 +4,7 @@ import fastifyCookie from "@fastify/cookie";
 import fastifyCors from "@fastify/cors";
 import compression from "@fastify/compress";
 import type { Container } from "./container";
+import type { SessionAccessToken } from "./infra/auth";
 import { errorHandler, notFoundHandler } from "./infra/error-handler";
 import logger from "./infra/logger";
 import { discordAuthRoutes } from "./features/discord-auth/discord-auth.routes";
@@ -15,6 +16,8 @@ import { userFeedsRoutes } from "./features/user-feeds/user-feeds.routes";
 declare module "fastify" {
   interface FastifyRequest {
     container: Container;
+    accessToken: SessionAccessToken;
+    discordUserId: string;
   }
 }
 

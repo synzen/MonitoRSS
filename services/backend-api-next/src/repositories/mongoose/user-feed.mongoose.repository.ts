@@ -746,6 +746,27 @@ export class UserFeedMongooseRepository
     return this.toEntity(doc as UserFeedDoc & { _id: Types.ObjectId });
   }
 
+  async filterFeedIdsByOwnership(
+    feedIds: string[],
+    discordUserId: string,
+  ): Promise<string[]> {
+    const objectIds = feedIds
+      .filter((id) => Types.ObjectId.isValid(id))
+      .map((id) => new Types.ObjectId(id));
+
+    if (objectIds.length === 0) return [];
+
+    const docs = await this.model
+      .find({
+        _id: { $in: objectIds },
+        ...this.getOwnershipFilter(discordUserId),
+      })
+      .select("_id")
+      .lean();
+
+    return docs.map((doc) => (doc._id as Types.ObjectId).toString());
+  }
+
   async findByUrls(
     discordUserId: string,
     urls: string[],
@@ -861,6 +882,16 @@ export class UserFeedMongooseRepository
     return result.modifiedCount;
   }
 
+  areAllValidIds(ids: string[]): boolean {
+    return ids.every((id) => Types.ObjectId.isValid(id));
+  }
+
+  async countByIds(ids: string[]): Promise<number> {
+    if (ids.length === 0) return 0;
+    const objectIds = ids.map((id) => this.stringToObjectId(id));
+    return this.model.countDocuments({ _id: { $in: objectIds } });
+  }
+
   async findByIds(ids: string[]): Promise<IUserFeed[]> {
     const objectIds = ids.map((id) => this.stringToObjectId(id));
     const docs = await this.model.find({ _id: { $in: objectIds } }).lean();
@@ -919,7 +950,7 @@ export class UserFeedMongooseRepository
     }));
   }
 
-  async findUserIdsByFeedIds(feedIds: string[]): Promise<string[]> {
+  async findDiscordUserIdsByFeedIds(feedIds: string[]): Promise<string[]> {
     if (feedIds.length === 0) return [];
 
     const objectIds = feedIds.map((id) => this.stringToObjectId(id));

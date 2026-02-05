@@ -382,6 +382,10 @@ export interface IUserFeedRepository {
   removeConnectionsFromInvites(
     input: RemoveConnectionsFromInvitesInput,
   ): Promise<void>;
+  filterFeedIdsByOwnership(
+    feedIds: string[],
+    discordUserId: string,
+  ): Promise<string[]>;
 
   findOneAndUpdate(
     filter: Record<string, unknown>,
@@ -426,6 +430,8 @@ export interface IUserFeedRepository {
     filter: Record<string, unknown>,
     update: Record<string, unknown>,
   ): Promise<number>;
+  areAllValidIds(ids: string[]): boolean;
+  countByIds(ids: string[]): Promise<number>;
   findByIds(ids: string[]): Promise<IUserFeed[]>;
   findEligibleFeedsForDisable(
     feedIds: string[],
@@ -434,7 +440,7 @@ export interface IUserFeedRepository {
   findEligibleFeedsForEnable(
     feedIds: string[],
   ): Promise<UserFeedForBulkOperation[]>;
-  findUserIdsByFeedIds(feedIds: string[]): Promise<string[]>;
+  findDiscordUserIdsByFeedIds(feedIds: string[]): Promise<string[]>;
   getFeedsGroupedByUserForLimitEnforcement(
     query: UserFeedLimitEnforcementQuery,
   ): AsyncIterable<UserFeedLimitEnforcementResult>;

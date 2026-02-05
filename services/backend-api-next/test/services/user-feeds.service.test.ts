@@ -345,7 +345,6 @@ describe("UserFeedsService", { concurrency: true }, () => {
         passingComparisons: ["title", "description"],
         blockingComparisons: ["author"],
         formatOptions: { dateFormat: "YYYY-MM-DD" },
-        dateCheckOptions: { oldArticleDateDiffMsThreshold: 86400000 },
       });
 
       const result = await ctx.service.addFeed(
@@ -359,10 +358,6 @@ describe("UserFeedsService", { concurrency: true }, () => {
       ]);
       assert.deepStrictEqual(result.blockingComparisons, ["author"]);
       assert.strictEqual(result.formatOptions?.dateFormat, "YYYY-MM-DD");
-      assert.strictEqual(
-        result.dateCheckOptions?.oldArticleDateDiffMsThreshold,
-        86400000,
-      );
     });
 
     it("throws SourceFeedNotFoundException when sourceFeedId not found", async () => {
