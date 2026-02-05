@@ -23,9 +23,11 @@ import {
 import type { IUserFeed } from "../../repositories/interfaces/user-feed.types";
 import { CustomPlaceholderStepType } from "../../repositories/shared/enums";
 import { UserFeedManagerStatus } from "../../repositories/shared/enums";
+import { convertToNestedDiscordEmbed } from "../../shared/utils/convert-to-nested-discord-embed";
 import type {
   CreateUserFeedBody,
   DeduplicateFeedUrlsBody,
+  GetUserFeedParams,
   ValidateUrlBody,
   UpdateUserFeedsBody,
 } from "./user-feeds.schemas";
@@ -144,7 +146,7 @@ export async function formatUserFeedResponse(
       key: "discord-channel" as const,
       details: {
         ...con.details,
-        embeds: con.details.embeds,
+        embeds: convertToNestedDiscordEmbed(con.details.embeds),
         webhook: con.details.webhook
           ? {
               id: con.details.webhook.id,
@@ -345,4 +347,53 @@ export async function updateUserFeedsHandler(
   }
 
   throw new BadRequestError(ApiErrorCode.INVALID_REQUEST);
+}
+
+export async function getUserFeedHandler(
+  request: FastifyRequest<{ Params: GetUserFeedParams }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { userFeedRepository, usersService, supportersService, config } =
+    request.container;
+  const { discordUserId } = request;
+  const { feedId } = request.params;
+
+  if (!userFeedRepository.areAllValidIds([feedId])) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
+  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
+
+  const feed = isAdmin
+    ? await userFeedRepository.findById(feedId)
+    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
+
+  if (!feed) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const acceptedInvite = feed.shareManageOptions?.invites?.find(
+    (inv) =>
+      inv.discordUserId === discordUserId &&
+      inv.status === UserFeedManagerStatus.Accepted,
+  );
+
+  if (acceptedInvite?.connections?.length) {
+    const allowedConnectionIds = new Set(
+      acceptedInvite.connections.map((c) => c.connectionId),
+    );
+
+    feed.connections.discordChannels = feed.connections.discordChannels.filter(
+      (ch) => allowedConnectionIds.has(ch.id),
+    );
+  }
+
+  const formatted = await formatUserFeedResponse(
+    feed,
+    discordUserId,
+    supportersService,
+  );
+
+  return reply.status(200).send({ result: formatted });
 }

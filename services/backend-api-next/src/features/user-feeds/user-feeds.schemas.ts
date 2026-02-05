@@ -41,6 +41,18 @@ export const validateUrlBodySchema = {
   },
 };
 
+export interface GetUserFeedParams {
+  feedId: string;
+}
+
+export const getUserFeedParamsSchema = {
+  type: "object",
+  required: ["feedId"],
+  properties: {
+    feedId: { type: "string", minLength: 1 },
+  },
+};
+
 export enum UpdateUserFeedsOp {
   BulkDelete = "bulk-delete",
   BulkDisable = "bulk-disable",
