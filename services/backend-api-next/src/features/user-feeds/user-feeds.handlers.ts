@@ -23,6 +23,7 @@ import { UserFeedManagerStatus } from "../../repositories/shared/enums";
 import type {
   CreateUserFeedBody,
   DeduplicateFeedUrlsBody,
+  ValidateUrlBody,
 } from "./user-feeds.schemas";
 
 export async function deduplicateFeedUrlsHandler(
@@ -237,4 +238,61 @@ export async function formatUserFeedResponse(
     shareManageOptions: isOwner ? feed.shareManageOptions : undefined,
     refreshRateOptions,
   };
+}
+
+export async function validateFeedUrlHandler(
+  request: FastifyRequest<{ Body: ValidateUrlBody }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { userFeedsService } = request.container;
+  const token = getAccessTokenFromRequest(request);
+  const discordUserId = token!.discord.id;
+
+  try {
+    const result = await userFeedsService.validateFeedUrl(
+      { discordUserId },
+      { url: request.body.url },
+    );
+
+    return reply.status(200).send({ result });
+  } catch (err) {
+    if (err instanceof BannedFeedException) {
+      throw new BadRequestError(ApiErrorCode.BANNED_FEED);
+    }
+    if (err instanceof FeedFetchTimeoutException) {
+      throw new BadRequestError(ApiErrorCode.FEED_REQUEST_TIMEOUT);
+    }
+    if (err instanceof FeedParseException) {
+      throw new BadRequestError(ApiErrorCode.ADD_FEED_PARSE_FAILED);
+    }
+    if (err instanceof FeedRequestException) {
+      throw new BadRequestError(ApiErrorCode.FEED_FETCH_FAILED);
+    }
+    if (err instanceof FeedInvalidSslCertException) {
+      throw new BadRequestError(ApiErrorCode.FEED_INVALID_SSL_CERT);
+    }
+    if (err instanceof NoFeedOnHtmlPageException) {
+      throw new BadRequestError(ApiErrorCode.NO_FEED_IN_HTML_PAGE);
+    }
+    if (err instanceof FeedTooManyRequestsException) {
+      throw new BadRequestError(ApiErrorCode.FEED_REQUEST_TOO_MANY_REQUESTS);
+    }
+    if (err instanceof FeedUnauthorizedException) {
+      throw new BadRequestError(ApiErrorCode.FEED_REQUEST_UNAUTHORIZED);
+    }
+    if (err instanceof FeedForbiddenException) {
+      throw new BadRequestError(ApiErrorCode.FEED_REQUEST_FORBIDDEN);
+    }
+    if (err instanceof FeedInternalErrorException) {
+      throw new BadRequestError(ApiErrorCode.FEED_REQUEST_INTERNAL_ERROR);
+    }
+    if (err instanceof FeedNotFoundException) {
+      throw new BadRequestError(ApiErrorCode.FEED_NOT_FOUND);
+    }
+    if (err instanceof FeedTooLargeException) {
+      throw new BadRequestError(ApiErrorCode.FEED_TOO_LARGE);
+    }
+
+    throw err;
+  }
 }

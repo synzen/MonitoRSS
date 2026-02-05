@@ -28,3 +28,15 @@ export const deduplicateFeedUrlsBodySchema = {
     },
   },
 };
+
+export interface ValidateUrlBody {
+  url: string;
+}
+
+export const validateUrlBodySchema = {
+  type: "object",
+  required: ["url"],
+  properties: {
+    url: { type: "string", minLength: 1 },
+  },
+};
