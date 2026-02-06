@@ -99,6 +99,14 @@ export const CLONE_USER_FEED_EXCEPTION_ERROR_CODES: ExceptionErrorCodes =
     CHANNEL_PERMISSION_ERROR_CODES,
   );
 
+export const MANUAL_REQUEST_EXCEPTION_ERROR_CODES: ExceptionErrorCodes =
+  mergeExceptionErrorCodes(FEED_EXCEPTION_ERROR_CODES, {
+    FeedNotFailedException: {
+      status: 422,
+      code: ApiErrorCode.FEED_NOT_FAILED,
+    },
+  });
+
 export const GET_ARTICLE_PROPERTIES_EXCEPTION_ERROR_CODES: ExceptionErrorCodes =
   {
     InvalidPreviewCustomPlaceholdersRegexException: {

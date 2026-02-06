@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import type { IUserFeed } from "../../repositories/interfaces/user-feed.types";
+import type { IUser } from "../../repositories/interfaces/user.types";
 import {
   UserFeedDisabledCode,
   UserFeedHealthStatus,
@@ -214,6 +215,7 @@ export class UserFeedsService {
       title?: string;
       url?: string;
     },
+    existingUser?: IUser,
   ) {
     const sourceFeed = await this.deps.userFeedRepository.findById(feedId);
 
@@ -238,9 +240,11 @@ export class UserFeedsService {
     let finalUrl = sourceFeed.url;
 
     if (data?.url && data.url !== sourceFeed.url) {
-      const user = await this.deps.usersService.getOrCreateUserByDiscordId(
-        sourceFeed.user.discordUserId,
-      );
+      const user =
+        existingUser ??
+        (await this.deps.usersService.getOrCreateUserByDiscordId(
+          sourceFeed.user.discordUserId,
+        ));
 
       finalUrl = (
         await this.checkUrlIsValid(
@@ -379,16 +383,22 @@ export class UserFeedsService {
     feed,
     url,
     query,
+    user: existingUser,
   }: {
     feed: IUserFeed;
     url: string;
     query: Record<string, string>;
+    user?: IUser;
   }) {
+    const user =
+      existingUser ??
+      (await this.deps.usersService.getOrCreateUserByDiscordId(
+        feed.user.discordUserId,
+      ));
+
     const lookupDetails = getFeedRequestLookupDetails({
       feed,
-      user: await this.deps.usersService.getOrCreateUserByDiscordId(
-        feed.user.discordUserId,
-      ),
+      user,
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
     });
 
@@ -416,7 +426,15 @@ export class UserFeedsService {
   }
 
   async updateFeedById(
-    { id, disabledCode }: { id: string; disabledCode?: UserFeedDisabledCode },
+    {
+      id,
+      disabledCode,
+      user: existingUser,
+    }: {
+      id: string;
+      disabledCode?: UserFeedDisabledCode;
+      user?: IUser;
+    },
     updates: UpdateFeedInput,
   ): Promise<IUserFeed | null> {
     let userBenefits: Awaited<
@@ -429,9 +447,11 @@ export class UserFeedsService {
       throw new Error(`Feed ${id} not found while updating feed`);
     }
 
-    const user = await this.deps.usersService.getOrCreateUserByDiscordId(
-      feed.user.discordUserId,
-    );
+    const user =
+      existingUser ??
+      (await this.deps.usersService.getOrCreateUserByDiscordId(
+        feed.user.discordUserId,
+      ));
 
     const useUpdateObject: Record<string, Record<string, unknown>> = {
       $set: {},
@@ -778,6 +798,7 @@ export class UserFeedsService {
     url,
     customPlaceholders,
     feed,
+    user: existingUser,
   }: GetFeedArticlePropertiesInput): Promise<GetFeedArticlePropertiesOutput> {
     const input: GetArticlesInput = {
       url,
@@ -801,9 +822,11 @@ export class UserFeedsService {
       },
     };
 
-    const user = await this.deps.usersService.getOrCreateUserByDiscordId(
-      feed.user.discordUserId,
-    );
+    const user =
+      existingUser ??
+      (await this.deps.usersService.getOrCreateUserByDiscordId(
+        feed.user.discordUserId,
+      ));
 
     const { articles, requestStatus } =
       await this.deps.feedHandlerService.getArticles(
@@ -865,9 +888,11 @@ export class UserFeedsService {
     discordUserId,
     feed,
     includeHtmlInErrors,
+    user: existingUser,
   }: GetFeedArticlesInput): Promise<GetFeedArticlesOutput> {
     const user =
-      await this.deps.usersService.getOrCreateUserByDiscordId(discordUserId);
+      existingUser ??
+      (await this.deps.usersService.getOrCreateUserByDiscordId(discordUserId));
 
     return this.deps.feedHandlerService.getArticles(
       {
@@ -1173,15 +1198,18 @@ export class UserFeedsService {
     feed,
     skip,
     limit,
+    user: existingUser,
   }: {
     feed: IUserFeed;
     skip: number;
     limit: number;
+    user?: IUser;
   }) {
     const [user, { maxDailyArticles }] = await Promise.all([
-      this.deps.usersService.getOrCreateUserByDiscordId(
-        feed.user.discordUserId,
-      ),
+      existingUser ??
+        this.deps.usersService.getOrCreateUserByDiscordId(
+          feed.user.discordUserId,
+        ),
       this.deps.supportersService.getBenefitsOfDiscordUser(
         feed.user.discordUserId,
       ),

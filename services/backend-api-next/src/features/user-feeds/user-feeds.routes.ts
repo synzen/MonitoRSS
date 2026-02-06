@@ -11,6 +11,7 @@ import {
   getDeliveryLogsHandler,
   getFeedRequestsHandler,
   getUserFeedHandler,
+  manualRequestHandler,
   validateFeedUrlHandler,
   updateUserFeedsHandler,
   updateUserFeedHandler,
@@ -53,6 +54,7 @@ import {
   FEED_EXCEPTION_ERROR_CODES,
   GET_ARTICLE_PROPERTIES_EXCEPTION_ERROR_CODES,
   GET_ARTICLES_EXCEPTION_ERROR_CODES,
+  MANUAL_REQUEST_EXCEPTION_ERROR_CODES,
   SEND_TEST_ARTICLE_EXCEPTION_ERROR_CODES,
   UPDATE_USER_FEED_EXCEPTION_ERROR_CODES,
 } from "./user-feeds.exception-codes";
@@ -163,6 +165,14 @@ export async function userFeedsRoutes(app: FastifyInstance): Promise<void> {
       ),
     },
   );
+
+  app.post<{ Params: GetUserFeedParams }>("/:feedId/manual-request", {
+    schema: { params: GetUserFeedParamsSchema },
+    handler: withExceptionFilter(
+      MANUAL_REQUEST_EXCEPTION_ERROR_CODES,
+      manualRequestHandler,
+    ),
+  });
 
   app.patch<{ Params: GetUserFeedParams; Body: UpdateUserFeedBody }>(
     "/:feedId",

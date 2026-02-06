@@ -8,6 +8,7 @@ import {
 import type { IUserFeed } from "../../repositories/interfaces/user-feed.types";
 import { CustomPlaceholderStepType } from "../../repositories/shared/enums";
 import { UserFeedManagerStatus } from "../../repositories/shared/enums";
+import { ManualRequestTooSoonException } from "../../shared/exceptions/user-feeds.exceptions";
 import { convertToNestedDiscordEmbed } from "../../shared/utils/convert-to-nested-discord-embed";
 import type {
   CloneUserFeedBody,
@@ -346,7 +347,7 @@ export async function updateUserFeedHandler(
   }
 
   const updated = await userFeedsService.updateFeedById(
-    { id: feedId, disabledCode: feed.disabledCode },
+    { id: feedId, disabledCode: feed.disabledCode, user },
     request.body as Parameters<typeof userFeedsService.updateFeedById>[1],
   );
 
@@ -449,6 +450,7 @@ export async function cloneUserFeedHandler(
     feedId,
     accessToken.access_token,
     { title: request.body?.title, url: request.body?.url },
+    user,
   );
 
   return reply.status(201).send({ result: { id } });
@@ -538,6 +540,7 @@ export async function getFeedRequestsHandler(
     feed,
     url: feed.url,
     query: request.query as Record<string, string>,
+    user,
   });
 
   return reply.status(200).send(result);
@@ -632,6 +635,7 @@ export async function getArticlePropertiesHandler(
         typeof userFeedsService.getFeedArticleProperties
       >[0]["customPlaceholders"],
       feed,
+      user,
     });
 
   return reply.status(200).send({
@@ -701,6 +705,7 @@ export async function getArticlesHandler(
     selectPropertyTypes,
     skip,
     includeHtmlInErrors,
+    user,
     formatter: {
       ...formatter,
       externalProperties,
@@ -773,7 +778,63 @@ export async function deliveryPreviewHandler(
     feed,
     skip: request.body.skip ?? 0,
     limit: request.body.limit ?? 10,
+    user,
   });
 
   return reply.status(200).send(result);
+}
+
+export async function manualRequestHandler(
+  request: FastifyRequest<{ Params: GetUserFeedParams }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { userFeedRepository, userFeedsService, usersService, config } =
+    request.container;
+  const { discordUserId } = request;
+  const { feedId } = request.params;
+
+  if (!userFeedRepository.areAllValidIds([feedId])) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
+  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
+
+  const feed = isAdmin
+    ? await userFeedRepository.findById(feedId)
+    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
+
+  if (!feed) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  try {
+    const {
+      requestStatus,
+      requestStatusCode,
+      getArticlesRequestStatus,
+      hasEnabledFeed,
+    } = await userFeedsService.manuallyRequest(feed);
+
+    return reply.status(200).send({
+      result: {
+        requestStatus,
+        requestStatusCode,
+        getArticlesRequestStatus,
+        hasEnabledFeed,
+      },
+    });
+  } catch (err) {
+    if (err instanceof ManualRequestTooSoonException) {
+      return reply.status(422).send({
+        result: {
+          minutesUntilNextRequest: Math.ceil(
+            (err.secondsUntilNextRequest ?? 0) / 60,
+          ),
+        },
+      });
+    }
+
+    throw err;
+  }
 }

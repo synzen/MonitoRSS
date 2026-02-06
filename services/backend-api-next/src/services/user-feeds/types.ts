@@ -12,6 +12,7 @@ import type {
   GetFeedArticlesFilterReturnType,
   CustomPlaceholder,
 } from "../feed-handler/types";
+import type { IUser } from "../../repositories/interfaces/user.types";
 import type { IUserRepository } from "../../repositories/interfaces/user.types";
 import type { UserFeedDisabledCode } from "../../repositories/shared/enums";
 import type { FeedsService } from "../feeds/feeds.service";
@@ -155,6 +156,7 @@ export interface GetFeedArticlePropertiesInput {
   feed: IUserFeed;
   url: string;
   customPlaceholders?: CustomPlaceholder[] | null;
+  user?: IUser;
 }
 
 export interface GetFeedArticlePropertiesOutput {
@@ -172,6 +174,7 @@ export interface GetFeedArticlesInput {
   skip?: number;
   discordUserId: string;
   includeHtmlInErrors?: boolean;
+  user?: IUser;
   filters?: {
     returnType: GetFeedArticlesFilterReturnType.IncludeEvaluationResults;
     expression?: Record<string, unknown>;
