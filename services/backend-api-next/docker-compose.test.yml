@@ -45,4 +45,4 @@ services:
       - ./src:/app/src
       - ./test:/app/test
       - ./index.ts:/app/index.ts
-    command: sh -c "${TEST_COMMAND:-node --import tsx --test --test-concurrency=1 test/**/*.api.test.ts}"
+    command: bash -c "shopt -s globstar; ${TEST_COMMAND:-node --import tsx --test --test-concurrency=1 test/**/*.api.test.ts}"
