@@ -8,6 +8,7 @@ import {
   deliveryPreviewHandler,
   getArticlePropertiesHandler,
   getArticlesHandler,
+  getDailyLimitHandler,
   getDeliveryLogsHandler,
   getFeedRequestsHandler,
   getUserFeedHandler,
@@ -214,6 +215,11 @@ export async function userFeedsRoutes(app: FastifyInstance): Promise<void> {
       handler: getDeliveryLogsHandler,
     },
   );
+
+  app.get<{ Params: GetUserFeedParams }>("/:feedId/daily-limit", {
+    schema: { params: GetUserFeedParamsSchema },
+    handler: getDailyLimitHandler,
+  });
 
   app.get<{ Params: GetUserFeedParams }>("/:feedId", {
     schema: { params: GetUserFeedParamsSchema },

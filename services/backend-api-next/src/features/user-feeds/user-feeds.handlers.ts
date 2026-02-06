@@ -784,6 +784,35 @@ export async function deliveryPreviewHandler(
   return reply.status(200).send(result);
 }
 
+export async function getDailyLimitHandler(
+  request: FastifyRequest<{ Params: GetUserFeedParams }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { userFeedRepository, userFeedsService, usersService, config } =
+    request.container;
+  const { discordUserId } = request;
+  const { feedId } = request.params;
+
+  if (!userFeedRepository.areAllValidIds([feedId])) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
+  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
+
+  const feed = isAdmin
+    ? await userFeedRepository.findById(feedId)
+    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
+
+  if (!feed) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const { progress, max } = await userFeedsService.getFeedDailyLimit(feed);
+
+  return reply.status(200).send({ result: { current: progress, max } });
+}
+
 export async function manualRequestHandler(
   request: FastifyRequest<{ Params: GetUserFeedParams }>,
   reply: FastifyReply,
