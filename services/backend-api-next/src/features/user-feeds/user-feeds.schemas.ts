@@ -1,57 +1,38 @@
-export interface CreateUserFeedBody {
-  url: string;
-  title?: string;
-  sourceFeedId?: string;
-}
+import { Type, type Static } from "@sinclair/typebox";
+import { GetFeedArticlesFilterReturnType } from "../../services/feed-handler/types";
 
-export const createUserFeedBodySchema = {
-  type: "object",
-  required: ["url"],
-  properties: {
-    url: { type: "string", minLength: 1 },
-    title: { type: "string" },
-    sourceFeedId: { type: "string" },
+export const CreateUserFeedBodySchema = Type.Object({
+  url: Type.String({ minLength: 1 }),
+  title: Type.Optional(Type.String()),
+  sourceFeedId: Type.Optional(Type.String()),
+});
+export type CreateUserFeedBody = Static<typeof CreateUserFeedBodySchema>;
+
+export const DeduplicateFeedUrlsBodySchema = Type.Object({
+  urls: Type.Array(Type.String({ minLength: 1 })),
+});
+export type DeduplicateFeedUrlsBody = Static<
+  typeof DeduplicateFeedUrlsBodySchema
+>;
+
+export const ValidateUrlBodySchema = Type.Object({
+  url: Type.String({ minLength: 1 }),
+});
+export type ValidateUrlBody = Static<typeof ValidateUrlBodySchema>;
+
+export const CloneUserFeedBodySchema = Type.Object(
+  {
+    title: Type.Optional(Type.String()),
+    url: Type.Optional(Type.String()),
   },
-};
+  { additionalProperties: false },
+);
+export type CloneUserFeedBody = Static<typeof CloneUserFeedBodySchema>;
 
-export interface DeduplicateFeedUrlsBody {
-  urls: string[];
-}
-
-export const deduplicateFeedUrlsBodySchema = {
-  type: "object",
-  required: ["urls"],
-  properties: {
-    urls: {
-      type: "array",
-      items: { type: "string", minLength: 1 },
-    },
-  },
-};
-
-export interface ValidateUrlBody {
-  url: string;
-}
-
-export const validateUrlBodySchema = {
-  type: "object",
-  required: ["url"],
-  properties: {
-    url: { type: "string", minLength: 1 },
-  },
-};
-
-export interface GetUserFeedParams {
-  feedId: string;
-}
-
-export const getUserFeedParamsSchema = {
-  type: "object",
-  required: ["feedId"],
-  properties: {
-    feedId: { type: "string", minLength: 1 },
-  },
-};
+export const GetUserFeedParamsSchema = Type.Object({
+  feedId: Type.String({ minLength: 1 }),
+});
+export type GetUserFeedParams = Static<typeof GetUserFeedParamsSchema>;
 
 export enum UpdateUserFeedsOp {
   BulkDelete = "bulk-delete",
@@ -59,38 +40,24 @@ export enum UpdateUserFeedsOp {
   BulkEnable = "bulk-enable",
 }
 
-export interface UpdateUserFeedsBody {
-  op: UpdateUserFeedsOp;
-  data: {
-    feeds: Array<{ id: string }>;
-  };
-}
-
-export interface UpdateUserFeedBody {
-  title?: string;
-  url?: string;
-  disabledCode?: string | null;
-  passingComparisons?: string[];
-  blockingComparisons?: string[];
-  formatOptions?: {
-    dateFormat?: string;
-    dateTimezone?: string;
-    dateLocale?: string;
-  };
-  dateCheckOptions?: {
-    oldArticleDateDiffMsThreshold?: number;
-  };
-  shareManageOptions?: {
-    invites: Array<{ discordUserId: string }>;
-  };
-  userRefreshRateSeconds?: number | null;
-  externalProperties?: Array<{
-    id: string;
-    sourceField: string;
-    label: string;
-    cssSelector: string;
-  }>;
-}
+export const UpdateUserFeedsBodySchema = Type.Object(
+  {
+    op: Type.Enum(UpdateUserFeedsOp),
+    data: Type.Object(
+      {
+        feeds: Type.Array(
+          Type.Object(
+            { id: Type.String({ minLength: 1 }) },
+            { additionalProperties: false },
+          ),
+        ),
+      },
+      { additionalProperties: false },
+    ),
+  },
+  { additionalProperties: false },
+);
+export type UpdateUserFeedsBody = Static<typeof UpdateUserFeedsBodySchema>;
 
 export const SUPPORTED_DATE_LOCALES = [
   "af",
@@ -238,99 +205,405 @@ export const SUPPORTED_DATE_LOCALES = [
   "es-us",
 ] as const;
 
-export const updateUserFeedBodySchema = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    title: { type: "string", minLength: 1 },
-    url: { type: "string", minLength: 1 },
-    disabledCode: { type: ["string", "null"], enum: ["MANUAL", null] },
-    passingComparisons: {
-      type: "array",
-      items: { type: "string", minLength: 1 },
-    },
-    blockingComparisons: {
-      type: "array",
-      items: { type: "string", minLength: 1 },
-    },
-    formatOptions: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        dateFormat: { type: "string" },
-        dateTimezone: { type: "string" },
-        dateLocale: { type: "string", enum: ["", ...SUPPORTED_DATE_LOCALES] },
-      },
-    },
-    dateCheckOptions: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        oldArticleDateDiffMsThreshold: { type: "integer", minimum: 0 },
-      },
-    },
-    shareManageOptions: {
-      type: "object",
-      additionalProperties: false,
-      required: ["invites"],
-      properties: {
-        invites: {
-          type: "array",
-          items: {
-            type: "object",
-            additionalProperties: false,
-            required: ["discordUserId"],
-            properties: {
-              discordUserId: { type: "string", minLength: 1 },
-            },
-          },
-        },
-      },
-    },
-    userRefreshRateSeconds: { type: ["integer", "null"], minimum: 1 },
-    externalProperties: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["id", "sourceField", "label", "cssSelector"],
-        properties: {
-          id: { type: "string", minLength: 1 },
-          sourceField: { type: "string", minLength: 1 },
-          label: { type: "string", minLength: 1 },
-          cssSelector: { type: "string", minLength: 1 },
-        },
-      },
-    },
-  },
-};
+const TimezoneString = Type.Unsafe<string>({
+  type: "string",
+  isTimezone: true,
+});
 
-export const updateUserFeedsBodySchema = {
-  type: "object",
-  required: ["op", "data"],
-  additionalProperties: false,
-  properties: {
-    op: {
-      type: "string",
-      enum: Object.values(UpdateUserFeedsOp),
-    },
-    data: {
-      type: "object",
-      required: ["feeds"],
-      additionalProperties: false,
-      properties: {
-        feeds: {
-          type: "array",
-          items: {
-            type: "object",
-            required: ["id"],
-            additionalProperties: false,
-            properties: {
-              id: { type: "string", minLength: 1 },
-            },
-          },
-        },
-      },
-    },
+const DateLocaleString = Type.String({
+  enum: ["", ...SUPPORTED_DATE_LOCALES],
+});
+
+export const DatePreviewBodySchema = Type.Object(
+  {
+    dateFormat: Type.Optional(Type.String()),
+    dateTimezone: Type.Optional(Type.String()),
+    dateLocale: Type.Optional(Type.String()),
   },
-};
+  { additionalProperties: false },
+);
+export type DatePreviewBody = Static<typeof DatePreviewBodySchema>;
+
+const NullableString = Type.Union([Type.String(), Type.Null()]);
+
+const EmbedFieldSchema = Type.Object(
+  {
+    name: Type.Optional(NullableString),
+    value: Type.Optional(NullableString),
+    inline: Type.Optional(Type.Union([Type.Boolean(), Type.Null()])),
+  },
+  { additionalProperties: false },
+);
+
+const EmbedImageSchema = Type.Object(
+  {
+    url: Type.Optional(NullableString),
+  },
+  { additionalProperties: false },
+);
+
+const EmbedAuthorSchema = Type.Object(
+  {
+    name: Type.Optional(NullableString),
+    url: Type.Optional(NullableString),
+    iconUrl: Type.Optional(NullableString),
+  },
+  { additionalProperties: false },
+);
+
+const EmbedFooterSchema = Type.Object(
+  {
+    text: Type.Optional(NullableString),
+    iconUrl: Type.Optional(NullableString),
+  },
+  { additionalProperties: false },
+);
+
+const EmbedSchema = Type.Object(
+  {
+    title: Type.Optional(NullableString),
+    description: Type.Optional(NullableString),
+    url: Type.Optional(NullableString),
+    color: Type.Optional(NullableString),
+    timestamp: Type.Optional(NullableString),
+    image: Type.Optional(Type.Union([EmbedImageSchema, Type.Null()])),
+    thumbnail: Type.Optional(Type.Union([EmbedImageSchema, Type.Null()])),
+    author: Type.Optional(Type.Union([EmbedAuthorSchema, Type.Null()])),
+    footer: Type.Optional(Type.Union([EmbedFooterSchema, Type.Null()])),
+    fields: Type.Optional(
+      Type.Union([Type.Array(EmbedFieldSchema), Type.Null()]),
+    ),
+  },
+  { additionalProperties: false },
+);
+
+const PlaceholderLimitSchema = Type.Object(
+  {
+    placeholder: Type.String({ minLength: 1 }),
+    characterCount: Type.Integer({ minimum: 1 }),
+    appendString: Type.Optional(Type.String()),
+  },
+  { additionalProperties: false },
+);
+
+const WebhookSchema = Type.Union([
+  Type.Object(
+    {
+      name: Type.String({ minLength: 1 }),
+      iconUrl: Type.Optional(Type.String()),
+    },
+    { additionalProperties: false },
+  ),
+  Type.Null(),
+]);
+
+const UserFeedFormatOptionsSchema = Type.Union([
+  Type.Object(
+    {
+      dateFormat: Type.Optional(Type.String()),
+      dateTimezone: Type.Optional(TimezoneString),
+      dateLocale: Type.Optional(DateLocaleString),
+    },
+    { additionalProperties: false },
+  ),
+  Type.Null(),
+]);
+
+export const SendTestArticleBodySchema = Type.Object(
+  {
+    article: Type.Object(
+      { id: Type.String({ minLength: 1 }) },
+      { additionalProperties: false },
+    ),
+    channelId: Type.String({ minLength: 1 }),
+    content: Type.Optional(Type.String()),
+    embeds: Type.Optional(Type.Array(EmbedSchema)),
+    componentsV2: Type.Optional(
+      Type.Union([
+        Type.Array(Type.Object({}, { additionalProperties: true })),
+        Type.Null(),
+      ]),
+    ),
+    placeholderLimits: Type.Optional(Type.Array(PlaceholderLimitSchema)),
+    webhook: Type.Optional(WebhookSchema),
+    threadId: Type.Optional(Type.String()),
+    userFeedFormatOptions: Type.Optional(UserFeedFormatOptionsSchema),
+  },
+  { additionalProperties: false },
+);
+export type SendTestArticleBody = Static<typeof SendTestArticleBodySchema>;
+
+export const UpdateUserFeedBodySchema = Type.Object(
+  {
+    title: Type.Optional(Type.String({ minLength: 1 })),
+    url: Type.Optional(Type.String({ minLength: 1 })),
+    disabledCode: Type.Optional(
+      Type.Union([Type.Literal("MANUAL"), Type.Null()]),
+    ),
+    passingComparisons: Type.Optional(
+      Type.Array(Type.String({ minLength: 1 })),
+    ),
+    blockingComparisons: Type.Optional(
+      Type.Array(Type.String({ minLength: 1 })),
+    ),
+    formatOptions: Type.Optional(
+      Type.Object(
+        {
+          dateFormat: Type.Optional(Type.String()),
+          dateTimezone: Type.Optional(TimezoneString),
+          dateLocale: Type.Optional(DateLocaleString),
+        },
+        { additionalProperties: false },
+      ),
+    ),
+    dateCheckOptions: Type.Optional(
+      Type.Object(
+        {
+          oldArticleDateDiffMsThreshold: Type.Optional(
+            Type.Integer({ minimum: 0 }),
+          ),
+        },
+        { additionalProperties: false },
+      ),
+    ),
+    shareManageOptions: Type.Optional(
+      Type.Object(
+        {
+          invites: Type.Array(
+            Type.Object(
+              { discordUserId: Type.String({ minLength: 1 }) },
+              { additionalProperties: false },
+            ),
+          ),
+        },
+        { additionalProperties: false },
+      ),
+    ),
+    userRefreshRateSeconds: Type.Optional(
+      Type.Union([Type.Integer({ minimum: 1 }), Type.Null()]),
+    ),
+    externalProperties: Type.Optional(
+      Type.Array(
+        Type.Object(
+          {
+            id: Type.String({ minLength: 1 }),
+            sourceField: Type.String({ minLength: 1 }),
+            label: Type.String({ minLength: 1 }),
+            cssSelector: Type.String({ minLength: 1 }),
+          },
+          { additionalProperties: false },
+        ),
+      ),
+    ),
+  },
+  { additionalProperties: false },
+);
+export type UpdateUserFeedBody = Static<typeof UpdateUserFeedBodySchema>;
+
+export const GetFeedRequestsQuerySchema = Type.Object({
+  limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 50, default: 25 })),
+  skip: Type.Optional(Type.Integer({ minimum: 0, default: 0 })),
+});
+export type GetFeedRequestsQuery = Static<typeof GetFeedRequestsQuerySchema>;
+
+export const DeliveryPreviewBodySchema = Type.Object(
+  {
+    skip: Type.Optional(Type.Integer({ minimum: 0, default: 0 })),
+    limit: Type.Optional(
+      Type.Integer({ minimum: 1, maximum: 50, default: 10 }),
+    ),
+  },
+  { additionalProperties: false },
+);
+export type DeliveryPreviewBody = Static<typeof DeliveryPreviewBodySchema>;
+
+export const GetDeliveryLogsQuerySchema = Type.Object({
+  limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 50, default: 25 })),
+  skip: Type.Optional(Type.Integer({ minimum: 0, maximum: 1000, default: 0 })),
+});
+export type GetDeliveryLogsQuery = Static<typeof GetDeliveryLogsQuerySchema>;
+
+export type CustomPlaceholderStep =
+  | {
+      id?: string;
+      type: "REGEX";
+      regexSearch: string;
+      regexSearchFlags?: string | null;
+      replacementString?: string | null;
+    }
+  | {
+      id?: string;
+      type: "URL_ENCODE";
+    }
+  | {
+      id?: string;
+      type: "DATE_FORMAT";
+      format: string;
+      timezone?: string | null;
+      locale?: string | null;
+    }
+  | {
+      id?: string;
+      type: "UPPERCASE";
+    }
+  | {
+      id?: string;
+      type: "LOWERCASE";
+    };
+
+const RegexStepSchema = Type.Object(
+  {
+    id: Type.Optional(Type.String()),
+    type: Type.Literal("REGEX"),
+    regexSearch: Type.String({ minLength: 1 }),
+    regexSearchFlags: Type.Optional(NullableString),
+    replacementString: Type.Optional(NullableString),
+  },
+  { additionalProperties: false },
+);
+
+const UrlEncodeStepSchema = Type.Object(
+  {
+    id: Type.Optional(Type.String()),
+    type: Type.Literal("URL_ENCODE"),
+  },
+  { additionalProperties: false },
+);
+
+const DateFormatStepSchema = Type.Object(
+  {
+    id: Type.Optional(Type.String()),
+    type: Type.Literal("DATE_FORMAT"),
+    format: Type.String({ minLength: 1 }),
+    timezone: Type.Optional(NullableString),
+    locale: Type.Optional(NullableString),
+  },
+  { additionalProperties: false },
+);
+
+const UppercaseStepSchema = Type.Object(
+  {
+    id: Type.Optional(Type.String()),
+    type: Type.Literal("UPPERCASE"),
+  },
+  { additionalProperties: false },
+);
+
+const LowercaseStepSchema = Type.Object(
+  {
+    id: Type.Optional(Type.String()),
+    type: Type.Literal("LOWERCASE"),
+  },
+  { additionalProperties: false },
+);
+
+const CustomPlaceholderStepSchema = Type.Unsafe<CustomPlaceholderStep>({
+  oneOf: [
+    RegexStepSchema,
+    UrlEncodeStepSchema,
+    DateFormatStepSchema,
+    UppercaseStepSchema,
+    LowercaseStepSchema,
+  ],
+});
+
+const ExternalPropertySchema = Type.Object(
+  {
+    id: Type.String({ minLength: 1 }),
+    sourceField: Type.String({ minLength: 1 }),
+    label: Type.String({ minLength: 1 }),
+    cssSelector: Type.String({ minLength: 1 }),
+  },
+  { additionalProperties: false },
+);
+
+const CustomPlaceholderSchema = Type.Object(
+  {
+    id: Type.Optional(Type.String()),
+    referenceName: Type.String({ minLength: 1 }),
+    sourcePlaceholder: Type.String({ minLength: 1 }),
+    steps: Type.Array(CustomPlaceholderStepSchema),
+  },
+  { additionalProperties: false },
+);
+
+const GetArticlesFormatterOptionsSchema = Type.Object(
+  {
+    formatTables: Type.Boolean({ default: false }),
+    stripImages: Type.Boolean({ default: false }),
+    disableImageLinkPreviews: Type.Boolean({ default: false }),
+    dateFormat: Type.Optional(Type.String()),
+    dateTimezone: Type.Optional(Type.String()),
+  },
+  { additionalProperties: false },
+);
+
+const GetArticlesFormatterSchema = Type.Object(
+  {
+    options: GetArticlesFormatterOptionsSchema,
+    customPlaceholders: Type.Optional(
+      Type.Union([Type.Array(CustomPlaceholderSchema), Type.Null()]),
+    ),
+    externalProperties: Type.Optional(
+      Type.Union([Type.Array(ExternalPropertySchema), Type.Null()]),
+    ),
+  },
+  { additionalProperties: false },
+);
+
+const GetArticlesFiltersSchema = Type.Object(
+  {
+    returnType: Type.String({
+      enum: Object.values(GetFeedArticlesFilterReturnType),
+    }),
+    expression: Type.Optional(Type.Object({}, { additionalProperties: true })),
+    articleId: Type.Optional(Type.String()),
+    articleIdHashes: Type.Optional(Type.Array(Type.String())),
+    search: Type.Optional(Type.String()),
+  },
+  { additionalProperties: false },
+);
+
+export const GetArticlesBodySchema = Type.Object(
+  {
+    limit: Type.Optional(
+      Type.Integer({ minimum: 1, maximum: 50, default: 25 }),
+    ),
+    skip: Type.Optional(
+      Type.Integer({ minimum: 0, maximum: 1000, default: 0 }),
+    ),
+    random: Type.Optional(Type.Boolean()),
+    selectProperties: Type.Optional(Type.Array(Type.String())),
+    selectPropertyTypes: Type.Optional(Type.Array(Type.String())),
+    filters: Type.Optional(GetArticlesFiltersSchema),
+    formatter: GetArticlesFormatterSchema,
+    includeHtmlInErrors: Type.Optional(Type.Boolean()),
+  },
+  { additionalProperties: false },
+);
+export type GetArticlesBody = Static<typeof GetArticlesBodySchema>;
+
+export const GetArticlePropertiesBodySchema = Type.Object(
+  {
+    customPlaceholders: Type.Optional(
+      Type.Union([
+        Type.Array(
+          Type.Object(
+            {
+              id: Type.Optional(Type.String()),
+              referenceName: Type.String({ minLength: 1 }),
+              sourcePlaceholder: Type.String({ minLength: 1 }),
+              steps: Type.Array(CustomPlaceholderStepSchema),
+            },
+            { additionalProperties: false },
+          ),
+        ),
+        Type.Null(),
+      ]),
+    ),
+  },
+  { additionalProperties: false },
+);
+export type GetArticlePropertiesBody = Static<
+  typeof GetArticlePropertiesBodySchema
+>;

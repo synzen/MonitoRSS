@@ -53,3 +53,87 @@ export const UPDATE_USER_FEED_EXCEPTION_ERROR_CODES: ExceptionErrorCodes =
       code: ApiErrorCode.USER_REFRESH_RATE_NOT_ALLOWED,
     },
   });
+
+const CHANNEL_PERMISSION_ERROR_CODES: ExceptionErrorCodes = {
+  MissingDiscordChannelException: {
+    status: 400,
+    code: ApiErrorCode.FEED_MISSING_CHANNEL,
+  },
+  MissingChannelException: {
+    status: 400,
+    code: ApiErrorCode.FEED_MISSING_CHANNEL,
+  },
+  DiscordChannelPermissionsException: {
+    status: 400,
+    code: ApiErrorCode.FEED_MISSING_CHANNEL_PERMISSION,
+  },
+  UserMissingManageGuildException: {
+    status: 403,
+    code: ApiErrorCode.FEED_USER_MISSING_MANAGE_GUILD,
+  },
+  MissingChannelPermissionsException: {
+    status: 400,
+    code: ApiErrorCode.FEED_MISSING_CHANNEL_PERMISSION,
+  },
+  InvalidDiscordChannelException: {
+    status: 400,
+    code: ApiErrorCode.DISCORD_CAHNNEL_INVALID,
+  },
+  WebhookMissingPermissionsException: {
+    status: 403,
+    code: ApiErrorCode.WEBHOOKS_MANAGE_MISSING_PERMISSIONS,
+  },
+  InsufficientSupporterLevelException: {
+    status: 400,
+    code: ApiErrorCode.INSUFFICIENT_SUPPORTER_LEVEL,
+  },
+  DiscordChannelMissingViewPermissionsException: {
+    status: 400,
+    code: ApiErrorCode.FEED_MISSING_VIEW_CHANNEL_PERMISSION,
+  },
+};
+
+export const CLONE_USER_FEED_EXCEPTION_ERROR_CODES: ExceptionErrorCodes =
+  mergeExceptionErrorCodes(
+    FEED_EXCEPTION_ERROR_CODES,
+    CHANNEL_PERMISSION_ERROR_CODES,
+  );
+
+export const GET_ARTICLE_PROPERTIES_EXCEPTION_ERROR_CODES: ExceptionErrorCodes =
+  {
+    InvalidPreviewCustomPlaceholdersRegexException: {
+      status: 422,
+      code: ApiErrorCode.INVALID_CUSTOM_PLACEHOLDERS_REGEX_PREVIEW_INPUT,
+    },
+    InvalidFiltersRegexException: {
+      status: 422,
+      code: ApiErrorCode.INVALID_FILTERS_REGEX,
+    },
+  };
+
+export const GET_ARTICLES_EXCEPTION_ERROR_CODES: ExceptionErrorCodes =
+  GET_ARTICLE_PROPERTIES_EXCEPTION_ERROR_CODES;
+
+export const SEND_TEST_ARTICLE_EXCEPTION_ERROR_CODES: ExceptionErrorCodes =
+  mergeExceptionErrorCodes(CHANNEL_PERMISSION_ERROR_CODES, {
+    FeedConnectionNotFoundException: {
+      status: 404,
+      code: ApiErrorCode.FEED_CONNECTION_NOT_FOUND,
+    },
+    FeedArticleNotFoundException: {
+      status: 404,
+      code: ApiErrorCode.FEED_ARTICLE_NOT_FOUND,
+    },
+    InvalidPreviewCustomPlaceholdersRegexException: {
+      status: 422,
+      code: ApiErrorCode.INVALID_CUSTOM_PLACEHOLDERS_REGEX_PREVIEW_INPUT,
+    },
+    InvalidFiltersRegexException: {
+      status: 422,
+      code: ApiErrorCode.INVALID_FILTERS_REGEX,
+    },
+    InvalidComponentsV2Exception: {
+      status: 400,
+      code: ApiErrorCode.FEED_INVALID_COMPONENTS_V2,
+    },
+  });

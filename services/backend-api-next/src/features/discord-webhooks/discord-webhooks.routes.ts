@@ -1,10 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { getWebhookHandler } from "./discord-webhooks.handlers";
 import { requireAuthHook } from "../../infra/auth";
-
-interface WebhookParams {
-  id: string;
-}
+import type { WebhookParams } from "./discord-webhooks.schemas";
 
 export async function discordWebhooksRoutes(
   app: FastifyInstance,

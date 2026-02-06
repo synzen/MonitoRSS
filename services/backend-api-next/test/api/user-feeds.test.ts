@@ -14,6 +14,7 @@ import {
   UserFeedDisabledCode,
   UserFeedManagerStatus,
 } from "../../src/repositories/shared/enums";
+import { GetFeedArticlesFilterReturnType } from "../../src/services/feed-handler/types";
 
 let ctx: AppTestContext;
 let feedApiMockServer: TestHttpServer;
@@ -3403,3 +3404,3266 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
     assert.strictEqual(body.result.userRefreshRateSeconds, undefined);
   });
 });
+
+describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
+  const cloneUrlResponses: Record<string, string> = {
+    "https://example.com/clone-url-timeout.xml": "TIMED_OUT",
+    "https://example.com/clone-url-parse.xml": "PARSE_ERROR",
+    "https://example.com/clone-url-fetch.xml": "FETCH_ERROR",
+  };
+
+  beforeEach(() => {
+    feedApiMockServer.registerRoute(
+      "POST",
+      "/v1/user-feeds/get-articles",
+      (req) => {
+        const reqUrl = (req.body as { url?: string })?.url ?? "";
+        const requestStatus = cloneUrlResponses[reqUrl] || "SUCCESS";
+
+        return {
+          status: 200,
+          body: {
+            result: {
+              requestStatus,
+              articles: [],
+              totalArticles: 0,
+              selectedProperties: [],
+              url: reqUrl,
+              feedTitle: "Feed",
+            },
+          },
+        };
+      },
+    );
+  });
+
+  it("returns 401 without authentication", async () => {
+    const feedId = generateTestId();
+    const response = await ctx.fetch(`/api/v1/user-feeds/${feedId}/clone`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    assert.strictEqual(response.status, 401);
+  });
+
+  it("returns 404 for non-existent feed ID", async () => {
+    const mockAccessToken = createMockAccessToken(generateSnowflake());
+    const cookies = await ctx.setSession(mockAccessToken);
+    const nonExistentId = generateTestId();
+
+    const response = await ctx.fetch(
+      `/api/v1/user-feeds/${nonExistentId}/clone`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          cookie: cookies,
+        },
+        body: JSON.stringify({}),
+      },
+    );
+    assert.strictEqual(response.status, 404);
+  });
+
+  it("returns 201 and creates a cloned feed with same URL", async () => {
+    const discordUserId = generateSnowflake();
+    const mockAccessToken = createMockAccessToken(discordUserId);
+    const cookies = await ctx.setSession(mockAccessToken);
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Original Feed",
+      url: "https://example.com/clone-source.xml",
+      user: { id: generateTestId(), discordUserId },
+    });
+
+    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie: cookies,
+      },
+      body: JSON.stringify({}),
+    });
+
+    assert.strictEqual(response.status, 201);
+    const body = (await response.json()) as {
+      result: { id: string };
+    };
+    assert.ok(body.result.id);
+    assert.notStrictEqual(body.result.id, feed.id);
+
+    const clonedFeed = await ctx.container.userFeedRepository.findById(
+      body.result.id,
+    );
+    assert.ok(clonedFeed);
+    assert.strictEqual(clonedFeed.url, feed.url);
+    assert.strictEqual(clonedFeed.title, feed.title);
+  });
+
+  it("returns 201 and uses custom title when provided", async () => {
+    const discordUserId = generateSnowflake();
+    const mockAccessToken = createMockAccessToken(discordUserId);
+    const cookies = await ctx.setSession(mockAccessToken);
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Original Feed Title",
+      url: "https://example.com/clone-title.xml",
+      user: { id: generateTestId(), discordUserId },
+    });
+
+    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie: cookies,
+      },
+      body: JSON.stringify({ title: "Custom Cloned Title" }),
+    });
+
+    assert.strictEqual(response.status, 201);
+    const body = (await response.json()) as {
+      result: { id: string };
+    };
+    assert.ok(body.result.id);
+
+    const clonedFeed = await ctx.container.userFeedRepository.findById(
+      body.result.id,
+    );
+    assert.ok(clonedFeed);
+    assert.strictEqual(clonedFeed.title, "Custom Cloned Title");
+  });
+
+  it("returns 400 with FEED_LIMIT_REACHED when user is at feed limit", async () => {
+    const discordUserId = generateSnowflake();
+    const mockAccessToken = createMockAccessToken(discordUserId);
+    const cookies = await ctx.setSession(mockAccessToken);
+
+    const maxFeeds = ctx.container.config.BACKEND_API_DEFAULT_MAX_USER_FEEDS;
+    for (let i = 0; i < maxFeeds; i++) {
+      await ctx.container.userFeedRepository.create({
+        title: `Feed ${i}`,
+        url: `https://example.com/clone-limit-${i}.xml`,
+        user: { id: generateTestId(), discordUserId },
+      });
+    }
+
+    const feedToClone = await ctx.container.userFeedRepository.create({
+      title: "Feed to Clone",
+      url: "https://example.com/clone-limit-source.xml",
+      user: { id: generateTestId(), discordUserId },
+    });
+
+    const response = await ctx.fetch(
+      `/api/v1/user-feeds/${feedToClone.id}/clone`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          cookie: cookies,
+        },
+        body: JSON.stringify({}),
+      },
+    );
+
+    assert.strictEqual(response.status, 400);
+    const body = (await response.json()) as { code: string };
+    assert.strictEqual(body.code, "FEED_LIMIT_REACHED");
+  });
+
+  it("returns 201 when cloned by accepted shared manager", async () => {
+    const ownerDiscordUserId = generateSnowflake();
+    const sharedManagerDiscordUserId = generateSnowflake();
+    const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
+    const cookies = await ctx.setSession(mockAccessToken);
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Shared Feed to Clone",
+      url: "https://example.com/clone-shared.xml",
+      user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+      shareManageOptions: {
+        invites: [
+          {
+            discordUserId: sharedManagerDiscordUserId,
+            status: UserFeedManagerStatus.Accepted,
+          },
+        ],
+      },
+    });
+
+    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie: cookies,
+      },
+      body: JSON.stringify({}),
+    });
+
+    assert.strictEqual(response.status, 201);
+    const body = (await response.json()) as { result: { id: string } };
+    assert.ok(body.result.id);
+    assert.notStrictEqual(body.result.id, feed.id);
+  });
+
+  it("clones feed with discord channel connections", async () => {
+    const discordUserId = generateSnowflake();
+    const mockAccessToken = createMockAccessToken(discordUserId);
+    const cookies = await ctx.setSession(mockAccessToken);
+
+    const connectionName = "Clone Connection";
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Feed With Connection",
+      url: "https://example.com/clone-connections.xml",
+      user: { id: generateTestId(), discordUserId },
+      connections: {
+        discordChannels: [
+          {
+            id: generateTestId(),
+            name: connectionName,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            details: { embeds: [], formatter: {} },
+          } as never,
+        ],
+      },
+    });
+
+    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie: cookies,
+      },
+      body: JSON.stringify({}),
+    });
+
+    assert.strictEqual(response.status, 201);
+    const body = (await response.json()) as { result: { id: string } };
+
+    const clonedFeed = await ctx.container.userFeedRepository.findById(
+      body.result.id,
+    );
+    assert.ok(clonedFeed);
+    assert.ok(clonedFeed.connections.discordChannels.length > 0);
+    assert.strictEqual(
+      clonedFeed.connections.discordChannels[0]!.name,
+      connectionName,
+    );
+    assert.notStrictEqual(
+      clonedFeed.connections.discordChannels[0]!.id,
+      feed.connections.discordChannels[0]!.id,
+    );
+  });
+
+  it("returns 404 when cloning feed owned by another user", async () => {
+    const ownerDiscordUserId = generateSnowflake();
+    const otherDiscordUserId = generateSnowflake();
+    const mockAccessToken = createMockAccessToken(otherDiscordUserId);
+    const cookies = await ctx.setSession(mockAccessToken);
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Someone Else's Feed",
+      url: "https://example.com/clone-not-owned.xml",
+      user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+    });
+
+    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie: cookies,
+      },
+      body: JSON.stringify({}),
+    });
+
+    assert.strictEqual(response.status, 404);
+  });
+
+  it("strips extraneous body fields and still succeeds", async () => {
+    const discordUserId = generateSnowflake();
+    const mockAccessToken = createMockAccessToken(discordUserId);
+    const cookies = await ctx.setSession(mockAccessToken);
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Feed for Extra Fields",
+      url: "https://example.com/clone-extra-fields.xml",
+      user: { id: generateTestId(), discordUserId },
+    });
+
+    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie: cookies,
+      },
+      body: JSON.stringify({ title: "Clone", unknownField: "bad" }),
+    });
+
+    assert.strictEqual(response.status, 201);
+    const body = (await response.json()) as { result: { id: string } };
+    assert.ok(body.result.id);
+  });
+
+  it("returns 201 and uses new URL when url is provided", async () => {
+    const discordUserId = generateSnowflake();
+    const mockAccessToken = createMockAccessToken(discordUserId);
+    const cookies = await ctx.setSession(mockAccessToken);
+    const newUrl = "https://example.com/clone-new-url.xml";
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Original Feed",
+      url: "https://example.com/clone-original-url.xml",
+      user: { id: generateTestId(), discordUserId },
+    });
+
+    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie: cookies,
+      },
+      body: JSON.stringify({ url: newUrl }),
+    });
+
+    assert.strictEqual(response.status, 201);
+    const body = (await response.json()) as { result: { id: string } };
+    assert.ok(body.result.id);
+
+    const clonedFeed = await ctx.container.userFeedRepository.findById(
+      body.result.id,
+    );
+    assert.ok(clonedFeed);
+    assert.strictEqual(clonedFeed.url, newUrl);
+  });
+
+  it("returns 400 FEED_REQUEST_TIMEOUT when cloning with invalid url", async () => {
+    const discordUserId = generateSnowflake();
+    const mockAccessToken = createMockAccessToken(discordUserId);
+    const cookies = await ctx.setSession(mockAccessToken);
+    const newUrl = "https://example.com/clone-url-timeout.xml";
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Feed for Clone Timeout",
+      url: "https://example.com/clone-url-timeout-old.xml",
+      user: { id: generateTestId(), discordUserId },
+    });
+
+    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie: cookies,
+      },
+      body: JSON.stringify({ url: newUrl }),
+    });
+    assert.strictEqual(response.status, 400);
+    const body = (await response.json()) as { code: string };
+    assert.strictEqual(body.code, "FEED_REQUEST_TIMEOUT");
+  });
+
+  it("returns 400 ADD_FEED_PARSE_FAILED when cloning with unparseable url", async () => {
+    const discordUserId = generateSnowflake();
+    const mockAccessToken = createMockAccessToken(discordUserId);
+    const cookies = await ctx.setSession(mockAccessToken);
+    const newUrl = "https://example.com/clone-url-parse.xml";
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Feed for Clone Parse Error",
+      url: "https://example.com/clone-url-parse-old.xml",
+      user: { id: generateTestId(), discordUserId },
+    });
+
+    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie: cookies,
+      },
+      body: JSON.stringify({ url: newUrl }),
+    });
+    assert.strictEqual(response.status, 400);
+    const body = (await response.json()) as { code: string };
+    assert.strictEqual(body.code, "ADD_FEED_PARSE_FAILED");
+  });
+
+  it("returns 400 FEED_FETCH_FAILED when cloning with unreachable url", async () => {
+    const discordUserId = generateSnowflake();
+    const mockAccessToken = createMockAccessToken(discordUserId);
+    const cookies = await ctx.setSession(mockAccessToken);
+    const newUrl = "https://example.com/clone-url-fetch.xml";
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Feed for Clone Fetch Error",
+      url: "https://example.com/clone-url-fetch-old.xml",
+      user: { id: generateTestId(), discordUserId },
+    });
+
+    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie: cookies,
+      },
+      body: JSON.stringify({ url: newUrl }),
+    });
+    assert.strictEqual(response.status, 400);
+    const body = (await response.json()) as { code: string };
+    assert.strictEqual(body.code, "FEED_FETCH_FAILED");
+  });
+
+  it("returns 201 when admin clones another user's feed", async () => {
+    const ownerDiscordUserId = generateSnowflake();
+    const adminDiscordUserId = generateSnowflake();
+    const mockAccessToken = createMockAccessToken(adminDiscordUserId);
+    const cookies = await ctx.setSession(mockAccessToken);
+
+    const adminUser =
+      await ctx.container.usersService.getOrCreateUserByDiscordId(
+        adminDiscordUserId,
+      );
+    ctx.container.config.BACKEND_API_ADMIN_USER_IDS.push(adminUser.id);
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Feed Owned by Another User",
+      url: "https://example.com/clone-admin.xml",
+      user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+    });
+
+    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        cookie: cookies,
+      },
+      body: JSON.stringify({}),
+    });
+
+    assert.strictEqual(response.status, 201);
+    const body = (await response.json()) as { result: { id: string } };
+    assert.ok(body.result.id);
+
+    ctx.container.config.BACKEND_API_ADMIN_USER_IDS.pop();
+  });
+});
+
+describe(
+  "POST /api/v1/user-feeds/:feedId/test-send",
+  { concurrency: true },
+  () => {
+    it("returns 401 without authentication", async () => {
+      const feedId = generateTestId();
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feedId}/test-send`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            article: { id: "article-1" },
+            channelId: "123",
+          }),
+        },
+      );
+      assert.strictEqual(response.status, 401);
+    });
+
+    it("returns 404 for non-existent feed", async () => {
+      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const cookies = await ctx.setSession(mockAccessToken);
+      const nonExistentId = generateTestId();
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${nonExistentId}/test-send`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            article: { id: "article-1" },
+            channelId: "123",
+          }),
+        },
+      );
+      assert.strictEqual(response.status, 404);
+    });
+
+    it("returns 400 when article is missing", async () => {
+      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const cookies = await ctx.setSession(mockAccessToken);
+      const feedId = generateTestId();
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feedId}/test-send`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({ channelId: "123" }),
+        },
+      );
+      assert.strictEqual(response.status, 400);
+    });
+
+    it("returns 400 when channelId is missing", async () => {
+      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const cookies = await ctx.setSession(mockAccessToken);
+      const feedId = generateTestId();
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feedId}/test-send`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({ article: { id: "article-1" } }),
+        },
+      );
+      assert.strictEqual(response.status, 400);
+    });
+
+    it("returns 200 on successful test send", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+      const channelId = generateSnowflake();
+      const guildId = generateSnowflake();
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Test Send Feed",
+        url: "https://example.com/test-send-feed.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      ctx.discordMockServer.registerRoute("GET", `/channels/${channelId}`, {
+        status: 200,
+        body: {
+          id: channelId,
+          guild_id: guildId,
+          type: 0,
+        },
+      });
+
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        mockAccessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: guildId,
+              name: "Test Server",
+              owner: false,
+              permissions: "16",
+            },
+          ],
+        },
+      );
+
+      feedApiMockServer.registerRoute("POST", "/v1/user-feeds/test", {
+        status: 200,
+        body: {
+          status: "SUCCESS",
+        },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/test-send`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            article: { id: "article-1" },
+            channelId,
+          }),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { status: string };
+      };
+      assert.ok(body.result);
+      assert.strictEqual(body.result.status, "SUCCESS");
+    });
+
+    it("returns 400 with FEED_MISSING_CHANNEL when channel not found", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+      const channelId = generateSnowflake();
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Test Send Channel Not Found",
+        url: "https://example.com/test-send-no-channel.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      ctx.discordMockServer.registerRoute("GET", `/channels/${channelId}`, {
+        status: 404,
+        body: { message: "Unknown Channel", code: 10003 },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/test-send`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            article: { id: "article-1" },
+            channelId,
+          }),
+        },
+      );
+
+      assert.strictEqual(response.status, 400);
+      const body = (await response.json()) as { code: string };
+      assert.strictEqual(body.code, "FEED_MISSING_CHANNEL");
+    });
+
+    it("returns 400 for invalid timezone", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Test Send Invalid TZ",
+        url: "https://example.com/test-send-invalid-tz.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/test-send`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            article: { id: "article-1" },
+            channelId: "123",
+            userFeedFormatOptions: { dateTimezone: "INVALID_TZ" },
+          }),
+        },
+      );
+      assert.strictEqual(response.status, 400);
+    });
+
+    it("returns 400 for invalid timezone in test-send with null userFeedFormatOptions", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+      const feedId = generateTestId();
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feedId}/test-send`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            article: { id: "article-1" },
+            channelId: "123",
+            userFeedFormatOptions: null,
+          }),
+        },
+      );
+      assert.notStrictEqual(response.status, 500);
+    });
+
+    it("returns 403 with FEED_USER_MISSING_MANAGE_GUILD when user lacks permission", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+      const channelId = generateSnowflake();
+      const guildId = generateSnowflake();
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Test Send No Permission",
+        url: "https://example.com/test-send-no-perm.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      ctx.discordMockServer.registerRoute("GET", `/channels/${channelId}`, {
+        status: 200,
+        body: {
+          id: channelId,
+          guild_id: guildId,
+          type: 0,
+        },
+      });
+
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        mockAccessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: guildId,
+              name: "Test Server",
+              owner: false,
+              permissions: "0",
+            },
+          ],
+        },
+      );
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/test-send`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            article: { id: "article-1" },
+            channelId,
+          }),
+        },
+      );
+
+      assert.strictEqual(response.status, 403);
+      const body = (await response.json()) as { code: string };
+      assert.strictEqual(body.code, "FEED_USER_MISSING_MANAGE_GUILD");
+    });
+  },
+);
+
+describe(
+  "POST /api/v1/user-feeds/:feedId/date-preview",
+  { concurrency: true },
+  () => {
+    it("returns 401 without authentication", async () => {
+      const response = await ctx.fetch(
+        "/api/v1/user-feeds/fake-feed-id/date-preview",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        },
+      );
+      assert.strictEqual(response.status, 401);
+    });
+
+    it("returns 200 with default values", async () => {
+      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        "/api/v1/user-feeds/fake-feed-id/date-preview",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({}),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { valid: boolean; output: string };
+      };
+      assert.strictEqual(body.result.valid, true);
+      assert.ok(typeof body.result.output === "string");
+      assert.ok(body.result.output.length > 0);
+    });
+
+    it("returns 200 with custom date format", async () => {
+      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        "/api/v1/user-feeds/fake-feed-id/date-preview",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({ dateFormat: "YYYY-MM-DD" }),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { valid: boolean; output: string };
+      };
+      assert.strictEqual(body.result.valid, true);
+      assert.match(body.result.output, /^\d{4}-\d{2}-\d{2}$/);
+    });
+
+    it("returns 200 with custom timezone", async () => {
+      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        "/api/v1/user-feeds/fake-feed-id/date-preview",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({ dateTimezone: "America/New_York" }),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { valid: boolean; output: string };
+      };
+      assert.strictEqual(body.result.valid, true);
+    });
+
+    it("returns 200 with custom locale", async () => {
+      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        "/api/v1/user-feeds/fake-feed-id/date-preview",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({ dateLocale: "fr" }),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { valid: boolean; output: string };
+      };
+      assert.strictEqual(body.result.valid, true);
+    });
+
+    it("returns 200 with valid false for invalid timezone", async () => {
+      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        "/api/v1/user-feeds/fake-feed-id/date-preview",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({ dateTimezone: "Invalid/Zone" }),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { valid: boolean; output?: string };
+      };
+      assert.strictEqual(body.result.valid, false);
+    });
+  },
+);
+
+describe(
+  "GET /api/v1/user-feeds/:feedId/requests",
+  { concurrency: true },
+  () => {
+    const feedRequestsMockHandler = (req: { url: string }) => {
+      const url = new URL(req.url, "http://localhost");
+      return {
+        status: 200,
+        body: {
+          result: {
+            requests: [],
+            nextRetryTimestamp: null,
+            receivedLimit: url.searchParams.get("limit"),
+            receivedSkip: url.searchParams.get("skip"),
+          },
+        },
+      };
+    };
+
+    it("returns 401 without authentication", async () => {
+      const feedId = generateTestId();
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feedId}/requests`,
+        {
+          method: "GET",
+        },
+      );
+      assert.strictEqual(response.status, 401);
+    });
+
+    it("returns 404 for invalid ObjectId", async () => {
+      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        "/api/v1/user-feeds/not-valid-id/requests",
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+      assert.strictEqual(response.status, 404);
+    });
+
+    it("returns 404 for non-existent valid ObjectId", async () => {
+      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const cookies = await ctx.setSession(mockAccessToken);
+      const nonExistentId = generateTestId();
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${nonExistentId}/requests`,
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+      assert.strictEqual(response.status, 404);
+    });
+
+    it("returns 404 when feed belongs to another user", async () => {
+      const ownerDiscordUserId = generateSnowflake();
+      const otherDiscordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(otherDiscordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Owner's Feed",
+        url: "https://example.com/owner-feed.xml",
+        user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/requests`,
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+      assert.strictEqual(response.status, 404);
+    });
+
+    it("returns 200 when user owns the feed", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "My Feed",
+        url: "https://example.com/my-feed.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      feedApiMockServer.registerRoute(
+        "GET",
+        "/v1/feed-requests",
+        feedRequestsMockHandler,
+      );
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/requests`,
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+    });
+
+    it("returns 200 when user is an accepted shared manager", async () => {
+      const ownerDiscordUserId = generateSnowflake();
+      const sharedManagerDiscordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Shared Feed Requests",
+        url: "https://example.com/shared-feed-requests.xml",
+        user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+        shareManageOptions: {
+          invites: [
+            {
+              discordUserId: sharedManagerDiscordUserId,
+              status: UserFeedManagerStatus.Accepted,
+            },
+          ],
+        },
+      });
+
+      feedApiMockServer.registerRoute(
+        "GET",
+        "/v1/feed-requests",
+        feedRequestsMockHandler,
+      );
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/requests`,
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+    });
+
+    it("returns 200 when admin accesses another user's feed", async () => {
+      const ownerDiscordUserId = generateSnowflake();
+      const adminDiscordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(adminDiscordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const adminUser =
+        await ctx.container.usersService.getOrCreateUserByDiscordId(
+          adminDiscordUserId,
+        );
+      ctx.container.config.BACKEND_API_ADMIN_USER_IDS.push(adminUser.id);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Admin Access Feed Requests",
+        url: "https://example.com/admin-feed-requests.xml",
+        user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+      });
+
+      feedApiMockServer.registerRoute(
+        "GET",
+        "/v1/feed-requests",
+        feedRequestsMockHandler,
+      );
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/requests`,
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+
+      ctx.container.config.BACKEND_API_ADMIN_USER_IDS.pop();
+    });
+
+    it("returns 400 when limit is below minimum", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Feed Limit Validation",
+        url: "https://example.com/limit-validation.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/requests?limit=0`,
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 400);
+    });
+
+    it("returns 400 when limit exceeds maximum", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Feed Limit Max Validation",
+        url: "https://example.com/limit-max-validation.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/requests?limit=51`,
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 400);
+    });
+
+    it("returns 400 when skip is negative", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Feed Skip Validation",
+        url: "https://example.com/skip-validation.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/requests?skip=-1`,
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 400);
+    });
+
+    it("returns 400 when limit is not a number", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Feed Limit NaN Validation",
+        url: "https://example.com/limit-nan-validation.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/requests?limit=abc`,
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 400);
+    });
+
+    it("forwards limit and skip query params to upstream API", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Feed Query Forward",
+        url: "https://example.com/query-forward.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      feedApiMockServer.registerRoute(
+        "GET",
+        "/v1/feed-requests",
+        feedRequestsMockHandler,
+      );
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/requests?limit=10&skip=5`,
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { receivedLimit: string; receivedSkip: string };
+      };
+      assert.strictEqual(body.result.receivedLimit, "10");
+      assert.strictEqual(body.result.receivedSkip, "5");
+    });
+  },
+);
+
+describe(
+  "GET /api/v1/user-feeds/:feedId/delivery-logs",
+  { concurrency: true },
+  () => {
+    const deliveryLogsMockHandler = (req: { url: string }) => {
+      const url = new URL(req.url, "http://localhost");
+      return {
+        status: 200,
+        body: {
+          result: {
+            logs: [],
+            receivedLimit: url.searchParams.get("limit"),
+            receivedSkip: url.searchParams.get("skip"),
+          },
+        },
+      };
+    };
+
+    it("returns 401 without authentication", async () => {
+      const feedId = generateTestId();
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feedId}/delivery-logs`,
+        {
+          method: "GET",
+        },
+      );
+      assert.strictEqual(response.status, 401);
+    });
+
+    it("returns 404 for invalid ObjectId", async () => {
+      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        "/api/v1/user-feeds/not-valid-id/delivery-logs",
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+      assert.strictEqual(response.status, 404);
+    });
+
+    it("returns 404 for non-existent valid ObjectId", async () => {
+      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const cookies = await ctx.setSession(mockAccessToken);
+      const nonExistentId = generateTestId();
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${nonExistentId}/delivery-logs`,
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+      assert.strictEqual(response.status, 404);
+    });
+
+    it("returns 404 when feed belongs to another user", async () => {
+      const ownerDiscordUserId = generateSnowflake();
+      const otherDiscordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(otherDiscordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Other User Delivery Logs Feed",
+        url: "https://example.com/other-delivery-logs.xml",
+        user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/delivery-logs`,
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+      assert.strictEqual(response.status, 404);
+    });
+
+    it("returns 200 when user owns the feed", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Own Feed Delivery Logs",
+        url: "https://example.com/own-delivery-logs.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      feedApiMockServer.registerRoute(
+        "GET",
+        `/v1/user-feeds/${feed.id}/delivery-logs`,
+        deliveryLogsMockHandler,
+      );
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/delivery-logs`,
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+    });
+
+    it("returns 200 when user is an accepted shared manager", async () => {
+      const ownerDiscordUserId = generateSnowflake();
+      const sharedManagerDiscordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Shared Feed Delivery Logs",
+        url: "https://example.com/shared-delivery-logs.xml",
+        user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+        shareManageOptions: {
+          invites: [
+            {
+              discordUserId: sharedManagerDiscordUserId,
+              status: UserFeedManagerStatus.Accepted,
+            },
+          ],
+        },
+      });
+
+      feedApiMockServer.registerRoute(
+        "GET",
+        `/v1/user-feeds/${feed.id}/delivery-logs`,
+        deliveryLogsMockHandler,
+      );
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/delivery-logs`,
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+    });
+
+    it("returns 200 when admin accesses another user's feed", async () => {
+      const ownerDiscordUserId = generateSnowflake();
+      const adminDiscordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(adminDiscordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const adminUser =
+        await ctx.container.usersService.getOrCreateUserByDiscordId(
+          adminDiscordUserId,
+        );
+      ctx.container.config.BACKEND_API_ADMIN_USER_IDS.push(adminUser.id);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Admin Access Delivery Logs Feed",
+        url: "https://example.com/admin-delivery-logs.xml",
+        user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+      });
+
+      feedApiMockServer.registerRoute(
+        "GET",
+        `/v1/user-feeds/${feed.id}/delivery-logs`,
+        deliveryLogsMockHandler,
+      );
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/delivery-logs`,
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+
+      ctx.container.config.BACKEND_API_ADMIN_USER_IDS.pop();
+    });
+
+    it("returns 400 when limit is below minimum", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Delivery Logs Limit Validation",
+        url: "https://example.com/delivery-logs-limit-validation.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/delivery-logs?limit=0`,
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 400);
+    });
+
+    it("returns 400 when limit exceeds maximum", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Delivery Logs Limit Max Validation",
+        url: "https://example.com/delivery-logs-limit-max.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/delivery-logs?limit=51`,
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 400);
+    });
+
+    it("returns 400 when skip is negative", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Delivery Logs Skip Validation",
+        url: "https://example.com/delivery-logs-skip-validation.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/delivery-logs?skip=-1`,
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 400);
+    });
+
+    it("returns 400 when skip exceeds maximum", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Delivery Logs Skip Max Validation",
+        url: "https://example.com/delivery-logs-skip-max.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/delivery-logs?skip=1001`,
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 400);
+    });
+
+    it("returns 400 when limit is not a number", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Delivery Logs Limit NaN Validation",
+        url: "https://example.com/delivery-logs-limit-nan.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/delivery-logs?limit=abc`,
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 400);
+    });
+
+    it("forwards limit and skip query params to upstream API", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Delivery Logs Query Forward",
+        url: "https://example.com/delivery-logs-query-forward.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      feedApiMockServer.registerRoute(
+        "GET",
+        `/v1/user-feeds/${feed.id}/delivery-logs`,
+        deliveryLogsMockHandler,
+      );
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/delivery-logs?limit=10&skip=5`,
+        {
+          method: "GET",
+          headers: { cookie: cookies },
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { receivedLimit: string; receivedSkip: string };
+      };
+      assert.strictEqual(body.result.receivedLimit, "10");
+      assert.strictEqual(body.result.receivedSkip, "5");
+    });
+  },
+);
+
+describe(
+  "POST /api/v1/user-feeds/:feedId/delivery-preview",
+  { concurrency: true },
+  () => {
+    const deliveryPreviewMockHandler = (req: { body?: unknown }) => {
+      const reqBody = req.body as Record<string, unknown> | undefined;
+      return {
+        status: 200,
+        body: {
+          receivedSkip: reqBody?.skip,
+          receivedLimit: reqBody?.limit,
+        },
+      };
+    };
+
+    it("returns 401 without authentication", async () => {
+      const feedId = generateTestId();
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feedId}/delivery-preview`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        },
+      );
+      assert.strictEqual(response.status, 401);
+    });
+
+    it("returns 404 for invalid ObjectId", async () => {
+      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const response = await ctx.fetch(
+        "/api/v1/user-feeds/not-valid-id/delivery-preview",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({}),
+        },
+      );
+      assert.strictEqual(response.status, 404);
+    });
+
+    it("returns 404 for non-existent valid ObjectId", async () => {
+      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const cookies = await ctx.setSession(mockAccessToken);
+      const nonExistentId = generateTestId();
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${nonExistentId}/delivery-preview`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({}),
+        },
+      );
+      assert.strictEqual(response.status, 404);
+    });
+
+    it("returns 404 when feed belongs to another user", async () => {
+      const ownerDiscordUserId = generateSnowflake();
+      const otherDiscordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(otherDiscordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Other User Delivery Preview Feed",
+        url: "https://example.com/other-delivery-preview.xml",
+        user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/delivery-preview`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({}),
+        },
+      );
+      assert.strictEqual(response.status, 404);
+    });
+
+    it("returns 200 when user owns the feed", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Own Feed Delivery Preview",
+        url: "https://example.com/own-delivery-preview.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      feedApiMockServer.registerRoute(
+        "POST",
+        `/v1/user-feeds/delivery-preview`,
+        deliveryPreviewMockHandler,
+      );
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/delivery-preview`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({}),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+    });
+
+    it("returns 200 when user is an accepted shared manager", async () => {
+      const ownerDiscordUserId = generateSnowflake();
+      const sharedManagerDiscordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Shared Feed Delivery Preview",
+        url: "https://example.com/shared-delivery-preview.xml",
+        user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+        shareManageOptions: {
+          invites: [
+            {
+              discordUserId: sharedManagerDiscordUserId,
+              status: UserFeedManagerStatus.Accepted,
+            },
+          ],
+        },
+      });
+
+      feedApiMockServer.registerRoute(
+        "POST",
+        `/v1/user-feeds/delivery-preview`,
+        deliveryPreviewMockHandler,
+      );
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/delivery-preview`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({}),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+    });
+
+    it("returns 200 when admin accesses another user's feed", async () => {
+      const ownerDiscordUserId = generateSnowflake();
+      const adminDiscordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(adminDiscordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const adminUser =
+        await ctx.container.usersService.getOrCreateUserByDiscordId(
+          adminDiscordUserId,
+        );
+      ctx.container.config.BACKEND_API_ADMIN_USER_IDS.push(adminUser.id);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Admin Access Delivery Preview Feed",
+        url: "https://example.com/admin-delivery-preview.xml",
+        user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+      });
+
+      feedApiMockServer.registerRoute(
+        "POST",
+        `/v1/user-feeds/delivery-preview`,
+        deliveryPreviewMockHandler,
+      );
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/delivery-preview`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({}),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+
+      ctx.container.config.BACKEND_API_ADMIN_USER_IDS.pop();
+    });
+
+    it("returns 400 when limit is below minimum", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Delivery Preview Limit Validation",
+        url: "https://example.com/delivery-preview-limit-validation.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/delivery-preview`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({ limit: 0 }),
+        },
+      );
+
+      assert.strictEqual(response.status, 400);
+    });
+
+    it("returns 400 when limit exceeds maximum", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Delivery Preview Limit Max Validation",
+        url: "https://example.com/delivery-preview-limit-max.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/delivery-preview`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({ limit: 51 }),
+        },
+      );
+
+      assert.strictEqual(response.status, 400);
+    });
+
+    it("returns 400 when skip is negative", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Delivery Preview Skip Validation",
+        url: "https://example.com/delivery-preview-skip-validation.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/delivery-preview`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({ skip: -1 }),
+        },
+      );
+
+      assert.strictEqual(response.status, 400);
+    });
+
+    it("returns 200 with default skip/limit when body is empty", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Delivery Preview Default Params",
+        url: "https://example.com/delivery-preview-default-params.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      feedApiMockServer.registerRoute(
+        "POST",
+        `/v1/user-feeds/delivery-preview`,
+        deliveryPreviewMockHandler,
+      );
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/delivery-preview`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({}),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { receivedSkip: number; receivedLimit: number };
+      };
+      assert.strictEqual(body.result.receivedSkip, 0);
+      assert.strictEqual(body.result.receivedLimit, 10);
+    });
+
+    it("forwards skip and limit in the upstream request body", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Delivery Preview Forward Params",
+        url: "https://example.com/delivery-preview-forward-params.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      feedApiMockServer.registerRoute(
+        "POST",
+        `/v1/user-feeds/delivery-preview`,
+        deliveryPreviewMockHandler,
+      );
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/delivery-preview`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({ skip: 5, limit: 20 }),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { receivedSkip: number; receivedLimit: number };
+      };
+      assert.strictEqual(body.result.receivedSkip, 5);
+      assert.strictEqual(body.result.receivedLimit, 20);
+    });
+
+    it("filters connections for shared manager with limited connection IDs", async () => {
+      const ownerDiscordUserId = generateSnowflake();
+      const sharedManagerDiscordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Delivery Preview Filtered Connections",
+        url: "https://example.com/delivery-preview-filtered.xml",
+        user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+        connections: {
+          discordChannels: [
+            {
+              id: generateTestId(),
+              name: "Connection 1",
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              details: { embeds: [], formatter: {} },
+            } as never,
+            {
+              id: generateTestId(),
+              name: "Connection 2",
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              details: { embeds: [], formatter: {} },
+            } as never,
+          ],
+        },
+      });
+
+      const createdFeed = await ctx.container.userFeedRepository.findById(
+        feed.id,
+      );
+      const firstConnectionId = createdFeed!.connections.discordChannels[0]!.id;
+
+      await ctx.container.userFeedRepository.findOneAndUpdate(
+        { _id: feed.id },
+        {
+          $set: {
+            shareManageOptions: {
+              invites: [
+                {
+                  discordUserId: sharedManagerDiscordUserId,
+                  status: UserFeedManagerStatus.Accepted,
+                  connections: [{ connectionId: firstConnectionId }],
+                },
+              ],
+            },
+          },
+        },
+      );
+
+      feedApiMockServer.registerRoute(
+        "POST",
+        `/v1/user-feeds/delivery-preview`,
+        deliveryPreviewMockHandler,
+      );
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/delivery-preview`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({}),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+
+      const upstreamRequests = feedApiMockServer
+        .getRequestsForPath("/v1/user-feeds/delivery-preview")
+        .filter(
+          (r) =>
+            (r.body as Record<string, unknown>)?.feed &&
+            (
+              (r.body as Record<string, unknown>).feed as Record<
+                string,
+                unknown
+              >
+            ).id === feed.id,
+        );
+      assert.strictEqual(upstreamRequests.length, 1);
+      const mediums = (upstreamRequests[0]!.body as Record<string, unknown>)
+        .mediums as Array<{ id: string }>;
+      assert.strictEqual(mediums.length, 1);
+      assert.strictEqual(mediums[0]!.id, firstConnectionId);
+    });
+
+    it("shared manager without connection restrictions sees all connections in delivery preview", async () => {
+      const ownerDiscordUserId = generateSnowflake();
+      const sharedManagerDiscordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Delivery Preview All Connections",
+        url: "https://example.com/delivery-preview-all.xml",
+        user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+        connections: {
+          discordChannels: [
+            {
+              id: generateTestId(),
+              name: "Connection 1",
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              details: { embeds: [], formatter: {} },
+            } as never,
+            {
+              id: generateTestId(),
+              name: "Connection 2",
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              details: { embeds: [], formatter: {} },
+            } as never,
+          ],
+        },
+      });
+
+      await ctx.container.userFeedRepository.findOneAndUpdate(
+        { _id: feed.id },
+        {
+          $set: {
+            shareManageOptions: {
+              invites: [
+                {
+                  discordUserId: sharedManagerDiscordUserId,
+                  status: UserFeedManagerStatus.Accepted,
+                },
+              ],
+            },
+          },
+        },
+      );
+
+      feedApiMockServer.registerRoute(
+        "POST",
+        `/v1/user-feeds/delivery-preview`,
+        deliveryPreviewMockHandler,
+      );
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/delivery-preview`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({}),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+
+      const upstreamRequests = feedApiMockServer
+        .getRequestsForPath("/v1/user-feeds/delivery-preview")
+        .filter(
+          (r) =>
+            (r.body as Record<string, unknown>)?.feed &&
+            (
+              (r.body as Record<string, unknown>).feed as Record<
+                string,
+                unknown
+              >
+            ).id === feed.id,
+        );
+      assert.strictEqual(upstreamRequests.length, 1);
+      const mediums = (upstreamRequests[0]!.body as Record<string, unknown>)
+        .mediums as Array<{ id: string }>;
+      assert.strictEqual(mediums.length, 2);
+    });
+  },
+);
+
+describe(
+  "POST /api/v1/user-feeds/:feedId/get-article-properties",
+  { concurrency: true },
+  () => {
+    beforeEach(() => {
+      feedApiMockServer.registerRoute(
+        "POST",
+        "/v1/user-feeds/get-articles",
+        (req) => {
+          const body = req.body as { url?: string };
+
+          if (body?.url?.includes("invalid-regex")) {
+            return {
+              status: 422,
+              body: {
+                code: "CUSTOM_PLACEHOLDER_REGEX_EVAL",
+                errors: [{ message: "Invalid regex" }],
+              },
+            };
+          }
+
+          return {
+            status: 200,
+            body: {
+              result: {
+                requestStatus: "SUCCESS",
+                articles: [{ title: "Article 1" }],
+                totalArticles: 1,
+                selectedProperties: ["*"],
+              },
+            },
+          };
+        },
+      );
+    });
+
+    it("returns 401 without authentication", async () => {
+      const feedId = generateTestId();
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feedId}/get-article-properties`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        },
+      );
+      assert.strictEqual(response.status, 401);
+    });
+
+    it("returns 404 for non-existent feed", async () => {
+      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const cookies = await ctx.setSession(mockAccessToken);
+      const nonExistentId = generateTestId();
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${nonExistentId}/get-article-properties`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({}),
+        },
+      );
+      assert.strictEqual(response.status, 404);
+    });
+
+    it("returns 200 with properties and requestStatus", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+      const feedUrl = `https://example.com/article-properties-${generateTestId()}.xml`;
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Article Properties Feed",
+        url: feedUrl,
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-article-properties`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({}),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { properties: string[]; requestStatus: string };
+      };
+      assert.ok(body.result);
+      assert.strictEqual(body.result.requestStatus, "SUCCESS");
+      assert.ok(Array.isArray(body.result.properties));
+    });
+
+    it("returns 200 with empty body (no customPlaceholders)", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Article Properties Empty Body",
+        url: "https://example.com/article-properties-empty.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-article-properties`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({}),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { properties: string[]; requestStatus: string };
+      };
+      assert.ok(body.result);
+      assert.strictEqual(body.result.requestStatus, "SUCCESS");
+    });
+
+    it("returns 404 when feed belongs to another user", async () => {
+      const ownerDiscordUserId = generateSnowflake();
+      const otherDiscordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(otherDiscordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Other User Article Props Feed",
+        url: "https://example.com/other-article-props.xml",
+        user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-article-properties`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({}),
+        },
+      );
+      assert.strictEqual(response.status, 404);
+    });
+
+    it("returns 400 for invalid step type", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Step Validation Feed",
+        url: `https://example.com/step-invalid-type-${generateTestId()}.xml`,
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-article-properties`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            customPlaceholders: [
+              {
+                referenceName: "test",
+                sourcePlaceholder: "title",
+                steps: [{ type: "INVALID" }],
+              },
+            ],
+          }),
+        },
+      );
+      assert.strictEqual(response.status, 400);
+    });
+
+    it("returns 400 for REGEX step missing regexSearch", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Step Validation Feed",
+        url: `https://example.com/step-regex-missing-${generateTestId()}.xml`,
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-article-properties`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            customPlaceholders: [
+              {
+                referenceName: "test",
+                sourcePlaceholder: "title",
+                steps: [{ type: "REGEX" }],
+              },
+            ],
+          }),
+        },
+      );
+      assert.strictEqual(response.status, 400);
+    });
+
+    it("returns 400 for DATE_FORMAT step missing format", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Step Validation Feed",
+        url: `https://example.com/step-date-missing-${generateTestId()}.xml`,
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-article-properties`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            customPlaceholders: [
+              {
+                referenceName: "test",
+                sourcePlaceholder: "title",
+                steps: [{ type: "DATE_FORMAT" }],
+              },
+            ],
+          }),
+        },
+      );
+      assert.strictEqual(response.status, 400);
+    });
+
+    it("returns 200 with valid REGEX step", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+      const feedUrl = `https://example.com/step-regex-valid-${generateTestId()}.xml`;
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Step Validation Feed",
+        url: feedUrl,
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-article-properties`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            customPlaceholders: [
+              {
+                referenceName: "test",
+                sourcePlaceholder: "title",
+                steps: [
+                  {
+                    type: "REGEX",
+                    regexSearch: "foo",
+                    regexSearchFlags: "gi",
+                    replacementString: "bar",
+                  },
+                ],
+              },
+            ],
+          }),
+        },
+      );
+      assert.strictEqual(response.status, 200);
+    });
+
+    it("returns 200 with valid URL_ENCODE step", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+      const feedUrl = `https://example.com/step-urlencode-${generateTestId()}.xml`;
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Step Validation Feed",
+        url: feedUrl,
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-article-properties`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            customPlaceholders: [
+              {
+                referenceName: "test",
+                sourcePlaceholder: "title",
+                steps: [{ type: "URL_ENCODE" }],
+              },
+            ],
+          }),
+        },
+      );
+      assert.strictEqual(response.status, 200);
+    });
+
+    it("returns 200 with valid UPPERCASE and LOWERCASE steps", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+      const feedUrl = `https://example.com/step-case-${generateTestId()}.xml`;
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Step Validation Feed",
+        url: feedUrl,
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-article-properties`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            customPlaceholders: [
+              {
+                referenceName: "test",
+                sourcePlaceholder: "title",
+                steps: [{ type: "UPPERCASE" }, { type: "LOWERCASE" }],
+              },
+            ],
+          }),
+        },
+      );
+      assert.strictEqual(response.status, 200);
+    });
+
+    it("returns 200 when user is an accepted shared manager", async () => {
+      const ownerDiscordUserId = generateSnowflake();
+      const sharedManagerDiscordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+      const feedUrl = `https://example.com/shared-article-props-${generateTestId()}.xml`;
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Shared Feed Article Props",
+        url: feedUrl,
+        user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+        shareManageOptions: {
+          invites: [
+            {
+              discordUserId: sharedManagerDiscordUserId,
+              status: UserFeedManagerStatus.Accepted,
+            },
+          ],
+        },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-article-properties`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({}),
+        },
+      );
+      assert.strictEqual(response.status, 200);
+    });
+
+    it("returns 200 when user is admin accessing another user's feed", async () => {
+      const adminDiscordUserId = generateSnowflake();
+      const ownerDiscordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(adminDiscordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+      const feedUrl = `https://example.com/admin-article-props-${generateTestId()}.xml`;
+
+      const adminUser =
+        await ctx.container.usersService.getOrCreateUserByDiscordId(
+          adminDiscordUserId,
+        );
+      ctx.container.config.BACKEND_API_ADMIN_USER_IDS.push(adminUser.id);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Admin Access Article Props Feed",
+        url: feedUrl,
+        user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-article-properties`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({}),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+
+      ctx.container.config.BACKEND_API_ADMIN_USER_IDS.pop();
+    });
+
+    it("returns 200 with explicit null customPlaceholders", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+      const feedUrl = `https://example.com/null-placeholders-${generateTestId()}.xml`;
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Null Placeholders Feed",
+        url: feedUrl,
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-article-properties`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({ customPlaceholders: null }),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { properties: string[]; requestStatus: string };
+      };
+      assert.ok(body.result);
+      assert.strictEqual(body.result.requestStatus, "SUCCESS");
+    });
+
+    it("returns 422 for invalid custom placeholder regex", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+      const feedUrl = `https://example.com/invalid-regex-${generateTestId()}.xml`;
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Invalid Regex Feed",
+        url: feedUrl,
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-article-properties`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            customPlaceholders: [
+              {
+                referenceName: "test",
+                sourcePlaceholder: "title",
+                steps: [{ type: "REGEX", regexSearch: "[invalid" }],
+              },
+            ],
+          }),
+        },
+      );
+      assert.strictEqual(response.status, 422);
+    });
+  },
+);
+
+describe(
+  "POST /api/v1/user-feeds/:feedId/get-articles",
+  { concurrency: true },
+  () => {
+    const capturedBodies = new Map<string, Record<string, unknown>>();
+
+    beforeEach(() => {
+      capturedBodies.clear();
+      feedApiMockServer.registerRoute(
+        "POST",
+        "/v1/user-feeds/get-articles",
+        (req) => {
+          const body = req.body as { url?: string };
+
+          if (body?.url) {
+            capturedBodies.set(body.url, req.body as Record<string, unknown>);
+          }
+
+          if (body?.url?.includes("invalid-custom-regex")) {
+            return {
+              status: 422,
+              body: {
+                code: "CUSTOM_PLACEHOLDER_REGEX_EVAL",
+                errors: [{ message: "Invalid regex" }],
+              },
+            };
+          }
+
+          if (body?.url?.includes("invalid-filters-regex")) {
+            return {
+              status: 422,
+              body: {
+                code: "FILTERS_REGEX_EVAL",
+                errors: [{ message: "Invalid filter regex" }],
+              },
+            };
+          }
+
+          return {
+            status: 200,
+            body: {
+              result: {
+                requestStatus: "SUCCESS",
+                articles: [{ id: "article-1", title: "Test Article" }],
+                totalArticles: 1,
+                selectedProperties: ["id", "title"],
+              },
+            },
+          };
+        },
+      );
+    });
+
+    it("returns 401 without authentication", async () => {
+      const feedId = generateTestId();
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feedId}/get-articles`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            formatter: {
+              options: {
+                formatTables: false,
+                stripImages: false,
+                disableImageLinkPreviews: false,
+              },
+            },
+          }),
+        },
+      );
+      assert.strictEqual(response.status, 401);
+    });
+
+    it("returns 404 for non-existent feed", async () => {
+      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const cookies = await ctx.setSession(mockAccessToken);
+      const feedId = generateTestId();
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feedId}/get-articles`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            formatter: {
+              options: {
+                formatTables: false,
+                stripImages: false,
+                disableImageLinkPreviews: false,
+              },
+            },
+          }),
+        },
+      );
+      assert.strictEqual(response.status, 404);
+    });
+
+    it("returns 404 when feed belongs to another user", async () => {
+      const ownerDiscordId = generateSnowflake();
+      const otherDiscordId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(otherDiscordId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Owner Feed",
+        url: "https://example.com/owner-feed-get-articles.xml",
+        user: { id: generateTestId(), discordUserId: ownerDiscordId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-articles`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            formatter: {
+              options: {
+                formatTables: false,
+                stripImages: false,
+                disableImageLinkPreviews: false,
+              },
+            },
+          }),
+        },
+      );
+      assert.strictEqual(response.status, 404);
+    });
+
+    it("returns 400 when formatter is missing", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Test Feed",
+        url: "https://example.com/feed-get-articles-validation.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-articles`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({}),
+        },
+      );
+      assert.strictEqual(response.status, 400);
+    });
+
+    it("returns 200 with valid request", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Test Feed",
+        url: "https://example.com/feed-get-articles-success.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-articles`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            formatter: {
+              options: {
+                formatTables: false,
+                stripImages: false,
+                disableImageLinkPreviews: false,
+              },
+            },
+          }),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: {
+          articles: Array<Record<string, string>>;
+          requestStatus: string;
+          totalArticles: number;
+          selectedProperties: string[];
+        };
+      };
+      assert.ok(body.result);
+      assert.strictEqual(body.result.requestStatus, "SUCCESS");
+      assert.strictEqual(body.result.totalArticles, 1);
+      assert.ok(Array.isArray(body.result.articles));
+      assert.ok(Array.isArray(body.result.selectedProperties));
+    });
+
+    it("returns 200 with filters and pagination", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Test Feed",
+        url: "https://example.com/feed-get-articles-filters.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-articles`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            limit: 5,
+            skip: 2,
+            filters: {
+              returnType:
+                GetFeedArticlesFilterReturnType.IncludeEvaluationResults,
+              search: "test",
+            },
+            formatter: {
+              options: {
+                formatTables: false,
+                stripImages: false,
+                disableImageLinkPreviews: false,
+              },
+            },
+          }),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: {
+          articles: Array<Record<string, string>>;
+          requestStatus: string;
+          totalArticles: number;
+        };
+      };
+      assert.strictEqual(body.result.requestStatus, "SUCCESS");
+      assert.ok(Array.isArray(body.result.articles));
+    });
+
+    it("merges feed formatOptions into upstream request", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+      const feedUrl = `https://example.com/feed-get-articles-format-${generateTestId()}.xml`;
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Test Feed",
+        url: feedUrl,
+        user: { id: generateTestId(), discordUserId },
+        formatOptions: {
+          dateFormat: "YYYY-MM-DD",
+          dateTimezone: "America/New_York",
+          dateLocale: "en",
+        },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-articles`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            formatter: {
+              options: {
+                formatTables: true,
+                stripImages: false,
+                disableImageLinkPreviews: false,
+              },
+            },
+          }),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const capturedBody = capturedBodies.get(feedUrl);
+      assert.ok(capturedBody);
+      const upstreamBody = capturedBody as {
+        formatter: {
+          options: {
+            dateFormat: string;
+            dateTimezone: string;
+            dateLocale: string;
+            formatTables: boolean;
+          };
+        };
+      };
+      assert.strictEqual(
+        upstreamBody.formatter.options.dateFormat,
+        "YYYY-MM-DD",
+      );
+      assert.strictEqual(
+        upstreamBody.formatter.options.dateTimezone,
+        "America/New_York",
+      );
+      assert.strictEqual(upstreamBody.formatter.options.dateLocale, "en");
+      assert.strictEqual(upstreamBody.formatter.options.formatTables, true);
+    });
+
+    it("returns 200 when user is an accepted shared manager", async () => {
+      const ownerDiscordUserId = generateSnowflake();
+      const sharedManagerDiscordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+      const feedUrl = `https://example.com/shared-get-articles-${generateTestId()}.xml`;
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Shared Feed Get Articles",
+        url: feedUrl,
+        user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+        shareManageOptions: {
+          invites: [
+            {
+              discordUserId: sharedManagerDiscordUserId,
+              status: UserFeedManagerStatus.Accepted,
+            },
+          ],
+        },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-articles`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            formatter: {
+              options: {
+                formatTables: false,
+                stripImages: false,
+                disableImageLinkPreviews: false,
+              },
+            },
+          }),
+        },
+      );
+      assert.strictEqual(response.status, 200);
+    });
+
+    it("returns 200 when user is admin accessing another user's feed", async () => {
+      const adminDiscordUserId = generateSnowflake();
+      const ownerDiscordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(adminDiscordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+      const feedUrl = `https://example.com/admin-get-articles-${generateTestId()}.xml`;
+
+      const adminUser =
+        await ctx.container.usersService.getOrCreateUserByDiscordId(
+          adminDiscordUserId,
+        );
+      ctx.container.config.BACKEND_API_ADMIN_USER_IDS.push(adminUser.id);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Admin Access Get Articles Feed",
+        url: feedUrl,
+        user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-articles`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            formatter: {
+              options: {
+                formatTables: false,
+                stripImages: false,
+                disableImageLinkPreviews: false,
+              },
+            },
+          }),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+
+      ctx.container.config.BACKEND_API_ADMIN_USER_IDS.pop();
+    });
+
+    it("passes custom placeholders to upstream request", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+      const feedUrl = `https://example.com/feed-get-articles-placeholders-${generateTestId()}.xml`;
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Custom Placeholders Feed",
+        url: feedUrl,
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-articles`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            formatter: {
+              options: {
+                formatTables: false,
+                stripImages: false,
+                disableImageLinkPreviews: false,
+              },
+              customPlaceholders: [
+                {
+                  referenceName: "test",
+                  sourcePlaceholder: "title",
+                  steps: [
+                    {
+                      type: "REGEX",
+                      regexSearch: "foo",
+                      regexSearchFlags: "gi",
+                      replacementString: "bar",
+                    },
+                  ],
+                },
+              ],
+            },
+          }),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const capturedBody = capturedBodies.get(feedUrl);
+      assert.ok(capturedBody);
+      const upstreamBody = capturedBody as {
+        formatter: {
+          customPlaceholders: Array<{
+            referenceName: string;
+            sourcePlaceholder: string;
+            steps: Array<{ type: string; regexSearch: string }>;
+          }>;
+        };
+      };
+      assert.strictEqual(upstreamBody.formatter.customPlaceholders.length, 1);
+      assert.strictEqual(
+        upstreamBody.formatter.customPlaceholders[0]!.referenceName,
+        "test",
+      );
+    });
+
+    it("passes external properties to upstream request", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+      const feedUrl = `https://example.com/feed-get-articles-extprops-${generateTestId()}.xml`;
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "External Properties Feed",
+        url: feedUrl,
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-articles`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            formatter: {
+              options: {
+                formatTables: false,
+                stripImages: false,
+                disableImageLinkPreviews: false,
+              },
+              externalProperties: [
+                {
+                  id: "ext-1",
+                  sourceField: "title",
+                  label: "Full Text",
+                  cssSelector: ".content",
+                },
+              ],
+            },
+          }),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const capturedBody = capturedBodies.get(feedUrl);
+      assert.ok(capturedBody);
+      const upstreamBody = capturedBody as {
+        formatter: {
+          externalProperties: Array<{
+            id: string;
+            sourceField: string;
+            label: string;
+            cssSelector: string;
+          }>;
+        };
+      };
+      assert.strictEqual(upstreamBody.formatter.externalProperties.length, 1);
+      assert.strictEqual(
+        upstreamBody.formatter.externalProperties[0]!.sourceField,
+        "title",
+      );
+    });
+
+    it("passes includeHtmlInErrors to upstream request", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+      const feedUrl = `https://example.com/feed-get-articles-html-errors-${generateTestId()}.xml`;
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "HTML Errors Feed",
+        url: feedUrl,
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-articles`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            includeHtmlInErrors: true,
+            formatter: {
+              options: {
+                formatTables: false,
+                stripImages: false,
+                disableImageLinkPreviews: false,
+              },
+            },
+          }),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const capturedBody = capturedBodies.get(feedUrl);
+      assert.ok(capturedBody);
+      assert.strictEqual(
+        (capturedBody as { includeHtmlInErrors: boolean }).includeHtmlInErrors,
+        true,
+      );
+    });
+
+    it("returns 422 for invalid custom placeholder regex from upstream", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Invalid Regex Feed",
+        url: `https://example.com/invalid-custom-regex-${generateTestId()}.xml`,
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-articles`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            formatter: {
+              options: {
+                formatTables: false,
+                stripImages: false,
+                disableImageLinkPreviews: false,
+              },
+            },
+          }),
+        },
+      );
+      assert.strictEqual(response.status, 422);
+    });
+
+    it("returns 422 for invalid filters regex from upstream", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Invalid Filters Feed",
+        url: `https://example.com/invalid-filters-regex-${generateTestId()}.xml`,
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-articles`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            filters: {
+              returnType:
+                GetFeedArticlesFilterReturnType.IncludeEvaluationResults,
+              expression: {},
+            },
+            formatter: {
+              options: {
+                formatTables: false,
+                stripImages: false,
+                disableImageLinkPreviews: false,
+              },
+            },
+          }),
+        },
+      );
+      assert.strictEqual(response.status, 422);
+    });
+
+    it("falls back to user preferences for date options when feed has no formatOptions", async () => {
+      const discordUserId = generateSnowflake();
+      const mockAccessToken = createMockAccessToken(discordUserId);
+      const cookies = await ctx.setSession(mockAccessToken);
+      const feedUrl = `https://example.com/feed-get-articles-user-prefs-${generateTestId()}.xml`;
+
+      await ctx.container.usersService.getOrCreateUserByDiscordId(
+        discordUserId,
+      );
+      await ctx.container.userRepository.updatePreferencesByDiscordId(
+        discordUserId,
+        {
+          dateFormat: "DD/MM/YYYY",
+          dateTimezone: "Europe/London",
+          dateLocale: "en-GB",
+        },
+      );
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "User Prefs Fallback Feed",
+        url: feedUrl,
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await ctx.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-articles`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            cookie: cookies,
+          },
+          body: JSON.stringify({
+            formatter: {
+              options: {
+                formatTables: false,
+                stripImages: false,
+                disableImageLinkPreviews: false,
+              },
+            },
+          }),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const capturedBody = capturedBodies.get(feedUrl);
+      assert.ok(capturedBody);
+      const upstreamBody = capturedBody as {
+        formatter: {
+          options: {
+            dateFormat: string;
+            dateTimezone: string;
+            dateLocale: string;
+          };
+        };
+      };
+      assert.strictEqual(
+        upstreamBody.formatter.options.dateFormat,
+        "DD/MM/YYYY",
+      );
+      assert.strictEqual(
+        upstreamBody.formatter.options.dateTimezone,
+        "Europe/London",
+      );
+      assert.strictEqual(upstreamBody.formatter.options.dateLocale, "en-GB");
+    });
+  },
+);

@@ -6,6 +6,7 @@ import compression from "@fastify/compress";
 import type { Container } from "./container";
 import type { SessionAccessToken } from "./infra/auth";
 import { errorHandler, notFoundHandler } from "./infra/error-handler";
+import { timezoneKeywordPlugin } from "./infra/ajv-plugins";
 import logger from "./infra/logger";
 import { discordAuthRoutes } from "./features/discord-auth/discord-auth.routes";
 import { discordUsersRoutes } from "./features/discord-users/discord-users.routes";
@@ -34,6 +35,7 @@ export async function createApp(
         coerceTypes: true,
         removeAdditional: true,
       },
+      plugins: [timezoneKeywordPlugin],
     },
   });
 

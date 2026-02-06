@@ -126,7 +126,7 @@ export interface CreateFilterValidationResponse {
 }
 
 export enum GetFeedArticlesFilterReturnType {
-  IncludeEvaluationResults = "include-evaluation-results",
+  IncludeEvaluationResults = "INCLUDE_EVAL_RESULTS",
 }
 
 export interface GetArticlesInput {

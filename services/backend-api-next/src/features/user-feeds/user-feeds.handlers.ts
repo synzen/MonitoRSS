@@ -1,27 +1,29 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
 import {
   BadRequestError,
   ForbiddenError,
   NotFoundError,
   ApiErrorCode,
 } from "../../infra/error-handler";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
 import type { IUserFeed } from "../../repositories/interfaces/user-feed.types";
 import { CustomPlaceholderStepType } from "../../repositories/shared/enums";
 import { UserFeedManagerStatus } from "../../repositories/shared/enums";
 import { convertToNestedDiscordEmbed } from "../../shared/utils/convert-to-nested-discord-embed";
 import type {
+  CloneUserFeedBody,
   CreateUserFeedBody,
+  DatePreviewBody,
   DeduplicateFeedUrlsBody,
+  DeliveryPreviewBody,
+  GetArticlePropertiesBody,
+  GetArticlesBody,
+  GetDeliveryLogsQuery,
+  GetFeedRequestsQuery,
   GetUserFeedParams,
   ValidateUrlBody,
   UpdateUserFeedsBody,
   UpdateUserFeedBody,
+  SendTestArticleBody,
 } from "./user-feeds.schemas";
 import { UpdateUserFeedsOp } from "./user-feeds.schemas";
 
@@ -332,19 +334,6 @@ export async function updateUserFeedHandler(
     throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
   }
 
-  const dateTimezone = request.body.formatOptions?.dateTimezone;
-
-  if (dateTimezone) {
-    try {
-      dayjs.tz(undefined, dateTimezone);
-    } catch {
-      throw new BadRequestError(
-        ApiErrorCode.VALIDATION_FAILED,
-        "Invalid timezone",
-      );
-    }
-  }
-
   if (request.body.externalProperties) {
     const labels = request.body.externalProperties.map((p) => p.label);
 
@@ -427,4 +416,364 @@ export async function deleteUserFeedHandler(
   await userFeedsService.deleteFeedById(feedId);
 
   return reply.status(204).send();
+}
+
+export async function cloneUserFeedHandler(
+  request: FastifyRequest<{
+    Params: GetUserFeedParams;
+    Body: CloneUserFeedBody;
+  }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { userFeedRepository, userFeedsService, usersService, config } =
+    request.container;
+  const { discordUserId, accessToken } = request;
+  const { feedId } = request.params;
+
+  if (!userFeedRepository.areAllValidIds([feedId])) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
+  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
+
+  const feed = isAdmin
+    ? await userFeedRepository.findById(feedId)
+    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
+
+  if (!feed) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const { id } = await userFeedsService.clone(
+    feedId,
+    accessToken.access_token,
+    { title: request.body?.title, url: request.body?.url },
+  );
+
+  return reply.status(201).send({ result: { id } });
+}
+
+export async function sendTestArticleHandler(
+  request: FastifyRequest<{
+    Params: GetUserFeedParams;
+    Body: SendTestArticleBody;
+  }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const {
+    feedsService,
+    feedConnectionsDiscordChannelsService,
+    userFeedRepository,
+    usersService,
+    config,
+  } = request.container;
+  const { discordUserId, accessToken } = request;
+  const { feedId } = request.params;
+
+  if (!userFeedRepository.areAllValidIds([feedId])) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
+  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
+
+  const feed = isAdmin
+    ? await userFeedRepository.findById(feedId)
+    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
+
+  if (!feed) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  await feedsService.canUseChannel({
+    channelId: request.body.channelId,
+    userAccessToken: accessToken.access_token,
+  });
+
+  const result =
+    await feedConnectionsDiscordChannelsService.sendTestArticleDirect(feed, {
+      article: request.body.article,
+      channelId: request.body.channelId,
+      content: request.body.content,
+      embeds: request.body.embeds,
+      componentsV2: request.body.componentsV2 ?? undefined,
+      placeholderLimits: request.body.placeholderLimits,
+      webhook: request.body.webhook,
+      threadId: request.body.threadId,
+      userFeedFormatOptions: request.body.userFeedFormatOptions,
+    });
+
+  return reply.status(200).send({ result });
+}
+
+export async function getFeedRequestsHandler(
+  request: FastifyRequest<{
+    Params: GetUserFeedParams;
+    Querystring: GetFeedRequestsQuery;
+  }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { userFeedRepository, userFeedsService, usersService, config } =
+    request.container;
+  const { discordUserId } = request;
+  const { feedId } = request.params;
+
+  if (!userFeedRepository.areAllValidIds([feedId])) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
+  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
+
+  const feed = isAdmin
+    ? await userFeedRepository.findById(feedId)
+    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
+
+  if (!feed) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const result = await userFeedsService.getFeedRequests({
+    feed,
+    url: feed.url,
+    query: request.query as Record<string, string>,
+  });
+
+  return reply.status(200).send(result);
+}
+
+export async function getDeliveryLogsHandler(
+  request: FastifyRequest<{
+    Params: GetUserFeedParams;
+    Querystring: GetDeliveryLogsQuery;
+  }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { userFeedRepository, userFeedsService, usersService, config } =
+    request.container;
+  const { discordUserId } = request;
+  const { feedId } = request.params;
+
+  if (!userFeedRepository.areAllValidIds([feedId])) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
+  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
+
+  const feed = isAdmin
+    ? await userFeedRepository.findById(feedId)
+    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
+
+  if (!feed) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const result = await userFeedsService.getDeliveryLogs(feed.id, {
+    limit: request.query.limit ?? 25,
+    skip: request.query.skip ?? 0,
+  });
+
+  return reply.status(200).send(result);
+}
+
+export async function datePreviewHandler(
+  request: FastifyRequest<{ Params: GetUserFeedParams; Body: DatePreviewBody }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { userFeedsService } = request.container;
+
+  const result = userFeedsService.getDatePreview({
+    dateFormat: request.body.dateFormat,
+    dateLocale: request.body.dateLocale,
+    dateTimezone: request.body.dateTimezone,
+  });
+
+  return reply.status(200).send({
+    result: {
+      valid: result.valid,
+      output: result.output,
+    },
+  });
+}
+
+export async function getArticlePropertiesHandler(
+  request: FastifyRequest<{
+    Params: GetUserFeedParams;
+    Body: GetArticlePropertiesBody;
+  }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { userFeedRepository, userFeedsService, usersService, config } =
+    request.container;
+  const { discordUserId } = request;
+  const { feedId } = request.params;
+
+  if (!userFeedRepository.areAllValidIds([feedId])) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
+  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
+
+  const feed = isAdmin
+    ? await userFeedRepository.findById(feedId)
+    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
+
+  if (!feed) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const { properties, requestStatus } =
+    await userFeedsService.getFeedArticleProperties({
+      url: feed.url,
+      customPlaceholders: request.body.customPlaceholders as Parameters<
+        typeof userFeedsService.getFeedArticleProperties
+      >[0]["customPlaceholders"],
+      feed,
+    });
+
+  return reply.status(200).send({
+    result: {
+      properties,
+      requestStatus,
+    },
+  });
+}
+
+export async function getArticlesHandler(
+  request: FastifyRequest<{
+    Params: GetUserFeedParams;
+    Body: GetArticlesBody;
+  }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { userFeedRepository, userFeedsService, usersService, config } =
+    request.container;
+  const { discordUserId } = request;
+  const { feedId } = request.params;
+
+  if (!userFeedRepository.areAllValidIds([feedId])) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
+  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
+
+  const feed = isAdmin
+    ? await userFeedRepository.findById(feedId)
+    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
+
+  if (!feed) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const {
+    limit,
+    skip,
+    random,
+    filters,
+    selectProperties,
+    selectPropertyTypes,
+    formatter: { externalProperties, ...formatter },
+    includeHtmlInErrors,
+  } = request.body;
+
+  const {
+    articles,
+    response,
+    requestStatus,
+    filterStatuses,
+    selectedProperties,
+    totalArticles,
+    externalContentErrors,
+  } = await userFeedsService.getFeedArticles({
+    limit: limit ?? 25,
+    url: feed.url,
+    feed,
+    random,
+    filters: filters as Parameters<
+      typeof userFeedsService.getFeedArticles
+    >[0]["filters"],
+    discordUserId: feed.user.discordUserId,
+    selectProperties,
+    selectPropertyTypes,
+    skip,
+    includeHtmlInErrors,
+    formatter: {
+      ...formatter,
+      externalProperties,
+      options: {
+        ...formatter.options,
+        dateFormat: feed.formatOptions?.dateFormat,
+        dateTimezone: feed.formatOptions?.dateTimezone,
+        dateLocale: feed.formatOptions?.dateLocale,
+      },
+    } as Parameters<typeof userFeedsService.getFeedArticles>[0]["formatter"],
+  });
+
+  return reply.status(200).send({
+    result: {
+      articles,
+      response,
+      requestStatus,
+      filterStatuses,
+      selectedProperties,
+      totalArticles,
+      externalContentErrors,
+    },
+  });
+}
+
+export async function deliveryPreviewHandler(
+  request: FastifyRequest<{
+    Params: GetUserFeedParams;
+    Body: DeliveryPreviewBody;
+  }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { userFeedRepository, userFeedsService, usersService, config } =
+    request.container;
+  const { discordUserId } = request;
+  const { feedId } = request.params;
+
+  if (!userFeedRepository.areAllValidIds([feedId])) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
+  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
+
+  const feed = isAdmin
+    ? await userFeedRepository.findById(feedId)
+    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
+
+  if (!feed) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const acceptedInvite = feed.shareManageOptions?.invites?.find(
+    (inv) =>
+      inv.discordUserId === discordUserId &&
+      inv.status === UserFeedManagerStatus.Accepted,
+  );
+
+  if (acceptedInvite?.connections?.length) {
+    const allowedConnectionIds = new Set(
+      acceptedInvite.connections.map((c) => c.connectionId),
+    );
+
+    feed.connections.discordChannels = feed.connections.discordChannels.filter(
+      (ch) => allowedConnectionIds.has(ch.id),
+    );
+  }
+
+  const result = await userFeedsService.getDeliveryPreview({
+    feed,
+    skip: request.body.skip ?? 0,
+    limit: request.body.limit ?? 10,
+  });
+
+  return reply.status(200).send(result);
 }

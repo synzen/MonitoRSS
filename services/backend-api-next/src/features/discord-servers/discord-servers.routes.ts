@@ -13,28 +13,14 @@ import {
   requireBotInServer,
   requireServerPermission,
 } from "../../infra/auth";
-
-interface ServerParams {
-  serverId: string;
-}
-
-interface MemberParams {
-  serverId: string;
-  memberId: string;
-}
-
-interface ActiveThreadsQuerystring {
-  parentChannelId?: string;
-}
-
-interface ChannelsQuerystring {
-  types?: string;
-}
-
-interface MembersQuerystring {
-  search: string;
-  limit: number;
-}
+import {
+  MembersQuerystringSchema,
+  type ServerParams,
+  type MemberParams,
+  type ActiveThreadsQuerystring,
+  type ChannelsQuerystring,
+  type MembersQuerystring,
+} from "./discord-servers.schemas";
 
 const extractServerId = (request: FastifyRequest) =>
   (request.params as ServerParams).serverId;
@@ -92,14 +78,7 @@ export async function discordServersRoutes(
         requireServerPermission(extractServerId),
       ],
       schema: {
-        querystring: {
-          type: "object",
-          required: ["search", "limit"],
-          properties: {
-            search: { type: "string", minLength: 1 },
-            limit: { type: "integer", minimum: 1 },
-          },
-        },
+        querystring: MembersQuerystringSchema,
       },
       handler: getServerMembersHandler,
     },
