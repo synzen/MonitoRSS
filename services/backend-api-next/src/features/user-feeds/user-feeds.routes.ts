@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import {
   createUserFeedHandler,
   deduplicateFeedUrlsHandler,
+  deleteUserFeedHandler,
   getUserFeedHandler,
   validateFeedUrlHandler,
   updateUserFeedsHandler,
@@ -72,6 +73,11 @@ export async function userFeedsRoutes(app: FastifyInstance): Promise<void> {
       ),
     },
   );
+
+  app.delete<{ Params: GetUserFeedParams }>("/:feedId", {
+    schema: { params: getUserFeedParamsSchema },
+    handler: deleteUserFeedHandler,
+  });
 
   app.get<{ Params: GetUserFeedParams }>("/:feedId", {
     schema: { params: getUserFeedParamsSchema },

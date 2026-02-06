@@ -746,6 +746,24 @@ export class UserFeedMongooseRepository
     return this.toEntity(doc as UserFeedDoc & { _id: Types.ObjectId });
   }
 
+  async findByIdAndCreator(
+    id: string,
+    discordUserId: string,
+  ): Promise<IUserFeed | null> {
+    const doc = await this.model
+      .findOne({
+        _id: this.stringToObjectId(id),
+        "user.discordUserId": discordUserId,
+      })
+      .lean();
+
+    if (!doc) {
+      return null;
+    }
+
+    return this.toEntity(doc as UserFeedDoc & { _id: Types.ObjectId });
+  }
+
   async filterFeedIdsByOwnership(
     feedIds: string[],
     discordUserId: string,

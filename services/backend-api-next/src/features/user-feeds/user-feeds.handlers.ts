@@ -4,6 +4,7 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import {
   BadRequestError,
+  ForbiddenError,
   NotFoundError,
   ApiErrorCode,
 } from "../../infra/error-handler";
@@ -384,4 +385,46 @@ export async function updateUserFeedHandler(
   );
 
   return reply.status(200).send({ result: formatted });
+}
+
+export async function deleteUserFeedHandler(
+  request: FastifyRequest<{ Params: GetUserFeedParams }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { userFeedRepository, userFeedsService, usersService, config } =
+    request.container;
+  const { discordUserId } = request;
+  const { feedId } = request.params;
+
+  if (!userFeedRepository.areAllValidIds([feedId])) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
+  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
+
+  const feed = isAdmin
+    ? await userFeedRepository.findById(feedId)
+    : await userFeedRepository.findByIdAndCreator(feedId, discordUserId);
+
+  if (!feed) {
+    if (!isAdmin) {
+      const feedByOwnership = await userFeedRepository.findByIdAndOwnership(
+        feedId,
+        discordUserId,
+      );
+
+      if (feedByOwnership) {
+        throw new ForbiddenError(
+          ApiErrorCode.MISSING_SHARED_MANAGER_PERMISSIONS,
+        );
+      }
+    }
+
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  await userFeedsService.deleteFeedById(feedId);
+
+  return reply.status(204).send();
 }

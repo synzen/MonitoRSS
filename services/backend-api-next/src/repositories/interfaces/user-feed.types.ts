@@ -420,6 +420,10 @@ export interface IUserFeedRepository {
     id: string,
     discordUserId: string,
   ): Promise<IUserFeed | null>;
+  findByIdAndCreator(
+    id: string,
+    discordUserId: string,
+  ): Promise<IUserFeed | null>;
   updateById(
     id: string,
     update: Record<string, unknown>,
