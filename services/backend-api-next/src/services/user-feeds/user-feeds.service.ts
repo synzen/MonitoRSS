@@ -522,7 +522,7 @@ export class UserFeedsService {
       useUpdateObject.$set!.externalProperties = updates.externalProperties;
     }
 
-    if (updates.userRefreshRateSeconds) {
+    if (updates.userRefreshRateSeconds !== undefined) {
       if (!userBenefits) {
         userBenefits =
           await this.deps.supportersService.getBenefitsOfDiscordUser(

@@ -1,25 +1,15 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
 import {
   BadRequestError,
   NotFoundError,
   ApiErrorCode,
 } from "../../infra/error-handler";
-import {
-  FeedLimitReachedException,
-  SourceFeedNotFoundException,
-  BannedFeedException,
-  FeedFetchTimeoutException,
-  FeedParseException,
-  FeedRequestException,
-  FeedInvalidSslCertException,
-  NoFeedOnHtmlPageException,
-  FeedTooManyRequestsException,
-  FeedUnauthorizedException,
-  FeedForbiddenException,
-  FeedInternalErrorException,
-  FeedNotFoundException,
-  FeedTooLargeException,
-} from "../../shared/exceptions/user-feeds.exceptions";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 import type { IUserFeed } from "../../repositories/interfaces/user-feed.types";
 import { CustomPlaceholderStepType } from "../../repositories/shared/enums";
 import { UserFeedManagerStatus } from "../../repositories/shared/enums";
@@ -30,6 +20,7 @@ import type {
   GetUserFeedParams,
   ValidateUrlBody,
   UpdateUserFeedsBody,
+  UpdateUserFeedBody,
 } from "./user-feeds.schemas";
 import { UpdateUserFeedsOp } from "./user-feeds.schemas";
 
@@ -55,74 +46,25 @@ export async function createUserFeedHandler(
   const { userFeedsService, supportersService } = request.container;
   const { discordUserId, accessToken } = request;
 
-  try {
-    const feed = await userFeedsService.addFeed(
-      {
-        discordUserId,
-        userAccessToken: accessToken.access_token,
-      },
-      {
-        url: request.body.url,
-        title: request.body.title,
-        sourceFeedId: request.body.sourceFeedId,
-      },
-    );
-
-    const formatted = await formatUserFeedResponse(
-      feed,
+  const feed = await userFeedsService.addFeed(
+    {
       discordUserId,
-      supportersService,
-    );
+      userAccessToken: accessToken.access_token,
+    },
+    {
+      url: request.body.url,
+      title: request.body.title,
+      sourceFeedId: request.body.sourceFeedId,
+    },
+  );
 
-    return reply.status(201).send({ result: formatted });
-  } catch (err) {
-    if (err instanceof FeedLimitReachedException) {
-      throw new BadRequestError(ApiErrorCode.FEED_LIMIT_REACHED);
-    }
-    if (err instanceof SourceFeedNotFoundException) {
-      throw new BadRequestError(
-        ApiErrorCode.ADD_FEED_WITH_SOURCE_FEED_NOT_FOUND,
-      );
-    }
-    if (err instanceof BannedFeedException) {
-      throw new BadRequestError(ApiErrorCode.BANNED_FEED);
-    }
-    if (err instanceof FeedFetchTimeoutException) {
-      throw new BadRequestError(ApiErrorCode.FEED_REQUEST_TIMEOUT);
-    }
-    if (err instanceof FeedParseException) {
-      throw new BadRequestError(ApiErrorCode.ADD_FEED_PARSE_FAILED);
-    }
-    if (err instanceof FeedRequestException) {
-      throw new BadRequestError(ApiErrorCode.FEED_FETCH_FAILED);
-    }
-    if (err instanceof FeedInvalidSslCertException) {
-      throw new BadRequestError(ApiErrorCode.FEED_INVALID_SSL_CERT);
-    }
-    if (err instanceof NoFeedOnHtmlPageException) {
-      throw new BadRequestError(ApiErrorCode.NO_FEED_IN_HTML_PAGE);
-    }
-    if (err instanceof FeedTooManyRequestsException) {
-      throw new BadRequestError(ApiErrorCode.FEED_REQUEST_TOO_MANY_REQUESTS);
-    }
-    if (err instanceof FeedUnauthorizedException) {
-      throw new BadRequestError(ApiErrorCode.FEED_REQUEST_UNAUTHORIZED);
-    }
-    if (err instanceof FeedForbiddenException) {
-      throw new BadRequestError(ApiErrorCode.FEED_REQUEST_FORBIDDEN);
-    }
-    if (err instanceof FeedInternalErrorException) {
-      throw new BadRequestError(ApiErrorCode.FEED_REQUEST_INTERNAL_ERROR);
-    }
-    if (err instanceof FeedNotFoundException) {
-      throw new BadRequestError(ApiErrorCode.FEED_NOT_FOUND);
-    }
-    if (err instanceof FeedTooLargeException) {
-      throw new BadRequestError(ApiErrorCode.FEED_TOO_LARGE);
-    }
+  const formatted = await formatUserFeedResponse(
+    feed,
+    discordUserId,
+    supportersService,
+  );
 
-    throw err;
-  }
+  return reply.status(201).send({ result: formatted });
 }
 
 interface SupportersServiceForFormat {
@@ -252,53 +194,12 @@ export async function validateFeedUrlHandler(
   const { userFeedsService } = request.container;
   const { discordUserId } = request;
 
-  try {
-    const result = await userFeedsService.validateFeedUrl(
-      { discordUserId },
-      { url: request.body.url },
-    );
+  const result = await userFeedsService.validateFeedUrl(
+    { discordUserId },
+    { url: request.body.url },
+  );
 
-    return reply.status(200).send({ result });
-  } catch (err) {
-    if (err instanceof BannedFeedException) {
-      throw new BadRequestError(ApiErrorCode.BANNED_FEED);
-    }
-    if (err instanceof FeedFetchTimeoutException) {
-      throw new BadRequestError(ApiErrorCode.FEED_REQUEST_TIMEOUT);
-    }
-    if (err instanceof FeedParseException) {
-      throw new BadRequestError(ApiErrorCode.ADD_FEED_PARSE_FAILED);
-    }
-    if (err instanceof FeedRequestException) {
-      throw new BadRequestError(ApiErrorCode.FEED_FETCH_FAILED);
-    }
-    if (err instanceof FeedInvalidSslCertException) {
-      throw new BadRequestError(ApiErrorCode.FEED_INVALID_SSL_CERT);
-    }
-    if (err instanceof NoFeedOnHtmlPageException) {
-      throw new BadRequestError(ApiErrorCode.NO_FEED_IN_HTML_PAGE);
-    }
-    if (err instanceof FeedTooManyRequestsException) {
-      throw new BadRequestError(ApiErrorCode.FEED_REQUEST_TOO_MANY_REQUESTS);
-    }
-    if (err instanceof FeedUnauthorizedException) {
-      throw new BadRequestError(ApiErrorCode.FEED_REQUEST_UNAUTHORIZED);
-    }
-    if (err instanceof FeedForbiddenException) {
-      throw new BadRequestError(ApiErrorCode.FEED_REQUEST_FORBIDDEN);
-    }
-    if (err instanceof FeedInternalErrorException) {
-      throw new BadRequestError(ApiErrorCode.FEED_REQUEST_INTERNAL_ERROR);
-    }
-    if (err instanceof FeedNotFoundException) {
-      throw new BadRequestError(ApiErrorCode.FEED_NOT_FOUND);
-    }
-    if (err instanceof FeedTooLargeException) {
-      throw new BadRequestError(ApiErrorCode.FEED_TOO_LARGE);
-    }
-
-    throw err;
-  }
+  return reply.status(200).send({ result });
 }
 
 export async function updateUserFeedsHandler(
@@ -391,6 +292,93 @@ export async function getUserFeedHandler(
 
   const formatted = await formatUserFeedResponse(
     feed,
+    discordUserId,
+    supportersService,
+  );
+
+  return reply.status(200).send({ result: formatted });
+}
+
+export async function updateUserFeedHandler(
+  request: FastifyRequest<{
+    Params: GetUserFeedParams;
+    Body: UpdateUserFeedBody;
+  }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const {
+    userFeedRepository,
+    userFeedsService,
+    usersService,
+    supportersService,
+    config,
+  } = request.container;
+  const { discordUserId } = request;
+  const { feedId } = request.params;
+
+  if (!userFeedRepository.areAllValidIds([feedId])) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
+  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
+
+  const feed = isAdmin
+    ? await userFeedRepository.findById(feedId)
+    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
+
+  if (!feed) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const dateTimezone = request.body.formatOptions?.dateTimezone;
+
+  if (dateTimezone) {
+    try {
+      dayjs.tz(undefined, dateTimezone);
+    } catch {
+      throw new BadRequestError(
+        ApiErrorCode.VALIDATION_FAILED,
+        "Invalid timezone",
+      );
+    }
+  }
+
+  if (request.body.externalProperties) {
+    const labels = request.body.externalProperties.map((p) => p.label);
+
+    if (new Set(labels).size !== labels.length) {
+      throw new BadRequestError(
+        ApiErrorCode.VALIDATION_FAILED,
+        "External properties must have unique labels",
+      );
+    }
+  }
+
+  const updated = await userFeedsService.updateFeedById(
+    { id: feedId, disabledCode: feed.disabledCode },
+    request.body as Parameters<typeof userFeedsService.updateFeedById>[1],
+  );
+
+  const acceptedInvite = updated!.shareManageOptions?.invites?.find(
+    (inv) =>
+      inv.discordUserId === discordUserId &&
+      inv.status === UserFeedManagerStatus.Accepted,
+  );
+
+  if (acceptedInvite?.connections?.length) {
+    const allowedConnectionIds = new Set(
+      acceptedInvite.connections.map((c) => c.connectionId),
+    );
+
+    updated!.connections.discordChannels =
+      updated!.connections.discordChannels.filter((ch) =>
+        allowedConnectionIds.has(ch.id),
+      );
+  }
+
+  const formatted = await formatUserFeedResponse(
+    updated!,
     discordUserId,
     supportersService,
   );
