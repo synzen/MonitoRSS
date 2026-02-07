@@ -28,6 +28,9 @@ export const SEND_TEST_ARTICLE_EXCEPTION_ERROR_CODES: ExceptionErrorCodes = {
   },
 };
 
+export const COPY_CONNECTION_SETTINGS_EXCEPTION_ERROR_CODES: ExceptionErrorCodes =
+  {};
+
 export const CREATE_CONNECTION_EXCEPTION_ERROR_CODES: ExceptionErrorCodes = {
   MissingDiscordChannelException: {
     status: 400,

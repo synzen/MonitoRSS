@@ -2,12 +2,18 @@ import type { FastifyRequest, FastifyReply } from "fastify";
 import { NotFoundError, ApiErrorCode } from "../../infra/error-handler";
 import { FeedConnectionType } from "../../repositories/shared/enums";
 import type { IFeedEmbed } from "../../repositories/interfaces/feed-embed.types";
-import type { SendTestArticlePreviewInput } from "../../services/feed-connections-discord-channels/types";
+import type {
+  SendTestArticlePreviewInput,
+  CopyableSetting,
+} from "../../services/feed-connections-discord-channels/types";
+import { UserFeedTargetFeedSelectionType } from "../../services/feed-connections-discord-channels/types";
 import type {
   CreateConnectionParams,
   CreateDiscordChannelConnectionBody,
   ConnectionActionParams,
   SendConnectionTestArticleBody,
+  CopyConnectionSettingsBody,
+  CloneConnectionBody,
 } from "./feed-connections.schemas";
 
 export async function createDiscordChannelConnectionHandler(
@@ -188,4 +194,155 @@ export async function sendTestArticleHandler(
   );
 
   return reply.status(201).send({ result });
+}
+
+export async function copyConnectionSettingsHandler(
+  request: FastifyRequest<{
+    Params: ConnectionActionParams;
+    Body: CopyConnectionSettingsBody;
+  }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const {
+    userFeedRepository,
+    feedConnectionsDiscordChannelsService,
+    usersService,
+    config,
+  } = request.container;
+  const { discordUserId } = request;
+  const { feedId, connectionId } = request.params;
+
+  if (!userFeedRepository.areAllValidIds([feedId])) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
+  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
+
+  const feed = isAdmin
+    ? await userFeedRepository.findById(feedId)
+    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
+
+  if (!feed) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const isOwner = feed.user.discordUserId === discordUserId;
+  if (!isAdmin && !isOwner) {
+    const invite = feed.shareManageOptions?.invites.find(
+      (i) => i.discordUserId === discordUserId,
+    );
+    const allowedConnectionIds = invite?.connections?.map(
+      (c) => c.connectionId,
+    );
+
+    if (
+      allowedConnectionIds &&
+      allowedConnectionIds.length > 0 &&
+      !allowedConnectionIds.includes(connectionId)
+    ) {
+      throw new NotFoundError(ApiErrorCode.FEED_CONNECTION_NOT_FOUND);
+    }
+  }
+
+  const connection = feed.connections.discordChannels.find(
+    (c) => c.id === connectionId,
+  );
+
+  if (!connection) {
+    throw new NotFoundError(ApiErrorCode.FEED_CONNECTION_NOT_FOUND);
+  }
+
+  const { properties, targetDiscordChannelConnectionIds } = request.body;
+
+  await feedConnectionsDiscordChannelsService.copySettings(feed, connection, {
+    properties: properties as CopyableSetting[],
+    targetDiscordChannelConnectionIds,
+  });
+
+  return reply.status(204).send();
+}
+
+export async function cloneConnectionHandler(
+  request: FastifyRequest<{
+    Params: ConnectionActionParams;
+    Body: CloneConnectionBody;
+  }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const {
+    userFeedRepository,
+    feedConnectionsDiscordChannelsService,
+    usersService,
+    config,
+  } = request.container;
+  const { discordUserId, accessToken } = request;
+  const { feedId, connectionId } = request.params;
+
+  if (!userFeedRepository.areAllValidIds([feedId])) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
+  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
+
+  const feed = isAdmin
+    ? await userFeedRepository.findById(feedId)
+    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
+
+  if (!feed) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const isOwner = feed.user.discordUserId === discordUserId;
+  if (!isAdmin && !isOwner) {
+    const invite = feed.shareManageOptions?.invites.find(
+      (i) => i.discordUserId === discordUserId,
+    );
+    const allowedConnectionIds = invite?.connections?.map(
+      (c) => c.connectionId,
+    );
+
+    if (
+      allowedConnectionIds &&
+      allowedConnectionIds.length > 0 &&
+      !allowedConnectionIds.includes(connectionId)
+    ) {
+      throw new NotFoundError(ApiErrorCode.FEED_CONNECTION_NOT_FOUND);
+    }
+  }
+
+  const connection = feed.connections.discordChannels.find(
+    (c) => c.id === connectionId,
+  );
+
+  if (!connection) {
+    throw new NotFoundError(ApiErrorCode.FEED_CONNECTION_NOT_FOUND);
+  }
+
+  const {
+    name,
+    channelId,
+    targetFeedIds,
+    targetFeedSelectionType,
+    targetFeedSearch,
+  } = request.body;
+
+  const result = await feedConnectionsDiscordChannelsService.cloneConnection(
+    connection,
+    {
+      name,
+      channelId,
+      targetFeedIds,
+      targetFeedSelectionType:
+        (targetFeedSelectionType as
+          | UserFeedTargetFeedSelectionType
+          | undefined) ?? UserFeedTargetFeedSelectionType.All,
+      targetFeedSearch,
+    },
+    accessToken.access_token,
+    discordUserId,
+  );
+
+  return reply.status(200).send({ result });
 }

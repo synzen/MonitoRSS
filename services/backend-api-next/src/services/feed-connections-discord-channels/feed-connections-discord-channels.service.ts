@@ -631,8 +631,7 @@ export class FeedConnectionsDiscordChannelsService {
     }
 
     const useSelectedFeeds =
-      targetFeedSelectionType === UserFeedTargetFeedSelectionType.Selected ||
-      (targetFeedIds && targetFeedIds.length > 0);
+      targetFeedSelectionType === UserFeedTargetFeedSelectionType.Selected;
 
     const connectionData = {
       ...connection,

@@ -5,19 +5,26 @@ import {
   CreateDiscordChannelConnectionBodySchema,
   ConnectionActionParamsSchema,
   SendConnectionTestArticleBodySchema,
+  CopyConnectionSettingsBodySchema,
+  CloneConnectionBodySchema,
   type CreateConnectionParams,
   type CreateDiscordChannelConnectionBody,
   type ConnectionActionParams,
   type SendConnectionTestArticleBody,
+  type CopyConnectionSettingsBody,
+  type CloneConnectionBody,
 } from "./feed-connections.schemas";
 import { withExceptionFilter } from "../../shared/filters/exception-filter";
 import {
   CREATE_CONNECTION_EXCEPTION_ERROR_CODES,
   SEND_TEST_ARTICLE_EXCEPTION_ERROR_CODES,
+  COPY_CONNECTION_SETTINGS_EXCEPTION_ERROR_CODES,
 } from "./feed-connections.exception-codes";
 import {
   createDiscordChannelConnectionHandler,
   sendTestArticleHandler,
+  copyConnectionSettingsHandler,
+  cloneConnectionHandler,
 } from "./feed-connections.handlers";
 
 export async function feedConnectionsRoutes(
@@ -50,6 +57,34 @@ export async function feedConnectionsRoutes(
     handler: withExceptionFilter(
       SEND_TEST_ARTICLE_EXCEPTION_ERROR_CODES,
       sendTestArticleHandler,
+    ),
+  });
+
+  app.post<{
+    Params: ConnectionActionParams;
+    Body: CopyConnectionSettingsBody;
+  }>("/discord-channels/:connectionId/copy-connection-settings", {
+    schema: {
+      params: ConnectionActionParamsSchema,
+      body: CopyConnectionSettingsBodySchema,
+    },
+    handler: withExceptionFilter(
+      COPY_CONNECTION_SETTINGS_EXCEPTION_ERROR_CODES,
+      copyConnectionSettingsHandler,
+    ),
+  });
+
+  app.post<{
+    Params: ConnectionActionParams;
+    Body: CloneConnectionBody;
+  }>("/discord-channels/:connectionId/clone", {
+    schema: {
+      params: ConnectionActionParamsSchema,
+      body: CloneConnectionBodySchema,
+    },
+    handler: withExceptionFilter(
+      CREATE_CONNECTION_EXCEPTION_ERROR_CODES,
+      cloneConnectionHandler,
     ),
   });
 }

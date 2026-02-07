@@ -276,3 +276,56 @@ export const CreateDiscordChannelConnectionBodySchema = Type.Object(
 export type CreateDiscordChannelConnectionBody = Static<
   typeof CreateDiscordChannelConnectionBodySchema
 >;
+
+export const CopyConnectionSettingsBodySchema = Type.Object(
+  {
+    properties: Type.Array(
+      Type.Union([
+        Type.Literal("embeds"),
+        Type.Literal("webhookName"),
+        Type.Literal("webhookIconUrl"),
+        Type.Literal("webhookThread"),
+        Type.Literal("placeholderLimits"),
+        Type.Literal("content"),
+        Type.Literal("contentFormatTables"),
+        Type.Literal("contentStripImages"),
+        Type.Literal("ignoreNewLines"),
+        Type.Literal("contentDisableImageLinkPreviews"),
+        Type.Literal("components"),
+        Type.Literal("componentsV2"),
+        Type.Literal("forumThreadTitle"),
+        Type.Literal("forumThreadTags"),
+        Type.Literal("placeholderFallbackSetting"),
+        Type.Literal("filters"),
+        Type.Literal("splitOptions"),
+        Type.Literal("customPlaceholders"),
+        Type.Literal("deliveryRateLimits"),
+        Type.Literal("messageMentions"),
+        Type.Literal("channel"),
+      ]),
+      { minItems: 1 },
+    ),
+    targetDiscordChannelConnectionIds: Type.Array(
+      Type.String({ minLength: 1 }),
+      { minItems: 1 },
+    ),
+  },
+  { additionalProperties: false },
+);
+export type CopyConnectionSettingsBody = Static<
+  typeof CopyConnectionSettingsBodySchema
+>;
+
+export const CloneConnectionBodySchema = Type.Object(
+  {
+    name: Type.String({ minLength: 1 }),
+    channelId: Type.Optional(Type.String()),
+    targetFeedIds: Type.Optional(Type.Array(Type.String())),
+    targetFeedSelectionType: Type.Optional(
+      Type.Union([Type.Literal("all"), Type.Literal("selected")]),
+    ),
+    targetFeedSearch: Type.Optional(Type.String()),
+  },
+  { additionalProperties: false },
+);
+export type CloneConnectionBody = Static<typeof CloneConnectionBodySchema>;
