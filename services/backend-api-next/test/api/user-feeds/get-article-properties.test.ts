@@ -4,7 +4,6 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../../helpers/test-context";
-import { createMockAccessToken } from "../../helpers/mock-factories";
 import { generateSnowflake, generateTestId } from "../../helpers/test-id";
 import {
   createTestHttpServer,
@@ -85,18 +84,13 @@ describe(
     });
 
     it("returns 404 for non-existent feed", async () => {
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(generateSnowflake());
       const nonExistentId = generateTestId();
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${nonExistentId}/get-article-properties`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({}),
         },
       );
@@ -105,8 +99,7 @@ describe(
 
     it("returns 200 with properties and requestStatus", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const feedUrl = `https://example.com/article-properties-${generateTestId()}.xml`;
 
       const feed = await ctx.container.userFeedRepository.create({
@@ -115,14 +108,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-article-properties`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({}),
         },
       );
@@ -138,8 +127,7 @@ describe(
 
     it("returns 200 with empty body (no customPlaceholders)", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Article Properties Empty Body",
@@ -147,14 +135,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-article-properties`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({}),
         },
       );
@@ -170,8 +154,7 @@ describe(
     it("returns 404 when feed belongs to another user", async () => {
       const ownerDiscordUserId = generateSnowflake();
       const otherDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(otherDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(otherDiscordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Other User Article Props Feed",
@@ -179,14 +162,10 @@ describe(
         user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-article-properties`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({}),
         },
       );
@@ -195,8 +174,7 @@ describe(
 
     it("returns 400 for invalid step type", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Step Validation Feed",
@@ -204,14 +182,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-article-properties`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             customPlaceholders: [
               {
@@ -228,8 +202,7 @@ describe(
 
     it("returns 400 for REGEX step missing regexSearch", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Step Validation Feed",
@@ -237,14 +210,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-article-properties`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             customPlaceholders: [
               {
@@ -261,8 +230,7 @@ describe(
 
     it("returns 400 for DATE_FORMAT step missing format", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Step Validation Feed",
@@ -270,14 +238,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-article-properties`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             customPlaceholders: [
               {
@@ -294,8 +258,7 @@ describe(
 
     it("returns 200 with valid REGEX step", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const feedUrl = `https://example.com/step-regex-valid-${generateTestId()}.xml`;
 
       const feed = await ctx.container.userFeedRepository.create({
@@ -304,14 +267,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-article-properties`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             customPlaceholders: [
               {
@@ -335,8 +294,7 @@ describe(
 
     it("returns 200 with valid URL_ENCODE step", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const feedUrl = `https://example.com/step-urlencode-${generateTestId()}.xml`;
 
       const feed = await ctx.container.userFeedRepository.create({
@@ -345,14 +303,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-article-properties`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             customPlaceholders: [
               {
@@ -369,8 +323,7 @@ describe(
 
     it("returns 200 with valid UPPERCASE and LOWERCASE steps", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const feedUrl = `https://example.com/step-case-${generateTestId()}.xml`;
 
       const feed = await ctx.container.userFeedRepository.create({
@@ -379,14 +332,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-article-properties`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             customPlaceholders: [
               {
@@ -404,8 +353,7 @@ describe(
     it("returns 200 when user is an accepted shared manager", async () => {
       const ownerDiscordUserId = generateSnowflake();
       const sharedManagerDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(sharedManagerDiscordUserId);
       const feedUrl = `https://example.com/shared-article-props-${generateTestId()}.xml`;
 
       const feed = await ctx.container.userFeedRepository.create({
@@ -422,14 +370,10 @@ describe(
         },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-article-properties`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({}),
         },
       );
@@ -439,8 +383,7 @@ describe(
     it("returns 200 when user is admin accessing another user's feed", async () => {
       const adminDiscordUserId = generateSnowflake();
       const ownerDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(adminDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(adminDiscordUserId);
       const feedUrl = `https://example.com/admin-article-props-${generateTestId()}.xml`;
 
       const adminUser =
@@ -455,14 +398,10 @@ describe(
         user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-article-properties`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({}),
         },
       );
@@ -474,8 +413,7 @@ describe(
 
     it("returns 200 with explicit null customPlaceholders", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const feedUrl = `https://example.com/null-placeholders-${generateTestId()}.xml`;
 
       const feed = await ctx.container.userFeedRepository.create({
@@ -484,14 +422,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-article-properties`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({ customPlaceholders: null }),
         },
       );
@@ -506,8 +440,7 @@ describe(
 
     it("returns 422 for invalid custom placeholder regex", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const feedUrl = `https://example.com/invalid-regex-${generateTestId()}.xml`;
 
       const feed = await ctx.container.userFeedRepository.create({
@@ -516,14 +449,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-article-properties`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             customPlaceholders: [
               {

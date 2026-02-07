@@ -4,7 +4,6 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../../helpers/test-context";
-import { createMockAccessToken } from "../../helpers/mock-factories";
 import { generateSnowflake, generateTestId } from "../../helpers/test-id";
 import {
   FeedConnectionDisabledCode,
@@ -50,13 +49,10 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
   });
 
   it("returns 200 with empty results when user has no feeds", async () => {
-    const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
 
-    const response = await ctx.fetch("/api/v1/user-feeds?limit=10&offset=0", {
+    const response = await user.fetch("/api/v1/user-feeds?limit=10&offset=0", {
       method: "GET",
-      headers: { cookie: cookies },
     });
 
     assert.strictEqual(response.status, 200);
@@ -67,8 +63,7 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
 
   it("returns feeds owned by the user", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "My Listed Feed",
@@ -76,9 +71,8 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch("/api/v1/user-feeds?limit=10&offset=0", {
+    const response = await user.fetch("/api/v1/user-feeds?limit=10&offset=0", {
       method: "GET",
-      headers: { cookie: cookies },
     });
 
     assert.strictEqual(response.status, 200);
@@ -93,8 +87,7 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
   it("does not return feeds belonging to other users", async () => {
     const ownerDiscordUserId = generateSnowflake();
     const otherDiscordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(otherDiscordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(otherDiscordUserId);
 
     const uniqueUrl = `https://example.com/get-user-feeds-other-${generateSnowflake()}.xml`;
 
@@ -104,9 +97,8 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
     });
 
-    const response = await ctx.fetch("/api/v1/user-feeds?limit=100&offset=0", {
+    const response = await user.fetch("/api/v1/user-feeds?limit=100&offset=0", {
       method: "GET",
-      headers: { cookie: cookies },
     });
 
     assert.strictEqual(response.status, 200);
@@ -118,8 +110,7 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
   it("returns feeds where user is accepted shared manager", async () => {
     const ownerDiscordUserId = generateSnowflake();
     const sharedManagerDiscordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(sharedManagerDiscordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Shared Feed Listed",
@@ -135,9 +126,8 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
       },
     });
 
-    const response = await ctx.fetch("/api/v1/user-feeds?limit=100&offset=0", {
+    const response = await user.fetch("/api/v1/user-feeds?limit=100&offset=0", {
       method: "GET",
-      headers: { cookie: cookies },
     });
 
     assert.strictEqual(response.status, 200);
@@ -150,8 +140,7 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
   it("does not return feeds where user has pending invite", async () => {
     const ownerDiscordUserId = generateSnowflake();
     const pendingDiscordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(pendingDiscordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(pendingDiscordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Pending Invite Feed",
@@ -167,9 +156,8 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
       },
     });
 
-    const response = await ctx.fetch("/api/v1/user-feeds?limit=100&offset=0", {
+    const response = await user.fetch("/api/v1/user-feeds?limit=100&offset=0", {
       method: "GET",
-      headers: { cookie: cookies },
     });
 
     assert.strictEqual(response.status, 200);
@@ -180,8 +168,7 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
 
   it("returns correct total count", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
     const userId = generateTestId();
 
     await Promise.all(
@@ -194,9 +181,8 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
       ),
     );
 
-    const response = await ctx.fetch("/api/v1/user-feeds?limit=2&offset=0", {
+    const response = await user.fetch("/api/v1/user-feeds?limit=2&offset=0", {
       method: "GET",
-      headers: { cookie: cookies },
     });
 
     assert.strictEqual(response.status, 200);
@@ -207,8 +193,7 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
 
   it("respects limit and offset pagination", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
     const userId = generateTestId();
 
     await Promise.all(
@@ -221,9 +206,8 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
       ),
     );
 
-    const response = await ctx.fetch("/api/v1/user-feeds?limit=1&offset=1", {
+    const response = await user.fetch("/api/v1/user-feeds?limit=1&offset=1", {
       method: "GET",
-      headers: { cookie: cookies },
     });
 
     assert.strictEqual(response.status, 200);
@@ -234,8 +218,7 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
 
   it("filters by search parameter", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
     const userId = generateTestId();
     const uniqueToken = generateSnowflake();
 
@@ -251,11 +234,10 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
       user: { id: userId, discordUserId },
     });
 
-    const response = await ctx.fetch(
+    const response = await user.fetch(
       `/api/v1/user-feeds?limit=100&offset=0&search=${uniqueToken}`,
       {
         method: "GET",
-        headers: { cookie: cookies },
       },
     );
 
@@ -267,8 +249,7 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
 
   it("filters by computedStatuses", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
     const userId = generateTestId();
 
     const disabledFeed = await ctx.container.userFeedRepository.create({
@@ -288,11 +269,10 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
       user: { id: userId, discordUserId },
     });
 
-    const response = await ctx.fetch(
+    const response = await user.fetch(
       `/api/v1/user-feeds?limit=100&offset=0&filters[computedStatuses]=MANUALLY_DISABLED`,
       {
         method: "GET",
-        headers: { cookie: cookies },
       },
     );
 
@@ -306,8 +286,7 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
 
   it("filters by disabledCodes", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
     const userId = generateTestId();
 
     const badFormatFeed = await ctx.container.userFeedRepository.create({
@@ -327,11 +306,10 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
       user: { id: userId, discordUserId },
     });
 
-    const response = await ctx.fetch(
+    const response = await user.fetch(
       `/api/v1/user-feeds?limit=100&offset=0&filters[disabledCodes]=BAD_FORMAT`,
       {
         method: "GET",
-        headers: { cookie: cookies },
       },
     );
 
@@ -343,8 +321,7 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
 
   it("sorts by title ascending", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
     const userId = generateTestId();
     const token = generateSnowflake();
 
@@ -360,11 +337,10 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
       user: { id: userId, discordUserId },
     });
 
-    const response = await ctx.fetch(
+    const response = await user.fetch(
       `/api/v1/user-feeds?limit=100&offset=0&sort=title&search=${token}`,
       {
         method: "GET",
-        headers: { cookie: cookies },
       },
     );
 
@@ -377,8 +353,7 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
 
   it("sorts by title descending", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
     const userId = generateTestId();
     const token = generateSnowflake();
 
@@ -394,11 +369,10 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
       user: { id: userId, discordUserId },
     });
 
-    const response = await ctx.fetch(
+    const response = await user.fetch(
       `/api/v1/user-feeds?limit=100&offset=0&sort=-title&search=${token}`,
       {
         method: "GET",
-        headers: { cookie: cookies },
       },
     );
 
@@ -411,8 +385,7 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
 
   it("filters by connectionDisabledCodes", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
     const userId = generateTestId();
 
     const feedWithBadConn = await ctx.container.userFeedRepository.create({
@@ -442,11 +415,10 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
       user: { id: userId, discordUserId },
     });
 
-    const response = await ctx.fetch(
+    const response = await user.fetch(
       `/api/v1/user-feeds?limit=100&offset=0&filters[connectionDisabledCodes]=MISSING_PERMISSIONS`,
       {
         method: "GET",
-        headers: { cookie: cookies },
       },
     );
 
@@ -460,8 +432,7 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
   it("filters by ownedByUser", async () => {
     const ownerDiscordUserId = generateSnowflake();
     const sharedDiscordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(sharedDiscordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(sharedDiscordUserId);
     const token = generateSnowflake();
 
     await ctx.container.userFeedRepository.create({
@@ -484,11 +455,10 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
       },
     });
 
-    const response = await ctx.fetch(
+    const response = await user.fetch(
       `/api/v1/user-feeds?limit=100&offset=0&search=${token}&filters[ownedByUser]=true`,
       {
         method: "GET",
-        headers: { cookie: cookies },
       },
     );
 
@@ -500,8 +470,7 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
 
   it("searches by URL", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
     const userId = generateTestId();
     const uniqueToken = generateSnowflake();
 
@@ -517,11 +486,10 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
       user: { id: userId, discordUserId },
     });
 
-    const response = await ctx.fetch(
+    const response = await user.fetch(
       `/api/v1/user-feeds?limit=100&offset=0&search=${uniqueToken}`,
       {
         method: "GET",
-        headers: { cookie: cookies },
       },
     );
 
@@ -533,8 +501,7 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
 
   it("filters by empty disabledCodes to find feeds with no disabled code", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
     const userId = generateTestId();
     const token = generateSnowflake();
 
@@ -555,11 +522,10 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
       { $set: { disabledCode: UserFeedDisabledCode.Manual } },
     );
 
-    const response = await ctx.fetch(
+    const response = await user.fetch(
       `/api/v1/user-feeds?limit=100&offset=0&search=${token}&filters[disabledCodes]=`,
       {
         method: "GET",
-        headers: { cookie: cookies },
       },
     );
 
@@ -574,26 +540,20 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
   });
 
   it("returns 400 when limit is missing", async () => {
-    const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
 
-    const response = await ctx.fetch("/api/v1/user-feeds?offset=0", {
+    const response = await user.fetch("/api/v1/user-feeds?offset=0", {
       method: "GET",
-      headers: { cookie: cookies },
     });
 
     assert.strictEqual(response.status, 400);
   });
 
   it("returns 400 when offset is missing", async () => {
-    const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
 
-    const response = await ctx.fetch("/api/v1/user-feeds?limit=10", {
+    const response = await user.fetch("/api/v1/user-feeds?limit=10", {
       method: "GET",
-      headers: { cookie: cookies },
     });
 
     assert.strictEqual(response.status, 400);
@@ -601,8 +561,7 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
 
   it("returns empty results when offset exceeds total", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
     const userId = generateTestId();
 
     await ctx.container.userFeedRepository.create({
@@ -611,11 +570,10 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
       user: { id: userId, discordUserId },
     });
 
-    const response = await ctx.fetch(
+    const response = await user.fetch(
       "/api/v1/user-feeds?limit=10&offset=9999",
       {
         method: "GET",
-        headers: { cookie: cookies },
       },
     );
 
@@ -627,8 +585,7 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
 
   it("returns correct response shape", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     await ctx.container.userFeedRepository.create({
       title: "Shape Test Feed",
@@ -636,9 +593,8 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch("/api/v1/user-feeds?limit=10&offset=0", {
+    const response = await user.fetch("/api/v1/user-feeds?limit=10&offset=0", {
       method: "GET",
-      headers: { cookie: cookies },
     });
 
     assert.strictEqual(response.status, 200);

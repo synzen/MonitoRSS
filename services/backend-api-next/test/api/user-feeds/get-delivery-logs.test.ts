@@ -4,7 +4,6 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../../helpers/test-context";
-import { createMockAccessToken } from "../../helpers/mock-factories";
 import { generateSnowflake, generateTestId } from "../../helpers/test-id";
 import {
   createTestHttpServer,
@@ -65,29 +64,25 @@ describe(
     });
 
     it("returns 404 for invalid ObjectId", async () => {
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(generateSnowflake());
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         "/api/v1/user-feeds/not-valid-id/delivery-logs",
         {
           method: "GET",
-          headers: { cookie: cookies },
         },
       );
       assert.strictEqual(response.status, 404);
     });
 
     it("returns 404 for non-existent valid ObjectId", async () => {
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(generateSnowflake());
       const nonExistentId = generateTestId();
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${nonExistentId}/delivery-logs`,
         {
           method: "GET",
-          headers: { cookie: cookies },
         },
       );
       assert.strictEqual(response.status, 404);
@@ -96,8 +91,7 @@ describe(
     it("returns 404 when feed belongs to another user", async () => {
       const ownerDiscordUserId = generateSnowflake();
       const otherDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(otherDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(otherDiscordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Other User Delivery Logs Feed",
@@ -105,11 +99,10 @@ describe(
         user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/delivery-logs`,
         {
           method: "GET",
-          headers: { cookie: cookies },
         },
       );
       assert.strictEqual(response.status, 404);
@@ -117,8 +110,7 @@ describe(
 
     it("returns 200 when user owns the feed", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Own Feed Delivery Logs",
@@ -132,11 +124,10 @@ describe(
         deliveryLogsMockHandler,
       );
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/delivery-logs`,
         {
           method: "GET",
-          headers: { cookie: cookies },
         },
       );
 
@@ -146,8 +137,7 @@ describe(
     it("returns 200 when user is an accepted shared manager", async () => {
       const ownerDiscordUserId = generateSnowflake();
       const sharedManagerDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(sharedManagerDiscordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Shared Feed Delivery Logs",
@@ -169,11 +159,10 @@ describe(
         deliveryLogsMockHandler,
       );
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/delivery-logs`,
         {
           method: "GET",
-          headers: { cookie: cookies },
         },
       );
 
@@ -183,8 +172,7 @@ describe(
     it("returns 200 when admin accesses another user's feed", async () => {
       const ownerDiscordUserId = generateSnowflake();
       const adminDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(adminDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(adminDiscordUserId);
 
       const adminUser =
         await ctx.container.usersService.getOrCreateUserByDiscordId(
@@ -204,11 +192,10 @@ describe(
         deliveryLogsMockHandler,
       );
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/delivery-logs`,
         {
           method: "GET",
-          headers: { cookie: cookies },
         },
       );
 
@@ -219,8 +206,7 @@ describe(
 
     it("returns 400 when limit is below minimum", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Delivery Logs Limit Validation",
@@ -228,11 +214,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/delivery-logs?limit=0`,
         {
           method: "GET",
-          headers: { cookie: cookies },
         },
       );
 
@@ -241,8 +226,7 @@ describe(
 
     it("returns 400 when limit exceeds maximum", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Delivery Logs Limit Max Validation",
@@ -250,11 +234,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/delivery-logs?limit=51`,
         {
           method: "GET",
-          headers: { cookie: cookies },
         },
       );
 
@@ -263,8 +246,7 @@ describe(
 
     it("returns 400 when skip is negative", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Delivery Logs Skip Validation",
@@ -272,11 +254,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/delivery-logs?skip=-1`,
         {
           method: "GET",
-          headers: { cookie: cookies },
         },
       );
 
@@ -285,8 +266,7 @@ describe(
 
     it("returns 400 when skip exceeds maximum", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Delivery Logs Skip Max Validation",
@@ -294,11 +274,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/delivery-logs?skip=1001`,
         {
           method: "GET",
-          headers: { cookie: cookies },
         },
       );
 
@@ -307,8 +286,7 @@ describe(
 
     it("returns 400 when limit is not a number", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Delivery Logs Limit NaN Validation",
@@ -316,11 +294,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/delivery-logs?limit=abc`,
         {
           method: "GET",
-          headers: { cookie: cookies },
         },
       );
 
@@ -329,8 +306,7 @@ describe(
 
     it("forwards limit and skip query params to upstream API", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Delivery Logs Query Forward",
@@ -344,11 +320,10 @@ describe(
         deliveryLogsMockHandler,
       );
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/delivery-logs?limit=10&skip=5`,
         {
           method: "GET",
-          headers: { cookie: cookies },
         },
       );
 

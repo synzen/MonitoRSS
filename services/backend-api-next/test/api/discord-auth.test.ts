@@ -3,8 +3,8 @@ import assert from "node:assert";
 import {
   createAppTestContext,
   type AppTestContext,
+  type AuthenticatedUser,
 } from "../helpers/test-context";
-import type { SessionAccessToken } from "../../src/services/discord-auth/types";
 
 describe("Discord Auth API", { concurrency: true }, () => {
   let ctx: AppTestContext;
@@ -176,19 +176,12 @@ describe("Discord Auth API", { concurrency: true }, () => {
 
 describe("Discord Auth Logout with session", { concurrency: false }, () => {
   let logoutCtx: AppTestContext;
-  const mockAccessToken: SessionAccessToken = {
-    access_token: "mock-access-token",
-    token_type: "Bearer",
-    expires_in: 604800,
-    refresh_token: "mock-refresh-token",
-    scope: "identify guilds",
-    expiresAt: Math.floor(Date.now() / 1000) + 604800,
-    discord: { id: "123456789" },
-  };
+  let user: AuthenticatedUser;
 
   before(async () => {
     logoutCtx = await createAppTestContext();
     logoutCtx.container.discordAuthService.revokeToken = async () => {};
+    user = await logoutCtx.asUser("123456789");
   });
 
   after(async () => {
@@ -201,28 +194,20 @@ describe("Discord Auth Logout with session", { concurrency: false }, () => {
       revokedToken = token;
     };
 
-    const cookies = await logoutCtx.setSession(mockAccessToken);
-
-    const response = await logoutCtx.fetch("/api/v1/discord/logout", {
-      headers: { cookie: cookies },
-    });
+    const response = await user.fetch("/api/v1/discord/logout");
 
     assert.strictEqual(response.status, 204);
-    assert.deepStrictEqual(revokedToken, mockAccessToken);
+    assert.deepStrictEqual(revokedToken, user.accessToken);
   });
 
   it("clears session after logout", async () => {
-    const cookies = await logoutCtx.setSession(mockAccessToken);
-
-    const response = await logoutCtx.fetch("/api/v1/discord/logout", {
-      headers: { cookie: cookies },
-    });
+    const response = await user.fetch("/api/v1/discord/logout");
 
     assert.strictEqual(response.status, 204);
 
     const logoutCookies = response.headers.get("set-cookie");
     const secondLogoutRes = await logoutCtx.fetch("/api/v1/discord/logout", {
-      headers: { cookie: logoutCookies || cookies },
+      headers: { cookie: logoutCookies || "" },
     });
     assert.strictEqual(
       secondLogoutRes.status,

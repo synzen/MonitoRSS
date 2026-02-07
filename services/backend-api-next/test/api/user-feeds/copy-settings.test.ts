@@ -4,7 +4,6 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../../helpers/test-context";
-import { createMockAccessToken } from "../../helpers/mock-factories";
 import { generateSnowflake, generateTestId } from "../../helpers/test-id";
 import { UserFeedManagerStatus } from "../../../src/repositories/shared/enums";
 import { UserFeedCopyableSetting } from "../../../src/services/user-feeds/types";
@@ -40,18 +39,13 @@ describe(
     });
 
     it("returns 404 for non-existent feed ID", async () => {
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(generateSnowflake());
       const nonExistentId = generateTestId();
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${nonExistentId}/copy-settings`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             settings: [UserFeedCopyableSetting.PassingComparisons],
             targetFeedIds: [generateTestId()],
@@ -64,8 +58,7 @@ describe(
     it("returns 404 for feed owned by another user", async () => {
       const ownerDiscordUserId = generateSnowflake();
       const otherDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(otherDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(otherDiscordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Another User Feed",
@@ -73,14 +66,10 @@ describe(
         user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/copy-settings`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             settings: [UserFeedCopyableSetting.PassingComparisons],
             targetFeedIds: [generateTestId()],
@@ -92,8 +81,7 @@ describe(
 
     it("returns 400 when settings field is missing", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Feed for Missing Settings",
@@ -101,14 +89,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/copy-settings`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             targetFeedIds: [generateTestId()],
           }),
@@ -119,8 +103,7 @@ describe(
 
     it("returns 400 for invalid enum value in settings", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Feed for Invalid Settings",
@@ -128,14 +111,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/copy-settings`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             settings: ["invalidSetting"],
             targetFeedIds: [generateTestId()],
@@ -147,8 +126,7 @@ describe(
 
     it("returns 400 when targetFeedSelectionType is omitted and no targetFeedIds", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Feed for No Targets",
@@ -156,14 +134,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/copy-settings`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             settings: [UserFeedCopyableSetting.PassingComparisons],
           }),
@@ -174,8 +148,7 @@ describe(
 
     it("returns 400 when targetFeedSelectionType is selected and no targetFeedIds", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Feed for Selected No Targets",
@@ -183,14 +156,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/copy-settings`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             settings: [UserFeedCopyableSetting.PassingComparisons],
             targetFeedSelectionType: "selected",
@@ -202,8 +171,7 @@ describe(
 
     it("returns 204 with targetFeedIds (specific targets)", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const sourceFeed = await ctx.container.userFeedRepository.create({
         title: "Source Feed",
@@ -218,14 +186,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${sourceFeed.id}/copy-settings`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             settings: [UserFeedCopyableSetting.PassingComparisons],
             targetFeedIds: [targetFeed.id],
@@ -237,8 +201,7 @@ describe(
 
     it("returns 204 with targetFeedSelectionType all", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const sourceFeed = await ctx.container.userFeedRepository.create({
         title: "Source Feed All",
@@ -247,14 +210,10 @@ describe(
         passingComparisons: ["title"],
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${sourceFeed.id}/copy-settings`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             settings: [UserFeedCopyableSetting.PassingComparisons],
             targetFeedSelectionType: "all",
@@ -266,8 +225,7 @@ describe(
 
     it("copies passingComparisons to target feed", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const sourceFeed = await ctx.container.userFeedRepository.create({
         title: "Source Feed DB Check",
@@ -282,14 +240,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${sourceFeed.id}/copy-settings`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             settings: [UserFeedCopyableSetting.PassingComparisons],
             targetFeedIds: [targetFeed.id],
@@ -308,8 +262,7 @@ describe(
     it("returns 204 when accepted shared manager copies settings", async () => {
       const ownerDiscordUserId = generateSnowflake();
       const sharedManagerDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(sharedManagerDiscordUserId);
 
       const sourceFeed = await ctx.container.userFeedRepository.create({
         title: "Shared Feed Copy Settings",
@@ -335,14 +288,10 @@ describe(
         },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${sourceFeed.id}/copy-settings`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             settings: [UserFeedCopyableSetting.PassingComparisons],
             targetFeedIds: [targetFeed.id],
@@ -355,8 +304,7 @@ describe(
     it("returns 204 when admin copies settings on another user's feed", async () => {
       const ownerDiscordUserId = generateSnowflake();
       const adminDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(adminDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(adminDiscordUserId);
 
       const adminUser =
         await ctx.container.usersService.getOrCreateUserByDiscordId(
@@ -371,14 +319,10 @@ describe(
         passingComparisons: ["title"],
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${sourceFeed.id}/copy-settings`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             settings: [UserFeedCopyableSetting.PassingComparisons],
             targetFeedSelectionType: "all",
@@ -392,8 +336,7 @@ describe(
 
     it("copies blockingComparisons to target feed", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const sourceFeed = await ctx.container.userFeedRepository.create({
         title: "Source BlockingComp",
@@ -408,14 +351,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${sourceFeed.id}/copy-settings`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             settings: [UserFeedCopyableSetting.BlockingComparisons],
             targetFeedIds: [targetFeed.id],
@@ -433,8 +372,7 @@ describe(
 
     it("copies externalProperties with regenerated IDs", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const sourceExtProps = [
         {
@@ -464,14 +402,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${sourceFeed.id}/copy-settings`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             settings: [UserFeedCopyableSetting.ExternalProperties],
             targetFeedIds: [targetFeed.id],
@@ -501,8 +435,7 @@ describe(
 
     it("copies dateCheckOptions to target feed", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const sourceFeed = await ctx.container.userFeedRepository.create({
         title: "Source DateChecks",
@@ -517,14 +450,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${sourceFeed.id}/copy-settings`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             settings: [UserFeedCopyableSetting.DateChecks],
             targetFeedIds: [targetFeed.id],
@@ -544,8 +473,7 @@ describe(
 
     it("copies datePlaceholderSettings to target feed", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const sourceFeed = await ctx.container.userFeedRepository.create({
         title: "Source DatePlaceholder",
@@ -564,14 +492,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${sourceFeed.id}/copy-settings`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             settings: [UserFeedCopyableSetting.DatePlaceholderSettings],
             targetFeedIds: [targetFeed.id],
@@ -595,8 +519,7 @@ describe(
 
     it("copies refreshRate to target feed", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const sourceFeed = await ctx.container.userFeedRepository.create({
         title: "Source RefreshRate",
@@ -611,14 +534,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${sourceFeed.id}/copy-settings`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             settings: [UserFeedCopyableSetting.RefreshRate],
             targetFeedIds: [targetFeed.id],
@@ -636,8 +555,7 @@ describe(
 
     it("unsets refreshRate on target when source has none", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const sourceFeed = await ctx.container.userFeedRepository.create({
         title: "Source No RefreshRate",
@@ -652,14 +570,10 @@ describe(
         userRefreshRateSeconds: 300,
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${sourceFeed.id}/copy-settings`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             settings: [UserFeedCopyableSetting.RefreshRate],
             targetFeedIds: [targetFeed.id],
@@ -677,8 +591,7 @@ describe(
 
     it("copies connections with regenerated IDs", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const sourceConnectionId = generateTestId();
       const sourceFeed = await ctx.container.userFeedRepository.create({
@@ -707,14 +620,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${sourceFeed.id}/copy-settings`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             settings: [UserFeedCopyableSetting.Connections],
             targetFeedIds: [targetFeed.id],
@@ -735,8 +644,7 @@ describe(
 
     it("copies settings to all feeds with targetFeedSelectionType all", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const sourceFeed = await ctx.container.userFeedRepository.create({
         title: "Source All Targets",
@@ -757,14 +665,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${sourceFeed.id}/copy-settings`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             settings: [UserFeedCopyableSetting.BlockingComparisons],
             targetFeedSelectionType: "all",
@@ -794,8 +698,7 @@ describe(
     it("does not copy settings to feeds owned by other users", async () => {
       const discordUserId = generateSnowflake();
       const otherDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const sourceFeed = await ctx.container.userFeedRepository.create({
         title: "Source Ownership Check",
@@ -810,14 +713,10 @@ describe(
         user: { id: generateTestId(), discordUserId: otherDiscordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${sourceFeed.id}/copy-settings`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             settings: [UserFeedCopyableSetting.PassingComparisons],
             targetFeedIds: [otherUserFeed.id],
@@ -835,8 +734,7 @@ describe(
 
     it("filters target feeds by search when using targetFeedSelectionType all", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const uniqueTag = generateTestId();
 
       const sourceFeed = await ctx.container.userFeedRepository.create({
@@ -858,14 +756,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${sourceFeed.id}/copy-settings`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             settings: [UserFeedCopyableSetting.PassingComparisons],
             targetFeedSelectionType: "all",

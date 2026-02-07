@@ -4,7 +4,6 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../../helpers/test-context";
-import { createMockAccessToken } from "../../helpers/mock-factories";
 import { generateSnowflake, generateTestId } from "../../helpers/test-id";
 import {
   createTestHttpServer,
@@ -50,31 +49,21 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
   });
 
   it("returns 404 for invalid ObjectId", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
 
-    const response = await ctx.fetch("/api/v1/user-feeds/not-valid-id", {
+    const response = await user.fetch("/api/v1/user-feeds/not-valid-id", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ title: "New Title" }),
     });
     assert.strictEqual(response.status, 404);
   });
 
   it("returns 404 for non-existent valid ObjectId", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
     const nonExistentId = generateTestId();
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${nonExistentId}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${nonExistentId}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ title: "New Title" }),
     });
     assert.strictEqual(response.status, 404);
@@ -83,8 +72,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
   it("returns 404 when feed belongs to another user", async () => {
     const ownerDiscordUserId = generateSnowflake();
     const otherDiscordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(otherDiscordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(otherDiscordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Owner's Feed",
@@ -92,12 +80,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ title: "Hacked Title" }),
     });
     assert.strictEqual(response.status, 404);
@@ -105,8 +89,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("returns 200 and updates title", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Original Title",
@@ -114,12 +97,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ title: "Updated Title" }),
     });
 
@@ -133,8 +112,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("returns 200 and updates disabledCode to MANUAL", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed to Disable",
@@ -142,12 +120,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ disabledCode: "MANUAL" }),
     });
 
@@ -160,8 +134,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("returns 200 and enables feed (disabledCode null)", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const created = await ctx.container.userFeedRepository.create({
       title: "Disabled Feed",
@@ -174,12 +147,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       { $set: { disabledCode: UserFeedDisabledCode.Manual } },
     ))!;
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ disabledCode: null }),
     });
 
@@ -193,8 +162,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
   it("shared manager can update feed", async () => {
     const ownerDiscordUserId = generateSnowflake();
     const sharedManagerDiscordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(sharedManagerDiscordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Shared Feed to Update",
@@ -210,12 +178,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ title: "Updated by Shared Manager" }),
     });
 
@@ -229,8 +193,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
   it("pending invite cannot update feed", async () => {
     const ownerDiscordUserId = generateSnowflake();
     const pendingDiscordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(pendingDiscordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(pendingDiscordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Pending Invite Feed",
@@ -246,12 +209,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ title: "Should Not Work" }),
     });
     assert.strictEqual(response.status, 404);
@@ -259,8 +218,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("returns 400 when title is empty string", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed for Empty Title",
@@ -268,12 +226,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ title: "" }),
     });
     assert.strictEqual(response.status, 400);
@@ -281,8 +235,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("returns 400 for invalid timezone", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed for Invalid TZ",
@@ -290,12 +243,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         formatOptions: { dateTimezone: "INVALID_TZ" },
       }),
@@ -305,8 +254,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("returns 200 for valid timezone", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed for Valid TZ",
@@ -314,12 +262,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         formatOptions: { dateTimezone: "America/New_York" },
       }),
@@ -329,8 +273,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("returns 200 for empty timezone (skips validation)", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed for Empty TZ",
@@ -338,12 +281,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         formatOptions: { dateTimezone: "" },
       }),
@@ -353,8 +292,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("returns 400 for invalid locale", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed for Invalid Locale",
@@ -362,12 +300,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         formatOptions: { dateLocale: "zz-invalid" },
       }),
@@ -377,8 +311,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("returns 200 for valid locale", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed for Valid Locale",
@@ -386,12 +319,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         formatOptions: { dateLocale: "en" },
       }),
@@ -401,8 +330,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("returns 400 for duplicate externalProperties labels", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed for Dupe Labels",
@@ -410,12 +338,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         externalProperties: [
           {
@@ -438,8 +362,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("returns 200 for unique externalProperties labels", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed for Unique Labels",
@@ -447,12 +370,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         externalProperties: [
           {
@@ -475,8 +394,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("strips extraneous fields and still succeeds", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed for Extra Fields",
@@ -484,12 +402,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ title: "Valid", unknownField: "bad" }),
     });
     assert.strictEqual(response.status, 200);
@@ -535,8 +449,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
     it("returns 200 and updates url when valid", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const newUrl = "https://example.com/patch-url-valid.xml";
 
       const feed = await ctx.container.userFeedRepository.create({
@@ -545,12 +458,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+      const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          cookie: cookies,
-        },
         body: JSON.stringify({ url: newUrl }),
       });
       assert.strictEqual(response.status, 200);
@@ -560,8 +469,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
     it("returns 400 FEED_REQUEST_TIMEOUT on url timeout", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const newUrl = "https://example.com/patch-url-timeout.xml";
 
       const feed = await ctx.container.userFeedRepository.create({
@@ -570,12 +478,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+      const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          cookie: cookies,
-        },
         body: JSON.stringify({ url: newUrl }),
       });
       assert.strictEqual(response.status, 400);
@@ -585,8 +489,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
     it("returns 400 ADD_FEED_PARSE_FAILED on url parse error", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const newUrl = "https://example.com/patch-url-parse.xml";
 
       const feed = await ctx.container.userFeedRepository.create({
@@ -595,12 +498,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+      const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          cookie: cookies,
-        },
         body: JSON.stringify({ url: newUrl }),
       });
       assert.strictEqual(response.status, 400);
@@ -610,8 +509,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
     it("returns 400 FEED_FETCH_FAILED on url fetch error", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const newUrl = "https://example.com/patch-url-fetch.xml";
 
       const feed = await ctx.container.userFeedRepository.create({
@@ -620,12 +518,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+      const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          cookie: cookies,
-        },
         body: JSON.stringify({ url: newUrl }),
       });
       assert.strictEqual(response.status, 400);
@@ -635,8 +529,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
     it("returns 400 FEED_INVALID_SSL_CERT on invalid ssl", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const newUrl = "https://example.com/patch-url-ssl.xml";
 
       const feed = await ctx.container.userFeedRepository.create({
@@ -645,12 +538,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+      const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          cookie: cookies,
-        },
         body: JSON.stringify({ url: newUrl }),
       });
       assert.strictEqual(response.status, 400);
@@ -661,8 +550,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("returns 200 and sets userRefreshRateSeconds", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed for Refresh Rate",
@@ -670,12 +558,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ userRefreshRateSeconds: 3600 }),
     });
     assert.strictEqual(response.status, 200);
@@ -687,8 +571,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("returns 400 when userRefreshRateSeconds is too high", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed for High Refresh",
@@ -696,12 +579,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ userRefreshRateSeconds: 86401 }),
     });
     assert.strictEqual(response.status, 400);
@@ -711,8 +590,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("returns 400 when userRefreshRateSeconds is too low", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed for Low Refresh",
@@ -720,12 +598,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ userRefreshRateSeconds: 60 }),
     });
     assert.strictEqual(response.status, 400);
@@ -735,8 +609,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("returns 400 FEED_LIMIT_REACHED when enabling at limit", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const maxFeeds = ctx.container.config.BACKEND_API_DEFAULT_MAX_USER_FEEDS;
 
@@ -758,12 +631,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       $set: { disabledCode: UserFeedDisabledCode.ExceededFeedLimit },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${disabledFeed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${disabledFeed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ disabledCode: null }),
     });
     assert.strictEqual(response.status, 400);
@@ -773,8 +642,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("returns 200 and updates passingComparisons", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed for Passing Comparisons",
@@ -782,12 +650,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ passingComparisons: ["title"] }),
     });
     assert.strictEqual(response.status, 200);
@@ -799,8 +663,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("returns 200 and updates blockingComparisons", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed for Blocking Comparisons",
@@ -808,12 +671,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ blockingComparisons: ["guid"] }),
     });
     assert.strictEqual(response.status, 200);
@@ -825,8 +684,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("returns 200 and updates dateCheckOptions", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed for Date Check Options",
@@ -834,12 +692,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         dateCheckOptions: { oldArticleDateDiffMsThreshold: 86400000 },
       }),
@@ -858,8 +712,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("returns 400 for negative dateCheckOptions threshold", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed for Negative Date Check",
@@ -867,12 +720,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         dateCheckOptions: { oldArticleDateDiffMsThreshold: -1 },
       }),
@@ -882,8 +731,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("returns 200 and updates shareManageOptions", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed for Share Options",
@@ -891,12 +739,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         shareManageOptions: {
           invites: [{ discordUserId: "123456789" }],
@@ -919,8 +763,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("returns 200 for empty dateLocale", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed for Empty Locale",
@@ -928,12 +771,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         formatOptions: { dateLocale: "" },
       }),
@@ -944,8 +783,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
   it("filters connections for shared manager with limited connection IDs", async () => {
     const ownerDiscordUserId = generateSnowflake();
     const sharedManagerDiscordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(sharedManagerDiscordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Patch Connections Filter",
@@ -993,12 +831,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       },
     );
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ title: "Updated by Limited Manager" }),
     });
 
@@ -1012,8 +846,7 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("unsets userRefreshRateSeconds when null is sent", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed for Null Refresh Rate",
@@ -1026,12 +859,8 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       { $set: { userRefreshRateSeconds: 3600 } },
     );
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ userRefreshRateSeconds: null }),
     });
 

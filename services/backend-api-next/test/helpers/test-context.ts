@@ -8,6 +8,12 @@ import { Environment } from "../../src/config";
 import { getTestDbUri } from "./test-constants";
 import type { SessionAccessToken } from "../../src/services/discord-auth/types";
 import { createTestHttpServer, type TestHttpServer } from "./test-http-server";
+import { createMockAccessToken } from "./mock-factories";
+
+export interface AuthenticatedUser {
+  accessToken: SessionAccessToken;
+  fetch(path: string, options?: RequestInit): Promise<Response>;
+}
 
 async function setupDatabase(): Promise<Connection> {
   const databaseName = `test_${randomUUID().replace(/-/g, "")}`;
@@ -54,6 +60,7 @@ export interface AppTestContext {
   discordMockServer: TestHttpServer;
   fetch(path: string, options?: RequestInit): Promise<Response>;
   setSession(accessToken: SessionAccessToken): Promise<string>;
+  asUser(discordUserId: string): Promise<AuthenticatedUser>;
   createSupporter(data: CreateSupporterData): Promise<void>;
   teardown(): Promise<void>;
 }
@@ -207,6 +214,36 @@ export async function createAppTestContext(
         throw new Error("Failed to set session: no cookie returned");
       }
       return cookie;
+    },
+
+    async asUser(discordUserId: string): Promise<AuthenticatedUser> {
+      const accessToken = createMockAccessToken(discordUserId);
+      const sessionResponse = await fetch(`${baseUrl}/__test__/set-session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accessToken }),
+      });
+      const cookies = sessionResponse.headers.get("set-cookie");
+      if (!cookies) {
+        throw new Error("Failed to set session: no cookie returned");
+      }
+
+      return {
+        accessToken,
+        async fetch(path: string, options?: RequestInit) {
+          const headers = new Headers(options?.headers);
+          headers.set("cookie", cookies);
+
+          if (options?.body && !headers.has("Content-Type")) {
+            headers.set("Content-Type", "application/json");
+          }
+
+          return globalThis.fetch(`${baseUrl}${path}`, {
+            ...options,
+            headers,
+          });
+        },
+      };
     },
 
     async createSupporter(data: CreateSupporterData) {

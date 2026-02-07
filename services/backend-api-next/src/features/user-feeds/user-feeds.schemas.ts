@@ -5,6 +5,11 @@ import {
   UserFeedCopyableSetting,
 } from "../../services/user-feeds/types";
 import { UserFeedTargetFeedSelectionType } from "../../services/feed-connections-discord-channels/types";
+import {
+  NullableString,
+  EmbedSchema,
+  PlaceholderLimitSchema,
+} from "../../shared/schemas/discord-embed.schemas";
 
 export const CreateUserFeedBodySchema = Type.Object({
   url: Type.String({ minLength: 1 }),
@@ -228,68 +233,6 @@ export const DatePreviewBodySchema = Type.Object(
   { additionalProperties: false },
 );
 export type DatePreviewBody = Static<typeof DatePreviewBodySchema>;
-
-const NullableString = Type.Union([Type.String(), Type.Null()]);
-
-const EmbedFieldSchema = Type.Object(
-  {
-    name: Type.Optional(NullableString),
-    value: Type.Optional(NullableString),
-    inline: Type.Optional(Type.Union([Type.Boolean(), Type.Null()])),
-  },
-  { additionalProperties: false },
-);
-
-const EmbedImageSchema = Type.Object(
-  {
-    url: Type.Optional(NullableString),
-  },
-  { additionalProperties: false },
-);
-
-const EmbedAuthorSchema = Type.Object(
-  {
-    name: Type.Optional(NullableString),
-    url: Type.Optional(NullableString),
-    iconUrl: Type.Optional(NullableString),
-  },
-  { additionalProperties: false },
-);
-
-const EmbedFooterSchema = Type.Object(
-  {
-    text: Type.Optional(NullableString),
-    iconUrl: Type.Optional(NullableString),
-  },
-  { additionalProperties: false },
-);
-
-const EmbedSchema = Type.Object(
-  {
-    title: Type.Optional(NullableString),
-    description: Type.Optional(NullableString),
-    url: Type.Optional(NullableString),
-    color: Type.Optional(NullableString),
-    timestamp: Type.Optional(NullableString),
-    image: Type.Optional(Type.Union([EmbedImageSchema, Type.Null()])),
-    thumbnail: Type.Optional(Type.Union([EmbedImageSchema, Type.Null()])),
-    author: Type.Optional(Type.Union([EmbedAuthorSchema, Type.Null()])),
-    footer: Type.Optional(Type.Union([EmbedFooterSchema, Type.Null()])),
-    fields: Type.Optional(
-      Type.Union([Type.Array(EmbedFieldSchema), Type.Null()]),
-    ),
-  },
-  { additionalProperties: false },
-);
-
-const PlaceholderLimitSchema = Type.Object(
-  {
-    placeholder: Type.String({ minLength: 1 }),
-    characterCount: Type.Integer({ minimum: 1 }),
-    appendString: Type.Optional(Type.String()),
-  },
-  { additionalProperties: false },
-);
 
 const WebhookSchema = Type.Union([
   Type.Object(

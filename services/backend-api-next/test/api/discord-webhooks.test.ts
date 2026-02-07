@@ -4,7 +4,6 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../helpers/test-context";
-import { createMockAccessToken } from "../helpers/mock-factories";
 import { generateSnowflake } from "../helpers/test-id";
 
 const MANAGE_CHANNEL_PERMISSION = "16";
@@ -28,25 +27,21 @@ describe("GET /api/v1/discord-webhooks/:id", { concurrency: true }, () => {
 
   it("returns 404 when webhook not found", async () => {
     const webhookId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
+    const user = await ctx.asUser(generateSnowflake());
 
     ctx.discordMockServer.registerRoute("GET", `/webhooks/${webhookId}`, {
       status: 404,
       body: { message: "Unknown Webhook" },
     });
 
-    const cookies = await ctx.setSession(mockAccessToken);
-
-    const response = await ctx.fetch(`/api/v1/discord-webhooks/${webhookId}`, {
-      headers: { cookie: cookies },
-    });
+    const response = await user.fetch(`/api/v1/discord-webhooks/${webhookId}`);
 
     assert.strictEqual(response.status, 404);
   });
 
   it("returns 404 when webhook has no guild_id", async () => {
     const webhookId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
+    const user = await ctx.asUser(generateSnowflake());
 
     ctx.discordMockServer.registerRoute("GET", `/webhooks/${webhookId}`, {
       status: 200,
@@ -58,11 +53,7 @@ describe("GET /api/v1/discord-webhooks/:id", { concurrency: true }, () => {
       },
     });
 
-    const cookies = await ctx.setSession(mockAccessToken);
-
-    const response = await ctx.fetch(`/api/v1/discord-webhooks/${webhookId}`, {
-      headers: { cookie: cookies },
-    });
+    const response = await user.fetch(`/api/v1/discord-webhooks/${webhookId}`);
 
     assert.strictEqual(response.status, 404);
   });
@@ -70,7 +61,7 @@ describe("GET /api/v1/discord-webhooks/:id", { concurrency: true }, () => {
   it("returns 404 when user does not manage the guild", async () => {
     const webhookId = generateSnowflake();
     const guildId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
+    const user = await ctx.asUser(generateSnowflake());
 
     ctx.discordMockServer.registerRoute("GET", `/webhooks/${webhookId}`, {
       status: 200,
@@ -86,7 +77,7 @@ describe("GET /api/v1/discord-webhooks/:id", { concurrency: true }, () => {
     ctx.discordMockServer.registerRouteForToken(
       "GET",
       "/users/@me/guilds",
-      mockAccessToken.access_token,
+      user.accessToken.access_token,
       {
         status: 200,
         body: [
@@ -100,11 +91,7 @@ describe("GET /api/v1/discord-webhooks/:id", { concurrency: true }, () => {
       },
     );
 
-    const cookies = await ctx.setSession(mockAccessToken);
-
-    const response = await ctx.fetch(`/api/v1/discord-webhooks/${webhookId}`, {
-      headers: { cookie: cookies },
-    });
+    const response = await user.fetch(`/api/v1/discord-webhooks/${webhookId}`);
 
     assert.strictEqual(response.status, 404);
   });
@@ -113,7 +100,7 @@ describe("GET /api/v1/discord-webhooks/:id", { concurrency: true }, () => {
     const webhookId = generateSnowflake();
     const guildId = generateSnowflake();
     const channelId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
+    const user = await ctx.asUser(generateSnowflake());
 
     ctx.discordMockServer.registerRoute("GET", `/webhooks/${webhookId}`, {
       status: 200,
@@ -130,7 +117,7 @@ describe("GET /api/v1/discord-webhooks/:id", { concurrency: true }, () => {
     ctx.discordMockServer.registerRouteForToken(
       "GET",
       "/users/@me/guilds",
-      mockAccessToken.access_token,
+      user.accessToken.access_token,
       {
         status: 200,
         body: [
@@ -144,11 +131,7 @@ describe("GET /api/v1/discord-webhooks/:id", { concurrency: true }, () => {
       },
     );
 
-    const cookies = await ctx.setSession(mockAccessToken);
-
-    const response = await ctx.fetch(`/api/v1/discord-webhooks/${webhookId}`, {
-      headers: { cookie: cookies },
-    });
+    const response = await user.fetch(`/api/v1/discord-webhooks/${webhookId}`);
 
     assert.strictEqual(response.status, 200);
     const body = (await response.json()) as {
@@ -168,43 +151,35 @@ describe("GET /api/v1/discord-webhooks/:id", { concurrency: true }, () => {
 
   it("returns 403 when bot lacks permissions to get webhook", async () => {
     const webhookId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
+    const user = await ctx.asUser(generateSnowflake());
 
     ctx.discordMockServer.registerRoute("GET", `/webhooks/${webhookId}`, {
       status: 403,
       body: { message: "Missing Permissions" },
     });
 
-    const cookies = await ctx.setSession(mockAccessToken);
-
-    const response = await ctx.fetch(`/api/v1/discord-webhooks/${webhookId}`, {
-      headers: { cookie: cookies },
-    });
+    const response = await user.fetch(`/api/v1/discord-webhooks/${webhookId}`);
 
     assert.strictEqual(response.status, 403);
   });
 
   it("returns 403 when bot gets 401 unauthorized from Discord", async () => {
     const webhookId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
+    const user = await ctx.asUser(generateSnowflake());
 
     ctx.discordMockServer.registerRoute("GET", `/webhooks/${webhookId}`, {
       status: 401,
       body: { message: "401: Unauthorized" },
     });
 
-    const cookies = await ctx.setSession(mockAccessToken);
-
-    const response = await ctx.fetch(`/api/v1/discord-webhooks/${webhookId}`, {
-      headers: { cookie: cookies },
-    });
+    const response = await user.fetch(`/api/v1/discord-webhooks/${webhookId}`);
 
     assert.strictEqual(response.status, 403);
   });
 
   it("returns 404 when webhook has null guild_id", async () => {
     const webhookId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
+    const user = await ctx.asUser(generateSnowflake());
 
     ctx.discordMockServer.registerRoute("GET", `/webhooks/${webhookId}`, {
       status: 200,
@@ -217,11 +192,7 @@ describe("GET /api/v1/discord-webhooks/:id", { concurrency: true }, () => {
       },
     });
 
-    const cookies = await ctx.setSession(mockAccessToken);
-
-    const response = await ctx.fetch(`/api/v1/discord-webhooks/${webhookId}`, {
-      headers: { cookie: cookies },
-    });
+    const response = await user.fetch(`/api/v1/discord-webhooks/${webhookId}`);
 
     assert.strictEqual(response.status, 404);
   });
@@ -230,7 +201,7 @@ describe("GET /api/v1/discord-webhooks/:id", { concurrency: true }, () => {
     const webhookId = generateSnowflake();
     const guildId = generateSnowflake();
     const channelId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
+    const user = await ctx.asUser(generateSnowflake());
 
     ctx.discordMockServer.registerRoute("GET", `/webhooks/${webhookId}`, {
       status: 200,
@@ -247,7 +218,7 @@ describe("GET /api/v1/discord-webhooks/:id", { concurrency: true }, () => {
     ctx.discordMockServer.registerRouteForToken(
       "GET",
       "/users/@me/guilds",
-      mockAccessToken.access_token,
+      user.accessToken.access_token,
       {
         status: 200,
         body: [
@@ -261,11 +232,7 @@ describe("GET /api/v1/discord-webhooks/:id", { concurrency: true }, () => {
       },
     );
 
-    const cookies = await ctx.setSession(mockAccessToken);
-
-    const response = await ctx.fetch(`/api/v1/discord-webhooks/${webhookId}`, {
-      headers: { cookie: cookies },
-    });
+    const response = await user.fetch(`/api/v1/discord-webhooks/${webhookId}`);
 
     assert.strictEqual(response.status, 200);
     const body = (await response.json()) as {

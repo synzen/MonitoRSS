@@ -4,7 +4,6 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../helpers/test-context";
-import { createMockAccessToken } from "../helpers/mock-factories";
 import { generateSnowflake } from "../helpers/test-id";
 
 let ctx: AppTestContext;
@@ -24,7 +23,7 @@ describe("GET /api/v1/discord-users/bot", { concurrency: true }, () => {
   });
 
   it("returns 200 with bot info when authenticated", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
+    const user = await ctx.asUser(generateSnowflake());
 
     ctx.discordMockServer.registerRoute("GET", "/users/test-client-id", {
       status: 200,
@@ -35,11 +34,7 @@ describe("GET /api/v1/discord-users/bot", { concurrency: true }, () => {
       },
     });
 
-    const cookies = await ctx.setSession(mockAccessToken);
-
-    const response = await ctx.fetch("/api/v1/discord-users/bot", {
-      headers: { cookie: cookies },
-    });
+    const response = await user.fetch("/api/v1/discord-users/bot");
 
     assert.strictEqual(response.status, 200);
     const body = (await response.json()) as {
@@ -79,12 +74,12 @@ describe(
 
     it("returns authenticated: true when token is valid", async () => {
       const userId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(userId);
+      const user = await ctx.asUser(userId);
 
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: {
@@ -96,13 +91,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         "/api/v1/discord-users/@me/auth-status",
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 200);
@@ -111,25 +101,20 @@ describe(
     });
 
     it("returns authenticated: false and clears session when Discord returns 401", async () => {
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 401,
           body: { message: "401: Unauthorized" },
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         "/api/v1/discord-users/@me/auth-status",
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 200);
@@ -138,25 +123,20 @@ describe(
     });
 
     it("returns authenticated: false and clears session when Discord returns 403", async () => {
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 403,
           body: { message: "403: Forbidden" },
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         "/api/v1/discord-users/@me/auth-status",
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 200);
@@ -165,25 +145,20 @@ describe(
     });
 
     it("propagates unexpected errors from Discord API", async () => {
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 500,
           body: { message: "500: Internal Server Error" },
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         "/api/v1/discord-users/@me/auth-status",
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 500);
@@ -199,7 +174,7 @@ describe("GET /api/v1/discord-users/:id", { concurrency: true }, () => {
 
   it("returns user info when authenticated", async () => {
     const userId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
+    const user = await ctx.asUser(generateSnowflake());
 
     ctx.discordMockServer.registerRoute("GET", `/users/${userId}`, {
       status: 200,
@@ -211,11 +186,7 @@ describe("GET /api/v1/discord-users/:id", { concurrency: true }, () => {
       },
     });
 
-    const cookies = await ctx.setSession(mockAccessToken);
-
-    const response = await ctx.fetch(`/api/v1/discord-users/${userId}`, {
-      headers: { cookie: cookies },
-    });
+    const response = await user.fetch(`/api/v1/discord-users/${userId}`);
 
     assert.strictEqual(response.status, 200);
     const body = (await response.json()) as {
@@ -236,7 +207,7 @@ describe("GET /api/v1/discord-users/:id", { concurrency: true }, () => {
 
   it("returns animated gif avatar URL for animated avatars", async () => {
     const userId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
+    const user = await ctx.asUser(generateSnowflake());
 
     ctx.discordMockServer.registerRoute("GET", `/users/${userId}`, {
       status: 200,
@@ -248,11 +219,7 @@ describe("GET /api/v1/discord-users/:id", { concurrency: true }, () => {
       },
     });
 
-    const cookies = await ctx.setSession(mockAccessToken);
-
-    const response = await ctx.fetch(`/api/v1/discord-users/${userId}`, {
-      headers: { cookie: cookies },
-    });
+    const response = await user.fetch(`/api/v1/discord-users/${userId}`);
 
     assert.strictEqual(response.status, 200);
     const body = (await response.json()) as {
@@ -291,12 +258,12 @@ describe(
 
     it("returns user profile and supporter benefits", async () => {
       const userId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(userId);
+      const user = await supporterCtx.asUser(userId);
 
       supporterCtx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: {
@@ -318,11 +285,7 @@ describe(
         allowCustomPlaceholders: true,
       });
 
-      const cookies = await supporterCtx.setSession(mockAccessToken);
-
-      const response = await supporterCtx.fetch("/api/v1/discord-users/@me", {
-        headers: { cookie: cookies },
-      });
+      const response = await user.fetch("/api/v1/discord-users/@me");
 
       assert.strictEqual(response.status, 200);
       const body = (await response.json()) as {
@@ -361,12 +324,12 @@ describe(
 
     it("returns user profile without supporter object when user has no supporter record", async () => {
       const userId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(userId);
+      const user = await supporterCtx.asUser(userId);
 
       supporterCtx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: {
@@ -378,11 +341,7 @@ describe(
         },
       );
 
-      const cookies = await supporterCtx.setSession(mockAccessToken);
-
-      const response = await supporterCtx.fetch("/api/v1/discord-users/@me", {
-        headers: { cookie: cookies },
-      });
+      const response = await user.fetch("/api/v1/discord-users/@me");
 
       assert.strictEqual(response.status, 200);
       const body = (await response.json()) as {

@@ -4,7 +4,6 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../../helpers/test-context";
-import { createMockAccessToken } from "../../helpers/mock-factories";
 import { generateSnowflake, generateTestId } from "../../helpers/test-id";
 import {
   createTestHttpServer,
@@ -64,17 +63,12 @@ describe(
     });
 
     it("returns 404 for invalid ObjectId", async () => {
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(generateSnowflake());
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         "/api/v1/user-feeds/not-valid-id/delivery-preview",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({}),
         },
       );
@@ -82,18 +76,13 @@ describe(
     });
 
     it("returns 404 for non-existent valid ObjectId", async () => {
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(generateSnowflake());
       const nonExistentId = generateTestId();
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${nonExistentId}/delivery-preview`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({}),
         },
       );
@@ -103,8 +92,7 @@ describe(
     it("returns 404 when feed belongs to another user", async () => {
       const ownerDiscordUserId = generateSnowflake();
       const otherDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(otherDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(otherDiscordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Other User Delivery Preview Feed",
@@ -112,14 +100,10 @@ describe(
         user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/delivery-preview`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({}),
         },
       );
@@ -128,8 +112,7 @@ describe(
 
     it("returns 200 when user owns the feed", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Own Feed Delivery Preview",
@@ -143,14 +126,10 @@ describe(
         deliveryPreviewMockHandler,
       );
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/delivery-preview`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({}),
         },
       );
@@ -161,8 +140,7 @@ describe(
     it("returns 200 when user is an accepted shared manager", async () => {
       const ownerDiscordUserId = generateSnowflake();
       const sharedManagerDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(sharedManagerDiscordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Shared Feed Delivery Preview",
@@ -184,14 +162,10 @@ describe(
         deliveryPreviewMockHandler,
       );
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/delivery-preview`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({}),
         },
       );
@@ -202,8 +176,7 @@ describe(
     it("returns 200 when admin accesses another user's feed", async () => {
       const ownerDiscordUserId = generateSnowflake();
       const adminDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(adminDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(adminDiscordUserId);
 
       const adminUser =
         await ctx.container.usersService.getOrCreateUserByDiscordId(
@@ -223,14 +196,10 @@ describe(
         deliveryPreviewMockHandler,
       );
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/delivery-preview`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({}),
         },
       );
@@ -242,8 +211,7 @@ describe(
 
     it("returns 400 when limit is below minimum", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Delivery Preview Limit Validation",
@@ -251,14 +219,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/delivery-preview`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({ limit: 0 }),
         },
       );
@@ -268,8 +232,7 @@ describe(
 
     it("returns 400 when limit exceeds maximum", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Delivery Preview Limit Max Validation",
@@ -277,14 +240,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/delivery-preview`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({ limit: 51 }),
         },
       );
@@ -294,8 +253,7 @@ describe(
 
     it("returns 400 when skip is negative", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Delivery Preview Skip Validation",
@@ -303,14 +261,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/delivery-preview`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({ skip: -1 }),
         },
       );
@@ -320,8 +274,7 @@ describe(
 
     it("returns 200 with default skip/limit when body is empty", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Delivery Preview Default Params",
@@ -335,14 +288,10 @@ describe(
         deliveryPreviewMockHandler,
       );
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/delivery-preview`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({}),
         },
       );
@@ -357,8 +306,7 @@ describe(
 
     it("forwards skip and limit in the upstream request body", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Delivery Preview Forward Params",
@@ -372,14 +320,10 @@ describe(
         deliveryPreviewMockHandler,
       );
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/delivery-preview`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({ skip: 5, limit: 20 }),
         },
       );
@@ -395,8 +339,7 @@ describe(
     it("filters connections for shared manager with limited connection IDs", async () => {
       const ownerDiscordUserId = generateSnowflake();
       const sharedManagerDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(sharedManagerDiscordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Delivery Preview Filtered Connections",
@@ -450,14 +393,10 @@ describe(
         deliveryPreviewMockHandler,
       );
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/delivery-preview`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({}),
         },
       );
@@ -486,8 +425,7 @@ describe(
     it("shared manager without connection restrictions sees all connections in delivery preview", async () => {
       const ownerDiscordUserId = generateSnowflake();
       const sharedManagerDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(sharedManagerDiscordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Delivery Preview All Connections",
@@ -535,14 +473,10 @@ describe(
         deliveryPreviewMockHandler,
       );
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/delivery-preview`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({}),
         },
       );

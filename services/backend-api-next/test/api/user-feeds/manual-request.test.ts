@@ -4,7 +4,6 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../../helpers/test-context";
-import { createMockAccessToken } from "../../helpers/mock-factories";
 import { generateSnowflake, generateTestId } from "../../helpers/test-id";
 import {
   createTestHttpServer,
@@ -100,15 +99,13 @@ describe(
     });
 
     it("returns 404 for non-existent feed ID", async () => {
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(generateSnowflake());
       const nonExistentId = generateTestId();
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${nonExistentId}/manual-request`,
         {
           method: "POST",
-          headers: { cookie: cookies },
         },
       );
       assert.strictEqual(response.status, 404);
@@ -116,8 +113,7 @@ describe(
 
     it("returns 200 with result on success", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Manual Request Feed",
@@ -131,11 +127,10 @@ describe(
         },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/manual-request`,
         {
           method: "POST",
-          headers: { cookie: cookies },
         },
       );
 
@@ -153,8 +148,7 @@ describe(
 
     it("returns 422 when manual request is too soon", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Manual Request Too Soon Feed",
@@ -169,11 +163,10 @@ describe(
         },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/manual-request`,
         {
           method: "POST",
-          headers: { cookie: cookies },
         },
       );
 
@@ -189,8 +182,7 @@ describe(
     it("returns 404 when feed belongs to a different user", async () => {
       const ownerDiscordUserId = generateSnowflake();
       const otherDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(otherDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(otherDiscordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Other User Manual Request Feed",
@@ -198,11 +190,10 @@ describe(
         user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/manual-request`,
         {
           method: "POST",
-          headers: { cookie: cookies },
         },
       );
       assert.strictEqual(response.status, 404);
@@ -211,8 +202,7 @@ describe(
     it("returns 200 when shared manager triggers manual request", async () => {
       const ownerDiscordUserId = generateSnowflake();
       const sharedManagerDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(sharedManagerDiscordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Shared Manager Manual Request Feed",
@@ -228,11 +218,10 @@ describe(
         },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/manual-request`,
         {
           method: "POST",
-          headers: { cookie: cookies },
         },
       );
 
@@ -246,8 +235,7 @@ describe(
     it("returns 200 when admin triggers manual request on another user's feed", async () => {
       const ownerDiscordUserId = generateSnowflake();
       const adminDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(adminDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(adminDiscordUserId);
 
       const adminUser =
         await ctx.container.usersService.getOrCreateUserByDiscordId(
@@ -261,11 +249,10 @@ describe(
         user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/manual-request`,
         {
           method: "POST",
-          headers: { cookie: cookies },
         },
       );
 
@@ -280,8 +267,7 @@ describe(
 
     it("returns 200 with non-success requestStatus when upstream fetch fails", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const feedUrl = "https://example.com/fetch-fail-manual-request.xml";
 
       feedRequestOverrides[feedUrl] = {
@@ -294,11 +280,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/manual-request`,
         {
           method: "POST",
-          headers: { cookie: cookies },
         },
       );
 
@@ -317,8 +302,7 @@ describe(
 
     it("returns 200 with requestStatusCode when upstream returns BAD_STATUS_CODE", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const feedUrl = "https://example.com/bad-status-manual-request.xml";
 
       feedRequestOverrides[feedUrl] = {
@@ -332,11 +316,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/manual-request`,
         {
           method: "POST",
-          headers: { cookie: cookies },
         },
       );
 
@@ -357,8 +340,7 @@ describe(
 
     it("clears disabledCode when fetch succeeds and feed was not disabled with InvalidFeed", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Disabled Manual Request Feed",
@@ -373,11 +355,10 @@ describe(
         },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/manual-request`,
         {
           method: "POST",
-          headers: { cookie: cookies },
         },
       );
 
@@ -397,8 +378,7 @@ describe(
 
     it("does not clear disabledCode when fetch fails", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const feedUrl = "https://example.com/still-disabled-manual-request.xml";
 
       feedRequestOverrides[feedUrl] = {
@@ -418,11 +398,10 @@ describe(
         },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/manual-request`,
         {
           method: "POST",
-          headers: { cookie: cookies },
         },
       );
 
@@ -447,8 +426,7 @@ describe(
 
     it("checks article properties when feed disabled with InvalidFeed and re-enables on success", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const feedUrl = "https://example.com/invalid-feed-manual-request.xml";
 
       getArticlesOverrides[feedUrl] = {
@@ -473,11 +451,10 @@ describe(
         },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/manual-request`,
         {
           method: "POST",
-          headers: { cookie: cookies },
         },
       );
 
@@ -504,8 +481,7 @@ describe(
 
     it("does not re-enable when feed disabled with InvalidFeed and article check fails", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const feedUrl =
         "https://example.com/invalid-feed-fail-manual-request.xml";
 
@@ -531,11 +507,10 @@ describe(
         },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/manual-request`,
         {
           method: "POST",
-          headers: { cookie: cookies },
         },
       );
 

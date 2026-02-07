@@ -4,7 +4,6 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../../helpers/test-context";
-import { createMockAccessToken } from "../../helpers/mock-factories";
 import { generateSnowflake, generateTestId } from "../../helpers/test-id";
 import {
   createTestHttpServer,
@@ -50,29 +49,25 @@ describe(
     });
 
     it("returns 404 for invalid ObjectId", async () => {
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(generateSnowflake());
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         "/api/v1/user-feeds/not-valid-id/daily-limit",
         {
           method: "GET",
-          headers: { cookie: cookies },
         },
       );
       assert.strictEqual(response.status, 404);
     });
 
     it("returns 404 for non-existent valid ObjectId", async () => {
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(generateSnowflake());
       const nonExistentId = generateTestId();
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${nonExistentId}/daily-limit`,
         {
           method: "GET",
-          headers: { cookie: cookies },
         },
       );
       assert.strictEqual(response.status, 404);
@@ -81,8 +76,7 @@ describe(
     it("returns 404 when feed belongs to another user", async () => {
       const ownerDiscordUserId = generateSnowflake();
       const otherDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(otherDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(otherDiscordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Other User Daily Limit Feed",
@@ -90,11 +84,10 @@ describe(
         user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/daily-limit`,
         {
           method: "GET",
-          headers: { cookie: cookies },
         },
       );
       assert.strictEqual(response.status, 404);
@@ -102,8 +95,7 @@ describe(
 
     it("returns 200 with current and max on success", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Daily Limit Feed",
@@ -120,11 +112,10 @@ describe(
         }),
       );
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/daily-limit`,
         {
           method: "GET",
-          headers: { cookie: cookies },
         },
       );
 
@@ -139,8 +130,7 @@ describe(
     it("returns 200 when user is an accepted shared manager", async () => {
       const ownerDiscordUserId = generateSnowflake();
       const sharedManagerDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(sharedManagerDiscordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Shared Daily Limit Feed",
@@ -165,11 +155,10 @@ describe(
         }),
       );
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/daily-limit`,
         {
           method: "GET",
-          headers: { cookie: cookies },
         },
       );
 
@@ -184,8 +173,7 @@ describe(
     it("returns 404 when user has a pending (not accepted) invite", async () => {
       const ownerDiscordUserId = generateSnowflake();
       const pendingDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(pendingDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(pendingDiscordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Pending Invite Daily Limit Feed",
@@ -201,11 +189,10 @@ describe(
         },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/daily-limit`,
         {
           method: "GET",
-          headers: { cookie: cookies },
         },
       );
       assert.strictEqual(response.status, 404);
@@ -214,8 +201,7 @@ describe(
     it("returns 200 when user is an admin accessing another user's feed", async () => {
       const ownerDiscordUserId = generateSnowflake();
       const adminDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(adminDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(adminDiscordUserId);
 
       const adminUser =
         await ctx.container.usersService.getOrCreateUserByDiscordId(
@@ -238,11 +224,10 @@ describe(
         }),
       );
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/daily-limit`,
         {
           method: "GET",
-          headers: { cookie: cookies },
         },
       );
 

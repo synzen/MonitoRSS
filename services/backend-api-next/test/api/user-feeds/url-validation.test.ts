@@ -4,7 +4,6 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../../helpers/test-context";
-import { createMockAccessToken } from "../../helpers/mock-factories";
 import { generateSnowflake, generateTestId } from "../../helpers/test-id";
 import {
   createTestHttpServer,
@@ -45,38 +44,27 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
   });
 
   it("returns 400 when url is missing from body", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
 
-    const response = await ctx.fetch("/api/v1/user-feeds/url-validation", {
+    const response = await user.fetch("/api/v1/user-feeds/url-validation", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({}),
     });
     assert.strictEqual(response.status, 400);
   });
 
   it("returns 400 when url is empty string", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
 
-    const response = await ctx.fetch("/api/v1/user-feeds/url-validation", {
+    const response = await user.fetch("/api/v1/user-feeds/url-validation", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ url: "" }),
     });
     assert.strictEqual(response.status, 400);
   });
 
   it("returns 200 with resolvedToUrl null and feedTitle when URL is valid", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
     const feedUrl = "https://example.com/feed.xml";
 
     feedApiMockServer.registerRoute("POST", "/v1/user-feeds/get-articles", {
@@ -93,12 +81,8 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
       },
     });
 
-    const response = await ctx.fetch("/api/v1/user-feeds/url-validation", {
+    const response = await user.fetch("/api/v1/user-feeds/url-validation", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ url: feedUrl }),
     });
 
@@ -111,8 +95,7 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
   });
 
   it("returns 200 with resolvedToUrl when URL redirects to different URL", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
     const inputUrl = "https://example.com/page.html";
     const resolvedUrl = "https://example.com/discovered-feed.xml";
 
@@ -130,12 +113,8 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
       },
     });
 
-    const response = await ctx.fetch("/api/v1/user-feeds/url-validation", {
+    const response = await user.fetch("/api/v1/user-feeds/url-validation", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ url: inputUrl }),
     });
 
@@ -148,8 +127,7 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
   });
 
   it("returns 400 with FEED_REQUEST_TIMEOUT when feed fetch times out", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
 
     feedApiMockServer.registerRoute("POST", "/v1/user-feeds/get-articles", {
       status: 200,
@@ -163,12 +141,8 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
       },
     });
 
-    const response = await ctx.fetch("/api/v1/user-feeds/url-validation", {
+    const response = await user.fetch("/api/v1/user-feeds/url-validation", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ url: "https://example.com/slow-feed.xml" }),
     });
 
@@ -178,8 +152,7 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
   });
 
   it("returns 400 with ADD_FEED_PARSE_FAILED when feed cannot be parsed", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
 
     feedApiMockServer.registerRoute("POST", "/v1/user-feeds/get-articles", {
       status: 200,
@@ -193,12 +166,8 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
       },
     });
 
-    const response = await ctx.fetch("/api/v1/user-feeds/url-validation", {
+    const response = await user.fetch("/api/v1/user-feeds/url-validation", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ url: "https://example.com/bad-feed.xml" }),
     });
 
@@ -208,8 +177,7 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
   });
 
   it("returns 400 with FEED_INVALID_SSL_CERT when SSL certificate is invalid", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
 
     feedApiMockServer.registerRoute("POST", "/v1/user-feeds/get-articles", {
       status: 200,
@@ -223,12 +191,8 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
       },
     });
 
-    const response = await ctx.fetch("/api/v1/user-feeds/url-validation", {
+    const response = await user.fetch("/api/v1/user-feeds/url-validation", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ url: "https://bad-ssl.example.com/feed.xml" }),
     });
 
@@ -238,8 +202,7 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
   });
 
   it("returns 400 with NO_FEED_IN_HTML_PAGE when HTML page has no feed", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
 
     feedApiMockServer.registerRoute("POST", "/v1/user-feeds/get-articles", {
       status: 200,
@@ -254,12 +217,8 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
       },
     });
 
-    const response = await ctx.fetch("/api/v1/user-feeds/url-validation", {
+    const response = await user.fetch("/api/v1/user-feeds/url-validation", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ url: "https://example.com/page.html" }),
     });
 
@@ -269,8 +228,7 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
   });
 
   it("returns 400 with FEED_FETCH_FAILED when feed request fails", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
 
     feedApiMockServer.registerRoute("POST", "/v1/user-feeds/get-articles", {
       status: 200,
@@ -284,12 +242,8 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
       },
     });
 
-    const response = await ctx.fetch("/api/v1/user-feeds/url-validation", {
+    const response = await user.fetch("/api/v1/user-feeds/url-validation", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ url: "https://unreachable.example.com/feed.xml" }),
     });
 
@@ -299,8 +253,7 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
   });
 
   it("returns 400 with FEED_REQUEST_TOO_MANY_REQUESTS when feed returns 429", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
 
     feedApiMockServer.registerRoute("POST", "/v1/user-feeds/get-articles", {
       status: 200,
@@ -315,12 +268,8 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
       },
     });
 
-    const response = await ctx.fetch("/api/v1/user-feeds/url-validation", {
+    const response = await user.fetch("/api/v1/user-feeds/url-validation", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ url: "https://ratelimited.example.com/feed.xml" }),
     });
 
@@ -330,8 +279,7 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
   });
 
   it("returns 400 with FEED_NOT_FOUND when feed returns 404", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
 
     feedApiMockServer.registerRoute("POST", "/v1/user-feeds/get-articles", {
       status: 200,
@@ -346,12 +294,8 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
       },
     });
 
-    const response = await ctx.fetch("/api/v1/user-feeds/url-validation", {
+    const response = await user.fetch("/api/v1/user-feeds/url-validation", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ url: "https://notfound.example.com/feed.xml" }),
     });
 
@@ -361,8 +305,7 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
   });
 
   it("returns 400 with BANNED_FEED when feed is banned", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
     const feedUrl = "https://example.com/banned-validation-feed.xml";
 
     feedApiMockServer.registerRoute("POST", "/v1/user-feeds/get-articles", {
@@ -385,12 +328,8 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
       guildIds: [],
     });
 
-    const response = await ctx.fetch("/api/v1/user-feeds/url-validation", {
+    const response = await user.fetch("/api/v1/user-feeds/url-validation", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ url: feedUrl }),
     });
 

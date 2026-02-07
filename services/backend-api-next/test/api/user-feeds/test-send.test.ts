@@ -4,7 +4,6 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../../helpers/test-context";
-import { createMockAccessToken } from "../../helpers/mock-factories";
 import { generateSnowflake, generateTestId } from "../../helpers/test-id";
 import {
   createTestHttpServer,
@@ -55,18 +54,13 @@ describe(
     });
 
     it("returns 404 for non-existent feed", async () => {
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(generateSnowflake());
       const nonExistentId = generateTestId();
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${nonExistentId}/test-send`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             article: { id: "article-1" },
             channelId: "123",
@@ -77,18 +71,13 @@ describe(
     });
 
     it("returns 400 when article is missing", async () => {
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(generateSnowflake());
       const feedId = generateTestId();
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feedId}/test-send`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({ channelId: "123" }),
         },
       );
@@ -96,18 +85,13 @@ describe(
     });
 
     it("returns 400 when channelId is missing", async () => {
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(generateSnowflake());
       const feedId = generateTestId();
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feedId}/test-send`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({ article: { id: "article-1" } }),
         },
       );
@@ -116,8 +100,7 @@ describe(
 
     it("returns 200 on successful test send", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const channelId = generateSnowflake();
       const guildId = generateSnowflake();
 
@@ -139,7 +122,7 @@ describe(
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -160,14 +143,10 @@ describe(
         },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/test-send`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             article: { id: "article-1" },
             channelId,
@@ -185,8 +164,7 @@ describe(
 
     it("returns 400 with FEED_MISSING_CHANNEL when channel not found", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const channelId = generateSnowflake();
 
       const feed = await ctx.container.userFeedRepository.create({
@@ -200,14 +178,10 @@ describe(
         body: { message: "Unknown Channel", code: 10003 },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/test-send`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             article: { id: "article-1" },
             channelId,
@@ -222,8 +196,7 @@ describe(
 
     it("returns 400 for invalid timezone", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Test Send Invalid TZ",
@@ -231,14 +204,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/test-send`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             article: { id: "article-1" },
             channelId: "123",
@@ -251,18 +220,13 @@ describe(
 
     it("returns 400 for invalid timezone in test-send with null userFeedFormatOptions", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const feedId = generateTestId();
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feedId}/test-send`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             article: { id: "article-1" },
             channelId: "123",
@@ -275,8 +239,7 @@ describe(
 
     it("returns 403 with FEED_USER_MISSING_MANAGE_GUILD when user lacks permission", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const channelId = generateSnowflake();
       const guildId = generateSnowflake();
 
@@ -298,7 +261,7 @@ describe(
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -312,14 +275,10 @@ describe(
         },
       );
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/test-send`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             article: { id: "article-1" },
             channelId,

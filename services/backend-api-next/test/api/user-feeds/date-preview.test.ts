@@ -4,7 +4,6 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../../helpers/test-context";
-import { createMockAccessToken } from "../../helpers/mock-factories";
 import { generateSnowflake } from "../../helpers/test-id";
 import {
   createTestHttpServer,
@@ -51,17 +50,12 @@ describe(
     });
 
     it("returns 200 with default values", async () => {
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(generateSnowflake());
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         "/api/v1/user-feeds/fake-feed-id/date-preview",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({}),
         },
       );
@@ -76,17 +70,12 @@ describe(
     });
 
     it("returns 200 with custom date format", async () => {
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(generateSnowflake());
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         "/api/v1/user-feeds/fake-feed-id/date-preview",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({ dateFormat: "YYYY-MM-DD" }),
         },
       );
@@ -100,17 +89,12 @@ describe(
     });
 
     it("returns 200 with custom timezone", async () => {
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(generateSnowflake());
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         "/api/v1/user-feeds/fake-feed-id/date-preview",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({ dateTimezone: "America/New_York" }),
         },
       );
@@ -123,17 +107,12 @@ describe(
     });
 
     it("returns 200 with custom locale", async () => {
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(generateSnowflake());
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         "/api/v1/user-feeds/fake-feed-id/date-preview",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({ dateLocale: "fr" }),
         },
       );
@@ -146,17 +125,12 @@ describe(
     });
 
     it("returns 200 with valid false for invalid timezone", async () => {
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(generateSnowflake());
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         "/api/v1/user-feeds/fake-feed-id/date-preview",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({ dateTimezone: "Invalid/Zone" }),
         },
       );

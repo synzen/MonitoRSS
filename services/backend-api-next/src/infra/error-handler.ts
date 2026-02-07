@@ -103,7 +103,7 @@ function createErrorResponse(
   return {
     code,
     message: message ?? API_ERROR_MESSAGES[code],
-    timestamp: Date.now(),
+    timestamp: Date.now() / 1000,
     errors,
     isStandardized: true,
   };

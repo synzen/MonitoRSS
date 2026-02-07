@@ -4,7 +4,6 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../../helpers/test-context";
-import { createMockAccessToken } from "../../helpers/mock-factories";
 import { generateSnowflake, generateTestId } from "../../helpers/test-id";
 import {
   createTestHttpServer,
@@ -52,15 +51,10 @@ describe("PATCH /api/v1/user-feeds", () => {
   });
 
   it("returns 400 when op is missing", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
 
-    const response = await ctx.fetch("/api/v1/user-feeds", {
+    const response = await user.fetch("/api/v1/user-feeds", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         data: { feeds: [{ id: "feed-1" }] },
       }),
@@ -69,15 +63,10 @@ describe("PATCH /api/v1/user-feeds", () => {
   });
 
   it("returns 400 when data is missing", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
 
-    const response = await ctx.fetch("/api/v1/user-feeds", {
+    const response = await user.fetch("/api/v1/user-feeds", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         op: "bulk-delete",
       }),
@@ -86,15 +75,10 @@ describe("PATCH /api/v1/user-feeds", () => {
   });
 
   it("returns 400 when data.feeds is missing", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
 
-    const response = await ctx.fetch("/api/v1/user-feeds", {
+    const response = await user.fetch("/api/v1/user-feeds", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         op: "bulk-delete",
         data: {},
@@ -104,15 +88,10 @@ describe("PATCH /api/v1/user-feeds", () => {
   });
 
   it("returns 400 when op is invalid value", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
 
-    const response = await ctx.fetch("/api/v1/user-feeds", {
+    const response = await user.fetch("/api/v1/user-feeds", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         op: "invalid-op",
         data: { feeds: [{ id: "feed-1" }] },
@@ -122,15 +101,10 @@ describe("PATCH /api/v1/user-feeds", () => {
   });
 
   it("returns 400 when feed id is empty string", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
 
-    const response = await ctx.fetch("/api/v1/user-feeds", {
+    const response = await user.fetch("/api/v1/user-feeds", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         op: "bulk-delete",
         data: { feeds: [{ id: "" }] },
@@ -141,8 +115,7 @@ describe("PATCH /api/v1/user-feeds", () => {
 
   it("bulk-delete returns 200 with deleted results for existing feed", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed to Delete",
@@ -150,12 +123,8 @@ describe("PATCH /api/v1/user-feeds", () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch("/api/v1/user-feeds", {
+    const response = await user.fetch("/api/v1/user-feeds", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         op: "bulk-delete",
         data: { feeds: [{ id: feed.id }] },
@@ -173,17 +142,12 @@ describe("PATCH /api/v1/user-feeds", () => {
   });
 
   it("bulk-delete returns 404 for non-existent feeds", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
 
     const nonExistentId = generateTestId();
 
-    const response = await ctx.fetch("/api/v1/user-feeds", {
+    const response = await user.fetch("/api/v1/user-feeds", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         op: "bulk-delete",
         data: { feeds: [{ id: nonExistentId }] },
@@ -195,8 +159,7 @@ describe("PATCH /api/v1/user-feeds", () => {
 
   it("bulk-disable returns 200 with disabled results", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed to Disable",
@@ -204,12 +167,8 @@ describe("PATCH /api/v1/user-feeds", () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch("/api/v1/user-feeds", {
+    const response = await user.fetch("/api/v1/user-feeds", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         op: "bulk-disable",
         data: { feeds: [{ id: feed.id }] },
@@ -228,8 +187,7 @@ describe("PATCH /api/v1/user-feeds", () => {
 
   it("bulk-enable returns 200 with enabled results", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed to Enable",
@@ -242,12 +200,8 @@ describe("PATCH /api/v1/user-feeds", () => {
       UserFeedDisabledCode.Manual,
     );
 
-    const response = await ctx.fetch("/api/v1/user-feeds", {
+    const response = await user.fetch("/api/v1/user-feeds", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         op: "bulk-enable",
         data: { feeds: [{ id: feed.id }] },
@@ -267,8 +221,7 @@ describe("PATCH /api/v1/user-feeds", () => {
   it("bulk-delete excludes feeds owned by another user from results", async () => {
     const ownerDiscordUserId = generateSnowflake();
     const attackerDiscordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(attackerDiscordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(attackerDiscordUserId);
 
     const ownerFeed = await ctx.container.userFeedRepository.create({
       title: "Owner's Feed",
@@ -276,12 +229,8 @@ describe("PATCH /api/v1/user-feeds", () => {
       user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
     });
 
-    const response = await ctx.fetch("/api/v1/user-feeds", {
+    const response = await user.fetch("/api/v1/user-feeds", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         op: "bulk-delete",
         data: { feeds: [{ id: ownerFeed.id }] },
@@ -303,8 +252,7 @@ describe("PATCH /api/v1/user-feeds", () => {
   it("bulk-disable excludes feeds owned by another user from results", async () => {
     const ownerDiscordUserId = generateSnowflake();
     const attackerDiscordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(attackerDiscordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(attackerDiscordUserId);
 
     const ownerFeed = await ctx.container.userFeedRepository.create({
       title: "Owner's Feed",
@@ -312,12 +260,8 @@ describe("PATCH /api/v1/user-feeds", () => {
       user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
     });
 
-    const response = await ctx.fetch("/api/v1/user-feeds", {
+    const response = await user.fetch("/api/v1/user-feeds", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         op: "bulk-disable",
         data: { feeds: [{ id: ownerFeed.id }] },
@@ -343,8 +287,7 @@ describe("PATCH /api/v1/user-feeds", () => {
   it("bulk-enable excludes feeds owned by another user from results", async () => {
     const ownerDiscordUserId = generateSnowflake();
     const attackerDiscordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(attackerDiscordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(attackerDiscordUserId);
 
     const ownerFeed = await ctx.container.userFeedRepository.create({
       title: "Owner's Feed",
@@ -357,12 +300,8 @@ describe("PATCH /api/v1/user-feeds", () => {
       UserFeedDisabledCode.Manual,
     );
 
-    const response = await ctx.fetch("/api/v1/user-feeds", {
+    const response = await user.fetch("/api/v1/user-feeds", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         op: "bulk-enable",
         data: { feeds: [{ id: ownerFeed.id }] },
@@ -388,8 +327,7 @@ describe("PATCH /api/v1/user-feeds", () => {
   it("shared manager can bulk-delete feeds they have accepted invites to", async () => {
     const ownerDiscordUserId = generateSnowflake();
     const sharedManagerDiscordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(sharedManagerDiscordUserId);
 
     const sharedFeed = await ctx.container.userFeedRepository.create({
       title: "Shared Feed",
@@ -405,12 +343,8 @@ describe("PATCH /api/v1/user-feeds", () => {
       },
     });
 
-    const response = await ctx.fetch("/api/v1/user-feeds", {
+    const response = await user.fetch("/api/v1/user-feeds", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         op: "bulk-delete",
         data: { feeds: [{ id: sharedFeed.id }] },
@@ -428,8 +362,7 @@ describe("PATCH /api/v1/user-feeds", () => {
   it("user with pending invite cannot bulk-delete feeds", async () => {
     const ownerDiscordUserId = generateSnowflake();
     const pendingInviteeDiscordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(pendingInviteeDiscordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(pendingInviteeDiscordUserId);
 
     const sharedFeed = await ctx.container.userFeedRepository.create({
       title: "Shared Feed",
@@ -445,12 +378,8 @@ describe("PATCH /api/v1/user-feeds", () => {
       },
     });
 
-    const response = await ctx.fetch("/api/v1/user-feeds", {
+    const response = await user.fetch("/api/v1/user-feeds", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         op: "bulk-delete",
         data: { feeds: [{ id: sharedFeed.id }] },
@@ -470,18 +399,12 @@ describe("PATCH /api/v1/user-feeds", () => {
   });
 
   it("returns 404 for invalid ObjectIds", async () => {
-    const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
 
     const invalidId = "not-a-valid-objectid";
 
-    const response = await ctx.fetch("/api/v1/user-feeds", {
+    const response = await user.fetch("/api/v1/user-feeds", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         op: "bulk-delete",
         data: { feeds: [{ id: invalidId }] },
@@ -494,8 +417,7 @@ describe("PATCH /api/v1/user-feeds", () => {
   it("mixed authorization: returns results only for authorized feeds", async () => {
     const ownerDiscordUserId = generateSnowflake();
     const otherOwnerDiscordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(ownerDiscordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(ownerDiscordUserId);
 
     const ownedFeed = await ctx.container.userFeedRepository.create({
       title: "My Own Feed",
@@ -523,12 +445,8 @@ describe("PATCH /api/v1/user-feeds", () => {
       user: { id: generateTestId(), discordUserId: otherOwnerDiscordUserId },
     });
 
-    const response = await ctx.fetch("/api/v1/user-feeds", {
+    const response = await user.fetch("/api/v1/user-feeds", {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({
         op: "bulk-delete",
         data: {

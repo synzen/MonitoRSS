@@ -4,7 +4,6 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../../helpers/test-context";
-import { createMockAccessToken } from "../../helpers/mock-factories";
 import { generateSnowflake, generateTestId } from "../../helpers/test-id";
 import {
   createTestHttpServer,
@@ -114,18 +113,13 @@ describe(
     });
 
     it("returns 404 for non-existent feed", async () => {
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(generateSnowflake());
       const feedId = generateTestId();
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feedId}/get-articles`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             formatter: {
               options: {
@@ -143,8 +137,7 @@ describe(
     it("returns 404 when feed belongs to another user", async () => {
       const ownerDiscordId = generateSnowflake();
       const otherDiscordId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(otherDiscordId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(otherDiscordId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Owner Feed",
@@ -152,14 +145,10 @@ describe(
         user: { id: generateTestId(), discordUserId: ownerDiscordId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-articles`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             formatter: {
               options: {
@@ -176,8 +165,7 @@ describe(
 
     it("returns 400 when formatter is missing", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Test Feed",
@@ -185,14 +173,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-articles`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({}),
         },
       );
@@ -201,8 +185,7 @@ describe(
 
     it("returns 200 with valid request", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Test Feed",
@@ -210,14 +193,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-articles`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             formatter: {
               options: {
@@ -248,8 +227,7 @@ describe(
 
     it("returns 200 with filters and pagination", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Test Feed",
@@ -257,14 +235,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-articles`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             limit: 5,
             skip: 2,
@@ -298,8 +272,7 @@ describe(
 
     it("merges feed formatOptions into upstream request", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const feedUrl = `https://example.com/feed-get-articles-format-${generateTestId()}.xml`;
 
       const feed = await ctx.container.userFeedRepository.create({
@@ -313,14 +286,10 @@ describe(
         },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-articles`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             formatter: {
               options: {
@@ -361,8 +330,7 @@ describe(
     it("returns 200 when user is an accepted shared manager", async () => {
       const ownerDiscordUserId = generateSnowflake();
       const sharedManagerDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(sharedManagerDiscordUserId);
       const feedUrl = `https://example.com/shared-get-articles-${generateTestId()}.xml`;
 
       const feed = await ctx.container.userFeedRepository.create({
@@ -379,14 +347,10 @@ describe(
         },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-articles`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             formatter: {
               options: {
@@ -404,8 +368,7 @@ describe(
     it("returns 200 when user is admin accessing another user's feed", async () => {
       const adminDiscordUserId = generateSnowflake();
       const ownerDiscordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(adminDiscordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(adminDiscordUserId);
       const feedUrl = `https://example.com/admin-get-articles-${generateTestId()}.xml`;
 
       const adminUser =
@@ -420,14 +383,10 @@ describe(
         user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-articles`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             formatter: {
               options: {
@@ -447,8 +406,7 @@ describe(
 
     it("passes custom placeholders to upstream request", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const feedUrl = `https://example.com/feed-get-articles-placeholders-${generateTestId()}.xml`;
 
       const feed = await ctx.container.userFeedRepository.create({
@@ -457,14 +415,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-articles`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             formatter: {
               options: {
@@ -512,8 +466,7 @@ describe(
 
     it("passes external properties to upstream request", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const feedUrl = `https://example.com/feed-get-articles-extprops-${generateTestId()}.xml`;
 
       const feed = await ctx.container.userFeedRepository.create({
@@ -522,14 +475,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-articles`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             formatter: {
               options: {
@@ -572,8 +521,7 @@ describe(
 
     it("passes includeHtmlInErrors to upstream request", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const feedUrl = `https://example.com/feed-get-articles-html-errors-${generateTestId()}.xml`;
 
       const feed = await ctx.container.userFeedRepository.create({
@@ -582,14 +530,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-articles`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             includeHtmlInErrors: true,
             formatter: {
@@ -614,8 +558,7 @@ describe(
 
     it("returns 422 for invalid custom placeholder regex from upstream", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Invalid Regex Feed",
@@ -623,14 +566,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-articles`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             formatter: {
               options: {
@@ -647,8 +586,7 @@ describe(
 
     it("returns 422 for invalid filters regex from upstream", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
 
       const feed = await ctx.container.userFeedRepository.create({
         title: "Invalid Filters Feed",
@@ -656,14 +594,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-articles`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             filters: {
               returnType:
@@ -685,8 +619,7 @@ describe(
 
     it("falls back to user preferences for date options when feed has no formatOptions", async () => {
       const discordUserId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(discordUserId);
-      const cookies = await ctx.setSession(mockAccessToken);
+      const user = await ctx.asUser(discordUserId);
       const feedUrl = `https://example.com/feed-get-articles-user-prefs-${generateTestId()}.xml`;
 
       await ctx.container.usersService.getOrCreateUserByDiscordId(
@@ -707,14 +640,10 @@ describe(
         user: { id: generateTestId(), discordUserId },
       });
 
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/user-feeds/${feed.id}/get-articles`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            cookie: cookies,
-          },
           body: JSON.stringify({
             formatter: {
               options: {

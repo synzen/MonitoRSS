@@ -4,7 +4,6 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../helpers/test-context";
-import { createMockAccessToken } from "../helpers/mock-factories";
 import { generateSnowflake } from "../helpers/test-id";
 
 const MANAGE_CHANNEL_PERMISSION = "16";
@@ -28,25 +27,21 @@ describe("GET /api/v1/discord-servers/:serverId", { concurrency: true }, () => {
 
   it("returns 404 when bot is not in the server", async () => {
     const serverId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
+    const user = await ctx.asUser(generateSnowflake());
 
     ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
       status: 404,
       body: { message: "Unknown Guild" },
     });
 
-    const cookies = await ctx.setSession(mockAccessToken);
-
-    const response = await ctx.fetch(`/api/v1/discord-servers/${serverId}`, {
-      headers: { cookie: cookies },
-    });
+    const response = await user.fetch(`/api/v1/discord-servers/${serverId}`);
 
     assert.strictEqual(response.status, 404);
   });
 
   it("returns 403 when user lacks permission to manage server", async () => {
     const serverId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
+    const user = await ctx.asUser(generateSnowflake());
 
     ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
       status: 200,
@@ -56,7 +51,7 @@ describe("GET /api/v1/discord-servers/:serverId", { concurrency: true }, () => {
     ctx.discordMockServer.registerRouteForToken(
       "GET",
       "/users/@me/guilds",
-      mockAccessToken.access_token,
+      user.accessToken.access_token,
       {
         status: 200,
         body: [
@@ -70,18 +65,14 @@ describe("GET /api/v1/discord-servers/:serverId", { concurrency: true }, () => {
       },
     );
 
-    const cookies = await ctx.setSession(mockAccessToken);
-
-    const response = await ctx.fetch(`/api/v1/discord-servers/${serverId}`, {
-      headers: { cookie: cookies },
-    });
+    const response = await user.fetch(`/api/v1/discord-servers/${serverId}`);
 
     assert.strictEqual(response.status, 403);
   });
 
   it("returns 200 with profile and includesBot when all checks pass", async () => {
     const serverId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
+    const user = await ctx.asUser(generateSnowflake());
 
     ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
       status: 200,
@@ -91,7 +82,7 @@ describe("GET /api/v1/discord-servers/:serverId", { concurrency: true }, () => {
     ctx.discordMockServer.registerRouteForToken(
       "GET",
       "/users/@me/guilds",
-      mockAccessToken.access_token,
+      user.accessToken.access_token,
       {
         status: 200,
         body: [
@@ -105,11 +96,7 @@ describe("GET /api/v1/discord-servers/:serverId", { concurrency: true }, () => {
       },
     );
 
-    const cookies = await ctx.setSession(mockAccessToken);
-
-    const response = await ctx.fetch(`/api/v1/discord-servers/${serverId}`, {
-      headers: { cookie: cookies },
-    });
+    const response = await user.fetch(`/api/v1/discord-servers/${serverId}`);
 
     assert.strictEqual(response.status, 200);
     const body = (await response.json()) as {
@@ -145,12 +132,12 @@ describe(
 
     it("returns 403 when user lacks permission", async () => {
       const serverId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -164,13 +151,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/status`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 403);
@@ -178,7 +160,7 @@ describe(
 
     it("returns 200 with authorized=true when bot is in server", async () => {
       const serverId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 200,
@@ -188,7 +170,7 @@ describe(
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -202,13 +184,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/status`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 200);
@@ -220,7 +197,7 @@ describe(
 
     it("returns 200 with authorized=false when bot is not in server", async () => {
       const serverId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 404,
@@ -230,7 +207,7 @@ describe(
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -244,13 +221,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/status`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 200);
@@ -276,20 +248,15 @@ describe(
 
     it("returns 404 when bot is not in the server", async () => {
       const serverId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 404,
         body: { message: "Unknown Guild" },
       });
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/active-threads`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 404);
@@ -297,7 +264,7 @@ describe(
 
     it("returns 403 when user lacks permission", async () => {
       const serverId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 200,
@@ -307,7 +274,7 @@ describe(
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -321,13 +288,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/active-threads`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 403);
@@ -335,7 +297,7 @@ describe(
 
     it("returns 200 with threads list", async () => {
       const serverId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 200,
@@ -345,7 +307,7 @@ describe(
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -386,13 +348,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/active-threads`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 200);
@@ -416,7 +373,7 @@ describe(
     it("filters threads by parentChannelId", async () => {
       const serverId = generateSnowflake();
       const parentChannelId = "channel-1";
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 200,
@@ -426,7 +383,7 @@ describe(
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -467,13 +424,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/active-threads?parentChannelId=${parentChannelId}`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 200);
@@ -507,12 +459,12 @@ describe(
 
     it("returns 403 when user lacks permission", async () => {
       const serverId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -526,13 +478,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/channels`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 403);
@@ -540,12 +487,12 @@ describe(
 
     it("returns 200 with channels list", async () => {
       const serverId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -592,13 +539,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/channels`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 200);
@@ -624,12 +566,12 @@ describe(
 
     it("filters channels by types query parameter", async () => {
       const serverId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -674,13 +616,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/channels?types=forum`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 200);
@@ -701,12 +638,12 @@ describe(
 
     it("returns 404 when server not found", async () => {
       const serverId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -729,13 +666,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/channels`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 404);
@@ -757,20 +689,15 @@ describe(
 
     it("returns 404 when bot is not in the server", async () => {
       const serverId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 404,
         body: { message: "Unknown Guild" },
       });
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/roles`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 404);
@@ -778,7 +705,7 @@ describe(
 
     it("returns 403 when user lacks permission", async () => {
       const serverId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 200,
@@ -788,7 +715,7 @@ describe(
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -802,13 +729,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/roles`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 403);
@@ -816,7 +738,7 @@ describe(
 
     it("returns 200 with roles list and hex colors", async () => {
       const serverId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 200,
@@ -826,7 +748,7 @@ describe(
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -864,13 +786,8 @@ describe(
         ],
       });
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/roles`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 200);
@@ -913,20 +830,15 @@ describe(
 
     it("returns 404 when bot is not in the server", async () => {
       const serverId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 404,
         body: { message: "Unknown Guild" },
       });
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/members?search=test&limit=10`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 404);
@@ -934,7 +846,7 @@ describe(
 
     it("returns 403 when user lacks permission", async () => {
       const serverId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 200,
@@ -944,7 +856,7 @@ describe(
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -958,13 +870,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/members?search=test&limit=10`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 403);
@@ -972,7 +879,7 @@ describe(
 
     it("returns 400 when missing required search query param", async () => {
       const serverId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 200,
@@ -982,7 +889,7 @@ describe(
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -996,13 +903,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/members?limit=10`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 400);
@@ -1010,7 +912,7 @@ describe(
 
     it("returns 400 when missing required limit query param", async () => {
       const serverId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 200,
@@ -1020,7 +922,7 @@ describe(
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -1034,13 +936,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/members?search=test`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 400);
@@ -1049,7 +946,7 @@ describe(
     it("returns 200 with member results", async () => {
       const serverId = generateSnowflake();
       const memberId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 200,
@@ -1059,7 +956,7 @@ describe(
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -1092,13 +989,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/members?${new URLSearchParams({ search: "test user", limit: "10" })}`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 200);
@@ -1125,7 +1017,7 @@ describe(
 
     it("returns 200 with empty results when no members match", async () => {
       const serverId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 200,
@@ -1135,7 +1027,7 @@ describe(
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -1158,13 +1050,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/members?search=nonexistent&limit=10`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 200);
@@ -1194,20 +1081,15 @@ describe(
     it("returns 404 when bot is not in the server", async () => {
       const serverId = generateSnowflake();
       const memberId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 404,
         body: { message: "Unknown Guild" },
       });
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/members/${memberId}`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 404);
@@ -1216,7 +1098,7 @@ describe(
     it("returns 403 when user lacks permission", async () => {
       const serverId = generateSnowflake();
       const memberId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 200,
@@ -1226,7 +1108,7 @@ describe(
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -1240,13 +1122,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/members/${memberId}`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 403);
@@ -1255,7 +1132,7 @@ describe(
     it("returns 200 with null result for invalid memberId", async () => {
       const serverId = generateSnowflake();
       const memberId = "not-a-snowflake";
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 200,
@@ -1265,7 +1142,7 @@ describe(
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -1279,13 +1156,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/members/${memberId}`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 200);
@@ -1296,7 +1168,7 @@ describe(
     it("returns 200 with null result when member not found", async () => {
       const serverId = generateSnowflake();
       const memberId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 200,
@@ -1306,7 +1178,7 @@ describe(
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -1329,13 +1201,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/members/${memberId}`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 200);
@@ -1346,7 +1213,7 @@ describe(
     it("returns 200 with null result when member forbidden", async () => {
       const serverId = generateSnowflake();
       const memberId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 200,
@@ -1356,7 +1223,7 @@ describe(
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -1379,13 +1246,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/members/${memberId}`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 200);
@@ -1396,7 +1258,7 @@ describe(
     it("returns 200 with formatted member data", async () => {
       const serverId = generateSnowflake();
       const memberId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 200,
@@ -1406,7 +1268,7 @@ describe(
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -1437,13 +1299,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/members/${memberId}`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 200);
@@ -1468,7 +1325,7 @@ describe(
     it("returns 200 with null avatarUrl when member has no avatar", async () => {
       const serverId = generateSnowflake();
       const memberId = generateSnowflake();
-      const mockAccessToken = createMockAccessToken(generateSnowflake());
+      const user = await ctx.asUser(generateSnowflake());
 
       ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
         status: 200,
@@ -1478,7 +1335,7 @@ describe(
       ctx.discordMockServer.registerRouteForToken(
         "GET",
         "/users/@me/guilds",
-        mockAccessToken.access_token,
+        user.accessToken.access_token,
         {
           status: 200,
           body: [
@@ -1508,13 +1365,8 @@ describe(
         },
       );
 
-      const cookies = await ctx.setSession(mockAccessToken);
-
-      const response = await ctx.fetch(
+      const response = await user.fetch(
         `/api/v1/discord-servers/${serverId}/members/${memberId}`,
-        {
-          headers: { cookie: cookies },
-        },
       );
 
       assert.strictEqual(response.status, 200);

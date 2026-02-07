@@ -4,7 +4,6 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../../helpers/test-context";
-import { createMockAccessToken } from "../../helpers/mock-factories";
 import { generateSnowflake, generateTestId } from "../../helpers/test-id";
 import {
   createTestHttpServer,
@@ -45,24 +44,20 @@ describe("DELETE /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
   });
 
   it("returns 404 for invalid ObjectId", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
 
-    const response = await ctx.fetch("/api/v1/user-feeds/not-valid-id", {
+    const response = await user.fetch("/api/v1/user-feeds/not-valid-id", {
       method: "DELETE",
-      headers: { cookie: cookies },
     });
     assert.strictEqual(response.status, 404);
   });
 
   it("returns 404 for non-existent valid ObjectId", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
     const nonExistentId = generateTestId();
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${nonExistentId}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${nonExistentId}`, {
       method: "DELETE",
-      headers: { cookie: cookies },
     });
     assert.strictEqual(response.status, 404);
   });
@@ -70,8 +65,7 @@ describe("DELETE /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
   it("returns 404 when feed belongs to another user (non-manager)", async () => {
     const ownerDiscordUserId = generateSnowflake();
     const otherDiscordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(otherDiscordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(otherDiscordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Owner's Feed",
@@ -79,9 +73,8 @@ describe("DELETE /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "DELETE",
-      headers: { cookie: cookies },
     });
     assert.strictEqual(response.status, 404);
   });
@@ -89,8 +82,7 @@ describe("DELETE /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
   it("returns 403 when user is an accepted shared manager (not creator)", async () => {
     const ownerDiscordUserId = generateSnowflake();
     const sharedManagerDiscordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(sharedManagerDiscordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Shared Feed",
@@ -106,9 +98,8 @@ describe("DELETE /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "DELETE",
-      headers: { cookie: cookies },
     });
     assert.strictEqual(response.status, 403);
     const body = (await response.json()) as { code: string };
@@ -117,8 +108,7 @@ describe("DELETE /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
 
   it("returns 204 when user is the creator", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed to Delete",
@@ -126,17 +116,15 @@ describe("DELETE /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "DELETE",
-      headers: { cookie: cookies },
     });
     assert.strictEqual(response.status, 204);
   });
 
   it("actually deletes the feed from the database", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed to Verify Deletion",
@@ -144,9 +132,8 @@ describe("DELETE /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    await ctx.fetch(`/api/v1/user-feeds/${feed.id}`, {
+    await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
       method: "DELETE",
-      headers: { cookie: cookies },
     });
 
     const deleted = await ctx.container.userFeedRepository.findById(feed.id);

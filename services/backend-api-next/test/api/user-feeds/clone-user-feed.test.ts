@@ -4,16 +4,12 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../../helpers/test-context";
-import { createMockAccessToken } from "../../helpers/mock-factories";
 import { generateSnowflake, generateTestId } from "../../helpers/test-id";
 import {
   createTestHttpServer,
   type TestHttpServer,
 } from "../../helpers/test-http-server";
-import {
-  UserFeedDisabledCode,
-  UserFeedManagerStatus,
-} from "../../../src/repositories/shared/enums";
+import { UserFeedManagerStatus } from "../../../src/repositories/shared/enums";
 
 let ctx: AppTestContext;
 let feedApiMockServer: TestHttpServer;
@@ -81,18 +77,13 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
   });
 
   it("returns 404 for non-existent feed ID", async () => {
-    const mockAccessToken = createMockAccessToken(generateSnowflake());
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(generateSnowflake());
     const nonExistentId = generateTestId();
 
-    const response = await ctx.fetch(
+    const response = await user.fetch(
       `/api/v1/user-feeds/${nonExistentId}/clone`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          cookie: cookies,
-        },
         body: JSON.stringify({}),
       },
     );
@@ -101,8 +92,7 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
 
   it("returns 201 and creates a cloned feed with same URL", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Original Feed",
@@ -110,12 +100,8 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({}),
     });
 
@@ -136,8 +122,7 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
 
   it("returns 201 and uses custom title when provided", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Original Feed Title",
@@ -145,12 +130,8 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ title: "Custom Cloned Title" }),
     });
 
@@ -169,8 +150,7 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
 
   it("returns 400 with FEED_LIMIT_REACHED when user is at feed limit", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const maxFeeds = ctx.container.config.BACKEND_API_DEFAULT_MAX_USER_FEEDS;
     for (let i = 0; i < maxFeeds; i++) {
@@ -187,14 +167,10 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(
+    const response = await user.fetch(
       `/api/v1/user-feeds/${feedToClone.id}/clone`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          cookie: cookies,
-        },
         body: JSON.stringify({}),
       },
     );
@@ -207,8 +183,7 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
   it("returns 201 when cloned by accepted shared manager", async () => {
     const ownerDiscordUserId = generateSnowflake();
     const sharedManagerDiscordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(sharedManagerDiscordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(sharedManagerDiscordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Shared Feed to Clone",
@@ -224,12 +199,8 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
       },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({}),
     });
 
@@ -241,8 +212,7 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
 
   it("clones feed with discord channel connections", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const connectionName = "Clone Connection";
     const feed = await ctx.container.userFeedRepository.create({
@@ -262,12 +232,8 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
       },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({}),
     });
 
@@ -292,8 +258,7 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
   it("returns 404 when cloning feed owned by another user", async () => {
     const ownerDiscordUserId = generateSnowflake();
     const otherDiscordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(otherDiscordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(otherDiscordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Someone Else's Feed",
@@ -301,12 +266,8 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({}),
     });
 
@@ -315,8 +276,7 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
 
   it("strips extraneous body fields and still succeeds", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
 
     const feed = await ctx.container.userFeedRepository.create({
       title: "Feed for Extra Fields",
@@ -324,12 +284,8 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ title: "Clone", unknownField: "bad" }),
     });
 
@@ -340,8 +296,7 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
 
   it("returns 201 and uses new URL when url is provided", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
     const newUrl = "https://example.com/clone-new-url.xml";
 
     const feed = await ctx.container.userFeedRepository.create({
@@ -350,12 +305,8 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ url: newUrl }),
     });
 
@@ -372,8 +323,7 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
 
   it("returns 400 FEED_REQUEST_TIMEOUT when cloning with invalid url", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
     const newUrl = "https://example.com/clone-url-timeout.xml";
 
     const feed = await ctx.container.userFeedRepository.create({
@@ -382,12 +332,8 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ url: newUrl }),
     });
     assert.strictEqual(response.status, 400);
@@ -397,8 +343,7 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
 
   it("returns 400 ADD_FEED_PARSE_FAILED when cloning with unparseable url", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
     const newUrl = "https://example.com/clone-url-parse.xml";
 
     const feed = await ctx.container.userFeedRepository.create({
@@ -407,12 +352,8 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ url: newUrl }),
     });
     assert.strictEqual(response.status, 400);
@@ -422,8 +363,7 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
 
   it("returns 400 FEED_FETCH_FAILED when cloning with unreachable url", async () => {
     const discordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(discordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(discordUserId);
     const newUrl = "https://example.com/clone-url-fetch.xml";
 
     const feed = await ctx.container.userFeedRepository.create({
@@ -432,12 +372,8 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({ url: newUrl }),
     });
     assert.strictEqual(response.status, 400);
@@ -448,8 +384,7 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
   it("returns 201 when admin clones another user's feed", async () => {
     const ownerDiscordUserId = generateSnowflake();
     const adminDiscordUserId = generateSnowflake();
-    const mockAccessToken = createMockAccessToken(adminDiscordUserId);
-    const cookies = await ctx.setSession(mockAccessToken);
+    const user = await ctx.asUser(adminDiscordUserId);
 
     const adminUser =
       await ctx.container.usersService.getOrCreateUserByDiscordId(
@@ -463,12 +398,8 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
       user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
     });
 
-    const response = await ctx.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        cookie: cookies,
-      },
       body: JSON.stringify({}),
     });
 

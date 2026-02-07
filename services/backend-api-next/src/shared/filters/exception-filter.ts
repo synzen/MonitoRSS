@@ -25,7 +25,12 @@ export function withExceptionFilter(
         const match = errorCodes[err.constructor.name];
 
         if (match) {
-          throw new HttpError(match.status, match.code);
+          throw new HttpError(
+            match.status,
+            match.code,
+            undefined,
+            err.subErrors.length > 0 ? err.subErrors : undefined,
+          );
         }
       }
 

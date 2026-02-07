@@ -55,6 +55,7 @@ import {
   type UpdateUserFeedBody,
   type SendTestArticleBody,
 } from "./user-feeds.schemas";
+import { feedConnectionsRoutes } from "../feed-connections/feed-connections.routes";
 import { withExceptionFilter } from "../../shared/filters/exception-filter";
 import {
   CLONE_USER_FEED_EXCEPTION_ERROR_CODES,
@@ -68,6 +69,10 @@ import {
 
 export async function userFeedsRoutes(app: FastifyInstance): Promise<void> {
   app.addHook("onRequest", requireAuthHook);
+
+  await app.register(feedConnectionsRoutes, {
+    prefix: "/:feedId/connections",
+  });
 
   app.post<{ Body: DeduplicateFeedUrlsBody }>("/deduplicate-feed-urls", {
     schema: { body: DeduplicateFeedUrlsBodySchema },
