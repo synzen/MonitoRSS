@@ -180,10 +180,10 @@ export type RefreshRateEnforcementTarget =
     };
 
 export enum UserFeedComputedStatus {
-  Ok = "ok",
-  RequiresAttention = "requires-attention",
-  ManuallyDisabled = "manually-disabled",
-  Retrying = "retrying",
+  Ok = "OK",
+  RequiresAttention = "REQUIRES_ATTENTION",
+  ManuallyDisabled = "MANUALLY_DISABLED",
+  Retrying = "RETRYING",
 }
 
 export interface UserFeedListingFilters {

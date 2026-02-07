@@ -1,6 +1,9 @@
 import { Type, type Static } from "@sinclair/typebox";
 import { GetFeedArticlesFilterReturnType } from "../../services/feed-handler/types";
-import { UserFeedCopyableSetting } from "../../services/user-feeds/types";
+import {
+  GetUserFeedsInputSortKey,
+  UserFeedCopyableSetting,
+} from "../../services/user-feeds/types";
 import { UserFeedTargetFeedSelectionType } from "../../services/feed-connections-discord-channels/types";
 
 export const CreateUserFeedBodySchema = Type.Object({
@@ -622,3 +625,15 @@ export const CopySettingsBodySchema = Type.Object(
   { additionalProperties: false },
 );
 export type CopySettingsBody = Static<typeof CopySettingsBodySchema>;
+
+export const GetUserFeedsQuerySchema = Type.Object({
+  limit: Type.Integer({ minimum: 1 }),
+  offset: Type.Integer({ minimum: 0 }),
+  search: Type.Optional(Type.String()),
+  sort: Type.Optional(
+    Type.String({
+      enum: Object.values(GetUserFeedsInputSortKey),
+    }),
+  ),
+});
+export type GetUserFeedsQuery = Static<typeof GetUserFeedsQuerySchema>;

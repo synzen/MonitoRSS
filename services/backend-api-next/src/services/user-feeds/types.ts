@@ -99,10 +99,10 @@ export enum GetUserFeedsInputSortKey {
 }
 
 export enum UserFeedComputedStatus {
-  Ok = "ok",
-  RequiresAttention = "requires-attention",
-  ManuallyDisabled = "manually-disabled",
-  Retrying = "retrying",
+  Ok = "OK",
+  RequiresAttention = "REQUIRES_ATTENTION",
+  ManuallyDisabled = "MANUALLY_DISABLED",
+  Retrying = "RETRYING",
 }
 
 export interface GetUserFeedsInputFilters {
@@ -110,7 +110,6 @@ export interface GetUserFeedsInputFilters {
   connectionDisabledCodes?: (string | null)[];
   computedStatuses?: UserFeedComputedStatus[];
   ownedByUser?: boolean;
-  userTagIds?: string[];
 }
 
 export interface GetUserFeedsInput {

@@ -13,6 +13,7 @@ import {
   getDeliveryLogsHandler,
   getFeedRequestsHandler,
   getUserFeedHandler,
+  getUserFeedsHandler,
   manualRequestHandler,
   validateFeedUrlHandler,
   updateUserFeedsHandler,
@@ -32,6 +33,7 @@ import {
   GetDeliveryLogsQuerySchema,
   GetFeedRequestsQuerySchema,
   GetUserFeedParamsSchema,
+  GetUserFeedsQuerySchema,
   ValidateUrlBodySchema,
   UpdateUserFeedsBodySchema,
   UpdateUserFeedBodySchema,
@@ -47,6 +49,7 @@ import {
   type GetDeliveryLogsQuery,
   type GetFeedRequestsQuery,
   type GetUserFeedParams,
+  type GetUserFeedsQuery,
   type ValidateUrlBody,
   type UpdateUserFeedsBody,
   type UpdateUserFeedBody,
@@ -238,5 +241,10 @@ export async function userFeedsRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Params: GetUserFeedParams }>("/:feedId", {
     schema: { params: GetUserFeedParamsSchema },
     handler: getUserFeedHandler,
+  });
+
+  app.get<{ Querystring: GetUserFeedsQuery }>("/", {
+    schema: { querystring: GetUserFeedsQuerySchema },
+    handler: getUserFeedsHandler,
   });
 }

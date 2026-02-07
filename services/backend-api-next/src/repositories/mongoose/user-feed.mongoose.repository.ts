@@ -47,7 +47,7 @@ import type {
 } from "../interfaces/feed-connection.types";
 import {
   FeedConnectionDisabledCode,
-  FeedConnectionType,
+  FeedConnectionTypeEntityKey,
   UserFeedDisabledCode,
   UserFeedHealthStatus,
   UserFeedManagerInviteType,
@@ -541,7 +541,7 @@ export class UserFeedMongooseRepository
     const badConnectionCodes = Object.values(FeedConnectionDisabledCode).filter(
       (c) => c !== FeedConnectionDisabledCode.Manual,
     );
-    const feedConnectionTypeKeys = Object.values(FeedConnectionType);
+    const feedConnectionTypeKeys = Object.values(FeedConnectionTypeEntityKey);
 
     const pipeline: PipelineStage[] = [
       { $match: this.getOwnershipFilter(discordUserId) },
@@ -588,7 +588,7 @@ export class UserFeedMongooseRepository
 
     const $match: Record<string, unknown> = {};
 
-    if (filters?.ownedByUser !== undefined) {
+    if (filters?.ownedByUser) {
       $match.ownedByUser = filters.ownedByUser;
     }
 
@@ -616,7 +616,7 @@ export class UserFeedMongooseRepository
       );
 
       const $or: Record<string, unknown>[] = Object.values(
-        FeedConnectionType,
+        FeedConnectionTypeEntityKey,
       ).map((key) => ({
         [`connections.${key}.disabledCode`]: { $in: codesToSearchFor },
       }));

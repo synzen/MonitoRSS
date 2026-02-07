@@ -39,6 +39,10 @@ export enum FeedConnectionType {
   DiscordWebhook = "DISCORD_WEBHOOK",
 }
 
+export enum FeedConnectionTypeEntityKey {
+  DiscordChannels = "discordChannels",
+}
+
 export enum FeedConnectionDisabledCode {
   Manual = "MANUAL",
   BadFormat = "BAD_FORMAT",

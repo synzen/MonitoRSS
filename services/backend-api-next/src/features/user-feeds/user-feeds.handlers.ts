@@ -1,4 +1,5 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
+import qs from "qs";
 import {
   BadRequestError,
   ForbiddenError,
@@ -22,6 +23,7 @@ import type {
   GetDeliveryLogsQuery,
   GetFeedRequestsQuery,
   GetUserFeedParams,
+  GetUserFeedsQuery,
   ValidateUrlBody,
   UpdateUserFeedsBody,
   UpdateUserFeedBody,
@@ -29,6 +31,10 @@ import type {
 } from "./user-feeds.schemas";
 import { UpdateUserFeedsOp } from "./user-feeds.schemas";
 import { UserFeedTargetFeedSelectionType } from "../../services/feed-connections-discord-channels/types";
+import type {
+  GetUserFeedsInputFilters,
+  GetUserFeedsInputSortKey,
+} from "../../services/user-feeds/types";
 
 export async function deduplicateFeedUrlsHandler(
   request: FastifyRequest<{ Body: DeduplicateFeedUrlsBody }>,
@@ -868,6 +874,87 @@ export async function manualRequestHandler(
 
     throw err;
   }
+}
+
+function parseFilters(raw: unknown): GetUserFeedsInputFilters | undefined {
+  if (!raw || typeof raw !== "object") {
+    return undefined;
+  }
+
+  const filters: GetUserFeedsInputFilters = {};
+  const obj = raw as Record<string, unknown>;
+
+  if (typeof obj.disabledCodes === "string") {
+    filters.disabledCodes = obj.disabledCodes.split(",").map((v) => {
+      const trimmed = v.trim();
+      return trimmed === "" ? null : (trimmed as never);
+    });
+  }
+
+  if (typeof obj.connectionDisabledCodes === "string") {
+    filters.connectionDisabledCodes = obj.connectionDisabledCodes
+      .split(",")
+      .map((v) => {
+        const trimmed = v.trim();
+        return trimmed === "" ? null : trimmed;
+      });
+  }
+
+  if (typeof obj.computedStatuses === "string") {
+    filters.computedStatuses = obj.computedStatuses
+      .split(",")
+      .map((v) => v.trim()) as never;
+  }
+
+  if (typeof obj.ownedByUser === "string") {
+    filters.ownedByUser = obj.ownedByUser === "true";
+  }
+
+  return Object.keys(filters).length > 0 ? filters : undefined;
+}
+
+export async function getUserFeedsHandler(
+  request: FastifyRequest<{ Querystring: GetUserFeedsQuery }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { userFeedsService, usersService } = request.container;
+  const { discordUserId } = request;
+
+  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
+
+  const rawQuery = request.url.split("?")[1] || "";
+  const parsed = qs.parse(rawQuery);
+  const filters = parseFilters(parsed.filters);
+
+  const input = {
+    limit: request.query.limit,
+    offset: request.query.offset,
+    search: request.query.search,
+    sort: request.query.sort as GetUserFeedsInputSortKey | undefined,
+    filters,
+  };
+
+  const [feeds, count] = await Promise.all([
+    userFeedsService.getFeedsByUser(user.id, discordUserId, input),
+    userFeedsService.getFeedCountByUser(user.id, discordUserId, input),
+  ]);
+
+  return reply.status(200).send({
+    results: feeds.map((feed) => ({
+      id: feed.id,
+      title: feed.title,
+      url: feed.url,
+      inputUrl: feed.inputUrl,
+      healthStatus: feed.healthStatus,
+      disabledCode: feed.disabledCode,
+      createdAt: feed.createdAt.toISOString(),
+      computedStatus: feed.computedStatus,
+      isLegacyFeed: false,
+      ownedByUser: feed.ownedByUser,
+      refreshRateSeconds: feed.refreshRateSeconds,
+    })),
+    total: count,
+  });
 }
 
 export async function copySettingsHandler(
