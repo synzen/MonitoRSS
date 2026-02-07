@@ -12,6 +12,7 @@ import { ManualRequestTooSoonException } from "../../shared/exceptions/user-feed
 import { convertToNestedDiscordEmbed } from "../../shared/utils/convert-to-nested-discord-embed";
 import type {
   CloneUserFeedBody,
+  CopySettingsBody,
   CreateUserFeedBody,
   DatePreviewBody,
   DeduplicateFeedUrlsBody,
@@ -27,6 +28,7 @@ import type {
   SendTestArticleBody,
 } from "./user-feeds.schemas";
 import { UpdateUserFeedsOp } from "./user-feeds.schemas";
+import { UserFeedTargetFeedSelectionType } from "../../services/feed-connections-discord-channels/types";
 
 export async function deduplicateFeedUrlsHandler(
   request: FastifyRequest<{ Body: DeduplicateFeedUrlsBody }>,
@@ -866,4 +868,55 @@ export async function manualRequestHandler(
 
     throw err;
   }
+}
+
+export async function copySettingsHandler(
+  request: FastifyRequest<{
+    Params: GetUserFeedParams;
+    Body: CopySettingsBody;
+  }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { userFeedRepository, userFeedsService, usersService, config } =
+    request.container;
+  const { discordUserId } = request;
+  const { feedId } = request.params;
+
+  if (!userFeedRepository.areAllValidIds([feedId])) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
+  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
+
+  const feed = isAdmin
+    ? await userFeedRepository.findById(feedId)
+    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
+
+  if (!feed) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const { targetFeedSelectionType, targetFeedIds } = request.body;
+
+  if (
+    (!targetFeedSelectionType ||
+      targetFeedSelectionType === UserFeedTargetFeedSelectionType.Selected) &&
+    !targetFeedIds?.length
+  ) {
+    throw new BadRequestError(ApiErrorCode.VALIDATION_FAILED);
+  }
+
+  await userFeedsService.copySettings({
+    sourceFeed: feed,
+    dto: {
+      settings: request.body.settings,
+      targetFeedIds: request.body.targetFeedIds,
+      targetFeedSelectionType: request.body.targetFeedSelectionType,
+      targetFeedSearch: request.body.targetFeedSearch,
+    },
+    discordUserId,
+  });
+
+  return reply.status(204).send();
 }

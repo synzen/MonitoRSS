@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import {
   cloneUserFeedHandler,
+  copySettingsHandler,
   createUserFeedHandler,
   datePreviewHandler,
   deduplicateFeedUrlsHandler,
@@ -21,6 +22,7 @@ import {
 import { requireAuthHook } from "../../infra/auth";
 import {
   CloneUserFeedBodySchema,
+  CopySettingsBodySchema,
   CreateUserFeedBodySchema,
   DatePreviewBodySchema,
   DeduplicateFeedUrlsBodySchema,
@@ -35,6 +37,7 @@ import {
   UpdateUserFeedBodySchema,
   SendTestArticleBodySchema,
   type CloneUserFeedBody,
+  type CopySettingsBody,
   type CreateUserFeedBody,
   type DatePreviewBody,
   type DeduplicateFeedUrlsBody,
@@ -174,6 +177,17 @@ export async function userFeedsRoutes(app: FastifyInstance): Promise<void> {
       manualRequestHandler,
     ),
   });
+
+  app.post<{ Params: GetUserFeedParams; Body: CopySettingsBody }>(
+    "/:feedId/copy-settings",
+    {
+      schema: {
+        params: GetUserFeedParamsSchema,
+        body: CopySettingsBodySchema,
+      },
+      handler: copySettingsHandler,
+    },
+  );
 
   app.patch<{ Params: GetUserFeedParams; Body: UpdateUserFeedBody }>(
     "/:feedId",
