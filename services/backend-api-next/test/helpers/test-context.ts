@@ -9,6 +9,7 @@ import { getTestDbUri } from "./test-constants";
 import type { SessionAccessToken } from "../../src/services/discord-auth/types";
 import { createTestHttpServer, type TestHttpServer } from "./test-http-server";
 import { createMockAccessToken } from "./mock-factories";
+import type { MockApi } from "./mock-apis";
 
 export interface AuthenticatedUser {
   accessToken: SessionAccessToken;
@@ -58,6 +59,7 @@ export interface AppTestContext {
   container: Container;
   baseUrl: string;
   discordMockServer: TestHttpServer;
+  mockApis: Record<string, MockApi>;
   fetch(path: string, options?: RequestInit): Promise<Response>;
   setSession(accessToken: SessionAccessToken): Promise<string>;
   asUser(discordUserId: string): Promise<AuthenticatedUser>;
@@ -67,6 +69,7 @@ export interface AppTestContext {
 
 export interface CreateAppTestContextOptions {
   configOverrides?: Partial<Config>;
+  mockApis?: Record<string, MockApi>;
   beforeListen?: (app: FastifyInstance) => Promise<void> | void;
 }
 
@@ -163,8 +166,17 @@ export async function createAppTestContext(
   const connection = await setupDatabase();
   const discordMockServer = createTestHttpServer();
 
+  const mockApiOverrides: Partial<Config> = {};
+  const mockApis = options.mockApis ?? {};
+
+  for (const api of Object.values(mockApis)) {
+    (mockApiOverrides as Record<string, unknown>)[api.configKey] =
+      api.server.host;
+  }
+
   const config = createTestConfig({
     BACKEND_API_DISCORD_API_BASE_URL: discordMockServer.host,
+    ...mockApiOverrides,
     ...options.configOverrides,
   });
 
@@ -198,6 +210,7 @@ export async function createAppTestContext(
     container,
     baseUrl,
     discordMockServer,
+    mockApis,
 
     async fetch(path: string, init?: RequestInit) {
       return fetch(`${baseUrl}${path}`, init);
