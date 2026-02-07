@@ -234,3 +234,19 @@ export interface CreatePreviewFunctionInput {
   channelNewThreadTitle?: string;
   channelNewThreadExcludesPreview?: boolean;
 }
+
+export interface CreateTemplatePreviewFunctionInput {
+  userFeed: IUserFeed;
+  content?: string;
+  embeds?: DiscordPreviewEmbed[];
+  feedFormatOptions?: {
+    dateFormat?: string;
+    dateTimezone?: string;
+    dateLocale?: string;
+  } | null;
+  connectionFormatOptions?: IDiscordFormatter | null;
+  articleId?: string;
+  placeholderLimits?: IPlaceholderLimit[] | null;
+  enablePlaceholderFallback?: boolean;
+  componentsV2?: Array<Record<string, unknown>> | null;
+}

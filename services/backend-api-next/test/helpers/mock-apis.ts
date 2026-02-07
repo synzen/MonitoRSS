@@ -24,6 +24,10 @@ interface ArticleIdDiscriminatorOptions {
 function createMockApi(
   configKey: keyof Config,
   discriminator: ArticleIdDiscriminatorOptions,
+  defaultResponse: MockResponse = {
+    status: 200,
+    body: { status: "SUCCESS" },
+  },
 ): MockApi {
   const server = createTestHttpServer();
   const responses = new Map<string, MockResponse>();
@@ -38,7 +42,7 @@ function createMockApi(
         return responses.get(id)!;
       }
 
-      return { status: 200, body: { status: "SUCCESS" } };
+      return defaultResponse;
     },
   );
 
@@ -68,4 +72,22 @@ export function createMockFeedHandlerApi(): MockApi {
       return b?.article?.id;
     },
   });
+}
+
+export function createMockFeedHandlerPreviewApi(): MockApi {
+  return createMockApi(
+    "BACKEND_API_USER_FEEDS_API_HOST",
+    {
+      method: "POST",
+      path: "/v1/user-feeds/preview",
+      extractId: (body) => {
+        const b = body as { article?: { id?: string } } | undefined;
+        return b?.article?.id;
+      },
+    },
+    {
+      status: 200,
+      body: { status: "SUCCESS", customPlaceholderPreviews: [] },
+    },
+  );
 }

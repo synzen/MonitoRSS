@@ -319,6 +319,7 @@ describe(
             connection,
             {
               name: connection.name + "new-name",
+              targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
               targetFeedIds: [createdFeed.id],
             },
             "token",
@@ -395,6 +396,7 @@ describe(
             connection,
             {
               name: "cloned-connection",
+              targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
               targetFeedIds: [feed1.id, feed2.id, feed3.id],
             },
             "token",
@@ -460,6 +462,7 @@ describe(
             connection,
             {
               name: "cloned-with-new-channel",
+              targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
               targetFeedIds: [createdFeed.id],
               channelId: newChannelId,
             },
@@ -692,6 +695,7 @@ describe(
             connection,
             {
               name: "cloned-full",
+              targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
               targetFeedIds: [createdFeed.id],
             },
             "token",

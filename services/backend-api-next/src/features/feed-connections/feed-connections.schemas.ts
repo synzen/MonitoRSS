@@ -3,6 +3,7 @@ import {
   EmbedSchema,
   PlaceholderLimitSchema,
 } from "../../shared/schemas/discord-embed.schemas";
+import { SUPPORTED_DATE_LOCALES } from "../user-feeds/user-feeds.schemas";
 
 export const CreateConnectionParamsSchema = Type.Object({
   feedId: Type.String({ minLength: 1 }),
@@ -202,12 +203,21 @@ const ConnectionFormatOptionsSchema = Type.Union([
   Type.Null(),
 ]);
 
+const TimezoneString = Type.Unsafe<string>({
+  type: "string",
+  isTimezone: true,
+});
+
+const DateLocaleString = Type.String({
+  enum: ["", ...SUPPORTED_DATE_LOCALES],
+});
+
 const PreviewUserFeedFormatOptionsSchema = Type.Union([
   Type.Object(
     {
       dateFormat: Type.Optional(Type.String()),
-      dateTimezone: Type.Optional(Type.String()),
-      dateLocale: Type.Optional(Type.String()),
+      dateTimezone: Type.Optional(TimezoneString),
+      dateLocale: Type.Optional(DateLocaleString),
     },
     { additionalProperties: false },
   ),
@@ -252,6 +262,45 @@ export const SendConnectionTestArticleBodySchema = Type.Object(
 export type SendConnectionTestArticleBody = Static<
   typeof SendConnectionTestArticleBodySchema
 >;
+
+export const CreatePreviewBodySchema = Type.Object(
+  {
+    article: Type.Optional(
+      Type.Object(
+        { id: Type.String({ minLength: 1 }) },
+        { additionalProperties: false },
+      ),
+    ),
+    content: Type.Optional(Type.String()),
+    embeds: Type.Optional(Type.Array(EmbedSchema)),
+    channelNewThreadTitle: Type.Optional(Type.String()),
+    channelNewThreadExcludesPreview: Type.Optional(Type.Boolean()),
+    componentRows: Type.Optional(Type.Array(ComponentRowSchema)),
+    forumThreadTitle: Type.Optional(Type.String({ maxLength: 100 })),
+    forumThreadTags: Type.Optional(Type.Array(ForumThreadTagSchema)),
+    splitOptions: Type.Optional(SplitOptionsSchema),
+    mentions: Type.Optional(MentionsSchema),
+    customPlaceholders: Type.Optional(
+      Type.Union([Type.Array(PreviewCustomPlaceholderSchema), Type.Null()]),
+    ),
+    externalProperties: Type.Optional(
+      Type.Union([Type.Array(PreviewExternalPropertySchema), Type.Null()]),
+    ),
+    placeholderLimits: Type.Optional(Type.Array(PlaceholderLimitSchema)),
+    connectionFormatOptions: Type.Optional(ConnectionFormatOptionsSchema),
+    userFeedFormatOptions: Type.Optional(PreviewUserFeedFormatOptionsSchema),
+    enablePlaceholderFallback: Type.Optional(Type.Boolean()),
+    includeCustomPlaceholderPreviews: Type.Optional(Type.Boolean()),
+    componentsV2: Type.Optional(
+      Type.Union([
+        Type.Array(Type.Object({}, { additionalProperties: true })),
+        Type.Null(),
+      ]),
+    ),
+  },
+  { additionalProperties: false },
+);
+export type CreatePreviewBody = Static<typeof CreatePreviewBodySchema>;
 
 export const CreateDiscordChannelConnectionBodySchema = Type.Object(
   {
@@ -329,3 +378,28 @@ export const CloneConnectionBodySchema = Type.Object(
   { additionalProperties: false },
 );
 export type CloneConnectionBody = Static<typeof CloneConnectionBodySchema>;
+
+export const CreateTemplatePreviewBodySchema = Type.Object(
+  {
+    article: Type.Object(
+      { id: Type.String({ minLength: 1 }) },
+      { additionalProperties: false },
+    ),
+    content: Type.Optional(Type.String()),
+    embeds: Type.Optional(Type.Array(EmbedSchema)),
+    placeholderLimits: Type.Optional(Type.Array(PlaceholderLimitSchema)),
+    userFeedFormatOptions: Type.Optional(PreviewUserFeedFormatOptionsSchema),
+    connectionFormatOptions: Type.Optional(ConnectionFormatOptionsSchema),
+    enablePlaceholderFallback: Type.Optional(Type.Boolean()),
+    componentsV2: Type.Optional(
+      Type.Union([
+        Type.Array(Type.Object({}, { additionalProperties: true })),
+        Type.Null(),
+      ]),
+    ),
+  },
+  { additionalProperties: false },
+);
+export type CreateTemplatePreviewBody = Static<
+  typeof CreateTemplatePreviewBodySchema
+>;

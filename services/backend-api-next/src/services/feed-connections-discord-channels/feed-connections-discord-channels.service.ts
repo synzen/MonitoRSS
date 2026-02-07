@@ -8,6 +8,7 @@ import {
   UserFeedTargetFeedSelectionType,
   SendTestArticlePreviewInput,
   CreatePreviewFunctionInput,
+  CreateTemplatePreviewFunctionInput,
   DiscordPreviewEmbed,
 } from "./types";
 import { CopyableSetting } from "./types";
@@ -1247,7 +1248,7 @@ export class FeedConnectionsDiscordChannelsService {
     placeholderLimits,
     enablePlaceholderFallback,
     componentsV2,
-  }: CreatePreviewFunctionInput) {
+  }: CreateTemplatePreviewFunctionInput) {
     const user = await this.deps.usersService.getOrCreateUserByDiscordId(
       userFeed.user.discordUserId,
     );
