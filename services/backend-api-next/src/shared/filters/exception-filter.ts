@@ -8,15 +8,15 @@ export type ExceptionErrorCodes = Record<
   { status: number; code: ApiErrorCode }
 >;
 
-type FastifyHandler = (
+type FastifyHandler<T = unknown> = (
   request: FastifyRequest<any>,
   reply: FastifyReply,
-) => Promise<void>;
+) => Promise<T>;
 
-export function withExceptionFilter(
+export function withExceptionFilter<T>(
   errorCodes: ExceptionErrorCodes,
-  handler: FastifyHandler,
-): FastifyHandler {
+  handler: FastifyHandler<T>,
+): FastifyHandler<T> {
   return async (request, reply) => {
     try {
       return await handler(request, reply);

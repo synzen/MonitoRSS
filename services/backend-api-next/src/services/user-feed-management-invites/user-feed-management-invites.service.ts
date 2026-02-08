@@ -9,7 +9,6 @@ import {
   UserManagerAlreadyInvitedException,
   UserFeedTransferRequestExistsException,
   InviteNotFoundException,
-  InvalidConnectionIdException,
 } from "../../shared/exceptions/user-feed-management-invites.exceptions";
 import type {
   UserFeedManagementInvitesServiceDeps,
@@ -44,14 +43,16 @@ export class UserFeedManagementInvitesService {
     }
 
     if (connections && connections.length > 0) {
-      const allConnections = feed.connections.discordChannels;
+      const allConnections = Object.values(feed.connections).flat() as Array<{
+        id: string;
+      }>;
       const someConnectionIdIsInvalid = connections.some(
         ({ connectionId: id }) =>
           !isValidObjectId(id) || !allConnections.find((c) => c.id === id),
       );
 
       if (someConnectionIdIsInvalid) {
-        throw new InvalidConnectionIdException(
+        throw new Error(
           `Some connection IDs are invalid while creating user feed management invite: ${connections.map((c) => c.connectionId)}`,
         );
       }
@@ -144,10 +145,18 @@ export class UserFeedManagementInvitesService {
         updates,
       );
     } else if (invite.type === UserFeedManagerInviteType.Transfer) {
-      await this.deps.userFeedRepository.transferFeedOwnership(
-        userFeed.id,
-        invite.discordUserId,
-      );
+      if (updates.status === UserFeedManagerStatus.Accepted) {
+        await this.deps.userFeedRepository.transferFeedOwnership(
+          userFeed.id,
+          invite.discordUserId,
+        );
+      } else {
+        await this.deps.userFeedRepository.updateInvite(
+          userFeed.id,
+          inviteIndex,
+          updates,
+        );
+      }
     }
   }
 

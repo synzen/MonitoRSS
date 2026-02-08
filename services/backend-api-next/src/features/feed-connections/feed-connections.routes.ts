@@ -9,6 +9,7 @@ import {
   CloneConnectionBodySchema,
   CreatePreviewBodySchema,
   CreateTemplatePreviewBodySchema,
+  UpdateDiscordChannelConnectionBodySchema,
   type CreateConnectionParams,
   type CreateDiscordChannelConnectionBody,
   type ConnectionActionParams,
@@ -17,6 +18,7 @@ import {
   type CloneConnectionBody,
   type CreatePreviewBody,
   type CreateTemplatePreviewBody,
+  type UpdateDiscordChannelConnectionBody,
 } from "./feed-connections.schemas";
 import { withExceptionFilter } from "../../shared/filters/exception-filter";
 import {
@@ -25,6 +27,8 @@ import {
   COPY_CONNECTION_SETTINGS_EXCEPTION_ERROR_CODES,
   CREATE_PREVIEW_EXCEPTION_ERROR_CODES,
   CREATE_TEMPLATE_PREVIEW_EXCEPTION_ERROR_CODES,
+  UPDATE_CONNECTION_EXCEPTION_ERROR_CODES,
+  DELETE_CONNECTION_EXCEPTION_ERROR_CODES,
 } from "./feed-connections.exception-codes";
 import {
   createDiscordChannelConnectionHandler,
@@ -33,6 +37,8 @@ import {
   cloneConnectionHandler,
   createPreviewHandler,
   createTemplatePreviewHandler,
+  updateDiscordChannelConnectionHandler,
+  deleteDiscordChannelConnectionHandler,
 } from "./feed-connections.handlers";
 
 export async function feedConnectionsRoutes(
@@ -121,6 +127,32 @@ export async function feedConnectionsRoutes(
     handler: withExceptionFilter(
       CREATE_PREVIEW_EXCEPTION_ERROR_CODES,
       createPreviewHandler,
+    ),
+  });
+
+  app.patch<{
+    Params: ConnectionActionParams;
+    Body: UpdateDiscordChannelConnectionBody;
+  }>("/discord-channels/:connectionId", {
+    schema: {
+      params: ConnectionActionParamsSchema,
+      body: UpdateDiscordChannelConnectionBodySchema,
+    },
+    handler: withExceptionFilter(
+      UPDATE_CONNECTION_EXCEPTION_ERROR_CODES,
+      updateDiscordChannelConnectionHandler,
+    ),
+  });
+
+  app.delete<{
+    Params: ConnectionActionParams;
+  }>("/discord-channels/:connectionId", {
+    schema: {
+      params: ConnectionActionParamsSchema,
+    },
+    handler: withExceptionFilter(
+      DELETE_CONNECTION_EXCEPTION_ERROR_CODES,
+      deleteDiscordChannelConnectionHandler,
     ),
   });
 }

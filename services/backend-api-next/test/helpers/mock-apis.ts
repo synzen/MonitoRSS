@@ -91,3 +91,25 @@ export function createMockFeedHandlerPreviewApi(): MockApi {
     },
   );
 }
+
+export function createMockFeedHandlerFilterValidationApi(): MockApi & {
+  server: TestHttpServer;
+} {
+  const server = createTestHttpServer();
+
+  server.registerRoute("POST", "/v1/user-feeds/filter-validation", () => ({
+    status: 200,
+    body: { result: { errors: [] } },
+  }));
+
+  return {
+    server,
+    configKey: "BACKEND_API_USER_FEEDS_API_HOST",
+    intercept(_t: TestContext, _response: MockResponse): string {
+      return generateTestId();
+    },
+    async stop() {
+      await server.stop();
+    },
+  };
+}

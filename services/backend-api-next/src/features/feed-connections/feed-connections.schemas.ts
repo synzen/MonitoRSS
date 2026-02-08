@@ -27,7 +27,6 @@ const WebhookSchema = Type.Object(
     id: Type.String({ minLength: 1 }),
     name: Type.Optional(Type.String()),
     iconUrl: Type.Optional(Type.String()),
-    threadId: Type.Optional(Type.String()),
   },
   { additionalProperties: false },
 );
@@ -402,4 +401,66 @@ export const CreateTemplatePreviewBodySchema = Type.Object(
 );
 export type CreateTemplatePreviewBody = Static<
   typeof CreateTemplatePreviewBodySchema
+>;
+
+const FiltersSchema = Type.Union([
+  Type.Object(
+    { expression: Type.Object({}, { additionalProperties: true }) },
+    { additionalProperties: false },
+  ),
+  Type.Null(),
+]);
+
+const CustomRateLimitSchema = Type.Object(
+  {
+    timeWindowSeconds: Type.Integer({ minimum: 1, maximum: 2592000 }),
+    limit: Type.Integer({ minimum: 1, maximum: 10000 }),
+  },
+  { additionalProperties: false },
+);
+
+export const UpdateDiscordChannelConnectionBodySchema = Type.Object(
+  {
+    name: Type.Optional(Type.String({ minLength: 1, maxLength: 250 })),
+    channelId: Type.Optional(Type.String()),
+    channelNewThreadTitle: Type.Optional(Type.String()),
+    channelNewThreadExcludesPreview: Type.Optional(Type.Boolean()),
+    webhook: Type.Optional(WebhookSchema),
+    applicationWebhook: Type.Optional(ApplicationWebhookSchema),
+    content: Type.Optional(Type.String()),
+    forumThreadTitle: Type.Optional(Type.String({ maxLength: 100 })),
+    forumThreadTags: Type.Optional(Type.Array(ForumThreadTagSchema)),
+    filters: Type.Optional(FiltersSchema),
+    mentions: Type.Optional(MentionsSchema),
+    placeholderLimits: Type.Optional(Type.Array(PlaceholderLimitSchema)),
+    embeds: Type.Optional(Type.Array(EmbedSchema)),
+    componentRows: Type.Optional(
+      Type.Array(ComponentRowSchema, { maxItems: 5 }),
+    ),
+    disabledCode: Type.Optional(
+      Type.Union([Type.Literal("MANUAL"), Type.Null()]),
+    ),
+    splitOptions: Type.Optional(SplitOptionsSchema),
+    formatter: Type.Optional(Type.Union([FormatterOptionsSchema, Type.Null()])),
+    enablePlaceholderFallback: Type.Optional(Type.Boolean()),
+    customPlaceholders: Type.Optional(
+      Type.Union([Type.Array(PreviewCustomPlaceholderSchema), Type.Null()]),
+    ),
+    rateLimits: Type.Optional(
+      Type.Union([Type.Array(CustomRateLimitSchema), Type.Null()]),
+    ),
+    threadCreationMethod: Type.Optional(
+      Type.Union([Type.Literal("new-thread"), Type.Null()]),
+    ),
+    componentsV2: Type.Optional(
+      Type.Union([
+        Type.Array(Type.Object({}, { additionalProperties: true })),
+        Type.Null(),
+      ]),
+    ),
+  },
+  { additionalProperties: false },
+);
+export type UpdateDiscordChannelConnectionBody = Static<
+  typeof UpdateDiscordChannelConnectionBodySchema
 >;

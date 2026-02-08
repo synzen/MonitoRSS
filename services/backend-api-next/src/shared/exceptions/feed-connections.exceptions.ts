@@ -72,3 +72,11 @@ export class FeedConnectionNotFoundException extends StandardException {
     super(message ?? "Feed connection not found");
   }
 }
+
+export class CannotEnableAutoDisabledConnection extends StandardException {
+  constructor(message?: string) {
+    super(
+      message ?? "Cannot enable a connection that was automatically disabled",
+    );
+  }
+}

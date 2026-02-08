@@ -1,11 +1,17 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import { NotFoundError, ApiErrorCode } from "../../infra/error-handler";
-import { FeedConnectionType } from "../../repositories/shared/enums";
+import {
+  FeedConnectionType,
+  FeedConnectionDisabledCode,
+} from "../../repositories/shared/enums";
+import { CannotEnableAutoDisabledConnection } from "../../shared/exceptions/feed-connections.exceptions";
 import type { IFeedEmbed } from "../../repositories/interfaces/feed-embed.types";
+import { convertToFlatDiscordEmbeds } from "../../shared/utils/convert-to-flat-discord-embeds";
 import type {
   SendTestArticlePreviewInput,
   CopyableSetting,
   CreatePreviewFunctionInput,
+  UpdateDiscordChannelConnectionDetailsInput,
 } from "../../services/feed-connections-discord-channels/types";
 import { UserFeedTargetFeedSelectionType } from "../../services/feed-connections-discord-channels/types";
 import type {
@@ -17,7 +23,72 @@ import type {
   CloneConnectionBody,
   CreatePreviewBody,
   CreateTemplatePreviewBody,
+  UpdateDiscordChannelConnectionBody,
 } from "./feed-connections.schemas";
+
+export async function deleteDiscordChannelConnectionHandler(
+  request: FastifyRequest<{
+    Params: ConnectionActionParams;
+  }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const {
+    userFeedRepository,
+    feedConnectionsDiscordChannelsService,
+    usersService,
+    config,
+  } = request.container;
+  const { discordUserId } = request;
+  const { feedId, connectionId } = request.params;
+
+  if (!userFeedRepository.areAllValidIds([feedId])) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
+  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
+
+  const feed = isAdmin
+    ? await userFeedRepository.findById(feedId)
+    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
+
+  if (!feed) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const isOwner = feed.user.discordUserId === discordUserId;
+  if (!isAdmin && !isOwner) {
+    const invite = feed.shareManageOptions?.invites.find(
+      (i) => i.discordUserId === discordUserId,
+    );
+    const allowedConnectionIds = invite?.connections?.map(
+      (c) => c.connectionId,
+    );
+
+    if (
+      allowedConnectionIds &&
+      allowedConnectionIds.length > 0 &&
+      !allowedConnectionIds.includes(connectionId)
+    ) {
+      throw new NotFoundError(ApiErrorCode.FEED_CONNECTION_NOT_FOUND);
+    }
+  }
+
+  const connection = feed.connections.discordChannels.find(
+    (c) => c.id === connectionId,
+  );
+
+  if (!connection) {
+    throw new NotFoundError(ApiErrorCode.FEED_CONNECTION_NOT_FOUND);
+  }
+
+  await feedConnectionsDiscordChannelsService.deleteConnection(
+    feedId,
+    connectionId,
+  );
+
+  return reply.status(204).send();
+}
 
 export async function createDiscordChannelConnectionHandler(
   request: FastifyRequest<{
@@ -489,4 +560,184 @@ export async function createTemplatePreviewHandler(
     });
 
   return reply.status(201).send({ result });
+}
+
+export async function updateDiscordChannelConnectionHandler(
+  request: FastifyRequest<{
+    Params: ConnectionActionParams;
+    Body: UpdateDiscordChannelConnectionBody;
+  }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const {
+    userFeedRepository,
+    feedConnectionsDiscordChannelsService,
+    usersService,
+    config,
+  } = request.container;
+  const { discordUserId, accessToken } = request;
+  const { feedId, connectionId } = request.params;
+
+  if (!userFeedRepository.areAllValidIds([feedId])) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
+  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
+
+  const feed = isAdmin
+    ? await userFeedRepository.findById(feedId)
+    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
+
+  if (!feed) {
+    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+  }
+
+  const isOwner = feed.user.discordUserId === discordUserId;
+  if (!isAdmin && !isOwner) {
+    const invite = feed.shareManageOptions?.invites.find(
+      (i) => i.discordUserId === discordUserId,
+    );
+    const allowedConnectionIds = invite?.connections?.map(
+      (c) => c.connectionId,
+    );
+
+    if (
+      allowedConnectionIds &&
+      allowedConnectionIds.length > 0 &&
+      !allowedConnectionIds.includes(connectionId)
+    ) {
+      throw new NotFoundError(ApiErrorCode.FEED_CONNECTION_NOT_FOUND);
+    }
+  }
+
+  const connection = feed.connections.discordChannels.find(
+    (c) => c.id === connectionId,
+  );
+
+  if (!connection) {
+    throw new NotFoundError(ApiErrorCode.FEED_CONNECTION_NOT_FOUND);
+  }
+
+  const body = request.body;
+
+  let useDisabledCode: FeedConnectionDisabledCode | null | undefined =
+    undefined;
+  let useChannelId: string | undefined = body.channelId;
+  let useApplicationWebhook: typeof body.applicationWebhook | undefined =
+    undefined;
+
+  if (connection.disabledCode) {
+    if (connection.disabledCode === FeedConnectionDisabledCode.BadFormat) {
+      if (body.disabledCode === null) {
+        throw new CannotEnableAutoDisabledConnection();
+      }
+      if (body.content || body.embeds?.length) {
+        useDisabledCode = null;
+      }
+    } else if (connection.disabledCode === FeedConnectionDisabledCode.Manual) {
+      if (body.disabledCode === null) {
+        useDisabledCode = null;
+      }
+    } else if (
+      connection.disabledCode === FeedConnectionDisabledCode.MissingPermissions
+    ) {
+      if (body.disabledCode === null) {
+        if (connection.details.channel) {
+          useChannelId = body.channelId || connection.details.channel.id;
+          useDisabledCode = null;
+        } else if (
+          connection.details.webhook?.channelId &&
+          connection.details.webhook.name
+        ) {
+          useApplicationWebhook = {
+            channelId: connection.details.webhook.channelId,
+            name: connection.details.webhook.name,
+            iconUrl: connection.details.webhook.iconUrl,
+            threadId: connection.details.webhook.threadId,
+          };
+          useDisabledCode = null;
+        } else {
+          throw new Error(
+            "Unhandled case when attempting to enable connection due to missing permissions",
+          );
+        }
+      }
+    } else if (body.disabledCode === null) {
+      throw new CannotEnableAutoDisabledConnection();
+    }
+  } else if (body.disabledCode === FeedConnectionDisabledCode.Manual) {
+    useDisabledCode = FeedConnectionDisabledCode.Manual;
+  }
+
+  const details: UpdateDiscordChannelConnectionDetailsInput = {
+    placeholderLimits: body.placeholderLimits,
+    channelNewThreadTitle: body.channelNewThreadTitle,
+    channelNewThreadExcludesPreview: body.channelNewThreadExcludesPreview,
+    componentRows: body.componentRows as any,
+    componentsV2: body.componentsV2,
+    channel:
+      !useApplicationWebhook && useChannelId ? { id: useChannelId } : undefined,
+    webhook: useApplicationWebhook || useChannelId ? undefined : body.webhook,
+    applicationWebhook:
+      useApplicationWebhook ||
+      (useChannelId ? undefined : body.applicationWebhook),
+    embeds: convertToFlatDiscordEmbeds(body.embeds),
+    content: body.content,
+    formatter: body.formatter,
+    forumThreadTitle: body.forumThreadTitle,
+    forumThreadTags: body.forumThreadTags,
+    enablePlaceholderFallback: body.enablePlaceholderFallback,
+  };
+
+  const updatedConnection =
+    await feedConnectionsDiscordChannelsService.updateDiscordChannelConnection(
+      feedId,
+      connectionId,
+      {
+        accessToken: accessToken.access_token,
+        feed: {
+          user: feed.user,
+          connections: feed.connections,
+        },
+        oldConnection: connection,
+        updates: {
+          name: body.name,
+          filters: body.filters,
+          disabledCode: useDisabledCode,
+          splitOptions: body.splitOptions,
+          mentions: body.mentions as any,
+          rateLimits: body.rateLimits,
+          customPlaceholders: body.customPlaceholders as any,
+          threadCreationMethod: body.threadCreationMethod,
+          details,
+        },
+      },
+    );
+
+  return reply.status(200).send({
+    result: {
+      id: updatedConnection.id,
+      name: updatedConnection.name,
+      key: FeedConnectionType.DiscordChannel,
+      filters: updatedConnection.filters,
+      details: {
+        channel: updatedConnection.details.channel
+          ? {
+              id: updatedConnection.details.channel.id,
+              guildId: updatedConnection.details.channel.guildId,
+            }
+          : undefined,
+        webhook: updatedConnection.details.webhook
+          ? {
+              id: updatedConnection.details.webhook.id,
+              guildId: updatedConnection.details.webhook.guildId,
+            }
+          : undefined,
+        embeds: updatedConnection.details.embeds,
+        content: updatedConnection.details.content,
+      },
+      splitOptions: updatedConnection.splitOptions,
+    },
+  });
 }

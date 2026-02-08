@@ -118,14 +118,11 @@ describe("UserFeedManagementInvitesService", { concurrency: true }, () => {
       );
     });
 
-    it("throws InvalidConnectionIdException for invalid connection id", async () => {
+    it("throws Error for invalid connection id", async () => {
       const ctx = harness.createContext();
       const feed = await ctx.createFeed({});
       const targetDiscordUserId = ctx.generateId();
       const invalidConnectionId = ctx.generateId();
-
-      const { InvalidConnectionIdException } =
-        await import("../../src/shared/exceptions/user-feed-management-invites.exceptions");
 
       await assert.rejects(
         () =>
@@ -135,7 +132,10 @@ describe("UserFeedManagementInvitesService", { concurrency: true }, () => {
             type: UserFeedManagerInviteType.CoManage,
             connections: [{ connectionId: invalidConnectionId }],
           }),
-        InvalidConnectionIdException,
+        {
+          name: "Error",
+          message: /Some connection IDs are invalid/,
+        },
       );
     });
   });

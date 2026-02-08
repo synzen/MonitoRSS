@@ -100,9 +100,15 @@ export interface UpdateDiscordChannelConnectionDetailsInput {
   forumThreadTags?: IForumThreadTag[];
   placeholderLimits?: IPlaceholderLimit[];
   componentRows?: IDiscordComponentRow[];
-  componentsV2?: Array<Record<string, unknown>>;
-  formatter?: IDiscordFormatter;
+  componentsV2?: Array<Record<string, unknown>> | null;
+  formatter?: IDiscordFormatter | null;
   enablePlaceholderFallback?: boolean;
+}
+
+export interface ICustomRateLimitInput {
+  id?: string;
+  timeWindowSeconds: number;
+  limit: number;
 }
 
 export interface UpdateDiscordChannelConnectionInput {
@@ -119,7 +125,7 @@ export interface UpdateDiscordChannelConnectionInput {
     disabledCode?: FeedConnectionDisabledCode | null;
     splitOptions?: ISplitOptions | null;
     mentions?: IMentions | null;
-    rateLimits?: ICustomRateLimit[] | null;
+    rateLimits?: ICustomRateLimitInput[] | null;
     customPlaceholders?: ICustomPlaceholder[] | null;
     details?: UpdateDiscordChannelConnectionDetailsInput;
   };

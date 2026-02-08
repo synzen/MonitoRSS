@@ -13,6 +13,8 @@ import { discordUsersRoutes } from "./features/discord-users/discord-users.route
 import { discordServersRoutes } from "./features/discord-servers/discord-servers.routes";
 import { discordWebhooksRoutes } from "./features/discord-webhooks/discord-webhooks.routes";
 import { userFeedsRoutes } from "./features/user-feeds/user-feeds.routes";
+import { supporterSubscriptionsRoutes } from "./features/supporter-subscriptions/supporter-subscriptions.routes";
+import { userFeedManagementInvitesRoutes } from "./features/user-feed-management-invites/user-feed-management-invites.routes";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -100,6 +102,16 @@ export async function createApp(
 
       // User feeds routes
       await instance.register(userFeedsRoutes, { prefix: "/user-feeds" });
+
+      // Supporter subscriptions routes (Paddle webhooks)
+      await instance.register(supporterSubscriptionsRoutes, {
+        prefix: "/subscription-products",
+      });
+
+      // User feed management invites routes
+      await instance.register(userFeedManagementInvitesRoutes, {
+        prefix: "/user-feed-management-invites",
+      });
     },
     { prefix: "/api/v1" },
   );

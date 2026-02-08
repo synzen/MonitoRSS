@@ -112,3 +112,61 @@ export const CREATE_CONNECTION_EXCEPTION_ERROR_CODES: ExceptionErrorCodes = {
     code: ApiErrorCode.FEED_INVALID_COMPONENTS_V2,
   },
 };
+
+export const UPDATE_CONNECTION_EXCEPTION_ERROR_CODES: ExceptionErrorCodes = {
+  MissingDiscordChannelException: {
+    status: 400,
+    code: ApiErrorCode.FEED_MISSING_CHANNEL,
+  },
+  MissingChannelException: {
+    status: 400,
+    code: ApiErrorCode.FEED_MISSING_CHANNEL,
+  },
+  DiscordChannelPermissionsException: {
+    status: 400,
+    code: ApiErrorCode.FEED_MISSING_CHANNEL_PERMISSION,
+  },
+  MissingChannelPermissionsException: {
+    status: 400,
+    code: ApiErrorCode.FEED_MISSING_CHANNEL_PERMISSION,
+  },
+  DiscordChannelMissingViewPermissionsException: {
+    status: 400,
+    code: ApiErrorCode.FEED_MISSING_VIEW_CHANNEL_PERMISSION,
+  },
+  InvalidDiscordChannelException: {
+    status: 400,
+    code: ApiErrorCode.DISCORD_CAHNNEL_INVALID,
+  },
+  UserMissingManageGuildException: {
+    status: 403,
+    code: ApiErrorCode.FEED_USER_MISSING_MANAGE_GUILD,
+  },
+  WebhookMissingPermissionsException: {
+    status: 403,
+    code: ApiErrorCode.WEBHOOKS_MANAGE_MISSING_PERMISSIONS,
+  },
+  InsufficientSupporterLevelException: {
+    status: 400,
+    code: ApiErrorCode.INSUFFICIENT_SUPPORTER_LEVEL,
+  },
+  InvalidFilterExpressionException: {
+    status: 400,
+    code: ApiErrorCode.FEED_INVALID_FILTER_EXPRESSION,
+  },
+  InvalidComponentsV2Exception: {
+    status: 400,
+    code: ApiErrorCode.FEED_INVALID_COMPONENTS_V2,
+  },
+  CannotEnableAutoDisabledConnection: {
+    status: 400,
+    code: ApiErrorCode.FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED,
+  },
+};
+
+export const DELETE_CONNECTION_EXCEPTION_ERROR_CODES: ExceptionErrorCodes = {
+  FeedConnectionNotFoundException: {
+    status: 404,
+    code: ApiErrorCode.FEED_CONNECTION_NOT_FOUND,
+  },
+};

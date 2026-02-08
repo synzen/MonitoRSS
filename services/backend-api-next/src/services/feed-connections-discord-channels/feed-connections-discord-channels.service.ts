@@ -266,14 +266,32 @@ export class FeedConnectionsDiscordChannelsService {
       updates,
     }: UpdateDiscordChannelConnectionInput,
   ): Promise<IDiscordChannelConnection> {
-    const setRecordDetails: Partial<IDiscordChannelConnection["details"]> =
-      Object.entries(updates.details || {}).reduce(
-        (acc, [key, value]) => ({
-          ...acc,
-          [`connections.discordChannels.$.details.${key}`]: value,
-        }),
-        {},
-      );
+    const setRecordDetails: Record<string, unknown> = {};
+    const unsetRecordDetails: Record<string, ""> = {};
+    const clearableDetailKeys = new Set([
+      "placeholderLimits",
+      "channelNewThreadTitle",
+      "channelNewThreadExcludesPreview",
+      "componentRows",
+      "componentsV2",
+      "embeds",
+      "content",
+      "formatter",
+      "forumThreadTitle",
+      "forumThreadTags",
+      "enablePlaceholderFallback",
+    ]);
+
+    for (const [key, value] of Object.entries(updates.details || {})) {
+      const detailKey = `connections.discordChannels.$.details.${key}`;
+
+      if (value === undefined && clearableDetailKeys.has(key)) {
+        unsetRecordDetails[detailKey] = "";
+        continue;
+      }
+
+      setRecordDetails[detailKey] = value;
+    }
 
     let createdApplicationWebhookId: string | undefined = undefined;
 
@@ -294,8 +312,10 @@ export class FeedConnectionsDiscordChannelsService {
             : type,
         parentChannelId: parentChannel?.id,
       };
-      // @ts-ignore
-      setRecordDetails["connections.discordChannels.$.details.webhook"] = null;
+      unsetRecordDetails["connections.discordChannels.$.details.webhook"] = "";
+      unsetRecordDetails[
+        "connections.discordChannels.$.details.applicationWebhook"
+      ] = "";
     } else if (
       updates.details?.webhook ||
       updates.details?.applicationWebhook
@@ -386,8 +406,7 @@ export class FeedConnectionsDiscordChannelsService {
         channelId: channel.id,
         isApplicationOwned: !!updates.details.applicationWebhook,
       };
-      // @ts-ignore
-      setRecordDetails["connections.discordChannels.$.details.channel"] = null;
+      unsetRecordDetails["connections.discordChannels.$.details.channel"] = "";
     }
 
     if (updates.filters) {
@@ -484,6 +503,7 @@ export class FeedConnectionsDiscordChannelsService {
         }),
       },
       $unset: {
+        ...unsetRecordDetails,
         ...(updates.filters === null && {
           [`connections.discordChannels.$.filters`]: "",
         }),
@@ -579,8 +599,15 @@ export class FeedConnectionsDiscordChannelsService {
       shareManageOptions: feed.shareManageOptions,
     });
 
-    if (connection.details.webhook?.isApplicationOwned) {
-      await this.cleanupWebhook(connection.details.webhook.id);
+    try {
+      if (connection.details.webhook?.isApplicationOwned) {
+        await this.cleanupWebhook(connection.details.webhook.id);
+      }
+    } catch (err) {
+      logger.error(
+        `Failed to cleanup application webhook ${connection.details.webhook?.id} on feed ${feedId}, discord channel connection ${connectionId} after connection deletion`,
+        { stack: (err as Error).stack },
+      );
     }
   }
 
