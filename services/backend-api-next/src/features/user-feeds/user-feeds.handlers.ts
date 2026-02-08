@@ -930,7 +930,9 @@ export async function getUserFeedsHandler(
     limit: request.query.limit,
     offset: request.query.offset,
     search: request.query.search,
-    sort: request.query.sort as GetUserFeedsInputSortKey | undefined,
+    sort: (request.query.sort || undefined) as
+      | GetUserFeedsInputSortKey
+      | undefined,
     filters,
   };
 

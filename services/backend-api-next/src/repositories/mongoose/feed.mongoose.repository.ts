@@ -260,4 +260,24 @@ export class FeedMongooseRepository
       .lean();
     return doc ? this.toEntity(doc as FeedDoc & { _id: Types.ObjectId }) : null;
   }
+
+  async findUnconvertedByGuilds(options: {
+    guildIds: string[] | "*";
+    conversionDisabledCodes: string[];
+  }): Promise<IFeed[]> {
+    const query: Record<string, unknown> = {
+      disabled: {
+        $nin: options.conversionDisabledCodes,
+      },
+    };
+
+    if (options.guildIds !== "*") {
+      query.guild = { $in: options.guildIds };
+    }
+
+    const docs = await this.model.find(query).lean();
+    return docs.map((doc) =>
+      this.toEntity(doc as FeedDoc & { _id: Types.ObjectId }),
+    );
+  }
 }

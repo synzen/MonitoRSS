@@ -1206,6 +1206,27 @@ export class UserFeedMongooseRepository
   }
 
   // Migration methods
+  async countAllFeeds(): Promise<number> {
+    return this.model.countDocuments().exec();
+  }
+
+  async *iterateAllFeedsForSlotRecalculation(): AsyncIterable<FeedForSlotOffsetRecalculation> {
+    const cursor = this.model
+      .find({})
+      .select("_id url refreshRateSeconds userRefreshRateSeconds")
+      .lean()
+      .cursor();
+
+    for await (const doc of cursor) {
+      yield {
+        id: this.objectIdToString((doc as { _id: Types.ObjectId })._id),
+        url: doc.url,
+        refreshRateSeconds: doc.refreshRateSeconds,
+        userRefreshRateSeconds: doc.userRefreshRateSeconds,
+      };
+    }
+  }
+
   async *iterateFeedsMissingSlotOffset(): AsyncIterable<{
     id: string;
     url: string;
@@ -1808,6 +1829,25 @@ export class UserFeedMongooseRepository
     const docs = await this.model.find({ debug: true }).select("url").lean();
 
     return new Set(docs.map((d) => d.url));
+  }
+
+  async getDistinctRefreshRates(): Promise<{
+    refreshRateSeconds: number[];
+    userRefreshRateSeconds: number[];
+  }> {
+    const [refreshRateSeconds, userRefreshRateSeconds] = await Promise.all([
+      this.model.distinct("refreshRateSeconds").exec(),
+      this.model.distinct("userRefreshRateSeconds").exec(),
+    ]);
+
+    return {
+      refreshRateSeconds: refreshRateSeconds.filter(
+        (r): r is number => typeof r === "number",
+      ),
+      userRefreshRateSeconds: userRefreshRateSeconds.filter(
+        (r): r is number => typeof r === "number",
+      ),
+    };
   }
 
   async syncRefreshRates(input: RefreshRateSyncInput): Promise<void> {

@@ -123,4 +123,10 @@ export interface IUserRepository {
     userIds?: string[];
     feedIds?: string[];
   }): AsyncIterable<{ feedId: string }>;
+  iterateUsersWithExpiringRedditCredentials(withinMs: number): AsyncIterable<{
+    userId: string;
+    discordUserId: string;
+    credentialId: string;
+    encryptedRefreshToken: string;
+  }>;
 }

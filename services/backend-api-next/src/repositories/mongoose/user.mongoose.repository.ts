@@ -489,4 +489,69 @@ export class UserMongooseRepository
       };
     }
   }
+
+  async *iterateUsersWithExpiringRedditCredentials(
+    withinMs: number,
+  ): AsyncIterable<{
+    userId: string;
+    discordUserId: string;
+    credentialId: string;
+    encryptedRefreshToken: string;
+  }> {
+    const expirationThreshold = new Date(Date.now() + withinMs);
+
+    const cursor = this.model
+      .find({
+        externalCredentials: {
+          $elemMatch: {
+            type: UserExternalCredentialType.Reddit,
+            status: UserExternalCredentialStatus.Active,
+            "data.accessToken": { $exists: true },
+            "data.refreshToken": { $exists: true },
+            expireAt: {
+              $exists: true,
+              $lte: expirationThreshold,
+            },
+          },
+        },
+      })
+      .select("_id discordUserId externalCredentials")
+      .lean()
+      .cursor();
+
+    for await (const doc of cursor) {
+      const typedDoc = doc as {
+        _id: Types.ObjectId;
+        discordUserId: string;
+        externalCredentials?: Array<{
+          _id: Types.ObjectId;
+          type: string;
+          data?: Record<string, unknown>;
+        }>;
+      };
+
+      const redditCredential = typedDoc.externalCredentials?.find(
+        (c) => c.type === UserExternalCredentialType.Reddit,
+      );
+
+      if (!redditCredential) {
+        continue;
+      }
+
+      const refreshToken = redditCredential.data?.refreshToken as
+        | string
+        | undefined;
+
+      if (!refreshToken) {
+        continue;
+      }
+
+      yield {
+        userId: this.objectIdToString(typedDoc._id),
+        discordUserId: typedDoc.discordUserId,
+        credentialId: this.objectIdToString(redditCredential._id),
+        encryptedRefreshToken: refreshToken,
+      };
+    }
+  }
 }

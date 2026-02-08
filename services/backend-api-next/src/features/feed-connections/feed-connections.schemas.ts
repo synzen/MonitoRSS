@@ -4,6 +4,7 @@ import {
   PlaceholderLimitSchema,
 } from "../../shared/schemas/discord-embed.schemas";
 import { SUPPORTED_DATE_LOCALES } from "../user-feeds/user-feeds.schemas";
+import { AjvKeyword } from "../../infra/ajv-plugins";
 
 export const CreateConnectionParamsSchema = Type.Object({
   feedId: Type.String({ minLength: 1 }),
@@ -204,7 +205,7 @@ const ConnectionFormatOptionsSchema = Type.Union([
 
 const TimezoneString = Type.Unsafe<string>({
   type: "string",
-  isTimezone: true,
+  [AjvKeyword.IS_TIMEZONE]: true,
 });
 
 const DateLocaleString = Type.String({

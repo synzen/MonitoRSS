@@ -18,6 +18,6 @@
     "noPropertyAccessFromIndexSignature": false,
     "allowJs": true
   },
-  "include": ["index.ts", "src/**/*"],
+  "include": ["index.ts", "schedule-emitter.ts", "src/**/*"],
   "exclude": ["dist", "src/**/*.test.ts", "test/**/*"]
 }

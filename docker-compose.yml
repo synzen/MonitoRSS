@@ -3,12 +3,28 @@ name: monitorss-prod
 # To update to a specific version, add MONITORSS_VERSION to your .env.prod file (e.g., MONITORSS_VERSION=7.0.1)
 # For major version updates (e.g., 7 to 8), run `git pull` first to get the latest docker-compose changes.
 # See releases: https://github.com/synzen/MonitoRSS/releases
+#
+# To use backend-api-next instead of monolith, set USE_BACKEND_API_NEXT=true in your .env.prod file.
+# This will use the new Fastify-based backend instead of the NestJS monolith.
 
 x-env-files: &env-files
   - path: ./.env.prod
     required: false
   - path: ./.env
     required: false
+
+x-backend-api-next-env: &backend-api-next-env
+  - BACKEND_API_NODE_ENV=${BACKEND_API_NODE_ENV:-local}
+  - BACKEND_API_PORT=${BACKEND_API_PORT:-8000}
+  - BACKEND_API_DEFAULT_MAX_FEEDS=${BACKEND_API_DEFAULT_MAX_FEEDS:-999999}
+  - BACKEND_API_USER_FEEDS_API_HOST=${BACKEND_API_USER_FEEDS_API_HOST:-http://user-feeds-service:5000}
+  - BACKEND_API_FEED_REQUESTS_API_HOST=${BACKEND_API_FEED_REQUESTS_API_HOST:-http://feed-requests-service:5000}
+  - BACKEND_API_FEED_USER_AGENT=${BACKEND_API_FEED_USER_AGENT:-MonitoRSS}
+  - BACKEND_API_RABBITMQ_BROKER_URL=${BACKEND_API_RABBITMQ_BROKER_URL:-amqp://guest:guest@rabbitmq-broker:5672/}
+  - BACKEND_API_USER_FEEDS_API_KEY=${BACKEND_API_USER_FEEDS_API_KEY:-user-feeds-api-key}
+  - BACKEND_API_FEED_REQUESTS_API_KEY=${BACKEND_API_FEED_REQUESTS_API_KEY:-feed-requests-api-key}
+  - LOG_LEVEL=${LOG_LEVEL:-info}
+  - NODE_ENV=${NODE_ENV:-production}
 
 services:
   bot-presence-service:
@@ -88,6 +104,7 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-production}
 
+  # Schedule emitter - uses monolith by default, backend-api-next when USE_BACKEND_API_NEXT=true
   schedule-emitter-service:
     extends:
       file: ./docker-compose.base.yml
@@ -97,7 +114,20 @@ services:
     env_file: *env-files
     environment:
       - NODE_ENV=${NODE_ENV:-production}
+    profiles:
+      - legacy
+      - default
 
+  schedule-emitter-next-service:
+    extends:
+      file: ./docker-compose.base.yml
+      service: schedule-emitter-next-service
+    env_file: *env-files
+    environment: *backend-api-next-env
+    profiles:
+      - next
+
+  # Web API - uses monolith by default, backend-api-next when USE_BACKEND_API_NEXT=true
   monolith:
     image: ghcr.io/synzen/monitorss-monolith:${MONITORSS_VERSION:-7}
     restart: on-failure:3
@@ -123,6 +153,24 @@ services:
     command: ["node", "dist/main.js"]
     networks:
       - monitorss-default
+    profiles:
+      - legacy
+      - default
+
+  monolith-next:
+    extends:
+      file: ./docker-compose.base.yml
+      service: web-api-next
+    depends_on:
+      - mongo
+      - user-feeds-service
+      - feed-requests-service
+    ports:
+      - "${BACKEND_API_PORT:-8000}:${BACKEND_API_PORT:-8000}"
+    env_file: *env-files
+    environment: *backend-api-next-env
+    profiles:
+      - next
 
 volumes:
   mongodb-data:

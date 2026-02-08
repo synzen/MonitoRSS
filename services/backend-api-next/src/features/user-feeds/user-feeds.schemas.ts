@@ -10,6 +10,7 @@ import {
   EmbedSchema,
   PlaceholderLimitSchema,
 } from "../../shared/schemas/discord-embed.schemas";
+import { AjvKeyword } from "../../infra/ajv-plugins";
 
 export const CreateUserFeedBodySchema = Type.Object({
   url: Type.String({ minLength: 1 }),
@@ -217,7 +218,7 @@ export const SUPPORTED_DATE_LOCALES = [
 
 const TimezoneString = Type.Unsafe<string>({
   type: "string",
-  isTimezone: true,
+  [AjvKeyword.IS_TIMEZONE]: true,
 });
 
 const DateLocaleString = Type.String({
@@ -575,7 +576,7 @@ export const GetUserFeedsQuerySchema = Type.Object({
   search: Type.Optional(Type.String()),
   sort: Type.Optional(
     Type.String({
-      enum: Object.values(GetUserFeedsInputSortKey),
+      enum: ["", ...Object.values(GetUserFeedsInputSortKey)],
     }),
   ),
 });

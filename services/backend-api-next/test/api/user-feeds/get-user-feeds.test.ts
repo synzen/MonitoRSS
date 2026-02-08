@@ -539,6 +539,29 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
     );
   });
 
+  it("accepts empty string for sort parameter and uses default sort", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const userId = generateTestId();
+
+    await ctx.container.userFeedRepository.create({
+      title: "Empty Sort Test Feed",
+      url: `https://example.com/get-user-feeds-emptysort-${generateSnowflake()}.xml`,
+      user: { id: userId, discordUserId },
+    });
+
+    const response = await user.fetch(
+      "/api/v1/user-feeds?limit=10&offset=0&sort=",
+      {
+        method: "GET",
+      },
+    );
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as GetUserFeedsResponse;
+    assert.ok(Array.isArray(body.results));
+  });
+
   it("returns 400 when limit is missing", async () => {
     const user = await ctx.asUser(generateSnowflake());
 

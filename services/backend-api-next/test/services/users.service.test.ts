@@ -314,10 +314,20 @@ describe("UsersService", { concurrency: true }, () => {
       assert.ok(result.creditBalance);
     });
 
-    it("returns null when user does not exist", async () => {
+    it("creates user if they do not exist and updates preferences", async () => {
+      const createdUser = {
+        ...harness.createContext().defaultUser,
+        discordUserId: "non-existent-user",
+      };
+      let callCount = 0;
       const ctx = harness.createContext({
         userRepository: {
-          updatePreferencesByDiscordId: () => Promise.resolve(null),
+          findByDiscordId: () => {
+            callCount++;
+            return Promise.resolve(callCount <= 2 ? null : createdUser);
+          },
+          create: () => Promise.resolve(createdUser),
+          updatePreferencesByDiscordId: () => Promise.resolve(createdUser),
         },
       });
 
@@ -328,7 +338,12 @@ describe("UsersService", { concurrency: true }, () => {
         },
       );
 
-      assert.strictEqual(result, null);
+      assert.ok(result);
+      assert.strictEqual(ctx.userRepository.create.mock.calls.length, 1);
+      assert.strictEqual(
+        ctx.userRepository.updatePreferencesByDiscordId.mock.calls.length,
+        1,
+      );
     });
   });
 

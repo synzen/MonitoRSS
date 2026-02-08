@@ -17,12 +17,12 @@ describe("Health API", { concurrency: true }, () => {
   });
 
   describe("GET /api/v1/health", () => {
-    it("returns 200 with status ok", async () => {
+    it("returns 200 with ok: 1", async () => {
       const response = await ctx.fetch("/api/v1/health");
 
       assert.strictEqual(response.status, 200);
-      const body = (await response.json()) as { status: string };
-      assert.strictEqual(body.status, "ok");
+      const body = (await response.json()) as { ok: number };
+      assert.strictEqual(body.ok, 1);
     });
   });
 

@@ -1,4 +1,10 @@
 name: monitorss-dev
+
+# To use backend-api-next instead of backend-api, use:
+#   docker compose -f docker-compose.dev.yml --profile next up
+# Default (legacy backend-api):
+#   docker compose -f docker-compose.dev.yml up
+
 services:
   feed-requests-redis-cache:
     extends:
@@ -133,54 +139,6 @@ services:
       - LOG_LEVEL=debug
       - NODE_ENV=local
 
-  # user-feeds-service:
-  #   extends:
-  #     file: docker-compose.base.yml
-  #     service: user-feeds-service
-  #   volumes:
-  #     - ./services/user-feeds:/usr/src/app
-  #     - /usr/src/app/node_modules/
-  #   command: npm run start:watch
-  #   env_file:
-  #     - ./.env.local
-  #   environment:
-  #     - LOG_LEVEL=debug
-  #     - USER_FEEDS_START_TARGET=service
-  #     - NODE_ENV=local
-  #     - USER_FEEDS_FEED_REQUESTS_API_URL=http://feed-requests-api:5000/v1/feed-requests
-  #     - USER_FEEDS_FEED_REQUESTS_GRPC_URL=dns:///feed-requests-service:4999
-
-  # user-feeds-api:
-  #   extends:
-  #     file: docker-compose.base.yml
-  #     service: user-feeds-service
-  #   volumes:
-  #     - ./services/user-feeds:/usr/src/app
-  #     - /usr/src/app/node_modules/
-  #   ports:
-  #     - "5001:5000"
-  #   command: npm run start:watch
-  #   env_file:
-  #     - ./.env.local
-  #   environment:
-  #     - LOG_LEVEL=debug
-  #     - USER_FEEDS_START_TARGET=api
-  #     - NODE_ENV=local
-  #     - USER_FEEDS_FEED_REQUESTS_API_URL=http://feed-requests-api:5000/v1/feed-requests
-  #     - USER_FEEDS_FEED_REQUESTS_GRPC_URL=dns:///feed-requests-service:4999
-  #   networks:
-  #     - monitorss-default
-
-  # user-feeds-postgres-migration:
-  #   extends:
-  #     file: docker-compose.base.yml
-  #     service: user-feeds-postgres-migration
-  #   command: npm run migration:up
-  #   env_file:
-  #     - ./.env.local
-  #   environment:
-  #     - NODE_ENV=local
-
   # user-feeds-next replaces user-feeds
   user-feeds-postgres-migration:
     extends:
@@ -245,7 +203,7 @@ services:
         - action: rebuild
           path: ./services/user-feeds-next/package.json
 
-  # Schedule emitter
+  # Schedule emitter (legacy backend-api) - default profile
   schedule-emitter-service:
     extends:
       file: docker-compose.base.yml
@@ -259,8 +217,47 @@ services:
       - NODE_ENV=local
       - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
       - LOG_LEVEL=debug
+    profiles:
+      - legacy
+      - default
 
-  # Web - Backend api
+  # Schedule emitter (backend-api-next) - next profile
+  schedule-emitter-next-service:
+    extends:
+      file: docker-compose.base.yml
+      service: schedule-emitter-next-service
+    build:
+      context: services/backend-api-next
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./services/backend-api-next:/usr/src/app
+      - /usr/src/app/node_modules/
+    env_file:
+      - ./.env.local
+    environment:
+      - NODE_ENV=local
+      - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
+      - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672/
+      - BACKEND_API_USER_FEEDS_API_HOST=http://user-feeds-api:5000
+      - BACKEND_API_USER_FEEDS_API_KEY=user-feeds-api-key
+      - BACKEND_API_FEED_REQUESTS_API_HOST=http://feed-requests-api:5000
+      - BACKEND_API_FEED_REQUESTS_API_KEY=feed-requests-api-key
+      - BACKEND_API_FEED_USER_AGENT=MonitoRSS
+      - LOG_LEVEL=debug
+    command: npm run dev:schedule-emitter
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./services/backend-api-next
+          target: /usr/src/app
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: ./services/backend-api-next/package.json
+    profiles:
+      - next
+
+  # Web API (legacy backend-api) - default profile
   web-api:
     extends:
       file: docker-compose.base.yml
@@ -281,11 +278,73 @@ services:
     command: npm run start:watch
     networks:
       - monitorss-default
+    profiles:
+      - legacy
+      - default
 
+  # Web API (backend-api-next) - next profile
+  web-api-next:
+    extends:
+      file: docker-compose.base.yml
+      service: web-api-next
+    build:
+      context: services/backend-api-next
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./services/backend-api-next:/usr/src/app
+      - /usr/src/app/node_modules/
+    ports:
+      - "${BACKEND_API_PORT:-8000}:${BACKEND_API_PORT:-8000}"
+    env_file:
+      - ./.env.local
+    environment:
+      - BACKEND_API_NODE_ENV=local
+      - BACKEND_API_PORT=${BACKEND_API_PORT:-8000}
+      - BACKEND_API_USER_FEEDS_API_HOST=http://user-feeds-api:5000
+      - BACKEND_API_USER_FEEDS_API_KEY=user-feeds-api-key
+      - BACKEND_API_FEED_REQUESTS_API_HOST=http://feed-requests-api:5000
+      - BACKEND_API_FEED_REQUESTS_API_KEY=feed-requests-api-key
+      - BACKEND_API_FEED_USER_AGENT=MonitoRSS
+      - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
+      - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672/
+      - BACKEND_API_LOGIN_REDIRECT_URI=http://localhost:3000
+      - LOG_LEVEL=debug
+      - NODE_ENV=local
+    command: npm run dev
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./services/backend-api-next
+          target: /usr/src/app
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: ./services/backend-api-next/package.json
+    networks:
+      - monitorss-default
+    profiles:
+      - next
+
+  # Web client for legacy backend-api
   web-client:
     extends:
       file: docker-compose.base.yml
       service: web-client
+    environment:
+      - API_PROXY_URL=http://web-api:${BACKEND_API_PORT:-8000}
+    profiles:
+      - legacy
+      - default
+
+  # Web client for backend-api-next
+  web-client-next:
+    extends:
+      file: docker-compose.base.yml
+      service: web-client
+    environment:
+      - API_PROXY_URL=http://web-api-next:${BACKEND_API_PORT:-8000}
+    profiles:
+      - next
 
 volumes:
   mongodb-dev-data:

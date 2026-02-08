@@ -243,14 +243,12 @@ export class UsersService {
       return this.getByDiscordId(discordUserId);
     }
 
-    const user = await this.deps.userRepository.updatePreferencesByDiscordId(
+    await this.getOrCreateUserByDiscordId(discordUserId);
+
+    await this.deps.userRepository.updatePreferencesByDiscordId(
       discordUserId,
       data.preferences,
     );
-
-    if (!user) {
-      return null;
-    }
 
     return this.getByDiscordId(discordUserId);
   }

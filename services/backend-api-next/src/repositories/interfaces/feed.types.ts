@@ -77,6 +77,11 @@ export interface IFeedRepository {
 
   findById(id: string): Promise<IFeed | null>;
 
+  findUnconvertedByGuilds(options: {
+    guildIds: string[] | "*";
+    conversionDisabledCodes: string[];
+  }): Promise<IFeed[]>;
+
   updateById(
     id: string,
     update: Record<string, unknown>,

@@ -321,6 +321,7 @@ export interface ScheduledFeedWithLookupKey {
 export interface FeedForSlotOffsetRecalculation {
   id: string;
   url: string;
+  refreshRateSeconds?: number;
   userRefreshRateSeconds?: number;
 }
 
@@ -506,6 +507,8 @@ export interface IUserFeedRepository {
   countPendingInvitesForUser(discordUserId: string): Promise<number>;
 
   // Migration methods
+  countAllFeeds(): Promise<number>;
+  iterateAllFeedsForSlotRecalculation(): AsyncIterable<FeedForSlotOffsetRecalculation>;
   iterateFeedsMissingSlotOffset(): AsyncIterable<UserFeedForSlotOffsetMigration>;
   bulkUpdateSlotOffsets(operations: SlotOffsetUpdateOperation[]): Promise<void>;
   iterateFeedsMissingUserId(): AsyncIterable<UserFeedForUserIdMigration>;
@@ -588,4 +591,9 @@ export interface IUserFeedRepository {
     filter: { url?: string; lookupKey?: string },
     disabledCode: UserFeedDisabledCode,
   ): Promise<number>;
+
+  getDistinctRefreshRates(): Promise<{
+    refreshRateSeconds: number[];
+    userRefreshRateSeconds: number[];
+  }>;
 }
