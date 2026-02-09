@@ -1,0 +1,195 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - status
+    - generic [ref=e3]:
+      - status [ref=e4]: Navigated to feeds page.
+      - banner [ref=e5]:
+        - generic [ref=e7]:
+          - generic [ref=e8]:
+            - link "MonitoRSS Home" [ref=e10] [cursor=pointer]:
+              - /url: /feeds
+              - generic [ref=e11]:
+                - img "RustBot" [ref=e13]: R
+                - generic "MonitoRSS" [ref=e14]
+            - button "Navigate to my feeds Ctrl + K" [ref=e17] [cursor=pointer]:
+              - img [ref=e19]
+              - generic [ref=e21]:
+                - paragraph [ref=e22]: Navigate to my feeds
+                - generic [ref=e23]: Ctrl + K
+          - button "Account settings" [ref=e25] [cursor=pointer]:
+            - generic:
+              - generic:
+                - img
+      - generic [ref=e27]:
+        - generic [ref=e28]:
+          - generic [ref=e29]:
+            - heading "Feeds (7)" [level=1] [ref=e31]:
+              - text: Feeds
+              - text: (7)
+            - generic [ref=e32]:
+              - button "Feed Actions" [ref=e33] [cursor=pointer]:
+                - generic: Feed Actions
+                - img [ref=e35]
+              - generic [ref=e37]:
+                - button "Add Feed" [ref=e38] [cursor=pointer]:
+                  - img [ref=e40]
+                  - text: Add Feed
+                - button "Additional add feed options" [ref=e42] [cursor=pointer]:
+                  - img [ref=e43]
+          - paragraph [ref=e46]: Every feed represents a news source that you can subscribe to. After adding a feed, you may then specify where you want articles for that feed to be sent to.
+        - generic [ref=e47]:
+          - paragraph [ref=e49]: Loaded table with 7 of 7 feeds
+          - search [ref=e50]:
+            - generic [ref=e51]:
+              - group [ref=e52]:
+                - generic [ref=e53]:
+                  - generic:
+                    - img
+                  - textbox "Search feeds by title or url" [ref=e54]
+                - button "Search" [ref=e55] [cursor=pointer]:
+                  - img [ref=e57]
+                  - text: Search
+              - button "Status" [ref=e60] [cursor=pointer]:
+                - img [ref=e62]
+                - generic:
+                  - paragraph: Status
+                - img [ref=e65]
+              - 'button "Display table columns: 5 of 5" [ref=e68] [cursor=pointer]':
+                - img [ref=e70]
+                - generic:
+                  - paragraph: "Columns: 5 of 5"
+                - img [ref=e73]
+          - table [ref=e77]:
+            - rowgroup [ref=e78]:
+              - row "Check all currently loaded feeds for bulk actions Status Title sorted ascending URL Added on Refresh Rate Shared with Me" [ref=e79]:
+                - columnheader "Check all currently loaded feeds for bulk actions" [ref=e80]:
+                  - checkbox "Check all currently loaded feeds for bulk actions" [ref=e84]
+                - button "Status" [ref=e86] [cursor=pointer]:
+                  - generic [ref=e88]: Status
+                - button "Title sorted ascending" [active] [ref=e89] [cursor=pointer]:
+                  - generic [ref=e90]:
+                    - generic [ref=e91]: Title
+                    - img "sorted ascending" [ref=e92]
+                - button "URL" [ref=e94] [cursor=pointer]:
+                  - generic [ref=e96]: URL
+                - button "Added on" [ref=e97] [cursor=pointer]:
+                  - generic [ref=e99]: Added on
+                - button "Refresh Rate" [ref=e100] [cursor=pointer]:
+                  - generic [ref=e102]: Refresh Rate
+                - button "Shared with Me" [ref=e103] [cursor=pointer]:
+                  - generic [ref=e105]: Shared with Me
+                - status [ref=e106]
+            - rowgroup [ref=e107]:
+              - row "Check feed AAA Test Feed for bulk actions Ok AAA Test Feed http://host.docker.internal:3001/feed.xml?sort=aaa 2026/02/09 10 minutes" [ref=e108]:
+                - cell "Check feed AAA Test Feed for bulk actions" [ref=e109]:
+                  - checkbox "Check feed AAA Test Feed for bulk actions" [ref=e112]
+                - cell "Ok" [ref=e114]:
+                  - img "Ok" [ref=e115]
+                - cell "AAA Test Feed" [ref=e117]:
+                  - link "AAA Test Feed" [ref=e118] [cursor=pointer]:
+                    - /url: /feeds/6989e19d217190c23b5d8a91
+                - cell "http://host.docker.internal:3001/feed.xml?sort=aaa" [ref=e119]:
+                  - link "http://host.docker.internal:3001/feed.xml?sort=aaa" [ref=e121] [cursor=pointer]:
+                    - /url: http://host.docker.internal:3001/feed.xml?sort=aaa
+                - cell "2026/02/09" [ref=e122]
+                - cell "10 minutes" [ref=e123]
+                - cell [ref=e124]
+              - row "Check feed BBB Test Feed for bulk actions Ok BBB Test Feed http://host.docker.internal:3001/feed.xml?sort=bbb 2026/02/09 20 minutes" [ref=e125]:
+                - cell "Check feed BBB Test Feed for bulk actions" [ref=e126]:
+                  - checkbox "Check feed BBB Test Feed for bulk actions" [ref=e129]
+                - cell "Ok" [ref=e131]:
+                  - img "Ok" [ref=e132]
+                - cell "BBB Test Feed" [ref=e134]:
+                  - link "BBB Test Feed" [ref=e135] [cursor=pointer]:
+                    - /url: /feeds/6989e19d217190c23b5d8a9a
+                - cell "http://host.docker.internal:3001/feed.xml?sort=bbb" [ref=e136]:
+                  - link "http://host.docker.internal:3001/feed.xml?sort=bbb" [ref=e138] [cursor=pointer]:
+                    - /url: http://host.docker.internal:3001/feed.xml?sort=bbb
+                - cell "2026/02/09" [ref=e139]
+                - cell "20 minutes" [ref=e140]
+                - cell [ref=e141]
+              - row "Check feed CCC Test Feed for bulk actions CCC Test Feed http://host.docker.internal:3001/feed.xml?sort=ccc 2026/02/09 30 minutes" [ref=e142]:
+                - cell "Check feed CCC Test Feed for bulk actions" [ref=e143]:
+                  - checkbox "Check feed CCC Test Feed for bulk actions" [ref=e146]
+                - cell [ref=e148]:
+                  - img [ref=e149]
+                - cell "CCC Test Feed" [ref=e151]:
+                  - link "CCC Test Feed" [ref=e152] [cursor=pointer]:
+                    - /url: /feeds/6989e19d217190c23b5d8aa3
+                - cell "http://host.docker.internal:3001/feed.xml?sort=ccc" [ref=e153]:
+                  - link "http://host.docker.internal:3001/feed.xml?sort=ccc" [ref=e155] [cursor=pointer]:
+                    - /url: http://host.docker.internal:3001/feed.xml?sort=ccc
+                - cell "2026/02/09" [ref=e156]
+                - cell "30 minutes" [ref=e157]
+                - cell [ref=e158]
+              - row "Check feed Manual Test Feed for bulk actions Ok Manual Test Feed http://host.docker.internal:3001/feed.xml 2026/02/09 2 minutes" [ref=e159]:
+                - cell "Check feed Manual Test Feed for bulk actions" [ref=e160]:
+                  - checkbox "Check feed Manual Test Feed for bulk actions" [ref=e163]
+                - cell "Ok" [ref=e165]:
+                  - img "Ok" [ref=e166]
+                - cell "Manual Test Feed" [ref=e168]:
+                  - link "Manual Test Feed" [ref=e169] [cursor=pointer]:
+                    - /url: /feeds/6989dcfd44ce883f11926489
+                - cell "http://host.docker.internal:3001/feed.xml" [ref=e170]:
+                  - link "http://host.docker.internal:3001/feed.xml" [ref=e172] [cursor=pointer]:
+                    - /url: http://host.docker.internal:3001/feed.xml
+                - cell "2026/02/09" [ref=e173]
+                - cell "2 minutes" [ref=e174]
+                - cell [ref=e175]
+              - row "Check feed Untitled Feed for bulk actions Ok Untitled Feed https://testdeus.blogspot.com/feeds/posts/default 2026/01/11 2 minutes" [ref=e176]:
+                - cell "Check feed Untitled Feed for bulk actions" [ref=e177]:
+                  - checkbox "Check feed Untitled Feed for bulk actions" [ref=e180]
+                - cell "Ok" [ref=e182]:
+                  - img "Ok" [ref=e183]
+                - cell "Untitled Feed" [ref=e185]:
+                  - link "Untitled Feed" [ref=e186] [cursor=pointer]:
+                    - /url: /feeds/696421195696827786d0ff87
+                - cell "https://testdeus.blogspot.com/feeds/posts/default" [ref=e187]:
+                  - link "https://testdeus.blogspot.com/feeds/posts/default" [ref=e189] [cursor=pointer]:
+                    - /url: https://testdeus.blogspot.com/feeds/posts/default
+                - cell "2026/01/11" [ref=e190]
+                - cell "2 minutes" [ref=e191]
+                - cell [ref=e192]
+              - row "Check feed hyui for bulk actions Ok hyui https://testdeus.blogspot.com/feeds/posts/default 2026/01/22 2 minutes" [ref=e193]:
+                - cell "Check feed hyui for bulk actions" [ref=e194]:
+                  - checkbox "Check feed hyui for bulk actions" [ref=e197]
+                - cell "Ok" [ref=e199]:
+                  - img "Ok" [ref=e200]
+                - cell "hyui" [ref=e202]:
+                  - link "hyui" [ref=e203] [cursor=pointer]:
+                    - /url: /feeds/697273a98c331b8d17fde07f
+                - cell "https://testdeus.blogspot.com/feeds/posts/default" [ref=e204]:
+                  - link "https://testdeus.blogspot.com/feeds/posts/default" [ref=e206] [cursor=pointer]:
+                    - /url: https://testdeus.blogspot.com/feeds/posts/default
+                - cell "2026/01/22" [ref=e207]
+                - cell "2 minutes" [ref=e208]
+                - cell [ref=e209]
+              - row "Check feed title for bulk actions Ok title https://testdeus.blogspot.com/feeds/posts/default 2026/02/08 2 minutes" [ref=e210]:
+                - cell "Check feed title for bulk actions" [ref=e211]:
+                  - checkbox "Check feed title for bulk actions" [ref=e214]
+                - cell "Ok" [ref=e216]:
+                  - img "Ok" [ref=e217]
+                - cell "title" [ref=e219]:
+                  - link "title" [ref=e220] [cursor=pointer]:
+                    - /url: /feeds/6989115bc134e55e46b7e26a
+                - cell "https://testdeus.blogspot.com/feeds/posts/default" [ref=e221]:
+                  - link "https://testdeus.blogspot.com/feeds/posts/default" [ref=e223] [cursor=pointer]:
+                    - /url: https://testdeus.blogspot.com/feeds/posts/default
+                - cell "2026/02/08" [ref=e224]
+                - cell "2 minutes" [ref=e225]
+                - cell [ref=e226]
+          - generic [ref=e227]:
+            - paragraph [ref=e229]: Viewed 7 of 7 feeds
+            - button "Load More" [disabled] [ref=e230]:
+              - generic [ref=e231]: Load More
+  - generic:
+    - region
+    - region
+    - region
+    - region
+    - region
+    - region
+```

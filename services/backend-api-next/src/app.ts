@@ -99,6 +99,9 @@ export async function createApp(
   // API routes with /api/v1 prefix
   app.register(
     async (instance) => {
+      // Set error handler for this scope
+      instance.setErrorHandler(errorHandler);
+
       // Health check endpoint
       instance.get("/health", async () => ({ ok: 1 }));
 

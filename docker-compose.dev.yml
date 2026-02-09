@@ -229,9 +229,6 @@ services:
     build:
       context: services/backend-api-next
       dockerfile: Dockerfile.dev
-    volumes:
-      - ./services/backend-api-next:/usr/src/app
-      - /usr/src/app/node_modules/
     env_file:
       - ./.env.local
     environment:
@@ -248,10 +245,14 @@ services:
     develop:
       watch:
         - action: sync+restart
-          path: ./services/backend-api-next
-          target: /usr/src/app
-          ignore:
-            - node_modules/
+          path: ./services/backend-api-next/src
+          target: /usr/src/app/src
+        - action: sync+restart
+          path: ./services/backend-api-next/index.ts
+          target: /usr/src/app/index.ts
+        - action: sync+restart
+          path: ./services/backend-api-next/schedule-emitter.ts
+          target: /usr/src/app/schedule-emitter.ts
         - action: rebuild
           path: ./services/backend-api-next/package.json
     profiles:
@@ -290,9 +291,6 @@ services:
     build:
       context: services/backend-api-next
       dockerfile: Dockerfile.dev
-    volumes:
-      - ./services/backend-api-next:/usr/src/app
-      - /usr/src/app/node_modules/
     ports:
       - "${BACKEND_API_PORT:-8000}:${BACKEND_API_PORT:-8000}"
     env_file:
@@ -314,10 +312,14 @@ services:
     develop:
       watch:
         - action: sync+restart
-          path: ./services/backend-api-next
-          target: /usr/src/app
-          ignore:
-            - node_modules/
+          path: ./services/backend-api-next/src
+          target: /usr/src/app/src
+        - action: sync+restart
+          path: ./services/backend-api-next/index.ts
+          target: /usr/src/app/index.ts
+        - action: sync+restart
+          path: ./services/backend-api-next/schedule-emitter.ts
+          target: /usr/src/app/schedule-emitter.ts
         - action: rebuild
           path: ./services/backend-api-next/package.json
     networks:

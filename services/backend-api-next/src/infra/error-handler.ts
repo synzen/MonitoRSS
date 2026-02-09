@@ -162,15 +162,6 @@ export function errorHandler(
   }
 
   if (error.validation) {
-    logger.warn("Validation error", {
-      discordId,
-      http: {
-        method: request.method,
-        url: request.url,
-      },
-      validation: error.validation,
-    });
-
     const errors = error.validation.map((v) => ({ message: v.message ?? "" }));
     return reply
       .status(400)

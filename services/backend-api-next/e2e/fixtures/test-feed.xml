@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>E2E Test Feed</title>
+    <link>http://localhost:3001</link>
+    <description>Test feed for E2E tests</description>
+    <item>
+      <title>Test Article 1</title>
+      <link>http://localhost:3001/article/1</link>
+      <description>This is test article 1</description>
+      <pubDate>Mon, 01 Jan 2024 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Test Article 2</title>
+      <link>http://localhost:3001/article/2</link>
+      <description>This is test article 2</description>
+      <pubDate>Tue, 02 Jan 2024 00:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

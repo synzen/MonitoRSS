@@ -262,7 +262,6 @@ services:
     build:
       context: services/backend-api-next
       dockerfile: dockerfiles/mixed.Dockerfile
-      target: build
     restart: on-failure:10
     depends_on:
       - mongo
@@ -284,7 +283,6 @@ services:
     build:
       context: services/backend-api-next
       dockerfile: dockerfiles/mixed.Dockerfile
-      target: build
     restart: on-failure:3
     depends_on:
       - mongo

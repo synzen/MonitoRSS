@@ -97,7 +97,7 @@ export async function formatUserFeedResponse(
     (con) => ({
       id: con.id,
       name: con.name,
-      key: "discord-channel" as const,
+      key: "DISCORD_CHANNEL" as const,
       details: {
         ...con.details,
         embeds: convertToNestedDiscordEmbed(con.details.embeds),
@@ -900,10 +900,14 @@ function parseFilters(raw: unknown): GetUserFeedsInputFilters | undefined {
       });
   }
 
-  if (typeof obj.computedStatuses === "string") {
+  if (
+    typeof obj.computedStatuses === "string" &&
+    obj.computedStatuses.trim() !== ""
+  ) {
     filters.computedStatuses = obj.computedStatuses
       .split(",")
-      .map((v) => v.trim()) as never;
+      .map((v) => v.trim())
+      .filter((v) => v !== "") as never;
   }
 
   if (typeof obj.ownedByUser === "string") {

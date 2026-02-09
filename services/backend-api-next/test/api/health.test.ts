@@ -27,8 +27,8 @@ describe("Health API", { concurrency: true }, () => {
   });
 
   describe("404 handling", () => {
-    it("returns 404 for unknown routes", async () => {
-      const response = await ctx.fetch("/unknown-route");
+    it("returns 404 for unknown API routes", async () => {
+      const response = await ctx.fetch("/api/v1/unknown-route");
 
       assert.strictEqual(response.status, 404);
       const body = (await response.json()) as { code: string; message: string };

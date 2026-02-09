@@ -712,7 +712,7 @@ const handlers = [
     return HttpResponse.json<GetUserFeedRequestsOutput>({
       result: {
         requests: mockUserFeedRequests,
-        nextRetryTimestamp: null,
+        nextRetryTimestamp: Math.floor(Date.now() / 1000) + 3600,
         feedHostGlobalRateLimit: null,
       },
     });
