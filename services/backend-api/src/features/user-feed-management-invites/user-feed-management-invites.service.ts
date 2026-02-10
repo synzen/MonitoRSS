@@ -242,17 +242,33 @@ export class UserFeedManagementInvitesService {
         }
       );
     } else if (invite.type === UserFeedManagerInviteType.Transfer) {
-      await this.userFeedModel.updateOne(
-        {
-          _id: userFeed._id,
-        },
-        {
-          $set: {
-            "user.discordUserId": invite.discordUserId,
-            "shareManageOptions.invites": [],
+      if (updates.status === UserFeedManagerStatus.Accepted) {
+        await this.userFeedModel.updateOne(
+          {
+            _id: userFeed._id,
           },
-        }
-      );
+          {
+            $set: {
+              "user.discordUserId": invite.discordUserId,
+              "shareManageOptions.invites": [],
+            },
+          }
+        );
+      } else {
+        await this.userFeedModel.updateOne(
+          {
+            _id: userFeed._id,
+          },
+          {
+            $set: {
+              ...(updates.status && {
+                [`shareManageOptions.invites.${inviteIndex}.status`]:
+                  updates.status,
+              }),
+            },
+          }
+        );
+      }
     }
   }
 
