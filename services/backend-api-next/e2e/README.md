@@ -4,10 +4,10 @@ This directory contains end-to-end tests for the backend-api-next service using 
 
 ## Prerequisites
 
-1. Docker stack must be running with the `next` profile:
+1. Docker stack must be running with the `next` profile - source changes will automatically restart container:
 
    ```bash
-   docker compose -f docker-compose.dev.yml --profile next up
+   docker compose -f docker-compose.dev.yml --profile next watch
    ```
 
 2. You must have authenticated via Discord (see Setup below)

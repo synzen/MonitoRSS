@@ -1,5 +1,6 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import type { Config } from "../config";
+import type { DiscordApiService } from "../services/discord-api/discord-api.service";
 import logger from "./logger";
 import {
   DISCORD_AUTH_ENDPOINT,
@@ -76,7 +77,10 @@ export interface AuthService {
   ): Promise<UserManagesGuildResult>;
 }
 
-export function createAuthService(config: Config): AuthService {
+export function createAuthService(
+  config: Config,
+  discordApiService: DiscordApiService,
+): AuthService {
   const OAUTH_SCOPES = "identify guilds";
   const CLIENT_ID = config.BACKEND_API_DISCORD_CLIENT_ID;
   const CLIENT_SECRET = config.BACKEND_API_DISCORD_CLIENT_SECRET;
@@ -253,18 +257,10 @@ export function createAuthService(config: Config): AuthService {
       userAccessToken: string,
       guildId: string,
     ): Promise<UserManagesGuildResult> {
-      const url = `${API_BASE_URL}/users/@me/guilds`;
-      const res = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${userAccessToken}`,
-        },
-      });
+      const guilds = await discordApiService.executeBearerRequest<
+        PartialUserGuild[]
+      >(userAccessToken, "/users/@me/guilds");
 
-      if (!res.ok) {
-        throw new Error(`Failed to get user guilds (${res.status})`);
-      }
-
-      const guilds = (await res.json()) as PartialUserGuild[];
       const targetGuild = guilds.find((g) => g.id === guildId);
 
       if (!targetGuild) {

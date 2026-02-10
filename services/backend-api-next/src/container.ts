@@ -131,7 +131,6 @@ export function createContainer(deps: {
   mongoConnection: MongoConnection;
   rabbitmq: RabbitConnection;
 }): Container {
-  const authService = createAuthService(deps.config);
   const publishMessage = createPublisher(deps.rabbitmq);
 
   // Repositories
@@ -174,6 +173,7 @@ export function createContainer(deps: {
 
   // External API Services
   const discordApiService = new DiscordApiService(deps.config);
+  const authService = createAuthService(deps.config, discordApiService);
   const discordAuthService = new DiscordAuthService(
     deps.config,
     discordApiService,

@@ -23,7 +23,7 @@ export const CreatePreviewOutputSchema = z.object({
       }),
     )
     .optional(),
-  customPlaceholderPreviews: z.array(z.array(z.string())),
+  customPlaceholderPreviews: z.array(z.array(z.string())).optional(),
 });
 
 const FilterStatusSchema = z.object({

@@ -16,7 +16,11 @@ import { DiscordOAuth2Guard } from "../discord-auth/guards/DiscordOAuth2.guard";
 import { SessionAccessToken } from "../discord-auth/types/SessionAccessToken.type";
 import { getAccessTokenFromRequest } from "../discord-auth/utils/get-access-token-from-session";
 import { DiscordUsersService } from "./discord-users.service";
-import { GetMeAuthStatusOutputDto, GetUserOutputDto } from "./dto";
+import {
+  GetMeAuthStatusOutputDto,
+  GetMyServersOutputDto,
+  GetUserOutputDto,
+} from "./dto";
 import { GetBotOutputDto } from "./dto/GetBotOutput.dto";
 
 @Controller("discord-users")
@@ -70,6 +74,31 @@ export class DiscordUsersController {
       maxUserFeeds: user.maxUserFeeds,
       maxUserFeedsComposition: user.maxUserFeedsComposition,
       allowCustomPlaceholders: user.allowCustomPlaceholders,
+    };
+  }
+
+  @Get("@me/servers")
+  @UseGuards(DiscordOAuth2Guard)
+  async getMyServers(
+    @DiscordAccessToken() accessToken: SessionAccessToken
+  ): Promise<GetMyServersOutputDto> {
+    const guilds = await this.discordUsersService.getGuilds(
+      accessToken.access_token
+    );
+
+    const data = guilds.map((guild) => ({
+      id: guild.id,
+      name: guild.name,
+      iconUrl: guild.iconUrl,
+      benefits: {
+        maxFeeds: guild.benefits.maxFeeds,
+        webhooks: guild.benefits.webhooks,
+      },
+    }));
+
+    return {
+      results: data,
+      total: data.length,
     };
   }
 

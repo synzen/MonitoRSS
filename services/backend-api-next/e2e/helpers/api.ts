@@ -5,10 +5,14 @@ import type { Feed, Connection } from "./types";
 import { MOCK_RSS_FEED_URL } from "./constants";
 
 export const E2E_PREFIX = "e2e-";
-const CONFIG_FILE = join(process.cwd(), "e2e", "config.json");
+const CONFIG_FILE = join(process.cwd(), "e2econfig.json");
 
 interface E2EConfig {
   channelId?: string;
+  serverName?: string;
+  channelName?: string;
+  forumChannelName?: string;
+  inviteUsername?: string;
 }
 
 function loadConfig(): E2EConfig {
@@ -24,6 +28,24 @@ function loadConfig(): E2EConfig {
 
 export function getTestChannelId(): string | undefined {
   return process.env.E2E_TEST_CHANNEL_ID || loadConfig().channelId;
+}
+
+export function getTestServerName(): string | undefined {
+  return process.env.E2E_TEST_SERVER_NAME || loadConfig().serverName;
+}
+
+export function getTestChannelName(): string | undefined {
+  return process.env.E2E_TEST_CHANNEL_NAME || loadConfig().channelName;
+}
+
+export function getTestForumChannelName(): string | undefined {
+  return (
+    process.env.E2E_TEST_FORUM_CHANNEL_NAME || loadConfig().forumChannelName
+  );
+}
+
+export function getTestInviteUsername(): string | undefined {
+  return process.env.E2E_TEST_INVITE_USERNAME || loadConfig().inviteUsername;
 }
 
 export function generateTestId(): string {

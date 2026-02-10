@@ -1,6 +1,10 @@
-import { RESTHandler } from "@synzen/discord-rest";
-import type { FetchResponse } from "@synzen/discord-rest/dist/types/FetchResponse";
-import { Environment, type Config } from "../../config";
+import {
+  REST,
+  DiscordAPIError as DjsDiscordAPIError,
+  HTTPError,
+} from "@discordjs/rest";
+import type { RequestData } from "@discordjs/rest";
+import type { Config } from "../../config";
 import { DiscordAPIError } from "../../shared/exceptions/discord-api.error";
 import type {
   DiscordGuildMember,
@@ -12,40 +16,53 @@ import type {
 import type { RequestOptions } from "./types";
 
 export class DiscordApiService {
-  private readonly API_URL: string;
   private readonly BOT_TOKEN: string;
   private readonly CLIENT_ID: string;
-  private readonly restHandler: RESTHandler;
+  private readonly rest: REST;
 
   constructor(private readonly config: Config) {
-    this.API_URL = config.BACKEND_API_DISCORD_API_BASE_URL;
     this.BOT_TOKEN = config.BACKEND_API_DISCORD_BOT_TOKEN;
     this.CLIENT_ID = config.BACKEND_API_DISCORD_CLIENT_ID;
-    this.restHandler = new RESTHandler({
-      delayOnInvalidThreshold: config.NODE_ENV !== Environment.Test,
+
+    const apiBase = config.BACKEND_API_DISCORD_API_BASE_URL.endsWith("/api")
+      ? config.BACKEND_API_DISCORD_API_BASE_URL
+      : `${config.BACKEND_API_DISCORD_API_BASE_URL}/api`;
+
+    const rest = new REST({
+      version: "10",
+      api: apiBase,
     });
+    rest.setToken(this.BOT_TOKEN);
+    this.rest = rest;
   }
 
   async executeBotRequest<T>(
     endpoint: string,
     options?: RequestOptions,
   ): Promise<T> {
-    const url = `${this.API_URL}${endpoint}`;
-    const res = await this.restHandler.fetch(url, {
-      method: (options?.method as never) || "GET",
-      headers: {
-        Authorization: `Bot ${this.BOT_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: options?.body,
-    });
+    const method = options?.method || "GET";
+    const requestData: RequestData = {
+      body: options?.body ? JSON.parse(options.body) : undefined,
+      auth: true,
+      authPrefix: "Bot",
+    };
 
-    await this.handleJSONResponseError({ res, url });
+    // When a 401 is received, discordjs calls rest.setToken(null) which causes
+    // all subsequent requests to fail with a confusing error message about missing token
+    // Re-set token before each request to handle cases where it may have been
+    // cleared (e.g., @discordjs/rest clears token on 401 responses)
+    this.rest.setToken(this.BOT_TOKEN);
 
-    if (res.status === 204) {
-      return null as T;
-    } else {
-      return res.json() as Promise<T>;
+    try {
+      const result = await this.executeRequest(
+        endpoint as `/${string}`,
+        method,
+        requestData,
+      );
+
+      return result as T;
+    } catch (error) {
+      this.convertError(error, endpoint);
     }
   }
 
@@ -54,18 +71,27 @@ export class DiscordApiService {
     endpoint: string,
     options?: RequestOptions,
   ): Promise<T> {
-    const url = `${this.API_URL}${endpoint}`;
-    const res = await this.restHandler.fetch(url, {
-      method: (options?.method as never) || "GET",
+    const method = options?.method || "GET";
+    const requestData: RequestData = {
+      body: options?.body ? JSON.parse(options.body) : undefined,
+      auth: false,
+      authPrefix: "Bearer",
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
       },
-    });
+    };
 
-    await this.handleJSONResponseError({ res, url });
+    try {
+      const result = await this.executeRequest(
+        endpoint as `/${string}`,
+        method,
+        requestData,
+      );
 
-    return res.json() as Promise<T>;
+      return result as T;
+    } catch (error) {
+      this.convertError(error, endpoint);
+    }
   }
 
   async getBot(): Promise<DiscordUser> {
@@ -121,27 +147,42 @@ export class DiscordApiService {
     );
   }
 
-  private async handleJSONResponseError({
-    res,
-    url,
-  }: {
-    res: FetchResponse;
-    url: string;
-  }): Promise<void> {
-    if (res.status >= 400 && res.status < 500) {
+  private async executeRequest(
+    endpoint: `/${string}`,
+    method: string,
+    requestData: RequestData,
+  ): Promise<unknown> {
+    switch (method) {
+      case "GET":
+        return this.rest.get(endpoint, requestData);
+      case "POST":
+        return this.rest.post(endpoint, requestData);
+      case "PUT":
+        return this.rest.put(endpoint, requestData);
+      case "DELETE":
+        return this.rest.delete(endpoint, requestData);
+      case "PATCH":
+        return this.rest.patch(endpoint, requestData);
+      default:
+        throw new Error(`Unsupported HTTP method: ${method}`);
+    }
+  }
+
+  private convertError(error: unknown, endpoint: string): never {
+    if (error instanceof DjsDiscordAPIError) {
       throw new DiscordAPIError(
-        `Discord API request to ${url} failed (${JSON.stringify(
-          await res.json(),
-        )})`,
-        res.status,
+        `Discord API request to ${endpoint} failed (${JSON.stringify(error.rawError)})`,
+        error.status,
       );
     }
 
-    if (res.status >= 500) {
+    if (error instanceof HTTPError) {
       throw new DiscordAPIError(
-        `Discord API request to ${url} failed (${res.status} - Discord internal error)`,
-        res.status,
+        `Discord API request to ${endpoint} failed (${error.status} - ${error.message})`,
+        error.status,
       );
     }
+
+    throw error;
   }
 }

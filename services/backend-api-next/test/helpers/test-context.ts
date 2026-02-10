@@ -164,7 +164,7 @@ export async function createAppTestContext(
   options: CreateAppTestContextOptions = {},
 ): Promise<AppTestContext> {
   const connection = await setupDatabase();
-  const discordMockServer = createTestHttpServer();
+  const discordMockServer = createTestHttpServer({ pathPrefix: "/api/v10" });
 
   const mockApiOverrides: Partial<Config> = {};
   const mockApis = options.mockApis ?? {};

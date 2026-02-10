@@ -75,7 +75,7 @@ export interface CreatePreviewOutput {
     content?: string;
     embeds?: unknown[];
   }>;
-  customPlaceholderPreviews: string[][];
+  customPlaceholderPreviews?: string[][];
 }
 
 interface FilterStatus {

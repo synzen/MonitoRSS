@@ -6,6 +6,8 @@ import {
 } from "../helpers/test-context";
 import { generateSnowflake } from "../helpers/test-id";
 
+const MANAGE_CHANNEL_PERMISSION = "16";
+
 let ctx: AppTestContext;
 
 before(async () => {
@@ -367,3 +369,277 @@ describe(
     });
   },
 );
+
+describe("GET /api/v1/discord-users/@me/servers", { concurrency: true }, () => {
+  it("returns 401 without authentication", async () => {
+    const response = await ctx.fetch("/api/v1/discord-users/@me/servers");
+    assert.strictEqual(response.status, 401);
+  });
+
+  it("returns servers with correct shape", async () => {
+    const user = await ctx.asUser(generateSnowflake());
+    const serverId = generateSnowflake();
+
+    ctx.discordMockServer.registerRouteForToken(
+      "GET",
+      "/users/@me/guilds",
+      user.accessToken.access_token,
+      {
+        status: 200,
+        body: [
+          {
+            id: serverId,
+            name: "Test Server",
+            icon: "abc123",
+            owner: false,
+            permissions: MANAGE_CHANNEL_PERMISSION,
+          },
+        ],
+      },
+    );
+
+    const response = await user.fetch("/api/v1/discord-users/@me/servers");
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as {
+      results: Array<{
+        id: string;
+        name: string;
+        iconUrl: string;
+        benefits: {
+          maxFeeds: number;
+          webhooks: boolean;
+        };
+      }>;
+      total: number;
+    };
+
+    assert.ok(body.results);
+    assert.strictEqual(body.total, 1);
+    const server = body.results[0];
+    assert.ok(server);
+    assert.strictEqual(server.id, serverId);
+    assert.strictEqual(server.name, "Test Server");
+    assert.strictEqual(
+      server.iconUrl,
+      `https://cdn.discordapp.com/icons/${serverId}/abc123.png?size=128`,
+    );
+    assert.ok(server.benefits);
+    assert.strictEqual(typeof server.benefits.maxFeeds, "number");
+    assert.strictEqual(typeof server.benefits.webhooks, "boolean");
+  });
+
+  it("only returns servers where user has MANAGE_CHANNEL permission", async () => {
+    const user = await ctx.asUser(generateSnowflake());
+    const serverWithPermission = generateSnowflake();
+    const serverWithoutPermission = generateSnowflake();
+
+    ctx.discordMockServer.registerRouteForToken(
+      "GET",
+      "/users/@me/guilds",
+      user.accessToken.access_token,
+      {
+        status: 200,
+        body: [
+          {
+            id: serverWithPermission,
+            name: "Server With Permission",
+            icon: "icon1",
+            owner: false,
+            permissions: MANAGE_CHANNEL_PERMISSION,
+          },
+          {
+            id: serverWithoutPermission,
+            name: "Server Without Permission",
+            icon: "icon2",
+            owner: false,
+            permissions: "0",
+          },
+        ],
+      },
+    );
+
+    const response = await user.fetch("/api/v1/discord-users/@me/servers");
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as {
+      results: Array<{ id: string; name: string }>;
+      total: number;
+    };
+
+    assert.strictEqual(body.total, 1);
+    assert.strictEqual(body.results.length, 1);
+    const server = body.results[0];
+    assert.ok(server);
+    assert.strictEqual(server.id, serverWithPermission);
+    assert.strictEqual(server.name, "Server With Permission");
+  });
+
+  it("includes servers where user is owner", async () => {
+    const user = await ctx.asUser(generateSnowflake());
+    const ownedServerId = generateSnowflake();
+
+    ctx.discordMockServer.registerRouteForToken(
+      "GET",
+      "/users/@me/guilds",
+      user.accessToken.access_token,
+      {
+        status: 200,
+        body: [
+          {
+            id: ownedServerId,
+            name: "Owned Server",
+            icon: "ownericon",
+            owner: true,
+            permissions: "0",
+          },
+        ],
+      },
+    );
+
+    const response = await user.fetch("/api/v1/discord-users/@me/servers");
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as {
+      results: Array<{ id: string; name: string }>;
+      total: number;
+    };
+
+    assert.strictEqual(body.total, 1);
+    const server = body.results[0];
+    assert.ok(server);
+    assert.strictEqual(server.id, ownedServerId);
+    assert.strictEqual(server.name, "Owned Server");
+  });
+
+  it("returns empty results when user has no eligible servers", async () => {
+    const user = await ctx.asUser(generateSnowflake());
+
+    ctx.discordMockServer.registerRouteForToken(
+      "GET",
+      "/users/@me/guilds",
+      user.accessToken.access_token,
+      {
+        status: 200,
+        body: [
+          {
+            id: generateSnowflake(),
+            name: "No Permission Server",
+            icon: "icon",
+            owner: false,
+            permissions: "0",
+          },
+        ],
+      },
+    );
+
+    const response = await user.fetch("/api/v1/discord-users/@me/servers");
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as {
+      results: Array<unknown>;
+      total: number;
+    };
+
+    assert.strictEqual(body.total, 0);
+    assert.deepStrictEqual(body.results, []);
+  });
+
+  it("returns empty results when Discord returns no guilds", async () => {
+    const user = await ctx.asUser(generateSnowflake());
+
+    ctx.discordMockServer.registerRouteForToken(
+      "GET",
+      "/users/@me/guilds",
+      user.accessToken.access_token,
+      {
+        status: 200,
+        body: [],
+      },
+    );
+
+    const response = await user.fetch("/api/v1/discord-users/@me/servers");
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as {
+      results: Array<unknown>;
+      total: number;
+    };
+
+    assert.strictEqual(body.total, 0);
+    assert.deepStrictEqual(body.results, []);
+  });
+
+  it("propagates Discord API errors", async () => {
+    const user = await ctx.asUser(generateSnowflake());
+
+    ctx.discordMockServer.registerRouteForToken(
+      "GET",
+      "/users/@me/guilds",
+      user.accessToken.access_token,
+      {
+        status: 500,
+        body: { message: "500: Internal Server Error" },
+      },
+    );
+
+    const response = await user.fetch("/api/v1/discord-users/@me/servers");
+
+    assert.strictEqual(response.status, 500);
+  });
+
+  it("returns multiple servers with varying permissions", async () => {
+    const user = await ctx.asUser(generateSnowflake());
+    const serverId1 = generateSnowflake();
+    const serverId2 = generateSnowflake();
+    const serverId3 = generateSnowflake();
+
+    ctx.discordMockServer.registerRouteForToken(
+      "GET",
+      "/users/@me/guilds",
+      user.accessToken.access_token,
+      {
+        status: 200,
+        body: [
+          {
+            id: serverId1,
+            name: "Server 1",
+            icon: "icon1",
+            owner: true,
+            permissions: "0",
+          },
+          {
+            id: serverId2,
+            name: "Server 2",
+            icon: "icon2",
+            owner: false,
+            permissions: MANAGE_CHANNEL_PERMISSION,
+          },
+          {
+            id: serverId3,
+            name: "Server 3",
+            icon: "icon3",
+            owner: false,
+            permissions: "8",
+          },
+        ],
+      },
+    );
+
+    const response = await user.fetch("/api/v1/discord-users/@me/servers");
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as {
+      results: Array<{ id: string; name: string }>;
+      total: number;
+    };
+
+    assert.strictEqual(body.total, 2);
+    assert.strictEqual(body.results.length, 2);
+
+    const serverIds = body.results.map((s) => s.id);
+    assert.ok(serverIds.includes(serverId1));
+    assert.ok(serverIds.includes(serverId2));
+    assert.ok(!serverIds.includes(serverId3));
+  });
+});

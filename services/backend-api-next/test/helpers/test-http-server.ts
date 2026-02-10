@@ -18,6 +18,10 @@ export interface RecordedRequest {
 
 type ResponseProvider = (req: RecordedRequest) => MockResponse;
 
+export interface TestHttpServerOptions {
+  pathPrefix?: string;
+}
+
 export interface TestHttpServer {
   port: number;
   host: string;
@@ -38,10 +42,13 @@ export interface TestHttpServer {
   stop(): Promise<void>;
 }
 
-export function createTestHttpServer(): TestHttpServer {
+export function createTestHttpServer(
+  options?: TestHttpServerOptions,
+): TestHttpServer {
   const requests: RecordedRequest[] = [];
   const routes = new Map<string, MockResponse | ResponseProvider>();
   const tokenRoutes = new Map<string, Map<string, MockResponse>>();
+  const pathPrefix = options?.pathPrefix ?? "";
 
   function makeRouteKey(method: string, path: string): string {
     return `${method.toUpperCase()}:${path}`;
@@ -143,7 +150,7 @@ export function createTestHttpServer(): TestHttpServer {
       path: string,
       response: MockResponse | ResponseProvider,
     ) {
-      routes.set(makeRouteKey(method, path), response);
+      routes.set(makeRouteKey(method, `${pathPrefix}${path}`), response);
     },
 
     registerRouteForToken(
@@ -152,7 +159,7 @@ export function createTestHttpServer(): TestHttpServer {
       token: string,
       response: MockResponse,
     ) {
-      const key = makeRouteKey(method, path);
+      const key = makeRouteKey(method, `${pathPrefix}${path}`);
       let handlers = tokenRoutes.get(key);
 
       if (!handlers) {
@@ -168,7 +175,8 @@ export function createTestHttpServer(): TestHttpServer {
     },
 
     getRequestsForPath(path: string) {
-      return requests.filter((r) => r.path === path);
+      const prefixedPath = `${pathPrefix}${path}`;
+      return requests.filter((r) => r.path === path || r.path === prefixedPath);
     },
 
     clear() {

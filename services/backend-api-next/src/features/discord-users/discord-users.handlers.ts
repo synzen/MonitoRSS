@@ -89,3 +89,29 @@ export async function getUserByIdHandler(
     },
   });
 }
+
+export async function getMeServersHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const { discordUsersService } = request.container;
+
+  const guilds = await discordUsersService.getGuilds(
+    request.accessToken.access_token,
+  );
+
+  const data = guilds.map((guild) => ({
+    id: guild.id,
+    name: guild.name,
+    iconUrl: guild.iconUrl,
+    benefits: {
+      maxFeeds: guild.benefits.maxFeeds,
+      webhooks: guild.benefits.webhooks,
+    },
+  }));
+
+  return reply.send({
+    results: data,
+    total: data.length,
+  });
+}
