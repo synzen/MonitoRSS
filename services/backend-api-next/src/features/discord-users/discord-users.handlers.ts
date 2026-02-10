@@ -63,7 +63,9 @@ export async function getAuthStatusHandler(
   } catch (err) {
     if (
       err instanceof DiscordAPIError &&
-      (err.statusCode === 401 || err.statusCode === 403)
+      (err.statusCode === 401 ||
+        err.statusCode === 403 ||
+        err.statusCode === 404)
     ) {
       await request.session.delete();
       return reply.send({ authenticated: false });

@@ -24,9 +24,13 @@ export class DiscordApiService {
     this.BOT_TOKEN = config.BACKEND_API_DISCORD_BOT_TOKEN;
     this.CLIENT_ID = config.BACKEND_API_DISCORD_CLIENT_ID;
 
-    const apiBase = config.BACKEND_API_DISCORD_API_BASE_URL.endsWith("/api")
-      ? config.BACKEND_API_DISCORD_API_BASE_URL
-      : `${config.BACKEND_API_DISCORD_API_BASE_URL}/api`;
+    let apiBase = config.BACKEND_API_DISCORD_API_BASE_URL;
+
+    if (/\/api\/v\d+$/.test(apiBase)) {
+      apiBase = apiBase.replace(/\/v\d+$/, "");
+    } else if (!apiBase.endsWith("/api")) {
+      apiBase = `${apiBase}/api`;
+    }
 
     const rest = new REST({
       version: "10",

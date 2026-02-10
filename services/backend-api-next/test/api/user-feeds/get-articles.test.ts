@@ -617,6 +617,38 @@ describe(
       assert.strictEqual(response.status, 422);
     });
 
+    it("returns 200 with filters containing only articleId (no returnType)", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Test Feed",
+        url: `https://example.com/feed-get-articles-articleid-${generateTestId()}.xml`,
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await user.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-articles`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            filters: {
+              articleId: "some-article-id",
+            },
+            formatter: {
+              options: {
+                formatTables: false,
+                stripImages: false,
+                disableImageLinkPreviews: false,
+              },
+            },
+          }),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+    });
+
     it("falls back to user preferences for date options when feed has no formatOptions", async () => {
       const discordUserId = generateSnowflake();
       const user = await ctx.asUser(discordUserId);

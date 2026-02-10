@@ -502,9 +502,11 @@ const GetArticlesFormatterSchema = Type.Object(
 
 const GetArticlesFiltersSchema = Type.Object(
   {
-    returnType: Type.String({
-      enum: Object.values(GetFeedArticlesFilterReturnType),
-    }),
+    returnType: Type.Optional(
+      Type.String({
+        enum: Object.values(GetFeedArticlesFilterReturnType),
+      }),
+    ),
     expression: Type.Optional(Type.Object({}, { additionalProperties: true })),
     articleId: Type.Optional(Type.String()),
     articleIdHashes: Type.Optional(Type.Array(Type.String())),
