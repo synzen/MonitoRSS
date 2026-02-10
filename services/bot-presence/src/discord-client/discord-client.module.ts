@@ -1,21 +1,61 @@
-import { DynamicModule, Module } from '@nestjs/common';
-import { AppConfigModule } from '../app-config/app-config.module';
-import { Client, GatewayIntentBits, GatewayOpcodes } from '@discordjs/core';
-import { AppConfigService } from '../app-config/app-config.service';
+import { DynamicModule, Module } from "@nestjs/common";
+import { AppConfigModule } from "../app-config/app-config.module";
+import { Client, GatewayIntentBits, GatewayOpcodes } from "@discordjs/core";
+import { AppConfigService } from "../app-config/app-config.service";
 
-import { REST } from '@discordjs/rest';
+import { REST } from "@discordjs/rest";
+import { Routes } from "discord-api-types/v10";
 import {
   WebSocketManager,
   CompressionMethod,
   WebSocketShardEvents,
-} from '@discordjs/ws';
-import { DiscordClientService } from './discord-client.service';
-import { DISCORD_PRESENCE_ACTIVITY_TYPE_IDS } from '../constants/discord-presence-activity-type.constants';
+} from "@discordjs/ws";
+import { DiscordClientService } from "./discord-client.service";
+import { DISCORD_PRESENCE_ACTIVITY_TYPE_IDS } from "../constants/discord-presence-activity-type.constants";
 import {
   DISCORD_PRESENCE_STATUS_TO_API_VALUE,
   DiscordPresenceStatus,
-} from '../constants/discord-presence-status.constants';
-import { MessageBrokerModule } from '../message-broker/message-broker.module';
+} from "../constants/discord-presence-status.constants";
+import { MessageBrokerModule } from "../message-broker/message-broker.module";
+
+interface GatewayBotInfo {
+  shards: number;
+  session_start_limit: {
+    total: number;
+    remaining: number;
+    reset_after: number;
+    max_concurrency: number;
+  };
+}
+
+async function waitForSufficientSessions(
+  rest: REST,
+  requiredShards?: number,
+): Promise<void> {
+  const gatewayInfo = (await rest.get(Routes.gatewayBot())) as GatewayBotInfo;
+  const { shards: recommendedShards, session_start_limit } = gatewayInfo;
+  const shardsNeeded = requiredShards ?? recommendedShards;
+
+  if (session_start_limit.remaining >= shardsNeeded) {
+    console.log(
+      `Session limit check passed: ${session_start_limit.remaining} sessions available, ${shardsNeeded} needed`,
+    );
+    return;
+  }
+
+  const resetAt = new Date(Date.now() + session_start_limit.reset_after);
+  console.log(
+    `Not enough sessions to spawn ${shardsNeeded} shards. ` +
+      `Only ${session_start_limit.remaining} remaining. ` +
+      `Waiting until reset at ${resetAt.toISOString()}...`,
+  );
+
+  await new Promise((resolve) =>
+    setTimeout(resolve, session_start_limit.reset_after),
+  );
+
+  return waitForSufficientSessions(rest, requiredShards);
+}
 
 @Module({})
 export class DiscordClientModule {
@@ -29,7 +69,7 @@ export class DiscordClientModule {
             const token = appConfigService.getBotToken();
             const presenceStatus = appConfigService.getPresenceStatus();
 
-            const rest = new REST({ version: '10' }).setToken(token);
+            const rest = new REST({ version: "10" }).setToken(token);
 
             let intents: GatewayIntentBits = undefined;
 
@@ -59,6 +99,7 @@ export class DiscordClientModule {
 
             const client = new Client({ rest, gateway });
 
+            await waitForSufficientSessions(rest);
             await gateway.connect();
 
             if (presenceStatus) {
