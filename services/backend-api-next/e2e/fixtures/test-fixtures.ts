@@ -14,7 +14,7 @@ import {
   getTestChannelId,
 } from "../helpers/api";
 import type { Feed, FeedWithConnection } from "../helpers/types";
-import { AUTH_STATE_PATH } from "../helpers/constants";
+import { AUTH_STATE_PATH, AUTH_STATE_PATH_USER2 } from "../helpers/constants";
 
 type TestFixtures = {
   testFeed: Feed;
@@ -28,6 +28,10 @@ type WorkerFixtures = {
 
 async function createAuthenticatedContext(browser: Browser) {
   return browser.newContext({ storageState: AUTH_STATE_PATH });
+}
+
+async function createUser2AuthenticatedContext(browser: Browser) {
+  return browser.newContext({ storageState: AUTH_STATE_PATH_USER2 });
 }
 
 export const test = base.extend<TestFixtures, WorkerFixtures>({
@@ -72,7 +76,13 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   ],
 });
 
-export { expect, type Page, type Locator, createAuthenticatedContext };
+export {
+  expect,
+  type Page,
+  type Locator,
+  createAuthenticatedContext,
+  createUser2AuthenticatedContext,
+};
 
 export async function waitForApiResponse(
   page: Page,

@@ -291,6 +291,11 @@ services:
     build:
       context: services/backend-api-next
       dockerfile: Dockerfile.dev
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:8000/api/v1/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     ports:
       - "${BACKEND_API_PORT:-8000}:${BACKEND_API_PORT:-8000}"
     env_file:
@@ -343,6 +348,9 @@ services:
     extends:
       file: docker-compose.base.yml
       service: web-client
+    depends_on:
+      web-api-next:
+        condition: service_healthy
     environment:
       - API_PROXY_URL=http://web-api-next:${BACKEND_API_PORT:-8000}
     profiles:
