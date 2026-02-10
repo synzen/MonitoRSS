@@ -139,3 +139,4 @@ __pycache__
 CLAUDE.md
 nul
 dist
+auth*.json
