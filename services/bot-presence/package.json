@@ -20,9 +20,9 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@discordjs/core": "^2.3.0",
-    "@discordjs/rest": "^2.2.0",
-    "@discordjs/ws": "^2.0.3",
+    "@discordjs/core": "^2.4.0",
+    "@discordjs/rest": "^2.6.0",
+    "@discordjs/ws": "^2.0.4",
     "@golevelup/nestjs-rabbitmq": "^6.0.2",
     "@nestjs/common": "^11.1.8",
     "@nestjs/config": "^4.0.2",
