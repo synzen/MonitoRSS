@@ -1,12 +1,12 @@
-import { ActivityType } from '@discordjs/core';
+import { ActivityType } from "@discordjs/core";
 
 export enum DiscordPresenceActivityType {
-  Playing = 'playing',
-  Streaming = 'streaming',
-  Listening = 'listening',
-  Watching = 'watching',
-  CustomStatus = 'custom_status',
-  Competing = 'competing',
+  Playing = "playing",
+  Streaming = "streaming",
+  Listening = "listening",
+  Watching = "watching",
+  CustomStatus = "custom_status",
+  Competing = "competing",
 }
 
 export const DISCORD_PRESENCE_ACTIVITY_TYPE_IDS: Record<

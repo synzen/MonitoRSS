@@ -137,6 +137,8 @@ __pycache__
 .env*
 !.env.example
 CLAUDE.md
+AGENTS.md
 nul
 dist
 auth*.json
+**/e2e/test-results/*
