@@ -16,13 +16,17 @@
     "@mikro-orm/core": "^6.2.9",
     "@mikro-orm/mongodb": "^6.2.9",
     "@synzen/discord-rest": "^0.7.0-beta.9",
-    "amqp-connection-manager": "^4.1.9",
-    "amqplib": "^0.10.3",
+    "amqp-connection-manager": "^5.0.0",
+    "amqplib": "^0.10.9",
     "dayjs": "^1.11.2",
     "dotenv": "^16.0.1",
     "source-map-support": "^0.5.21",
     "winston": "^3.3.3",
     "zod": "^3.22.4"
+  },
+  "overrides": {
+    "amqp-connection-manager": "^5.0.0",
+    "amqplib": "^0.10.9"
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.0",
