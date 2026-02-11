@@ -54,3 +54,5 @@ COPY --from=build-prod /usr/src/app/client/dist client/dist
 
 ENV BACKEND_API_PORT=3000
 
+CMD [ "node", "./dist/main" ]
+
