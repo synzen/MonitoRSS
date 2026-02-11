@@ -260,9 +260,22 @@ services:
 
   # Web API (legacy backend-api) - default profile
   web-api:
-    extends:
-      file: docker-compose.base.yml
-      service: web-api
+    build:
+      context: services/backend-api
+      dockerfile: dockerfiles/web/mixed.Dockerfile
+      target: build
+    restart: on-failure:5
+    depends_on:
+      - mongo
+      - user-feeds-service
+      - feed-requests-service
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: "wget http://localhost:8000/api/v1/health -q -O - > /dev/null 2>&1"
+      interval: 5s
+      timeout: 5s
+      retries: 3
     volumes:
       - ./services/backend-api:/usr/src/app
       - /usr/src/app/node_modules/
@@ -270,7 +283,12 @@ services:
       - ./.env.local
     environment:
       - BACKEND_API_NODE_ENV=local
-      - BACKEND_API_USER_FEEDS_API_HOST=http://user-feeds-api:5000
+      - BACKEND_API_PORT=8000
+      - BACKEND_API_DEFAULT_MAX_FEEDS=10
+      - BACKEND_API_FEED_USER_AGENT=MonitoRSS
+      - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672/
+      - BACKEND_API_USER_FEEDS_API_KEY=user-feeds-api-key
+      - BACKEND_API_FEED_REQUESTS_API_KEY=feed-requests-api-key
       - LOG_LEVEL=debug
       - NODE_ENV=local
       - BACKEND_API_USER_FEEDS_API_HOST=http://user-feeds-api:5000

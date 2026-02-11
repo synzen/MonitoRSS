@@ -1,11 +1,11 @@
-import { PresenceUpdateStatus } from '@discordjs/core';
+import { PresenceUpdateStatus } from "@discordjs/core";
 
 export enum DiscordPresenceStatus {
-  Online = 'online',
-  Idle = 'idle',
-  DoNotDisturb = 'dnd',
-  Invisible = 'invisible',
-  Offline = 'offline',
+  Online = "online",
+  Idle = "idle",
+  DoNotDisturb = "dnd",
+  Invisible = "invisible",
+  Offline = "offline",
 }
 
 export const DISCORD_PRESENCE_STATUS_TO_API_VALUE: Record<
