@@ -120,6 +120,42 @@ export async function createConnection(
   };
 }
 
+export async function createWebhookConnection(
+  page: Page,
+  feedId: string,
+  channelId: string,
+  options: { name?: string; webhookName: string; webhookIconUrl?: string },
+): Promise<Connection> {
+  const testId = generateTestId();
+  const body = {
+    name: options.name ?? `Test Webhook Connection ${testId}`,
+    applicationWebhook: {
+      channelId,
+      name: options.webhookName,
+      iconUrl: options.webhookIconUrl,
+    },
+  };
+
+  const response = await page.request.post(
+    `/api/v1/user-feeds/${feedId}/connections/discord-channels`,
+    { data: body },
+  );
+
+  if (!response.ok()) {
+    const text = await response.text();
+    throw new Error(
+      `Failed to create webhook connection: ${response.status()} - ${text}`,
+    );
+  }
+
+  const data = await response.json();
+  return {
+    id: data.result.id,
+    name: data.result.name,
+    key: data.result.key,
+  };
+}
+
 export async function deleteConnection(
   page: Page,
   feedId: string,
@@ -174,4 +210,63 @@ export async function updateFeed(
     const text = await response.text();
     throw new Error(`Failed to update feed: ${response.status()} - ${text}`);
   }
+}
+
+export async function updateConnection(
+  page: Page,
+  feedId: string,
+  connectionId: string,
+  data: Record<string, unknown>,
+): Promise<void> {
+  const response = await page.request.patch(
+    `/api/v1/user-feeds/${feedId}/connections/discord-channels/${connectionId}`,
+    { data },
+  );
+
+  if (!response.ok()) {
+    const text = await response.text();
+    throw new Error(
+      `Failed to update connection: ${response.status()} - ${text}`,
+    );
+  }
+}
+
+export async function getConnection(
+  page: Page,
+  feedId: string,
+  connectionId: string,
+): Promise<{
+  id: string;
+  name: string;
+  details: {
+    webhook?: {
+      id: string;
+      channelId?: string;
+      name?: string;
+      iconUrl?: string;
+      isApplicationOwned?: boolean;
+    };
+  };
+}> {
+  const response = await page.request.get(`/api/v1/user-feeds/${feedId}`);
+
+  if (!response.ok()) {
+    const text = await response.text();
+    throw new Error(`Failed to get feed: ${response.status()} - ${text}`);
+  }
+
+  const data = await response.json();
+  const connections = data.result.discordChannelConnections || [];
+  const connection = connections.find(
+    (c: { id: string }) => c.id === connectionId,
+  );
+
+  if (!connection) {
+    const availableIds = connections.map((c: { id: string }) => c.id);
+    throw new Error(
+      `Connection ${connectionId} not found in feed ${feedId}. Available: ${JSON.stringify(availableIds)}`,
+    );
+  }
+
+  return connection;
 }
