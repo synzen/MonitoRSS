@@ -101,6 +101,7 @@ export async function formatUserFeedResponse(
       details: {
         ...con.details,
         embeds: convertToNestedDiscordEmbed(con.details.embeds),
+        formatter: con.details.formatter ?? {},
         webhook: con.details.webhook
           ? {
               id: con.details.webhook.id,

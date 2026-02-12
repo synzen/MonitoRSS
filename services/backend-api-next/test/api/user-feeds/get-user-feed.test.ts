@@ -359,4 +359,76 @@ describe("GET /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
     assert.ok(body.result.shareManageOptions);
     assert.ok(Array.isArray(body.result.shareManageOptions.invites));
   });
+
+  it("returns connection embeds in nested format", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Feed With Embed",
+      url: "https://example.com/embed-feed.xml",
+      user: { id: generateTestId(), discordUserId },
+      connections: {
+        discordChannels: [
+          {
+            id: generateTestId(),
+            name: "Connection With Embed",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            details: {
+              embeds: [
+                {
+                  title: "Test Title",
+                  authorName: "Author Name",
+                  authorIconURL: "http://author-icon",
+                  footerText: "Footer Text",
+                  footerIconURL: "http://footer-icon",
+                  imageURL: "http://image-url",
+                  thumbnailURL: "http://thumbnail-url",
+                },
+              ],
+              formatter: {},
+            },
+          } as never,
+        ],
+      },
+    });
+
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
+      method: "GET",
+    });
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as {
+      result: {
+        connections: Array<{
+          details: {
+            embeds: Array<{
+              title?: string;
+              author?: { name?: string; iconUrl?: string };
+              footer?: { text?: string; iconUrl?: string };
+              image?: { url?: string };
+              thumbnail?: { url?: string };
+            }>;
+          };
+        }>;
+      };
+    };
+
+    const responseEmbed = body.result.connections[0]?.details.embeds[0];
+    assert.ok(responseEmbed);
+    assert.strictEqual(responseEmbed.title, "Test Title");
+    assert.deepStrictEqual(responseEmbed.author, {
+      name: "Author Name",
+      iconUrl: "http://author-icon",
+    });
+    assert.deepStrictEqual(responseEmbed.footer, {
+      text: "Footer Text",
+      iconUrl: "http://footer-icon",
+    });
+    assert.deepStrictEqual(responseEmbed.image, { url: "http://image-url" });
+    assert.deepStrictEqual(responseEmbed.thumbnail, {
+      url: "http://thumbnail-url",
+    });
+  });
 });

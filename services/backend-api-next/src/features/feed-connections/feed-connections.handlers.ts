@@ -7,6 +7,7 @@ import {
 import { CannotEnableAutoDisabledConnection } from "../../shared/exceptions/feed-connections.exceptions";
 import type { IFeedEmbed } from "../../repositories/interfaces/feed-embed.types";
 import { convertToFlatDiscordEmbeds } from "../../shared/utils/convert-to-flat-discord-embeds";
+import { convertToNestedDiscordEmbed } from "../../shared/utils/convert-to-nested-discord-embed";
 import type {
   SendTestArticlePreviewInput,
   CopyableSetting,
@@ -146,7 +147,7 @@ export async function createDiscordChannelConnectionHandler(
       threadCreationMethod,
       templateData: {
         content,
-        embeds: embeds as IFeedEmbed[] | undefined,
+        embeds: convertToFlatDiscordEmbeds(embeds),
         componentsV2: componentsV2 ?? undefined,
         placeholderLimits,
         formatter: formatter || undefined,
@@ -172,8 +173,9 @@ export async function createDiscordChannelConnectionHandler(
               guildId: connection.details.webhook.guildId,
             }
           : undefined,
-        embeds: connection.details.embeds,
+        embeds: convertToNestedDiscordEmbed(connection.details.embeds),
         content: connection.details.content,
+        formatter: connection.details.formatter ?? {},
       },
       splitOptions: connection.splitOptions,
     },
@@ -734,8 +736,9 @@ export async function updateDiscordChannelConnectionHandler(
               guildId: updatedConnection.details.webhook.guildId,
             }
           : undefined,
-        embeds: updatedConnection.details.embeds,
+        embeds: convertToNestedDiscordEmbed(updatedConnection.details.embeds),
         content: updatedConnection.details.content,
+        formatter: updatedConnection.details.formatter ?? {},
       },
       splitOptions: updatedConnection.splitOptions,
     },

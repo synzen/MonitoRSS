@@ -672,6 +672,80 @@ describe(
         assert.strictEqual(embed.description, "A description");
       });
 
+      it("returns embeds in nested format in response", async () => {
+        const discordUserId = generateSnowflake();
+        const user = await ctx.asUser(discordUserId);
+        const channelId = generateSnowflake();
+        const guildId = generateSnowflake();
+
+        const feed = await ctx.container.userFeedRepository.create({
+          title: "Nested Embed Feed",
+          url: "https://example.com/nested-embed.xml",
+          user: { id: generateTestId(), discordUserId },
+        });
+
+        setupDiscordMocks(channelId, guildId, user.accessToken);
+
+        const response = await user.fetch(
+          `/api/v1/user-feeds/${feed.id}/connections/discord-channels`,
+          {
+            method: "POST",
+            body: JSON.stringify({
+              name: "Nested Embed Connection",
+              channelId,
+              embeds: [
+                {
+                  title: "Test Title",
+                  author: {
+                    name: "Author Name",
+                    iconUrl: "http://author-icon",
+                  },
+                  footer: {
+                    text: "Footer Text",
+                    iconUrl: "http://footer-icon",
+                  },
+                  image: { url: "http://image-url" },
+                  thumbnail: { url: "http://thumbnail-url" },
+                },
+              ],
+            }),
+          },
+        );
+
+        assert.strictEqual(response.status, 201);
+        const body = (await response.json()) as {
+          result: {
+            details: {
+              embeds: Array<{
+                title?: string;
+                author?: { name?: string; iconUrl?: string };
+                footer?: { text?: string; iconUrl?: string };
+                image?: { url?: string };
+                thumbnail?: { url?: string };
+              }>;
+            };
+          };
+        };
+
+        const responseEmbed = body.result.details.embeds[0];
+        assert.ok(responseEmbed);
+        assert.strictEqual(responseEmbed.title, "Test Title");
+        assert.deepStrictEqual(responseEmbed.author, {
+          name: "Author Name",
+          iconUrl: "http://author-icon",
+        });
+        assert.deepStrictEqual(responseEmbed.footer, {
+          text: "Footer Text",
+          iconUrl: "http://footer-icon",
+        });
+        assert.deepStrictEqual(responseEmbed.image, {
+          url: "http://image-url",
+        });
+        assert.deepStrictEqual(responseEmbed.thumbnail, {
+          url: "http://thumbnail-url",
+        });
+      });
+
       it("creates connection with formatter options and persists them", async () => {
         const discordUserId = generateSnowflake();
         const user = await ctx.asUser(discordUserId);
