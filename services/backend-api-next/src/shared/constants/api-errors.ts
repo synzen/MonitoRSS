@@ -61,6 +61,7 @@ export enum ApiErrorCode {
   INVALID_AUTH_CODE = "INVALID_AUTH_CODE",
   INVALID_JSON_STATE = "INVALID_JSON_STATE",
   USER_NOT_FOUND = "USER_NOT_FOUND",
+  ROUTE_NOT_FOUND = "ROUTE_NOT_FOUND",
 }
 
 export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
@@ -143,4 +144,5 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   INVALID_AUTH_CODE: "Invalid code",
   INVALID_JSON_STATE: "Invalid jsonState format",
   USER_NOT_FOUND: "User not found",
+  ROUTE_NOT_FOUND: "Not Found",
 };

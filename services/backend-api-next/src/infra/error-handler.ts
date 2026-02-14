@@ -185,7 +185,7 @@ export function errorHandler(
 }
 
 export function notFoundHandler(request: FastifyRequest, reply: FastifyReply) {
-  sendError(reply, 404, ApiErrorCode.FEED_NOT_FOUND, "Not Found");
+  sendError(reply, 404, ApiErrorCode.ROUTE_NOT_FOUND, "Not Found");
 }
 
 export { ApiErrorCode } from "../shared/constants/api-errors";
