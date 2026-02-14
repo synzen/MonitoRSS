@@ -898,6 +898,153 @@ describe(
         );
       });
 
+      it("preserves regex step fields in customPlaceholders", async () => {
+        const discordUserId = generateSnowflake();
+        const user = await ctx.asUser(discordUserId);
+        const { feedId, connectionId } = await createTestFeedWithConnection(
+          ctx,
+          { discordUserId },
+        );
+
+        const response = await user.fetch(testUrl(feedId, connectionId), {
+          method: "PATCH",
+          body: JSON.stringify({
+            customPlaceholders: [
+              {
+                id: "cp-regex",
+                referenceName: "regexTest",
+                sourcePlaceholder: "title",
+                steps: [
+                  {
+                    id: "step-regex",
+                    type: "REGEX",
+                    regexSearch: "foo(.+)bar",
+                    replacementString: "$1",
+                    regexSearchFlags: "gi",
+                  },
+                ],
+              },
+            ],
+          }),
+        });
+
+        assert.strictEqual(response.status, 200);
+
+        const feed = await ctx.container.userFeedRepository.findById(feedId);
+        const storedConnection = feed?.connections.discordChannels.find(
+          (c) => c.id === connectionId,
+        );
+        const step = storedConnection?.customPlaceholders?.[0]?.steps?.[0] as {
+          type: string;
+          regexSearch?: string;
+          replacementString?: string;
+          regexSearchFlags?: string;
+        };
+
+        assert.strictEqual(step?.type, "REGEX");
+        assert.strictEqual(step?.regexSearch, "foo(.+)bar");
+        assert.strictEqual(step?.replacementString, "$1");
+        assert.strictEqual(step?.regexSearchFlags, "gi");
+      });
+
+      it("preserves date format step fields in customPlaceholders", async () => {
+        const discordUserId = generateSnowflake();
+        const user = await ctx.asUser(discordUserId);
+        const { feedId, connectionId } = await createTestFeedWithConnection(
+          ctx,
+          { discordUserId },
+        );
+
+        const response = await user.fetch(testUrl(feedId, connectionId), {
+          method: "PATCH",
+          body: JSON.stringify({
+            customPlaceholders: [
+              {
+                id: "cp-date",
+                referenceName: "dateTest",
+                sourcePlaceholder: "title",
+                steps: [
+                  {
+                    id: "step-date",
+                    type: "DATE_FORMAT",
+                    format: "YYYY-MM-DD",
+                    timezone: "America/New_York",
+                  },
+                ],
+              },
+            ],
+          }),
+        });
+
+        assert.strictEqual(response.status, 200);
+
+        const feed = await ctx.container.userFeedRepository.findById(feedId);
+        const storedConnection = feed?.connections.discordChannels.find(
+          (c) => c.id === connectionId,
+        );
+        const step = storedConnection?.customPlaceholders?.[0]?.steps?.[0] as {
+          type: string;
+          format?: string;
+          timezone?: string;
+        };
+
+        assert.strictEqual(step?.type, "DATE_FORMAT");
+        assert.strictEqual(step?.format, "YYYY-MM-DD");
+        assert.strictEqual(step?.timezone, "America/New_York");
+      });
+
+      it("preserves multiple step types in a single custom placeholder", async () => {
+        const discordUserId = generateSnowflake();
+        const user = await ctx.asUser(discordUserId);
+        const { feedId, connectionId } = await createTestFeedWithConnection(
+          ctx,
+          { discordUserId },
+        );
+
+        const response = await user.fetch(testUrl(feedId, connectionId), {
+          method: "PATCH",
+          body: JSON.stringify({
+            customPlaceholders: [
+              {
+                id: "cp-multi",
+                referenceName: "multiStep",
+                sourcePlaceholder: "title",
+                steps: [
+                  {
+                    id: "step-1",
+                    type: "REGEX",
+                    regexSearch: "test",
+                    replacementString: "replaced",
+                  },
+                  { id: "step-2", type: "UPPERCASE" },
+                  { id: "step-3", type: "URL_ENCODE" },
+                ],
+              },
+            ],
+          }),
+        });
+
+        assert.strictEqual(response.status, 200);
+
+        const feed = await ctx.container.userFeedRepository.findById(feedId);
+        const storedConnection = feed?.connections.discordChannels.find(
+          (c) => c.id === connectionId,
+        );
+        const steps = storedConnection?.customPlaceholders?.[0]
+          ?.steps as Array<{
+          type: string;
+          regexSearch?: string;
+          replacementString?: string;
+        }>;
+
+        assert.strictEqual(steps?.length, 3);
+        assert.strictEqual(steps[0]?.type, "REGEX");
+        assert.strictEqual(steps[0]?.regexSearch, "test");
+        assert.strictEqual(steps[0]?.replacementString, "replaced");
+        assert.strictEqual(steps[1]?.type, "UPPERCASE");
+        assert.strictEqual(steps[2]?.type, "URL_ENCODE");
+      });
+
       it("updates rateLimits", async () => {
         const discordUserId = generateSnowflake();
         const user = await ctx.asUser(discordUserId);

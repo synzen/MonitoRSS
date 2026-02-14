@@ -92,61 +92,44 @@ const MentionsSchema = Type.Union([
   Type.Null(),
 ]);
 
-const RegexStepSchema = Type.Object(
-  {
-    id: Type.Optional(Type.String()),
-    type: Type.Literal("REGEX"),
-    regexSearch: Type.String({ minLength: 1 }),
-    regexSearchFlags: Type.Optional(Type.Union([Type.String(), Type.Null()])),
-    replacementString: Type.Optional(Type.Union([Type.String(), Type.Null()])),
-  },
-  { additionalProperties: false },
-);
-
-const UrlEncodeStepSchema = Type.Object(
-  {
-    id: Type.Optional(Type.String()),
-    type: Type.Literal("URL_ENCODE"),
-  },
-  { additionalProperties: false },
-);
-
-const DateFormatStepSchema = Type.Object(
-  {
-    id: Type.Optional(Type.String()),
-    type: Type.Literal("DATE_FORMAT"),
-    format: Type.String({ minLength: 1 }),
-    timezone: Type.Optional(Type.Union([Type.String(), Type.Null()])),
-    locale: Type.Optional(Type.Union([Type.String(), Type.Null()])),
-  },
-  { additionalProperties: false },
-);
-
-const UppercaseStepSchema = Type.Object(
-  {
-    id: Type.Optional(Type.String()),
-    type: Type.Literal("UPPERCASE"),
-  },
-  { additionalProperties: false },
-);
-
-const LowercaseStepSchema = Type.Object(
-  {
-    id: Type.Optional(Type.String()),
-    type: Type.Literal("LOWERCASE"),
-  },
-  { additionalProperties: false },
-);
-
-const PreviewCustomPlaceholderStepSchema = Type.Unsafe({
-  oneOf: [
-    RegexStepSchema,
-    UrlEncodeStepSchema,
-    DateFormatStepSchema,
-    UppercaseStepSchema,
-    LowercaseStepSchema,
-  ],
+const RegexStepSchema = Type.Object({
+  id: Type.Optional(Type.String()),
+  type: Type.Literal("REGEX"),
+  regexSearch: Type.String({ minLength: 1 }),
+  regexSearchFlags: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+  replacementString: Type.Optional(Type.Union([Type.String(), Type.Null()])),
 });
+
+const UrlEncodeStepSchema = Type.Object({
+  id: Type.Optional(Type.String()),
+  type: Type.Literal("URL_ENCODE"),
+});
+
+const DateFormatStepSchema = Type.Object({
+  id: Type.Optional(Type.String()),
+  type: Type.Literal("DATE_FORMAT"),
+  format: Type.String({ minLength: 1 }),
+  timezone: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+  locale: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+});
+
+const UppercaseStepSchema = Type.Object({
+  id: Type.Optional(Type.String()),
+  type: Type.Literal("UPPERCASE"),
+});
+
+const LowercaseStepSchema = Type.Object({
+  id: Type.Optional(Type.String()),
+  type: Type.Literal("LOWERCASE"),
+});
+
+const PreviewCustomPlaceholderStepSchema = Type.Union([
+  RegexStepSchema,
+  UrlEncodeStepSchema,
+  DateFormatStepSchema,
+  UppercaseStepSchema,
+  LowercaseStepSchema,
+]);
 
 const PreviewCustomPlaceholderSchema = Type.Object(
   {
