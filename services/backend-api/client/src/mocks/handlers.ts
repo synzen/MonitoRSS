@@ -38,7 +38,6 @@ import {
   GetServerRolesOutput,
   GetServerSettingsOutput,
   GetServerStatusOutput,
-  UpdateServerSettingsOutput,
 } from "@/features/discordServers";
 import mockDiscordChannels from "./data/discordChannels";
 import mockDiscordRoles from "./data/discordRoles";
@@ -192,18 +191,6 @@ const handlers = [
           timezone: "UTC",
         },
         includesBot: true,
-      },
-    })
-  ),
-
-  http.patch("/api/v1/discord-servers/:serverId", async () =>
-    HttpResponse.json<UpdateServerSettingsOutput>({
-      result: {
-        profile: {
-          dateFormat: "YYYY-MM-DD",
-          dateLanguage: "en",
-          timezone: "UTC",
-        },
       },
     })
   ),
