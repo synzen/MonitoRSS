@@ -1,0 +1,15 @@
+**/node_modules
+**/.env*
+**/dist
+**/.tsbuildinfo
+**/test
+**/e2e
+.git
+docs
+packages
+
+services/*
+!services/backend-api-next
+!services/backend-api
+services/backend-api/*
+!services/backend-api/client

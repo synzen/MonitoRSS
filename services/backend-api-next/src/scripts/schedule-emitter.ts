@@ -1,18 +1,18 @@
-import "./src/infra/dayjs-locales";
-import { loadConfig } from "./src/config";
+import "../infra/dayjs-locales";
+import { loadConfig } from "../config";
 import {
   createMongoConnection,
   closeMongoConnection,
-} from "./src/infra/mongoose";
+} from "../infra/mongoose";
 import {
   createRabbitConnection,
   closeRabbitConnection,
-} from "./src/infra/rabbitmq";
-import { createContainer, type Container } from "./src/container";
-import { SCHEDULER_WINDOW_SIZE_MS } from "./src/shared/constants/scheduler.constants";
-import { decrypt } from "./src/shared/utils/decrypt";
-import { RedditAppRevokedException } from "./src/shared/exceptions/reddit.exceptions";
-import logger from "./src/infra/logger";
+} from "../infra/rabbitmq";
+import { createContainer, type Container } from "../container";
+import { SCHEDULER_WINDOW_SIZE_MS } from "../shared/constants/scheduler.constants";
+import { decrypt } from "../shared/utils/decrypt";
+import { RedditAppRevokedException } from "../shared/exceptions/reddit.exceptions";
+import logger from "../infra/logger";
 
 const REDDIT_REFRESH_INTERVAL_MS = 1000 * 60 * 20; // 20 minutes
 const MAINTENANCE_INTERVAL_MS = 1000 * 60 * 5; // 5 minutes

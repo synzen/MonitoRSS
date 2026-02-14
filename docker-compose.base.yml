@@ -260,8 +260,8 @@ services:
   # Schedule emitter (backend-api-next)
   schedule-emitter-next-service:
     build:
-      context: services/backend-api-next
-      dockerfile: dockerfiles/mixed.Dockerfile
+      context: .
+      dockerfile: services/backend-api-next/dockerfiles/mixed.Dockerfile
     restart: on-failure:10
     depends_on:
       - mongo
@@ -276,13 +276,13 @@ services:
       - BACKEND_API_FEED_USER_AGENT=${BACKEND_API_FEED_USER_AGENT:-MonitoRSS}
     networks:
       - monitorss-default
-    command: ["node", "dist/schedule-emitter.js"]
+    command: ["node", "dist/scripts/schedule-emitter.js"]
 
   # Web API (backend-api-next)
   web-api-next:
     build:
-      context: services/backend-api-next
-      dockerfile: dockerfiles/mixed.Dockerfile
+      context: .
+      dockerfile: services/backend-api-next/dockerfiles/mixed.Dockerfile
     restart: on-failure:3
     depends_on:
       - mongo
@@ -303,7 +303,7 @@ services:
       - BACKEND_API_FEED_USER_AGENT=${BACKEND_API_FEED_USER_AGENT:-MonitoRSS}
     networks:
       - monitorss-default
-    command: ["node", "dist/index.js"]
+    command: ["node", "dist/main.js"]
 
   # Web API (legacy backend-api)
   web-api:

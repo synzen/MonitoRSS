@@ -1,16 +1,16 @@
-import "./src/infra/dayjs-locales";
-import { loadConfig } from "./src/config";
+import "./infra/dayjs-locales";
+import { loadConfig } from "./config";
 import {
   createMongoConnection,
   closeMongoConnection,
-} from "./src/infra/mongoose";
+} from "./infra/mongoose";
 import {
   createRabbitConnection,
   closeRabbitConnection,
-} from "./src/infra/rabbitmq";
-import { createContainer } from "./src/container";
-import { createApp, startApp } from "./src/app";
-import logger from "./src/infra/logger";
+} from "./infra/rabbitmq";
+import { createContainer } from "./container";
+import { createApp, startApp } from "./app";
+import logger from "./infra/logger";
 
 async function main() {
   const config = loadConfig();

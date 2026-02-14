@@ -247,12 +247,6 @@ services:
         - action: sync+restart
           path: ./services/backend-api-next/src
           target: /usr/src/app/src
-        - action: sync+restart
-          path: ./services/backend-api-next/index.ts
-          target: /usr/src/app/index.ts
-        - action: sync+restart
-          path: ./services/backend-api-next/schedule-emitter.ts
-          target: /usr/src/app/schedule-emitter.ts
         - action: rebuild
           path: ./services/backend-api-next/package.json
     profiles:
@@ -337,12 +331,6 @@ services:
         - action: sync+restart
           path: ./services/backend-api-next/src
           target: /usr/src/app/src
-        - action: sync+restart
-          path: ./services/backend-api-next/index.ts
-          target: /usr/src/app/index.ts
-        - action: sync+restart
-          path: ./services/backend-api-next/schedule-emitter.ts
-          target: /usr/src/app/schedule-emitter.ts
         - action: rebuild
           path: ./services/backend-api-next/package.json
     networks:
