@@ -261,7 +261,7 @@ services:
   schedule-emitter-next-service:
     build:
       context: .
-      dockerfile: services/backend-api-next/dockerfiles/mixed.Dockerfile
+      dockerfile: services/backend-api-next/dockerfiles/api-only.Dockerfile
     restart: on-failure:10
     depends_on:
       - mongo
