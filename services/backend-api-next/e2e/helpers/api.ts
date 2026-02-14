@@ -9,6 +9,7 @@ const CONFIG_FILE = join(process.cwd(), "e2econfig.json");
 
 interface E2EConfig {
   channelId?: string;
+  forumChannelId?: string;
   serverName?: string;
   channelName?: string;
   forumChannelName?: string;
@@ -36,6 +37,10 @@ export function getTestServerName(): string | undefined {
 
 export function getTestChannelName(): string | undefined {
   return process.env.E2E_TEST_CHANNEL_NAME || loadConfig().channelName;
+}
+
+export function getTestForumChannelId(): string | undefined {
+  return process.env.E2E_TEST_FORUM_CHANNEL_ID || loadConfig().forumChannelId;
 }
 
 export function getTestForumChannelName(): string | undefined {
@@ -99,6 +104,45 @@ export async function createConnection(
     name: overrides?.name ?? `Test Connection ${testId}`,
     channelId,
   };
+
+  const response = await page.request.post(
+    `/api/v1/user-feeds/${feedId}/connections/discord-channels`,
+    { data: body },
+  );
+
+  if (!response.ok()) {
+    const text = await response.text();
+    throw new Error(
+      `Failed to create connection: ${response.status()} - ${text}`,
+    );
+  }
+
+  const data = await response.json();
+  return {
+    id: data.result.id,
+    name: data.result.name,
+    key: data.result.key,
+  };
+}
+
+export async function createConnectionWithOptions(
+  page: Page,
+  feedId: string,
+  channelId: string,
+  options?: {
+    name?: string;
+    threadCreationMethod?: "new-thread";
+  },
+): Promise<Connection> {
+  const testId = generateTestId();
+  const body: Record<string, unknown> = {
+    name: options?.name ?? `Test Connection ${testId}`,
+    channelId,
+  };
+
+  if (options?.threadCreationMethod) {
+    body.threadCreationMethod = options.threadCreationMethod;
+  }
 
   const response = await page.request.post(
     `/api/v1/user-feeds/${feedId}/connections/discord-channels`,
@@ -200,7 +244,26 @@ export async function enableAllTableColumns(page: Page): Promise<void> {
 export async function updateFeed(
   page: Page,
   feedId: string,
-  data: { disabledCode?: string; userRefreshRateSeconds?: number | null },
+  data: {
+    disabledCode?: string;
+    userRefreshRateSeconds?: number | null;
+    passingComparisons?: string[];
+    blockingComparisons?: string[];
+    formatOptions?: {
+      dateFormat?: string;
+      dateTimezone?: string;
+      dateLocale?: string;
+    };
+    dateCheckOptions?: {
+      oldArticleDateDiffMsThreshold?: number;
+    };
+    externalProperties?: Array<{
+      id: string;
+      sourceField: string;
+      label: string;
+      cssSelector: string;
+    }>;
+  },
 ): Promise<void> {
   const response = await page.request.patch(`/api/v1/user-feeds/${feedId}`, {
     data,
@@ -231,14 +294,22 @@ export async function updateConnection(
   }
 }
 
-export async function getConnection(
-  page: Page,
-  feedId: string,
-  connectionId: string,
-): Promise<{
+export interface ConnectionDetails {
   id: string;
   name: string;
+  filters?: {
+    expression?: Record<string, unknown>;
+  };
+  rateLimits?: Array<{ timeWindowSeconds: number; limit: number }>;
+  customPlaceholders?: Array<{
+    id: string;
+    referenceName: string;
+    sourcePlaceholder: string;
+    steps: Array<{ id: string; type: string }>;
+  }>;
   details: {
+    content?: string;
+    embeds?: Array<Record<string, unknown>>;
     webhook?: {
       id: string;
       channelId?: string;
@@ -246,8 +317,17 @@ export async function getConnection(
       iconUrl?: string;
       isApplicationOwned?: boolean;
     };
+    channel?: {
+      id: string;
+    };
   };
-}> {
+}
+
+export async function getConnection(
+  page: Page,
+  feedId: string,
+  connectionId: string,
+): Promise<ConnectionDetails> {
   const response = await page.request.get(`/api/v1/user-feeds/${feedId}`);
 
   if (!response.ok()) {
@@ -269,4 +349,26 @@ export async function getConnection(
   }
 
   return connection;
+}
+
+export async function copyConnectionSettings(
+  page: Page,
+  feedId: string,
+  connectionId: string,
+  data: {
+    properties: string[];
+    targetDiscordChannelConnectionIds: string[];
+  },
+): Promise<void> {
+  const response = await page.request.post(
+    `/api/v1/user-feeds/${feedId}/connections/discord-channels/${connectionId}/copy-connection-settings`,
+    { data },
+  );
+
+  if (!response.ok()) {
+    const text = await response.text();
+    throw new Error(
+      `Failed to copy connection settings: ${response.status()} - ${text}`,
+    );
+  }
 }

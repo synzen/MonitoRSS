@@ -74,6 +74,8 @@ export interface CreatePreviewOutput {
   messages?: Array<{
     content?: string;
     embeds?: unknown[];
+    components?: unknown[];
+    flags?: number;
   }>;
   customPlaceholderPreviews?: string[][];
 }

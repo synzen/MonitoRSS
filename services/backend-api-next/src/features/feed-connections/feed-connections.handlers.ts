@@ -247,7 +247,7 @@ export async function sendTestArticleHandler(
     {
       article: body.article,
       previewInput: {
-        content: body.content,
+        content: body.content ?? undefined,
         embeds: body.embeds,
         channelNewThreadTitle: body.channelNewThreadTitle,
         channelNewThreadExcludesPreview: body.channelNewThreadExcludesPreview,
@@ -486,7 +486,7 @@ export async function createPreviewHandler(
     userFeed: feed,
     connection,
     articleId: body.article?.id,
-    content: body.content,
+    content: body.content ?? undefined,
     embeds: body.embeds,
     channelNewThreadTitle: body.channelNewThreadTitle,
     channelNewThreadExcludesPreview: body.channelNewThreadExcludesPreview,

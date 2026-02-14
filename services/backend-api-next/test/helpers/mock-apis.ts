@@ -102,6 +102,19 @@ export function createMockFeedHandlerFilterValidationApi(): MockApi & {
     body: { result: { errors: [] } },
   }));
 
+  server.registerRoute(
+    "POST",
+    "/v1/user-feeds/validate-discord-payload",
+    (req) => {
+      const body = req.body as { data?: Record<string, unknown> };
+
+      return {
+        status: 200,
+        body: { valid: true, data: body?.data ?? {} },
+      };
+    },
+  );
+
   return {
     server,
     configKey: "BACKEND_API_USER_FEEDS_API_HOST",

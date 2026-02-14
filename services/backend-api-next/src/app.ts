@@ -244,7 +244,7 @@ export async function createApp(
   await app.register(fastifyStatic, {
     root: clientDistPath,
     prefix: "/",
-    decorateReply: false,
+    decorateReply: true,
   });
 
   // Error handlers

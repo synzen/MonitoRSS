@@ -20,6 +20,8 @@ export const CreatePreviewOutputSchema = z.object({
       z.object({
         content: z.string().optional(),
         embeds: z.array(z.unknown()).optional(),
+        components: z.array(z.unknown()).optional(),
+        flags: z.number().optional(),
       }),
     )
     .optional(),

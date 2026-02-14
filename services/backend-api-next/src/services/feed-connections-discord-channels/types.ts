@@ -95,11 +95,11 @@ export interface UpdateDiscordChannelConnectionDetailsInput {
     threadId?: string;
   };
   embeds?: IFeedEmbed[];
-  content?: string;
+  content?: string | null;
   forumThreadTitle?: string;
   forumThreadTags?: IForumThreadTag[];
   placeholderLimits?: IPlaceholderLimit[];
-  componentRows?: IDiscordComponentRow[];
+  componentRows?: IDiscordComponentRow[] | null;
   componentsV2?: Array<Record<string, unknown>> | null;
   formatter?: IDiscordFormatter | null;
   enablePlaceholderFallback?: boolean;

@@ -968,6 +968,28 @@ describe(
         assert.strictEqual(storedConnection?.details.webhook, undefined);
         assert.strictEqual(storedConnection?.details.channel?.id, newChannelId);
       });
+
+      it("accepts content null and componentRows null for V2 mode", async () => {
+        const discordUserId = generateSnowflake();
+        const user = await ctx.asUser(discordUserId);
+        const { feedId, connectionId } = await createTestFeedWithConnection(
+          ctx,
+          { discordUserId },
+        );
+
+        const response = await user.fetch(testUrl(feedId, connectionId), {
+          method: "PATCH",
+          body: JSON.stringify({
+            content: null,
+            componentRows: null,
+            componentsV2: [
+              { type: 17, components: [{ type: 10, content: "{{title}}" }] },
+            ],
+          }),
+        });
+
+        assert.strictEqual(response.status, 200);
+      });
     });
 
     describe("Disabled code re-enabling logic", () => {

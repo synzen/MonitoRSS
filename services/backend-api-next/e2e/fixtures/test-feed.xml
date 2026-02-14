@@ -7,14 +7,32 @@
     <item>
       <title>Test Article 1</title>
       <link>http://localhost:3001/article/1</link>
-      <description>This is test article 1</description>
-      <pubDate>Mon, 01 Jan 2024 00:00:00 GMT</pubDate>
+      <description><![CDATA[This is test article 1 <img src="https://i.imgur.com/EXAMPLE1.png" />]]></description>
+      <pubDate>Thu, 04 Jan 2024 00:00:00 GMT</pubDate>
     </item>
     <item>
       <title>Test Article 2</title>
       <link>http://localhost:3001/article/2</link>
-      <description>This is test article 2</description>
+      <description><![CDATA[This is test article 2 <img src="https://i.imgur.com/EXAMPLE2.png" />]]></description>
+      <pubDate>Wed, 03 Jan 2024 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Test Article 3</title>
+      <link>http://localhost:3001/article/3</link>
+      <description><![CDATA[Here is a table:<table><tr><th>Name</th><th>Value</th></tr><tr><td>Alpha</td><td>100</td></tr><tr><td>Beta</td><td>200</td></tr></table>]]></description>
       <pubDate>Tue, 02 Jan 2024 00:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Test Article 4</title>
+      <link>http://localhost:3001/article/4</link>
+      <description><![CDATA[Line one
+
+
+Line two
+
+
+Line three]]></description>
+      <pubDate>Mon, 01 Jan 2024 00:00:00 GMT</pubDate>
     </item>
   </channel>
 </rss>

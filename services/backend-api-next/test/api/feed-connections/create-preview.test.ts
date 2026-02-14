@@ -393,6 +393,72 @@ describe(
       assert.strictEqual(response.status, 201);
     });
 
+    it("returns 201 when content is null and componentRows is null (V2 mode)", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+      const { feedId, connectionId } = await createTestFeedWithConnection(ctx, {
+        discordUserId,
+      });
+
+      const response = await user.fetch(testUrl(feedId, connectionId), {
+        method: "POST",
+        body: JSON.stringify({
+          content: null,
+          componentRows: null,
+          componentsV2: [
+            { type: 17, components: [{ type: 10, content: "{{title}}" }] },
+          ],
+        }),
+      });
+
+      assert.strictEqual(response.status, 201);
+    });
+
+    it("preserves flags and components in preview response for V2 mode", async (t) => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+      const { feedId, connectionId } = await createTestFeedWithConnection(ctx, {
+        discordUserId,
+      });
+
+      const articleId = feedHandler.intercept(t, {
+        status: 200,
+        body: {
+          status: "SUCCESS",
+          messages: [
+            {
+              flags: 32768,
+              components: [
+                { type: 17, components: [{ type: 10, content: "Hello" }] },
+              ],
+            },
+          ],
+          customPlaceholderPreviews: [],
+        },
+      });
+
+      const response = await user.fetch(testUrl(feedId, connectionId), {
+        method: "POST",
+        body: JSON.stringify({ article: { id: articleId } }),
+      });
+
+      assert.strictEqual(response.status, 201);
+      const body = (await response.json()) as {
+        result: {
+          status: string;
+          messages?: Array<{
+            flags?: number;
+            components?: unknown[];
+          }>;
+        };
+      };
+      assert.strictEqual(body.result.status, "SUCCESS");
+      assert.ok(body.result.messages);
+      assert.strictEqual(body.result.messages[0]?.flags, 32768);
+      assert.ok(Array.isArray(body.result.messages[0]?.components));
+      assert.strictEqual(body.result.messages[0]?.components?.length, 1);
+    });
+
     it("returns 201 when splitOptions and mentions are null", async () => {
       const discordUserId = generateSnowflake();
       const user = await ctx.asUser(discordUserId);

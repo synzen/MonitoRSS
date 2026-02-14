@@ -447,6 +447,28 @@ describe(
       assert.strictEqual(response.status, 201);
     });
 
+    it("returns 201 when content is null and componentRows is null (V2 mode)", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+      const { feedId, connectionId } = await createTestFeedWithConnection(ctx, {
+        discordUserId,
+      });
+
+      const response = await user.fetch(testUrl(feedId, connectionId), {
+        method: "POST",
+        body: JSON.stringify({
+          article: { id: "article-1" },
+          content: null,
+          componentRows: null,
+          componentsV2: [
+            { type: 17, components: [{ type: 10, content: "{{title}}" }] },
+          ],
+        }),
+      });
+
+      assert.strictEqual(response.status, 201);
+    });
+
     it("returns 201 when splitOptions and mentions are null", async () => {
       const discordUserId = generateSnowflake();
       const user = await ctx.asUser(discordUserId);
