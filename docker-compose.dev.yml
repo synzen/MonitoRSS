@@ -282,6 +282,19 @@ services:
     environment:
       - API_PROXY_URL=http://web-api:${BACKEND_API_PORT:-8000}
     command: npm run dev -- --host 0.0.0.0
+    develop:
+      watch:
+        - action: sync
+          path: ./services/backend-api/client/src
+          target: /usr/src/app/client/src
+        - action: sync
+          path: ./services/backend-api/client/public
+          target: /usr/src/app/client/public
+        - action: sync
+          path: ./services/backend-api/client/index.html
+          target: /usr/src/app/client/index.html
+        - action: rebuild
+          path: ./services/backend-api/client/package.json
     networks:
       - monitorss-default
 
