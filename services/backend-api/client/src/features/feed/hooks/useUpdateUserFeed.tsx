@@ -21,13 +21,13 @@ export const useUpdateUserFeed = (props?: Props) => {
         await queryClient.invalidateQueries({
           predicate: (query) => {
             const queryKeyStringsToIgnoreValidation = new Set(
-              props?.queryKeyStringsToIgnoreValidation
+              props?.queryKeyStringsToIgnoreValidation,
             );
 
             if (
               queryKeyStringsToIgnoreValidation &&
               query.queryKey.some(
-                (item) => typeof item === "string" && queryKeyStringsToIgnoreValidation.has(item)
+                (item) => typeof item === "string" && queryKeyStringsToIgnoreValidation.has(item),
               )
             ) {
               return false;
@@ -44,9 +44,9 @@ export const useUpdateUserFeed = (props?: Props) => {
               feedId: inputData.feedId,
             },
           ],
-          data
+          data,
         );
       },
-    }
+    },
   );
 };

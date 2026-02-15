@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Box, VStack, HStack, Text, IconButton, Icon, Button } from "@chakra-ui/react";
-import { FaExclamationCircle, FaCog } from "react-icons/fa";
+import { FaExclamationCircle, FaExclamationTriangle, FaCog } from "react-icons/fa";
 import { ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import { AddComponentButton } from "./AddComponentButton";
 import type { Component, SectionComponent } from "./types";
@@ -24,7 +24,8 @@ interface ComponentTreeItemProps {
   component: Component;
   depth?: number;
   scrollToComponentId?: string | null;
-  componentIdsWithProblems: Set<string>;
+  componentIdsWithErrors: Set<string>;
+  componentIdsWithWarnings: Set<string>;
   isAccessory?: boolean;
 }
 
@@ -32,7 +33,8 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
   component,
   depth = 0,
   scrollToComponentId,
-  componentIdsWithProblems,
+  componentIdsWithErrors,
+  componentIdsWithWarnings,
   isAccessory = false,
 }) => {
   const ref = React.useRef<HTMLDivElement>(null);
@@ -54,8 +56,8 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
     if (added) {
       notifyInfo(
         `Successfully added ${getMessageBuilderComponentLabel(
-          childType
-        )} component under ${getMessageBuilderComponentLabel(component.type)}`
+          childType,
+        )} component under ${getMessageBuilderComponentLabel(component.type)}`,
       );
     }
   };
@@ -114,16 +116,27 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
               )}
               {getMessageBuilderComponentLabel(component.type)}
             </Text>
-            {componentIdsWithProblems.has(component.id) && (
+            {componentIdsWithErrors.has(component.id) && (
               <Icon
                 as={FaExclamationCircle}
                 color={isSelected ? "white" : "red.400"}
                 flexShrink={0}
                 size="sm"
-                aria-label="Problem detected"
-                title="Problem detected"
+                aria-label="Error detected"
+                title="Error detected"
               />
             )}
+            {!componentIdsWithErrors.has(component.id) &&
+              componentIdsWithWarnings.has(component.id) && (
+                <Icon
+                  as={FaExclamationTriangle}
+                  color={isSelected ? "white" : "orange.400"}
+                  flexShrink={0}
+                  size="sm"
+                  aria-label="Warning detected"
+                  title="Warning detected"
+                />
+              )}
           </HStack>
         </HStack>{" "}
         {isSelected && isDesktop && (
@@ -173,7 +186,8 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                   component={child}
                   depth={depth + 1}
                   scrollToComponentId={scrollToComponentId}
-                  componentIdsWithProblems={componentIdsWithProblems}
+                  componentIdsWithErrors={componentIdsWithErrors}
+                  componentIdsWithWarnings={componentIdsWithWarnings}
                 />
               </NavigableTreeItem>
             ))}
@@ -187,7 +201,8 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
                   component={(component as SectionComponent).accessory!}
                   depth={depth + 1}
                   scrollToComponentId={scrollToComponentId}
-                  componentIdsWithProblems={componentIdsWithProblems}
+                  componentIdsWithErrors={componentIdsWithErrors}
+                  componentIdsWithWarnings={componentIdsWithWarnings}
                   isAccessory
                 />
               </NavigableTreeItem>

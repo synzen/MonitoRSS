@@ -112,7 +112,7 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
 
   const onUpdate = async (
     details: UpdateDiscordChannelConnectionInput["details"],
-    updateLabel: string
+    updateLabel: string,
   ) => {
     if (!feedId || !connectionId) {
       return;
@@ -371,7 +371,7 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                               }
                             : null,
                         },
-                        "filters"
+                        "filters",
                       )
                     }
                     filters={connection?.filters?.expression as LogicalFilterExpression}

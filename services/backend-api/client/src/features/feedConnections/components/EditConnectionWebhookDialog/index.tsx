@@ -150,7 +150,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                   <FormControl isInvalid={!!errors.name} isRequired>
                     <FormLabel>
                       {t(
-                        "features.feed.components.addDiscordWebhookConnectionDialog.formNameLabel"
+                        "features.feed.components.addDiscordWebhookConnectionDialog.formNameLabel",
                       )}
                     </FormLabel>
                     <Controller
@@ -170,7 +170,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                     <FormHelperText>
                       {t(
                         "features.feed.components" +
-                          ".addDiscordWebhookConnectionDialog.formNameDescription"
+                          ".addDiscordWebhookConnectionDialog.formNameDescription",
                       )}
                     </FormHelperText>
                   </FormControl>
@@ -272,7 +272,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                   <FormLabel>
                     {t(
                       "features.feed.components" +
-                        ".addDiscordWebhookConnectionDialog.webhookNameLabel"
+                        ".addDiscordWebhookConnectionDialog.webhookNameLabel",
                     )}
                   </FormLabel>
                   <Controller
@@ -291,7 +291,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                   <FormHelperText>
                     {t(
                       "features.feed.components.addDiscordWebhookConnectionDialog" +
-                        ".webhookNameDescription"
+                        ".webhookNameDescription",
                     )}
                   </FormHelperText>
                   <FormErrorMessage>{errors.applicationWebhook?.name?.message}</FormErrorMessage>
@@ -300,7 +300,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                   <FormLabel>
                     {t(
                       "features.feed.components.addDiscordWebhookConnectionDialog" +
-                        ".webhookIconUrlLabel"
+                        ".webhookIconUrlLabel",
                     )}
                   </FormLabel>
                   <Controller
@@ -320,7 +320,7 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
                   <FormHelperText>
                     {t(
                       "features.feed.components.addDiscordWebhookConnectionDialog" +
-                        ".webhookIconUrlDescription"
+                        ".webhookIconUrlDescription",
                     )}
                   </FormHelperText>
                   <FormErrorMessage>{errors.applicationWebhook?.iconUrl?.message}</FormErrorMessage>

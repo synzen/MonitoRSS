@@ -72,7 +72,7 @@ export const UserFeedStatusFilterProvider = ({ children }: PropsWithChildren<{}>
       statusFilters,
       setStatusFilters,
     }),
-    [statusFilters, setStatusFilters]
+    [statusFilters, setStatusFilters],
   );
 
   return (

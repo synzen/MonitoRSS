@@ -18,7 +18,7 @@ export type CreateUserFeedDeduplicatedUrlsOutput = InferType<
 >;
 
 export const createUserFeedDeduplicatedUrls = async (
-  options: CreateUserFeedDeduplicatedUrlsInput
+  options: CreateUserFeedDeduplicatedUrlsInput,
 ): Promise<CreateUserFeedDeduplicatedUrlsOutput> => {
   const res = await fetchRest("/api/v1/user-feeds/deduplicate-feed-urls", {
     validateSchema: CreateUserFeedDeduplicatedUrlsOutputSchema,

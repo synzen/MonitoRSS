@@ -43,7 +43,7 @@ export const FeedFormatOptionsProvider = ({
       feed?.formatOptions?.dateFormat,
       feed?.formatOptions?.dateTimezone,
       JSON.stringify(feed?.externalProperties),
-    ]
+    ],
   );
 
   return (

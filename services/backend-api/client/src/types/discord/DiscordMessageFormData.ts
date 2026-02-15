@@ -16,7 +16,7 @@ export const discordMessageEmbedFormSchema = object({
     .test(
       "color",
       "Must be a valid color",
-      (v) => !v || (!!v && /^\d+$/.test(v) && Number(v) < 16777216)
+      (v) => !v || (!!v && /^\d+$/.test(v) && Number(v) < 16777216),
     )
     .optional(),
   author: object({
@@ -99,7 +99,7 @@ export const discordMessageFormSchema = object({
     object({
       id: string().required(),
       components: array(DiscordButtonSchema.required()).required().max(5),
-    }).required()
+    }).required(),
   )
     .max(5)
     .nullable(),
@@ -114,7 +114,7 @@ export const discordMessageFormSchema = object({
       })
         .nullable()
         .default(null),
-    }).required()
+    }).required(),
   )
     .optional()
     .nullable()
@@ -129,7 +129,7 @@ export const discordMessageFormSchema = object({
         })
           .nullable()
           .default(null),
-      }).required()
+      }).required(),
     )
       .optional()
       .nullable(),
@@ -143,7 +143,7 @@ export const discordMessageFormSchema = object({
       characterCount: number().min(1).positive().integer().required(),
       placeholder: string().min(1).required(),
       appendString: string().optional().nullable(),
-    }).required()
+    }).required(),
   )
     .nullable()
     .default(undefined),

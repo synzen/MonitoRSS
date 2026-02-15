@@ -16,7 +16,7 @@ const GetServersChannelsOutputSchema = object({
 export type GetServerChannelsOutput = InferType<typeof GetServersChannelsOutputSchema>;
 
 export const getServerChannels = async (
-  options: GetServerChannelsInput
+  options: GetServerChannelsInput,
 ): Promise<GetServerChannelsOutput> => {
   const searchParams = new URLSearchParams();
 

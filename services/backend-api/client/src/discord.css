@@ -465,7 +465,12 @@
 
 .message-group .comment .markup code.inline,
 .message-group .comment .markup pre {
-  font-family: Consolas, Liberation Mono, Menlo, Courier, monospace;
+  font-family:
+    Consolas,
+    Liberation Mono,
+    Menlo,
+    Courier,
+    monospace;
   background: #f9f9f9;
 }
 
@@ -1091,7 +1096,12 @@
 .discord-view button,
 .discord-view input,
 .discord-view textarea {
-  font-family: Whitney, Helvetica Neue, Helvetica, Arial, sans-serif;
+  font-family:
+    Whitney,
+    Helvetica Neue,
+    Helvetica,
+    Arial,
+    sans-serif;
 }
 
 .discord-view a img {
@@ -1217,7 +1227,12 @@
 /* Code styling for v2 components (without .message-group .comment parent) */
 .markup code.inline,
 .markup pre {
-  font-family: Consolas, Liberation Mono, Menlo, Courier, monospace;
+  font-family:
+    Consolas,
+    Liberation Mono,
+    Menlo,
+    Courier,
+    monospace;
   background: #353747;
 }
 

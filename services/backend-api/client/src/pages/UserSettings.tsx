@@ -572,7 +572,7 @@ const UserSettingsInner = () => {
                                   Benefits will be suspended on{" "}
                                   <chakra.span fontWeight={600}>
                                     {new Date(
-                                      subscription.pastDueGracePeriodEndDate
+                                      subscription.pastDueGracePeriodEndDate,
                                     ).toLocaleDateString(undefined, {
                                       year: "numeric",
                                       month: "long",

@@ -30,7 +30,7 @@ function getTreeItemSibling(treeItem: HTMLElement, dir: "next" | "previous"): HT
   }
 
   const parentGroup = treeItem.parentElement?.closest(
-    '.navigable-tree-group[role="group"]'
+    '.navigable-tree-group[role="group"]',
   ) as HTMLElement;
 
   if (!parentGroup) {
@@ -90,7 +90,7 @@ function getLastTreeItemFromTreeItem(currentTreeItem?: HTMLElement | null): HTML
 }
 
 function getDeepestFirstTreeItemFromTreeItem(
-  currentTreeItem?: HTMLElement | null
+  currentTreeItem?: HTMLElement | null,
 ): HTMLElement | null {
   if (!currentTreeItem) {
     return null;
@@ -108,7 +108,7 @@ function getDeepestFirstTreeItemFromTreeItem(
 }
 
 function getFirstChildTreeItemFromTreeItem(
-  currentTreeItem?: HTMLElement | null
+  currentTreeItem?: HTMLElement | null,
 ): HTMLElement | null {
   // is this a group?
   const groupChildElem = currentTreeItem?.querySelector('.navigable-tree-group[role="group"]');
@@ -165,7 +165,7 @@ function getNextTreeItemFromTreeItem(currentTreeItem?: HTMLElement | null): HTML
 
   // this is the last treeitem in its group - get the group's parent treeitem
   const parentGroup = currentTreeItem.parentElement?.closest(
-    '.navigable-tree-group[role="group"]'
+    '.navigable-tree-group[role="group"]',
   ) as HTMLElement; // this is the role="group" element
   const parentTreeItem = parentGroup?.parentElement?.closest('[role="treeitem"]') as HTMLElement; // this is the parent tree item
   const nextSiblingOfParentTreeItem = getTreeItemSibling(parentTreeItem, "next");
@@ -236,7 +236,7 @@ export const NavigableTreeItemProvider = ({
         });
       }
     },
-    [id, setExpandedIds]
+    [id, setExpandedIds],
   );
 
   const onFocused = useCallback(() => {
@@ -331,7 +331,7 @@ export const NavigableTreeItemProvider = ({
         e.stopPropagation();
       }
     },
-    [thisItemIsFocused, onCollapsed, onExpanded, isExpanded]
+    [thisItemIsFocused, onCollapsed, onExpanded, isExpanded],
   );
 
   useEffect(() => {

@@ -1,9 +1,6 @@
 import "../infra/dayjs-locales";
 import { loadConfig } from "../config";
-import {
-  createMongoConnection,
-  closeMongoConnection,
-} from "../infra/mongoose";
+import { createMongoConnection, closeMongoConnection } from "../infra/mongoose";
 import {
   createRabbitConnection,
   closeRabbitConnection,

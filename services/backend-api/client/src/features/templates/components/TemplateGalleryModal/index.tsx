@@ -94,7 +94,7 @@ export interface TemplateGalleryModalProps {
 export function isTemplateCompatible(
   template: Template,
   feedFields: string[],
-  detectedFields: DetectedFields
+  detectedFields: DetectedFields,
 ): boolean {
   const andFieldsSatisfied =
     !template.requiredFields?.length ||
@@ -114,7 +114,7 @@ export function isTemplateCompatible(
 export function getMissingFields(
   template: Template,
   feedFields: string[],
-  detectedFields: DetectedFields
+  detectedFields: DetectedFields,
 ): string[] {
   const missingAndFields = (template.requiredFields ?? []).filter((field) => {
     return detectedFields[field].length === 0 && !feedFields.includes(field);
@@ -135,7 +135,7 @@ export function getMissingFields(
 export function getDisabledReason(
   template: Template,
   feedFields: string[],
-  detectedFields: DetectedFields
+  detectedFields: DetectedFields,
 ): string {
   const missingFields = getMissingFields(template, feedFields, detectedFields);
 
@@ -188,7 +188,7 @@ const useTemplatePreview = ({
         const previewInputData = convertMessageBuilderStateToConnectionPreviewInput(
           userFeed,
           connection,
-          messageComponent
+          messageComponent,
         );
 
         const input: CreateDiscordChannelConnectionPreviewInput = {
@@ -250,7 +250,7 @@ const useCurrentFormatPreview = ({
       const previewInputData = convertMessageBuilderStateToConnectionPreviewInput(
         userFeed,
         connection,
-        currentMessageComponent
+        currentMessageComponent,
       );
 
       const input: CreateDiscordChannelConnectionPreviewInput = {

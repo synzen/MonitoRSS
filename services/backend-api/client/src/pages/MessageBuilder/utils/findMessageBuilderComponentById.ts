@@ -2,7 +2,7 @@ import { Component, ComponentType, SectionComponent } from "../types";
 
 function findMessageBuilderComponentById(
   root: Component | undefined,
-  id: string
+  id: string,
 ): { parent: Component | null; target: Component | null } {
   if (!root) {
     return {

@@ -116,7 +116,7 @@ export const SearchFeedsModal = () => {
     },
     {
       disabled: !isOpen,
-    }
+    },
   );
   const debouncedSetSearch = useMemo(() => debounce(setSearch, 300), [setSearch]);
   const searchInputRef = useRef<HTMLInputElement>(null);

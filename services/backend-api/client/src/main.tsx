@@ -41,7 +41,7 @@ function stringifyNode(node: Node): string {
       text,
     },
     null,
-    2
+    2,
   );
 }
 
@@ -61,7 +61,7 @@ function catchGoogleTranslateErrors() {
           console.error(
             "Google Translate Error: Cannot remove a child from a different parent",
             child,
-            this
+            this,
           );
         }
 
@@ -84,7 +84,7 @@ function catchGoogleTranslateErrors() {
           console.error(
             "Google Translate Error: Cannot insert before a reference node from a different parent",
             referenceNode,
-            this
+            this,
           );
         }
 
@@ -181,7 +181,7 @@ prepare().then(() => {
           </ForceDarkMode>
         </QueryClientProvider>
       </ChakraProvider>
-    </BrowserRouter>
+    </BrowserRouter>,
     // </React.StrictMode>,
   );
 });

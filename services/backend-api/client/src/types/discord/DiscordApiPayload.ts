@@ -48,7 +48,7 @@ const DiscordComponentSchema = object({
       url: string().optional().nullable(),
       disabled: boolean().optional(),
       content: string().optional(),
-    })
+    }),
   ).optional(),
   accessory: object({
     type: number().required(),
@@ -57,7 +57,7 @@ const DiscordComponentSchema = object({
     url: string().optional().nullable(),
     disabled: boolean().optional(),
     media: object({
-      url: string().required(),
+      url: string().defined(),
     }).optional(),
     description: string().optional().nullable(),
     spoiler: boolean().optional(),
@@ -73,7 +73,7 @@ const DiscordComponentSchema = object({
 });
 
 export const DiscordMessageApiPayloadSchema = object({
-  content: string().optional().default(undefined),
+  content: string().optional().nullable().default(undefined),
   embeds: array(DiscordEmbedSchema).optional().default(undefined),
   components: array(DiscordComponentSchema).nullable().optional(),
   flags: number().optional().nullable(),

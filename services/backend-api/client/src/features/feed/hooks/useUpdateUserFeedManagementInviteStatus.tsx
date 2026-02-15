@@ -28,7 +28,7 @@ export const useUpdateUserFeedManagementInviteStatus = () => {
           },
         });
       },
-    }
+    },
   );
 
   return {

@@ -22,7 +22,7 @@ describe("getErrorMessageByStatus", () => {
 
   it("returns correct message for MISSING_APPLICATION_PERMISSION", () => {
     const message = getErrorMessageByStatus(
-      SendTestArticleDeliveryStatus.MissingApplicationPermission
+      SendTestArticleDeliveryStatus.MissingApplicationPermission,
     );
     expect(message).toContain("doesn't have permission");
   });
@@ -136,7 +136,7 @@ describe("useTestSendFlow", () => {
 
       expect(result.current.testSendFeedback?.status).toBe("error");
       expect(result.current.testSendFeedback?.deliveryStatus).toBe(
-        SendTestArticleDeliveryStatus.MissingChannel
+        SendTestArticleDeliveryStatus.MissingChannel,
       );
     });
 

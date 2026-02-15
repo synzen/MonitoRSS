@@ -67,7 +67,7 @@ export const InputWithInsertPlaceholder: React.FC<Props> = ({
         }
       }
     },
-    [onChange]
+    [onChange],
   );
 
   return (

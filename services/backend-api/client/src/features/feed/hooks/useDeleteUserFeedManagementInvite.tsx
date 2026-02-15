@@ -18,6 +18,6 @@ export const useDeleteUserFeedManagementInvite = ({ feedId }: { feedId: string }
           },
         });
       },
-    }
+    },
   );
 };

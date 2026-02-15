@@ -94,7 +94,7 @@ describe("useConnectionTemplateSelection", () => {
             isOpen: true,
             isEditing: false,
           }),
-        { wrapper: TestWrapper }
+        { wrapper: TestWrapper },
       );
 
       expect(result.current.currentStep).toBe(ConnectionCreationStep.ServerChannel);
@@ -107,7 +107,7 @@ describe("useConnectionTemplateSelection", () => {
             isOpen: true,
             isEditing: false,
           }),
-        { wrapper: TestWrapper }
+        { wrapper: TestWrapper },
       );
 
       expect(result.current.selectedTemplateId).toBeUndefined();
@@ -138,7 +138,7 @@ describe("useConnectionTemplateSelection", () => {
             isOpen: true,
             isEditing: false,
           }),
-        { wrapper: TestWrapper }
+        { wrapper: TestWrapper },
       );
 
       expect(result.current.selectedArticleId).toBeUndefined();
@@ -153,7 +153,7 @@ describe("useConnectionTemplateSelection", () => {
             isOpen: true,
             isEditing: false,
           }),
-        { wrapper: TestWrapper }
+        { wrapper: TestWrapper },
       );
 
       act(() => {
@@ -170,7 +170,7 @@ describe("useConnectionTemplateSelection", () => {
             isOpen: true,
             isEditing: true,
           }),
-        { wrapper: TestWrapper }
+        { wrapper: TestWrapper },
       );
 
       act(() => {
@@ -187,7 +187,7 @@ describe("useConnectionTemplateSelection", () => {
             isOpen: true,
             isEditing: false,
           }),
-        { wrapper: TestWrapper }
+        { wrapper: TestWrapper },
       );
 
       act(() => {
@@ -213,7 +213,7 @@ describe("useConnectionTemplateSelection", () => {
         {
           wrapper: TestWrapper,
           initialProps: { isOpen: true },
-        }
+        },
       );
 
       act(() => {
@@ -239,7 +239,7 @@ describe("useConnectionTemplateSelection", () => {
             isOpen: true,
             isEditing: false,
           }),
-        { wrapper: TestWrapper }
+        { wrapper: TestWrapper },
       );
 
       act(() => {
@@ -258,7 +258,7 @@ describe("useConnectionTemplateSelection", () => {
             isOpen: true,
             isEditing: false,
           }),
-        { wrapper: TestWrapper }
+        { wrapper: TestWrapper },
       );
 
       act(() => {
@@ -275,7 +275,7 @@ describe("useConnectionTemplateSelection", () => {
             isOpen: true,
             isEditing: false,
           }),
-        { wrapper: TestWrapper }
+        { wrapper: TestWrapper },
       );
 
       // Navigate to template step to trigger article fetch
@@ -290,7 +290,7 @@ describe("useConnectionTemplateSelection", () => {
           // Either the auto-select worked, or articles are present
           expect(result.current.articles.length).toBeGreaterThan(0);
         },
-        { timeout: 2000 }
+        { timeout: 2000 },
       );
 
       // Note: In the real implementation, the articles useEffect auto-selects
@@ -307,7 +307,7 @@ describe("useConnectionTemplateSelection", () => {
             isOpen: true,
             isEditing: false,
           }),
-        { wrapper: TestWrapper }
+        { wrapper: TestWrapper },
       );
 
       // Navigate to template step
@@ -328,7 +328,7 @@ describe("useConnectionTemplateSelection", () => {
             isOpen: true,
             isEditing: false,
           }),
-        { wrapper: TestWrapper }
+        { wrapper: TestWrapper },
       );
 
       act(() => {
@@ -365,7 +365,7 @@ describe("useConnectionTemplateSelection", () => {
             isOpen: true,
             isEditing: false,
           }),
-        { wrapper: TestWrapper }
+        { wrapper: TestWrapper },
       );
 
       act(() => {
@@ -405,7 +405,7 @@ describe("useConnectionTemplateSelection", () => {
             isOpen: true,
             isEditing: false,
           }),
-        { wrapper: TestWrapper }
+        { wrapper: TestWrapper },
       );
 
       // Navigate to template step
@@ -456,7 +456,7 @@ describe("useConnectionTemplateSelection", () => {
             isOpen: true,
             isEditing: false,
           }),
-        { wrapper: TestWrapper }
+        { wrapper: TestWrapper },
       );
 
       act(() => {
@@ -482,7 +482,7 @@ describe("useConnectionTemplateSelection", () => {
             isOpen: true,
             isEditing: false,
           }),
-        { wrapper: TestWrapper }
+        { wrapper: TestWrapper },
       );
 
       expect(result.current.isTemplateStep).toBe(false);
@@ -495,7 +495,7 @@ describe("useConnectionTemplateSelection", () => {
             isOpen: true,
             isEditing: false,
           }),
-        { wrapper: TestWrapper }
+        { wrapper: TestWrapper },
       );
 
       act(() => {
@@ -512,7 +512,7 @@ describe("useConnectionTemplateSelection", () => {
             isOpen: true,
             isEditing: true,
           }),
-        { wrapper: TestWrapper }
+        { wrapper: TestWrapper },
       );
 
       expect(result.current.isTemplateStep).toBe(false);
@@ -527,7 +527,7 @@ describe("useConnectionTemplateSelection", () => {
             isOpen: true,
             isEditing: false,
           }),
-        { wrapper: TestWrapper }
+        { wrapper: TestWrapper },
       );
 
       const details = result.current.getTemplateUpdateDetails();
@@ -543,7 +543,7 @@ describe("useConnectionTemplateSelection", () => {
             isOpen: true,
             isEditing: false,
           }),
-        { wrapper: TestWrapper }
+        { wrapper: TestWrapper },
       );
 
       act(() => {

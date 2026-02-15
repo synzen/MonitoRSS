@@ -1,7 +1,7 @@
 import { StandardApiErrorResponse } from "@/types/StandardApiErrorResponse";
 
 export const generateMockApiErrorResponse = (
-  override?: Partial<StandardApiErrorResponse>
+  override?: Partial<StandardApiErrorResponse>,
 ): StandardApiErrorResponse => ({
   isStandardized: true,
   code: "UNKNOWN_ERROR",

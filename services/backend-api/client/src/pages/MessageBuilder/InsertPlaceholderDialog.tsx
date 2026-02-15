@@ -65,7 +65,7 @@ const PlaceholderItem: React.FC<PlaceholderItemProps> = ({
       _hover={{ bg: "gray.700" }}
       aria-label={`Insert ${placeholder.tag} placeholder. Preview: ${placeholder.content.slice(
         0,
-        100
+        100,
       )}${placeholder.content.length > 100 ? "..." : ""}`}
     >
       <Box
@@ -136,7 +136,7 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
   const filteredPlaceholders = placeholders.filter(
     (ph) =>
       ph.tag.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ph.content.toLowerCase().includes(searchTerm.toLowerCase())
+      ph.content.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const handleSelectTag = (tag: string) => {
@@ -154,7 +154,7 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
         onSelected={handleSelectTag}
       />
     ),
-    [filteredPlaceholders, handleSelectTag]
+    [filteredPlaceholders, handleSelectTag],
   );
 
   // Reset search and focus when modal closes/opens
@@ -279,7 +279,7 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
                   },
                   {
                     tab: UserFeedConnectionTabSearchParam.CustomPlaceholders,
-                  }
+                  },
                 )}
                 color="blue.300"
                 fontSize="sm"

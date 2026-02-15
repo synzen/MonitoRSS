@@ -82,7 +82,7 @@ export const Condition = ({ onDelete, prefix = "", deletable, containerProps }: 
               onChange={field.onChange}
               isRequired
               placeholder={t(
-                "features.feedConnections.components.filtersForm.placeholderSelectArticleProperty"
+                "features.feedConnections.components.filtersForm.placeholderSelectArticleProperty",
               )}
               isInvalid={!!error}
               ariaLabelledBy={`${prefix}-property-label`}

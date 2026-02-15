@@ -13,7 +13,7 @@ const GetDiscordWebhooksOutputSchema = object({
 export type GetDiscordWebhooksOutput = InferType<typeof GetDiscordWebhooksOutputSchema>;
 
 export const getDiscordWebhooks = async (
-  options: GetDiscordWebhooksInput
+  options: GetDiscordWebhooksInput,
 ): Promise<GetDiscordWebhooksOutput> => {
   const params = new URLSearchParams();
   params.append("filters[serverId]", options.serverId);

@@ -138,7 +138,7 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
             <Input
               isDisabled={userFeedArticlesFetchStatus === "fetching"}
               placeholder={t(
-                "features.feedConnections.components.articlePlaceholderTable.searchInputPlaceholder"
+                "features.feedConnections.components.articlePlaceholderTable.searchInputPlaceholder",
               )}
               onChange={(e) => setPlaceholderTableSearch(e.target.value.toLowerCase())}
             />
@@ -146,7 +146,7 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
           <Checkbox onChange={(e) => setHideEmptyPlaceholders(e.target.checked)}>
             <Text whiteSpace="nowrap">
               {t(
-                "features.feedConnections.components.articlePlaceholderTable.hideEmptyPlaceholdersLabel"
+                "features.feedConnections.components.articlePlaceholderTable.hideEmptyPlaceholdersLabel",
               )}
             </Text>
           </Checkbox>
@@ -298,7 +298,7 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
                             >
                               <span>
                                 {t(
-                                  "features.feedConnections.components.articlePlaceholderTable.selectArticle"
+                                  "features.feedConnections.components.articlePlaceholderTable.selectArticle",
                                 )}
                               </span>
                             </Button>
@@ -323,7 +323,7 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
                         >
                           <span>
                             {t(
-                              "features.feedConnections.components.articlePlaceholderTable.randomButton"
+                              "features.feedConnections.components.articlePlaceholderTable.randomButton",
                             )}
                           </span>
                         </Button>
@@ -376,7 +376,7 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
                                   },
                                   {
                                     tab: UserFeedConnectionTabSearchParam.CustomPlaceholders,
-                                  }
+                                  },
                                 )}
                               >
                                 Custom Placeholders

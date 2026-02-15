@@ -115,7 +115,7 @@ export const PlaceholderLimitDialog = ({
                       <FormControl isInvalid={!!errors.placeholder} isRequired>
                         <FormLabel id="placeholder-label" htmlFor="placeholder-select">
                           {t(
-                            "features.feedConnections.components.placeholderLimitDialog.placeholderInputLabel"
+                            "features.feedConnections.components.placeholderLimitDialog.placeholderInputLabel",
                           )}
                         </FormLabel>
                         <ArticlePropertySelect
@@ -132,7 +132,7 @@ export const PlaceholderLimitDialog = ({
                         {!errors.placeholder && (
                           <FormHelperText>
                             {t(
-                              "features.feedConnections.components.placeholderLimitDialog.placeholderInputDescription"
+                              "features.feedConnections.components.placeholderLimitDialog.placeholderInputDescription",
                             )}
                           </FormHelperText>
                         )}
@@ -151,7 +151,7 @@ export const PlaceholderLimitDialog = ({
                       <FormControl isInvalid={!!errors.characterCount} isRequired>
                         <FormLabel>
                           {t(
-                            "features.feedConnections.components.placeholderLimitDialog.limitInputLabel"
+                            "features.feedConnections.components.placeholderLimitDialog.limitInputLabel",
                           )}
                         </FormLabel>
                         <NumberInput
@@ -168,7 +168,7 @@ export const PlaceholderLimitDialog = ({
                         {!errors.characterCount && (
                           <FormHelperText>
                             {t(
-                              "features.feedConnections.components.placeholderLimitDialog.limitInputDescription"
+                              "features.feedConnections.components.placeholderLimitDialog.limitInputDescription",
                             )}
                           </FormHelperText>
                         )}
@@ -187,13 +187,13 @@ export const PlaceholderLimitDialog = ({
                       <FormControl isInvalid={!!errors.appendString}>
                         <FormLabel>
                           {t(
-                            "features.feedConnections.components.placeholderLimitDialog.appendTextInputLabel"
+                            "features.feedConnections.components.placeholderLimitDialog.appendTextInputLabel",
                           )}
                         </FormLabel>
                         <AutoResizeTextarea {...field} bg="gray.800" />
                         <FormHelperText>
                           {t(
-                            "features.feedConnections.components.placeholderLimitDialog.appendTextInputDescription"
+                            "features.feedConnections.components.placeholderLimitDialog.appendTextInputDescription",
                           )}
                         </FormHelperText>
                         {errors.characterCount && (

@@ -26,7 +26,7 @@ export const MultiSelectUserFeedProvider = ({ children }: { children: ReactNode 
       setSelectedFeeds,
       clearSelection,
     }),
-    [selectedFeeds, setSelectedFeeds, clearSelection]
+    [selectedFeeds, setSelectedFeeds, clearSelection],
   );
 
   return (

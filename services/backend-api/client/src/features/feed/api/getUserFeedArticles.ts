@@ -46,14 +46,14 @@ const GetUserFeedArticlesOutputSchema = object({
         object({
           id: string().required(),
           idHash: string().required(),
-        })
+        }),
       ).required(),
       totalArticles: number().required(),
       selectedProperties: array(string().required()).required(),
       filterStatuses: array(
         object({
           passed: boolean().required(),
-        }).required()
+        }).required(),
       )
         .optional()
         .default([]),
@@ -68,7 +68,7 @@ const GetUserFeedArticlesOutputSchema = object({
           statusCode: number().optional(),
           pageHtml: string().optional(),
           pageHtmlTruncated: boolean().optional(),
-        })
+        }),
       ).optional(),
     })
     .required(),
@@ -77,7 +77,7 @@ const GetUserFeedArticlesOutputSchema = object({
 export type GetUserFeedArticlesOutput = InferType<typeof GetUserFeedArticlesOutputSchema>;
 
 export const getUserFeedArticles = async (
-  options: GetUserFeedArticlesInput
+  options: GetUserFeedArticlesInput,
 ): Promise<GetUserFeedArticlesOutput> => {
   const res = await fetchRest(`/api/v1/user-feeds/${options.feedId}/get-articles`, {
     requestOptions: {

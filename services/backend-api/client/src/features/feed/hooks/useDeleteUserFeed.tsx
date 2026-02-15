@@ -19,9 +19,9 @@ export const useDeleteUserFeed = () => {
           },
           {
             throwOnError: true,
-          }
+          },
         );
       },
-    }
+    },
   );
 };

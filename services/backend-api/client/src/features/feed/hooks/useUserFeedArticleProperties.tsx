@@ -38,7 +38,7 @@ export const useUserFeedArticleProperties = ({ feedId, data: inputData, isDisabl
     },
     {
       enabled: !!feedId && !isDisabled,
-    }
+    },
   );
 
   return {

@@ -89,9 +89,9 @@ export const CustomPlaceholderSchema = object({
           UrlEncodeStep.isValidSync(data) ||
           DateFormatStep.isValidSync(data) ||
           UppercaseStep.isValidSync(data) ||
-          LowercaseStep.isValidSync(data)
+          LowercaseStep.isValidSync(data),
       )
-      .required()
+      .required(),
   ).required(),
 });
 

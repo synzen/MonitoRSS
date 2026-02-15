@@ -134,7 +134,7 @@ export type UpdateDiscordChannelConnectionOutput = InferType<
 >;
 
 export const updateDiscordChannelConnection = async (
-  options: UpdateDiscordChannelConnectionInput
+  options: UpdateDiscordChannelConnectionInput,
 ): Promise<UpdateDiscordChannelConnectionOutput> => {
   const res = await fetchRest(
     `/api/v1/user-feeds/${options.feedId}/connections/discord-channels/${options.connectionId}`,
@@ -144,7 +144,7 @@ export const updateDiscordChannelConnection = async (
         method: "PATCH",
         body: JSON.stringify(options.details),
       },
-    }
+    },
   );
 
   return res as UpdateDiscordChannelConnectionOutput;

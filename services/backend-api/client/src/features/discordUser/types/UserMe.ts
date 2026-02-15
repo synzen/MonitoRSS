@@ -39,7 +39,7 @@ export const UserMeSchema = object({
       object({
         key: string().required(),
         quantity: number().required(),
-      }).required()
+      }).required(),
     )
       .optional()
       .nullable(),
@@ -71,7 +71,7 @@ export const UserMeSchema = object({
     object({
       type: string().required(),
       status: string().oneOf(["REVOKED", "ACTIVE"]).required(),
-    })
+    }),
   ),
 });
 

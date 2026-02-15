@@ -65,8 +65,8 @@ export const REACT_SELECT_STYLES: (opts?: { invertBg?: boolean }) => SelectStyle
       state.isFocused && !state.isSelected
         ? getChakraColor("gray.600")
         : state.isSelected
-        ? getChakraColor("blue.500")
-        : getChakraColor("gray.800"),
+          ? getChakraColor("blue.500")
+          : getChakraColor("gray.800"),
   }),
   container: (provided) => ({
     ...provided,

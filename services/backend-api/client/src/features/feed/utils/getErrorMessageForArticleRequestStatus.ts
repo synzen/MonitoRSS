@@ -3,7 +3,7 @@ import { UserFeedUrlRequestStatus } from "../types/UserFeedUrlRequestStatus";
 
 export const getErrorMessageForArticleRequestStatus = (
   status: UserFeedArticleRequestStatus | UserFeedUrlRequestStatus,
-  statusCode?: number
+  statusCode?: number,
 ) => {
   if (
     status === UserFeedArticleRequestStatus.ParseError ||

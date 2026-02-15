@@ -38,7 +38,7 @@ export const useDiscordServerMembers = ({ serverId, data: inputData, disabled }:
     },
     {
       enabled: !!accessData?.result.authorized && !!serverId && !disabled,
-    }
+    },
   );
 
   return {

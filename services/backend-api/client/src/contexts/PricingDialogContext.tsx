@@ -28,7 +28,7 @@ export const PricingDialogProvider = ({ children }: PropsWithChildren<{}>) => {
     () => ({
       onOpen,
     }),
-    [onOpen]
+    [onOpen],
   );
 
   return (

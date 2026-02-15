@@ -15,7 +15,7 @@ export const DiscordServerChannelSchema = object({
       name: string(),
       emojiName: string().optional().nullable().default(null),
       hasPermissionToUse: bool().required(),
-    }).required()
+    }).required(),
   )
     .nullable()
     .default(null),

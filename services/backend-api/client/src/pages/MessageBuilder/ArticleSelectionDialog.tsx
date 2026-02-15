@@ -251,7 +251,7 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
                   hidden={fetchStatus === "fetching"}
                   aria-label={`Articles ${startIndex + 1} to ${Math.min(
                     startIndex + ITEMS_PER_PAGE,
-                    totalArticles
+                    totalArticles,
                   )} of ${totalArticles}`}
                 >
                   {articles.map((article, index) => {

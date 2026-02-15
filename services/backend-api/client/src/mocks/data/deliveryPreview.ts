@@ -790,7 +790,7 @@ const createAllLearningMockData = (): BackendArticleDeliveryResult[] =>
         outcome: ArticleDeliveryOutcome.FirstRunBaseline,
         outcomeReason: "First run - establishing baseline",
         stages: createFirstRunStages(),
-      })
+      }),
     ),
   }));
 
@@ -806,7 +806,7 @@ const createAllRateLimitedMockData = (): BackendArticleDeliveryResult[] =>
         outcome: ArticleDeliveryOutcome.RateLimitedFeed,
         outcomeReason: "Daily limit reached",
         stages: createRateLimitedStages(m.mediumId),
-      })
+      }),
     ),
   }));
 
@@ -822,7 +822,7 @@ const createAllDuplicateMockData = (): BackendArticleDeliveryResult[] =>
         outcome: ArticleDeliveryOutcome.DuplicateId,
         outcomeReason: "Previously seen",
         stages: createDuplicateIdStages(),
-      })
+      }),
     ),
   }));
 

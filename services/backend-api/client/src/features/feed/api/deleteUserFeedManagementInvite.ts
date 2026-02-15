@@ -5,7 +5,7 @@ export interface DeleteUserFeedManagementInviteInput {
 }
 
 export const deleteUserFeedManagementInvite = async (
-  options: DeleteUserFeedManagementInviteInput
+  options: DeleteUserFeedManagementInviteInput,
 ): Promise<void> => {
   await fetchRest(`/api/v1/user-feed-management-invites/${options.id}`, {
     requestOptions: {

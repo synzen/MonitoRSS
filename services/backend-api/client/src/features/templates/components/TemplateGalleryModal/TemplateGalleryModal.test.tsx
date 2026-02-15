@@ -165,7 +165,7 @@ describe("TemplateGalleryModal", () => {
         }),
       };
       expect(
-        isTemplateCompatible(template, ["title", "description", "image"], fullDetectedFields)
+        isTemplateCompatible(template, ["title", "description", "image"], fullDetectedFields),
       ).toBe(true);
     });
 
@@ -189,8 +189,8 @@ describe("TemplateGalleryModal", () => {
           createDetectedFields({
             [TemplateRequiredField.Description]: ["description"],
             [TemplateRequiredField.Title]: ["title"],
-          })
-        )
+          }),
+        ),
       ).toBe(false);
     });
 
@@ -214,8 +214,8 @@ describe("TemplateGalleryModal", () => {
           ["title"],
           createDetectedFields({
             [TemplateRequiredField.Title]: ["title"],
-          })
-        )
+          }),
+        ),
       ).toBe(true);
     });
 
@@ -239,8 +239,8 @@ describe("TemplateGalleryModal", () => {
           ["description"],
           createDetectedFields({
             [TemplateRequiredField.Description]: ["description"],
-          })
-        )
+          }),
+        ),
       ).toBe(true);
     });
 
@@ -264,8 +264,8 @@ describe("TemplateGalleryModal", () => {
           ["image"],
           createDetectedFields({
             [TemplateRequiredField.Image]: ["image"],
-          })
-        )
+          }),
+        ),
       ).toBe(false);
     });
   });
@@ -301,7 +301,7 @@ describe("TemplateGalleryModal", () => {
         }),
       };
       expect(
-        getMissingFields(template, ["title", "description", "image"], fullDetectedFields)
+        getMissingFields(template, ["title", "description", "image"], fullDetectedFields),
       ).toEqual([]);
     });
 
@@ -325,8 +325,8 @@ describe("TemplateGalleryModal", () => {
           createDetectedFields({
             [TemplateRequiredField.Description]: ["description"],
             [TemplateRequiredField.Title]: ["title"],
-          })
-        )
+          }),
+        ),
       ).toEqual(["image"]);
     });
 
@@ -369,8 +369,8 @@ describe("TemplateGalleryModal", () => {
           ["title"],
           createDetectedFields({
             [TemplateRequiredField.Title]: ["title"],
-          })
-        )
+          }),
+        ),
       ).toEqual([]);
     });
 
@@ -555,8 +555,8 @@ describe("TemplateGalleryModal", () => {
           createDetectedFields({
             [TemplateRequiredField.Description]: ["description"],
             [TemplateRequiredField.Title]: ["title"],
-          })
-        )
+          }),
+        ),
       ).toBe("");
     });
 
@@ -590,7 +590,7 @@ describe("TemplateGalleryModal", () => {
         }),
       };
       expect(getDisabledReason(template, ["title"], emptyDetectedFields)).toBe(
-        "Needs: description, image"
+        "Needs: description, image",
       );
     });
 
@@ -616,7 +616,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText("Choose a Template")).toBeInTheDocument();
     });
@@ -625,7 +625,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} modalTitle="Browse Templates" />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText("Browse Templates")).toBeInTheDocument();
       expect(screen.queryByText("Choose a Template")).not.toBeInTheDocument();
@@ -635,7 +635,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByLabelText("Close")).toBeInTheDocument();
     });
@@ -644,7 +644,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText("Simple Text")).toBeInTheDocument();
       expect(screen.getByText("Rich Embed")).toBeInTheDocument();
@@ -655,7 +655,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText("Preview")).toBeInTheDocument();
     });
@@ -664,7 +664,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByLabelText("Preview article")).toBeInTheDocument();
     });
@@ -677,7 +677,7 @@ describe("TemplateGalleryModal", () => {
             selectedTemplateId={undefined}
             connectionId={undefined}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       // Wait for initial render to complete - single preview mode shows this message
       await waitFor(() => {
@@ -689,7 +689,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} testId="test-modal" />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByTestId("test-modal")).toBeInTheDocument();
     });
@@ -702,7 +702,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} onClose={onClose} />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       await user.click(screen.getByLabelText("Close"));
@@ -715,7 +715,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} onClose={onClose} />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       await user.click(screen.getByText("Cancel"));
@@ -728,7 +728,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} onSecondaryAction={onSecondaryAction} />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       await user.click(screen.getByText("Cancel"));
@@ -739,7 +739,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} isOpen={false} />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.queryByText("Choose a Template")).not.toBeInTheDocument();
     });
@@ -750,7 +750,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} onClose={onClose} />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       await user.keyboard("{Escape}");
@@ -761,7 +761,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} testId="test-modal" />
-        </TestWrapper>
+        </TestWrapper>,
       );
       // Verify modal is rendered with overlay click behavior enabled
       // The actual click behavior is handled by Chakra Modal internally
@@ -778,7 +778,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} onTemplateSelect={onTemplateSelect} />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       await user.click(screen.getByText("Rich Embed"));
@@ -789,7 +789,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} />
-        </TestWrapper>
+        </TestWrapper>,
       );
       const radios = screen.getAllByRole("radio");
       expect(radios).toHaveLength(3);
@@ -799,7 +799,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} selectedTemplateId="rich-embed" />
-        </TestWrapper>
+        </TestWrapper>,
       );
       const radios = screen.getAllByRole("radio");
       const richEmbedRadio = radios.find((r) => r.getAttribute("value") === "rich-embed");
@@ -810,7 +810,7 @@ describe("TemplateGalleryModal", () => {
       const { rerender } = render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} selectedTemplateId="rich-embed" />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Verify template is selected
@@ -822,7 +822,7 @@ describe("TemplateGalleryModal", () => {
       rerender(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} selectedTemplateId={undefined} />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Verify no template is selected
@@ -841,7 +841,7 @@ describe("TemplateGalleryModal", () => {
             feedFields={["title", "link"]}
             detectedFields={emptyDetectedFields}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       const radios = screen.getAllByRole("radio");
       const richEmbedRadio = radios.find((r) => r.getAttribute("value") === "rich-embed");
@@ -859,7 +859,7 @@ describe("TemplateGalleryModal", () => {
             feedFields={["title", "link"]}
             detectedFields={emptyDetectedFields}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText("Needs: description")).toBeInTheDocument();
       expect(screen.getByText("Needs: image")).toBeInTheDocument();
@@ -873,7 +873,7 @@ describe("TemplateGalleryModal", () => {
             feedFields={[]}
             detectedFields={emptyDetectedFields}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       const badges = screen.getAllByText("Needs articles");
       expect(badges.length).toBeGreaterThan(0);
@@ -883,7 +883,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} feedFields={[]} />
-        </TestWrapper>
+        </TestWrapper>,
       );
       const radios = screen.getAllByRole("radio");
       const defaultRadio = radios.find((r) => r.getAttribute("value") === "default");
@@ -894,7 +894,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} feedFields={[]} />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText(/Your feed has no articles yet/i)).toBeInTheDocument();
     });
@@ -907,7 +907,7 @@ describe("TemplateGalleryModal", () => {
             feedFields={[]}
             detectedFields={emptyDetectedFields}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       const radios = screen.getAllByRole("radio");
 
@@ -933,7 +933,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} />
-        </TestWrapper>
+        </TestWrapper>,
       );
       const selector = screen.getByLabelText("Preview article");
       expect(selector).toBeInTheDocument();
@@ -949,7 +949,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} onArticleChange={onArticleChange} />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       const selector = screen.getByLabelText("Preview article");
@@ -961,7 +961,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} selectedArticleId="article-2" />
-        </TestWrapper>
+        </TestWrapper>,
       );
       const selector = screen.getByLabelText("Preview article") as HTMLSelectElement;
       expect(selector.value).toBe("article-2");
@@ -971,7 +971,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} articles={[]} />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.queryByLabelText("Preview article")).not.toBeInTheDocument();
     });
@@ -980,7 +980,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} articles={[]} isLoadingArticles />
-        </TestWrapper>
+        </TestWrapper>,
       );
       // The skeleton shows "Preview" label (from TemplateGalleryLoadingSkeleton)
       expect(screen.getByText("Preview")).toBeInTheDocument();
@@ -992,11 +992,11 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} articles={[]} isLoadingArticles />
-        </TestWrapper>
+        </TestWrapper>,
       );
       // The preview area should show a skeleton, not the "no articles" message
       expect(
-        screen.queryByText(/There are currently no articles in the feed to preview/i)
+        screen.queryByText(/There are currently no articles in the feed to preview/i),
       ).not.toBeInTheDocument();
     });
   });
@@ -1006,7 +1006,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} onPrimaryAction={vi.fn()} />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText("Use this template")).toBeInTheDocument();
     });
@@ -1019,7 +1019,7 @@ describe("TemplateGalleryModal", () => {
             onPrimaryAction={vi.fn()}
             primaryActionLabel="Apply Template"
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText("Apply Template")).toBeInTheDocument();
     });
@@ -1032,7 +1032,7 @@ describe("TemplateGalleryModal", () => {
             onPrimaryAction={vi.fn()}
             selectedTemplateId={undefined}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText("Use this template")).not.toBeDisabled();
     });
@@ -1047,7 +1047,7 @@ describe("TemplateGalleryModal", () => {
             onPrimaryAction={onPrimaryAction}
             selectedTemplateId={undefined}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       await user.click(screen.getByText("Use this template"));
       expect(onPrimaryAction).not.toHaveBeenCalled();
@@ -1063,7 +1063,7 @@ describe("TemplateGalleryModal", () => {
             onPrimaryAction={onPrimaryAction}
             selectedTemplateId="rich-embed"
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       await user.click(screen.getByText("Use this template"));
@@ -1079,7 +1079,7 @@ describe("TemplateGalleryModal", () => {
             selectedTemplateId="default"
             isPrimaryActionLoading
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       const button = screen.getByText("Use this template").closest("button");
       expect(button).toHaveAttribute("data-loading");
@@ -1089,7 +1089,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText("Cancel")).toBeInTheDocument();
     });
@@ -1098,7 +1098,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} secondaryActionLabel="Close" />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText("Close")).toBeInTheDocument();
     });
@@ -1111,7 +1111,7 @@ describe("TemplateGalleryModal", () => {
             tertiaryActionLabel="Customize manually"
             onTertiaryAction={vi.fn()}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText("Customize manually")).toBeInTheDocument();
     });
@@ -1126,7 +1126,7 @@ describe("TemplateGalleryModal", () => {
             tertiaryActionLabel="Customize manually"
             onTertiaryAction={onTertiaryAction}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       await user.click(screen.getByText("Customize manually"));
@@ -1137,7 +1137,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.queryByText("Customize manually")).not.toBeInTheDocument();
     });
@@ -1148,7 +1148,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} testId="test-modal" />
-        </TestWrapper>
+        </TestWrapper>,
       );
       const modalContent = screen.getByTestId("test-modal");
       // Chakra Modal automatically generates aria-labelledby attribute
@@ -1159,7 +1159,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} />
-        </TestWrapper>
+        </TestWrapper>,
       );
       // The legend is visually hidden but should be in the DOM
       const legend = screen.getByText("Choose a template");
@@ -1170,7 +1170,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByLabelText("Template preview")).toBeInTheDocument();
     });
@@ -1179,7 +1179,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} />
-        </TestWrapper>
+        </TestWrapper>,
       );
       const previewPanel = screen.getByLabelText("Template preview");
       expect(previewPanel).toHaveAttribute("role", "region");
@@ -1189,7 +1189,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} />
-        </TestWrapper>
+        </TestWrapper>,
       );
       // The aria-live region for preview updates is visually hidden (not inside preview panel)
       // to prevent duplicate announcements
@@ -1201,7 +1201,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} />
-        </TestWrapper>
+        </TestWrapper>,
       );
       // The aria-live region is visually hidden for screen reader announcements
       const liveRegion = document.querySelector('[aria-live="polite"][aria-atomic="true"]');
@@ -1217,7 +1217,7 @@ describe("TemplateGalleryModal", () => {
                 result: { status: SendTestArticleDeliveryStatus.Success, messages: [] },
               });
             }, 1000);
-          })
+          }),
       );
 
       const mockUserFeed = { id: "feed-123" } as Parameters<
@@ -1235,7 +1235,7 @@ describe("TemplateGalleryModal", () => {
             userFeed={mockUserFeed}
             connection={mockConnection}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       const previewPanel = screen.getByLabelText("Template preview");
@@ -1250,7 +1250,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} onTemplateSelect={onTemplateSelect} />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       const radios = screen.getAllByRole("radio");
@@ -1272,7 +1272,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} onTemplateSelect={onTemplateSelect} />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       const radios = screen.getAllByRole("radio");
@@ -1295,7 +1295,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} onTemplateSelect={onTemplateSelect} />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       const radios = screen.getAllByRole("radio");
@@ -1312,7 +1312,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} onPrimaryAction={vi.fn()} />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Tab through modal - verify elements receive focus in order
@@ -1343,7 +1343,7 @@ describe("TemplateGalleryModal", () => {
             feedFields={["title"]}
             detectedFields={emptyDetectedFields}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       const radios = screen.getAllByRole("radio");
@@ -1361,7 +1361,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} onTemplateSelect={onTemplateSelect} />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       const radios = screen.getAllByRole("radio");
@@ -1377,7 +1377,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} onPrimaryAction={vi.fn()} />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Chakra Modal provides focus trap by default
@@ -1394,7 +1394,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} onPrimaryAction={vi.fn()} />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Verify there are multiple focusable elements in the modal
@@ -1438,7 +1438,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <ModalWithTrigger />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       const triggerButton = screen.getByTestId("trigger");
@@ -1478,7 +1478,7 @@ describe("TemplateGalleryModal", () => {
             userFeed={mockUserFeed}
             connection={mockConnection}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Wait for preview to load and announcement to be set
@@ -1489,7 +1489,7 @@ describe("TemplateGalleryModal", () => {
           expect(liveRegion).toBeInTheDocument();
           expect(liveRegion?.textContent).toContain("Preview updated for Simple Text template");
         },
-        { timeout: 3000 }
+        { timeout: 3000 },
       );
     });
 
@@ -1497,13 +1497,13 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Our custom announcement region has aria-atomic="true"
       // (Chakra may add other aria-live regions for alerts, etc.)
       const announcementRegions = document.querySelectorAll(
-        '[aria-live="polite"][aria-atomic="true"]'
+        '[aria-live="polite"][aria-atomic="true"]',
       );
       expect(announcementRegions).toHaveLength(1);
     });
@@ -1520,13 +1520,13 @@ describe("TemplateGalleryModal", () => {
             connectionId={undefined}
             selectedTemplateId="default"
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       // The preview panel should show loading or preview content, not an error
       // Since articles exist, we should not see the "no articles" message
       await waitFor(() => {
         expect(
-          screen.queryByText(/There are currently no articles in the feed to preview/i)
+          screen.queryByText(/There are currently no articles in the feed to preview/i),
         ).not.toBeInTheDocument();
       });
     });
@@ -1541,11 +1541,11 @@ describe("TemplateGalleryModal", () => {
             connectionId={undefined}
             selectedTemplateId="default"
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       await waitFor(() => {
         expect(
-          screen.getByText(/There are currently no articles in the feed to preview/i)
+          screen.getByText(/There are currently no articles in the feed to preview/i),
         ).toBeInTheDocument();
       });
     });
@@ -1571,14 +1571,14 @@ describe("TemplateGalleryModal", () => {
             connection={mockConnection}
             showComparisonPreview={false}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       await waitFor(
         () => {
           expect(screen.getByText("Failed to load preview. Please try again.")).toBeInTheDocument();
         },
-        { timeout: 3000 }
+        { timeout: 3000 },
       );
     });
   });
@@ -1593,7 +1593,7 @@ describe("TemplateGalleryModal", () => {
             onTestSend={vi.fn()}
             onSave={vi.fn()}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText("Send to Discord")).toBeInTheDocument();
     });
@@ -1607,7 +1607,7 @@ describe("TemplateGalleryModal", () => {
             onTestSend={vi.fn()}
             onSave={vi.fn()}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText("Save")).toBeInTheDocument();
     });
@@ -1621,7 +1621,7 @@ describe("TemplateGalleryModal", () => {
             onTestSend={vi.fn()}
             onSave={vi.fn()}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText("Send to Discord")).toBeDisabled();
     });
@@ -1636,7 +1636,7 @@ describe("TemplateGalleryModal", () => {
             onTestSend={vi.fn()}
             onSave={vi.fn()}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText("Send to Discord")).toBeDisabled();
     });
@@ -1651,7 +1651,7 @@ describe("TemplateGalleryModal", () => {
             onTestSend={vi.fn()}
             onSave={vi.fn()}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText("Save")).toBeInTheDocument();
       expect(screen.queryByText("Send to Discord")).not.toBeInTheDocument();
@@ -1668,7 +1668,7 @@ describe("TemplateGalleryModal", () => {
             onTestSend={onTestSend}
             onSave={vi.fn()}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       await user.click(screen.getByText("Send to Discord"));
@@ -1686,7 +1686,7 @@ describe("TemplateGalleryModal", () => {
             onTestSend={vi.fn()}
             onSave={onSave}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       await user.click(screen.getByText("Save"));
@@ -1703,7 +1703,7 @@ describe("TemplateGalleryModal", () => {
             onSave={vi.fn()}
             isTestSendLoading
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText("Sending...")).toBeInTheDocument();
     });
@@ -1721,7 +1721,7 @@ describe("TemplateGalleryModal", () => {
               message: "Article sent to Discord successfully!",
             }}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText("Article sent to Discord successfully!")).toBeInTheDocument();
     });
@@ -1739,10 +1739,10 @@ describe("TemplateGalleryModal", () => {
               message: "Failed to send test article. Please try again.",
             }}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(
-        screen.getByText("Failed to send test article. Please try again.")
+        screen.getByText("Failed to send test article. Please try again."),
       ).toBeInTheDocument();
       expect(screen.getByText("Retry")).toBeInTheDocument();
     });
@@ -1759,7 +1759,7 @@ describe("TemplateGalleryModal", () => {
             onSave={vi.fn()}
             testSendFeedback={{ status: "error", message: "Failed to send test article." }}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       await user.click(screen.getByText("Retry"));
@@ -1776,7 +1776,7 @@ describe("TemplateGalleryModal", () => {
             onSave={vi.fn()}
             isSaveLoading
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       const saveButton = screen.getByText("Save").closest("button");
       expect(saveButton).toHaveAttribute("data-loading");
@@ -1792,7 +1792,7 @@ describe("TemplateGalleryModal", () => {
             onTestSend={vi.fn()}
             onSave={vi.fn()}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       const saveButton = screen.getByText("Save").closest("button");
       expect(saveButton).toHaveClass("chakra-button");
@@ -1814,7 +1814,7 @@ describe("TemplateGalleryModal", () => {
               deliveryStatus: SendTestArticleDeliveryStatus.BadPayload,
             }}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText(/Discord couldn't send this preview/i)).toBeInTheDocument();
@@ -1835,7 +1835,7 @@ describe("TemplateGalleryModal", () => {
               message: "Article sent to Discord successfully!",
             }}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.queryByText(/Discord couldn't send this preview/i)).not.toBeInTheDocument();
@@ -1855,12 +1855,12 @@ describe("TemplateGalleryModal", () => {
               message: "Failed to send test article. Please try again.",
             }}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.queryByText(/Discord couldn't send this preview/i)).not.toBeInTheDocument();
       expect(
-        screen.getByText("Failed to send test article. Please try again.")
+        screen.getByText("Failed to send test article. Please try again."),
       ).toBeInTheDocument();
     });
 
@@ -1878,7 +1878,7 @@ describe("TemplateGalleryModal", () => {
               deliveryStatus: SendTestArticleDeliveryStatus.BadPayload,
             }}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.queryByRole("radio")).not.toBeInTheDocument();
@@ -1900,7 +1900,7 @@ describe("TemplateGalleryModal", () => {
               deliveryStatus: SendTestArticleDeliveryStatus.BadPayload,
             }}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Footer buttons should be hidden when error panel is showing
@@ -1929,7 +1929,7 @@ describe("TemplateGalleryModal", () => {
               deliveryStatus: SendTestArticleDeliveryStatus.BadPayload,
             }}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       await user.click(screen.getByRole("button", { name: /Try Another Template/i }));
@@ -1953,7 +1953,7 @@ describe("TemplateGalleryModal", () => {
               deliveryStatus: SendTestArticleDeliveryStatus.BadPayload,
             }}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       await user.click(screen.getByRole("button", { name: /Use this template/i }));
@@ -1975,7 +1975,7 @@ describe("TemplateGalleryModal", () => {
               deliveryStatus: SendTestArticleDeliveryStatus.BadPayload,
             }}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       const useTemplateButton = screen.getByRole("button", {
@@ -1998,7 +1998,7 @@ describe("TemplateGalleryModal", () => {
       render(
         <TestWrapper>
           <TemplateGalleryModal {...defaultProps} showComparisonPreview={false} />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText("Preview")).toBeInTheDocument();
       expect(screen.queryByText("Current Format")).not.toBeInTheDocument();
@@ -2013,7 +2013,7 @@ describe("TemplateGalleryModal", () => {
             showComparisonPreview
             currentMessageComponent={mockMessageComponent}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText("Current Format")).toBeInTheDocument();
       expect(screen.getByText("Template Preview")).toBeInTheDocument();
@@ -2029,7 +2029,7 @@ describe("TemplateGalleryModal", () => {
             currentMessageComponent={mockMessageComponent}
             selectedTemplateId={undefined}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText("Select a template to compare")).toBeInTheDocument();
     });
@@ -2042,7 +2042,7 @@ describe("TemplateGalleryModal", () => {
             showComparisonPreview
             currentMessageComponent={undefined}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByText("No current format to display")).toBeInTheDocument();
     });
@@ -2055,7 +2055,7 @@ describe("TemplateGalleryModal", () => {
             showComparisonPreview
             currentMessageComponent={mockMessageComponent}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(screen.getByLabelText("Preview article")).toBeInTheDocument();
     });

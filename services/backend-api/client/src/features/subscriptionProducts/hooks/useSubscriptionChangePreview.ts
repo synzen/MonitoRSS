@@ -29,7 +29,7 @@ export const useSubscriptionChangePreview = (input: Partial<GetSubscriptionChang
     {
       enabled: !!input.data,
       cacheTime: 0,
-    }
+    },
   );
 
   return {

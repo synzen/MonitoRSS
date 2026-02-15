@@ -10,7 +10,7 @@ export const useDiscordUserMe = () => {
     async () => getDiscordMe(),
     {
       enabled: !!authStatusData?.authenticated,
-    }
+    },
   );
 
   return {

@@ -22,7 +22,7 @@ const IS_IN_TIMEFRAME_TO_SHOW_REDUCED_LIMIT_ALERT = new Date() < new Date("2025-
 export const ReducedLimitAlert = () => {
   const { data: userMeData } = useUserMe();
   const [isUserHiddenDecreasedLimitAlert, setIsUserHiddenDecreasedLimitAlert] = useState(
-    localStorage.getItem("userHasHiddenFeedLimitAlert") === "true"
+    localStorage.getItem("userHasHiddenFeedLimitAlert") === "true",
   );
   const { data: exceededFeedLimits } = useUserFeeds({
     limit: 1,

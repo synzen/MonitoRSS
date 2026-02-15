@@ -194,7 +194,7 @@ export const useTestSendFlow = ({
  */
 export const getTemplateUpdateData = (
   selectedTemplateId: string | undefined,
-  detectedFields: DetectedFields
+  detectedFields: DetectedFields,
 ) => {
   const templateToApply = selectedTemplateId
     ? getTemplateById(selectedTemplateId) || DEFAULT_TEMPLATE

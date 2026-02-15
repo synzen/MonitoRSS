@@ -18,7 +18,7 @@ export const useEnableUserFeeds = () => {
         },
         {
           throwOnError: true,
-        }
+        },
       ),
   });
 

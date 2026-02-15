@@ -103,7 +103,7 @@ export function formatLabelList(labels: string[], maxShow = 2): string {
 
 export function getAlertSeverity(errors: ExternalContentError[]): "error" | "warning" {
   const hasConfigError = errors.some(
-    (e) => e.errorType === ExternalContentErrorType.INVALID_CSS_SELECTOR
+    (e) => e.errorType === ExternalContentErrorType.INVALID_CSS_SELECTOR,
   );
 
   return hasConfigError ? "error" : "warning";

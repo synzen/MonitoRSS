@@ -145,18 +145,28 @@ export const ArticleDeliveryResultSchema = object({
   mediumResults: array(MediumDeliveryResultSchema.required()).required(),
 });
 
-export type FeedStateDeliveryPreviewDetails = InferType<typeof FeedStateDeliveryPreviewDetailsSchema>;
-export type IdComparisonDeliveryPreviewDetails = InferType<typeof IdComparisonDeliveryPreviewDetailsSchema>;
+export type FeedStateDeliveryPreviewDetails = InferType<
+  typeof FeedStateDeliveryPreviewDetailsSchema
+>;
+export type IdComparisonDeliveryPreviewDetails = InferType<
+  typeof IdComparisonDeliveryPreviewDetailsSchema
+>;
 export type BlockingComparisonDeliveryPreviewDetails = InferType<
   typeof BlockingComparisonDeliveryPreviewDetailsSchema
 >;
 export type PassingComparisonDeliveryPreviewDetails = InferType<
   typeof PassingComparisonDeliveryPreviewDetailsSchema
 >;
-export type DateCheckDeliveryPreviewDetails = InferType<typeof DateCheckDeliveryPreviewDetailsSchema>;
+export type DateCheckDeliveryPreviewDetails = InferType<
+  typeof DateCheckDeliveryPreviewDetailsSchema
+>;
 export type FilterExplainBlockedDetail = InferType<typeof FilterExplainBlockedDetailSchema>;
-export type MediumFilterDeliveryPreviewDetails = InferType<typeof MediumFilterDeliveryPreviewDetailsSchema>;
-export type RateLimitDeliveryPreviewDetails = InferType<typeof RateLimitDeliveryPreviewDetailsSchema>;
+export type MediumFilterDeliveryPreviewDetails = InferType<
+  typeof MediumFilterDeliveryPreviewDetailsSchema
+>;
+export type RateLimitDeliveryPreviewDetails = InferType<
+  typeof RateLimitDeliveryPreviewDetailsSchema
+>;
 
 export type BackendStageResult = InferType<typeof BackendStageResultSchema>;
 export type BackendMediumDeliveryResult = InferType<typeof BackendMediumDeliveryResultSchema>;

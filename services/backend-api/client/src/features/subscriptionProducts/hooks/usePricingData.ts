@@ -20,7 +20,7 @@ export const usePricingData = ({ isOpen }: UsePricingDataOptions) => {
 
   const [products, setProducts] = useState<PricePreview[]>();
   const [additionalFeedPricePreview, setAdditionalFeedPricePreview] = useState<PricePreview | null>(
-    null
+    null,
   );
   const [chargePreview, setChargePreview] = useState<string | null>(null);
   const [baseAdditionalFeedsPrice, setBaseAdditionalFeedsPrice] = useState<string | null>(null);
@@ -38,7 +38,7 @@ export const usePricingData = ({ isOpen }: UsePricingDataOptions) => {
 
   const additionalFeedsQuantity = additionalFeedPricePreview?.prices[0]?.quantity;
   const userSubscriptionAdditionalFeeds = userData?.result.subscription.addons?.find(
-    (a) => a.key === ProductKey.Tier3Feed
+    (a) => a.key === ProductKey.Tier3Feed,
   )?.quantity;
 
   const changeInterval = useCallback((newInterval: BillingInterval) => {
@@ -81,7 +81,7 @@ export const usePricingData = ({ isOpen }: UsePricingDataOptions) => {
         setIsLoadingAdditionalFeedsChange(false);
       }
     },
-    [priceIdOfAdditionalFeeds, priceIdOfTier3, getPricePreview, getChargePreview]
+    [priceIdOfAdditionalFeeds, priceIdOfTier3, getPricePreview, getChargePreview],
   );
 
   const changeAdditionalFeedsInput = useCallback(
@@ -90,7 +90,7 @@ export const usePricingData = ({ isOpen }: UsePricingDataOptions) => {
       setAdditionalFeedsInput(clamped);
       updateAdditionalFeeds(clamped);
     },
-    [updateAdditionalFeeds]
+    [updateAdditionalFeeds],
   );
 
   // Sync interval with user's billing interval when available
@@ -117,7 +117,7 @@ export const usePricingData = ({ isOpen }: UsePricingDataOptions) => {
         setHasError(false);
 
         const userAdditionalFeedsAddon = userData.result.subscription.addons?.find(
-          (a) => a.key === ProductKey.Tier3Feed
+          (a) => a.key === ProductKey.Tier3Feed,
         );
 
         if (userAdditionalFeedsAddon?.quantity != null) {
@@ -163,7 +163,7 @@ export const usePricingData = ({ isOpen }: UsePricingDataOptions) => {
         if (t3FeedPricePreview) {
           setAdditionalFeedPricePreview(t3FeedPricePreview);
           const basePriceFormatted = t3FeedPricePreview.prices.find(
-            (p) => p.interval === "month"
+            (p) => p.interval === "month",
           )?.formattedPrice;
 
           if (basePriceFormatted) {
@@ -187,12 +187,12 @@ export const usePricingData = ({ isOpen }: UsePricingDataOptions) => {
 
       return product?.prices.find((p) => p.interval === interval);
     },
-    [products, interval]
+    [products, interval],
   );
 
   const getProduct = useCallback(
     (productId: ProductKey) => products?.find((p) => p.id === productId),
-    [products]
+    [products],
   );
 
   return {

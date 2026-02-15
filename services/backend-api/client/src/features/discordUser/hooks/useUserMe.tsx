@@ -30,7 +30,7 @@ export const useUserMe = (props?: Props) => {
         return false;
       },
       enabled: props?.enabled,
-    }
+    },
   );
 
   useEffect(() => {

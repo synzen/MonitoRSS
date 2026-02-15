@@ -18,7 +18,7 @@ const GetServerMembersOutputSchema = object({
 export type GetServerMembersOutput = InferType<typeof GetServerMembersOutputSchema>;
 
 export const getServerMembers = async (
-  options: GetServerMembersInput
+  options: GetServerMembersInput,
 ): Promise<GetServerMembersOutput> => {
   const params = new URLSearchParams({
     limit: options.data.limit.toString(),
@@ -29,7 +29,7 @@ export const getServerMembers = async (
     `/api/v1/discord-servers/${options.serverId}/members?${params.toString()}`,
     {
       validateSchema: GetServerMembersOutputSchema,
-    }
+    },
   );
 
   return res as GetServerMembersOutput;

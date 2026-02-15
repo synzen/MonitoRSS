@@ -99,7 +99,7 @@ const ErrorCategory = ({ title, errors }: { title: string; errors: ExternalConte
 const buildSummary = (
   configErrors: ExternalContentError[],
   selectorWarnings: ExternalContentError[],
-  externalErrors: ExternalContentError[]
+  externalErrors: ExternalContentError[],
 ): { title: string; description: string } => {
   const hasConfigErrors = configErrors.length > 0;
   const hasSelectorWarnings = selectorWarnings.length > 0;
@@ -121,13 +121,13 @@ const buildSummary = (
       parts.push(
         `${selectorWarnings.length} selector${
           selectorWarnings.length > 1 ? "s" : ""
-        } with no matches`
+        } with no matches`,
       );
     }
 
     if (hasExternalErrors) {
       parts.push(
-        `${externalErrors.length} page load failure${externalErrors.length > 1 ? "s" : ""}`
+        `${externalErrors.length} page load failure${externalErrors.length > 1 ? "s" : ""}`,
       );
     }
 

@@ -11,7 +11,7 @@ interface GetChannelIconOptions {
 
 export const getChannelIcon = (
   channelType?: ChannelIconType | string | null,
-  options: GetChannelIconOptions = {}
+  options: GetChannelIconOptions = {},
 ): React.ReactNode => {
   const { className, size } = options;
   const iconProps = { className, size };

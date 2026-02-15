@@ -46,7 +46,7 @@ export const UserFeedProvider = ({
         ignoreNewLines: false,
       },
     }),
-    [feed]
+    [feed],
   );
 
   if (error) {

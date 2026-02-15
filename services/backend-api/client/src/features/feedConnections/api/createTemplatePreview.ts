@@ -54,7 +54,7 @@ const CreateTemplatePreviewOutputSchema = object({
 export type CreateTemplatePreviewOutput = InferType<typeof CreateTemplatePreviewOutputSchema>;
 
 export const createTemplatePreview = async (
-  options: CreateTemplatePreviewInput
+  options: CreateTemplatePreviewInput,
 ): Promise<CreateTemplatePreviewOutput> => {
   const res = await fetchRest(`/api/v1/user-feeds/${options.feedId}/connections/template-preview`, {
     validateSchema: CreateTemplatePreviewOutputSchema,

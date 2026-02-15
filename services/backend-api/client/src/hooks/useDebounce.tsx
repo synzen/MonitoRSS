@@ -20,7 +20,7 @@ export function useDebounce<T>(value: T, delay: number) {
         clearTimeout(handler);
       };
     },
-    [JSON.stringify(value), delay] // Only re-call effect if value or delay changes
+    [JSON.stringify(value), delay], // Only re-call effect if value or delay changes
   );
 
   return debouncedValue;

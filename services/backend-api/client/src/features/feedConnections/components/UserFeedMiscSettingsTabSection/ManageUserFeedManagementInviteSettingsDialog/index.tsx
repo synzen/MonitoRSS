@@ -68,7 +68,7 @@ export const ManageUserFeedManagementInviteSettingsDialog = ({
 
     try {
       const everyConnectionIsChecked = allConnectionIds.every((id) =>
-        checkedConnections.includes(id)
+        checkedConnections.includes(id),
       );
 
       await mutateAsync({

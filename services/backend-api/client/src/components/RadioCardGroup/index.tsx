@@ -32,7 +32,7 @@ export const RadioCardGroup = ({ options }: RadioCardGroupProps) => {
 export const RadioCard = (
   props: UseRadioProps & {
     children: React.ReactNode;
-  }
+  },
 ) => {
   const { children } = props;
   const { getInputProps, getRadioProps } = useRadio(props);

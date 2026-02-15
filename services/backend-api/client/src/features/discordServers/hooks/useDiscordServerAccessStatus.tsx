@@ -24,7 +24,7 @@ export const useDiscordServerAccessStatus = ({ serverId }: Props) => {
     {
       enabled: !!serverId && !hasErrored,
       onError: () => setHasErrored(true),
-    }
+    },
   );
 
   return {

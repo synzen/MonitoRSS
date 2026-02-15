@@ -13,14 +13,14 @@ const GetUserFeedsOutputSchema = object({
       id: string().required(),
       deleted: bool().required(),
       isLegacy: bool().required(),
-    })
+    }),
   ).required(),
 }).required();
 
 export type DeleteUserFeedsOutput = InferType<typeof GetUserFeedsOutputSchema>;
 
 export const deleteUserFeeds = async (
-  input: DeleteUserFeedsInput
+  input: DeleteUserFeedsInput,
 ): Promise<DeleteUserFeedsOutput> => {
   const res = await fetchRest(`/api/v1/user-feeds`, {
     requestOptions: {

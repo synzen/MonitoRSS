@@ -186,15 +186,15 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
   const biggestPriceLength = products
     ? Math.max(
         ...products.flatMap((pr) =>
-          pr.prices.filter((p) => p.interval === interval).map((p) => p.formattedPrice.length)
+          pr.prices.filter((p) => p.interval === interval).map((p) => p.formattedPrice.length),
         ),
-        0
+        0,
       )
     : 4;
 
   const priceTextSize = getIdealPriceTextSize(biggestPriceLength);
   const userTierIndex = TIER_CONFIGS.findIndex(
-    (t) => t.productId === userSubscription?.product.key
+    (t) => t.productId === userSubscription?.product.key,
   );
 
   const changeSubscriptionDetailsWithProduct = changeSubscriptionDetails?.prices
@@ -210,7 +210,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
       }
 
       const product = products?.find((prod) =>
-        prod.prices.some((thisPrice) => thisPrice.id === price.priceId)
+        prod.prices.some((thisPrice) => thisPrice.id === price.priceId),
       );
       const productPrice = product?.prices.find((p) => p.id === price.priceId);
 
@@ -318,7 +318,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                             {TIER_CONFIGS.map(
                               (
                                 { productId, features, supportsAdditionalFeeds },
-                                currentTierIndex
+                                currentTierIndex,
                               ) => {
                                 const product = getProduct(productId);
                                 const price = getProductPrice(productId);
@@ -427,7 +427,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                                   onClick={() => {
                                                     if (additionalFeedsInput > 0) {
                                                       changeAdditionalFeedsInput(
-                                                        additionalFeedsInput - 1
+                                                        additionalFeedsInput - 1,
                                                       );
                                                     }
                                                   }}
@@ -437,7 +437,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                                   value={additionalFeedsInput}
                                                   onChange={(valueString) => {
                                                     changeAdditionalFeedsInput(
-                                                      parseInt(valueString, 10)
+                                                      parseInt(valueString, 10),
                                                     );
                                                   }}
                                                   min={0}
@@ -458,7 +458,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                                   variant="outline"
                                                   onClick={() => {
                                                     changeAdditionalFeedsInput(
-                                                      additionalFeedsInput + 1
+                                                      additionalFeedsInput + 1,
                                                     );
                                                   }}
                                                 />
@@ -482,7 +482,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                                     additional feeds: +
                                                     {
                                                       additionalFeedPricePreview.prices.find(
-                                                        (p) => p.interval === interval
+                                                        (p) => p.interval === interval,
                                                       )?.formattedPrice
                                                     }
                                                     {interval === "month"
@@ -541,15 +541,15 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                             isOnThisTier || (isOnThisTier && isUpdate)
                                               ? "outline"
                                               : isAboveUserTier
-                                              ? "solid"
-                                              : "outline"
+                                                ? "solid"
+                                                : "outline"
                                           }
                                           colorScheme={
                                             isAboveUserTier || (isOnThisTier && isUpdate)
                                               ? "blue"
                                               : isBelowUserTier
-                                              ? "red"
-                                              : undefined
+                                                ? "red"
+                                                : undefined
                                           }
                                         >
                                           {isOnThisTier && !isUpdate && <span>Current Plan</span>}
@@ -565,7 +565,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                     </CardFooter>
                                   </Card>
                                 );
-                              }
+                              },
                             )}
                           </SimpleGrid>
                         </Flex>

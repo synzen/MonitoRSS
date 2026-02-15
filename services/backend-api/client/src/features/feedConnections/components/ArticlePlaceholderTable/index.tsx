@@ -94,17 +94,17 @@ export const ArticlePlaceholderTable = ({
                     {asPlaceholders
                       ? t(
                           "features.feedConnections.components" +
-                            ".articlePlaceholderTable.columnHeaderPlaceholder"
+                            ".articlePlaceholderTable.columnHeaderPlaceholder",
                         )
                       : t(
                           "features.feedConnections.components" +
-                            ".articlePlaceholderTable.columnHeaderProperty"
+                            ".articlePlaceholderTable.columnHeaderProperty",
                         )}
                   </Th>
                   <Th>
                     {t(
                       "features.feedConnections.components" +
-                        ".articlePlaceholderTable.columnHeaderValue"
+                        ".articlePlaceholderTable.columnHeaderValue",
                     )}
                   </Th>
                 </Tr>

@@ -33,7 +33,7 @@ export const SendConnectionTestArticleButton = () => {
         },
         {
           disableToast: true,
-        }
+        },
       );
 
       if (resultInfo?.status === "error") {

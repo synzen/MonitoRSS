@@ -64,9 +64,9 @@ const formSchema = object({
             const names = properties.map((s) => s.label);
 
             return !names.length || names.filter((n) => n === value).length === 1;
-          }
+          },
         ),
-    }).required()
+    }).required(),
   ).required(),
 });
 

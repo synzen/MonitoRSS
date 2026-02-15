@@ -15,7 +15,7 @@ const GetArticleDailyLimitSchema = object({
 export type GetArticleDailyLimitOutput = InferType<typeof GetArticleDailyLimitSchema>;
 
 export const getArticleDailyLimit = async (
-  options: GetArticleDailyLimitInput
+  options: GetArticleDailyLimitInput,
 ): Promise<GetArticleDailyLimitOutput> => {
   const res = await fetchRest(`/api/v1/user-feeds/${options.feedId}/daily-limit`, {
     validateSchema: GetArticleDailyLimitSchema,

@@ -38,7 +38,7 @@ export const useDiscordServerActiveThreads = ({ serverId, options }: Props) => {
     },
     {
       enabled: !!accessData?.result.authorized && !!serverId,
-    }
+    },
   );
 
   return {

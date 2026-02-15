@@ -121,7 +121,7 @@ export const DiscordMessageForumThreadForm = () => {
   const { t } = useTranslation();
   const availableTagIds = new Set(availableTags?.map((tag) => tag.id));
   const deletedTagIds = new Set(
-    connection.details.forumThreadTags?.filter((v) => !availableTagIds.has(v.id)).map((v) => v.id)
+    connection.details.forumThreadTags?.filter((v) => !availableTagIds.has(v.id)).map((v) => v.id),
   );
 
   return (
@@ -231,7 +231,7 @@ export const DiscordMessageForumThreadForm = () => {
                               }
 
                               const existingFieldIndex = fieldsWithoutDeletedTags.findIndex(
-                                (v) => v.id === id
+                                (v) => v.id === id,
                               );
 
                               if (existingFieldIndex === -1) {
