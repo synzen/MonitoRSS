@@ -5,7 +5,7 @@ import { getDiscordAuthStatus, GetDiscordAuthStatusOutput } from "../api";
 export const useDiscordAuthStatus = () => {
   const { data, status, error } = useQuery<GetDiscordAuthStatusOutput, ApiAdapterError>(
     ["discord-auth-status"],
-    async () => getDiscordAuthStatus()
+    async () => getDiscordAuthStatus(),
   );
 
   return {

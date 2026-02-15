@@ -24,7 +24,7 @@ export type GetUserFeedArticlePropertiesOutput = InferType<
 >;
 
 export const getUserFeedArticleProperties = async (
-  options: GetUserFeedArticlePropertiesInput
+  options: GetUserFeedArticlePropertiesInput,
 ): Promise<GetUserFeedArticlePropertiesOutput> => {
   const res = await fetchRest(`/api/v1/user-feeds/${options.feedId}/get-article-properties`, {
     requestOptions: {

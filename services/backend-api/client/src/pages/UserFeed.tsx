@@ -276,7 +276,7 @@ const UserFeedInner: React.FC = () => {
   );
 
   const disabledConnections = feed?.connections.filter(
-    (c) => c.disabledCode === FeedConnectionDisabledCode.Manual
+    (c) => c.disabledCode === FeedConnectionDisabledCode.Manual,
   );
 
   const tabIndex = tabIndexBySearchParam.get(urlSearch);
@@ -545,7 +545,7 @@ const UserFeedInner: React.FC = () => {
                     <CategoryText title={t("pages.feed.refreshRateLabel")}>
                       {feed
                         ? formatRefreshRateSeconds(
-                            feed.userRefreshRateSeconds || feed.refreshRateSeconds
+                            feed.userRefreshRateSeconds || feed.refreshRateSeconds,
                           )
                         : null}
                     </CategoryText>

@@ -34,12 +34,10 @@ const SendTestArticleDirectOutputSchema = object({
   result: SendTestArticleResultSchema,
 }).required();
 
-export type SendTestArticleDirectOutput = InferType<
-  typeof SendTestArticleDirectOutputSchema
->;
+export type SendTestArticleDirectOutput = InferType<typeof SendTestArticleDirectOutputSchema>;
 
 export const sendTestArticleDirect = async (
-  options: SendTestArticleDirectInput
+  options: SendTestArticleDirectInput,
 ): Promise<SendTestArticleDirectOutput> => {
   const res = await fetchRest(`/api/v1/user-feeds/${options.feedId}/test-send`, {
     validateSchema: SendTestArticleDirectOutputSchema,

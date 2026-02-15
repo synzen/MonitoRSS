@@ -27,7 +27,7 @@ export const useDeliveryPreviewWithPagination = ({ feedId, limit, disabled }: Pr
 
   const lastChecked = useMemo(
     () => (!dataUpdatedAt ? new Date() : new Date(dataUpdatedAt)),
-    [dataUpdatedAt]
+    [dataUpdatedAt],
   );
 
   return {

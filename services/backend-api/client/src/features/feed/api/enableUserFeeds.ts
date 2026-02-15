@@ -12,14 +12,14 @@ const EnableUserFeedsOutputSchema = object({
     object({
       id: string().required(),
       enabled: bool().required(),
-    })
+    }),
   ).required(),
 }).required();
 
 export type EnableUserFeedsOutput = InferType<typeof EnableUserFeedsOutputSchema>;
 
 export const EnableUserFeeds = async (
-  input: EnableUserFeedsInput
+  input: EnableUserFeedsInput,
 ): Promise<EnableUserFeedsOutput> => {
   const res = await fetchRest(`/api/v1/user-feeds`, {
     requestOptions: {

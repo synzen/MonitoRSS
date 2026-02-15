@@ -27,13 +27,13 @@ import { MessageBuilder } from "./MessageBuilder";
 const UserSettings = lazyWithRetries(() =>
   import("./UserSettings").then(({ UserSettings: c }) => ({
     default: c,
-  }))
+  })),
 );
 
 const Checkout = lazyWithRetries(() =>
   import("./Checkout").then(({ Checkout: c }) => ({
     default: c,
-  }))
+  })),
 );
 
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);

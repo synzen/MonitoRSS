@@ -26,7 +26,7 @@ export const SupportWidget = () => {
         };
 
         // @ts-ignore
-        (n.q = []), (window.FreshworksWidget = n);
+        ((n.q = []), (window.FreshworksWidget = n));
       }
     })();
 

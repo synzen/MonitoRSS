@@ -25,7 +25,7 @@ export const useDiscordWebhook = ({ webhookId }: Props) => {
     },
     {
       enabled: !!webhookId,
-    }
+    },
   );
 
   return {

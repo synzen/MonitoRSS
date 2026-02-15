@@ -47,7 +47,7 @@ export const useUpdateConnection = ({ type, disablePreviewInvalidation }: Props)
             },
           ],
           refetchType: "all",
-        })
+        }),
       );
 
       if (!disablePreviewInvalidation) {
@@ -64,7 +64,7 @@ export const useUpdateConnection = ({ type, disablePreviewInvalidation }: Props)
               },
             ],
             refetchType: "active",
-          })
+          }),
         );
       }
 

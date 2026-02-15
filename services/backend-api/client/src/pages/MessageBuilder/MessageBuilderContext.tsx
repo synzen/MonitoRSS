@@ -65,7 +65,7 @@ interface MessageBuilderContextType {
       | ComponentType.V2MediaGallery
       | ComponentType.V2MediaGalleryItem
       | ComponentType.V2Thumbnail,
-    isAccessory?: boolean
+    isAccessory?: boolean,
   ) => Component | null;
   deleteComponent: (componentId: string) => void;
   resetMessage: () => void;
@@ -200,14 +200,14 @@ const MessageBuilderInternalProvider: React.FC<{ children: React.ReactNode }> = 
             newComponent = createNewMessageBuilderComponent(
               childType,
               parentId,
-              0
+              0,
             ) as LegacyEmbedContainerComponent;
 
             indexToAddAt = 1;
             const childEmbed = createNewMessageBuilderComponent(
               ComponentType.LegacyEmbed,
               newComponent.id,
-              0
+              0,
             ) as LegacyEmbedComponent;
             newComponent.children.push(childEmbed);
             idsToExpand.push(childEmbed.id);
@@ -252,7 +252,7 @@ const MessageBuilderInternalProvider: React.FC<{ children: React.ReactNode }> = 
 
       return newComponent;
     },
-    [getValues, setValue]
+    [getValues, setValue],
   );
 
   const deleteComponent: MessageBuilderContextType["deleteComponent"] = useCallback(
@@ -328,7 +328,7 @@ const MessageBuilderInternalProvider: React.FC<{ children: React.ReactNode }> = 
         notifyInfo(`Successfully removed component`);
       }
     },
-    [getValues, setValue, setCurrentSelectedId, setCurrentFocusedId]
+    [getValues, setValue, setCurrentSelectedId, setCurrentFocusedId],
   );
 
   const moveComponentUp: MessageBuilderContextType["moveComponentUp"] = useCallback(
@@ -369,7 +369,7 @@ const MessageBuilderInternalProvider: React.FC<{ children: React.ReactNode }> = 
         shouldValidate: true,
       });
     },
-    [getValues, setValue]
+    [getValues, setValue],
   );
 
   const moveComponentDown: MessageBuilderContextType["moveComponentDown"] = useCallback(
@@ -410,7 +410,7 @@ const MessageBuilderInternalProvider: React.FC<{ children: React.ReactNode }> = 
         shouldValidate: true,
       });
     },
-    [getValues, setValue]
+    [getValues, setValue],
   );
 
   const resetMessage: MessageBuilderContextType["resetMessage"] = useCallback(() => {
@@ -432,7 +432,7 @@ const MessageBuilderInternalProvider: React.FC<{ children: React.ReactNode }> = 
 
         const formPath = getMessageBuilderComponentFormPathById(
           messageComponent,
-          currentSelectedId
+          currentSelectedId,
         );
 
         if (formPath) {
@@ -443,7 +443,7 @@ const MessageBuilderInternalProvider: React.FC<{ children: React.ReactNode }> = 
           });
         }
       },
-      [currentSelectedId, getValues, setValue]
+      [currentSelectedId, getValues, setValue],
     );
 
   const navigateToComponentId: MessageBuilderContextType["navigateToComponentId"] = useCallback(
@@ -457,7 +457,7 @@ const MessageBuilderInternalProvider: React.FC<{ children: React.ReactNode }> = 
         setExpandedIds((prev) => new Set([...prev, ...parentIds]));
       }
     },
-    []
+    [],
   );
 
   const switchRootType: MessageBuilderContextType["switchRootType"] = useCallback(
@@ -492,7 +492,7 @@ const MessageBuilderInternalProvider: React.FC<{ children: React.ReactNode }> = 
           ...(createNewMessageBuilderComponent(
             ComponentType.LegacyRoot,
             "",
-            0
+            0,
           ) as LegacyMessageComponentRoot),
           ...sharedProperties,
           children: [],
@@ -502,7 +502,7 @@ const MessageBuilderInternalProvider: React.FC<{ children: React.ReactNode }> = 
           ...(createNewMessageBuilderComponent(
             ComponentType.V2Root,
             "",
-            0
+            0,
           ) as V2MessageComponentRoot),
           ...sharedProperties,
           children: [],
@@ -523,7 +523,7 @@ const MessageBuilderInternalProvider: React.FC<{ children: React.ReactNode }> = 
       setCurrentFocusedId(newRoot.id);
       setExpandedIds(() => new Set([newRoot.id]));
     },
-    [] as const
+    [] as const,
   );
 
   const currentArticle = articlesResponse?.result.articles?.[0];
@@ -561,7 +561,7 @@ const MessageBuilderInternalProvider: React.FC<{ children: React.ReactNode }> = 
       updateCurrentlySelectedComponent,
       navigateToComponentId,
       switchRootType,
-    ]
+    ],
   );
 
   return (

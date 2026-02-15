@@ -45,7 +45,7 @@ export const useDiscordServerSettings = ({ serverId }: Props) => {
 
         return failureCount < 3;
       },
-    }
+    },
   );
 
   return {

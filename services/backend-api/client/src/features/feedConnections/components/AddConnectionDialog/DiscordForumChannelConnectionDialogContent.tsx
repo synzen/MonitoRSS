@@ -339,7 +339,7 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
                 <FormControl isInvalid={!!errors.serverId} isRequired>
                   <FormLabel htmlFor="server-select">
                     {t(
-                      "features.feed.components.addDiscordChannelConnectionDialog.formServerLabel"
+                      "features.feed.components.addDiscordChannelConnectionDialog.formServerLabel",
                     )}
                   </FormLabel>
                   <Controller
@@ -448,7 +448,7 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
                   <FormHelperText>
                     {t(
                       "features.feed.components" +
-                        ".addDiscordChannelConnectionDialog.formNameDescription"
+                        ".addDiscordChannelConnectionDialog.formNameDescription",
                     )}
                   </FormHelperText>
                 </FormControl>

@@ -18,7 +18,7 @@ export const useDisableUserFeeds = () => {
         },
         {
           throwOnError: true,
-        }
+        },
       ),
   });
 

@@ -16,7 +16,7 @@ const GetServerSettingsOutputSchema = object({
 export type GetServerSettingsOutput = InferType<typeof GetServerSettingsOutputSchema>;
 
 export const getServerSettings = async (
-  options: GetServerSettingsInput
+  options: GetServerSettingsInput,
 ): Promise<GetServerSettingsOutput> => {
   const res = await fetchRest(`/api/v1/discord-servers/${options.serverId}`, {
     validateSchema: GetServerSettingsOutputSchema,

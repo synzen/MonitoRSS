@@ -14,13 +14,13 @@ const GetServerMemberOutputSchema = object({
 export type GetServerMemberOutput = InferType<typeof GetServerMemberOutputSchema>;
 
 export const getServerMember = async (
-  options: GetServerMemberInput
+  options: GetServerMemberInput,
 ): Promise<GetServerMemberOutput | null> => {
   const res = await fetchRest(
     `/api/v1/discord-servers/${options.serverId}/members/${options.memberId}`,
     {
       validateSchema: GetServerMemberOutputSchema,
-    }
+    },
   );
 
   if (!res) {

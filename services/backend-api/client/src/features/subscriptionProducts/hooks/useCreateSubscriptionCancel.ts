@@ -15,7 +15,7 @@ export const useCreateSubscriptionCancel = () => {
           refetchType: "all",
           type: "all",
         }),
-    }
+    },
   );
 
   return {

@@ -167,7 +167,7 @@ export function errorHandler(
     const errors = error.validation.map((v) => ({
       message: v.instancePath
         ? `${v.instancePath} ${v.message ?? ""}`
-        : v.message ?? "",
+        : (v.message ?? ""),
     }));
 
     logger.warn(`Validation failed`, {

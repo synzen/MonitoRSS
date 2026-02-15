@@ -83,7 +83,7 @@ const DiscordMessageComponentRow = ({
             ?.filter(
               (c) =>
                 c.type === DiscordComponentType.Button &&
-                c.style === DiscordComponentButtonStyle.Link
+                c.style === DiscordComponentButtonStyle.Link,
             )
             ?.map((c, componentIndex) => {
               const labelError = rowErrors?.components?.[componentIndex]?.label?.message;
@@ -150,7 +150,7 @@ const DiscordMessageComponentRow = ({
                         size="sm"
                         // value={field.value || ""}
                         {...register(
-                          `componentRows.${rowIndex}.components.${componentIndex}.label`
+                          `componentRows.${rowIndex}.components.${componentIndex}.label`,
                         )}
                       />
                       {!labelError && (

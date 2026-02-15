@@ -150,7 +150,7 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
         setTimeout(focusButton, 200);
       }
     },
-    [stepIndex]
+    [stepIndex],
   );
 
   // During transitions, we might not have targetRect yet

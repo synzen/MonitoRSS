@@ -18,7 +18,7 @@ export const FeedSchema = object({
     object({
       category: string().required(),
       value: string().required(),
-    })
+    }),
   ).required(),
   refreshRateSeconds: number().required(),
   text: string().defined(),

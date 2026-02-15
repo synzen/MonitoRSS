@@ -16,7 +16,7 @@ vi.mock("../DiscordView", () => ({
       {messages?.map(
         (
           msg: { content?: string; embeds?: Array<{ title?: string; description?: string }> },
-          i: number
+          i: number,
         ) => (
           <div key={i} data-testid="legacy-message">
             {msg.content && <span data-testid="message-content">{msg.content}</span>}
@@ -29,7 +29,7 @@ vi.mock("../DiscordView", () => ({
               </div>
             ))}
           </div>
-        )
+        ),
       )}
     </div>
   )),
@@ -232,7 +232,7 @@ describe("DiscordMessageDisplay", () => {
       // MediaGallery renders a grid with image containers
       // In test environment, images may show fallback UI since URLs don't load
       const { container } = renderWithChakra(
-        <DiscordMessageDisplay messages={[mockV2WithMediaGallery]} />
+        <DiscordMessageDisplay messages={[mockV2WithMediaGallery]} />,
       );
 
       // Verify the component renders (doesn't throw)
@@ -354,7 +354,7 @@ describe("DiscordMessageDisplay", () => {
 
     it("matches snapshot for MediaGallery", () => {
       const { container } = renderWithChakra(
-        <DiscordMessageDisplay messages={[mockV2WithMediaGallery]} />
+        <DiscordMessageDisplay messages={[mockV2WithMediaGallery]} />,
       );
 
       expect(container).toMatchSnapshot();

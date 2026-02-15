@@ -10,7 +10,7 @@ export interface UpdateUserFeedManagementInviteInput {
 }
 
 export const updateUserFeedManagementInvite = async (
-  options: UpdateUserFeedManagementInviteInput
+  options: UpdateUserFeedManagementInviteInput,
 ): Promise<void> => {
   await fetchRest(`/api/v1/user-feed-management-invites/${options.id}`, {
     requestOptions: {

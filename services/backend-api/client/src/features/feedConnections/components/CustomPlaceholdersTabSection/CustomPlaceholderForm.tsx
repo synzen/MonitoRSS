@@ -631,7 +631,7 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                                       shouldDirty: true,
                                       shouldTouch: true,
                                       shouldValidate: true,
-                                    }
+                                    },
                                   );
                                 }}
                               >
@@ -714,7 +714,7 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                           type: CustomPlaceholderStepType.Regex,
                           regexSearch: "",
                           replacementString: "",
-                        })
+                        }),
                       );
                     }}
                   >
@@ -735,7 +735,7 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                           format: preferredFormat || "YYYY-MM-DDTHH:mm:ssZ",
                           locale: preferedLocale || undefined,
                           timezone: preferredTimezone || undefined,
-                        })
+                        }),
                       );
                     }}
                   >
@@ -753,7 +753,7 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                         steps.concat({
                           id: uuidv4(),
                           type: CustomPlaceholderStepType.UrlEncode,
-                        })
+                        }),
                       );
                     }}
                   >
@@ -771,7 +771,7 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                         steps.concat({
                           id: uuidv4(),
                           type: CustomPlaceholderStepType.Uppercase,
-                        })
+                        }),
                       );
                     }}
                   >
@@ -789,7 +789,7 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                         steps.concat({
                           id: uuidv4(),
                           type: CustomPlaceholderStepType.Lowercase,
-                        })
+                        }),
                       );
                     }}
                   >

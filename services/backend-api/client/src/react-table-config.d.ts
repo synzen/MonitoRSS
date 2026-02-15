@@ -21,7 +21,8 @@ declare module "react-table" {
   // take this file as-is, or comment out the sections that don't apply to your plugin configuration
 
   export interface TableOptions<D extends object = {}>
-    extends UsePaginationOptions<D>,
+    extends
+      UsePaginationOptions<D>,
       UseGlobalFiltersOptions<D>,
       UseRowSelectOptions<D>,
       UseSortByOptions<D>,
@@ -31,20 +32,21 @@ declare module "react-table" {
   export interface Hooks<D extends object = {}> extends UseRowSelectHooks<D>, UseSortByHooks<D> {}
 
   export interface TableInstance<D extends object = {}>
-    extends UsePaginationInstanceProps<D>,
+    extends
+      UsePaginationInstanceProps<D>,
       UseRowSelectInstanceProps<D>,
       UseSortByInstanceProps<D>,
       UseGlobalFiltersInstanceProps<D> {}
 
   export interface TableState<D extends object = {}>
-    extends UsePaginationState<D>,
+    extends
+      UsePaginationState<D>,
       UseRowSelectState<D>,
       UseSortByState<D>,
       UseGlobalFiltersState<D> {}
 
   export interface ColumnInterface<D extends object = {}>
-    extends UseGlobalFiltersColumnOptions<D>,
-      UseSortByColumnOptions<D> {}
+    extends UseGlobalFiltersColumnOptions<D>, UseSortByColumnOptions<D> {}
 
   export interface ColumnInstance<D extends object = {}> extends UseSortByColumnProps<D> {}
 

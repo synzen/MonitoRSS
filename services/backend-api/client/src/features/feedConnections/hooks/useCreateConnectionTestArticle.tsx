@@ -17,7 +17,7 @@ export type CreateConnectionTestArticleOutput = CreateDiscordChannelConnectionTe
 const methodsByType: Record<
   FeedConnectionType,
   (
-    input: CreateConnectionTestArticleInput["previewInput"]
+    input: CreateConnectionTestArticleInput["previewInput"],
   ) => Promise<CreateConnectionTestArticleOutput>
 > = {
   [FeedConnectionType.DiscordChannel]: createDiscordChannelConnectionTestArticle,

@@ -81,11 +81,11 @@ interface ContextProps {
     frameTarget?: string;
   }) => void;
   getPricePreview: (
-    pricesToGet: Array<{ priceId: string; quantity: number }>
+    pricesToGet: Array<{ priceId: string; quantity: number }>,
   ) => Promise<Array<PricePreview>>;
   isSubscriptionCreated: boolean;
   getChargePreview: (
-    items: Array<{ priceId: string; quantity: number }>
+    items: Array<{ priceId: string; quantity: number }>,
   ) => Promise<{ totalFormatted: string }>;
 }
 
@@ -199,7 +199,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       items: Array<{
         priceId: string;
         quantity: number;
-      }>
+      }>,
     ) => {
       if (!paddle) {
         throw new Error("Paddle is not initialized");
@@ -219,7 +219,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
         totalFormatted: formatCurrency(details.totals.total, currencyCode),
       };
     },
-    [!!paddle]
+    [!!paddle],
   );
 
   const getPricePreview = useCallback(
@@ -252,7 +252,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
         const previewData = await retryPromise(async () =>
           paddle.PricePreview({
             items: pricesToGet.map(({ priceId, quantity }) => ({ priceId, quantity })),
-          })
+          }),
         );
 
         const { details, currencyCode } = previewData.data;
@@ -320,7 +320,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
         throw e;
       }
     },
-    [!!paddle]
+    [!!paddle],
   );
 
   const updatePaymentMethod = useCallback(
@@ -336,7 +336,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
         },
       });
     },
-    [!!paddle]
+    [!!paddle],
   );
 
   const updateCheckout: ContextProps["updateCheckout"] = useCallback(
@@ -349,7 +349,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
 
       paddle.Checkout.updateItems(prices);
     },
-    [!!paddle]
+    [!!paddle],
   );
 
   const openCheckout = useCallback(
@@ -397,7 +397,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
         },
       });
     },
-    [user?.result.email, user?.result.id, !!paddle]
+    [user?.result.email, user?.result.id, !!paddle],
   );
 
   const resetCheckoutData = useCallback(() => {
@@ -427,7 +427,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       resetCheckoutData,
       isSubscriptionCreated,
       getChargePreview,
-    ]
+    ],
   );
 
   return (

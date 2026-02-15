@@ -14,7 +14,7 @@ export const useCreateSubscriptionResume = () => {
             return query.queryKey[0] === "user-me";
           },
         }),
-    }
+    },
   );
 
   return {

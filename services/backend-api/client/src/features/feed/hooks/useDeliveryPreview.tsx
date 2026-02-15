@@ -48,7 +48,7 @@ export const useDeliveryPreview = ({ feedId, data: inputData, disabled }: Props)
 
           return allPages.length * inputData.limit;
         },
-      }
+      },
     );
 
   return {

@@ -11,7 +11,7 @@ export interface CreateDiscordChannelConnectionCopySettingsInput {
 }
 
 export const createDiscordChannelConnectionCopySettings = async (
-  options: CreateDiscordChannelConnectionCopySettingsInput
+  options: CreateDiscordChannelConnectionCopySettingsInput,
 ): Promise<void> => {
   await fetchRest(
     `/api/v1/user-feeds/${options.feedId}/connections/discord-channels/${options.connectionId}/copy-connection-settings`,
@@ -20,6 +20,6 @@ export const createDiscordChannelConnectionCopySettings = async (
         method: "POST",
         body: JSON.stringify(options.details),
       },
-    }
+    },
   );
 };

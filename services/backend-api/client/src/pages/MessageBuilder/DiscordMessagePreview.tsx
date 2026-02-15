@@ -17,9 +17,9 @@ import { useUserFeedConnectionContext } from "../../contexts/UserFeedConnectionC
 import { DiscordServerName, DiscordChannelName } from "../../features/discordServers";
 import { CreateDiscordChannelConnectionPreviewInput } from "../../features/feedConnections/api";
 import { MentionDataProvider, useMentionData } from "../../contexts/MentionDataContext";
-
 interface DiscordMessagePreviewProps {
   maxHeight?: string | number;
+  onResolvedMessages?: (messages: Record<string, any>[]) => void;
 }
 
 interface DiscordMessageDisplayWithMentionsProps {
@@ -49,7 +49,10 @@ const DiscordMessageDisplayWithMentions: React.FC<DiscordMessageDisplayWithMenti
   );
 };
 
-export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ maxHeight }) => {
+export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
+  maxHeight,
+  onResolvedMessages,
+}) => {
   const {
     watch,
     formState: { isValid, isDirty },
@@ -61,7 +64,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
   const previewData = convertMessageBuilderStateToConnectionPreviewInput(
     userFeed,
     connection,
-    messageComponent
+    messageComponent,
   );
 
   const debouncedPreviewData = useDebounce(previewData, 500);
@@ -119,6 +122,10 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
     !!messageComponent &&
     messageComponent.children.length === 0;
 
+  React.useEffect(() => {
+    onResolvedMessages?.(messages);
+  }, [messages]);
+
   if (error) {
     return (
       <Stack spacing={0}>
@@ -158,16 +165,17 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({ ma
                     serverId={connection.details.channel?.guildId}
                     textStyle={{ fontSize: "sm", fontWeight: "medium" }}
                   />
-                  {!connection.details.channel.parentChannelId && connection.details.channel?.id && (
-                    <>
-                      {" → Channel: "}
-                      <DiscordChannelName
-                        channelId={connection.details.channel?.id}
-                        serverId={connection.details.channel?.guildId}
-                        textProps={{ fontSize: "sm", fontWeight: "medium" }}
-                      />
-                    </>
-                  )}
+                  {!connection.details.channel.parentChannelId &&
+                    connection.details.channel?.id && (
+                      <>
+                        {" → Channel: "}
+                        <DiscordChannelName
+                          channelId={connection.details.channel?.id}
+                          serverId={connection.details.channel?.guildId}
+                          textProps={{ fontSize: "sm", fontWeight: "medium" }}
+                        />
+                      </>
+                    )}
                 </>
               ) : (
                 "Unknown Server"

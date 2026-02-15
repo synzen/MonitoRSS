@@ -39,7 +39,7 @@ export const useUserFeedDeliveryLogs = ({ feedId, data: inputData }: Props) => {
       enabled: !!feedId,
       keepPreviousData: true,
       refetchOnWindowFocus: true,
-    }
+    },
   );
 
   return {

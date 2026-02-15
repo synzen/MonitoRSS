@@ -118,7 +118,7 @@ describe("MessageBuilder Template Application", () => {
           type: ComponentType.V2Root,
           id: expect.any(String),
         }),
-        { shouldValidate: true, shouldDirty: true, shouldTouch: true }
+        { shouldValidate: true, shouldDirty: true, shouldTouch: true },
       );
     });
 
@@ -145,7 +145,7 @@ describe("MessageBuilder Template Application", () => {
           id: "default-root",
           name: "Simple Text Template",
         }),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
@@ -170,7 +170,7 @@ describe("MessageBuilder Template Application", () => {
         expect.objectContaining({
           type: ComponentType.V2Root,
         }),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 

@@ -5,7 +5,7 @@ import { getDiscordBot, GetDiscordBotOutput } from "../api";
 export const useDiscordBot = () => {
   const { data, status, error } = useQuery<GetDiscordBotOutput, ApiAdapterError>(
     ["discord-bot"],
-    async () => getDiscordBot()
+    async () => getDiscordBot(),
   );
 
   return {

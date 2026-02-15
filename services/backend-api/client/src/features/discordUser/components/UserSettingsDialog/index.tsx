@@ -102,7 +102,7 @@ export const UserSettingsDialog: React.FC<Props> = ({ isOpen, onClose }) => {
                       <Input
                         {...register(`serverIds.${index}`)}
                         placeholder={t(
-                          "features.discordUsers.components.settingsDialog.serverInputPlaceholder"
+                          "features.discordUsers.components.settingsDialog.serverInputPlaceholder",
                         )}
                       />
                     </FormControl>

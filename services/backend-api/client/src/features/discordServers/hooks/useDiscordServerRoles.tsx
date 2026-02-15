@@ -22,7 +22,7 @@ export const useDiscordServerRoles = ({ serverId, disabled }: Props) => {
     },
     {
       enabled: !!serverId && !disabled,
-    }
+    },
   );
 
   const getRolebyId = (roleId: string) => {

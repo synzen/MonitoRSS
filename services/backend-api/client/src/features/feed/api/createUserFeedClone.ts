@@ -18,7 +18,7 @@ const CreateUserFeedCloneOutputSchema = object({
 export type CreateUserFeedCloneOutput = InferType<typeof CreateUserFeedCloneOutputSchema>;
 
 export const createUserFeedClone = async (
-  options: CreateUserFeedCloneInput
+  options: CreateUserFeedCloneInput,
 ): Promise<CreateUserFeedCloneOutput> => {
   const res = await fetchRest(`/api/v1/user-feeds/${options.feedId}/clone`, {
     validateSchema: CreateUserFeedCloneOutputSchema,

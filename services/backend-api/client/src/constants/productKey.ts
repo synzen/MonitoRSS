@@ -71,10 +71,10 @@ export const PRICE_IDS: ProductPriceIds = import.meta.env.PROD
   : SANDBOX_PRICE_IDS;
 
 export const findProductKeyByPriceId = (
-  priceId: string
+  priceId: string,
 ): Exclude<ProductKey, ProductKey.Free> | null => {
   const entry = Object.entries(PRICE_IDS).find(
-    ([, prices]) => prices.month === priceId || prices.year === priceId
+    ([, prices]) => prices.month === priceId || prices.year === priceId,
   );
 
   return entry ? (entry[0] as Exclude<ProductKey, ProductKey.Free>) : null;

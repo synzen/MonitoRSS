@@ -36,7 +36,7 @@ export const useUserFeedRequests = ({ feedId, data: inputData, disabled }: Props
       enabled: !!feedId && !disabled,
       keepPreviousData: true,
       refetchOnWindowFocus: true,
-    }
+    },
   );
 
   return {

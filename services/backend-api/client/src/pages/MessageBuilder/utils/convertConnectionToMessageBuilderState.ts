@@ -36,7 +36,7 @@ const createLegacyButtonComponent = (
     undefined
   >[number]["components"][number],
   parentId: string,
-  index: number
+  index: number,
 ): LegacyButtonComponent => {
   let style = DiscordButtonStyle.Primary;
 
@@ -64,7 +64,7 @@ const createLegacyButtonComponent = (
     ...(createNewMessageBuilderComponent(
       ComponentType.LegacyButton,
       parentId,
-      index
+      index,
     ) as LegacyButtonComponent),
     label: button.label,
     style,
@@ -76,12 +76,12 @@ const createLegacyButtonComponent = (
 const createLegacyActionRowComponent = (
   row: Exclude<FeedDiscordChannelConnection["details"]["componentRows"], undefined>[number],
   parentId: string,
-  index: number
+  index: number,
 ): LegacyActionRowComponent => {
   const actionRowComponent = createNewMessageBuilderComponent(
     ComponentType.LegacyActionRow,
     parentId,
-    index
+    index,
   ) as LegacyActionRowComponent;
 
   if (row.components && row.components.length > 0) {
@@ -89,7 +89,7 @@ const createLegacyActionRowComponent = (
       if (component.type === 2) {
         // Button component type
         actionRowComponent.children.push(
-          createLegacyButtonComponent(component, actionRowComponent.id, componentIndex)
+          createLegacyButtonComponent(component, actionRowComponent.id, componentIndex),
         );
       }
     });
@@ -101,14 +101,14 @@ const createLegacyActionRowComponent = (
 const createLegacyEmbedComponent = (
   embed: FeedDiscordChannelConnection["details"]["embeds"][number],
   parentId: string,
-  index: number
+  index: number,
 ): LegacyEmbedComponent => {
   const children: Component[] = [];
   const embedComponent = {
     ...(createNewMessageBuilderComponent(
       ComponentType.LegacyEmbed,
       parentId,
-      index
+      index,
     ) as LegacyEmbedComponent),
     children,
   };
@@ -126,7 +126,7 @@ const createLegacyEmbedComponent = (
       ...createNewMessageBuilderComponent(
         ComponentType.LegacyEmbedAuthor,
         embedComponent.id,
-        index
+        index,
       ),
       authorName: embed.author.name,
       authorUrl: embed.author.url,
@@ -149,7 +149,7 @@ const createLegacyEmbedComponent = (
       ...createNewMessageBuilderComponent(
         ComponentType.LegacyEmbedDescription,
         embedComponent.id,
-        index
+        index,
       ),
       description: embed.description,
     } as LegacyEmbedDescriptionComponent);
@@ -162,7 +162,7 @@ const createLegacyEmbedComponent = (
         ...createNewMessageBuilderComponent(
           ComponentType.LegacyEmbedField,
           embedComponent.id,
-          fieldIndex
+          fieldIndex,
         ),
         fieldName: field.name,
         fieldValue: field.value,
@@ -185,7 +185,7 @@ const createLegacyEmbedComponent = (
       ...createNewMessageBuilderComponent(
         ComponentType.LegacyEmbedThumbnail,
         embedComponent.id,
-        index
+        index,
       ),
       thumbnailUrl: embed.thumbnail.url,
     } as LegacyEmbedThumbnailComponent);
@@ -197,7 +197,7 @@ const createLegacyEmbedComponent = (
       ...createNewMessageBuilderComponent(
         ComponentType.LegacyEmbedFooter,
         embedComponent.id,
-        index
+        index,
       ),
       footerText: embed.footer.text,
       footerIconUrl: embed.footer.iconUrl,
@@ -210,7 +210,7 @@ const createLegacyEmbedComponent = (
       ...createNewMessageBuilderComponent(
         ComponentType.LegacyEmbedTimestamp,
         embedComponent.id,
-        index
+        index,
       ),
       timestamp: embed.timestamp,
     } as LegacyEmbedTimestampComponent);
@@ -255,13 +255,13 @@ const getButtonStyleFromNumber = (styleNum: number): DiscordButtonStyle => {
 const createV2ButtonComponent = (
   button: NonNullable<V2ComponentFromAPI["accessory"]>,
   parentId: string,
-  index: number
+  index: number,
 ): ButtonComponent => {
   return {
     ...(createNewMessageBuilderComponent(
       ComponentType.V2Button,
       parentId,
-      index
+      index,
     ) as ButtonComponent),
     label: button.label || "",
     style: getButtonStyleFromNumber(button.style || 1),
@@ -273,13 +273,13 @@ const createV2ButtonComponent = (
 const createV2TextDisplayComponent = (
   textDisplay: { type: string; content?: string },
   parentId: string,
-  index: number
+  index: number,
 ): TextDisplayComponent => {
   return {
     ...(createNewMessageBuilderComponent(
       ComponentType.V2TextDisplay,
       parentId,
-      index
+      index,
     ) as TextDisplayComponent),
     content: textDisplay.content || "",
   };
@@ -288,13 +288,13 @@ const createV2TextDisplayComponent = (
 const createV2ThumbnailComponent = (
   thumbnail: NonNullable<V2ComponentFromAPI["accessory"]>,
   parentId: string,
-  index: number
+  index: number,
 ): ThumbnailComponent => {
   return {
     ...(createNewMessageBuilderComponent(
       ComponentType.V2Thumbnail,
       parentId,
-      index
+      index,
     ) as ThumbnailComponent),
     mediaUrl: thumbnail.media?.url || "",
     description: thumbnail.description || "",
@@ -305,13 +305,13 @@ const createV2ThumbnailComponent = (
 const createV2SectionComponent = (
   section: V2ComponentFromAPI,
   parentId: string,
-  index: number
+  index: number,
 ): SectionComponent => {
   const sectionComponent = {
     ...(createNewMessageBuilderComponent(
       ComponentType.V2Section,
       parentId,
-      index
+      index,
     ) as SectionComponent),
     children: [] as TextDisplayComponent[],
   };
@@ -321,7 +321,7 @@ const createV2SectionComponent = (
     section.components.forEach((comp, compIndex) => {
       if (comp.type === V2_COMPONENT_TYPE.TextDisplay) {
         sectionComponent.children.push(
-          createV2TextDisplayComponent(comp, sectionComponent.id, compIndex)
+          createV2TextDisplayComponent(comp, sectionComponent.id, compIndex),
         );
       }
     });
@@ -334,7 +334,7 @@ const createV2SectionComponent = (
     sectionComponent.accessory = createV2ThumbnailComponent(
       section.accessory,
       sectionComponent.id,
-      0
+      0,
     );
   }
 
@@ -344,13 +344,13 @@ const createV2SectionComponent = (
 const createV2ActionRowComponent = (
   row: V2ComponentFromAPI,
   parentId: string,
-  index: number
+  index: number,
 ): ActionRowComponent => {
   const actionRowComponent = {
     ...(createNewMessageBuilderComponent(
       ComponentType.V2ActionRow,
       parentId,
-      index
+      index,
     ) as ActionRowComponent),
     children: [] as ButtonComponent[],
   };
@@ -363,8 +363,8 @@ const createV2ActionRowComponent = (
           createV2ButtonComponent(
             comp as NonNullable<V2ComponentFromAPI["accessory"]>,
             actionRowComponent.id,
-            compIndex
-          )
+            compIndex,
+          ),
         );
       }
     });
@@ -376,13 +376,13 @@ const createV2ActionRowComponent = (
 const createV2DividerComponent = (
   divider: V2ComponentFromAPI,
   parentId: string,
-  index: number
+  index: number,
 ): DividerComponent => {
   return {
     ...(createNewMessageBuilderComponent(
       ComponentType.V2Divider,
       parentId,
-      index
+      index,
     ) as DividerComponent),
     visual: divider.divider !== false,
     spacing: divider.spacing === 1 || divider.spacing === 2 ? divider.spacing : 1,
@@ -392,7 +392,7 @@ const createV2DividerComponent = (
 const createV2MediaGalleryComponent = (
   mediaGallery: V2ComponentFromAPI,
   parentId: string,
-  index: number
+  index: number,
 ): MediaGalleryComponent => {
   const galleryId = `${parentId}-${ComponentType.V2MediaGallery}-${index}`;
 
@@ -400,24 +400,24 @@ const createV2MediaGalleryComponent = (
     (mediaGallery as any).items?.map(
       (
         item: { media: { url: string }; description?: string; spoiler?: boolean },
-        itemIndex: number
+        itemIndex: number,
       ): MediaGalleryItemComponent => ({
         ...(createNewMessageBuilderComponent(
           ComponentType.V2MediaGalleryItem,
           galleryId,
-          itemIndex
+          itemIndex,
         ) as MediaGalleryItemComponent),
         mediaUrl: item.media?.url || "",
         description: item.description || undefined,
         spoiler: item.spoiler || false,
-      })
+      }),
     ) || [];
 
   return {
     ...(createNewMessageBuilderComponent(
       ComponentType.V2MediaGallery,
       parentId,
-      index
+      index,
     ) as MediaGalleryComponent),
     children,
   };
@@ -426,13 +426,13 @@ const createV2MediaGalleryComponent = (
 const createV2ContainerComponent = (
   container: V2ComponentFromAPI,
   parentId: string,
-  index: number
+  index: number,
 ): ContainerComponent => {
   const containerComponent: ContainerComponent = {
     ...(createNewMessageBuilderComponent(
       ComponentType.V2Container,
       parentId,
-      index
+      index,
     ) as ContainerComponent),
     accentColor: container.accent_color ?? undefined,
     spoiler: container.spoiler ?? false,
@@ -444,23 +444,23 @@ const createV2ContainerComponent = (
     container.components.forEach((comp: V2ComponentFromAPI, compIndex: number) => {
       if (comp.type === V2_COMPONENT_TYPE.Separator) {
         containerComponent.children.push(
-          createV2DividerComponent(comp, containerComponent.id, compIndex)
+          createV2DividerComponent(comp, containerComponent.id, compIndex),
         );
       } else if (comp.type === V2_COMPONENT_TYPE.ActionRow) {
         containerComponent.children.push(
-          createV2ActionRowComponent(comp, containerComponent.id, compIndex)
+          createV2ActionRowComponent(comp, containerComponent.id, compIndex),
         );
       } else if (comp.type === V2_COMPONENT_TYPE.Section) {
         containerComponent.children.push(
-          createV2SectionComponent(comp, containerComponent.id, compIndex)
+          createV2SectionComponent(comp, containerComponent.id, compIndex),
         );
       } else if (comp.type === V2_COMPONENT_TYPE.TextDisplay) {
         containerComponent.children.push(
-          createV2TextDisplayComponent(comp, containerComponent.id, compIndex)
+          createV2TextDisplayComponent(comp, containerComponent.id, compIndex),
         );
       } else if (comp.type === V2_COMPONENT_TYPE.MediaGallery) {
         containerComponent.children.push(
-          createV2MediaGalleryComponent(comp, containerComponent.id, compIndex)
+          createV2MediaGalleryComponent(comp, containerComponent.id, compIndex),
         );
       }
     });
@@ -470,7 +470,7 @@ const createV2ContainerComponent = (
 };
 
 export const convertConnectionToMessageBuilderState = (
-  connection: FeedDiscordChannelConnection | null | undefined
+  connection: FeedDiscordChannelConnection | null | undefined,
 ): MessageBuilderFormState => {
   if (!connection?.details) {
     return {};
@@ -505,19 +505,19 @@ export const convertConnectionToMessageBuilderState = (
     componentsV2.forEach((component, index) => {
       if (component.type === V2_COMPONENT_TYPE.Section) {
         v2RootComponent.children.push(
-          createV2SectionComponent(component, v2RootComponent.id, index)
+          createV2SectionComponent(component, v2RootComponent.id, index),
         );
       } else if (component.type === V2_COMPONENT_TYPE.ActionRow) {
         v2RootComponent.children.push(
-          createV2ActionRowComponent(component, v2RootComponent.id, index)
+          createV2ActionRowComponent(component, v2RootComponent.id, index),
         );
       } else if (component.type === V2_COMPONENT_TYPE.Separator) {
         v2RootComponent.children.push(
-          createV2DividerComponent(component, v2RootComponent.id, index)
+          createV2DividerComponent(component, v2RootComponent.id, index),
         );
       } else if (component.type === V2_COMPONENT_TYPE.Container) {
         v2RootComponent.children.push(
-          createV2ContainerComponent(component, v2RootComponent.id, index)
+          createV2ContainerComponent(component, v2RootComponent.id, index),
         );
       }
     });
@@ -536,7 +536,7 @@ export const convertConnectionToMessageBuilderState = (
     ...(createNewMessageBuilderComponent(
       ComponentType.LegacyRoot,
       "",
-      0
+      0,
     ) as LegacyMessageComponentRoot),
     children: [],
     ...sharedRootProperties,
@@ -554,7 +554,7 @@ export const convertConnectionToMessageBuilderState = (
       ...(createNewMessageBuilderComponent(
         ComponentType.LegacyText,
         legacyRootComponent.id,
-        0
+        0,
       ) as LegacyTextComponent),
       content,
     });
@@ -565,10 +565,10 @@ export const convertConnectionToMessageBuilderState = (
     const container = createNewMessageBuilderComponent(
       ComponentType.LegacyEmbedContainer,
       legacyRootComponent.id,
-      0
+      0,
     );
     container.children = embeds.map((embed, index) =>
-      createLegacyEmbedComponent(embed, container.id, index)
+      createLegacyEmbedComponent(embed, container.id, index),
     );
     legacyRootComponent.children.push(container);
   }
@@ -578,7 +578,7 @@ export const convertConnectionToMessageBuilderState = (
     componentRows.forEach((row, rowIndex) => {
       if (row.components.length) {
         legacyRootComponent.children.push(
-          createLegacyActionRowComponent(row, legacyRootComponent.id, rowIndex)
+          createLegacyActionRowComponent(row, legacyRootComponent.id, rowIndex),
         );
       }
     });

@@ -78,9 +78,9 @@ const formSchema = object({
     .of(
       mixed()
         .oneOf<CopyableUserFeedSettings>(
-          Object.values(CopyableUserFeedSettings) as CopyableUserFeedSettings[]
+          Object.values(CopyableUserFeedSettings) as CopyableUserFeedSettings[],
         )
-        .required()
+        .required(),
     )
     .min(1, "At least one setting must be selected")
     .required(),
@@ -151,7 +151,7 @@ export const CopyUserFeedSettingsDialog = ({
   const calculateNewCheckedSettings = (
     currentSettings: FormData["checkedSettings"],
     setting: CopyableUserFeedSettings,
-    checked: boolean
+    checked: boolean,
   ) => {
     if (checked && !currentSettings.includes(setting)) {
       return [...currentSettings, setting];
@@ -167,7 +167,7 @@ export const CopyUserFeedSettingsDialog = ({
   const calculateNewCheckedSettingsForCategory = (
     currentSettings: FormData["checkedSettings"],
     category: CopyCategory,
-    checked: boolean
+    checked: boolean,
   ) => {
     const settingsInCategory = Object.entries(CopyableSettingDescriptions)
       .filter(([, { category: settingCategory }]) => settingCategory === category)
@@ -178,7 +178,7 @@ export const CopyUserFeedSettingsDialog = ({
     }
 
     return currentSettings.filter(
-      (s) => !settingsInCategory.includes(s as CopyableUserFeedSettings)
+      (s) => !settingsInCategory.includes(s as CopyableUserFeedSettings),
     );
   };
 
@@ -250,7 +250,7 @@ export const CopyUserFeedSettingsDialog = ({
                     const newSettings = calculateNewCheckedSettingsForCategory(
                       field.value,
                       category,
-                      e.target.checked
+                      e.target.checked,
                     );
 
                     field.onChange(newSettings);
@@ -280,7 +280,7 @@ export const CopyUserFeedSettingsDialog = ({
                               const newSettings = calculateNewCheckedSettings(
                                 field.value,
                                 setting as CopyableUserFeedSettings,
-                                e.target.checked
+                                e.target.checked,
                               );
 
                               field.onChange(newSettings);
@@ -291,7 +291,7 @@ export const CopyUserFeedSettingsDialog = ({
                           </Checkbox>
                         </chakra.li>
                       );
-                    }
+                    },
                   )}
                 </chakra.ul>
               </Stack>
@@ -359,7 +359,7 @@ export const CopyUserFeedSettingsDialog = ({
                                     const newSettings = calculateNewCheckedSettings(
                                       field.value,
                                       setting,
-                                      e.target.checked
+                                      e.target.checked,
                                     );
                                     field.onChange(newSettings);
                                   }}

@@ -94,11 +94,11 @@ export const ComparisonsTabSection = ({
   };
 
   const passingComaprisonsToAdd = data?.result.properties.filter(
-    (property) => !passingComparisons?.includes(property)
+    (property) => !passingComparisons?.includes(property),
   );
 
   const blockingComparisonsToAdd = data?.result.properties.filter(
-    (property) => !blockingComparisons?.includes(property)
+    (property) => !blockingComparisons?.includes(property),
   );
 
   const onAddPassingComparison = async (value: string) => {
@@ -155,7 +155,7 @@ export const ComparisonsTabSection = ({
     requestStatus && requestStatus !== UserFeedArticleRequestStatus.Success
       ? getErrorMessageForArticleRequestStatus(
           requestStatus,
-          userFeedArticles?.result?.response?.statusCode
+          userFeedArticles?.result?.response?.statusCode,
         )
       : null;
 
@@ -189,7 +189,7 @@ export const ComparisonsTabSection = ({
             <AlertIcon />
             <AlertTitle>
               {t(
-                "features.feedConnections.components.comparisonsTabSection.errorFailedToGetPropertiesTitle"
+                "features.feedConnections.components.comparisonsTabSection.errorFailedToGetPropertiesTitle",
               )}
             </AlertTitle>
             <AlertDescription>{error.message}</AlertDescription>
@@ -211,12 +211,12 @@ export const ComparisonsTabSection = ({
           <Stack>
             <Heading size="sm" as="h3">
               {t(
-                "features.feedConnections.components.comparisonsTabSection.passingComparisonsTitle"
+                "features.feedConnections.components.comparisonsTabSection.passingComparisonsTitle",
               )}
             </Heading>
             <Text>
               {t(
-                "features.feedConnections.components.comparisonsTabSection.passingComparisonsDescription"
+                "features.feedConnections.components.comparisonsTabSection.passingComparisonsDescription",
               )}
             </Text>
           </Stack>
@@ -261,12 +261,12 @@ export const ComparisonsTabSection = ({
           <Stack>
             <Heading size="sm" as="h3">
               {t(
-                "features.feedConnections.components.comparisonsTabSection.blockingComparisonsTitle"
+                "features.feedConnections.components.comparisonsTabSection.blockingComparisonsTitle",
               )}
             </Heading>
             <Text>
               {t(
-                "features.feedConnections.components.comparisonsTabSection.blockingComparisonsDescription"
+                "features.feedConnections.components.comparisonsTabSection.blockingComparisonsDescription",
               )}
             </Text>
           </Stack>

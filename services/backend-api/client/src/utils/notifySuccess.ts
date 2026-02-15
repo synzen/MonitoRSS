@@ -12,7 +12,7 @@ interface Options {
 export const notifySuccess = (
   title: string,
   description?: string | React.ReactNode,
-  options?: Options
+  options?: Options,
 ) => {
   toast({
     title,

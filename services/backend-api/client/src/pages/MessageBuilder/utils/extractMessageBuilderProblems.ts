@@ -11,53 +11,11 @@ import {
   LegacyEmbedImageComponent,
   LegacyEmbedThumbnailComponent,
 } from "../types";
-import getMessageBuilderComponentLabel from "./getMessageBuilderComponentLabel";
-
-const getComponentPath = (
-  component: Component,
-  targetId: string,
-  currentPath = ""
-): string | null => {
-  interface StackItem {
-    component: Component;
-    path: string;
-  }
-
-  const stack: StackItem[] = [
-    { component, path: currentPath || getMessageBuilderComponentLabel(component.type) },
-  ];
-
-  while (stack.length > 0) {
-    const { component: currentComponent, path } = stack.pop()!;
-
-    if (currentComponent.id === targetId) {
-      return path;
-    }
-
-    // Add accessory to stack (will be processed first due to stack LIFO nature)
-    if (currentComponent.type === ComponentType.V2Section && currentComponent.accessory) {
-      const accessoryPath = `${path} > ${getMessageBuilderComponentLabel(
-        currentComponent.type
-      )} (accessory)`;
-      stack.push({ component: currentComponent.accessory, path: accessoryPath });
-    }
-
-    // Add children to stack in reverse order to maintain left-to-right processing
-    if (currentComponent.children) {
-      for (let i = currentComponent.children.length - 1; i >= 0; i -= 1) {
-        const child = currentComponent.children[i];
-        const childPath = `${path} > ${getMessageBuilderComponentLabel(child.type)}`;
-        stack.push({ component: child, path: childPath });
-      }
-    }
-  }
-
-  return null;
-};
+import getComponentPath from "./getComponentPath";
 
 const extractMessageBuilderProblems = (
   formStateErrors: Merge<FieldError, FieldErrorsImpl<any>> | undefined,
-  messageComponent?: MessageComponentRoot
+  messageComponent?: MessageComponentRoot,
 ) => {
   const problems: Array<MessageBuilderProblem> = [];
 
@@ -85,6 +43,7 @@ const extractMessageBuilderProblems = (
             message: errors[key].message,
             path: getComponentPath(messageComponent, component.id) || component.name,
             componentId: component.id,
+            severity: "error",
           });
         }
 
@@ -107,6 +66,7 @@ const extractMessageBuilderProblems = (
             message: errors[key].message,
             path: getComponentPath(messageComponent, component.id) || component.name,
             componentId: component.id,
+            severity: "error",
           });
         }
 
@@ -125,6 +85,7 @@ const extractMessageBuilderProblems = (
           message: errors[key].message,
           path: getComponentPath(messageComponent, component.id) || component.name,
           componentId: component.id,
+          severity: "error",
         });
       }
     });
@@ -139,6 +100,7 @@ const extractMessageBuilderProblems = (
       message: `Total character length for all Text Display components exceeds Discord limit of 4000. Current length: ${textDisplayCharacterCount}.`,
       path: getComponentPath(messageComponent, messageComponent.id) || "Message Root",
       componentId: messageComponent.id,
+      severity: "error",
     });
   }
 
@@ -149,22 +111,22 @@ const extractMessageBuilderProblems = (
       }
 
       const authorComponent = component.children?.find(
-        (c) => c.type === ComponentType.LegacyEmbedAuthor
+        (c) => c.type === ComponentType.LegacyEmbedAuthor,
       ) as LegacyEmbedAuthorComponent | undefined;
       const titleComponent = component.children?.find(
-        (c) => c.type === ComponentType.LegacyEmbedTitle
+        (c) => c.type === ComponentType.LegacyEmbedTitle,
       ) as LegacyEmbedTitleComponent | undefined;
       const descriptionComponent = component.children?.find(
-        (c) => c.type === ComponentType.LegacyEmbedDescription
+        (c) => c.type === ComponentType.LegacyEmbedDescription,
       ) as LegacyEmbedDescriptionComponent | undefined;
       const footerComponent = component.children?.find(
-        (c) => c.type === ComponentType.LegacyEmbedFooter
+        (c) => c.type === ComponentType.LegacyEmbedFooter,
       ) as LegacyEmbedFooterComponent | undefined;
       const imageComponent = component.children?.find(
-        (c) => c.type === ComponentType.LegacyEmbedImage
+        (c) => c.type === ComponentType.LegacyEmbedImage,
       ) as LegacyEmbedImageComponent | undefined;
       const thumbnailComponent = component.children?.find(
-        (c) => c.type === ComponentType.LegacyEmbedThumbnail
+        (c) => c.type === ComponentType.LegacyEmbedThumbnail,
       ) as LegacyEmbedThumbnailComponent | undefined;
 
       const authorName = authorComponent?.authorName;
@@ -180,6 +142,7 @@ const extractMessageBuilderProblems = (
             "Embed must have at least one of author name, title text, description text, footer text, image URL, or thumbnail URL defined",
           path: getComponentPath(messageComponent, component.id) || component.name,
           componentId: component.id,
+          severity: "error",
         });
       }
     });

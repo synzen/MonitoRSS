@@ -6,7 +6,7 @@ export interface DeleteDiscordChannelConnectionInput {
 }
 
 export const deleteDiscordChannelConnection = async (
-  options: DeleteDiscordChannelConnectionInput
+  options: DeleteDiscordChannelConnectionInput,
 ): Promise<void> => {
   await fetchRest(
     `/api/v1/user-feeds/${options.feedId}/connections/discord-channels/${options.connectionId}`,
@@ -14,6 +14,6 @@ export const deleteDiscordChannelConnection = async (
       requestOptions: {
         method: "DELETE",
       },
-    }
+    },
   );
 };

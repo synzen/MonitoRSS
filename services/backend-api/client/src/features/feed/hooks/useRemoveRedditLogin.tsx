@@ -16,9 +16,9 @@ export const useRemoveRedditLogin = () => {
           },
           {
             throwOnError: true,
-          }
+          },
         ),
-    }
+    },
   );
 
   return {

@@ -11,7 +11,7 @@ const getMessageBuilderFieldErrors = (
   errors: FieldErrors,
   messageComponent: Component | undefined,
   componentId: string,
-  fieldNames: string[]
+  fieldNames: string[],
 ): (FieldError | undefined)[] => {
   if (!messageComponent) return fieldNames.map(() => undefined);
 

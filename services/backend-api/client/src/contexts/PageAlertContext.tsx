@@ -98,7 +98,7 @@ export const PageAlertContextOutlet = ({ containerProps }: PageAlertContextOutle
     (id: string) => {
       removeAlert(id);
     },
-    [removeAlert]
+    [removeAlert],
   );
 
   return (

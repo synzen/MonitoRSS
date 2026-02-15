@@ -40,7 +40,7 @@ import getMessageBuilderComponentLabel from "./getMessageBuilderComponentLabel";
 const createNewMessageBuilderComponent = (
   type: ComponentType,
   parentId: string,
-  index: number
+  index: number,
 ): Component => {
   const base = {
     id: `${parentId}-${type}-${index}`,

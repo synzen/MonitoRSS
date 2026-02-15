@@ -88,7 +88,7 @@ function getArticlePath(stages: DeliveryPreviewStageResult[]): ArticlePath {
 
 function getRelevantStages(
   stages: DeliveryPreviewStageResult[],
-  articlePath: ArticlePath
+  articlePath: ArticlePath,
 ): DeliveryPreviewStageResult[] {
   return stages.filter((stage) => {
     if (stage.stage === DeliveryPreviewStage.PassingComparison && articlePath === "new") {
@@ -827,7 +827,7 @@ const FeedErrorContent = ({ outcomeReason }: FeedErrorContentProps) => (
 export const DeliveryChecksModal = ({ isOpen, onClose, result, initialMediumId }: Props) => {
   const { userFeed } = useUserFeedContext();
   const [selectedMediumId, setSelectedMediumId] = useState(
-    initialMediumId || result.mediumResults[0]?.mediumId
+    initialMediumId || result.mediumResults[0]?.mediumId,
   );
 
   const isLearningPhase = result.outcome === ArticleDeliveryOutcome.FirstRunBaseline;

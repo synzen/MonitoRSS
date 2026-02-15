@@ -8,6 +8,6 @@ import {
 
 export const useSendTestArticleDirect = () => {
   return useMutation<SendTestArticleDirectOutput, ApiAdapterError, SendTestArticleDirectInput>(
-    (input) => sendTestArticleDirect(input)
+    (input) => sendTestArticleDirect(input),
   );
 };

@@ -210,7 +210,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
   const calculateNewCheckedSettings = (
     currentSettings: FormData["properties"],
     setting: CopyableConnectionDiscordChannelSettings,
-    checked: boolean
+    checked: boolean,
   ) => {
     if (checked && !currentSettings.includes(setting)) {
       return [...currentSettings, setting];
@@ -226,7 +226,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
   const calculateNewCheckedSettingsFromCategory = (
     currentSettings: FormData["properties"],
     category: CopyCategory,
-    checked: boolean
+    checked: boolean,
   ) => {
     const settingsInCategory = Object.entries(CopyableSettingDescriptions)
       .filter(([, { category: settingCategory }]) => settingCategory === category)
@@ -237,7 +237,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
     }
 
     return currentSettings.filter(
-      (s) => !settingsInCategory.includes(s as CopyableConnectionDiscordChannelSettings)
+      (s) => !settingsInCategory.includes(s as CopyableConnectionDiscordChannelSettings),
     );
   };
 
@@ -294,7 +294,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
         }
 
         return true;
-      }
+      },
     );
 
     // If no settings are visible in this category, don't render it
@@ -326,7 +326,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
                     const newSettings = calculateNewCheckedSettingsFromCategory(
                       field.value,
                       category,
-                      e.target.checked
+                      e.target.checked,
                     );
 
                     field.onChange(newSettings);
@@ -354,7 +354,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
                     }
 
                     const isForumRelated = FORUM_RELATED_SETTINGS.includes(
-                      setting as CopyableConnectionDiscordChannelSettings
+                      setting as CopyableConnectionDiscordChannelSettings,
                     );
 
                     if (isForumRelated && !connectionIsInForum) {
@@ -363,7 +363,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
 
                     // Hide V2-incompatible settings when V2 components exist
                     const isV2Incompatible = V2_INCOMPATIBLE_SETTINGS.includes(
-                      setting as CopyableConnectionDiscordChannelSettings
+                      setting as CopyableConnectionDiscordChannelSettings,
                     );
 
                     if (isV2Incompatible && hasComponentsV2) {
@@ -387,19 +387,19 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
                           const newSettings = calculateNewCheckedSettings(
                             field.value,
                             setting as CopyableConnectionDiscordChannelSettings,
-                            e.target.checked
+                            e.target.checked,
                           );
 
                           field.onChange(newSettings);
                         }}
                         isChecked={field.value.includes(
-                          setting as CopyableConnectionDiscordChannelSettings
+                          setting as CopyableConnectionDiscordChannelSettings,
                         )}
                       >
                         {description}
                       </Checkbox>
                     );
-                  }
+                  },
                 )}
               </Stack>
             </fieldset>
@@ -412,7 +412,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
   const otherSettings = Object.values(CopyableConnectionDiscordChannelSettings).filter(
     (setting) => {
       return !CopyableSettingDescriptions[setting].category;
-    }
+    },
   );
 
   const connectionDetail = getPrettyConnectionDetail(connection as never);
@@ -479,7 +479,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
                                       const newSettings = calculateNewCheckedSettings(
                                         field.value,
                                         setting,
-                                        e.target.checked
+                                        e.target.checked,
                                       );
                                       field.onChange(newSettings);
                                     }}

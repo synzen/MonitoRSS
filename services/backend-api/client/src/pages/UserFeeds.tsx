@@ -333,7 +333,7 @@ const UserFeedsInner: React.FC = () => {
                         selectedFeeds.every(
                           (r) =>
                             !!r.disabledCode &&
-                            r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit
+                            r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit,
                         )
                       }
                       icon={<FaPause />}

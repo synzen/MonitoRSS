@@ -212,7 +212,7 @@ export const DeliveryHistory = () => {
                     {data.result.logs.map((item) => {
                       const connection = userFeed.connections.find((c) => c.id === item.mediumId);
                       const matchedArticle = articles?.result.articles.find(
-                        (a) => a.idHash === item.articleIdHash
+                        (a) => a.idHash === item.articleIdHash,
                       );
 
                       // @ts-ignore

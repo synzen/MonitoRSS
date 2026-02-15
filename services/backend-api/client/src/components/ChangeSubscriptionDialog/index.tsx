@@ -204,7 +204,7 @@ export const ChangeSubscriptionDialog = ({
                       {data && (
                         <Text color="whiteAlpha.700">
                           {new Date(
-                            data.data.immediateTransaction.billingPeriod.startsAt
+                            data.data.immediateTransaction.billingPeriod.startsAt,
                           ).toLocaleDateString(undefined, {
                             month: "long",
                             day: "numeric",
@@ -212,7 +212,7 @@ export const ChangeSubscriptionDialog = ({
                           })}
                           {" - "}
                           {new Date(
-                            data.data.immediateTransaction.billingPeriod.endsAt
+                            data.data.immediateTransaction.billingPeriod.endsAt,
                           ).toLocaleDateString(undefined, {
                             month: "long",
                             day: "numeric",
