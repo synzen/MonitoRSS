@@ -459,6 +459,32 @@ describe(
       assert.strictEqual(body.result.messages[0]?.components?.length, 1);
     });
 
+    it("returns 201 with embeds containing empty image and thumbnail urls", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+      const { feedId, connectionId } = await createTestFeedWithConnection(ctx, {
+        discordUserId,
+      });
+
+      const response = await user.fetch(testUrl(feedId, connectionId), {
+        method: "POST",
+        body: JSON.stringify({
+          embeds: [
+            {
+              title: "Test",
+              description: "Desc",
+              thumbnail: { url: "" },
+              image: { url: "" },
+              author: { name: "" },
+              footer: { text: "" },
+            },
+          ],
+        }),
+      });
+
+      assert.strictEqual(response.status, 201);
+    });
+
     it("returns 201 when splitOptions and mentions are null", async () => {
       const discordUserId = generateSnowflake();
       const user = await ctx.asUser(discordUserId);

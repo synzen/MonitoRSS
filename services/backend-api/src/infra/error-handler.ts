@@ -126,15 +126,17 @@ export function errorHandler(
   const discordId = getAccessTokenFromRequest(request)?.discord?.id;
 
   if (error instanceof HttpError) {
-    logger.error(`HTTP Exception - ${error.message}`, {
-      exception: error.stack,
-      discordId,
-      http: {
-        method: request.method,
-        url: request.url,
-      },
-      statusCode: error.statusCode,
-    });
+    if (!(error instanceof UnauthorizedError)) {
+      logger.error(`HTTP Exception - ${error.message}`, {
+        exception: error.stack,
+        discordId,
+        http: {
+          method: request.method,
+          url: request.url,
+        },
+        statusCode: error.statusCode,
+      });
+    }
 
     if (
       error instanceof TooManyRequestsError &&
@@ -162,7 +164,21 @@ export function errorHandler(
   }
 
   if (error.validation) {
-    const errors = error.validation.map((v) => ({ message: v.message ?? "" }));
+    const errors = error.validation.map((v) => ({
+      message: v.instancePath
+        ? `${v.instancePath} ${v.message ?? ""}`
+        : v.message ?? "",
+    }));
+
+    logger.warn(`Validation failed`, {
+      discordId,
+      http: {
+        method: request.method,
+        url: request.url,
+      },
+      validationErrors: errors,
+    });
+
     return reply
       .status(400)
       .send(

@@ -400,51 +400,39 @@ export type CustomPlaceholderStep =
       type: "LOWERCASE";
     };
 
-const RegexStepSchema = Type.Object(
-  {
-    id: Type.Optional(Type.String()),
-    type: Type.Literal("REGEX"),
-    regexSearch: Type.String({ minLength: 1 }),
-    regexSearchFlags: Type.Optional(NullableString),
-    replacementString: Type.Optional(NullableString),
-  },
-  { additionalProperties: false },
-);
+// Step schemas must NOT use additionalProperties: false because AJV's
+// removeAdditional option (set globally) mutates data during oneOf evaluation,
+// stripping properties from earlier branches before later branches are checked.
+const RegexStepSchema = Type.Object({
+  id: Type.Optional(Type.String()),
+  type: Type.Literal("REGEX"),
+  regexSearch: Type.String({ minLength: 1 }),
+  regexSearchFlags: Type.Optional(NullableString),
+  replacementString: Type.Optional(NullableString),
+});
 
-const UrlEncodeStepSchema = Type.Object(
-  {
-    id: Type.Optional(Type.String()),
-    type: Type.Literal("URL_ENCODE"),
-  },
-  { additionalProperties: false },
-);
+const UrlEncodeStepSchema = Type.Object({
+  id: Type.Optional(Type.String()),
+  type: Type.Literal("URL_ENCODE"),
+});
 
-const DateFormatStepSchema = Type.Object(
-  {
-    id: Type.Optional(Type.String()),
-    type: Type.Literal("DATE_FORMAT"),
-    format: Type.String({ minLength: 1 }),
-    timezone: Type.Optional(NullableString),
-    locale: Type.Optional(NullableString),
-  },
-  { additionalProperties: false },
-);
+const DateFormatStepSchema = Type.Object({
+  id: Type.Optional(Type.String()),
+  type: Type.Literal("DATE_FORMAT"),
+  format: Type.String({ minLength: 1 }),
+  timezone: Type.Optional(NullableString),
+  locale: Type.Optional(NullableString),
+});
 
-const UppercaseStepSchema = Type.Object(
-  {
-    id: Type.Optional(Type.String()),
-    type: Type.Literal("UPPERCASE"),
-  },
-  { additionalProperties: false },
-);
+const UppercaseStepSchema = Type.Object({
+  id: Type.Optional(Type.String()),
+  type: Type.Literal("UPPERCASE"),
+});
 
-const LowercaseStepSchema = Type.Object(
-  {
-    id: Type.Optional(Type.String()),
-    type: Type.Literal("LOWERCASE"),
-  },
-  { additionalProperties: false },
-);
+const LowercaseStepSchema = Type.Object({
+  id: Type.Optional(Type.String()),
+  type: Type.Literal("LOWERCASE"),
+});
 
 const CustomPlaceholderStepSchema = Type.Unsafe<CustomPlaceholderStep>({
   oneOf: [
@@ -481,6 +469,7 @@ const GetArticlesFormatterOptionsSchema = Type.Object(
     formatTables: Type.Boolean({ default: false }),
     stripImages: Type.Boolean({ default: false }),
     disableImageLinkPreviews: Type.Boolean({ default: false }),
+    ignoreNewLines: Type.Optional(Type.Boolean()),
     dateFormat: Type.Optional(Type.String()),
     dateTimezone: Type.Optional(Type.String()),
   },

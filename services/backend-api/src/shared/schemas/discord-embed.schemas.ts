@@ -4,8 +4,8 @@ export const NullableString = Type.Union([Type.String(), Type.Null()]);
 
 export const EmbedFieldSchema = Type.Object(
   {
-    name: Type.String({ minLength: 1 }),
-    value: Type.String({ minLength: 1 }),
+    name: Type.Optional(NullableString),
+    value: Type.Optional(NullableString),
     inline: Type.Optional(Type.Union([Type.Boolean(), Type.Null()])),
   },
   { additionalProperties: false },
@@ -13,24 +13,24 @@ export const EmbedFieldSchema = Type.Object(
 
 export const EmbedImageSchema = Type.Object(
   {
-    url: Type.String({ minLength: 1 }),
+    url: Type.Optional(NullableString),
   },
   { additionalProperties: false },
 );
 
 export const EmbedAuthorSchema = Type.Object(
   {
-    name: Type.String({ minLength: 1 }),
-    url: Type.Optional(Type.String()),
-    iconUrl: Type.Optional(Type.String()),
+    name: Type.Optional(NullableString),
+    url: Type.Optional(NullableString),
+    iconUrl: Type.Optional(NullableString),
   },
   { additionalProperties: false },
 );
 
 export const EmbedFooterSchema = Type.Object(
   {
-    text: Type.String({ minLength: 1 }),
-    iconUrl: Type.Optional(Type.String()),
+    text: Type.Optional(NullableString),
+    iconUrl: Type.Optional(NullableString),
   },
   { additionalProperties: false },
 );

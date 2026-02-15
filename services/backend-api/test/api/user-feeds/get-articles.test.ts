@@ -203,6 +203,7 @@ describe(
                 formatTables: false,
                 stripImages: false,
                 disableImageLinkPreviews: false,
+                ignoreNewLines: false,
               },
             },
           }),
@@ -462,6 +463,65 @@ describe(
         upstreamBody.formatter.customPlaceholders[0]!.referenceName,
         "test",
       );
+    });
+
+    it("accepts custom placeholders with all step types", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+      const feedUrl = `https://example.com/feed-get-articles-all-steps-${generateTestId()}.xml`;
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "All Step Types Feed",
+        url: feedUrl,
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await user.fetch(
+        `/api/v1/user-feeds/${feed.id}/get-articles`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            formatter: {
+              options: {
+                formatTables: false,
+                stripImages: false,
+                disableImageLinkPreviews: false,
+              },
+              customPlaceholders: [
+                {
+                  referenceName: "all-steps",
+                  sourcePlaceholder: "rss:description__#",
+                  steps: [
+                    {
+                      type: "REGEX",
+                      regexSearch: "\\s-\\s",
+                      regexSearchFlags: "g",
+                      replacementString: " - ",
+                    },
+                    {
+                      type: "URL_ENCODE",
+                    },
+                    {
+                      type: "DATE_FORMAT",
+                      format: "YYYY-MM-DD",
+                      timezone: "Asia/Bangkok",
+                      locale: "vi",
+                    },
+                    {
+                      type: "UPPERCASE",
+                    },
+                    {
+                      type: "LOWERCASE",
+                    },
+                  ],
+                },
+              ],
+            },
+          }),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
     });
 
     it("passes external properties to upstream request", async () => {

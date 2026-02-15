@@ -32,7 +32,7 @@ describe("Health API", { concurrency: true }, () => {
 
       assert.strictEqual(response.status, 404);
       const body = (await response.json()) as { code: string; message: string };
-      assert.strictEqual(body.code, "FEED_NOT_FOUND");
+      assert.strictEqual(body.code, "ROUTE_NOT_FOUND");
       assert.strictEqual(body.message, "Not Found");
     });
   });
