@@ -1,10 +1,5 @@
 name: monitorss-dev
 
-# To use backend-api-next instead of backend-api, use:
-#   docker compose -f docker-compose.dev.yml --profile next up
-# Default (legacy backend-api):
-#   docker compose -f docker-compose.dev.yml up
-
 services:
   feed-requests-redis-cache:
     extends:
@@ -139,7 +134,6 @@ services:
       - LOG_LEVEL=debug
       - NODE_ENV=local
 
-  # user-feeds-next replaces user-feeds
   user-feeds-postgres-migration:
     extends:
       file: docker-compose.base.yml
@@ -203,32 +197,14 @@ services:
         - action: rebuild
           path: ./services/user-feeds-next/package.json
 
-  # Schedule emitter (legacy backend-api) - default profile
   schedule-emitter-service:
     extends:
       file: docker-compose.base.yml
       service: schedule-emitter-service
-    volumes:
-      - ./services/backend-api:/usr/src/app
-      - /usr/src/app/node_modules/
-    env_file:
-      - ./.env.local
-    environment:
-      - NODE_ENV=local
-      - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
-      - LOG_LEVEL=debug
-    profiles:
-      - legacy
-      - default
-
-  # Schedule emitter (backend-api-next) - next profile
-  schedule-emitter-next-service:
-    extends:
-      file: docker-compose.base.yml
-      service: schedule-emitter-next-service
     build:
-      context: services/backend-api-next
+      context: services/backend-api
       dockerfile: Dockerfile.dev
+      target: ""
     env_file:
       - ./.env.local
     environment:
@@ -245,64 +221,20 @@ services:
     develop:
       watch:
         - action: sync+restart
-          path: ./services/backend-api-next/src
+          path: ./services/backend-api/src
           target: /usr/src/app/src
         - action: rebuild
-          path: ./services/backend-api-next/package.json
-    profiles:
-      - next
+          path: ./services/backend-api/package.json
 
-  # Web API (legacy backend-api) - default profile
   web-api:
     build:
       context: services/backend-api
-      dockerfile: dockerfiles/web/mixed.Dockerfile
-      target: build
+      dockerfile: Dockerfile.dev
     restart: on-failure:5
     depends_on:
       - mongo
       - user-feeds-service
       - feed-requests-service
-    ports:
-      - "8000:8000"
-    healthcheck:
-      test: "wget http://localhost:8000/api/v1/health -q -O - > /dev/null 2>&1"
-      interval: 5s
-      timeout: 5s
-      retries: 3
-    volumes:
-      - ./services/backend-api:/usr/src/app
-      - /usr/src/app/node_modules/
-    env_file:
-      - ./.env.local
-    environment:
-      - BACKEND_API_NODE_ENV=local
-      - BACKEND_API_PORT=8000
-      - BACKEND_API_DEFAULT_MAX_FEEDS=10
-      - BACKEND_API_FEED_USER_AGENT=MonitoRSS
-      - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672/
-      - BACKEND_API_USER_FEEDS_API_KEY=user-feeds-api-key
-      - BACKEND_API_FEED_REQUESTS_API_KEY=feed-requests-api-key
-      - LOG_LEVEL=debug
-      - NODE_ENV=local
-      - BACKEND_API_USER_FEEDS_API_HOST=http://user-feeds-api:5000
-      - BACKEND_API_FEED_REQUESTS_API_HOST=http://feed-requests-api:5000
-      - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
-    command: npm run start:watch
-    networks:
-      - monitorss-default
-    profiles:
-      - legacy
-      - default
-
-  # Web API (backend-api-next) - next profile
-  web-api-next:
-    extends:
-      file: docker-compose.base.yml
-      service: web-api-next
-    build:
-      context: services/backend-api-next
-      dockerfile: Dockerfile.dev
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:8000/api/v1/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 5s
@@ -329,38 +261,29 @@ services:
     develop:
       watch:
         - action: sync+restart
-          path: ./services/backend-api-next/src
+          path: ./services/backend-api/src
           target: /usr/src/app/src
         - action: rebuild
-          path: ./services/backend-api-next/package.json
+          path: ./services/backend-api/package.json
     networks:
       - monitorss-default
-    profiles:
-      - next
 
-  # Web client for legacy backend-api
   web-client:
-    extends:
-      file: docker-compose.base.yml
-      service: web-client
+    build:
+      context: services/backend-api
+      dockerfile: Dockerfile.dev
+    working_dir: /usr/src/app/client
+    restart: on-failure:3
+    depends_on:
+      web-api:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
     environment:
       - API_PROXY_URL=http://web-api:${BACKEND_API_PORT:-8000}
-    profiles:
-      - legacy
-      - default
-
-  # Web client for backend-api-next
-  web-client-next:
-    extends:
-      file: docker-compose.base.yml
-      service: web-client
-    depends_on:
-      web-api-next:
-        condition: service_healthy
-    environment:
-      - API_PROXY_URL=http://web-api-next:${BACKEND_API_PORT:-8000}
-    profiles:
-      - next
+    command: npm run dev -- --host 0.0.0.0
+    networks:
+      - monitorss-default
 
 volumes:
   mongodb-dev-data:

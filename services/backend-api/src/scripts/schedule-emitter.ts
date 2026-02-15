@@ -1,178 +1,182 @@
-import { INestApplicationContext } from "@nestjs/common";
-import { NestFactory } from "@nestjs/core";
-import { AppModule } from "../app.module";
-import applyMongoMigrations from "../apply-mongo-migrations";
-import { ScheduleHandlerService } from "../features/schedule-handler/schedule-handler.service";
-import logger from "../utils/logger";
-import { getModelToken } from "@nestjs/mongoose";
-import { User, UserModel } from "../features/users/entities/user.entity";
-import { UserExternalCredentialType } from "../common/constants/user-external-credential-type.constants";
-import { RedditApiService } from "../services/apis/reddit/reddit-api.service";
-import dayjs from "dayjs";
-import { ConfigService } from "@nestjs/config";
-import decrypt from "../utils/decrypt";
-import { UsersService } from "../features/users/users.service";
-import { RedditAppRevokedException } from "../services/apis/reddit/errors/reddit-app-revoked.exception";
-import { UserExternalCredentialStatus } from "../common/constants/user-external-credential-status.constants";
-import { SCHEDULER_WINDOW_SIZE_MS } from "../common/constants/scheduler.constants";
-import { UserFeed, UserFeedModel } from "../features/user-feeds/entities";
+import "../infra/dayjs-locales";
+import { loadConfig } from "../config";
+import {
+  createMongoConnection,
+  closeMongoConnection,
+} from "../infra/mongoose";
+import {
+  createRabbitConnection,
+  closeRabbitConnection,
+} from "../infra/rabbitmq";
+import { createContainer, type Container } from "../container";
+import { SCHEDULER_WINDOW_SIZE_MS } from "../shared/constants/scheduler.constants";
+import { decrypt } from "../shared/utils/decrypt";
+import { RedditAppRevokedException } from "../shared/exceptions/reddit.exceptions";
+import logger from "../infra/logger";
 
-bootstrap();
+const REDDIT_REFRESH_INTERVAL_MS = 1000 * 60 * 20; // 20 minutes
+const MAINTENANCE_INTERVAL_MS = 1000 * 60 * 5; // 5 minutes
+const REDDIT_CREDENTIAL_EXPIRY_WINDOW_MS = 1000 * 60 * 60 * 2; // 2 hours
 
-async function bootstrap() {
-  try {
-    logger.info("Starting schedule emitter service...");
-    const app = await NestFactory.createApplicationContext(
-      AppModule.forScheduleEmitter()
-    );
-    await app.init();
-    logger.info(`Applying migrations...`);
-    applyMongoMigrations(app)
-      .then(() => {
-        logger.info(`Migrations applied`);
-      })
-      .catch((err) => {
-        logger.error(`Failed to apply migrations`, {
-          stack: err.stack,
-        });
+let timersIntervalId: ReturnType<typeof setInterval> | null = null;
+let maintenanceIntervalId: ReturnType<typeof setInterval> | null = null;
+let redditRefreshIntervalId: ReturnType<typeof setInterval> | null = null;
+
+async function main() {
+  const config = loadConfig();
+
+  logger.info("Starting schedule emitter service...");
+
+  const mongoConnection = await createMongoConnection(
+    config.BACKEND_API_MONGODB_URI,
+  );
+  const rabbitmq = await createRabbitConnection(
+    config.BACKEND_API_RABBITMQ_BROKER_URL,
+  );
+
+  const container = createContainer({
+    config,
+    mongoConnection,
+    rabbitmq,
+  });
+
+  logger.info("Applying migrations...");
+  container.mongoMigrationsService
+    .applyMigrations()
+    .then(() => {
+      logger.info("Migrations applied");
+    })
+    .catch((err) => {
+      logger.error("Failed to apply migrations", {
+        error: (err as Error).stack,
       });
-
-    refreshRedditCredentials(app);
-    setInterval(() => {
-      refreshRedditCredentials(app);
-    }, 1000 * 60 * 20); // Every 20 minutes
-
-    runMaintenanceOps(app);
-    setInterval(() => {
-      runMaintenanceOps(app);
-    }, 1000 * 60 * 5); // Every 5 minutes
-
-    await runTimers(app);
-
-    setInterval(() => {
-      runTimers(app).catch((err) => {
-        logger.error(`Failed to run timers`, { stack: err.stack });
-      });
-    }, SCHEDULER_WINDOW_SIZE_MS);
-    logger.info("Initiailized schedule emitter service");
-  } catch (err) {
-    logger.error(`Failed to initialize schedule emitter`, {
-      stack: err.stack,
     });
-  }
+
+  refreshRedditCredentials(container);
+  redditRefreshIntervalId = setInterval(() => {
+    refreshRedditCredentials(container);
+  }, REDDIT_REFRESH_INTERVAL_MS);
+
+  runMaintenanceOps(container);
+  maintenanceIntervalId = setInterval(() => {
+    runMaintenanceOps(container);
+  }, MAINTENANCE_INTERVAL_MS);
+
+  await runTimers(container);
+  timersIntervalId = setInterval(() => {
+    runTimers(container).catch((err) => {
+      logger.error("Failed to run timers", { error: (err as Error).stack });
+    });
+  }, SCHEDULER_WINDOW_SIZE_MS);
+
+  logger.info("Schedule emitter service initialized");
+
+  const shutdown = async (signal: string) => {
+    logger.info(`Received ${signal}. Shutting down...`);
+
+    if (timersIntervalId) clearInterval(timersIntervalId);
+    if (maintenanceIntervalId) clearInterval(maintenanceIntervalId);
+    if (redditRefreshIntervalId) clearInterval(redditRefreshIntervalId);
+    logger.info("Cleared all intervals");
+
+    try {
+      await closeRabbitConnection(rabbitmq);
+    } catch (err) {
+      logger.error("Error closing RabbitMQ connection", {
+        error: (err as Error).stack,
+      });
+    }
+
+    try {
+      await closeMongoConnection(mongoConnection);
+    } catch (err) {
+      logger.error("Error closing MongoDB connection", {
+        error: (err as Error).stack,
+      });
+    }
+
+    process.exit(0);
+  };
+
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
 }
 
-async function runTimers(app: INestApplicationContext) {
-  const scheduleHandlerService = app.get(ScheduleHandlerService);
-  const userFeedModel = app.get<UserFeedModel>(getModelToken(UserFeed.name));
-  const [allRefreshRatesSeconds, allUserRefreshRateSeconds]: [
-    number[],
-    number[]
-  ] = await Promise.all([
-    userFeedModel.distinct("refreshRateSeconds").exec(),
-    userFeedModel.distinct("userRefreshRateSeconds").exec(),
-  ]);
+async function runTimers(container: Container) {
+  const { refreshRateSeconds, userRefreshRateSeconds } =
+    await container.userFeedRepository.getDistinctRefreshRates();
 
-  const currentRefreshRatesMs = new Set([
-    ...allRefreshRatesSeconds
-      .concat(allUserRefreshRateSeconds)
+  const currentRefreshRatesMs = new Set(
+    [...refreshRateSeconds, ...userRefreshRateSeconds]
       .filter((s) => !!s)
       .map((seconds) => seconds * 1000),
-  ]);
+  );
 
   const promises = Array.from(currentRefreshRatesMs).map(
     async (refreshRateMs) => {
       try {
-        await scheduleHandlerService.handleRefreshRate(refreshRateMs / 1000, {
-          urlsHandler: async (data) =>
-            await scheduleHandlerService.emitUrlRequestBatchEvent({
-              rateSeconds: refreshRateMs / 1000,
-              data,
-            }),
-        });
+        await container.scheduleHandlerService.handleRefreshRate(
+          refreshRateMs / 1000,
+          {
+            urlsHandler: async (data) =>
+              container.scheduleHandlerService.emitUrlRequestBatchEvent({
+                rateSeconds: refreshRateMs / 1000,
+                data,
+              }),
+          },
+        );
       } catch (err) {
         logger.error(
           `Failed to trigger refresh rate ${refreshRateMs / 1000}s`,
           {
-            stack: err.stack,
-          }
+            stack: (err as Error).stack,
+          },
         );
       }
-    }
+    },
   );
 
   await Promise.all(promises);
 }
 
-async function runMaintenanceOps(app: INestApplicationContext) {
+async function runMaintenanceOps(container: Container) {
   try {
-    const scheduleHandlerService = app.get(ScheduleHandlerService);
-    await scheduleHandlerService.runMaintenanceOperations();
+    await container.scheduleHandlerService.runMaintenanceOperations();
   } catch (err) {
-    logger.error(`Failed to run maintenance operations`, { stack: err.stack });
+    logger.error("Failed to run maintenance operations", {
+      error: (err as Error).stack,
+    });
   }
 }
 
-async function refreshRedditCredentials(app: INestApplicationContext) {
+async function refreshRedditCredentials(container: Container) {
   try {
-    const redditApiService = app.get<RedditApiService>(RedditApiService);
-    const configService = app.get(ConfigService);
-    const userModel = app.get<UserModel>(getModelToken(User.name));
-    const usersService = app.get(UsersService);
-    const encryptionKey = configService.get<string>(
-      "BACKEND_API_ENCRYPTION_KEY_HEX"
-    );
+    const encryptionKey = container.config.BACKEND_API_ENCRYPTION_KEY_HEX;
 
     if (!encryptionKey) {
       logger.debug(
-        `Encryption key not found, skipping credentials refresh task`
+        "Encryption key not found, skipping credentials refresh task",
       );
-
       return;
     }
 
-    logger.debug(`Refreshing credentials on schedule`);
+    logger.debug("Refreshing credentials on schedule");
 
-    const users = userModel
-      .find({
-        externalCredentials: {
-          $elemMatch: {
-            type: UserExternalCredentialType.Reddit,
-            "data.accessToken": { $exists: true },
-            "data.refreshToken": { $exists: true },
-            status: UserExternalCredentialStatus.Active,
-            expireAt: {
-              $exists: true,
-              $lte: dayjs().add(2, "hour").toDate(),
-            },
-          },
-        },
-      })
-      .lean()
-      .select("_id externalCredentials discordUserId")
-      .cursor();
+    const usersIterator =
+      container.userRepository.iterateUsersWithExpiringRedditCredentials(
+        REDDIT_CREDENTIAL_EXPIRY_WINDOW_MS,
+      );
 
-    for await (const user of users) {
-      logger.debug(`Refreshing reddit credentials for user ${user._id}`, {
+    for await (const user of usersIterator) {
+      logger.debug(`Refreshing reddit credentials for user ${user.userId}`, {
         user,
       });
 
-      const redditCredential = user.externalCredentials?.find(
-        (c) => c.type === UserExternalCredentialType.Reddit
-      );
-
-      const encryptedRefreshToken = redditCredential?.data
-        ?.refreshToken as string;
-
       try {
-        if (!encryptedRefreshToken) {
+        if (!user.encryptedRefreshToken) {
           logger.debug(
-            `No reddit credentials found for user ${user._id}, skipping`,
-            {
-              encryptedRefreshToken,
-            }
+            `No reddit credentials found for user ${user.userId}, skipping`,
           );
-
           continue;
         }
 
@@ -180,45 +184,50 @@ async function refreshRedditCredentials(app: INestApplicationContext) {
           access_token: newAccessToken,
           refresh_token: newRefreshToken,
           expires_in: expiresIn,
-        } = await redditApiService.refreshAccessToken(
-          decrypt(encryptedRefreshToken, encryptionKey)
+        } = await container.redditApiService.refreshAccessToken(
+          decrypt(user.encryptedRefreshToken, encryptionKey),
         );
 
-        await usersService.setRedditCredentials({
-          userId: user._id,
+        await container.usersService.setRedditCredentials({
+          userId: user.userId,
           accessToken: newAccessToken,
           refreshToken: newRefreshToken,
           expiresIn,
         });
 
         logger.info(
-          `Refreshed reddit credentials for user ${user._id} successfully`
+          `Refreshed reddit credentials for user ${user.userId} successfully`,
         );
       } catch (err) {
-        if (err instanceof RedditAppRevokedException && redditCredential?._id) {
+        if (err instanceof RedditAppRevokedException) {
           logger.debug(
-            `Reddit app has been revoked, revoking credentials for user ${user._id}`
+            `Reddit app has been revoked, revoking credentials for user ${user.userId}`,
           );
 
-          await usersService.revokeRedditCredentials(
-            user._id,
-            redditCredential?._id
+          await container.usersService.revokeRedditCredentials(
+            user.userId,
+            user.credentialId,
           );
 
-          return;
+          continue;
         }
 
         logger.error(
-          `Failed to refresh reddit credentials for user ${user._id}`,
-          {
-            stack: err.stack,
-          }
+          `Failed to refresh reddit credentials for user ${user.userId}`,
+          { error: (err as Error).stack },
         );
       }
     }
   } catch (err) {
-    logger.error(`Failed to refresh reddit credentials on schedule`, {
-      stack: err.stack,
+    logger.error("Failed to refresh reddit credentials on schedule", {
+      error: (err as Error).stack,
     });
   }
 }
+
+main().catch((err) => {
+  logger.error("Failed to start schedule emitter service", {
+    error: (err as Error).stack,
+  });
+  process.exit(1);
+});

@@ -1,9 +1,0 @@
-{
-  "collection": "@nestjs/schematics",
-  "sourceRoot": "src",
-  "entryFile": "scripts/migrate-all-legacy-feeds",
-  "compilerOptions": {
-    "assets": ["**/*.proto"],
-    "watchAssets": true
-  }
-}

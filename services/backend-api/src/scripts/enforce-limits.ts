@@ -1,37 +1,45 @@
-import { NestFactory } from "@nestjs/core";
-import { AppModule } from "../app.module";
-import logger from "../utils/logger";
-import { SupportersService } from "../features/supporters/supporters.service";
-import { UserFeedsService } from "../features/user-feeds/user-feeds.service";
+import "../infra/dayjs-locales";
+import { loadConfig } from "../config";
+import { createMongoConnection, closeMongoConnection } from "../infra/mongoose";
+import {
+  createRabbitConnection,
+  closeRabbitConnection,
+} from "../infra/rabbitmq";
+import { createContainer } from "../container";
+import logger from "../infra/logger";
 
-bootstrap();
+async function main() {
+  const config = loadConfig();
 
-async function bootstrap() {
+  logger.info("Enforcing limits...");
+
+  const mongoConnection = await createMongoConnection(
+    config.BACKEND_API_MONGODB_URI,
+  );
+  const rabbitmq = await createRabbitConnection(
+    config.BACKEND_API_RABBITMQ_BROKER_URL,
+  );
+
+  const container = createContainer({
+    config,
+    mongoConnection,
+    rabbitmq,
+  });
+
   try {
-    logger.info("Enforcing limits...");
-    const app = await NestFactory.createApplicationContext(AppModule.forRoot());
-    await app.init();
-
-    const supportersService = app.get(SupportersService);
-    const userFeedsService = app.get(UserFeedsService);
-
-    const benefits = await supportersService.getBenefitsOfAllDiscordUsers();
-
-    await userFeedsService.enforceAllUserFeedLimits(
-      benefits.map(({ discordUserId, maxUserFeeds, refreshRateSeconds }) => ({
-        discordUserId,
-        maxUserFeeds,
-        refreshRateSeconds,
-      }))
-    );
-
+    await container.scheduleHandlerService.enforceUserFeedLimits();
     logger.info("Completed");
-    await app.close();
-    process.exit(0);
-  } catch (err) {
-    logger.error(`Failed to enforce limits`, {
-      stack: err.stack,
-    });
-    process.exit(1);
+  } finally {
+    await closeRabbitConnection(rabbitmq);
+    await closeMongoConnection(mongoConnection);
   }
+
+  process.exit(0);
 }
+
+main().catch((err) => {
+  logger.error("Failed to enforce limits", {
+    stack: (err as Error).stack,
+  });
+  process.exit(1);
+});

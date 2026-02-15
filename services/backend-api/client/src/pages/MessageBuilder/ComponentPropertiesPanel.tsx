@@ -1127,14 +1127,53 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             <AlertIcon />
             <Box flex="1">
               <Text>Add at least one component to your Container.</Text>
-              <Button
-                size="sm"
-                colorScheme="blue"
-                mt={2}
-                onClick={() => addChildComponent(selectedComponent.id, ComponentType.V2Section)}
-              >
-                Add Section
-              </Button>
+              <HStack mt={2} spacing={2} flexWrap="wrap">
+                <Button
+                  size="sm"
+                  colorScheme="blue"
+                  onClick={() =>
+                    addChildComponent(selectedComponent.id, ComponentType.V2Section)
+                  }
+                >
+                  Add Section
+                </Button>
+                <Button
+                  size="sm"
+                  colorScheme="blue"
+                  onClick={() =>
+                    addChildComponent(selectedComponent.id, ComponentType.V2TextDisplay)
+                  }
+                >
+                  Add Text Display
+                </Button>
+                <Button
+                  size="sm"
+                  colorScheme="blue"
+                  onClick={() =>
+                    addChildComponent(selectedComponent.id, ComponentType.V2ActionRow)
+                  }
+                >
+                  Add Action Row
+                </Button>
+                <Button
+                  size="sm"
+                  colorScheme="blue"
+                  onClick={() =>
+                    addChildComponent(selectedComponent.id, ComponentType.V2MediaGallery)
+                  }
+                >
+                  Add Media Gallery
+                </Button>
+                <Button
+                  size="sm"
+                  colorScheme="blue"
+                  onClick={() =>
+                    addChildComponent(selectedComponent.id, ComponentType.V2Divider)
+                  }
+                >
+                  Add Divider
+                </Button>
+              </HStack>
             </Box>
           </Alert>
         )}

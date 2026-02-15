@@ -234,7 +234,7 @@ services:
     networks:
       - monitorss-default
 
-  # Schedule emitter (legacy backend-api)
+  # Schedule emitter
   schedule-emitter-service:
     build:
       context: services/backend-api
@@ -256,88 +256,6 @@ services:
     networks:
       - monitorss-default
     command: npm run start:schedule-emitter
-
-  # Schedule emitter (backend-api-next)
-  schedule-emitter-next-service:
-    build:
-      context: .
-      dockerfile: services/backend-api-next/dockerfiles/api-only.Dockerfile
-    restart: on-failure:10
-    depends_on:
-      - mongo
-      - rabbitmq-broker
-    environment:
-      - BACKEND_API_DEFAULT_MAX_FEEDS=${BACKEND_API_DEFAULT_MAX_FEEDS:-10}
-      - BACKEND_API_RABBITMQ_BROKER_URL=${BACKEND_API_RABBITMQ_BROKER_URL:-amqp://guest:guest@rabbitmq-broker:5672/}
-      - BACKEND_API_USER_FEEDS_API_HOST=${BACKEND_API_USER_FEEDS_API_HOST:-http://user-feeds-service:5000}
-      - BACKEND_API_USER_FEEDS_API_KEY=${BACKEND_API_USER_FEEDS_API_KEY:-user-feeds-api-key}
-      - BACKEND_API_FEED_REQUESTS_API_HOST=${BACKEND_API_FEED_REQUESTS_API_HOST:-http://feed-requests-service:5000}
-      - BACKEND_API_FEED_REQUESTS_API_KEY=${BACKEND_API_FEED_REQUESTS_API_KEY:-feed-requests-api-key}
-      - BACKEND_API_FEED_USER_AGENT=${BACKEND_API_FEED_USER_AGENT:-MonitoRSS}
-    networks:
-      - monitorss-default
-    command: ["node", "dist/scripts/schedule-emitter.js"]
-
-  # Web API (backend-api-next)
-  web-api-next:
-    build:
-      context: .
-      dockerfile: services/backend-api-next/dockerfiles/mixed.Dockerfile
-    restart: on-failure:3
-    depends_on:
-      - mongo
-      - rabbitmq-broker
-    healthcheck:
-      test: "wget --no-verbose --tries=1 --spider http://127.0.0.1:${BACKEND_API_PORT:-8000}/api/v1/health || exit 1"
-      interval: 5s
-      timeout: 5s
-      retries: 3
-    environment:
-      - BACKEND_API_PORT=${BACKEND_API_PORT:-8000}
-      - BACKEND_API_DEFAULT_MAX_FEEDS=${BACKEND_API_DEFAULT_MAX_FEEDS:-10}
-      - BACKEND_API_RABBITMQ_BROKER_URL=${BACKEND_API_RABBITMQ_BROKER_URL:-amqp://guest:guest@rabbitmq-broker:5672/}
-      - BACKEND_API_USER_FEEDS_API_HOST=${BACKEND_API_USER_FEEDS_API_HOST:-http://user-feeds-service:5000}
-      - BACKEND_API_USER_FEEDS_API_KEY=${BACKEND_API_USER_FEEDS_API_KEY:-user-feeds-api-key}
-      - BACKEND_API_FEED_REQUESTS_API_HOST=${BACKEND_API_FEED_REQUESTS_API_HOST:-http://feed-requests-service:5000}
-      - BACKEND_API_FEED_REQUESTS_API_KEY=${BACKEND_API_FEED_REQUESTS_API_KEY:-feed-requests-api-key}
-      - BACKEND_API_FEED_USER_AGENT=${BACKEND_API_FEED_USER_AGENT:-MonitoRSS}
-    networks:
-      - monitorss-default
-    command: ["node", "dist/main.js"]
-
-  # Web API (legacy backend-api)
-  web-api:
-    build:
-      context: services/backend-api
-      dockerfile: dockerfiles/web/mixed.Dockerfile
-      target: build
-    restart: on-failure:3
-    depends_on:
-      - mongo
-      - rabbitmq-broker
-    ports:
-      - "${BACKEND_API_PORT:-8000}:${BACKEND_API_PORT:-8000}"
-    environment:
-      - BACKEND_API_PORT=${BACKEND_API_PORT:-8000}
-    networks:
-      - monitorss-default
-    command: npm run start:watch
-
-  # Web client (React frontend served by Vite dev server)
-  web-client:
-    build:
-      context: services/backend-api
-      dockerfile: dockerfiles/web/mixed.Dockerfile
-      target: build
-    working_dir: /usr/src/app/client
-    restart: on-failure:3
-    ports:
-      - "3000:3000"
-    environment:
-      - API_PROXY_URL=http://web-api:${BACKEND_API_PORT:-8000}
-    command: npm run dev -- --host 0.0.0.0
-    networks:
-      - monitorss-default
 
 volumes:
   mongodb-data:

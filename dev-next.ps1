@@ -1,1 +1,1 @@
-docker compose -f docker-compose.dev.yml --profile next watch
+docker compose -f docker-compose.dev.yml watch
