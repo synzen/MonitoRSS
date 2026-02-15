@@ -12,7 +12,7 @@ export const useDiscordChannelConnection = ({ feedId, connectionId }: Props) => 
   });
 
   const connection = feed?.connections.find(
-    (c) => c.id === connectionId && c.key === FeedConnectionType.DiscordChannel
+    (c) => c.id === connectionId && c.key === FeedConnectionType.DiscordChannel,
   ) as FeedDiscordChannelConnection | undefined;
 
   return {

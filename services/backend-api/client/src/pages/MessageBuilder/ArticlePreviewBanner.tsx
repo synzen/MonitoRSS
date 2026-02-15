@@ -55,7 +55,7 @@ export const ArticlePreviewBanner: React.FC = () => {
       const messageComponentData = convertMessageBuilderStateToConnectionPreviewInput(
         userFeed,
         connection,
-        formState.messageComponent
+        formState.messageComponent,
       );
 
       const previewInput: CreateDiscordChannelConnectionPreviewInput = {
@@ -76,7 +76,7 @@ export const ArticlePreviewBanner: React.FC = () => {
         },
         {
           disableToast: true,
-        }
+        },
       );
 
       if (resultInfo?.status === "info") {

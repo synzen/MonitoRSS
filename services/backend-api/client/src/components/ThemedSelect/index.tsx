@@ -52,7 +52,7 @@ export const ThemedSelect = <T,>({
   // @ts-ignore
   const styles = useColorModeValue<SelectStyles, SelectStyles>(
     {},
-    REACT_SELECT_STYLES({ invertBg })
+    REACT_SELECT_STYLES({ invertBg }),
   );
   const selectedOption = options.find((option) => option.value === value);
 

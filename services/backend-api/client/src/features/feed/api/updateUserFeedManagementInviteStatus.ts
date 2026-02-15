@@ -12,7 +12,7 @@ export interface UpdateUserFeedManagementInviteStatusInput {
 }
 
 export const updateUserFeedManagementInviteStatus = async (
-  options: UpdateUserFeedManagementInviteStatusInput
+  options: UpdateUserFeedManagementInviteStatusInput,
 ): Promise<void> => {
   await fetchRest(`/api/v1/user-feed-management-invites/${options.id}/status`, {
     requestOptions: {

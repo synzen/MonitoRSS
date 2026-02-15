@@ -43,7 +43,7 @@ export const ArticleFilterResultsView = ({
                   <Th>
                     {t(
                       "features.feedConnections.components" +
-                        ".articleFilterResultsTable.columnHeaderPassedFilters"
+                        ".articleFilterResultsTable.columnHeaderPassedFilters",
                     )}
                   </Th>
                   <Th width="100%">Article {displayPropertyName}</Th>

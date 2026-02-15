@@ -103,7 +103,7 @@ export const FiltersForm = ({
       },
       {
         shouldDirty: true,
-      }
+      },
     );
   };
 

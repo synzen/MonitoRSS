@@ -30,7 +30,7 @@ const renderComponent = (props: Partial<TestSendErrorPanelProps> = {}) =>
   render(
     <TestWrapper>
       <TestSendErrorPanel {...defaultProps} {...props} />
-    </TestWrapper>
+    </TestWrapper>,
   );
 
 describe("TestSendErrorPanel", () => {
@@ -43,7 +43,7 @@ describe("TestSendErrorPanel", () => {
       renderComponent();
 
       expect(
-        screen.getByText(/Test Failed - Discord Couldn't Process This Message/i)
+        screen.getByText(/Test Failed - Discord Couldn't Process This Message/i),
       ).toBeInTheDocument();
     });
 
@@ -54,7 +54,7 @@ describe("TestSendErrorPanel", () => {
       renderComponent({ feedback });
 
       expect(
-        screen.getByText("The template has placeholders that couldn't be filled.")
+        screen.getByText("The template has placeholders that couldn't be filled."),
       ).toBeInTheDocument();
     });
 
@@ -62,10 +62,10 @@ describe("TestSendErrorPanel", () => {
       renderComponent();
 
       expect(
-        screen.getByText(/Using this template may disable your connection/i)
+        screen.getByText(/Using this template may disable your connection/i),
       ).toBeInTheDocument();
       expect(
-        screen.getByText(/automatically disabled to prevent repeated failures/i)
+        screen.getByText(/automatically disabled to prevent repeated failures/i),
       ).toBeInTheDocument();
     });
 
@@ -79,7 +79,7 @@ describe("TestSendErrorPanel", () => {
       renderComponent();
 
       expect(
-        screen.getByRole("button", { name: /Use Anyway - I understand/i })
+        screen.getByRole("button", { name: /Use Anyway - I understand/i }),
       ).toBeInTheDocument();
     });
   });

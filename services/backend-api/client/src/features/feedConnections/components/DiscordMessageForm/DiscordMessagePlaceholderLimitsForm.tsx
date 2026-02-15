@@ -65,7 +65,7 @@ export const DiscordMessagePlaceholderLimitsForm = ({
         <HStack justifyContent="space-between">
           <Text>
             {t(
-              "features.feedConnections.components.discordMessagePlaceholderLimitsForm.description"
+              "features.feedConnections.components.discordMessagePlaceholderLimitsForm.description",
             )}
           </Text>
         </HStack>
@@ -78,17 +78,17 @@ export const DiscordMessagePlaceholderLimitsForm = ({
                 <Tr>
                   <Th>
                     {t(
-                      "features.feedConnections.components.discordMessagePlaceholderLimitsForm.placeholderColumnLabel"
+                      "features.feedConnections.components.discordMessagePlaceholderLimitsForm.placeholderColumnLabel",
                     )}
                   </Th>
                   <Th>
                     {t(
-                      "features.feedConnections.components.discordMessagePlaceholderLimitsForm.upperCharacterLimitColumnLabel"
+                      "features.feedConnections.components.discordMessagePlaceholderLimitsForm.upperCharacterLimitColumnLabel",
                     )}
                   </Th>
                   <Th>
                     {t(
-                      "features.feedConnections.components.discordMessagePlaceholderLimitsForm.appendTextColumnLabel"
+                      "features.feedConnections.components.discordMessagePlaceholderLimitsForm.appendTextColumnLabel",
                     )}
                   </Th>
                   <Th isNumeric>Actions</Th>

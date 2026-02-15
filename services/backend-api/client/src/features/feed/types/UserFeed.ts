@@ -24,7 +24,7 @@ export const UserFeedSchema = object({
     object({
       rateSeconds: number().required(),
       disabledCode: string().default(undefined),
-    }).required()
+    }).required(),
   ).required(),
   healthStatus: string().oneOf(Object.values(UserFeedHealthStatus)).required(),
   connections: array(FeedConnectionSchema).required(),
@@ -55,9 +55,9 @@ export const UserFeedSchema = object({
         connections: array(
           object({
             connectionId: string().required(),
-          }).required()
+          }).required(),
         ).nullable(),
-      }).required()
+      }).required(),
     ).required(),
   })
     .optional()

@@ -84,7 +84,7 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   FEED_INVALID_COMPONENTS_V2:
     "Your message configuration is invalid. Please check your V2 component settings and ensure all required fields are filled in.",
   FEED_CONNECTION_CANNOT_ENABLE_AUTO_DISABLED: t(
-    "common.apiErrors.feedConnectionCannotEnableAutoDisabled"
+    "common.apiErrors.feedConnectionCannotEnableAutoDisabled",
   ),
   FEED_ARTICLE_NOT_FOUND: t("common.apiErrors.feedArticleNotFound"),
   DISCORD_SERVER_NOT_FOUND: t("common.apiErrors.discordServerNotFound"),
@@ -119,7 +119,7 @@ export const getStandardErrorCodeMessage = (code: ApiErrorCode) => {
 
   if (!mappedError) {
     return `${t(
-      "common.errors.somethingWentWrong"
+      "common.errors.somethingWentWrong",
     )} Please try again later, or contact support@monitorss.xyz if the issue persists.`;
   }
 

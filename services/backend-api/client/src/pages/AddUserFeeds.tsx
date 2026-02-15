@@ -178,7 +178,7 @@ const ProgressAlert = ({
                 colorScheme={hasCompleted ? "green" : "blue"}
                 aria-labelledby="processing-feeds"
                 aria-valuetext={`${Math.round(
-                  percentCompleted
+                  percentCompleted,
                 )}%, ${feedsRemaining} feeds remaining`}
               />
               <Text>{Math.round(percentCompleted)}%</Text>
@@ -211,11 +211,11 @@ const UploadProgressView = ({
     urls.map((u) => ({
       url: u,
       status: "pending",
-    }))
+    })),
   );
   const totalSucceeded = allResults.filter((r) => r.status === "success").length;
   const totalFailed = allResults.filter(
-    (r) => r.status === "failed" || r.status === "prompt-url-change"
+    (r) => r.status === "failed" || r.status === "prompt-url-change",
   ).length;
   const { mutateAsync: createUserFeed } = useCreateUserFeed();
   const { mutateAsync: createUrlValidation } = useCreateUserFeedUrlValidation();
@@ -227,7 +227,7 @@ const UploadProgressView = ({
 
   const resultsWithAlternateUrls = allResults.filter((r) => r.alternateUrl);
   const alternateUrls = Array.from(
-    new Set(allResults.filter((r) => r.alternateUrl).map((r) => r.alternateUrl))
+    new Set(allResults.filter((r) => r.alternateUrl).map((r) => r.alternateUrl)),
   );
   const firstPendingIndex = allResults.findIndex((r) => r.status === "pending");
   const isInProgress = firstPendingIndex > -1;
@@ -285,10 +285,10 @@ const UploadProgressView = ({
           }
 
           return r;
-        })
+        }),
       );
     },
-    [createUrlValidation, createUserFeed, sourceFeed?.id]
+    [createUrlValidation, createUserFeed, sourceFeed?.id],
   );
 
   useEffect(() => {

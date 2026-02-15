@@ -94,7 +94,7 @@ const fetchRest = async <T>(url: string, fetchOptions?: FetchOptions<T>): Promis
       // eslint-disable-next-line no-console
       console.error(url, yupErr.errors);
       throw new ApiAdapterError(
-        "Sorry, there was an internal error (API contract violation). Try again later."
+        "Sorry, there was an internal error (API contract violation). Try again later.",
       );
     }
   }

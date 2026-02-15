@@ -38,7 +38,7 @@ export const useUserFeedDatePreview = ({ feedId, data: inputData, disabled }: Pr
     },
     {
       enabled: !!feedId || disabled,
-    }
+    },
   );
 
   return {

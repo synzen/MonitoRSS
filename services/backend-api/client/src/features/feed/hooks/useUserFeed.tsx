@@ -32,7 +32,7 @@ export const useUserFeed = ({ feedId }: Props) => {
     },
     {
       enabled: !!feedId,
-    }
+    },
   );
 
   const updateCache = (details: Partial<Feed>) => {

@@ -260,7 +260,7 @@ export const InsertMentionDialog: React.FC<Props> = ({
     if (!searchTerm) return rolesData.results;
 
     return rolesData.results.filter((r) =>
-      r.name?.toLowerCase().includes(searchTerm.toLowerCase())
+      r.name?.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [rolesData, searchTerm]);
 
@@ -269,13 +269,13 @@ export const InsertMentionDialog: React.FC<Props> = ({
 
     // Filter out categories and voice channels (not mentionable)
     const mentionableChannels = channelsData.results.filter(
-      (c) => c.type !== "category" && c.type !== "voice"
+      (c) => c.type !== "category" && c.type !== "voice",
     );
 
     if (!searchTerm) return mentionableChannels;
 
     return mentionableChannels.filter((c) =>
-      c.name.toLowerCase().includes(searchTerm.toLowerCase())
+      c.name.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [channelsData, searchTerm]);
 
@@ -308,7 +308,7 @@ export const InsertMentionDialog: React.FC<Props> = ({
       onSelected(mention);
       onClose();
     },
-    [onSelected, onClose]
+    [onSelected, onClose],
   );
 
   // Reset state when modal closes/opens
@@ -340,7 +340,7 @@ export const InsertMentionDialog: React.FC<Props> = ({
         guildId={guildId}
       />
     ),
-    [filteredRoles, handleInsert, guildId]
+    [filteredRoles, handleInsert, guildId],
   );
 
   const renderUserItem = React.useCallback(
@@ -353,7 +353,7 @@ export const InsertMentionDialog: React.FC<Props> = ({
         onInsert={handleInsert}
       />
     ),
-    [membersData, handleInsert]
+    [membersData, handleInsert],
   );
 
   const renderChannelItem = React.useCallback(
@@ -366,7 +366,7 @@ export const InsertMentionDialog: React.FC<Props> = ({
         onInsert={handleInsert}
       />
     ),
-    [filteredChannels, handleInsert]
+    [filteredChannels, handleInsert],
   );
 
   const getTitle = () => {

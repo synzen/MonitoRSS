@@ -36,7 +36,7 @@ const DISABLED_CODES_FOR_ERROR = [
 
 export const ConnectionCard = ({ feedId, connection }: Props) => {
   const isError = DISABLED_CODES_FOR_ERROR.includes(
-    connection.disabledCode as FeedConnectionDisabledCode
+    connection.disabledCode as FeedConnectionDisabledCode,
   );
 
   let cardLeftBorder = "";

@@ -24,7 +24,7 @@ export type CreateUserFeedManualRequestOutput = InferType<
 >;
 
 export const createUserFeedManualRequest = async (
-  options: CreateUserManualRequestInput
+  options: CreateUserManualRequestInput,
 ): Promise<CreateUserFeedManualRequestOutput> => {
   const res = await fetchRest(`/api/v1/user-feeds/${options.feedId}/manual-request`, {
     requestOptions: {

@@ -28,7 +28,7 @@ export const useArticleDailyLimit = ({ feedId }: Props) => {
     {
       enabled: !!feedId,
       refetchOnWindowFocus: true,
-    }
+    },
   );
 
   return {

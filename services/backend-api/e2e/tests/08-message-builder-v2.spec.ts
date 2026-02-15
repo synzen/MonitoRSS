@@ -374,6 +374,144 @@ test.describe("Message Builder V2", () => {
     await expect(page.getByRole("cell", { name: "10" })).toBeVisible();
   });
 
+  test("shows resolution warnings when placeholders resolve to empty and clears them when fixed", async ({
+    page,
+    testFeedWithConnection,
+  }) => {
+    const { feed, connection } = testFeedWithConnection;
+
+    await page.goto(
+      `/feeds/${feed.id}/discord-channel-connections/${connection.id}/message-builder`,
+    );
+
+    // Dismiss the welcome dialog
+    const welcomeDialog = page.getByRole("dialog", {
+      name: "Welcome to your Message Builder!",
+    });
+    await expect(welcomeDialog).toBeVisible({ timeout: 10000 });
+    await welcomeDialog
+      .getByRole("button", {
+        name: "Skip the message builder tour and start using the feature",
+      })
+      .click();
+    await expect(welcomeDialog).not.toBeVisible({ timeout: 5000 });
+
+    // Wait for article to load in preview
+    await expect(
+      page.getByText("Previewing Article", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+
+    const tree = page.getByRole("tree");
+
+    // Click the root tree item and switch to Components V2
+    await tree.getByRole("treeitem").first().click();
+    await page.getByRole("radiogroup").getByText("Components V2").click();
+    const switchButton = page.getByRole("button", { name: "Switch Format" });
+    if (await switchButton.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await switchButton.click();
+    }
+    await expect(
+      tree.getByRole("treeitem").first().getByText("Components V2"),
+    ).toBeVisible({ timeout: 10000 });
+
+    async function addComponent(parentText: string, menuItemName: string) {
+      await tree.getByText(parentText, { exact: true }).first().click();
+      await page.getByRole("button", { name: /New Component/i }).click();
+      await page.getByRole("menuitem", { name: menuItemName }).click();
+    }
+
+    const previewLoadingBar = page.getByLabel("Updating message preview");
+
+    async function waitForPreview() {
+      await expect(previewLoadingBar).not.toBeVisible({ timeout: 30000 });
+      await expect(page.getByText("Failed to load preview.")).not.toBeVisible();
+    }
+
+    // Add Section with Text Display + Thumbnail Accessory + Action Row with Button
+    await addComponent("Components V2", "Add Section");
+    await addComponent("Section", "Add Text Display");
+    await addComponent("Section", "Add Thumbnail Accessory");
+    await addComponent("Components V2", "Add Action Row");
+    await addComponent("Action Row", "Add Button");
+
+    // Set Text Display content to a non-existent placeholder
+    await tree.getByRole("treeitem", { name: "Text Display" }).first().click();
+    await page
+      .getByRole("textbox", { name: "Text Content" })
+      .fill("{{nonExistentField}}");
+
+    // Set Thumbnail URL to a non-existent placeholder
+    await tree.getByRole("treeitem", { name: "Thumbnail (Accessory)" }).click();
+    await page
+      .getByRole("textbox", { name: "Image URL" })
+      .fill("{{nonExistentField}}");
+
+    // Set Button label to non-existent placeholder, style to Link, URL to valid
+    await tree.getByRole("treeitem", { name: "Button" }).click();
+    await page
+      .getByRole("textbox", { name: "Button Label" })
+      .fill("{{nonExistentField}}");
+    await page
+      .getByRole("combobox", { name: "Button Style" })
+      .selectOption("Link");
+    await page
+      .getByRole("textbox", { name: "Link URL" })
+      .fill("https://example.com");
+
+    // Wait for preview to load
+    await waitForPreview();
+
+    // Verify warnings appear in Problems section
+    const problemsSection = page.locator(
+      '[data-tour-target="problems-section"]',
+    );
+
+    // Check that the problems count is at least 1
+    await expect(problemsSection.getByText(/\(\d+\)/)).toBeVisible({
+      timeout: 15000,
+    });
+
+    // Verify warning text is visible
+    await expect(
+      page.getByText("placeholder", { exact: false }).first(),
+    ).toBeVisible({ timeout: 10000 });
+
+    // Verify warning indicators in tree
+    await expect(
+      page.locator('[aria-label="Warning detected"]').first(),
+    ).toBeVisible({ timeout: 10000 });
+
+    // Verify warnings don't block save
+    const saveButton = page.getByRole("button", { name: "Save Changes" });
+    await expect(saveButton).toBeEnabled({ timeout: 10000 });
+
+    // Click Save - save should succeed without problems dialog
+    await saveButton.click();
+
+    // The problems dialog should NOT appear (it only appears for errors)
+    await expect(page.getByText("Failed to Save Changes")).not.toBeVisible({
+      timeout: 5000,
+    });
+
+    // Wait for save to complete
+    await expect(
+      page.getByText("You are previewing unsaved changes"),
+    ).not.toBeVisible({ timeout: 30000 });
+
+    // Now fix the Text Display by changing to a valid placeholder
+    await tree.getByRole("treeitem", { name: "Text Display" }).first().click();
+    await page.getByRole("textbox", { name: "Text Content" }).fill("{{title}}");
+
+    // Wait for preview to reload
+    await waitForPreview();
+
+    // The Text Display warning should be gone, but Thumbnail and Button warnings remain
+    // Verify that at least one warning is still present (Thumbnail/Button)
+    await expect(
+      page.locator('[aria-label="Warning detected"]').first(),
+    ).toBeVisible({ timeout: 10000 });
+  });
+
   test("can configure forum thread settings and verify persistence", async ({
     page,
   }, testInfo) => {

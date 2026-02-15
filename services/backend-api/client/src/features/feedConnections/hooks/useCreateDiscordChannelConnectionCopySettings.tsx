@@ -30,7 +30,7 @@ export const useCreateDiscordChannelConnectionCopySettings = () => {
           ],
           refetchType: "all",
         }),
-    }
+    },
   );
 
   return {

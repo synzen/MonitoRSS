@@ -13,7 +13,7 @@ const GetDiscordWebhookOutputSchema = object({
 export type GetDiscordWebhookOutput = InferType<typeof GetDiscordWebhookOutputSchema>;
 
 export const getDiscordWebhook = async (
-  options: GetDiscordWebhookInput
+  options: GetDiscordWebhookInput,
 ): Promise<GetDiscordWebhookOutput> => {
   const res = await fetchRest(`/api/v1/discord-webhooks/${options.webhookId}`, {
     validateSchema: GetDiscordWebhookOutputSchema,

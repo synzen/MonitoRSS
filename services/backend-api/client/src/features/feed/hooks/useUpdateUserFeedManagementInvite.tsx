@@ -33,7 +33,7 @@ export const useUpdateUserFeedManagementInvite = ({ feedId }: Props) => {
           },
         });
       },
-    }
+    },
   );
 
   return {

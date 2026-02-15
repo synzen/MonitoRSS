@@ -6,7 +6,7 @@ export const discordMessageEmbedFormLegacySchema = object().shape({
     .test(
       "color",
       "Must be a valid color",
-      (v) => !v || (!!v && /^\d+$/.test(v) && Number(v) < 16777216)
+      (v) => !v || (!!v && /^\d+$/.test(v) && Number(v) < 16777216),
     )
     .optional(),
   author: object({

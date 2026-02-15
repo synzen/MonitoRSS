@@ -7,7 +7,7 @@ export const useUserFeedsInfinite = (
   input: Omit<GetUserFeedsInput, "search">,
   opts?: {
     disabled?: boolean;
-  }
+  },
 ) => {
   const [search, setSearch] = useState("");
   const useLimit = input.limit || 10;
@@ -57,7 +57,7 @@ export const useUserFeedsInfinite = (
 
         return allPages.length * useLimit;
       },
-    }
+    },
   );
 
   return {

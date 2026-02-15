@@ -17,7 +17,7 @@ export const useDiscordUser = (inputData: Input) => {
     },
     {
       enabled: !inputData.disabled,
-    }
+    },
   );
 
   return {

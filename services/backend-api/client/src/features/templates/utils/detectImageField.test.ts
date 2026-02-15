@@ -8,9 +8,7 @@ describe("detectImageFields", () => {
 
     it("returns empty array for null/undefined", () => {
       expect(detectImageFields(null as unknown as Array<Record<string, unknown>>)).toEqual([]);
-      expect(detectImageFields(undefined as unknown as Array<Record<string, unknown>>)).toEqual(
-        []
-      );
+      expect(detectImageFields(undefined as unknown as Array<Record<string, unknown>>)).toEqual([]);
     });
 
     it("detects field with valid image URL", () => {
@@ -60,8 +58,7 @@ describe("detectImageFields", () => {
             "https://nelog.jp/smartnav-4-production-stoppage#comment-95840",
           "extracted::description::anchor4":
             "https://nelog.jp/wp-content/uploads/2025/03/image.png",
-          "extracted::description::image1":
-            "https://nelog.jp/wp-content/uploads/2025/03/photo.jpg",
+          "extracted::description::image1": "https://nelog.jp/wp-content/uploads/2025/03/photo.jpg",
         },
       ];
       // Should only detect the image field, not the anchor fields

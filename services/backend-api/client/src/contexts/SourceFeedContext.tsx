@@ -43,7 +43,7 @@ export const SourceFeedProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         }
       },
     }),
-    [sourceFeed]
+    [sourceFeed],
   );
 
   return <SourceFeedContext.Provider value={contextValue}>{children}</SourceFeedContext.Provider>;

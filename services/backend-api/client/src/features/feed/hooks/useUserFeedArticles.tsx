@@ -67,7 +67,7 @@ export const useUserFeedArticles = ({
       onSuccess,
       keepPreviousData: true,
       staleTime: 1000 * 60 * 5, // 5 minutes
-    }
+    },
   );
 
   return {

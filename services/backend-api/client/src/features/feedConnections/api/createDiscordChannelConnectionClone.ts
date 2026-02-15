@@ -23,7 +23,7 @@ export type CreateDiscordChannelConnectionCloneOutput = InferType<
 >;
 
 export const createDiscordChannelConnectionClone = async (
-  options: CreateDiscordChannelConnectionCloneInput
+  options: CreateDiscordChannelConnectionCloneInput,
 ): Promise<CreateDiscordChannelConnectionCloneOutput> => {
   const res = await fetchRest(
     `/api/v1/user-feeds/${options.feedId}/connections/discord-channels/${options.connectionId}/clone`,
@@ -33,7 +33,7 @@ export const createDiscordChannelConnectionClone = async (
         method: "POST",
         body: JSON.stringify(options.details),
       },
-    }
+    },
   );
 
   return res as CreateDiscordChannelConnectionCloneOutput;

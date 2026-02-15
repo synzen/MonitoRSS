@@ -36,7 +36,7 @@ interface ContextProps {
       connectionType: FeedConnectionType;
       previewInput: CreateDiscordChannelConnectionPreviewInput;
     },
-    opts?: { disableToastErrors?: boolean; disableToast?: boolean }
+    opts?: { disableToastErrors?: boolean; disableToast?: boolean },
   ) => Promise<{
     status: "info" | "success" | "error";
     title: string;
@@ -52,7 +52,7 @@ export const SendTestArticleContext = createContext<ContextProps>({
 });
 
 const getMessageByStatus = (
-  result: CreateConnectionTestArticleOutput["result"]
+  result: CreateConnectionTestArticleOutput["result"],
 ): {
   title: string;
   titleIcon?: ReactNode;
@@ -267,7 +267,7 @@ export const SendTestArticleProvider = ({ children }: PropsWithChildren<{}>) => 
       isFetching: status === "loading",
       error: error?.message,
     }),
-    [sendTestArticle, status]
+    [sendTestArticle, status],
   );
 
   return (

@@ -25,7 +25,7 @@ const getProseExplanation = (
   operator: string,
   filterInput: string,
   isNegated: boolean,
-  matched: boolean
+  matched: boolean,
 ): string => {
   const fieldLabel = fieldName.toLowerCase();
   const readableOp = getReadableOperator(operator);

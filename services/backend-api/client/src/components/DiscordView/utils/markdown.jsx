@@ -713,7 +713,7 @@ const parseEmbedTitle = parserFor(
     "subtext",
     "blockQuote",
     "list",
-  ])
+  ]),
 );
 
 // used in:
@@ -723,7 +723,7 @@ function jumboify(ast) {
     (node) =>
       node.type !== "emoji" &&
       node.type !== "customEmoji" &&
-      (typeof node.content !== "string" || node.content.trim() !== "")
+      (typeof node.content !== "string" || node.content.trim() !== ""),
   );
 
   if (nonEmojiNodes) {

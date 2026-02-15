@@ -56,7 +56,7 @@ import {
 } from "./MessageBuilder/MessageBuilderContext";
 import { ProblemsSection } from "./MessageBuilder/ProblemsSection";
 import { ProblemsDialog } from "./MessageBuilder/ProblemsDialog";
-import extractMessageBuilderProblems from "./MessageBuilder/utils/extractMessageBuilderProblems";
+import useMessageBuilderProblems from "./MessageBuilder/hooks/useMessageBuilderProblems";
 import RouteParams from "../types/RouteParams";
 import { Loading } from "../components";
 import { SearchFeedsModal } from "../components/SearchFeedsModal";
@@ -193,11 +193,13 @@ const MessageBuilderContent: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  const problems = extractMessageBuilderProblems(
-    formState.errors.messageComponent,
-    messageComponent
-  );
-  const componentIdsWithProblems = new Set(problems.map((p) => p.componentId));
+  const {
+    errors: problems,
+    allProblems,
+    componentIdsWithErrors,
+    componentIdsWithWarnings,
+    setResolvedMessages,
+  } = useMessageBuilderProblems(formState.errors.messageComponent, messageComponent);
 
   // If the user attempts to close the tab with unsaved changes, ask for confirmation
   useEffect(() => {
@@ -222,7 +224,7 @@ const MessageBuilderContent: React.FC = () => {
 
       try {
         const connectionDetails = convertMessageBuilderStateToConnectionUpdate(
-          data.messageComponent
+          data.messageComponent,
         );
 
         await updateConnection({
@@ -247,7 +249,7 @@ const MessageBuilderContent: React.FC = () => {
       if (problems.length > 0) {
         onProblemsDialogOpen();
       }
-    }
+    },
   );
 
   const handleDiscard = () => {
@@ -514,7 +516,8 @@ const MessageBuilderContent: React.FC = () => {
                               <ComponentTreeItem
                                 component={messageComponent}
                                 scrollToComponentId={scrollToComponentId}
-                                componentIdsWithProblems={componentIdsWithProblems}
+                                componentIdsWithErrors={componentIdsWithErrors}
+                                componentIdsWithWarnings={componentIdsWithWarnings}
                               />
                             </NavigableTreeItem>
                           </div>
@@ -557,7 +560,10 @@ const MessageBuilderContent: React.FC = () => {
                       </Text>
                     </Box>
                     <Box flex={1} overflow="hidden">
-                      <DiscordMessagePreview maxHeight={isProblemsCollapsed ? "none" : undefined} />
+                      <DiscordMessagePreview
+                        maxHeight={isProblemsCollapsed ? "none" : undefined}
+                        onResolvedMessages={setResolvedMessages}
+                      />
                     </Box>
                   </Box>
                   {isDesktop && (
@@ -583,8 +589,8 @@ const MessageBuilderContent: React.FC = () => {
                             <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
                               Problems
                             </Text>
-                            <Text color="gray.400" aria-label={`${problems.length} found`}>
-                              ({problems.length})
+                            <Text color="gray.400" aria-label={`${allProblems.length} found`}>
+                              ({allProblems.length})
                             </Text>
                           </HStack>
                           <Icon
@@ -597,7 +603,7 @@ const MessageBuilderContent: React.FC = () => {
                       {!isProblemsCollapsed && (
                         <Box id="problems-content" role="region" aria-labelledby="problems-heading">
                           <ProblemsSection
-                            problems={problems}
+                            problems={allProblems}
                             onClickComponentPath={handlePathClick}
                           />
                         </Box>
@@ -625,8 +631,13 @@ const MessageBuilderContent: React.FC = () => {
                             _selected={{ color: "white", borderColor: "blue.400" }}
                           >
                             <HStack>
-                              {problems.length > 0 && <WarningIcon color="red.400" aria-hidden />}
-                              <Text>Problems ({problems.length})</Text>
+                              {allProblems.length > 0 && (
+                                <WarningIcon
+                                  color={problems.length > 0 ? "red.400" : "orange.400"}
+                                  aria-hidden
+                                />
+                              )}
+                              <Text>Problems ({allProblems.length})</Text>
                             </HStack>
                           </Tab>
                         </TabList>
@@ -643,7 +654,8 @@ const MessageBuilderContent: React.FC = () => {
                                   <ComponentTreeItem
                                     component={messageComponent}
                                     scrollToComponentId={scrollToComponentId}
-                                    componentIdsWithProblems={componentIdsWithProblems}
+                                    componentIdsWithErrors={componentIdsWithErrors}
+                                    componentIdsWithWarnings={componentIdsWithWarnings}
                                   />
                                 </NavigableTreeItem>
                               </div>
@@ -651,7 +663,7 @@ const MessageBuilderContent: React.FC = () => {
                           </TabPanel>
                           <TabPanel p={0}>
                             <ProblemsSection
-                              problems={problems}
+                              problems={allProblems}
                               onClickComponentPath={handlePathClick}
                             />
                           </TabPanel>

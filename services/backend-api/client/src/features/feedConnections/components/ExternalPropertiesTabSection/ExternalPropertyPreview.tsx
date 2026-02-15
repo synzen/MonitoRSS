@@ -82,7 +82,7 @@ const ArticlesSection = ({ externalProperties, articleId }: Props & { articleId?
   });
 
   const articleEntries = Object.entries(data?.result.articles[0] || {}).filter(
-    ([key, value]) => key.startsWith("external::") && !!value
+    ([key, value]) => key.startsWith("external::") && !!value,
   );
 
   const externalContentErrors = (data?.result.externalContentErrors ||
@@ -239,7 +239,7 @@ const ArticlesSection = ({ externalProperties, articleId }: Props & { articleId?
 export const ExternalPropertyPreview = ({ externalProperties: inputExternalProperties }: Props) => {
   const { userFeed, articleFormatOptions } = useUserFeedContext();
   const [selectedConnectionId, setSelectedConnectionId] = useState<string>(
-    userFeed.connections[0]?.id
+    userFeed.connections[0]?.id,
   );
   const [articleId, setArticleId] = useState<string | undefined>();
   const { externalProperties } = useDebounce({ externalProperties: inputExternalProperties }, 500);
@@ -331,7 +331,7 @@ export const ExternalPropertyPreview = ({ externalProperties: inputExternalPrope
                         minWidth={200}
                         onChange={(e) => onChangeSelectedConnection(e.target.value)}
                         aria-labelledby={`preview-connection-${inputExternalProperties.map(
-                          (p) => p.id
+                          (p) => p.id,
                         )}`}
                       >
                         {userFeed.connections.map((con) => (

@@ -17,7 +17,7 @@ const GetServerActiveThreadsOutputSchema = object({
 export type GetServerActiveThreadsOutput = InferType<typeof GetServerActiveThreadsOutputSchema>;
 
 export const getServerActiveThreads = async (
-  options: GetServerActiveThreadsInput
+  options: GetServerActiveThreadsInput,
 ): Promise<GetServerActiveThreadsOutput> => {
   const searchParams = new URLSearchParams();
 
@@ -29,7 +29,7 @@ export const getServerActiveThreads = async (
     `/api/v1/discord-servers/${options.serverId}/active-threads?${searchParams.toString()}`,
     {
       validateSchema: GetServerActiveThreadsOutputSchema,
-    }
+    },
   );
 
   return res as GetServerActiveThreadsOutput;

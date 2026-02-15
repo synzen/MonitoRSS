@@ -23,7 +23,7 @@ export const useConnectionTemplateSelection = ({
   isEditing,
 }: UseConnectionTemplateSelectionOptions) => {
   const [currentStep, setCurrentStep] = useState<ConnectionCreationStep>(
-    ConnectionCreationStep.ServerChannel
+    ConnectionCreationStep.ServerChannel,
   );
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);
   const [selectedArticleId, setSelectedArticleId] = useState<string | undefined>();

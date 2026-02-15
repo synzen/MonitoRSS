@@ -24,7 +24,7 @@ const methodsByType: Record<
 
 export const useCreateConnectionPreview = (
   type: FeedConnectionType,
-  inputData: CreateConnectionPreviewInput
+  inputData: CreateConnectionPreviewInput,
 ) => {
   const { status, data, fetchStatus, error } = useQuery<
     CreateConnectionPreviewOutput,
@@ -39,7 +39,7 @@ export const useCreateConnectionPreview = (
     {
       enabled: inputData.enabled,
       keepPreviousData: true,
-    }
+    },
   );
 
   return {

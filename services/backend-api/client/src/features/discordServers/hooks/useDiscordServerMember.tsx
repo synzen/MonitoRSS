@@ -29,7 +29,7 @@ export const useDiscordServerMember = ({ serverId, memberId, disabled }: Props) 
     },
     {
       enabled: !!serverId && !!memberId && !disabled,
-    }
+    },
   );
 
   return {

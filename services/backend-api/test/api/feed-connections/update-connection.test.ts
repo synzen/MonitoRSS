@@ -1624,6 +1624,72 @@ describe(
         );
       });
 
+      it("auto-enables BadFormat connection with non-empty componentRows", async () => {
+        const discordUserId = generateSnowflake();
+        const user = await ctx.asUser(discordUserId);
+        const { feedId, connectionId } = await createTestFeedWithConnection(
+          ctx,
+          {
+            discordUserId,
+            connectionOverrides: {
+              disabledCode: "BAD_FORMAT",
+            },
+          },
+        );
+
+        const response = await user.fetch(testUrl(feedId, connectionId), {
+          method: "PATCH",
+          body: JSON.stringify({
+            componentRows: [{ id: "row-1", components: [] }],
+          }),
+        });
+
+        assert.strictEqual(response.status, 200);
+
+        const feed = await ctx.container.userFeedRepository.findById(feedId);
+        const storedConnection = feed?.connections.discordChannels.find(
+          (c) => c.id === connectionId,
+        );
+        assert.strictEqual(
+          storedConnection?.disabledCode,
+          undefined,
+          "should be enabled",
+        );
+      });
+
+      it("auto-enables BadFormat connection with non-empty componentsV2", async () => {
+        const discordUserId = generateSnowflake();
+        const user = await ctx.asUser(discordUserId);
+        const { feedId, connectionId } = await createTestFeedWithConnection(
+          ctx,
+          {
+            discordUserId,
+            connectionOverrides: {
+              disabledCode: "BAD_FORMAT",
+            },
+          },
+        );
+
+        const response = await user.fetch(testUrl(feedId, connectionId), {
+          method: "PATCH",
+          body: JSON.stringify({
+            componentsV2: [{ type: 17, components: [] }],
+          }),
+        });
+
+        assert.strictEqual(response.status, 200);
+
+        const feed = await ctx.container.userFeedRepository.findById(feedId);
+        const storedConnection = feed?.connections.discordChannels.find(
+          (c) => c.id === connectionId,
+        );
+        assert.strictEqual(
+          storedConnection?.disabledCode,
+          undefined,
+          "should be enabled",
+        );
+      });
+
       it("auto-enables BadFormat connection with non-empty embeds array", async () => {
         const discordUserId = generateSnowflake();
         const user = await ctx.asUser(discordUserId);

@@ -35,7 +35,7 @@ export const RefreshUserFeedButton = () => {
       } else {
         const message = getErrorMessageForArticleRequestStatus(
           getArticlesRequestStatus || requestStatus,
-          requestStatusCode
+          requestStatusCode,
         );
         createErrorAlert({
           title: "Failed to re-enable feed. Request to the feed was not successful.",

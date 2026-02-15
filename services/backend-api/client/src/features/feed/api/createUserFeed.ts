@@ -17,7 +17,7 @@ const CreateFeedOutputSchema = object({
 export type CreateUserFeedOutput = InferType<typeof CreateFeedOutputSchema>;
 
 export const createUserFeed = async (
-  options: CreateUserFeedInput
+  options: CreateUserFeedInput,
 ): Promise<CreateUserFeedOutput> => {
   const res = await fetchRest("/api/v1/user-feeds", {
     validateSchema: CreateFeedOutputSchema,

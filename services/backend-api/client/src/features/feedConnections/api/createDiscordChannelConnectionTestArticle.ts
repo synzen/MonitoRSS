@@ -3,8 +3,7 @@ import fetchRest from "../../../utils/fetchRest";
 import { SendTestArticleResultSchema } from "@/types";
 import { CreateDiscordChannelConnectionPreviewInput } from "./createDiscordChannelConnectionPreview";
 
-export interface CreateDiscordChannelConnectionTestArticleInput
-  extends CreateDiscordChannelConnectionPreviewInput {}
+export interface CreateDiscordChannelConnectionTestArticleInput extends CreateDiscordChannelConnectionPreviewInput {}
 
 const CreateDiscordChannelConnectionTestArticleOutputSchema = object({
   result: SendTestArticleResultSchema,
@@ -15,7 +14,7 @@ export type CreateDiscordChannelConnectionTestArticleOutput = InferType<
 >;
 
 export const createDiscordChannelConnectionTestArticle = async (
-  options: CreateDiscordChannelConnectionTestArticleInput
+  options: CreateDiscordChannelConnectionTestArticleInput,
 ): Promise<CreateDiscordChannelConnectionTestArticleOutput> => {
   const res = await fetchRest(
     `/api/v1/user-feeds/${options.feedId}/connections/` +
@@ -26,7 +25,7 @@ export const createDiscordChannelConnectionTestArticle = async (
         method: "POST",
         body: JSON.stringify(options.data),
       },
-    }
+    },
   );
 
   return res as CreateDiscordChannelConnectionTestArticleOutput;

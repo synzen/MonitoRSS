@@ -49,7 +49,7 @@ const createStatusLabel = (
   status: UserFeedRequestStatus,
   response: {
     statusCode?: number | null;
-  }
+  },
 ) => {
   switch (status) {
     case UserFeedRequestStatus.OK:

@@ -5,7 +5,7 @@ export interface CreateUserFeedManagementInviteResendInput {
 }
 
 export const createUserFeedManagementInviteResend = async (
-  options: CreateUserFeedManagementInviteResendInput
+  options: CreateUserFeedManagementInviteResendInput,
 ): Promise<void> => {
   await fetchRest(`/api/v1/user-feed-management-invites/${options.id}/resend`, {
     skipJsonParse: true,

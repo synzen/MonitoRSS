@@ -49,7 +49,7 @@ export const DatePreferencesForm = ({
       dateTimezone: timezone,
       dateLocale: locale,
     },
-    400
+    400,
   );
 
   const { data: datePreviewData, error: datePreviewError } = useUserFeedDatePreview({
@@ -88,7 +88,7 @@ export const DatePreferencesForm = ({
         <FormControl>
           <FormLabel marginBottom={0}>
             {t(
-              "features.feedConnections.components.userFeedSettingsTabSection.dateSettingsPreviewTitle"
+              "features.feedConnections.components.userFeedSettingsTabSection.dateSettingsPreviewTitle",
             )}
           </FormLabel>
           {!datePreviewError && (
@@ -97,7 +97,7 @@ export const DatePreferencesForm = ({
                 {datePreviewData?.result.valid && datePreviewData?.result.output}
                 {!datePreviewData?.result.valid &&
                   t(
-                    "features.feedConnections.components.userFeedSettingsTabSection.invalidTimezone"
+                    "features.feedConnections.components.userFeedSettingsTabSection.invalidTimezone",
                   )}
               </Text>
             </Skeleton>
@@ -141,7 +141,7 @@ export const DatePreferencesForm = ({
       <FormControl isInvalid={!!errors.timezone}>
         <FormLabel>
           {t(
-            "features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputLabel"
+            "features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputLabel",
           )}
         </FormLabel>
         <Input

@@ -57,7 +57,7 @@ export type GetDeliveryPreviewOutput = InferType<typeof GetDeliveryPreviewOutput
 function generateStageSummary(
   stage: DeliveryPreviewStage,
   status: DeliveryPreviewStageStatus,
-  details: Record<string, unknown> | null
+  details: Record<string, unknown> | null,
 ): string {
   const passed = status === DeliveryPreviewStageStatus.Passed;
 
@@ -143,7 +143,7 @@ function generateSkippedSummary(stage: DeliveryPreviewStage, stages: BackendStag
  */
 function transformStage(
   backendStage: BackendStageResult,
-  allStages: BackendStageResult[]
+  allStages: BackendStageResult[],
 ): DeliveryPreviewStageResult {
   const stage = backendStage.stage as DeliveryPreviewStage;
   const status = backendStage.status as DeliveryPreviewStageStatus;
@@ -166,7 +166,7 @@ function transformStage(
  * Transform the backend response to frontend format.
  */
 function transformResponse(
-  backendResponse: BackendGetDeliveryPreviewOutput
+  backendResponse: BackendGetDeliveryPreviewOutput,
 ): GetDeliveryPreviewOutput {
   const canonicalStages = backendResponse.result.stages;
 
@@ -180,7 +180,7 @@ function transformResponse(
       mediumResults: article.mediumResults.map((medium): MediumDeliveryResult => {
         // Backend now returns complete stage list with status - just add summaries
         const transformedStages = medium.stages.map((stage) =>
-          transformStage(stage, medium.stages)
+          transformStage(stage, medium.stages),
         );
 
         return {
@@ -190,7 +190,7 @@ function transformResponse(
           stages: transformedStages,
         };
       }),
-    })
+    }),
   );
 
   return {

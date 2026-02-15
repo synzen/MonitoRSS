@@ -4,7 +4,7 @@
 export const retryPromise = async <T>(
   promise: () => Promise<T>,
   retries = 3,
-  delay = 1000
+  delay = 1000,
 ): Promise<T> => {
   try {
     return await promise();

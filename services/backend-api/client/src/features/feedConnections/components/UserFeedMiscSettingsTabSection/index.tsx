@@ -105,7 +105,7 @@ const FormSchema = object({
     invites: array(
       object({
         discordUserId: string().required(),
-      }).required()
+      }).required(),
     ).required(),
   })
     .optional()
@@ -168,7 +168,7 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
       dateTimezone,
       dateLocale,
     },
-    400
+    400,
   );
 
   const { data: datePreviewData, error: datePreviewError } = useUserFeedDatePreview({
@@ -234,10 +234,11 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
       });
     } catch (e) {
       const fastestAllowedRate = Math.min(
-        ...(feed?.refreshRateOptions.filter((r) => !r.disabledCode).map((o) => o.rateSeconds) || [])
+        ...(feed?.refreshRateOptions.filter((r) => !r.disabledCode).map((o) => o.rateSeconds) ||
+          []),
       );
       const canHaveLowerRate = feed?.refreshRateOptions.filter(
-        (r) => r.disabledCode === "INSUFFICIENT_SUPPORTER_TIER"
+        (r) => r.disabledCode === "INSUFFICIENT_SUPPORTER_TIER",
       );
 
       if (e instanceof ApiAdapterError && e.errorCode === "USER_REFRESH_RATE_NOT_ALLOWED") {
@@ -405,7 +406,7 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                         <Tbody>
                           {feed.shareManageOptions?.invites.map((u) => {
                             const connectionIds = new Set(
-                              u.connections?.map((c) => c.connectionId) || []
+                              u.connections?.map((c) => c.connectionId) || [],
                             );
                             const connectionNames = Object.values(feed.connections)
                               .filter((c) => connectionIds.has(c.id))
@@ -650,7 +651,7 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
               <Stack spacing={2}>
                 <Heading size="sm" as="h3">
                   {t(
-                    "features.feedConnections.components.userFeedSettingsTabSection.dateSettingsTitle"
+                    "features.feedConnections.components.userFeedSettingsTabSection.dateSettingsTitle",
                   )}
                 </Heading>
                 <Text>
@@ -667,7 +668,7 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                 <FormControl aria-live="polite" aria-busy={!!datePreviewData}>
                   <FormLabel marginBottom={0}>
                     {t(
-                      "features.feedConnections.components.userFeedSettingsTabSection.dateSettingsPreviewTitle"
+                      "features.feedConnections.components.userFeedSettingsTabSection.dateSettingsPreviewTitle",
                     )}
                   </FormLabel>
                   {!datePreviewError && (
@@ -679,7 +680,7 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                         {datePreviewData?.result.valid && datePreviewData?.result.output}
                         {!datePreviewData?.result.valid &&
                           t(
-                            "features.feedConnections.components.userFeedSettingsTabSection.invalidTimezone"
+                            "features.feedConnections.components.userFeedSettingsTabSection.invalidTimezone",
                           )}
                       </Text>
                     </Skeleton>
@@ -698,7 +699,7 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                     <FormControl isInvalid={!!formErrors.dateTimezone}>
                       <FormLabel>
                         {t(
-                          "features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputLabel"
+                          "features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputLabel",
                         )}
                       </FormLabel>
                       <Input spellCheck={false} autoComplete="off" {...field} />
@@ -744,7 +745,7 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                     <FormControl isInvalid={!!formErrors.dateFormat}>
                       <FormLabel>
                         {t(
-                          "features.feedConnections.components.userFeedSettingsTabSection.dateFormatInputLabel"
+                          "features.feedConnections.components.userFeedSettingsTabSection.dateFormatInputLabel",
                         )}
                       </FormLabel>
                       <Input spellCheck={false} autoComplete="off" {...field} />

@@ -18,7 +18,7 @@ export type CreateUserFeedUrlValidationOutput = InferType<
 >;
 
 export const createUserFeedUrlValidation = async (
-  options: CreateUserFeedUrlValidationInput
+  options: CreateUserFeedUrlValidationInput,
 ): Promise<CreateUserFeedUrlValidationOutput> => {
   const res = await fetchRest("/api/v1/user-feeds/url-validation", {
     validateSchema: CreateUserFeedUrlValidationOutputSchema,

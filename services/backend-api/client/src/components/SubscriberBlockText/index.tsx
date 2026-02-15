@@ -82,7 +82,7 @@ export const SubscriberBlockText = ({ alternateText, onClick, feature, supporter
 
     if (currentTier) {
       const currentTierIndex = supporterTiersOrdered.indexOf(
-        isOnPatreon ? currentTier.patreon : currentTier.regular
+        isOnPatreon ? currentTier.patreon : currentTier.regular,
       );
       const requiredTierIndex = supporterTiersOrdered.indexOf(showTier);
 

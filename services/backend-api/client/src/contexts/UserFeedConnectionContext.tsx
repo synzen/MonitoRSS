@@ -34,7 +34,7 @@ export const UserFeedConnectionProvider = ({
 }) => {
   const { feed, status } = useUserFeed({ feedId });
   const connection = feed?.connections.find(
-    (c) => c.id === connectionId
+    (c) => c.id === connectionId,
   ) as FeedDiscordChannelConnection;
 
   if (status === "loading" || !feed || !connection) {
@@ -57,7 +57,7 @@ export const UserFeedConnectionProvider = ({
         ...articleFormatOptions,
       },
     }),
-    [feed]
+    [feed],
   );
 
   return (

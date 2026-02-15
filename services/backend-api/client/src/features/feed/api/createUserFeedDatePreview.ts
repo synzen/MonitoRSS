@@ -22,7 +22,7 @@ export type CreateUserFeedDatePreviewOutput = InferType<
 >;
 
 export const createUserFeedDatePreview = async (
-  options: CreateUserFeedDatePreviewInput
+  options: CreateUserFeedDatePreviewInput,
 ): Promise<CreateUserFeedDatePreviewOutput> => {
   const res = await fetchRest(`/api/v1/user-feeds/${options.feedId}/date-preview`, {
     validateSchema: CreateUserFeedDatePreviewOutputSchema,

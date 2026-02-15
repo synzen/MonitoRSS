@@ -54,15 +54,15 @@ import {
 const DiscordMessageEmbedForm = lazyWithRetries(() =>
   import("./DiscordMessageEmbedForm").then(({ DiscordMessageEmbedForm: component }) => ({
     default: component,
-  }))
+  })),
 );
 
 const DiscordChannelConnectionPreview = lazyWithRetries(() =>
   import("./DiscordChannelConnectionPreview").then(
     ({ DiscordChannelConnectionPreview: component }) => ({
       default: component,
-    })
-  )
+    }),
+  ),
 );
 
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
@@ -265,7 +265,7 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                             <Text fontSize="sm" fontWeight={600}>
                               <Highlight
                                 query={t(
-                                  "components.discordMessageForm.previewSectionUnsavedWarning"
+                                  "components.discordMessageForm.previewSectionUnsavedWarning",
                                 )}
                                 styles={{
                                   bg: "orange.200",
@@ -299,7 +299,7 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                                 },
                                 {
                                   disableToast: true,
-                                }
+                                },
                               );
 
                               if (resultInfo?.status === "info") {

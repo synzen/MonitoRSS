@@ -109,7 +109,7 @@ export const UserFeedHealthAlert = () => {
                     navigate(
                       pages.userFeed(userFeed.id, {
                         tab: UserFeedTabSearchParam.Logs,
-                      })
+                      }),
                     )
                   }
                 >

@@ -12,7 +12,7 @@ interface Options {
 export const notifyError = (
   title: string,
   error: Error | string | React.ReactNode,
-  options?: Options
+  options?: Options,
 ) => {
   let description: string | React.ReactNode = "";
 

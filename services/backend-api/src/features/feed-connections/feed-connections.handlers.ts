@@ -634,7 +634,7 @@ export async function updateDiscordChannelConnectionHandler(
       if (body.disabledCode === null) {
         throw new CannotEnableAutoDisabledConnection();
       }
-      if (body.content || body.embeds?.length) {
+      if (body.content || body.embeds?.length || body.componentRows?.length || body.componentsV2?.length) {
         useDisabledCode = null;
       }
     } else if (connection.disabledCode === FeedConnectionDisabledCode.Manual) {

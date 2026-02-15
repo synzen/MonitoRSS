@@ -22,11 +22,11 @@ import { pages } from "../../../../../constants";
 import { UserFeedTabSearchParam } from "../../../../../constants/userFeedTabSearchParam";
 import { useDeliveryPreviewWithPagination } from "../../../hooks/useDeliveryPreviewWithPagination";
 import { InlineErrorAlert } from "../../../../../components";
-import { DeliveryPreviewAccordion, DeliveryPreviewAccordionSkeleton } from "./DeliveryPreviewAccordion";
 import {
-  ArticleDeliveryOutcome,
-  ArticleDeliveryResult,
-} from "../../../types/DeliveryPreview";
+  DeliveryPreviewAccordion,
+  DeliveryPreviewAccordionSkeleton,
+} from "./DeliveryPreviewAccordion";
+import { ArticleDeliveryOutcome, ArticleDeliveryResult } from "../../../types/DeliveryPreview";
 import { formatRefreshRateSeconds } from "../../../../../utils/formatRefreshRateSeconds";
 import { FeedLevelStateDisplay, FeedState } from "./FeedLevelStateDisplay";
 
@@ -34,16 +34,19 @@ dayjs.extend(relativeTime);
 
 export const getPatternAlert = (
   results: ArticleDeliveryResult[],
-  refreshRateSeconds: number
+  refreshRateSeconds: number,
 ): { type: "info" | "warning"; message: string } | null => {
   if (results.length === 0) return null;
 
-  const outcomeCounts = results.reduce((acc, r) => {
-    const outcome = r.outcome as ArticleDeliveryOutcome;
-    acc[outcome] = (acc[outcome] || 0) + 1;
+  const outcomeCounts = results.reduce(
+    (acc, r) => {
+      const outcome = r.outcome as ArticleDeliveryOutcome;
+      acc[outcome] = (acc[outcome] || 0) + 1;
 
-    return acc;
-  }, {} as Record<string, number>);
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   const totalResults = results.length;
   const dominantOutcome = Object.entries(outcomeCounts).sort((a, b) => b[1] - a[1])[0];
@@ -176,10 +179,7 @@ export const DeliveryPreviewPresentational = ({
       <Box px={4} pb={4}>
         {isLoading && <DeliveryPreviewAccordionSkeleton />}
         {error && (
-          <InlineErrorAlert
-            title="Failed to load delivery preview"
-            description={error.message}
-          />
+          <InlineErrorAlert title="Failed to load delivery preview" description={error.message} />
         )}
         {!isLoading && !error && hasNoConnections && (
           <Alert status="info" borderRadius="md">

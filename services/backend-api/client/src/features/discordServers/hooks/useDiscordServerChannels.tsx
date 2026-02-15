@@ -35,7 +35,7 @@ export const useDiscordServerChannels = ({ serverId, types }: Props) => {
     {
       enabled: !!accessData?.result.authorized && !hadError && !!serverId,
       onError: () => setHadError(true),
-    }
+    },
   );
 
   // New channels may be created when window is out-of-focus

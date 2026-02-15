@@ -14,7 +14,7 @@ export const ARTICLE_LIST_ITEM_PADDING = {
 
 export const getArticleListItemBorderProps = (
   isFirst: boolean,
-  leftBorderColor: string = "gray.500"
+  leftBorderColor: string = "gray.500",
 ): BoxProps => ({
   borderTop: isFirst ? "none" : "1px solid",
   borderTopColor: "gray.700",

@@ -10,7 +10,7 @@ export const useLogin = () => {
       : "";
 
     window.location.href = `/api/v1/discord/login-v2?jsonState=${encodeURIComponent(
-      jsonState
+      jsonState,
     )}${addScopesQuery}`;
   };
 

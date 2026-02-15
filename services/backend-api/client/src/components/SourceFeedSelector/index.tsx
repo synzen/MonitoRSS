@@ -27,7 +27,7 @@ export const SourceFeedSelector: React.FC = () => {
       selectSourceFeedButton.current?.focus();
       setSourceFeedWithData(null);
     },
-    [selectSourceFeedButton.current, setSourceFeedWithData]
+    [selectSourceFeedButton.current, setSourceFeedWithData],
   );
 
   return (

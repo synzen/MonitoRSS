@@ -67,7 +67,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   const guildId = connection?.details.channel?.guildId || connection?.details.webhook?.guildId;
   const { target: selectedComponent } = findMessageBuilderComponentById(
     messageComponent,
-    selectedComponentId
+    selectedComponentId,
   );
 
   const renderComponentDescription = (component: Component) => {
@@ -146,7 +146,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["color"]
+        ["color"],
       );
 
       return (
@@ -198,7 +198,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                       onChange={(c) => {
                         const hexColorAsNumberString = parseInt(
                           c.hex.replace("#", ""),
-                          16
+                          16,
                         ).toString();
                         onChange({
                           ...component,
@@ -233,7 +233,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["authorName", "authorUrl", "authorIconUrl"]
+        ["authorName", "authorUrl", "authorIconUrl"],
       );
 
       return (
@@ -278,7 +278,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["title", "titleUrl"]
+        ["title", "titleUrl"],
       );
 
       return (
@@ -313,7 +313,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["description"]
+        ["description"],
       );
 
       return (
@@ -339,7 +339,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["imageUrl"]
+        ["imageUrl"],
       );
 
       return (
@@ -364,7 +364,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["thumbnailUrl"]
+        ["thumbnailUrl"],
       );
 
       return (
@@ -389,7 +389,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["footerText", "footerIconUrl"]
+        ["footerText", "footerIconUrl"],
       );
 
       return (
@@ -423,7 +423,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["fieldName", "fieldValue"]
+        ["fieldName", "fieldValue"],
       );
 
       return (
@@ -474,7 +474,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["timestamp"]
+        ["timestamp"],
       );
 
       return (
@@ -530,7 +530,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["content"]
+        ["content"],
       );
 
       return (
@@ -551,7 +551,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["label", "href", "style"]
+        ["label", "href", "style"],
       );
 
       return (
@@ -617,7 +617,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["spacing", "visual"]
+        ["spacing", "visual"],
       );
 
       return (
@@ -662,7 +662,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["mediaUrl", "description"]
+        ["mediaUrl", "description"],
       );
 
       return (
@@ -715,7 +715,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["accentColor"]
+        ["accentColor"],
       );
 
       return (
@@ -828,7 +828,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["mediaUrl", "description"]
+        ["mediaUrl", "description"],
       );
 
       return (
@@ -878,7 +878,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["label", "url"]
+        ["label", "url"],
       );
 
       return (
@@ -919,7 +919,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
     const findParentAndIndex = (
       comp: Component,
-      targetId: string
+      targetId: string,
     ): { parent: Component; index: number; total: number } | null => {
       if (comp.children) {
         for (let i = 0; i < comp.children.length; i += 1) {
@@ -1051,7 +1051,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                     selectedComponent.id,
                     selectedComponent.type === ComponentType.LegacyActionRow
                       ? ComponentType.LegacyButton
-                      : ComponentType.V2Button
+                      : ComponentType.V2Button,
                   )
                 }
               >
@@ -1077,13 +1077,15 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             </Box>
           </Alert>
         )}
-      {selectedComponent.type === ComponentType.V2Section && selectedComponent.children.length > 3 && (
-        <Alert status="error" borderRadius="md" role={undefined}>
-          <AlertIcon />
-          Sections can have at most 3 child components. {selectedComponent.children.length - 3}{" "}
-          child components must be deleted.
-        </Alert>
-      )}
+      {selectedComponent.type === ComponentType.V2Section &&
+        selectedComponent.children.length > 3 && (
+          <Alert status="error" borderRadius="md" role={undefined}>
+            <AlertIcon />
+            Sections can have at most 3 child components. {selectedComponent.children.length -
+              3}{" "}
+            child components must be deleted.
+          </Alert>
+        )}
       {selectedComponent.type === ComponentType.V2Section && !selectedComponent.accessory && (
         <Alert status="info" borderRadius="md">
           <AlertIcon />
@@ -1131,9 +1133,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 <Button
                   size="sm"
                   colorScheme="blue"
-                  onClick={() =>
-                    addChildComponent(selectedComponent.id, ComponentType.V2Section)
-                  }
+                  onClick={() => addChildComponent(selectedComponent.id, ComponentType.V2Section)}
                 >
                   Add Section
                 </Button>
@@ -1149,9 +1149,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 <Button
                   size="sm"
                   colorScheme="blue"
-                  onClick={() =>
-                    addChildComponent(selectedComponent.id, ComponentType.V2ActionRow)
-                  }
+                  onClick={() => addChildComponent(selectedComponent.id, ComponentType.V2ActionRow)}
                 >
                   Add Action Row
                 </Button>
@@ -1167,9 +1165,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 <Button
                   size="sm"
                   colorScheme="blue"
-                  onClick={() =>
-                    addChildComponent(selectedComponent.id, ComponentType.V2Divider)
-                  }
+                  onClick={() => addChildComponent(selectedComponent.id, ComponentType.V2Divider)}
                 >
                   Add Divider
                 </Button>

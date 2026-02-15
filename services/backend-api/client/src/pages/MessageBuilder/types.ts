@@ -45,10 +45,13 @@ export function canComponentHaveChildren(type: ComponentType): boolean {
   return (PARENT_COMPONENT_TYPES as readonly ComponentType[]).includes(type);
 }
 
+export type MessageBuilderProblemSeverity = "error" | "warning";
+
 export interface MessageBuilderProblem {
   message: string;
   path: string;
   componentId: string;
+  severity: MessageBuilderProblemSeverity;
 }
 
 // Types for component tree

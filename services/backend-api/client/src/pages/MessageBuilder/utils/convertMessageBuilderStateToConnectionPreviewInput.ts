@@ -147,7 +147,7 @@ const convertV2ContainerToAPI = (container: ContainerComponent) => ({
 const convertV2RootToPreviewInput = (
   userFeed: UserFeed,
   connection: FeedDiscordChannelConnection,
-  messageComponent: V2MessageComponentRoot
+  messageComponent: V2MessageComponentRoot,
 ): Omit<CreateDiscordChannelConnectionPreviewInput["data"], "article"> => {
   const componentsV2: CreateDiscordChannelConnectionPreviewInput["data"]["componentsV2"] = [];
 
@@ -189,7 +189,7 @@ const convertV2RootToPreviewInput = (
 const convertMessageBuilderStateToConnectionPreviewInput = (
   userFeed: UserFeed,
   connection: FeedDiscordChannelConnection,
-  messageComponent?: MessageComponentRoot
+  messageComponent?: MessageComponentRoot,
 ): Omit<CreateDiscordChannelConnectionPreviewInput["data"], "article"> => {
   if (!messageComponent) {
     return {};
@@ -257,7 +257,7 @@ const convertMessageBuilderStateToConnectionPreviewInput = (
   });
 
   const legacyTextComponent = messageComponent.children.find(
-    (c) => c.type === ComponentType.LegacyText
+    (c) => c.type === ComponentType.LegacyText,
   );
 
   return {

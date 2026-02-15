@@ -17,7 +17,7 @@ export const useConnectionDialogCallbacks = (): UseConnectionDialogCallbacksResu
         }.`,
       });
     },
-    [createSuccessAlert]
+    [createSuccessAlert],
   );
 
   return {

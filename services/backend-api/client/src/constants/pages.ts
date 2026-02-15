@@ -41,7 +41,7 @@ export const pages = {
       connectionType: FeedConnectionType;
       connectionId: string;
     },
-    opts?: { tab?: UserFeedConnectionTabSearchParam }
+    opts?: { tab?: UserFeedConnectionTabSearchParam },
   ) =>
     `/feeds/${data.feedId}${getConnectionPathByType(data.connectionType)}/${data.connectionId}${
       opts?.tab ? opts.tab : ""
