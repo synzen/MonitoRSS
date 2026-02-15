@@ -244,6 +244,10 @@ const UploadProgressView = ({
       };
 
       try {
+        if (!/^https?:\/\//.test(url)) {
+          throw new Error("Invalid feed link. Links must start with http:// or https://");
+        }
+
         const {
           result: { resolvedToUrl },
         } = await createUrlValidation({

@@ -10,7 +10,6 @@ COPY . ./
 
 FROM node:24 AS build-prod
 
-
 ARG VITE_FRESHDESK_WIDGET_ID
 ARG VITE_PADDLE_PW_AUTH
 ARG VITE_SENTRY_DSN
@@ -23,7 +22,6 @@ ARG SENTRY_RELEASE
 WORKDIR /usr/src/app
 COPY --from=build /usr/src/app ./
 
-# Build production files
 ENV SKIP_PREFLIGHT_CHECK=true
 ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN
 ENV VITE_FRESHDESK_WIDGET_ID=$VITE_FRESHDESK_WIDGET_ID
@@ -50,7 +48,6 @@ WORKDIR /usr/src/app
 COPY --from=build-prod /usr/src/app/package*.json ./
 COPY --from=build-prod /usr/src/app/node_modules node_modules
 COPY --from=build-prod /usr/src/app/dist dist
-COPY --from=build-prod /usr/src/app/client/dist client/dist
+COPY --from=build-prod /usr/src/app/client/dist /usr/src/backend-api/client/dist
 
 ENV BACKEND_API_PORT=3000
-

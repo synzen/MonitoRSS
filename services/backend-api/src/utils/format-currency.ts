@@ -1,4 +1,4 @@
-import logger from "./logger";
+import logger from "../infra/logger";
 
 const formattersByCurrency: Record<string, (input: string) => string> = {
   AUD: (input) => `$${input}`,
@@ -23,20 +23,11 @@ const formattersByCurrency: Record<string, (input: string) => string> = {
 
 const ZERO_DECIMAL_CURRENCIES = ["JPY"];
 
-/**
- * Cases to consider:
- *
- * "19"
- * "00"
- * "9"
- */
-
-export const formatCurrency = (input: string, currencyCode: string) => {
+export function formatCurrency(input: string, currencyCode: string): string {
   const formatter = formattersByCurrency[currencyCode];
 
   if (!formatter) {
     logger.error(`No formatter for currency code ${currencyCode}`);
-
     return `${input} ${currencyCode}`;
   }
 
@@ -57,4 +48,4 @@ export const formatCurrency = (input: string, currencyCode: string) => {
   }
 
   return formatter(`${beforeDecimal || "0"}.${afterDecimal.padEnd(2, "0")}`);
-};
+}

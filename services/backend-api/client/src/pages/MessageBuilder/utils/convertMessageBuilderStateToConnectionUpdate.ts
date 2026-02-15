@@ -397,6 +397,14 @@ const convertLegacyRootToConnectionUpdate = (
     details.placeholderLimits = component.placeholderLimits;
   }
 
+  if (component.channelNewThreadTitle !== undefined) {
+    details.channelNewThreadTitle = component.channelNewThreadTitle;
+  }
+
+  if (component.channelNewThreadExcludesPreview !== undefined) {
+    details.channelNewThreadExcludesPreview = component.channelNewThreadExcludesPreview;
+  }
+
   return details;
 };
 
