@@ -1,13 +1,17 @@
-import { NestFactory } from "@nestjs/core";
-import { program } from "commander";
-import { getModelToken } from "@nestjs/mongoose";
-import { AppModule } from "../app.module";
-import logger from "../utils/logger";
-import { Feed, FeedModel } from "../features/feeds/entities/feed.entity";
+import "../infra/dayjs-locales";
+import { Command } from "commander";
+import { loadConfig } from "../config";
+import { createMongoConnection, closeMongoConnection } from "../infra/mongoose";
 import {
-  ConversionDisabledCode,
-  LegacyFeedConversionService,
-} from "../features/legacy-feed-conversion/legacy-feed-conversion.service";
+  createRabbitConnection,
+  closeRabbitConnection,
+} from "../infra/rabbitmq";
+import { createContainer } from "../container";
+import { ConversionDisabledCode } from "../services/legacy-feed-conversion/legacy-feed-conversion.service";
+import logger from "../infra/logger";
+import type { IFeed } from "../repositories/interfaces/feed.types";
+
+const program = new Command();
 
 interface MigrationResult {
   feedId: string;
@@ -32,127 +36,26 @@ program
   .requiredOption("--user <id>", "Discord user ID to own all converted feeds")
   .requiredOption(
     "--guild <ids>",
-    'Comma-separated guild IDs, or "*" for all guilds'
+    'Comma-separated guild IDs, or "*" for all guilds',
   )
   .option("--dry-run", "Preview without database changes", false);
 
-program.parse();
+program.parse(process.argv);
 
-const options = program.opts<{
+const options = program.opts() as {
   user: string;
   guild: string;
   dryRun: boolean;
-}>();
-
-bootstrap();
-
-async function bootstrap() {
-  const summary: MigrationSummary = {
-    totalFeeds: 0,
-    processed: 0,
-    successful: 0,
-    failed: 0,
-    startTime: new Date(),
-    failedFeeds: [],
-  };
-
-  try {
-    logger.info("Starting legacy feed migration script...", {
-      user: options.user,
-      guild: options.guild,
-      dryRun: options.dryRun,
-    });
-
-    const app = await NestFactory.createApplicationContext(AppModule.forRoot());
-    await app.init();
-
-    const feedModel = app.get<FeedModel>(getModelToken(Feed.name));
-    const conversionService = app.get(LegacyFeedConversionService);
-
-    logger.info("Application context initialized");
-
-    const feeds = await getUnconvertedFeeds(feedModel, options.guild);
-    summary.totalFeeds = feeds.length;
-
-    logger.info(`Found ${feeds.length} unconverted legacy feeds`);
-
-    if (feeds.length === 0) {
-      logger.info("No feeds to migrate");
-      printSummary(summary, options.dryRun);
-      await app.close();
-      process.exit(0);
-    }
-
-    for (const feed of feeds) {
-      const result = await processFeed(
-        feed,
-        conversionService,
-        options.user,
-        options.dryRun
-      );
-
-      summary.processed++;
-
-      if (result.success) {
-        summary.successful++;
-      } else {
-        summary.failed++;
-        summary.failedFeeds.push(result);
-      }
-
-      if (summary.processed % 100 === 0) {
-        const progressPercent = (
-          (summary.processed / summary.totalFeeds) *
-          100
-        ).toFixed(1);
-        logger.info(
-          `Progress: ${progressPercent}% (${summary.processed}/${summary.totalFeeds})`
-        );
-      }
-    }
-
-    summary.endTime = new Date();
-    printSummary(summary, options.dryRun);
-
-    await app.close();
-    process.exit(summary.failed > 0 ? 1 : 0);
-  } catch (err) {
-    logger.error("Migration failed", {
-      error: (err as Error).message,
-      stack: (err as Error).stack,
-    });
-    summary.endTime = new Date();
-    printSummary(summary, options.dryRun);
-    process.exit(1);
-  }
-}
-
-async function getUnconvertedFeeds(
-  feedModel: FeedModel,
-  guildOption: string
-): Promise<Feed[]> {
-  const query: Record<string, unknown> = {
-    disabled: {
-      $nin: Object.values(ConversionDisabledCode),
-    },
-  };
-
-  if (guildOption !== "*") {
-    const guildIds = guildOption.split(",").map((id) => id.trim());
-    query.guild = { $in: guildIds };
-  }
-
-  return feedModel.find(query).lean();
-}
+};
 
 async function processFeed(
-  feed: Feed,
-  conversionService: LegacyFeedConversionService,
+  feed: IFeed,
+  container: ReturnType<typeof createContainer>,
   discordUserId: string,
-  dryRun: boolean
+  dryRun: boolean,
 ): Promise<MigrationResult> {
   const result: MigrationResult = {
-    feedId: feed._id.toHexString(),
+    feedId: feed.id,
     guildId: feed.guild,
     url: feed.url,
     title: feed.title,
@@ -161,17 +64,21 @@ async function processFeed(
 
   try {
     if (dryRun) {
-      logger.info(`[DRY-RUN] Would convert feed ${feed._id}`, {
+      await container.legacyFeedConversionService.convertToUserFeed(feed, {
+        discordUserId,
+        doNotSave: true,
+      });
+      logger.info(`[DRY-RUN] Would convert feed ${feed.id}`, {
         title: feed.title,
         url: feed.url,
         guild: feed.guild,
       });
       result.success = true;
     } else {
-      await conversionService.convertToUserFeed(feed, {
+      await container.legacyFeedConversionService.convertToUserFeed(feed, {
         discordUserId,
       });
-      logger.info(`Converted feed ${feed._id}`, {
+      logger.info(`Converted feed ${feed.id}`, {
         title: feed.title,
         url: feed.url,
       });
@@ -180,7 +87,7 @@ async function processFeed(
   } catch (err) {
     const error = err as Error;
     result.error = error.message;
-    logger.error(`Failed to convert feed ${feed._id}`, {
+    logger.error(`Failed to convert feed ${feed.id}`, {
       error: error.message,
       title: feed.title,
       url: feed.url,
@@ -223,10 +130,119 @@ function printSummary(summary: MigrationSummary, dryRun: boolean) {
 
     if (summary.failedFeeds.length > 50) {
       logger.info(
-        `  ... and ${summary.failedFeeds.length - 50} more failed feeds`
+        `  ... and ${summary.failedFeeds.length - 50} more failed feeds`,
       );
     }
   }
 
   logger.info("=".repeat(60) + "\n");
 }
+
+async function main() {
+  const summary: MigrationSummary = {
+    totalFeeds: 0,
+    processed: 0,
+    successful: 0,
+    failed: 0,
+    startTime: new Date(),
+    failedFeeds: [],
+  };
+
+  const config = loadConfig();
+
+  logger.info("Starting legacy feed migration script...", {
+    user: options.user,
+    guild: options.guild,
+    dryRun: options.dryRun,
+  });
+
+  const mongoConnection = await createMongoConnection(
+    config.BACKEND_API_MONGODB_URI,
+  );
+  const rabbitmq = await createRabbitConnection(
+    config.BACKEND_API_RABBITMQ_BROKER_URL,
+  );
+
+  const container = createContainer({
+    config,
+    mongoConnection,
+    rabbitmq,
+  });
+
+  try {
+    logger.info("Application context initialized");
+
+    const guildIds: string[] | "*" =
+      options.guild === "*"
+        ? "*"
+        : options.guild.split(",").map((id: string) => id.trim());
+
+    const feeds = await container.feedRepository.findUnconvertedByGuilds({
+      guildIds,
+      conversionDisabledCodes: Object.values(ConversionDisabledCode),
+    });
+    summary.totalFeeds = feeds.length;
+
+    logger.info(`Found ${feeds.length} unconverted legacy feeds`);
+
+    if (feeds.length === 0) {
+      logger.info("No feeds to migrate");
+      printSummary(summary, options.dryRun);
+      await closeRabbitConnection(rabbitmq);
+      await closeMongoConnection(mongoConnection);
+      process.exit(0);
+    }
+
+    for (const feed of feeds) {
+      const result = await processFeed(
+        feed,
+        container,
+        options.user,
+        options.dryRun,
+      );
+
+      summary.processed++;
+
+      if (result.success) {
+        summary.successful++;
+      } else {
+        summary.failed++;
+        summary.failedFeeds.push(result);
+      }
+
+      if (summary.processed % 100 === 0) {
+        const progressPercent = (
+          (summary.processed / summary.totalFeeds) *
+          100
+        ).toFixed(1);
+        logger.info(
+          `Progress: ${progressPercent}% (${summary.processed}/${summary.totalFeeds})`,
+        );
+      }
+    }
+
+    summary.endTime = new Date();
+    printSummary(summary, options.dryRun);
+
+    await closeRabbitConnection(rabbitmq);
+    await closeMongoConnection(mongoConnection);
+    process.exit(summary.failed > 0 ? 1 : 0);
+  } catch (err) {
+    logger.error("Migration failed", {
+      error: (err as Error).message,
+      stack: (err as Error).stack,
+    });
+    summary.endTime = new Date();
+    printSummary(summary, options.dryRun);
+    await closeRabbitConnection(rabbitmq);
+    await closeMongoConnection(mongoConnection);
+    process.exit(1);
+  }
+}
+
+main().catch((err) => {
+  logger.error("Unhandled error in migration script", {
+    stack: (err as Error).stack,
+  });
+  process.exit(1);
+});

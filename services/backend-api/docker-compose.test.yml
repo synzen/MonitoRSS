@@ -1,0 +1,47 @@
+services:
+  mongo:
+    image: mongo:8.0
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    healthcheck:
+      test: |
+        mongosh --quiet --eval "
+          try {
+            rs.status().ok
+          } catch(e) {
+            rs.initiate({_id:'rs0', members:[{_id:0, host:'localhost:27017'}]});
+            rs.status().ok
+          }
+        " || exit 1
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+    tmpfs: /data/db
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    tmpfs: /var/lib/rabbitmq
+
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      mongo:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      BACKEND_API_MONGODB_URI: mongodb://mongo:27017/backendapi_test?replicaSet=rs0&directConnection=true
+      BACKEND_API_RABBITMQ_BROKER_URL: amqp://guest:guest@rabbitmq:5672
+      BACKEND_API_SESSION_SECRET: test-secret-key-that-is-at-least-32-bytes-long
+      NODE_ENV: test
+    volumes:
+      - ./src:/app/src
+      - ./test:/app/test
+    command: bash -c "shopt -s globstar; ${TEST_COMMAND:-node --import tsx --test --test-concurrency=1 test/**/*.api.test.ts}"

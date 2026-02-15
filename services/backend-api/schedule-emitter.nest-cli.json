@@ -1,9 +1,0 @@
-{
-  "collection": "@nestjs/schematics",
-  "sourceRoot": "src",
-  "entryFile": "scripts/schedule-emitter",
-  "compilerOptions": {
-    "assets": ["**/*.proto"],
-    "watchAssets": true
-  }
-}

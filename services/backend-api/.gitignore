@@ -36,3 +36,9 @@ lerna-debug.log*
 
 .env*
 deploy*.sh
+
+# Playwright E2E testing
+e2e/auth.json
+e2e/config.json
+e2e/test-results/
+playwright-report/

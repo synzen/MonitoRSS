@@ -1,9 +1,0 @@
-{
-  "collection": "@nestjs/schematics",
-  "sourceRoot": "src",
-  "entryFile": "scripts/enforce-limits",
-  "compilerOptions": {
-    "assets": ["**/*.proto"],
-    "watchAssets": true
-  }
-}
