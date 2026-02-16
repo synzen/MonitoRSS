@@ -1081,6 +1081,7 @@ export class UserFeedsService {
     if (finalUrl !== url) {
       return {
         resolvedToUrl: finalUrl,
+        feedTitle,
       };
     }
 
