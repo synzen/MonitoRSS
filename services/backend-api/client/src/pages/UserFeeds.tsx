@@ -11,7 +11,6 @@ import {
   AlertIcon,
   AlertTitle,
   AlertDescription,
-  Center,
   Menu,
   MenuButton,
   MenuList,
@@ -20,18 +19,22 @@ import {
   IconButton,
   Portal,
 } from "@chakra-ui/react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AddIcon, ChevronDownIcon, DeleteIcon } from "@chakra-ui/icons";
-import { useCallback, useContext, useEffect, useState } from "react";
-import { FaCopy, FaRegNewspaper } from "react-icons/fa6";
+import { AddIcon, CheckCircleIcon, ChevronDownIcon, DeleteIcon } from "@chakra-ui/icons";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { FaCopy } from "react-icons/fa6";
 import { FaPause, FaPlay } from "react-icons/fa";
 import { IoDuplicate } from "react-icons/io5";
-import { useUserMe } from "../features/discordUser";
+import { useUserMe, useDiscordUserMe } from "../features/discordUser";
 import {
-  AddUserFeedDialog,
+  BrowseFeedsModal,
+  CategoryGrid,
   CloneUserFeedDialog,
+  FeedDiscoverySearch,
   FeedManagementInvitesDialog,
+  useCreateUserFeed,
+  useCuratedFeeds,
   useDeleteUserFeeds,
   useDisableUserFeeds,
   useEnableUserFeeds,
@@ -41,6 +44,10 @@ import {
   useUserFeedManagementInvitesCount,
   useUserFeeds,
 } from "../features/feed";
+import type { FeedActionState } from "../features/feed";
+import { CuratedFeed } from "../features/feed/constants/curatedFeedData";
+import { ApiErrorCode } from "../utils/getStandardErrorCodeMessage copy";
+import ApiAdapterError from "../utils/ApiAdapterError";
 import { pages } from "../constants";
 import { BoxConstrained, ConfirmModal } from "../components";
 import { UserFeedStatusFilterContext } from "../contexts";
@@ -93,7 +100,6 @@ const CopyUserFeedSettingsMenuItem = ({
 
 const UserFeedsInner: React.FC = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { state } = useLocation();
   const { data: userMeData } = useUserMe();
   const { data: userFeedsRequireAttentionResults } = useUserFeeds({
@@ -114,6 +120,19 @@ const UserFeedsInner: React.FC = () => {
   const { mutateAsync: disableUserFeeds } = useDisableUserFeeds();
   const { mutateAsync: deleteUserFeeds } = useDeleteUserFeeds();
   const { createSuccessAlert, createErrorAlert, createInfoAlert } = usePageAlertContext();
+  const { data: discordUserMe } = useDiscordUserMe();
+  const { mutateAsync: createUserFeed } = useCreateUserFeed();
+  const { data: curatedData, getCategoryPreviewText } = useCuratedFeeds();
+
+  const [isInDiscoveryMode, setIsInDiscoveryMode] = useState<boolean | null>(null);
+  const [feedActionStates, setFeedActionStates] = useState<Record<string, FeedActionState>>({});
+  const [isBrowseModalOpen, setIsBrowseModalOpen] = useState(false);
+  const [browseModalInitialCategory, setBrowseModalInitialCategory] = useState<
+    string | undefined
+  >();
+  const [isSearchActive, setIsSearchActive] = useState(false);
+  const [modalSessionAddCount, setModalSessionAddCount] = useState(0);
+
   const totalFeedCount = userFeedsResults?.total;
   const navigatedAlertTitle = state?.alertTitle;
 
@@ -124,6 +143,94 @@ const UserFeedsInner: React.FC = () => {
       });
     }
   }, [navigatedAlertTitle]);
+
+  useEffect(() => {
+    if (isInDiscoveryMode === null && userFeedsResults) {
+      setIsInDiscoveryMode(userFeedsResults.total === 0);
+    } else if (isInDiscoveryMode === false && userFeedsResults && userFeedsResults.total === 0) {
+      setIsInDiscoveryMode(true);
+      setFeedActionStates({});
+    }
+  }, [userFeedsResults, isInDiscoveryMode]);
+
+  const isAtLimit = !!(
+    userFeedsResults &&
+    discordUserMe &&
+    userFeedsResults.total >= discordUserMe.maxUserFeeds
+  );
+
+  const addedFeedUrls = useMemo(
+    () =>
+      Object.entries(feedActionStates)
+        .filter(([, s]) => s.status === "added")
+        .map(([url]) => url),
+    [feedActionStates]
+  );
+
+  const handleCuratedFeedAdd = useCallback(
+    async (feed: CuratedFeed) => {
+      setFeedActionStates((prev) => ({ ...prev, [feed.url]: { status: "adding" } }));
+      try {
+        const { result } = await createUserFeed({ details: { url: feed.url } });
+        setFeedActionStates((prev) => ({
+          ...prev,
+          [feed.url]: { status: "added", settingsUrl: pages.userFeed(result.id) },
+        }));
+        setModalSessionAddCount((prev) => prev + 1);
+      } catch (err) {
+        const apiError = err as ApiAdapterError;
+        if (apiError.errorCode === ApiErrorCode.FEED_LIMIT_REACHED) {
+          setFeedActionStates((prev) => ({ ...prev, [feed.url]: { status: "limit-reached" } }));
+        } else {
+          setFeedActionStates((prev) => ({
+            ...prev,
+            [feed.url]: {
+              status: "error",
+              message: apiError.message,
+              errorCode: apiError.errorCode,
+            },
+          }));
+        }
+      }
+    },
+    [createUserFeed]
+  );
+
+  const handleUrlFeedAdded = useCallback((_feedId: string, feedUrl: string) => {
+    setFeedActionStates((prev) => ({
+      ...prev,
+      [feedUrl]: { status: "added", settingsUrl: pages.userFeed(_feedId) },
+    }));
+    setModalSessionAddCount((prev) => prev + 1);
+  }, []);
+
+  const handleExitDiscovery = useCallback(() => {
+    setIsInDiscoveryMode(false);
+    createSuccessAlert({
+      title: `${addedFeedUrls.length} feed${addedFeedUrls.length !== 1 ? "s" : ""} added`,
+      description: "Click a feed to set up where articles are delivered.",
+    });
+  }, [addedFeedUrls.length, createSuccessAlert]);
+
+  const handleSearchChange = useCallback((query: string) => {
+    setIsSearchActive(query.length > 0);
+  }, []);
+
+  const handleBrowseModalClose = useCallback(() => {
+    setIsBrowseModalOpen(false);
+    if (!isInDiscoveryMode && modalSessionAddCount > 0) {
+      createSuccessAlert({
+        title: `${modalSessionAddCount} feed${modalSessionAddCount !== 1 ? "s" : ""} added`,
+        description: "Click a feed to set up where articles are delivered.",
+      });
+    }
+  }, [modalSessionAddCount, createSuccessAlert, isInDiscoveryMode]);
+
+  const handleOpenBrowseModal = useCallback((categoryId?: string) => {
+    setBrowseModalInitialCategory(categoryId);
+    setModalSessionAddCount(0);
+    setIsBrowseModalOpen(true);
+  }, []);
 
   const onApplyRequiresAttentionFilters = useCallback(() => {
     if (
@@ -283,159 +390,226 @@ const UserFeedsInner: React.FC = () => {
             </HStack>
           </Alert>
         </Stack>
-        <Flex alignItems="center" justifyContent="space-between" gap="4" flexWrap="wrap">
-          <Flex alignItems="center" gap={4}>
-            <Heading as="h1" size="lg" tabIndex={-1}>
-              {t("pages.userFeeds.title")}{" "}
-              <span>
-                {totalFeedCount !== undefined &&
-                  selectedFeeds.length > 0 &&
-                  `(${selectedFeeds.length}/${totalFeedCount})`}
-              </span>
-              <span>
-                {totalFeedCount !== undefined && !selectedFeeds.length && `(${totalFeedCount})`}
-              </span>
-            </Heading>
-          </Flex>
-          <HStack flexWrap="wrap">
-            <Menu>
-              <MenuButton
-                as={Button}
-                rightIcon={<ChevronDownIcon />}
-                variant="outline"
-                // isDisabled={selectedFeeds.length === 0}
-              >
-                Feed Actions
-              </MenuButton>
-              <MenuList zIndex={2}>
-                <ConfirmModal
-                  trigger={
-                    <MenuItem
-                      isDisabled={
-                        !selectedFeeds.length ||
-                        !selectedFeeds.some((f) => f.disabledCode === UserFeedDisabledCode.Manual)
+        {!isInDiscoveryMode && (
+          <>
+            <Flex alignItems="center" justifyContent="space-between" gap="4" flexWrap="wrap">
+              <Flex alignItems="center" gap={4}>
+                <Heading as="h1" size="lg" tabIndex={-1}>
+                  {t("pages.userFeeds.title")}{" "}
+                  <span>
+                    {totalFeedCount !== undefined &&
+                      selectedFeeds.length > 0 &&
+                      `(${selectedFeeds.length}/${totalFeedCount})`}
+                  </span>
+                  <span>
+                    {totalFeedCount !== undefined && !selectedFeeds.length && `(${totalFeedCount})`}
+                  </span>
+                </Heading>
+              </Flex>
+              <HStack flexWrap="wrap">
+                <Menu>
+                  <MenuButton
+                    as={Button}
+                    rightIcon={<ChevronDownIcon />}
+                    variant="outline"
+                    // isDisabled={selectedFeeds.length === 0}
+                  >
+                    Feed Actions
+                  </MenuButton>
+                  <MenuList zIndex={2}>
+                    <ConfirmModal
+                      trigger={
+                        <MenuItem
+                          isDisabled={
+                            !selectedFeeds.length ||
+                            !selectedFeeds.some(
+                              (f) => f.disabledCode === UserFeedDisabledCode.Manual
+                            )
+                          }
+                          icon={<FaPlay />}
+                        >
+                          Enable
+                        </MenuItem>
                       }
-                      icon={<FaPlay />}
-                    >
-                      Enable
-                    </MenuItem>
-                  }
-                  title={`Are you sure you want to enable ${selectedFeeds.length} feed(s)?`}
-                  description="Only feeds that were manually disabled will be enabled."
-                  onConfirm={onEnableSelectedFeeds}
-                  colorScheme="blue"
-                />
-                <ConfirmModal
-                  trigger={
-                    <MenuItem
-                      isDisabled={
-                        !selectedFeeds.length ||
-                        selectedFeeds.every(
-                          (r) =>
-                            !!r.disabledCode &&
-                            r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit,
-                        )
+                      title={`Are you sure you want to enable ${selectedFeeds.length} feed(s)?`}
+                      description="Only feeds that were manually disabled will be enabled."
+                      onConfirm={onEnableSelectedFeeds}
+                      colorScheme="blue"
+                    />
+                    <ConfirmModal
+                      trigger={
+                        <MenuItem
+                          isDisabled={
+                            !selectedFeeds.length ||
+                            selectedFeeds.every(
+                              (r) =>
+                                !!r.disabledCode &&
+                                r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit
+                            )
+                          }
+                          icon={<FaPause />}
+                        >
+                          Disable
+                        </MenuItem>
                       }
-                      icon={<FaPause />}
-                    >
-                      Disable
-                    </MenuItem>
-                  }
-                  title={`Are you sure you want to disable ${selectedFeeds.length} feed(s)?`}
-                  description="Only feeds that are not currently disabled will be affected."
-                  onConfirm={onDisableSelectedFeeds}
-                  colorScheme="blue"
-                />
-                <CloneUserFeedDialog
-                  feedId={selectedFeeds[0]?.id}
-                  trigger={
-                    <MenuItem isDisabled={selectedFeeds.length !== 1} icon={<IoDuplicate />}>
-                      Clone
-                    </MenuItem>
-                  }
-                  defaultValues={{
-                    title: `${selectedFeeds[0]?.title} (Clone)`,
-                    url: selectedFeeds[0]?.url,
-                  }}
-                />
-                <CopyUserFeedSettingsMenuItem
-                  selectedFeedId={selectedFeeds.length === 1 ? selectedFeeds[0]?.id : undefined}
-                  onSuccess={() => {
-                    clearSelection();
-                  }}
-                />
-                <MenuDivider />
-                <ConfirmModal
-                  trigger={
-                    <MenuItem
-                      icon={<DeleteIcon color="red.200" />}
-                      isDisabled={!selectedFeeds.length}
-                    >
-                      <Text color="red.200">Delete</Text>
-                    </MenuItem>
-                  }
-                  title={`Are you sure you want to delete ${selectedFeeds.length} feed(s)?`}
-                  description="This action cannot be undone."
-                  onConfirm={onDeleteSelectedFeeds}
-                  colorScheme="red"
-                  okText={t("common.buttons.delete")}
-                />
-              </MenuList>
-            </Menu>
-            <HStack gap={1}>
-              <AddUserFeedDialog
-                trigger={
-                  <Button colorScheme="blue" leftIcon={<AddIcon />} borderRightRadius={0}>
+                      title={`Are you sure you want to disable ${selectedFeeds.length} feed(s)?`}
+                      description="Only feeds that are not currently disabled will be affected."
+                      onConfirm={onDisableSelectedFeeds}
+                      colorScheme="blue"
+                    />
+                    <CloneUserFeedDialog
+                      feedId={selectedFeeds[0]?.id}
+                      trigger={
+                        <MenuItem isDisabled={selectedFeeds.length !== 1} icon={<IoDuplicate />}>
+                          Clone
+                        </MenuItem>
+                      }
+                      defaultValues={{
+                        title: `${selectedFeeds[0]?.title} (Clone)`,
+                        url: selectedFeeds[0]?.url,
+                      }}
+                    />
+                    <CopyUserFeedSettingsMenuItem
+                      selectedFeedId={selectedFeeds.length === 1 ? selectedFeeds[0]?.id : undefined}
+                      onSuccess={() => {
+                        clearSelection();
+                      }}
+                    />
+                    <MenuDivider />
+                    <ConfirmModal
+                      trigger={
+                        <MenuItem
+                          icon={<DeleteIcon color="red.200" />}
+                          isDisabled={!selectedFeeds.length}
+                        >
+                          <Text color="red.200">Delete</Text>
+                        </MenuItem>
+                      }
+                      title={`Are you sure you want to delete ${selectedFeeds.length} feed(s)?`}
+                      description="This action cannot be undone."
+                      onConfirm={onDeleteSelectedFeeds}
+                      colorScheme="red"
+                      okText={t("common.buttons.delete")}
+                    />
+                  </MenuList>
+                </Menu>
+                <HStack gap={1}>
+                  <Button
+                    colorScheme="blue"
+                    leftIcon={<AddIcon />}
+                    borderRightRadius={0}
+                    onClick={() => handleOpenBrowseModal(undefined)}
+                  >
                     Add Feed
                   </Button>
-                }
-              />
-              <Menu>
-                <MenuButton
-                  as={IconButton}
-                  colorScheme="blue"
-                  icon={<ChevronDownIcon fontSize={24} />}
-                  aria-label="Additional add feed options"
-                  borderLeftRadius={0}
-                />
-                <MenuList>
-                  <MenuItem icon={<AddIcon />} as={Link} to={pages.addFeeds()}>
-                    Add multiple feeds
-                  </MenuItem>
-                </MenuList>
-              </Menu>
-            </HStack>
-          </HStack>
-        </Flex>
-        <HStack spacing={6}>
-          <Text>
-            Every feed represents a news source that you can subscribe to. After adding a feed, you
-            may then specify where you want articles for that feed to be sent to.
-          </Text>
-        </HStack>
-      </Stack>
-      {userFeedsResults?.total === 0 && (
-        <Center>
-          <Stack spacing={6}>
-            <Stack alignItems="center">
-              <Box p={12} rounded="full" bg="gray.700" opacity={0.3}>
-                <FaRegNewspaper fontSize={128} />
-              </Box>
-              <Text fontSize={24} fontWeight="semibold">
-                You don&apos;t have any feeds yet
+                  <Menu>
+                    <MenuButton
+                      as={IconButton}
+                      colorScheme="blue"
+                      icon={<ChevronDownIcon fontSize={24} />}
+                      aria-label="Additional add feed options"
+                      borderLeftRadius={0}
+                    />
+                    <MenuList>
+                      <MenuItem icon={<AddIcon />} as={Link} to={pages.addFeeds()}>
+                        Add multiple feeds
+                      </MenuItem>
+                    </MenuList>
+                  </Menu>
+                </HStack>
+              </HStack>
+            </Flex>
+            <HStack spacing={6}>
+              <Text>
+                Every feed represents a news source that you can subscribe to. After adding a feed,
+                you may then specify where you want articles for that feed to be sent to.
               </Text>
+            </HStack>
+          </>
+        )}
+      </Stack>
+      {isInDiscoveryMode && (
+        <>
+          <Box>
+            <Stack spacing={6} py={8}>
+              <Stack textAlign="center" spacing={2} role="status" aria-live="polite">
+                {addedFeedUrls.length > 0 ? (
+                  <Stack
+                    textAlign="center"
+                    spacing={3}
+                    bg="gray.800"
+                    borderWidth="1px"
+                    borderColor="whiteAlpha.200"
+                    borderRadius="md"
+                    p={6}
+                    alignItems="center"
+                  >
+                    <CheckCircleIcon color="green.400" boxSize={8} aria-hidden="true" />
+                    <Heading as="h2" size="lg">
+                      {addedFeedUrls.length} feed{addedFeedUrls.length !== 1 ? "s" : ""} added!
+                    </Heading>
+                    <Text color="gray.400">
+                      Add more feeds below, or view your feeds to set up delivery.
+                    </Text>
+                    <Box>
+                      <Button colorScheme="blue" size="sm" onClick={handleExitDiscovery}>
+                        View your feeds{" "}
+                        <Box as="span" aria-hidden="true">
+                          &rarr;
+                        </Box>
+                      </Button>
+                    </Box>
+                  </Stack>
+                ) : (
+                  <>
+                    <Heading as="h2" size="lg">
+                      Get news delivered to your Discord
+                    </Heading>
+                    <Text color="gray.400">
+                      Browse popular feeds to get started, or paste any URL
+                    </Text>
+                  </>
+                )}
+              </Stack>
+
+              <Stack spacing={2}>
+                <FeedDiscoverySearch
+                  feedActionStates={feedActionStates}
+                  isAtLimit={isAtLimit}
+                  onAdd={handleCuratedFeedAdd}
+                  onSearchChange={handleSearchChange}
+                  onFeedAdded={handleUrlFeedAdded}
+                />
+                {!isSearchActive && (
+                  <Text color="gray.400" fontSize="xs" textAlign="center">
+                    Tip: Paste a YouTube channel, subreddit, or any website URL and we&apos;ll find
+                    the feed automatically
+                  </Text>
+                )}
+              </Stack>
+
+              {!isSearchActive && (
+                <CategoryGrid
+                  categories={curatedData.categories}
+                  totalFeedCount={curatedData.feeds.length}
+                  getCategoryPreviewText={getCategoryPreviewText}
+                  onSelectCategory={handleOpenBrowseModal}
+                />
+              )}
             </Stack>
-            <AddUserFeedDialog
-              trigger={
-                <Button colorScheme="blue" leftIcon={<AddIcon fontSize={12} />}>
-                  Add a new feed
-                </Button>
-              }
-            />
-          </Stack>
-        </Center>
+          </Box>
+        </>
       )}
-      {userFeedsResults && userFeedsResults.total > 0 ? <UserFeedsTable /> : null}
+      {isInDiscoveryMode === false && <UserFeedsTable />}
+      <BrowseFeedsModal
+        isOpen={isBrowseModalOpen}
+        onClose={handleBrowseModalClose}
+        initialCategory={browseModalInitialCategory}
+        feedActionStates={feedActionStates}
+        isAtLimit={isAtLimit}
+        onAdd={handleCuratedFeedAdd}
+        onFeedAdded={handleUrlFeedAdded}
+      />
     </>
   );
 };
