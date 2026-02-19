@@ -45,6 +45,7 @@ interface FeedCardProps {
   feedSettingsUrl?: string;
   previewEnabled?: boolean;
   previewOpen?: boolean;
+  hideActions?: boolean;
   borderless?: boolean;
   searchQuery?: string;
 }
@@ -62,6 +63,7 @@ export const FeedCard = ({
   feedSettingsUrl,
   previewEnabled = false,
   previewOpen = false,
+  hideActions = false,
   borderless = false,
   searchQuery,
 }: FeedCardProps) => {
@@ -259,48 +261,50 @@ export const FeedCard = ({
           )}
         </Box>
 
-        <Box flexShrink={0}>
-          {state === "default" && (
-            <Button size="sm" onClick={onAdd} aria-label={`Add ${feed.title} feed`}>
-              + Add
-            </Button>
-          )}
-          {state === "adding" && (
-            <Button
-              size="sm"
-              aria-label={`Adding ${feed.title} feed...`}
-              aria-disabled="true"
-              onClick={(e) => e.preventDefault()}
-            >
-              <Spinner size="xs" />
-            </Button>
-          )}
-          {state === "added" && (
-            <Button
-              size="sm"
-              aria-label={`${feed.title} feed added`}
-              aria-disabled="true"
-              onClick={(e) => e.preventDefault()}
-            >
-              Added <CheckIcon ml={1} aria-hidden="true" />
-            </Button>
-          )}
-          {state === "error" && (
-            <Button size="sm" onClick={onAdd} aria-describedby={errorId}>
-              Retry
-            </Button>
-          )}
-          {state === "limit-reached" && (
-            <Button
-              size="sm"
-              aria-label={`Add ${feed.title} feed, disabled, feed limit reached`}
-              aria-disabled="true"
-              onClick={(e) => e.preventDefault()}
-            >
-              + Add
-            </Button>
-          )}
-        </Box>
+        {!hideActions && (
+          <Box flexShrink={0}>
+            {state === "default" && (
+              <Button size="sm" onClick={onAdd} aria-label={`Add ${feed.title} feed`}>
+                + Add
+              </Button>
+            )}
+            {state === "adding" && (
+              <Button
+                size="sm"
+                aria-label={`Adding ${feed.title} feed...`}
+                aria-disabled="true"
+                onClick={(e) => e.preventDefault()}
+              >
+                <Spinner size="xs" />
+              </Button>
+            )}
+            {state === "added" && (
+              <Button
+                size="sm"
+                aria-label={`${feed.title} feed added`}
+                aria-disabled="true"
+                onClick={(e) => e.preventDefault()}
+              >
+                Added <CheckIcon ml={1} aria-hidden="true" />
+              </Button>
+            )}
+            {state === "error" && (
+              <Button size="sm" onClick={onAdd} aria-describedby={errorId}>
+                Retry
+              </Button>
+            )}
+            {state === "limit-reached" && (
+              <Button
+                size="sm"
+                aria-label={`Add ${feed.title} feed, disabled, feed limit reached`}
+                aria-disabled="true"
+                onClick={(e) => e.preventDefault()}
+              >
+                + Add
+              </Button>
+            )}
+          </Box>
+        )}
       </HStack>
 
       {state === "error" && (

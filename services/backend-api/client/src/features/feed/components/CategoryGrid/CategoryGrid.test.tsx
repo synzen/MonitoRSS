@@ -25,7 +25,7 @@ const renderGrid = (overrides = {}) => {
   const result = render(
     <ChakraProvider>
       <CategoryGrid {...props} />
-    </ChakraProvider>,
+    </ChakraProvider>
   );
 
   return { user, ...result };
@@ -120,7 +120,7 @@ describe("CategoryGrid", () => {
     const onSelectCategory = vi.fn();
     const { user } = renderGrid({ onSelectCategory });
 
-    await user.click(screen.getByText("Browse All").closest("[role='radio']")!);
+    await user.click(screen.getByText("Browse All Categories").closest("[role='radio']")!);
 
     expect(onSelectCategory).toHaveBeenCalledWith(undefined);
   });
@@ -128,6 +128,6 @@ describe("CategoryGrid", () => {
   it("shows total feed count in Browse All card", () => {
     renderGrid({ totalFeedCount: 123 });
 
-    expect(screen.getByText(/See all 123 feeds/)).toBeInTheDocument();
+    expect(screen.getByText(/123 popular feeds to explore/)).toBeInTheDocument();
   });
 });

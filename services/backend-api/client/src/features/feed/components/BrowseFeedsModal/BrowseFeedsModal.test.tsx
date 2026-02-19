@@ -424,21 +424,15 @@ describe("BrowseFeedsModal", () => {
     });
   });
 
-  describe("DOM tab order", () => {
-    it("card Add buttons appear before See all buttons in highlights", () => {
+  describe("Highlights view accessibility", () => {
+    it("highlights view cards have no Add buttons", () => {
       renderModal();
 
       const allButtons = screen.getAllByRole("button");
-      const firstAddBtn = allButtons.find((btn) => btn.textContent?.includes("+ Add"));
-      const firstSeeAll = allButtons.find((btn) =>
-        btn.getAttribute("aria-label")?.includes("See all")
+      const addButtons = allButtons.filter((btn) =>
+        btn.getAttribute("aria-label")?.match(/^Add .* feed$/)
       );
-
-      if (firstAddBtn && firstSeeAll) {
-        const addIndex = allButtons.indexOf(firstAddBtn);
-        const seeAllIndex = allButtons.indexOf(firstSeeAll);
-        expect(addIndex).toBeLessThan(seeAllIndex);
-      }
+      expect(addButtons).toHaveLength(0);
     });
   });
 
@@ -515,8 +509,10 @@ describe("BrowseFeedsModal", () => {
       }
     });
 
-    it("at limit: all Add buttons become disabled", () => {
-      renderModal({ isAtLimit: true });
+    it("at limit: all Add buttons become disabled in category view", async () => {
+      const { user } = renderModal({ isAtLimit: true });
+
+      await user.click(screen.getByRole("radio", { name: /Gaming/ }));
 
       const disabledButtons = screen.getAllByRole("button", {
         name: /add .* feed, disabled, feed limit reached/i,
@@ -530,11 +526,13 @@ describe("BrowseFeedsModal", () => {
   });
 
   describe("Feed add flow", () => {
-    it("clicking Add calls onAdd with feed object", async () => {
+    it("clicking Add calls onAdd with feed object in category view", async () => {
       const onAdd = vi.fn();
       const { user } = renderModal({ onAdd });
 
-      const firstFeed = allHighlightFeeds[0];
+      await user.click(screen.getByRole("radio", { name: /Gaming/ }));
+
+      const firstFeed = allHighlightFeeds.find((f) => f.category === "gaming")!;
       await user.click(screen.getByRole("button", { name: `Add ${firstFeed.title} feed` }));
 
       expect(onAdd).toHaveBeenCalledTimes(1);
@@ -543,10 +541,11 @@ describe("BrowseFeedsModal", () => {
       );
     });
 
-    it("adding state shows spinner on card", () => {
-      const firstFeed = allHighlightFeeds[0];
-      renderModal({
+    it("adding state shows spinner on card in category view", async () => {
+      const firstFeed = allHighlightFeeds.find((f) => f.category === "gaming")!;
+      const { user } = renderModal({
         feedActionStates: { [firstFeed.url]: { status: "adding" } },
+        initialCategory: "gaming",
       });
 
       const addingButton = screen.getByRole("button", {
@@ -556,10 +555,11 @@ describe("BrowseFeedsModal", () => {
       expect(addingButton).toHaveAttribute("aria-disabled", "true");
     });
 
-    it("added state shows checkmark on card", () => {
-      const firstFeed = allHighlightFeeds[0];
+    it("added state shows checkmark on card in category view", () => {
+      const firstFeed = allHighlightFeeds.find((f) => f.category === "gaming")!;
       renderModal({
         feedActionStates: { [firstFeed.url]: { status: "added", settingsUrl: "/feeds/1" } },
+        initialCategory: "gaming",
       });
 
       const addedButton = screen.getByRole("button", {
@@ -568,11 +568,12 @@ describe("BrowseFeedsModal", () => {
       expect(addedButton).toBeInTheDocument();
     });
 
-    it("error state shows error message and Retry button", async () => {
+    it("error state shows error message and Retry button in category view", async () => {
       const onAdd = vi.fn();
-      const firstFeed = allHighlightFeeds[0];
+      const firstFeed = allHighlightFeeds.find((f) => f.category === "gaming")!;
       const { user } = renderModal({
         onAdd,
+        initialCategory: "gaming",
         feedActionStates: {
           [firstFeed.url]: { status: "error", message: "Network error" },
         },
@@ -592,6 +593,7 @@ describe("BrowseFeedsModal", () => {
       const gamingFeed = allHighlightFeeds.find((f) => f.category === "gaming")!;
       const { user } = renderModal({
         feedActionStates: { [gamingFeed.url]: { status: "added", settingsUrl: "/feeds/1" } },
+        initialCategory: "gaming",
       });
 
       expect(
@@ -599,20 +601,20 @@ describe("BrowseFeedsModal", () => {
       ).toBeInTheDocument();
 
       await user.click(screen.getByRole("radio", { name: /Anime/ }));
-      await user.click(screen.getByRole("radio", { name: /All/ }));
+      await user.click(screen.getByRole("radio", { name: /Gaming/ }));
 
       expect(
         screen.getByRole("button", { name: `${gamingFeed.title} feed added` })
       ).toBeInTheDocument();
     });
 
-    it("re-opening modal preserves Added states", () => {
-      const firstFeed = allHighlightFeeds[0];
+    it("re-opening modal preserves Added states in category view", () => {
+      const firstFeed = allHighlightFeeds.find((f) => f.category === "gaming")!;
       const feedActionStates = {
         [firstFeed.url]: { status: "added" as const, settingsUrl: "/feeds/1" },
       };
 
-      const { rerender } = renderModal({ feedActionStates });
+      const { rerender } = renderModal({ feedActionStates, initialCategory: "gaming" });
 
       expect(
         screen.getByRole("button", { name: `${firstFeed.title} feed added` })
@@ -625,6 +627,7 @@ describe("BrowseFeedsModal", () => {
               <BrowseFeedsModal
                 {...defaultProps}
                 feedActionStates={feedActionStates}
+                initialCategory="gaming"
                 isOpen={false}
               />
             </PricingDialogContext.Provider>
@@ -639,6 +642,7 @@ describe("BrowseFeedsModal", () => {
               <BrowseFeedsModal
                 {...defaultProps}
                 feedActionStates={feedActionStates}
+                initialCategory="gaming"
                 isOpen={true}
               />
             </PricingDialogContext.Provider>

@@ -49,7 +49,7 @@ test.describe("Feed Discovery", () => {
       ).toBeVisible({ timeout: 15000 });
 
       await expect(
-        page.getByText("Browse popular feeds to get started, or paste any URL"),
+        page.getByText("Browse popular feeds to get started, or paste a URL to check any website"),
       ).toBeVisible();
 
       await expect(

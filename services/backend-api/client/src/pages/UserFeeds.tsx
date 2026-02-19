@@ -172,7 +172,7 @@ const UserFeedsInner: React.FC = () => {
       Object.entries(feedActionStates)
         .filter(([, s]) => s.status === "added")
         .map(([url]) => url),
-    [feedActionStates],
+    [feedActionStates]
   );
 
   const handleCuratedFeedAdd = useCallback(
@@ -201,7 +201,7 @@ const UserFeedsInner: React.FC = () => {
         }
       }
     },
-    [createUserFeed],
+    [createUserFeed]
   );
 
   const handleUrlFeedAdded = useCallback((_feedId: string, feedUrl: string) => {
@@ -431,7 +431,7 @@ const UserFeedsInner: React.FC = () => {
                           isDisabled={
                             !selectedFeeds.length ||
                             !selectedFeeds.some(
-                              (f) => f.disabledCode === UserFeedDisabledCode.Manual,
+                              (f) => f.disabledCode === UserFeedDisabledCode.Manual
                             )
                           }
                           icon={<FaPlay />}
@@ -452,7 +452,7 @@ const UserFeedsInner: React.FC = () => {
                             selectedFeeds.every(
                               (r) =>
                                 !!r.disabledCode &&
-                                r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit,
+                                r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit
                             )
                           }
                           icon={<FaPause />}
@@ -574,7 +574,7 @@ const UserFeedsInner: React.FC = () => {
                       Get news delivered to your Discord
                     </Heading>
                     <Text color="gray.400">
-                      Browse popular feeds to get started, or paste any URL
+                      Browse popular feeds to get started, or paste a URL to check any website
                     </Text>
                   </>
                 )}
@@ -589,9 +589,9 @@ const UserFeedsInner: React.FC = () => {
                   onFeedAdded={handleUrlFeedAdded}
                 />
                 {!isSearchActive && (
-                  <Text color="gray.400" fontSize="xs" textAlign="center">
-                    Tip: Paste a YouTube channel, subreddit, or any website URL and we&apos;ll find
-                    the feed automatically
+                  <Text color="gray.400" fontSize="sm" textAlign="center">
+                    Many websites support feeds — try pasting a YouTube channel, subreddit, blog, or
+                    news site URL
                   </Text>
                 )}
               </Stack>

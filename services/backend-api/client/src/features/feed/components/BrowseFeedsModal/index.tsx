@@ -55,6 +55,7 @@ export const BrowseFeedsModal = ({
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const modalBodyRef = useRef<HTMLDivElement>(null);
   const prevIsOpenRef = useRef(false);
 
   // Reset state during render (not in useEffect) to avoid a flash of stale state on open
@@ -92,6 +93,10 @@ export const BrowseFeedsModal = ({
     }
   }, [isOpen]);
 
+  const scrollModalBodyToTop = () => {
+    modalBodyRef.current?.scrollTo(0, 0);
+  };
+
   const handleCategorySelect = (categoryId: string | undefined) => {
     if (isSearchActive) {
       searchState.handleClear();
@@ -100,6 +105,7 @@ export const BrowseFeedsModal = ({
 
     setSelectedCategory(categoryId);
     setVisibleCount(BATCH_SIZE);
+    scrollModalBodyToTop();
   };
 
   const handleShowMore = () => {
@@ -133,6 +139,7 @@ export const BrowseFeedsModal = ({
 
     setSelectedCategory(categoryId);
     setVisibleCount(BATCH_SIZE);
+    scrollModalBodyToTop();
   };
 
   const highlights = getHighlightFeeds();
@@ -148,10 +155,14 @@ export const BrowseFeedsModal = ({
       <ModalContent>
         <ModalHeader as="h2">Add a Feed</ModalHeader>
         <ModalCloseButton />
-        <ModalBody pb={6} overflowY="auto" maxH="70vh">
+        <ModalBody ref={modalBodyRef} pb={6} overflowY="auto" maxH="70vh">
           <Stack spacing={4}>
             <FeedLimitBar />
             <FeedDiscoverySearchInput state={searchState} />
+            <Text fontSize="sm" color="gray.400">
+              Don&apos;t see what you&apos;re looking for? Try pasting a website URL above — many
+              sites have feeds we can detect.
+            </Text>
             <Box as="nav" aria-label="Feed categories">
               <CategoryPills
                 categories={data?.categories ?? []}
@@ -236,6 +247,7 @@ export const BrowseFeedsModal = ({
                                     isCurated
                                     showPopularBadge={false}
                                     showDomain={false}
+                                    hideActions
                                     feedSettingsUrl={cardProps.feedSettingsUrl}
                                   />
                                 </Box>

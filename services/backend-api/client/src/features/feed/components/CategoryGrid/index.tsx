@@ -46,7 +46,7 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
       setFocusedIndex(nextIndex);
       buttonRefs.current[nextIndex]?.focus();
     },
-    [totalItems, focusedIndex],
+    [totalItems, focusedIndex]
   );
 
   return (
@@ -107,10 +107,10 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
         onClick={() => onSelectCategory(undefined)}
       >
         <Text fontWeight="bold" mb={1}>
-          Browse All
+          Browse All Categories
         </Text>
         <Text color="gray.400" fontSize="sm">
-          See all {totalFeedCount} feeds &rarr;
+          {totalFeedCount} popular feeds to explore &rarr;
         </Text>
       </Box>
     </SimpleGrid>

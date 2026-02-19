@@ -177,6 +177,12 @@ describe("FeedCard", () => {
       expect(btn).toHaveAttribute("aria-disabled", "true");
       expect(btn).toHaveTextContent("+ Add");
     });
+
+    it("hideActions hides all action buttons", () => {
+      renderCard({ hideActions: true });
+
+      expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    });
   });
 
   describe("Curated error messages", () => {

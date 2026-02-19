@@ -3,44 +3,100 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { CuratedCategory, CuratedFeed } from "../features/feed/types";
 import { PricingDialogContext } from "../contexts";
 import { UserFeeds } from "./UserFeeds";
 
-const mockCategories: Array<CuratedCategory & { count: number }> = [
-  { id: "gaming", label: "Gaming", count: 25 },
-  { id: "specific-games", label: "Specific Games", count: 22 },
-  { id: "anime", label: "Anime & Manga", count: 8 },
-  { id: "tech", label: "Tech & Security", count: 15 },
-  { id: "sports", label: "Sports", count: 12 },
-  { id: "finance", label: "Finance & Crypto", count: 10 },
-  { id: "news", label: "World News", count: 10 },
-  { id: "entertainment", label: "Entertainment", count: 5 },
-];
+const {
+  mockCategories,
+  allFeeds,
+  mockCreateUserFeed,
+  mockUseUserFeedsReturn,
+  curatedFeedsMockImpl,
+} = vi.hoisted(() => {
+  const _mockCategories = [
+    { id: "gaming", label: "Gaming", count: 25 },
+    { id: "specific-games", label: "Specific Games", count: 22 },
+    { id: "anime", label: "Anime & Manga", count: 8 },
+    { id: "tech", label: "Tech & Security", count: 15 },
+    { id: "sports", label: "Sports", count: 12 },
+    { id: "finance", label: "Finance & Crypto", count: 10 },
+    { id: "news", label: "World News", count: 10 },
+    { id: "entertainment", label: "Entertainment", count: 5 },
+  ];
 
-function makeFeed(overrides: Partial<CuratedFeed> & { url: string }): CuratedFeed {
-  return {
-    title: `Feed ${overrides.url}`,
-    category: "gaming",
-    domain: "example.com",
-    description: `Description for ${overrides.url}`,
-    ...overrides,
+  function makeFeed(
+    overrides: Partial<{
+      url: string;
+      title: string;
+      category: string;
+      domain: string;
+      description: string;
+    }> & { url: string }
+  ) {
+    return {
+      title: `Feed ${overrides.url}`,
+      category: "gaming",
+      domain: "example.com",
+      description: `Description for ${overrides.url}`,
+      ...overrides,
+    };
+  }
+
+  const _allFeeds = _mockCategories.flatMap((cat) =>
+    Array.from({ length: 3 }, (_, i) =>
+      makeFeed({
+        url: `https://example.com/${cat.id}-${i}`,
+        title: `${cat.label} Feed ${i}`,
+        category: cat.id,
+      })
+    )
+  );
+
+  const _mockCreateUserFeed = vi.fn();
+  const _mockUseUserFeedsReturn = vi.fn();
+
+  const _curatedFeedsMockImpl = (options?: { search?: string; category?: string }) => {
+    let feeds = _allFeeds;
+
+    if (options?.category) {
+      feeds = _allFeeds.filter((f) => f.category === options.category);
+    } else if (options?.search) {
+      const q = options.search.toLowerCase();
+      feeds = _allFeeds.filter((f) => f.title.toLowerCase().includes(q));
+    }
+
+    return {
+      data: { feeds, categories: _mockCategories },
+      getHighlightFeeds: () =>
+        _mockCategories.map((cat) => ({
+          category: cat,
+          feeds: _allFeeds.filter((f) => f.category === cat.id).slice(0, 3),
+        })),
+      getCategoryPreviewText: (categoryId: string) => {
+        const catFeeds = _allFeeds.filter((f) => f.category === categoryId);
+
+        return catFeeds
+          .slice(0, 3)
+          .map((f) => f.title)
+          .join(", ");
+      },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    };
   };
-}
 
-const allFeeds: CuratedFeed[] = mockCategories.flatMap((cat) =>
-  Array.from({ length: 3 }, (_, i) =>
-    makeFeed({
-      url: `https://example.com/${cat.id}-${i}`,
-      title: `${cat.label} Feed ${i}`,
-      category: cat.id,
-    }),
-  ),
-);
-
-const mockCreateUserFeed = vi.fn();
-const mockUseUserFeedsReturn = vi.fn();
+  return {
+    mockCategories: _mockCategories,
+    allFeeds: _allFeeds,
+    mockCreateUserFeed: _mockCreateUserFeed,
+    mockUseUserFeedsReturn: _mockUseUserFeedsReturn,
+    curatedFeedsMockImpl: _curatedFeedsMockImpl,
+  };
+});
 
 vi.mock("../features/feed", async () => {
   const actual = (await vi.importActual("../features/feed")) as Record<string, unknown>;
@@ -86,36 +142,16 @@ vi.mock("../features/feed", async () => {
     useEnableUserFeeds: () => ({ mutateAsync: vi.fn() }),
     useUserFeedManagementInvitesCount: () => ({ data: { total: 0 } }),
     useCreateUserFeed: () => ({ mutateAsync: mockCreateUserFeed }),
-    useCuratedFeeds: (options?: { search?: string; category?: string }) => {
-      let feeds = allFeeds;
+    useCuratedFeeds: curatedFeedsMockImpl,
+  };
+});
 
-      if (options?.category) {
-        feeds = allFeeds.filter((f) => f.category === options.category);
-      } else if (options?.search) {
-        const q = options.search.toLowerCase();
-        feeds = allFeeds.filter((f) => f.title.toLowerCase().includes(q));
-      }
+vi.mock("../features/feed/hooks", async () => {
+  const actual = (await vi.importActual("../features/feed/hooks")) as Record<string, unknown>;
 
-      return {
-        data: { feeds, categories: mockCategories },
-        getHighlightFeeds: () =>
-          mockCategories.map((cat) => ({
-            category: cat,
-            feeds: allFeeds.filter((f) => f.category === cat.id).slice(0, 3),
-          })),
-        getCategoryPreviewText: (categoryId: string) => {
-          const catFeeds = allFeeds.filter((f) => f.category === categoryId);
-
-          return catFeeds
-            .slice(0, 3)
-            .map((f) => f.title)
-            .join(", ");
-        },
-        isLoading: false,
-        error: null,
-        refetch: vi.fn(),
-      };
-    },
+  return {
+    ...actual,
+    useCuratedFeeds: curatedFeedsMockImpl,
   };
 });
 
@@ -147,15 +183,20 @@ vi.mock("../features/feed/components/FeedLimitBar", () => ({
 }));
 
 const renderPage = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
   const user = userEvent.setup();
   const result = render(
-    <ChakraProvider>
-      <MemoryRouter>
-        <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
-          <UserFeeds />
-        </PricingDialogContext.Provider>
-      </MemoryRouter>
-    </ChakraProvider>,
+    <QueryClientProvider client={queryClient}>
+      <ChakraProvider>
+        <MemoryRouter>
+          <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
+            <UserFeeds />
+          </PricingDialogContext.Provider>
+        </MemoryRouter>
+      </ChakraProvider>
+    </QueryClientProvider>
   );
 
   return { user, ...result };
@@ -171,7 +212,7 @@ describe("UserFeeds — Discovery Mode", () => {
     renderPage();
     expect(screen.getByText("Get news delivered to your Discord")).toBeInTheDocument();
     expect(
-      screen.getByText("Browse popular feeds to get started, or paste any URL"),
+      screen.getByText("Browse popular feeds to get started, or paste a URL to check any website")
     ).toBeInTheDocument();
   });
 
@@ -182,19 +223,19 @@ describe("UserFeeds — Discovery Mode", () => {
 
   it("shows category card grid with all categories plus Browse All", () => {
     renderPage();
-    const categoryList = screen.getByRole("list", { name: "Feed categories" });
-    const items = within(categoryList).getAllByRole("listitem");
+    const categoryGroup = screen.getByRole("radiogroup", { name: "Feed categories" });
+    const items = within(categoryGroup).getAllByRole("radio");
 
     expect(items).toHaveLength(mockCategories.length + 1);
   });
 
-  it("shows category cards as buttons with accessible names including preview text", () => {
+  it("shows category cards as radios with accessible names including preview text", () => {
     renderPage();
-    const gamingButton = screen.getByRole("button", {
-      name: /^Gaming —/,
+    const gamingRadio = screen.getByRole("radio", {
+      name: /^Gaming\./,
     });
 
-    expect(gamingButton).toBeInTheDocument();
+    expect(gamingRadio).toBeInTheDocument();
   });
 
   it("shows category preview text from getCategoryPreviewText", () => {
@@ -204,13 +245,13 @@ describe("UserFeeds — Discovery Mode", () => {
 
   it("shows Browse All card with feed count", () => {
     renderPage();
-    expect(screen.getByText("Browse All")).toBeInTheDocument();
-    expect(screen.getByText(`See all ${allFeeds.length} feeds →`)).toBeInTheDocument();
+    expect(screen.getByText("Browse All Categories")).toBeInTheDocument();
+    expect(screen.getByText(`${allFeeds.length} popular feeds to explore →`)).toBeInTheDocument();
   });
 
   it("shows tip text", () => {
     renderPage();
-    expect(screen.getByText(/Tip: Paste a YouTube channel/)).toBeInTheDocument();
+    expect(screen.getByText(/Many websites support feeds/)).toBeInTheDocument();
   });
 
   it("does not show user feeds table in discovery mode", () => {
@@ -232,10 +273,10 @@ describe("UserFeeds — Category card interactions", () => {
 
   it("clicking a category card opens the browse modal", async () => {
     const { user } = renderPage();
-    const gamingButton = screen.getByRole("button", {
-      name: /^Gaming —/,
+    const gamingRadio = screen.getByRole("radio", {
+      name: /^Gaming\./,
     });
-    await user.click(gamingButton);
+    await user.click(gamingRadio);
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("Add a Feed")).toBeInTheDocument();
@@ -243,7 +284,7 @@ describe("UserFeeds — Category card interactions", () => {
 
   it("clicking Browse All opens the modal", async () => {
     const { user } = renderPage();
-    const browseAllButton = screen.getByText("Browse All").closest("button")!;
+    const browseAllButton = screen.getByText("Browse All Categories").closest("button")!;
     await user.click(browseAllButton);
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
@@ -263,7 +304,7 @@ describe("UserFeeds — Search interaction", () => {
     await user.type(searchInput, "Gaming");
     await user.click(screen.getByRole("button", { name: "Go" }));
 
-    expect(screen.queryByRole("list", { name: "Feed categories" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("radiogroup", { name: "Feed categories" })).not.toBeInTheDocument();
   });
 
   it("restores category cards when search is cleared", async () => {
@@ -272,10 +313,10 @@ describe("UserFeeds — Search interaction", () => {
 
     await user.type(searchInput, "Gaming");
     await user.click(screen.getByRole("button", { name: "Go" }));
-    expect(screen.queryByRole("list", { name: "Feed categories" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("radiogroup", { name: "Feed categories" })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Clear search" }));
-    expect(screen.getByRole("list", { name: "Feed categories" })).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup", { name: "Feed categories" })).toBeInTheDocument();
   });
 
   it("hides tip text when search is active", async () => {
@@ -285,7 +326,7 @@ describe("UserFeeds — Search interaction", () => {
     await user.type(searchInput, "Gaming");
     await user.click(screen.getByRole("button", { name: "Go" }));
 
-    expect(screen.queryByText(/Tip: Paste a YouTube channel/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Many websites support feeds/)).not.toBeInTheDocument();
   });
 });
 
@@ -416,7 +457,7 @@ describe("UserFeeds — Non-discovery mode", () => {
             <UserFeeds />
           </PricingDialogContext.Provider>
         </MemoryRouter>
-      </ChakraProvider>,
+      </ChakraProvider>
     );
 
     expect(screen.getByText("Get news delivered to your Discord")).toBeInTheDocument();
@@ -459,7 +500,7 @@ describe("UserFeeds — Returning user Add Feed button", () => {
 
     expect(screen.getByText("1 feed added")).toBeInTheDocument();
     expect(
-      screen.getByText("Click a feed to set up where articles are delivered."),
+      screen.getByText("Click a feed to set up where articles are delivered.")
     ).toBeInTheDocument();
   });
 
