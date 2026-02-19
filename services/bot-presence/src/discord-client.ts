@@ -118,17 +118,21 @@ export async function createDiscordClient(
                 DISCORD_PRESENCE_STATUS_TO_API_VALUE[
                   config.presenceStatus.status
                 ],
-              activities: config.presenceStatus.activity
-                ? [
-                    {
-                      name: config.presenceStatus.activity.name,
-                      type: DISCORD_PRESENCE_ACTIVITY_TYPE_IDS[
-                        config.presenceStatus.activity.type
-                      ],
-                      url: config.presenceStatus.activity.url,
-                    },
-                  ]
-                : [],
+              activities:
+                config.presenceStatus.activity &&
+                config.presenceStatus.status !==
+                  DiscordPresenceStatus.Invisible &&
+                config.presenceStatus.status !== DiscordPresenceStatus.Offline
+                  ? [
+                      {
+                        name: config.presenceStatus.activity.name,
+                        type: DISCORD_PRESENCE_ACTIVITY_TYPE_IDS[
+                          config.presenceStatus.activity.type
+                        ],
+                        url: config.presenceStatus.activity.url,
+                      },
+                    ]
+                  : [],
               afk: false,
               since:
                 config.presenceStatus.status === DiscordPresenceStatus.Idle
