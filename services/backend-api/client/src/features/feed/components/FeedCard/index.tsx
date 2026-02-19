@@ -291,8 +291,13 @@ export const FeedCard = ({
             </Button>
           )}
           {state === "limit-reached" && (
-            <Button size="sm" aria-disabled="true" onClick={(e) => e.preventDefault()}>
-              Limit reached
+            <Button
+              size="sm"
+              aria-label={`Add ${feed.title} feed, disabled, feed limit reached`}
+              aria-disabled="true"
+              onClick={(e) => e.preventDefault()}
+            >
+              + Add
             </Button>
           )}
         </Box>

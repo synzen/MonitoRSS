@@ -454,7 +454,9 @@ describe("FeedDiscoverySearch", () => {
       const input = screen.getByLabelText("Search popular feeds or paste a URL");
       await user.type(input, "IGN{Enter}");
 
-      expect(screen.getByRole("button", { name: /limit reached/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /add ign feed, disabled, feed limit reached/i })
+      ).toBeInTheDocument();
     });
 
     it("does not override added state when isAtLimit is true", async () => {

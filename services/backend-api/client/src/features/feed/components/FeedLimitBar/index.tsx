@@ -1,6 +1,6 @@
 import { useContext } from "react";
-import { Box, HStack, Text, Button, VisuallyHidden } from "@chakra-ui/react";
-import { MinusIcon, WarningIcon } from "@chakra-ui/icons";
+import { HStack, Text, Button, VisuallyHidden } from "@chakra-ui/react";
+import { WarningIcon } from "@chakra-ui/icons";
 import { useUserFeeds } from "../../hooks";
 import { useDiscordUserMe } from "../../../discordUser";
 import { PricingDialogContext } from "../../../../contexts";
@@ -23,25 +23,17 @@ export const FeedLimitBar = () => {
 
   if (isAtLimit) {
     return (
-      <Box>
-        <HStack role="status">
-          <MinusIcon color="red.300" boxSize={3} aria-hidden="true" />
-          <Text color="red.300" fontWeight="semibold">
-            Feed Limit: {currentCount}/{maxCount}
+      <HStack justifyContent="space-between" flexWrap="wrap" gap={2}>
+        <HStack>
+          <WarningIcon color="red.300" aria-hidden="true" />
+          <Text color="red.300" fontWeight="semibold" role="status">
+            Feed limit reached ({currentCount}/{maxCount})
           </Text>
         </HStack>
-        <Box bg="yellow.900" p={3} borderRadius="md" mt={2} role="alert">
-          <HStack alignItems="flex-start" spacing={2}>
-            <WarningIcon color="yellow.400" aria-hidden="true" mt={0.5} />
-            <Text fontSize="sm">
-              You&apos;ve reached your feed limit. Upgrade your plan to add more feeds.
-            </Text>
-          </HStack>
-          <Button size="sm" mt={2} onClick={onOpen}>
-            Increase Limits
-          </Button>
-        </Box>
-      </Box>
+        <Button size="sm" onClick={onOpen}>
+          Increase Limits
+        </Button>
+      </HStack>
     );
   }
 
@@ -64,7 +56,7 @@ export const FeedLimitBar = () => {
 
   return (
     <HStack justifyContent="space-between" flexWrap="wrap" gap={2}>
-      <Text role="status">
+      <Text role="status" fontWeight="semibold">
         Feed Limit: {currentCount}/{maxCount}
       </Text>
       <Button variant="outline" size="sm" onClick={onOpen}>

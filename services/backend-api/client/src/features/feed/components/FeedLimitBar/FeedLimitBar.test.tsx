@@ -24,7 +24,7 @@ const renderBar = () => {
       <PricingDialogContext.Provider value={{ onOpen: mockOnOpen }}>
         <FeedLimitBar />
       </PricingDialogContext.Provider>
-    </ChakraProvider>,
+    </ChakraProvider>
   );
 };
 
@@ -115,19 +115,13 @@ describe("FeedLimitBar", () => {
       } as never);
     });
 
-    it("shows red count text", () => {
+    it("shows feed limit reached text", () => {
       renderBar();
 
-      expect(screen.getByRole("status")).toHaveTextContent("Feed Limit: 25/25");
+      expect(screen.getByRole("status")).toHaveTextContent("Feed limit reached (25/25)");
     });
 
-    it("warning banner has role alert", () => {
-      renderBar();
-
-      expect(screen.getByRole("alert")).toHaveTextContent(/reached your feed limit/i);
-    });
-
-    it("Increase Limits button is inside the warning banner", () => {
+    it("shows Increase Limits button", () => {
       renderBar();
 
       expect(screen.getByRole("button", { name: /increase limits/i })).toBeInTheDocument();

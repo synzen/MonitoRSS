@@ -40,7 +40,7 @@ function makeHighlightFeeds(): CuratedFeed[] {
           title: `${cat.label} Feed ${i}`,
           category: cat.id,
           popular: i === 0,
-        }),
+        })
       );
     }
   });
@@ -55,7 +55,7 @@ function makeCategoryFeeds(categoryId: string, count: number): CuratedFeed[] {
       title: `${categoryId} Feed ${i}`,
       category: categoryId,
       popular: i === 0,
-    }),
+    })
   );
 }
 
@@ -135,7 +135,7 @@ const renderModal = (props: Partial<React.ComponentProps<typeof BrowseFeedsModal
           <BrowseFeedsModal {...defaultProps} {...props} />
         </PricingDialogContext.Provider>
       </MemoryRouter>
-    </ChakraProvider>,
+    </ChakraProvider>
   );
 
   return { user, ...result };
@@ -359,7 +359,7 @@ describe("BrowseFeedsModal", () => {
               <BrowseFeedsModal {...defaultProps} initialCategory="tech" isOpen={false} />
             </PricingDialogContext.Provider>
           </MemoryRouter>
-        </ChakraProvider>,
+        </ChakraProvider>
       );
 
       rerender(
@@ -369,7 +369,7 @@ describe("BrowseFeedsModal", () => {
               <BrowseFeedsModal {...defaultProps} initialCategory="sports" isOpen={true} />
             </PricingDialogContext.Provider>
           </MemoryRouter>
-        </ChakraProvider>,
+        </ChakraProvider>
       );
 
       expect(screen.getByRole("radio", { name: /Sports/ })).toHaveAttribute("aria-checked", "true");
@@ -388,7 +388,7 @@ describe("BrowseFeedsModal", () => {
               <BrowseFeedsModal {...defaultProps} initialCategory="gaming" isOpen={false} />
             </PricingDialogContext.Provider>
           </MemoryRouter>
-        </ChakraProvider>,
+        </ChakraProvider>
       );
 
       rerender(
@@ -398,7 +398,7 @@ describe("BrowseFeedsModal", () => {
               <BrowseFeedsModal {...defaultProps} initialCategory={undefined} isOpen={true} />
             </PricingDialogContext.Provider>
           </MemoryRouter>
-        </ChakraProvider>,
+        </ChakraProvider>
       );
 
       expect(screen.getByRole("radio", { name: /All/ })).toHaveAttribute("aria-checked", "true");
@@ -431,7 +431,7 @@ describe("BrowseFeedsModal", () => {
       const allButtons = screen.getAllByRole("button");
       const firstAddBtn = allButtons.find((btn) => btn.textContent?.includes("+ Add"));
       const firstSeeAll = allButtons.find((btn) =>
-        btn.getAttribute("aria-label")?.includes("See all"),
+        btn.getAttribute("aria-label")?.includes("See all")
       );
 
       if (firstAddBtn && firstSeeAll) {
@@ -515,14 +515,17 @@ describe("BrowseFeedsModal", () => {
       }
     });
 
-    it("at limit: all Add buttons become Limit reached", () => {
+    it("at limit: all Add buttons become disabled", () => {
       renderModal({ isAtLimit: true });
 
-      const addButtons = screen.queryAllByRole("button", { name: /Add .* feed/ });
-      expect(addButtons).toHaveLength(0);
-
-      const limitButtons = screen.getAllByText("Limit reached");
-      expect(limitButtons.length).toBeGreaterThan(0);
+      const disabledButtons = screen.getAllByRole("button", {
+        name: /add .* feed, disabled, feed limit reached/i,
+      });
+      expect(disabledButtons.length).toBeGreaterThan(0);
+      disabledButtons.forEach((btn) => {
+        expect(btn).toHaveAttribute("aria-disabled", "true");
+        expect(btn).toHaveTextContent("+ Add");
+      });
     });
   });
 
@@ -536,7 +539,7 @@ describe("BrowseFeedsModal", () => {
 
       expect(onAdd).toHaveBeenCalledTimes(1);
       expect(onAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ url: firstFeed.url, title: firstFeed.title }),
+        expect.objectContaining({ url: firstFeed.url, title: firstFeed.title })
       );
     });
 
@@ -592,14 +595,14 @@ describe("BrowseFeedsModal", () => {
       });
 
       expect(
-        screen.getByRole("button", { name: `${gamingFeed.title} feed added` }),
+        screen.getByRole("button", { name: `${gamingFeed.title} feed added` })
       ).toBeInTheDocument();
 
       await user.click(screen.getByRole("radio", { name: /Anime/ }));
       await user.click(screen.getByRole("radio", { name: /All/ }));
 
       expect(
-        screen.getByRole("button", { name: `${gamingFeed.title} feed added` }),
+        screen.getByRole("button", { name: `${gamingFeed.title} feed added` })
       ).toBeInTheDocument();
     });
 
@@ -612,7 +615,7 @@ describe("BrowseFeedsModal", () => {
       const { rerender } = renderModal({ feedActionStates });
 
       expect(
-        screen.getByRole("button", { name: `${firstFeed.title} feed added` }),
+        screen.getByRole("button", { name: `${firstFeed.title} feed added` })
       ).toBeInTheDocument();
 
       rerender(
@@ -626,7 +629,7 @@ describe("BrowseFeedsModal", () => {
               />
             </PricingDialogContext.Provider>
           </MemoryRouter>
-        </ChakraProvider>,
+        </ChakraProvider>
       );
 
       rerender(
@@ -640,11 +643,11 @@ describe("BrowseFeedsModal", () => {
               />
             </PricingDialogContext.Provider>
           </MemoryRouter>
-        </ChakraProvider>,
+        </ChakraProvider>
       );
 
       expect(
-        screen.getByRole("button", { name: `${firstFeed.title} feed added` }),
+        screen.getByRole("button", { name: `${firstFeed.title} feed added` })
       ).toBeInTheDocument();
     });
   });

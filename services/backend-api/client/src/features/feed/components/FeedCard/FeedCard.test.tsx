@@ -168,11 +168,14 @@ describe("FeedCard", () => {
       expect(retryBtn).toHaveAttribute("aria-describedby", alert.id);
     });
 
-    it("limit-reached state shows Limit reached text and aria-disabled", () => {
+    it("limit-reached state shows disabled Add button", () => {
       renderCard({ state: "limit-reached" });
 
-      const btn = screen.getByRole("button", { name: /limit reached/i });
+      const btn = screen.getByRole("button", {
+        name: /add ign feed, disabled, feed limit reached/i,
+      });
       expect(btn).toHaveAttribute("aria-disabled", "true");
+      expect(btn).toHaveTextContent("+ Add");
     });
   });
 
@@ -301,7 +304,9 @@ describe("FeedCard", () => {
       const onAdd = vi.fn();
       renderCard({ state: "limit-reached", onAdd });
 
-      fireEvent.click(screen.getByRole("button", { name: /limit reached/i }));
+      fireEvent.click(
+        screen.getByRole("button", { name: /add ign feed, disabled, feed limit reached/i })
+      );
       expect(onAdd).not.toHaveBeenCalled();
     });
 
