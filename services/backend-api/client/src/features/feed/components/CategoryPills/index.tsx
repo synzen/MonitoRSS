@@ -48,7 +48,7 @@ export const CategoryPills: React.FC<CategoryPillsProps> = ({
       onSelect(allItems[nextIndex].id);
       pillRefs.current[nextIndex]?.focus();
     },
-    [allItems, selectedIndex, onSelect]
+    [allItems, selectedIndex, onSelect],
   );
 
   return (

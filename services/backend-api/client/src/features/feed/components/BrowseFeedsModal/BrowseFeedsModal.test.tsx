@@ -108,6 +108,16 @@ vi.mock("../../hooks/useCreateUserFeedUrlValidation", () => ({
   }),
 }));
 
+vi.mock("../../hooks/useFeedPreviewByUrl", () => ({
+  useFeedPreviewByUrl: () => ({
+    mutateAsync: vi.fn(),
+    status: "idle",
+    error: null,
+    reset: vi.fn(),
+    data: undefined,
+  }),
+}));
+
 const defaultProps = {
   isOpen: true,
   onClose: vi.fn(),

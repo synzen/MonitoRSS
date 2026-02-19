@@ -70,7 +70,19 @@ vi.mock("../../hooks", () => ({
 
     if (options?.search) {
       const q = options.search.toLowerCase();
-      feeds = mockFeeds.filter((f) => f.title.toLowerCase().includes(q));
+      feeds = mockFeeds
+        .map((f) => {
+          let score = 0;
+          if (f.title.toLowerCase().startsWith(q)) score += 100;
+          else if (f.title.toLowerCase().includes(q)) score += 75;
+          if (f.domain.toLowerCase().includes(q)) score += 50;
+          if (f.description.toLowerCase().includes(q)) score += 25;
+
+          return { feed: f, score };
+        })
+        .filter(({ score }) => score > 0)
+        .sort((a, b) => b.score - a.score)
+        .map(({ feed }) => feed);
     }
 
     return {
@@ -94,6 +106,16 @@ vi.mock("../../hooks/useCreateUserFeedUrlValidation", () => ({
     error: null,
     data: undefined,
     reset: mockResetValidation,
+  }),
+}));
+
+vi.mock("../../hooks/useFeedPreviewByUrl", () => ({
+  useFeedPreviewByUrl: () => ({
+    mutateAsync: vi.fn(),
+    status: "idle",
+    error: null,
+    reset: vi.fn(),
+    data: undefined,
   }),
 }));
 
@@ -121,7 +143,7 @@ const renderSearch = (props: Partial<React.ComponentProps<typeof FeedDiscoverySe
       <MemoryRouter>
         <FeedDiscoverySearch {...defaultProps} {...props} />
       </MemoryRouter>
-    </ChakraProvider>,
+    </ChakraProvider>
   );
 
   return { user, ...result };
@@ -222,8 +244,8 @@ describe("FeedDiscoverySearch", () => {
 
       expect(
         screen.getByText(
-          "No matches in popular feeds. Try a different search or paste a direct URL.",
-        ),
+          "No matches in popular feeds. Try a different search or paste a direct URL."
+        )
       ).toBeInTheDocument();
     });
   });
@@ -237,7 +259,7 @@ describe("FeedDiscoverySearch", () => {
 
       const liveRegions = document.querySelectorAll('[aria-live="polite"]');
       const hasResultCount = Array.from(liveRegions).some((el) =>
-        el.textContent?.includes("result"),
+        el.textContent?.includes("result")
       );
 
       expect(hasResultCount).toBe(true);
@@ -292,8 +314,8 @@ describe("FeedDiscoverySearch", () => {
       expect(screen.getByTestId("url-validation-result")).toBeInTheDocument();
       expect(
         screen.queryByText(
-          "No matches in popular feeds. Try a different search or paste a direct URL.",
-        ),
+          "No matches in popular feeds. Try a different search or paste a direct URL."
+        )
       ).not.toBeInTheDocument();
     });
 
@@ -465,7 +487,7 @@ describe("FeedDiscoverySearch", () => {
         expect.objectContaining({
           url: "https://feeds.feedburner.com/ign/games",
           title: "IGN",
-        }),
+        })
       );
     });
 

@@ -181,9 +181,7 @@ describe("useCuratedFeeds", () => {
       });
 
       expect(result.current.data!.feeds.length).toBeGreaterThan(0);
-      result.current.data!.feeds.forEach((f) => {
-        expect(f.title.toLowerCase()).toContain("steam");
-      });
+      expect(result.current.data!.feeds.some((f) => f.title === "Steam News")).toBe(true);
     });
 
     it("search is case-insensitive", async () => {
@@ -227,6 +225,50 @@ describe("useCuratedFeeds", () => {
       });
 
       expect(result.current.data!.feeds).toEqual([]);
+    });
+
+    it("search matches description", async () => {
+      const { result } = renderHook(() => useCuratedFeeds({ search: "cybersecurity" }), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current.data).toBeDefined();
+      });
+
+      expect(result.current.data!.feeds.some((f) => f.title === "The Hacker News")).toBe(true);
+    });
+
+    it("search matches domain", async () => {
+      const { result } = renderHook(() => useCuratedFeeds({ search: "ign.com" }), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current.data).toBeDefined();
+      });
+
+      expect(result.current.data!.feeds.some((f) => f.title === "IGN")).toBe(true);
+    });
+
+    it("title matches rank above description matches", async () => {
+      const { result } = renderHook(() => useCuratedFeeds({ search: "gaming" }), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current.data).toBeDefined();
+      });
+
+      const feeds = result.current.data!.feeds;
+      expect(feeds.length).toBeGreaterThan(0);
+
+      const gamingFeed4Index = feeds.findIndex((f) => f.title === "Gaming Feed 4");
+      const pcGamerIndex = feeds.findIndex((f) => f.title === "PC Gamer");
+
+      expect(gamingFeed4Index).toBeGreaterThanOrEqual(0);
+      expect(pcGamerIndex).toBeGreaterThanOrEqual(0);
+      expect(gamingFeed4Index).toBeLessThan(pcGamerIndex);
     });
 
     it("preserves popular field on feed entries", async () => {

@@ -1,9 +1,30 @@
-import { useState } from "react";
-import { Box, HStack, Text, Badge, Button, Spinner, Link } from "@chakra-ui/react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  Box,
+  HStack,
+  Text,
+  Badge,
+  Button,
+  Spinner,
+  Link,
+  Divider,
+  Skeleton,
+  UnorderedList,
+  ListItem,
+  Highlight,
+} from "@chakra-ui/react";
 import { CheckIcon, WarningIcon } from "@chakra-ui/icons";
+import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
 import { Link as RouterLink } from "react-router-dom";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 import { getAvatarColor } from "@/utils/getAvatarColor";
+
+dayjs.extend(relativeTime);
 import { getCuratedFeedErrorMessage } from "./getCuratedFeedErrorMessage";
+import { getPreviewErrorMessage } from "./getPreviewErrorMessage";
+import { useFeedPreviewByUrl } from "../../hooks/useFeedPreviewByUrl";
+import type { GetFeedPreviewByUrlOutput } from "../../api/getFeedPreviewByUrl";
 
 interface FeedCardProps {
   feed: {
@@ -22,6 +43,10 @@ interface FeedCardProps {
   showDomain?: boolean;
   showCategoryTag?: string;
   feedSettingsUrl?: string;
+  previewEnabled?: boolean;
+  previewOpen?: boolean;
+  borderless?: boolean;
+  searchQuery?: string;
 }
 
 export const FeedCard = ({
@@ -35,23 +60,93 @@ export const FeedCard = ({
   showDomain = true,
   showCategoryTag,
   feedSettingsUrl,
+  previewEnabled = false,
+  previewOpen = false,
+  borderless = false,
+  searchQuery,
 }: FeedCardProps) => {
   const [imgError, setImgError] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
-  const errorId = `feed-error-${feed.url.replace(/[^a-zA-Z0-9]/g, "-")}`;
-  const errorDetailsId = `feed-error-details-${feed.url.replace(/[^a-zA-Z0-9]/g, "-")}`;
+  const [isPreviewOpen, setIsPreviewOpen] = useState(previewOpen);
+  const [previewError, setPreviewError] = useState(false);
+  const [cachedPreview, setCachedPreview] = useState<GetFeedPreviewByUrlOutput | null>(null);
+  const {
+    mutateAsync: fetchPreview,
+    status: previewStatus,
+    data: previewData,
+  } = useFeedPreviewByUrl();
+  const initialFetchDone = useRef(false);
+
+  useEffect(() => {
+    if (previewOpen && previewEnabled && !initialFetchDone.current) {
+      initialFetchDone.current = true;
+
+      fetchPreview({ details: { url: feed.url } })
+        .then((result) => setCachedPreview(result))
+        .catch(() => setPreviewError(true));
+    }
+  }, [previewOpen, previewEnabled, feed.url, fetchPreview]);
+
+  const uniqueId = useId();
+  const errorId = `feed-error-${uniqueId}`;
+  const errorDetailsId = `feed-error-details-${uniqueId}`;
+  const previewId = `feed-preview-${uniqueId}`;
 
   const displayErrorMessage =
     state === "error" && isCurated
       ? getCuratedFeedErrorMessage(errorCode)
       : errorMessage || "Failed to add feed";
 
+  const handleTogglePreview = useCallback(
+    async (e: React.MouseEvent) => {
+      e.preventDefault();
+
+      const nextOpen = !isPreviewOpen;
+      setIsPreviewOpen(nextOpen);
+
+      if (nextOpen && !cachedPreview) {
+        setPreviewError(false);
+
+        try {
+          const result = await fetchPreview({ details: { url: feed.url } });
+          setCachedPreview(result);
+        } catch {
+          setPreviewError(true);
+        }
+      }
+    },
+    [isPreviewOpen, feed.url, fetchPreview, cachedPreview]
+  );
+
+  const handleRetryPreview = useCallback(async () => {
+    setPreviewError(false);
+
+    try {
+      const result = await fetchPreview({ details: { url: feed.url } });
+      setCachedPreview(result);
+    } catch {
+      setPreviewError(true);
+    }
+  }, [feed.url, fetchPreview]);
+
+  const resolvedPreview = cachedPreview || previewData;
+  const previewArticles = resolvedPreview?.result.articles;
+  const previewRequestStatus = resolvedPreview?.result.requestStatus;
+  const previewResponseStatusCode = resolvedPreview?.result.responseStatusCode;
+  const isPreviewLoading = previewStatus === "loading" && !cachedPreview;
+  const isPreviewError =
+    previewError || (previewRequestStatus && previewRequestStatus !== "SUCCESS");
+  const previewErrorMessage = isPreviewError
+    ? getPreviewErrorMessage(previewRequestStatus ?? undefined, previewResponseStatusCode)
+    : undefined;
+
   return (
     <Box
+      as="article"
       bg="gray.800"
-      borderWidth="1px"
+      borderWidth={borderless ? 0 : "1px"}
       borderColor={state === "error" ? "red.400" : "gray.600"}
-      borderRadius="md"
+      borderRadius={borderless ? 0 : "md"}
       p={3}
       opacity={state === "added" ? 0.7 : 1}
     >
@@ -67,7 +162,7 @@ export const FeedCard = ({
               alignItems="center"
               justifyContent="center"
             >
-              <Text color="white" fontSize="sm" fontWeight="bold" lineHeight="1">
+              <Text color="white" fontSize="sm" fontWeight="bold" lineHeight="1" aria-hidden="true">
                 {feed.title.charAt(0).toUpperCase()}
               </Text>
             </Box>
@@ -96,7 +191,16 @@ export const FeedCard = ({
         <Box flex={1} minW={0}>
           <HStack spacing={2} flexWrap="wrap">
             <Text fontWeight="bold" noOfLines={1}>
-              {feed.title}
+              {searchQuery ? (
+                <Highlight
+                  query={searchQuery}
+                  styles={{ bg: "yellow.700", color: "white", px: "0", rounded: "none" }}
+                >
+                  {feed.title}
+                </Highlight>
+              ) : (
+                feed.title
+              )}
             </Text>
             {feed.popular && showPopularBadge && (
               <Badge
@@ -127,12 +231,32 @@ export const FeedCard = ({
           </HStack>
           {showDomain && (
             <Text color="gray.400" fontSize="xs" noOfLines={1}>
-              {feed.domain}
+              {searchQuery ? (
+                <Highlight
+                  query={searchQuery}
+                  styles={{ bg: "yellow.700", color: "gray.100", px: "0", rounded: "none" }}
+                >
+                  {feed.domain}
+                </Highlight>
+              ) : (
+                feed.domain
+              )}
             </Text>
           )}
-          <Text color="gray.400" noOfLines={1} fontSize="sm">
-            {feed.description}
-          </Text>
+          {feed.description && (
+            <Text color="gray.400" noOfLines={1} fontSize="sm">
+              {searchQuery ? (
+                <Highlight
+                  query={searchQuery}
+                  styles={{ bg: "yellow.700", color: "gray.100", px: "0", rounded: "none" }}
+                >
+                  {feed.description}
+                </Highlight>
+              ) : (
+                feed.description
+              )}
+            </Text>
+          )}
         </Box>
 
         <Box flexShrink={0}>
@@ -241,6 +365,177 @@ export const FeedCard = ({
           >
             Go to feed settings
           </Link>
+        </Box>
+      )}
+
+      {previewEnabled && (
+        <Box
+          as="details"
+          mt={2}
+          open={isPreviewOpen || undefined}
+          onToggle={(e: React.SyntheticEvent<HTMLDetailsElement>) => {
+            const nowOpen = e.currentTarget.open;
+            if (nowOpen !== isPreviewOpen) {
+              setIsPreviewOpen(nowOpen);
+            }
+          }}
+          sx={{
+            "& > summary": {
+              listStyle: "none",
+            },
+            "& > summary::-webkit-details-marker": {
+              display: "none",
+            },
+          }}
+        >
+          <Box
+            as="summary"
+            cursor="pointer"
+            py={1}
+            fontSize="sm"
+            color="blue.300"
+            _hover={{ color: "blue.200" }}
+            _focusVisible={{
+              outline: "2px solid",
+              outlineColor: "blue.400",
+              outlineOffset: "2px",
+              borderRadius: "sm",
+            }}
+            onClick={handleTogglePreview}
+            display="inline-flex"
+            alignItems="center"
+            gap={1}
+          >
+            Preview articles
+            {isPreviewOpen ? (
+              <ChevronUpIcon aria-hidden="true" />
+            ) : (
+              <ChevronDownIcon aria-hidden="true" />
+            )}
+          </Box>
+
+          {isPreviewOpen && (
+            <Box
+              mt={2}
+              pt={2}
+              borderTopWidth="1px"
+              borderTopColor="gray.700"
+              role="region"
+              aria-label={`${feed.title} article preview`}
+            >
+              {isPreviewLoading && (
+                <Box aria-busy="true" aria-label="Loading article preview">
+                  <Text
+                    fontSize="xs"
+                    color="gray.400"
+                    fontWeight="semibold"
+                    textTransform="uppercase"
+                    letterSpacing="wider"
+                    mb={2}
+                  >
+                    Recent articles
+                  </Text>
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <HStack key={i} mb={2} justify="space-between">
+                      <Skeleton height="14px" width={`${60 + (i % 3) * 10}%`} />
+                      <Skeleton height="14px" width="70px" />
+                    </HStack>
+                  ))}
+                </Box>
+              )}
+
+              {!isPreviewLoading && isPreviewError && (
+                <HStack spacing={2}>
+                  <Text color="gray.400" fontSize="sm" role="alert">
+                    {previewErrorMessage}
+                  </Text>
+                  <Button size="xs" variant="outline" onClick={handleRetryPreview}>
+                    Retry
+                  </Button>
+                </HStack>
+              )}
+
+              {!isPreviewLoading &&
+                !isPreviewError &&
+                previewArticles &&
+                previewArticles.length === 0 && (
+                  <Text color="gray.400" fontSize="sm">
+                    No articles found in this feed.
+                  </Text>
+                )}
+
+              {!isPreviewLoading &&
+                !isPreviewError &&
+                previewArticles &&
+                previewArticles.length > 0 && (
+                  <>
+                    <Text
+                      id={previewId}
+                      fontSize="xs"
+                      color="gray.400"
+                      fontWeight="semibold"
+                      textTransform="uppercase"
+                      letterSpacing="wider"
+                      mb={2}
+                    >
+                      Recent articles
+                    </Text>
+                    <UnorderedList
+                      listStyleType="none"
+                      ml={0}
+                      spacing={2}
+                      aria-labelledby={previewId}
+                    >
+                      {previewArticles.map((article, index) => (
+                        <ListItem key={index}>
+                          <HStack justify="space-between" align="baseline" spacing={3}>
+                            {article.url ? (
+                              <Link
+                                href={article.url}
+                                isExternal
+                                color="gray.100"
+                                fontSize="sm"
+                                fontWeight="medium"
+                                noOfLines={1}
+                                _hover={{ color: "white", textDecoration: "underline" }}
+                                _focusVisible={{
+                                  outline: "2px solid",
+                                  outlineColor: "blue.400",
+                                  outlineOffset: "2px",
+                                }}
+                              >
+                                {article.title}
+                              </Link>
+                            ) : (
+                              <Text
+                                fontSize="sm"
+                                fontWeight="medium"
+                                noOfLines={1}
+                                color="gray.100"
+                              >
+                                {article.title}
+                              </Text>
+                            )}
+                            {article.date && (
+                              <Text
+                                as="time"
+                                dateTime={article.date}
+                                fontSize="xs"
+                                color="gray.400"
+                                flexShrink={0}
+                                whiteSpace="nowrap"
+                              >
+                                {dayjs(article.date).fromNow()}
+                              </Text>
+                            )}
+                          </HStack>
+                        </ListItem>
+                      ))}
+                    </UnorderedList>
+                  </>
+                )}
+            </Box>
+          )}
         </Box>
       )}
     </Box>

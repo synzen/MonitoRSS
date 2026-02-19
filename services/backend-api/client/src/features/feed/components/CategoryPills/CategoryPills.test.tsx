@@ -22,7 +22,7 @@ const renderPills = (props: Partial<React.ComponentProps<typeof CategoryPills>> 
         onSelect={() => {}}
         {...props}
       />
-    </ChakraProvider>
+    </ChakraProvider>,
   );
 
   return { user, ...result };
@@ -44,7 +44,7 @@ describe("CategoryPills", () => {
 
       expect(screen.getByText("Gaming").closest("[role='radio']")).toHaveAttribute(
         "aria-checked",
-        "true"
+        "true",
       );
     });
 
@@ -53,11 +53,11 @@ describe("CategoryPills", () => {
 
       expect(screen.getByText("All").closest("[role='radio']")).toHaveAttribute(
         "aria-checked",
-        "false"
+        "false",
       );
       expect(screen.getByText("Tech").closest("[role='radio']")).toHaveAttribute(
         "aria-checked",
-        "false"
+        "false",
       );
     });
 
@@ -183,7 +183,7 @@ describe("CategoryPills", () => {
       const group = screen.getByRole("radiogroup");
       expect(group).toHaveAttribute(
         "aria-description",
-        "Search is filtering results. Select a category to clear search."
+        "Search is filtering results. Select a category to clear search.",
       );
     });
 

@@ -25,6 +25,7 @@ import type {
   GetUserFeedParams,
   GetUserFeedsQuery,
   ValidateUrlBody,
+  PreviewByUrlBody,
   UpdateUserFeedsBody,
   UpdateUserFeedBody,
   SendTestArticleBody,
@@ -208,6 +209,21 @@ export async function validateFeedUrlHandler(
   const { discordUserId } = request;
 
   const result = await userFeedsService.validateFeedUrl(
+    { discordUserId },
+    { url: request.body.url },
+  );
+
+  return reply.status(200).send({ result });
+}
+
+export async function previewFeedByUrlHandler(
+  request: FastifyRequest<{ Body: PreviewByUrlBody }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { userFeedsService } = request.container;
+  const { discordUserId } = request;
+
+  const result = await userFeedsService.previewFeedByUrl(
     { discordUserId },
     { url: request.body.url },
   );

@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { Box, Text, Button, Spinner, Link, HStack } from "@chakra-ui/react";
-import { CheckIcon, WarningIcon } from "@chakra-ui/icons";
-import { Link as RouterLink } from "react-router-dom";
+import { Box, Text, Button, Spinner, HStack } from "@chakra-ui/react";
+import { WarningIcon } from "@chakra-ui/icons";
 import ApiAdapterError from "@/utils/ApiAdapterError";
-import { getAvatarColor } from "@/utils/getAvatarColor";
 import { CreateUserFeedUrlValidationOutput } from "../../api/createUserFeedUrlValidation";
 import { InlineErrorAlert } from "@/components/InlineErrorAlert";
 import { FixFeedRequestsCTA } from "../FixFeedRequestsCTA";
@@ -44,8 +42,6 @@ export const UrlValidationResult = ({
   const [addedFeedId, setAddedFeedId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState<ApiAdapterError | null>(null);
-  const [resolvedIconError, setResolvedIconError] = useState(false);
-
   const feedUrl = validationData?.result.resolvedToUrl || url;
 
   const handleAdd = async () => {
@@ -105,64 +101,24 @@ export const UrlValidationResult = ({
         resolvedHostname = validationData.result.resolvedToUrl!;
       }
 
-      let originalHostname: string;
-
-      try {
-        originalHostname = new URL(url).hostname;
-      } catch {
-        originalHostname = url;
-      }
-
       const feedTitle = validationData.result.feedTitle || resolvedHostname;
 
       return (
-        <Box mt={3}>
-          <Box borderLeftWidth="4px" borderLeftColor="yellow.400" pl={3} py={2}>
+        <Box
+          mt={3}
+          role="group"
+          aria-label="Feed found at a different URL"
+          borderWidth="1px"
+          borderColor="yellow.600"
+          borderRadius="md"
+          overflow="hidden"
+        >
+          <Box bg="yellow.900" px={3} py={2}>
             <HStack spacing={2} mb={2}>
               <WarningIcon color="yellow.400" aria-hidden="true" />
               <Text fontWeight="bold">We found a feed at a different URL</Text>
             </HStack>
-            <HStack spacing={3} align="center" mb={2}>
-              <Box flexShrink={0}>
-                {resolvedIconError ? (
-                  <Box
-                    w="32px"
-                    h="32px"
-                    borderRadius="full"
-                    bg={getAvatarColor(feedTitle)}
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                  >
-                    <Text color="white" fontSize="sm" fontWeight="bold" lineHeight="1">
-                      {feedTitle.charAt(0).toUpperCase()}
-                    </Text>
-                  </Box>
-                ) : (
-                  <Box
-                    w="32px"
-                    h="32px"
-                    borderRadius="md"
-                    bg="white"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                  >
-                    <img
-                      src={`https://www.google.com/s2/favicons?sz=32&domain=${originalHostname}`}
-                      alt=""
-                      width={28}
-                      height={28}
-                      onError={() => setResolvedIconError(true)}
-                    />
-                  </Box>
-                )}
-              </Box>
-              <Text fontWeight="bold" color="white">
-                {feedTitle}
-              </Text>
-            </HStack>
-            <Box as="dl" fontSize="sm" mb={2}>
+            <Box as="dl" fontSize="sm">
               <HStack spacing={1} align="baseline" mb={1}>
                 <Text as="dt" fontWeight="semibold" color="gray.300" flexShrink={0}>
                   Your URL:
@@ -180,46 +136,32 @@ export const UrlValidationResult = ({
                 </Text>
               </HStack>
             </Box>
-            <HStack spacing={2}>
-              {buttonState === "default" && (
-                <Button size="sm" onClick={handleAdd}>
-                  + Add this feed
-                </Button>
-              )}
-              {buttonState === "limit" && (
-                <Button size="sm" aria-disabled="true" onClick={(e) => e.preventDefault()}>
-                  Limit reached
-                </Button>
-              )}
-              {buttonState === "adding" && (
-                <Button size="sm" aria-disabled="true" onClick={(e) => e.preventDefault()}>
-                  <Spinner size="xs" />
-                </Button>
-              )}
-              {buttonState === "added" && (
-                <HStack spacing={2}>
-                  <Button size="sm" aria-disabled="true" onClick={(e) => e.preventDefault()}>
-                    Added <CheckIcon ml={1} aria-hidden="true" />
-                  </Button>
-                  <Link
-                    as={RouterLink}
-                    to={pages.userFeed(addedFeedId!)}
-                    color="blue.300"
-                    fontSize="sm"
-                  >
-                    Go to feed settings
-                  </Link>
-                </HStack>
-              )}
-              {buttonState === "limit-error" && (
-                <Button size="sm" aria-disabled="true" onClick={(e) => e.preventDefault()}>
-                  Limit reached
-                </Button>
-              )}
-            </HStack>
           </Box>
+          <FeedCard
+            feed={{
+              title: feedTitle,
+              domain: resolvedHostname,
+              description: validationData.result.resolvedToUrl!,
+              url: feedUrl,
+            }}
+            state={
+              buttonState === "default"
+                ? "default"
+                : buttonState === "adding"
+                ? "adding"
+                : buttonState === "added"
+                ? "added"
+                : "limit-reached"
+            }
+            onAdd={handleAdd}
+            errorMessage={addError && !isLimitReachedError ? "Failed to add feed" : undefined}
+            feedSettingsUrl={addedFeedId ? pages.userFeed(addedFeedId) : undefined}
+            previewEnabled
+            previewOpen
+            borderless
+          />
           {addError && !isLimitReachedError && (
-            <Box mt={2}>
+            <Box px={3} pb={2}>
               <InlineErrorAlert title="Failed to add feed" description={addError.message} />
             </Box>
           )}
@@ -250,14 +192,15 @@ export const UrlValidationResult = ({
             buttonState === "default"
               ? "default"
               : buttonState === "adding"
-                ? "adding"
-                : buttonState === "added"
-                  ? "added"
-                  : "limit-reached"
+              ? "adding"
+              : buttonState === "added"
+              ? "added"
+              : "limit-reached"
           }
           onAdd={handleAdd}
           errorMessage={addError && !isLimitReachedError ? "Failed to add feed" : undefined}
           feedSettingsUrl={addedFeedId ? pages.userFeed(addedFeedId) : undefined}
+          previewEnabled
         />
         {addError && !isLimitReachedError && (
           <Box mt={2}>

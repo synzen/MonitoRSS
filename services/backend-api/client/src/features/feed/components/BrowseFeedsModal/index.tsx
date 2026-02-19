@@ -285,6 +285,7 @@ export const BrowseFeedsModal = ({
                               errorCode={cardProps.errorCode}
                               isCurated
                               feedSettingsUrl={cardProps.feedSettingsUrl}
+                              previewEnabled
                             />
                           </Box>
                         );

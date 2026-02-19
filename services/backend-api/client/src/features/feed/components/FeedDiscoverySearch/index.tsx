@@ -55,11 +55,11 @@ export function useFeedDiscoverySearchState({
 
   const isUrlInput = URL_PATTERN.test(activeQuery);
   const { data } = useCuratedFeeds(
-    activeQuery && !isUrlInput ? { search: activeQuery } : undefined,
+    activeQuery && !isUrlInput ? { search: activeQuery } : undefined
   );
 
   const hasActiveSearch = activeQuery.length > 0;
-  const totalResults = isUrlInput ? 0 : (data?.feeds.length ?? 0);
+  const totalResults = isUrlInput ? 0 : data?.feeds.length ?? 0;
   const visibleResults = data?.feeds.slice(0, visibleCount) ?? [];
 
   const setInputRef = useCallback(
@@ -70,7 +70,7 @@ export function useFeedDiscoverySearchState({
         (searchInputRef as MutableRefObject<HTMLInputElement | null>).current = node;
       }
     },
-    [searchInputRef],
+    [searchInputRef]
   );
 
   const getCategoryLabel = (categoryId: string) =>
@@ -136,7 +136,7 @@ export function useFeedDiscoverySearchState({
 
     requestAnimationFrame(() => {
       const nextItem = document.querySelector(
-        `[data-feed-index="${previousCount}"] button`,
+        `[data-feed-index="${previousCount}"] button`
       ) as HTMLElement | null;
 
       nextItem?.focus();
@@ -185,6 +185,7 @@ export const FeedDiscoverySearchInput = ({ state }: { state: SearchStateReturn }
             onChange={(e) => state.setInputValue(e.target.value)}
             placeholder="Search popular feeds or paste a URL"
             aria-label="Search popular feeds or paste a URL"
+            bg="gray.800"
           />
           {state.inputValue && (
             <InputRightElement>
@@ -224,7 +225,7 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
             role="list"
             aria-label={`Search results, showing ${Math.min(
               state.visibleCount,
-              state.totalResults,
+              state.totalResults
             )} of ${state.totalResults}`}
             spacing={2}
             listStyleType="none"
@@ -233,7 +234,7 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
               const cardProps = getFeedCardPropsFromState(
                 state.feedActionStates,
                 feed.url,
-                state.isAtLimit,
+                state.isAtLimit
               );
 
               return (
@@ -247,6 +248,8 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
                     isCurated
                     showCategoryTag={state.getCategoryLabel(feed.category)}
                     feedSettingsUrl={cardProps.feedSettingsUrl}
+                    previewEnabled
+                    searchQuery={state.activeQuery}
                   />
                 </Box>
               );

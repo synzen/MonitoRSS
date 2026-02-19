@@ -1,10 +1,27 @@
 import "@testing-library/jest-dom";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ChakraProvider } from "@chakra-ui/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 import { FeedCard } from "./index";
 import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage copy";
+
+dayjs.extend(relativeTime);
+
+const mockMutateAsync = vi.fn();
+const mockReset = vi.fn();
+
+vi.mock("../../hooks/useFeedPreviewByUrl", () => ({
+  useFeedPreviewByUrl: () => ({
+    mutateAsync: mockMutateAsync,
+    status: "idle",
+    error: null,
+    reset: mockReset,
+    data: undefined,
+  }),
+}));
 
 const defaultFeed = {
   title: "IGN",
@@ -19,11 +36,18 @@ const renderCard = (props: Partial<React.ComponentProps<typeof FeedCard>> = {}) 
       <MemoryRouter>
         <FeedCard feed={defaultFeed} state="default" onAdd={() => {}} {...props} />
       </MemoryRouter>
-    </ChakraProvider>,
+    </ChakraProvider>
   );
 };
 
+const getPreviewToggle = () => screen.getByText("Preview articles").closest("summary")!;
+
 describe("FeedCard", () => {
+  beforeEach(() => {
+    mockMutateAsync.mockReset();
+    mockReset.mockReset();
+  });
+
   describe("Rendering", () => {
     it("renders title and description", () => {
       renderCard();
@@ -189,7 +213,7 @@ describe("FeedCard", () => {
 
       expect(screen.getByText(/https:\/\/ign\.com\/rss\/articles\/feed/)).toBeInTheDocument();
       expect(
-        screen.getByText(/Failed to get feed articles - requesting the feed took too long/),
+        screen.getByText(/Failed to get feed articles - requesting the feed took too long/)
       ).toBeInTheDocument();
     });
 
@@ -287,6 +311,269 @@ describe("FeedCard", () => {
 
       fireEvent.click(screen.getByRole("button", { name: /retry/i }));
       expect(onAdd).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("Search highlighting", () => {
+    it("highlights matching text in title when searchQuery provided", () => {
+      renderCard({ searchQuery: "IGN" });
+
+      const mark = document.querySelector("mark");
+      expect(mark).toBeInTheDocument();
+      expect(mark!.textContent).toBe("IGN");
+    });
+
+    it("highlights matching text in description when searchQuery provided", () => {
+      renderCard({ searchQuery: "game" });
+
+      const marks = document.querySelectorAll("mark");
+      const descriptionMark = Array.from(marks).find((m) => m.textContent === "game");
+      expect(descriptionMark).toBeInTheDocument();
+    });
+
+    it("highlights matching text in domain when searchQuery provided", () => {
+      renderCard({ searchQuery: "ign" });
+
+      const marks = document.querySelectorAll("mark");
+      const domainMark = Array.from(marks).find((m) => m.textContent === "ign");
+      expect(domainMark).toBeInTheDocument();
+    });
+
+    it("does not highlight when searchQuery is not provided", () => {
+      renderCard();
+
+      const marks = document.querySelectorAll("mark");
+      expect(marks).toHaveLength(0);
+    });
+  });
+
+  describe("Article preview", () => {
+    it("clicking Preview articles shows articles after loading", async () => {
+      mockMutateAsync.mockResolvedValue({
+        result: {
+          requestStatus: "SUCCESS",
+          articles: [
+            { title: "Preview Article 1", date: "2025-01-15T10:00:00Z" },
+            { title: "Preview Article 2" },
+          ],
+        },
+      });
+
+      renderCard({ previewEnabled: true });
+
+      fireEvent.click(getPreviewToggle());
+
+      await waitFor(() => {
+        expect(screen.getByText("Preview Article 1")).toBeInTheDocument();
+        expect(screen.getByText("Preview Article 2")).toBeInTheDocument();
+      });
+    });
+
+    it("does not render preview toggle when previewEnabled is false", () => {
+      renderCard({ previewEnabled: false });
+
+      expect(screen.queryByText("Preview articles")).not.toBeInTheDocument();
+    });
+
+    it("Add button click does NOT toggle preview", async () => {
+      mockMutateAsync.mockResolvedValue({
+        result: { requestStatus: "SUCCESS", articles: [] },
+      });
+
+      const onAdd = vi.fn();
+      renderCard({ previewEnabled: true, onAdd });
+
+      fireEvent.click(screen.getByRole("button", { name: "Add IGN feed" }));
+
+      expect(onAdd).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText("Recent articles")).not.toBeInTheDocument();
+    });
+
+    it("collapsing and re-expanding uses cached data", async () => {
+      mockMutateAsync.mockResolvedValue({
+        result: {
+          requestStatus: "SUCCESS",
+          articles: [{ title: "Cached Article" }],
+        },
+      });
+
+      renderCard({ previewEnabled: true });
+
+      const toggle = getPreviewToggle();
+
+      fireEvent.click(toggle);
+      await waitFor(() => {
+        expect(screen.getByText("Cached Article")).toBeInTheDocument();
+      });
+
+      fireEvent.click(toggle);
+      expect(screen.queryByText("Cached Article")).not.toBeInTheDocument();
+
+      fireEvent.click(toggle);
+      await waitFor(() => {
+        expect(screen.getByText("Cached Article")).toBeInTheDocument();
+      });
+
+      expect(mockMutateAsync).toHaveBeenCalledTimes(1);
+    });
+
+    it("error state shows 'Couldn't load preview' with Retry button", async () => {
+      mockMutateAsync.mockRejectedValue(new Error("Network error"));
+
+      renderCard({ previewEnabled: true });
+
+      fireEvent.click(getPreviewToggle());
+
+      await waitFor(() => {
+        expect(screen.getByText("Couldn't load preview. Try again later.")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
+      });
+    });
+
+    it("retry triggers new API call", async () => {
+      mockMutateAsync.mockRejectedValueOnce(new Error("Network error")).mockResolvedValue({
+        result: {
+          requestStatus: "SUCCESS",
+          articles: [{ title: "Recovered Article" }],
+        },
+      });
+
+      renderCard({ previewEnabled: true });
+
+      fireEvent.click(getPreviewToggle());
+
+      await waitFor(() => {
+        expect(screen.getByText("Couldn't load preview. Try again later.")).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: /retry/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText("Recovered Article")).toBeInTheDocument();
+      });
+
+      expect(mockMutateAsync).toHaveBeenCalledTimes(2);
+    });
+
+    it("empty articles shows 'No articles found'", async () => {
+      mockMutateAsync.mockResolvedValue({
+        result: { requestStatus: "SUCCESS", articles: [] },
+      });
+
+      renderCard({ previewEnabled: true });
+
+      fireEvent.click(getPreviewToggle());
+
+      await waitFor(() => {
+        expect(screen.getByText("No articles found in this feed.")).toBeInTheDocument();
+      });
+    });
+
+    it("details open attribute toggles correctly", async () => {
+      mockMutateAsync.mockResolvedValue({
+        result: { requestStatus: "SUCCESS", articles: [] },
+      });
+
+      renderCard({ previewEnabled: true });
+
+      const details = screen.getByText("Preview articles").closest("details")!;
+      const toggle = getPreviewToggle();
+
+      expect(details).not.toHaveAttribute("open");
+
+      fireEvent.click(toggle);
+      await waitFor(() => {
+        expect(details).toHaveAttribute("open");
+      });
+
+      fireEvent.click(toggle);
+      expect(details).not.toHaveAttribute("open");
+    });
+
+    it("non-SUCCESS requestStatus shows specific error message", async () => {
+      mockMutateAsync.mockResolvedValue({
+        result: { requestStatus: "TIMED_OUT", articles: [] },
+      });
+
+      renderCard({ previewEnabled: true });
+
+      fireEvent.click(getPreviewToggle());
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("This feed can't be reached right now. Try again later.")
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("BAD_STATUS_CODE with 403 shows unavailable message", async () => {
+      mockMutateAsync.mockResolvedValue({
+        result: { requestStatus: "BAD_STATUS_CODE", responseStatusCode: 403, articles: [] },
+      });
+
+      renderCard({ previewEnabled: true });
+
+      fireEvent.click(getPreviewToggle());
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("This feed is no longer available. Try a different feed.")
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("PARSE_ERROR shows broken feed message", async () => {
+      mockMutateAsync.mockResolvedValue({
+        result: { requestStatus: "PARSE_ERROR", articles: [] },
+      });
+
+      renderCard({ previewEnabled: true });
+
+      fireEvent.click(getPreviewToggle());
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("Something's wrong with this feed. Try a different feed.")
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("article with url renders as external link", async () => {
+      mockMutateAsync.mockResolvedValue({
+        result: {
+          requestStatus: "SUCCESS",
+          articles: [{ title: "Linked Article", url: "https://example.com/article" }],
+        },
+      });
+
+      renderCard({ previewEnabled: true });
+
+      fireEvent.click(getPreviewToggle());
+
+      await waitFor(() => {
+        const link = screen.getByRole("link", { name: "Linked Article" });
+        expect(link).toHaveAttribute("href", "https://example.com/article");
+        expect(link).toHaveAttribute("target", "_blank");
+        expect(link).toHaveAttribute("rel", expect.stringContaining("noopener"));
+      });
+    });
+
+    it("article without url renders as plain text", async () => {
+      mockMutateAsync.mockResolvedValue({
+        result: {
+          requestStatus: "SUCCESS",
+          articles: [{ title: "Plain Article" }],
+        },
+      });
+
+      renderCard({ previewEnabled: true });
+
+      fireEvent.click(getPreviewToggle());
+
+      await waitFor(() => {
+        expect(screen.getByText("Plain Article")).toBeInTheDocument();
+        expect(screen.queryByRole("link", { name: "Plain Article" })).not.toBeInTheDocument();
+      });
     });
   });
 });

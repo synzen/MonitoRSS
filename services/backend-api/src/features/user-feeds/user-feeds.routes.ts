@@ -16,6 +16,7 @@ import {
   getUserFeedsHandler,
   manualRequestHandler,
   validateFeedUrlHandler,
+  previewFeedByUrlHandler,
   updateUserFeedsHandler,
   updateUserFeedHandler,
   sendTestArticleHandler,
@@ -35,6 +36,7 @@ import {
   GetUserFeedParamsSchema,
   GetUserFeedsQuerySchema,
   ValidateUrlBodySchema,
+  PreviewByUrlBodySchema,
   UpdateUserFeedsBodySchema,
   UpdateUserFeedBodySchema,
   SendTestArticleBodySchema,
@@ -51,6 +53,7 @@ import {
   type GetUserFeedParams,
   type GetUserFeedsQuery,
   type ValidateUrlBody,
+  type PreviewByUrlBody,
   type UpdateUserFeedsBody,
   type UpdateUserFeedBody,
   type SendTestArticleBody,
@@ -85,6 +88,11 @@ export async function userFeedsRoutes(app: FastifyInstance): Promise<void> {
       FEED_EXCEPTION_ERROR_CODES,
       validateFeedUrlHandler,
     ),
+  });
+
+  app.post<{ Body: PreviewByUrlBody }>("/preview-by-url", {
+    schema: { body: PreviewByUrlBodySchema },
+    handler: previewFeedByUrlHandler,
   });
 
   app.post<{ Body: CreateUserFeedBody }>("/", {

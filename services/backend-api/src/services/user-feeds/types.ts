@@ -145,6 +145,18 @@ export interface ValidateFeedUrlOutput {
   feedTitle?: string;
 }
 
+export interface PreviewFeedByUrlArticle {
+  title: string;
+  date?: string;
+  url?: string;
+}
+
+export interface PreviewFeedByUrlOutput {
+  articles: PreviewFeedByUrlArticle[];
+  requestStatus: GetArticlesResponseRequestStatus;
+  responseStatusCode?: number;
+}
+
 export interface CheckUrlIsValidOutput {
   finalUrl: string;
   enableDateChecks: boolean;

@@ -46,7 +46,7 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
       setFocusedIndex(nextIndex);
       buttonRefs.current[nextIndex]?.focus();
     },
-    [totalItems, focusedIndex]
+    [totalItems, focusedIndex],
   );
 
   return (

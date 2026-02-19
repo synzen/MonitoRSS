@@ -25,7 +25,7 @@ const renderGrid = (overrides = {}) => {
   const result = render(
     <ChakraProvider>
       <CategoryGrid {...props} />
-    </ChakraProvider>
+    </ChakraProvider>,
   );
 
   return { user, ...result };

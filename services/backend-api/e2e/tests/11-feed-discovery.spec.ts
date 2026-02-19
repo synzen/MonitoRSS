@@ -61,7 +61,7 @@ test.describe("Feed Discovery", () => {
       await expect(page.getByRole("button", { name: "Go" })).toBeVisible();
 
       await expect(
-        page.getByRole("list", { name: "Feed categories" }),
+        page.getByRole("radiogroup", { name: "Feed categories" }),
       ).toBeVisible();
 
       await expect(
@@ -105,7 +105,7 @@ test.describe("Feed Discovery", () => {
       await page.getByRole("button", { name: "Clear search" }).click();
 
       await expect(
-        page.getByRole("list", { name: "Feed categories" }),
+        page.getByRole("radiogroup", { name: "Feed categories" }),
       ).toBeVisible();
       await expect(searchInput).toHaveValue("");
     });
@@ -295,8 +295,8 @@ test.describe("Feed Discovery", () => {
       ).toBeVisible({ timeout: 15000 });
 
       await page
-        .getByRole("list", { name: "Feed categories" })
-        .getByRole("button", { name: /^Gaming/ })
+        .getByRole("radiogroup", { name: "Feed categories" })
+        .getByRole("radio", { name: /^Gaming/ })
         .click();
 
       await expect(
@@ -327,8 +327,8 @@ test.describe("Feed Discovery", () => {
       ).toBeVisible({ timeout: 15000 });
 
       await page
-        .getByRole("list", { name: "Feed categories" })
-        .getByRole("button", { name: /Browse All/ })
+        .getByRole("radiogroup", { name: "Feed categories" })
+        .getByRole("radio", { name: /Browse All/ })
         .click();
 
       await expect(
@@ -366,8 +366,8 @@ test.describe("Feed Discovery", () => {
       ).toBeVisible({ timeout: 15000 });
 
       await page
-        .getByRole("list", { name: "Feed categories" })
-        .getByRole("button", { name: /^Gaming/ })
+        .getByRole("radiogroup", { name: "Feed categories" })
+        .getByRole("radio", { name: /^Gaming/ })
         .click();
 
       await expect(
@@ -405,6 +405,63 @@ test.describe("Feed Discovery", () => {
     });
   });
 
+  test.describe("Browse Modal - Article Preview", () => {
+    test("clicking a FeedCard in category view shows article preview", async ({
+      page,
+    }) => {
+      test.setTimeout(60000);
+      await page.goto("/feeds");
+      await expect(
+        page.getByRole("heading", {
+          name: "Get news delivered to your Discord",
+        }),
+      ).toBeVisible({ timeout: 15000 });
+
+      await page
+        .getByRole("radiogroup", { name: "Feed categories" })
+        .getByRole("radio", { name: /^Gaming/ })
+        .click();
+
+      await expect(
+        page.getByRole("heading", { name: "Add a Feed" }),
+      ).toBeVisible();
+
+      const gamingPill = page.getByRole("radio", { name: "Gaming" });
+      await gamingPill.click();
+      await expect(gamingPill).toHaveAttribute("aria-checked", "true");
+
+      await expect(
+        page.getByRole("list", { name: /Gaming feeds/ }),
+      ).toBeVisible();
+
+      const firstSummary = page
+        .locator("summary")
+        .filter({ hasText: "Preview articles" })
+        .first();
+      await expect(firstSummary).toBeVisible();
+
+      const firstDetails = firstSummary.locator("..");
+      await expect(firstDetails).not.toHaveAttribute("open");
+
+      await firstSummary.click();
+      await expect(firstDetails).toHaveAttribute("open");
+
+      const previewRegion = firstDetails.locator('[role="region"]');
+
+      await expect(
+        previewRegion
+          .getByText("Recent articles")
+          .or(previewRegion.getByText("No articles found in this feed."))
+          .or(previewRegion.getByRole("button", { name: /retry/i })),
+      ).toBeVisible({ timeout: 30000 });
+
+      await firstSummary.click();
+      await expect(firstDetails).not.toHaveAttribute("open");
+
+      await page.getByRole("button", { name: "Close" }).click();
+    });
+  });
+
   test.describe("Browse Modal - Adding Feeds", () => {
     test.afterAll(async ({ browser }) => {
       const context = await createAuthenticatedContext(browser);
@@ -423,8 +480,8 @@ test.describe("Feed Discovery", () => {
       ).toBeVisible({ timeout: 15000 });
 
       await page
-        .getByRole("list", { name: "Feed categories" })
-        .getByRole("button", { name: /Browse All/ })
+        .getByRole("radiogroup", { name: "Feed categories" })
+        .getByRole("radio", { name: /Browse All/ })
         .click();
 
       await expect(
@@ -476,8 +533,8 @@ test.describe("Feed Discovery", () => {
           .click();
       } else {
         await page
-          .getByRole("list", { name: "Feed categories" })
-          .getByRole("button", { name: /Browse All/ })
+          .getByRole("radiogroup", { name: "Feed categories" })
+          .getByRole("radio", { name: /Browse All/ })
           .click();
       }
 

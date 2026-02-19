@@ -6,15 +6,33 @@ function filterByCategory(feeds: CuratedFeed[], categoryId: string): CuratedFeed
   return feeds.filter((feed) => feed.category === categoryId);
 }
 
-function searchByTitle(feeds: CuratedFeed[], query: string): CuratedFeed[] {
-  const lowerQuery = query.toLowerCase();
+function searchFeeds(feeds: CuratedFeed[], query: string): CuratedFeed[] {
+  const q = query.toLowerCase();
 
-  return feeds.filter((feed) => feed.title.toLowerCase().includes(lowerQuery));
+  const scored = feeds
+    .map((feed) => {
+      let score = 0;
+      const title = feed.title.toLowerCase();
+      const domain = feed.domain.toLowerCase();
+      const description = feed.description.toLowerCase();
+
+      if (title.startsWith(q)) score += 100;
+      else if (title.includes(q)) score += 75;
+      if (domain.includes(q)) score += 50;
+      if (description.includes(q)) score += 25;
+
+      return { feed, score };
+    })
+    .filter(({ score }) => score > 0);
+
+  scored.sort((a, b) => b.score - a.score);
+
+  return scored.map(({ feed }) => feed);
 }
 
 function getCategoryMetadata(
   feeds: CuratedFeed[],
-  categories: CuratedCategory[],
+  categories: CuratedCategory[]
 ): Array<CuratedCategory & { count: number }> {
   return categories.map((cat) => ({
     ...cat,
@@ -24,7 +42,7 @@ function getCategoryMetadata(
 
 function getHighlightFeeds(
   feeds: CuratedFeed[],
-  categories: CuratedCategory[],
+  categories: CuratedCategory[]
 ): Array<{
   category: CuratedCategory;
   feeds: CuratedFeed[];
@@ -83,7 +101,7 @@ export function useCuratedFeeds(options?: UseCuratedFeedsOptions): UseCuratedFee
   if (options?.category) {
     feeds = filterByCategory(allFeeds, options.category);
   } else if (options?.search) {
-    feeds = searchByTitle(allFeeds, options.search);
+    feeds = searchFeeds(allFeeds, options.search);
   }
 
   const categories = getCategoryMetadata(allFeeds, allCategories);
