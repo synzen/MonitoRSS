@@ -1302,7 +1302,7 @@ describe(
     });
 
     describe("Response format", () => {
-      it("returns minimal response structure matching NestJS format", async () => {
+      it("returns full connection response structure", async () => {
         const discordUserId = generateSnowflake();
         const user = await ctx.asUser(discordUserId);
         const { feedId, connectionId } = await createTestFeedWithConnection(
@@ -1312,7 +1312,7 @@ describe(
 
         const response = await user.fetch(testUrl(feedId, connectionId), {
           method: "PATCH",
-          body: JSON.stringify({ name: "minimal-response-test" }),
+          body: JSON.stringify({ name: "full-response-test" }),
         });
 
         assert.strictEqual(response.status, 200);
@@ -1321,52 +1321,11 @@ describe(
         };
 
         assert.ok(body.result.id);
-        assert.strictEqual(body.result.name, "minimal-response-test");
+        assert.strictEqual(body.result.name, "full-response-test");
         assert.strictEqual(body.result.key, "DISCORD_CHANNEL");
         assert.ok(body.result.details);
 
-        assert.strictEqual(
-          body.result.mentions,
-          undefined,
-          "should not include mentions",
-        );
-        assert.strictEqual(
-          body.result.rateLimits,
-          undefined,
-          "should not include rateLimits",
-        );
-        assert.strictEqual(
-          body.result.customPlaceholders,
-          undefined,
-          "should not include customPlaceholders",
-        );
-        assert.strictEqual(
-          body.result.disabledCode,
-          undefined,
-          "should not include disabledCode",
-        );
-        assert.strictEqual(
-          body.result.createdAt,
-          undefined,
-          "should not include createdAt",
-        );
-        assert.strictEqual(
-          body.result.updatedAt,
-          undefined,
-          "should not include updatedAt",
-        );
-
         const details = body.result.details as Record<string, unknown>;
-        assert.strictEqual(
-          details.forumThreadTitle,
-          undefined,
-          "details should not include forumThreadTitle",
-        );
-        assert.strictEqual(
-          details.forumThreadTags,
-          undefined,
-          "details should not include forumThreadTags",
-        );
         assert.deepStrictEqual(
           details.formatter,
           {},
@@ -1374,7 +1333,7 @@ describe(
         );
       });
 
-      it("returns channel with only id and guildId", async () => {
+      it("returns channel with id and guildId", async () => {
         const discordUserId = generateSnowflake();
         const user = await ctx.asUser(discordUserId);
         const { feedId, connectionId } = await createTestFeedWithConnection(
@@ -1395,11 +1354,6 @@ describe(
         const channel = body.result.details.channel;
         assert.ok(channel.id);
         assert.ok(channel.guildId);
-        assert.strictEqual(
-          channel.type,
-          undefined,
-          "channel should not include type",
-        );
       });
     });
 

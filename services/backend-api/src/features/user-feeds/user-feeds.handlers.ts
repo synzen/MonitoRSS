@@ -7,10 +7,9 @@ import {
   ApiErrorCode,
 } from "../../infra/error-handler";
 import type { IUserFeed } from "../../repositories/interfaces/user-feed.types";
-import { CustomPlaceholderStepType } from "../../repositories/shared/enums";
 import { UserFeedManagerStatus } from "../../repositories/shared/enums";
 import { ManualRequestTooSoonException } from "../../shared/exceptions/user-feeds.exceptions";
-import { convertToNestedDiscordEmbed } from "../../shared/utils/convert-to-nested-discord-embed";
+import { formatDiscordChannelConnectionResponse } from "../feed-connections/feed-connections.handlers";
 import type {
   CloneUserFeedBody,
   CopySettingsBody,
@@ -94,50 +93,7 @@ export async function formatUserFeedResponse(
   supportersService: SupportersServiceForFormat,
 ) {
   const discordChannelConnections = feed.connections.discordChannels.map(
-    (con) => ({
-      id: con.id,
-      name: con.name,
-      key: "DISCORD_CHANNEL" as const,
-      details: {
-        ...con.details,
-        embeds: convertToNestedDiscordEmbed(con.details.embeds),
-        formatter: con.details.formatter ?? {},
-        webhook: con.details.webhook
-          ? {
-              id: con.details.webhook.id,
-              guildId: con.details.webhook.guildId,
-              iconUrl: con.details.webhook.iconUrl,
-              name: con.details.webhook.name,
-              type: con.details.webhook.type,
-              threadId: con.details.webhook.threadId,
-              isApplicationOwned: con.details.webhook.isApplicationOwned,
-              channelId: con.details.webhook.channelId,
-            }
-          : undefined,
-        componentRows:
-          con.details.componentRows?.map((r) => ({
-            ...r,
-            components: r.components || [],
-          })) || [],
-      },
-      filters: con.filters,
-      rateLimits: con.rateLimits,
-      disabledCode: con.disabledCode,
-      splitOptions: con.splitOptions,
-      mentions: con.mentions,
-      customPlaceholders: con.customPlaceholders?.map((c) => ({
-        ...c,
-        steps: c.steps.map((s) => {
-          if (s.type === CustomPlaceholderStepType.Regex) {
-            return {
-              ...s,
-              regexSearchFlags: s.regexSearchFlags || "gmi",
-            };
-          }
-          return s;
-        }),
-      })),
-    }),
+    (con) => formatDiscordChannelConnectionResponse(con),
   );
 
   const isOwner = feed.user.discordUserId === discordUserId;

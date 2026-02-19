@@ -3,9 +3,11 @@ import { NotFoundError, ApiErrorCode } from "../../infra/error-handler";
 import {
   FeedConnectionType,
   FeedConnectionDisabledCode,
+  CustomPlaceholderStepType,
 } from "../../repositories/shared/enums";
 import { CannotEnableAutoDisabledConnection } from "../../shared/exceptions/feed-connections.exceptions";
 import type { IFeedEmbed } from "../../repositories/interfaces/feed-embed.types";
+import type { IDiscordChannelConnection } from "../../repositories/interfaces/feed-connection.types";
 import { convertToFlatDiscordEmbeds } from "../../shared/utils/convert-to-flat-discord-embeds";
 import { convertToNestedDiscordEmbed } from "../../shared/utils/convert-to-nested-discord-embed";
 import type {
@@ -26,6 +28,55 @@ import type {
   CreateTemplatePreviewBody,
   UpdateDiscordChannelConnectionBody,
 } from "./feed-connections.schemas";
+
+export function formatDiscordChannelConnectionResponse(
+  con: IDiscordChannelConnection,
+) {
+  return {
+    id: con.id,
+    name: con.name,
+    key: FeedConnectionType.DiscordChannel as const,
+    details: {
+      ...con.details,
+      embeds: convertToNestedDiscordEmbed(con.details.embeds),
+      formatter: con.details.formatter ?? {},
+      webhook: con.details.webhook
+        ? {
+            id: con.details.webhook.id,
+            guildId: con.details.webhook.guildId,
+            iconUrl: con.details.webhook.iconUrl,
+            name: con.details.webhook.name,
+            type: con.details.webhook.type,
+            threadId: con.details.webhook.threadId,
+            isApplicationOwned: con.details.webhook.isApplicationOwned,
+            channelId: con.details.webhook.channelId,
+          }
+        : undefined,
+      componentRows:
+        con.details.componentRows?.map((r) => ({
+          ...r,
+          components: r.components || [],
+        })) || [],
+    },
+    filters: con.filters,
+    rateLimits: con.rateLimits,
+    disabledCode: con.disabledCode,
+    splitOptions: con.splitOptions,
+    mentions: con.mentions,
+    customPlaceholders: con.customPlaceholders?.map((c) => ({
+      ...c,
+      steps: c.steps.map((s) => {
+        if (s.type === CustomPlaceholderStepType.Regex) {
+          return {
+            ...s,
+            regexSearchFlags: s.regexSearchFlags || "gmi",
+          };
+        }
+        return s;
+      }),
+    })),
+  };
+}
 
 export async function deleteDiscordChannelConnectionHandler(
   request: FastifyRequest<{
@@ -155,30 +206,7 @@ export async function createDiscordChannelConnectionHandler(
     });
 
   return reply.status(201).send({
-    result: {
-      id: connection.id,
-      name: connection.name,
-      key: FeedConnectionType.DiscordChannel,
-      filters: connection.filters,
-      details: {
-        channel: connection.details.channel
-          ? {
-              id: connection.details.channel.id,
-              guildId: connection.details.channel.guildId,
-            }
-          : undefined,
-        webhook: connection.details.webhook
-          ? {
-              id: connection.details.webhook.id,
-              guildId: connection.details.webhook.guildId,
-            }
-          : undefined,
-        embeds: convertToNestedDiscordEmbed(connection.details.embeds),
-        content: connection.details.content,
-        formatter: connection.details.formatter ?? {},
-      },
-      splitOptions: connection.splitOptions,
-    },
+    result: formatDiscordChannelConnectionResponse(connection),
   });
 }
 
@@ -634,7 +662,12 @@ export async function updateDiscordChannelConnectionHandler(
       if (body.disabledCode === null) {
         throw new CannotEnableAutoDisabledConnection();
       }
-      if (body.content || body.embeds?.length || body.componentRows?.length || body.componentsV2?.length) {
+      if (
+        body.content ||
+        body.embeds?.length ||
+        body.componentRows?.length ||
+        body.componentsV2?.length
+      ) {
         useDisabledCode = null;
       }
     } else if (connection.disabledCode === FeedConnectionDisabledCode.Manual) {
@@ -718,29 +751,6 @@ export async function updateDiscordChannelConnectionHandler(
     );
 
   return reply.status(200).send({
-    result: {
-      id: updatedConnection.id,
-      name: updatedConnection.name,
-      key: FeedConnectionType.DiscordChannel,
-      filters: updatedConnection.filters,
-      details: {
-        channel: updatedConnection.details.channel
-          ? {
-              id: updatedConnection.details.channel.id,
-              guildId: updatedConnection.details.channel.guildId,
-            }
-          : undefined,
-        webhook: updatedConnection.details.webhook
-          ? {
-              id: updatedConnection.details.webhook.id,
-              guildId: updatedConnection.details.webhook.guildId,
-            }
-          : undefined,
-        embeds: convertToNestedDiscordEmbed(updatedConnection.details.embeds),
-        content: updatedConnection.details.content,
-        formatter: updatedConnection.details.formatter ?? {},
-      },
-      splitOptions: updatedConnection.splitOptions,
-    },
+    result: formatDiscordChannelConnectionResponse(updatedConnection),
   });
 }
