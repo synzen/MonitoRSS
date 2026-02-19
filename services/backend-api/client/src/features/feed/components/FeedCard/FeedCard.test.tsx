@@ -19,7 +19,7 @@ const renderCard = (props: Partial<React.ComponentProps<typeof FeedCard>> = {}) 
       <MemoryRouter>
         <FeedCard feed={defaultFeed} state="default" onAdd={() => {}} {...props} />
       </MemoryRouter>
-    </ChakraProvider>
+    </ChakraProvider>,
   );
 };
 
@@ -162,9 +162,7 @@ describe("FeedCard", () => {
       });
 
       const alert = screen.getByRole("alert");
-      expect(alert).toHaveTextContent(
-        "This feed can't be reached right now. Try again later."
-      );
+      expect(alert).toHaveTextContent("This feed can't be reached right now. Try again later.");
       expect(alert).not.toHaveTextContent("requesting the feed took too long");
     });
 
@@ -191,7 +189,7 @@ describe("FeedCard", () => {
 
       expect(screen.getByText(/https:\/\/ign\.com\/rss\/articles\/feed/)).toBeInTheDocument();
       expect(
-        screen.getByText(/Failed to get feed articles - requesting the feed took too long/)
+        screen.getByText(/Failed to get feed articles - requesting the feed took too long/),
       ).toBeInTheDocument();
     });
 

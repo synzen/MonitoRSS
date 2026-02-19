@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { CuratedFeed } from "../../constants/curatedFeedData";
+import { CuratedFeed } from "../../types";
 import { FeedDiscoverySearch } from "./index";
 
 const mockCategories = [
@@ -79,6 +79,7 @@ vi.mock("../../hooks", () => ({
       getCategoryPreviewText: () => "",
       isLoading: false,
       error: null,
+      refetch: vi.fn(),
     };
   },
 }));
@@ -120,7 +121,7 @@ const renderSearch = (props: Partial<React.ComponentProps<typeof FeedDiscoverySe
       <MemoryRouter>
         <FeedDiscoverySearch {...defaultProps} {...props} />
       </MemoryRouter>
-    </ChakraProvider>
+    </ChakraProvider>,
   );
 
   return { user, ...result };
@@ -221,8 +222,8 @@ describe("FeedDiscoverySearch", () => {
 
       expect(
         screen.getByText(
-          "No matches in popular feeds. Try a different search or paste a direct URL."
-        )
+          "No matches in popular feeds. Try a different search or paste a direct URL.",
+        ),
       ).toBeInTheDocument();
     });
   });
@@ -236,7 +237,7 @@ describe("FeedDiscoverySearch", () => {
 
       const liveRegions = document.querySelectorAll('[aria-live="polite"]');
       const hasResultCount = Array.from(liveRegions).some((el) =>
-        el.textContent?.includes("result")
+        el.textContent?.includes("result"),
       );
 
       expect(hasResultCount).toBe(true);
@@ -291,8 +292,8 @@ describe("FeedDiscoverySearch", () => {
       expect(screen.getByTestId("url-validation-result")).toBeInTheDocument();
       expect(
         screen.queryByText(
-          "No matches in popular feeds. Try a different search or paste a direct URL."
-        )
+          "No matches in popular feeds. Try a different search or paste a direct URL.",
+        ),
       ).not.toBeInTheDocument();
     });
 
@@ -346,6 +347,7 @@ describe("FeedDiscoverySearch", () => {
             getCategoryPreviewText: () => "",
             isLoading: false as const,
             error: null,
+            refetch: vi.fn(),
           };
         }
 
@@ -378,6 +380,7 @@ describe("FeedDiscoverySearch", () => {
             getCategoryPreviewText: () => "",
             isLoading: false as const,
             error: null,
+            refetch: vi.fn(),
           };
         }
 
@@ -387,6 +390,7 @@ describe("FeedDiscoverySearch", () => {
           getCategoryPreviewText: () => "",
           isLoading: false as const,
           error: null,
+          refetch: vi.fn(),
         };
       });
 
@@ -461,7 +465,7 @@ describe("FeedDiscoverySearch", () => {
         expect.objectContaining({
           url: "https://feeds.feedburner.com/ign/games",
           title: "IGN",
-        })
+        }),
       );
     });
 

@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { CuratedFeed, CuratedCategory } from "../../constants/curatedFeedData";
+import { CuratedFeed, CuratedCategory } from "../../types";
 import { PricingDialogContext } from "../../../../contexts";
 import { BrowseFeedsModal } from "./index";
 
@@ -40,7 +40,7 @@ function makeHighlightFeeds(): CuratedFeed[] {
           title: `${cat.label} Feed ${i}`,
           category: cat.id,
           popular: i === 0,
-        })
+        }),
       );
     }
   });
@@ -55,7 +55,7 @@ function makeCategoryFeeds(categoryId: string, count: number): CuratedFeed[] {
       title: `${categoryId} Feed ${i}`,
       category: categoryId,
       popular: i === 0,
-    })
+    }),
   );
 }
 
@@ -85,6 +85,7 @@ vi.mock("../../hooks", () => ({
       getCategoryPreviewText: () => "",
       isLoading: false,
       error: null,
+      refetch: vi.fn(),
     };
   },
   useUserFeeds: () => ({ data: { total: 5 } }),
@@ -124,7 +125,7 @@ const renderModal = (props: Partial<React.ComponentProps<typeof BrowseFeedsModal
           <BrowseFeedsModal {...defaultProps} {...props} />
         </PricingDialogContext.Provider>
       </MemoryRouter>
-    </ChakraProvider>
+    </ChakraProvider>,
   );
 
   return { user, ...result };
@@ -339,10 +340,7 @@ describe("BrowseFeedsModal", () => {
     it("re-opening with a different initialCategory selects the new category", () => {
       const { rerender } = renderModal({ initialCategory: "tech" });
 
-      expect(screen.getByRole("radio", { name: /Tech/ })).toHaveAttribute(
-        "aria-checked",
-        "true"
-      );
+      expect(screen.getByRole("radio", { name: /Tech/ })).toHaveAttribute("aria-checked", "true");
 
       rerender(
         <ChakraProvider>
@@ -351,7 +349,7 @@ describe("BrowseFeedsModal", () => {
               <BrowseFeedsModal {...defaultProps} initialCategory="tech" isOpen={false} />
             </PricingDialogContext.Provider>
           </MemoryRouter>
-        </ChakraProvider>
+        </ChakraProvider>,
       );
 
       rerender(
@@ -361,26 +359,17 @@ describe("BrowseFeedsModal", () => {
               <BrowseFeedsModal {...defaultProps} initialCategory="sports" isOpen={true} />
             </PricingDialogContext.Provider>
           </MemoryRouter>
-        </ChakraProvider>
+        </ChakraProvider>,
       );
 
-      expect(screen.getByRole("radio", { name: /Sports/ })).toHaveAttribute(
-        "aria-checked",
-        "true"
-      );
-      expect(screen.getByRole("radio", { name: /Tech/ })).toHaveAttribute(
-        "aria-checked",
-        "false"
-      );
+      expect(screen.getByRole("radio", { name: /Sports/ })).toHaveAttribute("aria-checked", "true");
+      expect(screen.getByRole("radio", { name: /Tech/ })).toHaveAttribute("aria-checked", "false");
     });
 
     it("re-opening with no initialCategory shows highlights view", async () => {
       const { user, rerender } = renderModal({ initialCategory: "gaming" });
 
-      expect(screen.getByRole("radio", { name: /Gaming/ })).toHaveAttribute(
-        "aria-checked",
-        "true"
-      );
+      expect(screen.getByRole("radio", { name: /Gaming/ })).toHaveAttribute("aria-checked", "true");
 
       rerender(
         <ChakraProvider>
@@ -389,7 +378,7 @@ describe("BrowseFeedsModal", () => {
               <BrowseFeedsModal {...defaultProps} initialCategory="gaming" isOpen={false} />
             </PricingDialogContext.Provider>
           </MemoryRouter>
-        </ChakraProvider>
+        </ChakraProvider>,
       );
 
       rerender(
@@ -399,13 +388,10 @@ describe("BrowseFeedsModal", () => {
               <BrowseFeedsModal {...defaultProps} initialCategory={undefined} isOpen={true} />
             </PricingDialogContext.Provider>
           </MemoryRouter>
-        </ChakraProvider>
+        </ChakraProvider>,
       );
 
-      expect(screen.getByRole("radio", { name: /All/ })).toHaveAttribute(
-        "aria-checked",
-        "true"
-      );
+      expect(screen.getByRole("radio", { name: /All/ })).toHaveAttribute("aria-checked", "true");
       expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(8);
     });
   });
@@ -435,7 +421,7 @@ describe("BrowseFeedsModal", () => {
       const allButtons = screen.getAllByRole("button");
       const firstAddBtn = allButtons.find((btn) => btn.textContent?.includes("+ Add"));
       const firstSeeAll = allButtons.find((btn) =>
-        btn.getAttribute("aria-label")?.includes("See all")
+        btn.getAttribute("aria-label")?.includes("See all"),
       );
 
       if (firstAddBtn && firstSeeAll) {
@@ -540,7 +526,7 @@ describe("BrowseFeedsModal", () => {
 
       expect(onAdd).toHaveBeenCalledTimes(1);
       expect(onAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ url: firstFeed.url, title: firstFeed.title })
+        expect.objectContaining({ url: firstFeed.url, title: firstFeed.title }),
       );
     });
 
@@ -596,14 +582,14 @@ describe("BrowseFeedsModal", () => {
       });
 
       expect(
-        screen.getByRole("button", { name: `${gamingFeed.title} feed added` })
+        screen.getByRole("button", { name: `${gamingFeed.title} feed added` }),
       ).toBeInTheDocument();
 
       await user.click(screen.getByRole("radio", { name: /Anime/ }));
       await user.click(screen.getByRole("radio", { name: /All/ }));
 
       expect(
-        screen.getByRole("button", { name: `${gamingFeed.title} feed added` })
+        screen.getByRole("button", { name: `${gamingFeed.title} feed added` }),
       ).toBeInTheDocument();
     });
 
@@ -616,7 +602,7 @@ describe("BrowseFeedsModal", () => {
       const { rerender } = renderModal({ feedActionStates });
 
       expect(
-        screen.getByRole("button", { name: `${firstFeed.title} feed added` })
+        screen.getByRole("button", { name: `${firstFeed.title} feed added` }),
       ).toBeInTheDocument();
 
       rerender(
@@ -630,7 +616,7 @@ describe("BrowseFeedsModal", () => {
               />
             </PricingDialogContext.Provider>
           </MemoryRouter>
-        </ChakraProvider>
+        </ChakraProvider>,
       );
 
       rerender(
@@ -644,11 +630,11 @@ describe("BrowseFeedsModal", () => {
               />
             </PricingDialogContext.Provider>
           </MemoryRouter>
-        </ChakraProvider>
+        </ChakraProvider>,
       );
 
       expect(
-        screen.getByRole("button", { name: `${firstFeed.title} feed added` })
+        screen.getByRole("button", { name: `${firstFeed.title} feed added` }),
       ).toBeInTheDocument();
     });
   });

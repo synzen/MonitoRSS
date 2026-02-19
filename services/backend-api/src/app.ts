@@ -29,6 +29,7 @@ import { userFeedManagementInvitesRoutes } from "./features/user-feed-management
 import { usersRoutes } from "./features/users/users.routes";
 import { redditAuthRoutes } from "./features/reddit-auth/reddit-auth.routes";
 import { errorReportsRoutes } from "./features/error-reports/error-reports.routes";
+import { curatedFeedsRoutes } from "./features/curated-feeds/curated-feeds.routes";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -228,6 +229,9 @@ export async function createApp(
 
       // Error reports routes
       await instance.register(errorReportsRoutes, { prefix: "/error-reports" });
+
+      // Curated feeds routes
+      await instance.register(curatedFeedsRoutes, { prefix: "/curated-feeds" });
     },
     { prefix: "/api/v1" },
   );

@@ -18,6 +18,8 @@ import {
   MenuDivider,
   IconButton,
   Portal,
+  Skeleton,
+  SimpleGrid,
 } from "@chakra-ui/react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -45,7 +47,7 @@ import {
   useUserFeeds,
 } from "../features/feed";
 import type { FeedActionState } from "../features/feed";
-import { CuratedFeed } from "../features/feed/constants/curatedFeedData";
+import type { CuratedFeed } from "../features/feed/types";
 import { ApiErrorCode } from "../utils/getStandardErrorCodeMessage copy";
 import ApiAdapterError from "../utils/ApiAdapterError";
 import { pages } from "../constants";
@@ -122,7 +124,13 @@ const UserFeedsInner: React.FC = () => {
   const { createSuccessAlert, createErrorAlert, createInfoAlert } = usePageAlertContext();
   const { data: discordUserMe } = useDiscordUserMe();
   const { mutateAsync: createUserFeed } = useCreateUserFeed();
-  const { data: curatedData, getCategoryPreviewText } = useCuratedFeeds();
+  const {
+    data: curatedData,
+    getCategoryPreviewText,
+    isLoading: curatedLoading,
+    error: curatedError,
+    refetch: curatedRefetch,
+  } = useCuratedFeeds();
 
   const [isInDiscoveryMode, setIsInDiscoveryMode] = useState<boolean | null>(null);
   const [feedActionStates, setFeedActionStates] = useState<Record<string, FeedActionState>>({});
@@ -164,7 +172,7 @@ const UserFeedsInner: React.FC = () => {
       Object.entries(feedActionStates)
         .filter(([, s]) => s.status === "added")
         .map(([url]) => url),
-    [feedActionStates]
+    [feedActionStates],
   );
 
   const handleCuratedFeedAdd = useCallback(
@@ -193,7 +201,7 @@ const UserFeedsInner: React.FC = () => {
         }
       }
     },
-    [createUserFeed]
+    [createUserFeed],
   );
 
   const handleUrlFeedAdded = useCallback((_feedId: string, feedUrl: string) => {
@@ -390,7 +398,7 @@ const UserFeedsInner: React.FC = () => {
             </HStack>
           </Alert>
         </Stack>
-        {!isInDiscoveryMode && (
+        {isInDiscoveryMode === false && (
           <>
             <Flex alignItems="center" justifyContent="space-between" gap="4" flexWrap="wrap">
               <Flex alignItems="center" gap={4}>
@@ -423,7 +431,7 @@ const UserFeedsInner: React.FC = () => {
                           isDisabled={
                             !selectedFeeds.length ||
                             !selectedFeeds.some(
-                              (f) => f.disabledCode === UserFeedDisabledCode.Manual
+                              (f) => f.disabledCode === UserFeedDisabledCode.Manual,
                             )
                           }
                           icon={<FaPlay />}
@@ -444,7 +452,7 @@ const UserFeedsInner: React.FC = () => {
                             selectedFeeds.every(
                               (r) =>
                                 !!r.disabledCode &&
-                                r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit
+                                r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit,
                             )
                           }
                           icon={<FaPause />}
@@ -588,10 +596,28 @@ const UserFeedsInner: React.FC = () => {
                 )}
               </Stack>
 
-              {!isSearchActive && (
+              {curatedLoading && !isSearchActive && (
+                <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={4}>
+                  {Array.from({ length: 8 }, (_, i) => (
+                    <Skeleton key={i} height="80px" borderRadius="md" />
+                  ))}
+                </SimpleGrid>
+              )}
+              {!!curatedError && !curatedLoading && (
+                <Alert status="error">
+                  <AlertIcon />
+                  <AlertDescription>
+                    Failed to load feeds.{" "}
+                    <Button variant="link" onClick={() => curatedRefetch()} colorScheme="blue">
+                      Retry
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
+              {!isSearchActive && curatedData && !curatedLoading && (
                 <CategoryGrid
                   categories={curatedData.categories}
-                  totalFeedCount={curatedData.feeds.length}
+                  totalFeedCount={curatedData.feeds.length ?? 0}
                   getCategoryPreviewText={getCategoryPreviewText}
                   onSelectCategory={handleOpenBrowseModal}
                 />

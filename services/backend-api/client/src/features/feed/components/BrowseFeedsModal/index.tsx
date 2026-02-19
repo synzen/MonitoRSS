@@ -12,6 +12,10 @@ import {
   Button,
   SimpleGrid,
   Heading,
+  Spinner,
+  Alert,
+  AlertIcon,
+  AlertDescription,
 } from "@chakra-ui/react";
 import { FeedCard } from "../FeedCard";
 import { FeedLimitBar } from "../FeedLimitBar";
@@ -22,7 +26,7 @@ import {
 } from "../FeedDiscoverySearch";
 import { CategoryPills } from "../CategoryPills";
 import { useCuratedFeeds } from "../../hooks";
-import { CuratedFeed } from "../../constants/curatedFeedData";
+import type { CuratedFeed } from "../../types";
 import type { FeedActionState } from "../../types/FeedActionState";
 import { getFeedCardPropsFromState } from "../../types/FeedActionState";
 
@@ -51,9 +55,22 @@ export const BrowseFeedsModal = ({
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const prevIsOpenRef = useRef(false);
 
-  const { data, getHighlightFeeds } = useCuratedFeeds(
-    selectedCategory ? { category: selectedCategory } : undefined
+  // Reset state during render (not in useEffect) to avoid a flash of stale state on open
+  if (isOpen && !prevIsOpenRef.current) {
+    prevIsOpenRef.current = true;
+    setSelectedCategory(initialCategory);
+    setVisibleCount(BATCH_SIZE);
+    setIsSearchActive(false);
+  }
+
+  if (!isOpen && prevIsOpenRef.current) {
+    prevIsOpenRef.current = false;
+  }
+
+  const { data, getHighlightFeeds, isLoading, error, refetch } = useCuratedFeeds(
+    selectedCategory ? { category: selectedCategory } : undefined,
   );
 
   const handleSearchChange = useCallback((query: string) => {
@@ -69,17 +86,11 @@ export const BrowseFeedsModal = ({
     onFeedAdded,
   });
 
-  const prevIsOpenRef = useRef(false);
-
   useEffect(() => {
-    if (isOpen && !prevIsOpenRef.current) {
-      setSelectedCategory(initialCategory);
-      setVisibleCount(BATCH_SIZE);
-      setIsSearchActive(false);
+    if (isOpen) {
       searchState.handleClear();
     }
-    prevIsOpenRef.current = isOpen;
-  }, [isOpen, initialCategory]);
+  }, [isOpen]);
 
   const handleCategorySelect = (categoryId: string | undefined) => {
     if (isSearchActive) {
@@ -92,21 +103,22 @@ export const BrowseFeedsModal = ({
   };
 
   const handleShowMore = () => {
+    const feeds = data?.feeds ?? [];
     const previousCount = visibleCount;
     const newCount = visibleCount + BATCH_SIZE;
-    const isLoadingAll = newCount >= data.feeds.length;
+    const isLoadingAll = newCount >= feeds.length;
     setVisibleCount(newCount);
 
     requestAnimationFrame(() => {
       if (isLoadingAll) {
-        const lastIndex = data.feeds.length - 1;
+        const lastIndex = feeds.length - 1;
         const lastItem = document.querySelector(
-          `[data-category-feed-index="${lastIndex}"] button`
+          `[data-category-feed-index="${lastIndex}"] button`,
         ) as HTMLElement | null;
         lastItem?.focus();
       } else {
         const nextItem = document.querySelector(
-          `[data-category-feed-index="${previousCount}"] button`
+          `[data-category-feed-index="${previousCount}"] button`,
         ) as HTMLElement | null;
         nextItem?.focus();
       }
@@ -124,11 +136,11 @@ export const BrowseFeedsModal = ({
   };
 
   const highlights = getHighlightFeeds();
-  const visibleFeeds = data.feeds.slice(0, visibleCount);
-  const totalFeeds = data.feeds.length;
+  const visibleFeeds = data?.feeds.slice(0, visibleCount) ?? [];
+  const totalFeeds = data?.feeds.length ?? 0;
   const hasMore = visibleCount < totalFeeds;
   const selectedCategoryLabel =
-    data.categories.find((c) => c.id === selectedCategory)?.label || selectedCategory;
+    (data?.categories ?? []).find((c) => c.id === selectedCategory)?.label || selectedCategory;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="6xl" initialFocusRef={searchInputRef}>
@@ -142,18 +154,34 @@ export const BrowseFeedsModal = ({
             <FeedDiscoverySearchInput state={searchState} />
             <Box as="nav" aria-label="Feed categories">
               <CategoryPills
-                categories={data.categories}
+                categories={data?.categories ?? []}
                 selectedCategory={selectedCategory}
                 onSelect={handleCategorySelect}
                 isSearchActive={isSearchActive}
               />
             </Box>
+            {isLoading && !isSearchActive && (
+              <Box display="flex" justifyContent="center" py={8}>
+                <Spinner size="lg" aria-label="Loading feeds" />
+              </Box>
+            )}
+            {!!error && !isLoading && (
+              <Alert status="error">
+                <AlertIcon />
+                <AlertDescription>
+                  Failed to load feeds.{" "}
+                  <Button variant="link" onClick={() => refetch()} colorScheme="blue">
+                    Retry
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
             {isSearchActive && (
               <Box as="section" aria-label="Feed list">
                 <FeedDiscoverySearchResults state={searchState} />
               </Box>
             )}
-            {!isSearchActive && (
+            {!isSearchActive && data && !isLoading && !error && (
               <Box as="section" aria-label="Feed list">
                 {selectedCategory === undefined ? (
                   <Stack spacing={6}>
@@ -194,7 +222,7 @@ export const BrowseFeedsModal = ({
                               const cardProps = getFeedCardPropsFromState(
                                 feedActionStates,
                                 feed.url,
-                                isAtLimit
+                                isAtLimit,
                               );
 
                               return (
@@ -235,7 +263,7 @@ export const BrowseFeedsModal = ({
                       role="list"
                       aria-label={`${selectedCategoryLabel} feeds, showing ${Math.min(
                         visibleCount,
-                        totalFeeds
+                        totalFeeds,
                       )} of ${totalFeeds}`}
                       spacing={2}
                       listStyleType="none"
@@ -244,7 +272,7 @@ export const BrowseFeedsModal = ({
                         const cardProps = getFeedCardPropsFromState(
                           feedActionStates,
                           feed.url,
-                          isAtLimit
+                          isAtLimit,
                         );
 
                         return (

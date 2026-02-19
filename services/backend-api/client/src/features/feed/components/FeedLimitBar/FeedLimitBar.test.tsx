@@ -24,7 +24,7 @@ const renderBar = () => {
       <PricingDialogContext.Provider value={{ onOpen: mockOnOpen }}>
         <FeedLimitBar />
       </PricingDialogContext.Provider>
-    </ChakraProvider>
+    </ChakraProvider>,
   );
 };
 

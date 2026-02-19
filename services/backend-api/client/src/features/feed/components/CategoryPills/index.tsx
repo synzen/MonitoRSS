@@ -45,16 +45,19 @@ export const CategoryPills: React.FC<CategoryPillsProps> = ({
       }
 
       e.preventDefault();
+      onSelect(allItems[nextIndex].id);
       pillRefs.current[nextIndex]?.focus();
     },
-    [allItems.length, selectedIndex]
+    [allItems, selectedIndex, onSelect]
   );
 
   return (
     <Flex
       role="radiogroup"
       aria-label="Feed categories"
-      {...(isSearchActive && { "aria-description": "Search is filtering results. Select a category to clear search." })}
+      {...(isSearchActive && {
+        "aria-description": "Search is filtering results. Select a category to clear search.",
+      })}
       flexWrap="wrap"
       gap={2}
       onKeyDown={onKeyDown}

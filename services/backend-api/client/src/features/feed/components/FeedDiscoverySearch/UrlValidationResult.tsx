@@ -250,10 +250,10 @@ export const UrlValidationResult = ({
             buttonState === "default"
               ? "default"
               : buttonState === "adding"
-              ? "adding"
-              : buttonState === "added"
-              ? "added"
-              : "limit-reached"
+                ? "adding"
+                : buttonState === "added"
+                  ? "added"
+                  : "limit-reached"
           }
           onAdd={handleAdd}
           errorMessage={addError && !isLimitReachedError ? "Failed to add feed" : undefined}

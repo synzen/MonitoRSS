@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { CuratedCategory, CuratedFeed } from "../features/feed/constants/curatedFeedData";
+import { CuratedCategory, CuratedFeed } from "../features/feed/types";
 import { PricingDialogContext } from "../contexts";
 import { UserFeeds } from "./UserFeeds";
 
@@ -35,8 +35,8 @@ const allFeeds: CuratedFeed[] = mockCategories.flatMap((cat) =>
       url: `https://example.com/${cat.id}-${i}`,
       title: `${cat.label} Feed ${i}`,
       category: cat.id,
-    })
-  )
+    }),
+  ),
 );
 
 const mockCreateUserFeed = vi.fn();
@@ -113,6 +113,7 @@ vi.mock("../features/feed", async () => {
         },
         isLoading: false,
         error: null,
+        refetch: vi.fn(),
       };
     },
   };
@@ -154,7 +155,7 @@ const renderPage = () => {
           <UserFeeds />
         </PricingDialogContext.Provider>
       </MemoryRouter>
-    </ChakraProvider>
+    </ChakraProvider>,
   );
 
   return { user, ...result };
@@ -170,7 +171,7 @@ describe("UserFeeds — Discovery Mode", () => {
     renderPage();
     expect(screen.getByText("Get news delivered to your Discord")).toBeInTheDocument();
     expect(
-      screen.getByText("Browse popular feeds to get started, or paste any URL")
+      screen.getByText("Browse popular feeds to get started, or paste any URL"),
     ).toBeInTheDocument();
   });
 
@@ -415,7 +416,7 @@ describe("UserFeeds — Non-discovery mode", () => {
             <UserFeeds />
           </PricingDialogContext.Provider>
         </MemoryRouter>
-      </ChakraProvider>
+      </ChakraProvider>,
     );
 
     expect(screen.getByText("Get news delivered to your Discord")).toBeInTheDocument();
@@ -458,7 +459,7 @@ describe("UserFeeds — Returning user Add Feed button", () => {
 
     expect(screen.getByText("1 feed added")).toBeInTheDocument();
     expect(
-      screen.getByText("Click a feed to set up where articles are delivered.")
+      screen.getByText("Click a feed to set up where articles are delivered."),
     ).toBeInTheDocument();
   });
 

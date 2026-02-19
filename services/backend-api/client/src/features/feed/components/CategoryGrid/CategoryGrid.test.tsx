@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { describe, it, expect, vi } from "vitest";
@@ -32,82 +32,86 @@ const renderGrid = (overrides = {}) => {
 };
 
 describe("CategoryGrid", () => {
-  it("renders all category buttons plus Browse All", () => {
+  it("renders all category radios plus Browse All", () => {
     renderGrid();
-    const list = screen.getByRole("list", { name: "Feed categories" });
-    const items = within(list).getAllByRole("listitem");
+    const radios = screen.getAllByRole("radio");
 
-    expect(items).toHaveLength(categories.length + 1);
+    expect(radios).toHaveLength(categories.length + 1);
   });
 
-  it("only the first button has tabIndex 0", () => {
+  it("has a radiogroup container", () => {
     renderGrid();
-    const buttons = screen.getAllByRole("button");
+    expect(screen.getByRole("radiogroup", { name: "Feed categories" })).toBeInTheDocument();
+  });
 
-    expect(buttons[0]).toHaveAttribute("tabindex", "0");
-    buttons.slice(1).forEach((btn) => {
-      expect(btn).toHaveAttribute("tabindex", "-1");
+  it("only the first radio has tabIndex 0", () => {
+    renderGrid();
+    const radios = screen.getAllByRole("radio");
+
+    expect(radios[0]).toHaveAttribute("tabindex", "0");
+    radios.slice(1).forEach((radio) => {
+      expect(radio).toHaveAttribute("tabindex", "-1");
     });
   });
 
-  it("ArrowRight moves focus to the next button", async () => {
+  it("ArrowRight moves focus to the next radio", async () => {
     const { user } = renderGrid();
-    const buttons = screen.getAllByRole("button");
+    const radios = screen.getAllByRole("radio");
 
-    buttons[0].focus();
+    radios[0].focus();
     await user.keyboard("{ArrowRight}");
 
-    expect(buttons[1]).toHaveFocus();
+    expect(radios[1]).toHaveFocus();
   });
 
   it("ArrowLeft from first wraps to last", async () => {
     const { user } = renderGrid();
-    const buttons = screen.getAllByRole("button");
+    const radios = screen.getAllByRole("radio");
 
-    buttons[0].focus();
+    radios[0].focus();
     await user.keyboard("{ArrowLeft}");
 
-    expect(buttons[buttons.length - 1]).toHaveFocus();
+    expect(radios[radios.length - 1]).toHaveFocus();
   });
 
   it("ArrowRight from last wraps to first", async () => {
     const { user } = renderGrid();
-    const buttons = screen.getAllByRole("button");
+    const radios = screen.getAllByRole("radio");
 
-    buttons[0].focus();
-    for (let i = 0; i < buttons.length; i++) {
+    radios[0].focus();
+    for (let i = 0; i < radios.length; i++) {
       await user.keyboard("{ArrowRight}");
     }
 
-    expect(buttons[0]).toHaveFocus();
+    expect(radios[0]).toHaveFocus();
   });
 
-  it("Home moves focus to first button", async () => {
+  it("Home moves focus to first radio", async () => {
     const { user } = renderGrid();
-    const buttons = screen.getAllByRole("button");
+    const radios = screen.getAllByRole("radio");
 
-    buttons[0].focus();
+    radios[0].focus();
     await user.keyboard("{ArrowRight}{ArrowRight}");
     await user.keyboard("{Home}");
 
-    expect(buttons[0]).toHaveFocus();
+    expect(radios[0]).toHaveFocus();
   });
 
-  it("End moves focus to last button", async () => {
+  it("End moves focus to last radio", async () => {
     const { user } = renderGrid();
-    const buttons = screen.getAllByRole("button");
+    const radios = screen.getAllByRole("radio");
 
-    buttons[0].focus();
+    radios[0].focus();
     await user.keyboard("{End}");
 
-    expect(buttons[buttons.length - 1]).toHaveFocus();
+    expect(radios[radios.length - 1]).toHaveFocus();
   });
 
   it("clicking a category calls onSelectCategory with the category id", async () => {
     const onSelectCategory = vi.fn();
     const { user } = renderGrid({ onSelectCategory });
 
-    await user.click(screen.getByRole("button", { name: /^Gaming/ }));
+    await user.click(screen.getByRole("radio", { name: /^Gaming/ }));
 
     expect(onSelectCategory).toHaveBeenCalledWith("gaming");
   });
@@ -116,7 +120,7 @@ describe("CategoryGrid", () => {
     const onSelectCategory = vi.fn();
     const { user } = renderGrid({ onSelectCategory });
 
-    await user.click(screen.getByText("Browse All").closest("button")!);
+    await user.click(screen.getByText("Browse All").closest("[role='radio']")!);
 
     expect(onSelectCategory).toHaveBeenCalledWith(undefined);
   });

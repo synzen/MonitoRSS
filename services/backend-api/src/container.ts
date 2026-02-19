@@ -18,6 +18,8 @@ import type { IFeedRepository } from "./repositories/interfaces/feed.types";
 import type { IFeedFilteredFormatRepository } from "./repositories/interfaces/feed-filtered-format.types";
 import type { ISupporterRepository } from "./repositories/interfaces/supporter.types";
 import type { IUserFeedRepository } from "./repositories/interfaces/user-feed.types";
+import type { ICuratedFeedRepository } from "./repositories/interfaces/curated-feed.types";
+import type { ICuratedCategoryRepository } from "./repositories/interfaces/curated-category.types";
 import { MongoMigrationMongooseRepository } from "./repositories/mongoose/mongo-migration.mongoose.repository";
 import { FailRecordMongooseRepository } from "./repositories/mongoose/fail-record.mongoose.repository";
 import { BannedFeedMongooseRepository } from "./repositories/mongoose/banned-feed.mongoose.repository";
@@ -33,6 +35,8 @@ import { FeedMongooseRepository } from "./repositories/mongoose/feed.mongoose.re
 import { FeedFilteredFormatMongooseRepository } from "./repositories/mongoose/feed-filtered-format.mongoose.repository";
 import { SupporterMongooseRepository } from "./repositories/mongoose/supporter.mongoose.repository";
 import { UserFeedMongooseRepository } from "./repositories/mongoose/user-feed.mongoose.repository";
+import { CuratedFeedMongooseRepository } from "./repositories/mongoose/curated-feed.mongoose.repository";
+import { CuratedCategoryMongooseRepository } from "./repositories/mongoose/curated-category.mongoose.repository";
 import { DiscordApiService } from "./services/discord-api/discord-api.service";
 import { DiscordAuthService } from "./services/discord-auth/discord-auth.service";
 import { DiscordPermissionsService } from "./services/discord-permissions/discord-permissions.service";
@@ -91,6 +95,8 @@ export interface Container {
   feedFilteredFormatRepository: IFeedFilteredFormatRepository;
   supporterRepository: ISupporterRepository;
   userFeedRepository: IUserFeedRepository;
+  curatedFeedRepository: ICuratedFeedRepository;
+  curatedCategoryRepository: ICuratedCategoryRepository;
 
   // External API Services
   discordApiService: DiscordApiService;
@@ -168,6 +174,12 @@ export function createContainer(deps: {
     deps.mongoConnection,
   );
   const userFeedRepository = new UserFeedMongooseRepository(
+    deps.mongoConnection,
+  );
+  const curatedFeedRepository = new CuratedFeedMongooseRepository(
+    deps.mongoConnection,
+  );
+  const curatedCategoryRepository = new CuratedCategoryMongooseRepository(
     deps.mongoConnection,
   );
 
@@ -369,6 +381,8 @@ export function createContainer(deps: {
     feedFilteredFormatRepository,
     supporterRepository,
     userFeedRepository,
+    curatedFeedRepository,
+    curatedCategoryRepository,
 
     // External API Services
     discordApiService,

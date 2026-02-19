@@ -12,3 +12,4 @@ export * from "./UserFeedDeliveryLog";
 export * from "./DeliveryPreview";
 export * from "./ExternalContentError";
 export * from "./FeedActionState";
+export * from "./CuratedFeed";

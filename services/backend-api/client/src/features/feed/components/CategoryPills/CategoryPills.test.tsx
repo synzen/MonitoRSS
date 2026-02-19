@@ -101,58 +101,70 @@ describe("CategoryPills", () => {
       expect(gamingPill).toHaveAttribute("tabindex", "-1");
     });
 
-    it("ArrowRight moves focus to next pill", async () => {
-      const { user } = renderPills();
+    it("ArrowRight moves focus and selects next pill", async () => {
+      const onSelect = vi.fn();
+      const { user } = renderPills({ onSelect });
 
       await user.tab();
       await user.keyboard("{ArrowRight}");
 
       expect(screen.getByText("Gaming").closest("button")).toHaveFocus();
+      expect(onSelect).toHaveBeenCalledWith("gaming");
     });
 
-    it("ArrowLeft moves focus to previous pill", async () => {
-      const { user } = renderPills({ selectedCategory: "tech" });
+    it("ArrowLeft moves focus and selects previous pill", async () => {
+      const onSelect = vi.fn();
+      const { user } = renderPills({ selectedCategory: "tech", onSelect });
 
       await user.tab();
       await user.keyboard("{ArrowLeft}");
 
       expect(screen.getByText("Gaming").closest("button")).toHaveFocus();
+      expect(onSelect).toHaveBeenCalledWith("gaming");
     });
 
     it("ArrowRight on last pill wraps to first pill", async () => {
-      const { user } = renderPills({ selectedCategory: "news" });
+      const onSelect = vi.fn();
+      const { user } = renderPills({ selectedCategory: "news", onSelect });
 
       await user.tab();
       await user.keyboard("{ArrowRight}");
 
       expect(screen.getByText("All").closest("button")).toHaveFocus();
+      expect(onSelect).toHaveBeenCalledWith(undefined);
     });
 
     it("ArrowLeft on first pill wraps to last pill", async () => {
-      const { user } = renderPills();
+      const onSelect = vi.fn();
+      const { user } = renderPills({ onSelect });
 
       await user.tab();
       await user.keyboard("{ArrowLeft}");
 
       expect(screen.getByText("News").closest("button")).toHaveFocus();
+      expect(onSelect).toHaveBeenCalledWith("news");
     });
 
-    it("Home moves focus to first pill", async () => {
-      const { user } = renderPills({ selectedCategory: "news" });
+    it("Home moves focus and selects first pill", async () => {
+      const onSelect = vi.fn();
+      const { user } = renderPills({ selectedCategory: "news", onSelect });
 
       await user.tab();
       await user.keyboard("{Home}");
 
       expect(screen.getByText("All").closest("button")).toHaveFocus();
+      expect(onSelect).toHaveBeenCalledWith(undefined);
     });
 
-    it("End moves focus to last pill", async () => {
-      const { user } = renderPills();
+    it("End moves focus and selects last pill", async () => {
+      const onSelect = vi.fn();
+      const { user } = renderPills({ onSelect });
 
       await user.tab();
       await user.keyboard("{End}");
 
       expect(screen.getByText("News").closest("button")).toHaveFocus();
+      expect(onSelect).toHaveBeenCalledWith("news");
     });
   });
 

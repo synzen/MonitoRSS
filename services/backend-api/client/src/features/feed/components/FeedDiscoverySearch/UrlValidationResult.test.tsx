@@ -47,7 +47,7 @@ const renderComponent = (props: Partial<React.ComponentProps<typeof UrlValidatio
       <MemoryRouter>
         <UrlValidationResult {...defaultProps} {...props} />
       </MemoryRouter>
-    </ChakraProvider>
+    </ChakraProvider>,
   );
 
   return { user, ...result };
@@ -88,7 +88,7 @@ describe("UrlValidationResult", () => {
       });
 
       expect(
-        screen.getByRole("button", { name: /add blog\.example\.com feed/i })
+        screen.getByRole("button", { name: /add blog\.example\.com feed/i }),
       ).toBeInTheDocument();
     });
   });
@@ -187,7 +187,7 @@ describe("UrlValidationResult", () => {
 
       expect(icon).toHaveAttribute(
         "src",
-        "https://www.google.com/s2/favicons?sz=32&domain=www.youtube.com"
+        "https://www.google.com/s2/favicons?sz=32&domain=www.youtube.com",
       );
     });
 
@@ -331,7 +331,7 @@ describe("UrlValidationResult", () => {
       mockMutateAsync.mockRejectedValue(
         new ApiAdapterError("Server error", {
           errorCode: ApiErrorCode.INTERNAL_ERROR,
-        })
+        }),
       );
 
       const { user } = renderComponent({
@@ -351,7 +351,7 @@ describe("UrlValidationResult", () => {
       mockMutateAsync.mockRejectedValue(
         new ApiAdapterError("Limit reached", {
           errorCode: ApiErrorCode.FEED_LIMIT_REACHED,
-        })
+        }),
       );
 
       const { user } = renderComponent({

@@ -1,9 +1,6 @@
-import {
-  categories as allCategories,
-  feeds as allFeeds,
-  CuratedCategory,
-  CuratedFeed,
-} from "../constants/curatedFeedData";
+import { useQuery } from "@tanstack/react-query";
+import { getCuratedFeeds } from "../api";
+import type { CuratedCategory, CuratedFeed } from "../types";
 
 function filterByCategory(feeds: CuratedFeed[], categoryId: string): CuratedFeed[] {
   return feeds.filter((feed) => feed.category === categoryId);
@@ -17,7 +14,7 @@ function searchByTitle(feeds: CuratedFeed[], query: string): CuratedFeed[] {
 
 function getCategoryMetadata(
   feeds: CuratedFeed[],
-  categories: CuratedCategory[]
+  categories: CuratedCategory[],
 ): Array<CuratedCategory & { count: number }> {
   return categories.map((cat) => ({
     ...cat,
@@ -27,7 +24,7 @@ function getCategoryMetadata(
 
 function getHighlightFeeds(
   feeds: CuratedFeed[],
-  categories: CuratedCategory[]
+  categories: CuratedCategory[],
 ): Array<{
   category: CuratedCategory;
   feeds: CuratedFeed[];
@@ -55,17 +52,32 @@ interface UseCuratedFeedsOptions {
 }
 
 interface UseCuratedFeedsResult {
-  data: {
-    feeds: CuratedFeed[];
-    categories: Array<CuratedCategory & { count: number }>;
-  };
+  data:
+    | {
+        feeds: CuratedFeed[];
+        categories: Array<CuratedCategory & { count: number }>;
+      }
+    | undefined;
   getHighlightFeeds: () => Array<{ category: CuratedCategory; feeds: CuratedFeed[] }>;
   getCategoryPreviewText: (categoryId: string) => string;
-  isLoading: false;
-  error: null;
+  isLoading: boolean;
+  error: unknown;
+  refetch: () => void;
 }
 
 export function useCuratedFeeds(options?: UseCuratedFeedsOptions): UseCuratedFeedsResult {
+  const {
+    data: queryData,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery(["curated-feeds"], getCuratedFeeds, {
+    staleTime: Infinity,
+  });
+
+  const allFeeds = queryData?.result.feeds ?? [];
+  const allCategories = queryData?.result.categories ?? [];
+
   let feeds = allFeeds;
 
   if (options?.category) {
@@ -76,14 +88,19 @@ export function useCuratedFeeds(options?: UseCuratedFeedsOptions): UseCuratedFee
 
   const categories = getCategoryMetadata(allFeeds, allCategories);
 
+  const data = queryData
+    ? {
+        feeds,
+        categories,
+      }
+    : undefined;
+
   return {
-    data: {
-      feeds,
-      categories,
-    },
+    data,
     getHighlightFeeds: () => getHighlightFeeds(allFeeds, allCategories),
     getCategoryPreviewText: (categoryId: string) => getCategoryPreviewText(allFeeds, categoryId),
-    isLoading: false,
-    error: null,
+    isLoading,
+    error,
+    refetch,
   };
 }

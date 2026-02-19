@@ -14,7 +14,7 @@ import {
 import { SearchIcon, CloseIcon } from "@chakra-ui/icons";
 import { FeedCard } from "../FeedCard";
 import { useCuratedFeeds } from "../../hooks";
-import { CuratedFeed } from "../../constants/curatedFeedData";
+import type { CuratedFeed } from "../../types";
 import { useCreateUserFeedUrlValidation } from "../../hooks/useCreateUserFeedUrlValidation";
 import { UrlValidationResult } from "./UrlValidationResult";
 import type { FeedActionState } from "../../types/FeedActionState";
@@ -55,12 +55,12 @@ export function useFeedDiscoverySearchState({
 
   const isUrlInput = URL_PATTERN.test(activeQuery);
   const { data } = useCuratedFeeds(
-    activeQuery && !isUrlInput ? { search: activeQuery } : undefined
+    activeQuery && !isUrlInput ? { search: activeQuery } : undefined,
   );
 
   const hasActiveSearch = activeQuery.length > 0;
-  const totalResults = isUrlInput ? 0 : data.feeds.length;
-  const visibleResults = data.feeds.slice(0, visibleCount);
+  const totalResults = isUrlInput ? 0 : (data?.feeds.length ?? 0);
+  const visibleResults = data?.feeds.slice(0, visibleCount) ?? [];
 
   const setInputRef = useCallback(
     (node: HTMLInputElement | null) => {
@@ -70,11 +70,11 @@ export function useFeedDiscoverySearchState({
         (searchInputRef as MutableRefObject<HTMLInputElement | null>).current = node;
       }
     },
-    [searchInputRef]
+    [searchInputRef],
   );
 
   const getCategoryLabel = (categoryId: string) =>
-    data.categories.find((c) => c.id === categoryId)?.label || categoryId;
+    data?.categories.find((c) => c.id === categoryId)?.label || categoryId;
 
   const handleSearch = async (e: FormEvent) => {
     e.preventDefault();
@@ -136,7 +136,7 @@ export function useFeedDiscoverySearchState({
 
     requestAnimationFrame(() => {
       const nextItem = document.querySelector(
-        `[data-feed-index="${previousCount}"] button`
+        `[data-feed-index="${previousCount}"] button`,
       ) as HTMLElement | null;
 
       nextItem?.focus();
@@ -224,7 +224,7 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
             role="list"
             aria-label={`Search results, showing ${Math.min(
               state.visibleCount,
-              state.totalResults
+              state.totalResults,
             )} of ${state.totalResults}`}
             spacing={2}
             listStyleType="none"
@@ -233,7 +233,7 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
               const cardProps = getFeedCardPropsFromState(
                 state.feedActionStates,
                 feed.url,
-                state.isAtLimit
+                state.isAtLimit,
               );
 
               return (
