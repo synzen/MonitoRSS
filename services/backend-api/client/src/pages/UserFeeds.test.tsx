@@ -212,7 +212,7 @@ describe("UserFeeds — Discovery Mode", () => {
     renderPage();
     expect(screen.getByText("Get news delivered to your Discord")).toBeInTheDocument();
     expect(
-      screen.getByText("Browse popular feeds to get started, or paste a URL to check any website")
+      screen.getByText("Browse popular feeds to get started, or paste a URL to check any website.")
     ).toBeInTheDocument();
   });
 

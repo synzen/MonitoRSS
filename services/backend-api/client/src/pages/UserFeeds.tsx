@@ -574,7 +574,7 @@ const UserFeedsInner: React.FC = () => {
                       Get news delivered to your Discord
                     </Heading>
                     <Text color="gray.400">
-                      Browse popular feeds to get started, or paste a URL to check any website
+                      Browse popular feeds to get started, or paste a URL to check any website.
                     </Text>
                   </>
                 )}
