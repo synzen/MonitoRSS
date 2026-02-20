@@ -5,7 +5,11 @@ import { useUserFeeds } from "../../hooks";
 import { useDiscordUserMe } from "../../../discordUser";
 import { PricingDialogContext } from "../../../../contexts";
 
-export const FeedLimitBar = () => {
+interface FeedLimitBarProps {
+  showOnlyWhenConstrained?: boolean;
+}
+
+export const FeedLimitBar = ({ showOnlyWhenConstrained = false }: FeedLimitBarProps) => {
   const { data: userFeedsData } = useUserFeeds({ limit: 1, offset: 0 });
   const { data: discordUserMe } = useDiscordUserMe();
   const { onOpen } = useContext(PricingDialogContext);
@@ -19,7 +23,12 @@ export const FeedLimitBar = () => {
 
   const remaining = maxCount - currentCount;
   const isAtLimit = remaining <= 0;
-  const isNearLimit = !isAtLimit && remaining <= 3;
+  const nearLimitThreshold = Math.min(3, Math.floor(maxCount * 0.2));
+  const isNearLimit = !isAtLimit && remaining <= nearLimitThreshold;
+
+  if (showOnlyWhenConstrained && !isAtLimit && !isNearLimit) {
+    return null;
+  }
 
   if (isAtLimit) {
     return (

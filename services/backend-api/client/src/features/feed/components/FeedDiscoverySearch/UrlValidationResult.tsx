@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Box, Text, Button, Spinner, HStack } from "@chakra-ui/react";
 import { WarningIcon } from "@chakra-ui/icons";
 import ApiAdapterError from "@/utils/ApiAdapterError";
@@ -43,6 +43,13 @@ export const UrlValidationResult = ({
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState<ApiAdapterError | null>(null);
   const feedUrl = validationData?.result.resolvedToUrl || url;
+  const feedTitle = validationData?.result.feedTitle || undefined;
+
+  useEffect(() => {
+    setAddedFeedId(null);
+    setIsAdding(false);
+    setAddError(null);
+  }, [url]);
 
   const handleAdd = async () => {
     if (isAdding || addedFeedId) return;
@@ -52,7 +59,7 @@ export const UrlValidationResult = ({
 
     try {
       const { result } = await createFeed({
-        details: { url: feedUrl },
+        details: { url: feedUrl, title: feedTitle },
       });
       setAddedFeedId(result.id);
       onFeedAdded?.(result.id, feedUrl);

@@ -24,7 +24,7 @@ import {
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AddIcon, CheckCircleIcon, ChevronDownIcon, DeleteIcon } from "@chakra-ui/icons";
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { FaCopy } from "react-icons/fa6";
 import { FaPause, FaPlay } from "react-icons/fa";
 import { IoDuplicate } from "react-icons/io5";
@@ -34,6 +34,7 @@ import {
   CategoryGrid,
   CloneUserFeedDialog,
   FeedDiscoverySearch,
+  FeedLimitBar,
   FeedManagementInvitesDialog,
   useCreateUserFeed,
   useCuratedFeeds,
@@ -140,6 +141,7 @@ const UserFeedsInner: React.FC = () => {
   >();
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [modalSessionAddCount, setModalSessionAddCount] = useState(0);
+  const limitAlertShownRef = useRef(false);
 
   const totalFeedCount = userFeedsResults?.total;
   const navigatedAlertTitle = state?.alertTitle;
@@ -172,7 +174,7 @@ const UserFeedsInner: React.FC = () => {
       Object.entries(feedActionStates)
         .filter(([, s]) => s.status === "added")
         .map(([url]) => url),
-    [feedActionStates]
+    [feedActionStates],
   );
 
   const handleCuratedFeedAdd = useCallback(
@@ -189,6 +191,13 @@ const UserFeedsInner: React.FC = () => {
         const apiError = err as ApiAdapterError;
         if (apiError.errorCode === ApiErrorCode.FEED_LIMIT_REACHED) {
           setFeedActionStates((prev) => ({ ...prev, [feed.url]: { status: "limit-reached" } }));
+          if (!limitAlertShownRef.current) {
+            limitAlertShownRef.current = true;
+            createInfoAlert({
+              title: "Feed limit reached",
+              description: `You've used all ${discordUserMe?.maxUserFeeds ?? ""} of your available feeds.`,
+            });
+          }
         } else {
           setFeedActionStates((prev) => ({
             ...prev,
@@ -201,7 +210,7 @@ const UserFeedsInner: React.FC = () => {
         }
       }
     },
-    [createUserFeed]
+    [createUserFeed, createInfoAlert, discordUserMe?.maxUserFeeds],
   );
 
   const handleUrlFeedAdded = useCallback((_feedId: string, feedUrl: string) => {
@@ -431,7 +440,7 @@ const UserFeedsInner: React.FC = () => {
                           isDisabled={
                             !selectedFeeds.length ||
                             !selectedFeeds.some(
-                              (f) => f.disabledCode === UserFeedDisabledCode.Manual
+                              (f) => f.disabledCode === UserFeedDisabledCode.Manual,
                             )
                           }
                           icon={<FaPlay />}
@@ -452,7 +461,7 @@ const UserFeedsInner: React.FC = () => {
                             selectedFeeds.every(
                               (r) =>
                                 !!r.disabledCode &&
-                                r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit
+                                r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit,
                             )
                           }
                           icon={<FaPause />}
@@ -594,6 +603,7 @@ const UserFeedsInner: React.FC = () => {
                     news site URL
                   </Text>
                 )}
+                <FeedLimitBar showOnlyWhenConstrained />
               </Stack>
 
               {curatedLoading && !isSearchActive && (

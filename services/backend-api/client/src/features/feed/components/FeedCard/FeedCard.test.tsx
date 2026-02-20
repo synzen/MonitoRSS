@@ -168,14 +168,14 @@ describe("FeedCard", () => {
       expect(retryBtn).toHaveAttribute("aria-describedby", alert.id);
     });
 
-    it("limit-reached state shows disabled Add button", () => {
+    it("limit-reached state shows disabled Limit reached button", () => {
       renderCard({ state: "limit-reached" });
 
       const btn = screen.getByRole("button", {
         name: /add ign feed, disabled, feed limit reached/i,
       });
       expect(btn).toHaveAttribute("aria-disabled", "true");
-      expect(btn).toHaveTextContent("+ Add");
+      expect(btn).toHaveTextContent("Limit reached");
     });
 
     it("hideActions hides all action buttons", () => {

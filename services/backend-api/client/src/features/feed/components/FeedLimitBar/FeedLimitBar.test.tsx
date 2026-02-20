@@ -18,11 +18,11 @@ import { useDiscordUserMe } from "../../../discordUser";
 
 const mockOnOpen = vi.fn();
 
-const renderBar = () => {
+const renderBar = (props: { showOnlyWhenConstrained?: boolean } = {}) => {
   return render(
     <ChakraProvider>
       <PricingDialogContext.Provider value={{ onOpen: mockOnOpen }}>
-        <FeedLimitBar />
+        <FeedLimitBar {...props} />
       </PricingDialogContext.Provider>
     </ChakraProvider>
   );
@@ -155,6 +155,73 @@ describe("FeedLimitBar", () => {
 
       fireEvent.click(screen.getByRole("button", { name: /increase limits/i }));
       expect(mockOnOpen).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("showOnlyWhenConstrained", () => {
+    it("hides bar when user has plenty of headroom", () => {
+      vi.mocked(useUserFeeds).mockReturnValue({
+        data: { results: [], total: 12 },
+      } as never);
+      vi.mocked(useDiscordUserMe).mockReturnValue({
+        data: { maxUserFeeds: 25 },
+      } as never);
+
+      renderBar({ showOnlyWhenConstrained: true });
+
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    });
+
+    it("shows bar when near limit (3 remaining)", () => {
+      vi.mocked(useUserFeeds).mockReturnValue({
+        data: { results: [], total: 22 },
+      } as never);
+      vi.mocked(useDiscordUserMe).mockReturnValue({
+        data: { maxUserFeeds: 25 },
+      } as never);
+
+      renderBar({ showOnlyWhenConstrained: true });
+
+      expect(screen.getByRole("status")).toHaveTextContent("3 remaining");
+    });
+
+    it("shows bar when at limit", () => {
+      vi.mocked(useUserFeeds).mockReturnValue({
+        data: { results: [], total: 25 },
+      } as never);
+      vi.mocked(useDiscordUserMe).mockReturnValue({
+        data: { maxUserFeeds: 25 },
+      } as never);
+
+      renderBar({ showOnlyWhenConstrained: true });
+
+      expect(screen.getByRole("status")).toHaveTextContent("Feed limit reached (25/25)");
+    });
+
+    it("does not show warning for small limits with plenty of headroom (0/3)", () => {
+      vi.mocked(useUserFeeds).mockReturnValue({
+        data: { results: [], total: 0 },
+      } as never);
+      vi.mocked(useDiscordUserMe).mockReturnValue({
+        data: { maxUserFeeds: 3 },
+      } as never);
+
+      renderBar({ showOnlyWhenConstrained: true });
+
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    });
+
+    it("shows warning for small limits when at limit (3/3)", () => {
+      vi.mocked(useUserFeeds).mockReturnValue({
+        data: { results: [], total: 3 },
+      } as never);
+      vi.mocked(useDiscordUserMe).mockReturnValue({
+        data: { maxUserFeeds: 3 },
+      } as never);
+
+      renderBar({ showOnlyWhenConstrained: true });
+
+      expect(screen.getByRole("status")).toHaveTextContent("Feed limit reached (3/3)");
     });
   });
 

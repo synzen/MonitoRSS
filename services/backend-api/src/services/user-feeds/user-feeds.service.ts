@@ -153,13 +153,6 @@ export class UserFeedsService {
 
     const userId = user.id;
 
-    const feedCount =
-      await this.calculateCurrentFeedCountOfDiscordUser(discordUserId);
-
-    if (feedCount >= maxUserFeeds) {
-      throw new FeedLimitReachedException("Max feeds reached");
-    }
-
     const tempLookupDetails = getFeedRequestLookupDetails({
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
       feed: {
@@ -191,6 +184,15 @@ export class UserFeedsService {
         ? { oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24 }
         : undefined,
     });
+
+    const feedCount =
+      await this.deps.userFeedRepository.countByOwnership(discordUserId);
+
+    if (feedCount > maxUserFeeds) {
+      await this.deps.userFeedRepository.deleteById(created.id);
+
+      throw new FeedLimitReachedException("Max feeds reached");
+    }
 
     if (connections) {
       for (const c of connections.discordChannels) {
@@ -230,14 +232,6 @@ export class UserFeedsService {
         sourceFeed.user.discordUserId,
       );
 
-    const feedCount = await this.calculateCurrentFeedCountOfDiscordUser(
-      sourceFeed.user.discordUserId,
-    );
-
-    if (feedCount >= maxUserFeeds) {
-      throw new FeedLimitReachedException("Max feeds reached");
-    }
-
     let inputUrl = sourceFeed.inputUrl;
     let finalUrl = sourceFeed.url;
 
@@ -269,6 +263,16 @@ export class UserFeedsService {
         inputUrl,
       },
     });
+
+    const feedCount = await this.deps.userFeedRepository.countByOwnership(
+      sourceFeed.user.discordUserId,
+    );
+
+    if (feedCount > maxUserFeeds) {
+      await this.deps.userFeedRepository.deleteById(created.id);
+
+      throw new FeedLimitReachedException("Max feeds reached");
+    }
 
     await this.deps.usersService.syncLookupKeys({ feedIds: [created.id] });
 
@@ -1110,7 +1114,6 @@ export class UserFeedsService {
       },
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
     });
-
 
     const getArticlesResponse = await this.deps.feedHandlerService.getArticles(
       {
