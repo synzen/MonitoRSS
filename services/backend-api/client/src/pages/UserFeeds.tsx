@@ -590,7 +590,7 @@ const UserFeedsInner: React.FC = () => {
                 />
                 {!isSearchActive && (
                   <Text color="gray.400" fontSize="sm" textAlign="center">
-                    Many websites support feeds — try pasting a YouTube channel, subreddit, blog, or
+                    Many websites support feeds - try pasting a YouTube channel, subreddit, blog, or
                     news site URL
                   </Text>
                 )}

@@ -160,7 +160,7 @@ export const BrowseFeedsModal = ({
             <FeedLimitBar />
             <FeedDiscoverySearchInput state={searchState} />
             <Text fontSize="sm" color="gray.400">
-              Don&apos;t see what you&apos;re looking for? Try pasting a website URL above — many
+              Don&apos;t see what you&apos;re looking for? Try pasting a website URL above - many
               sites have feeds we can detect.
             </Text>
             <Box as="nav" aria-label="Feed categories">

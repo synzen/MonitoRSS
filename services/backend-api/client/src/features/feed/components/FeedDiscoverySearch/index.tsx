@@ -272,7 +272,7 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
 
         {!state.isUrlInput && state.totalResults === 0 && (
           <Text color="gray.400">
-            No matches in our popular feeds list. Many websites have feeds — try pasting a URL
+            No matches in our popular feeds list. Many websites have feeds - try pasting a URL
             (e.g., a YouTube channel or news site) and we&apos;ll check automatically.
           </Text>
         )}

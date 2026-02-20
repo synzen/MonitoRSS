@@ -244,7 +244,7 @@ describe("FeedDiscoverySearch", () => {
 
       expect(
         screen.getByText(
-          "No matches in our popular feeds list. Many websites have feeds — try pasting a URL (e.g., a YouTube channel or news site) and we'll check automatically."
+          "No matches in our popular feeds list. Many websites have feeds - try pasting a URL (e.g., a YouTube channel or news site) and we'll check automatically."
         )
       ).toBeInTheDocument();
     });
@@ -314,7 +314,7 @@ describe("FeedDiscoverySearch", () => {
       expect(screen.getByTestId("url-validation-result")).toBeInTheDocument();
       expect(
         screen.queryByText(
-          "No matches in our popular feeds list. Many websites have feeds — try pasting a URL (e.g., a YouTube channel or news site) and we'll check automatically."
+          "No matches in our popular feeds list. Many websites have feeds - try pasting a URL (e.g., a YouTube channel or news site) and we'll check automatically."
         )
       ).not.toBeInTheDocument();
     });

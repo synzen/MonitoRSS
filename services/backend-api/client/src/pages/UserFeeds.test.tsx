@@ -202,7 +202,7 @@ const renderPage = () => {
   return { user, ...result };
 };
 
-describe("UserFeeds — Discovery Mode", () => {
+describe("UserFeeds - Discovery Mode", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseUserFeedsReturn.mockReturnValue({ data: { results: [], total: 0 } });
@@ -265,7 +265,7 @@ describe("UserFeeds — Discovery Mode", () => {
   });
 });
 
-describe("UserFeeds — Category card interactions", () => {
+describe("UserFeeds - Category card interactions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseUserFeedsReturn.mockReturnValue({ data: { results: [], total: 0 } });
@@ -291,7 +291,7 @@ describe("UserFeeds — Category card interactions", () => {
   });
 });
 
-describe("UserFeeds — Search interaction", () => {
+describe("UserFeeds - Search interaction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseUserFeedsReturn.mockReturnValue({ data: { results: [], total: 0 } });
@@ -330,7 +330,7 @@ describe("UserFeeds — Search interaction", () => {
   });
 });
 
-describe("UserFeeds — Feed adding & inline banner", () => {
+describe("UserFeeds - Feed adding & inline banner", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseUserFeedsReturn.mockReturnValue({ data: { results: [], total: 0 } });
@@ -394,7 +394,7 @@ describe("UserFeeds — Feed adding & inline banner", () => {
   });
 });
 
-describe("UserFeeds — Exit discovery mode", () => {
+describe("UserFeeds - Exit discovery mode", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockCreateUserFeed.mockResolvedValue({ result: { id: "feed-123" } });
@@ -424,7 +424,7 @@ describe("UserFeeds — Exit discovery mode", () => {
   });
 });
 
-describe("UserFeeds — Non-discovery mode", () => {
+describe("UserFeeds - Non-discovery mode", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -465,7 +465,7 @@ describe("UserFeeds — Non-discovery mode", () => {
   });
 });
 
-describe("UserFeeds — Returning user Add Feed button", () => {
+describe("UserFeeds - Returning user Add Feed button", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseUserFeedsReturn.mockReturnValue({

@@ -3,7 +3,7 @@ import { getCuratedFeedErrorMessage } from "./getCuratedFeedErrorMessage";
 import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage copy";
 
 describe("getCuratedFeedErrorMessage", () => {
-  describe("Bucket 1 — Transient (try again later)", () => {
+  describe("Bucket 1 - Transient (try again later)", () => {
     const transientCodes = [
       ApiErrorCode.FEED_REQUEST_TIMEOUT,
       ApiErrorCode.FEED_REQUEST_INTERNAL_ERROR,
@@ -20,7 +20,7 @@ describe("getCuratedFeedErrorMessage", () => {
     });
   });
 
-  describe("Bucket 2 — Unavailable (try a different feed)", () => {
+  describe("Bucket 2 - Unavailable (try a different feed)", () => {
     const unavailableCodes = [
       ApiErrorCode.FEED_NOT_FOUND,
       ApiErrorCode.FEED_REQUEST_FORBIDDEN,
@@ -35,7 +35,7 @@ describe("getCuratedFeedErrorMessage", () => {
     });
   });
 
-  describe("Bucket 3 — Broken feed (try a different feed)", () => {
+  describe("Bucket 3 - Broken feed (try a different feed)", () => {
     const brokenCodes = [
       ApiErrorCode.ADD_FEED_PARSE_FAILED,
       ApiErrorCode.NO_FEED_IN_HTML_PAGE,

@@ -75,7 +75,7 @@ const checkAccessory = (
       checkField(ctx, accessory, accessory.label, resolvedAccessory.label, "Button Label");
       break;
     default: {
-      // Compile error here means a new accessory type was added — handle it above
+      // Compile error here means a new accessory type was added - handle it above
       const _exhaustive: never = accessory;
       break;
     }
@@ -175,7 +175,7 @@ const walkV2Components = (
         break;
 
       default: {
-        // Compile error here means a new ComponentType was added — handle it above
+        // Compile error here means a new ComponentType was added - handle it above
         const _exhaustive: never = templateChild;
         break;
       }
@@ -252,7 +252,7 @@ const walkLegacyEmbeds = (
         case ComponentType.V2MediaGalleryItem:
           break;
         default: {
-          // Compile error here means a new ComponentType was added — handle it above
+          // Compile error here means a new ComponentType was added - handle it above
           const _exhaustive: never = subComponent;
           break;
         }

@@ -171,7 +171,7 @@ test.describe("Feed Discovery", () => {
         page.getByText("We found a feed at a different URL"),
       ).toBeVisible({ timeout: 30000 });
 
-      // feedTitle depends on feed-requests service caching state — may show hostname fallback
+      // feedTitle depends on feed-requests service caching state - may show hostname fallback
       await expect(
         page
           .getByText("Resolved Test Feed")
