@@ -779,25 +779,41 @@ export class FeedConnectionsDiscordChannelsService {
       }
 
       if (properties.includes(CopyableSetting.ContentFormatTables)) {
-        currentConnection.details.formatter.disableImageLinkPreviews =
-          sourceConnection.details.formatter.disableImageLinkPreviews;
+        if (!currentConnection.details.formatter) {
+          currentConnection.details.formatter = {};
+        }
+
+        currentConnection.details.formatter.formatTables =
+          sourceConnection.details.formatter?.formatTables;
       }
 
       if (properties.includes(CopyableSetting.ContentStripImages)) {
-        currentConnection.details.formatter.formatTables =
-          sourceConnection.details.formatter.formatTables;
+        if (!currentConnection.details.formatter) {
+          currentConnection.details.formatter = {};
+        }
+
+        currentConnection.details.formatter.stripImages =
+          sourceConnection.details.formatter?.stripImages;
       }
 
       if (
         properties.includes(CopyableSetting.ContentDisableImageLinkPreviews)
       ) {
-        currentConnection.details.formatter.stripImages =
-          sourceConnection.details.formatter.stripImages;
+        if (!currentConnection.details.formatter) {
+          currentConnection.details.formatter = {};
+        }
+
+        currentConnection.details.formatter.disableImageLinkPreviews =
+          sourceConnection.details.formatter?.disableImageLinkPreviews;
       }
 
       if (properties.includes(CopyableSetting.IgnoreNewLines)) {
+        if (!currentConnection.details.formatter) {
+          currentConnection.details.formatter = {};
+        }
+
         currentConnection.details.formatter.ignoreNewLines =
-          sourceConnection.details.formatter.ignoreNewLines;
+          sourceConnection.details.formatter?.ignoreNewLines;
       }
 
       if (properties.includes(CopyableSetting.Components)) {

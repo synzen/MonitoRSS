@@ -760,26 +760,26 @@ describe(
         assert.deepStrictEqual(target.filters.expression.type, "LOGICAL");
       });
 
-      it("copies formatter properties (contentFormatTables, contentStripImages, contentDisableImageLinkPreviews, ignoreNewLines)", async () => {
-        // The actual mapping in the service is:
-        //   contentFormatTables → formatter.disableImageLinkPreviews
-        //   contentStripImages → formatter.formatTables
-        //   contentDisableImageLinkPreviews → formatter.stripImages
-        //   ignoreNewLines → formatter.ignoreNewLines
+      it("copies formatter properties with correct mapping", async () => {
         const { feedId, targetId, response } = await setupCopyTest(
           {
             details: {
               formatter: {
-                disableImageLinkPreviews: true,
                 formatTables: true,
-                stripImages: true,
-                ignoreNewLines: true,
+                stripImages: false,
+                disableImageLinkPreviews: true,
+                ignoreNewLines: false,
               },
             },
           },
           {
             details: {
-              formatter: {},
+              formatter: {
+                formatTables: false,
+                stripImages: true,
+                disableImageLinkPreviews: false,
+                ignoreNewLines: true,
+              },
             },
           },
           [
@@ -798,13 +798,85 @@ describe(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           any
         >;
+        assert.strictEqual(target.details.formatter.formatTables, true);
+        assert.strictEqual(target.details.formatter.stripImages, false);
         assert.strictEqual(
           target.details.formatter.disableImageLinkPreviews,
           true,
         );
+        assert.strictEqual(target.details.formatter.ignoreNewLines, false);
+      });
+
+      it("copies formatter properties when target has no formatter (unset via DB)", async () => {
+        const discordUserId = generateSnowflake();
+        const user = await ctx.asUser(discordUserId);
+        const sourceId = generateTestId();
+        const targetId = generateTestId();
+
+        const { feedId } = await createTestFeedWithConnections(ctx, {
+          discordUserId,
+          connections: [
+            {
+              id: sourceId,
+              name: "source",
+              details: {
+                channel: { id: "ch-1", guildId: "guild-1" },
+                embeds: [],
+                formatter: {
+                  formatTables: true,
+                  disableImageLinkPreviews: true,
+                },
+              },
+            },
+            {
+              id: targetId,
+              name: "target",
+              details: {
+                channel: { id: "ch-2", guildId: "guild-1" },
+                embeds: [],
+                formatter: {},
+              },
+            },
+          ],
+        });
+
+        const UserFeedModel = ctx.connection.model("UserFeed");
+        await UserFeedModel.updateOne(
+          {
+            _id: feedId,
+            "connections.discordChannels.id": targetId,
+          },
+          {
+            $unset: {
+              "connections.discordChannels.$.details.formatter": "",
+            },
+          },
+        );
+
+        const response = await user.fetch(testUrl(feedId, sourceId), {
+          method: "POST",
+          body: JSON.stringify({
+            properties: [
+              "contentFormatTables",
+              "contentDisableImageLinkPreviews",
+            ],
+            targetDiscordChannelConnectionIds: [targetId],
+          }),
+        });
+
+        assert.strictEqual(response.status, 204);
+
+        const feed = await ctx.container.userFeedRepository.findById(feedId);
+        const target = getTargetConnection(feed!, targetId) as Record<
+          string,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          any
+        >;
         assert.strictEqual(target.details.formatter.formatTables, true);
-        assert.strictEqual(target.details.formatter.stripImages, true);
-        assert.strictEqual(target.details.formatter.ignoreNewLines, true);
+        assert.strictEqual(
+          target.details.formatter.disableImageLinkPreviews,
+          true,
+        );
       });
 
       it("copies splitOptions", async () => {
