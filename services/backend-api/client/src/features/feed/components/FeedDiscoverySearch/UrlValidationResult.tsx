@@ -223,7 +223,7 @@ export const UrlValidationResult = ({
               Couldn&apos;t find a feed
             </Text>
             <Text fontSize="sm" color="gray.400" mb={2}>
-              {validationError.message}
+              We couldn&apos;t detect a news feed at this URL. The site may not publish one.
             </Text>
             <Button size="sm" variant="outline" onClick={onTrySearchByName}>
               Try searching by name instead
