@@ -1,4 +1,12 @@
-import { useState, useRef, useCallback, RefObject, MutableRefObject, FormEvent } from "react";
+import {
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+  RefObject,
+  MutableRefObject,
+  FormEvent,
+} from "react";
 import {
   Box,
   HStack,
@@ -18,7 +26,9 @@ import type { CuratedFeed } from "../../types";
 import { useCreateUserFeedUrlValidation } from "../../hooks/useCreateUserFeedUrlValidation";
 import { UrlValidationResult } from "./UrlValidationResult";
 import type { FeedActionState } from "../../types/FeedActionState";
+import { PlatformHint } from "./PlatformHint";
 import { getFeedCardPropsFromState } from "../../types/FeedActionState";
+import { createDiscoverySearchEvent } from "../../api/createDiscoverySearchEvent";
 
 interface FeedDiscoverySearchProps {
   feedActionStates: Record<string, FeedActionState>;
@@ -61,6 +71,16 @@ export function useFeedDiscoverySearchState({
   const hasActiveSearch = activeQuery.length > 0;
   const totalResults = isUrlInput ? 0 : data?.feeds.length ?? 0;
   const visibleResults = data?.feeds.slice(0, visibleCount) ?? [];
+
+  useEffect(() => {
+    if (!activeQuery || isUrlInput) return;
+
+    createDiscoverySearchEvent({
+      searchTerm: activeQuery,
+      resultCount: totalResults,
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeQuery]);
 
   const setInputRef = useCallback(
     (node: HTMLInputElement | null) => {
@@ -271,10 +291,7 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
         )}
 
         {!state.isUrlInput && state.totalResults === 0 && (
-          <Text color="gray.400">
-            No matches in our popular feeds list. Many websites have feeds - try pasting a URL
-            (e.g., a YouTube channel or news site) and we&apos;ll check automatically.
-          </Text>
+          <PlatformHint query={state.activeQuery} />
         )}
       </Box>
 

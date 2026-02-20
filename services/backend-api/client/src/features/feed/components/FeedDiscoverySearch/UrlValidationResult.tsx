@@ -1,6 +1,16 @@
 import { useEffect, useState } from "react";
-import { Box, Text, Button, Spinner, HStack } from "@chakra-ui/react";
-import { WarningIcon } from "@chakra-ui/icons";
+import {
+  Box,
+  Text,
+  Button,
+  Spinner,
+  HStack,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+} from "@chakra-ui/react";
+import { CheckIcon, WarningIcon } from "@chakra-ui/icons";
 import ApiAdapterError from "@/utils/ApiAdapterError";
 import { CreateUserFeedUrlValidationOutput } from "../../api/createUserFeedUrlValidation";
 import { InlineErrorAlert } from "@/components/InlineErrorAlert";
@@ -143,6 +153,62 @@ export const UrlValidationResult = ({
                 </Text>
               </HStack>
             </Box>
+            <Box mt={3}>
+              {buttonState === "default" && (
+                <Button
+                  colorScheme="blue"
+                  width="full"
+                  onClick={handleAdd}
+                  aria-label={`Add ${feedTitle} feed`}
+                >
+                  + Add this feed
+                </Button>
+              )}
+              {buttonState === "adding" && (
+                <Button
+                  colorScheme="blue"
+                  width="full"
+                  aria-label={`Adding ${feedTitle} feed...`}
+                  aria-disabled="true"
+                  onClick={(e) => e.preventDefault()}
+                >
+                  <Spinner size="xs" mr={2} /> Adding...
+                </Button>
+              )}
+              {buttonState === "added" && (
+                <Button
+                  colorScheme="blue"
+                  variant="outline"
+                  width="full"
+                  aria-label={`${feedTitle} feed added`}
+                  aria-disabled="true"
+                  onClick={(e) => e.preventDefault()}
+                >
+                  Added <CheckIcon ml={2} aria-hidden="true" />
+                </Button>
+              )}
+              {(buttonState === "limit" || buttonState === "limit-error") && (
+                <Button
+                  width="full"
+                  variant="outline"
+                  color="gray.300"
+                  borderColor="gray.500"
+                  cursor="not-allowed"
+                  _hover={{}}
+                  _active={{}}
+                  aria-label={`Add ${feedTitle} feed, disabled, feed limit reached`}
+                  aria-disabled="true"
+                  onClick={(e) => e.preventDefault()}
+                >
+                  Limit reached
+                </Button>
+              )}
+            </Box>
+            {addError && !isLimitReachedError && (
+              <Box mt={2}>
+                <InlineErrorAlert title="Failed to add feed" description={addError.message} />
+              </Box>
+            )}
           </Box>
           <FeedCard
             feed={{
@@ -151,27 +217,14 @@ export const UrlValidationResult = ({
               description: validationData.result.resolvedToUrl!,
               url: feedUrl,
             }}
-            state={
-              buttonState === "default"
-                ? "default"
-                : buttonState === "adding"
-                ? "adding"
-                : buttonState === "added"
-                ? "added"
-                : "limit-reached"
-            }
+            state="default"
             onAdd={handleAdd}
-            errorMessage={addError && !isLimitReachedError ? "Failed to add feed" : undefined}
             feedSettingsUrl={addedFeedId ? pages.userFeed(addedFeedId) : undefined}
             previewEnabled
             previewOpen
             borderless
+            hideActions
           />
-          {addError && !isLimitReachedError && (
-            <Box px={3} pb={2}>
-              <InlineErrorAlert title="Failed to add feed" description={addError.message} />
-            </Box>
-          )}
         </Box>
       );
     }
@@ -199,15 +252,16 @@ export const UrlValidationResult = ({
             buttonState === "default"
               ? "default"
               : buttonState === "adding"
-              ? "adding"
-              : buttonState === "added"
-              ? "added"
-              : "limit-reached"
+                ? "adding"
+                : buttonState === "added"
+                  ? "added"
+                  : "limit-reached"
           }
           onAdd={handleAdd}
           errorMessage={addError && !isLimitReachedError ? "Failed to add feed" : undefined}
           feedSettingsUrl={addedFeedId ? pages.userFeed(addedFeedId) : undefined}
           previewEnabled
+          fullWidthAction
         />
         {addError && !isLimitReachedError && (
           <Box mt={2}>
@@ -225,16 +279,42 @@ export const UrlValidationResult = ({
     if (isNoFeedFound) {
       return (
         <Box mt={3}>
-          <Box borderLeftWidth="4px" borderLeftColor="red.400" pl={3} py={2}>
-            <Text fontWeight="bold" mb={1}>
-              Couldn&apos;t find a feed
+          <Alert status="warning" variant="left-accent" borderRadius="md">
+            <AlertIcon />
+            <Box>
+              <AlertTitle>Couldn&apos;t find a feed</AlertTitle>
+              <AlertDescription>
+                <Text fontSize="sm" mb={2}>
+                  We couldn&apos;t detect a news feed at this URL. The site may not publish one.
+                </Text>
+                <Button size="sm" variant="outline" onClick={onTrySearchByName}>
+                  Try searching by name instead
+                </Button>
+              </AlertDescription>
+            </Box>
+          </Alert>
+
+          <Box
+            mt={3}
+            borderWidth="1px"
+            borderColor="whiteAlpha.200"
+            borderRadius="md"
+            bg="gray.700"
+            px={4}
+            py={3}
+          >
+            <Text as="h3" fontWeight="semibold" fontSize="sm" mb={2}>
+              Tips for finding feeds
             </Text>
-            <Text fontSize="sm" color="gray.400" mb={2}>
-              We couldn&apos;t detect a news feed at this URL. The site may not publish one.
-            </Text>
-            <Button size="sm" variant="outline" onClick={onTrySearchByName}>
-              Try searching by name instead
-            </Button>
+            <Box as="ul" pl={4} fontSize="sm" color="gray.300">
+              <Box as="li" mb={1}>
+                Double-check the URL for typos or missing parts
+              </Box>
+              <Box as="li" mb={1}>
+                Look for an RSS icon or &quot;Subscribe&quot; link on the website
+              </Box>
+              <Box as="li">Search Google for the site name + &quot;RSS feed&quot;</Box>
+            </Box>
           </Box>
         </Box>
       );

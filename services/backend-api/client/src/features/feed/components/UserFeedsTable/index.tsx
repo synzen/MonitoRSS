@@ -29,7 +29,7 @@ import { createTableColumns } from "./columns";
 export const UserFeedsTable: React.FC = () => {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor),
+    useSensor(KeyboardSensor)
   );
 
   const { statusFilters, setStatusFilters } = useContext(UserFeedStatusFilterContext);
@@ -80,15 +80,12 @@ export const UserFeedsTable: React.FC = () => {
   // Row selection sync with context
   const rowSelection = useMemo(
     () =>
-      selectedFeeds.reduce(
-        (acc, feed) => {
-          acc[feed.id] = true;
+      selectedFeeds.reduce((acc, feed) => {
+        acc[feed.id] = true;
 
-          return acc;
-        },
-        {} as Record<string, boolean>,
-      ),
-    [selectedFeeds],
+        return acc;
+      }, {} as Record<string, boolean>),
+    [selectedFeeds]
   );
 
   const onRowSelectionChange: OnChangeFn<RowSelectionState> = useCallback(
@@ -100,7 +97,7 @@ export const UserFeedsTable: React.FC = () => {
         setSelectedFeeds(flatData.filter((r) => newValOrUpdater[r.id]));
       }
     },
-    [rowSelection, flatData, setSelectedFeeds],
+    [rowSelection, flatData, setSelectedFeeds]
   );
 
   // Column drag-and-drop handler
@@ -108,7 +105,9 @@ export const UserFeedsTable: React.FC = () => {
     (event: DragEndEvent) => {
       const { active, over } = event;
 
-      if (over && active.id !== over.id && active.id !== "select" && over.id !== "select") {
+      const isFixed = (id: string | number) => id === "select" || id === "configure";
+
+      if (over && active.id !== over.id && !isFixed(active.id) && !isFixed(over.id)) {
         setColumnOrder((currentOrder) => {
           const oldIndex = currentOrder.indexOf(active.id as string);
           const newIndex = currentOrder.indexOf(over.id as string);
@@ -117,7 +116,7 @@ export const UserFeedsTable: React.FC = () => {
         });
       }
     },
-    [setColumnOrder],
+    [setColumnOrder]
   );
 
   // Table instance
@@ -155,7 +154,7 @@ export const UserFeedsTable: React.FC = () => {
     (statuses: UserFeedComputedStatus[]) => {
       setStatusFilters(statuses);
     },
-    [setStatusFilters],
+    [setStatusFilters]
   );
 
   if (status === "error") {

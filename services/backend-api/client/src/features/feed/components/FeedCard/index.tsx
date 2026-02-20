@@ -15,7 +15,7 @@ import {
 } from "@chakra-ui/react";
 import { CheckIcon, WarningIcon } from "@chakra-ui/icons";
 import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
-import { Link as RouterLink } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { getAvatarColor } from "@/utils/getAvatarColor";
@@ -46,6 +46,7 @@ interface FeedCardProps {
   previewEnabled?: boolean;
   previewOpen?: boolean;
   hideActions?: boolean;
+  fullWidthAction?: boolean;
   borderless?: boolean;
   searchQuery?: string;
 }
@@ -64,9 +65,11 @@ export const FeedCard = ({
   previewEnabled = false,
   previewOpen = false,
   hideActions = false,
+  fullWidthAction = false,
   borderless = false,
   searchQuery,
 }: FeedCardProps) => {
+  const navigate = useNavigate();
   const [imgError, setImgError] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(previewOpen);
@@ -98,6 +101,29 @@ export const FeedCard = ({
     state === "error" && isCurated
       ? getCuratedFeedErrorMessage(errorCode)
       : errorMessage || "Failed to add feed";
+
+  const isAddable = state === "default" || state === "adding" || state === "added";
+  const isAdded = state === "added";
+  const hasSettingsLink = isAdded && !!feedSettingsUrl;
+
+  const getAddButtonLabel = () => {
+    if (hasSettingsLink) return `Go to feed settings for ${feed.title}`;
+    if (isAdded) return `${feed.title} feed added`;
+    if (state === "adding") return `Adding ${feed.title} feed...`;
+    return `Add ${feed.title} feed`;
+  };
+
+  const isAdding = state === "adding";
+
+  const handleAddButtonClick = (e: React.MouseEvent) => {
+    if (isAdding || (isAdded && !feedSettingsUrl)) {
+      e.preventDefault();
+    } else if (hasSettingsLink) {
+      navigate(feedSettingsUrl!);
+    } else {
+      onAdd();
+    }
+  };
 
   const handleTogglePreview = useCallback(
     async (e: React.MouseEvent) => {
@@ -150,10 +176,9 @@ export const FeedCard = ({
       borderColor={state === "error" ? "red.400" : "gray.600"}
       borderRadius={borderless ? 0 : "md"}
       p={3}
-      opacity={state === "added" ? 0.7 : 1}
     >
       <HStack spacing={3} align="start">
-        <Box flexShrink={0}>
+        <Box flexShrink={0} opacity={state === "added" ? 0.7 : 1}>
           {imgError ? (
             <Box
               w="32px"
@@ -190,7 +215,7 @@ export const FeedCard = ({
           )}
         </Box>
 
-        <Box flex={1} minW={0}>
+        <Box flex={1} minW={0} opacity={state === "added" ? 0.7 : 1}>
           <HStack spacing={2} flexWrap="wrap">
             <Text fontWeight="bold" noOfLines={1}>
               {searchQuery ? (
@@ -261,32 +286,35 @@ export const FeedCard = ({
           )}
         </Box>
 
-        {!hideActions && (
+        {!hideActions && !fullWidthAction && (
           <Box flexShrink={0}>
-            {state === "default" && (
-              <Button size="sm" onClick={onAdd} aria-label={`Add ${feed.title} feed`}>
-                + Add
-              </Button>
-            )}
-            {state === "adding" && (
-              <Button
-                size="sm"
-                aria-label={`Adding ${feed.title} feed...`}
-                aria-disabled="true"
-                onClick={(e) => e.preventDefault()}
-              >
-                <Spinner size="xs" />
-              </Button>
-            )}
-            {state === "added" && (
-              <Button
-                size="sm"
-                aria-label={`${feed.title} feed added`}
-                aria-disabled="true"
-                onClick={(e) => e.preventDefault()}
-              >
-                Added <CheckIcon ml={1} aria-hidden="true" />
-              </Button>
+            {isAddable && (
+              <HStack spacing={2}>
+                <Box role="status">
+                  {isAdded && (
+                    <HStack spacing={1} color="green.300">
+                      <CheckIcon boxSize={3} aria-hidden="true" />
+                      <Text fontSize="xs">Added</Text>
+                    </HStack>
+                  )}
+                </Box>
+                <Button
+                  size="sm"
+                  onClick={handleAddButtonClick}
+                  aria-label={getAddButtonLabel()}
+                  aria-busy={isAdding || undefined}
+                  aria-disabled={isAdding || (isAdded && !feedSettingsUrl) || undefined}
+                >
+                  {isAdding && <Spinner size="xs" />}
+                  {hasSettingsLink && <>Feed settings &rarr;</>}
+                  {isAdded && !feedSettingsUrl && (
+                    <>
+                      Added <CheckIcon ml={1} aria-hidden="true" />
+                    </>
+                  )}
+                  {!isAdded && !isAdding && "+ Add"}
+                </Button>
+              </HStack>
             )}
             {state === "error" && (
               <Button size="sm" onClick={onAdd} aria-describedby={errorId}>
@@ -297,8 +325,8 @@ export const FeedCard = ({
               <Button
                 size="sm"
                 variant="outline"
-                color="gray.500"
-                borderColor="gray.600"
+                color="gray.300"
+                borderColor="gray.500"
                 cursor="not-allowed"
                 _hover={{}}
                 _active={{}}
@@ -369,17 +397,63 @@ export const FeedCard = ({
         </Box>
       )}
 
-      {state === "added" && feedSettingsUrl && (
-        <Box mt={2}>
-          <Link
-            as={RouterLink}
-            to={feedSettingsUrl}
-            color="blue.300"
-            fontSize="sm"
-            aria-label={`Go to feed settings for ${feed.title}`}
-          >
-            Go to feed settings
-          </Link>
+      {!hideActions && fullWidthAction && (
+        <Box mt={3}>
+          {isAddable && (
+            <>
+              <Box role="status">
+                {isAdded && (
+                  <HStack spacing={1} color="green.300" mb={2} justify="center">
+                    <CheckIcon boxSize={3} aria-hidden="true" />
+                    <Text fontSize="sm">Added</Text>
+                  </HStack>
+                )}
+              </Box>
+              <Button
+                colorScheme="blue"
+                width="full"
+                onClick={handleAddButtonClick}
+                variant={isAdded && !feedSettingsUrl ? "outline" : "solid"}
+                aria-label={getAddButtonLabel()}
+                aria-busy={isAdding || undefined}
+                aria-disabled={isAdding || (isAdded && !feedSettingsUrl) || undefined}
+              >
+                {isAdding && (
+                  <>
+                    <Spinner size="xs" mr={2} /> Adding...
+                  </>
+                )}
+                {hasSettingsLink && <>Go to feed settings &rarr;</>}
+                {isAdded && !feedSettingsUrl && (
+                  <>
+                    Added <CheckIcon ml={2} aria-hidden="true" />
+                  </>
+                )}
+                {!isAdded && !isAdding && "+ Add Feed"}
+              </Button>
+            </>
+          )}
+          {state === "error" && (
+            <Button colorScheme="blue" width="full" onClick={onAdd} aria-describedby={errorId}>
+              Retry
+            </Button>
+          )}
+          {state === "limit-reached" && (
+            <Button
+              width="full"
+              variant="outline"
+              color="gray.300"
+              borderColor="gray.500"
+              cursor="not-allowed"
+              _hover={{}}
+              _active={{}}
+              aria-label={`Add ${feed.title} feed, disabled, feed limit reached`}
+              aria-disabled="true"
+              onClick={(e) => e.preventDefault()}
+            >
+              Limit reached
+            </Button>
+          )}
         </Box>
       )}
 
@@ -420,6 +494,7 @@ export const FeedCard = ({
             display="inline-flex"
             alignItems="center"
             gap={1}
+            aria-label={`Preview articles for ${feed.title}`}
           >
             Preview articles
             {isPreviewOpen ? (

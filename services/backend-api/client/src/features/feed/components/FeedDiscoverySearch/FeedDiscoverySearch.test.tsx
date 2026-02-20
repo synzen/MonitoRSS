@@ -119,6 +119,12 @@ vi.mock("../../hooks/useFeedPreviewByUrl", () => ({
   }),
 }));
 
+const mockCreateDiscoverySearchEvent = vi.fn().mockResolvedValue(undefined);
+
+vi.mock("../../api/createDiscoverySearchEvent", () => ({
+  createDiscoverySearchEvent: (...args: unknown[]) => mockCreateDiscoverySearchEvent(...args),
+}));
+
 vi.mock("./UrlValidationResult", () => ({
   UrlValidationResult: (props: { url: string; validationStatus: string }) => (
     <div
@@ -236,7 +242,7 @@ describe("FeedDiscoverySearch", () => {
   });
 
   describe("No matches", () => {
-    it("shows no matches message when 0 results", async () => {
+    it("shows generic no matches message for non-platform queries", async () => {
       const { user } = renderSearch();
 
       const input = screen.getByLabelText("Search popular feeds or paste a URL");
@@ -247,6 +253,75 @@ describe("FeedDiscoverySearch", () => {
           "No matches in our popular feeds list. Many websites have feeds - try pasting a URL (e.g., a YouTube channel or news site) and we'll check automatically."
         )
       ).toBeInTheDocument();
+    });
+
+    it('shows YouTube hint when searching "youtube"', async () => {
+      const { user } = renderSearch();
+
+      const input = screen.getByLabelText("Search popular feeds or paste a URL");
+      await user.type(input, "youtube{Enter}");
+
+      expect(
+        screen.getByText("To add a YouTube channel, paste the channel URL.")
+      ).toBeInTheDocument();
+      expect(screen.getByText("https://www.youtube.com/@ChannelName")).toBeInTheDocument();
+    });
+
+    it("shows YouTube hint case-insensitively", async () => {
+      const { user } = renderSearch();
+
+      const input = screen.getByLabelText("Search popular feeds or paste a URL");
+      await user.type(input, "YOUTUBE{Enter}");
+
+      expect(
+        screen.getByText("To add a YouTube channel, paste the channel URL.")
+      ).toBeInTheDocument();
+    });
+
+    it('shows YouTube hint for "yt" keyword', async () => {
+      const { user } = renderSearch();
+
+      const input = screen.getByLabelText("Search popular feeds or paste a URL");
+      await user.type(input, "yt{Enter}");
+
+      expect(
+        screen.getByText("To add a YouTube channel, paste the channel URL.")
+      ).toBeInTheDocument();
+    });
+
+    it('shows Reddit hint when searching "reddit"', async () => {
+      const { user } = renderSearch();
+
+      const input = screen.getByLabelText("Search popular feeds or paste a URL");
+      await user.type(input, "reddit{Enter}");
+
+      expect(screen.getByText("To add a subreddit, paste the subreddit URL.")).toBeInTheDocument();
+      expect(screen.getByText("https://www.reddit.com/r/SubredditName")).toBeInTheDocument();
+    });
+
+    it("platform hint is inside aria-live region", async () => {
+      const { user } = renderSearch();
+
+      const input = screen.getByLabelText("Search popular feeds or paste a URL");
+      await user.type(input, "youtube{Enter}");
+
+      const liveRegions = document.querySelectorAll('[aria-live="polite"]');
+      const hasHint = Array.from(liveRegions).some((el) =>
+        el.textContent?.includes("To add a YouTube channel")
+      );
+
+      expect(hasHint).toBe(true);
+    });
+
+    it("example URL uses code element", async () => {
+      const { user } = renderSearch();
+
+      const input = screen.getByLabelText("Search popular feeds or paste a URL");
+      await user.type(input, "youtube{Enter}");
+
+      const codeEl = screen.getByText("https://www.youtube.com/@ChannelName");
+
+      expect(codeEl.tagName).toBe("CODE");
     });
   });
 
@@ -513,6 +588,29 @@ describe("FeedDiscoverySearch", () => {
       await user.click(screen.getByRole("button", { name: "Clear search" }));
 
       expect(onSearchChange).toHaveBeenLastCalledWith("");
+    });
+  });
+
+  describe("Discovery search tracking", () => {
+    it("sends tracking event on text search submission", async () => {
+      const { user } = renderSearch();
+
+      const input = screen.getByLabelText("Search popular feeds or paste a URL");
+      await user.type(input, "IGN{Enter}");
+
+      expect(mockCreateDiscoverySearchEvent).toHaveBeenCalledWith({
+        searchTerm: "IGN",
+        resultCount: 1,
+      });
+    });
+
+    it("does not send tracking event for URL input", async () => {
+      const { user } = renderSearch();
+
+      const input = screen.getByLabelText("Search popular feeds or paste a URL");
+      await user.type(input, "https://example.com/feed{Enter}");
+
+      expect(mockCreateDiscoverySearchEvent).not.toHaveBeenCalled();
     });
   });
 });

@@ -500,7 +500,7 @@ describe("UserFeeds - Returning user Add Feed button", () => {
 
     expect(screen.getByText("1 feed added")).toBeInTheDocument();
     expect(
-      screen.getByText("Click a feed to set up where articles are delivered.")
+      screen.getByText("Open a feed to set up where articles are delivered.")
     ).toBeInTheDocument();
   });
 
@@ -511,5 +511,83 @@ describe("UserFeeds - Returning user Add Feed button", () => {
     await user.click(screen.getByRole("button", { name: "Close" }));
 
     expect(screen.queryByText(/feed.* added/)).not.toBeInTheDocument();
+  });
+});
+
+describe("UserFeeds - Onboarding banner after exiting discovery", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCreateUserFeed.mockResolvedValue({ result: { id: "feed-123" } });
+  });
+
+  const addFeedAndExitDiscovery = async (user: ReturnType<typeof userEvent.setup>) => {
+    const searchInput = screen.getByLabelText("Search popular feeds or paste a URL");
+    await user.type(searchInput, "Gaming");
+    await user.click(screen.getByRole("button", { name: "Go" }));
+
+    const addButtons = screen.getAllByRole("button", { name: /^Add .+ feed$/ });
+    await user.click(addButtons[0]);
+
+    await user.click(screen.getByRole("button", { name: /View your feeds/ }));
+  };
+
+  it("shows onboarding banner after exiting discovery mode", async () => {
+    let totalFeeds = 0;
+    mockUseUserFeedsReturn.mockImplementation(() => ({
+      data: { results: [], total: totalFeeds },
+    }));
+
+    const { user } = renderPage();
+    totalFeeds = 1;
+    await addFeedAndExitDiscovery(user);
+
+    expect(screen.getByText("Set up delivery")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Open a feed from the list below to configure where its articles are delivered in Discord."
+      )
+    ).toBeInTheDocument();
+  });
+
+  it("banner has role='status' for polite screen reader announcement", async () => {
+    let totalFeeds = 0;
+    mockUseUserFeedsReturn.mockImplementation(() => ({
+      data: { results: [], total: totalFeeds },
+    }));
+
+    const { user } = renderPage();
+    totalFeeds = 1;
+    await addFeedAndExitDiscovery(user);
+
+    const banner = screen.getByText("Set up delivery").closest("[role='status']");
+    expect(banner).toBeInTheDocument();
+  });
+
+  it("banner can be dismissed via close button", async () => {
+    let totalFeeds = 0;
+    mockUseUserFeedsReturn.mockImplementation(() => ({
+      data: { results: [], total: totalFeeds },
+    }));
+
+    const { user } = renderPage();
+    totalFeeds = 1;
+    await addFeedAndExitDiscovery(user);
+
+    expect(screen.getByText("Set up delivery")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Dismiss setup guidance" }));
+
+    expect(screen.queryByText("Set up delivery")).not.toBeInTheDocument();
+    const heading = screen.getByRole("heading", { level: 1 });
+    expect(heading).toHaveFocus();
+  });
+
+  it("does not show onboarding banner for returning users", () => {
+    mockUseUserFeedsReturn.mockReturnValue({
+      data: { results: [{ id: "1" }], total: 5 },
+    });
+    renderPage();
+
+    expect(screen.queryByText("Set up delivery")).not.toBeInTheDocument();
   });
 });

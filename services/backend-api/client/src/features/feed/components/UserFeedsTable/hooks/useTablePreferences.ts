@@ -4,6 +4,7 @@ import { useUserMe, useUpdateUserMe } from "../../../../discordUser/hooks";
 import {
   DEFAULT_COLUMN_ORDER,
   DEFAULT_COLUMN_VISIBILITY,
+  FIXED_COLUMNS,
   PREFERENCE_DEBOUNCE_MS,
   TOGGLEABLE_COLUMNS,
 } from "../constants";
@@ -38,7 +39,10 @@ export function useTablePreferences(): TablePreferences & TablePreferencesHandle
   // Column order state
   const [columnOrder, setColumnOrder] = useState<string[]>(() => {
     if (savedColumnOrder && savedColumnOrder.length > 0) {
-      return ["select", ...savedColumnOrder.filter((col) => col !== "select")];
+      const isFixed = (col: string) =>
+        FIXED_COLUMNS.includes(col as (typeof FIXED_COLUMNS)[number]);
+
+      return ["select", ...savedColumnOrder.filter((col) => !isFixed(col)), "configure"];
     }
 
     return DEFAULT_COLUMN_ORDER;
@@ -100,7 +104,7 @@ export function useTablePreferences(): TablePreferences & TablePreferencesHandle
 
       const hasChanges = TOGGLEABLE_COLUMNS.some(
         ({ id }) =>
-          columnVisibility[id] !== (savedColumnVisibility?.[id] ?? DEFAULT_COLUMN_VISIBILITY[id]),
+          columnVisibility[id] !== (savedColumnVisibility?.[id] ?? DEFAULT_COLUMN_VISIBILITY[id])
       );
 
       if (hasChanges) {
@@ -127,14 +131,19 @@ export function useTablePreferences(): TablePreferences & TablePreferencesHandle
   useEffect(() => {
     if (savedColumnOrder && savedColumnOrder.length > 0 && !hasInitializedColumnOrder.current) {
       hasInitializedColumnOrder.current = true;
-      setColumnOrder(["select", ...savedColumnOrder.filter((col) => col !== "select")]);
+      const isFixed = (col: string) =>
+        FIXED_COLUMNS.includes(col as (typeof FIXED_COLUMNS)[number]);
+
+      setColumnOrder(["select", ...savedColumnOrder.filter((col) => !isFixed(col)), "configure"]);
     }
   }, [savedColumnOrder]);
 
   // Save column order preference when it changes (debounced)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      const orderToSave = columnOrder.filter((col) => col !== "select");
+      const isFixed = (col: string) =>
+        FIXED_COLUMNS.includes(col as (typeof FIXED_COLUMNS)[number]);
+      const orderToSave = columnOrder.filter((col) => !isFixed(col));
 
       const currentOrder = savedColumnOrder || [];
       const hasChanges =

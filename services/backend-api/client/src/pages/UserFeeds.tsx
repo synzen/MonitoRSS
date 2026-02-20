@@ -20,6 +20,7 @@ import {
   Portal,
   Skeleton,
   SimpleGrid,
+  CloseButton,
 } from "@chakra-ui/react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -141,6 +142,7 @@ const UserFeedsInner: React.FC = () => {
   >();
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [modalSessionAddCount, setModalSessionAddCount] = useState(0);
+  const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
   const limitAlertShownRef = useRef(false);
 
   const totalFeedCount = userFeedsResults?.total;
@@ -160,6 +162,8 @@ const UserFeedsInner: React.FC = () => {
     } else if (isInDiscoveryMode === false && userFeedsResults && userFeedsResults.total === 0) {
       setIsInDiscoveryMode(true);
       setFeedActionStates({});
+      setIsSearchActive(false);
+      limitAlertShownRef.current = false;
     }
   }, [userFeedsResults, isInDiscoveryMode]);
 
@@ -174,14 +178,14 @@ const UserFeedsInner: React.FC = () => {
       Object.entries(feedActionStates)
         .filter(([, s]) => s.status === "added")
         .map(([url]) => url),
-    [feedActionStates],
+    [feedActionStates]
   );
 
   const handleCuratedFeedAdd = useCallback(
     async (feed: CuratedFeed) => {
       setFeedActionStates((prev) => ({ ...prev, [feed.url]: { status: "adding" } }));
       try {
-        const { result } = await createUserFeed({ details: { url: feed.url } });
+        const { result } = await createUserFeed({ details: { url: feed.url, title: feed.title } });
         setFeedActionStates((prev) => ({
           ...prev,
           [feed.url]: { status: "added", settingsUrl: pages.userFeed(result.id) },
@@ -195,7 +199,9 @@ const UserFeedsInner: React.FC = () => {
             limitAlertShownRef.current = true;
             createInfoAlert({
               title: "Feed limit reached",
-              description: `You've used all ${discordUserMe?.maxUserFeeds ?? ""} of your available feeds.`,
+              description: `You've used all ${
+                discordUserMe?.maxUserFeeds ?? ""
+              } of your available feeds.`,
             });
           }
         } else {
@@ -210,7 +216,7 @@ const UserFeedsInner: React.FC = () => {
         }
       }
     },
-    [createUserFeed, createInfoAlert, discordUserMe?.maxUserFeeds],
+    [createUserFeed, createInfoAlert, discordUserMe?.maxUserFeeds]
   );
 
   const handleUrlFeedAdded = useCallback((_feedId: string, feedUrl: string) => {
@@ -223,11 +229,16 @@ const UserFeedsInner: React.FC = () => {
 
   const handleExitDiscovery = useCallback(() => {
     setIsInDiscoveryMode(false);
-    createSuccessAlert({
-      title: `${addedFeedUrls.length} feed${addedFeedUrls.length !== 1 ? "s" : ""} added`,
-      description: "Click a feed to set up where articles are delivered.",
-    });
-  }, [addedFeedUrls.length, createSuccessAlert]);
+    setShowOnboardingBanner(true);
+  }, []);
+
+  const handleDismissOnboarding = useCallback(() => {
+    setShowOnboardingBanner(false);
+    const h1 = document.querySelector("h1");
+    if (h1) {
+      (h1 as HTMLElement).focus();
+    }
+  }, []);
 
   const handleSearchChange = useCallback((query: string) => {
     setIsSearchActive(query.length > 0);
@@ -238,7 +249,7 @@ const UserFeedsInner: React.FC = () => {
     if (!isInDiscoveryMode && modalSessionAddCount > 0) {
       createSuccessAlert({
         title: `${modalSessionAddCount} feed${modalSessionAddCount !== 1 ? "s" : ""} added`,
-        description: "Click a feed to set up where articles are delivered.",
+        description: "Open a feed to set up where articles are delivered.",
       });
     }
   }, [modalSessionAddCount, createSuccessAlert, isInDiscoveryMode]);
@@ -440,7 +451,7 @@ const UserFeedsInner: React.FC = () => {
                           isDisabled={
                             !selectedFeeds.length ||
                             !selectedFeeds.some(
-                              (f) => f.disabledCode === UserFeedDisabledCode.Manual,
+                              (f) => f.disabledCode === UserFeedDisabledCode.Manual
                             )
                           }
                           icon={<FaPlay />}
@@ -461,7 +472,7 @@ const UserFeedsInner: React.FC = () => {
                             selectedFeeds.every(
                               (r) =>
                                 !!r.disabledCode &&
-                                r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit,
+                                r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit
                             )
                           }
                           icon={<FaPause />}
@@ -542,6 +553,29 @@ const UserFeedsInner: React.FC = () => {
                 you may then specify where you want articles for that feed to be sent to.
               </Text>
             </HStack>
+            {showOnboardingBanner && (
+              <Alert
+                status="info"
+                role="status"
+                aria-live="polite"
+                aria-labelledby="onboarding-banner-title"
+                borderRadius="md"
+              >
+                <AlertIcon />
+                <Box flex="1">
+                  <AlertTitle id="onboarding-banner-title">Set up delivery</AlertTitle>
+                  <AlertDescription>
+                    Open a feed from the list below to configure where its articles are delivered in
+                    Discord.
+                  </AlertDescription>
+                </Box>
+                <CloseButton
+                  aria-label="Dismiss setup guidance"
+                  onClick={handleDismissOnboarding}
+                  alignSelf="flex-start"
+                />
+              </Alert>
+            )}
           </>
         )}
       </Stack>

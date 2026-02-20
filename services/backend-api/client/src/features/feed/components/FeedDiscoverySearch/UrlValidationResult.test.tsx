@@ -2,6 +2,7 @@ import "@testing-library/jest-dom";
 import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { UrlValidationResult } from "./UrlValidationResult";
@@ -41,13 +42,18 @@ const defaultProps = {
 
 const renderComponent = (props: Partial<React.ComponentProps<typeof UrlValidationResult>> = {}) => {
   const user = userEvent.setup();
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
 
   const result = render(
-    <ChakraProvider>
-      <MemoryRouter>
-        <UrlValidationResult {...defaultProps} {...props} />
-      </MemoryRouter>
-    </ChakraProvider>,
+    <QueryClientProvider client={queryClient}>
+      <ChakraProvider>
+        <MemoryRouter>
+          <UrlValidationResult {...defaultProps} {...props} />
+        </MemoryRouter>
+      </ChakraProvider>
+    </QueryClientProvider>
   );
 
   return { user, ...result };
@@ -88,7 +94,7 @@ describe("UrlValidationResult", () => {
       });
 
       expect(
-        screen.getByRole("button", { name: /add blog\.example\.com feed/i }),
+        screen.getByRole("button", { name: /add blog\.example\.com feed/i })
       ).toBeInTheDocument();
     });
   });
@@ -135,7 +141,7 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      expect(screen.getByText("blog.example.com")).toBeInTheDocument();
+      expect(screen.getAllByText("blog.example.com").length).toBeGreaterThanOrEqual(1);
     });
 
     it('shows "Your URL" and "Feed found" labels with values', () => {
@@ -153,10 +159,10 @@ describe("UrlValidationResult", () => {
       expect(screen.getByText("Your URL:")).toBeInTheDocument();
       expect(screen.getByText("https://example.com")).toBeInTheDocument();
       expect(screen.getByText("Feed found:")).toBeInTheDocument();
-      expect(screen.getByText("https://example.com/rss.xml")).toBeInTheDocument();
+      expect(screen.getAllByText("https://example.com/rss.xml").length).toBeGreaterThanOrEqual(1);
     });
 
-    it('shows "+ Add this feed" button', () => {
+    it('shows "Add this feed" button', () => {
       renderComponent({
         url: "https://example.com",
         validationStatus: "success",
@@ -168,7 +174,7 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      expect(screen.getByRole("button", { name: /add this feed/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /add example feed/i })).toBeInTheDocument();
     });
 
     it("shows favicon using original URL domain", () => {
@@ -187,7 +193,7 @@ describe("UrlValidationResult", () => {
 
       expect(icon).toHaveAttribute(
         "src",
-        "https://www.google.com/s2/favicons?sz=32&domain=www.youtube.com",
+        "https://www.google.com/s2/favicons?sz=32&domain=www.youtube.com"
       );
     });
 
@@ -250,6 +256,43 @@ describe("UrlValidationResult", () => {
 
       expect(onTrySearchByName).toHaveBeenCalledTimes(1);
     });
+
+    it('shows "Tips for finding feeds" heading', () => {
+      renderComponent({
+        validationStatus: "error",
+        validationError: new ApiAdapterError("Invalid feed", {
+          errorCode: ApiErrorCode.FEED_INVALID,
+        }),
+      });
+
+      expect(screen.getByRole("heading", { name: /tips for finding feeds/i })).toBeInTheDocument();
+    });
+
+    it("tips list contains 3 items", () => {
+      renderComponent({
+        validationStatus: "error",
+        validationError: new ApiAdapterError("Invalid feed", {
+          errorCode: ApiErrorCode.FEED_INVALID,
+        }),
+      });
+
+      const list = screen.getByRole("list");
+      const items = screen.getAllByRole("listitem");
+
+      expect(list).toBeInTheDocument();
+      expect(items).toHaveLength(3);
+    });
+
+    it("tips section does not render for request errors", () => {
+      renderComponent({
+        validationStatus: "error",
+        validationError: new ApiAdapterError("Request failed", {
+          errorCode: ApiErrorCode.FEED_REQUEST_FAILED,
+        }),
+      });
+
+      expect(screen.queryByText("Tips for finding feeds")).not.toBeInTheDocument();
+    });
   });
 
   describe("State 2d: Request error", () => {
@@ -307,11 +350,11 @@ describe("UrlValidationResult", () => {
       await user.click(screen.getByRole("button", { name: /add test feed feed/i }));
 
       expect(mockMutateAsync).toHaveBeenCalledWith({
-        details: { url: "https://example.com/feed.xml" },
+        details: { url: "https://example.com/feed.xml", title: "Test Feed" },
       });
     });
 
-    it('after successful add: "Added" button + "Go to feed settings" link visible', async () => {
+    it('after successful add: "Added" indicator + "Go to feed settings" button visible', async () => {
       mockMutateAsync.mockResolvedValue({ result: { id: "feed-123" } });
 
       const { user } = renderComponent({
@@ -323,15 +366,15 @@ describe("UrlValidationResult", () => {
 
       await user.click(screen.getByRole("button", { name: /add test feed feed/i }));
 
-      expect(screen.getByText(/added/i)).toBeInTheDocument();
-      expect(screen.getByText("Go to feed settings")).toBeInTheDocument();
+      expect(screen.getByText("Added")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /go to feed settings/i })).toBeInTheDocument();
     });
 
     it("add failure: InlineErrorAlert below card, button stays enabled", async () => {
       mockMutateAsync.mockRejectedValue(
         new ApiAdapterError("Server error", {
           errorCode: ApiErrorCode.INTERNAL_ERROR,
-        }),
+        })
       );
 
       const { user } = renderComponent({
@@ -351,7 +394,7 @@ describe("UrlValidationResult", () => {
       mockMutateAsync.mockRejectedValue(
         new ApiAdapterError("Limit reached", {
           errorCode: ApiErrorCode.FEED_LIMIT_REACHED,
-        }),
+        })
       );
 
       const { user } = renderComponent({

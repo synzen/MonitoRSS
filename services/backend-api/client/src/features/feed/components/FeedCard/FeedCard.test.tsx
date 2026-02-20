@@ -128,10 +128,11 @@ describe("FeedCard", () => {
       expect(btn).toHaveTextContent("+ Add");
     });
 
-    it("adding state shows spinner and aria-disabled", () => {
+    it("adding state shows busy button", () => {
       renderCard({ state: "adding" });
 
       const btn = screen.getByRole("button", { name: "Adding IGN feed..." });
+      expect(btn).toHaveAttribute("aria-busy", "true");
       expect(btn).toHaveAttribute("aria-disabled", "true");
     });
 
@@ -143,18 +144,23 @@ describe("FeedCard", () => {
       expect(btn).toHaveTextContent("Added");
     });
 
-    it("added state does NOT show Go to feed settings link when feedSettingsUrl is not set", () => {
+    it("added state does NOT show feed settings link when feedSettingsUrl is not set", () => {
       renderCard({ state: "added" });
 
-      expect(screen.queryByText("Go to feed settings")).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: /feed settings/i })).not.toBeInTheDocument();
     });
 
-    it("added state shows Go to feed settings link when feedSettingsUrl is set", () => {
+    it("added state shows feed settings button when feedSettingsUrl is set", () => {
       renderCard({ state: "added", feedSettingsUrl: "/feeds/123" });
 
-      const link = screen.getByRole("link", { name: "Go to feed settings for IGN" });
-      expect(link).toBeInTheDocument();
-      expect(link).toHaveAttribute("href", "/feeds/123");
+      const btn = screen.getByRole("button", { name: "Go to feed settings for IGN" });
+      expect(btn).toBeInTheDocument();
+    });
+
+    it("added state with feedSettingsUrl shows subtle Added indicator", () => {
+      renderCard({ state: "added", feedSettingsUrl: "/feeds/123" });
+
+      expect(screen.getByText("Added")).toBeInTheDocument();
     });
 
     it("error state shows error message with role alert and Retry button", () => {

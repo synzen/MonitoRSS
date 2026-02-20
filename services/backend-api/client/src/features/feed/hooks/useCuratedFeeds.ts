@@ -32,7 +32,7 @@ function searchFeeds(feeds: CuratedFeed[], query: string): CuratedFeed[] {
 
 function getCategoryMetadata(
   feeds: CuratedFeed[],
-  categories: CuratedCategory[]
+  categories: CuratedCategory[],
 ): Array<CuratedCategory & { count: number }> {
   return categories.map((cat) => ({
     ...cat,
@@ -42,7 +42,7 @@ function getCategoryMetadata(
 
 function getHighlightFeeds(
   feeds: CuratedFeed[],
-  categories: CuratedCategory[]
+  categories: CuratedCategory[],
 ): Array<{
   category: CuratedCategory;
   feeds: CuratedFeed[];
@@ -93,8 +93,8 @@ export function useCuratedFeeds(options?: UseCuratedFeedsOptions): UseCuratedFee
     staleTime: Infinity,
   });
 
-  const allFeeds = queryData?.result.feeds ?? [];
-  const allCategories = queryData?.result.categories ?? [];
+  const allFeeds = queryData?.result.feeds.filter((f) => f.category !== "other") ?? [];
+  const allCategories = queryData?.result.categories.filter((c) => c.id !== "other") ?? [];
 
   let feeds = allFeeds;
 

@@ -20,6 +20,7 @@ import type { ISupporterRepository } from "./repositories/interfaces/supporter.t
 import type { IUserFeedRepository } from "./repositories/interfaces/user-feed.types";
 import type { ICuratedFeedRepository } from "./repositories/interfaces/curated-feed.types";
 import type { ICuratedCategoryRepository } from "./repositories/interfaces/curated-category.types";
+import type { IDiscoverySearchEventRepository } from "./repositories/interfaces/discovery-search-event.types";
 import { MongoMigrationMongooseRepository } from "./repositories/mongoose/mongo-migration.mongoose.repository";
 import { FailRecordMongooseRepository } from "./repositories/mongoose/fail-record.mongoose.repository";
 import { BannedFeedMongooseRepository } from "./repositories/mongoose/banned-feed.mongoose.repository";
@@ -37,6 +38,7 @@ import { SupporterMongooseRepository } from "./repositories/mongoose/supporter.m
 import { UserFeedMongooseRepository } from "./repositories/mongoose/user-feed.mongoose.repository";
 import { CuratedFeedMongooseRepository } from "./repositories/mongoose/curated-feed.mongoose.repository";
 import { CuratedCategoryMongooseRepository } from "./repositories/mongoose/curated-category.mongoose.repository";
+import { DiscoverySearchEventMongooseRepository } from "./repositories/mongoose/discovery-search-event.mongoose.repository";
 import { DiscordApiService } from "./services/discord-api/discord-api.service";
 import { DiscordAuthService } from "./services/discord-auth/discord-auth.service";
 import { DiscordPermissionsService } from "./services/discord-permissions/discord-permissions.service";
@@ -97,6 +99,7 @@ export interface Container {
   userFeedRepository: IUserFeedRepository;
   curatedFeedRepository: ICuratedFeedRepository;
   curatedCategoryRepository: ICuratedCategoryRepository;
+  discoverySearchEventRepository: IDiscoverySearchEventRepository;
 
   // External API Services
   discordApiService: DiscordApiService;
@@ -182,6 +185,8 @@ export function createContainer(deps: {
   const curatedCategoryRepository = new CuratedCategoryMongooseRepository(
     deps.mongoConnection,
   );
+  const discoverySearchEventRepository =
+    new DiscoverySearchEventMongooseRepository(deps.mongoConnection);
 
   // External API Services
   const discordApiService = new DiscordApiService(deps.config);
@@ -383,6 +388,7 @@ export function createContainer(deps: {
     userFeedRepository,
     curatedFeedRepository,
     curatedCategoryRepository,
+    discoverySearchEventRepository,
 
     // External API Services
     discordApiService,
