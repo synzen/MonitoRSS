@@ -413,7 +413,6 @@ export const UpdateDiscordChannelConnectionBodySchema = Type.Object(
     channelId: Type.Optional(Type.String()),
     channelNewThreadTitle: Type.Optional(Type.String()),
     channelNewThreadExcludesPreview: Type.Optional(Type.Boolean()),
-    webhook: Type.Optional(WebhookSchema),
     applicationWebhook: Type.Optional(ApplicationWebhookSchema),
     content: Type.Optional(Type.Union([Type.String(), Type.Null()])),
     forumThreadTitle: Type.Optional(Type.String({ maxLength: 100 })),

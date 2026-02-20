@@ -77,7 +77,7 @@ interface CreateTestFeedOptions {
         placeholder: string;
         characterCount: number;
       }>;
-      formatter?: { formatTables?: boolean };
+      formatter?: { formatTables?: boolean; stripImages?: boolean };
       enablePlaceholderFallback?: boolean;
     };
   }>;
@@ -511,7 +511,7 @@ describe(
         assert.strictEqual(body.result.details.embeds[0]?.title, "Test Embed");
       });
 
-      it("clears detail fields omitted from request", async () => {
+      it("preserves detail fields omitted from request", async () => {
         const discordUserId = generateSnowflake();
         const user = await ctx.asUser(discordUserId);
         const { feedId, connectionId } = await createTestFeedWithConnection(
@@ -519,10 +519,29 @@ describe(
           {
             discordUserId,
             connectionOverrides: {
+              customPlaceholders: [
+                {
+                  id: generateTestId(),
+                  referenceName: "myplaceholder",
+                  sourcePlaceholder: "title",
+                  steps: [
+                    {
+                      id: generateTestId(),
+                      type: "REGEX",
+                      regexSearch: ".*",
+                    },
+                  ],
+                },
+              ],
               details: {
                 content: "Old content",
                 embeds: [{ title: "Old embed" }],
                 forumThreadTitle: "Old thread",
+                formatter: { formatTables: true, stripImages: true },
+                enablePlaceholderFallback: true,
+                placeholderLimits: [
+                  { placeholder: "title", characterCount: 100 },
+                ],
               },
             },
           },
@@ -540,11 +559,145 @@ describe(
           (c) => c.id === connectionId,
         );
 
-        assert.strictEqual(storedConnection?.details.content, undefined);
-        assert.strictEqual(storedConnection?.details.embeds, undefined);
+        assert.strictEqual(storedConnection?.details.content, "Old content");
+        assert.strictEqual(storedConnection?.details.embeds?.length, 1);
+        assert.strictEqual(
+          storedConnection?.details.embeds?.[0]?.title,
+          "Old embed",
+        );
         assert.strictEqual(
           storedConnection?.details.forumThreadTitle,
-          undefined,
+          "Old thread",
+        );
+        assert.strictEqual(
+          storedConnection?.details.formatter?.formatTables,
+          true,
+        );
+        assert.strictEqual(
+          storedConnection?.details.formatter?.stripImages,
+          true,
+        );
+        assert.strictEqual(
+          storedConnection?.details.enablePlaceholderFallback,
+          true,
+        );
+        assert.strictEqual(
+          storedConnection?.details.placeholderLimits?.length,
+          1,
+        );
+        assert.strictEqual(
+          storedConnection?.details.placeholderLimits?.[0]?.placeholder,
+          "title",
+        );
+        assert.strictEqual(storedConnection?.customPlaceholders?.length, 1);
+        assert.strictEqual(
+          storedConnection?.customPlaceholders?.[0]?.referenceName,
+          "myplaceholder",
+        );
+      });
+
+      it("preserves detail fields when saving only customPlaceholders", async () => {
+        const discordUserId = generateSnowflake();
+        const user = await ctx.asUser(discordUserId);
+        const { feedId, connectionId } = await createTestFeedWithConnection(
+          ctx,
+          {
+            discordUserId,
+            connectionOverrides: {
+              details: {
+                content: "Old content",
+                embeds: [{ title: "Old embed" }],
+                formatter: { formatTables: true },
+                componentsV2: [{ type: 1, components: [] }],
+              },
+            },
+          },
+        );
+
+        const response = await user.fetch(testUrl(feedId, connectionId), {
+          method: "PATCH",
+          body: JSON.stringify({
+            customPlaceholders: [
+              {
+                referenceName: "newplaceholder",
+                sourcePlaceholder: "description",
+                steps: [
+                  {
+                    type: "REGEX",
+                    regexSearch: "test",
+                  },
+                ],
+              },
+            ],
+          }),
+        });
+
+        assert.strictEqual(response.status, 200);
+
+        const feed = await ctx.container.userFeedRepository.findById(feedId);
+        const storedConnection = feed?.connections.discordChannels.find(
+          (c) => c.id === connectionId,
+        );
+
+        assert.strictEqual(storedConnection?.details.content, "Old content");
+        assert.strictEqual(storedConnection?.details.embeds?.length, 1);
+        assert.strictEqual(
+          storedConnection?.details.formatter?.formatTables,
+          true,
+        );
+        assert.ok(
+          storedConnection?.details.componentsV2?.length,
+          "componentsV2 should be preserved",
+        );
+        assert.strictEqual(storedConnection?.customPlaceholders?.length, 1);
+        assert.strictEqual(
+          storedConnection?.customPlaceholders?.[0]?.referenceName,
+          "newplaceholder",
+        );
+      });
+
+      it("clears detail fields when explicitly set to null", async () => {
+        const discordUserId = generateSnowflake();
+        const user = await ctx.asUser(discordUserId);
+        const { feedId, connectionId } = await createTestFeedWithConnection(
+          ctx,
+          {
+            discordUserId,
+            connectionOverrides: {
+              details: {
+                content: "Old content",
+                formatter: {
+                  formatTables: true,
+                  stripImages: false,
+                },
+              },
+            },
+          },
+        );
+
+        const response = await user.fetch(testUrl(feedId, connectionId), {
+          method: "PATCH",
+          body: JSON.stringify({
+            content: null,
+            formatter: null,
+          }),
+        });
+
+        assert.strictEqual(response.status, 200);
+
+        const feed = await ctx.container.userFeedRepository.findById(feedId);
+        const storedConnection = feed?.connections.discordChannels.find(
+          (c) => c.id === connectionId,
+        );
+
+        assert.ok(
+          !storedConnection?.details.content,
+          `content should be cleared`,
+        );
+        assert.ok(
+          !storedConnection?.details.formatter ||
+            Object.keys(storedConnection.details.formatter).length === 0,
+          `formatter should be cleared`,
         );
       });
 
@@ -1326,10 +1479,9 @@ describe(
         assert.ok(body.result.details);
 
         const details = body.result.details as Record<string, unknown>;
-        assert.deepStrictEqual(
+        assert.ok(
           details.formatter,
-          {},
-          "details.formatter should be empty object for connections without formatter",
+          "details.formatter should be present for connections",
         );
       });
 

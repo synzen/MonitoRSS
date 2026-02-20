@@ -705,25 +705,62 @@ export async function updateDiscordChannelConnectionHandler(
     useDisabledCode = FeedConnectionDisabledCode.Manual;
   }
 
-  const details: UpdateDiscordChannelConnectionDetailsInput = {
-    placeholderLimits: body.placeholderLimits,
-    channelNewThreadTitle: body.channelNewThreadTitle,
-    channelNewThreadExcludesPreview: body.channelNewThreadExcludesPreview,
-    componentRows: body.componentRows as any,
-    componentsV2: body.componentsV2,
-    channel:
-      !useApplicationWebhook && useChannelId ? { id: useChannelId } : undefined,
-    webhook: useApplicationWebhook || useChannelId ? undefined : body.webhook,
-    applicationWebhook:
-      useApplicationWebhook ||
-      (useChannelId ? undefined : body.applicationWebhook),
-    embeds: convertToFlatDiscordEmbeds(body.embeds),
-    content: body.content,
-    formatter: body.formatter,
-    forumThreadTitle: body.forumThreadTitle,
-    forumThreadTags: body.forumThreadTags,
-    enablePlaceholderFallback: body.enablePlaceholderFallback,
-  };
+  const details: UpdateDiscordChannelConnectionDetailsInput = {};
+
+  if ("placeholderLimits" in body) {
+    details.placeholderLimits = body.placeholderLimits;
+  }
+
+  if ("channelNewThreadTitle" in body) {
+    details.channelNewThreadTitle = body.channelNewThreadTitle;
+  }
+
+  if ("channelNewThreadExcludesPreview" in body) {
+    details.channelNewThreadExcludesPreview =
+      body.channelNewThreadExcludesPreview;
+  }
+
+  if ("componentRows" in body) {
+    details.componentRows = (body.componentRows as any) ?? undefined;
+  }
+
+  if ("componentsV2" in body) {
+    details.componentsV2 = body.componentsV2 ?? undefined;
+  }
+
+  if ("embeds" in body) {
+    details.embeds = convertToFlatDiscordEmbeds(body.embeds);
+  }
+
+  if ("content" in body) {
+    details.content = body.content ?? undefined;
+  }
+
+  if ("formatter" in body) {
+    details.formatter = body.formatter ?? undefined;
+  }
+
+  if ("forumThreadTitle" in body) {
+    details.forumThreadTitle = body.forumThreadTitle;
+  }
+
+  if ("forumThreadTags" in body) {
+    details.forumThreadTags = body.forumThreadTags;
+  }
+
+  if ("enablePlaceholderFallback" in body) {
+    details.enablePlaceholderFallback = body.enablePlaceholderFallback;
+  }
+
+  if (!useApplicationWebhook && useChannelId) {
+    details.channel = { id: useChannelId };
+  }
+
+  if (useApplicationWebhook) {
+    details.applicationWebhook = useApplicationWebhook;
+  } else if (!useChannelId && "applicationWebhook" in body) {
+    details.applicationWebhook = body.applicationWebhook;
+  }
 
   const updatedConnection =
     await feedConnectionsDiscordChannelsService.updateDiscordChannelConnection(
