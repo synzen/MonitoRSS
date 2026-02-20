@@ -1,3 +1,5 @@
+import { DetectedImageField } from "../types/DetectedFields";
+
 const IMAGE_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)(\?.*)?$/i;
 
 function selectPreferredField(fields: string[]): string {
@@ -58,34 +60,50 @@ function getImageDedupeKey(urlString: string): string {
   }
 }
 
-export function detectImageFields(articles: Array<Record<string, unknown>>): string[] {
-  if (!articles || articles.length === 0) return [];
+function getArticleImageFields(article: Record<string, unknown>): Set<string> {
+  const dedupeKeyToFields = new Map<string, string[]>();
 
-  const selectedFields = new Set<string>();
+  for (const [field, value] of Object.entries(article)) {
+    if (field === "id" || field === "idHash") continue;
+    if (field.includes("::anchor")) continue;
 
-  for (const article of articles) {
-    // Group fields by their normalized URL key within this article
-    const dedupeKeyToFields = new Map<string, string[]>();
-
-    for (const [field, value] of Object.entries(article)) {
-      if (field === "id" || field === "idHash") continue;
-      if (field.includes("::anchor")) continue;
-
-      if (isImageUrl(value)) {
-        const url = value as string;
-        const dedupeKey = getImageDedupeKey(url);
-        const existing = dedupeKeyToFields.get(dedupeKey) || [];
-        existing.push(field);
-        dedupeKeyToFields.set(dedupeKey, existing);
-      }
-    }
-
-    // For each unique image (by dedupe key), select the preferred field
-    for (const fields of dedupeKeyToFields.values()) {
-      const preferredField = selectPreferredField(fields);
-      selectedFields.add(preferredField);
+    if (isImageUrl(value)) {
+      const url = value as string;
+      const dedupeKey = getImageDedupeKey(url);
+      const existing = dedupeKeyToFields.get(dedupeKey) || [];
+      existing.push(field);
+      dedupeKeyToFields.set(dedupeKey, existing);
     }
   }
 
-  return Array.from(selectedFields).sort();
+  const fields = new Set<string>();
+
+  for (const fieldGroup of dedupeKeyToFields.values()) {
+    fields.add(selectPreferredField(fieldGroup));
+  }
+
+  return fields;
+}
+
+export function detectImageFields(articles: Array<Record<string, unknown>>): DetectedImageField[] {
+  if (!articles || articles.length === 0) return [];
+
+  const allFields = new Set<string>();
+  const fieldArticleCount = new Map<string, number>();
+
+  for (const article of articles) {
+    const articleFields = getArticleImageFields(article);
+
+    for (const field of articleFields) {
+      allFields.add(field);
+      fieldArticleCount.set(field, (fieldArticleCount.get(field) || 0) + 1);
+    }
+  }
+
+  return Array.from(allFields)
+    .sort()
+    .map((field) => ({
+      field,
+      presentInAll: fieldArticleCount.get(field) === articles.length,
+    }));
 }

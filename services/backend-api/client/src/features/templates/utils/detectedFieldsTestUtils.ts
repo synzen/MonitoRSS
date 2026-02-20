@@ -1,14 +1,36 @@
-import { DetectedFields, TemplateRequiredField } from "../types";
+import { DetectedFields, DetectedImageField, TemplateRequiredField } from "../types";
 
 export const createEmptyDetectedFields = (): DetectedFields =>
-  Object.values(TemplateRequiredField).reduce(
-    (acc, field) => ({ ...acc, [field]: [] }),
-    {} as DetectedFields,
-  );
+  ({
+    [TemplateRequiredField.Image]: [],
+    [TemplateRequiredField.Description]: [],
+    [TemplateRequiredField.Title]: [],
+    [TemplateRequiredField.Author]: [],
+    [TemplateRequiredField.Link]: [],
+  } as DetectedFields);
 
-export const createDetectedFields = (
-  overrides: Partial<Record<TemplateRequiredField, string[]>> = {},
-): DetectedFields => ({
-  ...createEmptyDetectedFields(),
-  ...overrides,
-});
+type DetectedFieldsOverrides = {
+  [TemplateRequiredField.Image]?: string[] | DetectedImageField[];
+  [TemplateRequiredField.Description]?: string[];
+  [TemplateRequiredField.Title]?: string[];
+  [TemplateRequiredField.Author]?: string[];
+  [TemplateRequiredField.Link]?: string[];
+};
+
+export const createDetectedFields = (overrides: DetectedFieldsOverrides = {}): DetectedFields => {
+  const base = createEmptyDetectedFields();
+  const result = { ...base, ...overrides };
+
+  if (overrides[TemplateRequiredField.Image]) {
+    const imageOverride = overrides[TemplateRequiredField.Image];
+
+    if (imageOverride.length > 0 && typeof imageOverride[0] === "string") {
+      result[TemplateRequiredField.Image] = (imageOverride as string[]).map((field) => ({
+        field,
+        presentInAll: true,
+      }));
+    }
+  }
+
+  return result as DetectedFields;
+};

@@ -6,4 +6,15 @@ export enum TemplateRequiredField {
   Link = "link",
 }
 
-export type DetectedFields = Record<TemplateRequiredField, string[]>;
+export interface DetectedImageField {
+  field: string;
+  presentInAll: boolean;
+}
+
+export type DetectedFields = {
+  [TemplateRequiredField.Image]: DetectedImageField[];
+  [TemplateRequiredField.Description]: string[];
+  [TemplateRequiredField.Title]: string[];
+  [TemplateRequiredField.Author]: string[];
+  [TemplateRequiredField.Link]: string[];
+};

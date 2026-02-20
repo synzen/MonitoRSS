@@ -64,7 +64,7 @@ export const RICH_EMBED_TEMPLATE: Template = {
   ThumbnailComponent: RichEmbedThumbnail,
   requiredFields: [TemplateRequiredField.Description],
   createMessageComponent: (fields?: DetectedFields): MessageComponentRoot => {
-    const imageField = fields?.image[0];
+    const imageField = fields?.image.find((i) => i.presentInAll)?.field;
     const descriptionField = fields?.description[0] ?? "description";
     const authorField = fields?.author[0];
     const linkField = fields?.link[0];
@@ -181,7 +181,7 @@ export const COMPACT_CARD_TEMPLATE: Template = {
   requiredFields: [],
   requiredFieldsOr: [TemplateRequiredField.Title, TemplateRequiredField.Description],
   createMessageComponent: (fields?: DetectedFields): MessageComponentRoot => {
-    const imageField = fields?.image[0];
+    const imageField = fields?.image.find((i) => i.presentInAll)?.field;
     const descriptionField = fields?.description[0] ?? "description";
     const linkField = fields?.link[0];
     const titleField = fields?.title[0];
@@ -269,11 +269,11 @@ export const MEDIA_GALLERY_TEMPLATE: Template = {
   requiredFields: [TemplateRequiredField.Image],
   createMessageComponent: (fields?: DetectedFields): MessageComponentRoot => {
     const descriptionField = fields?.description[0];
-    const imageFields = fields?.image ?? [];
+    const imageFieldNames = (fields?.image ?? []).map((i) => i.field);
     const linkField = fields?.link[0];
     const titleField = fields?.title[0];
 
-    const imagesToUse = imageFields.length > 0 ? imageFields.slice(0, 10) : ["image"];
+    const imagesToUse = imageFieldNames.length > 0 ? imageFieldNames.slice(0, 10) : ["image"];
 
     const galleryItems: MediaGalleryItemComponent[] = imagesToUse.map((imageField, index) => ({
       type: ComponentType.V2MediaGalleryItem,
