@@ -1,4 +1,4 @@
-import { DetectedImageField } from "../types/DetectedFields";
+import { DetectedField } from "../types/DetectedFields";
 
 const IMAGE_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)(\?.*)?$/i;
 
@@ -85,7 +85,7 @@ function getArticleImageFields(article: Record<string, unknown>): Set<string> {
   return fields;
 }
 
-export function detectImageFields(articles: Array<Record<string, unknown>>): DetectedImageField[] {
+export function detectImageFields(articles: Array<Record<string, unknown>>): DetectedField[] {
   if (!articles || articles.length === 0) return [];
 
   const allFields = new Set<string>();

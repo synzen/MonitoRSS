@@ -21,8 +21,8 @@ export const DEFAULT_TEMPLATE: Template = {
   ThumbnailComponent: SimpleTextThumbnail,
   requiredFields: [],
   createMessageComponent: (fields?: DetectedFields): MessageComponentRoot => {
-    const titleField = fields?.title[0];
-    const linkField = fields?.link[0];
+    const titleField = fields?.title[0]?.field;
+    const linkField = fields?.link[0]?.field;
 
     let content = "";
 
@@ -65,10 +65,10 @@ export const RICH_EMBED_TEMPLATE: Template = {
   requiredFields: [TemplateRequiredField.Description],
   createMessageComponent: (fields?: DetectedFields): MessageComponentRoot => {
     const imageField = fields?.image.find((i) => i.presentInAll)?.field;
-    const descriptionField = fields?.description[0] ?? "description";
-    const authorField = fields?.author[0];
-    const linkField = fields?.link[0];
-    const titleField = fields?.title[0];
+    const descriptionField = fields?.description[0]?.field ?? "description";
+    const authorField = fields?.author[0]?.field;
+    const linkField = fields?.link[0]?.field;
+    const titleField = fields?.title[0]?.field;
 
     const hasImage = !!imageField;
     const hasTitle = !!titleField;
@@ -182,9 +182,9 @@ export const COMPACT_CARD_TEMPLATE: Template = {
   requiredFieldsOr: [TemplateRequiredField.Title, TemplateRequiredField.Description],
   createMessageComponent: (fields?: DetectedFields): MessageComponentRoot => {
     const imageField = fields?.image.find((i) => i.presentInAll)?.field;
-    const descriptionField = fields?.description[0] ?? "description";
-    const linkField = fields?.link[0];
-    const titleField = fields?.title[0];
+    const descriptionField = fields?.description[0]?.field ?? "description";
+    const linkField = fields?.link[0]?.field;
+    const titleField = fields?.title[0]?.field;
 
     const hasImage = !!imageField;
 
@@ -268,10 +268,10 @@ export const MEDIA_GALLERY_TEMPLATE: Template = {
   ThumbnailComponent: MediaGalleryThumbnail,
   requiredFields: [TemplateRequiredField.Image],
   createMessageComponent: (fields?: DetectedFields): MessageComponentRoot => {
-    const descriptionField = fields?.description[0];
+    const descriptionField = fields?.description[0]?.field;
     const imageFieldNames = (fields?.image ?? []).map((i) => i.field);
-    const linkField = fields?.link[0];
-    const titleField = fields?.title[0];
+    const linkField = fields?.link[0]?.field;
+    const titleField = fields?.title[0]?.field;
 
     const imagesToUse = imageFieldNames.length > 0 ? imageFieldNames.slice(0, 10) : ["image"];
 
