@@ -515,6 +515,26 @@ const mockUserFeeds: UserFeed[] = [
       {
         details: {
           channel: {
+            id: mockDiscordChannels[0].id,
+            guildId: mockDiscordServers[0].id,
+          },
+          embeds: [],
+          formatter: {
+            formatTables: false,
+            stripImages: false,
+          },
+        },
+        splitOptions: null,
+        filters: null,
+        mentions: null,
+        id: "missing-medium",
+        disabledCode: FeedConnectionDisabledCode.MissingMedium,
+        key: FeedConnectionType.DiscordChannel,
+        name: "Missing Channel Connection",
+      },
+      {
+        details: {
+          channel: {
             id: mockDiscordChannels[4].id,
             guildId: mockDiscordServers[0].id,
             type: "forum-thread",
