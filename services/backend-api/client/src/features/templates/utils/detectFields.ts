@@ -17,9 +17,9 @@ export function detectFields(articles: Array<Record<string, unknown>>): Detected
 
   return {
     image: detectImageFields(articles),
-    description: description ? [description] : [],
-    title: articles[0].title ? ["title"] : [],
-    author: articles[0].author ? ["author"] : [],
-    link: articles[0].link ? ["link"] : [],
+    description: description ? [{ field: description, presentInAll: true }] : [],
+    title: articles[0].title ? [{ field: "title", presentInAll: true }] : [],
+    author: articles[0].author ? [{ field: "author", presentInAll: true }] : [],
+    link: articles[0].link ? [{ field: "link", presentInAll: true }] : [],
   };
 }

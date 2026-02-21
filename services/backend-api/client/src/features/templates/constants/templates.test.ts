@@ -54,14 +54,15 @@ describe("templates", () => {
       expect(RICH_EMBED_TEMPLATE.requiredFields).toContain("description");
     });
 
-    it("uses LegacyRoot format", () => {
-      expect(RICH_EMBED_TEMPLATE.createMessageComponent().type).toBe(ComponentType.LegacyRoot);
+    it("uses V2Root format", () => {
+      expect(RICH_EMBED_TEMPLATE.createMessageComponent().type).toBe(ComponentType.V2Root);
     });
   });
 
   describe("COMPACT_CARD_TEMPLATE", () => {
-    it("requires title field", () => {
-      expect(COMPACT_CARD_TEMPLATE.requiredFields).toEqual(["title"]);
+    it("requires title or description field", () => {
+      expect(COMPACT_CARD_TEMPLATE.requiredFields).toEqual([]);
+      expect(COMPACT_CARD_TEMPLATE.requiredFieldsOr).toEqual(["title", "description"]);
     });
 
     it("uses V2Root format", () => {

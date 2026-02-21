@@ -30,7 +30,7 @@ const renderComponent = (props: Partial<TestSendErrorPanelProps> = {}) =>
   render(
     <TestWrapper>
       <TestSendErrorPanel {...defaultProps} {...props} />
-    </TestWrapper>,
+    </TestWrapper>
   );
 
 describe("TestSendErrorPanel", () => {
@@ -42,9 +42,7 @@ describe("TestSendErrorPanel", () => {
     it("renders error headline with icon", () => {
       renderComponent();
 
-      expect(
-        screen.getByText(/Test Failed - Discord Couldn't Process This Message/i),
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Discord couldn't send this preview/i)).toBeInTheDocument();
     });
 
     it("renders user-friendly error message", () => {
@@ -54,18 +52,18 @@ describe("TestSendErrorPanel", () => {
       renderComponent({ feedback });
 
       expect(
-        screen.getByText("The template has placeholders that couldn't be filled."),
+        screen.getByText("The template has placeholders that couldn't be filled.")
       ).toBeInTheDocument();
     });
 
-    it("renders warning callout about connection disabling", () => {
+    it("renders warning callout about articles not delivering", () => {
       renderComponent();
 
       expect(
-        screen.getByText(/Using this template may disable your connection/i),
+        screen.getByText(/Some articles may not deliver with this template/i)
       ).toBeInTheDocument();
       expect(
-        screen.getByText(/automatically disabled to prevent repeated failures/i),
+        screen.getByText(/the connection will pause until you adjust the format/i)
       ).toBeInTheDocument();
     });
 
@@ -75,12 +73,10 @@ describe("TestSendErrorPanel", () => {
       expect(screen.getByRole("button", { name: /Try Another Template/i })).toBeInTheDocument();
     });
 
-    it('renders "Use Anyway - I understand" button', () => {
+    it('renders "Use this template" button', () => {
       renderComponent();
 
-      expect(
-        screen.getByRole("button", { name: /Use Anyway - I understand/i }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Use this template/i })).toBeInTheDocument();
     });
   });
 
@@ -177,21 +173,21 @@ describe("TestSendErrorPanel", () => {
       expect(onTryAnother).toHaveBeenCalledTimes(1);
     });
 
-    it('calls onUseAnyway when "Use Anyway" is clicked', async () => {
+    it('calls onUseAnyway when "Use this template" is clicked', async () => {
       const onUseAnyway = vi.fn();
       const user = userEvent.setup();
       renderComponent({ onUseAnyway });
 
-      await user.click(screen.getByRole("button", { name: /Use Anyway - I understand/i }));
+      await user.click(screen.getByRole("button", { name: /Use this template/i }));
 
       expect(onUseAnyway).toHaveBeenCalledTimes(1);
     });
 
-    it("shows loading state on Use Anyway button when isUseAnywayLoading is true", () => {
+    it("shows loading state on Use this template button when isUseAnywayLoading is true", () => {
       renderComponent({ isUseAnywayLoading: true });
 
       const useAnywayButton = screen.getByRole("button", {
-        name: /Use Anyway - I understand/i,
+        name: /Use this template/i,
       });
       expect(useAnywayButton).toBeInTheDocument();
     });
@@ -201,22 +197,21 @@ describe("TestSendErrorPanel", () => {
     it('has role="region" with proper aria attributes', () => {
       renderComponent();
 
-      // Find the specific error panel region by its aria-labelledby attribute
-      const panel = screen.getByRole("region", { name: /Test Failed/i });
+      const panel = screen.getByRole("region", { name: /Discord couldn't send this preview/i });
       expect(panel).toBeInTheDocument();
     });
 
     it("has aria-labelledby pointing to heading", () => {
       renderComponent();
 
-      const panel = screen.getByRole("region", { name: /Test Failed/i });
+      const panel = screen.getByRole("region", { name: /Discord couldn't send this preview/i });
       expect(panel).toHaveAttribute("aria-labelledby", "test-send-error-heading");
     });
 
     it("has aria-describedby pointing to description", () => {
       renderComponent();
 
-      const panel = screen.getByRole("region", { name: /Test Failed/i });
+      const panel = screen.getByRole("region", { name: /Discord couldn't send this preview/i });
       expect(panel).toHaveAttribute("aria-describedby", "test-send-error-description");
     });
   });
