@@ -26,6 +26,7 @@ import { UserFeedStatusTag } from "../UserFeedStatusTag";
 import { STATUS_FILTERS, TOGGLEABLE_COLUMNS } from "../constants";
 
 interface TableToolbarProps {
+  searchInputRef?: React.RefObject<HTMLInputElement>;
   searchInput: string;
   onSearchInputChange: (value: string) => void;
   onSearchSubmit: () => void;
@@ -39,6 +40,7 @@ interface TableToolbarProps {
 }
 
 export const TableToolbar: React.FC<TableToolbarProps> = ({
+  searchInputRef,
   searchInput,
   onSearchInputChange,
   onSearchSubmit,
@@ -93,6 +95,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
               <SearchIcon color="gray.400" />
             </InputLeftElement>
             <Input
+              ref={searchInputRef}
               onChange={({ target: { value } }) => onSearchInputChange(value)}
               value={searchInput || ""}
               minWidth="275px"
@@ -171,7 +174,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
               <MenuOptionGroup
                 type="checkbox"
                 value={TOGGLEABLE_COLUMNS.filter(({ id }) => columnVisibility[id]).map(
-                  ({ id }) => id,
+                  ({ id }) => id
                 )}
                 onChange={handleColumnVisibilityChange}
               >

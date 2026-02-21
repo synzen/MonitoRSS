@@ -26,8 +26,7 @@ import { UpdateDiscordChannelConnectionInput } from "../../api";
 import { EditConnectionWebhookDialog } from "../EditConnectionWebhookDialog";
 import { DeleteConnectionButton } from "../DeleteConnectionButton";
 import { CopyDiscordChannelConnectionSettingsDialog } from "../CopyDiscordChannelConnectingSettingsDialog";
-import { DiscordTextChannelConnectionDialogContent } from "../AddConnectionDialog/DiscordTextChannelConnectionDialogContent";
-import { DiscordForumChannelConnectionDialogContent } from "../AddConnectionDialog/DiscordForumChannelConnectionDialogContent";
+import { EditConnectionDialogContent } from "../EditConnectionDialogContent";
 import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 
 interface Props {
@@ -66,10 +65,6 @@ export const DiscordChannelConnectionSettings = ({ feedId, connection, trigger }
     });
   };
 
-  const isForum =
-    connection.details.channel?.type === "forum" ||
-    connection.details.channel?.type === "forum-thread";
-
   return (
     <>
       <CopyDiscordChannelConnectionSettingsDialog
@@ -79,38 +74,12 @@ export const DiscordChannelConnectionSettings = ({ feedId, connection, trigger }
         onClose={isCopySettingsOnClose}
         onCloseRef={actionsButtonRef}
       />
-      {connection.details.channel && !isForum && (
-        <DiscordTextChannelConnectionDialogContent
-          connection={connection}
-          isOpen={editIsOpen}
-          onClose={editOnClose}
-        />
-      )}
-      {connection.details.channel && isForum && (
-        <DiscordForumChannelConnectionDialogContent
-          connection={connection}
-          isOpen={editIsOpen}
-          onClose={editOnClose}
-        />
-      )}
-      {connection?.details.webhook && (
-        <EditConnectionWebhookDialog
-          connectionId={connection.id}
-          onCloseRef={actionsButtonRef}
-          isOpen={editIsOpen}
-          onClose={editOnClose}
-          defaultValues={{
-            name: connection.name,
-            serverId: connection.details.webhook.guildId,
-            applicationWebhook: {
-              iconUrl: connection.details.webhook.iconUrl,
-              name: connection.details.webhook.name || "",
-              threadId: connection.details.webhook.threadId,
-              channelId: connection.details.webhook.channelId || "",
-            },
-          }}
-        />
-      )}
+      <EditConnectionDialogContent
+        connection={connection}
+        isOpen={editIsOpen}
+        onClose={editOnClose}
+        onCloseRef={actionsButtonRef}
+      />
       {/** For converting a channel to webhook */}
       <EditConnectionWebhookDialog
         excludeName
