@@ -17,7 +17,7 @@ describe("detectImageFields", () => {
           image: "https://example.com/photo.jpg",
         },
       ];
-      expect(detectImageFields(articles)).toEqual(["image"]);
+      expect(detectImageFields(articles)).toEqual([{ field: "image", presentInAll: true }]);
     });
 
     it("detects multiple image fields with different URLs", () => {
@@ -27,7 +27,10 @@ describe("detectImageFields", () => {
           thumbnail: "https://example.com/photo2.png",
         },
       ];
-      expect(detectImageFields(articles)).toEqual(["image", "thumbnail"]);
+      expect(detectImageFields(articles)).toEqual([
+        { field: "image", presentInAll: true },
+        { field: "thumbnail", presentInAll: true },
+      ]);
     });
 
     it("skips id and idHash fields", () => {
@@ -38,7 +41,7 @@ describe("detectImageFields", () => {
           image: "https://example.com/actual.jpg",
         },
       ];
-      expect(detectImageFields(articles)).toEqual(["image"]);
+      expect(detectImageFields(articles)).toEqual([{ field: "image", presentInAll: true }]);
     });
 
     it("skips non-image URLs", () => {
@@ -48,7 +51,7 @@ describe("detectImageFields", () => {
           image: "https://example.com/photo.jpg",
         },
       ];
-      expect(detectImageFields(articles)).toEqual(["image"]);
+      expect(detectImageFields(articles)).toEqual([{ field: "image", presentInAll: true }]);
     });
 
     it("skips extracted anchor fields even if they contain image URLs", () => {
@@ -61,8 +64,9 @@ describe("detectImageFields", () => {
           "extracted::description::image1": "https://nelog.jp/wp-content/uploads/2025/03/photo.jpg",
         },
       ];
-      // Should only detect the image field, not the anchor fields
-      expect(detectImageFields(articles)).toEqual(["extracted::description::image1"]);
+      expect(detectImageFields(articles)).toEqual([
+        { field: "extracted::description::image1", presentInAll: true },
+      ]);
     });
 
     it("skips values with whitespace (mixed content)", () => {
@@ -73,7 +77,7 @@ describe("detectImageFields", () => {
           image: "https://example.com/actual.jpg",
         },
       ];
-      expect(detectImageFields(articles)).toEqual(["image"]);
+      expect(detectImageFields(articles)).toEqual([{ field: "image", presentInAll: true }]);
     });
 
     it("skips values with newlines", () => {
@@ -83,7 +87,7 @@ describe("detectImageFields", () => {
           image: "https://example.com/actual.jpg",
         },
       ];
-      expect(detectImageFields(articles)).toEqual(["image"]);
+      expect(detectImageFields(articles)).toEqual([{ field: "image", presentInAll: true }]);
     });
   });
 
@@ -95,7 +99,7 @@ describe("detectImageFields", () => {
           "media:group__media:thumbnail__@__url": "https://example.com/photo.jpg",
         },
       ];
-      expect(detectImageFields(articles)).toEqual(["image__url"]);
+      expect(detectImageFields(articles)).toEqual([{ field: "image__url", presentInAll: true }]);
     });
 
     it("includes both fields when they have different URLs", () => {
@@ -105,7 +109,10 @@ describe("detectImageFields", () => {
           thumbnail: "https://example.com/photo2.jpg",
         },
       ];
-      expect(detectImageFields(articles)).toEqual(["image__url", "thumbnail"]);
+      expect(detectImageFields(articles)).toEqual([
+        { field: "image__url", presentInAll: true },
+        { field: "thumbnail", presentInAll: true },
+      ]);
     });
 
     it("uses alphabetical order as tie-breaker for same-length fields", () => {
@@ -115,7 +122,7 @@ describe("detectImageFields", () => {
           image: "https://example.com/img.jpg",
         },
       ];
-      expect(detectImageFields(articles)).toEqual(["image"]);
+      expect(detectImageFields(articles)).toEqual([{ field: "image", presentInAll: true }]);
     });
 
     it("handles three fields with same URL", () => {
@@ -126,17 +133,44 @@ describe("detectImageFields", () => {
           img: "https://example.com/img.jpg",
         },
       ];
-      expect(detectImageFields(articles)).toEqual(["img"]);
+      expect(detectImageFields(articles)).toEqual([{ field: "img", presentInAll: true }]);
     });
   });
 
   describe("cross-article behavior", () => {
-    it("aggregates unique fields across articles", () => {
+    it("marks fields not in all articles as partial", () => {
       const articles = [
         { image: "https://example.com/photo1.jpg" },
         { thumbnail: "https://example.com/photo2.jpg" },
       ];
-      expect(detectImageFields(articles)).toEqual(["image", "thumbnail"]);
+      expect(detectImageFields(articles)).toEqual([
+        { field: "image", presentInAll: false },
+        { field: "thumbnail", presentInAll: false },
+      ]);
+    });
+
+    it("marks field present in all articles as presentInAll", () => {
+      const articles = [
+        { image: "https://example.com/photo1.jpg" },
+        { image: "https://example.com/photo2.jpg" },
+      ];
+      expect(detectImageFields(articles)).toEqual([{ field: "image", presentInAll: true }]);
+    });
+
+    it("distinguishes presentInAll from partial fields", () => {
+      const articles = [
+        {
+          image: "https://example.com/photo1.jpg",
+          banner: "https://example.com/banner1.jpg",
+        },
+        {
+          image: "https://example.com/photo2.jpg",
+        },
+      ];
+      expect(detectImageFields(articles)).toEqual([
+        { field: "banner", presentInAll: false },
+        { field: "image", presentInAll: true },
+      ]);
     });
 
     it("deduplicates within each article separately", () => {
@@ -149,7 +183,7 @@ describe("detectImageFields", () => {
           image__url: "https://example.com/other.jpg",
         },
       ];
-      expect(detectImageFields(articles)).toEqual(["image__url"]);
+      expect(detectImageFields(articles)).toEqual([{ field: "image__url", presentInAll: true }]);
     });
 
     it("handles different duplicates in different articles", () => {
@@ -163,13 +197,10 @@ describe("detectImageFields", () => {
           banner: "https://example.com/b.jpg",
         },
       ];
-      // Article 1: img vs thumbnail (same URL) -> keeps img (shorter)
-      // Article 2: img vs banner (same URL) -> keeps img (shorter)
-      // Final result: only img
-      expect(detectImageFields(articles)).toEqual(["img"]);
+      expect(detectImageFields(articles)).toEqual([{ field: "img", presentInAll: true }]);
     });
 
-    it("includes multiple fields when URLs differ across articles", () => {
+    it("marks all fields as partial when no field is shared", () => {
       const articles = [
         {
           img: "https://example.com/a.jpg",
@@ -179,9 +210,15 @@ describe("detectImageFields", () => {
           banner: "https://example.com/c.jpg",
         },
       ];
-      // Article 1: img vs thumbnail -> keeps img
-      // Article 2: banner is unique
-      expect(detectImageFields(articles)).toEqual(["banner", "img"]);
+      expect(detectImageFields(articles)).toEqual([
+        { field: "banner", presentInAll: false },
+        { field: "img", presentInAll: false },
+      ]);
+    });
+
+    it("marks field as partial when one article has no image fields", () => {
+      const articles = [{ image: "https://example.com/photo.jpg" }, { title: "No images here" }];
+      expect(detectImageFields(articles)).toEqual([{ field: "image", presentInAll: false }]);
     });
   });
 
@@ -194,7 +231,7 @@ describe("detectImageFields", () => {
             "https://preview.redd.it/7azztrbwusag1.png?width=640&crop=smart&auto=webp&s=abc123",
         },
       ];
-      expect(detectImageFields(articles)).toEqual(["image__url"]);
+      expect(detectImageFields(articles)).toEqual([{ field: "image__url", presentInAll: true }]);
     });
 
     it("deduplicates same Reddit image with different query parameters", () => {
@@ -204,7 +241,7 @@ describe("detectImageFields", () => {
           image: "https://preview.redd.it/abc123.jpg?width=1080&format=png",
         },
       ];
-      expect(detectImageFields(articles)).toEqual(["image"]);
+      expect(detectImageFields(articles)).toEqual([{ field: "image", presentInAll: true }]);
     });
 
     it("keeps different Reddit images as separate", () => {
@@ -214,7 +251,10 @@ describe("detectImageFields", () => {
           image2: "https://i.redd.it/second.png",
         },
       ];
-      expect(detectImageFields(articles)).toEqual(["image1", "image2"]);
+      expect(detectImageFields(articles)).toEqual([
+        { field: "image1", presentInAll: true },
+        { field: "image2", presentInAll: true },
+      ]);
     });
 
     it("deduplicates redditmedia.com URLs by filename", () => {
@@ -224,7 +264,7 @@ describe("detectImageFields", () => {
           full: "https://i.redditmedia.com/abc123.jpg",
         },
       ];
-      expect(detectImageFields(articles)).toEqual(["full"]);
+      expect(detectImageFields(articles)).toEqual([{ field: "full", presentInAll: true }]);
     });
   });
 
@@ -236,7 +276,7 @@ describe("detectImageFields", () => {
           full: "https://example.com/photo.jpg?size=large",
         },
       ];
-      expect(detectImageFields(articles)).toEqual(["full"]);
+      expect(detectImageFields(articles)).toEqual([{ field: "full", presentInAll: true }]);
     });
 
     it("deduplicates image with and without query parameters", () => {
@@ -246,7 +286,7 @@ describe("detectImageFields", () => {
           withParams: "https://example.com/photo.jpg?v=123",
         },
       ];
-      expect(detectImageFields(articles)).toEqual(["clean"]);
+      expect(detectImageFields(articles)).toEqual([{ field: "clean", presentInAll: true }]);
     });
   });
 
@@ -256,21 +296,26 @@ describe("detectImageFields", () => {
     extensions.forEach((ext) => {
       it(`detects .${ext} files`, () => {
         const articles = [{ image: `https://example.com/photo.${ext}` }];
-        expect(detectImageFields(articles)).toEqual(["image"]);
+        expect(detectImageFields(articles)).toEqual([{ field: "image", presentInAll: true }]);
       });
     });
 
     it("detects URLs with query parameters", () => {
       const articles = [{ image: "https://example.com/photo.jpg?size=large&quality=high" }];
-      expect(detectImageFields(articles)).toEqual(["image"]);
+      expect(detectImageFields(articles)).toEqual([{ field: "image", presentInAll: true }]);
     });
 
     it("handles case-insensitive extensions", () => {
       const articles = [
-        { image1: "https://example.com/photo.JPG" },
-        { image2: "https://example.com/photo.PNG" },
+        {
+          image1: "https://example.com/photo.JPG",
+          image2: "https://example.com/other.PNG",
+        },
       ];
-      expect(detectImageFields(articles)).toEqual(["image1", "image2"]);
+      expect(detectImageFields(articles)).toEqual([
+        { field: "image1", presentInAll: true },
+        { field: "image2", presentInAll: true },
+      ]);
     });
   });
 });

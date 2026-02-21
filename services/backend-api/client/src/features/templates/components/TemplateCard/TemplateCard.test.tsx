@@ -145,7 +145,7 @@ describe("TemplateCard", () => {
           templates={[mockTemplate, template2]}
           defaultValue="test-template"
           onChange={onChange}
-        />,
+        />
       );
 
       const card2 = screen.getByTestId("template-card-template-2");
@@ -209,7 +209,7 @@ describe("TemplateCard", () => {
           templates={[mockTemplate]}
           disabledTemplates={["test-template"]}
           disabledReason="Custom reason"
-        />,
+        />
       );
       expect(screen.getByText("Custom reason")).toBeInTheDocument();
     });
@@ -229,7 +229,7 @@ describe("TemplateCard", () => {
           templates={[mockTemplate]}
           disabledTemplates={["test-template"]}
           onChange={onChange}
-        />,
+        />
       );
 
       const card = screen.getByTestId("template-card-test-template");
@@ -329,23 +329,26 @@ describe("TemplateCard", () => {
 
     it("always shows explanation for disabled cards with required fields", () => {
       render(
-        <TestWrapper templates={[templateWithImageField]} disabledTemplates={["image-template"]} />,
+        <TestWrapper
+          templates={[templateWithImageField]}
+          disabledTemplates={["image-template"]}
+          disabledReason="Needs: image"
+        />
       );
 
-      // Explanation should be visible immediately without any interaction
-      expect(screen.getByText(/This template displays images from articles/i)).toBeInTheDocument();
+      expect(screen.getByText("No images detected in recent articles")).toBeInTheDocument();
     });
 
     it("shows correct explanation for image field", () => {
       render(
-        <TestWrapper templates={[templateWithImageField]} disabledTemplates={["image-template"]} />,
+        <TestWrapper
+          templates={[templateWithImageField]}
+          disabledTemplates={["image-template"]}
+          disabledReason="Needs: image"
+        />
       );
 
-      expect(
-        screen.getByText(
-          "This template displays images from articles. Your feed's articles don't include images.",
-        ),
-      ).toBeInTheDocument();
+      expect(screen.getByText("No images detected in recent articles")).toBeInTheDocument();
     });
 
     it("shows correct explanation for description field", () => {
@@ -353,28 +356,24 @@ describe("TemplateCard", () => {
         <TestWrapper
           templates={[templateWithDescriptionField]}
           disabledTemplates={["description-template"]}
-        />,
+          disabledReason="Needs: description"
+        />
       );
 
-      expect(
-        screen.getByText(
-          "This template shows article descriptions. Your feed's articles don't include descriptions.",
-        ),
-      ).toBeInTheDocument();
+      expect(screen.getByText("No descriptions detected in recent articles")).toBeInTheDocument();
     });
 
-    it("shows combined explanation for multiple missing fields", () => {
+    it("shows default explanation for multiple missing fields", () => {
       render(
         <TestWrapper
           templates={[templateWithMultipleFields]}
           disabledTemplates={["multi-field-template"]}
-        />,
+          disabledReason="Needs: image, description"
+        />
       );
 
       expect(
-        screen.getByText(
-          "This template needs image and description fields that your feed's articles don't have.",
-        ),
+        screen.getByText("Required fields not detected in recent articles")
       ).toBeInTheDocument();
     });
 
@@ -389,7 +388,7 @@ describe("TemplateCard", () => {
         <TestWrapper
           templates={[templateWithNoRequiredFields]}
           disabledTemplates={["no-fields-template"]}
-        />,
+        />
       );
 
       // Should not find any explanation text
@@ -398,7 +397,7 @@ describe("TemplateCard", () => {
 
     it("shows info icon with explanation", () => {
       render(
-        <TestWrapper templates={[templateWithImageField]} disabledTemplates={["image-template"]} />,
+        <TestWrapper templates={[templateWithImageField]} disabledTemplates={["image-template"]} />
       );
 
       const card = screen.getByTestId("template-card-image-template");
