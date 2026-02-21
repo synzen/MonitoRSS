@@ -1,5 +1,5 @@
 import { Alert, AlertIcon, Box, Center, Stack, Table, Td, Thead, Tr, Text } from "@chakra-ui/react";
-import React, { useCallback, useContext, useEffect, useMemo } from "react";
+import React, { useCallback, useContext, useEffect, useMemo, useRef } from "react";
 import {
   OnChangeFn,
   RowSelectionState,
@@ -23,13 +23,19 @@ import { UserFeedComputedStatus } from "../../types";
 import { UserFeedStatusFilterContext } from "../../../../contexts";
 import { useMultiSelectUserFeedContext } from "../../../../contexts/MultiSelectUserFeedContext";
 import { useTablePreferences, useTableSearch, useFeedTableData } from "./hooks";
-import { SortableTableHeader, TableToolbar, LoadMoreSection } from "./components";
+import {
+  ActiveFilterChips,
+  FilteredEmptyState,
+  SortableTableHeader,
+  TableToolbar,
+  LoadMoreSection,
+} from "./components";
 import { createTableColumns } from "./columns";
 
 export const UserFeedsTable: React.FC = () => {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor),
+    useSensor(KeyboardSensor)
   );
 
   const { statusFilters, setStatusFilters } = useContext(UserFeedStatusFilterContext);
@@ -77,18 +83,19 @@ export const UserFeedsTable: React.FC = () => {
   // Columns with search highlighting
   const columns = useMemo(() => createTableColumns(search), [search]);
 
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const hasActiveFilters = !!urlSearch || statusFilters.length > 0;
+
   // Row selection sync with context
   const rowSelection = useMemo(
     () =>
-      selectedFeeds.reduce(
-        (acc, feed) => {
-          acc[feed.id] = true;
+      selectedFeeds.reduce((acc, feed) => {
+        acc[feed.id] = true;
 
-          return acc;
-        },
-        {} as Record<string, boolean>,
-      ),
-    [selectedFeeds],
+        return acc;
+      }, {} as Record<string, boolean>),
+    [selectedFeeds]
   );
 
   const onRowSelectionChange: OnChangeFn<RowSelectionState> = useCallback(
@@ -100,7 +107,7 @@ export const UserFeedsTable: React.FC = () => {
         setSelectedFeeds(flatData.filter((r) => newValOrUpdater[r.id]));
       }
     },
-    [rowSelection, flatData, setSelectedFeeds],
+    [rowSelection, flatData, setSelectedFeeds]
   );
 
   // Column drag-and-drop handler
@@ -117,7 +124,7 @@ export const UserFeedsTable: React.FC = () => {
         });
       }
     },
-    [setColumnOrder],
+    [setColumnOrder]
   );
 
   // Table instance
@@ -155,7 +162,7 @@ export const UserFeedsTable: React.FC = () => {
     (statuses: UserFeedComputedStatus[]) => {
       setStatusFilters(statuses);
     },
-    [setStatusFilters],
+    [setStatusFilters]
   );
 
   if (status === "error") {
@@ -169,17 +176,30 @@ export const UserFeedsTable: React.FC = () => {
 
   const isInitiallyLoading = status === "loading" && !data;
 
+  const isFilteredEmpty = !isInitiallyLoading && flatData.length === 0 && hasActiveFilters;
+
+  const handleClearAllFilters = useCallback(() => {
+    onSearchClear();
+    onStatusSelect([]);
+    searchInputRef.current?.focus();
+  }, [onSearchClear, onStatusSelect]);
+
   return (
     <Stack spacing={4}>
       <Box srOnly aria-live="polite">
         {!isInitiallyLoading && (
           <Text>
-            Loaded table with {flatData.length} of {total} feeds
+            {isFilteredEmpty
+              ? "No feeds match current filters"
+              : hasActiveFilters
+              ? `Showing ${flatData.length} of ${total} feeds`
+              : `Loaded table with ${flatData.length} of ${total} feeds`}
           </Text>
         )}
       </Box>
       {!isInitiallyLoading && (
         <TableToolbar
+          searchInputRef={searchInputRef}
           searchInput={searchInput}
           onSearchInputChange={setSearchInput}
           onSearchSubmit={onSearchSubmit}
@@ -192,13 +212,23 @@ export const UserFeedsTable: React.FC = () => {
           onColumnVisibilityChange={setColumnVisibility}
         />
       )}
+      {!isInitiallyLoading && hasActiveFilters && (
+        <ActiveFilterChips
+          search={urlSearch}
+          onSearchClear={onSearchClear}
+          statusFilters={statusFilters}
+          onStatusFiltersClear={() => onStatusSelect([])}
+          searchInputRef={searchInputRef}
+        />
+      )}
       <Center mt={4} hidden={!isInitiallyLoading}>
         <Stack alignItems="center">
           <Loading />
           <Text>Loading feeds...</Text>
         </Stack>
       </Center>
-      <Stack hidden={isInitiallyLoading}>
+      {isFilteredEmpty && <FilteredEmptyState onClearAllFilters={handleClearAllFilters} />}
+      <Stack hidden={isInitiallyLoading || isFilteredEmpty}>
         <Box
           boxShadow="lg"
           background="gray.850"
@@ -262,7 +292,7 @@ export const UserFeedsTable: React.FC = () => {
           </Table>
         </Box>
       </Stack>
-      {!isInitiallyLoading && (
+      {!isInitiallyLoading && !isFilteredEmpty && (
         <LoadMoreSection
           loadedCount={flatData.length}
           totalCount={total}
