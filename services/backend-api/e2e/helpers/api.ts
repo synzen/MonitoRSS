@@ -372,3 +372,30 @@ export async function copyConnectionSettings(
     );
   }
 }
+
+export async function getAllUserFeeds(page: Page): Promise<Feed[]> {
+  const response = await page.request.get(
+    "/api/v1/user-feeds?limit=100&offset=0",
+  );
+
+  if (!response.ok()) {
+    const text = await response.text();
+    throw new Error(`Failed to get user feeds: ${response.status()} - ${text}`);
+  }
+
+  const data = await response.json();
+  return (data.results || []).map(
+    (f: { id: string; title: string; url: string }) => ({
+      id: f.id,
+      title: f.title,
+      url: f.url,
+    }),
+  );
+}
+
+export async function deleteAllUserFeeds(page: Page): Promise<void> {
+  const feeds = await getAllUserFeeds(page);
+  for (const feed of feeds) {
+    await deleteFeed(page, feed.id).catch(() => {});
+  }
+}

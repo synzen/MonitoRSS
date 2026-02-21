@@ -31,6 +31,14 @@ export const ValidateUrlBodySchema = Type.Object({
 });
 export type ValidateUrlBody = Static<typeof ValidateUrlBodySchema>;
 
+export const PreviewByUrlBodySchema = Type.Object(
+  {
+    url: Type.String({ minLength: 1 }),
+  },
+  { additionalProperties: false },
+);
+export type PreviewByUrlBody = Static<typeof PreviewByUrlBodySchema>;
+
 export const CloneUserFeedBodySchema = Type.Object(
   {
     title: Type.Optional(Type.String()),

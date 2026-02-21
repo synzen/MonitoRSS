@@ -70,7 +70,7 @@ export const getPatternAlert = (
     return {
       type: "warning",
       message:
-        "Your feed has delivered the maximum articles allowed in a 24-hour period. Delivery resumes automatically as older deliveries fall outside this window—no action needed.",
+        "Your feed has delivered the maximum articles allowed in a 24-hour period. Delivery resumes automatically as older deliveries fall outside this window-no action needed.",
     };
   }
 

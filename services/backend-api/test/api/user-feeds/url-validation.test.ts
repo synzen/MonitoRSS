@@ -123,7 +123,7 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
       result: { resolvedToUrl: string | null; feedTitle?: string };
     };
     assert.strictEqual(body.result.resolvedToUrl, resolvedUrl);
-    assert.strictEqual(body.result.feedTitle, undefined);
+    assert.strictEqual(body.result.feedTitle, "Discovered Feed");
   });
 
   it("returns 400 with FEED_REQUEST_TIMEOUT when feed fetch times out", async () => {

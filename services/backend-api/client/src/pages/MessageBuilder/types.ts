@@ -167,7 +167,7 @@ export interface DividerComponent {
   id: string;
   name: string;
   visual?: boolean; // If a visual divider should be displayed (defaults to true)
-  spacing?: 1 | 2; // Size of separator padding—1 for small padding, 2 for large padding. Defaults to 1
+  spacing?: 1 | 2; // Size of separator padding-1 for small padding, 2 for large padding. Defaults to 1
   children: [];
 }
 

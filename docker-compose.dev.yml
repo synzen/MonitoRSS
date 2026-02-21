@@ -64,6 +64,10 @@ services:
       - ./.env.local
     environment:
       - NODE_ENV=development
+    develop:
+      watch:
+        - action: rebuild
+          path: ./.env.local
 
   discord-rest-listener-service:
     extends:
@@ -170,6 +174,8 @@ services:
             - node_modules/
         - action: rebuild
           path: ./services/user-feeds-next/package.json
+        - action: rebuild
+          path: ./.env.local
 
   user-feeds-api:
     extends:
@@ -196,6 +202,8 @@ services:
             - node_modules/
         - action: rebuild
           path: ./services/user-feeds-next/package.json
+        - action: rebuild
+          path: ./.env.local
 
   schedule-emitter-service:
     extends:
@@ -225,6 +233,8 @@ services:
           target: /usr/src/app/src
         - action: rebuild
           path: ./services/backend-api/package.json
+        - action: rebuild
+          path: ./.env.local
 
   web-api:
     build:
@@ -265,6 +275,8 @@ services:
           target: /usr/src/app/src
         - action: rebuild
           path: ./services/backend-api/package.json
+        - action: rebuild
+          path: ./.env.local
     networks:
       - monitorss-default
 

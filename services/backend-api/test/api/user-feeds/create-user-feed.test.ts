@@ -723,6 +723,61 @@ describe("POST /api/v1/user-feeds", () => {
     assert.strictEqual(body.result.dateCheckOptions, undefined);
   });
 
+  it("enforces feed limit under concurrent requests", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const maxFeeds = ctx.container.config.BACKEND_API_DEFAULT_MAX_USER_FEEDS;
+
+    feedApiMockServer.registerRoute("POST", "/v1/user-feeds/get-articles", {
+      status: 200,
+      body: {
+        result: {
+          requestStatus: "SUCCESS",
+          articles: [],
+          totalArticles: 0,
+          selectedProperties: [],
+          url: "https://example.com/feed.xml",
+          feedTitle: "Feed",
+        },
+      },
+    });
+
+    for (let i = 0; i < maxFeeds - 1; i++) {
+      await ctx.container.userFeedRepository.create({
+        title: `Feed ${i}`,
+        url: `https://example.com/feed-${generateTestId()}.xml`,
+        user: { id: generateTestId(), discordUserId },
+      });
+    }
+
+    const concurrentRequests = 5;
+    const responses = await Promise.all(
+      Array.from({ length: concurrentRequests }, () =>
+        user.fetch("/api/v1/user-feeds", {
+          method: "POST",
+          body: JSON.stringify({
+            url: `https://example.com/concurrent-${generateTestId()}.xml`,
+          }),
+        }),
+      ),
+    );
+
+    const statuses = responses.map((r) => r.status);
+    const successCount = statuses.filter((s) => s === 201).length;
+
+    assert.ok(
+      successCount >= 1,
+      `Expected at least 1 success but got ${successCount}. Statuses: ${statuses.join(", ")}`,
+    );
+
+    const totalFeeds =
+      await ctx.container.userFeedRepository.countByOwnership(discordUserId);
+    assert.ok(
+      totalFeeds <= maxFeeds,
+      `Expected at most ${maxFeeds} feeds in DB but found ${totalFeeds}`,
+    );
+  });
+
   it("returns response with expected structure and fields", async () => {
     const user = await ctx.asUser(generateSnowflake());
     const feedUrl = "https://example.com/feed.xml";

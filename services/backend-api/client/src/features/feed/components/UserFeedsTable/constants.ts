@@ -52,4 +52,7 @@ export const DEFAULT_COLUMN_ORDER = [
   "createdAt",
   "refreshRateSeconds",
   "ownedByUser",
+  "configure",
 ];
+
+export const FIXED_COLUMNS = ["select", "configure"] as const;

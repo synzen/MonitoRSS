@@ -22,3 +22,4 @@ export * from "./updateUserFeedManagementInvite";
 export * from "./getUserFeedDeliveryLogs";
 export * from "./createUserFeedManualRequest";
 export * from "./getDeliveryPreview";
+export * from "./getCuratedFeeds";

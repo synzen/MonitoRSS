@@ -1,5 +1,5 @@
 import "./infra/dayjs-locales";
-import { loadConfig } from "./config";
+import { loadConfig, Environment } from "./config";
 import { createMongoConnection, closeMongoConnection } from "./infra/mongoose";
 import {
   createRabbitConnection,
@@ -28,6 +28,36 @@ async function main() {
     mongoConnection,
     rabbitmq,
   });
+
+  // Seed curated feeds in non-production environments
+  if (config.NODE_ENV !== Environment.Production) {
+    const existingFeeds = await container.curatedFeedRepository.getAll();
+    if (existingFeeds.length === 0) {
+      const { default: mockData } =
+        await import("./features/curated-feeds/data/curated-feeds-mock.json");
+      const session = await mongoConnection.startSession();
+      try {
+        await session.withTransaction(async () => {
+          await container.curatedCategoryRepository.replaceAll(
+            mockData.categories.map((c: { id: string; label: string }) => ({
+              categoryId: c.id,
+              label: c.label,
+            })),
+            session,
+          );
+          await container.curatedFeedRepository.replaceAll(
+            mockData.feeds,
+            session,
+          );
+        });
+        logger.info(
+          `Seeded curated feeds from mock data (${mockData.feeds.length} feeds, ${mockData.categories.length} categories)`,
+        );
+      } finally {
+        await session.endSession();
+      }
+    }
+  }
 
   // Initialize message broker consumers
   await container.messageBrokerEventsService.initialize();

@@ -12,11 +12,11 @@ interface SortableTableHeaderProps {
 }
 
 export const SortableTableHeader: React.FC<SortableTableHeaderProps> = ({ header, isFetching }) => {
-  const isSelectColumn = header.id === "select";
+  const isFixedColumn = header.id === "select" || header.id === "configure";
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: header.id,
-    disabled: isSelectColumn,
+    disabled: isFixedColumn,
   });
 
   const style: CSSProperties = {
@@ -30,7 +30,7 @@ export const SortableTableHeader: React.FC<SortableTableHeaderProps> = ({ header
   const isSorted = header.column.getIsSorted();
   const canSort = header.column.getCanSort();
 
-  let cursor: CSSProperties["cursor"] = isSelectColumn ? "default" : "grab";
+  let cursor: CSSProperties["cursor"] = isFixedColumn ? "default" : "grab";
 
   if (isFetching) {
     cursor = "not-allowed";
@@ -42,8 +42,8 @@ export const SortableTableHeader: React.FC<SortableTableHeaderProps> = ({ header
     <Th
       ref={setNodeRef}
       style={style}
-      {...(isSelectColumn ? {} : attributes)}
-      {...(isSelectColumn ? {} : listeners)}
+      {...(isFixedColumn ? {} : attributes)}
+      {...(isFixedColumn ? {} : listeners)}
       cursor={cursor}
       onClick={!isDragging ? header.column.getToggleSortingHandler() : undefined}
       userSelect="none"

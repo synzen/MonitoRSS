@@ -1,5 +1,5 @@
-import { Checkbox, Flex, Highlight, Link, Stack, Text } from "@chakra-ui/react";
-import { CheckIcon } from "@chakra-ui/icons";
+import { Button, Checkbox, Flex, Highlight, Link, Stack, Text } from "@chakra-ui/react";
+import { CheckIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import { Link as RouterLink } from "react-router-dom";
 import { CellContext, ColumnDef, HeaderContext, createColumnHelper } from "@tanstack/react-table";
 import dayjs from "dayjs";
@@ -204,8 +204,29 @@ function createSelectColumn(): ColumnDef<RowData> {
   });
 }
 
+function createConfigureColumn(): ColumnDef<RowData> {
+  return columnHelper.display({
+    id: "configure",
+    header: () => null,
+    cell: ({ row }) => (
+      <Button
+        as={RouterLink}
+        to={pages.userFeed(row.original.id)}
+        role="link"
+        variant="ghost"
+        size="sm"
+        rightIcon={<ChevronRightIcon boxSize={5} aria-hidden="true" />}
+        aria-label={`Configure ${row.original.title}`}
+      >
+        Configure
+      </Button>
+    ),
+  });
+}
+
 export function createTableColumns(search: string): ColumnDef<RowData>[] {
   const selectColumn = createSelectColumn();
+  const configureColumn = createConfigureColumn();
 
   const dataColumns = columnConfigs.map((config) => {
     if (typeof config.accessor === "function") {
@@ -223,7 +244,7 @@ export function createTableColumns(search: string): ColumnDef<RowData>[] {
     });
   }) as ColumnDef<RowData>[];
 
-  return [selectColumn, ...dataColumns];
+  return [selectColumn, ...dataColumns, configureColumn];
 }
 
 export { columnConfigs };

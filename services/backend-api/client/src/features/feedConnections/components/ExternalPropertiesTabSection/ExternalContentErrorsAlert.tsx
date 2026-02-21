@@ -180,7 +180,7 @@ const buildSummary = (
 
   return {
     title: "Some external content couldn't be loaded",
-    description: `${count} page${count > 1 ? "s" : ""} returned errors — Affected: ${labelText}`,
+    description: `${count} page${count > 1 ? "s" : ""} returned errors - Affected: ${labelText}`,
   };
 };
 

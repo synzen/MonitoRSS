@@ -115,7 +115,9 @@ export const UserFeedsTable: React.FC = () => {
     (event: DragEndEvent) => {
       const { active, over } = event;
 
-      if (over && active.id !== over.id && active.id !== "select" && over.id !== "select") {
+      const isFixed = (id: string | number) => id === "select" || id === "configure";
+
+      if (over && active.id !== over.id && !isFixed(active.id) && !isFixed(over.id)) {
         setColumnOrder((currentOrder) => {
           const oldIndex = currentOrder.indexOf(active.id as string);
           const newIndex = currentOrder.indexOf(over.id as string);

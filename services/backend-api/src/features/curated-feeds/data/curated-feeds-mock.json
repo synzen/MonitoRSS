@@ -1,0 +1,284 @@
+{
+  "categories": [
+    { "id": "gaming", "label": "Gaming" },
+    { "id": "specific-games", "label": "Specific Games" },
+    { "id": "anime", "label": "Anime & Manga" },
+    { "id": "tech", "label": "Tech & Security" },
+    { "id": "sports", "label": "Sports" },
+    { "id": "finance", "label": "Finance & Crypto" },
+    { "id": "news", "label": "World News" },
+    { "id": "entertainment", "label": "Entertainment" }
+  ],
+  "feeds": [
+    {
+      "url": "https://store.steampowered.com/feeds/news",
+      "title": "Steam News",
+      "category": "gaming",
+      "domain": "steampowered.com",
+      "description": "Latest Steam platform news and game updates",
+      "popular": true
+    },
+    {
+      "url": "https://www.pcgamer.com/rss",
+      "title": "PC Gamer",
+      "category": "gaming",
+      "domain": "pcgamer.com",
+      "description": "PC gaming news, reviews, and hardware guides",
+      "popular": true
+    },
+    {
+      "url": "https://www.ign.com/rss/articles",
+      "title": "IGN",
+      "category": "gaming",
+      "domain": "ign.com",
+      "description": "Video game news, reviews, and walkthroughs",
+      "popular": true
+    },
+    {
+      "url": "https://www.polygon.com/rss/index.xml",
+      "title": "Polygon",
+      "category": "gaming",
+      "domain": "polygon.com",
+      "description": "Gaming and entertainment culture news and reviews"
+    },
+    {
+      "url": "https://www.rockpapershotgun.com/feed",
+      "title": "Rock Paper Shotgun",
+      "category": "gaming",
+      "domain": "rockpapershotgun.com",
+      "description": "PC gaming news with opinion and analysis"
+    },
+    {
+      "url": "https://www.eurogamer.net/feed",
+      "title": "Eurogamer",
+      "category": "gaming",
+      "domain": "eurogamer.net",
+      "description": "European gaming news, reviews, and features"
+    },
+    {
+      "url": "https://www.gamespot.com/feeds/mashup",
+      "title": "GameSpot",
+      "category": "gaming",
+      "domain": "gamespot.com",
+      "description": "Video game news, reviews, and trailers"
+    },
+    {
+      "url": "https://www.nintendolife.com/feeds/latest",
+      "title": "Nintendo Life",
+      "category": "gaming",
+      "domain": "nintendolife.com",
+      "description": "Nintendo Switch and classic Nintendo gaming news"
+    },
+    {
+      "url": "https://www.vg247.com/feed",
+      "title": "VG247",
+      "category": "gaming",
+      "domain": "vg247.com",
+      "description": "Breaking video game news and features daily"
+    },
+    {
+      "url": "https://www.gematsu.com/feed",
+      "title": "Gematsu",
+      "category": "gaming",
+      "domain": "gematsu.com",
+      "description": "Japanese and worldwide video game news coverage"
+    },
+    {
+      "url": "https://www.gameinformer.com/rss",
+      "title": "Game Informer",
+      "category": "gaming",
+      "domain": "gameinformer.com",
+      "description": "In-depth gaming news, previews, and exclusive reveals"
+    },
+    {
+      "url": "https://www.destructoid.com/feed",
+      "title": "Destructoid",
+      "category": "gaming",
+      "domain": "destructoid.com",
+      "description": "Gaming news, reviews, and community discussions"
+    },
+    {
+      "url": "https://www.3djuegos.com/rss",
+      "title": "3DJuegos",
+      "category": "gaming",
+      "domain": "3djuegos.com",
+      "description": "Spanish language gaming news and reviews"
+    },
+    {
+      "url": "https://www.jeuxvideo.com/rss",
+      "title": "JeuxVideo.com",
+      "category": "gaming",
+      "domain": "jeuxvideo.com",
+      "description": "French language gaming news and community"
+    },
+    {
+      "url": "https://www.gamingonlinux.com/article_rss.php",
+      "title": "GamingOnLinux",
+      "category": "gaming",
+      "domain": "gamingonlinux.com",
+      "description": "Linux gaming news, Steam Deck, and Proton updates"
+    },
+    {
+      "url": "https://www.gamerpower.com/rss",
+      "title": "GamerPower",
+      "category": "gaming",
+      "domain": "gamerpower.com",
+      "description": "Free games, giveaways, and gaming deals tracker"
+    },
+    {
+      "url": "https://steamdb.info/rss",
+      "title": "SteamDB Deals",
+      "category": "gaming",
+      "domain": "steamdb.info",
+      "description": "Steam game deals, price tracking, and database"
+    },
+    {
+      "url": "https://www.trueachievements.com/rss",
+      "title": "TrueAchievements",
+      "category": "gaming",
+      "domain": "trueachievements.com",
+      "description": "Xbox achievements, Game Pass news, and guides"
+    },
+    {
+      "url": "https://www.gamerant.com/feed",
+      "title": "Game Rant",
+      "category": "gaming",
+      "domain": "gamerant.com",
+      "description": "Gaming news, movie reviews, and entertainment coverage"
+    },
+    {
+      "url": "https://www.charlieintel.com/feed",
+      "title": "Charlie Intel",
+      "category": "gaming",
+      "domain": "charlieintel.com",
+      "description": "Call of Duty news, updates, and esports coverage"
+    },
+    {
+      "url": "https://www.saudigamer.com/feed",
+      "title": "Saudi Gamer",
+      "category": "gaming",
+      "domain": "saudigamer.com",
+      "description": "Arabic language gaming news and reviews"
+    },
+    {
+      "url": "https://www.everyeye.it/feed",
+      "title": "Everyeye.it",
+      "category": "gaming",
+      "domain": "everyeye.it",
+      "description": "Italian gaming news and entertainment coverage"
+    },
+    {
+      "url": "https://www.gamer.com.tw/rss",
+      "title": "Gamer.com.tw",
+      "category": "gaming",
+      "domain": "gamer.com.tw",
+      "description": "Traditional Chinese gaming news and community"
+    },
+    {
+      "url": "https://www.wowhead.com/feed",
+      "title": "Wowhead",
+      "category": "specific-games",
+      "domain": "wowhead.com",
+      "description": "World of Warcraft news, guides, and database",
+      "popular": true
+    },
+    {
+      "url": "https://www.pathofexile.com/rss",
+      "title": "Path of Exile News",
+      "category": "specific-games",
+      "domain": "pathofexile.com",
+      "description": "Official Path of Exile news and patch notes",
+      "popular": true
+    },
+    {
+      "url": "https://genshin-feed.com/rss",
+      "title": "Genshin Impact",
+      "category": "specific-games",
+      "domain": "genshin-feed.com",
+      "description": "Genshin Impact news, events, and update tracker"
+    },
+    {
+      "url": "https://www.myanimelist.net/rss/news.xml",
+      "title": "MyAnimeList News",
+      "category": "anime",
+      "domain": "myanimelist.net",
+      "description": "Anime and manga news, reviews, and rankings",
+      "popular": true
+    },
+    {
+      "url": "https://www.livechart.me/feeds/episodes",
+      "title": "LiveChart.me - Episodes",
+      "category": "anime",
+      "domain": "livechart.me",
+      "description": "New anime episode releases and schedule tracker"
+    },
+    {
+      "url": "https://www.theverge.com/rss/index.xml",
+      "title": "The Verge",
+      "category": "tech",
+      "domain": "theverge.com",
+      "description": "Technology, science, and culture news coverage",
+      "popular": true
+    },
+    {
+      "url": "https://www.bleepingcomputer.com/feed",
+      "title": "BleepingComputer",
+      "category": "tech",
+      "domain": "bleepingcomputer.com",
+      "description": "Cybersecurity news, malware analysis, and tech support"
+    },
+    {
+      "url": "https://www.espn.com/espn/rss/news",
+      "title": "ESPN",
+      "category": "sports",
+      "domain": "espn.com",
+      "description": "Sports news, scores, and analysis across all leagues",
+      "popular": true
+    },
+    {
+      "url": "https://www.formula1.com/content/fom-website/en/latest/all.xml",
+      "title": "Formula 1",
+      "category": "sports",
+      "domain": "formula1.com",
+      "description": "Official Formula 1 racing news and race results"
+    },
+    {
+      "url": "https://cointelegraph.com/rss",
+      "title": "Cointelegraph",
+      "category": "finance",
+      "domain": "cointelegraph.com",
+      "description": "Cryptocurrency, blockchain, and fintech news coverage",
+      "popular": true
+    },
+    {
+      "url": "https://feeds.bbci.co.uk/news/world/rss.xml",
+      "title": "BBC News - World",
+      "category": "news",
+      "domain": "bbci.co.uk",
+      "description": "Breaking world news from the BBC",
+      "popular": true
+    },
+    {
+      "url": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
+      "title": "The New York Times - World",
+      "category": "news",
+      "domain": "nytimes.com",
+      "description": "International news and analysis from the NYT"
+    },
+    {
+      "url": "https://xkcd.com/rss.xml",
+      "title": "xkcd",
+      "category": "entertainment",
+      "domain": "xkcd.com",
+      "description": "A webcomic of romance, sarcasm, math, and language",
+      "popular": true
+    },
+    {
+      "url": "http://host.docker.internal:3001/feed-500",
+      "title": "Test Error Feed",
+      "category": "tech",
+      "domain": "host.docker.internal",
+      "description": "A test feed that returns a 500 error"
+    }
+  ]
+}
