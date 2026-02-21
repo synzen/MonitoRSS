@@ -100,7 +100,7 @@ export function useTablePreferences(): TablePreferences & TablePreferencesHandle
 
       const hasChanges = TOGGLEABLE_COLUMNS.some(
         ({ id }) =>
-          columnVisibility[id] !== (savedColumnVisibility?.[id] ?? DEFAULT_COLUMN_VISIBILITY[id]),
+          columnVisibility[id] !== (savedColumnVisibility?.[id] ?? DEFAULT_COLUMN_VISIBILITY[id])
       );
 
       if (hasChanges) {
