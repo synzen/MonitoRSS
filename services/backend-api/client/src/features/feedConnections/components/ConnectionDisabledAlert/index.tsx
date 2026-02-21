@@ -1,19 +1,22 @@
-import { Alert, AlertDescription, AlertTitle, Box, Button } from "@chakra-ui/react";
+import { Alert, AlertDescription, AlertTitle, Box, Button, useDisclosure } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { useContext } from "react";
+import { useContext, useRef } from "react";
 import { ArrowLeftIcon } from "@chakra-ui/icons";
-import { FeedConnectionDisabledCode } from "../../../../types";
+import { FeedConnectionDisabledCode, FeedDiscordChannelConnection } from "../../../../types";
 import { useUpdateDiscordChannelConnection } from "../../hooks";
 import { useUserFeedConnectionContext } from "../../../../contexts/UserFeedConnectionContext";
 import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 import { PricingDialogContext } from "../../../../contexts";
+import { EditConnectionDialogContent } from "../EditConnectionDialogContent";
 
 export const ConnectionDisabledAlert = () => {
   const { t } = useTranslation();
-  const { connection, userFeed } = useUserFeedConnectionContext();
+  const { connection, userFeed } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
   const { mutateAsync, status } = useUpdateDiscordChannelConnection();
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
   const { onOpen: onOpenPricingDialog } = useContext(PricingDialogContext);
+  const { isOpen: editIsOpen, onClose: editOnClose, onOpen: editOnOpen } = useDisclosure();
+  const configureButtonRef = useRef<HTMLButtonElement>(null);
   const { disabledCode } = connection;
 
   const onClickEnable = async () => {
@@ -45,7 +48,7 @@ export const ConnectionDisabledAlert = () => {
           </AlertTitle>
           <AlertDescription display="block">
             {t(
-              "features.feedConnections.components.connectionDisabledAlert.manuallyDisabledDescription",
+              "features.feedConnections.components.connectionDisabledAlert.manuallyDisabledDescription"
             )}
             <Box marginTop="1rem">
               <Button isLoading={status === "loading"} onClick={onClickEnable}>
@@ -75,18 +78,31 @@ export const ConnectionDisabledAlert = () => {
 
   if (disabledCode === FeedConnectionDisabledCode.MissingMedium) {
     return (
-      <Alert status="error" borderRadius="md">
-        <Box>
-          <AlertTitle>
-            {t("features.feedConnections.components.connectionDisabledAlert.missingMediumTitle")}
-          </AlertTitle>
-          <AlertDescription display="block">
-            {t(
-              "features.feedConnections.components.connectionDisabledAlert.missingMediumDescription",
-            )}
-          </AlertDescription>
-        </Box>
-      </Alert>
+      <>
+        <EditConnectionDialogContent
+          connection={connection}
+          isOpen={editIsOpen}
+          onClose={editOnClose}
+          onCloseRef={configureButtonRef}
+        />
+        <Alert status="error" borderRadius="md">
+          <Box>
+            <AlertTitle>
+              {t("features.feedConnections.components.connectionDisabledAlert.missingMediumTitle")}
+            </AlertTitle>
+            <AlertDescription display="block">
+              {t(
+                "features.feedConnections.components.connectionDisabledAlert.missingMediumDescription"
+              )}
+              <Box marginTop="1rem">
+                <Button ref={configureButtonRef} onClick={editOnOpen}>
+                  <span>{t("common.buttons.configure")}</span>
+                </Button>
+              </Box>
+            </AlertDescription>
+          </Box>
+        </Alert>
+      </>
     );
   }
 
@@ -96,12 +112,12 @@ export const ConnectionDisabledAlert = () => {
         <Box>
           <AlertTitle>
             {t(
-              "features.feedConnections.components.connectionDisabledAlert.missingPermissionsTitle",
+              "features.feedConnections.components.connectionDisabledAlert.missingPermissionsTitle"
             )}
           </AlertTitle>
           <AlertDescription display="block">
             {t(
-              "features.feedConnections.components.connectionDisabledAlert.missingPermissionsDescription",
+              "features.feedConnections.components.connectionDisabledAlert.missingPermissionsDescription"
             )}
             <Box marginTop="1rem">
               <Button isLoading={status === "loading"} onClick={onClickEnable}>
