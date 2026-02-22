@@ -31,6 +31,10 @@ const configSchema = z.object({
   // Session
   BACKEND_API_SESSION_SECRET: z.string().min(1),
   BACKEND_API_SESSION_SALT: z.string().min(1),
+  BACKEND_API_SESSION_COOKIE_SECURE: z
+    .string()
+    .transform((val) => val === "true")
+    .default("false"),
 
   // RabbitMQ
   BACKEND_API_RABBITMQ_BROKER_URL: z.string().min(1),
