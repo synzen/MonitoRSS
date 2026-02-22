@@ -173,7 +173,7 @@ const UserFeedsInner: React.FC = () => {
           next.delete("addFeed");
           return next;
         },
-        { replace: true },
+        { replace: true }
       );
       setBrowseModalInitialSearchQuery(addFeedQuery);
       setModalSessionAddCount(0);
@@ -205,7 +205,7 @@ const UserFeedsInner: React.FC = () => {
       Object.entries(feedActionStates)
         .filter(([, s]) => s.status === "added")
         .map(([url]) => url),
-    [feedActionStates],
+    [feedActionStates]
   );
 
   const handleCuratedFeedAdd = useCallback(
@@ -247,7 +247,7 @@ const UserFeedsInner: React.FC = () => {
         }
       }
     },
-    [createUserFeed, createInfoAlert, discordUserMe?.maxUserFeeds],
+    [createUserFeed, createInfoAlert, discordUserMe?.maxUserFeeds]
   );
 
   const handleCuratedFeedRemove = useCallback(
@@ -278,7 +278,7 @@ const UserFeedsInner: React.FC = () => {
         });
       }
     },
-    [feedActionStates, deleteUserFeed, createErrorAlert],
+    [feedActionStates, deleteUserFeed, createErrorAlert]
   );
 
   const handleUrlFeedAdded = useCallback((_feedId: string, feedUrl: string) => {
@@ -523,7 +523,7 @@ const UserFeedsInner: React.FC = () => {
                           isDisabled={
                             !selectedFeeds.length ||
                             !selectedFeeds.some(
-                              (f) => f.disabledCode === UserFeedDisabledCode.Manual,
+                              (f) => f.disabledCode === UserFeedDisabledCode.Manual
                             )
                           }
                           icon={<FaPlay />}
@@ -544,7 +544,7 @@ const UserFeedsInner: React.FC = () => {
                             selectedFeeds.every(
                               (r) =>
                                 !!r.disabledCode &&
-                                r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit,
+                                r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit
                             )
                           }
                           icon={<FaPause />}
@@ -732,14 +732,17 @@ const UserFeedsInner: React.FC = () => {
                   </AlertDescription>
                 </Alert>
               )}
-              {!isSearchActive && curatedData && !curatedLoading && (
-                <CategoryGrid
-                  categories={curatedData.categories}
-                  totalFeedCount={curatedData.feeds.length ?? 0}
-                  getCategoryPreviewText={getCategoryPreviewText}
-                  onSelectCategory={handleOpenBrowseModal}
-                />
-              )}
+              {!isSearchActive &&
+                curatedData &&
+                !curatedLoading &&
+                curatedData.feeds.length > 0 && (
+                  <CategoryGrid
+                    categories={curatedData.categories}
+                    totalFeedCount={curatedData.feeds.length ?? 0}
+                    getCategoryPreviewText={getCategoryPreviewText}
+                    onSelectCategory={handleOpenBrowseModal}
+                  />
+                )}
             </Stack>
           </Box>
         </>

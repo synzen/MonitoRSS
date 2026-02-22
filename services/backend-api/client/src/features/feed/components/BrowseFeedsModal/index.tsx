@@ -77,7 +77,7 @@ export const BrowseFeedsModal = ({
   }
 
   const { data, getHighlightFeeds, isLoading, error, refetch } = useCuratedFeeds(
-    selectedCategory ? { category: selectedCategory } : undefined,
+    selectedCategory ? { category: selectedCategory } : undefined
   );
 
   const handleSearchChange = useCallback((query: string) => {
@@ -131,12 +131,12 @@ export const BrowseFeedsModal = ({
       if (isLoadingAll) {
         const lastIndex = feeds.length - 1;
         const lastItem = document.querySelector(
-          `[data-category-feed-index="${lastIndex}"] button`,
+          `[data-category-feed-index="${lastIndex}"] button`
         ) as HTMLElement | null;
         lastItem?.focus();
       } else {
         const nextItem = document.querySelector(
-          `[data-category-feed-index="${previousCount}"] button`,
+          `[data-category-feed-index="${previousCount}"] button`
         ) as HTMLElement | null;
         nextItem?.focus();
       }
@@ -175,14 +175,16 @@ export const BrowseFeedsModal = ({
               Don&apos;t see what you&apos;re looking for? Try pasting a website URL above - many
               sites have feeds we can detect.
             </Text>
-            <Box as="nav" aria-label="Feed categories">
-              <CategoryPills
-                categories={data?.categories ?? []}
-                selectedCategory={selectedCategory}
-                onSelect={handleCategorySelect}
-                isSearchActive={isSearchActive}
-              />
-            </Box>
+            {(data?.feeds ?? []).length > 0 && (
+              <Box as="nav" aria-label="Feed categories">
+                <CategoryPills
+                  categories={data?.categories ?? []}
+                  selectedCategory={selectedCategory}
+                  onSelect={handleCategorySelect}
+                  isSearchActive={isSearchActive}
+                />
+              </Box>
+            )}
             {isLoading && !isSearchActive && (
               <Box display="flex" justifyContent="center" py={8}>
                 <Spinner size="lg" aria-label="Loading feeds" />
@@ -245,7 +247,7 @@ export const BrowseFeedsModal = ({
                               const cardProps = getFeedCardPropsFromState(
                                 feedActionStates,
                                 feed.url,
-                                isAtLimit,
+                                isAtLimit
                               );
 
                               return (
@@ -288,7 +290,7 @@ export const BrowseFeedsModal = ({
                       role="list"
                       aria-label={`${selectedCategoryLabel} feeds, showing ${Math.min(
                         visibleCount,
-                        totalFeeds,
+                        totalFeeds
                       )} of ${totalFeeds}`}
                       spacing={2}
                       listStyleType="none"
@@ -297,7 +299,7 @@ export const BrowseFeedsModal = ({
                         const cardProps = getFeedCardPropsFromState(
                           feedActionStates,
                           feed.url,
-                          isAtLimit,
+                          isAtLimit
                         );
 
                         return (
