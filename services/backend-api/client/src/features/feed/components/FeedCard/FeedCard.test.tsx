@@ -117,6 +117,35 @@ describe("FeedCard", () => {
 
       expect(screen.queryByText("ign.com")).not.toBeInTheDocument();
     });
+
+    it("article element has aria-label matching feed title", () => {
+      renderCard();
+
+      const article = screen.getByRole("article");
+      expect(article).toHaveAttribute("aria-label", "IGN");
+    });
+
+    it("title element has title attribute for tooltip on truncation", () => {
+      renderCard();
+
+      const titleEl = screen.getByText("IGN");
+      expect(titleEl).toHaveAttribute("title", "IGN");
+    });
+  });
+
+  describe("Redirect note", () => {
+    it("shows 'Originally entered' note when redirectedFrom is provided", () => {
+      renderCard({ redirectedFrom: "https://youtube.com/@MKBHD" });
+
+      expect(screen.getByText(/originally entered/i)).toBeInTheDocument();
+      expect(screen.getByText(/youtube\.com\/@MKBHD/)).toBeInTheDocument();
+    });
+
+    it("does not show redirect note when redirectedFrom is not provided", () => {
+      renderCard();
+
+      expect(screen.queryByText(/originally entered/i)).not.toBeInTheDocument();
+    });
   });
 
   describe("Button states", () => {

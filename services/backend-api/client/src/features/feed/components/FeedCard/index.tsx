@@ -52,6 +52,7 @@ interface FeedCardProps {
   borderless?: boolean;
   searchQuery?: string;
   wrapDescription?: boolean;
+  redirectedFrom?: string;
 }
 
 export const FeedCard = ({
@@ -73,6 +74,7 @@ export const FeedCard = ({
   borderless = false,
   searchQuery,
   wrapDescription = false,
+  redirectedFrom,
 }: FeedCardProps) => {
   const navigate = useNavigate();
   const [imgError, setImgError] = useState(false);
@@ -180,27 +182,6 @@ export const FeedCard = ({
     }
   };
 
-  const handleTogglePreview = useCallback(
-    async (e: React.MouseEvent) => {
-      e.preventDefault();
-
-      const nextOpen = !isPreviewOpen;
-      setIsPreviewOpen(nextOpen);
-
-      if (nextOpen && !cachedPreview) {
-        setPreviewError(false);
-
-        try {
-          const result = await fetchPreview({ details: { url: feed.url } });
-          setCachedPreview(result);
-        } catch {
-          setPreviewError(true);
-        }
-      }
-    },
-    [isPreviewOpen, feed.url, fetchPreview, cachedPreview]
-  );
-
   const handleRetryPreview = useCallback(async () => {
     setPreviewError(false);
 
@@ -231,6 +212,7 @@ export const FeedCard = ({
       borderColor={state === "error" ? "red.400" : "gray.600"}
       borderRadius={borderless ? 0 : "md"}
       p={3}
+      aria-label={feed.title}
     >
       <HStack spacing={3} align="start" flexWrap="wrap">
         <Box flexShrink={0} opacity={state === "added" || state === "removing" ? 0.7 : 1}>
@@ -272,7 +254,7 @@ export const FeedCard = ({
 
         <Box flex={1} minW="100px" opacity={state === "added" || state === "removing" ? 0.7 : 1}>
           <HStack spacing={2} flexWrap="wrap">
-            <Text fontWeight="bold" noOfLines={1}>
+            <Text fontWeight="bold" noOfLines={1} title={feed.title}>
               {searchQuery ? (
                 <Highlight
                   query={searchQuery}
@@ -323,6 +305,11 @@ export const FeedCard = ({
               ) : (
                 feed.domain
               )}
+            </Text>
+          )}
+          {redirectedFrom && (
+            <Text color="gray.400" fontSize="xs" noOfLines={1} title={redirectedFrom}>
+              Originally entered: {redirectedFrom}
             </Text>
           )}
           {feed.description && (
@@ -597,6 +584,12 @@ export const FeedCard = ({
             const nowOpen = e.currentTarget.open;
             if (nowOpen !== isPreviewOpen) {
               setIsPreviewOpen(nowOpen);
+              if (nowOpen && !cachedPreview) {
+                setPreviewError(false);
+                fetchPreview({ details: { url: feed.url } })
+                  .then((result) => setCachedPreview(result))
+                  .catch(() => setPreviewError(true));
+              }
             }
           }}
           sx={{
@@ -621,7 +614,6 @@ export const FeedCard = ({
               outlineOffset: "2px",
               borderRadius: "sm",
             }}
-            onClick={handleTogglePreview}
             display="inline-flex"
             alignItems="center"
             gap={1}
@@ -706,6 +698,7 @@ export const FeedCard = ({
                       ml={0}
                       spacing={2}
                       aria-labelledby={previewId}
+                      role="list"
                     >
                       {previewArticles.map((article, index) => (
                         <ListItem key={index}>

@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -17,6 +17,12 @@ vi.mock("../../hooks", () => ({
     status: "idle",
     error: null,
     reset: vi.fn(),
+  }),
+}));
+
+vi.mock("../../hooks/useDeleteUserFeed", () => ({
+  useDeleteUserFeed: () => ({
+    mutateAsync: vi.fn(),
   }),
 }));
 
@@ -53,7 +59,7 @@ const renderComponent = (props: Partial<React.ComponentProps<typeof UrlValidatio
           <UrlValidationResult {...defaultProps} {...props} />
         </MemoryRouter>
       </ChakraProvider>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
 
   return { user, ...result };
@@ -94,13 +100,14 @@ describe("UrlValidationResult", () => {
       });
 
       expect(
-        screen.getByRole("button", { name: /add blog\.example\.com feed/i }),
+        screen.getByRole("button", { name: /add blog\.example\.com feed/i })
       ).toBeInTheDocument();
     });
+
   });
 
-  describe("State 2b: Resolved URL", () => {
-    it("shows warning icon and heading", () => {
+  describe("State 2b: Resolved URL (non-platform redirect)", () => {
+    it("shows 'Originally entered' note for unknown domain redirects", () => {
       renderComponent({
         url: "https://example.com",
         validationStatus: "success",
@@ -112,7 +119,8 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      expect(screen.getByText("We found a feed at a different URL")).toBeInTheDocument();
+      expect(screen.getByText(/originally entered/i)).toBeInTheDocument();
+      expect(screen.getByText(/https:\/\/example\.com$/)).toBeInTheDocument();
     });
 
     it("shows feed title from feedTitle", () => {
@@ -144,25 +152,7 @@ describe("UrlValidationResult", () => {
       expect(screen.getAllByText("blog.example.com").length).toBeGreaterThanOrEqual(1);
     });
 
-    it('shows "Your URL" and "Feed found" labels with values', () => {
-      renderComponent({
-        url: "https://example.com",
-        validationStatus: "success",
-        validationData: {
-          result: {
-            resolvedToUrl: "https://example.com/rss.xml",
-            feedTitle: "Example",
-          },
-        },
-      });
-
-      expect(screen.getByText("Your URL:")).toBeInTheDocument();
-      expect(screen.getByText("https://example.com")).toBeInTheDocument();
-      expect(screen.getByText("Feed found:")).toBeInTheDocument();
-      expect(screen.getAllByText("https://example.com/rss.xml").length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('shows "Add this feed" button', () => {
+    it("shows add button for resolved URL", () => {
       renderComponent({
         url: "https://example.com",
         validationStatus: "success",
@@ -177,23 +167,22 @@ describe("UrlValidationResult", () => {
       expect(screen.getByRole("button", { name: /add example feed/i })).toBeInTheDocument();
     });
 
-    it("shows favicon using original URL domain", () => {
+    it("shows favicon using resolved URL domain", () => {
       renderComponent({
-        url: "https://www.youtube.com/c/mkbhd",
+        url: "https://example.com",
         validationStatus: "success",
         validationData: {
           result: {
-            resolvedToUrl: "https://www.youtube.com/feeds/videos.xml?channel_id=abc",
-            feedTitle: "MKBHD",
+            resolvedToUrl: "https://blog.example.com/rss.xml",
+            feedTitle: "Example",
           },
         },
       });
 
       const icon = screen.getByRole("img", { hidden: true });
-
       expect(icon).toHaveAttribute(
         "src",
-        "https://www.google.com/s2/favicons?sz=32&domain=www.youtube.com",
+        "https://www.google.com/s2/favicons?sz=32&domain=blog.example.com"
       );
     });
 
@@ -210,17 +199,14 @@ describe("UrlValidationResult", () => {
       });
 
       const icon = screen.getByRole("img", { hidden: true });
-
-      act(() => {
-        icon.dispatchEvent(new Event("error"));
-      });
+      fireEvent.error(icon);
 
       expect(screen.getByText("E")).toBeInTheDocument();
     });
   });
 
-  describe("State 2b-expected: Expected platform resolution", () => {
-    it('shows "Feed found" heading for YouTube URL', () => {
+  describe("State 2b-expected: Expected platform resolution (YouTube/Reddit)", () => {
+    it("does NOT show 'Originally entered' note for YouTube URL", () => {
       renderComponent({
         url: "https://www.youtube.com/@MKBHD",
         validationStatus: "success",
@@ -232,11 +218,10 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      expect(screen.getByText("Feed found")).toBeInTheDocument();
-      expect(screen.queryByText("We found a feed at a different URL")).not.toBeInTheDocument();
+      expect(screen.queryByText(/originally entered/i)).not.toBeInTheDocument();
     });
 
-    it('shows "Feed found" heading for Reddit URL', () => {
+    it("does NOT show 'Originally entered' note for Reddit URL", () => {
       renderComponent({
         url: "https://www.reddit.com/r/gaming",
         validationStatus: "success",
@@ -248,39 +233,7 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      expect(screen.getByText("Feed found")).toBeInTheDocument();
-    });
-
-    it('shows "Feed URL:" label instead of "Your URL:"', () => {
-      renderComponent({
-        url: "https://www.youtube.com/@MKBHD",
-        validationStatus: "success",
-        validationData: {
-          result: {
-            resolvedToUrl: "https://www.youtube.com/feeds/videos.xml?channel_id=abc",
-            feedTitle: "MKBHD",
-          },
-        },
-      });
-
-      expect(screen.getByText("Feed URL:")).toBeInTheDocument();
-      expect(screen.queryByText("Your URL:")).not.toBeInTheDocument();
-    });
-
-    it("still shows warning for unknown domain with resolved URL", () => {
-      renderComponent({
-        url: "https://example.com",
-        validationStatus: "success",
-        validationData: {
-          result: {
-            resolvedToUrl: "https://example.com/rss.xml",
-            feedTitle: "Example",
-          },
-        },
-      });
-
-      expect(screen.getByText("We found a feed at a different URL")).toBeInTheDocument();
-      expect(screen.queryByText("Feed found")).not.toBeInTheDocument();
+      expect(screen.queryByText(/originally entered/i)).not.toBeInTheDocument();
     });
 
     it("shows add button for expected resolution", () => {
@@ -297,6 +250,22 @@ describe("UrlValidationResult", () => {
 
       expect(screen.getByRole("button", { name: /add mkbhd feed/i })).toBeInTheDocument();
     });
+
+    it("still shows 'Originally entered' for unknown domain with resolved URL", () => {
+      renderComponent({
+        url: "https://example.com",
+        validationStatus: "success",
+        validationData: {
+          result: {
+            resolvedToUrl: "https://example.com/rss.xml",
+            feedTitle: "Example",
+          },
+        },
+      });
+
+      expect(screen.getByText(/originally entered/i)).toBeInTheDocument();
+    });
+
   });
 
   describe("State 2c: No feed found", () => {
@@ -434,7 +403,7 @@ describe("UrlValidationResult", () => {
       });
     });
 
-    it("sends undefined title when feedTitle is missing (direct match)", async () => {
+    it("sends hostname as title when feedTitle is missing (direct match)", async () => {
       mockMutateAsync.mockResolvedValue({ result: { id: "feed-123" } });
 
       const { user } = renderComponent({
@@ -448,11 +417,11 @@ describe("UrlValidationResult", () => {
       await user.click(screen.getByRole("button", { name: /add blog\.example\.com feed/i }));
 
       expect(mockMutateAsync).toHaveBeenCalledWith({
-        details: { url: "https://blog.example.com/feed.xml", title: undefined },
+        details: { url: "https://blog.example.com/feed.xml", title: "blog.example.com" },
       });
     });
 
-    it("sends undefined title when feedTitle is missing (resolved URL)", async () => {
+    it("sends hostname as title when feedTitle is missing (resolved URL)", async () => {
       mockMutateAsync.mockResolvedValue({ result: { id: "feed-123" } });
 
       const { user } = renderComponent({
@@ -468,7 +437,7 @@ describe("UrlValidationResult", () => {
       await user.click(screen.getByRole("button", { name: /add example\.com feed/i }));
 
       expect(mockMutateAsync).toHaveBeenCalledWith({
-        details: { url: "https://example.com/rss.xml", title: undefined },
+        details: { url: "https://example.com/rss.xml", title: "example.com" },
       });
     });
 
@@ -492,7 +461,7 @@ describe("UrlValidationResult", () => {
       mockMutateAsync.mockRejectedValue(
         new ApiAdapterError("Server error", {
           errorCode: ApiErrorCode.INTERNAL_ERROR,
-        }),
+        })
       );
 
       const { user } = renderComponent({
@@ -512,7 +481,7 @@ describe("UrlValidationResult", () => {
       mockMutateAsync.mockRejectedValue(
         new ApiAdapterError("Limit reached", {
           errorCode: ApiErrorCode.FEED_LIMIT_REACHED,
-        }),
+        })
       );
 
       const { user } = renderComponent({
