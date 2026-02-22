@@ -6,7 +6,7 @@ export interface CreateDiscoverySearchEventInput {
 }
 
 export const createDiscoverySearchEvent = async (
-  input: CreateDiscoverySearchEventInput
+  input: CreateDiscoverySearchEventInput,
 ): Promise<void> => {
   await fetchRest("/api/v1/discovery-search-events", {
     requestOptions: {

@@ -173,7 +173,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
               <MenuOptionGroup
                 type="checkbox"
                 value={TOGGLEABLE_COLUMNS.filter(({ id }) => columnVisibility[id]).map(
-                  ({ id }) => id
+                  ({ id }) => id,
                 )}
                 onChange={handleColumnVisibilityChange}
               >

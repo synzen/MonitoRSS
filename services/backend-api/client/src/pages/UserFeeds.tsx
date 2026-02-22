@@ -20,7 +20,6 @@ import {
   Portal,
   Skeleton,
   SimpleGrid,
-  CloseButton,
 } from "@chakra-ui/react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -63,6 +62,8 @@ import {
   usePageAlertContext,
 } from "../contexts/PageAlertContext";
 import { CopyUserFeedSettingsDialog } from "../features/feed/components/CopyUserFeedSettingsDialog";
+import { SetupChecklist } from "../features/feed/components/SetupChecklist";
+import { useUnconfiguredFeeds } from "../features/feed/hooks/useUnconfiguredFeeds";
 import { ReducedLimitAlert } from "../components/ReducedLimitAlert";
 
 export const UserFeeds = () => {
@@ -116,7 +117,7 @@ const UserFeedsInner: React.FC = () => {
     },
   });
   const { data: managementInvitesCount } = useUserFeedManagementInvitesCount();
-  const { data: userFeedsResults } = useUserFeeds({
+  const { data: userFeedsResults, refetch: refetchUserFeedsSummary } = useUserFeeds({
     limit: 1,
     offset: 0,
   });
@@ -148,11 +149,30 @@ const UserFeedsInner: React.FC = () => {
   >();
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [modalSessionAddCount, setModalSessionAddCount] = useState(0);
-  const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
   const limitAlertShownRef = useRef(false);
   const addFeedParamConsumed = useRef(false);
 
   const totalFeedCount = userFeedsResults?.total;
+  const feedsWithoutConnections = userFeedsResults?.feedsWithoutConnections ?? 0;
+  const [setupDismissed, setSetupDismissed] = useState(false);
+  const hadUnconfiguredFeeds = useRef(false);
+
+  if (feedsWithoutConnections > 0) {
+    hadUnconfiguredFeeds.current = true;
+  }
+
+  const { data: unconfiguredFeedsData, refetch: refetchUnconfiguredFeeds } = useUnconfiguredFeeds({
+    enabled: feedsWithoutConnections > 0 || (hadUnconfiguredFeeds.current && !setupDismissed),
+  });
+
+  const hasCompletedSetup =
+    !setupDismissed &&
+    hadUnconfiguredFeeds.current &&
+    unconfiguredFeedsData !== undefined &&
+    unconfiguredFeedsData.results.length === 0;
+  const unconfiguredFeedsLoaded = unconfiguredFeedsData !== undefined;
+  const showSetupChecklist =
+    (feedsWithoutConnections > 0 && unconfiguredFeedsLoaded) || hasCompletedSetup;
   const navigatedAlertTitle = state?.alertTitle;
 
   useEffect(() => {
@@ -300,15 +320,15 @@ const UserFeedsInner: React.FC = () => {
 
   const handleExitDiscovery = useCallback(() => {
     setIsInDiscoveryMode(false);
-    setShowOnboardingBanner(true);
   }, []);
 
-  const handleDismissOnboarding = useCallback(() => {
-    setShowOnboardingBanner(false);
-    const h1 = document.querySelector("h1");
-    if (h1) {
-      (h1 as HTMLElement).focus();
-    }
+  const handleSetupConnectionCreated = useCallback(() => {
+    refetchUnconfiguredFeeds();
+    refetchUserFeedsSummary();
+  }, [refetchUnconfiguredFeeds, refetchUserFeedsSummary]);
+
+  const handleSetupDismiss = useCallback(() => {
+    setSetupDismissed(true);
   }, []);
 
   const handleSearchChange = useCallback((query: string) => {
@@ -625,29 +645,6 @@ const UserFeedsInner: React.FC = () => {
                 you may then specify where you want articles for that feed to be sent to.
               </Text>
             </HStack>
-            {showOnboardingBanner && (
-              <Alert
-                status="info"
-                role="status"
-                aria-live="polite"
-                aria-labelledby="onboarding-banner-title"
-                borderRadius="md"
-              >
-                <AlertIcon />
-                <Box flex="1">
-                  <AlertTitle id="onboarding-banner-title">Set up delivery</AlertTitle>
-                  <AlertDescription>
-                    Open a feed from the list below to configure where its articles are delivered in
-                    Discord.
-                  </AlertDescription>
-                </Box>
-                <CloseButton
-                  aria-label="Dismiss setup guidance"
-                  onClick={handleDismissOnboarding}
-                  alignSelf="flex-start"
-                />
-              </Alert>
-            )}
           </>
         )}
       </Stack>
@@ -747,7 +744,23 @@ const UserFeedsInner: React.FC = () => {
           </Box>
         </>
       )}
-      {isInDiscoveryMode === false && <UserFeedsTable />}
+      {isInDiscoveryMode === false && (
+        <>
+          {showSetupChecklist && (
+            <SetupChecklist
+              feeds={(unconfiguredFeedsData?.results ?? []).map((f) => ({
+                id: f.id,
+                title: f.title,
+                url: f.url,
+                connectionCount: f.connectionCount,
+              }))}
+              onConnectionCreated={handleSetupConnectionCreated}
+              onDismiss={handleSetupDismiss}
+            />
+          )}
+          <UserFeedsTable />
+        </>
+      )}
       <BrowseFeedsModal
         isOpen={isBrowseModalOpen}
         onClose={handleBrowseModalClose}

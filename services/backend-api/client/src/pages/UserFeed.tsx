@@ -72,6 +72,7 @@ import {
   ComparisonsTabSection,
   UserFeedMiscSettingsTabSection,
   ConnectionCard,
+  CONNECTION_TYPES,
 } from "../features/feedConnections";
 
 import { UserFeedManagerStatus, pages } from "../constants";
@@ -276,7 +277,7 @@ const UserFeedInner: React.FC = () => {
   );
 
   const disabledConnections = feed?.connections.filter(
-    (c) => c.disabledCode === FeedConnectionDisabledCode.Manual,
+    (c) => c.disabledCode === FeedConnectionDisabledCode.Manual
   );
 
   const tabIndex = tabIndexBySearchParam.get(urlSearch);
@@ -545,7 +546,7 @@ const UserFeedInner: React.FC = () => {
                     <CategoryText title={t("pages.feed.refreshRateLabel")}>
                       {feed
                         ? formatRefreshRateSeconds(
-                            feed.userRefreshRateSeconds || feed.refreshRateSeconds,
+                            feed.userRefreshRateSeconds || feed.refreshRateSeconds
                           )
                         : null}
                     </CategoryText>
@@ -679,32 +680,16 @@ const UserFeedInner: React.FC = () => {
                             Add new connection
                           </MenuButton>
                           <MenuList maxWidth="300px">
-                            <MenuItem onClick={() => onAddConnection("discord-channel")}>
-                              <Stack spacing={1}>
-                                <Text>Discord Channel</Text>
-                                <Text fontSize={13} color="whiteAlpha.600">
-                                  Send articles as messages authored by the bot to a Discord
-                                  channel.
-                                </Text>
-                              </Stack>
-                            </MenuItem>
-                            <MenuItem onClick={() => onAddConnection("discord-forum")}>
-                              <Stack spacing={1}>
-                                <Text>Discord Forum</Text>
-                                <Text fontSize={13} color="whiteAlpha.600" whiteSpace="normal">
-                                  Send articles as messages authored by the bot to a Discord forum.
-                                </Text>
-                              </Stack>
-                            </MenuItem>
-                            <MenuItem onClick={() => onAddConnection("discord-webhook")}>
-                              <Stack spacing={1}>
-                                <Text>{t("pages.feed.discordWebhookMenuItem")}</Text>
-                                <Text fontSize={13} color="whiteAlpha.600">
-                                  Send articles as messages authored by a webhook with a custom name
-                                  and avatar to a Discord channel.
-                                </Text>
-                              </Stack>
-                            </MenuItem>
+                            {CONNECTION_TYPES.map((ct) => (
+                              <MenuItem key={ct.type} onClick={() => onAddConnection(ct.type)}>
+                                <Stack spacing={1}>
+                                  <Text>{ct.label}</Text>
+                                  <Text fontSize={13} color="whiteAlpha.600" whiteSpace="normal">
+                                    {ct.description}
+                                  </Text>
+                                </Stack>
+                              </MenuItem>
+                            ))}
                           </MenuList>
                         </Menu>
                       </Flex>

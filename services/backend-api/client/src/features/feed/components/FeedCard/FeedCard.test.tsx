@@ -36,7 +36,7 @@ const renderCard = (props: Partial<React.ComponentProps<typeof FeedCard>> = {}) 
       <MemoryRouter>
         <FeedCard feed={defaultFeed} state="default" onAdd={() => {}} {...props} />
       </MemoryRouter>
-    </ChakraProvider>
+    </ChakraProvider>,
   );
 };
 
@@ -227,7 +227,7 @@ describe("FeedCard", () => {
       renderCard({ state: "added", onRemove, feedSettingsUrl: "/feeds/123" });
 
       expect(
-        screen.getByRole("button", { name: "Go to feed settings for IGN" })
+        screen.getByRole("button", { name: "Go to feed settings for IGN" }),
       ).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Remove IGN feed" })).toBeInTheDocument();
     });
@@ -291,7 +291,7 @@ describe("FeedCard", () => {
 
       expect(screen.getByText(/https:\/\/ign\.com\/rss\/articles\/feed/)).toBeInTheDocument();
       expect(
-        screen.getByText(/Failed to get feed articles - requesting the feed took too long/)
+        screen.getByText(/Failed to get feed articles - requesting the feed took too long/),
       ).toBeInTheDocument();
     });
 
@@ -380,7 +380,7 @@ describe("FeedCard", () => {
       renderCard({ state: "limit-reached", onAdd });
 
       fireEvent.click(
-        screen.getByRole("button", { name: /add ign feed, disabled, feed limit reached/i })
+        screen.getByRole("button", { name: /add ign feed, disabled, feed limit reached/i }),
       );
       expect(onAdd).not.toHaveBeenCalled();
     });
@@ -417,7 +417,7 @@ describe("FeedCard", () => {
           <MemoryRouter>
             <FeedCard feed={defaultFeed} state="removing" onAdd={() => {}} onRemove={() => {}} />
           </MemoryRouter>
-        </ChakraProvider>
+        </ChakraProvider>,
       );
 
       rerender(
@@ -425,7 +425,7 @@ describe("FeedCard", () => {
           <MemoryRouter>
             <FeedCard feed={defaultFeed} state="default" onAdd={() => {}} onRemove={() => {}} />
           </MemoryRouter>
-        </ChakraProvider>
+        </ChakraProvider>,
       );
 
       const status = screen.getByRole("status");
@@ -438,7 +438,7 @@ describe("FeedCard", () => {
           <MemoryRouter>
             <FeedCard feed={defaultFeed} state="adding" onAdd={() => {}} />
           </MemoryRouter>
-        </ChakraProvider>
+        </ChakraProvider>,
       );
 
       rerender(
@@ -446,7 +446,7 @@ describe("FeedCard", () => {
           <MemoryRouter>
             <FeedCard feed={defaultFeed} state="added" onAdd={() => {}} />
           </MemoryRouter>
-        </ChakraProvider>
+        </ChakraProvider>,
       );
 
       const status = screen.getByRole("status");
@@ -652,7 +652,7 @@ describe("FeedCard", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText("This feed can't be reached right now. Try again later.")
+          screen.getByText("This feed can't be reached right now. Try again later."),
         ).toBeInTheDocument();
       });
     });
@@ -668,7 +668,7 @@ describe("FeedCard", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText("This feed is no longer available. Try a different feed.")
+          screen.getByText("This feed is no longer available. Try a different feed."),
         ).toBeInTheDocument();
       });
     });
@@ -684,7 +684,7 @@ describe("FeedCard", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText("Something's wrong with this feed. Try a different feed.")
+          screen.getByText("Something's wrong with this feed. Try a different feed."),
         ).toBeInTheDocument();
       });
     });

@@ -15,7 +15,7 @@ describe("getCuratedFeedErrorMessage", () => {
 
     it.each(transientCodes)("returns transient message for %s", (code) => {
       expect(getCuratedFeedErrorMessage(code)).toBe(
-        "This feed can't be reached right now. Try again later."
+        "This feed can't be reached right now. Try again later.",
       );
     });
   });
@@ -30,7 +30,7 @@ describe("getCuratedFeedErrorMessage", () => {
 
     it.each(unavailableCodes)("returns unavailable message for %s", (code) => {
       expect(getCuratedFeedErrorMessage(code)).toBe(
-        "This feed is no longer available. Try a different feed."
+        "This feed is no longer available. Try a different feed.",
       );
     });
   });
@@ -44,7 +44,7 @@ describe("getCuratedFeedErrorMessage", () => {
 
     it.each(brokenCodes)("returns broken message for %s", (code) => {
       expect(getCuratedFeedErrorMessage(code)).toBe(
-        "Something's wrong with this feed. Try a different feed."
+        "Something's wrong with this feed. Try a different feed.",
       );
     });
   });
@@ -52,13 +52,13 @@ describe("getCuratedFeedErrorMessage", () => {
   describe("Fallback", () => {
     it("returns transient message for unknown error code", () => {
       expect(getCuratedFeedErrorMessage("UNKNOWN_CODE")).toBe(
-        "This feed can't be reached right now. Try again later."
+        "This feed can't be reached right now. Try again later.",
       );
     });
 
     it("returns transient message when errorCode is undefined", () => {
       expect(getCuratedFeedErrorMessage(undefined)).toBe(
-        "This feed can't be reached right now. Try again later."
+        "This feed can't be reached right now. Try again later.",
       );
     });
   });

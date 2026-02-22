@@ -110,6 +110,7 @@ export interface GetUserFeedsInputFilters {
   connectionDisabledCodes?: (string | null)[];
   computedStatuses?: UserFeedComputedStatus[];
   ownedByUser?: boolean;
+  hasConnections?: boolean;
 }
 
 export interface GetUserFeedsInput {
@@ -132,6 +133,7 @@ export interface UserFeedListItem {
   legacyFeedId?: string;
   ownedByUser: boolean;
   refreshRateSeconds?: number;
+  connectionCount: number;
 }
 
 export interface CreateUserFeedInput {

@@ -10,12 +10,14 @@ export interface GetUserFeedsInput {
   filters?: {
     computedStatuses?: UserFeedComputedStatus[];
     disabledCodes?: UserFeedDisabledCode[];
+    hasConnections?: boolean;
   };
 }
 
 const GetUserFeedsOutputSchema = object({
   results: array(UserFeedSummarySchema.required()).required(),
   total: number().required(),
+  feedsWithoutConnections: number().required(),
 }).required();
 
 export type GetUserFeedsOutput = InferType<typeof GetUserFeedsOutputSchema>;
@@ -31,6 +33,10 @@ export const getUserFeeds = async (options: GetUserFeedsInput): Promise<GetUserF
 
   if (options.filters?.disabledCodes) {
     params.append(`filters[disabledCodes]`, options.filters?.disabledCodes?.join(",") || "");
+  }
+
+  if (options.filters?.hasConnections !== undefined) {
+    params.append(`filters[hasConnections]`, String(options.filters.hasConnections));
   }
 
   const searchParams = params.toString();

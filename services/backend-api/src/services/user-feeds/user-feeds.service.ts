@@ -123,6 +123,16 @@ export class UserFeedsService {
     });
   }
 
+  async getFeedsWithoutConnectionsCount(
+    _userId: string,
+    discordUserId: string,
+  ): Promise<number> {
+    return this.deps.userFeedRepository.getUserFeedsCount({
+      discordUserId,
+      filters: { hasConnections: false },
+    });
+  }
+
   async addFeed(
     {
       discordUserId,

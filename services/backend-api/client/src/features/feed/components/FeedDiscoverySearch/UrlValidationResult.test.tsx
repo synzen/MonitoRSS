@@ -59,7 +59,7 @@ const renderComponent = (props: Partial<React.ComponentProps<typeof UrlValidatio
           <UrlValidationResult {...defaultProps} {...props} />
         </MemoryRouter>
       </ChakraProvider>
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 
   return { user, ...result };
@@ -100,10 +100,9 @@ describe("UrlValidationResult", () => {
       });
 
       expect(
-        screen.getByRole("button", { name: /add blog\.example\.com feed/i })
+        screen.getByRole("button", { name: /add blog\.example\.com feed/i }),
       ).toBeInTheDocument();
     });
-
   });
 
   describe("State 2b: Resolved URL (non-platform redirect)", () => {
@@ -182,7 +181,7 @@ describe("UrlValidationResult", () => {
       const icon = screen.getByRole("img", { hidden: true });
       expect(icon).toHaveAttribute(
         "src",
-        "https://www.google.com/s2/favicons?sz=32&domain=blog.example.com"
+        "https://www.google.com/s2/favicons?sz=32&domain=blog.example.com",
       );
     });
 
@@ -265,7 +264,6 @@ describe("UrlValidationResult", () => {
 
       expect(screen.getByText(/originally entered/i)).toBeInTheDocument();
     });
-
   });
 
   describe("State 2c: No feed found", () => {
@@ -461,7 +459,7 @@ describe("UrlValidationResult", () => {
       mockMutateAsync.mockRejectedValue(
         new ApiAdapterError("Server error", {
           errorCode: ApiErrorCode.INTERNAL_ERROR,
-        })
+        }),
       );
 
       const { user } = renderComponent({
@@ -481,7 +479,7 @@ describe("UrlValidationResult", () => {
       mockMutateAsync.mockRejectedValue(
         new ApiAdapterError("Limit reached", {
           errorCode: ApiErrorCode.FEED_LIMIT_REACHED,
-        })
+        }),
       );
 
       const { user } = renderComponent({

@@ -25,3 +25,4 @@ export * from "./useCreateUserFeedManualRequest";
 export * from "./useDeliveryPreview";
 export * from "./useDeliveryPreviewWithPagination";
 export * from "./useCuratedFeeds";
+export * from "./useUnconfiguredFeeds";

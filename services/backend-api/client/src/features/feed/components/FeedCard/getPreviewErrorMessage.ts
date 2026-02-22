@@ -3,7 +3,7 @@ import { getCuratedFeedErrorMessage } from "./getCuratedFeedErrorMessage";
 
 function mapPreviewStatusToErrorCode(
   requestStatus?: string,
-  responseStatusCode?: number
+  responseStatusCode?: number,
 ): string | undefined {
   if (!requestStatus) {
     return undefined;
@@ -38,7 +38,7 @@ function mapPreviewStatusToErrorCode(
 
 export function getPreviewErrorMessage(
   requestStatus?: string,
-  responseStatusCode?: number
+  responseStatusCode?: number,
 ): string {
   const errorCode = mapPreviewStatusToErrorCode(requestStatus, responseStatusCode);
 

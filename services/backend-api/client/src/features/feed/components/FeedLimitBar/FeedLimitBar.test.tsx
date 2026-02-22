@@ -24,7 +24,7 @@ const renderBar = (props: { showOnlyWhenConstrained?: boolean } = {}) => {
       <PricingDialogContext.Provider value={{ onOpen: mockOnOpen }}>
         <FeedLimitBar {...props} />
       </PricingDialogContext.Provider>
-    </ChakraProvider>
+    </ChakraProvider>,
   );
 };
 

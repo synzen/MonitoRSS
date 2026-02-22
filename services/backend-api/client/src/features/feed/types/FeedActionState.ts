@@ -9,7 +9,7 @@ export type FeedActionState =
 export function getFeedCardPropsFromState(
   feedActionStates: Record<string, FeedActionState>,
   feedUrl: string,
-  isAtLimit: boolean
+  isAtLimit: boolean,
 ): {
   state: "default" | "adding" | "added" | "error" | "limit-reached" | "removing";
   errorMessage?: string;

@@ -30,7 +30,7 @@ const renderComponent = (props: Partial<TestSendErrorPanelProps> = {}) =>
   render(
     <TestWrapper>
       <TestSendErrorPanel {...defaultProps} {...props} />
-    </TestWrapper>
+    </TestWrapper>,
   );
 
 describe("TestSendErrorPanel", () => {
@@ -52,7 +52,7 @@ describe("TestSendErrorPanel", () => {
       renderComponent({ feedback });
 
       expect(
-        screen.getByText("The template has placeholders that couldn't be filled.")
+        screen.getByText("The template has placeholders that couldn't be filled."),
       ).toBeInTheDocument();
     });
 
@@ -60,10 +60,10 @@ describe("TestSendErrorPanel", () => {
       renderComponent();
 
       expect(
-        screen.getByText(/Some articles may not deliver with this template/i)
+        screen.getByText(/Some articles may not deliver with this template/i),
       ).toBeInTheDocument();
       expect(
-        screen.getByText(/the connection will pause until you adjust the format/i)
+        screen.getByText(/the connection will pause until you adjust the format/i),
       ).toBeInTheDocument();
     });
 

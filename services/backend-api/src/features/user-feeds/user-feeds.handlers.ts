@@ -887,6 +887,10 @@ function parseFilters(raw: unknown): GetUserFeedsInputFilters | undefined {
     filters.ownedByUser = obj.ownedByUser === "true";
   }
 
+  if (typeof obj.hasConnections === "string") {
+    filters.hasConnections = obj.hasConnections === "true";
+  }
+
   return Object.keys(filters).length > 0 ? filters : undefined;
 }
 
@@ -913,9 +917,10 @@ export async function getUserFeedsHandler(
     filters,
   };
 
-  const [feeds, count] = await Promise.all([
+  const [feeds, count, feedsWithoutConnectionsCount] = await Promise.all([
     userFeedsService.getFeedsByUser(user.id, discordUserId, input),
     userFeedsService.getFeedCountByUser(user.id, discordUserId, input),
+    userFeedsService.getFeedsWithoutConnectionsCount(user.id, discordUserId),
   ]);
 
   return reply.status(200).send({
@@ -931,8 +936,10 @@ export async function getUserFeedsHandler(
       isLegacyFeed: false,
       ownedByUser: feed.ownedByUser,
       refreshRateSeconds: feed.refreshRateSeconds,
+      connectionCount: feed.connectionCount,
     })),
     total: count,
+    feedsWithoutConnections: feedsWithoutConnectionsCount,
   });
 }
 

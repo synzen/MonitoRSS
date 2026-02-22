@@ -634,4 +634,137 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
     assert.strictEqual(feed.isLegacyFeed, false);
     assert.ok(typeof feed.ownedByUser === "boolean");
   });
+
+  it("filters feeds without connections when hasConnections=false", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const userId = generateTestId();
+    const token = generateSnowflake();
+
+    await ctx.container.userFeedRepository.create({
+      title: `No Conn ${token}`,
+      url: `https://example.com/get-user-feeds-noconn-${generateSnowflake()}.xml`,
+      user: { id: userId, discordUserId },
+    });
+
+    const feedWithConn = await ctx.container.userFeedRepository.create({
+      title: `Has Conn ${token}`,
+      url: `https://example.com/get-user-feeds-hasconn-${generateSnowflake()}.xml`,
+      user: { id: userId, discordUserId },
+    });
+
+    await ctx.container.userFeedRepository.findOneAndUpdate(
+      { _id: feedWithConn.id },
+      {
+        $set: {
+          "connections.discordChannels": [
+            {
+              id: generateTestId(),
+              name: "test-channel",
+            },
+          ],
+        },
+      },
+    );
+
+    const response = await user.fetch(
+      `/api/v1/user-feeds?limit=100&offset=0&search=${token}&filters[hasConnections]=false`,
+      { method: "GET" },
+    );
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as GetUserFeedsResponse;
+    assert.ok(body.results.length >= 1);
+    assert.ok(body.results.every((r) => r.title.includes("No Conn")));
+  });
+
+  it("filters feeds with connections when hasConnections=true", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const userId = generateTestId();
+    const token = generateSnowflake();
+
+    await ctx.container.userFeedRepository.create({
+      title: `No Conn ${token}`,
+      url: `https://example.com/get-user-feeds-noconn2-${generateSnowflake()}.xml`,
+      user: { id: userId, discordUserId },
+    });
+
+    const feedWithConn = await ctx.container.userFeedRepository.create({
+      title: `Has Conn ${token}`,
+      url: `https://example.com/get-user-feeds-hasconn2-${generateSnowflake()}.xml`,
+      user: { id: userId, discordUserId },
+    });
+
+    await ctx.container.userFeedRepository.findOneAndUpdate(
+      { _id: feedWithConn.id },
+      {
+        $set: {
+          "connections.discordChannels": [
+            {
+              id: generateTestId(),
+              name: "test-channel",
+            },
+          ],
+        },
+      },
+    );
+
+    const response = await user.fetch(
+      `/api/v1/user-feeds?limit=100&offset=0&search=${token}&filters[hasConnections]=true`,
+      { method: "GET" },
+    );
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as GetUserFeedsResponse;
+    assert.ok(body.results.length >= 1);
+    assert.ok(body.results.every((r) => r.title.includes("Has Conn")));
+  });
+
+  it("returns feedsWithoutConnections count in response", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const userId = generateTestId();
+    const token = generateSnowflake();
+
+    await ctx.container.userFeedRepository.create({
+      title: `No Conn A ${token}`,
+      url: `https://example.com/get-user-feeds-fwc-a-${generateSnowflake()}.xml`,
+      user: { id: userId, discordUserId },
+    });
+    await ctx.container.userFeedRepository.create({
+      title: `No Conn B ${token}`,
+      url: `https://example.com/get-user-feeds-fwc-b-${generateSnowflake()}.xml`,
+      user: { id: userId, discordUserId },
+    });
+
+    const feedWithConn = await ctx.container.userFeedRepository.create({
+      title: `Has Conn ${token}`,
+      url: `https://example.com/get-user-feeds-fwc-c-${generateSnowflake()}.xml`,
+      user: { id: userId, discordUserId },
+    });
+
+    await ctx.container.userFeedRepository.findOneAndUpdate(
+      { _id: feedWithConn.id },
+      {
+        $set: {
+          "connections.discordChannels": [
+            {
+              id: generateTestId(),
+              name: "test-channel",
+            },
+          ],
+        },
+      },
+    );
+
+    const response = await user.fetch("/api/v1/user-feeds?limit=10&offset=0", {
+      method: "GET",
+    });
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as any;
+    assert.ok(typeof body.feedsWithoutConnections === "number");
+    assert.ok(body.feedsWithoutConnections >= 2);
+  });
 });

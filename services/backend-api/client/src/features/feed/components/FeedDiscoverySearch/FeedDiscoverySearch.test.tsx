@@ -149,7 +149,7 @@ const renderSearch = (props: Partial<React.ComponentProps<typeof FeedDiscoverySe
       <MemoryRouter>
         <FeedDiscoverySearch {...defaultProps} {...props} />
       </MemoryRouter>
-    </ChakraProvider>
+    </ChakraProvider>,
   );
 
   return { user, ...result };
@@ -250,8 +250,8 @@ describe("FeedDiscoverySearch", () => {
 
       expect(
         screen.getByText(
-          "No matches in our popular feeds list. Many websites have feeds - try pasting a URL (e.g., a YouTube channel or news site) and we'll check automatically."
-        )
+          "No matches in our popular feeds list. Many websites have feeds - try pasting a URL (e.g., a YouTube channel or news site) and we'll check automatically.",
+        ),
       ).toBeInTheDocument();
     });
 
@@ -262,7 +262,7 @@ describe("FeedDiscoverySearch", () => {
       await user.type(input, "youtube{Enter}");
 
       expect(
-        screen.getByText("To add a YouTube channel, paste the channel URL.")
+        screen.getByText("To add a YouTube channel, paste the channel URL."),
       ).toBeInTheDocument();
       expect(screen.getByText("https://www.youtube.com/@ChannelName")).toBeInTheDocument();
     });
@@ -274,7 +274,7 @@ describe("FeedDiscoverySearch", () => {
       await user.type(input, "YOUTUBE{Enter}");
 
       expect(
-        screen.getByText("To add a YouTube channel, paste the channel URL.")
+        screen.getByText("To add a YouTube channel, paste the channel URL."),
       ).toBeInTheDocument();
     });
 
@@ -285,7 +285,7 @@ describe("FeedDiscoverySearch", () => {
       await user.type(input, "yt{Enter}");
 
       expect(
-        screen.getByText("To add a YouTube channel, paste the channel URL.")
+        screen.getByText("To add a YouTube channel, paste the channel URL."),
       ).toBeInTheDocument();
     });
 
@@ -307,7 +307,7 @@ describe("FeedDiscoverySearch", () => {
 
       const liveRegions = document.querySelectorAll('[aria-live="polite"]');
       const hasHint = Array.from(liveRegions).some((el) =>
-        el.textContent?.includes("To add a YouTube channel")
+        el.textContent?.includes("To add a YouTube channel"),
       );
 
       expect(hasHint).toBe(true);
@@ -334,7 +334,7 @@ describe("FeedDiscoverySearch", () => {
 
       const liveRegions = document.querySelectorAll('[aria-live="polite"]');
       const hasResultCount = Array.from(liveRegions).some((el) =>
-        el.textContent?.includes("result")
+        el.textContent?.includes("result"),
       );
 
       expect(hasResultCount).toBe(true);
@@ -389,8 +389,8 @@ describe("FeedDiscoverySearch", () => {
       expect(screen.getByTestId("url-validation-result")).toBeInTheDocument();
       expect(
         screen.queryByText(
-          "No matches in our popular feeds list. Many websites have feeds - try pasting a URL (e.g., a YouTube channel or news site) and we'll check automatically."
-        )
+          "No matches in our popular feeds list. Many websites have feeds - try pasting a URL (e.g., a YouTube channel or news site) and we'll check automatically.",
+        ),
       ).not.toBeInTheDocument();
     });
 
@@ -534,7 +534,7 @@ describe("FeedDiscoverySearch", () => {
       await user.type(input, "IGN{Enter}");
 
       expect(
-        screen.getByRole("button", { name: /add ign feed, disabled, feed limit reached/i })
+        screen.getByRole("button", { name: /add ign feed, disabled, feed limit reached/i }),
       ).toBeInTheDocument();
     });
 
@@ -572,7 +572,7 @@ describe("FeedDiscoverySearch", () => {
         expect.objectContaining({
           url: "https://feeds.feedburner.com/ign/games",
           title: "IGN",
-        })
+        }),
       );
     });
 

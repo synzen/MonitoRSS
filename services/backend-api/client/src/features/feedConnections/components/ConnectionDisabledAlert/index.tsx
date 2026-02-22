@@ -48,7 +48,7 @@ export const ConnectionDisabledAlert = () => {
           </AlertTitle>
           <AlertDescription display="block">
             {t(
-              "features.feedConnections.components.connectionDisabledAlert.manuallyDisabledDescription"
+              "features.feedConnections.components.connectionDisabledAlert.manuallyDisabledDescription",
             )}
             <Box marginTop="1rem">
               <Button isLoading={status === "loading"} onClick={onClickEnable}>
@@ -92,7 +92,7 @@ export const ConnectionDisabledAlert = () => {
             </AlertTitle>
             <AlertDescription display="block">
               {t(
-                "features.feedConnections.components.connectionDisabledAlert.missingMediumDescription"
+                "features.feedConnections.components.connectionDisabledAlert.missingMediumDescription",
               )}
               <Box marginTop="1rem">
                 <Button ref={configureButtonRef} onClick={editOnOpen}>
@@ -112,12 +112,12 @@ export const ConnectionDisabledAlert = () => {
         <Box>
           <AlertTitle>
             {t(
-              "features.feedConnections.components.connectionDisabledAlert.missingPermissionsTitle"
+              "features.feedConnections.components.connectionDisabledAlert.missingPermissionsTitle",
             )}
           </AlertTitle>
           <AlertDescription display="block">
             {t(
-              "features.feedConnections.components.connectionDisabledAlert.missingPermissionsDescription"
+              "features.feedConnections.components.connectionDisabledAlert.missingPermissionsDescription",
             )}
             <Box marginTop="1rem">
               <Button isLoading={status === "loading"} onClick={onClickEnable}>

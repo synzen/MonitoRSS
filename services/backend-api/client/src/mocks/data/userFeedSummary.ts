@@ -15,6 +15,7 @@ const mockUserFeedSummary: UserFeedSummary[] = [
     computedStatus: UserFeedComputedStatus.Ok,
     healthStatus: UserFeedHealthStatus.Ok,
     ownedByUser: true,
+    connectionCount: 0,
   },
   {
     id: mockUserFeeds[1].id,
@@ -24,6 +25,7 @@ const mockUserFeedSummary: UserFeedSummary[] = [
     computedStatus: UserFeedComputedStatus.RequiresAttention,
     healthStatus: UserFeedHealthStatus.Ok,
     ownedByUser: true,
+    connectionCount: 1,
   },
   {
     id: mockUserFeeds[2].id,
@@ -34,6 +36,7 @@ const mockUserFeedSummary: UserFeedSummary[] = [
     disabledCode: UserFeedDisabledCode.Manual,
     computedStatus: UserFeedComputedStatus.Ok,
     ownedByUser: false,
+    connectionCount: 2,
   },
   {
     id: mockUserFeeds[3].id,
@@ -44,6 +47,7 @@ const mockUserFeedSummary: UserFeedSummary[] = [
     disabledCode: undefined,
     computedStatus: UserFeedComputedStatus.Retrying,
     ownedByUser: true,
+    connectionCount: 1,
   },
 ];
 
@@ -57,6 +61,7 @@ for (let i = 0; i < 100; i += 1) {
     disabledCode: undefined,
     computedStatus: UserFeedComputedStatus.Ok,
     ownedByUser: true,
+    connectionCount: 1,
   });
 }
 

@@ -25,6 +25,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, object, string } from "yup";
+import type { RefObject } from "react";
 import { useEffect, useRef, useCallback } from "react";
 import {
   useCreateDiscordChannelConnection,
@@ -81,6 +82,8 @@ interface Props {
   onClose: () => void;
   isOpen: boolean;
   connection?: FeedDiscordChannelConnection;
+  feedId?: string;
+  finalFocusRef?: RefObject<HTMLElement>;
 }
 
 type FormData = InferType<typeof formSchema>;
@@ -89,6 +92,8 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
   onClose,
   isOpen,
   connection,
+  feedId: feedIdProp,
+  finalFocusRef,
 }) => {
   const isEditing = !!connection;
 
@@ -107,7 +112,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
     isLoadingArticles,
     handleNextStep: templateHandleNextStep,
     handleBackStep,
-  } = useConnectionTemplateSelection({ isOpen, isEditing });
+  } = useConnectionTemplateSelection({ isOpen, isEditing, feedId: feedIdProp });
 
   const defaultFormValues: Partial<FormData> = {
     name: connection?.name,
@@ -119,8 +124,8 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
       connection?.details.channel?.type === "new-thread"
         ? DiscordCreateChannelThreadMethod.New
         : connection?.details.channel?.type === "thread"
-          ? DiscordCreateChannelThreadMethod.Existing
-          : DiscordCreateChannelThreadMethod.None,
+        ? DiscordCreateChannelThreadMethod.Existing
+        : DiscordCreateChannelThreadMethod.None,
   };
 
   const { t } = useTranslation();
@@ -319,6 +324,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
       <TemplateGalleryModal
         isOpen={isOpen}
         onClose={onClose}
+        finalFocusRef={finalFocusRef}
         templates={TEMPLATES}
         selectedTemplateId={selectedTemplateId}
         onTemplateSelect={setSelectedTemplateId}
@@ -333,7 +339,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
         isLoadingArticles={isLoadingArticles}
         feedId={feedId || ""}
         userFeed={userFeed}
-        tertiaryActionLabel="← Back to Channel"
+        tertiaryActionLabel="Back to channel"
         onTertiaryAction={handleBackStep}
         onCancel={onClose}
         testId="template-selection-modal"
@@ -354,6 +360,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
       onClose={onClose}
       closeOnOverlayClick={!isSubmitting}
       initialFocusRef={initialFocusRef}
+      finalFocusRef={finalFocusRef}
     >
       <ModalOverlay />
       <ModalContent>
@@ -364,12 +371,12 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
         <ModalBody>
           <Stack spacing={4}>
             <Text>Send articles authored by the bot as a message to a Discord channel.</Text>
-            <form id="addfeed" onSubmit={handleSubmit(onSubmit)}>
+            <form id="add-text-channel-connection" onSubmit={handleSubmit(onSubmit)}>
               <Stack spacing={6}>
                 <FormControl isInvalid={!!errors.serverId} isRequired>
                   <FormLabel id="server-select-label" htmlFor="server-select">
                     {t(
-                      "features.feed.components.addDiscordChannelConnectionDialog.formServerLabel",
+                      "features.feed.components.addDiscordChannelConnectionDialog.formServerLabel"
                     )}
                   </FormLabel>
                   <Controller
@@ -399,7 +406,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                 <FormControl isInvalid={!!errors.channelId} isRequired>
                   <FormLabel id="channel-select-label" htmlFor="channel-select">
                     {t(
-                      "features.feed.components.addDiscordChannelConnectionDialog.formChannelLabel",
+                      "features.feed.components.addDiscordChannelConnectionDialog.formChannelLabel"
                     )}
                   </FormLabel>
                   <Controller
@@ -527,7 +534,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                                   <FormHelperText>
                                     {t(
                                       "features.feed.components" +
-                                        ".addDiscordChannelThreadConnectionDialog.formThreadDescripton",
+                                        ".addDiscordChannelThreadConnectionDialog.formThreadDescripton"
                                     )}
                                   </FormHelperText>
                                 </FormControl>
@@ -542,7 +549,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                 <FormControl isInvalid={!!errors.name} isRequired>
                   <FormLabel>
                     {t(
-                      "features.feed.components.addDiscordChannelThreadConnectionDialog.formNameLabel",
+                      "features.feed.components.addDiscordChannelThreadConnectionDialog.formNameLabel"
                     )}
                   </FormLabel>
                   <Controller
@@ -556,7 +563,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                   <FormHelperText>
                     {t(
                       "features.feed.components" +
-                        ".addDiscordChannelThreadConnectionDialog.formNameDescription",
+                        ".addDiscordChannelThreadConnectionDialog.formNameDescription"
                     )}
                   </FormHelperText>
                 </FormControl>
@@ -578,7 +585,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
               <Button
                 colorScheme="blue"
                 type="submit"
-                form="addfeed"
+                form="add-text-channel-connection"
                 isLoading={isSubmitting}
                 aria-disabled={isSubmitting || !isValid}
               >

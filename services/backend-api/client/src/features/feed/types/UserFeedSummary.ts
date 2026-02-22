@@ -16,6 +16,7 @@ export const UserFeedSummarySchema = object({
   computedStatus: string().oneOf(Object.values(UserFeedComputedStatus)).required(),
   ownedByUser: bool().required(),
   refreshRateSeconds: number().optional(),
+  connectionCount: number().required(),
 });
 
 export type UserFeedSummary = InferType<typeof UserFeedSummarySchema>;
