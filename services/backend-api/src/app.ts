@@ -41,8 +41,6 @@ declare module "fastify" {
 export async function createApp(
   container: Container,
 ): Promise<FastifyInstance> {
-  const isProduction = container.config.NODE_ENV === "production";
-
   const app = Fastify({
     logger: false,
     trustProxy: true,
@@ -85,7 +83,7 @@ export async function createApp(
     cookie: {
       path: "/",
       httpOnly: true,
-      secure: isProduction,
+      secure: container.config.BACKEND_API_SESSION_COOKIE_SECURE,
     },
   });
 
