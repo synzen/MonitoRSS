@@ -383,7 +383,7 @@ export const UrlValidationResult = ({
             resolvedAnnouncement={resolvedAnnouncement}
             buttonState={buttonState}
             feedTitle={displayTitle}
-            handleAdd={() => handleAdd(validationData.result.feedTitle)}
+            handleAdd={() => handleAdd(displayTitle)}
             handleRemove={handleRemove}
             onFeedRemoved={onFeedRemoved}
             addError={addError}
@@ -419,7 +419,7 @@ export const UrlValidationResult = ({
           resolvedAnnouncement={resolvedAnnouncement}
           buttonState={buttonState}
           feedTitle={displayTitle}
-          handleAdd={() => handleAdd(validationData.result.feedTitle)}
+          handleAdd={() => handleAdd(displayTitle)}
           handleRemove={handleRemove}
           onFeedRemoved={onFeedRemoved}
           addError={addError}
@@ -485,7 +485,7 @@ export const UrlValidationResult = ({
               ? "added"
               : "limit-reached"
           }
-          onAdd={() => handleAdd(validationData.result.feedTitle)}
+          onAdd={() => handleAdd(displayTitle)}
           onRemove={onFeedRemoved ? handleRemove : undefined}
           errorMessage={addError && !isLimitReachedError ? "Failed to add feed" : undefined}
           feedSettingsUrl={addedFeedId ? pages.userFeed(addedFeedId) : undefined}
