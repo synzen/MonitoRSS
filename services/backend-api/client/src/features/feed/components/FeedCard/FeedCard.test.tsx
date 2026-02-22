@@ -184,6 +184,40 @@ describe("FeedCard", () => {
       expect(btn).toHaveTextContent("Limit reached");
     });
 
+    it("added state shows Remove button when onRemove is provided (no settings link)", () => {
+      const onRemove = vi.fn();
+      renderCard({ state: "added", onRemove });
+
+      const btn = screen.getByRole("button", { name: "Remove IGN feed" });
+      expect(btn).toBeInTheDocument();
+      expect(btn).toHaveTextContent("Remove");
+    });
+
+    it("added state shows both settings and Remove buttons when onRemove and feedSettingsUrl are provided", () => {
+      const onRemove = vi.fn();
+      renderCard({ state: "added", onRemove, feedSettingsUrl: "/feeds/123" });
+
+      expect(
+        screen.getByRole("button", { name: "Go to feed settings for IGN" })
+      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Remove IGN feed" })).toBeInTheDocument();
+    });
+
+    it("added state shows disabled Added button when onRemove is NOT provided", () => {
+      renderCard({ state: "added" });
+
+      const btn = screen.getByRole("button", { name: "IGN feed added" });
+      expect(btn).toHaveAttribute("aria-disabled", "true");
+    });
+
+    it("removing state shows busy button", () => {
+      renderCard({ state: "removing" });
+
+      const btn = screen.getByRole("button", { name: "Removing IGN feed..." });
+      expect(btn).toHaveAttribute("aria-busy", "true");
+      expect(btn).toHaveAttribute("aria-disabled", "true");
+    });
+
     it("hideActions hides all action buttons", () => {
       renderCard({ hideActions: true });
 
@@ -328,6 +362,77 @@ describe("FeedCard", () => {
 
       fireEvent.click(screen.getByRole("button", { name: /retry/i }));
       expect(onAdd).toHaveBeenCalledTimes(1);
+    });
+
+    it("clicking Remove in added state calls onRemove", () => {
+      const onRemove = vi.fn();
+      renderCard({ state: "added", onRemove });
+
+      fireEvent.click(screen.getByRole("button", { name: "Remove IGN feed" }));
+      expect(onRemove).toHaveBeenCalledTimes(1);
+    });
+
+    it("clicking button in removing state does NOT call onRemove", () => {
+      const onRemove = vi.fn();
+      renderCard({ state: "removing", onRemove });
+
+      fireEvent.click(screen.getByRole("button", { name: "Removing IGN feed..." }));
+      expect(onRemove).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("Accessibility announcements", () => {
+    it("announces feed removed when state transitions from removing to default", () => {
+      const { rerender } = render(
+        <ChakraProvider>
+          <MemoryRouter>
+            <FeedCard feed={defaultFeed} state="removing" onAdd={() => {}} onRemove={() => {}} />
+          </MemoryRouter>
+        </ChakraProvider>
+      );
+
+      rerender(
+        <ChakraProvider>
+          <MemoryRouter>
+            <FeedCard feed={defaultFeed} state="default" onAdd={() => {}} onRemove={() => {}} />
+          </MemoryRouter>
+        </ChakraProvider>
+      );
+
+      const status = screen.getByRole("status");
+      expect(status).toHaveTextContent("IGN feed removed");
+    });
+
+    it("announces feed added when state transitions from adding to added", () => {
+      const { rerender } = render(
+        <ChakraProvider>
+          <MemoryRouter>
+            <FeedCard feed={defaultFeed} state="adding" onAdd={() => {}} />
+          </MemoryRouter>
+        </ChakraProvider>
+      );
+
+      rerender(
+        <ChakraProvider>
+          <MemoryRouter>
+            <FeedCard feed={defaultFeed} state="added" onAdd={() => {}} />
+          </MemoryRouter>
+        </ChakraProvider>
+      );
+
+      const status = screen.getByRole("status");
+      expect(status).toHaveTextContent("IGN feed added");
+    });
+
+    it("inline removing button shows visible Removing text", () => {
+      renderCard({
+        state: "removing",
+        onRemove: () => {},
+        feedSettingsUrl: "/feeds/123",
+      });
+
+      const btn = screen.getByRole("button", { name: "Removing IGN feed..." });
+      expect(btn).toHaveTextContent("Removing...");
     });
   });
 

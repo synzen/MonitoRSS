@@ -34,9 +34,11 @@ interface FeedDiscoverySearchProps {
   feedActionStates: Record<string, FeedActionState>;
   isAtLimit: boolean;
   onAdd: (feed: CuratedFeed) => void;
+  onRemove?: (feedUrl: string) => void;
   searchInputRef?: RefObject<HTMLInputElement>;
   onSearchChange?: (query: string) => void;
   onFeedAdded?: (feedId: string, feedUrl: string) => void;
+  onFeedRemoved?: (feedUrl: string) => void;
 }
 
 const URL_PATTERN = /^https?:\/\//;
@@ -46,9 +48,11 @@ export function useFeedDiscoverySearchState({
   feedActionStates,
   isAtLimit,
   onAdd,
+  onRemove,
   searchInputRef,
   onSearchChange,
   onFeedAdded,
+  onFeedRemoved,
 }: FeedDiscoverySearchProps) {
   const [inputValue, setInputValue] = useState("");
   const [activeQuery, setActiveQuery] = useState("");
@@ -185,7 +189,9 @@ export function useFeedDiscoverySearchState({
     feedActionStates,
     isAtLimit,
     onAdd,
+    onRemove,
     onFeedAdded,
+    onFeedRemoved,
   };
 }
 
@@ -263,6 +269,7 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
                     feed={feed}
                     state={cardProps.state}
                     onAdd={() => state.onAdd(feed)}
+                    onRemove={state.onRemove ? () => state.onRemove!(feed.url) : undefined}
                     errorMessage={cardProps.errorMessage}
                     errorCode={cardProps.errorCode}
                     isCurated
@@ -287,6 +294,7 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
             onTrySearchByName={state.handleTrySearchByName}
             onRetryValidation={state.handleRetryValidation}
             onFeedAdded={state.onFeedAdded}
+            onFeedRemoved={state.onFeedRemoved}
           />
         )}
 

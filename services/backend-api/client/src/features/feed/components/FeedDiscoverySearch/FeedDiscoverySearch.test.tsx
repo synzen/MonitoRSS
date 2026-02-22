@@ -511,7 +511,11 @@ describe("FeedDiscoverySearch", () => {
     it("passes through feedActionStates to FeedCard", async () => {
       const { user } = renderSearch({
         feedActionStates: {
-          "https://feeds.feedburner.com/ign/games": { status: "added", settingsUrl: "/feeds/1" },
+          "https://feeds.feedburner.com/ign/games": {
+            status: "added",
+            settingsUrl: "/feeds/1",
+            feedId: "1",
+          },
         },
       });
 
@@ -538,7 +542,11 @@ describe("FeedDiscoverySearch", () => {
       const { user } = renderSearch({
         isAtLimit: true,
         feedActionStates: {
-          "https://feeds.feedburner.com/ign/games": { status: "added", settingsUrl: "/feeds/1" },
+          "https://feeds.feedburner.com/ign/games": {
+            status: "added",
+            settingsUrl: "/feeds/1",
+            feedId: "1",
+          },
         },
       });
 

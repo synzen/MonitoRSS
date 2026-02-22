@@ -35,7 +35,7 @@ export const FeedLimitBar = ({ showOnlyWhenConstrained = false }: FeedLimitBarPr
       <HStack justifyContent="space-between" flexWrap="wrap" gap={2}>
         <HStack>
           <WarningIcon color="red.300" aria-hidden="true" />
-          <Text color="red.300" fontWeight="semibold" role="status">
+          <Text color="red.300" fontWeight="semibold">
             Feed limit reached ({currentCount}/{maxCount})
           </Text>
         </HStack>
@@ -51,7 +51,7 @@ export const FeedLimitBar = ({ showOnlyWhenConstrained = false }: FeedLimitBarPr
       <HStack justifyContent="space-between" flexWrap="wrap" gap={2}>
         <HStack>
           <WarningIcon color="yellow.400" aria-hidden="true" />
-          <Text color="yellow.400" fontWeight="semibold" role="status">
+          <Text color="yellow.400" fontWeight="semibold">
             <VisuallyHidden>Warning:</VisuallyHidden>
             Feed Limit: {currentCount}/{maxCount} · {remaining} remaining
           </Text>
@@ -65,7 +65,7 @@ export const FeedLimitBar = ({ showOnlyWhenConstrained = false }: FeedLimitBarPr
 
   return (
     <HStack justifyContent="space-between" flexWrap="wrap" gap={2}>
-      <Text role="status" fontWeight="semibold">
+      <Text fontWeight="semibold">
         Feed Limit: {currentCount}/{maxCount}
       </Text>
       <Button variant="outline" size="sm" onClick={onOpen}>

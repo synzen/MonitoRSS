@@ -558,7 +558,9 @@ describe("BrowseFeedsModal", () => {
     it("added state shows checkmark on card in category view", () => {
       const firstFeed = allHighlightFeeds.find((f) => f.category === "gaming")!;
       renderModal({
-        feedActionStates: { [firstFeed.url]: { status: "added", settingsUrl: "/feeds/1" } },
+        feedActionStates: {
+          [firstFeed.url]: { status: "added", settingsUrl: "/feeds/1", feedId: "1" },
+        },
         initialCategory: "gaming",
       });
 
@@ -592,7 +594,9 @@ describe("BrowseFeedsModal", () => {
     it("added feeds persist across category switches", async () => {
       const gamingFeed = allHighlightFeeds.find((f) => f.category === "gaming")!;
       const { user } = renderModal({
-        feedActionStates: { [gamingFeed.url]: { status: "added", settingsUrl: "/feeds/1" } },
+        feedActionStates: {
+          [gamingFeed.url]: { status: "added", settingsUrl: "/feeds/1", feedId: "1" },
+        },
         initialCategory: "gaming",
       });
 
@@ -611,7 +615,7 @@ describe("BrowseFeedsModal", () => {
     it("re-opening modal preserves Added states in category view", () => {
       const firstFeed = allHighlightFeeds.find((f) => f.category === "gaming")!;
       const feedActionStates = {
-        [firstFeed.url]: { status: "added" as const, settingsUrl: "/feeds/1" },
+        [firstFeed.url]: { status: "added" as const, settingsUrl: "/feeds/1", feedId: "1" },
       };
 
       const { rerender } = renderModal({ feedActionStates, initialCategory: "gaming" });

@@ -1,19 +1,21 @@
 export type FeedActionState =
   | { status: "default" }
   | { status: "adding" }
-  | { status: "added"; settingsUrl: string }
+  | { status: "added"; settingsUrl: string; feedId: string }
+  | { status: "removing" }
   | { status: "error"; message?: string; errorCode?: string }
   | { status: "limit-reached" };
 
 export function getFeedCardPropsFromState(
   feedActionStates: Record<string, FeedActionState>,
   feedUrl: string,
-  isAtLimit: boolean,
+  isAtLimit: boolean
 ): {
-  state: "default" | "adding" | "added" | "error" | "limit-reached";
+  state: "default" | "adding" | "added" | "error" | "limit-reached" | "removing";
   errorMessage?: string;
   errorCode?: string;
   feedSettingsUrl?: string;
+  feedId?: string;
 } {
   const actionState = feedActionStates[feedUrl];
 
@@ -21,7 +23,12 @@ export function getFeedCardPropsFromState(
     return { state: isAtLimit ? "limit-reached" : "default" };
   }
 
-  if (isAtLimit && actionState.status !== "added" && actionState.status !== "adding") {
+  if (
+    isAtLimit &&
+    actionState.status !== "added" &&
+    actionState.status !== "adding" &&
+    actionState.status !== "removing"
+  ) {
     return { state: "limit-reached" };
   }
 
@@ -36,6 +43,7 @@ export function getFeedCardPropsFromState(
       return {
         state: "added",
         feedSettingsUrl: actionState.settingsUrl,
+        feedId: actionState.feedId,
       };
     default:
       return { state: actionState.status };

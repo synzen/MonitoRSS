@@ -19,6 +19,26 @@ const PLATFORM_HINTS: PlatformHintEntry[] = [
   },
 ];
 
+const EXPECTED_RESOLUTION_HOSTNAMES = new Set([
+  "youtube.com",
+  "www.youtube.com",
+  "m.youtube.com",
+  "youtu.be",
+  "reddit.com",
+  "www.reddit.com",
+  "old.reddit.com",
+]);
+
+export function isExpectedResolutionUrl(url: string): boolean {
+  try {
+    const { hostname } = new URL(url);
+
+    return EXPECTED_RESOLUTION_HOSTNAMES.has(hostname);
+  } catch {
+    return false;
+  }
+}
+
 function getPlatformHint(query: string): PlatformHintEntry | null {
   const q = query.toLowerCase().trim();
 

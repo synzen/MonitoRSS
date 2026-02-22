@@ -37,7 +37,9 @@ interface BrowseFeedsModalProps {
   feedActionStates: Record<string, FeedActionState>;
   isAtLimit: boolean;
   onAdd: (feed: CuratedFeed) => void;
+  onRemove?: (feedUrl: string) => void;
   onFeedAdded?: (feedId: string, feedUrl: string) => void;
+  onFeedRemoved?: (feedUrl: string) => void;
 }
 
 const BATCH_SIZE = 20;
@@ -49,7 +51,9 @@ export const BrowseFeedsModal = ({
   feedActionStates,
   isAtLimit,
   onAdd,
+  onRemove,
   onFeedAdded,
+  onFeedRemoved,
 }: BrowseFeedsModalProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(initialCategory);
   const [isSearchActive, setIsSearchActive] = useState(false);
@@ -82,9 +86,11 @@ export const BrowseFeedsModal = ({
     feedActionStates,
     isAtLimit,
     onAdd,
+    onRemove,
     searchInputRef,
     onSearchChange: handleSearchChange,
     onFeedAdded,
+    onFeedRemoved,
   });
 
   useEffect(() => {
@@ -242,6 +248,7 @@ export const BrowseFeedsModal = ({
                                     feed={feed}
                                     state={cardProps.state}
                                     onAdd={() => onAdd(feed)}
+                                    onRemove={onRemove ? () => onRemove(feed.url) : undefined}
                                     errorMessage={cardProps.errorMessage}
                                     errorCode={cardProps.errorCode}
                                     isCurated
@@ -293,6 +300,7 @@ export const BrowseFeedsModal = ({
                               feed={feed}
                               state={cardProps.state}
                               onAdd={() => onAdd(feed)}
+                              onRemove={onRemove ? () => onRemove(feed.url) : undefined}
                               errorMessage={cardProps.errorMessage}
                               errorCode={cardProps.errorCode}
                               isCurated

@@ -12,6 +12,7 @@ import {
   UnorderedList,
   ListItem,
   Highlight,
+  VisuallyHidden,
 } from "@chakra-ui/react";
 import { CheckIcon, WarningIcon } from "@chakra-ui/icons";
 import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
@@ -34,8 +35,9 @@ interface FeedCardProps {
     popular?: boolean;
     url: string;
   };
-  state: "default" | "adding" | "added" | "error" | "limit-reached";
+  state: "default" | "adding" | "added" | "error" | "limit-reached" | "removing";
   onAdd: () => void;
+  onRemove?: () => void;
   errorMessage?: string;
   errorCode?: string;
   isCurated?: boolean;
@@ -55,6 +57,7 @@ export const FeedCard = ({
   feed,
   state,
   onAdd,
+  onRemove,
   errorMessage,
   errorCode,
   isCurated,
@@ -81,6 +84,26 @@ export const FeedCard = ({
     data: previewData,
   } = useFeedPreviewByUrl();
   const initialFetchDone = useRef(false);
+  const prevStateRef = useRef(state);
+  const addButtonRef = useRef<HTMLButtonElement>(null);
+  const [statusAnnouncement, setStatusAnnouncement] = useState("");
+
+  useEffect(() => {
+    const prevState = prevStateRef.current;
+    prevStateRef.current = state;
+
+    if (prevState === "removing" && state === "default") {
+      setStatusAnnouncement(`${feed.title} feed removed`);
+      wasRemovingRef.current = false;
+      requestAnimationFrame(() => {
+        addButtonRef.current?.focus();
+      });
+    } else if (prevState === "adding" && state === "added") {
+      setStatusAnnouncement(`${feed.title} feed added`);
+    } else if (prevState !== state) {
+      setStatusAnnouncement("");
+    }
+  }, [state, feed.title]);
 
   useEffect(() => {
     if (previewOpen && previewEnabled && !initialFetchDone.current) {
@@ -102,26 +125,55 @@ export const FeedCard = ({
       ? getCuratedFeedErrorMessage(errorCode)
       : errorMessage || "Failed to add feed";
 
-  const isAddable = state === "default" || state === "adding" || state === "added";
   const isAdded = state === "added";
+  const isAdding = state === "adding";
+  const isRemoving = state === "removing";
+  const isAddable = state === "default" || isAdding || isAdded || isRemoving;
   const hasSettingsLink = isAdded && !!feedSettingsUrl;
 
-  const getAddButtonLabel = () => {
-    if (hasSettingsLink) return `Go to feed settings for ${feed.title}`;
-    if (isAdded) return `${feed.title} feed added`;
-    if (state === "adding") return `Adding ${feed.title} feed...`;
-    return `Add ${feed.title} feed`;
+  // Keep the separate remove button mounted for one render after removal completes
+  // (removing → default) so focus doesn't fall to <body> and trigger a document title
+  // announcement. The useEffect moves focus to addButtonRef, then clears the ref.
+  const wasRemovingRef = useRef(false);
+  if (isRemoving) wasRemovingRef.current = true;
+  if (state !== "default" && state !== "removing") wasRemovingRef.current = false;
+
+  const showRemoveAsSeparateButton = wasRemovingRef.current || (onRemove && isAdded && hasSettingsLink);
+
+  // Use a single button for different states to maintain focus for accessibility
+  type MainButtonMode = "add" | "adding" | "added-disabled" | "remove" | "removing" | "settings";
+  const mainButtonMode: MainButtonMode = (() => {
+    if (isRemoving && showRemoveAsSeparateButton) return "settings";
+    if (isRemoving) return "removing";
+    if (isAdding) return "adding";
+    if (hasSettingsLink) return "settings";
+    if (isAdded && onRemove) return "remove";
+    if (isAdded) return "added-disabled";
+    return "add";
+  })();
+
+  const mainButtonLabel: Record<MainButtonMode, string> = {
+    add: `Add ${feed.title} feed`,
+    adding: `Adding ${feed.title} feed...`,
+    "added-disabled": `${feed.title} feed added`,
+    remove: `Remove ${feed.title} feed`,
+    removing: `Removing ${feed.title} feed...`,
+    settings: `Go to feed settings for ${feed.title}`,
   };
 
-  const isAdding = state === "adding";
-
   const handleAddButtonClick = (e: React.MouseEvent) => {
-    if (isAdding || (isAdded && !feedSettingsUrl)) {
-      e.preventDefault();
-    } else if (hasSettingsLink) {
-      navigate(feedSettingsUrl!);
-    } else {
-      onAdd();
+    switch (mainButtonMode) {
+      case "add":
+        onAdd();
+        break;
+      case "remove":
+        onRemove?.();
+        break;
+      case "settings":
+        navigate(feedSettingsUrl!);
+        break;
+      default:
+        e.preventDefault();
     }
   };
 
@@ -178,7 +230,7 @@ export const FeedCard = ({
       p={3}
     >
       <HStack spacing={3} align="start">
-        <Box flexShrink={0} opacity={state === "added" ? 0.7 : 1}>
+        <Box flexShrink={0} opacity={state === "added" || state === "removing" ? 0.7 : 1}>
           {imgError ? (
             <Box
               w="32px"
@@ -215,7 +267,7 @@ export const FeedCard = ({
           )}
         </Box>
 
-        <Box flex={1} minW={0} opacity={state === "added" ? 0.7 : 1}>
+        <Box flex={1} minW={0} opacity={state === "added" || state === "removing" ? 0.7 : 1}>
           <HStack spacing={2} flexWrap="wrap">
             <Text fontWeight="bold" noOfLines={1}>
               {searchQuery ? (
@@ -290,29 +342,60 @@ export const FeedCard = ({
           <Box flexShrink={0}>
             {isAddable && (
               <HStack spacing={2}>
-                <Box role="status">
-                  {isAdded && (
-                    <HStack spacing={1} color="green.300">
-                      <CheckIcon boxSize={3} aria-hidden="true" />
-                      <Text fontSize="xs">Added</Text>
-                    </HStack>
-                  )}
-                </Box>
+                <VisuallyHidden role="status" aria-live="polite" aria-atomic="true">
+                  {statusAnnouncement}
+                </VisuallyHidden>
+                {isAdded && !onRemove && (
+                  <HStack spacing={1} color="green.300">
+                    <CheckIcon boxSize={3} aria-hidden="true" />
+                    <Text fontSize="xs">Added</Text>
+                  </HStack>
+                )}
+                {showRemoveAsSeparateButton && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={isRemoving ? (e) => e.preventDefault() : onRemove}
+                    aria-label={
+                      isRemoving
+                        ? `Removing ${feed.title} feed...`
+                        : `Remove ${feed.title} feed`
+                    }
+                    aria-busy={isRemoving || undefined}
+                    aria-disabled={isRemoving || undefined}
+                  >
+                    {isRemoving ? (
+                      <>
+                        <Spinner size="xs" mr={1} /> Removing...
+                      </>
+                    ) : (
+                      "Remove"
+                    )}
+                  </Button>
+                )}
                 <Button
+                  ref={addButtonRef}
                   size="sm"
                   onClick={handleAddButtonClick}
-                  aria-label={getAddButtonLabel()}
-                  aria-busy={isAdding || undefined}
-                  aria-disabled={isAdding || (isAdded && !feedSettingsUrl) || undefined}
+                  aria-label={mainButtonLabel[mainButtonMode]}
+                  aria-busy={mainButtonMode === "adding" || mainButtonMode === "removing" || undefined}
+                  aria-disabled={mainButtonMode !== "add" && mainButtonMode !== "remove" && mainButtonMode !== "settings" || undefined}
+                  variant={mainButtonMode === "remove" ? "outline" : undefined}
                 >
-                  {isAdding && <Spinner size="xs" />}
-                  {hasSettingsLink && <>Feed settings &rarr;</>}
-                  {isAdded && !feedSettingsUrl && (
+                  {mainButtonMode === "adding" && <Spinner size="xs" />}
+                  {mainButtonMode === "removing" && (
+                    <>
+                      <Spinner size="xs" mr={1} /> Removing...
+                    </>
+                  )}
+                  {mainButtonMode === "remove" && "Remove"}
+                  {mainButtonMode === "settings" && <>Feed settings &rarr;</>}
+                  {mainButtonMode === "added-disabled" && (
                     <>
                       Added <CheckIcon ml={1} aria-hidden="true" />
                     </>
                   )}
-                  {!isAdded && !isAdding && "+ Add"}
+                  {mainButtonMode === "add" && "+ Add"}
                 </Button>
               </HStack>
             )}
@@ -401,36 +484,67 @@ export const FeedCard = ({
         <Box mt={3}>
           {isAddable && (
             <>
-              <Box role="status">
-                {isAdded && (
-                  <HStack spacing={1} color="green.300" mb={2} justify="center">
-                    <CheckIcon boxSize={3} aria-hidden="true" />
-                    <Text fontSize="sm">Added</Text>
-                  </HStack>
-                )}
-              </Box>
+              <VisuallyHidden role="status" aria-live="polite" aria-atomic="true">
+                {statusAnnouncement}
+              </VisuallyHidden>
+              {isAdded && !onRemove && (
+                <HStack spacing={1} color="green.300" mb={2} justify="center">
+                  <CheckIcon boxSize={3} aria-hidden="true" />
+                  <Text fontSize="sm">Added</Text>
+                </HStack>
+              )}
               <Button
-                colorScheme="blue"
+                ref={addButtonRef}
+                colorScheme={mainButtonMode === "remove" ? undefined : "blue"}
                 width="full"
                 onClick={handleAddButtonClick}
-                variant={isAdded && !feedSettingsUrl ? "outline" : "solid"}
-                aria-label={getAddButtonLabel()}
-                aria-busy={isAdding || undefined}
-                aria-disabled={isAdding || (isAdded && !feedSettingsUrl) || undefined}
+                variant={mainButtonMode === "remove" || mainButtonMode === "added-disabled" ? "outline" : "solid"}
+                aria-label={mainButtonLabel[mainButtonMode]}
+                aria-busy={mainButtonMode === "adding" || mainButtonMode === "removing" || undefined}
+                aria-disabled={mainButtonMode !== "add" && mainButtonMode !== "remove" && mainButtonMode !== "settings" || undefined}
               >
-                {isAdding && (
+                {mainButtonMode === "adding" && (
                   <>
                     <Spinner size="xs" mr={2} /> Adding...
                   </>
                 )}
-                {hasSettingsLink && <>Go to feed settings &rarr;</>}
-                {isAdded && !feedSettingsUrl && (
+                {mainButtonMode === "removing" && (
+                  <>
+                    <Spinner size="xs" mr={2} /> Removing...
+                  </>
+                )}
+                {mainButtonMode === "remove" && "Remove"}
+                {mainButtonMode === "settings" && <>Go to feed settings &rarr;</>}
+                {mainButtonMode === "added-disabled" && (
                   <>
                     Added <CheckIcon ml={2} aria-hidden="true" />
                   </>
                 )}
-                {!isAdded && !isAdding && "+ Add Feed"}
+                {mainButtonMode === "add" && "+ Add Feed"}
               </Button>
+              {showRemoveAsSeparateButton && (
+                <Button
+                  variant="outline"
+                  width="full"
+                  mt={2}
+                  onClick={isRemoving ? (e) => e.preventDefault() : onRemove}
+                  aria-label={
+                    isRemoving
+                      ? `Removing ${feed.title} feed...`
+                      : `Remove ${feed.title} feed`
+                  }
+                  aria-busy={isRemoving || undefined}
+                  aria-disabled={isRemoving || undefined}
+                >
+                  {isRemoving ? (
+                    <>
+                      <Spinner size="xs" mr={2} /> Removing...
+                    </>
+                  ) : (
+                    "Remove"
+                  )}
+                </Button>
+              )}
             </>
           )}
           {state === "error" && (

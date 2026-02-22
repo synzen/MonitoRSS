@@ -53,7 +53,7 @@ const renderComponent = (props: Partial<React.ComponentProps<typeof UrlValidatio
           <UrlValidationResult {...defaultProps} {...props} />
         </MemoryRouter>
       </ChakraProvider>
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 
   return { user, ...result };
@@ -94,7 +94,7 @@ describe("UrlValidationResult", () => {
       });
 
       expect(
-        screen.getByRole("button", { name: /add blog\.example\.com feed/i })
+        screen.getByRole("button", { name: /add blog\.example\.com feed/i }),
       ).toBeInTheDocument();
     });
   });
@@ -193,7 +193,7 @@ describe("UrlValidationResult", () => {
 
       expect(icon).toHaveAttribute(
         "src",
-        "https://www.google.com/s2/favicons?sz=32&domain=www.youtube.com"
+        "https://www.google.com/s2/favicons?sz=32&domain=www.youtube.com",
       );
     });
 
@@ -216,6 +216,86 @@ describe("UrlValidationResult", () => {
       });
 
       expect(screen.getByText("E")).toBeInTheDocument();
+    });
+  });
+
+  describe("State 2b-expected: Expected platform resolution", () => {
+    it('shows "Feed found" heading for YouTube URL', () => {
+      renderComponent({
+        url: "https://www.youtube.com/@MKBHD",
+        validationStatus: "success",
+        validationData: {
+          result: {
+            resolvedToUrl: "https://www.youtube.com/feeds/videos.xml?channel_id=abc",
+            feedTitle: "MKBHD",
+          },
+        },
+      });
+
+      expect(screen.getByText("Feed found")).toBeInTheDocument();
+      expect(screen.queryByText("We found a feed at a different URL")).not.toBeInTheDocument();
+    });
+
+    it('shows "Feed found" heading for Reddit URL', () => {
+      renderComponent({
+        url: "https://www.reddit.com/r/gaming",
+        validationStatus: "success",
+        validationData: {
+          result: {
+            resolvedToUrl: "https://www.reddit.com/r/gaming/.rss",
+            feedTitle: "gaming",
+          },
+        },
+      });
+
+      expect(screen.getByText("Feed found")).toBeInTheDocument();
+    });
+
+    it('shows "Feed URL:" label instead of "Your URL:"', () => {
+      renderComponent({
+        url: "https://www.youtube.com/@MKBHD",
+        validationStatus: "success",
+        validationData: {
+          result: {
+            resolvedToUrl: "https://www.youtube.com/feeds/videos.xml?channel_id=abc",
+            feedTitle: "MKBHD",
+          },
+        },
+      });
+
+      expect(screen.getByText("Feed URL:")).toBeInTheDocument();
+      expect(screen.queryByText("Your URL:")).not.toBeInTheDocument();
+    });
+
+    it("still shows warning for unknown domain with resolved URL", () => {
+      renderComponent({
+        url: "https://example.com",
+        validationStatus: "success",
+        validationData: {
+          result: {
+            resolvedToUrl: "https://example.com/rss.xml",
+            feedTitle: "Example",
+          },
+        },
+      });
+
+      expect(screen.getByText("We found a feed at a different URL")).toBeInTheDocument();
+      expect(screen.queryByText("Feed found")).not.toBeInTheDocument();
+    });
+
+    it("shows add button for expected resolution", () => {
+      renderComponent({
+        url: "https://www.youtube.com/@MKBHD",
+        validationStatus: "success",
+        validationData: {
+          result: {
+            resolvedToUrl: "https://www.youtube.com/feeds/videos.xml?channel_id=abc",
+            feedTitle: "MKBHD",
+          },
+        },
+      });
+
+      expect(screen.getByRole("button", { name: /add mkbhd feed/i })).toBeInTheDocument();
     });
   });
 
@@ -354,6 +434,44 @@ describe("UrlValidationResult", () => {
       });
     });
 
+    it("sends undefined title when feedTitle is missing (direct match)", async () => {
+      mockMutateAsync.mockResolvedValue({ result: { id: "feed-123" } });
+
+      const { user } = renderComponent({
+        url: "https://blog.example.com/feed.xml",
+        validationStatus: "success",
+        validationData: {
+          result: {},
+        },
+      });
+
+      await user.click(screen.getByRole("button", { name: /add blog\.example\.com feed/i }));
+
+      expect(mockMutateAsync).toHaveBeenCalledWith({
+        details: { url: "https://blog.example.com/feed.xml", title: undefined },
+      });
+    });
+
+    it("sends undefined title when feedTitle is missing (resolved URL)", async () => {
+      mockMutateAsync.mockResolvedValue({ result: { id: "feed-123" } });
+
+      const { user } = renderComponent({
+        url: "https://example.com",
+        validationStatus: "success",
+        validationData: {
+          result: {
+            resolvedToUrl: "https://example.com/rss.xml",
+          },
+        },
+      });
+
+      await user.click(screen.getByRole("button", { name: /add example\.com feed/i }));
+
+      expect(mockMutateAsync).toHaveBeenCalledWith({
+        details: { url: "https://example.com/rss.xml", title: undefined },
+      });
+    });
+
     it('after successful add: "Added" indicator + "Go to feed settings" button visible', async () => {
       mockMutateAsync.mockResolvedValue({ result: { id: "feed-123" } });
 
@@ -374,7 +492,7 @@ describe("UrlValidationResult", () => {
       mockMutateAsync.mockRejectedValue(
         new ApiAdapterError("Server error", {
           errorCode: ApiErrorCode.INTERNAL_ERROR,
-        })
+        }),
       );
 
       const { user } = renderComponent({
@@ -394,7 +512,7 @@ describe("UrlValidationResult", () => {
       mockMutateAsync.mockRejectedValue(
         new ApiAdapterError("Limit reached", {
           errorCode: ApiErrorCode.FEED_LIMIT_REACHED,
-        })
+        }),
       );
 
       const { user } = renderComponent({

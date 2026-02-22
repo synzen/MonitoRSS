@@ -89,8 +89,8 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
       }}
     >
       <HStack flexWrap="wrap">
-        <Flex as="fieldset" width="100%" flex={1}>
-          <InputGroup width="min-content" flex={1}>
+        <Flex as="fieldset" minWidth={0} flex={1} flexBasis="100%">
+          <InputGroup minWidth={0} flex={1}>
             <InputLeftElement pointerEvents="none">
               <SearchIcon color="gray.400" />
             </InputLeftElement>
@@ -98,7 +98,6 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
               ref={searchInputRef}
               onChange={({ target: { value } }) => onSearchInputChange(value)}
               value={searchInput || ""}
-              minWidth="275px"
               placeholder={t("pages.feeds.tableSearch")}
             />
             {search && !isFetching && (

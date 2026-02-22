@@ -1,5 +1,5 @@
 import { Alert, AlertIcon, Box, Center, Stack, Table, Td, Thead, Tr, Text } from "@chakra-ui/react";
-import React, { useCallback, useContext, useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   OnChangeFn,
   RowSelectionState,
@@ -180,6 +180,28 @@ export const UserFeedsTable: React.FC = () => {
 
   const isFilteredEmpty = !isInitiallyLoading && flatData.length === 0 && hasActiveFilters;
 
+  const [tableAnnouncement, setTableAnnouncement] = useState("");
+  const pendingAnnouncement = useRef(true);
+
+  useEffect(() => {
+    pendingAnnouncement.current = true;
+  }, [urlSearch, statusFilters]);
+
+  useEffect(() => {
+    if (isInitiallyLoading || isFetching) return;
+
+    if (!pendingAnnouncement.current) return;
+    pendingAnnouncement.current = false;
+
+    if (isFilteredEmpty) {
+      setTableAnnouncement("No feeds match current filters");
+    } else if (hasActiveFilters) {
+      setTableAnnouncement(`Showing ${flatData.length} of ${total} feeds`);
+    } else {
+      setTableAnnouncement(`Loaded table with ${flatData.length} of ${total} feeds`);
+    }
+  }, [isInitiallyLoading, isFetching, isFilteredEmpty, hasActiveFilters, flatData.length, total]);
+
   const handleClearAllFilters = useCallback(() => {
     onSearchClear();
     onStatusSelect([]);
@@ -189,15 +211,7 @@ export const UserFeedsTable: React.FC = () => {
   return (
     <Stack spacing={4}>
       <Box srOnly aria-live="polite">
-        {!isInitiallyLoading && (
-          <Text>
-            {isFilteredEmpty
-              ? "No feeds match current filters"
-              : hasActiveFilters
-              ? `Showing ${flatData.length} of ${total} feeds`
-              : `Loaded table with ${flatData.length} of ${total} feeds`}
-          </Text>
-        )}
+        <Text>{tableAnnouncement}</Text>
       </Box>
       {!isInitiallyLoading && (
         <TableToolbar

@@ -50,6 +50,7 @@ import {
 } from "../features/feed";
 import type { FeedActionState } from "../features/feed";
 import type { CuratedFeed } from "../features/feed/types";
+import { useDeleteUserFeed } from "../features/feed/hooks/useDeleteUserFeed";
 import { ApiErrorCode } from "../utils/getStandardErrorCodeMessage copy";
 import ApiAdapterError from "../utils/ApiAdapterError";
 import { pages } from "../constants";
@@ -126,6 +127,7 @@ const UserFeedsInner: React.FC = () => {
   const { createSuccessAlert, createErrorAlert, createInfoAlert } = usePageAlertContext();
   const { data: discordUserMe } = useDiscordUserMe();
   const { mutateAsync: createUserFeed } = useCreateUserFeed();
+  const { mutateAsync: deleteUserFeed } = useDeleteUserFeed();
   const {
     data: curatedData,
     getCategoryPreviewText,
@@ -188,7 +190,11 @@ const UserFeedsInner: React.FC = () => {
         const { result } = await createUserFeed({ details: { url: feed.url, title: feed.title } });
         setFeedActionStates((prev) => ({
           ...prev,
-          [feed.url]: { status: "added", settingsUrl: pages.userFeed(result.id) },
+          [feed.url]: {
+            status: "added",
+            settingsUrl: pages.userFeed(result.id),
+            feedId: result.id,
+          },
         }));
         setModalSessionAddCount((prev) => prev + 1);
       } catch (err) {
@@ -219,12 +225,52 @@ const UserFeedsInner: React.FC = () => {
     [createUserFeed, createInfoAlert, discordUserMe?.maxUserFeeds]
   );
 
+  const handleCuratedFeedRemove = useCallback(
+    async (feedUrl: string) => {
+      const currentState = feedActionStates[feedUrl];
+      if (!currentState || currentState.status !== "added") return;
+
+      const { feedId } = currentState;
+
+      setFeedActionStates((prev) => ({ ...prev, [feedUrl]: { status: "removing" } }));
+
+      try {
+        await deleteUserFeed({ feedId });
+        setFeedActionStates((prev) => {
+          const next = { ...prev };
+          delete next[feedUrl];
+          return next;
+        });
+        setModalSessionAddCount((prev) => Math.max(prev - 1, 0));
+      } catch (err) {
+        setFeedActionStates((prev) => ({
+          ...prev,
+          [feedUrl]: currentState,
+        }));
+        createErrorAlert({
+          title: "Failed to remove feed",
+          description: (err as Error).message,
+        });
+      }
+    },
+    [feedActionStates, deleteUserFeed, createErrorAlert]
+  );
+
   const handleUrlFeedAdded = useCallback((_feedId: string, feedUrl: string) => {
     setFeedActionStates((prev) => ({
       ...prev,
-      [feedUrl]: { status: "added", settingsUrl: pages.userFeed(_feedId) },
+      [feedUrl]: { status: "added", settingsUrl: pages.userFeed(_feedId), feedId: _feedId },
     }));
     setModalSessionAddCount((prev) => prev + 1);
+  }, []);
+
+  const handleUrlFeedRemoved = useCallback((feedUrl: string) => {
+    setFeedActionStates((prev) => {
+      const next = { ...prev };
+      delete next[feedUrl];
+      return next;
+    });
+    setModalSessionAddCount((prev) => Math.max(prev - 1, 0));
   }, []);
 
   const handleExitDiscovery = useCallback(() => {
@@ -628,8 +674,10 @@ const UserFeedsInner: React.FC = () => {
                   feedActionStates={feedActionStates}
                   isAtLimit={isAtLimit}
                   onAdd={handleCuratedFeedAdd}
+                  onRemove={handleCuratedFeedRemove}
                   onSearchChange={handleSearchChange}
                   onFeedAdded={handleUrlFeedAdded}
+                  onFeedRemoved={handleUrlFeedRemoved}
                 />
                 {!isSearchActive && (
                   <Text color="gray.400" fontSize="sm" textAlign="center">
@@ -678,7 +726,9 @@ const UserFeedsInner: React.FC = () => {
         feedActionStates={feedActionStates}
         isAtLimit={isAtLimit}
         onAdd={handleCuratedFeedAdd}
+        onRemove={handleCuratedFeedRemove}
         onFeedAdded={handleUrlFeedAdded}
+        onFeedRemoved={handleUrlFeedRemoved}
       />
     </>
   );
