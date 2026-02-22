@@ -69,11 +69,11 @@ export function useFeedDiscoverySearchState({
 
   const isUrlInput = URL_PATTERN.test(activeQuery);
   const { data } = useCuratedFeeds(
-    activeQuery && !isUrlInput ? { search: activeQuery } : undefined
+    activeQuery && !isUrlInput ? { search: activeQuery } : undefined,
   );
 
   const hasActiveSearch = activeQuery.length > 0;
-  const totalResults = isUrlInput ? 0 : data?.feeds.length ?? 0;
+  const totalResults = isUrlInput ? 0 : (data?.feeds.length ?? 0);
   const visibleResults = data?.feeds.slice(0, visibleCount) ?? [];
 
   useEffect(() => {
@@ -94,7 +94,7 @@ export function useFeedDiscoverySearchState({
         (searchInputRef as MutableRefObject<HTMLInputElement | null>).current = node;
       }
     },
-    [searchInputRef]
+    [searchInputRef],
   );
 
   const getCategoryLabel = (categoryId: string) =>
@@ -160,12 +160,34 @@ export function useFeedDiscoverySearchState({
 
     requestAnimationFrame(() => {
       const nextItem = document.querySelector(
-        `[data-feed-index="${previousCount}"] button`
+        `[data-feed-index="${previousCount}"] button`,
       ) as HTMLElement | null;
 
       nextItem?.focus();
     });
   };
+
+  const initializeWithQuery = useCallback(
+    async (query: string) => {
+      const trimmed = query.trim();
+      if (!trimmed) return;
+
+      setInputValue(trimmed);
+      setActiveQuery(trimmed);
+      setVisibleCount(BATCH_SIZE);
+      onSearchChange?.(trimmed);
+
+      if (URL_PATTERN.test(trimmed)) {
+        resetValidation();
+        try {
+          await validateUrl({ details: { url: trimmed } });
+        } catch {
+          // Error state handled by hook
+        }
+      }
+    },
+    [onSearchChange, resetValidation, validateUrl],
+  );
 
   return {
     inputValue,
@@ -183,6 +205,7 @@ export function useFeedDiscoverySearchState({
     handleTrySearchByName,
     handleRetryValidation,
     handleShowMore,
+    initializeWithQuery,
     validationStatus,
     validationError,
     validationData,
@@ -210,7 +233,6 @@ export const FeedDiscoverySearchInput = ({ state }: { state: SearchStateReturn }
             value={state.inputValue}
             onChange={(e) => state.setInputValue(e.target.value)}
             placeholder="Search popular feeds or paste a URL"
-            aria-label="Search popular feeds or paste a URL"
             bg="gray.800"
           />
           {state.inputValue && (
@@ -251,7 +273,7 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
             role="list"
             aria-label={`Search results, showing ${Math.min(
               state.visibleCount,
-              state.totalResults
+              state.totalResults,
             )} of ${state.totalResults}`}
             spacing={2}
             listStyleType="none"
@@ -260,7 +282,7 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
               const cardProps = getFeedCardPropsFromState(
                 state.feedActionStates,
                 feed.url,
-                state.isAtLimit
+                state.isAtLimit,
               );
 
               return (

@@ -659,4 +659,20 @@ describe("BrowseFeedsModal", () => {
       ).toBeInTheDocument();
     });
   });
+
+  describe("initialSearchQuery prop", () => {
+    it("pre-fills search input when initialSearchQuery is provided", () => {
+      renderModal({ initialSearchQuery: "Gaming Feed 0" });
+
+      const searchInput = screen.getByRole("textbox", { name: /search/i });
+      expect(searchInput).toHaveValue("Gaming Feed 0");
+    });
+
+    it("does not pre-fill search when initialSearchQuery is undefined", () => {
+      renderModal();
+
+      const searchInput = screen.getByRole("textbox", { name: /search/i });
+      expect(searchInput).toHaveValue("");
+    });
+  });
 });

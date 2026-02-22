@@ -3,13 +3,12 @@ import {
   Box,
   Button,
   Center,
+  Heading,
   HStack,
   IconButton,
   Input,
   InputGroup,
   InputLeftElement,
-  Kbd,
-  ListItem,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -18,75 +17,17 @@ import {
   Spinner,
   Stack,
   Text,
-  UnorderedList,
-  chakra,
+  Tooltip,
 } from "@chakra-ui/react";
-import { Link } from "react-router-dom";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useUserFeeds } from "../../features/feed/hooks/useUserFeeds";
 import { useUserFeedsInfinite } from "../../features/feed/hooks/useUserFeedsInfinite";
 import { pages } from "../../constants";
 
 const LIMIT = 20;
 
-const SearchResultItem = ({
-  feedId,
-  title,
-  link,
-  setSize,
-  position,
-  onClicked,
-}: {
-  feedId: string;
-  title: string;
-  link: string;
-  setSize: number;
-  position: number;
-  onClicked?: () => void;
-}) => {
-  return (
-    <ListItem
-      listStyleType="none"
-      aria-setsize={setSize}
-      aria-posinset={position}
-      onClick={onClicked}
-    >
-      <HStack
-        as={Link}
-        to={pages.userFeed(feedId)}
-        px={4}
-        py={4}
-        bg="whiteAlpha.200"
-        // border="solid 3px"
-        // borderColor="gray.600"
-        borderRadius="md"
-        mt={3}
-        alignItems="center"
-        _hover={{
-          outline: "3px solid",
-          outlineColor: "blue.500",
-          // backgroundColor: "blue.800",
-        }}
-        _focus={{
-          outline: "3px solid",
-          outlineColor: "blue.500",
-        }}
-      >
-        <Box overflow="hidden">
-          <Text fontWeight={600}>{title}</Text>
-          <Text
-            fontSize="sm"
-            color="whiteAlpha.700"
-            whiteSpace="nowrap"
-            overflow="hidden"
-            textOverflow="ellipsis"
-          >
-            {link}
-          </Text>
-        </Box>
-      </HStack>
-    </ListItem>
-  );
-};
+const isMac = /Mac|iPhone|iPod|iPad/.test(navigator.platform);
 
 function debounce(func: Function, delay: number) {
   let timeoutId: number;
@@ -102,9 +43,17 @@ function debounce(func: Function, delay: number) {
   };
 }
 
+const URL_PATTERN = /^https?:\/\//;
+
 export const SearchFeedsModal = () => {
+  const { data: feedCountData } = useUserFeeds({ limit: 1, offset: 0 });
+  const hasFeedsLoaded = feedCountData !== undefined;
+  const hasFeeds = (feedCountData?.total ?? 0) > 0;
+
   const [isOpen, setIsOpen] = useState(false);
   const [searchInput, setSearchInput] = useState("");
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const navigate = useNavigate();
   const {
     data: feeds,
     setSearch,
@@ -120,23 +69,44 @@ export const SearchFeedsModal = () => {
   );
   const debouncedSetSearch = useMemo(() => debounce(setSearch, 300), [setSearch]);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const triggerButtonRef = useRef<HTMLButtonElement>(null);
+  const listboxRef = useRef<HTMLDivElement>(null);
+
+  const allFeeds = feeds?.pages.flatMap((item) => item.results) || [];
+  const isEmpty = !feeds?.pages?.[0]?.total;
 
   const handleSearch = (query: string) => {
     setSearchInput(query);
+    setActiveIndex(-1);
     debouncedSetSearch(query);
   };
+
+  const handleAddFeedRedirect = () => {
+    setIsOpen(false);
+    navigate(`/feeds?addFeed=${encodeURIComponent(searchInput)}`);
+  };
+
+  const navigateToFeed = useCallback(
+    (feedId: string) => {
+      setIsOpen(false);
+      navigate(pages.userFeed(feedId));
+    },
+    [navigate],
+  );
 
   useEffect(() => {
     if (!isOpen) {
       setSearchInput("");
       setSearch("");
+      setActiveIndex(-1);
     }
   }, [isOpen]);
 
   useEffect(() => {
-    // listen for ctrl k
+    if (!hasFeeds) return;
+
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.ctrlKey && event.key === "k") {
+      if ((event.ctrlKey || event.metaKey) && event.key === "k") {
         event.preventDefault();
         setIsOpen((prev) => !prev);
       }
@@ -147,57 +117,80 @@ export const SearchFeedsModal = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [hasFeeds]);
 
-  const isEmpty = !feeds?.pages?.[0]?.total;
-  const allFeeds = feeds?.pages.flatMap((item) => item.results) || [];
+  useEffect(() => {
+    if (fetchStatus === "idle" && allFeeds.length > 0) {
+      setActiveIndex(0);
+    }
+  }, [fetchStatus, allFeeds.length]);
+
+  useEffect(() => {
+    if (activeIndex < 0) return;
+
+    const activeOption = document.getElementById(`feed-nav-option-${activeIndex}`);
+
+    activeOption?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex]);
+
+  const handleInputKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+
+      if (allFeeds.length > 0) {
+        setActiveIndex((prev) => (prev < allFeeds.length - 1 ? prev + 1 : 0));
+      }
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+
+      if (allFeeds.length > 0) {
+        setActiveIndex((prev) => (prev > 0 ? prev - 1 : allFeeds.length - 1));
+      }
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+
+      if (activeIndex >= 0 && activeIndex < allFeeds.length) {
+        navigateToFeed(allFeeds[activeIndex].id);
+      }
+    }
+  };
+
+  if (!hasFeedsLoaded || !hasFeeds) {
+    return null;
+  }
+
+  const showResults = fetchStatus === "idle" && !isEmpty;
 
   return (
-    <div>
-      <Button
-        variant="outline"
-        leftIcon={<SearchIcon />}
-        color="whiteAlpha.700"
-        fontWeight="normal"
-        w={400}
-        display={["none", "none", "flex"]}
-        justifyContent="flex-start"
-        alignItems="center"
-        onClick={() => setIsOpen(true)}
-      >
-        <HStack justifyContent="space-between" w="100%" alignItems="center">
-          <Text>Navigate to my feeds</Text>
-          <chakra.div mb={1}>
-            <Kbd>Ctrl</Kbd> + <Kbd>K</Kbd>
-          </chakra.div>
-        </HStack>
-      </Button>
-      <IconButton
-        variant="outline"
-        aria-label="Navigate to my feeds"
-        icon={<SearchIcon />}
-        color="whiteAlpha.700"
-        fontWeight="normal"
-        display={["flex", "flex", "none"]}
-        size={{ base: "sm", lg: "lg" }}
-        onClick={() => setIsOpen(true)}
-      />
+    <>
+      <Tooltip label={`Go to feed (${isMac ? "Cmd" : "Ctrl"}+K)`}>
+        <IconButton
+          ref={triggerButtonRef}
+          variant="ghost"
+          aria-label="Search your feeds and go to one"
+          icon={<SearchIcon />}
+          color="whiteAlpha.600"
+          // _hover={{ color: "whiteAlpha.900", bg: "whiteAlpha.200" }}
+          // _focus={{ color: "whiteAlpha.900", bg: "whiteAlpha.200" }}
+          size={{ base: "sm", lg: "md" }}
+          onClick={() => setIsOpen(true)}
+        />
+      </Tooltip>
       <Modal
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         size="xl"
         initialFocusRef={searchInputRef}
+        finalFocusRef={triggerButtonRef}
       >
         <ModalOverlay />
-        <ModalContent>
+        <ModalContent aria-labelledby="feed-nav-title">
           <ModalBody py={0} px={0}>
             <Stack>
               <HStack>
-                <header>
-                  <Text size="lg" fontWeight="semibold" px={4} pt={4}>
-                    Navigate to my feeds
-                  </Text>
-                </header>
+                <Heading as="h2" id="feed-nav-title" size="sm" fontWeight="semibold" px={4} pt={4}>
+                  Go to feed
+                </Heading>
                 <ModalCloseButton />
               </HStack>
               <HStack pl={4} pr={4}>
@@ -208,11 +201,17 @@ export const SearchFeedsModal = () => {
                   <Input
                     ref={searchInputRef}
                     variant="flushed"
-                    placeholder="Search your feeds"
+                    placeholder="Type a feed name..."
                     onChange={(e) => handleSearch(e.target.value)}
                     value={searchInput}
-                    aria-label="Search your feeds"
-                    // bg="gray.700"
+                    aria-label="Go to feed"
+                    role="combobox"
+                    aria-expanded={showResults}
+                    aria-controls="feed-nav-listbox"
+                    aria-activedescendant={
+                      activeIndex >= 0 ? `feed-nav-option-${activeIndex}` : undefined
+                    }
+                    onKeyDown={handleInputKeyDown}
                   />
                 </InputGroup>
               </HStack>
@@ -228,28 +227,81 @@ export const SearchFeedsModal = () => {
                 <Stack>
                   {fetchStatus === "fetching" && (
                     <Center py={4}>
-                      <Spinner />
+                      <Spinner label="Loading feeds" />
                     </Center>
                   )}
                   {fetchStatus === "idle" && !isEmpty && (
-                    <UnorderedList m={0}>
+                    <Box ref={listboxRef} role="listbox" id="feed-nav-listbox">
                       {allFeeds?.map((feed, index) => (
-                        <SearchResultItem
+                        <Box
                           key={feed.id}
-                          feedId={feed.id}
-                          title={feed.title}
-                          link={feed.url}
-                          setSize={allFeeds.length}
-                          position={index}
-                          onClicked={() => setIsOpen(false)}
-                        />
+                          id={`feed-nav-option-${index}`}
+                          role="option"
+                          aria-selected={index === activeIndex}
+                          px={4}
+                          py={4}
+                          bg="whiteAlpha.200"
+                          borderRadius="md"
+                          mt={3}
+                          cursor="pointer"
+                          onClick={() => navigateToFeed(feed.id)}
+                          outline={index === activeIndex ? "3px solid" : undefined}
+                          outlineColor={index === activeIndex ? "blue.500" : undefined}
+                          _hover={{
+                            outline: "3px solid",
+                            outlineColor: "blue.500",
+                          }}
+                        >
+                          <Box overflow="hidden">
+                            <Text fontWeight={600}>{feed.title}</Text>
+                            <Text
+                              fontSize="sm"
+                              color="whiteAlpha.700"
+                              whiteSpace="nowrap"
+                              overflow="hidden"
+                              textOverflow="ellipsis"
+                            >
+                              {feed.url}
+                            </Text>
+                          </Box>
+                        </Box>
                       ))}
-                    </UnorderedList>
+                    </Box>
                   )}
                   {fetchStatus === "idle" && isEmpty && (
-                    <Center py={4}>
-                      <Text color="whiteAlpha.700">No feeds found. Try adjusting your search.</Text>
-                    </Center>
+                    <Stack py={4} spacing={3} align="center">
+                      <Text color="whiteAlpha.700">No feeds found.</Text>
+                      {searchInput.trim() &&
+                        (URL_PATTERN.test(searchInput.trim()) ? (
+                          <Stack spacing={1} align="center">
+                            <Text fontSize="sm" color="whiteAlpha.700">
+                              This looks like a feed URL.
+                            </Text>
+                            <Button
+                              variant="link"
+                              colorScheme="blue"
+                              size="sm"
+                              onClick={handleAddFeedRedirect}
+                            >
+                              Add it as a new feed &rarr;
+                            </Button>
+                          </Stack>
+                        ) : (
+                          <Stack spacing={1} align="center">
+                            <Text fontSize="sm" color="whiteAlpha.700">
+                              Can&apos;t find what you&apos;re looking for?
+                            </Text>
+                            <Button
+                              variant="link"
+                              colorScheme="blue"
+                              size="sm"
+                              onClick={handleAddFeedRedirect}
+                            >
+                              Search for new feeds to add &rarr;
+                            </Button>
+                          </Stack>
+                        ))}
+                    </Stack>
                   )}
                   {fetchStatus === "idle" && allFeeds.length === LIMIT && (
                     <Center>
@@ -265,6 +317,6 @@ export const SearchFeedsModal = () => {
           </ModalBody>
         </ModalContent>
       </Modal>
-    </div>
+    </>
   );
 };

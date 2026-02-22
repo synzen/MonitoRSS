@@ -71,6 +71,22 @@ test.describe("Feed Discovery", () => {
       ).toBeVisible();
     });
 
+    test("nav search button is hidden when user has zero feeds", async ({
+      page,
+    }) => {
+      await page.goto("/feeds");
+
+      await expect(
+        page.getByRole("heading", {
+          name: "Get news delivered to your Discord",
+        }),
+      ).toBeVisible({ timeout: 15000 });
+
+      await expect(
+        page.getByRole("button", { name: "Search your feeds and go to one" }),
+      ).not.toBeVisible();
+    });
+
     test("text search shows matching curated feed cards", async ({ page }) => {
       await page.goto("/feeds");
       await expect(
@@ -839,6 +855,114 @@ test.describe("Feed Discovery", () => {
       await expect(
         page.getByRole("heading", { name: "Add a Feed" }),
       ).toBeVisible();
+
+      await page.getByRole("button", { name: "Close" }).click();
+    });
+
+    test("nav search button is visible when user has feeds", async ({
+      page,
+    }) => {
+      await page.goto("/feeds");
+      await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
+
+      await expect(
+        page.getByRole("button", { name: "Search your feeds and go to one" }),
+      ).toBeVisible();
+    });
+
+    test("nav search zero results shows redirect to add feed flow", async ({
+      page,
+    }) => {
+      test.setTimeout(60000);
+      await page.goto("/feeds");
+      await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
+
+      await page
+        .getByRole("button", { name: "Search your feeds and go to one" })
+        .click();
+
+      await expect(
+        page.getByRole("heading", { name: "Go to feed" }),
+      ).toBeVisible();
+
+      const searchInput = page.getByRole("combobox", {
+        name: "Go to feed",
+      });
+      await searchInput.fill("https://example.com/test-feed.xml");
+
+      await page.waitForTimeout(500);
+
+      await expect(page.getByText("This looks like a feed URL.")).toBeVisible({
+        timeout: 5000,
+      });
+
+      await page.getByRole("button", { name: /Add it as a new feed/ }).click();
+
+      await expect(
+        page.getByRole("heading", { name: "Add a Feed" }),
+      ).toBeVisible({ timeout: 10000 });
+    });
+
+    test("nav search redirect to add feed works twice in a row", async ({
+      page,
+    }) => {
+      test.setTimeout(60000);
+      await page.goto("/feeds");
+      await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
+
+      // First time: open search modal, type non-matching term, click redirect
+      await page
+        .getByRole("button", { name: "Search your feeds and go to one" })
+        .click();
+      await expect(
+        page.getByRole("heading", { name: "Go to feed" }),
+      ).toBeVisible();
+
+      const searchInput = page.getByRole("combobox", {
+        name: "Go to feed",
+      });
+      await searchInput.fill("zzz-no-match-term");
+      await page.waitForTimeout(500);
+
+      await expect(
+        page.getByText("Can't find what you're looking for?"),
+      ).toBeVisible({ timeout: 5000 });
+
+      await page
+        .getByRole("button", { name: /Search for new feeds to add/ })
+        .click();
+
+      await expect(
+        page.getByRole("heading", { name: "Add a Feed" }),
+      ).toBeVisible({ timeout: 10000 });
+
+      await page.getByRole("button", { name: "Close" }).click();
+
+      // Second time: same flow should work again
+      await page
+        .getByRole("button", { name: "Search your feeds and go to one" })
+        .click();
+      await expect(
+        page.getByRole("heading", { name: "Go to feed" }),
+      ).toBeVisible();
+
+      const searchInput2 = page.getByRole("combobox", {
+        name: "Go to feed",
+      });
+      await searchInput2.fill("zzz-another-no-match");
+      await page.waitForTimeout(500);
+
+      await expect(
+        page.getByText("Can't find what you're looking for?"),
+      ).toBeVisible({ timeout: 5000 });
+
+      await page
+        .getByRole("button", { name: /Search for new feeds to add/ })
+        .click();
+
+      await expect(
+        page.getByRole("heading", { name: "Add a Feed" }),
+      ).toBeVisible({ timeout: 10000 });
 
       await page.getByRole("button", { name: "Close" }).click();
     });

@@ -22,7 +22,7 @@ import {
   SimpleGrid,
   CloseButton,
 } from "@chakra-ui/react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AddIcon, CheckCircleIcon, ChevronDownIcon, DeleteIcon } from "@chakra-ui/icons";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
@@ -106,6 +106,7 @@ const CopyUserFeedSettingsMenuItem = ({
 const UserFeedsInner: React.FC = () => {
   const { t } = useTranslation();
   const { state } = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: userMeData } = useUserMe();
   const { data: userFeedsRequireAttentionResults } = useUserFeeds({
     limit: 1,
@@ -142,10 +143,14 @@ const UserFeedsInner: React.FC = () => {
   const [browseModalInitialCategory, setBrowseModalInitialCategory] = useState<
     string | undefined
   >();
+  const [browseModalInitialSearchQuery, setBrowseModalInitialSearchQuery] = useState<
+    string | undefined
+  >();
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [modalSessionAddCount, setModalSessionAddCount] = useState(0);
   const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
   const limitAlertShownRef = useRef(false);
+  const addFeedParamConsumed = useRef(false);
 
   const totalFeedCount = userFeedsResults?.total;
   const navigatedAlertTitle = state?.alertTitle;
@@ -157,6 +162,26 @@ const UserFeedsInner: React.FC = () => {
       });
     }
   }, [navigatedAlertTitle]);
+
+  useEffect(() => {
+    const addFeedQuery = searchParams.get("addFeed");
+    if (addFeedQuery && !addFeedParamConsumed.current) {
+      addFeedParamConsumed.current = true;
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete("addFeed");
+          return next;
+        },
+        { replace: true },
+      );
+      setBrowseModalInitialSearchQuery(addFeedQuery);
+      setModalSessionAddCount(0);
+      setIsBrowseModalOpen(true);
+    } else if (!addFeedQuery) {
+      addFeedParamConsumed.current = false;
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (isInDiscoveryMode === null && userFeedsResults) {
@@ -180,7 +205,7 @@ const UserFeedsInner: React.FC = () => {
       Object.entries(feedActionStates)
         .filter(([, s]) => s.status === "added")
         .map(([url]) => url),
-    [feedActionStates]
+    [feedActionStates],
   );
 
   const handleCuratedFeedAdd = useCallback(
@@ -222,7 +247,7 @@ const UserFeedsInner: React.FC = () => {
         }
       }
     },
-    [createUserFeed, createInfoAlert, discordUserMe?.maxUserFeeds]
+    [createUserFeed, createInfoAlert, discordUserMe?.maxUserFeeds],
   );
 
   const handleCuratedFeedRemove = useCallback(
@@ -253,7 +278,7 @@ const UserFeedsInner: React.FC = () => {
         });
       }
     },
-    [feedActionStates, deleteUserFeed, createErrorAlert]
+    [feedActionStates, deleteUserFeed, createErrorAlert],
   );
 
   const handleUrlFeedAdded = useCallback((_feedId: string, feedUrl: string) => {
@@ -302,6 +327,7 @@ const UserFeedsInner: React.FC = () => {
 
   const handleOpenBrowseModal = useCallback((categoryId?: string) => {
     setBrowseModalInitialCategory(categoryId);
+    setBrowseModalInitialSearchQuery(undefined);
     setModalSessionAddCount(0);
     setIsBrowseModalOpen(true);
   }, []);
@@ -497,7 +523,7 @@ const UserFeedsInner: React.FC = () => {
                           isDisabled={
                             !selectedFeeds.length ||
                             !selectedFeeds.some(
-                              (f) => f.disabledCode === UserFeedDisabledCode.Manual
+                              (f) => f.disabledCode === UserFeedDisabledCode.Manual,
                             )
                           }
                           icon={<FaPlay />}
@@ -518,7 +544,7 @@ const UserFeedsInner: React.FC = () => {
                             selectedFeeds.every(
                               (r) =>
                                 !!r.disabledCode &&
-                                r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit
+                                r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit,
                             )
                           }
                           icon={<FaPause />}
@@ -723,6 +749,7 @@ const UserFeedsInner: React.FC = () => {
         isOpen={isBrowseModalOpen}
         onClose={handleBrowseModalClose}
         initialCategory={browseModalInitialCategory}
+        initialSearchQuery={browseModalInitialSearchQuery}
         feedActionStates={feedActionStates}
         isAtLimit={isAtLimit}
         onAdd={handleCuratedFeedAdd}
