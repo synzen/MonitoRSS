@@ -314,6 +314,7 @@ export const BrowseFeedsModal = ({
                               isCurated
                               feedSettingsUrl={cardProps.feedSettingsUrl}
                               previewEnabled
+                              wrapDescription
                             />
                           </Box>
                         );

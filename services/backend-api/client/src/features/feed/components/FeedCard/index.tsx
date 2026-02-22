@@ -51,6 +51,7 @@ interface FeedCardProps {
   fullWidthAction?: boolean;
   borderless?: boolean;
   searchQuery?: string;
+  wrapDescription?: boolean;
 }
 
 export const FeedCard = ({
@@ -71,6 +72,7 @@ export const FeedCard = ({
   fullWidthAction = false,
   borderless = false,
   searchQuery,
+  wrapDescription = false,
 }: FeedCardProps) => {
   const navigate = useNavigate();
   const [imgError, setImgError] = useState(false);
@@ -138,7 +140,8 @@ export const FeedCard = ({
   if (isRemoving) wasRemovingRef.current = true;
   if (state !== "default" && state !== "removing") wasRemovingRef.current = false;
 
-  const showRemoveAsSeparateButton = wasRemovingRef.current || (onRemove && isAdded && hasSettingsLink);
+  const showRemoveAsSeparateButton =
+    wasRemovingRef.current || (onRemove && isAdded && hasSettingsLink);
 
   // Use a single button for different states to maintain focus for accessibility
   type MainButtonMode = "add" | "adding" | "added-disabled" | "remove" | "removing" | "settings";
@@ -229,7 +232,7 @@ export const FeedCard = ({
       borderRadius={borderless ? 0 : "md"}
       p={3}
     >
-      <HStack spacing={3} align="start">
+      <HStack spacing={3} align="start" flexWrap="wrap">
         <Box flexShrink={0} opacity={state === "added" || state === "removing" ? 0.7 : 1}>
           {imgError ? (
             <Box
@@ -267,7 +270,7 @@ export const FeedCard = ({
           )}
         </Box>
 
-        <Box flex={1} minW={0} opacity={state === "added" || state === "removing" ? 0.7 : 1}>
+        <Box flex={1} minW="100px" opacity={state === "added" || state === "removing" ? 0.7 : 1}>
           <HStack spacing={2} flexWrap="wrap">
             <Text fontWeight="bold" noOfLines={1}>
               {searchQuery ? (
@@ -323,7 +326,7 @@ export const FeedCard = ({
             </Text>
           )}
           {feed.description && (
-            <Text color="gray.400" noOfLines={1} fontSize="sm">
+            <Text color="gray.400" noOfLines={wrapDescription ? undefined : 1} fontSize="sm">
               {searchQuery ? (
                 <Highlight
                   query={searchQuery}
@@ -339,7 +342,7 @@ export const FeedCard = ({
         </Box>
 
         {!hideActions && !fullWidthAction && (
-          <Box flexShrink={0}>
+          <Box flexShrink={0} ml="auto">
             {isAddable && (
               <HStack spacing={2}>
                 <VisuallyHidden role="status" aria-live="polite" aria-atomic="true">
@@ -357,9 +360,7 @@ export const FeedCard = ({
                     variant="outline"
                     onClick={isRemoving ? (e) => e.preventDefault() : onRemove}
                     aria-label={
-                      isRemoving
-                        ? `Removing ${feed.title} feed...`
-                        : `Remove ${feed.title} feed`
+                      isRemoving ? `Removing ${feed.title} feed...` : `Remove ${feed.title} feed`
                     }
                     aria-busy={isRemoving || undefined}
                     aria-disabled={isRemoving || undefined}
@@ -378,8 +379,15 @@ export const FeedCard = ({
                   size="sm"
                   onClick={handleAddButtonClick}
                   aria-label={mainButtonLabel[mainButtonMode]}
-                  aria-busy={mainButtonMode === "adding" || mainButtonMode === "removing" || undefined}
-                  aria-disabled={mainButtonMode !== "add" && mainButtonMode !== "remove" && mainButtonMode !== "settings" || undefined}
+                  aria-busy={
+                    mainButtonMode === "adding" || mainButtonMode === "removing" || undefined
+                  }
+                  aria-disabled={
+                    (mainButtonMode !== "add" &&
+                      mainButtonMode !== "remove" &&
+                      mainButtonMode !== "settings") ||
+                    undefined
+                  }
                   variant={mainButtonMode === "remove" ? "outline" : undefined}
                 >
                   {mainButtonMode === "adding" && <Spinner size="xs" />}
@@ -498,10 +506,21 @@ export const FeedCard = ({
                 colorScheme={mainButtonMode === "remove" ? undefined : "blue"}
                 width="full"
                 onClick={handleAddButtonClick}
-                variant={mainButtonMode === "remove" || mainButtonMode === "added-disabled" ? "outline" : "solid"}
+                variant={
+                  mainButtonMode === "remove" || mainButtonMode === "added-disabled"
+                    ? "outline"
+                    : "solid"
+                }
                 aria-label={mainButtonLabel[mainButtonMode]}
-                aria-busy={mainButtonMode === "adding" || mainButtonMode === "removing" || undefined}
-                aria-disabled={mainButtonMode !== "add" && mainButtonMode !== "remove" && mainButtonMode !== "settings" || undefined}
+                aria-busy={
+                  mainButtonMode === "adding" || mainButtonMode === "removing" || undefined
+                }
+                aria-disabled={
+                  (mainButtonMode !== "add" &&
+                    mainButtonMode !== "remove" &&
+                    mainButtonMode !== "settings") ||
+                  undefined
+                }
               >
                 {mainButtonMode === "adding" && (
                   <>
@@ -529,9 +548,7 @@ export const FeedCard = ({
                   mt={2}
                   onClick={isRemoving ? (e) => e.preventDefault() : onRemove}
                   aria-label={
-                    isRemoving
-                      ? `Removing ${feed.title} feed...`
-                      : `Remove ${feed.title} feed`
+                    isRemoving ? `Removing ${feed.title} feed...` : `Remove ${feed.title} feed`
                   }
                   aria-busy={isRemoving || undefined}
                   aria-disabled={isRemoving || undefined}
