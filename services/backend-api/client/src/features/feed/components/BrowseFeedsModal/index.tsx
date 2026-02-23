@@ -201,8 +201,15 @@ export const BrowseFeedsModal = ({
                 </AlertDescription>
               </Alert>
             )}
+            {/* key forces remount when search query or results change so Google Translate
+                processes new content as fresh DOM nodes. */}
             {isSearchActive && (
-              <Box as="section" aria-label="Feed list" opacity={isAtLimit ? 0.85 : 1}>
+              <Box
+                key={`${searchState.activeQuery}-${searchState.validationStatus}-${searchState.totalResults}`}
+                as="section"
+                aria-label="Feed list"
+                opacity={isAtLimit ? 0.85 : 1}
+              >
                 <FeedDiscoverySearchResults state={searchState} />
               </Box>
             )}
