@@ -77,7 +77,7 @@ export const BrowseFeedsModal = ({
   }
 
   const { data, getHighlightFeeds, isLoading, error, refetch } = useCuratedFeeds(
-    selectedCategory ? { category: selectedCategory } : undefined,
+    selectedCategory ? { category: selectedCategory } : undefined
   );
 
   const handleSearchChange = useCallback((query: string) => {
@@ -131,12 +131,12 @@ export const BrowseFeedsModal = ({
       if (isLoadingAll) {
         const lastIndex = feeds.length - 1;
         const lastItem = document.querySelector(
-          `[data-category-feed-index="${lastIndex}"] button`,
+          `[data-category-feed-index="${lastIndex}"] button`
         ) as HTMLElement | null;
         lastItem?.focus();
       } else {
         const nextItem = document.querySelector(
-          `[data-category-feed-index="${previousCount}"] button`,
+          `[data-category-feed-index="${previousCount}"] button`
         ) as HTMLElement | null;
         nextItem?.focus();
       }
@@ -206,8 +206,16 @@ export const BrowseFeedsModal = ({
                 <FeedDiscoverySearchResults state={searchState} />
               </Box>
             )}
+            {/* key forces a full remount when category changes. Google Translate
+                does not re-translate text when React replaces children inside an already-translated
+                container; remounting creates fresh DOM nodes that Google Translate picks up. */}
             {!isSearchActive && data && !isLoading && !error && (
-              <Box as="section" aria-label="Feed list" opacity={isAtLimit ? 0.85 : 1}>
+              <Box
+                key={selectedCategory ?? "all"}
+                as="section"
+                aria-label="Feed list"
+                opacity={isAtLimit ? 0.85 : 1}
+              >
                 {selectedCategory === undefined ? (
                   <Stack spacing={6}>
                     {highlights.map(({ category, feeds }) => {
@@ -247,7 +255,7 @@ export const BrowseFeedsModal = ({
                               const cardProps = getFeedCardPropsFromState(
                                 feedActionStates,
                                 feed.url,
-                                isAtLimit,
+                                isAtLimit
                               );
 
                               return (
@@ -290,7 +298,7 @@ export const BrowseFeedsModal = ({
                       role="list"
                       aria-label={`${selectedCategoryLabel} feeds, showing ${Math.min(
                         visibleCount,
-                        totalFeeds,
+                        totalFeeds
                       )} of ${totalFeeds}`}
                       spacing={2}
                       listStyleType="none"
@@ -299,7 +307,7 @@ export const BrowseFeedsModal = ({
                         const cardProps = getFeedCardPropsFromState(
                           feedActionStates,
                           feed.url,
-                          isAtLimit,
+                          isAtLimit
                         );
 
                         return (

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Button, Collapse, HStack, Stack, Text, VisuallyHidden } from "@chakra-ui/react";
 import { CheckCircleIcon, ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
 import { AddConnectionDialog } from "../../../feedConnections/components/AddConnectionDialog";
@@ -28,6 +28,23 @@ export const SetupChecklist = ({ feeds, onConnectionCreated, onDismiss }: SetupC
   const feedCountAtDialogClose = useRef<number | null>(null);
 
   const isComplete = feeds.length === 0;
+  const [announcement, setAnnouncement] = useState("");
+  const shouldAnnounce = useRef(false);
+
+  const announceStatus = useCallback(() => {
+    if (!shouldAnnounce.current) return;
+    shouldAnnounce.current = false;
+
+    if (feeds.length === 0) {
+      setAnnouncement("All feeds are delivering");
+    } else {
+      setAnnouncement(feeds.length === 1 ? "1 feed remaining" : `${feeds.length} feeds remaining`);
+    }
+  }, [feeds.length]);
+
+  useEffect(() => {
+    announceStatus();
+  }, [announceStatus]);
 
   const sortedFeeds = useMemo(
     () =>
@@ -62,6 +79,7 @@ export const SetupChecklist = ({ feeds, onConnectionCreated, onDismiss }: SetupC
 
   const handleDialogClose = () => {
     feedCountAtDialogClose.current = feeds.length;
+    shouldAnnounce.current = true;
     setActiveConnectionFeedId(undefined);
     setAddConnectionType(undefined);
     onConnectionCreated();
@@ -149,7 +167,7 @@ export const SetupChecklist = ({ feeds, onConnectionCreated, onDismiss }: SetupC
         )}
 
         <VisuallyHidden role="status" aria-live="polite" aria-atomic="true">
-          {isComplete ? "All feeds are delivering" : remainingLabel}
+          {announcement}
         </VisuallyHidden>
       </Box>
 

@@ -56,8 +56,8 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
     if (added) {
       notifyInfo(
         `Successfully added ${getMessageBuilderComponentLabel(
-          childType,
-        )} component under ${getMessageBuilderComponentLabel(component.type)}`,
+          childType
+        )} component under ${getMessageBuilderComponentLabel(component.type)}`
       );
     }
   };
@@ -139,8 +139,10 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
               )}
           </HStack>
         </HStack>{" "}
-        {isSelected && isDesktop && (
-          <Box position="absolute" right="5px" top="5px">
+        {/* Always render the button (hidden when not selected) so Google Translate
+            processes it on initial load instead of missing dynamically inserted nodes. */}
+        {isDesktop && (
+          <Box position="absolute" right="5px" top="5px" hidden={!isSelected}>
             <AddComponentButton
               component={component}
               canHaveChildren={canHaveChildren}
@@ -177,7 +179,10 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
           onClose={() => setIsConfigPanelOpen(false)}
         />
       )}
-      {(hasChildren || hasAccessory) && isExpanded && (
+      {/* Always render children (NavigableTreeItemGroup handles hiding via hidden attribute).
+          This ensures child nodes exist in the DOM on initial render so Google Translate
+          can process them before the async expand fires. */}
+      {(hasChildren || hasAccessory) && (
         <VStack align="stretch" spacing={0}>
           <NavigableTreeItemGroup>
             {component.children?.map((child) => (

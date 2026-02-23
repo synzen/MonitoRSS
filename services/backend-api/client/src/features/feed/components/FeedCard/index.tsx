@@ -14,8 +14,16 @@ import {
   Highlight,
   VisuallyHidden,
 } from "@chakra-ui/react";
-import { CheckIcon, WarningIcon } from "@chakra-ui/icons";
-import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
+import {
+  AddIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  SmallCloseIcon,
+  RepeatIcon,
+  SettingsIcon,
+  WarningIcon,
+} from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -360,7 +368,9 @@ export const FeedCard = ({
                         <Spinner size="xs" mr={1} /> Removing...
                       </>
                     ) : (
-                      "Remove"
+                      <>
+                        <SmallCloseIcon boxSize={4} aria-hidden="true" mr={1} /> Remove
+                      </>
                     )}
                   </Button>
                 )}
@@ -386,20 +396,32 @@ export const FeedCard = ({
                       <Spinner size="xs" mr={1} /> Removing...
                     </>
                   )}
-                  {mainButtonMode === "remove" && "Remove"}
-                  {mainButtonMode === "settings" && <>Feed settings &rarr;</>}
+                  {mainButtonMode === "remove" && (
+                    <>
+                      <SmallCloseIcon boxSize={4} aria-hidden="true" mr={1} /> Remove
+                    </>
+                  )}
+                  {mainButtonMode === "settings" && (
+                    <>
+                      <SettingsIcon boxSize={3} aria-hidden="true" mr={1} /> Feed settings &rarr;
+                    </>
+                  )}
                   {mainButtonMode === "added-disabled" && (
                     <>
                       Added <CheckIcon ml={1} aria-hidden="true" />
                     </>
                   )}
-                  {mainButtonMode === "add" && "+ Add"}
+                  {mainButtonMode === "add" && (
+                    <>
+                      <AddIcon boxSize={3} aria-hidden="true" mr={1} /> Add
+                    </>
+                  )}
                 </Button>
               </HStack>
             )}
             {state === "error" && (
               <Button size="sm" onClick={onAdd} aria-describedby={errorId}>
-                Retry
+                <RepeatIcon boxSize={3} aria-hidden="true" mr={1} /> Retry
               </Button>
             )}
             {state === "limit-reached" && (
@@ -533,14 +555,27 @@ export const FeedCard = ({
                     <Spinner size="xs" mr={2} /> Removing...
                   </>
                 )}
-                {mainButtonMode === "remove" && "Remove"}
-                {mainButtonMode === "settings" && <>Go to feed settings &rarr;</>}
+                {mainButtonMode === "remove" && (
+                  <>
+                    <SmallCloseIcon boxSize={4} aria-hidden="true" mr={1} /> Remove
+                  </>
+                )}
+                {mainButtonMode === "settings" && (
+                  <>
+                    <SettingsIcon boxSize={3} aria-hidden="true" mr={1} /> Go to feed settings
+                    &rarr;
+                  </>
+                )}
                 {mainButtonMode === "added-disabled" && (
                   <>
                     Added <CheckIcon ml={2} aria-hidden="true" />
                   </>
                 )}
-                {mainButtonMode === "add" && "+ Add Feed"}
+                {mainButtonMode === "add" && (
+                  <>
+                    <AddIcon boxSize={3} aria-hidden="true" mr={1} /> Add Feed
+                  </>
+                )}
               </Button>
               {showRemoveAsSeparateButton && (
                 <Button
@@ -559,7 +594,9 @@ export const FeedCard = ({
                       <Spinner size="xs" mr={2} /> Removing...
                     </>
                   ) : (
-                    "Remove"
+                    <>
+                      <SmallCloseIcon boxSize={4} aria-hidden="true" mr={1} /> Remove
+                    </>
                   )}
                 </Button>
               )}
@@ -567,7 +604,7 @@ export const FeedCard = ({
           )}
           {state === "error" && (
             <Button colorScheme="blue" width="full" onClick={onAdd} aria-describedby={errorId}>
-              Retry
+              <RepeatIcon boxSize={3} aria-hidden="true" mr={1} /> Retry
             </Button>
           )}
           {state === "limit-reached" && (

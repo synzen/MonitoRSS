@@ -39,7 +39,10 @@ export const NavigableTreeItemGroup = (props: ComponentProps<typeof chakra.div>)
     <chakra.div
       role="group"
       className="navigable-tree-group"
-      display={isExpanded ? "block" : "none"}
+      // Use hidden attribute instead of display:none so child nodes exist in the DOM on
+      // initial render. Google Translate only processes nodes present when it first runs;
+      // display:none prevents the nodes from existing, while hidden keeps them in the tree.
+      {...(isExpanded ? {} : { hidden: true })}
       {...props}
     />
   );
