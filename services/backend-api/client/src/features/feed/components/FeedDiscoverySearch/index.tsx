@@ -69,11 +69,11 @@ export function useFeedDiscoverySearchState({
 
   const isUrlInput = URL_PATTERN.test(activeQuery);
   const { data } = useCuratedFeeds(
-    activeQuery && !isUrlInput ? { search: activeQuery } : undefined,
+    activeQuery && !isUrlInput ? { search: activeQuery } : undefined
   );
 
   const hasActiveSearch = activeQuery.length > 0;
-  const totalResults = isUrlInput ? 0 : (data?.feeds.length ?? 0);
+  const totalResults = isUrlInput ? 0 : data?.feeds.length ?? 0;
   const visibleResults = data?.feeds.slice(0, visibleCount) ?? [];
 
   useEffect(() => {
@@ -94,7 +94,7 @@ export function useFeedDiscoverySearchState({
         (searchInputRef as MutableRefObject<HTMLInputElement | null>).current = node;
       }
     },
-    [searchInputRef],
+    [searchInputRef]
   );
 
   const getCategoryLabel = (categoryId: string) =>
@@ -160,7 +160,7 @@ export function useFeedDiscoverySearchState({
 
     requestAnimationFrame(() => {
       const nextItem = document.querySelector(
-        `[data-feed-index="${previousCount}"] button`,
+        `[data-feed-index="${previousCount}"] button`
       ) as HTMLElement | null;
 
       nextItem?.focus();
@@ -186,7 +186,7 @@ export function useFeedDiscoverySearchState({
         }
       }
     },
-    [onSearchChange, resetValidation, validateUrl],
+    [onSearchChange, resetValidation, validateUrl]
   );
 
   return {
@@ -261,7 +261,8 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
       {state.totalResults > 0 && (
         <Box aria-live="polite" mt={3}>
           <Text fontSize="sm" color="gray.400">
-            {state.totalResults} result{state.totalResults !== 1 ? "s" : ""}
+            {state.totalResults} result{state.totalResults !== 1 ? "s" : ""} for &ldquo;
+            {state.activeQuery}&rdquo;
           </Text>
         </Box>
       )}
@@ -273,7 +274,7 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
             role="list"
             aria-label={`Search results, showing ${Math.min(
               state.visibleCount,
-              state.totalResults,
+              state.totalResults
             )} of ${state.totalResults}`}
             spacing={2}
             listStyleType="none"
@@ -282,7 +283,7 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
               const cardProps = getFeedCardPropsFromState(
                 state.feedActionStates,
                 feed.url,
-                state.isAtLimit,
+                state.isAtLimit
               );
 
               return (

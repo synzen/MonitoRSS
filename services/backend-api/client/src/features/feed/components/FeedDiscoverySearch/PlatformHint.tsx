@@ -51,6 +51,9 @@ export const PlatformHint = ({ query }: { query: string }) => {
   if (hint) {
     return (
       <Box borderWidth="1px" borderColor="blue.700" borderRadius="md" bg="blue.900" px={4} py={3}>
+        <Text fontSize="sm" color="gray.300" mb={2}>
+          No results for &ldquo;{query}&rdquo;
+        </Text>
         <Text fontSize="sm" color="gray.100">
           {hint.description}
         </Text>
@@ -66,7 +69,7 @@ export const PlatformHint = ({ query }: { query: string }) => {
 
   return (
     <Text color="gray.400">
-      No matches in our popular feeds list. Many websites have feeds - try pasting a URL (e.g., a
+      No results for &ldquo;{query}&rdquo;. Many websites have feeds - try pasting a URL (e.g., a
       YouTube channel or news site) and we&apos;ll check automatically.
     </Text>
   );
