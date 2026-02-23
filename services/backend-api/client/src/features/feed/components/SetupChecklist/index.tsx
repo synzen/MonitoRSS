@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Box, Button, Heading, HStack, Stack, Text, VisuallyHidden } from "@chakra-ui/react";
-import { CheckCircleIcon } from "@chakra-ui/icons";
+import { Box, Button, Collapse, HStack, Stack, Text, VisuallyHidden } from "@chakra-ui/react";
+import { CheckCircleIcon, ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
 import { AddConnectionDialog } from "../../../feedConnections/components/AddConnectionDialog";
 import type { ConnectionType } from "../../../feedConnections/constants";
 import { SetupChecklistCard } from "./SetupChecklistCard";
@@ -21,8 +21,10 @@ export const SetupChecklist = ({ feeds, onConnectionCreated, onDismiss }: SetupC
   const [addConnectionType, setAddConnectionType] = useState<
     { type: ConnectionType } | undefined
   >();
+  const [isExpanded, setIsExpanded] = useState(true);
+  const cardListId = "setup-checklist-feeds";
   const doneButtonRef = useRef<HTMLButtonElement>(null);
-  const sectionRef = useRef<HTMLElement>(null);
+  const sectionRef = useRef<HTMLDivElement>(null);
   const feedCountAtDialogClose = useRef<number | null>(null);
 
   const isComplete = feeds.length === 0;
@@ -66,52 +68,90 @@ export const SetupChecklist = ({ feeds, onConnectionCreated, onDismiss }: SetupC
   };
 
   return (
-    <Box
-      ref={sectionRef}
-      as="section"
-      tabIndex={-1}
-      aria-label="Feed delivery setup"
-      bg="gray.800"
-      borderWidth="1px"
-      borderColor="gray.600"
-      borderRadius="md"
-      p={5}
-    >
-      <Heading as="h2" size="md" mb={isComplete ? 4 : 1}>
-        Set up delivery
-      </Heading>
-
-      <VisuallyHidden role="status" aria-live="polite" aria-atomic="true">
-        {isComplete ? "All feeds are delivering" : remainingLabel}
-      </VisuallyHidden>
-
-      {isComplete ? (
-        <HStack justifyContent="space-between">
-          <HStack spacing={2}>
-            <CheckCircleIcon color="green.300" aria-hidden="true" />
-            <Text>All feeds are delivering</Text>
+    <>
+      <Box
+        ref={sectionRef}
+        role="region"
+        aria-label="Feed delivery setup"
+        bg="gray.700"
+        borderWidth="1px"
+        borderColor="gray.600"
+        borderLeftWidth="4px"
+        borderLeftColor="blue.300"
+        borderRadius="md"
+        p={4}
+        mt={2}
+      >
+        {isComplete ? (
+          <HStack justifyContent="space-between" flexWrap="wrap" gap={2}>
+            <HStack spacing={2}>
+              <CheckCircleIcon color="green.300" aria-hidden="true" />
+              <Text>All feeds are delivering</Text>
+            </HStack>
+            <Button ref={doneButtonRef} size="sm" colorScheme="blue" onClick={onDismiss}>
+              Done
+            </Button>
           </HStack>
-          <Button ref={doneButtonRef} size="sm" colorScheme="blue" onClick={onDismiss}>
-            Done
-          </Button>
-        </HStack>
-      ) : (
-        <>
-          <Text color="gray.400" mb={4}>
-            Choose where each feed&apos;s articles are delivered.
-          </Text>
+        ) : (
+          <>
+            <Button
+              variant="unstyled"
+              display="flex"
+              alignItems="center"
+              width="100%"
+              height="auto"
+              textAlign="left"
+              fontWeight="normal"
+              whiteSpace="normal"
+              onClick={() => setIsExpanded((prev) => !prev)}
+              aria-expanded={isExpanded}
+              aria-controls={cardListId}
+            >
+              <HStack spacing={2} flex={1}>
+                <Box flex={1}>
+                  <Text fontWeight="semibold">
+                    {feeds.length} feed{feeds.length !== 1 ? "s" : ""} need
+                    {feeds.length === 1 ? "s" : ""} delivery connections
+                  </Text>
+                  <Text color="gray.400" fontSize="sm">
+                    Choose where each feed&apos;s articles are delivered.
+                  </Text>
+                </Box>
+                <Box flexShrink={0} aria-hidden="true">
+                  {isExpanded ? <ChevronUpIcon boxSize={5} /> : <ChevronDownIcon boxSize={5} />}
+                </Box>
+              </HStack>
+            </Button>
 
-          <Stack spacing={3} mb={4}>
-            {sortedFeeds.map((feed) => (
-              <SetupChecklistCard key={feed.id} feed={feed} onAddConnection={handleAddConnection} />
-            ))}
-          </Stack>
+            <Collapse in={isExpanded} animateOpacity>
+              <Stack
+                id={cardListId}
+                spacing={3}
+                mt={4}
+                mb={2}
+                aria-label="Feeds needing delivery setup"
+                role="region"
+                aria-hidden={!isExpanded}
+              >
+                {sortedFeeds.map((feed) => (
+                  <SetupChecklistCard
+                    key={feed.id}
+                    feed={feed}
+                    onAddConnection={handleAddConnection}
+                  />
+                ))}
+              </Stack>
+              <Text color="gray.400" fontSize="sm" aria-hidden="true">
+                {remainingLabel}
+              </Text>
+            </Collapse>
+          </>
+        )}
 
-          <Text color="gray.400" fontSize="sm" aria-hidden="true">
-            {remainingLabel}
-          </Text>
-        </>
-      )}
+        <VisuallyHidden role="status" aria-live="polite" aria-atomic="true">
+          {isComplete ? "All feeds are delivering" : remainingLabel}
+        </VisuallyHidden>
+      </Box>
 
       <AddConnectionDialog
         feedId={activeConnectionFeedId}
@@ -120,6 +160,6 @@ export const SetupChecklist = ({ feeds, onConnectionCreated, onDismiss }: SetupC
         onClose={handleDialogClose}
         finalFocusRef={sectionRef}
       />
-    </Box>
+    </>
   );
 };

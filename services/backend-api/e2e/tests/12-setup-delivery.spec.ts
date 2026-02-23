@@ -30,7 +30,7 @@ test.describe("Setup Delivery Checklist", () => {
     await deleteAllUserFeeds(page);
     for (const feed of originalFeeds) {
       await createFeed(page, { url: feed.url, title: feed.title }).catch(
-        () => {},
+        () => {}
       );
     }
     await context.close();
@@ -59,34 +59,24 @@ test.describe("Setup Delivery Checklist", () => {
     }) => {
       await page.goto("/feeds");
 
-      const checklist = page.locator(
-        'section[aria-label="Feed delivery setup"]',
+      const alertTitle = page.getByText(
+        /\d+ feeds? needs? delivery connections/
       );
-
-      await expect(checklist).toBeVisible({ timeout: 15000 });
-
-      await expect(
-        checklist.getByRole("heading", { name: "Set up delivery" }),
-      ).toBeVisible();
+      await expect(alertTitle).toBeVisible({ timeout: 15000 });
 
       await expect(
-        checklist.getByText("Choose where each feed's articles are delivered."),
+        page.getByText("Choose where each feed's articles are delivered.")
       ).toBeVisible();
 
-      await expect(
-        checklist.getByText(feedWithoutConnection.title),
-      ).toBeVisible();
-
-      await expect(
-        checklist.getByText(/0 of \d+ feeds delivering/),
-      ).toBeVisible();
+      // Cards are expanded by default
+      await expect(page.getByText(feedWithoutConnection.title)).toBeVisible();
     });
 
     test("shows feeds table alongside the checklist", async ({ page }) => {
       await page.goto("/feeds");
 
       await expect(
-        page.getByRole("heading", { name: "Set up delivery" }),
+        page.getByText(/\d+ feeds? needs? delivery connections/)
       ).toBeVisible({ timeout: 15000 });
 
       await expect(page.getByRole("table")).toBeVisible();
@@ -112,23 +102,19 @@ test.describe("Setup Delivery Checklist", () => {
 
       await page.goto("/feeds");
 
-      const checklist = page.locator(
-        'section[aria-label="Feed delivery setup"]',
+      const alertTitle = page.getByText(
+        /\d+ feeds? needs? delivery connections/
       );
-      await expect(checklist).toBeVisible({ timeout: 15000 });
-      await expect(checklist.getByText(feed.title)).toBeVisible();
+      await expect(alertTitle).toBeVisible({ timeout: 15000 });
 
       await createConnection(page, feed.id, channelId);
 
-      // Trigger refetch by closing and reopening the page tab would be complex,
-      // so we reload but stay on the same page to trigger the success state.
-      // Since hadUnconfiguredFeeds resets on reload, we need to test the
-      // success state within a single page session. Instead, we verify that
-      // after reload the checklist is gone (clean state).
+      // After reload, the checklist should no longer be visible since all
+      // feeds are now configured.
       await page.reload();
 
       await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
-      await expect(checklist).not.toBeVisible();
+      await expect(alertTitle).not.toBeVisible();
     });
   });
 
@@ -171,7 +157,7 @@ test.describe("Setup Delivery Checklist", () => {
       await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
 
       await expect(
-        page.getByRole("heading", { name: "Set up delivery" }),
+        page.getByText(/\d+ feeds? needs? delivery connections/)
       ).not.toBeVisible();
     });
   });

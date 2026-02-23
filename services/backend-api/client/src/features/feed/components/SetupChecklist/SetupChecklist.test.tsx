@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -105,10 +105,10 @@ describe("SetupChecklist", () => {
     vi.clearAllMocks();
   });
 
-  it("renders heading 'Set up delivery'", () => {
+  it("renders title with feed count", () => {
     renderWithChakra(<SetupChecklist {...defaultProps} />);
 
-    expect(screen.getByText("Set up delivery")).toBeInTheDocument();
+    expect(screen.getByText("3 feeds need delivery connections")).toBeInTheDocument();
   });
 
   it("renders description text", () => {
@@ -119,18 +119,40 @@ describe("SetupChecklist", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows correct remaining count", () => {
+  it("shows correct remaining count in live region", () => {
     renderWithChakra(<SetupChecklist {...defaultProps} />);
 
     expect(screen.getAllByText("3 feeds remaining").length).toBeGreaterThan(0);
   });
 
-  it("renders all feed cards", () => {
+  it("feed cards are visible by default", () => {
     renderWithChakra(<SetupChecklist {...defaultProps} />);
 
-    expect(screen.getByText("Feed One")).toBeInTheDocument();
-    expect(screen.getByText("Feed Two")).toBeInTheDocument();
-    expect(screen.getByText("Feed Three")).toBeInTheDocument();
+    expect(screen.getByText("Feed One")).toBeVisible();
+    expect(screen.getByText("Feed Two")).toBeVisible();
+    expect(screen.getByText("Feed Three")).toBeVisible();
+  });
+
+  it("hides feed cards when header is clicked", async () => {
+    const { user } = renderWithChakra(<SetupChecklist {...defaultProps} />);
+
+    await user.click(screen.getByRole("button", { name: /3 feeds need delivery connections/ }));
+
+    await waitFor(() => {
+      expect(screen.queryByText("Feed One")).not.toBeVisible();
+    });
+  });
+
+  it("toggle button has correct aria-expanded attribute", async () => {
+    const { user } = renderWithChakra(<SetupChecklist {...defaultProps} />);
+
+    const toggleButton = screen.getByRole("button", {
+      name: /3 feeds need delivery connections/,
+    });
+    expect(toggleButton).toHaveAttribute("aria-expanded", "true");
+
+    await user.click(toggleButton);
+    expect(toggleButton).toHaveAttribute("aria-expanded", "false");
   });
 
   it("shows success state when feeds array is empty", () => {
@@ -138,12 +160,8 @@ describe("SetupChecklist", () => {
       <SetupChecklist feeds={[]} onConnectionCreated={vi.fn()} onDismiss={vi.fn()} />
     );
 
-    expect(screen.getByText("Set up delivery")).toBeInTheDocument();
     expect(screen.getAllByText("All feeds are delivering").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Done" })).toBeInTheDocument();
-    expect(
-      screen.queryByText("Choose where each feed's articles are delivered.")
-    ).not.toBeInTheDocument();
   });
 
   it("calls onDismiss when Done is clicked", async () => {

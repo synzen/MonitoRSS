@@ -35,7 +35,7 @@ const {
       category: string;
       domain: string;
       description: string;
-    }> & { url: string }
+    }> & { url: string },
   ) {
     return {
       title: `Feed ${overrides.url}`,
@@ -52,8 +52,8 @@ const {
         url: `https://example.com/${cat.id}-${i}`,
         title: `${cat.label} Feed ${i}`,
         category: cat.id,
-      })
-    )
+      }),
+    ),
   );
 
   const _mockCreateUserFeed = vi.fn();
@@ -280,9 +280,8 @@ vi.mock("../features/feed/components/SetupChecklist", () => ({
     feeds: Array<{ id: string }>;
     onDismiss: () => void;
   }) => (
-    <div data-testid="setup-checklist">
-      <span>Set up delivery</span>
-      <span>{feeds.length} feeds to configure</span>
+    <div data-testid="setup-checklist" role="region" aria-label="Feed delivery setup">
+      <span>{feeds.length} feeds need delivery connections</span>
       <button onClick={onDismiss}>Done</button>
     </div>
   ),
@@ -302,7 +301,7 @@ const renderPage = () => {
           </PricingDialogContext.Provider>
         </MemoryRouter>
       </ChakraProvider>
-    </QueryClientProvider>
+    </QueryClientProvider>,
   );
 
   return { user, ...result };
@@ -321,7 +320,7 @@ describe("UserFeeds - Discovery Mode", () => {
     renderPage();
     expect(screen.getByText("Get news delivered to your Discord")).toBeInTheDocument();
     expect(
-      screen.getByText("Browse popular feeds to get started, or paste a URL to check any website.")
+      screen.getByText("Browse popular feeds to get started, or paste a URL to check any website."),
     ).toBeInTheDocument();
   });
 
@@ -590,7 +589,7 @@ describe("UserFeeds - Non-discovery mode", () => {
             </PricingDialogContext.Provider>
           </MemoryRouter>
         </ChakraProvider>
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
 
     expect(screen.getByText("Get news delivered to your Discord")).toBeInTheDocument();
@@ -634,7 +633,7 @@ describe("UserFeeds - Returning user Add Feed button", () => {
 
     expect(screen.getByText("1 feed added")).toBeInTheDocument();
     expect(
-      screen.getByText("Open a feed to set up where articles are delivered.")
+      screen.getByText("Open a feed to set up where articles are delivered."),
     ).toBeInTheDocument();
   });
 
