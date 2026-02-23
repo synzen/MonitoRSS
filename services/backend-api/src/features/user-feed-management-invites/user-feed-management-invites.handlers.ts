@@ -64,7 +64,7 @@ export async function createInviteHandler(
       );
 
   if (!feed) {
-    throw new HttpError(404, ApiErrorCode.FEED_NOT_FOUND);
+    throw new HttpError(404, ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const inviteType =
@@ -90,7 +90,11 @@ export async function resendInviteHandler(
   const { id: inviteId } = request.params;
 
   if (!Types.ObjectId.isValid(inviteId)) {
-    throw new HttpError(404, ApiErrorCode.FEED_NOT_FOUND, "Invalid Object Id.");
+    throw new HttpError(
+      404,
+      ApiErrorCode.USER_FEED_NOT_FOUND,
+      "Invalid Object Id.",
+    );
   }
 
   const feed =
@@ -102,7 +106,7 @@ export async function resendInviteHandler(
   if (!feed) {
     throw new HttpError(
       404,
-      ApiErrorCode.FEED_NOT_FOUND,
+      ApiErrorCode.USER_FEED_NOT_FOUND,
       `Invite ${inviteId} not found`,
     );
   }
@@ -121,7 +125,11 @@ export async function updateInviteHandler(
   const { connections } = request.body;
 
   if (!Types.ObjectId.isValid(inviteId)) {
-    throw new HttpError(404, ApiErrorCode.FEED_NOT_FOUND, "Invalid Object Id.");
+    throw new HttpError(
+      404,
+      ApiErrorCode.USER_FEED_NOT_FOUND,
+      "Invalid Object Id.",
+    );
   }
 
   const feed =
@@ -133,7 +141,7 @@ export async function updateInviteHandler(
   if (!feed) {
     throw new HttpError(
       404,
-      ApiErrorCode.FEED_NOT_FOUND,
+      ApiErrorCode.USER_FEED_NOT_FOUND,
       `Invite ${inviteId} not found`,
     );
   }
@@ -157,7 +165,11 @@ export async function updateInviteStatusHandler(
   const { status } = request.body;
 
   if (!Types.ObjectId.isValid(inviteId)) {
-    throw new HttpError(404, ApiErrorCode.FEED_NOT_FOUND, "Invalid Object Id.");
+    throw new HttpError(
+      404,
+      ApiErrorCode.USER_FEED_NOT_FOUND,
+      "Invalid Object Id.",
+    );
   }
 
   const feed =
@@ -169,7 +181,7 @@ export async function updateInviteStatusHandler(
   if (!feed) {
     throw new HttpError(
       404,
-      ApiErrorCode.FEED_NOT_FOUND,
+      ApiErrorCode.USER_FEED_NOT_FOUND,
       `Invite ${inviteId} not found`,
     );
   }
@@ -194,7 +206,11 @@ export async function deleteInviteHandler(
   const { id: inviteId } = request.params;
 
   if (!Types.ObjectId.isValid(inviteId)) {
-    throw new HttpError(404, ApiErrorCode.FEED_NOT_FOUND, "Invalid Object Id.");
+    throw new HttpError(
+      404,
+      ApiErrorCode.USER_FEED_NOT_FOUND,
+      "Invalid Object Id.",
+    );
   }
 
   const feed =
@@ -206,7 +222,7 @@ export async function deleteInviteHandler(
   if (!feed) {
     throw new HttpError(
       404,
-      ApiErrorCode.FEED_NOT_FOUND,
+      ApiErrorCode.USER_FEED_NOT_FOUND,
       `Invite ${inviteId} not found`,
     );
   }

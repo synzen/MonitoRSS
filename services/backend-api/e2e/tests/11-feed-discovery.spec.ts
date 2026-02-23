@@ -480,6 +480,91 @@ test.describe("Feed Discovery", () => {
     });
   });
 
+  test.describe("Curated Feed Remove Error Handling", () => {
+    test.afterAll(async ({ browser }) => {
+      const context = await createAuthenticatedContext(browser);
+      const page = await context.newPage();
+      await deleteAllUserFeeds(page);
+      await context.close();
+    });
+
+    test("removing a curated feed in browse modal that fails shows inline error with retry", async ({
+      page,
+    }) => {
+      test.setTimeout(60000);
+      await deleteAllUserFeeds(page);
+      await page.goto("/feeds");
+      await expect(
+        page.getByRole("heading", {
+          name: "Get news delivered to your Discord",
+        }),
+      ).toBeVisible({ timeout: 15000 });
+
+      await page
+        .getByRole("radiogroup", { name: "Feed categories" })
+        .getByRole("radio", { name: /Browse All/ })
+        .click();
+
+      await expect(
+        page.getByRole("heading", { name: "Add a Feed" }),
+      ).toBeVisible();
+
+      const dialog = page.getByRole("dialog");
+
+      const modalSearch = dialog.getByRole("textbox", {
+        name: "Search popular feeds or paste a URL",
+      });
+      await modalSearch.fill(`${MOCK_RSS_FEED_URL}&modal-remove-error=1`);
+      await dialog.getByRole("button", { name: "Go" }).click();
+
+      const addButton = dialog
+        .getByRole("button", { name: /^Add .+ feed$/i })
+        .first();
+      await expect(addButton).toBeVisible({ timeout: 30000 });
+      await addButton.click();
+
+      const removeButton = dialog.getByRole("button", {
+        name: /^Remove .+ feed$/i,
+      });
+      await expect(removeButton).toBeVisible({ timeout: 10000 });
+
+      await page.route("**/api/v1/user-feeds/*", (route) => {
+        if (route.request().method() === "DELETE") {
+          return route.fulfill({
+            status: 500,
+            contentType: "application/json",
+            body: JSON.stringify({ message: "Internal server error" }),
+          });
+        }
+
+        return route.continue();
+      });
+
+      await removeButton.click();
+
+      await expect(dialog.getByText("Failed to remove feed")).toBeVisible({
+        timeout: 10000,
+      });
+
+      const retryRemoveButton = dialog.getByRole("button", {
+        name: /^Remove .+ feed$/i,
+      });
+      await expect(retryRemoveButton).toBeVisible();
+
+      await page.unroute("**/api/v1/user-feeds/*");
+
+      await retryRemoveButton.click();
+
+      await expect(
+        dialog.getByRole("button", { name: /^Add .+ feed$/i }).first(),
+      ).toBeVisible({ timeout: 10000 });
+
+      await expect(dialog.getByText("Failed to remove feed")).not.toBeVisible();
+
+      await page.getByRole("button", { name: "Close" }).click();
+    });
+  });
+
   test.describe("Browse Modal - Read Only", () => {
     test("category card opens modal, select category via pill", async ({
       page,

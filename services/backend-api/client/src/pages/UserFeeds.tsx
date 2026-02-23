@@ -223,7 +223,7 @@ const UserFeedsInner: React.FC = () => {
   const addedFeedUrls = useMemo(
     () =>
       Object.entries(feedActionStates)
-        .filter(([, s]) => s.status === "added")
+        .filter(([, s]) => s.status === "added" || s.status === "remove-error")
         .map(([url]) => url),
     [feedActionStates],
   );
@@ -273,9 +273,13 @@ const UserFeedsInner: React.FC = () => {
   const handleCuratedFeedRemove = useCallback(
     async (feedUrl: string) => {
       const currentState = feedActionStates[feedUrl];
-      if (!currentState || currentState.status !== "added") return;
+      if (
+        !currentState ||
+        (currentState.status !== "added" && currentState.status !== "remove-error")
+      )
+        return;
 
-      const { feedId } = currentState;
+      const { feedId, settingsUrl } = currentState;
 
       setFeedActionStates((prev) => ({ ...prev, [feedUrl]: { status: "removing" } }));
 
@@ -290,15 +294,16 @@ const UserFeedsInner: React.FC = () => {
       } catch (err) {
         setFeedActionStates((prev) => ({
           ...prev,
-          [feedUrl]: currentState,
+          [feedUrl]: {
+            status: "remove-error",
+            message: (err as Error).message,
+            settingsUrl,
+            feedId,
+          },
         }));
-        createErrorAlert({
-          title: "Failed to remove feed",
-          description: (err as Error).message,
-        });
       }
     },
-    [feedActionStates, deleteUserFeed, createErrorAlert],
+    [feedActionStates, deleteUserFeed],
   );
 
   const handleUrlFeedAdded = useCallback((_feedId: string, feedUrl: string) => {

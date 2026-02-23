@@ -58,6 +58,7 @@ export const UrlValidationResult = ({
   const [isAdding, setIsAdding] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [addError, setAddError] = useState<ApiAdapterError | null>(null);
+  const [removeError, setRemoveError] = useState<string | null>(null);
   const feedUrl = validationData?.result.resolvedToUrl || url;
 
   useEffect(() => {
@@ -65,6 +66,7 @@ export const UrlValidationResult = ({
     setIsAdding(false);
     setIsRemoving(false);
     setAddError(null);
+    setRemoveError(null);
   }, [url]);
 
   const handleAdd = async (title?: string) => {
@@ -89,6 +91,7 @@ export const UrlValidationResult = ({
   const handleRemove = useCallback(async () => {
     if (!addedFeedId || isRemoving) return;
 
+    setRemoveError(null);
     setIsRemoving(true);
 
     try {
@@ -96,8 +99,9 @@ export const UrlValidationResult = ({
       setAddedFeedId(null);
       setIsRemoving(false);
       onFeedRemoved?.(feedUrl);
-    } catch {
+    } catch (err) {
       setIsRemoving(false);
+      setRemoveError((err as Error).message || "Failed to remove feed");
     }
   }, [addedFeedId, isRemoving, deleteFeed, onFeedRemoved, feedUrl]);
 
@@ -177,6 +181,11 @@ export const UrlValidationResult = ({
         {addError && !isLimitReachedError && (
           <Box mt={2}>
             <InlineErrorAlert title="Failed to add feed" description={addError.message} />
+          </Box>
+        )}
+        {removeError && (
+          <Box mt={2}>
+            <InlineErrorAlert title="Failed to remove feed" description={removeError} />
           </Box>
         )}
       </Box>

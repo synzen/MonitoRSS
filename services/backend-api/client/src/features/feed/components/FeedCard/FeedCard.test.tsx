@@ -465,6 +465,71 @@ describe("FeedCard", () => {
     });
   });
 
+  describe("Remove error state", () => {
+    it("remove-error state shows inline error message with role alert", () => {
+      renderCard({
+        state: "remove-error",
+        errorMessage: "Network error",
+        feedSettingsUrl: "/feeds/123",
+        onRemove: vi.fn(),
+      });
+
+      const alert = screen.getByRole("alert");
+      expect(alert).toHaveTextContent("Network error");
+    });
+
+    it("remove-error state shows red border on card", () => {
+      renderCard({
+        state: "remove-error",
+        errorMessage: "Network error",
+        feedSettingsUrl: "/feeds/123",
+        onRemove: vi.fn(),
+      });
+
+      const article = screen.getByRole("article");
+      expect(article).toHaveStyle({ borderColor: "red.400" });
+    });
+
+    it("remove-error state shows default error message when errorMessage is not provided", () => {
+      renderCard({
+        state: "remove-error",
+        feedSettingsUrl: "/feeds/123",
+        onRemove: vi.fn(),
+      });
+
+      const alert = screen.getByRole("alert");
+      expect(alert).toHaveTextContent("Failed to remove feed");
+    });
+
+    it("remove-error state shows Feed settings button and Remove button for retry", () => {
+      const onRemove = vi.fn();
+      renderCard({
+        state: "remove-error",
+        errorMessage: "Network error",
+        feedSettingsUrl: "/feeds/123",
+        onRemove,
+      });
+
+      expect(
+        screen.getByRole("button", { name: "Go to feed settings for IGN" }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Remove IGN feed" })).toBeInTheDocument();
+    });
+
+    it("remove-error state Remove button calls onRemove for retry", () => {
+      const onRemove = vi.fn();
+      renderCard({
+        state: "remove-error",
+        errorMessage: "Network error",
+        feedSettingsUrl: "/feeds/123",
+        onRemove,
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: "Remove IGN feed" }));
+      expect(onRemove).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe("Search highlighting", () => {
     it("highlights matching text in title when searchQuery provided", () => {
       renderCard({ searchQuery: "IGN" });

@@ -94,7 +94,7 @@ export async function deleteDiscordChannelConnectionHandler(
   const { feedId, connectionId } = request.params;
 
   if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -105,7 +105,7 @@ export async function deleteDiscordChannelConnectionHandler(
     : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
 
   if (!feed) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const isOwner = feed.user.discordUserId === discordUserId;
@@ -159,7 +159,7 @@ export async function createDiscordChannelConnectionHandler(
   const { feedId } = request.params;
 
   if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -170,7 +170,7 @@ export async function createDiscordChannelConnectionHandler(
     : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
 
   if (!feed) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const {
@@ -227,7 +227,7 @@ export async function sendTestArticleHandler(
   const { feedId, connectionId } = request.params;
 
   if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -238,7 +238,7 @@ export async function sendTestArticleHandler(
     : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
 
   if (!feed) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const isOwner = feed.user.discordUserId === discordUserId;
@@ -317,7 +317,7 @@ export async function copyConnectionSettingsHandler(
   const { feedId, connectionId } = request.params;
 
   if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -328,7 +328,7 @@ export async function copyConnectionSettingsHandler(
     : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
 
   if (!feed) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const isOwner = feed.user.discordUserId === discordUserId;
@@ -384,7 +384,7 @@ export async function cloneConnectionHandler(
   const { feedId, connectionId } = request.params;
 
   if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -395,7 +395,7 @@ export async function cloneConnectionHandler(
     : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
 
   if (!feed) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const isOwner = feed.user.discordUserId === discordUserId;
@@ -468,7 +468,7 @@ export async function createPreviewHandler(
   const { feedId, connectionId } = request.params;
 
   if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -479,7 +479,7 @@ export async function createPreviewHandler(
     : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
 
   if (!feed) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const isOwner = feed.user.discordUserId === discordUserId;
@@ -557,7 +557,7 @@ export async function createTemplatePreviewHandler(
   const { feedId } = request.params;
 
   if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -568,7 +568,7 @@ export async function createTemplatePreviewHandler(
     : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
 
   if (!feed) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const body = request.body;
@@ -609,7 +609,7 @@ export async function updateDiscordChannelConnectionHandler(
   const { feedId, connectionId } = request.params;
 
   if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -620,7 +620,7 @@ export async function updateDiscordChannelConnectionHandler(
     : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
 
   if (!feed) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const isOwner = feed.user.discordUserId === discordUserId;

@@ -35,7 +35,7 @@ interface FeedCardProps {
     popular?: boolean;
     url: string;
   };
-  state: "default" | "adding" | "added" | "error" | "limit-reached" | "removing";
+  state: "default" | "adding" | "added" | "error" | "remove-error" | "limit-reached" | "removing";
   onAdd: () => void;
   onRemove?: () => void;
   errorMessage?: string;
@@ -129,7 +129,10 @@ export const FeedCard = ({
       ? getCuratedFeedErrorMessage(errorCode)
       : errorMessage || "Failed to add feed";
 
-  const isAdded = state === "added";
+  const removeErrorMessage =
+    state === "remove-error" ? errorMessage || "Failed to remove feed" : undefined;
+
+  const isAdded = state === "added" || state === "remove-error";
   const isAdding = state === "adding";
   const isRemoving = state === "removing";
   const isAddable = state === "default" || isAdding || isAdded || isRemoving;
@@ -209,7 +212,7 @@ export const FeedCard = ({
       as="article"
       bg="gray.800"
       borderWidth={borderless ? 0 : "1px"}
-      borderColor={state === "error" ? "red.400" : "gray.600"}
+      borderColor={state === "error" || state === "remove-error" ? "red.400" : "gray.600"}
       borderRadius={borderless ? 0 : "md"}
       p={3}
       aria-label={feed.title}
@@ -472,6 +475,17 @@ export const FeedCard = ({
               )}
             </Box>
           )}
+        </Box>
+      )}
+
+      {state === "remove-error" && (
+        <Box mt={2}>
+          <HStack spacing={2} align="start">
+            <WarningIcon color="red.300" mt="2px" aria-hidden="true" />
+            <Text color="red.300" fontSize="sm" role="alert">
+              {removeErrorMessage}
+            </Text>
+          </HStack>
         </Box>
       )}
 

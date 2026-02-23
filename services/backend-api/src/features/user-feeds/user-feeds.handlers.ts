@@ -198,13 +198,13 @@ export async function updateUserFeedsHandler(
   const requestedFeedIds = [...new Set(data.feeds.map((f) => f.id))];
 
   if (!userFeedRepository.areAllValidIds(requestedFeedIds)) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const existingCount = await userFeedRepository.countByIds(requestedFeedIds);
 
   if (existingCount !== requestedFeedIds.length) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -245,7 +245,7 @@ export async function getUserFeedHandler(
   const { feedId } = request.params;
 
   if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -256,7 +256,7 @@ export async function getUserFeedHandler(
     : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
 
   if (!feed) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const acceptedInvite = feed.shareManageOptions?.invites?.find(
@@ -302,7 +302,7 @@ export async function updateUserFeedHandler(
   const { feedId } = request.params;
 
   if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -313,7 +313,7 @@ export async function updateUserFeedHandler(
     : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
 
   if (!feed) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   if (request.body.externalProperties) {
@@ -368,7 +368,7 @@ export async function deleteUserFeedHandler(
   const { feedId } = request.params;
 
   if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -392,7 +392,7 @@ export async function deleteUserFeedHandler(
       }
     }
 
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   await userFeedsService.deleteFeedById(feedId);
@@ -413,7 +413,7 @@ export async function cloneUserFeedHandler(
   const { feedId } = request.params;
 
   if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -424,7 +424,7 @@ export async function cloneUserFeedHandler(
     : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
 
   if (!feed) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const { id } = await userFeedsService.clone(
@@ -455,7 +455,7 @@ export async function sendTestArticleHandler(
   const { feedId } = request.params;
 
   if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -466,7 +466,7 @@ export async function sendTestArticleHandler(
     : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
 
   if (!feed) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   await feedsService.canUseChannel({
@@ -503,7 +503,7 @@ export async function getFeedRequestsHandler(
   const { feedId } = request.params;
 
   if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -514,7 +514,7 @@ export async function getFeedRequestsHandler(
     : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
 
   if (!feed) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const result = await userFeedsService.getFeedRequests({
@@ -540,7 +540,7 @@ export async function getDeliveryLogsHandler(
   const { feedId } = request.params;
 
   if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -551,7 +551,7 @@ export async function getDeliveryLogsHandler(
     : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
 
   if (!feed) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const result = await userFeedsService.getDeliveryLogs(feed.id, {
@@ -595,7 +595,7 @@ export async function getArticlePropertiesHandler(
   const { feedId } = request.params;
 
   if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -606,7 +606,7 @@ export async function getArticlePropertiesHandler(
     : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
 
   if (!feed) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const { properties, requestStatus } =
@@ -640,7 +640,7 @@ export async function getArticlesHandler(
   const { feedId } = request.params;
 
   if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -651,7 +651,7 @@ export async function getArticlesHandler(
     : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
 
   if (!feed) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const {
@@ -725,7 +725,7 @@ export async function deliveryPreviewHandler(
   const { feedId } = request.params;
 
   if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -736,7 +736,7 @@ export async function deliveryPreviewHandler(
     : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
 
   if (!feed) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const acceptedInvite = feed.shareManageOptions?.invites?.find(
@@ -775,7 +775,7 @@ export async function getDailyLimitHandler(
   const { feedId } = request.params;
 
   if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -786,7 +786,7 @@ export async function getDailyLimitHandler(
     : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
 
   if (!feed) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const { progress, max } = await userFeedsService.getFeedDailyLimit(feed);
@@ -804,7 +804,7 @@ export async function manualRequestHandler(
   const { feedId } = request.params;
 
   if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -815,7 +815,7 @@ export async function manualRequestHandler(
     : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
 
   if (!feed) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   try {
@@ -956,7 +956,7 @@ export async function copySettingsHandler(
   const { feedId } = request.params;
 
   if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -967,7 +967,7 @@ export async function copySettingsHandler(
     : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
 
   if (!feed) {
-    throw new NotFoundError(ApiErrorCode.FEED_NOT_FOUND);
+    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
   }
 
   const { targetFeedSelectionType, targetFeedIds } = request.body;
