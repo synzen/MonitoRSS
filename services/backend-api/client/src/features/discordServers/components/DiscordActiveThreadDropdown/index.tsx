@@ -47,7 +47,7 @@ export const DiscordActiveThreadDropdown: React.FC<Props> = ({
     <Stack>
       <ThemedSelect
         loading={isFetching}
-        isDisabled={isDisabled || isFetching || !!error}
+        isDisabled={isDisabled || !!error}
         options={options}
         onChange={(val, optionData) => {
           onChange(val, optionData?.name);
@@ -58,6 +58,9 @@ export const DiscordActiveThreadDropdown: React.FC<Props> = ({
         selectProps={{
           inputId,
           "aria-labelledby": ariaLabelledBy,
+          "aria-busy": isFetching,
+          openMenuOnClick: !isFetching,
+          openMenuOnFocus: !isFetching,
         }}
         isInvalid={isInvalid}
         placeholder={placeholder}
@@ -67,7 +70,7 @@ export const DiscordActiveThreadDropdown: React.FC<Props> = ({
           <Box>
             <AlertTitle>
               {t(
-                "features.feed.components.addDiscordChannelThreadConnectionDialog.failedToGetThreads",
+                "features.feed.components.addDiscordChannelThreadConnectionDialog.failedToGetThreads"
               )}
             </AlertTitle>
             <AlertDescription>{error?.message}</AlertDescription>
