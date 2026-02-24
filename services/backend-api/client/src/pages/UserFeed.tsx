@@ -80,7 +80,10 @@ import { UserFeedLogs } from "../features/feed/components/UserFeedLogs";
 import { useUserMe } from "../features/discordUser";
 import { PricingDialogContext } from "../contexts";
 import { FeedConnectionDisabledCode } from "../types";
-import { formatRefreshRateSeconds } from "../utils/formatRefreshRateSeconds";
+import {
+  formatRefreshRateSeconds,
+  getEffectiveRefreshRateSeconds,
+} from "../utils/formatRefreshRateSeconds";
 import { ExternalPropertiesTabSection } from "../features/feedConnections/components/ExternalPropertiesTabSection";
 import { UserFeedProvider, useUserFeedContext } from "../contexts/UserFeedContext";
 import { UserFeedTabSearchParam } from "../constants/userFeedTabSearchParam";
@@ -277,7 +280,7 @@ const UserFeedInner: React.FC = () => {
   );
 
   const disabledConnections = feed?.connections.filter(
-    (c) => c.disabledCode === FeedConnectionDisabledCode.Manual
+    (c) => c.disabledCode === FeedConnectionDisabledCode.Manual,
   );
 
   const tabIndex = tabIndexBySearchParam.get(urlSearch);
@@ -544,11 +547,7 @@ const UserFeedInner: React.FC = () => {
                     as="ul"
                   >
                     <CategoryText title={t("pages.feed.refreshRateLabel")}>
-                      {feed
-                        ? formatRefreshRateSeconds(
-                            feed.userRefreshRateSeconds || feed.refreshRateSeconds
-                          )
-                        : null}
+                      {feed ? formatRefreshRateSeconds(getEffectiveRefreshRateSeconds(feed)) : null}
                     </CategoryText>
                     <CategoryText title={t("pages.feed.createdAtLabel")}>
                       {feed?.createdAt}

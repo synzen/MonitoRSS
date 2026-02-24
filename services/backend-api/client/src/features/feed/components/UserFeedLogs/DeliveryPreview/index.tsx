@@ -21,13 +21,18 @@ import { useUserFeedContext } from "../../../../../contexts/UserFeedContext";
 import { pages } from "../../../../../constants";
 import { UserFeedTabSearchParam } from "../../../../../constants/userFeedTabSearchParam";
 import { useDeliveryPreviewWithPagination } from "../../../hooks/useDeliveryPreviewWithPagination";
+import { useUserFeedRequests } from "../../../hooks";
 import { InlineErrorAlert } from "../../../../../components";
 import {
   DeliveryPreviewAccordion,
   DeliveryPreviewAccordionSkeleton,
 } from "./DeliveryPreviewAccordion";
 import { ArticleDeliveryOutcome, ArticleDeliveryResult } from "../../../types/DeliveryPreview";
-import { formatRefreshRateSeconds } from "../../../../../utils/formatRefreshRateSeconds";
+import {
+  formatRefreshRateSeconds,
+  getEffectiveRefreshRateSeconds,
+  getNextCheckText,
+} from "../../../../../utils/formatRefreshRateSeconds";
 import { FeedLevelStateDisplay, FeedState } from "./FeedLevelStateDisplay";
 
 dayjs.extend(relativeTime);
@@ -35,6 +40,7 @@ dayjs.extend(relativeTime);
 export const getPatternAlert = (
   results: ArticleDeliveryResult[],
   refreshRateSeconds: number,
+  lastRequestAtUnix?: number,
 ): { type: "info" | "warning"; message: string } | null => {
   if (results.length === 0) return null;
 
@@ -59,10 +65,12 @@ export const getPatternAlert = (
   // First run is a feed-level state - if any article has it, all do
   if (outcome === ArticleDeliveryOutcome.FirstRunBaseline && count >= 1) {
     const formattedTime = formatRefreshRateSeconds(refreshRateSeconds);
+    const nextCheckText = getNextCheckText(lastRequestAtUnix, refreshRateSeconds);
+    const nextCheckSuffix = nextCheckText ? ` ${nextCheckText}` : "";
 
     return {
       type: "info",
-      message: `This feed is in its learning phase. MonitoRSS is identifying existing articles so it only delivers new ones. This typically completes within ${formattedTime}.`,
+      message: `This feed is in its learning phase. MonitoRSS is identifying existing articles so it only delivers new ones. This typically completes within ${formattedTime}.${nextCheckSuffix}`,
     };
   }
 
@@ -105,6 +113,7 @@ export interface DeliveryPreviewPresentationalProps {
   feedState?: FeedState | null;
   feedId: string;
   refreshRateSeconds: number;
+  lastRequestAtUnix?: number;
   addConnectionUrl: string;
   lastCheckedFormatted?: string;
   onRefresh?: () => void;
@@ -122,6 +131,7 @@ export const DeliveryPreviewPresentational = ({
   feedState = null,
   feedId,
   refreshRateSeconds,
+  lastRequestAtUnix,
   addConnectionUrl,
   lastCheckedFormatted = "Never",
   onRefresh = () => {},
@@ -129,7 +139,7 @@ export const DeliveryPreviewPresentational = ({
 }: DeliveryPreviewPresentationalProps) => {
   const hasFeedLevelState = !!feedState;
   const hasNoData = results.length === 0 && !isLoading && !hasFeedLevelState;
-  const patternAlert = getPatternAlert(results, refreshRateSeconds);
+  const patternAlert = getPatternAlert(results, refreshRateSeconds, lastRequestAtUnix);
 
   return (
     <Stack spacing={4} mb={8} border="solid 1px" borderColor="gray.700" borderRadius="md">
@@ -225,7 +235,7 @@ export const DeliveryPreviewPresentational = ({
             {isFetching && results.length === 0 ? (
               <DeliveryPreviewAccordionSkeleton />
             ) : (
-              <DeliveryPreviewAccordion results={results} />
+              <DeliveryPreviewAccordion results={results} lastRequestAtUnix={lastRequestAtUnix} />
             )}
             <Flex justifyContent="space-between" alignItems="center">
               <Text fontSize="sm" color="whiteAlpha.600">
@@ -266,6 +276,13 @@ export const DeliveryPreview = () => {
     feedId: userFeed.id,
   });
 
+  const { data: requestsData } = useUserFeedRequests({
+    feedId: userFeed.id,
+    data: { skip: 0, limit: 1 },
+  });
+
+  const lastRequestAtUnix = requestsData?.result.requests[0]?.createdAt;
+
   const activeConnections = userFeed.connections.filter((c) => !c.disabledCode);
   const hasNoConnections = activeConnections.length === 0;
   const isLoading = status === "loading";
@@ -288,7 +305,8 @@ export const DeliveryPreview = () => {
       hasNoConnections={hasNoConnections}
       feedState={feedState}
       feedId={userFeed.id}
-      refreshRateSeconds={userFeed.refreshRateSeconds}
+      refreshRateSeconds={getEffectiveRefreshRateSeconds(userFeed)}
+      lastRequestAtUnix={lastRequestAtUnix}
       addConnectionUrl={pages.userFeed(userFeed.id, { tab: UserFeedTabSearchParam.Connections })}
       lastCheckedFormatted={formatLastChecked()}
       onRefresh={refresh}

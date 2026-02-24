@@ -25,10 +25,15 @@ import { pages } from "../../../../../constants";
 import { FeedConnectionType } from "../../../../../types";
 import { DeliveryChecksModal } from "./DeliveryChecksModal";
 import { getOutcomeColorScheme } from "./deliveryPreviewUtils";
-import { formatRefreshRateSeconds } from "../../../../../utils/formatRefreshRateSeconds";
+import {
+  formatRefreshRateSeconds,
+  getEffectiveRefreshRateSeconds,
+  getNextCheckText,
+} from "../../../../../utils/formatRefreshRateSeconds";
 
 interface Props {
   result: ArticleDeliveryResult;
+  lastRequestAtUnix?: number;
 }
 
 const getOutcomeLabel = (outcome: ArticleDeliveryOutcome): string => {
@@ -60,10 +65,18 @@ const getOutcomeLabel = (outcome: ArticleDeliveryOutcome): string => {
   }
 };
 
-const getExplanationText = (outcome: ArticleDeliveryOutcome): string => {
+const getExplanationText = (
+  outcome: ArticleDeliveryOutcome,
+  refreshRateSeconds: number,
+  lastRequestAtUnix?: number,
+): string => {
+  const refreshRateText = `Your feed checks for new content every ${formatRefreshRateSeconds(refreshRateSeconds)}.`;
+  const nextCheckText = getNextCheckText(lastRequestAtUnix, refreshRateSeconds);
+  const timingText = nextCheckText ? `${refreshRateText} ${nextCheckText}` : refreshRateText;
+
   switch (outcome) {
     case ArticleDeliveryOutcome.WouldDeliver:
-      return "This article would be delivered to Discord when the feed is next processed.";
+      return `This article would be delivered to Discord when the feed is next processed. ${timingText}`;
     case ArticleDeliveryOutcome.FirstRunBaseline:
       return "This feed is in its learning phase. MonitoRSS skips pre-existing articles to avoid flooding your channel with old content.";
     case ArticleDeliveryOutcome.DuplicateId:
@@ -79,7 +92,7 @@ const getExplanationText = (outcome: ArticleDeliveryOutcome): string => {
     case ArticleDeliveryOutcome.RateLimitedMedium:
       return "This connection has reached its delivery limit. The article will be delivered automatically once the limit resets.";
     case ArticleDeliveryOutcome.WouldDeliverPassingComparison:
-      return "This article was seen before, but one of your Passing Comparison fields changed, so it will be re-delivered as an update.";
+      return `This article was seen before, but one of your Passing Comparison fields changed, so it will be re-delivered as an update. ${timingText}`;
     case ArticleDeliveryOutcome.FeedUnchanged:
       return "The feed's content hasn't changed since it was last checked. MonitoRSS skips unchanged feeds to save resources. New articles will be detected automatically once the publisher has indicated that there are new changes.";
     case ArticleDeliveryOutcome.FeedError:
@@ -134,7 +147,7 @@ const ConnectionResultRow = ({ mediumResult }: ConnectionResultRowProps) => {
   );
 };
 
-export const ArticleDeliveryDetails = ({ result }: Props) => {
+export const ArticleDeliveryDetails = ({ result, lastRequestAtUnix }: Props) => {
   const { userFeed } = useUserFeedContext();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -148,19 +161,23 @@ export const ArticleDeliveryDetails = ({ result }: Props) => {
     return uniqueOutcomes.size > 1;
   };
 
+  const effectiveRefreshRateSeconds = getEffectiveRefreshRateSeconds(userFeed);
+
   const getDisplayText = () => {
     if (isLearningPhase) {
       const plural = connectionCount !== 1 ? "s" : "";
-      const formattedTime = formatRefreshRateSeconds(userFeed.refreshRateSeconds);
+      const formattedTime = formatRefreshRateSeconds(effectiveRefreshRateSeconds);
+      const nextCheckText = getNextCheckText(lastRequestAtUnix, effectiveRefreshRateSeconds);
+      const nextCheckSuffix = nextCheckText ? ` ${nextCheckText}` : "";
 
-      return `Skipped (Learning Phase): This article existed before the feed was added. MonitoRSS skips pre-existing articles to avoid flooding your channel with old content. New articles will be delivered to all ${connectionCount} connection${plural} once learning completes (within ${formattedTime}).`;
+      return `Skipped (Learning Phase): This article existed before the feed was added. MonitoRSS skips pre-existing articles to avoid flooding your channel with old content. New articles will be delivered to all ${connectionCount} connection${plural} once learning completes (within ${formattedTime}).${nextCheckSuffix}`;
     }
 
     if (hasPartialDelivery()) {
       return "This article would deliver to some connections but not others.";
     }
 
-    return getExplanationText(result.outcome);
+    return getExplanationText(result.outcome, effectiveRefreshRateSeconds, lastRequestAtUnix);
   };
 
   return (

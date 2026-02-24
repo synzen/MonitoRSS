@@ -75,6 +75,7 @@ import {
 } from "../../../../contexts/PageAlertContext";
 import { UserFeedTabSearchParam } from "../../../../constants/userFeedTabSearchParam";
 import ApiAdapterError from "../../../../utils/ApiAdapterError";
+import { getEffectiveRefreshRateSeconds } from "../../../../utils/formatRefreshRateSeconds";
 
 interface Props {
   feedId: string;
@@ -144,7 +145,7 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
       shareManageOptions: feed?.shareManageOptions || null,
       userRefreshRateMinutes:
         (
-          Number((feed?.userRefreshRateSeconds || feed?.refreshRateSeconds || 0).toFixed(1)) / 60
+          Number(getEffectiveRefreshRateSeconds(feed || { refreshRateSeconds: 0 }).toFixed(1)) / 60
         )?.toString() || "",
     },
   });
@@ -223,11 +224,9 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
         oldArticleDateDiffMsThreshold:
           updatedFeed.result.dateCheckOptions?.oldArticleDateDiffMsThreshold,
         shareManageOptions: updatedFeed.result.shareManageOptions || null,
-        userRefreshRateMinutes:
-          updatedFeed.result.userRefreshRateSeconds &&
-          !Number.isNaN(updatedFeed.result.userRefreshRateSeconds)
-            ? (updatedFeed.result.userRefreshRateSeconds / 60).toFixed(1)
-            : (updatedFeed.result.refreshRateSeconds / 60).toFixed(1),
+        userRefreshRateMinutes: (getEffectiveRefreshRateSeconds(updatedFeed.result) / 60).toFixed(
+          1,
+        ),
       });
       createSuccessAlert({
         title: "Successfully updated feed settings",

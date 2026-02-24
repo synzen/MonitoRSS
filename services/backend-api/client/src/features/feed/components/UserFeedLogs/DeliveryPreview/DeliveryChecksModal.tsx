@@ -32,7 +32,10 @@ import {
   RepeatIcon,
   WarningIcon,
 } from "@chakra-ui/icons";
-import { formatRefreshRateSeconds } from "../../../../../utils/formatRefreshRateSeconds";
+import {
+  formatRefreshRateSeconds,
+  getEffectiveRefreshRateSeconds,
+} from "../../../../../utils/formatRefreshRateSeconds";
 import {
   ArticleDeliveryOutcome,
   ArticleDeliveryResult,
@@ -869,9 +872,7 @@ export const DeliveryChecksModal = ({ isOpen, onClose, result, initialMediumId }
         <ModalCloseButton />
         <ModalBody>
           {isLearningPhase && (
-            <LearningPhaseContent
-              refreshRateSeconds={userFeed.userRefreshRateSeconds || userFeed.refreshRateSeconds}
-            />
+            <LearningPhaseContent refreshRateSeconds={getEffectiveRefreshRateSeconds(userFeed)} />
           )}
           {isFeedUnchanged && <FeedUnchangedContent />}
           {isFeedError && <FeedErrorContent outcomeReason={result.outcomeReason} />}
