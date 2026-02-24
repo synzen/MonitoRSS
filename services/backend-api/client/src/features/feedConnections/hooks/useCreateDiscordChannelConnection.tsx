@@ -14,15 +14,21 @@ export const useCreateDiscordChannelConnection = () => {
     CreateDiscordChannelConnectionInput
   >((details) => createDiscordChannelConnection(details), {
     onSuccess: (data, inputData) =>
-      queryClient.invalidateQueries({
-        queryKey: [
-          "user-feed",
-          {
-            feedId: inputData.feedId,
-          },
-        ],
-        refetchType: "all",
-      }),
+      Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: [
+            "user-feed",
+            {
+              feedId: inputData.feedId,
+            },
+          ],
+          refetchType: "all",
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["user-feeds"],
+          refetchType: "all",
+        }),
+      ]),
   });
 
   return {
