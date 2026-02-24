@@ -1,5 +1,6 @@
 import { Alert, AlertIcon, Box, Center, Stack, Table, Td, Thead, Tr, Text } from "@chakra-ui/react";
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   OnChangeFn,
   RowSelectionState,
@@ -79,6 +80,19 @@ export const UserFeedsTable: React.FC = () => {
   } = useTableSearch({
     onSearchChange: useCallback((s: string) => setSearch(s), [setSearch]),
   });
+
+  const [, setSearchParams] = useSearchParams();
+
+  const handleSearchForNewFeed = useCallback(
+    (term: string) => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("addFeed", term);
+        return next;
+      });
+    },
+    [setSearchParams],
+  );
 
   // Columns with search highlighting
   const columns = useMemo(() => createTableColumns(search), [search]);
@@ -246,7 +260,13 @@ export const UserFeedsTable: React.FC = () => {
           <Text>Loading feeds...</Text>
         </Stack>
       </Center>
-      {isFilteredEmpty && <FilteredEmptyState onClearAllFilters={handleClearAllFilters} />}
+      {isFilteredEmpty && (
+        <FilteredEmptyState
+          onClearAllFilters={handleClearAllFilters}
+          searchTerm={urlSearch}
+          onSearchForNewFeed={handleSearchForNewFeed}
+        />
+      )}
       <Stack hidden={isInitiallyLoading || isFilteredEmpty}>
         <Box
           boxShadow="lg"

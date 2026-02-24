@@ -47,9 +47,14 @@ const getStatusBorderColor = (outcome: ArticleDeliveryOutcome): string => {
 interface DeliveryPreviewAccordionItemProps {
   result: ArticleDeliveryResult;
   isFirst: boolean;
+  lastRequestAtUnix?: number;
 }
 
-const DeliveryPreviewAccordionItem = ({ result, isFirst }: DeliveryPreviewAccordionItemProps) => {
+const DeliveryPreviewAccordionItem = ({
+  result,
+  isFirst,
+  lastRequestAtUnix,
+}: DeliveryPreviewAccordionItemProps) => {
   const displayOutcome = getOutcomeLabel(result.outcome);
   const colorScheme = getOutcomeColorScheme(result.outcome);
   const borderColor = getStatusBorderColor(result.outcome);
@@ -81,7 +86,7 @@ const DeliveryPreviewAccordionItem = ({ result, isFirst }: DeliveryPreviewAccord
         <AccordionIcon ml={2} />
       </AccordionButton>
       <AccordionPanel p={0}>
-        <ArticleDeliveryDetails result={result} />
+        <ArticleDeliveryDetails result={result} lastRequestAtUnix={lastRequestAtUnix} />
       </AccordionPanel>
     </AccordionItem>
   );
@@ -89,9 +94,13 @@ const DeliveryPreviewAccordionItem = ({ result, isFirst }: DeliveryPreviewAccord
 
 interface DeliveryPreviewAccordionProps {
   results: ArticleDeliveryResult[];
+  lastRequestAtUnix?: number;
 }
 
-export const DeliveryPreviewAccordion = ({ results }: DeliveryPreviewAccordionProps) => (
+export const DeliveryPreviewAccordion = ({
+  results,
+  lastRequestAtUnix,
+}: DeliveryPreviewAccordionProps) => (
   <Box {...ARTICLE_LIST_CONTAINER_PROPS}>
     <Accordion allowMultiple>
       {results.map((result, index) => (
@@ -99,6 +108,7 @@ export const DeliveryPreviewAccordion = ({ results }: DeliveryPreviewAccordionPr
           key={result.articleId}
           result={result}
           isFirst={index === 0}
+          lastRequestAtUnix={lastRequestAtUnix}
         />
       ))}
     </Accordion>
