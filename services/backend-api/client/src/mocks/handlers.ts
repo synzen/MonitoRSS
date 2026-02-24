@@ -399,6 +399,7 @@ const handlers = [
     return HttpResponse.json<GetUserFeedsOutput>({
       results: limitedResults,
       total: filtered.length,
+      feedsWithoutConnections: 0,
     });
   }),
 

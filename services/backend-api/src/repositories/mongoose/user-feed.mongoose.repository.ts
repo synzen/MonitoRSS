@@ -548,6 +548,11 @@ export class UserFeedMongooseRepository
       {
         $addFields: {
           ownedByUser: { $eq: ["$user.discordUserId", discordUserId] },
+          connectionCount: {
+            $sum: Object.values(FeedConnectionTypeEntityKey).map((key) => ({
+              $size: { $ifNull: [`$connections.${key}`, []] },
+            })),
+          },
           computedStatus: {
             $cond: {
               if: {
@@ -628,6 +633,28 @@ export class UserFeedMongooseRepository
       pipeline.push({ $match: { $or } } as PipelineStage);
     }
 
+    if (filters?.hasConnections !== undefined) {
+      const connectionKeys = Object.values(FeedConnectionTypeEntityKey);
+
+      if (filters.hasConnections) {
+        pipeline.push({
+          $match: {
+            $or: connectionKeys.map((key) => ({
+              [`connections.${key}.0`]: { $exists: true },
+            })),
+          },
+        } as PipelineStage);
+      } else {
+        pipeline.push({
+          $match: {
+            $and: connectionKeys.map((key) => ({
+              [`connections.${key}.0`]: { $exists: false },
+            })),
+          },
+        } as PipelineStage);
+      }
+    }
+
     return pipeline;
   }
 
@@ -667,6 +694,7 @@ export class UserFeedMongooseRepository
           legacyFeedId: 1,
           ownedByUser: 1,
           refreshRateSeconds: 1,
+          connectionCount: 1,
         },
       },
     );
@@ -683,6 +711,7 @@ export class UserFeedMongooseRepository
       legacyFeedId?: Types.ObjectId;
       ownedByUser: boolean;
       refreshRateSeconds?: number;
+      connectionCount: number;
     }>(pipeline);
 
     return results.map((r) => ({
@@ -697,6 +726,7 @@ export class UserFeedMongooseRepository
       legacyFeedId: r.legacyFeedId?.toString(),
       ownedByUser: r.ownedByUser,
       refreshRateSeconds: r.refreshRateSeconds,
+      connectionCount: r.connectionCount,
     }));
   }
 

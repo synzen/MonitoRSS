@@ -10,6 +10,7 @@ export interface CreateUserFeedUrlValidationInput {
 const CreateUserFeedUrlValidationOutputSchema = object({
   result: object({
     resolvedToUrl: string().optional().nullable(),
+    feedTitle: string().optional(),
   }),
 }).required();
 

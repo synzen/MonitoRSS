@@ -1777,8 +1777,8 @@ describe("TemplateGalleryModal", () => {
           />
         </TestWrapper>
       );
-      const saveButton = screen.getByText("Save").closest("button");
-      expect(saveButton).toHaveAttribute("data-loading");
+      const saveButton = screen.getByText("Saving...").closest("button");
+      expect(saveButton).toHaveAttribute("aria-disabled", "true");
     });
 
     it("Save button is primary (blue) when no articles available", () => {

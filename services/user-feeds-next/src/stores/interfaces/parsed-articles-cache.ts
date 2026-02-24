@@ -31,6 +31,7 @@ export interface CacheKeyOptions {
 
 export interface CachedArticles {
   articles: Article[];
+  feed?: { title?: string };
 }
 
 /**

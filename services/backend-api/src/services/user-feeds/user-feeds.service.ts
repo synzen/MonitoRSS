@@ -41,6 +41,8 @@ import type {
   GetFeedArticlesInput,
   GetFeedArticlesOutput,
   CopyUserFeedSettingsInput,
+  PreviewFeedByUrlOutput,
+  PreviewFeedByUrlArticle,
 } from "./types";
 import { UserFeedCopyableSetting } from "./types";
 import type {
@@ -121,6 +123,16 @@ export class UserFeedsService {
     });
   }
 
+  async getFeedsWithoutConnectionsCount(
+    _userId: string,
+    discordUserId: string,
+  ): Promise<number> {
+    return this.deps.userFeedRepository.getUserFeedsCount({
+      discordUserId,
+      filters: { hasConnections: false },
+    });
+  }
+
   async addFeed(
     {
       discordUserId,
@@ -150,13 +162,6 @@ export class UserFeedsService {
     }
 
     const userId = user.id;
-
-    const feedCount =
-      await this.calculateCurrentFeedCountOfDiscordUser(discordUserId);
-
-    if (feedCount >= maxUserFeeds) {
-      throw new FeedLimitReachedException("Max feeds reached");
-    }
 
     const tempLookupDetails = getFeedRequestLookupDetails({
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
@@ -189,6 +194,15 @@ export class UserFeedsService {
         ? { oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24 }
         : undefined,
     });
+
+    const feedCount =
+      await this.deps.userFeedRepository.countByOwnership(discordUserId);
+
+    if (feedCount > maxUserFeeds) {
+      await this.deps.userFeedRepository.deleteById(created.id);
+
+      throw new FeedLimitReachedException("Max feeds reached");
+    }
 
     if (connections) {
       for (const c of connections.discordChannels) {
@@ -228,14 +242,6 @@ export class UserFeedsService {
         sourceFeed.user.discordUserId,
       );
 
-    const feedCount = await this.calculateCurrentFeedCountOfDiscordUser(
-      sourceFeed.user.discordUserId,
-    );
-
-    if (feedCount >= maxUserFeeds) {
-      throw new FeedLimitReachedException("Max feeds reached");
-    }
-
     let inputUrl = sourceFeed.inputUrl;
     let finalUrl = sourceFeed.url;
 
@@ -267,6 +273,16 @@ export class UserFeedsService {
         inputUrl,
       },
     });
+
+    const feedCount = await this.deps.userFeedRepository.countByOwnership(
+      sourceFeed.user.discordUserId,
+    );
+
+    if (feedCount > maxUserFeeds) {
+      await this.deps.userFeedRepository.deleteById(created.id);
+
+      throw new FeedLimitReachedException("Max feeds reached");
+    }
 
     await this.deps.usersService.syncLookupKeys({ feedIds: [created.id] });
 
@@ -1081,10 +1097,121 @@ export class UserFeedsService {
     if (finalUrl !== url) {
       return {
         resolvedToUrl: finalUrl,
+        feedTitle,
       };
     }
 
     return { resolvedToUrl: null, feedTitle };
+  }
+
+  async previewFeedByUrl(
+    opts: { discordUserId: string },
+    input: { url: string },
+  ): Promise<PreviewFeedByUrlOutput> {
+    const { discordUserId } = opts;
+    const { url } = input;
+
+    const user =
+      await this.deps.usersService.getOrCreateUserByDiscordId(discordUserId);
+
+    const lookupDetails = getFeedRequestLookupDetails({
+      feed: { url, feedRequestLookupKey: undefined },
+      user: {
+        externalCredentials: user.externalCredentials?.map((c) => ({
+          type: c.type,
+          data: c.data,
+        })),
+      },
+      decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
+    });
+
+    const getArticlesResponse = await this.deps.feedHandlerService.getArticles(
+      {
+        url,
+        formatter: {
+          options: {
+            dateFormat: undefined,
+            dateLocale: undefined,
+            dateTimezone: undefined,
+            disableImageLinkPreviews: false,
+            formatTables: false,
+            stripImages: false,
+          },
+        },
+        selectProperties: ["title", "date", "description", "link"],
+        limit: 5,
+        skip: 0,
+        findRssFromHtml: false,
+        executeFetchIfStale: true,
+      },
+      lookupDetails,
+    );
+
+    const {
+      requestStatus,
+      response,
+      articles: rawArticles,
+    } = getArticlesResponse;
+
+    if (requestStatus !== GetArticlesResponseRequestStatus.Success) {
+      return {
+        articles: [],
+        requestStatus,
+        responseStatusCode: response?.statusCode,
+      };
+    }
+
+    const articles: PreviewFeedByUrlArticle[] = rawArticles.map((raw) => {
+      let title = raw.title;
+
+      if (!title && raw.description) {
+        title =
+          raw.description.length > 80
+            ? raw.description.slice(0, 80) + "..."
+            : raw.description;
+      }
+
+      if (!title && raw.link) {
+        try {
+          const pathname = new URL(raw.link).pathname;
+          const lastSegment = pathname.split("/").filter(Boolean).pop();
+
+          if (lastSegment) {
+            title = decodeURIComponent(lastSegment);
+          }
+        } catch {
+          // invalid URL, fall through
+        }
+      }
+
+      if (!title) {
+        title = "Untitled article";
+      }
+
+      const article: PreviewFeedByUrlArticle = { title };
+
+      if (raw.date) {
+        article.date = raw.date;
+      }
+
+      if (raw.link) {
+        article.url = raw.link;
+      }
+
+      return article;
+    });
+
+    const withDates = articles.filter((a) => a.date);
+    const withoutDates = articles.filter((a) => !a.date);
+
+    withDates.sort(
+      (a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime(),
+    );
+
+    return {
+      articles: [...withDates, ...withoutDates],
+      requestStatus,
+    };
   }
 
   async deduplicateFeedUrls(

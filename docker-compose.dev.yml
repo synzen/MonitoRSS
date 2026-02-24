@@ -168,8 +168,6 @@ services:
           target: /usr/src/app
           ignore:
             - node_modules/
-        - action: rebuild
-          path: ./services/user-feeds-next/package.json
 
   user-feeds-api:
     extends:
@@ -194,8 +192,6 @@ services:
           target: /usr/src/app
           ignore:
             - node_modules/
-        - action: rebuild
-          path: ./services/user-feeds-next/package.json
 
   schedule-emitter-service:
     extends:
@@ -223,8 +219,6 @@ services:
         - action: sync+restart
           path: ./services/backend-api/src
           target: /usr/src/app/src
-        - action: rebuild
-          path: ./services/backend-api/package.json
 
   web-api:
     build:
@@ -263,8 +257,6 @@ services:
         - action: sync+restart
           path: ./services/backend-api/src
           target: /usr/src/app/src
-        - action: rebuild
-          path: ./services/backend-api/package.json
     networks:
       - monitorss-default
 

@@ -19,8 +19,8 @@ import {
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { useParams } from "react-router-dom";
 import { InferType, object, string } from "yup";
+import type { RefObject } from "react";
 import { useEffect, useRef, useCallback } from "react";
 import {
   DiscordActiveThreadDropdown,
@@ -28,7 +28,6 @@ import {
   DiscordServerSearchSelectv2,
   GetDiscordChannelType,
 } from "@/features/discordServers";
-import RouteParams from "../../../../types/RouteParams";
 import {
   useCreateDiscordChannelConnection,
   useUpdateDiscordChannelConnection,
@@ -65,6 +64,8 @@ interface Props {
   onClose: () => void;
   isOpen: boolean;
   connection?: FeedDiscordChannelConnection;
+  feedId?: string;
+  finalFocusRef?: RefObject<HTMLElement>;
 }
 
 type FormData = InferType<typeof formSchema>;
@@ -73,6 +74,8 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
   connection,
   onClose,
   isOpen,
+  feedId: feedIdProp,
+  finalFocusRef,
 }) => {
   const isEditing = !!connection;
 
@@ -83,6 +86,7 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
     setSelectedTemplateId,
     selectedArticleId,
     setSelectedArticleId,
+    feedId,
     userFeed,
     articles,
     feedFields,
@@ -90,7 +94,7 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
     isLoadingArticles,
     handleNextStep: templateHandleNextStep,
     handleBackStep,
-  } = useConnectionTemplateSelection({ isOpen, isEditing });
+  } = useConnectionTemplateSelection({ isOpen, isEditing, feedId: feedIdProp });
 
   const defaultValues: Partial<FormData> = {
     name: connection?.name,
@@ -100,7 +104,6 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
       : undefined,
     channelId: connection?.details.channel?.parentChannelId || connection?.details.channel?.id,
   };
-  const { feedId } = useParams<RouteParams>();
   const { t } = useTranslation();
   const {
     handleSubmit,
@@ -289,6 +292,7 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
       <TemplateGalleryModal
         isOpen={isOpen}
         onClose={onClose}
+        finalFocusRef={finalFocusRef}
         templates={TEMPLATES}
         selectedTemplateId={selectedTemplateId}
         onTemplateSelect={setSelectedTemplateId}
@@ -303,7 +307,7 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
         isLoadingArticles={isLoadingArticles}
         feedId={feedId || ""}
         userFeed={userFeed}
-        tertiaryActionLabel="← Back to Channel"
+        tertiaryActionLabel="Back to channel"
         onTertiaryAction={handleBackStep}
         onCancel={onClose}
         testId="forum-template-selection-modal"
@@ -324,6 +328,7 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
       onClose={onClose}
       closeOnOverlayClick={!isSubmitting}
       initialFocusRef={initialFocusRef}
+      finalFocusRef={finalFocusRef}
     >
       <ModalOverlay />
       <ModalContent>
@@ -334,12 +339,12 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
         <ModalBody>
           <Stack spacing={4}>
             <Text>Send articles as messages authored by the bot to a Discord forum</Text>
-            <form id="addfeed" onSubmit={handleSubmit(onSubmit)}>
+            <form id="add-forum-channel-connection" onSubmit={handleSubmit(onSubmit)}>
               <Stack spacing={4}>
                 <FormControl isInvalid={!!errors.serverId} isRequired>
                   <FormLabel htmlFor="server-select">
                     {t(
-                      "features.feed.components.addDiscordChannelConnectionDialog.formServerLabel",
+                      "features.feed.components.addDiscordChannelConnectionDialog.formServerLabel"
                     )}
                   </FormLabel>
                   <Controller
@@ -448,7 +453,7 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
                   <FormHelperText>
                     {t(
                       "features.feed.components" +
-                        ".addDiscordChannelConnectionDialog.formNameDescription",
+                        ".addDiscordChannelConnectionDialog.formNameDescription"
                     )}
                   </FormHelperText>
                 </FormControl>
@@ -470,7 +475,7 @@ export const DiscordForumChannelConnectionDialogContent: React.FC<Props> = ({
               <Button
                 colorScheme="blue"
                 type="submit"
-                form="addfeed"
+                form="add-forum-channel-connection"
                 isLoading={isSubmitting}
                 aria-disabled={isSubmitting || !isValid}
               >

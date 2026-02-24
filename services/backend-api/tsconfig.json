@@ -16,7 +16,8 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
-    "allowJs": true
+    "allowJs": true,
+    "resolveJsonModule": true
   },
   "include": ["src/**/*"],
   "exclude": ["dist", "src/**/*.test.ts", "test/**/*"]

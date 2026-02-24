@@ -26,6 +26,7 @@ export enum ApiErrorCode {
   BANNED_FEED = "BANNED_FEED",
   FEED_NOT_FAILED = "FEED_NOT_FAILED",
   FEED_NOT_FOUND = "FEED_NOT_FOUND",
+  USER_FEED_NOT_FOUND = "USER_FEED_NOT_FOUND",
   FEED_TOO_LARGE = "FEED_TOO_LARGE",
   FEED_INVALID_FILTER_EXPRESSION = "FEED_INVALID_FILTER_EXPRESSION",
   FEED_INVALID_COMPONENTS_V2 = "FEED_INVALID_COMPONENTS_V2",
@@ -79,6 +80,7 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
     "Something went wrong. Please try again later, or contact support@monitorss.xyz if the issue persists.",
   FEED_NOT_FAILED: t("common.apiErrors.feedNotFailed"),
   FEED_NOT_FOUND: t("common.apiErrors.feedNotFound"),
+  USER_FEED_NOT_FOUND: "This feed no longer exists. It may have already been removed.",
   FEED_TOO_LARGE: "Feed is too large (larger than 3 MB) to be processed",
   FEED_INVALID_FILTER_EXPRESSION: t("common.apiErrors.feedFilterInvalidExpression"),
   FEED_INVALID_COMPONENTS_V2:

@@ -39,7 +39,10 @@ export const NavigableTreeItemGroup = (props: ComponentProps<typeof chakra.div>)
     <chakra.div
       role="group"
       className="navigable-tree-group"
-      display={isExpanded ? "block" : "none"}
+      // Use hidden attribute instead of display:none so child nodes exist in the DOM on
+      // initial render. Google Translate only processes nodes present when it first runs;
+      // display:none prevents the nodes from existing, while hidden keeps them in the tree.
+      {...(isExpanded ? {} : { hidden: true })}
       {...props}
     />
   );
@@ -110,13 +113,14 @@ export const NavigableTreeItem = ({
               onBlurred();
             }}
             onKeyDown={(e) => {
-              // if current div is not focused, do nothing
-              // const focusedElem = document.activeElement as HTMLElement;
-              // if (focusedElem !== treeItemRef.current) {
-              //   return;
-              // }
+              // React synthetic events from Portals (e.g. Chakra Menu) bubble
+              // through the React tree, not the DOM tree. Ignore key events
+              // that originate from elements inside a Portal (like MenuItems)
+              // so they don't interfere with the Portal's own keyboard handling.
+              if (document.activeElement !== treeItemRef.current) {
+                return;
+              }
 
-              // if enter or space
               if (e.key === "Enter" || e.key === " ") {
                 onActivate?.();
               } else if (e.key === "Escape") {

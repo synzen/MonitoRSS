@@ -142,7 +142,7 @@ export async function findOrFetchFeedArticles(
     return {
       output: {
         articles: cachedArticles.articles,
-        feed: {},
+        feed: cachedArticles.feed ?? {},
       },
       url,
       attemptedToResolveFromHtml: false,
@@ -234,7 +234,7 @@ export async function findOrFetchFeedArticles(
   await setFeedArticlesInCache(parsedArticlesCacheStore, {
     url: resolvedUrl,
     options: cacheKeyOptions,
-    data: { articles },
+    data: { articles, feed },
   });
 
   return {

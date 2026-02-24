@@ -191,6 +191,7 @@ export interface UserFeedListingFilters {
   connectionDisabledCodes?: (string | null)[];
   computedStatuses?: UserFeedComputedStatus[];
   ownedByUser?: boolean;
+  hasConnections?: boolean;
 }
 
 export interface UserFeedListingInput {
@@ -214,6 +215,7 @@ export interface UserFeedListItem {
   legacyFeedId?: string;
   ownedByUser: boolean;
   refreshRateSeconds?: number;
+  connectionCount: number;
 }
 
 export interface UserFeedLimitEnforcementResult {

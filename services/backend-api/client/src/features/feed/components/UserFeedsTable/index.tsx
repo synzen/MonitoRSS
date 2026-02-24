@@ -1,5 +1,5 @@
 import { Alert, AlertIcon, Box, Center, Stack, Table, Td, Thead, Tr, Text } from "@chakra-ui/react";
-import React, { useCallback, useContext, useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   OnChangeFn,
   RowSelectionState,
@@ -35,7 +35,7 @@ import { createTableColumns } from "./columns";
 export const UserFeedsTable: React.FC = () => {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor)
+    useSensor(KeyboardSensor),
   );
 
   const { statusFilters, setStatusFilters } = useContext(UserFeedStatusFilterContext);
@@ -90,12 +90,15 @@ export const UserFeedsTable: React.FC = () => {
   // Row selection sync with context
   const rowSelection = useMemo(
     () =>
-      selectedFeeds.reduce((acc, feed) => {
-        acc[feed.id] = true;
+      selectedFeeds.reduce(
+        (acc, feed) => {
+          acc[feed.id] = true;
 
-        return acc;
-      }, {} as Record<string, boolean>),
-    [selectedFeeds]
+          return acc;
+        },
+        {} as Record<string, boolean>,
+      ),
+    [selectedFeeds],
   );
 
   const onRowSelectionChange: OnChangeFn<RowSelectionState> = useCallback(
@@ -107,7 +110,7 @@ export const UserFeedsTable: React.FC = () => {
         setSelectedFeeds(flatData.filter((r) => newValOrUpdater[r.id]));
       }
     },
-    [rowSelection, flatData, setSelectedFeeds]
+    [rowSelection, flatData, setSelectedFeeds],
   );
 
   // Column drag-and-drop handler
@@ -115,7 +118,9 @@ export const UserFeedsTable: React.FC = () => {
     (event: DragEndEvent) => {
       const { active, over } = event;
 
-      if (over && active.id !== over.id && active.id !== "select" && over.id !== "select") {
+      const isFixed = (id: string | number) => id === "select" || id === "configure";
+
+      if (over && active.id !== over.id && !isFixed(active.id) && !isFixed(over.id)) {
         setColumnOrder((currentOrder) => {
           const oldIndex = currentOrder.indexOf(active.id as string);
           const newIndex = currentOrder.indexOf(over.id as string);
@@ -124,7 +129,7 @@ export const UserFeedsTable: React.FC = () => {
         });
       }
     },
-    [setColumnOrder]
+    [setColumnOrder],
   );
 
   // Table instance
@@ -162,7 +167,7 @@ export const UserFeedsTable: React.FC = () => {
     (statuses: UserFeedComputedStatus[]) => {
       setStatusFilters(statuses);
     },
-    [setStatusFilters]
+    [setStatusFilters],
   );
 
   if (status === "error") {
@@ -178,6 +183,28 @@ export const UserFeedsTable: React.FC = () => {
 
   const isFilteredEmpty = !isInitiallyLoading && flatData.length === 0 && hasActiveFilters;
 
+  const [tableAnnouncement, setTableAnnouncement] = useState("");
+  const pendingAnnouncement = useRef(true);
+
+  useEffect(() => {
+    pendingAnnouncement.current = true;
+  }, [urlSearch, statusFilters]);
+
+  useEffect(() => {
+    if (isInitiallyLoading || isFetching) return;
+
+    if (!pendingAnnouncement.current) return;
+    pendingAnnouncement.current = false;
+
+    if (isFilteredEmpty) {
+      setTableAnnouncement("No feeds match current filters");
+    } else if (hasActiveFilters) {
+      setTableAnnouncement(`Showing ${flatData.length} of ${total} feeds`);
+    } else {
+      setTableAnnouncement(`Loaded table with ${flatData.length} of ${total} feeds`);
+    }
+  }, [isInitiallyLoading, isFetching, isFilteredEmpty, hasActiveFilters, flatData.length, total]);
+
   const handleClearAllFilters = useCallback(() => {
     onSearchClear();
     onStatusSelect([]);
@@ -187,15 +214,7 @@ export const UserFeedsTable: React.FC = () => {
   return (
     <Stack spacing={4}>
       <Box srOnly aria-live="polite">
-        {!isInitiallyLoading && (
-          <Text>
-            {isFilteredEmpty
-              ? "No feeds match current filters"
-              : hasActiveFilters
-              ? `Showing ${flatData.length} of ${total} feeds`
-              : `Loaded table with ${flatData.length} of ${total} feeds`}
-          </Text>
-        )}
+        <Text>{tableAnnouncement}</Text>
       </Box>
       {!isInitiallyLoading && (
         <TableToolbar

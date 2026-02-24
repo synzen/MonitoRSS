@@ -66,6 +66,7 @@ export const useUserFeeds = (
     queryClient.setQueryData<GetUserFeedsOutput>(queryKey, {
       results: updatedFeeds,
       total: data.total,
+      feedsWithoutConnections: data.feedsWithoutConnections,
     });
   };
 

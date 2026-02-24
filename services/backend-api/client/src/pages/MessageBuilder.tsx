@@ -86,6 +86,46 @@ import { TemplateGalleryModal } from "../features/templates/components/TemplateG
 import { TEMPLATES, getTemplateById, DEFAULT_TEMPLATE } from "../features/templates/constants";
 import { detectFields } from "../features/templates/utils";
 import { useTemplateFeedFields } from "../features/templates/hooks";
+import type { Component } from "./MessageBuilder/types";
+
+// When the tree container remounts (key change for Google Translate compatibility),
+// DOM focus is lost to <body>. This component restores focus to the currently
+// selected tree item so keyboard users aren't stranded.
+function TreeFocusRestorer({ treeRef }: { treeRef: React.RefObject<HTMLDivElement> }) {
+  const { currentSelectedId } = useNavigableTreeContext();
+
+  useEffect(() => {
+    if (!currentSelectedId || !treeRef.current) return;
+    if (document.activeElement && document.activeElement !== document.body) return;
+
+    requestAnimationFrame(() => {
+      if (document.activeElement && document.activeElement !== document.body) return;
+      const selected = treeRef.current?.querySelector(
+        `[data-id="${currentSelectedId}"]`
+      ) as HTMLElement | null;
+      selected?.focus();
+    });
+  }, []);
+
+  return null;
+}
+
+// Used as a React key on the tree container so it remounts when components are
+// added or removed. Google Translate does not re-translate text that React swaps
+// into an already-translated container; remounting creates fresh DOM nodes.
+function countComponentNodes(component: Component | null | undefined): number {
+  if (!component) return 0;
+  let count = 1;
+  if (component.children) {
+    for (const child of component.children) {
+      count += countComponentNodes(child as Component);
+    }
+  }
+  if ("accessory" in component && component.accessory) {
+    count += countComponentNodes(component.accessory as Component);
+  }
+  return count;
+}
 
 const SIDE_PANEL_WIDTH = {
   base: "350px",
@@ -117,6 +157,8 @@ const MessageBuilderContent: React.FC = () => {
   } = useDisclosure();
   const cancelRef = React.useRef<HTMLButtonElement>(null);
   const templatesButtonRef = useRef<HTMLButtonElement>(null);
+  const desktopTreeRef = useRef<HTMLDivElement>(null);
+  const mobileTreeRef = useRef<HTMLDivElement>(null);
   const [scrollToComponentId, setScrollToComponentId] = useState<string | null>(null);
   const { feedId, connectionId } = useParams<RouteParams>();
   const { mutateAsync: updateConnection, status: updateStatus } =
@@ -224,7 +266,7 @@ const MessageBuilderContent: React.FC = () => {
 
       try {
         const connectionDetails = convertMessageBuilderStateToConnectionUpdate(
-          data.messageComponent,
+          data.messageComponent
         );
 
         await updateConnection({
@@ -249,7 +291,7 @@ const MessageBuilderContent: React.FC = () => {
       if (problems.length > 0) {
         onProblemsDialogOpen();
       }
-    },
+    }
   );
 
   const handleDiscard = () => {
@@ -507,7 +549,13 @@ const MessageBuilderContent: React.FC = () => {
                       <VStack align="stretch" spacing={0} minWidth={200} height="100%">
                         <ComponentTreeToolbar />
                         {messageComponent && (
-                          <div role="tree" aria-label="Message Components">
+                          <div
+                            ref={desktopTreeRef}
+                            key={countComponentNodes(messageComponent)}
+                            role="tree"
+                            aria-label="Message Components"
+                          >
+                            <TreeFocusRestorer treeRef={desktopTreeRef} />
                             <NavigableTreeItem
                               isRootItem
                               id={messageComponent.id}
@@ -645,7 +693,13 @@ const MessageBuilderContent: React.FC = () => {
                           <TabPanel p={0}>
                             <ComponentTreeToolbar />
                             {messageComponent && (
-                              <div role="tree" aria-label="Message Components">
+                              <div
+                                ref={mobileTreeRef}
+                                key={countComponentNodes(messageComponent)}
+                                role="tree"
+                                aria-label="Message Components"
+                              >
+                                <TreeFocusRestorer treeRef={mobileTreeRef} />
                                 <NavigableTreeItem
                                   isRootItem
                                   id={messageComponent.id}

@@ -16,11 +16,13 @@ enum ConnectionCreationStep {
 interface UseConnectionTemplateSelectionOptions {
   isOpen: boolean;
   isEditing: boolean;
+  feedId?: string;
 }
 
 export const useConnectionTemplateSelection = ({
   isOpen,
   isEditing,
+  feedId: feedIdProp,
 }: UseConnectionTemplateSelectionOptions) => {
   const [currentStep, setCurrentStep] = useState<ConnectionCreationStep>(
     ConnectionCreationStep.ServerChannel,
@@ -28,7 +30,8 @@ export const useConnectionTemplateSelection = ({
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);
   const [selectedArticleId, setSelectedArticleId] = useState<string | undefined>();
 
-  const { feedId } = useParams<RouteParams>();
+  const { feedId: feedIdParam } = useParams<RouteParams>();
+  const feedId = feedIdProp || feedIdParam;
 
   // Fetch user feed data for template preview
   const { feed: userFeed } = useUserFeed({ feedId });

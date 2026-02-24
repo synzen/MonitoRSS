@@ -21,6 +21,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { InferType, object, string } from "yup";
+import type { RefObject } from "react";
 import { useEffect, useRef, useCallback } from "react";
 
 import RouteParams from "../../../../types/RouteParams";
@@ -64,6 +65,8 @@ const formSchema = object({
 interface Props {
   onClose: () => void;
   isOpen: boolean;
+  feedId?: string;
+  finalFocusRef?: RefObject<HTMLElement>;
 }
 
 type FormData = InferType<typeof formSchema>;
@@ -71,8 +74,11 @@ type FormData = InferType<typeof formSchema>;
 export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> = ({
   onClose,
   isOpen,
+  feedId: feedIdProp,
+  finalFocusRef,
 }) => {
-  const { feedId } = useParams<RouteParams>();
+  const { feedId: feedIdParam } = useParams<RouteParams>();
+  const feedId = feedIdProp || feedIdParam;
   const { t } = useTranslation();
 
   // Template selection state (webhook is always creating, not editing)
@@ -89,7 +95,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
     isLoadingArticles,
     handleNextStep: templateHandleNextStep,
     handleBackStep,
-  } = useConnectionTemplateSelection({ isOpen, isEditing: false });
+  } = useConnectionTemplateSelection({ isOpen, isEditing: false, feedId: feedIdProp });
 
   const {
     handleSubmit,
@@ -241,6 +247,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
       <TemplateGalleryModal
         isOpen={isOpen}
         onClose={onClose}
+        finalFocusRef={finalFocusRef}
         templates={TEMPLATES}
         selectedTemplateId={selectedTemplateId}
         onTemplateSelect={setSelectedTemplateId}
@@ -255,7 +262,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
         isLoadingArticles={isLoadingArticles}
         feedId={feedId || ""}
         userFeed={userFeed}
-        tertiaryActionLabel="← Back to Channel"
+        tertiaryActionLabel="Back to channel"
         onTertiaryAction={handleBackStep}
         onCancel={onClose}
         testId="webhook-template-selection-modal"
@@ -276,6 +283,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
       onClose={onClose}
       closeOnOverlayClick={!isSubmitting}
       initialFocusRef={initialFocusRef}
+      finalFocusRef={finalFocusRef}
     >
       <ModalOverlay />
       <ModalContent>
@@ -297,7 +305,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                 <FormControl isInvalid={!!errors.serverId} isRequired>
                   <FormLabel id="server-select-label" htmlFor="server-select">
                     {t(
-                      "features.feed.components.addDiscordWebhookConnectionDialog.formServerLabel",
+                      "features.feed.components.addDiscordWebhookConnectionDialog.formServerLabel"
                     )}
                   </FormLabel>
                   <Controller
@@ -418,7 +426,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                 <FormControl isInvalid={!!errors.webhook?.name} isRequired>
                   <FormLabel>
                     {t(
-                      "features.feed.components.addDiscordWebhookConnectionDialog.webhookNameLabel",
+                      "features.feed.components.addDiscordWebhookConnectionDialog.webhookNameLabel"
                     )}
                   </FormLabel>
                   <Controller
@@ -444,7 +452,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                   <FormLabel>
                     {t(
                       "features.feed.components.addDiscordWebhookConnectionDialog" +
-                        ".webhookIconUrlLabel",
+                        ".webhookIconUrlLabel"
                     )}
                   </FormLabel>
                   <Controller
@@ -467,7 +475,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                 <FormControl isInvalid={!!errors.name} isRequired>
                   <FormLabel>
                     {t(
-                      "features.feed.components.addDiscordChannelThreadConnectionDialog.formNameLabel",
+                      "features.feed.components.addDiscordChannelThreadConnectionDialog.formNameLabel"
                     )}
                   </FormLabel>
                   <Controller
@@ -487,7 +495,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                     <FormHelperText>
                       {t(
                         "features.feed.components" +
-                          ".addDiscordChannelThreadConnectionDialog.formNameDescription",
+                          ".addDiscordChannelThreadConnectionDialog.formNameDescription"
                       )}
                     </FormHelperText>
                   )}
