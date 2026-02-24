@@ -1,3 +1,5 @@
+import dayjs from "dayjs";
+
 export const getEffectiveRefreshRateSeconds = (feed: {
   userRefreshRateSeconds?: number;
   refreshRateSeconds: number;
@@ -33,5 +35,7 @@ export const getNextCheckText = (
     return "Next check expected shortly.";
   }
 
-  return `Next check expected in about ${formatRefreshRateSeconds(Math.ceil(secondsRemaining))}.`;
+  const humanized = dayjs.duration(secondsRemaining, "seconds").humanize();
+
+  return `Next check expected in about ${humanized}.`;
 };
