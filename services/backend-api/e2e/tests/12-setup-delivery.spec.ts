@@ -30,7 +30,7 @@ test.describe("Setup Delivery Checklist", () => {
     await deleteAllUserFeeds(page);
     for (const feed of originalFeeds) {
       await createFeed(page, { url: feed.url, title: feed.title }).catch(
-        () => {}
+        () => {},
       );
     }
     await context.close();
@@ -60,12 +60,12 @@ test.describe("Setup Delivery Checklist", () => {
       await page.goto("/feeds");
 
       const alertTitle = page.getByText(
-        /\d+ feeds? needs? delivery connections/
+        /\d+ feeds? needs? delivery connections/,
       );
       await expect(alertTitle).toBeVisible({ timeout: 15000 });
 
       await expect(
-        page.getByText("Choose where each feed's articles are delivered.")
+        page.getByText("Choose where each feed's articles are delivered."),
       ).toBeVisible();
 
       // Cards are expanded by default
@@ -76,7 +76,7 @@ test.describe("Setup Delivery Checklist", () => {
       await page.goto("/feeds");
 
       await expect(
-        page.getByText(/\d+ feeds? needs? delivery connections/)
+        page.getByText(/\d+ feeds? needs? delivery connections/),
       ).toBeVisible({ timeout: 15000 });
 
       await expect(page.getByRole("table")).toBeVisible();
@@ -103,7 +103,7 @@ test.describe("Setup Delivery Checklist", () => {
       await page.goto("/feeds");
 
       const alertTitle = page.getByText(
-        /\d+ feeds? needs? delivery connections/
+        /\d+ feeds? needs? delivery connections/,
       );
       await expect(alertTitle).toBeVisible({ timeout: 15000 });
 
@@ -157,7 +157,7 @@ test.describe("Setup Delivery Checklist", () => {
       await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
 
       await expect(
-        page.getByText(/\d+ feeds? needs? delivery connections/)
+        page.getByText(/\d+ feeds? needs? delivery connections/),
       ).not.toBeVisible();
     });
   });
