@@ -158,32 +158,43 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
   const { onSaveSuccess } = useConnectionDialogCallbacks();
 
   // Create connection callback for test send flow
-  const createConnection = useCallback(async (): Promise<void> => {
-    if (!feedId) {
-      throw new Error("Feed ID missing");
-    }
+  const createConnection = useCallback(
+    async (branding?: { name: string; iconUrl?: string }): Promise<void> => {
+      if (!feedId) {
+        throw new Error("Feed ID missing");
+      }
 
-    const formValues = watch();
-    const { name, createThreadMethod, channelId: inputChannelId, threadId } = formValues;
+      const formValues = watch();
+      const { name, createThreadMethod, channelId: inputChannelId, threadId } = formValues;
 
-    // Get template data to include in create call
-    const templateData = getTemplateUpdateData(selectedTemplateId, detectedFields);
+      // Get template data to include in create call
+      const templateData = getTemplateUpdateData(selectedTemplateId, detectedFields);
 
-    await mutateAsync({
-      feedId,
-      details: {
-        name,
-        channelId: threadId || inputChannelId,
-        threadCreationMethod:
-          createThreadMethod === DiscordCreateChannelThreadMethod.New ? "new-thread" : undefined,
-        content: templateData.content,
-        embeds: templateData.embeds,
-        componentsV2: templateData.componentsV2,
-        placeholderLimits: templateData.placeholderLimits,
-        formatter: templateData.formatter,
-      },
-    });
-  }, [feedId, watch, mutateAsync, selectedTemplateId, detectedFields]);
+      await mutateAsync({
+        feedId,
+        details: {
+          name,
+          ...(branding?.name
+            ? {
+                applicationWebhook: {
+                  channelId: threadId || inputChannelId,
+                  name: branding.name,
+                  iconUrl: branding.iconUrl,
+                },
+              }
+            : { channelId: threadId || inputChannelId }),
+          threadCreationMethod:
+            createThreadMethod === DiscordCreateChannelThreadMethod.New ? "new-thread" : undefined,
+          content: templateData.content,
+          embeds: templateData.embeds,
+          componentsV2: templateData.componentsV2,
+          placeholderLimits: templateData.placeholderLimits,
+          formatter: templateData.formatter,
+        },
+      });
+    },
+    [feedId, watch, mutateAsync, selectedTemplateId, detectedFields],
+  );
 
   // Get connection name from form
   const getConnectionName = useCallback(() => watch("name"), [watch]);

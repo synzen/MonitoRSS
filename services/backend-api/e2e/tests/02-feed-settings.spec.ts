@@ -68,8 +68,16 @@ test.describe("Feed Settings", () => {
       .filter({ hasText: serverName! })
       .click();
 
-    await page.locator("#channel-select").click();
-    await page.getByRole("option", { name: channelName!, exact: true }).click();
+    await expect(page.getByText("Select a channel")).toBeVisible({
+      timeout: 15000,
+    });
+    await page.locator("#channel-select").focus();
+    await page.locator("#channel-select").press("ArrowDown");
+    await page
+      .locator('[role="option"]')
+      .filter({ hasText: channelName! })
+      .first()
+      .click({ timeout: 15000 });
 
     await page
       .getByRole("radio", { name: /Don't use threads/i })
@@ -126,10 +134,16 @@ test.describe("Feed Settings", () => {
       .filter({ hasText: serverName! })
       .click();
 
-    await page.locator("#channel-select").click();
+    await expect(page.getByText("Select a channel")).toBeVisible({
+      timeout: 15000,
+    });
+    await page.locator("#channel-select").focus();
+    await page.locator("#channel-select").press("ArrowDown");
     await page
-      .getByRole("option", { name: forumChannelName!, exact: true })
-      .click();
+      .locator('[role="option"]')
+      .filter({ hasText: forumChannelName! })
+      .first()
+      .click({ timeout: 15000 });
 
     await page.getByRole("button", { name: /Next: Choose Template/i }).click();
 
@@ -182,8 +196,16 @@ test.describe("Feed Settings", () => {
       .filter({ hasText: serverName! })
       .click();
 
-    await page.locator("#channel-select").click();
-    await page.getByRole("option", { name: channelName!, exact: true }).click();
+    await expect(page.getByText("Select a channel")).toBeVisible({
+      timeout: 15000,
+    });
+    await page.locator("#channel-select").focus();
+    await page.locator("#channel-select").press("ArrowDown");
+    await page
+      .locator('[role="option"]')
+      .filter({ hasText: channelName! })
+      .first()
+      .click({ timeout: 15000 });
 
     await page.getByRole("button", { name: /Next: Choose Template/i }).click();
 

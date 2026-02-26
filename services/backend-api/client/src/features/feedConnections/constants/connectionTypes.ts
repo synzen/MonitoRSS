@@ -18,6 +18,6 @@ export const CONNECTION_TYPES: Array<{
   {
     type: "discord-webhook",
     label: "Discord Webhook",
-    description: "Send articles as messages authored by a webhook with a custom name and avatar.",
+    description: "Deliver articles with your own custom name and avatar for a branded look.",
   },
 ];

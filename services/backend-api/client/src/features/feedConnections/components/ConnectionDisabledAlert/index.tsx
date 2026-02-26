@@ -134,20 +134,17 @@ export const ConnectionDisabledAlert = () => {
     return (
       <Alert status="error" borderRadius="md">
         <Box>
-          <AlertTitle>
-            This webhook connection has been disabled because you are not currently a paid
-            subscriber to be able to access webhooks.
-          </AlertTitle>
+          <AlertTitle>Your branded delivery is paused</AlertTitle>
           <AlertDescription display="block">
-            Consider supporting MonitoRSS&apos;s open-source development by subscribing to a paid
-            plan and get access to this feature.
+            This connection was delivering articles with your custom name and avatar. Reactivate it
+            by subscribing to any paid plan.
             <Box marginTop="1rem">
               <Button
                 variant="outline"
                 leftIcon={<ArrowLeftIcon transform="rotate(90deg)" />}
                 onClick={onOpenPricingDialog}
               >
-                Upgrade to a paid plan
+                Reactivate branded delivery
               </Button>
             </Box>
           </AlertDescription>

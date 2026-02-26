@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import { FaDiscord } from "react-icons/fa";
+import { CheckIcon, LockIcon } from "@chakra-ui/icons";
 import {
   Modal,
   ModalOverlay,
@@ -22,6 +23,10 @@ import {
   FormControl,
   FormLabel,
   HStack,
+  Input,
+  Link as ChakraLink,
+  Switch,
+  Badge,
 } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
 import { TemplateCard } from "../TemplateCard";
@@ -42,6 +47,17 @@ import { FeedDiscordChannelConnection } from "../../../../types";
 import { convertTemplateMessageComponentToPreviewInput } from "./templatePreviewUtils";
 import { TemplateGalleryLayout } from "./TemplateGalleryLayout";
 import { MessageComponentRoot } from "../../../../pages/MessageBuilder/types";
+import { useIsFeatureAllowed } from "../../../../hooks";
+import {
+  BlockableFeature,
+  PRICE_IDS,
+  ProductKey,
+  PRODUCT_NAMES,
+  ProductFeature,
+  TIER_CONFIGS,
+} from "../../../../constants";
+import { usePaddleContext } from "../../../../contexts/PaddleContext";
+import { PricingDialogContext } from "../../../../contexts";
 
 const TEMPLATE_GALLERY_HELPER_TEXT =
   "Pick a starting point for your message layout. You can customize everything after applying.";
@@ -70,18 +86,21 @@ export interface TemplateGalleryModalProps {
   userFeed?: UserFeed;
   connection?: FeedDiscordChannelConnection;
   primaryActionLabel?: string;
-  onPrimaryAction?: (selectedTemplateId: string) => void;
+  onPrimaryAction?: (
+    selectedTemplateId: string,
+    branding?: { name: string; iconUrl?: string },
+  ) => void;
   isPrimaryActionLoading?: boolean;
   secondaryActionLabel?: string;
   onSecondaryAction?: () => void;
   tertiaryActionLabel?: string;
   onTertiaryAction?: () => void;
   testId?: string;
-  onTestSend?: () => void;
+  onTestSend?: (branding?: { name: string; iconUrl?: string }) => void;
   isTestSendLoading?: boolean;
   testSendFeedback?: TestSendFeedback | null;
   onClearTestSendFeedback?: () => void;
-  onSave?: () => void;
+  onSave?: (branding?: { name: string; iconUrl?: string }) => void;
   isSaveLoading?: boolean;
   saveError?: { message: string } | null;
   // Message builder context props
@@ -308,6 +327,86 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
     finalFocusRef,
   } = props;
 
+  const { allowed: webhooksAllowed } = useIsFeatureAllowed({
+    feature: BlockableFeature.DiscordWebhooks,
+  });
+  const { openCheckout, isLoaded: isPaddleLoaded, getPricePreview } = usePaddleContext();
+  const { onOpen: onOpenPricingDialog } = useContext(PricingDialogContext);
+
+  const [brandingDisplayName, setBrandingDisplayName] = useState("");
+  const [brandingAvatarUrl, setBrandingAvatarUrl] = useState("");
+  const hasBrandingValues = !!brandingDisplayName.trim();
+
+  const [billingInterval, setBillingInterval] = useState<"month" | "year">("month");
+  const [tier1Prices, setTier1Prices] = useState<{
+    month?: string;
+    year?: string;
+  }>({});
+  const [isPriceLoading, setIsPriceLoading] = useState(false);
+
+  const [modalView, setModalView] = useState<"editor" | "upgrade">("editor");
+  const upgradeHeadingRef = useRef<HTMLParagraphElement>(null);
+  const saveButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setModalView("editor");
+      setBrandingDisplayName("");
+      setBrandingAvatarUrl("");
+      setBillingInterval("month");
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (modalView !== "upgrade" || !isPaddleLoaded) return;
+
+    let cancelled = false;
+    setIsPriceLoading(true);
+
+    getPricePreview([
+      { priceId: PRICE_IDS[ProductKey.Tier1].month, quantity: 1 },
+      { priceId: PRICE_IDS[ProductKey.Tier1].year, quantity: 1 },
+    ])
+      .then((previews) => {
+        if (cancelled) return;
+        const tier1 = previews.find((p) => p.id === ProductKey.Tier1);
+
+        if (tier1) {
+          const monthPrice = tier1.prices.find((p) => p.interval === "month");
+          const yearPrice = tier1.prices.find((p) => p.interval === "year");
+
+          setTier1Prices({
+            month: monthPrice?.formattedPrice,
+            year: yearPrice?.formattedPrice,
+          });
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setIsPriceLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [modalView, isPaddleLoaded]);
+
+  useEffect(() => {
+    if (modalView === "upgrade") {
+      setTimeout(() => upgradeHeadingRef.current?.focus(), 0);
+    } else if (modalView === "editor") {
+      setTimeout(() => saveButtonRef.current?.focus(), 0);
+    }
+  }, [modalView]);
+
+  const prevWebhooksAllowedRef = useRef(webhooksAllowed);
+  useEffect(() => {
+    if (!prevWebhooksAllowedRef.current && webhooksAllowed && modalView !== "editor") {
+      setModalView("editor");
+    }
+    prevWebhooksAllowedRef.current = webhooksAllowed;
+  }, [webhooksAllowed, modalView]);
+
   const hasArticles = articles.length > 0;
   const canTestSend = hasArticles && !!selectedTemplateId && !!selectedArticleId;
 
@@ -416,8 +515,16 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
       return;
     }
 
+    if (!webhooksAllowed && hasBrandingValues) {
+      setModalView("upgrade");
+      return;
+    }
+
     if (onPrimaryAction) {
-      onPrimaryAction(selectedTemplateId);
+      onPrimaryAction(selectedTemplateId, {
+        name: brandingDisplayName,
+        iconUrl: brandingAvatarUrl || undefined,
+      });
     }
   };
 
@@ -429,12 +536,419 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
       return;
     }
 
+    if (!webhooksAllowed && hasBrandingValues) {
+      setModalView("upgrade");
+      return;
+    }
+
     if (onSave) {
-      onSave();
+      onSave({
+        name: brandingDisplayName,
+        iconUrl: brandingAvatarUrl || undefined,
+      });
     }
   };
 
+  const renderUpgradePrompt = () => {
+    return (
+      <Box
+        role="region"
+        aria-label="Upgrade to save custom branding"
+        p={8}
+        textAlign="center"
+        maxW="480px"
+        mx="auto"
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        minH={{ lg: "400px" }}
+      >
+        {/* Value proposition */}
+        <LockIcon boxSize={8} color="blue.300" mb={4} />
+        <Text
+          as="h3"
+          ref={upgradeHeadingRef}
+          tabIndex={-1}
+          fontSize="lg"
+          fontWeight="semibold"
+          mb={2}
+        >
+          Custom branding is included on all paid plans
+        </Text>
+        <Text color="whiteAlpha.700" mb={5}>
+          Deliver articles with your own name and avatar.
+        </Text>
+        <VStack as="ul" spacing={2} mb={6} alignItems="flex-start" listStyleType="none">
+          {TIER_CONFIGS.find((t) => t.productId === ProductKey.Tier1)
+            ?.features.filter(
+              (f) =>
+                f.name === ProductFeature.Webhooks ||
+                f.name === ProductFeature.Feeds ||
+                f.name === ProductFeature.RefreshRate,
+            )
+            .map((feature) => (
+              <HStack as="li" key={feature.name} spacing={2}>
+                <CheckIcon boxSize={3} color="green.400" />
+                <Text fontSize="sm" color="whiteAlpha.900">
+                  {feature.description}
+                </Text>
+              </HStack>
+            ))}
+        </VStack>
+
+        {/* Pricing */}
+        <Box
+          w="100%"
+          bg="whiteAlpha.50"
+          border="1px solid"
+          borderColor="whiteAlpha.100"
+          borderRadius="lg"
+          p={5}
+          mb={6}
+          role="group"
+          aria-label="Pricing options"
+        >
+          <HStack justifyContent="center" spacing={3} mb={2}>
+            <Text fontSize="sm" fontWeight="semibold">
+              Monthly
+            </Text>
+            <Switch
+              size="md"
+              colorScheme="green"
+              isChecked={billingInterval === "year"}
+              onChange={(e) => setBillingInterval(e.target.checked ? "year" : "month")}
+              aria-label="Switch to yearly pricing"
+            />
+            <Text fontSize="sm" fontWeight="semibold">
+              Yearly
+            </Text>
+          </HStack>
+          <Badge colorScheme="green" borderRadius="md" px={2} mb={4}>
+            Save 15% with yearly
+          </Badge>
+          <Box aria-live="polite" aria-atomic="true">
+            {isPriceLoading ? (
+              <Skeleton height="36px" width="160px" mx="auto" borderRadius="md" />
+            ) : (
+              <Text fontSize="3xl" fontWeight="bold">
+                {tier1Prices[billingInterval] || "—"}
+                <Text as="span" fontSize="lg" fontWeight="normal" color="whiteAlpha.700">
+                  /{billingInterval === "month" ? "month" : "year"}
+                </Text>
+              </Text>
+            )}
+          </Box>
+        </Box>
+
+        {/* Action */}
+        <Button
+          colorScheme="blue"
+          size="lg"
+          mb={3}
+          isDisabled={!isPaddleLoaded || isPriceLoading}
+          onClick={() => {
+            const priceId = PRICE_IDS[ProductKey.Tier1][billingInterval];
+            openCheckout({
+              prices: [{ priceId, quantity: 1 }],
+              displayMode: "overlay",
+            });
+          }}
+        >
+          Get {PRODUCT_NAMES[ProductKey.Tier1]}
+        </Button>
+        <Box mb={4}>
+          <ChakraLink
+            fontSize="sm"
+            color="whiteAlpha.700"
+            onClick={() => setModalView("editor")}
+            cursor="pointer"
+          >
+            Back to editor
+          </ChakraLink>
+        </Box>
+        <Text fontSize="xs" color="whiteAlpha.700">
+          By proceeding to payment, you agree to our{" "}
+          <ChakraLink
+            href="https://monitorss.xyz/terms"
+            target="_blank"
+            rel="noopener noreferrer"
+            color="blue.300"
+          >
+            terms
+          </ChakraLink>{" "}
+          and{" "}
+          <ChakraLink
+            href="https://monitorss.xyz/privacy-policy"
+            target="_blank"
+            rel="noopener noreferrer"
+            color="blue.300"
+          >
+            privacy policy
+          </ChakraLink>
+          . Payments handled by Paddle.com.
+        </Text>
+      </Box>
+    );
+  };
+
+  const renderPreviewColumn = () => (
+    <Box
+      bg="gray.900"
+      borderRadius="md"
+      p={4}
+      minH={{ base: "200px", lg: "400px" }}
+      role="region"
+      aria-label="Template preview"
+      aria-busy={isActuallyLoading || isCurrentFormatLoading}
+    >
+      {articles.length > 0 && (
+        <FormControl mb={4}>
+          <FormLabel htmlFor="article-selector" fontSize="xs" color="gray.400" mb={1}>
+            Preview article
+          </FormLabel>
+          <Select
+            id="article-selector"
+            value={selectedArticleId || ""}
+            onChange={(e) => onArticleChange(e.target.value)}
+            bg="gray.700"
+            borderColor="gray.600"
+            size="sm"
+            color="white"
+            _hover={{ borderColor: "gray.500" }}
+          >
+            {articles.map((article) => (
+              <option key={article.id} value={article.id} style={{ backgroundColor: "#2D3748" }}>
+                {article.title || article.id}
+              </option>
+            ))}
+          </Select>
+        </FormControl>
+      )}
+      {previewMessages.length > 0 && (
+        <Box
+          mb={4}
+          p={3}
+          borderRadius="md"
+          border={!webhooksAllowed ? "1px solid" : undefined}
+          borderColor={!webhooksAllowed ? "whiteAlpha.200" : undefined}
+          bg={!webhooksAllowed ? "gray.800" : undefined}
+        >
+          {!webhooksAllowed && (
+            <HStack spacing={2} mb={2}>
+              <LockIcon boxSize={3} color="whiteAlpha.700" />
+              <Text fontSize="xs" color="whiteAlpha.700">
+                Free plan — preview how your branding looks, then upgrade to save it.
+              </Text>
+            </HStack>
+          )}
+          <HStack spacing={3} flexWrap="wrap">
+            <FormControl flex={1} minW="150px">
+              <FormLabel fontSize="xs" color="gray.400" mb={1}>
+                Display Name
+              </FormLabel>
+              <Input
+                size="sm"
+                bg="gray.700"
+                borderColor="gray.600"
+                placeholder="e.g. Gaming News"
+                value={brandingDisplayName}
+                onChange={(e) => setBrandingDisplayName(e.target.value)}
+              />
+            </FormControl>
+            <FormControl flex={1} minW="150px">
+              <FormLabel fontSize="xs" color="gray.400" mb={1}>
+                Avatar URL
+              </FormLabel>
+              <Input
+                size="sm"
+                bg="gray.700"
+                borderColor="gray.600"
+                placeholder="https://example.com/avatar.png"
+                value={brandingAvatarUrl}
+                onChange={(e) => setBrandingAvatarUrl(e.target.value)}
+              />
+            </FormControl>
+          </HStack>
+        </Box>
+      )}
+      {showComparisonPreview && (
+        <VStack spacing={4} align="stretch">
+          <Box>
+            <Text fontSize="sm" fontWeight="semibold" color="gray.400" mb={2}>
+              Current Format
+            </Text>
+            {isCurrentFormatLoading && <Skeleton height="200px" borderRadius="md" />}
+            {!isCurrentFormatLoading && isCurrentFormatError && (
+              <Alert status="error" borderRadius="md">
+                <AlertIcon />
+                Failed to load current format preview.
+              </Alert>
+            )}
+            {!isCurrentFormatLoading &&
+              !isCurrentFormatError &&
+              currentFormatMessages.length > 0 && (
+                <DiscordMessageDisplay
+                  messages={currentFormatMessages}
+                  maxHeight={200}
+                  username={brandingDisplayName || undefined}
+                  avatarUrl={brandingAvatarUrl || undefined}
+                />
+              )}
+            {!isCurrentFormatLoading &&
+              !isCurrentFormatError &&
+              currentFormatMessages.length === 0 && (
+                <Box p={8} textAlign="center" bg="gray.800" borderRadius="md" color="gray.500">
+                  No current format to display
+                </Box>
+              )}
+          </Box>
+          <Box>
+            <Text fontSize="sm" fontWeight="semibold" color="gray.400" mb={2}>
+              Template Preview
+            </Text>
+            {!selectedTemplateId && (
+              <Box p={8} textAlign="center" bg="gray.800" borderRadius="md" color="gray.500">
+                Select a template to compare
+              </Box>
+            )}
+            {selectedTemplateId && isActuallyLoading && (
+              <Skeleton height="200px" borderRadius="md" />
+            )}
+            {selectedTemplateId && !isActuallyLoading && isPreviewError && (
+              <Alert status="error" borderRadius="md">
+                <AlertIcon />
+                Failed to load template preview.
+              </Alert>
+            )}
+            {selectedTemplateId &&
+              !isActuallyLoading &&
+              !isPreviewError &&
+              previewMessages.length > 0 && (
+                <DiscordMessageDisplay
+                  messages={previewMessages}
+                  maxHeight={200}
+                  username={brandingDisplayName || undefined}
+                  avatarUrl={brandingAvatarUrl || undefined}
+                />
+              )}
+            {selectedTemplateId &&
+              !isActuallyLoading &&
+              !isPreviewError &&
+              previewMessages.length === 0 && (
+                <Box p={8} textAlign="center" bg="gray.800" borderRadius="md" color="gray.500">
+                  There are currently no articles in the feed to preview. You can save now -
+                  previews will be available once articles arrive.
+                </Box>
+              )}
+          </Box>
+          <Text fontSize="sm" color="gray.400" mt={2}>
+            These are approximate previews. Send to Discord to see the actual representation.
+          </Text>
+        </VStack>
+      )}
+      {!showComparisonPreview && (
+        <Box>
+          <Text fontSize="sm" color="gray.400" mb={3}>
+            Preview
+          </Text>
+          {!selectedTemplateId && (
+            <Box p={8} textAlign="center" bg="gray.800" borderRadius="md" color="gray.500">
+              Select a template to preview
+            </Box>
+          )}
+          {selectedTemplateId && isActuallyLoading && (
+            <Skeleton height="300px" borderRadius="md" aria-label="Loading preview" />
+          )}
+          {selectedTemplateId && !isActuallyLoading && isPreviewError && (
+            <Alert status="error" borderRadius="md">
+              <AlertIcon />
+              Failed to load preview. Please try again.
+            </Alert>
+          )}
+          {selectedTemplateId &&
+            !isActuallyLoading &&
+            !isPreviewError &&
+            previewMessages.length > 0 && (
+              <DiscordMessageDisplay
+                messages={previewMessages}
+                maxHeight={{ base: 200, lg: 350 }}
+                username={brandingDisplayName || undefined}
+                avatarUrl={brandingAvatarUrl || undefined}
+              />
+            )}
+          {selectedTemplateId &&
+            !isActuallyLoading &&
+            !isPreviewError &&
+            previewMessages.length === 0 &&
+            articles.length === 0 && (
+              <Text color="gray.500" textAlign="center" py={8}>
+                There are currently no articles in the feed to preview. You can save now - previews
+                will be available once articles arrive.
+              </Text>
+            )}
+          {!!articles.length && (
+            <Text fontSize="sm" color="gray.400" mt={2}>
+              This is an approximate preview. Send to Discord to see the actual representation.
+            </Text>
+          )}
+        </Box>
+      )}
+      {onTestSend && hasArticles && (
+        <Box mt={4}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              onTestSend?.({
+                name: brandingDisplayName,
+                iconUrl: brandingAvatarUrl || undefined,
+              })
+            }
+            isLoading={isTestSendLoading}
+            isDisabled={!canTestSend}
+            aria-busy={isTestSendLoading}
+            leftIcon={<FaDiscord />}
+          >
+            {isTestSendLoading ? "Sending..." : "Send to Discord"}
+          </Button>
+        </Box>
+      )}
+      {testSendFeedback && !testSendFeedback.deliveryStatus && (
+        <Box mt={3}>
+          {testSendFeedback.status === "success" && (
+            <Alert status="success" borderRadius="md" size="sm">
+              <AlertIcon />
+              <AlertDescription>{testSendFeedback.message}</AlertDescription>
+            </Alert>
+          )}
+          {testSendFeedback.status === "error" && (
+            <Alert status="error" borderRadius="md" size="sm">
+              <AlertIcon />
+              <AlertDescription>{testSendFeedback.message}</AlertDescription>
+            </Alert>
+          )}
+        </Box>
+      )}
+    </Box>
+  );
+
   const renderModalBodyContent = () => {
+    if (modalView === "upgrade") {
+      const hasPreview = isActuallyLoading || previewMessages.length > 0;
+
+      if (!hasPreview) {
+        return renderUpgradePrompt();
+      }
+
+      return (
+        <TemplateGalleryLayout
+          templateList={renderUpgradePrompt()}
+          preview={renderPreviewColumn()}
+        />
+      );
+    }
+
     if (showErrorPanel) {
       return (
         <TestSendErrorPanel
@@ -504,212 +1018,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
               </VStack>
             </Box>
           }
-          preview={
-            <Box
-              bg="gray.900"
-              borderRadius="md"
-              p={4}
-              minH={{ base: "200px", lg: "400px" }}
-              role="region"
-              aria-label="Template preview"
-              aria-busy={isActuallyLoading || isCurrentFormatLoading}
-            >
-              {/* Article Selector - shared between both previews */}
-              {articles.length > 0 && (
-                <FormControl mb={4}>
-                  <FormLabel htmlFor="article-selector" fontSize="xs" color="gray.400" mb={1}>
-                    Preview article
-                  </FormLabel>
-                  <Select
-                    id="article-selector"
-                    value={selectedArticleId || ""}
-                    onChange={(e) => onArticleChange(e.target.value)}
-                    bg="gray.700"
-                    borderColor="gray.600"
-                    size="sm"
-                    color="white"
-                    _hover={{ borderColor: "gray.500" }}
-                  >
-                    {articles.map((article) => (
-                      <option
-                        key={article.id}
-                        value={article.id}
-                        style={{ backgroundColor: "#2D3748" }}
-                      >
-                        {article.title || article.id}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-              )}
-              {/* Dual Preview Mode */}
-              {showComparisonPreview && (
-                <VStack spacing={4} align="stretch">
-                  {/* Current Format Preview */}
-                  <Box>
-                    <Text fontSize="sm" fontWeight="semibold" color="gray.400" mb={2}>
-                      Current Format
-                    </Text>
-                    {isCurrentFormatLoading && <Skeleton height="200px" borderRadius="md" />}
-                    {!isCurrentFormatLoading && isCurrentFormatError && (
-                      <Alert status="error" borderRadius="md">
-                        <AlertIcon />
-                        Failed to load current format preview.
-                      </Alert>
-                    )}
-                    {!isCurrentFormatLoading &&
-                      !isCurrentFormatError &&
-                      currentFormatMessages.length > 0 && (
-                        <DiscordMessageDisplay messages={currentFormatMessages} maxHeight={200} />
-                      )}
-                    {!isCurrentFormatLoading &&
-                      !isCurrentFormatError &&
-                      currentFormatMessages.length === 0 && (
-                        <Box
-                          p={8}
-                          textAlign="center"
-                          bg="gray.800"
-                          borderRadius="md"
-                          color="gray.500"
-                        >
-                          No current format to display
-                        </Box>
-                      )}
-                  </Box>
-                  {/* Template Preview */}
-                  <Box>
-                    <Text fontSize="sm" fontWeight="semibold" color="gray.400" mb={2}>
-                      Template Preview
-                    </Text>
-                    {!selectedTemplateId && (
-                      <Box
-                        p={8}
-                        textAlign="center"
-                        bg="gray.800"
-                        borderRadius="md"
-                        color="gray.500"
-                      >
-                        Select a template to compare
-                      </Box>
-                    )}
-                    {selectedTemplateId && isActuallyLoading && (
-                      <Skeleton height="200px" borderRadius="md" />
-                    )}
-                    {selectedTemplateId && !isActuallyLoading && isPreviewError && (
-                      <Alert status="error" borderRadius="md">
-                        <AlertIcon />
-                        Failed to load template preview.
-                      </Alert>
-                    )}
-                    {selectedTemplateId &&
-                      !isActuallyLoading &&
-                      !isPreviewError &&
-                      previewMessages.length > 0 && (
-                        <DiscordMessageDisplay messages={previewMessages} maxHeight={200} />
-                      )}
-                    {selectedTemplateId &&
-                      !isActuallyLoading &&
-                      !isPreviewError &&
-                      previewMessages.length === 0 && (
-                        <Box
-                          p={8}
-                          textAlign="center"
-                          bg="gray.800"
-                          borderRadius="md"
-                          color="gray.500"
-                        >
-                          There are currently no articles in the feed to preview. You can save now -
-                          previews will be available once articles arrive.
-                        </Box>
-                      )}
-                  </Box>
-                  <Text fontSize="sm" color="gray.400" mt={2}>
-                    These are approximate previews. Send to Discord to see the actual
-                    representation.
-                  </Text>
-                </VStack>
-              )}
-              {/* Single Preview Mode (original behavior) */}
-              {!showComparisonPreview && (
-                <Box>
-                  <Text fontSize="sm" color="gray.400" mb={3}>
-                    Preview
-                  </Text>
-                  {/* No template selected - show placeholder */}
-                  {!selectedTemplateId && (
-                    <Box p={8} textAlign="center" bg="gray.800" borderRadius="md" color="gray.500">
-                      Select a template to preview
-                    </Box>
-                  )}
-                  {selectedTemplateId && isActuallyLoading && (
-                    <Skeleton height="300px" borderRadius="md" aria-label="Loading preview" />
-                  )}
-                  {selectedTemplateId && !isActuallyLoading && isPreviewError && (
-                    <Alert status="error" borderRadius="md">
-                      <AlertIcon />
-                      Failed to load preview. Please try again.
-                    </Alert>
-                  )}
-                  {selectedTemplateId &&
-                    !isActuallyLoading &&
-                    !isPreviewError &&
-                    previewMessages.length > 0 && (
-                      <DiscordMessageDisplay
-                        messages={previewMessages}
-                        maxHeight={{ base: 200, lg: 350 }}
-                      />
-                    )}
-                  {selectedTemplateId &&
-                    !isActuallyLoading &&
-                    !isPreviewError &&
-                    previewMessages.length === 0 &&
-                    articles.length === 0 && (
-                      <Text color="gray.500" textAlign="center" py={8}>
-                        There are currently no articles in the feed to preview. You can save now -
-                        previews will be available once articles arrive.
-                      </Text>
-                    )}
-                  {!!articles.length && (
-                    <Text fontSize="sm" color="gray.400" mt={2}>
-                      This is an approximate preview. Send to Discord to see the actual
-                      representation.
-                    </Text>
-                  )}
-                </Box>
-              )}
-              {onTestSend && hasArticles && (
-                <Box mt={4}>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onTestSend}
-                    isLoading={isTestSendLoading}
-                    isDisabled={!canTestSend}
-                    aria-busy={isTestSendLoading}
-                    leftIcon={<FaDiscord />}
-                  >
-                    {isTestSendLoading ? "Sending..." : "Send to Discord"}
-                  </Button>
-                </Box>
-              )}
-              {testSendFeedback && !testSendFeedback.deliveryStatus && (
-                <Box mt={3}>
-                  {testSendFeedback.status === "success" && (
-                    <Alert status="success" borderRadius="md" size="sm">
-                      <AlertIcon />
-                      <AlertDescription>{testSendFeedback.message}</AlertDescription>
-                    </Alert>
-                  )}
-                  {testSendFeedback.status === "error" && (
-                    <Alert status="error" borderRadius="md" size="sm">
-                      <AlertIcon />
-                      <AlertDescription>{testSendFeedback.message}</AlertDescription>
-                    </Alert>
-                  )}
-                </Box>
-              )}
-            </Box>
-          }
+          preview={renderPreviewColumn()}
         />
         <VisuallyHidden>
           <div aria-live="polite" aria-atomic="true">
@@ -732,7 +1041,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
       size={{ base: "full", md: "xl", lg: "6xl" }}
       scrollBehavior="inside"
       closeOnOverlayClick
-      closeOnEsc
+      closeOnEsc={modalView === "editor"}
       finalFocusRef={finalFocusRef}
     >
       <ModalOverlay />
@@ -741,14 +1050,20 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
         height={{ base: "100dvh", md: "auto" }}
         data-testid={testId}
         aria-labelledby="template-gallery-modal-header"
+        onKeyDown={(e) => {
+          if (e.key === "Escape" && modalView === "upgrade") {
+            e.stopPropagation();
+            setModalView("editor");
+          }
+        }}
       >
         <ModalHeader id="template-gallery-modal-header">
           {modalTitle || "Choose a Message Format Template"}
         </ModalHeader>
         <ModalCloseButton />
         <ModalBody>{renderModalBodyContent()}</ModalBody>
-        {/* Hide footer when error panel is showing - error panel has its own action buttons */}
-        {!showErrorPanel && (
+        {/* Hide footer when error panel or upgrade prompt is showing */}
+        {!showErrorPanel && modalView === "editor" && (
           <ModalFooter flexDirection="column" gap={3} alignItems="stretch">
             {showTemplateError && (
               <Alert status="error" borderRadius="md">
@@ -771,19 +1086,40 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                   <Button variant="ghost" onClick={onCancel || onClose}>
                     Cancel
                   </Button>
-                  <Button colorScheme="blue" aria-disabled={isSaveLoading} onClick={(e) => {
-                    e.preventDefault()
-
-                    if (isSaveLoading) {
-                      return
-                    }
-
-                    handleSave()
-                  }}
-                  // isLoading={isSaveLoading}
-                  >
-                    {isSaveLoading ? 'Saving...' : 'Save'}
-                  </Button>
+                  {!webhooksAllowed && hasBrandingValues ? (
+                    <>
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          if (isSaveLoading) return;
+                          setBrandingDisplayName("");
+                          setBrandingAvatarUrl("");
+                          if (onSave) onSave();
+                        }}
+                        isDisabled={isSaveLoading}
+                      >
+                        Save without branding
+                      </Button>
+                      <Button colorScheme="blue" onClick={() => setModalView("upgrade")}>
+                        Upgrade to save with branding
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      ref={saveButtonRef}
+                      colorScheme="blue"
+                      aria-disabled={isSaveLoading}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (isSaveLoading) {
+                          return;
+                        }
+                        handleSave();
+                      }}
+                    >
+                      {isSaveLoading ? "Saving..." : "Save"}
+                    </Button>
+                  )}
                 </HStack>
               </HStack>
             ) : (
@@ -803,14 +1139,35 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                 <Button variant="outline" mr={3} onClick={onSecondaryAction || onClose}>
                   {secondaryActionLabel}
                 </Button>
-                {onPrimaryAction && (
-                  <Button
-                    colorScheme="blue"
-                    isLoading={isPrimaryActionLoading}
-                    onClick={handlePrimaryAction}
-                  >
-                    {primaryActionLabel}
-                  </Button>
+                {!webhooksAllowed && hasBrandingValues ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      mr={3}
+                      onClick={() => {
+                        setBrandingDisplayName("");
+                        setBrandingAvatarUrl("");
+                        if (onPrimaryAction && selectedTemplateId)
+                          onPrimaryAction(selectedTemplateId);
+                      }}
+                    >
+                      Save without branding
+                    </Button>
+                    <Button colorScheme="blue" onClick={() => setModalView("upgrade")}>
+                      Upgrade to save with branding
+                    </Button>
+                  </>
+                ) : (
+                  onPrimaryAction && (
+                    <Button
+                      ref={saveButtonRef}
+                      colorScheme="blue"
+                      isLoading={isPrimaryActionLoading}
+                      onClick={handlePrimaryAction}
+                    >
+                      {primaryActionLabel}
+                    </Button>
+                  )
                 )}
               </HStack>
             )}

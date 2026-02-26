@@ -142,7 +142,9 @@ export const EditConnectionWebhookDialog: React.FC<Props> = ({
           <ModalCloseButton />
           <ModalBody>
             {webhooksDisabled && (
-              <Text color="orange.500">{t("common.errors.supporterRequiredAccessV2")}</Text>
+              <Text color="orange.500">
+                Upgrade to a paid plan to use custom branding on this connection.
+              </Text>
             )}
             {!webhooksDisabled && (
               <Stack spacing={4}>

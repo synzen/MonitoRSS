@@ -84,7 +84,7 @@ export const DiscordChannelConnectionSettings = ({ feedId, connection, trigger }
       <EditConnectionWebhookDialog
         excludeName
         connectionId={connection.id}
-        title="Convert to Discord Webhook"
+        title="Add custom branding"
         isOpen={isConvertToWebhookIsOpen}
         onClose={isConvertToWebhookOnClose}
         onCloseRef={actionsButtonRef}
@@ -169,7 +169,7 @@ export const DiscordChannelConnectionSettings = ({ feedId, connection, trigger }
           )}
           {connection && connection.details.channel && (
             <MenuItem onClick={isConvertToWebhookOnOpen} icon={<BiTransfer />}>
-              Convert to Discord Webhook
+              Add custom branding
             </MenuItem>
           )}
           <MenuDivider />

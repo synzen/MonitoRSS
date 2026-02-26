@@ -1107,7 +1107,7 @@ export class FeedConnectionsDiscordChannelsService {
       | SendTestArticleInput["details"]["mediumDetails"]["webhook"]
       | undefined;
 
-    if (input.webhook && isSupporter) {
+    if (input.webhook) {
       const webhook = await this.getOrCreateApplicationWebhook({
         channelId: input.threadId || input.channelId,
         webhook: { name: `test-send-${userFeed.id}` },

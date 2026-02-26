@@ -37,7 +37,7 @@ import { useNavigate } from "react-router-dom";
 import { InlineErrorAlert } from "../InlineErrorAlert";
 import { FAQ } from "../FAQ";
 import { ChangeSubscriptionDialog } from "../ChangeSubscriptionDialog";
-import { pages, ProductKey } from "../../constants";
+import { pages, ProductKey, TIER_CONFIGS } from "../../constants";
 import { EXTERNAL_PROPERTIES_MAX_ARTICLES } from "../../constants/externalPropertiesMaxArticles";
 import { usePaddleContext } from "../../contexts/PaddleContext";
 import { notifyInfo } from "../../utils/notifyInfo";
@@ -48,65 +48,6 @@ interface Props {
   onClose: () => void;
   onOpen: () => void;
 }
-
-enum Feature {
-  Feeds = "Feeds",
-  ArticleLimit = "Article Limit",
-  Webhooks = "Webhooks",
-  CustomPlaceholders = "Custom Placeholders",
-  RefreshRate = "Refresh Rate",
-  ExternalProperties = "External Properties",
-}
-
-interface TierConfig {
-  productId: ProductKey;
-  supportsAdditionalFeeds?: boolean;
-  features: Array<{ name: string; description: string; enabled?: boolean }>;
-}
-
-const TIER_CONFIGS: TierConfig[] = [
-  {
-    productId: ProductKey.Tier1,
-    features: [
-      { name: Feature.Feeds, description: "Track 35 news feeds", enabled: true },
-      { name: Feature.ArticleLimit, description: "1000 articles daily per feed", enabled: true },
-      { name: Feature.Webhooks, description: "Custom name/avatar with webhooks", enabled: true },
-      { name: Feature.CustomPlaceholders, description: "Custom placeholders", enabled: true },
-      { name: Feature.RefreshRate, description: "2 minute refresh rate", enabled: true },
-    ],
-  },
-  {
-    productId: ProductKey.Tier2,
-    features: [
-      { name: Feature.Feeds, description: "Track 70 news feeds", enabled: true },
-      { name: Feature.ArticleLimit, description: "1000 articles daily per feed", enabled: true },
-      { name: Feature.Webhooks, description: "Custom name/avatar with webhooks", enabled: true },
-      { name: Feature.CustomPlaceholders, description: "Custom placeholders", enabled: true },
-      {
-        name: Feature.ExternalProperties,
-        description: "External properties (scrape external links)*",
-        enabled: true,
-      },
-      { name: Feature.RefreshRate, description: "2 minute refresh rate", enabled: true },
-    ],
-  },
-  {
-    productId: ProductKey.Tier3,
-    supportsAdditionalFeeds: true,
-    features: [
-      { name: Feature.Feeds, description: "Track 140 news feeds", enabled: true },
-      { name: Feature.ArticleLimit, description: "1000 articles daily per feed", enabled: true },
-      { name: Feature.Webhooks, description: "Custom name/avatar with webhooks", enabled: true },
-      { name: Feature.CustomPlaceholders, description: "Custom placeholders", enabled: true },
-      {
-        name: Feature.ExternalProperties,
-        description: "External properties (scrape external links)*",
-        enabled: true,
-      },
-      { name: Feature.RefreshRate, description: "2 minute refresh rate", enabled: true },
-    ],
-  },
-];
 
 const getIdealPriceTextSize = (length: number) => {
   if (length < 10) return "6xl";

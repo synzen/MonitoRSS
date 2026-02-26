@@ -124,35 +124,38 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
   const { onSaveSuccess } = useConnectionDialogCallbacks();
 
   // Create connection callback for test send flow
-  const createConnection = useCallback(async (): Promise<void> => {
-    if (!feedId) {
-      throw new Error("Feed ID missing");
-    }
+  const createConnection = useCallback(
+    async (_branding?: { name: string; iconUrl?: string }): Promise<void> => {
+      if (!feedId) {
+        throw new Error("Feed ID missing");
+      }
 
-    const formValues = watch();
-    const { name, webhook, threadId: inputThreadId } = formValues;
+      const formValues = watch();
+      const { name, webhook, threadId: inputThreadId } = formValues;
 
-    // Get template data to include in create call
-    const templateData = getTemplateUpdateData(selectedTemplateId, detectedFields);
+      // Get template data to include in create call
+      const templateData = getTemplateUpdateData(selectedTemplateId, detectedFields);
 
-    await mutateAsync({
-      feedId,
-      details: {
-        name,
-        applicationWebhook: {
-          channelId,
-          name: webhook.name,
-          iconUrl: webhook.iconUrl,
-          threadId: inputThreadId,
+      await mutateAsync({
+        feedId,
+        details: {
+          name,
+          applicationWebhook: {
+            channelId,
+            name: webhook.name,
+            iconUrl: webhook.iconUrl,
+            threadId: inputThreadId,
+          },
+          content: templateData.content,
+          embeds: templateData.embeds,
+          componentsV2: templateData.componentsV2,
+          placeholderLimits: templateData.placeholderLimits,
+          formatter: templateData.formatter,
         },
-        content: templateData.content,
-        embeds: templateData.embeds,
-        componentsV2: templateData.componentsV2,
-        placeholderLimits: templateData.placeholderLimits,
-        formatter: templateData.formatter,
-      },
-    });
-  }, [feedId, watch, mutateAsync, selectedTemplateId, channelId, detectedFields]);
+      });
+    },
+    [feedId, watch, mutateAsync, selectedTemplateId, channelId, detectedFields],
+  );
 
   // Get connection name from form
   const getConnectionName = useCallback(() => watch("name"), [watch]);
@@ -287,13 +290,12 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
     >
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Add a Discord webhook connection</ModalHeader>
+        <ModalHeader>Add a branded connection</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <Stack spacing={4}>
             <Text>
-              Send articles authored by a webhook with a custom name and icon as a message to a
-              Discord channel or thread.
+              Deliver articles with your own custom name and avatar to a Discord channel or thread.
             </Text>
             <SubscriberBlockText
               feature={BlockableFeature.DiscordWebhooks}
@@ -305,7 +307,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                 <FormControl isInvalid={!!errors.serverId} isRequired>
                   <FormLabel id="server-select-label" htmlFor="server-select">
                     {t(
-                      "features.feed.components.addDiscordWebhookConnectionDialog.formServerLabel"
+                      "features.feed.components.addDiscordWebhookConnectionDialog.formServerLabel",
                     )}
                   </FormLabel>
                   <Controller
@@ -426,7 +428,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                 <FormControl isInvalid={!!errors.webhook?.name} isRequired>
                   <FormLabel>
                     {t(
-                      "features.feed.components.addDiscordWebhookConnectionDialog.webhookNameLabel"
+                      "features.feed.components.addDiscordWebhookConnectionDialog.webhookNameLabel",
                     )}
                   </FormLabel>
                   <Controller
@@ -452,7 +454,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                   <FormLabel>
                     {t(
                       "features.feed.components.addDiscordWebhookConnectionDialog" +
-                        ".webhookIconUrlLabel"
+                        ".webhookIconUrlLabel",
                     )}
                   </FormLabel>
                   <Controller
@@ -475,7 +477,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                 <FormControl isInvalid={!!errors.name} isRequired>
                   <FormLabel>
                     {t(
-                      "features.feed.components.addDiscordChannelThreadConnectionDialog.formNameLabel"
+                      "features.feed.components.addDiscordChannelThreadConnectionDialog.formNameLabel",
                     )}
                   </FormLabel>
                   <Controller
@@ -495,7 +497,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                     <FormHelperText>
                       {t(
                         "features.feed.components" +
-                          ".addDiscordChannelThreadConnectionDialog.formNameDescription"
+                          ".addDiscordChannelThreadConnectionDialog.formNameDescription",
                       )}
                     </FormHelperText>
                   )}

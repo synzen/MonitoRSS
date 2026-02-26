@@ -36,6 +36,7 @@ const DISCORD_V2_COMPONENT_TYPE = {
 
 const MONITORSS_AVATAR_URL =
   "https://cdn.discordapp.com/avatars/302050872383242240/1fb101f4b0fe104b6b8c53ec5e3d5af6.png";
+const DISCORD_DEFAULT_AVATAR_URL = "https://cdn.discordapp.com/embed/avatars/0.png";
 const MONITORSS_USERNAME = "MonitoRSS";
 
 const buttonColors: Record<string, { bg: string; color: string; border: string }> = {
@@ -115,6 +116,8 @@ interface DiscordMessageDisplayProps {
   isLoading?: boolean;
   emptyMessage?: string;
   mentionResolvers?: MentionResolvers;
+  username?: string;
+  avatarUrl?: string;
 }
 
 // Shared button rendering logic to avoid duplication
@@ -585,6 +588,8 @@ export const DiscordMessageDisplay: React.FC<DiscordMessageDisplayProps> = ({
   isLoading,
   emptyMessage,
   mentionResolvers,
+  username,
+  avatarUrl,
 }) => {
   const bgColor = useColorModeValue("#36393f", "#36393f");
   const textColor = useColorModeValue("#dcddde", "#dcddde");
@@ -606,8 +611,7 @@ export const DiscordMessageDisplay: React.FC<DiscordMessageDisplayProps> = ({
         <HStack align="flex-start" spacing={3}>
           <Avatar
             size="sm"
-            src={MONITORSS_AVATAR_URL}
-            name={MONITORSS_USERNAME}
+            src={avatarUrl || (username ? DISCORD_DEFAULT_AVATAR_URL : MONITORSS_AVATAR_URL)}
             borderRadius="50%"
             w={10}
             h={10}
@@ -615,7 +619,7 @@ export const DiscordMessageDisplay: React.FC<DiscordMessageDisplayProps> = ({
           <Stack spacing={1} flex={1} maxW="calc(100% - 40px - 0.75rem)">
             <HStack spacing={2} align="center">
               <Text fontSize="sm" fontWeight="semibold" color="white">
-                {MONITORSS_USERNAME}
+                {username || MONITORSS_USERNAME}
               </Text>
               <Box
                 fontSize="xs"
@@ -697,8 +701,7 @@ export const DiscordMessageDisplay: React.FC<DiscordMessageDisplayProps> = ({
       <HStack align="flex-start" spacing={3}>
         <Avatar
           size="sm"
-          src={MONITORSS_AVATAR_URL}
-          name={MONITORSS_USERNAME}
+          src={avatarUrl || (username ? DISCORD_DEFAULT_AVATAR_URL : MONITORSS_AVATAR_URL)}
           borderRadius="50%"
           w={10}
           h={10}
@@ -706,7 +709,7 @@ export const DiscordMessageDisplay: React.FC<DiscordMessageDisplayProps> = ({
         <Stack spacing={1} flex={1} maxW="calc(100% - 40px - 0.75rem)">
           <HStack spacing={2} align="center">
             <Text fontSize="sm" fontWeight="semibold" color="white">
-              {MONITORSS_USERNAME}
+              {username || MONITORSS_USERNAME}
             </Text>
             <Box
               fontSize="xs"
@@ -729,8 +732,8 @@ export const DiscordMessageDisplay: React.FC<DiscordMessageDisplayProps> = ({
               {legacyMessages.length > 0 && (
                 <DiscordView
                   darkTheme
-                  username={MONITORSS_USERNAME}
-                  avatar_url={MONITORSS_AVATAR_URL}
+                  username={username || MONITORSS_USERNAME}
+                  avatar_url={avatarUrl || MONITORSS_AVATAR_URL}
                   messages={legacyMessages}
                   excludeHeader
                   mentionResolvers={mentionResolvers}

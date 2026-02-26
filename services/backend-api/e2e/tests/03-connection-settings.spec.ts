@@ -52,11 +52,16 @@ test.describe("Connection Settings", () => {
       .filter({ hasText: serverName! })
       .click();
 
-    await page.locator("#channel-select").click();
+    await expect(page.getByText("Select a channel")).toBeVisible({
+      timeout: 15000,
+    });
+    await page.locator("#channel-select").focus();
+    await page.locator("#channel-select").press("ArrowDown");
     await page
-      .getByRole("option", { name: channelName!, exact: true })
+      .locator('[role="option"]')
+      .filter({ hasText: channelName! })
       .first()
-      .click();
+      .click({ timeout: 15000 });
 
     await page.getByRole("button", { name: /Save/i }).click();
 

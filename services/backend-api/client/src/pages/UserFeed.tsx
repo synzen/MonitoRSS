@@ -47,6 +47,7 @@ import {
   DeleteIcon,
   ExternalLinkIcon,
   QuestionOutlineIcon,
+  LockIcon,
 } from "@chakra-ui/icons";
 import { useContext, useEffect, useRef, useState } from "react";
 import { FaGear, FaPause, FaUserSlash } from "react-icons/fa6";
@@ -79,6 +80,7 @@ import { UserFeedManagerStatus, pages } from "../constants";
 import { UserFeedLogs } from "../features/feed/components/UserFeedLogs";
 import { useUserMe } from "../features/discordUser";
 import { PricingDialogContext } from "../contexts";
+import { BlockableFeature } from "../constants";
 import { FeedConnectionDisabledCode } from "../types";
 import {
   formatRefreshRateSeconds,
@@ -95,6 +97,7 @@ import {
   usePageAlertContext,
 } from "../contexts/PageAlertContext";
 import { TabContentContainer } from "../components/TabContentContainer";
+import { useIsFeatureAllowed } from "../hooks";
 
 const tabIndexBySearchParam = new Map<string, number>([
   [UserFeedTabSearchParam.Connections, 0],
@@ -172,6 +175,9 @@ const UserFeedInner: React.FC = () => {
   const isNewFeed = state?.isNewFeed as boolean | undefined;
 
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
+  const { allowed: webhooksAllowed } = useIsFeatureAllowed({
+    feature: BlockableFeature.DiscordWebhooks,
+  });
 
   const onAddConnection = (type: "discord-channel" | "discord-webhook" | "discord-forum") => {
     setAddConnectionType({ type });
@@ -682,7 +688,12 @@ const UserFeedInner: React.FC = () => {
                             {CONNECTION_TYPES.map((ct) => (
                               <MenuItem key={ct.type} onClick={() => onAddConnection(ct.type)}>
                                 <Stack spacing={1}>
-                                  <Text>{ct.label}</Text>
+                                  <HStack>
+                                    <Text>{ct.label}</Text>
+                                    {ct.type === "discord-webhook" && !webhooksAllowed && (
+                                      <LockIcon color="whiteAlpha.500" boxSize={3} />
+                                    )}
+                                  </HStack>
                                   <Text fontSize={13} color="whiteAlpha.600" whiteSpace="normal">
                                     {ct.description}
                                   </Text>

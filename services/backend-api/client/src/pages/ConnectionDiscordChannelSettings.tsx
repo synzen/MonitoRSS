@@ -351,7 +351,9 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                 <TabContentContainer>
                   <MessageTabSection
                     guildId={serverId}
-                    onMessageUpdated={(data) => onUpdate(data, "message format")}
+                    onMessageUpdated={(data, extra) =>
+                      onUpdate({ ...data, ...extra }, "message format")
+                    }
                   />
                 </TabContentContainer>
               </BoxConstrained.Container>
