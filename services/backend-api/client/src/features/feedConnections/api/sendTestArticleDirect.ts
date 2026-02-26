@@ -22,6 +22,7 @@ export interface SendTestArticleDirectInput {
       iconUrl?: string;
     } | null;
     threadId?: string;
+    channelNewThread?: boolean;
     userFeedFormatOptions?: {
       dateFormat?: string | null;
       dateTimezone?: string | null;

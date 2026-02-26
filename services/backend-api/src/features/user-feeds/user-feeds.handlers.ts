@@ -484,6 +484,7 @@ export async function sendTestArticleHandler(
       placeholderLimits: request.body.placeholderLimits,
       webhook: request.body.webhook,
       threadId: request.body.threadId,
+      channelNewThread: request.body.channelNewThread,
       userFeedFormatOptions: request.body.userFeedFormatOptions,
     });
 

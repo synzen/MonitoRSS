@@ -284,6 +284,7 @@ export const SendTestArticleBodySchema = Type.Object(
     placeholderLimits: Type.Optional(Type.Array(PlaceholderLimitSchema)),
     webhook: Type.Optional(WebhookSchema),
     threadId: Type.Optional(Type.String()),
+    channelNewThread: Type.Optional(Type.Boolean()),
     userFeedFormatOptions: Type.Optional(UserFeedFormatOptionsSchema),
   },
   { additionalProperties: false },
