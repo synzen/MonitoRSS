@@ -32,6 +32,7 @@ export interface UseTestSendFlowOptions {
   feedId: string | undefined;
   channelId: string | undefined;
   threadId?: string | undefined;
+  channelNewThread?: boolean;
   webhookName?: string | undefined;
   webhookIconUrl?: string | undefined;
   selectedTemplateId: string | undefined;
@@ -57,6 +58,7 @@ export const useTestSendFlow = ({
   feedId,
   channelId,
   threadId,
+  channelNewThread,
   webhookName,
   webhookIconUrl,
   selectedTemplateId,
@@ -106,6 +108,7 @@ export const useTestSendFlow = ({
           article: { id: selectedArticleId },
           channelId,
           threadId,
+          channelNewThread,
           content: templateData.content,
           embeds: templateData.embeds,
           componentsV2: templateData.componentsV2,
@@ -151,6 +154,7 @@ export const useTestSendFlow = ({
     selectedArticleId,
     channelId,
     threadId,
+    channelNewThread,
     webhookName,
     webhookIconUrl,
     selectedTemplateId,

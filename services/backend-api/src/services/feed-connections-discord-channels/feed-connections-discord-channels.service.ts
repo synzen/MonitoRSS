@@ -1062,6 +1062,7 @@ export class FeedConnectionsDiscordChannelsService {
         iconUrl?: string;
       } | null;
       threadId?: string;
+      channelNewThread?: boolean;
       userFeedFormatOptions?: IUserFeed["formatOptions"] | null;
     },
   ): Promise<SendTestArticleResult> {
@@ -1151,6 +1152,7 @@ export class FeedConnectionsDiscordChannelsService {
           ? undefined
           : {
               id: input.threadId || input.channelId,
+              ...(input.channelNewThread && { type: "new-thread" }),
             },
         webhook: webhookDetails,
         content: castDiscordContentForMedium(input.content),
