@@ -9,31 +9,39 @@ config({ path: join(process.cwd(), "..", "..", ".env.local") });
 config({ path: join(process.cwd(), "..", "..", ".env") });
 
 const BASE_URL = "http://localhost:3000";
-const POLL_INTERVAL_MS = 2000;
-const POLL_TIMEOUT_MS = 60000;
+const POLL_INTERVAL_MS = 3000;
+const POLL_TIMEOUT_MS = 90000;
 
-async function waitForFreeState(cookieHeader: string): Promise<void> {
+async function getUserSubscriptionKey(
+  cookieHeader: string,
+): Promise<string | null> {
+  const response = await fetch(`${BASE_URL}/api/v1/discord-users/@me`, {
+    headers: { Cookie: cookieHeader },
+  });
+
+  if (!response.ok) return null;
+
+  const data = await response.json();
+  return data.result?.subscription?.product?.key || null;
+}
+
+async function waitForCancellationWebhook(
+  cookieHeader: string,
+): Promise<void> {
   const startTime = Date.now();
 
   while (Date.now() - startTime < POLL_TIMEOUT_MS) {
     try {
-      const response = await fetch(`${BASE_URL}/api/v1/discord-users/@me`, {
-        headers: { Cookie: cookieHeader },
-      });
+      const key = await getUserSubscriptionKey(cookieHeader);
 
-      if (response.ok) {
-        const data = await response.json();
-        const subscription = data.result?.subscription;
-
-        if (!subscription || subscription.product?.key === "free") {
-          console.log("User back on Free tier - cleanup complete");
-          return;
-        }
-
-        console.log(
-          `Waiting for Free tier... current: ${subscription.product?.key}`,
-        );
+      if (!key || key === "free") {
+        console.log("User back on Free tier - cleanup complete");
+        return;
       }
+
+      console.log(
+        `Waiting for cancellation webhook... current tier: ${key}`,
+      );
     } catch {
       // API may be unavailable during teardown
     }
@@ -46,16 +54,17 @@ async function waitForFreeState(cookieHeader: string): Promise<void> {
 
 async function paddleTeardown() {
   try {
+    const authData = JSON.parse(readFileSync(AUTH_STATE_PATH, "utf-8"));
+    const cookies = authData.cookies || [];
+    const cookieHeader = cookies
+      .map((c: { name: string; value: string }) => `${c.name}=${c.value}`)
+      .join("; ");
+
     const cancelledIds = await cancelAllActiveSubscriptions();
 
     if (cancelledIds.length > 0) {
-      const authData = JSON.parse(readFileSync(AUTH_STATE_PATH, "utf-8"));
-      const cookies = authData.cookies || [];
-      const cookieHeader = cookies
-        .map((c: { name: string; value: string }) => `${c.name}=${c.value}`)
-        .join("; ");
-
-      await waitForFreeState(cookieHeader);
+      // Keep tunnel alive so Paddle can deliver the cancellation webhook
+      await waitForCancellationWebhook(cookieHeader);
     }
   } catch (err) {
     console.warn("Teardown subscription cleanup failed:", err);
