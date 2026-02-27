@@ -38,6 +38,6 @@ export const useDeleteConnection = (type: FeedConnectionType) => {
             refetchType: "all",
           }),
         ]),
-    }
+    },
   );
 };

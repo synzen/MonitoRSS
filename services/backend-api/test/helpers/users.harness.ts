@@ -21,6 +21,7 @@ const DEFAULT_USER = {
 };
 
 export interface UserRepositoryMockOptions {
+  findByEmail?: () => Promise<unknown>;
   findByDiscordId?: () => Promise<unknown>;
   findIdByDiscordId?: () => Promise<string | null>;
   create?: () => Promise<unknown>;
@@ -63,6 +64,7 @@ export interface UsersContextOptions {
 }
 
 export interface MockUserRepository {
+  findByEmail: ReturnType<typeof mock.fn>;
   findByDiscordId: ReturnType<typeof mock.fn>;
   findIdByDiscordId: ReturnType<typeof mock.fn>;
   create: ReturnType<typeof mock.fn>;
@@ -121,6 +123,10 @@ export function createUsersHarness(): UsersHarness {
       const config = { ...DEFAULT_CONFIG, ...options.config } as Config;
 
       const userRepository: MockUserRepository = {
+        findByEmail: mock.fn(
+          options.userRepository?.findByEmail ??
+            (() => Promise.resolve(null)),
+        ),
         findByDiscordId: mock.fn(
           options.userRepository?.findByDiscordId ??
             (() => Promise.resolve(null)),

@@ -31,6 +31,7 @@ export const UserMeSchema = object({
     }).optional(),
   }).default({}),
   subscription: object({
+    subscriptionId: string().optional().nullable(),
     product: object({
       key: string().oneOf(Object.values(ProductKey)).required(),
       name: string().required(),

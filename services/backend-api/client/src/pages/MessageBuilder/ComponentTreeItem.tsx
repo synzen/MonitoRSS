@@ -56,8 +56,8 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
     if (added) {
       notifyInfo(
         `Successfully added ${getMessageBuilderComponentLabel(
-          childType
-        )} component under ${getMessageBuilderComponentLabel(component.type)}`
+          childType,
+        )} component under ${getMessageBuilderComponentLabel(component.type)}`,
       );
     }
   };

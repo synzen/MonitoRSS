@@ -23,6 +23,7 @@ export interface SubscriptionAddon {
 }
 
 export interface SubscriptionDetails {
+  subscriptionId?: string | null;
   product: SubscriptionProductDetails;
   addons: SubscriptionAddon[];
   status: SubscriptionStatus;

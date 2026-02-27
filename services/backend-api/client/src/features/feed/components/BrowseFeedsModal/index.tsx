@@ -77,7 +77,7 @@ export const BrowseFeedsModal = ({
   }
 
   const { data, getHighlightFeeds, isLoading, error, refetch } = useCuratedFeeds(
-    selectedCategory ? { category: selectedCategory } : undefined
+    selectedCategory ? { category: selectedCategory } : undefined,
   );
 
   const handleSearchChange = useCallback((query: string) => {
@@ -131,12 +131,12 @@ export const BrowseFeedsModal = ({
       if (isLoadingAll) {
         const lastIndex = feeds.length - 1;
         const lastItem = document.querySelector(
-          `[data-category-feed-index="${lastIndex}"] button`
+          `[data-category-feed-index="${lastIndex}"] button`,
         ) as HTMLElement | null;
         lastItem?.focus();
       } else {
         const nextItem = document.querySelector(
-          `[data-category-feed-index="${previousCount}"] button`
+          `[data-category-feed-index="${previousCount}"] button`,
         ) as HTMLElement | null;
         nextItem?.focus();
       }
@@ -262,7 +262,7 @@ export const BrowseFeedsModal = ({
                               const cardProps = getFeedCardPropsFromState(
                                 feedActionStates,
                                 feed.url,
-                                isAtLimit
+                                isAtLimit,
                               );
 
                               return (
@@ -305,7 +305,7 @@ export const BrowseFeedsModal = ({
                       role="list"
                       aria-label={`${selectedCategoryLabel} feeds, showing ${Math.min(
                         visibleCount,
-                        totalFeeds
+                        totalFeeds,
                       )} of ${totalFeeds}`}
                       spacing={2}
                       listStyleType="none"
@@ -314,7 +314,7 @@ export const BrowseFeedsModal = ({
                         const cardProps = getFeedCardPropsFromState(
                           feedActionStates,
                           feed.url,
-                          isAtLimit
+                          isAtLimit,
                         );
 
                         return (

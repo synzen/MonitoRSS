@@ -8,7 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { initializePaddle, Paddle } from "@paddle/paddle-js";
+import { initializePaddle, Paddle, RetainCancellationFlowResult } from "@paddle/paddle-js";
 import { useNavigate } from "react-router-dom";
 import { captureException } from "@sentry/react";
 import { Box, Spinner, Stack, Text } from "@chakra-ui/react";
@@ -88,6 +88,7 @@ interface ContextProps {
   getChargePreview: (
     items: Array<{ priceId: string; quantity: number }>,
   ) => Promise<{ totalFormatted: string }>;
+  initCancellationFlow: (subscriptionId: string) => Promise<RetainCancellationFlowResult>;
 }
 
 export const PaddleContext = createContext<ContextProps>({
@@ -101,6 +102,9 @@ export const PaddleContext = createContext<ContextProps>({
   isSubscriptionCreated: false,
   getChargePreview: async () => {
     throw new Error("getChargePreview is not implemented");
+  },
+  initCancellationFlow: async () => {
+    throw new Error("initCancellationFlow is not implemented");
   },
 });
 
@@ -219,6 +223,17 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       return {
         totalFormatted: formatCurrency(details.totals.total, currencyCode),
       };
+    },
+    [!!paddle],
+  );
+
+  const initCancellationFlow = useCallback(
+    async (subscriptionId: string): Promise<RetainCancellationFlowResult> => {
+      if (!paddle) {
+        throw new Error("Paddle is not initialized");
+      }
+
+      return paddle.Retain.initCancellationFlow({ subscriptionId });
     },
     [!!paddle],
   );
@@ -427,6 +442,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       resetCheckoutData,
       isSubscriptionCreated,
       getChargePreview,
+      initCancellationFlow,
     }),
     [
       JSON.stringify(checkoutLoadedData),
@@ -438,6 +454,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       resetCheckoutData,
       isSubscriptionCreated,
       getChargePreview,
+      initCancellationFlow,
     ],
   );
 
