@@ -39,8 +39,11 @@ import { FAQ } from "../FAQ";
 import { ChangeSubscriptionDialog } from "../ChangeSubscriptionDialog";
 import { pages, ProductKey } from "../../constants";
 import { EXTERNAL_PROPERTIES_MAX_ARTICLES } from "../../constants/externalPropertiesMaxArticles";
+import { captureException } from "@sentry/react";
 import { usePaddleContext } from "../../contexts/PaddleContext";
+import { useUserMe } from "../../features/discordUser";
 import { notifyInfo } from "../../utils/notifyInfo";
+import { notifySuccess } from "../../utils/notifySuccess";
 import { usePricingData } from "../../features/subscriptionProducts";
 
 interface Props {
@@ -122,7 +125,8 @@ interface ChangeSubscriptionDetails {
 }
 
 export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
-  const { resetCheckoutData } = usePaddleContext();
+  const { resetCheckoutData, initCancellationFlow } = usePaddleContext();
+  const { data: userData } = useUserMe();
   const navigate = useNavigate();
   const [changeSubscriptionDetails, setChangeSubscriptionDetails] =
     useState<ChangeSubscriptionDetails>();
@@ -157,7 +161,9 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
     changeInterval(e.target.checked ? "year" : "month");
   };
 
-  const onClickPrice = (priceId?: string, productId?: ProductKey, isDowngrade?: boolean) => {
+  const subscriptionId = userData?.result.subscription.subscriptionId;
+
+  const onClickPrice = async (priceId?: string, productId?: ProductKey, isDowngrade?: boolean) => {
     if (!priceId || !productId || !userSubscription) {
       return;
     }
@@ -173,12 +179,49 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
     if (userSubscription.product.key === ProductKey.Free) {
       navigate(pages.checkout(priceId, additionalFeedsItem));
       onClose();
-    } else {
-      setChangeSubscriptionDetails({
-        prices: [{ priceId, quantity: 1 }, ...(additionalFeedsItem ? [additionalFeedsItem] : [])],
-        productId,
-        isDowngrade,
-      });
+
+      return;
+    }
+
+    const isCancelling = productId === ProductKey.Free;
+
+    if (isCancelling && subscriptionId) {
+      onClose();
+
+      try {
+        const result = await initCancellationFlow(subscriptionId);
+        console.log("[Paddle Retain] Flow completed with status:", result.status);
+
+        if (result.status === "retained" || result.status === "chose_to_cancel") {
+          notifySuccess("Changes saved!");
+
+          return;
+        }
+
+        if (result.status === "aborted") {
+          onOpen();
+
+          return;
+        }
+
+        if (result.status === "error") {
+          const errorDetails = "details" in result ? result.details : "unknown";
+          console.warn("[Paddle Retain] Flow returned error:", errorDetails);
+          captureException(new Error(`Paddle Retain error: ${errorDetails}`));
+        }
+      } catch (err) {
+        console.warn("[Paddle Retain] initCancellationFlow threw:", err);
+        captureException(err);
+      }
+    }
+
+    setChangeSubscriptionDetails({
+      prices: [{ priceId, quantity: 1 }, ...(additionalFeedsItem ? [additionalFeedsItem] : [])],
+      productId,
+      isDowngrade,
+    });
+
+    if (!isCancelling || !subscriptionId) {
       onClose();
     }
   };

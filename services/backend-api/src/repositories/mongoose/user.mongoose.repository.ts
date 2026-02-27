@@ -168,6 +168,11 @@ export class UserMongooseRepository
     return doc ? this.toEntity(doc as UserDoc & { _id: Types.ObjectId }) : null;
   }
 
+  async findByEmail(email: string): Promise<IUser | null> {
+    const doc = await this.model.findOne({ email }).lean();
+    return doc ? this.toEntity(doc as UserDoc & { _id: Types.ObjectId }) : null;
+  }
+
   async findByDiscordId(discordUserId: string): Promise<IUser | null> {
     const doc = await this.model.findOne({ discordUserId }).lean();
     return doc ? this.toEntity(doc as UserDoc & { _id: Types.ObjectId }) : null;

@@ -222,6 +222,7 @@ function createTestConfig(
     BACKEND_API_MONGODB_URI: "mongodb://localhost:27017/test",
     BACKEND_API_SESSION_SECRET: "test-secret-key-32-chars-long!!!",
     BACKEND_API_SESSION_SALT: "test-salt-16-ch!",
+    BACKEND_API_SESSION_COOKIE_SECURE: false,
     BACKEND_API_RABBITMQ_BROKER_URL: "amqp://localhost:5672",
     BACKEND_API_FEED_REQUESTS_API_HOST: serverHost,
     BACKEND_API_FEED_REQUESTS_API_KEY: "test-api-key",

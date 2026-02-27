@@ -184,21 +184,26 @@ export class PaddleWebhooksService {
       event.data.customer_id,
     );
 
-    if (!event.data.custom_data.userId) {
-      throw new Error(
-        `Could not find user id in custom_data when updating subscription for customer ${event.data.customer_id}`,
+    let discordUserId: string | undefined;
+
+    if (event.data.custom_data?.userId) {
+      const foundUser = await this.deps.userRepository.findById(
+        event.data.custom_data.userId,
       );
+
+      discordUserId = foundUser?.discordUserId;
     }
 
-    const foundUser = await this.deps.userRepository.findById(
-      event.data.custom_data.userId,
-    );
+    if (!discordUserId) {
+      const foundUser =
+        await this.deps.userRepository.findByEmail(billingEmail);
 
-    const discordUserId = foundUser?.discordUserId;
+      discordUserId = foundUser?.discordUserId;
+    }
 
     if (!discordUserId) {
       throw new Error(
-        `Could not find user with user ID ${event.data.custom_data.userId} when updating subscription for customer ${event.data.customer_id}`,
+        `Could not resolve discord user ID when updating subscription for customer ${event.data.customer_id}`,
       );
     }
 

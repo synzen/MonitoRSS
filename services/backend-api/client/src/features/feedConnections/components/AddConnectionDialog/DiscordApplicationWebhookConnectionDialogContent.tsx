@@ -305,7 +305,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                 <FormControl isInvalid={!!errors.serverId} isRequired>
                   <FormLabel id="server-select-label" htmlFor="server-select">
                     {t(
-                      "features.feed.components.addDiscordWebhookConnectionDialog.formServerLabel"
+                      "features.feed.components.addDiscordWebhookConnectionDialog.formServerLabel",
                     )}
                   </FormLabel>
                   <Controller
@@ -426,7 +426,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                 <FormControl isInvalid={!!errors.webhook?.name} isRequired>
                   <FormLabel>
                     {t(
-                      "features.feed.components.addDiscordWebhookConnectionDialog.webhookNameLabel"
+                      "features.feed.components.addDiscordWebhookConnectionDialog.webhookNameLabel",
                     )}
                   </FormLabel>
                   <Controller
@@ -452,7 +452,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                   <FormLabel>
                     {t(
                       "features.feed.components.addDiscordWebhookConnectionDialog" +
-                        ".webhookIconUrlLabel"
+                        ".webhookIconUrlLabel",
                     )}
                   </FormLabel>
                   <Controller
@@ -475,7 +475,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                 <FormControl isInvalid={!!errors.name} isRequired>
                   <FormLabel>
                     {t(
-                      "features.feed.components.addDiscordChannelThreadConnectionDialog.formNameLabel"
+                      "features.feed.components.addDiscordChannelThreadConnectionDialog.formNameLabel",
                     )}
                   </FormLabel>
                   <Controller
@@ -495,7 +495,7 @@ export const DiscordApplicationWebhookConnectionDialogContent: React.FC<Props> =
                     <FormHelperText>
                       {t(
                         "features.feed.components" +
-                          ".addDiscordChannelThreadConnectionDialog.formNameDescription"
+                          ".addDiscordChannelThreadConnectionDialog.formNameDescription",
                       )}
                     </FormHelperText>
                   )}

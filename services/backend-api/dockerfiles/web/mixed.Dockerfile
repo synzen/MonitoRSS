@@ -33,11 +33,7 @@ ENV SENTRY_RELEASE=$SENTRY_RELEASE
 
 RUN npm run build && cd client && npm run build
 
-RUN apt install curl
-RUN curl -sf https://gobinaries.com/tj/node-prune | sh
-
 RUN npm prune --production
-RUN /usr/local/bin/node-prune
 
 # Alpine will cause the app to mysteriously exit when attempting to register @fastify/secure-session
 FROM node:24-slim AS prod

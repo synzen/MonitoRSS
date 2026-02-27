@@ -204,6 +204,7 @@ export class UsersService {
       },
       externalAccounts,
       subscription: {
+        subscriptionId: subscription.id,
         product: {
           key: subscription.product.key,
           name: getPrettySubscriptionNameFromKey(subscription.product.key),

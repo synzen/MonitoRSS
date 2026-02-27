@@ -70,7 +70,7 @@ export const DiscordActiveThreadDropdown: React.FC<Props> = ({
           <Box>
             <AlertTitle>
               {t(
-                "features.feed.components.addDiscordChannelThreadConnectionDialog.failedToGetThreads"
+                "features.feed.components.addDiscordChannelThreadConnectionDialog.failedToGetThreads",
               )}
             </AlertTitle>
             <AlertDescription>{error?.message}</AlertDescription>

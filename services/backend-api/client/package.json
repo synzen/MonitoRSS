@@ -19,7 +19,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^3.0.0",
-    "@paddle/paddle-js": "^1.4.2",
+    "@paddle/paddle-js": "^1.6.2",
     "@sentry/react": "^7.109.0",
     "@sentry/vite-plugin": "^2.23.0",
     "@tanstack/react-query": "^4.16.1",

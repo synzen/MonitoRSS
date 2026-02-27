@@ -1,7 +1,5 @@
 FROM node:24 AS build
 
-RUN apt install curl
-
 WORKDIR /usr/src/app
 
 COPY package*.json ./
@@ -17,11 +15,7 @@ COPY --from=build /usr/src/app ./
 
 RUN npm run build
 
-RUN apt install curl
-RUN curl -sf https://gobinaries.com/tj/node-prune | sh
-
 RUN npm prune --production
-RUN /usr/local/bin/node-prune
 
 FROM node:24-alpine AS prod
 

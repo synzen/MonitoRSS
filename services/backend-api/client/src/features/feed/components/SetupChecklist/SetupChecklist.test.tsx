@@ -34,7 +34,7 @@ describe("SetupChecklistCard", () => {
 
   it("shows 'No connection — not delivering' when connectionCount is 0", () => {
     renderWithChakra(
-      <SetupChecklistCard feed={{ ...baseFeed, connectionCount: 0 }} onAddConnection={vi.fn()} />
+      <SetupChecklistCard feed={{ ...baseFeed, connectionCount: 0 }} onAddConnection={vi.fn()} />,
     );
 
     expect(screen.getAllByText("No connection \u2014 not delivering").length).toBeGreaterThan(0);
@@ -42,7 +42,7 @@ describe("SetupChecklistCard", () => {
 
   it("shows '1 connection configured' when connectionCount is 1", () => {
     renderWithChakra(
-      <SetupChecklistCard feed={{ ...baseFeed, connectionCount: 1 }} onAddConnection={vi.fn()} />
+      <SetupChecklistCard feed={{ ...baseFeed, connectionCount: 1 }} onAddConnection={vi.fn()} />,
     );
 
     expect(screen.getAllByText("1 connection configured").length).toBeGreaterThan(0);
@@ -50,7 +50,7 @@ describe("SetupChecklistCard", () => {
 
   it("shows '2 connections configured' when connectionCount is 2", () => {
     renderWithChakra(
-      <SetupChecklistCard feed={{ ...baseFeed, connectionCount: 2 }} onAddConnection={vi.fn()} />
+      <SetupChecklistCard feed={{ ...baseFeed, connectionCount: 2 }} onAddConnection={vi.fn()} />,
     );
 
     expect(screen.getAllByText("2 connections configured").length).toBeGreaterThan(0);
@@ -62,7 +62,7 @@ describe("SetupChecklistCard", () => {
       <SetupChecklistCard
         feed={{ ...baseFeed, connectionCount: 0 }}
         onAddConnection={onAddConnection}
-      />
+      />,
     );
 
     const buttons = screen.getAllByRole("button", { name: /Add connection to Gaming News/ });
@@ -76,7 +76,7 @@ describe("SetupChecklistCard", () => {
 
   it("shows all connection type options in menu", async () => {
     const { user } = renderWithChakra(
-      <SetupChecklistCard feed={baseFeed} onAddConnection={vi.fn()} />
+      <SetupChecklistCard feed={baseFeed} onAddConnection={vi.fn()} />,
     );
 
     const buttons = screen.getAllByRole("button", { name: /Add connection to Gaming News/ });
@@ -115,7 +115,7 @@ describe("SetupChecklist", () => {
     renderWithChakra(<SetupChecklist {...defaultProps} />);
 
     expect(
-      screen.getByText("Choose where each feed's articles are delivered.")
+      screen.getByText("Choose where each feed's articles are delivered."),
     ).toBeInTheDocument();
   });
 
@@ -157,7 +157,7 @@ describe("SetupChecklist", () => {
 
   it("shows success state when feeds array is empty", () => {
     renderWithChakra(
-      <SetupChecklist feeds={[]} onConnectionCreated={vi.fn()} onDismiss={vi.fn()} />
+      <SetupChecklist feeds={[]} onConnectionCreated={vi.fn()} onDismiss={vi.fn()} />,
     );
 
     expect(screen.getAllByText("All feeds are delivering").length).toBeGreaterThan(0);
@@ -167,7 +167,7 @@ describe("SetupChecklist", () => {
   it("calls onDismiss when Done is clicked", async () => {
     const onDismiss = vi.fn();
     const { user } = renderWithChakra(
-      <SetupChecklist feeds={[]} onConnectionCreated={vi.fn()} onDismiss={onDismiss} />
+      <SetupChecklist feeds={[]} onConnectionCreated={vi.fn()} onDismiss={onDismiss} />,
     );
 
     await user.click(screen.getByRole("button", { name: "Done" }));

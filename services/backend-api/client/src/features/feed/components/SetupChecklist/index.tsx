@@ -53,7 +53,7 @@ export const SetupChecklist = ({ feeds, onConnectionCreated, onDismiss }: SetupC
         if (a.connectionCount > 0 && b.connectionCount === 0) return 1;
         return 0;
       }),
-    [feeds]
+    [feeds],
   );
 
   const remainingLabel =

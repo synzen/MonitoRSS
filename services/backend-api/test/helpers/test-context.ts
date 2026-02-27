@@ -89,6 +89,7 @@ function createTestConfig(overrides?: Partial<Config>): Config {
 
     BACKEND_API_SESSION_SECRET: "test-secret-key-32-chars-long!!!",
     BACKEND_API_SESSION_SALT: "test-salt-16-ch!",
+    BACKEND_API_SESSION_COOKIE_SECURE: false,
 
     BACKEND_API_RABBITMQ_BROKER_URL: "amqp://localhost:5672",
 

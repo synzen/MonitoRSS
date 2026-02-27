@@ -68,7 +68,7 @@ export interface PaddleEventSubscriptionActivated {
     created_at: string;
     custom_data: {
       userId?: string;
-    };
+    } | null;
     updated_at: string;
     items: Array<{
       quantity: number;

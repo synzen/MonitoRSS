@@ -771,18 +771,21 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                   <Button variant="ghost" onClick={onCancel || onClose}>
                     Cancel
                   </Button>
-                  <Button colorScheme="blue" aria-disabled={isSaveLoading} onClick={(e) => {
-                    e.preventDefault()
+                  <Button
+                    colorScheme="blue"
+                    aria-disabled={isSaveLoading}
+                    onClick={(e) => {
+                      e.preventDefault();
 
-                    if (isSaveLoading) {
-                      return
-                    }
+                      if (isSaveLoading) {
+                        return;
+                      }
 
-                    handleSave()
-                  }}
-                  // isLoading={isSaveLoading}
+                      handleSave();
+                    }}
+                    // isLoading={isSaveLoading}
                   >
-                    {isSaveLoading ? 'Saving...' : 'Save'}
+                    {isSaveLoading ? "Saving..." : "Save"}
                   </Button>
                 </HStack>
               </HStack>
