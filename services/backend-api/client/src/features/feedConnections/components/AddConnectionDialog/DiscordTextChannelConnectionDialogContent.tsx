@@ -1,5 +1,8 @@
 /* eslint-disable no-nested-ternary */
 import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
   Box,
   Button,
   FormControl,
@@ -362,6 +365,11 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
         onSave={handleSave}
         isSaveLoading={isSaving || isSubmitting}
         saveError={error || updateError}
+        brandingDisabledReason={
+          watchedCreateThreadMethod === DiscordCreateChannelThreadMethod.New
+            ? "Display name and avatar customization aren't available with the new thread option. To customize these, go back and select a different thread setting."
+            : undefined
+        }
       />
     );
   }
@@ -454,7 +462,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                   name="createThreadMethod"
                   control={control}
                   render={({ field: createThreadMethodField }) => (
-                    <fieldset aria-describedby="thread-kind-help">
+                    <fieldset>
                       <FormControl isRequired isInvalid={!!errors.createThreadMethod}>
                         <FormLabel as="legend" id="thread-kind-label">
                           How should threads be used?
@@ -468,12 +476,21 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                           }}
                           value={createThreadMethodField.value}
                           aria-labelledby="thread-kind-label"
+                          aria-describedby="thread-kind-help"
                         >
                           <Stack>
                             <Radio value={DiscordCreateChannelThreadMethod.None}>
                               Don&apos;t use threads
                             </Radio>
-                            <Radio value={DiscordCreateChannelThreadMethod.New}>
+                            <Radio
+                              value={DiscordCreateChannelThreadMethod.New}
+                              aria-describedby={
+                                createThreadMethodField.value ===
+                                DiscordCreateChannelThreadMethod.New
+                                  ? "new-thread-constraint"
+                                  : undefined
+                              }
+                            >
                               Create a new thread for each new article
                             </Radio>
                             <Box>
@@ -554,6 +571,24 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                             </Box>
                           </Stack>
                         </RadioGroup>
+                        <Box aria-live="polite" aria-atomic="true" mt={2}>
+                          {createThreadMethodField.value ===
+                            DiscordCreateChannelThreadMethod.New && (
+                            <Alert
+                              id="new-thread-constraint"
+                              status="info"
+                              variant="left-accent"
+                              fontSize="sm"
+                              borderRadius="md"
+                            >
+                              <AlertIcon />
+                              <AlertDescription>
+                                Messages in new threads will appear under the MonitoRSS name. The
+                                display name and avatar can&apos;t be customized with this option.
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                        </Box>
                       </FormControl>
                     </fieldset>
                   )}

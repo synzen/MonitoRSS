@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
 import { FaDiscord } from "react-icons/fa";
-import { CheckIcon, LockIcon } from "@chakra-ui/icons";
+import { CheckIcon, InfoIcon, LockIcon } from "@chakra-ui/icons";
 import {
   Modal,
   ModalOverlay,
@@ -108,6 +108,7 @@ export interface TemplateGalleryModalProps {
   showComparisonPreview?: boolean;
   currentMessageComponent?: MessageComponentRoot;
   finalFocusRef?: React.RefObject<HTMLElement>;
+  brandingDisabledReason?: string;
 }
 
 export function isTemplateCompatible(
@@ -325,6 +326,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
     showComparisonPreview,
     currentMessageComponent,
     finalFocusRef,
+    brandingDisabledReason,
   } = props;
 
   const { allowed: webhooksAllowed } = useIsFeatureAllowed({
@@ -333,9 +335,11 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
   const { openCheckout, isLoaded: isPaddleLoaded, getPricePreview } = usePaddleContext();
   const { onOpen: onOpenPricingDialog } = useContext(PricingDialogContext);
 
+  const isBrandingDisabled = !!brandingDisabledReason;
+
   const [brandingDisplayName, setBrandingDisplayName] = useState("");
   const [brandingAvatarUrl, setBrandingAvatarUrl] = useState("");
-  const hasBrandingValues = !!brandingDisplayName.trim();
+  const hasBrandingValues = !isBrandingDisabled && !!brandingDisplayName.trim();
 
   const [billingInterval, setBillingInterval] = useState<"month" | "year">("month");
   const [tier1Prices, setTier1Prices] = useState<{
@@ -347,6 +351,13 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
   const [modalView, setModalView] = useState<"editor" | "upgrade">("editor");
   const upgradeHeadingRef = useRef<HTMLParagraphElement>(null);
   const saveButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (isBrandingDisabled) {
+      setBrandingDisplayName("");
+      setBrandingAvatarUrl("");
+    }
+  }, [isBrandingDisabled]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -521,10 +532,15 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
     }
 
     if (onPrimaryAction) {
-      onPrimaryAction(selectedTemplateId, {
-        name: brandingDisplayName,
-        iconUrl: brandingAvatarUrl || undefined,
-      });
+      onPrimaryAction(
+        selectedTemplateId,
+        isBrandingDisabled
+          ? undefined
+          : {
+              name: brandingDisplayName,
+              iconUrl: brandingAvatarUrl || undefined,
+            },
+      );
     }
   };
 
@@ -542,10 +558,14 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
     }
 
     if (onSave) {
-      onSave({
-        name: brandingDisplayName,
-        iconUrl: brandingAvatarUrl || undefined,
-      });
+      onSave(
+        isBrandingDisabled
+          ? undefined
+          : {
+              name: brandingDisplayName,
+              iconUrl: brandingAvatarUrl || undefined,
+            },
+      );
     }
   };
 
@@ -730,11 +750,19 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
           mb={4}
           p={3}
           borderRadius="md"
-          border={!webhooksAllowed ? "1px solid" : undefined}
-          borderColor={!webhooksAllowed ? "whiteAlpha.200" : undefined}
-          bg={!webhooksAllowed ? "gray.800" : undefined}
+          border="1px solid"
+          borderColor="whiteAlpha.200"
+          bg="gray.800"
         >
-          {!webhooksAllowed && (
+          {isBrandingDisabled && (
+            <HStack spacing={2} mb={2} id="branding-disabled-reason">
+              <InfoIcon boxSize={3} color="whiteAlpha.700" aria-hidden="true" />
+              <Text fontSize="sm" color="whiteAlpha.700">
+                {brandingDisabledReason}
+              </Text>
+            </HStack>
+          )}
+          {!isBrandingDisabled && !webhooksAllowed && (
             <HStack spacing={2} mb={2}>
               <LockIcon boxSize={3} color="whiteAlpha.700" />
               <Text fontSize="xs" color="whiteAlpha.700">
@@ -743,7 +771,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
             </HStack>
           )}
           <HStack spacing={3} flexWrap="wrap">
-            <FormControl flex={1} minW="150px">
+            <FormControl flex={1} minW="150px" isDisabled={isBrandingDisabled}>
               <FormLabel fontSize="xs" color="gray.400" mb={1}>
                 Display Name
               </FormLabel>
@@ -754,9 +782,11 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                 placeholder="e.g. Gaming News"
                 value={brandingDisplayName}
                 onChange={(e) => setBrandingDisplayName(e.target.value)}
+                opacity={isBrandingDisabled ? 0.6 : undefined}
+                aria-describedby={isBrandingDisabled ? "branding-disabled-reason" : undefined}
               />
             </FormControl>
-            <FormControl flex={1} minW="150px">
+            <FormControl flex={1} minW="150px" isDisabled={isBrandingDisabled}>
               <FormLabel fontSize="xs" color="gray.400" mb={1}>
                 Avatar URL
               </FormLabel>
@@ -767,6 +797,8 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                 placeholder="https://example.com/avatar.png"
                 value={brandingAvatarUrl}
                 onChange={(e) => setBrandingAvatarUrl(e.target.value)}
+                opacity={isBrandingDisabled ? 0.6 : undefined}
+                aria-describedby={isBrandingDisabled ? "branding-disabled-reason" : undefined}
               />
             </FormControl>
           </HStack>

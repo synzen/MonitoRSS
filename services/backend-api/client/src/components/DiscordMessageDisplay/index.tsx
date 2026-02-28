@@ -34,8 +34,6 @@ const DISCORD_V2_COMPONENT_TYPE = {
   Container: 17,
 } as const;
 
-const MONITORSS_AVATAR_URL =
-  "https://cdn.discordapp.com/avatars/302050872383242240/1fb101f4b0fe104b6b8c53ec5e3d5af6.png";
 const DISCORD_DEFAULT_AVATAR_URL = "https://cdn.discordapp.com/embed/avatars/0.png";
 const MONITORSS_USERNAME = "MonitoRSS";
 
@@ -611,7 +609,7 @@ export const DiscordMessageDisplay: React.FC<DiscordMessageDisplayProps> = ({
         <HStack align="flex-start" spacing={3}>
           <Avatar
             size="sm"
-            src={avatarUrl || (username ? DISCORD_DEFAULT_AVATAR_URL : MONITORSS_AVATAR_URL)}
+            src={avatarUrl || DISCORD_DEFAULT_AVATAR_URL}
             borderRadius="50%"
             w={10}
             h={10}
@@ -701,7 +699,7 @@ export const DiscordMessageDisplay: React.FC<DiscordMessageDisplayProps> = ({
       <HStack align="flex-start" spacing={3}>
         <Avatar
           size="sm"
-          src={avatarUrl || (username ? DISCORD_DEFAULT_AVATAR_URL : MONITORSS_AVATAR_URL)}
+          src={avatarUrl || DISCORD_DEFAULT_AVATAR_URL}
           borderRadius="50%"
           w={10}
           h={10}
@@ -733,7 +731,7 @@ export const DiscordMessageDisplay: React.FC<DiscordMessageDisplayProps> = ({
                 <DiscordView
                   darkTheme
                   username={username || MONITORSS_USERNAME}
-                  avatar_url={avatarUrl || MONITORSS_AVATAR_URL}
+                  avatar_url={avatarUrl || DISCORD_DEFAULT_AVATAR_URL}
                   messages={legacyMessages}
                   excludeHeader
                   mentionResolvers={mentionResolvers}
