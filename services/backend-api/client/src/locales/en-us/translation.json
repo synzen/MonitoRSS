@@ -51,7 +51,7 @@
       "feedLimitReached": "You have reached your feed limit. Delete or disable other feeds to enable this one, or consider supporting MonitoRSS to increase your feed limit.",
       "feedMissingChannel": "The channel does not exist",
       "feedUserMissingManageGuild": "You are missing the server-wide Manage Channels permission. Please contact your server administrator to grant you this permission.",
-      "webhooksManageMissingPermissions": "The bot is missing the \"Manage Webhooks\" permission in this server or channel.",
+      "webhooksManageMissingPermissions": "This action requires the bot to have the \"Manage Webhooks\" permission in this server or channel. Grant this permission in the channel's settings, then try again.",
       "webhookInvalid": "Webhook is invalid. Webhooks must be integration that are not owned by other bots.",
       "feedNotFailed": "Unable to retry feed. The feed is still active, and there is no need to retry unless the feed has failed.",
       "feedNotFound": "Feed does not exist or is not accessible. You may confirm by directly going to the feed link and checking that the feed is valid and publicly accessible.",

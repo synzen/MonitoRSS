@@ -29,7 +29,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, object, string } from "yup";
 import type { RefObject } from "react";
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import {
   useCreateDiscordChannelConnection,
   useUpdateDiscordChannelConnection,
@@ -91,6 +91,11 @@ interface Props {
 
 type FormData = InferType<typeof formSchema>;
 
+function getIsForumConnection(connection?: FeedDiscordChannelConnection): boolean {
+  const type = connection?.details.channel?.type;
+  return type === "forum" || type === "forum-thread";
+}
+
 export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
   onClose,
   isOpen,
@@ -99,6 +104,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
   finalFocusRef,
 }) => {
   const isEditing = !!connection;
+  const [isForumChannel, setIsForumChannel] = useState(() => getIsForumConnection(connection));
 
   // Template selection state from shared hook
   const {
@@ -117,19 +123,31 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
     handleBackStep,
   } = useConnectionTemplateSelection({ isOpen, isEditing, feedId: feedIdProp });
 
-  const defaultFormValues: Partial<FormData> = {
-    name: connection?.name,
-    channelId: connection?.details.channel?.parentChannelId || connection?.details.channel?.id,
-    serverId: connection?.details.channel?.guildId,
-    threadId:
-      connection?.details.channel?.type === "thread" ? connection?.details.channel?.id : undefined,
-    createThreadMethod:
-      connection?.details.channel?.type === "new-thread"
-        ? DiscordCreateChannelThreadMethod.New
-        : connection?.details.channel?.type === "thread"
-          ? DiscordCreateChannelThreadMethod.Existing
-          : DiscordCreateChannelThreadMethod.None,
-  };
+  const defaultFormValues: Partial<FormData> = isForumChannel
+    ? {
+        name: connection?.name,
+        serverId: connection?.details.channel?.guildId,
+        channelId: connection?.details.channel?.parentChannelId || connection?.details.channel?.id,
+        threadId: connection?.details.channel?.parentChannelId
+          ? connection?.details.channel?.id
+          : undefined,
+        createThreadMethod: DiscordCreateChannelThreadMethod.None,
+      }
+    : {
+        name: connection?.name,
+        channelId: connection?.details.channel?.parentChannelId || connection?.details.channel?.id,
+        serverId: connection?.details.channel?.guildId,
+        threadId:
+          connection?.details.channel?.type === "thread"
+            ? connection?.details.channel?.id
+            : undefined,
+        createThreadMethod:
+          connection?.details.channel?.type === "new-thread"
+            ? DiscordCreateChannelThreadMethod.New
+            : connection?.details.channel?.type === "thread"
+              ? DiscordCreateChannelThreadMethod.Existing
+              : DiscordCreateChannelThreadMethod.None,
+      };
 
   const { t } = useTranslation();
   const {
@@ -187,7 +205,9 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
               }
             : { channelId: threadId || inputChannelId }),
           threadCreationMethod:
-            createThreadMethod === DiscordCreateChannelThreadMethod.New ? "new-thread" : undefined,
+            !isForumChannel && createThreadMethod === DiscordCreateChannelThreadMethod.New
+              ? "new-thread"
+              : undefined,
           content: templateData.content,
           embeds: templateData.embeds,
           componentsV2: templateData.componentsV2,
@@ -196,15 +216,16 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
         },
       });
     },
-    [feedId, watch, mutateAsync, selectedTemplateId, detectedFields],
+    [feedId, watch, mutateAsync, selectedTemplateId, detectedFields, isForumChannel],
   );
 
   // Get connection name from form
   const getConnectionName = useCallback(() => watch("name"), [watch]);
 
   // Determine the effective channel/thread ID for test send
-  const testSendChannelId =
-    watchedCreateThreadMethod === DiscordCreateChannelThreadMethod.Existing && watchedThreadId
+  const testSendChannelId = isForumChannel
+    ? watchedThreadId || channelId
+    : watchedCreateThreadMethod === DiscordCreateChannelThreadMethod.Existing && watchedThreadId
       ? watchedThreadId
       : channelId;
 
@@ -219,7 +240,8 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
   } = useTestSendFlow({
     feedId,
     channelId: testSendChannelId,
-    channelNewThread: watchedCreateThreadMethod === DiscordCreateChannelThreadMethod.New,
+    channelNewThread:
+      !isForumChannel && watchedCreateThreadMethod === DiscordCreateChannelThreadMethod.New,
     selectedTemplateId,
     selectedArticleId,
     detectedFields,
@@ -232,6 +254,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
 
   useEffect(() => {
     if (connection) {
+      setIsForumChannel(getIsForumConnection(connection));
       reset(defaultFormValues);
     }
   }, [connection?.id]);
@@ -248,21 +271,42 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
 
     if (connection) {
       try {
-        await updateMutateAsync({
-          feedId,
-          connectionId: connection.id,
-          details: {
-            name,
-            channelId:
-              createThreadMethod === DiscordCreateChannelThreadMethod.Existing && threadId
-                ? threadId
-                : inputChannelId,
-            threadCreationMethod:
-              createThreadMethod === DiscordCreateChannelThreadMethod.New
-                ? "new-thread"
-                : undefined,
-          },
-        });
+        if (isForumChannel) {
+          if (threadId) {
+            await updateMutateAsync({
+              feedId,
+              connectionId: connection.id,
+              details: {
+                channelId: threadId,
+              },
+            });
+          } else {
+            await updateMutateAsync({
+              feedId,
+              connectionId: connection.id,
+              details: {
+                name,
+                channelId: inputChannelId,
+              },
+            });
+          }
+        } else {
+          await updateMutateAsync({
+            feedId,
+            connectionId: connection.id,
+            details: {
+              name,
+              channelId:
+                createThreadMethod === DiscordCreateChannelThreadMethod.Existing && threadId
+                  ? threadId
+                  : inputChannelId,
+              threadCreationMethod:
+                createThreadMethod === DiscordCreateChannelThreadMethod.New
+                  ? "new-thread"
+                  : undefined,
+            },
+          });
+        }
 
         createSuccessAlert({
           title: "Successfully updated connection.",
@@ -292,7 +336,9 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
           name,
           channelId: threadId || inputChannelId,
           threadCreationMethod:
-            createThreadMethod === DiscordCreateChannelThreadMethod.New ? "new-thread" : undefined,
+            !isForumChannel && createThreadMethod === DiscordCreateChannelThreadMethod.New
+              ? "new-thread"
+              : undefined,
           content: templateData.content,
           embeds: templateData.embeds,
           componentsV2: templateData.componentsV2,
@@ -313,16 +359,15 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
 
   useEffect(() => {
     reset();
+    setIsForumChannel(getIsForumConnection(connection));
   }, [isOpen]);
 
   const handleNextStep = async () => {
-    const isServerChannelValid = await trigger([
-      "serverId",
-      "channelId",
-      "name",
-      "createThreadMethod",
-      "threadId",
-    ]);
+    const fieldsToValidate: (keyof FormData)[] = isForumChannel
+      ? ["serverId", "channelId", "name"]
+      : ["serverId", "channelId", "name", "createThreadMethod", "threadId"];
+
+    const isServerChannelValid = await trigger(fieldsToValidate);
 
     if (isServerChannelValid) {
       templateHandleNextStep();
@@ -332,6 +377,11 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
   const errorCount = Object.keys(errors).length;
 
   const submissionError = error || updateError;
+
+  const brandingDisabledReason =
+    !isForumChannel && watchedCreateThreadMethod === DiscordCreateChannelThreadMethod.New
+      ? "Display name and avatar customization aren't available with the new thread option. To customize these, go back and select a different thread setting."
+      : undefined;
 
   // For template selection step, show TemplateGalleryModal instead of regular modal
   if (isTemplateStep) {
@@ -365,11 +415,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
         onSave={handleSave}
         isSaveLoading={isSaving || isSubmitting}
         saveError={error || updateError}
-        brandingDisabledReason={
-          watchedCreateThreadMethod === DiscordCreateChannelThreadMethod.New
-            ? "Display name and avatar customization aren't available with the new thread option. To customize these, go back and select a different thread setting."
-            : undefined
-        }
+        brandingDisabledReason={brandingDisabledReason}
       />
     );
   }
@@ -385,12 +431,12 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>
-          {connection ? "Edit Discord Channel Connection" : "Add Discord Channel Connection"}
+          {connection ? "Edit Discord Connection" : "Add Discord Connection"}
         </ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <Stack spacing={4}>
-            <Text>Send articles authored by the bot as a message to a Discord channel.</Text>
+            <Text>Send articles as a message to a Discord channel or forum.</Text>
             <form id="add-text-channel-connection" onSubmit={handleSubmit(onSubmit)}>
               <Stack spacing={6}>
                 <FormControl isInvalid={!!errors.serverId} isRequired>
@@ -436,8 +482,18 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                       <DiscordChannelDropdown
                         isInvalid={!!errors.channelId}
                         value={field.value || ""}
-                        onChange={(value, name) => {
+                        onChange={(value, name, channelType) => {
                           field.onChange(value);
+                          const isForum = channelType === "forum";
+                          setIsForumChannel(isForum);
+
+                          if (isForum) {
+                            setValue("createThreadMethod", DiscordCreateChannelThreadMethod.None, {
+                              shouldValidate: true,
+                            });
+                          }
+
+                          setValue("threadId", undefined);
 
                           if (name) {
                             setValue("name", name, {
@@ -452,147 +508,194 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                         serverId={serverId}
                         inputId="channel-select"
                         ariaLabelledBy="channel-select-label"
-                        types={[GetDiscordChannelType.Text, GetDiscordChannelType.Announcement]}
+                        types={[
+                          GetDiscordChannelType.Text,
+                          GetDiscordChannelType.Announcement,
+                          GetDiscordChannelType.Forum,
+                        ]}
                       />
                     )}
                   />
                   <FormErrorMessage>{errors.channelId?.message}</FormErrorMessage>
                 </FormControl>
-                <Controller
-                  name="createThreadMethod"
-                  control={control}
-                  render={({ field: createThreadMethodField }) => (
-                    <fieldset>
-                      <FormControl isRequired isInvalid={!!errors.createThreadMethod}>
-                        <FormLabel as="legend" id="thread-kind-label">
-                          How should threads be used?
-                        </FormLabel>
-                        <FormHelperText id="thread-kind-help" mb={2}>
-                          Select one option
-                        </FormHelperText>
-                        <RadioGroup
-                          onChange={(value) => {
-                            createThreadMethodField.onChange(value);
-                          }}
-                          value={createThreadMethodField.value}
-                          aria-labelledby="thread-kind-label"
-                          aria-describedby="thread-kind-help"
-                        >
-                          <Stack>
-                            <Radio value={DiscordCreateChannelThreadMethod.None}>
-                              Don&apos;t use threads
-                            </Radio>
-                            <Radio
-                              value={DiscordCreateChannelThreadMethod.New}
-                              aria-describedby={
-                                createThreadMethodField.value ===
-                                DiscordCreateChannelThreadMethod.New
-                                  ? "new-thread-constraint"
-                                  : undefined
-                              }
-                            >
-                              Create a new thread for each new article
-                            </Radio>
-                            <Box>
-                              <Radio
-                                value={DiscordCreateChannelThreadMethod.Existing}
-                                inputProps={{
-                                  "aria-controls": "forum-thread-select",
-                                  "aria-expanded":
-                                    createThreadMethodField.value ===
-                                    DiscordCreateChannelThreadMethod.Existing,
-                                }}
-                              >
-                                Use an existing thread for each new article
-                              </Radio>
-                              <fieldset>
-                                <chakra.legend srOnly>Existing thread information</chakra.legend>
-                                <FormControl
-                                  id="forum-thread-select"
-                                  display={
-                                    createThreadMethodField.value ===
-                                    DiscordCreateChannelThreadMethod.Existing
-                                      ? "block"
-                                      : "none"
-                                  }
-                                  isInvalid={!!errors.threadId}
-                                  isRequired={
-                                    createThreadMethodField.value ===
-                                    DiscordCreateChannelThreadMethod.Existing
-                                  }
-                                  pl={4}
-                                  ml={2}
-                                  mt={2}
-                                  borderLeft="solid 2px"
-                                  borderColor="gray.600"
-                                >
-                                  <FormLabel
-                                    id="channel-thread-label"
-                                    htmlFor="channel-thread-select"
-                                  >
-                                    Discord Channel Thread
-                                  </FormLabel>
-                                  <Controller
-                                    name="threadId"
-                                    control={control}
-                                    render={({ field }) => (
-                                      <DiscordActiveThreadDropdown
-                                        ariaLabelledBy="channel-thread-label"
-                                        isInvalid={!!errors.threadId}
-                                        inputId="channel-thread-select"
-                                        value={field.value || ""}
-                                        onChange={(value, name) => {
-                                          field.onChange(value);
+                {isForumChannel ? (
+                  <FormControl>
+                    <FormLabel id="forum-thread-label">Existing Forum Thread</FormLabel>
+                    <Controller
+                      name="threadId"
+                      control={control}
+                      render={({ field }) => (
+                        <DiscordActiveThreadDropdown
+                          ariaLabelledBy="forum-thread-label"
+                          isInvalid={false}
+                          isClearable
+                          inputId="forum-thread-select"
+                          value={field.value || ""}
+                          onChange={(value, name) => {
+                            field.onChange(value);
 
-                                          if (name) {
-                                            setValue("name", name, {
-                                              shouldDirty: true,
-                                              shouldTouch: true,
-                                              shouldValidate: true,
-                                            });
-                                          }
-                                        }}
-                                        onBlur={field.onBlur}
-                                        isDisabled={isSubmitting}
-                                        serverId={serverId}
-                                        parentChannelId={channelId}
-                                      />
-                                    )}
-                                  />
-                                  <FormErrorMessage>{errors.threadId?.message}</FormErrorMessage>
-                                  <FormHelperText>
-                                    {t(
-                                      "features.feed.components" +
-                                        ".addDiscordChannelThreadConnectionDialog.formThreadDescripton",
-                                    )}
-                                  </FormHelperText>
-                                </FormControl>
-                              </fieldset>
-                            </Box>
-                          </Stack>
-                        </RadioGroup>
-                        <Box aria-live="polite" aria-atomic="true" mt={2}>
-                          {createThreadMethodField.value ===
-                            DiscordCreateChannelThreadMethod.New && (
-                            <Alert
-                              id="new-thread-constraint"
-                              status="info"
-                              variant="left-accent"
-                              fontSize="sm"
-                              borderRadius="md"
-                            >
-                              <AlertIcon />
-                              <AlertDescription>
-                                Messages in new threads will appear under the MonitoRSS name. The
-                                display name and avatar can&apos;t be customized with this option.
-                              </AlertDescription>
-                            </Alert>
-                          )}
-                        </Box>
-                      </FormControl>
-                    </fieldset>
-                  )}
-                />
+                            if (name) {
+                              setValue("name", name, {
+                                shouldDirty: true,
+                                shouldTouch: true,
+                                shouldValidate: true,
+                              });
+                            }
+                          }}
+                          onBlur={field.onBlur}
+                          isDisabled={isSubmitting}
+                          serverId={serverId}
+                          parentChannelId={channelId}
+                          placeholder={
+                            !channelId
+                              ? "Must select a forum channel first"
+                              : "Optionally select a thread"
+                          }
+                        />
+                      )}
+                    />
+                    <FormHelperText>
+                      Optionally specify an existing thread that new articles should be sent to
+                      rather than creating new threads.
+                    </FormHelperText>
+                  </FormControl>
+                ) : (
+                  <Controller
+                    name="createThreadMethod"
+                    control={control}
+                    render={({ field: createThreadMethodField }) => (
+                      <fieldset>
+                        <FormControl isRequired isInvalid={!!errors.createThreadMethod}>
+                          <FormLabel as="legend" id="thread-kind-label">
+                            How should threads be used?
+                          </FormLabel>
+                          <FormHelperText id="thread-kind-help" mb={2}>
+                            Select one option
+                          </FormHelperText>
+                          <RadioGroup
+                            onChange={(value) => {
+                              createThreadMethodField.onChange(value);
+                            }}
+                            value={createThreadMethodField.value}
+                            aria-labelledby="thread-kind-label"
+                            aria-describedby="thread-kind-help"
+                          >
+                            <Stack>
+                              <Radio value={DiscordCreateChannelThreadMethod.None}>
+                                Don&apos;t use threads
+                              </Radio>
+                              <Radio
+                                value={DiscordCreateChannelThreadMethod.New}
+                                aria-describedby={
+                                  createThreadMethodField.value ===
+                                  DiscordCreateChannelThreadMethod.New
+                                    ? "new-thread-constraint"
+                                    : undefined
+                                }
+                              >
+                                Create a new thread for each new article
+                              </Radio>
+                              <Box>
+                                <Radio
+                                  value={DiscordCreateChannelThreadMethod.Existing}
+                                  inputProps={{
+                                    "aria-controls": "channel-thread-select-container",
+                                    "aria-expanded":
+                                      createThreadMethodField.value ===
+                                      DiscordCreateChannelThreadMethod.Existing,
+                                  }}
+                                >
+                                  Use an existing thread for each new article
+                                </Radio>
+                                <fieldset>
+                                  <chakra.legend srOnly>Existing thread information</chakra.legend>
+                                  <FormControl
+                                    id="channel-thread-select-container"
+                                    display={
+                                      createThreadMethodField.value ===
+                                      DiscordCreateChannelThreadMethod.Existing
+                                        ? "block"
+                                        : "none"
+                                    }
+                                    isInvalid={!!errors.threadId}
+                                    isRequired={
+                                      createThreadMethodField.value ===
+                                      DiscordCreateChannelThreadMethod.Existing
+                                    }
+                                    pl={4}
+                                    ml={2}
+                                    mt={2}
+                                    borderLeft="solid 2px"
+                                    borderColor="gray.600"
+                                  >
+                                    <FormLabel
+                                      id="channel-thread-label"
+                                      htmlFor="channel-thread-select"
+                                    >
+                                      Discord Channel Thread
+                                    </FormLabel>
+                                    <Controller
+                                      name="threadId"
+                                      control={control}
+                                      render={({ field }) => (
+                                        <DiscordActiveThreadDropdown
+                                          ariaLabelledBy="channel-thread-label"
+                                          isInvalid={!!errors.threadId}
+                                          inputId="channel-thread-select"
+                                          value={field.value || ""}
+                                          onChange={(value, name) => {
+                                            field.onChange(value);
+
+                                            if (name) {
+                                              setValue("name", name, {
+                                                shouldDirty: true,
+                                                shouldTouch: true,
+                                                shouldValidate: true,
+                                              });
+                                            }
+                                          }}
+                                          onBlur={field.onBlur}
+                                          isDisabled={isSubmitting}
+                                          serverId={serverId}
+                                          parentChannelId={channelId}
+                                        />
+                                      )}
+                                    />
+                                    <FormErrorMessage>{errors.threadId?.message}</FormErrorMessage>
+                                    <FormHelperText>
+                                      {t(
+                                        "features.feed.components" +
+                                          ".addDiscordChannelThreadConnectionDialog.formThreadDescripton",
+                                      )}
+                                    </FormHelperText>
+                                  </FormControl>
+                                </fieldset>
+                              </Box>
+                            </Stack>
+                          </RadioGroup>
+                          <Box aria-live="polite" aria-atomic="true" mt={2}>
+                            {createThreadMethodField.value ===
+                              DiscordCreateChannelThreadMethod.New && (
+                              <Alert
+                                id="new-thread-constraint"
+                                status="info"
+                                variant="left-accent"
+                                fontSize="sm"
+                                borderRadius="md"
+                              >
+                                <AlertIcon />
+                                <AlertDescription>
+                                  Messages in new threads will appear under the MonitoRSS name. The
+                                  display name and avatar can&apos;t be customized with this option.
+                                </AlertDescription>
+                              </Alert>
+                            )}
+                          </Box>
+                        </FormControl>
+                      </fieldset>
+                    )}
+                  />
+                )}
                 <FormControl isInvalid={!!errors.name} isRequired>
                   <FormLabel>
                     {t(

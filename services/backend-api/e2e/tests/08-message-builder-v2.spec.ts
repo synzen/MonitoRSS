@@ -4,6 +4,8 @@ import {
   createConnection,
   deleteFeed,
   getTestForumChannelId,
+  getTestForumChannelName,
+  getTestServerName,
   getTestChannelId,
 } from "../helpers/api";
 
@@ -601,5 +603,122 @@ test.describe("Message Builder V2", () => {
     } finally {
       await deleteFeed(page, feed.id).catch(() => {});
     }
+  });
+
+  test("can add forum connection with branding and send test article", async ({
+    page,
+    testFeed,
+  }) => {
+    const serverName = getTestServerName();
+    const forumChannelName = getTestForumChannelName();
+
+    test.skip(
+      !serverName || !forumChannelName,
+      "serverName and forumChannelName must be configured in e2econfig.json",
+    );
+
+    await page.goto(`/feeds/${testFeed.id}`);
+    await expect(
+      page.getByRole("button", { name: /Add connection/i }).first(),
+    ).toBeVisible({ timeout: 10000 });
+
+    await page
+      .getByRole("button", { name: /Add connection/i })
+      .first()
+      .click();
+
+    await page.locator("#server-select").click();
+    await page
+      .locator('[role="option"]')
+      .filter({ hasText: serverName! })
+      .click();
+
+    await expect(page.getByText("Select a channel")).toBeVisible({
+      timeout: 15000,
+    });
+    await page.locator("#channel-select").focus();
+    await page.locator("#channel-select").press("ArrowDown");
+    await page
+      .locator('[role="option"]')
+      .filter({ hasText: forumChannelName! })
+      .first()
+      .click({ timeout: 15000 });
+
+    await page.getByRole("button", { name: /Next: Choose Template/i }).click();
+
+    const modal = page.getByTestId("template-selection-modal");
+    await expect(modal).toBeVisible({ timeout: 10000 });
+
+    await page.getByText("Simple Text").first().click();
+    await expect(
+      modal.locator("strong").filter({ hasText: "Test Article" }),
+    ).toBeVisible({ timeout: 10000 });
+
+    await modal.getByLabel("Display Name").fill("E2E Forum Branding Bot");
+    await modal
+      .getByLabel("Avatar URL")
+      .fill("https://i.imgur.com/test-avatar.png");
+
+    await modal.getByRole("button", { name: /Send to Discord/i }).click();
+
+    await expect(
+      modal.getByText("Article sent to Discord successfully!"),
+    ).toBeVisible({ timeout: 30000 });
+  });
+
+  test("can add forum connection without branding and send test article", async ({
+    page,
+    testFeed,
+  }) => {
+    const serverName = getTestServerName();
+    const forumChannelName = getTestForumChannelName();
+
+    test.skip(
+      !serverName || !forumChannelName,
+      "serverName and forumChannelName must be configured in e2econfig.json",
+    );
+
+    await page.goto(`/feeds/${testFeed.id}`);
+    await expect(
+      page.getByRole("button", { name: /Add connection/i }).first(),
+    ).toBeVisible({ timeout: 10000 });
+
+    await page
+      .getByRole("button", { name: /Add connection/i })
+      .first()
+      .click();
+
+    await page.locator("#server-select").click();
+    await page
+      .locator('[role="option"]')
+      .filter({ hasText: serverName! })
+      .click();
+
+    await expect(page.getByText("Select a channel")).toBeVisible({
+      timeout: 15000,
+    });
+    await page.locator("#channel-select").focus();
+    await page.locator("#channel-select").press("ArrowDown");
+    await page
+      .locator('[role="option"]')
+      .filter({ hasText: forumChannelName! })
+      .first()
+      .click({ timeout: 15000 });
+
+    await page.getByRole("button", { name: /Next: Choose Template/i }).click();
+
+    const modal = page.getByTestId("template-selection-modal");
+    await expect(modal).toBeVisible({ timeout: 10000 });
+
+    await page.getByText("Simple Text").first().click();
+    await expect(
+      modal.locator("strong").filter({ hasText: "Test Article" }),
+    ).toBeVisible({ timeout: 10000 });
+
+    await modal.getByRole("button", { name: /Send to Discord/i }).click();
+
+    await expect(
+      modal.getByText("Article sent to Discord successfully!"),
+    ).toBeVisible({ timeout: 30000 });
   });
 });

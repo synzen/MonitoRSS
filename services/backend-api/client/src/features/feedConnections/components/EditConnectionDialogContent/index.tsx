@@ -1,7 +1,6 @@
 import { RefObject } from "react";
 import { FeedDiscordChannelConnection } from "../../../../types";
 import { DiscordTextChannelConnectionDialogContent } from "../AddConnectionDialog/DiscordTextChannelConnectionDialogContent";
-import { DiscordForumChannelConnectionDialogContent } from "../AddConnectionDialog/DiscordForumChannelConnectionDialogContent";
 import { EditConnectionWebhookDialog } from "../EditConnectionWebhookDialog";
 
 interface Props {
@@ -12,21 +11,10 @@ interface Props {
 }
 
 export const EditConnectionDialogContent = ({ connection, isOpen, onClose, onCloseRef }: Props) => {
-  const isForum =
-    connection.details.channel?.type === "forum" ||
-    connection.details.channel?.type === "forum-thread";
-
   return (
     <>
-      {connection.details.channel && !isForum && (
+      {connection.details.channel && (
         <DiscordTextChannelConnectionDialogContent
-          connection={connection}
-          isOpen={isOpen}
-          onClose={onClose}
-        />
-      )}
-      {connection.details.channel && isForum && (
-        <DiscordForumChannelConnectionDialogContent
           connection={connection}
           isOpen={isOpen}
           onClose={onClose}

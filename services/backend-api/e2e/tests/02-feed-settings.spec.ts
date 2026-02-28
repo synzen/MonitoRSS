@@ -60,7 +60,10 @@ test.describe("Feed Settings", () => {
       page.getByRole("heading", { name: testFeed.title }),
     ).toBeVisible({ timeout: 10000 });
 
-    await page.getByRole("button", { name: /Add Discord channel/i }).click();
+    await page
+      .getByRole("button", { name: /Add connection/i })
+      .first()
+      .click();
 
     await page.locator("#server-select").click();
     await page
@@ -126,7 +129,10 @@ test.describe("Feed Settings", () => {
       page.getByRole("heading", { name: testFeed.title }),
     ).toBeVisible({ timeout: 10000 });
 
-    await page.getByRole("button", { name: /Add Discord forum/i }).click();
+    await page
+      .getByRole("button", { name: /Add connection/i })
+      .first()
+      .click();
 
     await page.locator("#server-select").click();
     await page
@@ -147,9 +153,7 @@ test.describe("Feed Settings", () => {
 
     await page.getByRole("button", { name: /Next: Choose Template/i }).click();
 
-    await expect(
-      page.getByTestId("forum-template-selection-modal"),
-    ).toBeVisible({
+    await expect(page.getByTestId("template-selection-modal")).toBeVisible({
       timeout: 10000,
     });
 
@@ -157,7 +161,7 @@ test.describe("Feed Settings", () => {
 
     await expect(
       page
-        .locator('[data-testid="forum-template-selection-modal"]')
+        .locator('[data-testid="template-selection-modal"]')
         .locator("strong")
         .filter({ hasText: "Test Article" }),
     ).toBeVisible({
@@ -171,7 +175,7 @@ test.describe("Feed Settings", () => {
     });
   });
 
-  test("can create a Discord webhook connection through the UI modal", async ({
+  test("can create a connection with branding through the unified dialog", async ({
     page,
     testFeed,
   }) => {
@@ -188,7 +192,10 @@ test.describe("Feed Settings", () => {
       page.getByRole("heading", { name: testFeed.title }),
     ).toBeVisible({ timeout: 10000 });
 
-    await page.getByRole("button", { name: /Add Discord webhook/i }).click();
+    await page
+      .getByRole("button", { name: /Add connection/i })
+      .first()
+      .click();
 
     await page.locator("#server-select").click();
     await page
@@ -207,11 +214,13 @@ test.describe("Feed Settings", () => {
       .first()
       .click({ timeout: 15000 });
 
+    await page
+      .getByRole("radio", { name: /Don't use threads/i })
+      .click({ force: true });
+
     await page.getByRole("button", { name: /Next: Choose Template/i }).click();
 
-    await expect(
-      page.getByTestId("webhook-template-selection-modal"),
-    ).toBeVisible({
+    await expect(page.getByTestId("template-selection-modal")).toBeVisible({
       timeout: 10000,
     });
 
@@ -219,7 +228,7 @@ test.describe("Feed Settings", () => {
 
     await expect(
       page
-        .locator('[data-testid="webhook-template-selection-modal"]')
+        .locator('[data-testid="template-selection-modal"]')
         .locator("strong")
         .filter({ hasText: "Test Article" }),
     ).toBeVisible({

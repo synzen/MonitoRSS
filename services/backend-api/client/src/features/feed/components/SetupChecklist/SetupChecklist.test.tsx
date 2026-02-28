@@ -56,7 +56,7 @@ describe("SetupChecklistCard", () => {
     expect(screen.getAllByText("2 connections configured").length).toBeGreaterThan(0);
   });
 
-  it("calls onAddConnection with feed ID and type when menu item is clicked", async () => {
+  it("calls onAddConnection with feed ID when button is clicked", async () => {
     const onAddConnection = vi.fn();
     const { user } = renderWithChakra(
       <SetupChecklistCard
@@ -68,23 +68,7 @@ describe("SetupChecklistCard", () => {
     const buttons = screen.getAllByRole("button", { name: /Add connection to Gaming News/ });
     await user.click(buttons[0]);
 
-    const textChannelItems = screen.getAllByText("Discord Channel");
-    await user.click(textChannelItems[0]);
-
-    expect(onAddConnection).toHaveBeenCalledWith("feed-1", "discord-channel");
-  });
-
-  it("shows all connection type options in menu", async () => {
-    const { user } = renderWithChakra(
-      <SetupChecklistCard feed={baseFeed} onAddConnection={vi.fn()} />,
-    );
-
-    const buttons = screen.getAllByRole("button", { name: /Add connection to Gaming News/ });
-    await user.click(buttons[0]);
-
-    expect(screen.getAllByText("Discord Channel").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Discord Forum").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Discord Webhook").length).toBeGreaterThan(0);
+    expect(onAddConnection).toHaveBeenCalledWith("feed-1");
   });
 });
 

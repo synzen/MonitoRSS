@@ -9,12 +9,15 @@ async function navigateToTemplateModal(
 ) {
   await page.goto(`/feeds/${feedId}`);
   await expect(
-    page.getByRole("button", { name: /Add Discord channel/i }),
+    page.getByRole("button", { name: /Add connection/i }).first(),
   ).toBeVisible({
     timeout: 10000,
   });
 
-  await page.getByRole("button", { name: /Add Discord channel/i }).click();
+  await page
+    .getByRole("button", { name: /Add connection/i })
+    .first()
+    .click();
 
   await page.locator("#server-select").click();
   await page.locator('[role="option"]').filter({ hasText: serverName }).click();

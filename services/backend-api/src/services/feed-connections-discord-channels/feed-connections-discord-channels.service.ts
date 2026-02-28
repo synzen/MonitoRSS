@@ -1107,7 +1107,12 @@ export class FeedConnectionsDiscordChannelsService {
       | SendTestArticleInput["details"]["mediumDetails"]["webhook"]
       | undefined;
 
-    if (input.webhook) {
+    const channel = await this.deps.discordApiService.getChannel(
+      input.channelId,
+    );
+    const isForumChannel = channel.type === DiscordChannelType.GUILD_FORUM;
+
+    if (input.webhook || isForumChannel) {
       const webhook = await this.getOrCreateApplicationWebhook({
         channelId: input.threadId || input.channelId,
         webhook: { name: `test-send-${userFeed.id}` },
@@ -1116,9 +1121,10 @@ export class FeedConnectionsDiscordChannelsService {
       webhookDetails = {
         id: webhook.id,
         token: webhook.token as string,
-        name: input.webhook.name,
-        iconUrl: input.webhook.iconUrl,
+        name: input.webhook?.name,
+        iconUrl: input.webhook?.iconUrl,
         threadId: input.threadId,
+        type: isForumChannel ? "forum" : undefined,
       };
     }
 

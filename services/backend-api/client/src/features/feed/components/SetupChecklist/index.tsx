@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Button, Collapse, HStack, Stack, Text, VisuallyHidden } from "@chakra-ui/react";
 import { CheckCircleIcon, ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
 import { AddConnectionDialog } from "../../../feedConnections/components/AddConnectionDialog";
-import type { ConnectionType } from "../../../feedConnections/constants";
 import { SetupChecklistCard } from "./SetupChecklistCard";
 
 interface SetupChecklistProps {
@@ -18,9 +17,6 @@ interface SetupChecklistProps {
 
 export const SetupChecklist = ({ feeds, onConnectionCreated, onDismiss }: SetupChecklistProps) => {
   const [activeConnectionFeedId, setActiveConnectionFeedId] = useState<string | undefined>();
-  const [addConnectionType, setAddConnectionType] = useState<
-    { type: ConnectionType } | undefined
-  >();
   const [isExpanded, setIsExpanded] = useState(true);
   const cardListId = "setup-checklist-feeds";
   const doneButtonRef = useRef<HTMLButtonElement>(null);
@@ -72,16 +68,14 @@ export const SetupChecklist = ({ feeds, onConnectionCreated, onDismiss }: SetupC
     }
   }, [feeds.length, isComplete]);
 
-  const handleAddConnection = (feedId: string, type: ConnectionType) => {
+  const handleAddConnection = (feedId: string) => {
     setActiveConnectionFeedId(feedId);
-    setAddConnectionType({ type });
   };
 
   const handleDialogClose = () => {
     feedCountAtDialogClose.current = feeds.length;
     shouldAnnounce.current = true;
     setActiveConnectionFeedId(undefined);
-    setAddConnectionType(undefined);
     onConnectionCreated();
   };
 
@@ -173,7 +167,6 @@ export const SetupChecklist = ({ feeds, onConnectionCreated, onDismiss }: SetupC
 
       <AddConnectionDialog
         feedId={activeConnectionFeedId}
-        type={addConnectionType?.type}
         isOpen={!!activeConnectionFeedId}
         onClose={handleDialogClose}
         finalFocusRef={sectionRef}
