@@ -30,8 +30,14 @@ Your session is saved to `e2e/auth.json` (gitignored).
 ## Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (regular + paddle)
 npm run e2e
+
+# Run only regular (non-paddle) tests
+npx playwright test --project=chromium
+
+# Run only paddle tests (requires cloudflared + Paddle key)
+npm run e2e:paddle
 
 # Run tests with UI
 npm run e2e:ui
@@ -39,6 +45,18 @@ npm run e2e:ui
 # View test report
 npm run e2e:report
 ```
+
+## Project Structure
+
+The single `playwright.config.ts` defines 5 projects:
+
+| Project           | Purpose                                                      | Dependencies                         |
+| ----------------- | ------------------------------------------------------------ | ------------------------------------ |
+| `auth-setup`      | Validates Discord auth session                               | —                                    |
+| `paddle-setup`    | Starts tunnel, configures Paddle webhooks, ensures free tier | `auth-setup`                         |
+| `paddle-teardown` | Cancels subscriptions, stops tunnel                          | (auto, via teardown on paddle-setup) |
+| `chromium`        | Regular tests (non-paddle)                                   | `auth-setup`                         |
+| `paddle`          | Paddle checkout tests                                        | `auth-setup`, `paddle-setup`         |
 
 ## Connection Tests (One-time Setup)
 
@@ -68,13 +86,14 @@ Log in again via Discord (~30 seconds), then re-run tests.
 
 ## Test Structure
 
-- `e2e/tests/auth.spec.ts` - Authentication verification
-- `e2e/tests/feeds-list.spec.ts` - Feeds page functionality
-- `e2e/tests/api-validation.spec.ts` - API endpoint validation
+- `e2e/tests/auth.setup.ts` - Auth session validation (setup project)
+- `e2e/tests/paddle.setup.ts` - Paddle tunnel + webhook setup (setup project)
+- `e2e/tests/paddle.teardown.ts` - Paddle cleanup (teardown project)
+- `e2e/tests/*.spec.ts` - Test files
 
 ## Paddle Checkout Tests
 
-The Paddle checkout E2E test (`14-paddle-checkout.spec.ts`) verifies the full subscription flow through Paddle's sandbox environment. It uses a separate Playwright config and has additional requirements.
+The Paddle checkout E2E tests (`13-branding-fields.spec.ts`, `14-paddle-checkout.spec.ts`, `15-paddle-branding-checkout.spec.ts`, `16-paddle-retain-cancellation.spec.ts`) verify subscription flows through Paddle's sandbox environment.
 
 ### Prerequisites
 
@@ -87,15 +106,14 @@ The Paddle checkout E2E test (`14-paddle-checkout.spec.ts`) verifies the full su
 
 ### How It Works
 
-1. **Setup** (`paddle-setup.ts`):
-   - Validates the auth session
+1. **Setup** (`e2e/tests/paddle.setup.ts`):
    - Starts a Cloudflare Tunnel to expose `localhost:8000` with a public URL
-   - Updates the Paddle notification setting (`ntfset_01hbxt19pg3xeqjn4adhh8am17`) to point the webhook at the tunnel URL
+   - Updates the Paddle notification setting to point the webhook at the tunnel URL
    - Cancels any existing active subscriptions and waits for the user to be on the Free tier
 
-2. **Test**: Navigates to the checkout page, fills the Paddle iframe with test card credentials (`4242 4242 4242 4242`), and submits. Waits for the webhook to be processed and benefits to be provisioned.
+2. **Tests**: Navigate to checkout pages, fill Paddle iframes with test card credentials (`4242 4242 4242 4242`), and submit. Wait for webhook processing and benefit provisioning.
 
-3. **Teardown** (`paddle-teardown.ts`):
+3. **Teardown** (`e2e/tests/paddle.teardown.ts`):
    - Cancels any active subscriptions created during the test
    - Waits for the user to return to the Free tier
    - Stops the Cloudflare Tunnel
@@ -106,7 +124,7 @@ The Paddle checkout E2E test (`14-paddle-checkout.spec.ts`) verifies the full su
 npm run e2e:paddle
 ```
 
-This runs in headed mode (non-headless) with no retries, since the checkout flow involves real Paddle sandbox transactions.
+This uses the `--project=paddle` flag, which automatically runs `auth-setup` and `paddle-setup` first, then `paddle-teardown` after.
 
 ### Troubleshooting
 
@@ -122,6 +140,12 @@ After making code changes, validate with:
 ```bash
 cd services/backend-api
 npm run e2e
+```
+
+To run only regular (non-paddle) tests:
+
+```bash
+npx playwright test --project=chromium
 ```
 
 If you see "Session expired!" or "auth.json not found!", inform the user:

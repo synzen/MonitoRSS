@@ -42,4 +42,5 @@ e2e/auth.json
 e2e/config.json
 e2e/test-results/
 e2e/.paddle-state.json
+e2e/.tunnel-pid
 playwright-report/

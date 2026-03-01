@@ -1,9 +1,10 @@
+import { test as teardown } from "@playwright/test";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { config } from "dotenv";
-import { stopTunnel } from "./helpers/tunnel";
-import { cancelAllActiveSubscriptions } from "./helpers/paddle-api";
-import { AUTH_STATE_PATH } from "./helpers/constants";
+import { stopTunnel } from "../helpers/tunnel";
+import { cancelAllActiveSubscriptions } from "../helpers/paddle-api";
+import { AUTH_STATE_PATH } from "../helpers/constants";
 
 config({ path: join(process.cwd(), "..", "..", ".env.local") });
 config({ path: join(process.cwd(), "..", "..", ".env") });
@@ -48,7 +49,9 @@ async function waitForCancellationWebhook(cookieHeader: string): Promise<void> {
   console.warn("Warning: timed out waiting for Free tier during teardown");
 }
 
-async function paddleTeardown() {
+teardown("cancel subscriptions and stop tunnel", async () => {
+  teardown.setTimeout(120_000);
+
   try {
     const authData = JSON.parse(readFileSync(AUTH_STATE_PATH, "utf-8"));
     const cookies = authData.cookies || [];
@@ -59,7 +62,6 @@ async function paddleTeardown() {
     const cancelledIds = await cancelAllActiveSubscriptions();
 
     if (cancelledIds.length > 0) {
-      // Keep tunnel alive so Paddle can deliver the cancellation webhook
       await waitForCancellationWebhook(cookieHeader);
     }
   } catch (err) {
@@ -69,6 +71,4 @@ async function paddleTeardown() {
   await stopTunnel();
 
   console.log("Paddle E2E teardown complete");
-}
-
-export default paddleTeardown;
+});

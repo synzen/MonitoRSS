@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { Alert, Box, Button, Flex } from "@chakra-ui/react";
+import React, { useEffect, useState } from "react";
+import { Alert, Box, Button, Flex, Spinner } from "@chakra-ui/react";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
 import { InlineErrorAlert, ThemedSelect } from "@/components";
 import { useDiscordServers, useDiscordServerSettings } from "@/features/discordServers";
@@ -39,6 +39,21 @@ export const DiscordServerSearchSelectv2: React.FC<Props> = ({
   const { data: discordBot } = useDiscordBot();
 
   const loading = status === "loading";
+
+  const [showLoadingAlert, setShowLoadingAlert] = useState(false);
+
+  useEffect(() => {
+    if (!isFetchingServerSettings) {
+      setShowLoadingAlert(false);
+
+      return;
+    }
+
+    // Delay to avoid layout shift flash when the check resolves quickly
+    const timer = setTimeout(() => setShowLoadingAlert(true), 1000);
+
+    return () => clearTimeout(timer);
+  }, [isFetchingServerSettings]);
 
   const onChangedValue = (newServerId: string) => {
     onChange(newServerId);
@@ -89,9 +104,10 @@ export const DiscordServerSearchSelectv2: React.FC<Props> = ({
         aria-busy={isFetchingServerSettings}
         hidden={!alertOnArticleEligibility}
       >
-        {isFetchingServerSettings && (
+        {showLoadingAlert && (
           <Alert status="info" mt={2}>
-            Checking server eligibility...
+            <Spinner size="sm" mr={2} />
+            Verifying bot access...
           </Alert>
         )}
         <Box mt={2} hidden={getServerError?.statusCode !== 404}>

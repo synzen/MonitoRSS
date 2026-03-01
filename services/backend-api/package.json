@@ -43,7 +43,7 @@
     "e2e:auth": "npx playwright codegen http://localhost:3000 --save-storage=e2e/auth.json",
     "e2e:auth:user2": "npx tsx e2e/auth-user2.ts",
     "e2e:report": "npx playwright show-report",
-    "e2e:paddle": "npx playwright test --config playwright.paddle.config.ts"
+    "e2e:paddle": "npx playwright test --project=paddle"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",

@@ -666,17 +666,48 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                               <Radio value={DiscordCreateChannelThreadMethod.None}>
                                 Send directly to channel
                               </Radio>
-                              <Radio
-                                value={DiscordCreateChannelThreadMethod.New}
-                                aria-describedby={
-                                  createThreadMethodField.value ===
-                                  DiscordCreateChannelThreadMethod.New
-                                    ? "new-thread-constraint"
-                                    : undefined
-                                }
-                              >
-                                Create a new thread for each new article
-                              </Radio>
+                              <Box>
+                                <Radio
+                                  value={DiscordCreateChannelThreadMethod.New}
+                                  aria-describedby={
+                                    createThreadMethodField.value ===
+                                    DiscordCreateChannelThreadMethod.New
+                                      ? "new-thread-constraint"
+                                      : undefined
+                                  }
+                                >
+                                  Create a new thread for each new article
+                                </Radio>
+                                <Box
+                                  aria-live="polite"
+                                  aria-atomic="true"
+                                  display={
+                                    createThreadMethodField.value ===
+                                    DiscordCreateChannelThreadMethod.New
+                                      ? "block"
+                                      : "none"
+                                  }
+                                  pl={4}
+                                  ml={2}
+                                  mt={2}
+                                  borderLeft="solid 2px"
+                                  borderColor="gray.600"
+                                >
+                                  <Alert
+                                    id="new-thread-constraint"
+                                    status="info"
+                                    fontSize="sm"
+                                    borderRadius="md"
+                                  >
+                                    <AlertIcon />
+                                    <AlertDescription>
+                                      Messages in new threads will appear under the MonitoRSS name.
+                                      The display name and avatar can&apos;t be customized with this
+                                      option.
+                                    </AlertDescription>
+                                  </Alert>
+                                </Box>
+                              </Box>
                               <Box>
                                 <Radio
                                   value={DiscordCreateChannelThreadMethod.Existing}
@@ -755,24 +786,6 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                               </Box>
                             </Stack>
                           </RadioGroup>
-                          <Box aria-live="polite" aria-atomic="true" mt={2}>
-                            {createThreadMethodField.value ===
-                              DiscordCreateChannelThreadMethod.New && (
-                              <Alert
-                                id="new-thread-constraint"
-                                status="info"
-                                variant="left-accent"
-                                fontSize="sm"
-                                borderRadius="md"
-                              >
-                                <AlertIcon />
-                                <AlertDescription>
-                                  Messages in new threads will appear under the MonitoRSS name. The
-                                  display name and avatar can&apos;t be customized with this option.
-                                </AlertDescription>
-                              </Alert>
-                            )}
-                          </Box>
                         </FormControl>
                       </fieldset>
                     )}

@@ -301,3 +301,115 @@ test.describe("Branding Fields - Connection Settings", () => {
     });
   });
 });
+
+test.describe("Branding Fields - Message Builder", () => {
+  test("shows collapsible branding section with live preview updates", async ({
+    page,
+    testFeedWithConnection,
+  }) => {
+    const { feed, connection } = testFeedWithConnection;
+
+    await page.goto(
+      `/feeds/${feed.id}/discord-channel-connections/${connection.id}/message-builder`,
+    );
+
+    // Dismiss the welcome dialog
+    const welcomeDialog = page.getByRole("dialog", {
+      name: "Welcome to your Message Builder!",
+    });
+    await expect(welcomeDialog).toBeVisible({ timeout: 10000 });
+    await welcomeDialog
+      .getByRole("button", {
+        name: "Skip the message builder tour and start using the feature",
+      })
+      .click();
+    await expect(welcomeDialog).not.toBeVisible({ timeout: 5000 });
+
+    // Wait for article to load in preview
+    await expect(
+      page.getByText("Previewing Article", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+
+    // Verify the branding section is open by default for free users
+    const brandingSummary = page.locator("summary").filter({
+      hasText: "Branding:",
+    });
+    await expect(brandingSummary).toBeVisible();
+    await expect(brandingSummary).toContainText("Default");
+
+    // Verify branding fields are already visible (open by default)
+    const displayNameInput = page.getByLabel("Display Name");
+    const avatarUrlInput = page.getByLabel("Avatar URL");
+    await expect(displayNameInput).toBeVisible();
+    await expect(avatarUrlInput).toBeVisible();
+
+    // Verify "Free plan" framing is shown (free user)
+    await expect(page.getByText(/Free plan/)).toBeVisible();
+
+    // Verify chevron icon is present in the summary
+    await expect(brandingSummary.locator("svg").first()).toBeVisible();
+
+    // Type a custom display name and verify preview updates in the Discord message
+    await displayNameInput.fill("My Builder Bot");
+    await expect(page.getByText("My Builder Bot", { exact: true })).toBeVisible(
+      { timeout: 5000 },
+    );
+
+    // Verify the summary also updates
+    await expect(brandingSummary).toContainText("My Builder Bot");
+
+    // Verify section can be collapsed and re-expanded
+    await brandingSummary.click();
+    await expect(displayNameInput).not.toBeVisible();
+    await brandingSummary.click();
+    await expect(displayNameInput).toBeVisible();
+  });
+
+  test("shows split save buttons when free user fills branding and opens pricing dialog on upgrade click", async ({
+    page,
+    testFeedWithConnection,
+  }) => {
+    const { feed, connection } = testFeedWithConnection;
+
+    await page.goto(
+      `/feeds/${feed.id}/discord-channel-connections/${connection.id}/message-builder`,
+    );
+
+    // Dismiss the welcome dialog
+    const welcomeDialog = page.getByRole("dialog", {
+      name: "Welcome to your Message Builder!",
+    });
+    await expect(welcomeDialog).toBeVisible({ timeout: 10000 });
+    await welcomeDialog
+      .getByRole("button", {
+        name: "Skip the message builder tour and start using the feature",
+      })
+      .click();
+    await expect(welcomeDialog).not.toBeVisible({ timeout: 5000 });
+
+    // Wait for article to load
+    await expect(
+      page.getByText("Previewing Article", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+
+    // Branding section is open by default for free users — fill display name
+    await page.getByLabel("Display Name").fill("My Builder Bot");
+
+    // Verify the split save buttons appear
+    await expect(
+      page.getByRole("button", { name: "Save without branding" }),
+    ).toBeVisible({ timeout: 5000 });
+    await expect(
+      page.getByRole("button", { name: "Upgrade to save with branding" }),
+    ).toBeVisible();
+
+    // Click "Upgrade to save with branding" — should open PricingDialog
+    await page
+      .getByRole("button", { name: "Upgrade to save with branding" })
+      .click();
+
+    await expect(page.getByRole("dialog").getByText("Pricing")).toBeVisible({
+      timeout: 10000,
+    });
+  });
+});
