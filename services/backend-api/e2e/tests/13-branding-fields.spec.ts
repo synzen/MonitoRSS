@@ -169,6 +169,11 @@ test.describe("Branding Fields - Template Gallery Modal", () => {
       upgradeRegion.getByText(/Payments handled by Paddle/),
     ).toBeVisible();
 
+    // Verify "Save without branding" button is visible on upgrade prompt
+    await expect(
+      upgradeRegion.getByRole("button", { name: "Save without branding" }),
+    ).toBeVisible();
+
     // Verify "Back to editor" link works
     await upgradeRegion.getByText("Back to editor").click();
     await expect(upgradeRegion).not.toBeVisible();
@@ -190,6 +195,47 @@ test.describe("Branding Fields - Template Gallery Modal", () => {
       'iframe[name*="paddle"], iframe[src*="paddle"]',
     );
     await expect(paddleFrame.first()).toBeVisible({ timeout: 15000 });
+  });
+
+  test("saves without branding from upgrade prompt screen", async ({
+    page,
+    testFeed,
+  }) => {
+    const serverName = getTestServerName();
+    const channelName = getTestChannelName();
+
+    test.skip(
+      !serverName || !channelName,
+      "serverName and channelName must be configured in e2econfig.json",
+    );
+
+    const modal = await navigateToTemplateModal(
+      page,
+      testFeed.id,
+      serverName!,
+      channelName!,
+    );
+
+    // Fill branding then go to upgrade prompt
+    await modal.getByLabel("Display Name").fill("My Custom Bot");
+    await modal
+      .getByRole("button", { name: "Upgrade to save with branding" })
+      .click();
+
+    const upgradeRegion = modal.getByRole("region", {
+      name: "Upgrade to save custom branding",
+    });
+    await expect(upgradeRegion).toBeVisible();
+
+    // Click "Save without branding" on the upgrade prompt
+    await upgradeRegion
+      .getByRole("button", { name: "Save without branding" })
+      .click();
+
+    // Connection should save successfully
+    await expect(page.getByText("You're all set")).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("saves without branding when clicking save without branding", async ({

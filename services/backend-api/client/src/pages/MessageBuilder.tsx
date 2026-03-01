@@ -324,6 +324,11 @@ const MessageBuilderContent: React.FC = () => {
           details: connectionDetails,
         });
 
+        if (!webhooksAllowed) {
+          setBrandingDisplayName(existingWebhookName);
+          setBrandingAvatarUrl(existingWebhookIconUrl);
+        }
+
         createSuccessAlert({
           title: "Successfully saved message format",
           description: "Your Discord message format has been updated.",

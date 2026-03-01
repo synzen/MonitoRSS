@@ -28,6 +28,7 @@ export interface UpgradePromptProps {
   isPaddleLoaded?: boolean;
   onCheckout: (priceId: string) => void;
   onBackToEditor: () => void;
+  onSaveWithoutBranding: () => void;
 }
 
 export const UpgradePrompt = ({
@@ -39,6 +40,7 @@ export const UpgradePrompt = ({
   isPaddleLoaded,
   onCheckout,
   onBackToEditor,
+  onSaveWithoutBranding,
 }: UpgradePromptProps) => {
   return (
     <Box
@@ -74,7 +76,7 @@ export const UpgradePrompt = ({
             (f) =>
               f.name === ProductFeature.Webhooks ||
               f.name === ProductFeature.Feeds ||
-              f.name === ProductFeature.RefreshRate
+              f.name === ProductFeature.RefreshRate,
           )
           .map((feature) => (
             <HStack as="li" key={feature.name} spacing={2}>
@@ -140,6 +142,9 @@ export const UpgradePrompt = ({
         }}
       >
         Get {PRODUCT_NAMES[ProductKey.Tier1]}
+      </Button>
+      <Button variant="outline" size="sm" mb={2} onClick={onSaveWithoutBranding}>
+        Save without branding
       </Button>
       <Box mb={4}>
         <ChakraLink fontSize="sm" color="whiteAlpha.700" onClick={onBackToEditor} cursor="pointer">

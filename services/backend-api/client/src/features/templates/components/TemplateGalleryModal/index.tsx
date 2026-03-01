@@ -343,6 +343,14 @@ const TemplateGalleryModalInner = (props: TemplateGalleryModalProps) => {
         });
       }}
       onBackToEditor={() => setModalView("editor")}
+      onSaveWithoutBranding={() => {
+        clearBranding();
+        if (props.mode === "editor") {
+          props.onSave();
+        } else if (selectedTemplateId) {
+          props.onPrimaryAction(selectedTemplateId);
+        }
+      }}
     />
   );
 
