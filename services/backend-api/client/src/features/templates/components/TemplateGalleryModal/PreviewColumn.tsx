@@ -122,8 +122,8 @@ export const PreviewColumn = ({
           {!isBrandingDisabled && !webhooksAllowed && (
             <HStack spacing={2} mb={2}>
               <LockIcon boxSize={3} color="whiteAlpha.700" />
-              <Text fontSize="xs" color="whiteAlpha.700">
-                Free plan — preview how your branding looks, then upgrade to save it.
+              <Text fontSize="xs" color="whiteAlpha.800">
+                Upgrade to customize your branding. Preview it here first!
               </Text>
             </HStack>
           )}

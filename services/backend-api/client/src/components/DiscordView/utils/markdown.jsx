@@ -6,7 +6,7 @@
 import SimpleMarkdown from "simple-markdown";
 import Twemoji from "twemoji";
 import hljs from "highlight.js";
-import { uniqueId } from "lodash";
+import uniqueId from "lodash/uniqueId";
 import { getChannelIcon } from "../../../utils/getChannelIcon";
 import Emoji from "../../../constants/emojis";
 
@@ -713,7 +713,7 @@ const parseEmbedTitle = parserFor(
     "subtext",
     "blockQuote",
     "list",
-  ]),
+  ])
 );
 
 // used in:
@@ -723,7 +723,7 @@ function jumboify(ast) {
     (node) =>
       node.type !== "emoji" &&
       node.type !== "customEmoji" &&
-      (typeof node.content !== "string" || node.content.trim() !== ""),
+      (typeof node.content !== "string" || node.content.trim() !== "")
   );
 
   if (nonEmojiNodes) {

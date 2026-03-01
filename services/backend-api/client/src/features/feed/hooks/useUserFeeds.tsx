@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { pick } from "lodash";
+import pick from "lodash/pick";
 import { getUserFeeds, GetUserFeedsInput, GetUserFeedsOutput } from "../api";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 import { UserFeed } from "../types";
@@ -9,7 +9,7 @@ export const useUserFeeds = (
   input: GetUserFeedsInput,
   opts?: {
     enabled?: boolean;
-  },
+  }
 ) => {
   const [search, setSearch] = useState("");
   const [hasErrored, setHasErrored] = useState(false);
@@ -38,7 +38,7 @@ export const useUserFeeds = (
       onError: () => {
         setHasErrored(true);
       },
-    },
+    }
   );
 
   const isFetchingNewPage = isLoading || (isFetching && isPreviousData);
