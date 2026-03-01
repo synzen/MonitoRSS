@@ -24,7 +24,7 @@ import {
 import { FeedDiscordChannelConnection, SendTestArticleDeliveryStatus } from "../../../../types";
 
 vi.mock("../../../feedConnections/api", async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = (await importOriginal()) as Record<string, unknown>;
   return {
     ...actual,
     createDiscordChannelConnectionPreview: vi.fn(),

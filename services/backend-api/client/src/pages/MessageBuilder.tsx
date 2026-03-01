@@ -862,7 +862,7 @@ const MessageBuilderContent: React.FC = () => {
               onArticleChange={setSelectedArticleId}
               isLoadingArticles={galleryArticlesStatus === "loading"}
               feedId={feedId!}
-              connectionId={connectionId}
+              connectionId={connectionId!}
               userFeed={userFeed}
               connection={connection}
               modalTitle="Browse Templates"
