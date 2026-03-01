@@ -34,8 +34,8 @@ const DISCORD_V2_COMPONENT_TYPE = {
   Container: 17,
 } as const;
 
-const DISCORD_DEFAULT_AVATAR_URL = "https://cdn.discordapp.com/embed/avatars/0.png";
-const MONITORSS_USERNAME = "MonitoRSS";
+export const DISCORD_DEFAULT_AVATAR_URL = "https://cdn.discordapp.com/embed/avatars/0.png";
+export const MONITORSS_USERNAME = "MonitoRSS";
 
 const buttonColors: Record<string, { bg: string; color: string; border: string }> = {
   Primary: {

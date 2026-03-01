@@ -23,7 +23,11 @@ import { PageAlertContextOutlet, PageAlertProvider } from "../../contexts/PageAl
 import { useCreateConnectionPreview } from "../../features/feedConnections/hooks";
 import { FeedConnectionType, FeedDiscordChannelConnection } from "../../types";
 import { useDebounce } from "../../hooks";
-import { InlineErrorAlert, DiscordMessageDisplay } from "../../components";
+import {
+  InlineErrorAlert,
+  DiscordMessageDisplay,
+  DISCORD_DEFAULT_AVATAR_URL,
+} from "../../components";
 import convertMessageBuilderStateToConnectionPreviewInput, {
   V2_COMPONENT_TYPE,
 } from "./utils/convertMessageBuilderStateToConnectionPreviewInput";
@@ -40,6 +44,7 @@ interface DiscordMessagePreviewProps {
   onBrandingDisplayNameChange: (value: string) => void;
   onBrandingAvatarUrlChange: (value: string) => void;
   webhooksAllowed: boolean;
+  brandingChanged: boolean;
 }
 
 interface DiscordMessageDisplayWithMentionsProps {
@@ -86,6 +91,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
   onBrandingDisplayNameChange,
   onBrandingAvatarUrlChange,
   webhooksAllowed,
+  brandingChanged,
 }) => {
   const {
     watch,
@@ -224,7 +230,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
               )}
             </Box>
           </Text>
-          {isDirty && (
+          {(isDirty || brandingChanged) && (
             <Text fontSize="sm" fontWeight={600}>
               <Highlight
                 query="You are previewing unsaved changes"
@@ -276,8 +282,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
               />
               <Avatar
                 size="2xs"
-                src={brandingAvatarUrl || undefined}
-                name={brandingDisplayName || "MonitoRSS"}
+                src={brandingAvatarUrl || DISCORD_DEFAULT_AVATAR_URL}
                 bg="gray.500"
               />
               <Text as="span">Branding: {brandingSummary}</Text>

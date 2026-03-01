@@ -80,7 +80,7 @@ import { pages, BlockableFeature } from "../constants";
 import { UserFeedTabSearchParam } from "../constants/userFeedTabSearchParam";
 import { PricingDialogContext } from "../contexts";
 import { MessageBuilderTour } from "../components/MessageBuilderTour";
-import { useMessageBuilderTour, useIsMessageBuilderDesktop, useIsFeatureAllowed } from "../hooks";
+import { useMessageBuilderTour, useIsFeatureAllowed } from "../hooks";
 import { MESSAGE_BUILDER_MOBILE_BREAKPOINT } from "./MessageBuilder/constants/MessageBuilderMobileBreakpoint";
 import { useUserFeedArticles } from "../features/feed/hooks";
 import { TemplateGalleryModal } from "../features/templates/components/TemplateGalleryModal";
@@ -167,7 +167,6 @@ const MessageBuilderContent: React.FC = () => {
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
   const { userFeed, connection } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
   const { resetTour, resetTrigger } = useMessageBuilderTour();
-  const isDesktop = useIsMessageBuilderDesktop();
 
   // Branding state
   const existingWebhookName = connection.details.webhook?.name || "";
@@ -519,17 +518,16 @@ const MessageBuilderContent: React.FC = () => {
                     </Text>
                   </HStack>
                   <HStack spacing={3} flexWrap="wrap">
-                    {isDesktop && (
-                      <Button
-                        variant="outline"
-                        colorScheme="gray"
-                        size="sm"
-                        onClick={resetTour}
-                        leftIcon={<InfoIcon />}
-                      >
-                        Take Tour
-                      </Button>
-                    )}
+                    <Button
+                      display={{ base: "none", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "inline-flex" }}
+                      variant="outline"
+                      colorScheme="gray"
+                      size="sm"
+                      onClick={resetTour}
+                      leftIcon={<InfoIcon />}
+                    >
+                      Take Tour
+                    </Button>
                     <Button
                       ref={templatesButtonRef}
                       variant="outline"
@@ -587,68 +585,69 @@ const MessageBuilderContent: React.FC = () => {
               {/* Main Content */}
               <Flex flex={1} bg="gray.900" position="relative">
                 {/* Left Panel - Component Tree */}
-                {isDesktop && (
+                <Box
+                  display={{ base: "none", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "block" }}
+                  minWidth={SIDE_PANEL_WIDTH}
+                  maxWidth={SIDE_PANEL_WIDTH}
+                  width={SIDE_PANEL_WIDTH}
+                >
                   <Box
-                    minWidth={SIDE_PANEL_WIDTH}
-                    maxWidth={SIDE_PANEL_WIDTH}
-                    width={SIDE_PANEL_WIDTH}
+                    bg="gray.800"
+                    borderRight="1px"
+                    borderColor="gray.600"
+                    height="100%"
+                    width="100%"
+                    overflowY="auto"
+                    overflowX="hidden"
+                    data-tour-target="components-section"
                   >
-                    <Box
-                      bg="gray.800"
-                      borderRight="1px"
-                      borderColor="gray.600"
-                      height="100%"
-                      width="100%"
-                      overflowY="auto"
-                      overflowX="hidden"
-                      data-tour-target="components-section"
-                    >
-                      <VStack align="stretch" spacing={0} minWidth={200} height="100%">
-                        <ComponentTreeToolbar />
-                        {messageComponent && (
-                          <div
-                            ref={desktopTreeRef}
-                            key={countComponentNodes(messageComponent)}
-                            role="tree"
-                            aria-label="Message Components"
+                    <VStack align="stretch" spacing={0} minWidth={200} height="100%">
+                      <ComponentTreeToolbar />
+                      {messageComponent && (
+                        <div
+                          ref={desktopTreeRef}
+                          key={countComponentNodes(messageComponent)}
+                          role="tree"
+                          aria-label="Message Components"
+                        >
+                          <TreeFocusRestorer treeRef={desktopTreeRef} />
+                          <NavigableTreeItem
+                            isRootItem
+                            id={messageComponent.id}
+                            ariaLabel="Message Root"
                           >
-                            <TreeFocusRestorer treeRef={desktopTreeRef} />
-                            <NavigableTreeItem
-                              isRootItem
-                              id={messageComponent.id}
-                              ariaLabel="Message Root"
-                            >
-                              <ComponentTreeItem
-                                component={messageComponent}
-                                scrollToComponentId={scrollToComponentId}
-                                componentIdsWithErrors={componentIdsWithErrors}
-                                componentIdsWithWarnings={componentIdsWithWarnings}
-                              />
-                            </NavigableTreeItem>
-                          </div>
-                        )}
-                      </VStack>
-                    </Box>
-                  </Box>
-                )}
-                {/* Middle Panel - Properties */}
-                {isDesktop && (
-                  <Box minWidth={SIDE_PANEL_WIDTH} maxWidth={SIDE_PANEL_WIDTH}>
-                    <Box
-                      bg="gray.800"
-                      borderRight="1px"
-                      borderColor="gray.600"
-                      height="100%"
-                      width="100%"
-                      overflowY="auto"
-                      data-tour-target="properties-panel"
-                    >
-                      {currentSelectedId && (
-                        <ComponentPropertiesPanel selectedComponentId={currentSelectedId} />
+                            <ComponentTreeItem
+                              component={messageComponent}
+                              scrollToComponentId={scrollToComponentId}
+                              componentIdsWithErrors={componentIdsWithErrors}
+                              componentIdsWithWarnings={componentIdsWithWarnings}
+                            />
+                          </NavigableTreeItem>
+                        </div>
                       )}
-                    </Box>
+                    </VStack>
                   </Box>
-                )}
+                </Box>
+                {/* Middle Panel - Properties */}
+                <Box
+                  display={{ base: "none", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "block" }}
+                  minWidth={SIDE_PANEL_WIDTH}
+                  maxWidth={SIDE_PANEL_WIDTH}
+                >
+                  <Box
+                    bg="gray.800"
+                    borderRight="1px"
+                    borderColor="gray.600"
+                    height="100%"
+                    width="100%"
+                    overflowY="auto"
+                    data-tour-target="properties-panel"
+                  >
+                    {currentSelectedId && (
+                      <ComponentPropertiesPanel selectedComponentId={currentSelectedId} />
+                    )}
+                  </Box>
+                </Box>
                 {/* Right Panel - Discord Preview and Problems */}
                 <Flex flex={1} direction="column" bg="gray.800" maxW={CENTER_PANEL_WIDTH}>
                   <Box
@@ -673,120 +672,126 @@ const MessageBuilderContent: React.FC = () => {
                         onBrandingDisplayNameChange={setBrandingDisplayName}
                         onBrandingAvatarUrlChange={setBrandingAvatarUrl}
                         webhooksAllowed={webhooksAllowed}
+                        brandingChanged={brandingChanged}
                       />
                     </Box>
                   </Box>
-                  {isDesktop && (
-                    <Box borderTop="1px" borderColor="gray.600" data-tour-target="problems-section">
-                      <Box
-                        as="button"
-                        width="100%"
-                        p={4}
-                        borderBottom="1px"
-                        borderColor="gray.600"
-                        bg="transparent"
-                        cursor="pointer"
-                        textAlign="left"
-                        onClick={() => setIsProblemsCollapsed(!isProblemsCollapsed)}
-                        aria-expanded={!isProblemsCollapsed}
-                        aria-controls="problems-content"
-                        _hover={{ bg: "gray.700" }}
-                        _focus={{ outline: "2px solid", outlineColor: "blue.400" }}
-                        transition="background-color 0.2s"
-                      >
-                        <HStack spacing={2} align="center" justify="space-between">
-                          <HStack spacing={2} align="center">
-                            <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
-                              Problems
-                            </Text>
-                            <Text color="gray.400" aria-label={`${allProblems.length} found`}>
-                              ({allProblems.length})
-                            </Text>
-                          </HStack>
-                          <Icon
-                            as={isProblemsCollapsed ? FaChevronUp : FaChevronDown}
-                            color="gray.400"
-                            aria-hidden
-                          />
+                  <Box
+                    display={{ base: "none", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "block" }}
+                    borderTop="1px"
+                    borderColor="gray.600"
+                    data-tour-target="problems-section"
+                  >
+                    <Box
+                      as="button"
+                      width="100%"
+                      p={4}
+                      borderBottom="1px"
+                      borderColor="gray.600"
+                      bg="transparent"
+                      cursor="pointer"
+                      textAlign="left"
+                      onClick={() => setIsProblemsCollapsed(!isProblemsCollapsed)}
+                      aria-expanded={!isProblemsCollapsed}
+                      aria-controls="problems-content"
+                      _hover={{ bg: "gray.700" }}
+                      _focus={{ outline: "2px solid", outlineColor: "blue.400" }}
+                      transition="background-color 0.2s"
+                    >
+                      <HStack spacing={2} align="center" justify="space-between">
+                        <HStack spacing={2} align="center">
+                          <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
+                            Problems
+                          </Text>
+                          <Text color="gray.400" aria-label={`${allProblems.length} found`}>
+                            ({allProblems.length})
+                          </Text>
                         </HStack>
+                        <Icon
+                          as={isProblemsCollapsed ? FaChevronUp : FaChevronDown}
+                          color="gray.400"
+                          aria-hidden
+                        />
+                      </HStack>
+                    </Box>
+                    {!isProblemsCollapsed && (
+                      <Box id="problems-content" role="region" aria-labelledby="problems-heading">
+                        <ProblemsSection
+                          problems={allProblems}
+                          onClickComponentPath={handlePathClick}
+                        />
                       </Box>
-                      {!isProblemsCollapsed && (
-                        <Box id="problems-content" role="region" aria-labelledby="problems-heading">
+                    )}
+                  </Box>
+                  {/* Problems Section - Mobile Tabs */}
+                  <Box
+                    display={{ base: "block", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "none" }}
+                    borderTop="1px"
+                    borderColor="gray.600"
+                  >
+                    <Tabs
+                      colorScheme="blue"
+                      variant="line"
+                      index={selectedTabIndex}
+                      onChange={setSelectedTabIndex}
+                    >
+                      <TabList borderBottom="1px" borderColor="gray.600" bg="gray.700">
+                        <Tab
+                          color="gray.300"
+                          _selected={{ color: "white", borderColor: "blue.400" }}
+                        >
+                          Message Components ({messageComponent?.children?.length || 0})
+                        </Tab>
+                        <Tab
+                          color="gray.300"
+                          _selected={{ color: "white", borderColor: "blue.400" }}
+                        >
+                          <HStack>
+                            {allProblems.length > 0 && (
+                              <WarningIcon
+                                color={problems.length > 0 ? "red.400" : "orange.400"}
+                                aria-hidden
+                              />
+                            )}
+                            <Text>Problems ({allProblems.length})</Text>
+                          </HStack>
+                        </Tab>
+                      </TabList>
+                      <TabPanels>
+                        <TabPanel p={0}>
+                          <ComponentTreeToolbar />
+                          {messageComponent && (
+                            <div
+                              ref={mobileTreeRef}
+                              key={countComponentNodes(messageComponent)}
+                              role="tree"
+                              aria-label="Message Components"
+                            >
+                              <TreeFocusRestorer treeRef={mobileTreeRef} />
+                              <NavigableTreeItem
+                                isRootItem
+                                id={messageComponent.id}
+                                ariaLabel="Message Components Root"
+                              >
+                                <ComponentTreeItem
+                                  component={messageComponent}
+                                  scrollToComponentId={scrollToComponentId}
+                                  componentIdsWithErrors={componentIdsWithErrors}
+                                  componentIdsWithWarnings={componentIdsWithWarnings}
+                                />
+                              </NavigableTreeItem>
+                            </div>
+                          )}
+                        </TabPanel>
+                        <TabPanel p={0}>
                           <ProblemsSection
                             problems={allProblems}
                             onClickComponentPath={handlePathClick}
                           />
-                        </Box>
-                      )}
-                    </Box>
-                  )}
-                  {/* Problems Section - Mobile Tabs */}
-                  {!isDesktop && (
-                    <Box borderTop="1px" borderColor="gray.600">
-                      <Tabs
-                        colorScheme="blue"
-                        variant="line"
-                        index={selectedTabIndex}
-                        onChange={setSelectedTabIndex}
-                      >
-                        <TabList borderBottom="1px" borderColor="gray.600" bg="gray.700">
-                          <Tab
-                            color="gray.300"
-                            _selected={{ color: "white", borderColor: "blue.400" }}
-                          >
-                            Message Components ({messageComponent?.children?.length || 0})
-                          </Tab>
-                          <Tab
-                            color="gray.300"
-                            _selected={{ color: "white", borderColor: "blue.400" }}
-                          >
-                            <HStack>
-                              {allProblems.length > 0 && (
-                                <WarningIcon
-                                  color={problems.length > 0 ? "red.400" : "orange.400"}
-                                  aria-hidden
-                                />
-                              )}
-                              <Text>Problems ({allProblems.length})</Text>
-                            </HStack>
-                          </Tab>
-                        </TabList>
-                        <TabPanels>
-                          <TabPanel p={0}>
-                            <ComponentTreeToolbar />
-                            {messageComponent && (
-                              <div
-                                ref={mobileTreeRef}
-                                key={countComponentNodes(messageComponent)}
-                                role="tree"
-                                aria-label="Message Components"
-                              >
-                                <TreeFocusRestorer treeRef={mobileTreeRef} />
-                                <NavigableTreeItem
-                                  isRootItem
-                                  id={messageComponent.id}
-                                  ariaLabel="Message Components Root"
-                                >
-                                  <ComponentTreeItem
-                                    component={messageComponent}
-                                    scrollToComponentId={scrollToComponentId}
-                                    componentIdsWithErrors={componentIdsWithErrors}
-                                    componentIdsWithWarnings={componentIdsWithWarnings}
-                                  />
-                                </NavigableTreeItem>
-                              </div>
-                            )}
-                          </TabPanel>
-                          <TabPanel p={0}>
-                            <ProblemsSection
-                              problems={allProblems}
-                              onClickComponentPath={handlePathClick}
-                            />
-                          </TabPanel>
-                        </TabPanels>
-                      </Tabs>
-                    </Box>
-                  )}
+                        </TabPanel>
+                      </TabPanels>
+                    </Tabs>
+                  </Box>
                 </Flex>
               </Flex>
             </Flex>

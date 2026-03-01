@@ -1,4 +1,12 @@
-import { Alert, AlertDescription, AlertTitle, Box, Button, useDisclosure } from "@chakra-ui/react";
+import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
+  AlertTitle,
+  Box,
+  Button,
+  useDisclosure,
+} from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { useContext, useRef } from "react";
 import { ArrowLeftIcon } from "@chakra-ui/icons";
@@ -41,14 +49,15 @@ export const ConnectionDisabledAlert = () => {
 
   if (disabledCode === FeedConnectionDisabledCode.Manual) {
     return (
-      <Alert status="info" borderRadius="md">
+      <Alert status="info" borderRadius="md" alignItems="flex-start">
+        <AlertIcon />
         <Box>
           <AlertTitle>
             {t("features.feedConnections.components.connectionDisabledAlert.manuallyDisabledTitle")}
           </AlertTitle>
           <AlertDescription display="block">
             {t(
-              "features.feedConnections.components.connectionDisabledAlert.manuallyDisabledDescription",
+              "features.feedConnections.components.connectionDisabledAlert.manuallyDisabledDescription"
             )}
             <Box marginTop="1rem">
               <Button isLoading={status === "loading"} onClick={onClickEnable}>
@@ -63,7 +72,8 @@ export const ConnectionDisabledAlert = () => {
 
   if (disabledCode === FeedConnectionDisabledCode.BadFormat) {
     return (
-      <Alert status="error" borderRadius="md">
+      <Alert status="error" borderRadius="md" alignItems="flex-start">
+        <AlertIcon />
         <Box>
           <AlertTitle>
             {t("features.feedConnections.components.connectionDisabledAlert.badFormatTitle")}
@@ -85,14 +95,15 @@ export const ConnectionDisabledAlert = () => {
           onClose={editOnClose}
           onCloseRef={configureButtonRef}
         />
-        <Alert status="error" borderRadius="md">
+        <Alert status="error" borderRadius="md" alignItems="flex-start">
+          <AlertIcon />
           <Box>
             <AlertTitle>
               {t("features.feedConnections.components.connectionDisabledAlert.missingMediumTitle")}
             </AlertTitle>
             <AlertDescription display="block">
               {t(
-                "features.feedConnections.components.connectionDisabledAlert.missingMediumDescription",
+                "features.feedConnections.components.connectionDisabledAlert.missingMediumDescription"
               )}
               <Box marginTop="1rem">
                 <Button ref={configureButtonRef} onClick={editOnOpen}>
@@ -108,16 +119,17 @@ export const ConnectionDisabledAlert = () => {
 
   if (disabledCode === FeedConnectionDisabledCode.MissingPermissions) {
     return (
-      <Alert status="error" borderRadius="md">
+      <Alert status="error" borderRadius="md" alignItems="flex-start">
+        <AlertIcon />
         <Box>
           <AlertTitle>
             {t(
-              "features.feedConnections.components.connectionDisabledAlert.missingPermissionsTitle",
+              "features.feedConnections.components.connectionDisabledAlert.missingPermissionsTitle"
             )}
           </AlertTitle>
           <AlertDescription display="block">
             {t(
-              "features.feedConnections.components.connectionDisabledAlert.missingPermissionsDescription",
+              "features.feedConnections.components.connectionDisabledAlert.missingPermissionsDescription"
             )}
             <Box marginTop="1rem">
               <Button isLoading={status === "loading"} onClick={onClickEnable}>
@@ -132,19 +144,20 @@ export const ConnectionDisabledAlert = () => {
 
   if (disabledCode === FeedConnectionDisabledCode.NotPaidSubscriber) {
     return (
-      <Alert status="error" borderRadius="md">
+      <Alert status="warning" borderRadius="md" alignItems="flex-start">
+        <AlertIcon />
         <Box>
           <AlertTitle>Your branded delivery is paused</AlertTitle>
           <AlertDescription display="block">
-            This connection was delivering articles with your custom name and avatar. Reactivate it
-            by subscribing to any paid plan.
+            Articles are still being delivered, but without your custom name and avatar. Resubscribe
+            to restore your branded delivery and make your content stand out.
             <Box marginTop="1rem">
               <Button
-                variant="outline"
+                colorScheme="blue"
                 leftIcon={<ArrowLeftIcon transform="rotate(90deg)" />}
                 onClick={onOpenPricingDialog}
               >
-                Reactivate branded delivery
+                Restore branded delivery
               </Button>
             </Box>
           </AlertDescription>
