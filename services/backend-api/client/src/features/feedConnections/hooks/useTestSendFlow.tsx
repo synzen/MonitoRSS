@@ -93,6 +93,7 @@ export const useTestSendFlow = ({
   // Handle test send - now uses direct send without creating a connection
   const handleTestSend = useCallback(
     async (branding?: { name: string; iconUrl?: string }) => {
+      setTestSendFeedback(null);
       setIsTestSending(true);
 
       try {
@@ -163,7 +164,7 @@ export const useTestSendFlow = ({
       selectedTemplateId,
       detectedFields,
       sendTestArticleDirectMutation,
-    ],
+    ]
   );
 
   // Handle save - creates connection (template data is included in create call)
@@ -182,7 +183,7 @@ export const useTestSendFlow = ({
         setIsSaving(false);
       }
     },
-    [createConnection, getConnectionName, onSaveSuccess, onClose],
+    [createConnection, getConnectionName, onSaveSuccess, onClose]
   );
 
   // Clear test send feedback (used when dismissing error panel)
@@ -205,7 +206,7 @@ export const useTestSendFlow = ({
  */
 export const getTemplateUpdateData = (
   selectedTemplateId: string | undefined,
-  detectedFields: DetectedFields,
+  detectedFields: DetectedFields
 ) => {
   const templateToApply = selectedTemplateId
     ? getTemplateById(selectedTemplateId) || DEFAULT_TEMPLATE
