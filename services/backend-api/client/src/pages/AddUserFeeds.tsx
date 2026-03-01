@@ -689,7 +689,7 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
                     <Text>
                       After a feed has been added, you can navigate to the feed&apos;s control panel
                       link and add connections. Connections are destinations where articles are sent
-                      to, such as specific Discord channels or webhooks.
+                      to, such as specific Discord channels.
                       <br />
                       <br />
                       You can also copy a feed&apos;s connections to other feed to avoid having to

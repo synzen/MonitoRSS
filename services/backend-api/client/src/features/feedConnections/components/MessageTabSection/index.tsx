@@ -56,7 +56,12 @@ import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 import { FeedDiscordChannelConnection } from "../../../../types";
 
 interface Props {
-  onMessageUpdated: (data: DiscordMessageFormData) => Promise<void>;
+  onMessageUpdated: (
+    data: DiscordMessageFormData,
+    extra?: {
+      applicationWebhook?: { name: string; iconUrl?: string; channelId: string };
+    },
+  ) => Promise<void>;
   guildId: string | undefined;
 }
 

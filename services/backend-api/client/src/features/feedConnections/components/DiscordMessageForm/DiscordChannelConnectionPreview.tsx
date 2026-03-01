@@ -8,11 +8,17 @@ import { CreateDiscordChannelConnectionPreviewInput } from "../../api";
 import { useCreateConnectionPreview, useDiscordChannelConnection } from "../../hooks";
 import { useDebounce } from "../../../../hooks";
 import { useDiscordBot } from "../../../discordUser";
-import { InlineErrorAlert } from "../../../../components";
+import {
+  InlineErrorAlert,
+  DISCORD_DEFAULT_AVATAR_URL,
+  MONITORSS_USERNAME,
+} from "../../../../components";
 import { MentionDataProvider, useMentionData } from "../../../../contexts/MentionDataContext";
 
 type Props = CreateDiscordChannelConnectionPreviewInput & {
   hasErrors?: boolean;
+  usernameOverride?: string;
+  avatarUrlOverride?: string;
 };
 
 interface DiscordViewWithMentionsProps {
@@ -45,6 +51,8 @@ export const DiscordChannelConnectionPreview = ({
   data,
   feedId,
   hasErrors,
+  usernameOverride,
+  avatarUrlOverride,
 }: Props) => {
   const {
     feed,
@@ -141,8 +149,12 @@ export const DiscordChannelConnectionPreview = ({
       )}
       <MentionDataProvider serverId={connection?.details.channel?.guildId}>
         <DiscordViewWithMentions
-          username={bot?.result.username || "MonitoRSS"}
-          avatarUrl={bot?.result.avatar || "https://cdn.discordapp.com/embed/avatars/0.png"}
+          username={usernameOverride || bot?.result.username || MONITORSS_USERNAME}
+          avatarUrl={
+            avatarUrlOverride ||
+            bot?.result.avatar ||
+            DISCORD_DEFAULT_AVATAR_URL
+          }
           messages={connectionPreview?.result.messages || []}
         />
       </MentionDataProvider>

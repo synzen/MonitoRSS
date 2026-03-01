@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { captureException } from "@sentry/react";
 import { Box, Spinner, Stack, Text } from "@chakra-ui/react";
 import { useDiscordUserMe, useUserMe } from "../features/discordUser";
+import { notifyError } from "../utils/notifyError";
 import { pages, PRODUCT_NAMES, ProductKey } from "../constants";
 import { CheckoutSummaryData } from "../types/CheckoutSummaryData";
 import { PricePreview } from "../types/PricePreview";
@@ -79,13 +80,14 @@ interface ContextProps {
   openCheckout: (p: {
     prices: Array<{ priceId: string; quantity: number }>;
     frameTarget?: string;
+    displayMode?: "inline" | "overlay";
   }) => void;
   getPricePreview: (
-    pricesToGet: Array<{ priceId: string; quantity: number }>,
+    pricesToGet: Array<{ priceId: string; quantity: number }>
   ) => Promise<Array<PricePreview>>;
   isSubscriptionCreated: boolean;
   getChargePreview: (
-    items: Array<{ priceId: string; quantity: number }>,
+    items: Array<{ priceId: string; quantity: number }>
   ) => Promise<{ totalFormatted: string }>;
   initCancellationFlow: (subscriptionId: string) => Promise<RetainCancellationFlowResult>;
 }
@@ -203,7 +205,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       items: Array<{
         priceId: string;
         quantity: number;
-      }>,
+      }>
     ) => {
       if (!paddle) {
         throw new Error("Paddle is not initialized");
@@ -213,9 +215,15 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
         throw new Error(`Missing at least 1 item to preview charge`);
       }
 
-      const transactionPreview = await paddle.TransactionPreview({
-        items: items.map(({ priceId, quantity }) => ({ priceId, quantity, includeInTotals: true })),
-      });
+      const transactionPreview = await retryPromise(async () =>
+        paddle.TransactionPreview({
+          items: items.map(({ priceId, quantity }) => ({
+            priceId,
+            quantity,
+            includeInTotals: true,
+          })),
+        })
+      );
 
       const { details, currencyCode } = transactionPreview.data;
 
@@ -223,7 +231,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
         totalFormatted: formatCurrency(details.totals.total, currencyCode),
       };
     },
-    [!!paddle],
+    [!!paddle]
   );
 
   const initCancellationFlow = useCallback(
@@ -234,7 +242,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
 
       return paddle.Retain.initCancellationFlow({ subscriptionId });
     },
-    [!!paddle],
+    [!!paddle]
   );
 
   const getPricePreview = useCallback(
@@ -267,7 +275,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
         const previewData = await retryPromise(async () =>
           paddle.PricePreview({
             items: pricesToGet.map(({ priceId, quantity }) => ({ priceId, quantity })),
-          }),
+          })
         );
 
         const { details, currencyCode } = previewData.data;
@@ -335,7 +343,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
         throw e;
       }
     },
-    [!!paddle],
+    [!!paddle]
   );
 
   const updatePaymentMethod = useCallback(
@@ -351,7 +359,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
         },
       });
     },
-    [!!paddle],
+    [!!paddle]
   );
 
   const updateCheckout: ContextProps["updateCheckout"] = useCallback(
@@ -364,16 +372,18 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
 
       paddle.Checkout.updateItems(prices);
     },
-    [!!paddle],
+    [!!paddle]
   );
 
   const openCheckout = useCallback(
     ({
       prices,
       frameTarget,
+      displayMode,
     }: {
       prices: Array<{ priceId: string; quantity: number }>;
       frameTarget?: string;
+      displayMode?: "inline" | "overlay";
     }) => {
       setIsSubscriptionCreated(false);
 
@@ -385,9 +395,15 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
 
       if (!paddle) {
         captureException(Error("Failed to open paddle checkout since paddle is not initialized"));
+        notifyError(
+          "Unable to load checkout",
+          "Please try refreshing the page or using a different browser."
+        );
 
         return;
       }
+
+      const useOverlay = displayMode === "overlay";
 
       paddle?.Checkout.open({
         items: prices.map(({ priceId, quantity }) => ({
@@ -397,22 +413,28 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
         customer: {
           email: user.result.email,
         },
-        settings: {
-          displayMode: "inline",
-          frameTarget: frameTarget || "checkout-modal",
-          frameInitialHeight: 634,
-          allowLogout: false,
-          variant: "one-page",
-          showAddDiscounts: false,
-          frameStyle:
-            "width: 100%; height: 100%; min-width: 312px; min-height:634px; padding-left: 8px; padding-right: 8px;",
-        },
+        settings: useOverlay
+          ? {
+              displayMode: "overlay",
+              theme: "dark",
+              allowLogout: false,
+            }
+          : {
+              displayMode: "inline",
+              frameTarget: frameTarget || "checkout-modal",
+              frameInitialHeight: 634,
+              allowLogout: false,
+              variant: "one-page",
+              showAddDiscounts: false,
+              frameStyle:
+                "width: 100%; height: 100%; min-width: 312px; min-height:634px; padding-left: 8px; padding-right: 8px;",
+            },
         customData: {
           userId: user.result.id,
         },
       });
     },
-    [user?.result.email, user?.result.id, !!paddle],
+    [user?.result.email, user?.result.id, !!paddle]
   );
 
   const resetCheckoutData = useCallback(() => {
@@ -444,7 +466,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       isSubscriptionCreated,
       getChargePreview,
       initCancellationFlow,
-    ],
+    ]
   );
 
   return (

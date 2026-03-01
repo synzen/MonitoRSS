@@ -241,6 +241,7 @@ export const SendConnectionTestArticleBodySchema = Type.Object(
         Type.Null(),
       ]),
     ),
+    applicationWebhook: Type.Optional(ApplicationWebhookSchema),
   },
   { additionalProperties: false },
 );
@@ -320,7 +321,6 @@ export const CopyConnectionSettingsBodySchema = Type.Object(
         Type.Literal("embeds"),
         Type.Literal("webhookName"),
         Type.Literal("webhookIconUrl"),
-        Type.Literal("webhookThread"),
         Type.Literal("placeholderLimits"),
         Type.Literal("content"),
         Type.Literal("contentFormatTables"),
@@ -337,7 +337,6 @@ export const CopyConnectionSettingsBodySchema = Type.Object(
         Type.Literal("customPlaceholders"),
         Type.Literal("deliveryRateLimits"),
         Type.Literal("messageMentions"),
-        Type.Literal("channel"),
       ]),
       { minItems: 1 },
     ),

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "../fixtures/test-fixtures";
 import { getTestServerName, getTestChannelName } from "../helpers/api";
+import { ensureFreeSubscriptionState } from "../helpers/paddle-cleanup";
 
 async function navigateToTemplateModal(
   page: Page,
@@ -9,12 +10,15 @@ async function navigateToTemplateModal(
 ) {
   await page.goto(`/feeds/${feedId}`);
   await expect(
-    page.getByRole("button", { name: /Add Discord channel/i }),
+    page.getByRole("button", { name: /Add connection/i }).first(),
   ).toBeVisible({
     timeout: 10000,
   });
 
-  await page.getByRole("button", { name: /Add Discord channel/i }).click();
+  await page
+    .getByRole("button", { name: /Add connection/i })
+    .first()
+    .click();
 
   await page.locator("#server-select").click();
   await page.locator('[role="option"]').filter({ hasText: serverName }).click();
@@ -31,7 +35,7 @@ async function navigateToTemplateModal(
     .click({ timeout: 15000 });
 
   await page
-    .getByRole("radio", { name: /Don't use threads/i })
+    .getByRole("radio", { name: /Send directly to channel/i })
     .click({ force: true });
 
   await page.getByRole("button", { name: /Next: Choose Template/i }).click();
@@ -48,6 +52,10 @@ async function navigateToTemplateModal(
 }
 
 test.describe("Paddle Branding Checkout", () => {
+  test.beforeEach(async ({ page }) => {
+    await ensureFreeSubscriptionState(page);
+  });
+
   test("upgrades via Paddle checkout from branding upgrade prompt and saves with branding", async ({
     page,
     testFeed,
@@ -176,22 +184,27 @@ test.describe("Paddle Branding Checkout", () => {
       await subscribeButton.click();
     }
 
-    // Phase 6: Wait for checkout to complete and provisioning
-    // The "Provisioning benefits" overlay may appear briefly or the modal may transition directly
-    // Wait for either provisioning text OR the Save button to appear (indicating checkout completed)
+    // Phase 6: Wait for Paddle success screen, then close overlay to trigger checkout.completed
+    const paddleSuccessText = paddle.getByText(
+      /transaction has been completed successfully/i,
+    );
+    await expect(paddleSuccessText).toBeVisible({ timeout: 60000 });
+
+    const paddleCloseButton = paddle.getByRole("button", { name: "Close" });
+    await paddleCloseButton.click();
+    await expect(paddleFrame).not.toBeVisible({ timeout: 15000 });
+
+    // Phase 7: Wait for provisioning to complete
+    const provisioningText = page.getByText(/Provisioning benefits/i);
     await expect(
-      page
-        .getByText(/Provisioning benefits/i)
-        .or(modal.getByRole("button", { name: "Save" })),
+      provisioningText.or(modal.getByRole("button", { name: "Save" })),
     ).toBeVisible({ timeout: 60000 });
 
-    // If provisioning spinner is still showing, wait for it to disappear
-    const provisioningText = page.getByText(/Provisioning benefits/i);
     if (await provisioningText.isVisible().catch(() => false)) {
       await expect(provisioningText).not.toBeVisible({ timeout: 60000 });
     }
 
-    // Phase 7: Verify modal state preservation
+    // Phase 8: Verify modal state preservation
     await expect(modal).toBeVisible();
 
     await expect(modal.getByRole("button", { name: "Save" })).toBeVisible({
@@ -210,14 +223,7 @@ test.describe("Paddle Branding Checkout", () => {
       "https://i.imgur.com/test-avatar.png",
     );
 
-    // Close the Paddle overlay if it's still showing the success screen
-    const paddleCloseButton = paddle.getByRole("button", { name: "Close" });
-    if (await paddleCloseButton.isVisible().catch(() => false)) {
-      await paddleCloseButton.click();
-      await expect(paddleFrame).not.toBeVisible({ timeout: 15000 });
-    }
-
-    // Phase 8: Save with branding
+    // Phase 9: Save with branding
     await modal.getByRole("button", { name: "Save" }).click();
 
     await expect(page.getByText("You're all set")).toBeVisible({

@@ -26,6 +26,10 @@ export const SEND_TEST_ARTICLE_EXCEPTION_ERROR_CODES: ExceptionErrorCodes = {
     status: 400,
     code: ApiErrorCode.FEED_MISSING_CHANNEL,
   },
+  WebhookMissingPermissionsException: {
+    status: 403,
+    code: ApiErrorCode.WEBHOOKS_MANAGE_MISSING_PERMISSIONS,
+  },
 };
 
 export const CREATE_PREVIEW_EXCEPTION_ERROR_CODES: ExceptionErrorCodes = {

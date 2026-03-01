@@ -24,7 +24,15 @@ import MessageBuilderFormState from "./types/MessageBuilderFormState";
 import { FeedDiscordChannelConnection } from "../../types";
 import convertMessageBuilderStateToConnectionPreviewInput from "./utils/convertMessageBuilderStateToConnectionPreviewInput";
 
-export const ArticlePreviewBanner: React.FC = () => {
+interface ArticlePreviewBannerProps {
+  brandingDisplayName?: string;
+  brandingAvatarUrl?: string;
+}
+
+export const ArticlePreviewBanner: React.FC<ArticlePreviewBannerProps> = ({
+  brandingDisplayName,
+  brandingAvatarUrl,
+}) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Get article state from context
@@ -66,6 +74,14 @@ export const ArticlePreviewBanner: React.FC = () => {
             id: currentArticleId,
           },
           ...messageComponentData,
+          applicationWebhook: brandingDisplayName?.trim()
+            ? {
+                channelId:
+                  connection.details.channel?.id || connection.details.webhook?.channelId || "",
+                name: brandingDisplayName.trim(),
+                iconUrl: brandingAvatarUrl?.trim() || undefined,
+              }
+            : undefined,
         },
       };
 

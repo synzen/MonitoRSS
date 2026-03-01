@@ -100,8 +100,7 @@ export const SubscriberBlockText = ({ alternateText, onClick, feature, supporter
           <Box>
             <Text>
               {alternateText ||
-                `You must be a supporter at a sufficient tier (${showTier}) to access this. Consider
-              supporting MonitoRSS's free services and open-source development!`}
+                `Upgrade to a paid plan to deliver articles with your own custom name and avatar — so your feed looks like a natural part of your server.`}
             </Text>
             {userMeData?.result.enableBilling && (
               <Button mt={4} onClick={onClickBecomeSupporter}>

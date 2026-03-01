@@ -603,7 +603,7 @@ describe(
         );
       });
 
-      it("copies webhook name/iconUrl/threadId when both have webhooks", async () => {
+      it("copies webhook name/iconUrl when both have webhooks", async () => {
         const { feedId, targetId, response } = await setupCopyTest(
           {
             details: {
@@ -613,7 +613,6 @@ describe(
                 guildId: "g-1",
                 name: "Source WH",
                 iconUrl: "https://icon.src",
-                threadId: "thread-src",
               },
               channel: undefined,
             },
@@ -626,12 +625,11 @@ describe(
                 guildId: "g-2",
                 name: "Old Name",
                 iconUrl: "https://icon.old",
-                threadId: "thread-old",
               },
               channel: undefined,
             },
           },
-          ["webhookName", "webhookIconUrl", "webhookThread"],
+          ["webhookName", "webhookIconUrl"],
         );
 
         assert.strictEqual(response.status, 204);
@@ -644,22 +642,15 @@ describe(
         >;
         assert.strictEqual(target.details.webhook.name, "Source WH");
         assert.strictEqual(target.details.webhook.iconUrl, "https://icon.src");
-        assert.strictEqual(target.details.webhook.threadId, "thread-src");
         assert.strictEqual(target.details.webhook.id, "wh-tgt");
         assert.strictEqual(target.details.webhook.token, "tok-tgt");
       });
 
-      it("skips webhook props when target has no webhook", async () => {
+      it("skips branding copy when source has no webhook", async () => {
         const { feedId, targetId, response } = await setupCopyTest(
           {
             details: {
-              webhook: {
-                id: "wh-src",
-                token: "tok-src",
-                guildId: "g-1",
-                name: "Source WH",
-              },
-              channel: undefined,
+              channel: { id: "ch-src", guildId: "g-1" },
             },
           },
           {
@@ -679,64 +670,6 @@ describe(
           any
         >;
         assert.strictEqual(target.details.webhook, undefined);
-      });
-
-      it("copies channel when both have channels", async () => {
-        const { feedId, targetId, response } = await setupCopyTest(
-          {
-            details: {
-              channel: { id: "ch-source", guildId: "g-source" },
-            },
-          },
-          {
-            details: {
-              channel: { id: "ch-old", guildId: "g-old" },
-            },
-          },
-          ["channel"],
-        );
-
-        assert.strictEqual(response.status, 204);
-
-        const feed = await ctx.container.userFeedRepository.findById(feedId);
-        const target = getTargetConnection(feed!, targetId) as Record<
-          string,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          any
-        >;
-        assert.strictEqual(target.details.channel.id, "ch-source");
-        assert.strictEqual(target.details.channel.guildId, "g-source");
-      });
-
-      it("skips channel when target has no channel", async () => {
-        const { feedId, targetId, response } = await setupCopyTest(
-          {
-            details: {
-              channel: { id: "ch-source", guildId: "g-source" },
-            },
-          },
-          {
-            details: {
-              webhook: {
-                id: "wh-tgt",
-                token: "tok-tgt",
-                guildId: "g-2",
-              },
-              channel: undefined,
-            },
-          },
-          ["channel"],
-        );
-
-        assert.strictEqual(response.status, 204);
-
-        const feed = await ctx.container.userFeedRepository.findById(feedId);
-        const target = getTargetConnection(feed!, targetId) as Record<
-          string,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          any
-        >;
-        assert.strictEqual(target.details.channel, undefined);
       });
 
       it("copies filters", async () => {

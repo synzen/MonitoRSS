@@ -1,42 +1,37 @@
 import { FeedConnectionType, FeedDiscordChannelConnection } from "../types";
 
+export function getConnectionDestinationLabel(
+  channelType?: string | null,
+  webhookType?: string | null,
+): string {
+  const type = channelType || webhookType;
+
+  switch (type) {
+    case "forum":
+      return "Forum";
+    case "thread":
+    case "forum-thread":
+      return "Thread";
+    case "new-thread":
+    default:
+      return "Channel";
+  }
+}
+
 export function getPrettyConnectionName(connection: FeedDiscordChannelConnection) {
   const { key } = connection;
 
   if (key === FeedConnectionType.DiscordChannel) {
     const casted = connection as FeedDiscordChannelConnection;
+    const channelType = casted.details.channel?.type;
+    const webhookType = casted.details.webhook?.type;
+    const label = getConnectionDestinationLabel(channelType, webhookType);
 
-    if (casted.details.channel) {
-      if (casted.details.channel.type === "new-thread") {
-        return "Discord Channel (New threads)";
-      }
-
-      if (casted.details.channel.type === "thread") {
-        return "Discord Thread";
-      }
-
-      if (casted.details.channel.type === "forum") {
-        return "Discord Forum";
-      }
-
-      if (casted.details.channel.type === "forum-thread") {
-        return "Discord Forum Thread";
-      }
-
-      return "Discord Channel";
+    if (channelType === "new-thread") {
+      return "Discord Channel (New threads)";
     }
 
-    if (casted.details.webhook) {
-      if (casted.details.webhook.type === "forum") {
-        return "Discord Forum Webhook";
-      }
-
-      if (casted.details.webhook.type === "thread") {
-        return "Discord Thread Webhook";
-      }
-
-      return "Discord Channel Webhook";
-    }
+    return `Discord ${label}`;
   }
 
   return "Unknown";

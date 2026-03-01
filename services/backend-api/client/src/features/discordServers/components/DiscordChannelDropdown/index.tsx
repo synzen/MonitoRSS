@@ -6,7 +6,7 @@ import { GetDiscordChannelType } from "../../constants";
 
 interface Props {
   serverId?: string;
-  onChange: (channelId: string, channelName: string) => void;
+  onChange: (channelId: string, channelName: string, channelType?: string | null) => void;
   onBlur: () => void;
   value?: string;
   isDisabled?: boolean;
@@ -43,7 +43,7 @@ export const DiscordChannelDropdown: React.FC<Props> = ({
         loading={isFetching}
         isDisabled={isDisabled || !!error}
         options={options}
-        onChange={(val, optionData) => onChange(val, optionData.name)}
+        onChange={(val, optionData) => onChange(val, optionData.name, optionData.type)}
         onBlur={onBlur}
         value={value}
         isInvalid={isInvalid}

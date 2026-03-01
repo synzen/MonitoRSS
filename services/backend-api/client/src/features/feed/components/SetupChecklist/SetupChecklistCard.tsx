@@ -1,18 +1,7 @@
 import { useState } from "react";
-import {
-  Box,
-  HStack,
-  Stack,
-  Text,
-  Button,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuList,
-} from "@chakra-ui/react";
-import { CheckIcon, ChevronDownIcon, WarningIcon } from "@chakra-ui/icons";
+import { Box, HStack, Stack, Text, Button } from "@chakra-ui/react";
+import { AddIcon, CheckIcon, WarningIcon } from "@chakra-ui/icons";
 import { getAvatarColor } from "@/utils/getAvatarColor";
-import { CONNECTION_TYPES, type ConnectionType } from "../../../feedConnections/constants";
 
 interface SetupChecklistCardProps {
   feed: {
@@ -21,7 +10,7 @@ interface SetupChecklistCardProps {
     url: string;
     connectionCount: number;
   };
-  onAddConnection: (feedId: string, type: ConnectionType) => void;
+  onAddConnection: (feedId: string) => void;
 }
 
 export const SetupChecklistCard = ({ feed, onAddConnection }: SetupChecklistCardProps) => {
@@ -58,32 +47,18 @@ export const SetupChecklistCard = ({ feed, onAddConnection }: SetupChecklistCard
     </HStack>
   );
 
-  const connectionMenu = (width?: string) => (
-    <Menu>
-      <MenuButton
-        as={Button}
-        size="sm"
-        colorScheme={isConfigured ? undefined : "blue"}
-        variant={isConfigured ? "ghost" : "solid"}
-        width={width}
-        aria-label={buttonLabel}
-        rightIcon={<ChevronDownIcon />}
-      >
-        {isConfigured ? "Add another" : "Add connection"}
-      </MenuButton>
-      <MenuList maxWidth="300px">
-        {CONNECTION_TYPES.map((ct) => (
-          <MenuItem key={ct.type} onClick={() => onAddConnection(feed.id, ct.type)}>
-            <Stack spacing={1}>
-              <Text>{ct.label}</Text>
-              <Text fontSize={13} color="whiteAlpha.600" whiteSpace="normal">
-                {ct.description}
-              </Text>
-            </Stack>
-          </MenuItem>
-        ))}
-      </MenuList>
-    </Menu>
+  const connectionButton = (width?: string) => (
+    <Button
+      size="sm"
+      colorScheme={isConfigured ? undefined : "blue"}
+      variant={isConfigured ? "ghost" : "solid"}
+      width={width}
+      aria-label={buttonLabel}
+      leftIcon={<AddIcon fontSize="xs" />}
+      onClick={() => onAddConnection(feed.id)}
+    >
+      {isConfigured ? "Add another" : "Add connection"}
+    </Button>
   );
 
   return (
@@ -154,13 +129,13 @@ export const SetupChecklistCard = ({ feed, onAddConnection }: SetupChecklistCard
 
           <HStack spacing={3} flexShrink={0} display={{ base: "none", md: "flex" }}>
             {statusIndicator}
-            {connectionMenu()}
+            {connectionButton()}
           </HStack>
         </HStack>
 
         <Box display={{ base: "block", md: "none" }}>
           <Box mb={3}>{statusIndicator}</Box>
-          {connectionMenu("full")}
+          {connectionButton("full")}
         </Box>
       </Stack>
     </Box>

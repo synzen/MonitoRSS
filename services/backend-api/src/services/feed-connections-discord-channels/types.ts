@@ -30,7 +30,6 @@ export enum CopyableSetting {
   Embeds = "embeds",
   WebhookName = "webhookName",
   WebhookIconUrl = "webhookIconUrl",
-  WebhookThread = "webhookThread",
   PlaceholderLimits = "placeholderLimits",
   Content = "content",
   ContentFormatTables = "contentFormatTables",
@@ -47,7 +46,6 @@ export enum CopyableSetting {
   CustomPlaceholders = "customPlaceholders",
   DeliveryRateLimits = "deliveryRateLimits",
   MessageMentions = "messageMentions",
-  Channel = "channel",
 }
 
 export interface CreateDiscordChannelConnectionInput {
@@ -147,6 +145,7 @@ export enum UserFeedTargetFeedSelectionType {
 export interface CopySettingsInput {
   properties: CopyableSetting[];
   targetDiscordChannelConnectionIds: string[];
+  accessToken: string;
 }
 
 export interface FeedConnectionsDiscordChannelsServiceDeps {
