@@ -43,7 +43,7 @@ test.describe("Connection Settings", () => {
     await page.getByRole("menuitem").filter({ hasText: "Configure" }).click();
 
     await expect(
-      page.getByRole("dialog").getByText("Edit Discord Channel Connection"),
+      page.getByRole("dialog").getByText("Edit Discord Connection"),
     ).toBeVisible({ timeout: 10000 });
 
     await page.locator("#server-select").click();
@@ -67,7 +67,7 @@ test.describe("Connection Settings", () => {
 
     // Wait for dialog to close (indicates success) - may take time for API call
     await expect(
-      page.getByRole("dialog").getByText("Edit Discord Channel Connection"),
+      page.getByRole("dialog").getByText("Edit Discord Connection"),
     ).not.toBeVisible({ timeout: 30000 });
 
     await expect(
@@ -75,6 +75,94 @@ test.describe("Connection Settings", () => {
     ).toBeVisible({
       timeout: 10000,
     });
+  });
+
+  test("can update webhook connection branding via configure dialog", async ({
+    page,
+    testFeed,
+  }) => {
+    const channelId = getTestChannelId();
+    test.skip(!channelId, "channelId must be configured in e2econfig.json");
+
+    const connectionName = `Branding Update Test ${Date.now()}`;
+    const connection = await createWebhookConnection(
+      page,
+      testFeed.id,
+      channelId!,
+      {
+        name: connectionName,
+        webhookName: "Original Name",
+        webhookIconUrl: "https://example.com/original-icon.png",
+      },
+    );
+
+    await page.goto(
+      `/feeds/${testFeed.id}/discord-channel-connections/${connection.id}`,
+    );
+
+    const displayNameValue = page.locator('[aria-labelledby="display-name"]');
+    const avatarUrlValue = page.locator('[aria-labelledby="avatar-url"]');
+
+    await expect(displayNameValue).toContainText("Original Name", {
+      timeout: 10000,
+    });
+    await expect(avatarUrlValue).toContainText(
+      "https://example.com/original-icon.png",
+    );
+
+    const actionsButton = page.getByRole("button", {
+      name: "Connection Actions",
+    });
+    await actionsButton.waitFor({ timeout: 10000 });
+    await actionsButton.click();
+
+    await page.getByRole("menuitem").filter({ hasText: "Configure" }).click();
+
+    await expect(
+      page.getByRole("dialog").getByText("Edit Discord Connection"),
+    ).toBeVisible({ timeout: 10000 });
+
+    const displayNameInput = page
+      .getByRole("dialog")
+      .getByLabel("Display Name");
+    await expect(displayNameInput).toHaveValue("Original Name", {
+      timeout: 10000,
+    });
+
+    const avatarUrlInput = page.getByRole("dialog").getByLabel("Avatar URL");
+    await expect(avatarUrlInput).toHaveValue(
+      "https://example.com/original-icon.png",
+      { timeout: 10000 },
+    );
+
+    await displayNameInput.clear();
+    await displayNameInput.fill("Updated Name");
+
+    await avatarUrlInput.clear();
+    await avatarUrlInput.fill("https://example.com/updated-icon.png");
+
+    await page.getByRole("button", { name: /Save/i }).click();
+
+    await expect(
+      page.getByRole("dialog").getByText("Edit Discord Connection"),
+    ).not.toBeVisible({ timeout: 30000 });
+
+    await expect(
+      page.getByText("Successfully updated connection."),
+    ).toBeVisible({ timeout: 10000 });
+
+    await page.reload();
+
+    await expect(displayNameValue).toContainText("Updated Name", {
+      timeout: 10000,
+    });
+    await expect(displayNameValue).not.toContainText("Original Name");
+    await expect(avatarUrlValue).toContainText(
+      "https://example.com/updated-icon.png",
+    );
+    await expect(avatarUrlValue).not.toContainText(
+      "https://example.com/original-icon.png",
+    );
   });
 
   test("can clone a webhook connection with custom properties", async ({
@@ -547,7 +635,7 @@ test.describe("Copy Connection Settings", () => {
     });
   });
 
-  test("webhook settings only copy to webhook connections", async ({
+  test("branding settings copy to all connections", async ({
     page,
     testFeed,
   }) => {
@@ -608,7 +696,7 @@ test.describe("Copy Connection Settings", () => {
     const dialog = page.getByRole("dialog");
     const webhookCategoryCheckbox = dialog
       .locator("label")
-      .filter({ hasText: /^Webhook/ })
+      .filter({ hasText: /^Branding/ })
       .first()
       .locator("input[type='checkbox']");
     await webhookCategoryCheckbox.scrollIntoViewIfNeeded();
@@ -623,7 +711,7 @@ test.describe("Copy Connection Settings", () => {
       page.getByText(/Successfully copied connection settings/),
     ).toBeVisible({ timeout: 30000 });
 
-    // Navigate to webhook target and verify webhook settings were copied
+    // Navigate to webhook target and verify branding was copied
     await page.getByRole("link", { name: testFeed.title }).click();
     await page.getByRole("tab", { name: "Connections" }).click();
     await page.getByRole("link", { name: webhookTarget.name }).click();
@@ -632,8 +720,24 @@ test.describe("Copy Connection Settings", () => {
       page.getByRole("heading", { name: webhookTarget.name }),
     ).toBeVisible({ timeout: 10000 });
 
-    // Verify webhook name was copied
-    await expect(page.getByText("Source Webhook Name")).toBeVisible({
+    await expect(
+      page.getByLabel("Display Name").getByText("Source Webhook Name"),
+    ).toBeVisible({
+      timeout: 10000,
+    });
+
+    // Navigate to channel target and verify branding was also copied
+    await page.getByRole("link", { name: testFeed.title }).click();
+    await page.getByRole("tab", { name: "Connections" }).click();
+    await page.getByRole("link", { name: channelTarget.name }).click();
+
+    await expect(
+      page.getByRole("heading", { name: channelTarget.name }),
+    ).toBeVisible({ timeout: 10000 });
+
+    await expect(
+      page.getByLabel("Display Name").getByText("Source Webhook Name"),
+    ).toBeVisible({
       timeout: 10000,
     });
   });

@@ -54,6 +54,8 @@ import {
 import { TemplateGalleryModal } from "../../../templates/components/TemplateGalleryModal";
 import convertMessageBuilderStateToConnectionUpdate from "../../../../pages/MessageBuilder/utils/convertMessageBuilderStateToConnectionUpdate";
 import { ConnectionDialogErrorDisplay } from "./ConnectionDialogErrorDisplay";
+import { useIsFeatureAllowed } from "../../../../hooks";
+import { BlockableFeature } from "../../../../constants";
 
 enum DiscordCreateChannelThreadMethod {
   Existing = "EXISTING",
@@ -79,6 +81,8 @@ const formSchema = object({
     return schema.optional();
   }),
   channelId: string().required("Discord channel is required"),
+  brandingDisplayName: string().optional(),
+  brandingAvatarUrl: string().optional(),
 });
 
 interface Props {
@@ -92,8 +96,14 @@ interface Props {
 type FormData = InferType<typeof formSchema>;
 
 function getIsForumConnection(connection?: FeedDiscordChannelConnection): boolean {
-  const type = connection?.details.channel?.type;
-  return type === "forum" || type === "forum-thread";
+  const channelType = connection?.details.channel?.type;
+  const webhookType = connection?.details.webhook?.type;
+  return (
+    channelType === "forum" ||
+    channelType === "forum-thread" ||
+    webhookType === "forum" ||
+    webhookType === "forum-thread"
+  );
 }
 
 export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
@@ -123,31 +133,61 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
     handleBackStep,
   } = useConnectionTemplateSelection({ isOpen, isEditing, feedId: feedIdProp });
 
-  const defaultFormValues: Partial<FormData> = isForumChannel
-    ? {
+  const webhookDetails = connection?.details.webhook;
+  const channelDetails = connection?.details.channel;
+  const hasWebhookOnly = !!webhookDetails && !channelDetails;
+
+  const getDefaultFormValues = (): Partial<FormData> => {
+    const brandingValues = {
+      brandingDisplayName: webhookDetails?.name || undefined,
+      brandingAvatarUrl: webhookDetails?.iconUrl || undefined,
+    };
+
+    if (hasWebhookOnly) {
+      const wType = webhookDetails.type;
+
+      return {
         name: connection?.name,
-        serverId: connection?.details.channel?.guildId,
-        channelId: connection?.details.channel?.parentChannelId || connection?.details.channel?.id,
-        threadId: connection?.details.channel?.parentChannelId
-          ? connection?.details.channel?.id
-          : undefined,
-        createThreadMethod: DiscordCreateChannelThreadMethod.None,
-      }
-    : {
-        name: connection?.name,
-        channelId: connection?.details.channel?.parentChannelId || connection?.details.channel?.id,
-        serverId: connection?.details.channel?.guildId,
-        threadId:
-          connection?.details.channel?.type === "thread"
-            ? connection?.details.channel?.id
-            : undefined,
+        serverId: webhookDetails.guildId,
+        channelId: webhookDetails.channelId || undefined,
+        threadId: wType === "thread" ? webhookDetails.threadId : undefined,
         createThreadMethod:
-          connection?.details.channel?.type === "new-thread"
-            ? DiscordCreateChannelThreadMethod.New
-            : connection?.details.channel?.type === "thread"
-              ? DiscordCreateChannelThreadMethod.Existing
-              : DiscordCreateChannelThreadMethod.None,
+          wType === "forum" || wType === "forum-thread"
+            ? DiscordCreateChannelThreadMethod.None
+            : wType === "thread"
+            ? DiscordCreateChannelThreadMethod.Existing
+            : DiscordCreateChannelThreadMethod.None,
+        ...brandingValues,
       };
+    }
+
+    if (isForumChannel) {
+      return {
+        name: connection?.name,
+        serverId: channelDetails?.guildId,
+        channelId: channelDetails?.parentChannelId || channelDetails?.id,
+        threadId: channelDetails?.parentChannelId ? channelDetails?.id : undefined,
+        createThreadMethod: DiscordCreateChannelThreadMethod.None,
+        ...brandingValues,
+      };
+    }
+
+    return {
+      name: connection?.name,
+      channelId: channelDetails?.parentChannelId || channelDetails?.id,
+      serverId: channelDetails?.guildId,
+      threadId: channelDetails?.type === "thread" ? channelDetails?.id : undefined,
+      createThreadMethod:
+        channelDetails?.type === "new-thread"
+          ? DiscordCreateChannelThreadMethod.New
+          : channelDetails?.type === "thread"
+          ? DiscordCreateChannelThreadMethod.Existing
+          : DiscordCreateChannelThreadMethod.None,
+      ...brandingValues,
+    };
+  };
+
+  const defaultFormValues = getDefaultFormValues();
 
   const { t } = useTranslation();
   const {
@@ -169,14 +209,28 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
     "threadId",
     "createThreadMethod",
   ]);
-  const { mutateAsync, error } = useCreateDiscordChannelConnection();
-  const { mutateAsync: updateMutateAsync, error: updateError } =
-    useUpdateDiscordChannelConnection();
+  const { mutateAsync, error, reset: resetCreateError } = useCreateDiscordChannelConnection();
+  const {
+    mutateAsync: updateMutateAsync,
+    error: updateError,
+    reset: resetUpdateError,
+  } = useUpdateDiscordChannelConnection();
   const initialFocusRef = useRef<any>(null);
   const { createSuccessAlert } = usePageAlertContext();
+  const { allowed: brandingAllowed } = useIsFeatureAllowed({
+    feature: BlockableFeature.DiscordWebhooks,
+  });
 
   // Shared callbacks from hook
   const { onSaveSuccess } = useConnectionDialogCallbacks();
+
+  const handleClose = useCallback(() => {
+    reset();
+    setIsForumChannel(getIsForumConnection(connection));
+    resetCreateError();
+    resetUpdateError();
+    onClose();
+  }, [onClose, reset, connection, resetCreateError, resetUpdateError]);
 
   // Create connection callback for test send flow
   const createConnection = useCallback(
@@ -187,6 +241,10 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
 
       const formValues = watch();
       const { name, createThreadMethod, channelId: inputChannelId, threadId } = formValues;
+
+      if (!name) {
+        throw new Error("Connection name is missing");
+      }
 
       // Get template data to include in create call
       const templateData = getTemplateUpdateData(selectedTemplateId, detectedFields);
@@ -216,7 +274,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
         },
       });
     },
-    [feedId, watch, mutateAsync, selectedTemplateId, detectedFields, isForumChannel],
+    [feedId, watch, mutateAsync, selectedTemplateId, detectedFields, isForumChannel]
   );
 
   // Get connection name from form
@@ -226,8 +284,8 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
   const testSendChannelId = isForumChannel
     ? watchedThreadId || channelId
     : watchedCreateThreadMethod === DiscordCreateChannelThreadMethod.Existing && watchedThreadId
-      ? watchedThreadId
-      : channelId;
+    ? watchedThreadId
+    : channelId;
 
   // Test send flow hook
   const {
@@ -248,7 +306,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
     isOpen,
     createConnection,
     onSaveSuccess,
-    onClose,
+    onClose: handleClose,
     getConnectionName,
   });
 
@@ -264,6 +322,8 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
     createThreadMethod,
     channelId: inputChannelId,
     threadId,
+    brandingDisplayName,
+    brandingAvatarUrl,
   }: FormData) => {
     if (!feedId) {
       throw new Error("Feed ID missing while creating discord channel connection");
@@ -271,6 +331,18 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
 
     if (connection) {
       try {
+        const brandingPayload =
+          brandingAllowed && brandingDisplayName?.trim()
+            ? {
+                applicationWebhook: {
+                  name: brandingDisplayName.trim(),
+                  iconUrl: brandingAvatarUrl?.trim() || undefined,
+                  channelId: threadId || inputChannelId,
+                  threadId: undefined as string | undefined,
+                },
+              }
+            : {};
+
         if (isForumChannel) {
           if (threadId) {
             await updateMutateAsync({
@@ -278,6 +350,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
               connectionId: connection.id,
               details: {
                 channelId: threadId,
+                ...brandingPayload,
               },
             });
           } else {
@@ -287,23 +360,27 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
               details: {
                 name,
                 channelId: inputChannelId,
+                ...brandingPayload,
               },
             });
           }
         } else {
+          const effectiveChannelId =
+            createThreadMethod === DiscordCreateChannelThreadMethod.Existing && threadId
+              ? threadId
+              : inputChannelId;
+
           await updateMutateAsync({
             feedId,
             connectionId: connection.id,
             details: {
               name,
-              channelId:
-                createThreadMethod === DiscordCreateChannelThreadMethod.Existing && threadId
-                  ? threadId
-                  : inputChannelId,
+              channelId: effectiveChannelId,
               threadCreationMethod:
                 createThreadMethod === DiscordCreateChannelThreadMethod.New
                   ? "new-thread"
                   : undefined,
+              ...brandingPayload,
             },
           });
         }
@@ -311,7 +388,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
         createSuccessAlert({
           title: "Successfully updated connection.",
         });
-        onClose();
+        handleClose();
       } catch (err) {
         // Error handled by mutation error state
       }
@@ -351,16 +428,11 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
         title: "You're all set!",
         description: `New articles will be delivered automatically to ${name || "your channel"}.`,
       });
-      onClose();
+      handleClose();
     } catch (err) {
       // Error handled by mutation error state
     }
   };
-
-  useEffect(() => {
-    reset();
-    setIsForumChannel(getIsForumConnection(connection));
-  }, [isOpen]);
 
   const handleNextStep = async () => {
     const fieldsToValidate: (keyof FormData)[] = isForumChannel
@@ -370,8 +442,17 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
     const isServerChannelValid = await trigger(fieldsToValidate);
 
     if (isServerChannelValid) {
+      resetCreateError();
+      resetUpdateError();
       templateHandleNextStep();
     }
+  };
+
+  const handleBackToChannel = () => {
+    clearTestSendFeedback();
+    resetCreateError();
+    resetUpdateError();
+    handleBackStep();
   };
 
   const errorCount = Object.keys(errors).length;
@@ -388,7 +469,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
     return (
       <TemplateGalleryModal
         isOpen={isOpen}
-        onClose={onClose}
+        onClose={handleClose}
         finalFocusRef={finalFocusRef}
         templates={TEMPLATES}
         selectedTemplateId={selectedTemplateId}
@@ -405,8 +486,8 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
         feedId={feedId || ""}
         userFeed={userFeed}
         tertiaryActionLabel="Back to channel"
-        onTertiaryAction={handleBackStep}
-        onCancel={onClose}
+        onTertiaryAction={handleBackToChannel}
+        onCancel={handleClose}
         testId="template-selection-modal"
         onTestSend={handleTestSend}
         isTestSendLoading={isTestSending}
@@ -423,7 +504,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       closeOnOverlayClick={!isSubmitting}
       initialFocusRef={initialFocusRef}
       finalFocusRef={finalFocusRef}
@@ -442,7 +523,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                 <FormControl isInvalid={!!errors.serverId} isRequired>
                   <FormLabel id="server-select-label" htmlFor="server-select">
                     {t(
-                      "features.feed.components.addDiscordChannelConnectionDialog.formServerLabel",
+                      "features.feed.components.addDiscordChannelConnectionDialog.formServerLabel"
                     )}
                   </FormLabel>
                   <Controller
@@ -472,7 +553,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                 <FormControl isInvalid={!!errors.channelId} isRequired>
                   <FormLabel id="channel-select-label" htmlFor="channel-select">
                     {t(
-                      "features.feed.components.addDiscordChannelConnectionDialog.formChannelLabel",
+                      "features.feed.components.addDiscordChannelConnectionDialog.formChannelLabel"
                     )}
                   </FormLabel>
                   <Controller
@@ -665,7 +746,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                                     <FormHelperText>
                                       {t(
                                         "features.feed.components" +
-                                          ".addDiscordChannelThreadConnectionDialog.formThreadDescripton",
+                                          ".addDiscordChannelThreadConnectionDialog.formThreadDescripton"
                                       )}
                                     </FormHelperText>
                                   </FormControl>
@@ -699,7 +780,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                 <FormControl isInvalid={!!errors.name} isRequired>
                   <FormLabel>
                     {t(
-                      "features.feed.components.addDiscordChannelThreadConnectionDialog.formNameLabel",
+                      "features.feed.components.addDiscordChannelThreadConnectionDialog.formNameLabel"
                     )}
                   </FormLabel>
                   <Controller
@@ -713,10 +794,68 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                   <FormHelperText>
                     {t(
                       "features.feed.components" +
-                        ".addDiscordChannelThreadConnectionDialog.formNameDescription",
+                        ".addDiscordChannelThreadConnectionDialog.formNameDescription"
                     )}
                   </FormHelperText>
                 </FormControl>
+                {isEditing && (
+                  <fieldset>
+                    <chakra.legend fontWeight="semibold" fontSize="md" mb={2}>
+                      Branding
+                    </chakra.legend>
+                    {!brandingAllowed && (
+                      <Text fontSize="sm" color="orange.500" mb={2}>
+                        Upgrade to a paid plan to use custom branding on this connection.
+                      </Text>
+                    )}
+                    <Stack spacing={4} opacity={!brandingAllowed ? 0.5 : 1}>
+                      <FormControl isDisabled={!brandingAllowed || !!brandingDisabledReason}>
+                        <FormLabel>Display Name</FormLabel>
+                        <Controller
+                          name="brandingDisplayName"
+                          control={control}
+                          render={({ field }) => (
+                            <Input
+                              {...field}
+                              value={field.value || ""}
+                              bg="gray.800"
+                              placeholder="Optional"
+                              isDisabled={!brandingAllowed || !!brandingDisabledReason}
+                            />
+                          )}
+                        />
+                        <FormHelperText>
+                          The display name that will appear on delivered messages.
+                        </FormHelperText>
+                      </FormControl>
+                      <FormControl isDisabled={!brandingAllowed || !!brandingDisabledReason}>
+                        <FormLabel>Avatar URL</FormLabel>
+                        <Controller
+                          name="brandingAvatarUrl"
+                          control={control}
+                          render={({ field }) => (
+                            <Input
+                              {...field}
+                              value={field.value || ""}
+                              bg="gray.800"
+                              placeholder="Optional"
+                              type="url"
+                              isDisabled={!brandingAllowed || !!brandingDisabledReason}
+                            />
+                          )}
+                        />
+                        <FormHelperText>
+                          A URL for the avatar image that will appear on delivered messages.
+                        </FormHelperText>
+                      </FormControl>
+                    </Stack>
+                    {brandingDisabledReason && (
+                      <Text fontSize="sm" color="whiteAlpha.600" mt={2}>
+                        {brandingDisabledReason}
+                      </Text>
+                    )}
+                  </fieldset>
+                )}
               </Stack>
             </form>
             <ConnectionDialogErrorDisplay
@@ -728,7 +867,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
         </ModalBody>
         <ModalFooter>
           <HStack>
-            <Button variant="ghost" mr={3} onClick={onClose} isDisabled={isSubmitting}>
+            <Button variant="ghost" mr={3} onClick={handleClose} isDisabled={isSubmitting}>
               <span>{t("common.buttons.cancel")}</span>
             </Button>
             {connection ? (

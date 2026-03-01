@@ -88,7 +88,7 @@ export interface TemplateGalleryModalProps {
   primaryActionLabel?: string;
   onPrimaryAction?: (
     selectedTemplateId: string,
-    branding?: { name: string; iconUrl?: string },
+    branding?: { name: string; iconUrl?: string }
   ) => void;
   isPrimaryActionLoading?: boolean;
   secondaryActionLabel?: string;
@@ -114,7 +114,7 @@ export interface TemplateGalleryModalProps {
 export function isTemplateCompatible(
   template: Template,
   feedFields: string[],
-  detectedFields: DetectedFields,
+  detectedFields: DetectedFields
 ): boolean {
   const andFieldsSatisfied =
     !template.requiredFields?.length ||
@@ -134,7 +134,7 @@ export function isTemplateCompatible(
 export function getMissingFields(
   template: Template,
   feedFields: string[],
-  detectedFields: DetectedFields,
+  detectedFields: DetectedFields
 ): string[] {
   const missingAndFields = (template.requiredFields ?? []).filter((field) => {
     return detectedFields[field].length === 0 && !feedFields.includes(field);
@@ -155,7 +155,7 @@ export function getMissingFields(
 export function getDisabledReason(
   template: Template,
   feedFields: string[],
-  detectedFields: DetectedFields,
+  detectedFields: DetectedFields
 ): string {
   const missingFields = getMissingFields(template, feedFields, detectedFields);
 
@@ -208,7 +208,7 @@ const useTemplatePreview = ({
         const previewInputData = convertMessageBuilderStateToConnectionPreviewInput(
           userFeed,
           connection,
-          messageComponent,
+          messageComponent
         );
 
         const input: CreateDiscordChannelConnectionPreviewInput = {
@@ -270,7 +270,7 @@ const useCurrentFormatPreview = ({
       const previewInputData = convertMessageBuilderStateToConnectionPreviewInput(
         userFeed,
         connection,
-        currentMessageComponent,
+        currentMessageComponent
       );
 
       const input: CreateDiscordChannelConnectionPreviewInput = {
@@ -347,6 +347,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
     year?: string;
   }>({});
   const [isPriceLoading, setIsPriceLoading] = useState(false);
+  const [isPaddleCheckoutOpen, setIsPaddleCheckoutOpen] = useState(false);
 
   const [modalView, setModalView] = useState<"editor" | "upgrade">("editor");
   const upgradeHeadingRef = useRef<HTMLParagraphElement>(null);
@@ -365,6 +366,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
       setBrandingDisplayName("");
       setBrandingAvatarUrl("");
       setBillingInterval("month");
+      setIsPaddleCheckoutOpen(false);
     }
   }, [isOpen]);
 
@@ -414,6 +416,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
   useEffect(() => {
     if (!prevWebhooksAllowedRef.current && webhooksAllowed && modalView !== "editor") {
       setModalView("editor");
+      setIsPaddleCheckoutOpen(false);
     }
     prevWebhooksAllowedRef.current = webhooksAllowed;
   }, [webhooksAllowed, modalView]);
@@ -539,7 +542,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
           : {
               name: brandingDisplayName,
               iconUrl: brandingAvatarUrl || undefined,
-            },
+            }
       );
     }
   };
@@ -564,7 +567,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
           : {
               name: brandingDisplayName,
               iconUrl: brandingAvatarUrl || undefined,
-            },
+            }
       );
     }
   };
@@ -605,7 +608,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
               (f) =>
                 f.name === ProductFeature.Webhooks ||
                 f.name === ProductFeature.Feeds ||
-                f.name === ProductFeature.RefreshRate,
+                f.name === ProductFeature.RefreshRate
             )
             .map((feature) => (
               <HStack as="li" key={feature.name} spacing={2}>
@@ -669,6 +672,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
           isDisabled={!isPaddleLoaded || isPriceLoading}
           onClick={() => {
             const priceId = PRICE_IDS[ProductKey.Tier1][billingInterval];
+            setIsPaddleCheckoutOpen(true);
             openCheckout({
               prices: [{ priceId, quantity: 1 }],
               displayMode: "overlay",
@@ -1075,6 +1079,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
       closeOnOverlayClick
       closeOnEsc={modalView === "editor"}
       finalFocusRef={finalFocusRef}
+      trapFocus={!isPaddleCheckoutOpen}
     >
       <ModalOverlay />
       <ModalContent

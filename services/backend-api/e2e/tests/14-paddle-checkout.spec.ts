@@ -1,8 +1,13 @@
 import { test, expect } from "../fixtures/test-fixtures";
+import { ensureFreeSubscriptionState } from "../helpers/paddle-cleanup";
 
 const TIER_1_MONTHLY_PRICE_ID = "pri_01hf01yn08hj2jwtywq7fhsww3";
 
 test.describe("Paddle Checkout", () => {
+  test.beforeEach(async ({ page }) => {
+    await ensureFreeSubscriptionState(page);
+  });
+
   test("can subscribe to Tier 1 via Paddle checkout", async ({ page }) => {
     test.setTimeout(120_000);
 

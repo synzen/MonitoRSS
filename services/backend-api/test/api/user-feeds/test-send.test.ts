@@ -237,6 +237,121 @@ describe(
       assert.notStrictEqual(response.status, 500);
     });
 
+    it("returns 200 when channelId is a thread and webhook is requested", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+      const threadId = generateSnowflake();
+      const parentChannelId = generateSnowflake();
+      const guildId = generateSnowflake();
+      const webhookId = generateSnowflake();
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Test Send Thread Webhook",
+        url: "https://example.com/test-send-thread-webhook.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      ctx.discordMockServer.registerRoute("GET", `/channels/${threadId}`, {
+        status: 200,
+        body: {
+          id: threadId,
+          guild_id: guildId,
+          type: 11,
+          parent_id: parentChannelId,
+        },
+      });
+
+      ctx.discordMockServer.registerRoute(
+        "GET",
+        `/channels/${parentChannelId}`,
+        {
+          status: 200,
+          body: {
+            id: parentChannelId,
+            guild_id: guildId,
+            type: 0,
+          },
+        },
+      );
+
+      ctx.discordMockServer.registerRoute(
+        "GET",
+        `/channels/${parentChannelId}/webhooks`,
+        {
+          status: 200,
+          body: [
+            {
+              id: webhookId,
+              type: 1,
+              channel_id: parentChannelId,
+              name: "test-webhook",
+              token: "test-webhook-token",
+              application_id: "test-client-id",
+            },
+          ],
+        },
+      );
+
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        user.accessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: guildId,
+              name: "Test Server",
+              owner: false,
+              permissions: "16",
+            },
+          ],
+        },
+      );
+
+      feedApiMockServer.registerRoute("POST", "/v1/user-feeds/test", {
+        status: 200,
+        body: {
+          status: "SUCCESS",
+        },
+      });
+
+      const response = await user.fetch(
+        `/api/v1/user-feeds/${feed.id}/test-send`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            article: { id: "article-1" },
+            channelId: threadId,
+            webhook: { name: "My Webhook" },
+          }),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { status: string };
+      };
+      assert.strictEqual(body.result.status, "SUCCESS");
+
+      const webhookRequests = ctx.discordMockServer.getRequestsForPath(
+        `/api/v10/channels/${parentChannelId}/webhooks`,
+      );
+      assert.ok(
+        webhookRequests.length > 0,
+        "Webhook should be fetched from parent channel, not thread",
+      );
+
+      const threadWebhookRequests = ctx.discordMockServer.getRequestsForPath(
+        `/api/v10/channels/${threadId}/webhooks`,
+      );
+      assert.strictEqual(
+        threadWebhookRequests.length,
+        0,
+        "Should not attempt to fetch webhooks from thread",
+      );
+    });
+
     it("returns 403 with FEED_USER_MISSING_MANAGE_GUILD when user lacks permission", async () => {
       const discordUserId = generateSnowflake();
       const user = await ctx.asUser(discordUserId);

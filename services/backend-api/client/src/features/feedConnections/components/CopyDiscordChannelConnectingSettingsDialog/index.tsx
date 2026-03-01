@@ -37,7 +37,7 @@ import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 
 enum CopyCategory {
   Message = "Message Format",
-  Webhook = "Webhook",
+  Branding = "Branding",
 }
 
 const CopyableSettingDescriptions: Record<
@@ -48,10 +48,6 @@ const CopyableSettingDescriptions: Record<
     hint?: string;
   }
 > = {
-  [CopyableConnectionDiscordChannelSettings.Channel]: {
-    description: "Channel",
-    hint: "Only applicable if the target connection does not use a webhook",
-  },
   [CopyableConnectionDiscordChannelSettings.Filters]: {
     description: "Filters",
   },
@@ -109,15 +105,11 @@ const CopyableSettingDescriptions: Record<
   },
   [CopyableConnectionDiscordChannelSettings.WebhookName]: {
     description: "Name",
-    category: CopyCategory.Webhook,
+    category: CopyCategory.Branding,
   },
   [CopyableConnectionDiscordChannelSettings.WebhookIconUrl]: {
-    description: "Icon URL",
-    category: CopyCategory.Webhook,
-  },
-  [CopyableConnectionDiscordChannelSettings.WebhookThread]: {
-    description: "Thread",
-    category: CopyCategory.Webhook,
+    description: "Avatar URL",
+    category: CopyCategory.Branding,
   },
   [CopyableConnectionDiscordChannelSettings.DeliveryRateLimits]: {
     description: "Delivery rate limits",
@@ -264,7 +256,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
   };
 
   const checkboxesByCategories = Object.values(CopyCategory).map((category) => {
-    if (category === CopyCategory.Webhook && !connection?.details.webhook) {
+    if (category === CopyCategory.Branding && !connection?.details.webhook) {
       return null;
     }
 
@@ -341,11 +333,6 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
                 >
                   {category}
                   <br />
-                  {category === CopyCategory.Webhook && (
-                    <chakra.span color="whiteAlpha.600" fontSize={14}>
-                      Only applicable if the target connection uses a webhook
-                    </chakra.span>
-                  )}
                 </Checkbox>
                 {Object.entries(CopyableSettingDescriptions).map(
                   ([setting, { description, category: settingCategory }]) => {
@@ -465,13 +452,6 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
                             <>
                               {otherSettings.map((setting) => {
                                 const settingDescription = CopyableSettingDescriptions[setting];
-
-                                if (
-                                  setting === CopyableConnectionDiscordChannelSettings.Channel &&
-                                  !connection.details.channel
-                                ) {
-                                  return null;
-                                }
 
                                 return (
                                   <Checkbox
