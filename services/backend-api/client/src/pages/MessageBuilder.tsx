@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useContext } from "react";
 import {
   Box,
   Flex,
@@ -76,10 +76,11 @@ import {
   usePageAlertContext,
 } from "../contexts/PageAlertContext";
 import convertMessageBuilderStateToConnectionUpdate from "./MessageBuilder/utils/convertMessageBuilderStateToConnectionUpdate";
-import { pages } from "../constants";
+import { pages, BlockableFeature } from "../constants";
 import { UserFeedTabSearchParam } from "../constants/userFeedTabSearchParam";
+import { PricingDialogContext } from "../contexts";
 import { MessageBuilderTour } from "../components/MessageBuilderTour";
-import { useMessageBuilderTour, useIsMessageBuilderDesktop } from "../hooks";
+import { useMessageBuilderTour, useIsMessageBuilderDesktop, useIsFeatureAllowed } from "../hooks";
 import { MESSAGE_BUILDER_MOBILE_BREAKPOINT } from "./MessageBuilder/constants/MessageBuilderMobileBreakpoint";
 import { useUserFeedArticles } from "../features/feed/hooks";
 import { TemplateGalleryModal } from "../features/templates/components/TemplateGalleryModal";
@@ -101,7 +102,7 @@ function TreeFocusRestorer({ treeRef }: { treeRef: React.RefObject<HTMLDivElemen
     requestAnimationFrame(() => {
       if (document.activeElement && document.activeElement !== document.body) return;
       const selected = treeRef.current?.querySelector(
-        `[data-id="${currentSelectedId}"]`,
+        `[data-id="${currentSelectedId}"]`
       ) as HTMLElement | null;
       selected?.focus();
     });
@@ -167,6 +168,21 @@ const MessageBuilderContent: React.FC = () => {
   const { userFeed, connection } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
   const { resetTour, resetTrigger } = useMessageBuilderTour();
   const isDesktop = useIsMessageBuilderDesktop();
+
+  // Branding state
+  const existingWebhookName = connection.details.webhook?.name || "";
+  const existingWebhookIconUrl = connection.details.webhook?.iconUrl || "";
+  const [brandingDisplayName, setBrandingDisplayName] = useState(existingWebhookName);
+  const [brandingAvatarUrl, setBrandingAvatarUrl] = useState(existingWebhookIconUrl);
+  const skipBrandingRef = useRef(false);
+  const { allowed: webhooksAllowed } = useIsFeatureAllowed({
+    feature: BlockableFeature.DiscordWebhooks,
+  });
+  const { onOpen: onOpenPricingDialog } = useContext(PricingDialogContext);
+  const brandingChanged =
+    brandingDisplayName !== existingWebhookName || brandingAvatarUrl !== existingWebhookIconUrl;
+  const hasBrandingValues = !webhooksAllowed && !!brandingDisplayName.trim();
+  const hasAnyChanges = formState.isDirty || brandingChanged;
 
   // Template gallery state
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);
@@ -246,7 +262,7 @@ const MessageBuilderContent: React.FC = () => {
   // If the user attempts to close the tab with unsaved changes, ask for confirmation
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (formState.isDirty) {
+      if (hasAnyChanges) {
         event.preventDefault();
       }
     };
@@ -256,7 +272,7 @@ const MessageBuilderContent: React.FC = () => {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [formState.isDirty]);
+  }, [hasAnyChanges]);
 
   const handleSave = handleSubmit(
     async (data) => {
@@ -266,8 +282,27 @@ const MessageBuilderContent: React.FC = () => {
 
       try {
         const connectionDetails = convertMessageBuilderStateToConnectionUpdate(
-          data.messageComponent,
+          data.messageComponent
         );
+
+        const shouldSkipBranding = skipBrandingRef.current;
+        skipBrandingRef.current = false;
+
+        const channelId = connection.details.webhook?.channelId || connection.details.channel?.id;
+
+        if (
+          webhooksAllowed &&
+          !shouldSkipBranding &&
+          brandingDisplayName &&
+          brandingChanged &&
+          channelId
+        ) {
+          connectionDetails.applicationWebhook = {
+            name: brandingDisplayName,
+            iconUrl: brandingAvatarUrl || undefined,
+            channelId,
+          };
+        }
 
         await updateConnection({
           feedId,
@@ -291,11 +326,11 @@ const MessageBuilderContent: React.FC = () => {
       if (problems.length > 0) {
         onProblemsDialogOpen();
       }
-    },
+    }
   );
 
   const handleDiscard = () => {
-    if (!formState.isDirty) {
+    if (!hasAnyChanges) {
       return;
     }
 
@@ -304,6 +339,8 @@ const MessageBuilderContent: React.FC = () => {
 
   const confirmDiscard = () => {
     resetMessage();
+    setBrandingDisplayName(existingWebhookName);
+    setBrandingAvatarUrl(existingWebhookIconUrl);
     onClose();
   };
 
@@ -510,18 +547,38 @@ const MessageBuilderContent: React.FC = () => {
                         colorScheme="red"
                         size="sm"
                         onClick={handleDiscard}
-                        aria-disabled={formState.isDirty === false}
+                        aria-disabled={!hasAnyChanges}
                       >
                         Discard Changes
                       </Button>
-                      <Button
-                        colorScheme="blue"
-                        size="sm"
-                        onClick={handleSave}
-                        aria-disabled={updateStatus === "loading" || !formState.isDirty}
-                      >
-                        {updateStatus === "loading" ? "Saving Changes..." : "Save Changes"}
-                      </Button>
+                      {hasBrandingValues ? (
+                        <>
+                          <Button
+                            variant="outline"
+                            colorScheme="blue"
+                            size="sm"
+                            onClick={() => {
+                              skipBrandingRef.current = true;
+                              handleSave();
+                            }}
+                            aria-disabled={updateStatus === "loading" || !hasAnyChanges}
+                          >
+                            {updateStatus === "loading" ? "Saving..." : "Save without branding"}
+                          </Button>
+                          <Button colorScheme="blue" size="sm" onClick={onOpenPricingDialog}>
+                            Upgrade to save with branding
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          colorScheme="blue"
+                          size="sm"
+                          onClick={handleSave}
+                          aria-disabled={updateStatus === "loading" || !hasAnyChanges}
+                        >
+                          {updateStatus === "loading" ? "Saving Changes..." : "Save Changes"}
+                        </Button>
+                      )}
                     </HStack>
                   </HStack>
                 </HStack>
@@ -611,6 +668,11 @@ const MessageBuilderContent: React.FC = () => {
                       <DiscordMessagePreview
                         maxHeight={isProblemsCollapsed ? "none" : undefined}
                         onResolvedMessages={setResolvedMessages}
+                        brandingDisplayName={brandingDisplayName}
+                        brandingAvatarUrl={brandingAvatarUrl}
+                        onBrandingDisplayNameChange={setBrandingDisplayName}
+                        onBrandingAvatarUrlChange={setBrandingAvatarUrl}
+                        webhooksAllowed={webhooksAllowed}
                       />
                     </Box>
                   </Box>
@@ -759,6 +821,7 @@ const MessageBuilderContent: React.FC = () => {
             <MessageBuilderTour resetTrigger={resetTrigger} />
             {/* Template Gallery Modal */}
             <TemplateGalleryModal
+              mode="picker"
               isOpen={isTemplatesOpen}
               onClose={handleCloseTemplatesModal}
               templates={TEMPLATES}

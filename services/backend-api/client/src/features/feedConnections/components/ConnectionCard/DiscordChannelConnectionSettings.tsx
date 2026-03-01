@@ -12,7 +12,6 @@ import {
 import { cloneElement, useRef } from "react";
 import { FaCopy, FaEllipsisVertical, FaGear, FaPause, FaPlay } from "react-icons/fa6";
 import { IoDuplicate } from "react-icons/io5";
-import { BiTransfer } from "react-icons/bi";
 import { DeleteIcon } from "@chakra-ui/icons";
 import {
   FeedConnectionDisabledCode,
@@ -23,7 +22,6 @@ import { useUpdateDiscordChannelConnection } from "../../hooks";
 import { CloneDiscordConnectionCloneDialog } from "../CloneDiscordConnectionCloneDialog";
 import { ConfirmModal } from "../../../../components";
 import { UpdateDiscordChannelConnectionInput } from "../../api";
-import { EditConnectionWebhookDialog } from "../EditConnectionWebhookDialog";
 import { DeleteConnectionButton } from "../DeleteConnectionButton";
 import { CopyDiscordChannelConnectionSettingsDialog } from "../CopyDiscordChannelConnectingSettingsDialog";
 import { EditConnectionDialogContent } from "../EditConnectionDialogContent";
@@ -44,11 +42,6 @@ export const DiscordChannelConnectionSettings = ({ feedId, connection, trigger }
   } = useUpdateDiscordChannelConnection();
   const { isOpen: editIsOpen, onClose: editOnClose, onOpen: editOnOpen } = useDisclosure();
   const { t } = useTranslation();
-  const {
-    isOpen: isConvertToWebhookIsOpen,
-    onClose: isConvertToWebhookOnClose,
-    onOpen: isConvertToWebhookOnOpen,
-  } = useDisclosure();
   const {
     isOpen: isCopySettingsIsOpen,
     onClose: isCopySettingsOnClose,
@@ -78,15 +71,6 @@ export const DiscordChannelConnectionSettings = ({ feedId, connection, trigger }
         connection={connection}
         isOpen={editIsOpen}
         onClose={editOnClose}
-        onCloseRef={actionsButtonRef}
-      />
-      {/** For converting a channel to webhook */}
-      <EditConnectionWebhookDialog
-        excludeName
-        connectionId={connection.id}
-        title="Convert to Discord Webhook"
-        isOpen={isConvertToWebhookIsOpen}
-        onClose={isConvertToWebhookOnClose}
         onCloseRef={actionsButtonRef}
       />
       <Menu>
@@ -166,11 +150,6 @@ export const DiscordChannelConnectionSettings = ({ feedId, connection, trigger }
                 });
               }}
             />
-          )}
-          {connection && connection.details.channel && (
-            <MenuItem onClick={isConvertToWebhookOnOpen} icon={<BiTransfer />}>
-              Convert to Discord Webhook
-            </MenuItem>
           )}
           <MenuDivider />
           <DeleteConnectionButton

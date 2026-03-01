@@ -46,7 +46,7 @@ import {
   useUserFeedConnectionContext,
 } from "../contexts/UserFeedConnectionContext";
 import { UserFeedProvider, useUserFeedContext } from "../contexts/UserFeedContext";
-import { getPrettyConnectionName } from "../utils/getPrettyConnectionName";
+import { getConnectionDestinationLabel } from "../utils/getPrettyConnectionName";
 import {
   PageAlertContextOutlet,
   PageAlertProvider,
@@ -103,6 +103,11 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
 
   const serverId = connection?.details?.channel?.guildId || connection?.details?.webhook?.guildId;
+
+  const destinationLabel = getConnectionDestinationLabel(
+    connection?.details?.channel?.type,
+    connection?.details?.webhook?.type,
+  );
 
   const { data: discordWebhookResult, status: discordWebhooksStatus } = useDiscordWebhook({
     webhookId: connection?.details.webhook?.id,
@@ -238,21 +243,12 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                     <CategoryText title={t("pages.discordChannelConnection.serverLabel")}>
                       <DiscordServerName serverId={serverId} />
                     </CategoryText>
-                    <CategoryText
-                      title={t("pages.discordChannelConnection.channelNameLabel")}
-                      hidden={!connection?.details.channel}
-                    >
+                    <CategoryText title={destinationLabel} hidden={!connection?.details.channel}>
                       <DiscordChannelName
                         serverId={serverId}
                         channelId={connection?.details.channel?.id || ""}
                         hidden={!connection?.details.channel}
                       />
-                    </CategoryText>
-                    <CategoryText
-                      title={t("pages.discordChannelConnection.channelTypeLabel")}
-                      hidden={!!connection?.details.webhook}
-                    >
-                      <Text>{connection ? getPrettyConnectionName(connection) : ""}</Text>
                     </CategoryText>
                     <CategoryText
                       title="Webhook"
@@ -273,7 +269,7 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                       </HStack>
                     </CategoryText>
                     <CategoryText
-                      title="Webhook Channel"
+                      title={destinationLabel}
                       hidden={
                         !connection?.details.webhook ||
                         !connection.details.webhook.isApplicationOwned
@@ -288,11 +284,11 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                         />
                       </HStack>
                     </CategoryText>
-                    <CategoryText title="Webhook name" hidden={!connection?.details.webhook}>
+                    <CategoryText title="Display Name" hidden={!connection?.details.webhook}>
                       {connection?.details.webhook?.name || "N/A"}
                     </CategoryText>
                     <CategoryText
-                      title="Webhook icon"
+                      title="Avatar URL"
                       hidden={!connection?.details.webhook}
                       valueContainerProps={{
                         wordBreak: "break-all",
@@ -351,7 +347,9 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                 <TabContentContainer>
                   <MessageTabSection
                     guildId={serverId}
-                    onMessageUpdated={(data) => onUpdate(data, "message format")}
+                    onMessageUpdated={(data, extra) =>
+                      onUpdate({ ...data, ...extra }, "message format")
+                    }
                   />
                 </TabContentContainer>
               </BoxConstrained.Container>

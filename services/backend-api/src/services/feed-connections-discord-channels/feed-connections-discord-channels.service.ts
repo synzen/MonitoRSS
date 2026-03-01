@@ -716,7 +716,11 @@ export class FeedConnectionsDiscordChannelsService {
   async copySettings(
     userFeed: IUserFeed,
     sourceConnection: IDiscordChannelConnection,
-    { targetDiscordChannelConnectionIds, properties }: CopySettingsInput,
+    {
+      targetDiscordChannelConnectionIds,
+      properties,
+      accessToken,
+    }: CopySettingsInput,
   ): Promise<void> {
     const foundFeed = await this.deps.userFeedRepository.findById(userFeed.id);
 
@@ -738,6 +742,10 @@ export class FeedConnectionsDiscordChannelsService {
       return connection;
     });
 
+    const copyingBranding =
+      properties.includes(CopyableSetting.WebhookName) ||
+      properties.includes(CopyableSetting.WebhookIconUrl);
+
     for (let i = 0; i < relevantConnections.length; ++i) {
       const currentConnection = relevantConnections[i];
 
@@ -749,23 +757,45 @@ export class FeedConnectionsDiscordChannelsService {
         currentConnection.details.embeds = sourceConnection.details.embeds;
       }
 
-      if (
-        currentConnection.details.webhook &&
-        sourceConnection.details.webhook
-      ) {
-        if (properties.includes(CopyableSetting.WebhookName)) {
-          currentConnection.details.webhook.name =
-            sourceConnection.details.webhook.name;
+      if (copyingBranding && sourceConnection.details.webhook) {
+        if (!currentConnection.details.webhook) {
+          const channelId = currentConnection.details.channel?.id;
+
+          if (channelId) {
+            const { channel } = await this.assertDiscordChannelCanBeUsed(
+              accessToken,
+              channelId,
+              true,
+            );
+
+            const webhook = await this.getOrCreateApplicationWebhook({
+              channelId: channel.id,
+              webhook: {
+                name: `feed-${userFeed.id}-${currentConnection.id}`,
+              },
+            });
+
+            currentConnection.details.webhook = {
+              id: webhook.id,
+              token: webhook.token as string,
+              guildId: channel.guild_id,
+              channelId: channel.id,
+              isApplicationOwned: true,
+            };
+            currentConnection.details.channel = undefined;
+          }
         }
 
-        if (properties.includes(CopyableSetting.WebhookIconUrl)) {
-          currentConnection.details.webhook.iconUrl =
-            sourceConnection.details.webhook.iconUrl;
-        }
+        if (currentConnection.details.webhook) {
+          if (properties.includes(CopyableSetting.WebhookName)) {
+            currentConnection.details.webhook.name =
+              sourceConnection.details.webhook.name;
+          }
 
-        if (properties.includes(CopyableSetting.WebhookThread)) {
-          currentConnection.details.webhook.threadId =
-            sourceConnection.details.webhook.threadId;
+          if (properties.includes(CopyableSetting.WebhookIconUrl)) {
+            currentConnection.details.webhook.iconUrl =
+              sourceConnection.details.webhook.iconUrl;
+          }
         }
       }
 
@@ -860,14 +890,6 @@ export class FeedConnectionsDiscordChannelsService {
 
       if (properties.includes(CopyableSetting.MessageMentions)) {
         currentConnection.mentions = sourceConnection.mentions;
-      }
-
-      if (
-        properties.includes(CopyableSetting.Channel) &&
-        sourceConnection.details.channel &&
-        currentConnection.details.channel
-      ) {
-        currentConnection.details.channel = sourceConnection.details.channel;
       }
     }
 
@@ -1107,18 +1129,32 @@ export class FeedConnectionsDiscordChannelsService {
       | SendTestArticleInput["details"]["mediumDetails"]["webhook"]
       | undefined;
 
-    if (input.webhook && isSupporter) {
+    const channel = await this.deps.discordApiService.getChannel(
+      input.channelId,
+    );
+    const isForumChannel = channel.type === DiscordChannelType.GUILD_FORUM;
+    const isThread =
+      channel.type === DiscordChannelType.PUBLIC_THREAD ||
+      channel.type === DiscordChannelType.ANNOUNCEMENT_THREAD ||
+      channel.type === DiscordChannelType.PRIVATE_THREAD;
+
+    if (input.webhook || isForumChannel) {
+      const webhookChannelId = isThread
+        ? channel.parent_id || input.channelId
+        : input.channelId;
+
       const webhook = await this.getOrCreateApplicationWebhook({
-        channelId: input.threadId || input.channelId,
+        channelId: webhookChannelId,
         webhook: { name: `test-send-${userFeed.id}` },
       });
 
       webhookDetails = {
         id: webhook.id,
         token: webhook.token as string,
-        name: input.webhook.name,
-        iconUrl: input.webhook.iconUrl,
-        threadId: input.threadId,
+        name: input.webhook?.name,
+        iconUrl: input.webhook?.iconUrl,
+        threadId: isThread ? input.channelId : input.threadId,
+        type: isForumChannel ? "forum" : undefined,
       };
     }
 

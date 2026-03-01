@@ -13,6 +13,8 @@ import { MentionDataProvider, useMentionData } from "../../../../contexts/Mentio
 
 type Props = CreateDiscordChannelConnectionPreviewInput & {
   hasErrors?: boolean;
+  usernameOverride?: string;
+  avatarUrlOverride?: string;
 };
 
 interface DiscordViewWithMentionsProps {
@@ -45,6 +47,8 @@ export const DiscordChannelConnectionPreview = ({
   data,
   feedId,
   hasErrors,
+  usernameOverride,
+  avatarUrlOverride,
 }: Props) => {
   const {
     feed,
@@ -141,8 +145,12 @@ export const DiscordChannelConnectionPreview = ({
       )}
       <MentionDataProvider serverId={connection?.details.channel?.guildId}>
         <DiscordViewWithMentions
-          username={bot?.result.username || "MonitoRSS"}
-          avatarUrl={bot?.result.avatar || "https://cdn.discordapp.com/embed/avatars/0.png"}
+          username={usernameOverride || bot?.result.username || "MonitoRSS"}
+          avatarUrl={
+            avatarUrlOverride ||
+            bot?.result.avatar ||
+            "https://cdn.discordapp.com/embed/avatars/0.png"
+          }
           messages={connectionPreview?.result.messages || []}
         />
       </MentionDataProvider>

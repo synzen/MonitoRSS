@@ -48,7 +48,7 @@ import {
   ExternalLinkIcon,
   QuestionOutlineIcon,
 } from "@chakra-ui/icons";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { FaGear, FaPause, FaUserSlash } from "react-icons/fa6";
 import { FaCopy } from "react-icons/fa";
 import { IoDuplicate } from "react-icons/io5";
@@ -72,7 +72,6 @@ import {
   ComparisonsTabSection,
   UserFeedMiscSettingsTabSection,
   ConnectionCard,
-  CONNECTION_TYPES,
 } from "../features/feedConnections";
 
 import { UserFeedManagerStatus, pages } from "../constants";
@@ -145,9 +144,6 @@ const UserFeedInner: React.FC = () => {
   const { search: urlSearch, state } = useLocation();
   const { isOpen, onClose, onOpen } = useDisclosure();
   const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const [addConnectionType, setAddConnectionType] = useState<
-    { type: "discord-channel" | "discord-forum" | "discord-webhook" } | undefined
-  >(undefined);
   const { data: dailyLimit } = useArticleDailyLimit({
     feedId,
   });
@@ -172,9 +168,7 @@ const UserFeedInner: React.FC = () => {
   const isNewFeed = state?.isNewFeed as boolean | undefined;
 
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
-
-  const onAddConnection = (type: "discord-channel" | "discord-webhook" | "discord-forum") => {
-    setAddConnectionType({ type });
+  const onAddConnection = () => {
     onOpen();
   };
 
@@ -255,26 +249,8 @@ const UserFeedInner: React.FC = () => {
 
   const addConnectionButtons = isSharedWithMe ? null : (
     <Flex gap={4} flexWrap="wrap">
-      <Button
-        variant="outline"
-        onClick={() => onAddConnection("discord-channel")}
-        leftIcon={<AddIcon fontSize="sm" />}
-      >
-        Add Discord channel
-      </Button>
-      <Button
-        variant="outline"
-        onClick={() => onAddConnection("discord-forum")}
-        leftIcon={<AddIcon fontSize="sm" />}
-      >
-        Add Discord forum
-      </Button>
-      <Button
-        variant="outline"
-        onClick={() => onAddConnection("discord-webhook")}
-        leftIcon={<AddIcon fontSize="sm" />}
-      >
-        Add Discord webhook
+      <Button variant="outline" onClick={onAddConnection} leftIcon={<AddIcon fontSize="sm" />}>
+        Add Discord connection
       </Button>
     </Flex>
   );
@@ -301,7 +277,7 @@ const UserFeedInner: React.FC = () => {
         }}
       />
       <Tabs isLazy isFitted defaultIndex={tabIndex ?? 0} index={tabIndex ?? undefined} width="100%">
-        <AddConnectionDialog isOpen={isOpen} type={addConnectionType?.type} onClose={onClose} />
+        <AddConnectionDialog isOpen={isOpen} onClose={onClose} />
         <EditUserFeedDialog
           onCloseRef={menuButtonRef}
           isOpen={editIsOpen}
@@ -670,27 +646,13 @@ const UserFeedInner: React.FC = () => {
                         <Heading size="md" as="h2">
                           {t("pages.userFeeds.tabConnections")}
                         </Heading>
-                        <Menu placement="bottom-end">
-                          <MenuButton
-                            colorScheme="blue"
-                            as={Button}
-                            rightIcon={<ChevronDownIcon />}
-                          >
-                            Add new connection
-                          </MenuButton>
-                          <MenuList maxWidth="300px">
-                            {CONNECTION_TYPES.map((ct) => (
-                              <MenuItem key={ct.type} onClick={() => onAddConnection(ct.type)}>
-                                <Stack spacing={1}>
-                                  <Text>{ct.label}</Text>
-                                  <Text fontSize={13} color="whiteAlpha.600" whiteSpace="normal">
-                                    {ct.description}
-                                  </Text>
-                                </Stack>
-                              </MenuItem>
-                            ))}
-                          </MenuList>
-                        </Menu>
+                        <Button
+                          colorScheme="blue"
+                          onClick={onAddConnection}
+                          leftIcon={<AddIcon fontSize="sm" />}
+                        >
+                          Add connection
+                        </Button>
                       </Flex>
                       <Text>{t("pages.feed.connectionSectionDescription")}</Text>
                     </Stack>

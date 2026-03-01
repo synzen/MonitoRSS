@@ -313,7 +313,7 @@ export async function copyConnectionSettingsHandler(
     usersService,
     config,
   } = request.container;
-  const { discordUserId } = request;
+  const { discordUserId, accessToken } = request;
   const { feedId, connectionId } = request.params;
 
   if (!userFeedRepository.areAllValidIds([feedId])) {
@@ -362,6 +362,7 @@ export async function copyConnectionSettingsHandler(
   await feedConnectionsDiscordChannelsService.copySettings(feed, connection, {
     properties: properties as CopyableSetting[],
     targetDiscordChannelConnectionIds,
+    accessToken: accessToken.access_token,
   });
 
   return reply.status(204).send();
@@ -752,14 +753,12 @@ export async function updateDiscordChannelConnectionHandler(
     details.enablePlaceholderFallback = body.enablePlaceholderFallback;
   }
 
-  if (!useApplicationWebhook && useChannelId) {
-    details.channel = { id: useChannelId };
-  }
-
   if (useApplicationWebhook) {
     details.applicationWebhook = useApplicationWebhook;
-  } else if (!useChannelId && "applicationWebhook" in body) {
+  } else if ("applicationWebhook" in body) {
     details.applicationWebhook = body.applicationWebhook;
+  } else if (useChannelId) {
+    details.channel = { id: useChannelId };
   }
 
   const updatedConnection =
