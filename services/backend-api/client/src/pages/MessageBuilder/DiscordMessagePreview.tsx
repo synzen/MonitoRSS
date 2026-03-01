@@ -28,6 +28,7 @@ interface DiscordMessageDisplayWithMentionsProps {
   maxHeight?: string | number;
   isLoading?: boolean;
   emptyMessage?: string;
+  showVerifiedInAppBadge?: boolean;
 }
 
 const DiscordMessageDisplayWithMentions: React.FC<DiscordMessageDisplayWithMentionsProps> = ({
@@ -35,6 +36,7 @@ const DiscordMessageDisplayWithMentions: React.FC<DiscordMessageDisplayWithMenti
   maxHeight,
   isLoading,
   emptyMessage,
+  showVerifiedInAppBadge,
 }) => {
   const mentionData = useMentionData();
 
@@ -45,6 +47,7 @@ const DiscordMessageDisplayWithMentions: React.FC<DiscordMessageDisplayWithMenti
       isLoading={isLoading}
       emptyMessage={emptyMessage}
       mentionResolvers={mentionData}
+      showVerifiedInAppBadge={showVerifiedInAppBadge}
     />
   );
 };
@@ -64,7 +67,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
   const previewData = convertMessageBuilderStateToConnectionPreviewInput(
     userFeed,
     connection,
-    messageComponent,
+    messageComponent
   );
 
   const debouncedPreviewData = useDebounce(previewData, 500);
@@ -204,6 +207,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
             maxHeight={maxHeight}
             isLoading={isFetching || !currentArticle}
             emptyMessage={showEmptyState ? "No components added yet" : undefined}
+            showVerifiedInAppBadge={!connection.details.webhook}
           />
         </MentionDataProvider>
         <Text fontSize="sm" color="gray.400" mt={2} textAlign="left">

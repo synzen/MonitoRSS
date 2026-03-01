@@ -601,7 +601,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                 </FormControl>
                 {isForumChannel ? (
                   <FormControl>
-                    <FormLabel id="forum-thread-label">Existing Forum Thread</FormLabel>
+                    <FormLabel id="forum-thread-label">Send to an existing thread</FormLabel>
                     <Controller
                       name="threadId"
                       control={control}
@@ -636,8 +636,8 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                       )}
                     />
                     <FormHelperText>
-                      Optionally specify an existing thread that new articles should be sent to
-                      rather than creating new threads.
+                      By default, each article creates a new thread in this forum. Select a thread
+                      here to send all articles to one thread instead.
                     </FormHelperText>
                   </FormControl>
                 ) : (
@@ -648,10 +648,10 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                       <fieldset>
                         <FormControl isRequired isInvalid={!!errors.createThreadMethod}>
                           <FormLabel as="legend" id="thread-kind-label">
-                            How should threads be used?
+                            Thread behavior
                           </FormLabel>
                           <FormHelperText id="thread-kind-help" mb={2}>
-                            Select one option
+                            Choose how articles are delivered to this channel
                           </FormHelperText>
                           <RadioGroup
                             onChange={(value) => {
@@ -663,7 +663,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                           >
                             <Stack>
                               <Radio value={DiscordCreateChannelThreadMethod.None}>
-                                Don&apos;t use threads
+                                Send directly to channel
                               </Radio>
                               <Radio
                                 value={DiscordCreateChannelThreadMethod.New}

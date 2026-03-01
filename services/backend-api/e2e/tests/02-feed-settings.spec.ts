@@ -83,7 +83,7 @@ test.describe("Feed Settings", () => {
       .click({ timeout: 15000 });
 
     await page
-      .getByRole("radio", { name: /Don't use threads/i })
+      .getByRole("radio", { name: /Send directly to channel/i })
       .click({ force: true });
 
     await page.getByRole("button", { name: /Next: Choose Template/i }).click();
@@ -105,7 +105,7 @@ test.describe("Feed Settings", () => {
       timeout: 10000,
     });
 
-    await page.getByRole("button", { name: "Save all changes" }).click();
+    await page.getByRole("button", { name: "Save" }).click();
 
     await expect(page.getByText("You're all set")).toBeVisible({
       timeout: 10000,
@@ -168,7 +168,7 @@ test.describe("Feed Settings", () => {
       timeout: 10000,
     });
 
-    await page.getByRole("button", { name: "Save all changes" }).click();
+    await page.getByRole("button", { name: "Save" }).click();
 
     await expect(page.getByText("You're all set")).toBeVisible({
       timeout: 10000,
@@ -215,7 +215,7 @@ test.describe("Feed Settings", () => {
       .click({ timeout: 15000 });
 
     await page
-      .getByRole("radio", { name: /Don't use threads/i })
+      .getByRole("radio", { name: /Send directly to channel/i })
       .click({ force: true });
 
     await page.getByRole("button", { name: /Next: Choose Template/i }).click();
@@ -235,7 +235,7 @@ test.describe("Feed Settings", () => {
       timeout: 10000,
     });
 
-    await page.getByRole("button", { name: "Save all changes" }).click();
+    await page.getByRole("button", { name: "Save" }).click();
 
     await expect(page.getByText("You're all set")).toBeVisible({
       timeout: 10000,
@@ -422,8 +422,8 @@ test.describe("Feed Settings", () => {
       await page.getByRole("link", { name: "Feeds" }).click();
       await expect(page.getByRole("table")).toBeVisible({ timeout: 10000 });
 
-      // Click on the feed link in the table
-      await page.getByRole("link", { name: feedTitle }).click();
+      // Click on the feed link in the table (use first() to avoid matching the Configure button)
+      await page.getByRole("link", { name: feedTitle }).first().click();
       await expect(page.getByRole("tab", { name: tabName })).toBeVisible({
         timeout: 10000,
       });

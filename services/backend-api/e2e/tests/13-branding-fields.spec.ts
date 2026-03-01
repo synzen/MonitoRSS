@@ -40,7 +40,7 @@ async function navigateToTemplateModal(
     .click({ timeout: 15000 });
 
   await page
-    .getByRole("radio", { name: /Don't use threads/i })
+    .getByRole("radio", { name: /Send directly to channel/i })
     .click({ force: true });
 
   await page.getByRole("button", { name: /Next: Choose Template/i }).click();
@@ -244,8 +244,12 @@ test.describe("Branding Fields - Connection Settings", () => {
     await expect(page.getByText(/Free plan/)).toBeVisible();
 
     // Verify fields are interactive (not disabled)
-    const displayNameInput = page.getByLabel("Display Name");
-    const avatarUrlInput = page.getByLabel("Avatar URL");
+    const displayNameInput = page.getByRole("textbox", {
+      name: /Display Name/i,
+    });
+    const avatarUrlInput = page.getByRole("textbox", {
+      name: /Avatar URL/i,
+    });
     await expect(displayNameInput).toBeEnabled();
     await expect(avatarUrlInput).toBeEnabled();
 
@@ -272,7 +276,9 @@ test.describe("Branding Fields - Connection Settings", () => {
     await textContent.fill("{{title}} modified");
 
     // Scroll to and fill in branding display name
-    const displayNameInput = page.getByLabel("Display Name");
+    const displayNameInput = page.getByRole("textbox", {
+      name: /Display Name/i,
+    });
     await displayNameInput.scrollIntoViewIfNeeded();
     await displayNameInput.fill("My Custom Bot");
 

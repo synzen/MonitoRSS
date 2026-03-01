@@ -26,8 +26,10 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
       testMatch: [
-        "**/15-paddle-branding-checkout.spec.ts",
+        "**/13-branding-fields.spec.ts",
         "**/14-paddle-checkout.spec.ts",
+        "**/15-paddle-branding-checkout.spec.ts",
+        "**/16-paddle-retain-cancellation.spec.ts",
       ],
     },
   ],

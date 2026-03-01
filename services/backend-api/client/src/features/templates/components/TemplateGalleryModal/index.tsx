@@ -829,6 +829,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                   maxHeight={200}
                   username={brandingDisplayName || undefined}
                   avatarUrl={brandingAvatarUrl || undefined}
+                  showVerifiedInAppBadge={!hasBrandingValues}
                 />
               )}
             {!isCurrentFormatLoading &&
@@ -866,6 +867,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                   maxHeight={200}
                   username={brandingDisplayName || undefined}
                   avatarUrl={brandingAvatarUrl || undefined}
+                  showVerifiedInAppBadge={!hasBrandingValues}
                 />
               )}
             {selectedTemplateId &&
@@ -911,6 +913,7 @@ const TemplateGalleryModalComponent = (props: TemplateGalleryModalProps) => {
                 maxHeight={{ base: 200, lg: 350 }}
                 username={brandingDisplayName || undefined}
                 avatarUrl={brandingAvatarUrl || undefined}
+                showVerifiedInAppBadge={!hasBrandingValues}
               />
             )}
           {selectedTemplateId &&

@@ -116,12 +116,13 @@ interface DiscordMessageDisplayProps {
   mentionResolvers?: MentionResolvers;
   username?: string;
   avatarUrl?: string;
+  showVerifiedInAppBadge?: boolean;
 }
 
 // Shared button rendering logic to avoid duplication
 const renderButtonElement = (
   btn: { style?: number; url?: string | null; disabled?: boolean; label?: string },
-  key: string,
+  key: string
 ): React.ReactNode => {
   const styleName = styleNumToName[btn.style || 2] || "Secondary";
   const colors = buttonColors[styleName];
@@ -131,7 +132,7 @@ const renderButtonElement = (
     <Button
       key={key}
       as={isLinkButton ? "a" : undefined}
-      href={isLinkButton ? (btn.url ?? undefined) : undefined}
+      href={isLinkButton ? btn.url ?? undefined : undefined}
       target={isLinkButton ? "_blank" : undefined}
       rel={isLinkButton ? "noopener noreferrer" : undefined}
       size="sm"
@@ -160,7 +161,7 @@ const renderButtonElement = (
 
 const renderApiAccessory = (
   accessory: DiscordApiComponent["accessory"],
-  key: string,
+  key: string
 ): React.ReactNode => {
   if (!accessory) return null;
 
@@ -232,7 +233,7 @@ const renderApiButton = (btn: DiscordApiComponent["accessory"], key: string): Re
 const renderApiComponent = (
   comp: DiscordApiComponent,
   index: number,
-  mentionResolvers?: MentionResolvers,
+  mentionResolvers?: MentionResolvers
 ): React.ReactNode => {
   const { type } = comp;
   const parserState = mentionResolvers ? { mentionResolvers } : {};
@@ -303,7 +304,7 @@ const renderApiComponent = (
     const renderGalleryItem = (
       item: { media?: { url: string }; spoiler?: boolean; description?: string },
       i: number,
-      height?: string,
+      height?: string
     ) => (
       <Box
         key={`gallery-item-${index}-${i}`}
@@ -570,7 +571,7 @@ const renderApiComponent = (
         )}
         <VStack align="stretch" spacing={2} pl={accentColor ? 2 : 0}>
           {containerComp.components?.map((child, i) =>
-            renderApiComponent(child, i, mentionResolvers),
+            renderApiComponent(child, i, mentionResolvers)
           )}
         </VStack>
       </Box>
@@ -588,6 +589,7 @@ export const DiscordMessageDisplay: React.FC<DiscordMessageDisplayProps> = ({
   mentionResolvers,
   username,
   avatarUrl,
+  showVerifiedInAppBadge = true,
 }) => {
   const bgColor = useColorModeValue("#36393f", "#36393f");
   const textColor = useColorModeValue("#dcddde", "#dcddde");
@@ -629,7 +631,7 @@ export const DiscordMessageDisplay: React.FC<DiscordMessageDisplayProps> = ({
                 fontWeight="bold"
                 lineHeight="1"
               >
-                ✓ APP
+                {showVerifiedInAppBadge ? "✓ " : ""}APP
               </Box>
               <Text fontSize="xs" color="#a3a6aa" ml={1}>
                 Today at 12:04 PM
@@ -719,7 +721,7 @@ export const DiscordMessageDisplay: React.FC<DiscordMessageDisplayProps> = ({
               fontWeight="bold"
               lineHeight="1"
             >
-              ✓ APP
+              {showVerifiedInAppBadge ? "✓ " : ""}APP
             </Box>
             <Text fontSize="xs" color="#a3a6aa" ml={1}>
               Today at 12:04 PM

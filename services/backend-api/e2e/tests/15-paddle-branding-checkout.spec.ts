@@ -35,7 +35,7 @@ async function navigateToTemplateModal(
     .click({ timeout: 15000 });
 
   await page
-    .getByRole("radio", { name: /Don't use threads/i })
+    .getByRole("radio", { name: /Send directly to channel/i })
     .click({ force: true });
 
   await page.getByRole("button", { name: /Next: Choose Template/i }).click();
