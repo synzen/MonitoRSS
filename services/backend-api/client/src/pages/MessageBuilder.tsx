@@ -128,6 +128,20 @@ function countComponentNodes(component: Component | null | undefined): number {
   return count;
 }
 
+function collectComponentIds(component: Component | null | undefined): string[] {
+  if (!component) return [];
+  const ids: string[] = [component.id];
+  if (component.children) {
+    for (const child of component.children) {
+      ids.push(...collectComponentIds(child as Component));
+    }
+  }
+  if ("accessory" in component && component.accessory) {
+    ids.push(...collectComponentIds(component.accessory as Component));
+  }
+  return ids;
+}
+
 const SIDE_PANEL_WIDTH = {
   base: "350px",
   "2xl": "500px",
@@ -145,6 +159,7 @@ const MessageBuilderContent: React.FC = () => {
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const [isProblemsCollapsed, setIsProblemsCollapsed] = useState(false);
   const messageComponent = watch("messageComponent");
+  const allComponentIds = useMemo(() => collectComponentIds(messageComponent), [messageComponent]);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
     isOpen: isProblemsDialogOpen,
@@ -628,7 +643,13 @@ const MessageBuilderContent: React.FC = () => {
                     </VStack>
                   </Box>
                 </Box>
-                {/* Middle Panel - Properties */}
+                {/* Middle Panel - Properties
+                    All component property panels are pre-rendered with the hidden
+                    attribute so Google Translate can process their text on initial
+                    page load. Switching the selected component just toggles hidden
+                    instead of creating/destroying DOM nodes. Without this, Google
+                    Translate's MutationObserver inconsistently fails to re-translate
+                    new nodes that React inserts when switching between components. */}
                 <Box
                   display={{ base: "none", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "block" }}
                   minWidth={SIDE_PANEL_WIDTH}
@@ -643,9 +664,11 @@ const MessageBuilderContent: React.FC = () => {
                     overflowY="auto"
                     data-tour-target="properties-panel"
                   >
-                    {currentSelectedId && (
-                      <ComponentPropertiesPanel selectedComponentId={currentSelectedId} />
-                    )}
+                    {allComponentIds.map((id) => (
+                      <div key={id} hidden={id !== currentSelectedId}>
+                        <ComponentPropertiesPanel selectedComponentId={id} />
+                      </div>
+                    ))}
                   </Box>
                 </Box>
                 {/* Right Panel - Discord Preview and Problems */}
