@@ -4,36 +4,41 @@ import { Heading, Spinner, Stack } from "@chakra-ui/react";
 import { Suspense } from "react";
 import { RequireAuth } from "@/features/auth";
 import { PageContentV2 } from "../components/PageContentV2";
-import { UserFeeds } from "./UserFeeds";
-import { UserFeed } from "./UserFeed";
-import { ConnectionDiscordChannelSettings } from "./ConnectionDiscordChannelSettings";
 import { pages } from "../constants";
 import { FeedConnectionType } from "../types";
 import { Loading, NewHeader } from "../components";
 import { UserFeedStatusFilterProvider } from "../contexts";
 import { NotFound } from "./NotFound";
 import { SuspenseErrorBoundary } from "../components/SuspenseErrorBoundary";
-import AddUserFeeds from "./AddUserFeeds";
 import { MultiSelectUserFeedProvider } from "../contexts/MultiSelectUserFeedContext";
 import { lazyWithRetries } from "../utils/lazyImportWithRetry";
-import { MessageBuilder } from "./MessageBuilder";
 
-// const MessageBuilder = lazyWithRetries(() =>
-//   import("./MessageBuilder").then(({ MessageBuilder: c }) => ({
-//     default: c,
-//   }))
-// );
+const MessageBuilder = lazyWithRetries(() =>
+  import("./MessageBuilder").then(({ MessageBuilder: c }) => ({ default: c }))
+);
+
+const UserFeeds = lazyWithRetries(() =>
+  import("./UserFeeds").then(({ UserFeeds: c }) => ({ default: c }))
+);
+
+const UserFeed = lazyWithRetries(() =>
+  import("./UserFeed").then(({ UserFeed: c }) => ({ default: c }))
+);
+
+const ConnectionDiscordChannelSettings = lazyWithRetries(() =>
+  import("./ConnectionDiscordChannelSettings").then(({ ConnectionDiscordChannelSettings: c }) => ({
+    default: c,
+  }))
+);
+
+const AddUserFeeds = lazyWithRetries(() => import("./AddUserFeeds"));
 
 const UserSettings = lazyWithRetries(() =>
-  import("./UserSettings").then(({ UserSettings: c }) => ({
-    default: c,
-  })),
+  import("./UserSettings").then(({ UserSettings: c }) => ({ default: c }))
 );
 
 const Checkout = lazyWithRetries(() =>
-  import("./Checkout").then(({ Checkout: c }) => ({
-    default: c,
-  })),
+  import("./Checkout").then(({ Checkout: c }) => ({ default: c }))
 );
 
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
@@ -75,7 +80,9 @@ const Pages: React.FC = () => (
       element={
         <RequireAuth waitForUserFetch>
           <NewHeader invertBackground />
-          <AddUserFeeds />
+          <Suspense fallback={<Spinner mt={24} />}>
+            <AddUserFeeds />
+          </Suspense>
         </RequireAuth>
       }
     />
@@ -84,11 +91,13 @@ const Pages: React.FC = () => (
       element={
         <RequireAuth waitForUserFetch>
           <NewHeader />
-          <MultiSelectUserFeedProvider>
-            <UserFeedStatusFilterProvider>
-              <UserFeeds />
-            </UserFeedStatusFilterProvider>
-          </MultiSelectUserFeedProvider>
+          <Suspense fallback={<Spinner mt={24} />}>
+            <MultiSelectUserFeedProvider>
+              <UserFeedStatusFilterProvider>
+                <UserFeeds />
+              </UserFeedStatusFilterProvider>
+            </MultiSelectUserFeedProvider>
+          </Suspense>
         </RequireAuth>
       }
     />
@@ -97,7 +106,9 @@ const Pages: React.FC = () => (
       element={
         <RequireAuth>
           <PageContentV2>
-            <UserFeed />
+            <Suspense fallback={<Spinner mt={24} />}>
+              <UserFeed />
+            </Suspense>
           </PageContentV2>
         </RequireAuth>
       }
@@ -111,7 +122,9 @@ const Pages: React.FC = () => (
       element={
         <RequireAuth>
           <PageContentV2>
-            <ConnectionDiscordChannelSettings />
+            <Suspense fallback={<Spinner mt={24} />}>
+              <ConnectionDiscordChannelSettings />
+            </Suspense>
           </PageContentV2>
         </RequireAuth>
       }

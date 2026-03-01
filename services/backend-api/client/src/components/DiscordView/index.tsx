@@ -7,7 +7,7 @@ import React from "react";
 import dayjs from "dayjs";
 import localizedFormat from "dayjs/plugin/localizedFormat";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { uniqueId } from "lodash";
+import uniqueId from "lodash/uniqueId";
 import { Box } from "@chakra-ui/react";
 // @ts-ignore
 import { parse, parseAllowLinks, jumboify } from "./utils/markdown";
@@ -26,7 +26,7 @@ const MessageTimestamp = (
     compactMode?: boolean;
   } = {
     compactMode: false,
-  },
+  }
 ) => {
   const m = dayjs();
 

@@ -296,8 +296,8 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
           </chakra.summary>
           <Box px={3} pb={3} pt={2} borderTop="1px solid" borderColor="gray.600">
             {!webhooksAllowed && (
-              <Text fontSize="xs" color="whiteAlpha.600" mb={3}>
-                Free plan - preview how your branding looks, then upgrade to save it.
+              <Text fontSize="xs" color="whiteAlpha.800" mb={3}>
+                Upgrade to customize your branding. Preview it here first!
               </Text>
             )}
             <HStack spacing={4} flexWrap="wrap">
