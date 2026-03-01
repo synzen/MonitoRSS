@@ -907,6 +907,12 @@ export class FeedConnectionsDiscordChannelsService {
       article?: {
         id: string;
       };
+      applicationWebhook?: {
+        channelId: string;
+        name: string;
+        iconUrl?: string;
+        threadId?: string;
+      };
       previewInput?: SendTestArticlePreviewInput;
     },
   ): Promise<SendTestArticleResult> {
@@ -997,22 +1003,11 @@ export class FeedConnectionsDiscordChannelsService {
       article: details?.article ? details.article : undefined,
       mediumDetails: {
         ...connection.details,
-        channel: connection.details.channel
-          ? {
-              id: connection.details.channel.id,
-              type: connection.details.channel.type,
-            }
-          : undefined,
-        webhook: connection.details.webhook
-          ? {
-              id: connection.details.webhook.id,
-              token: connection.details.webhook.token,
-              name: connection.details.webhook.name,
-              iconUrl: connection.details.webhook.iconUrl,
-              type: connection.details.webhook.type,
-              threadId: connection.details.webhook.threadId,
-            }
-          : undefined,
+        ...(await this.resolveTestArticleWebhookDetails(
+          userFeed,
+          connection,
+          details?.applicationWebhook,
+        )),
         forumThreadTitle:
           previewInput?.forumThreadTitle || connection.details.forumThreadTitle,
         forumThreadTags:
@@ -1509,6 +1504,75 @@ export class FeedConnectionsDiscordChannelsService {
 
       throw err;
     }
+  }
+
+  private async resolveTestArticleWebhookDetails(
+    userFeed: IUserFeed,
+    connection: IDiscordChannelConnection,
+    applicationWebhook?: {
+      channelId: string;
+      name: string;
+      iconUrl?: string;
+      threadId?: string;
+    },
+  ): Promise<{
+    channel?: { id: string; type?: string };
+    webhook?: {
+      id: string;
+      token: string;
+      name?: string;
+      iconUrl?: string;
+      type?: string;
+      threadId?: string;
+    };
+  }> {
+    if (applicationWebhook) {
+      const channelId =
+        applicationWebhook.channelId ||
+        connection.details.webhook?.channelId ||
+        connection.details.channel?.id;
+
+      if (!channelId) {
+        throw new MissingDiscordChannelException();
+      }
+
+      const webhook = await this.getOrCreateApplicationWebhook({
+        channelId,
+        webhook: { name: `test-send-${userFeed.id}` },
+      });
+
+      return {
+        channel: undefined,
+        webhook: {
+          id: webhook.id,
+          token: webhook.token as string,
+          name: applicationWebhook.name,
+          iconUrl: applicationWebhook.iconUrl,
+          type: connection.details.webhook?.type || undefined,
+          threadId:
+            applicationWebhook.threadId || connection.details.webhook?.threadId,
+        },
+      };
+    }
+
+    return {
+      channel: connection.details.channel
+        ? {
+            id: connection.details.channel.id,
+            type: connection.details.channel.type || undefined,
+          }
+        : undefined,
+      webhook: connection.details.webhook
+        ? {
+            id: connection.details.webhook.id,
+            token: connection.details.webhook.token,
+            name: connection.details.webhook.name,
+            iconUrl: connection.details.webhook.iconUrl,
+            type: connection.details.webhook.type || undefined,
+            threadId: connection.details.webhook.threadId,
+          }
+        : undefined,
+    };
   }
 
   private async getOrCreateApplicationWebhook({

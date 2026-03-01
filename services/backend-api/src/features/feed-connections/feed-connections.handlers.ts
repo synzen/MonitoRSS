@@ -274,6 +274,7 @@ export async function sendTestArticleHandler(
     connection,
     {
       article: body.article,
+      applicationWebhook: body.applicationWebhook,
       previewInput: {
         content: body.content ?? undefined,
         embeds: body.embeds,

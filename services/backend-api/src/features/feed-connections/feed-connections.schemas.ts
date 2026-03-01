@@ -241,6 +241,7 @@ export const SendConnectionTestArticleBodySchema = Type.Object(
         Type.Null(),
       ]),
     ),
+    applicationWebhook: Type.Optional(ApplicationWebhookSchema),
   },
   { additionalProperties: false },
 );

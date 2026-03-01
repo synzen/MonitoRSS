@@ -164,7 +164,10 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
     return (
       <Stack spacing={0}>
         <PageAlertProvider>
-          <ArticlePreviewBanner />
+          <ArticlePreviewBanner
+            brandingDisplayName={brandingDisplayName}
+            brandingAvatarUrl={brandingAvatarUrl}
+          />
           <PageAlertContextOutlet
             containerProps={{
               mb: 2,
@@ -183,7 +186,10 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
   return (
     <Stack spacing={0}>
       <PageAlertProvider>
-        <ArticlePreviewBanner />
+        <ArticlePreviewBanner
+          brandingDisplayName={brandingDisplayName}
+          brandingAvatarUrl={brandingAvatarUrl}
+        />
         <PageAlertContextOutlet
           containerProps={{
             mb: 2,

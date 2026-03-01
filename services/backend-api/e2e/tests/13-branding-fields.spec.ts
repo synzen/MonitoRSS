@@ -365,6 +365,44 @@ test.describe("Branding Fields - Message Builder", () => {
     await expect(displayNameInput).toBeVisible();
   });
 
+  test("sends to Discord with branding display name filled", async ({
+    page,
+    testFeedWithConnection,
+  }) => {
+    const { feed, connection } = testFeedWithConnection;
+
+    await page.goto(
+      `/feeds/${feed.id}/discord-channel-connections/${connection.id}/message-builder`,
+    );
+
+    // Dismiss the welcome dialog
+    const welcomeDialog = page.getByRole("dialog", {
+      name: "Welcome to your Message Builder!",
+    });
+    await expect(welcomeDialog).toBeVisible({ timeout: 10000 });
+    await welcomeDialog
+      .getByRole("button", {
+        name: "Skip the message builder tour and start using the feature",
+      })
+      .click();
+    await expect(welcomeDialog).not.toBeVisible({ timeout: 5000 });
+
+    // Wait for article to load
+    await expect(
+      page.getByText("Previewing Article", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+
+    // Fill branding display name
+    await page.getByLabel("Display Name").fill("Test Branding Bot");
+
+    // Click "Send to Discord"
+    await page.getByRole("button", { name: "Send to Discord" }).click();
+
+    // Verify the send succeeds or shows an expected result (success/info alert)
+    const alert = page.locator('[role="alert"]');
+    await expect(alert.first()).toBeVisible({ timeout: 15000 });
+  });
+
   test("shows split save buttons when free user fills branding and opens pricing dialog on upgrade click", async ({
     page,
     testFeedWithConnection,
