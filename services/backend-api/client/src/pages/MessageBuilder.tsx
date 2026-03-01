@@ -759,6 +759,7 @@ const MessageBuilderContent: React.FC = () => {
             <MessageBuilderTour resetTrigger={resetTrigger} />
             {/* Template Gallery Modal */}
             <TemplateGalleryModal
+              mode="picker"
               isOpen={isTemplatesOpen}
               onClose={handleCloseTemplatesModal}
               templates={TEMPLATES}

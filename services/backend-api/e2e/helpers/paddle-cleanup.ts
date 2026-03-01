@@ -4,6 +4,8 @@ import { AUTH_STATE_PATH } from "./constants";
 import {
   cancelAllActiveSubscriptions,
   listActiveSubscriptions,
+  setNotificationTrafficSource,
+  simulateSubscriptionCreation,
 } from "./paddle-api";
 
 const BASE_URL = "http://localhost:3000";
@@ -22,7 +24,7 @@ async function waitForFreeState(cookieHeader: string): Promise<void> {
   const startTime = Date.now();
 
   while (Date.now() - startTime < POLL_TIMEOUT_MS) {
-    const response = await fetch(`${BASE_URL}/api/v1/discord-users/@me`, {
+    const response = await fetch(`${BASE_URL}/api/v1/users/@me`, {
       headers: { Cookie: cookieHeader },
     });
 
@@ -45,6 +47,71 @@ async function waitForFreeState(cookieHeader: string): Promise<void> {
   throw new Error(
     `Timed out waiting for user to be on Free tier after ${POLL_TIMEOUT_MS}ms`,
   );
+}
+
+async function waitForPaidState(cookieHeader: string): Promise<void> {
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < POLL_TIMEOUT_MS) {
+    const response = await fetch(`${BASE_URL}/api/v1/users/@me`, {
+      headers: { Cookie: cookieHeader },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const key = data.result?.subscription?.product?.key;
+
+      if (key && key !== "free") {
+        console.log(`User is on paid tier: ${key}`);
+        return;
+      }
+
+      console.log("Waiting for paid tier...");
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+  }
+
+  throw new Error(
+    `Timed out waiting for user to be on paid tier after ${POLL_TIMEOUT_MS}ms`,
+  );
+}
+
+export async function ensurePaidSubscriptionState(
+  page: Page,
+  opts: { customerId: string; priceId: string },
+): Promise<void> {
+  const cookieHeader = getCookieHeader();
+
+  const response = await fetch(`${BASE_URL}/api/v1/users/@me`, {
+    headers: { Cookie: cookieHeader },
+  });
+  const data = await response.json();
+  const key = data.result?.subscription?.product?.key;
+
+  if (key && key !== "free") {
+    console.log(`User already on paid tier: ${key}`);
+    return;
+  }
+
+  await setNotificationTrafficSource("all");
+
+  try {
+    await simulateSubscriptionCreation(opts);
+    await waitForPaidState(cookieHeader);
+  } finally {
+    await setNotificationTrafficSource("platform");
+  }
+
+  await page.goto("about:blank");
+  await page.evaluate(() => {
+    try {
+      sessionStorage.clear();
+      localStorage.clear();
+    } catch {
+      // may not be available on about:blank in some browsers
+    }
+  });
 }
 
 export async function ensureFreeSubscriptionState(page: Page): Promise<void> {

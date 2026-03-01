@@ -15,7 +15,7 @@ const POLL_TIMEOUT_MS = 90000;
 async function getUserSubscriptionKey(
   cookieHeader: string,
 ): Promise<string | null> {
-  const response = await fetch(`${BASE_URL}/api/v1/discord-users/@me`, {
+  const response = await fetch(`${BASE_URL}/api/v1/users/@me`, {
     headers: { Cookie: cookieHeader },
   });
 
@@ -25,9 +25,7 @@ async function getUserSubscriptionKey(
   return data.result?.subscription?.product?.key || null;
 }
 
-async function waitForCancellationWebhook(
-  cookieHeader: string,
-): Promise<void> {
+async function waitForCancellationWebhook(cookieHeader: string): Promise<void> {
   const startTime = Date.now();
 
   while (Date.now() - startTime < POLL_TIMEOUT_MS) {
@@ -39,9 +37,7 @@ async function waitForCancellationWebhook(
         return;
       }
 
-      console.log(
-        `Waiting for cancellation webhook... current tier: ${key}`,
-      );
+      console.log(`Waiting for cancellation webhook... current tier: ${key}`);
     } catch {
       // API may be unavailable during teardown
     }

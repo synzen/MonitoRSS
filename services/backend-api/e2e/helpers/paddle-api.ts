@@ -75,6 +75,66 @@ export async function cancelSubscription(
   console.log(`Cancelled subscription: ${subscriptionId}`);
 }
 
+interface PaddleSimulation {
+  id: string;
+  status: string;
+}
+
+interface PaddleSimulationRun {
+  id: string;
+  status: string;
+}
+
+export async function setNotificationTrafficSource(
+  trafficSource: "platform" | "all",
+): Promise<void> {
+  await paddleRequest(
+    `/notification-settings/${PADDLE_NOTIFICATION_SETTING_ID}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ traffic_source: trafficSource }),
+    },
+  );
+}
+
+export async function simulateSubscriptionCreation({
+  customerId,
+  priceId,
+}: {
+  customerId: string;
+  priceId: string;
+}): Promise<void> {
+  const simulation = await paddleRequest<{ data: PaddleSimulation }>(
+    "/simulations",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        notification_setting_id: PADDLE_NOTIFICATION_SETTING_ID,
+        name: `e2e-sub-creation-${Date.now()}`,
+        type: "subscription_creation",
+        config: {
+          subscription_creation: {
+            entities: {
+              customer_id: customerId,
+              items: [{ price_id: priceId, quantity: 1 }],
+            },
+          },
+        },
+      }),
+    },
+  );
+
+  const simulationId = simulation.data.id;
+  console.log(`Created simulation: ${simulationId}`);
+
+  await paddleRequest<{ data: PaddleSimulationRun }>(
+    `/simulations/${simulationId}/runs`,
+    { method: "POST" },
+  );
+
+  console.log(`Simulation run started for: ${simulationId}`);
+}
+
 export async function cancelAllActiveSubscriptions(): Promise<string[]> {
   const subscriptions = await listActiveSubscriptions();
   const cancelledIds: string[] = [];

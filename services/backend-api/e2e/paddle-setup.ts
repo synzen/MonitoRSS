@@ -1,11 +1,13 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { config } from "dotenv";
+import { MongoClient } from "mongodb";
 import { AUTH_STATE_PATH } from "./helpers/constants";
 import { startTunnel } from "./helpers/tunnel";
 import {
   updateNotificationUrl,
   cancelAllActiveSubscriptions,
+  listActiveSubscriptions,
 } from "./helpers/paddle-api";
 
 config({ path: join(process.cwd(), "..", "..", ".env.local") });
@@ -54,38 +56,82 @@ async function validateAuth(): Promise<string> {
   return cookieHeader;
 }
 
+async function getSubscriptionState(
+  cookieHeader: string,
+): Promise<{ key: string } | null> {
+  const response = await fetch(`${BASE_URL}/api/v1/users/@me`, {
+    headers: { Cookie: cookieHeader },
+  });
+
+  if (!response.ok) return null;
+
+  const data = await response.json();
+  const subscription = data.result?.subscription;
+
+  if (!subscription || subscription.product?.key === "free") {
+    return null;
+  }
+
+  return subscription.product;
+}
+
 async function waitForFreeState(cookieHeader: string): Promise<void> {
   const startTime = Date.now();
 
   while (Date.now() - startTime < POLL_TIMEOUT_MS) {
-    try {
-      const response = await fetch(`${BASE_URL}/api/v1/discord-users/@me`, {
-        headers: { Cookie: cookieHeader },
-      });
+    const product = await getSubscriptionState(cookieHeader);
 
-      if (response.ok) {
-        const data = await response.json();
-        const subscription = data.result?.subscription;
-
-        if (!subscription || subscription.product?.key === "free") {
-          console.log("User is on Free tier - ready for test");
-          return;
-        }
-
-        console.log(
-          `Waiting for Free tier... current: ${subscription.product?.key}`,
-        );
-      }
-    } catch {
-      console.log("Waiting for API...");
+    if (!product) {
+      console.log("User is on Free tier - ready for test");
+      return;
     }
 
+    console.log(`Waiting for Free tier... current: ${product.key}`);
     await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
   }
 
   throw new Error(
     `Timed out waiting for user to be on Free tier after ${POLL_TIMEOUT_MS}ms`,
   );
+}
+
+async function getDiscordUserId(cookieHeader: string): Promise<string> {
+  const response = await fetch(`${BASE_URL}/api/v1/discord-users/@me`, {
+    headers: { Cookie: cookieHeader },
+  });
+
+  const data = await response.json();
+  return data.id;
+}
+
+async function clearStaleSubscriptionFromDb(
+  discordUserId: string,
+): Promise<boolean> {
+  const client = new MongoClient("mongodb://127.0.0.1:27018/rss", {
+    directConnection: true,
+  });
+
+  try {
+    await client.connect();
+    const db = client.db();
+    const result = await db
+      .collection("supporters")
+      .updateOne(
+        { _id: discordUserId, "paddleCustomer.subscription": { $ne: null } },
+        { $set: { "paddleCustomer.subscription": null } },
+      );
+
+    if (result.modifiedCount > 0) {
+      console.log(
+        `Cleared stale subscription from DB for discord user ${discordUserId}`,
+      );
+      return true;
+    }
+
+    return false;
+  } finally {
+    await client.close();
+  }
 }
 
 async function paddleSetup() {
@@ -100,7 +146,24 @@ async function paddleSetup() {
     );
   }
 
-  await waitForFreeState(cookieHeader);
+  try {
+    await waitForFreeState(cookieHeader);
+  } catch {
+    const activeSubs = await listActiveSubscriptions();
+
+    if (activeSubs.length === 0) {
+      console.log(
+        "No active subscriptions in Paddle but backend still has one. Clearing stale DB state...",
+      );
+      const discordUserId = await getDiscordUserId(cookieHeader);
+      await clearStaleSubscriptionFromDb(discordUserId);
+      await waitForFreeState(cookieHeader);
+    } else {
+      throw new Error(
+        `Active Paddle subscriptions still exist: ${activeSubs.map((s) => s.id).join(", ")}`,
+      );
+    }
+  }
 
   writeFileSync(
     PADDLE_STATE_PATH,

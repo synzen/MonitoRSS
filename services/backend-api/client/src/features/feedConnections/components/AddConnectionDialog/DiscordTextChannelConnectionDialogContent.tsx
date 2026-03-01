@@ -155,8 +155,8 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
           wType === "forum" || wType === "forum-thread"
             ? DiscordCreateChannelThreadMethod.None
             : wType === "thread"
-            ? DiscordCreateChannelThreadMethod.Existing
-            : DiscordCreateChannelThreadMethod.None,
+              ? DiscordCreateChannelThreadMethod.Existing
+              : DiscordCreateChannelThreadMethod.None,
         ...brandingValues,
       };
     }
@@ -181,8 +181,8 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
         channelDetails?.type === "new-thread"
           ? DiscordCreateChannelThreadMethod.New
           : channelDetails?.type === "thread"
-          ? DiscordCreateChannelThreadMethod.Existing
-          : DiscordCreateChannelThreadMethod.None,
+            ? DiscordCreateChannelThreadMethod.Existing
+            : DiscordCreateChannelThreadMethod.None,
       ...brandingValues,
     };
   };
@@ -274,7 +274,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
         },
       });
     },
-    [feedId, watch, mutateAsync, selectedTemplateId, detectedFields, isForumChannel]
+    [feedId, watch, mutateAsync, selectedTemplateId, detectedFields, isForumChannel],
   );
 
   // Get connection name from form
@@ -284,8 +284,8 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
   const testSendChannelId = isForumChannel
     ? watchedThreadId || channelId
     : watchedCreateThreadMethod === DiscordCreateChannelThreadMethod.Existing && watchedThreadId
-    ? watchedThreadId
-    : channelId;
+      ? watchedThreadId
+      : channelId;
 
   // Test send flow hook
   const {
@@ -468,6 +468,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
   if (isTemplateStep) {
     return (
       <TemplateGalleryModal
+        mode="editor"
         isOpen={isOpen}
         onClose={handleClose}
         finalFocusRef={finalFocusRef}
@@ -523,7 +524,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                 <FormControl isInvalid={!!errors.serverId} isRequired>
                   <FormLabel id="server-select-label" htmlFor="server-select">
                     {t(
-                      "features.feed.components.addDiscordChannelConnectionDialog.formServerLabel"
+                      "features.feed.components.addDiscordChannelConnectionDialog.formServerLabel",
                     )}
                   </FormLabel>
                   <Controller
@@ -553,7 +554,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                 <FormControl isInvalid={!!errors.channelId} isRequired>
                   <FormLabel id="channel-select-label" htmlFor="channel-select">
                     {t(
-                      "features.feed.components.addDiscordChannelConnectionDialog.formChannelLabel"
+                      "features.feed.components.addDiscordChannelConnectionDialog.formChannelLabel",
                     )}
                   </FormLabel>
                   <Controller
@@ -746,7 +747,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                                     <FormHelperText>
                                       {t(
                                         "features.feed.components" +
-                                          ".addDiscordChannelThreadConnectionDialog.formThreadDescripton"
+                                          ".addDiscordChannelThreadConnectionDialog.formThreadDescripton",
                                       )}
                                     </FormHelperText>
                                   </FormControl>
@@ -780,7 +781,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                 <FormControl isInvalid={!!errors.name} isRequired>
                   <FormLabel>
                     {t(
-                      "features.feed.components.addDiscordChannelThreadConnectionDialog.formNameLabel"
+                      "features.feed.components.addDiscordChannelThreadConnectionDialog.formNameLabel",
                     )}
                   </FormLabel>
                   <Controller
@@ -794,7 +795,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                   <FormHelperText>
                     {t(
                       "features.feed.components" +
-                        ".addDiscordChannelThreadConnectionDialog.formNameDescription"
+                        ".addDiscordChannelThreadConnectionDialog.formNameDescription",
                     )}
                   </FormHelperText>
                 </FormControl>
