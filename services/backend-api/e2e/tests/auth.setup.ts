@@ -1,9 +1,10 @@
+import { test as setup } from "@playwright/test";
 import { existsSync, readFileSync } from "fs";
-import { AUTH_STATE_PATH } from "./helpers/constants";
+import { AUTH_STATE_PATH } from "../helpers/constants";
 
 const BASE_URL = "http://localhost:3000";
 
-async function globalSetup() {
+setup("validate Discord auth session", async () => {
   if (!existsSync(AUTH_STATE_PATH)) {
     console.error("\n========================================");
     console.error("ERROR: auth.json not found!");
@@ -21,38 +22,21 @@ async function globalSetup() {
 
   const authStatusUrl = `${BASE_URL}/api/v1/discord-users/@me/auth-status`;
 
+  const authData = JSON.parse(readFileSync(AUTH_STATE_PATH, "utf-8"));
+  const cookies = authData.cookies || [];
+
+  const cookieHeader = cookies
+    .map((c: { name: string; value: string }) => `${c.name}=${c.value}`)
+    .join("; ");
+
+  let response: Response;
+
   try {
-    const authData = JSON.parse(readFileSync(AUTH_STATE_PATH, "utf-8"));
-    const cookies = authData.cookies || [];
-
-    const cookieHeader = cookies
-      .map((c: { name: string; value: string }) => `${c.name}=${c.value}`)
-      .join("; ");
-
-    const response = await fetch(authStatusUrl, {
+    response = await fetch(authStatusUrl, {
       headers: {
         Cookie: cookieHeader,
       },
     });
-
-    if (!response.ok) {
-      throw new Error(`Auth status check failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    if (!data.authenticated) {
-      console.error("\n========================================");
-      console.error("ERROR: Session expired!");
-      console.error("========================================\n");
-      console.error("Your auth.json session has expired. To refresh:");
-      console.error("  1. Run: npm run e2e:auth");
-      console.error("  2. Log in via Discord in the browser that opens");
-      console.error("  3. Close the browser when done\n");
-      process.exit(1);
-    }
-
-    console.log("Session valid, proceeding with tests...");
   } catch (error) {
     if (error instanceof Error && error.message.includes("ECONNREFUSED")) {
       console.error("\n========================================");
@@ -66,6 +50,23 @@ async function globalSetup() {
     }
     throw error;
   }
-}
 
-export default globalSetup;
+  if (!response.ok) {
+    throw new Error(`Auth status check failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  if (!data.authenticated) {
+    console.error("\n========================================");
+    console.error("ERROR: Session expired!");
+    console.error("========================================\n");
+    console.error("Your auth.json session has expired. To refresh:");
+    console.error("  1. Run: npm run e2e:auth");
+    console.error("  2. Log in via Discord in the browser that opens");
+    console.error("  3. Close the browser when done\n");
+    process.exit(1);
+  }
+
+  console.log("Session valid, proceeding with tests...");
+});

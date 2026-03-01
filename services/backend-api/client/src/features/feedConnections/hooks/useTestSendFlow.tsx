@@ -39,7 +39,7 @@ export interface UseTestSendFlowOptions {
   selectedArticleId: string | undefined;
   detectedFields: DetectedFields;
   isOpen: boolean;
-  createConnection: () => Promise<void>;
+  createConnection: (branding?: { name: string; iconUrl?: string }) => Promise<void>;
   onSaveSuccess: (connectionName: string | undefined) => void;
   onClose: () => void;
   getConnectionName: () => string | undefined;
@@ -49,8 +49,8 @@ export interface UseTestSendFlowResult {
   testSendFeedback: TestSendFeedback | null;
   isSaving: boolean;
   isTestSending: boolean;
-  handleTestSend: () => Promise<void>;
-  handleSave: () => Promise<void>;
+  handleTestSend: (branding?: { name: string; iconUrl?: string }) => Promise<void>;
+  handleSave: (branding?: { name: string; iconUrl?: string }) => Promise<void>;
   clearTestSendFeedback: () => void;
 }
 
@@ -91,92 +91,100 @@ export const useTestSendFlow = ({
   }, [isOpen]);
 
   // Handle test send - now uses direct send without creating a connection
-  const handleTestSend = useCallback(async () => {
-    setIsTestSending(true);
+  const handleTestSend = useCallback(
+    async (branding?: { name: string; iconUrl?: string }) => {
+      setTestSendFeedback(null);
+      setIsTestSending(true);
 
-    try {
-      if (!feedId || !selectedArticleId || !channelId) {
-        return;
-      }
+      try {
+        if (!feedId || !selectedArticleId || !channelId) {
+          return;
+        }
 
-      // Get template data to send
-      const templateData = getTemplateUpdateData(selectedTemplateId, detectedFields);
+        // Get template data to send
+        const templateData = getTemplateUpdateData(selectedTemplateId, detectedFields);
 
-      const response = await sendTestArticleDirectMutation.mutateAsync({
-        feedId,
-        data: {
-          article: { id: selectedArticleId },
-          channelId,
-          threadId,
-          channelNewThread,
-          content: templateData.content,
-          embeds: templateData.embeds,
-          componentsV2: templateData.componentsV2,
-          placeholderLimits: templateData.placeholderLimits,
-          webhook: webhookName
-            ? {
-                name: webhookName,
-                iconUrl: webhookIconUrl,
-              }
-            : undefined,
-        },
-      });
-
-      // Check the actual delivery status, not just HTTP success
-      if (response.result.status === SendTestArticleDeliveryStatus.Success) {
-        setTestSendFeedback({
-          status: "success",
-          message: "Article sent to Discord successfully!",
+        const response = await sendTestArticleDirectMutation.mutateAsync({
+          feedId,
+          data: {
+            article: { id: selectedArticleId },
+            channelId,
+            threadId,
+            channelNewThread,
+            content: templateData.content,
+            embeds: templateData.embeds,
+            componentsV2: templateData.componentsV2,
+            placeholderLimits: templateData.placeholderLimits,
+            webhook:
+              branding?.name || webhookName
+                ? {
+                    name: branding?.name ?? webhookName!,
+                    iconUrl: branding?.iconUrl ?? webhookIconUrl,
+                  }
+                : undefined,
+          },
         });
-      } else {
-        // Map status to user-friendly message
-        const errorMessage = getErrorMessageByStatus(response.result.status);
+
+        // Check the actual delivery status, not just HTTP success
+        if (response.result.status === SendTestArticleDeliveryStatus.Success) {
+          setTestSendFeedback({
+            status: "success",
+            message: "Article sent to Discord successfully!",
+          });
+        } else {
+          // Map status to user-friendly message
+          const errorMessage = getErrorMessageByStatus(response.result.status);
+          setTestSendFeedback({
+            status: "error",
+            message: errorMessage,
+            deliveryStatus: response.result.status,
+            apiPayload: response.result.apiPayload,
+            apiResponse: response.result.apiResponse,
+          });
+        }
+      } catch (err) {
+        const errorMessage =
+          (err as Error).message || "Failed to send test article. Please try again.";
         setTestSendFeedback({
           status: "error",
           message: errorMessage,
-          deliveryStatus: response.result.status,
-          apiPayload: response.result.apiPayload,
-          apiResponse: response.result.apiResponse,
         });
+      } finally {
+        setIsTestSending(false);
       }
-    } catch (err) {
-      const errorMessage =
-        (err as Error).message || "Failed to send test article. Please try again.";
-      setTestSendFeedback({
-        status: "error",
-        message: errorMessage,
-      });
-    } finally {
-      setIsTestSending(false);
-    }
-  }, [
-    feedId,
-    selectedArticleId,
-    channelId,
-    threadId,
-    channelNewThread,
-    webhookName,
-    webhookIconUrl,
-    selectedTemplateId,
-    detectedFields,
-    sendTestArticleDirectMutation,
-  ]);
+    },
+    [
+      feedId,
+      selectedArticleId,
+      channelId,
+      threadId,
+      channelNewThread,
+      webhookName,
+      webhookIconUrl,
+      selectedTemplateId,
+      detectedFields,
+      sendTestArticleDirectMutation,
+    ]
+  );
 
   // Handle save - creates connection (template data is included in create call)
-  const handleSave = useCallback(async () => {
-    setIsSaving(true);
+  const handleSave = useCallback(
+    async (branding?: { name: string; iconUrl?: string }) => {
+      setIsSaving(true);
 
-    try {
-      await createConnection();
-      const connectionName = getConnectionName();
-      onSaveSuccess(connectionName);
-      onClose();
-    } catch (err) {
-      // Error handled by mutation error state
-    } finally {
-      setIsSaving(false);
-    }
-  }, [createConnection, getConnectionName, onSaveSuccess, onClose]);
+      try {
+        await createConnection(branding);
+        const connectionName = getConnectionName();
+        onSaveSuccess(connectionName);
+        onClose();
+      } catch (err) {
+        // Error handled by mutation error state
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [createConnection, getConnectionName, onSaveSuccess, onClose]
+  );
 
   // Clear test send feedback (used when dismissing error panel)
   const clearTestSendFeedback = useCallback(() => {
@@ -198,7 +206,7 @@ export const useTestSendFlow = ({
  */
 export const getTemplateUpdateData = (
   selectedTemplateId: string | undefined,
-  detectedFields: DetectedFields,
+  detectedFields: DetectedFields
 ) => {
   const templateToApply = selectedTemplateId
     ? getTemplateById(selectedTemplateId) || DEFAULT_TEMPLATE

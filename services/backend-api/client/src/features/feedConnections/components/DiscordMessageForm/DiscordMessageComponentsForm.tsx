@@ -22,6 +22,7 @@ import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import { motion } from "motion/react";
 import { v4 } from "uuid";
 import { useRef } from "react";
+import { useDisclosure } from "@chakra-ui/react";
 import { DiscordMessageFormData } from "@/types/discord";
 import {
   DiscordComponentButtonStyle,
@@ -31,7 +32,7 @@ import {
 } from "../../../../types";
 import { AnimatedComponent } from "../../../../components";
 import { useConnection } from "../../hooks";
-import { EditDiscordChannelWebhookConnectionButton } from "../EditDiscordChannelWebhookConnectionButton";
+import { DiscordTextChannelConnectionDialogContent } from "../AddConnectionDialog/DiscordTextChannelConnectionDialogContent";
 
 const DiscordMessageComponentRow = ({
   rowIndex,
@@ -256,7 +257,7 @@ export const DiscordMessageComponentsForm = ({ connectionId, feedId }: Props) =>
     name: "componentRows",
     keyName: "hookKey",
   });
-  // const [rows] = watch(["componentRows"]);
+  const { isOpen: editIsOpen, onClose: editOnClose, onOpen: editOnOpen } = useDisclosure();
 
   return (
     <Stack spacing={4}>
@@ -283,9 +284,14 @@ export const DiscordMessageComponentsForm = ({ connectionId, feedId }: Props) =>
                     automatically created and attached to this connection.
                   </Text>
                   <Box>
-                    <EditDiscordChannelWebhookConnectionButton
+                    <DiscordTextChannelConnectionDialogContent
                       connection={connection as FeedDiscordChannelConnection}
+                      isOpen={editIsOpen}
+                      onClose={editOnClose}
                     />
+                    <Button onClick={editOnOpen}>
+                      <span>Update webhook connection</span>
+                    </Button>
                   </Box>
                 </Stack>
               </AlertDescription>

@@ -1,6 +1,6 @@
 export * from "./AddConnectionDialog";
 export * from "./FiltersForm";
-export * from "./EditConnectionWebhookDialog";
+
 export * from "./DeleteConnectionButton";
 export * from "./SendConnectionTestArticleButton";
 export * from "./ArticlePlaceholderTable";
@@ -14,4 +14,3 @@ export * from "./DiscordMessageForm";
 export * from "./ArticlePropertySelect";
 export * from "./CloneDiscordConnectionCloneDialog";
 export * from "./ConnectionCard";
-export * from "./EditDiscordChannelWebhookConnectionButton";

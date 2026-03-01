@@ -274,7 +274,7 @@ export const Checkout = ({ cancelUrl }: Props) => {
                               <Skeleton isLoaded={isLoaded}>
                                 <Text fontSize="sm" color="whiteAlpha.700">
                                   {formatCurrency(
-                                    (feedsCheckoutData?.totals.subtotal || 0) / feedsQuantity,
+                                    (feedsCheckoutData?.totals.subtotal || 0) / feedsQuantity
                                   )}{" "}
                                   each × {feedsQuantity}
                                 </Text>

@@ -1,12 +1,16 @@
-import { AddIcon } from "@chakra-ui/icons";
+import { AddIcon, LockIcon } from "@chakra-ui/icons";
 import {
   Box,
   Button,
   Center,
   Flex,
+  FormControl,
+  FormHelperText,
+  FormLabel,
   Heading,
   Highlight,
   HStack,
+  Input,
   Spinner,
   Stack,
   Tab,
@@ -17,7 +21,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { Suspense, useContext, useState } from "react";
+import { Suspense, useContext, useRef, useState } from "react";
 import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { motion } from "motion/react";
@@ -34,7 +38,11 @@ import { DiscordMessageForumThreadForm } from "./DiscordMessageForumThreadForm";
 import { DiscordMessageMentionForm } from "./DiscordMessageMentionForm";
 import { DiscordMessagePlaceholderLimitsForm } from "./DiscordMessagePlaceholderLimitsForm";
 import { CreateDiscordChannelConnectionPreviewInput } from "../../api";
-import { SendTestArticleContext } from "../../../../contexts";
+import { PricingDialogContext, SendTestArticleContext } from "../../../../contexts";
+import { useIsFeatureAllowed } from "../../../../hooks";
+import { BlockableFeature } from "../../../../constants";
+import { useSendTestArticleDirect } from "../../hooks/useSendTestArticleDirect";
+import { SendTestArticleDeliveryStatus } from "@/types";
 import { AnimatedComponent } from "../../../../components";
 import { DiscordMessageComponentsForm } from "./DiscordMessageComponentsForm";
 import { SuspenseErrorBoundary } from "../../../../components/SuspenseErrorBoundary";
@@ -67,8 +75,16 @@ const DiscordChannelConnectionPreview = lazyWithRetries(() =>
 
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
+interface BrandingExtra {
+  applicationWebhook?: {
+    name: string;
+    iconUrl?: string;
+    channelId: string;
+  };
+}
+
 interface Props {
-  onClickSave: (data: DiscordMessageFormData) => Promise<void>;
+  onClickSave: (data: DiscordMessageFormData, extra?: BrandingExtra) => Promise<void>;
   articleIdToPreview?: string;
   guildId: string | undefined;
 }
@@ -83,6 +99,17 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
   const { t } = useTranslation();
   const [activeEmbedIndex, setActiveEmbedIndex] = useState(defaultIndex);
   const { isFetching: isSendingTestArticle, sendTestArticle } = useContext(SendTestArticleContext);
+  const { allowed: webhooksAllowed } = useIsFeatureAllowed({
+    feature: BlockableFeature.DiscordWebhooks,
+  });
+  const { onOpen: onOpenPricingDialog } = useContext(PricingDialogContext);
+  const sendTestArticleDirectMutation = useSendTestArticleDirect();
+  const existingWebhookName = connection.details.webhook?.name || "";
+  const existingWebhookIconUrl = connection.details.webhook?.iconUrl || "";
+  const [webhookDisplayName, setWebhookDisplayName] = useState(existingWebhookName);
+  const [webhookAvatarUrl, setWebhookAvatarUrl] = useState(existingWebhookIconUrl);
+  const skipBrandingRef = useRef(false);
+  const hasBrandingValues = !webhooksAllowed && !!webhookDisplayName.trim();
   const showForumForms =
     connection.details.channel?.type === "forum" || connection.details.webhook?.type === "forum";
   const showChannelThreadForm = connection.details.channel?.type === "new-thread";
@@ -212,7 +239,28 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
         forumThreadTags: formData.forumThreadTags || [],
       };
 
-      await onClickSave(toSubmit);
+      let brandingExtra: BrandingExtra | undefined;
+      const shouldSkipBranding = skipBrandingRef.current;
+      skipBrandingRef.current = false;
+
+      const brandingChanged =
+        webhookDisplayName !== existingWebhookName || webhookAvatarUrl !== existingWebhookIconUrl;
+
+      if (webhooksAllowed && !shouldSkipBranding && webhookDisplayName && brandingChanged) {
+        const channelId = connection.details.webhook?.channelId || connection.details.channel?.id;
+
+        if (channelId) {
+          brandingExtra = {
+            applicationWebhook: {
+              name: webhookDisplayName,
+              iconUrl: webhookAvatarUrl || undefined,
+              channelId,
+            },
+          };
+        }
+      }
+
+      await onClickSave(toSubmit, brandingExtra);
       reset(toSubmit);
     } catch (err) {
       notifyError(t("common.errors.failedToSave"), err as Error);
@@ -284,6 +332,7 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                           onClick={async () => {
                             if (
                               isSendingTestArticle ||
+                              sendTestArticleDirectMutation.isLoading ||
                               !articleIdToPreview ||
                               !previewInput.data.article
                             ) {
@@ -291,6 +340,43 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                             }
 
                             try {
+                              if (!webhooksAllowed && webhookDisplayName.trim()) {
+                                const channelId =
+                                  connection.details.channel?.id ||
+                                  connection.details.webhook?.channelId;
+
+                                if (!channelId) return;
+
+                                const response = await sendTestArticleDirectMutation.mutateAsync({
+                                  feedId: userFeed.id,
+                                  data: {
+                                    article: { id: articleIdToPreview },
+                                    channelId,
+                                    content: previewInput.data.content,
+                                    embeds: previewInput.data.embeds,
+                                    placeholderLimits: previewInput.data.placeholderLimits,
+                                    webhook: {
+                                      name: webhookDisplayName,
+                                      iconUrl: webhookAvatarUrl || undefined,
+                                    },
+                                  },
+                                });
+
+                                if (
+                                  response.result.status === SendTestArticleDeliveryStatus.Success
+                                ) {
+                                  createSuccessAlert({
+                                    title: "Article sent to Discord successfully!",
+                                  });
+                                } else {
+                                  createErrorAlert({
+                                    title: "Failed to send test article.",
+                                  });
+                                }
+
+                                return;
+                              }
+
                               const resultInfo = await sendTestArticle(
                                 {
                                   connectionType: connection.key,
@@ -322,8 +408,14 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                           }}
                           size="sm"
                           colorScheme="blue"
-                          isLoading={isSendingTestArticle}
-                          aria-disabled={isSendingTestArticle || !articleIdToPreview}
+                          isLoading={
+                            isSendingTestArticle || sendTestArticleDirectMutation.isLoading
+                          }
+                          aria-disabled={
+                            isSendingTestArticle ||
+                            sendTestArticleDirectMutation.isLoading ||
+                            !articleIdToPreview
+                          }
                         >
                           <span>
                             {t("components.discordMessageForm.sendPreviewToDiscordButtonText")}
@@ -361,11 +453,62 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                         }
                         feedId={userFeed.id}
                         hasErrors={errorsExist}
+                        usernameOverride={webhookDisplayName || undefined}
+                        avatarUrlOverride={webhookAvatarUrl || undefined}
                       />
                     </Suspense>
                   </SuspenseErrorBoundary>
                 )}
               </Box>
+              <Stack
+                spacing={3}
+                mt={4}
+                p={!webhooksAllowed ? 3 : 0}
+                border={!webhooksAllowed ? "1px solid" : undefined}
+                borderColor={!webhooksAllowed ? "whiteAlpha.200" : undefined}
+                bg={!webhooksAllowed ? "gray.800" : undefined}
+                borderRadius={!webhooksAllowed ? "md" : undefined}
+              >
+                <Heading as="h4" size="xs">
+                  Branding
+                </Heading>
+                {!webhooksAllowed && (
+                  <HStack spacing={2}>
+                    <LockIcon boxSize={3} color="whiteAlpha.700" />
+                    <Text fontSize="xs" color="whiteAlpha.700">
+                      Free plan — preview how your branding looks, then upgrade to save it.
+                    </Text>
+                  </HStack>
+                )}
+                <HStack spacing={4} flexWrap="wrap">
+                  <FormControl flex={1} minW="200px">
+                    <FormLabel fontSize="sm">Display Name</FormLabel>
+                    <Input
+                      size="sm"
+                      bg="gray.800"
+                      placeholder="e.g. Gaming News"
+                      value={webhookDisplayName}
+                      onChange={(e) => setWebhookDisplayName(e.target.value)}
+                    />
+                    <FormHelperText fontSize="xs">
+                      The name shown as the message author
+                    </FormHelperText>
+                  </FormControl>
+                  <FormControl flex={1} minW="200px">
+                    <FormLabel fontSize="sm">Avatar URL</FormLabel>
+                    <Input
+                      size="sm"
+                      bg="gray.800"
+                      placeholder="https://example.com/avatar.png"
+                      value={webhookAvatarUrl}
+                      onChange={(e) => setWebhookAvatarUrl(e.target.value)}
+                    />
+                    <FormHelperText fontSize="xs">
+                      The avatar shown next to the message
+                    </FormHelperText>
+                  </FormControl>
+                </HStack>
+              </Stack>
             </Stack>
             {showForumForms && (
               <Stack>
@@ -485,14 +628,33 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                       >
                         <span>Discard all changes</span>
                       </Button>
-                      <Button
-                        type="submit"
-                        colorScheme="blue"
-                        isDisabled={isSubmitting || !isDirty || errorsExist}
-                        isLoading={isSubmitting}
-                      >
-                        <span>Save all changes</span>
-                      </Button>
+                      {hasBrandingValues ? (
+                        <>
+                          <Button
+                            type="submit"
+                            variant="outline"
+                            isDisabled={isSubmitting || !isDirty || errorsExist}
+                            isLoading={isSubmitting}
+                            onClick={() => {
+                              skipBrandingRef.current = true;
+                            }}
+                          >
+                            <span>Save without branding</span>
+                          </Button>
+                          <Button colorScheme="blue" onClick={onOpenPricingDialog}>
+                            <span>Upgrade to save with branding</span>
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          type="submit"
+                          colorScheme="blue"
+                          isDisabled={isSubmitting || !isDirty || errorsExist}
+                          isLoading={isSubmitting}
+                        >
+                          <span>Save all changes</span>
+                        </Button>
+                      )}
                     </HStack>
                   </HStack>
                 </Flex>

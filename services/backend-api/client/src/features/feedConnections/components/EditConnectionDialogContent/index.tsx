@@ -1,8 +1,6 @@
 import { RefObject } from "react";
 import { FeedDiscordChannelConnection } from "../../../../types";
 import { DiscordTextChannelConnectionDialogContent } from "../AddConnectionDialog/DiscordTextChannelConnectionDialogContent";
-import { DiscordForumChannelConnectionDialogContent } from "../AddConnectionDialog/DiscordForumChannelConnectionDialogContent";
-import { EditConnectionWebhookDialog } from "../EditConnectionWebhookDialog";
 
 interface Props {
   connection: FeedDiscordChannelConnection;
@@ -11,45 +9,12 @@ interface Props {
   onCloseRef?: RefObject<HTMLButtonElement>;
 }
 
-export const EditConnectionDialogContent = ({ connection, isOpen, onClose, onCloseRef }: Props) => {
-  const isForum =
-    connection.details.channel?.type === "forum" ||
-    connection.details.channel?.type === "forum-thread";
-
+export const EditConnectionDialogContent = ({ connection, isOpen, onClose }: Props) => {
   return (
-    <>
-      {connection.details.channel && !isForum && (
-        <DiscordTextChannelConnectionDialogContent
-          connection={connection}
-          isOpen={isOpen}
-          onClose={onClose}
-        />
-      )}
-      {connection.details.channel && isForum && (
-        <DiscordForumChannelConnectionDialogContent
-          connection={connection}
-          isOpen={isOpen}
-          onClose={onClose}
-        />
-      )}
-      {connection.details.webhook && onCloseRef && (
-        <EditConnectionWebhookDialog
-          connectionId={connection.id}
-          isOpen={isOpen}
-          onClose={onClose}
-          onCloseRef={onCloseRef}
-          defaultValues={{
-            name: connection.name,
-            serverId: connection.details.webhook.guildId,
-            applicationWebhook: {
-              iconUrl: connection.details.webhook.iconUrl,
-              name: connection.details.webhook.name || "",
-              threadId: connection.details.webhook.threadId,
-              channelId: connection.details.webhook.channelId || "",
-            },
-          }}
-        />
-      )}
-    </>
+    <DiscordTextChannelConnectionDialogContent
+      connection={connection}
+      isOpen={isOpen}
+      onClose={onClose}
+    />
   );
 };

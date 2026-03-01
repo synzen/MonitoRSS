@@ -16,7 +16,7 @@ vi.mock("../DiscordView", () => ({
       {messages?.map(
         (
           msg: { content?: string; embeds?: Array<{ title?: string; description?: string }> },
-          i: number,
+          i: number
         ) => (
           <div key={i} data-testid="legacy-message">
             {msg.content && <span data-testid="message-content">{msg.content}</span>}
@@ -29,7 +29,7 @@ vi.mock("../DiscordView", () => ({
               </div>
             ))}
           </div>
-        ),
+        )
       )}
     </div>
   )),
@@ -232,7 +232,7 @@ describe("DiscordMessageDisplay", () => {
       // MediaGallery renders a grid with image containers
       // In test environment, images may show fallback UI since URLs don't load
       const { container } = renderWithChakra(
-        <DiscordMessageDisplay messages={[mockV2WithMediaGallery]} />,
+        <DiscordMessageDisplay messages={[mockV2WithMediaGallery]} />
       );
 
       // Verify the component renders (doesn't throw)
@@ -320,10 +320,19 @@ describe("DiscordMessageDisplay", () => {
       expect(avatar).toBeInTheDocument();
     });
 
-    it("renders APP badge", () => {
+    it("renders APP badge with checkmark by default", () => {
       renderWithChakra(<DiscordMessageDisplay messages={[mockV2Message]} />);
 
       expect(screen.getByText("✓ APP")).toBeInTheDocument();
+    });
+
+    it("renders APP badge without checkmark when showVerifiedInAppBadge is false", () => {
+      renderWithChakra(
+        <DiscordMessageDisplay messages={[mockV2Message]} showVerifiedInAppBadge={false} />
+      );
+
+      expect(screen.getByText("APP")).toBeInTheDocument();
+      expect(screen.queryByText("✓ APP")).not.toBeInTheDocument();
     });
 
     it("renders timestamp", () => {
@@ -354,7 +363,7 @@ describe("DiscordMessageDisplay", () => {
 
     it("matches snapshot for MediaGallery", () => {
       const { container } = renderWithChakra(
-        <DiscordMessageDisplay messages={[mockV2WithMediaGallery]} />,
+        <DiscordMessageDisplay messages={[mockV2WithMediaGallery]} />
       );
 
       expect(container).toMatchSnapshot();

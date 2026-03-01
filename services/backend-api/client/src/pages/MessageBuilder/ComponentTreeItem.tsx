@@ -18,7 +18,7 @@ import getChakraColor from "../../utils/getChakraColor";
 import getMessageBuilderComponentLabel from "./utils/getMessageBuilderComponentLabel";
 import getMessageBuilderComponentIcon from "./utils/getMessageBuilderComponentIcon";
 import { notifyInfo } from "../../utils/notifyInfo";
-import { useIsMessageBuilderDesktop } from "../../hooks";
+import { MESSAGE_BUILDER_MOBILE_BREAKPOINT } from "./constants/MessageBuilderMobileBreakpoint";
 
 interface ComponentTreeItemProps {
   component: Component;
@@ -40,7 +40,6 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
   const ref = React.useRef<HTMLDivElement>(null);
   const { onExpanded } = useNavigableTreeItemContext();
   const { addChildComponent } = useMessageBuilderContext();
-  const isDesktop = useIsMessageBuilderDesktop();
   const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
 
   const hasChildren = component.children && component.children.length > 0;
@@ -56,8 +55,8 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
     if (added) {
       notifyInfo(
         `Successfully added ${getMessageBuilderComponentLabel(
-          childType,
-        )} component under ${getMessageBuilderComponentLabel(component.type)}`,
+          childType
+        )} component under ${getMessageBuilderComponentLabel(component.type)}`
       );
     }
   };
@@ -140,45 +139,51 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
           </HStack>
         </HStack>{" "}
         {/* Always render the button (hidden when not selected) so Google Translate
-            processes it on initial load instead of missing dynamically inserted nodes. */}
-        {isDesktop && (
-          <Box position="absolute" right="5px" top="5px" hidden={!isSelected}>
-            <AddComponentButton
-              component={component}
-              canHaveChildren={canHaveChildren}
-              onAddChild={handleAddChild}
-            />
-          </Box>
-        )}
-      </HStack>
-      {/* Mobile inline action buttons - only show on pointer interaction, not keyboard focus */}
-      {!isDesktop && showMobileActions && (
-        <HStack pl={2 + depth * 4 + 6} pr={2} py={2} spacing={2} bg="gray.750">
+            processes it on initial load instead of missing dynamically inserted nodes.
+            Use CSS display instead of JS isDesktop to avoid flash on tree remount
+            (useBreakpointValue returns the base/false value on first render). */}
+        <Box
+          display={{ base: "none", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "block" }}
+          position="absolute"
+          right="5px"
+          top="5px"
+          hidden={!isSelected}
+        >
           <AddComponentButton
             component={component}
             canHaveChildren={canHaveChildren}
             onAddChild={handleAddChild}
-            buttonProps={{
-              size: "sm",
-              variant: "solid",
-            }}
           />
-          <Button
-            leftIcon={<FaCog />}
-            size="sm"
-            variant="solid"
-            onClick={() => setIsConfigPanelOpen(true)}
-          >
-            Configure
-          </Button>
-        </HStack>
-      )}
-      {!isDesktop && (
+        </Box>
+      </HStack>
+      {/* Mobile inline action buttons - use CSS display to avoid flash on tree remount */}
+      <Box display={{ base: "block", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "none" }}>
+        {showMobileActions && (
+          <HStack pl={2 + depth * 4 + 6} pr={2} py={2} spacing={2} bg="gray.750">
+            <AddComponentButton
+              component={component}
+              canHaveChildren={canHaveChildren}
+              onAddChild={handleAddChild}
+              buttonProps={{
+                size: "sm",
+                variant: "solid",
+              }}
+            />
+            <Button
+              leftIcon={<FaCog />}
+              size="sm"
+              variant="solid"
+              onClick={() => setIsConfigPanelOpen(true)}
+            >
+              Configure
+            </Button>
+          </HStack>
+        )}
         <SlidingConfigPanel
           isOpen={isConfigPanelOpen}
           onClose={() => setIsConfigPanelOpen(false)}
         />
-      )}
+      </Box>
       {/* Always render children (NavigableTreeItemGroup handles hiding via hidden attribute).
           This ensures child nodes exist in the DOM on initial render so Google Translate
           can process them before the async expand fires. */}

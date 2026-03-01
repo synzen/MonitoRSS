@@ -488,6 +488,118 @@ describe(
       assert.strictEqual(response.status, 201);
     });
 
+    it("returns 201 when applicationWebhook is provided", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+      const channelId = generateSnowflake();
+      const webhookId = generateSnowflake();
+
+      const connectionId = generateTestId();
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Test Feed",
+        url: `https://example.com/feed-${generateTestId()}.xml`,
+        user: { id: generateTestId(), discordUserId },
+        connections: {
+          discordChannels: [
+            {
+              id: connectionId,
+              name: "test-conn",
+              details: {
+                channel: { id: channelId, guildId: "guild-1" },
+                embeds: [],
+                formatter: {},
+              },
+            } as never,
+          ],
+        },
+      });
+
+      ctx.discordMockServer.registerRoute(
+        "GET",
+        `/channels/${channelId}/webhooks`,
+        {
+          status: 200,
+          body: [
+            {
+              id: webhookId,
+              type: 1,
+              channel_id: channelId,
+              name: "app-webhook",
+              token: "app-webhook-token",
+              application_id: "test-client-id",
+            },
+          ],
+        },
+      );
+
+      const response = await user.fetch(testUrl(feed.id, connectionId), {
+        method: "POST",
+        body: JSON.stringify({
+          article: { id: "article-1" },
+          applicationWebhook: {
+            channelId,
+            name: "My Custom Bot",
+            iconUrl: "https://example.com/avatar.png",
+          },
+        }),
+      });
+
+      assert.strictEqual(response.status, 201);
+    });
+
+    it("returns 403 when applicationWebhook is provided but bot lacks manage webhooks permission", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+      const channelId = generateSnowflake();
+
+      const connectionId = generateTestId();
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Test Feed",
+        url: `https://example.com/feed-${generateTestId()}.xml`,
+        user: { id: generateTestId(), discordUserId },
+        connections: {
+          discordChannels: [
+            {
+              id: connectionId,
+              name: "test-conn",
+              details: {
+                channel: { id: channelId, guildId: "guild-1" },
+                embeds: [],
+                formatter: {},
+              },
+            } as never,
+          ],
+        },
+      });
+
+      ctx.discordMockServer.registerRoute(
+        "GET",
+        `/channels/${channelId}/webhooks`,
+        {
+          status: 403,
+          body: {
+            message: "Missing Permissions",
+            code: 50013,
+          },
+        },
+      );
+
+      const response = await user.fetch(testUrl(feed.id, connectionId), {
+        method: "POST",
+        body: JSON.stringify({
+          article: { id: "article-1" },
+          applicationWebhook: {
+            channelId,
+            name: "My Custom Bot",
+          },
+        }),
+      });
+
+      assert.strictEqual(response.status, 403);
+      const body = (await response.json()) as { code: string };
+      assert.strictEqual(body.code, "WEBHOOKS_MANAGE_MISSING_PERMISSIONS");
+    });
+
     it("returns 201 when thread and forum preview fields are supplied", async () => {
       const discordUserId = generateSnowflake();
       const user = await ctx.asUser(discordUserId);

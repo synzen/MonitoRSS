@@ -1289,6 +1289,7 @@ describe(
               targetConnectionId1,
               targetConnectionId2,
             ],
+            accessToken: "fake-access-token",
           },
         );
 

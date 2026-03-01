@@ -15,7 +15,7 @@ import {
   useDisclosure,
   Skeleton,
 } from "@chakra-ui/react";
-import { useDiscordServerChannels } from "../../hooks";
+import { useDiscordServerChannels, useDiscordServerActiveThreads } from "../../hooks";
 import { GetDiscordChannelType } from "../../constants";
 
 interface Props {
@@ -54,11 +54,31 @@ export const DiscordChannelName: React.FC<Props> = ({
     return map;
   }, [data]);
 
+  const channelFound = channelNamesById.has(channelId);
+
+  const {
+    data: threadsData,
+    status: threadsStatus,
+  } = useDiscordServerActiveThreads({
+    serverId: !channelFound && status === "success" ? serverId : undefined,
+  });
+
+  const threadName = useMemo(() => {
+    if (!threadsData?.results) {
+      return undefined;
+    }
+
+    return threadsData.results.find((t) => t.id === channelId)?.name;
+  }, [threadsData, channelId]);
+
   if (hidden) {
     return null;
   }
 
-  if (status === "loading") {
+  const isLoading =
+    status === "loading" || (!channelFound && status === "success" && threadsStatus === "loading");
+
+  if (isLoading) {
     return (
       <span>
         <Skeleton height="1em" width="100px" display="inline-block" />
@@ -104,7 +124,7 @@ export const DiscordChannelName: React.FC<Props> = ({
     );
   }
 
-  const channelName = channelNamesById.get(channelId) || channelId;
+  const channelName = channelNamesById.get(channelId) || threadName || channelId;
 
   const useName = parenthesis ? `(#${channelName})` : `#${channelName}`;
 

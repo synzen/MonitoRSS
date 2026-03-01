@@ -142,7 +142,7 @@ const convertV2ContainerToAPI = (container: ContainerComponent) => ({
 });
 
 const convertV2RootToTemplatePreviewInput = (
-  messageComponent: V2MessageComponentRoot,
+  messageComponent: V2MessageComponentRoot
 ): Omit<CreateTemplatePreviewInput["data"], "article"> => {
   const componentsV2: CreateTemplatePreviewInput["data"]["componentsV2"] = [];
 
@@ -225,7 +225,7 @@ const convertLegacyEmbedToPreviewEmbed = (embedComponent: LegacyEmbedComponent) 
 };
 
 export const convertTemplateMessageComponentToPreviewInput = (
-  messageComponent?: MessageComponentRoot,
+  messageComponent?: MessageComponentRoot
 ): Omit<CreateTemplatePreviewInput["data"], "article"> => {
   if (!messageComponent) {
     return {};
@@ -247,7 +247,7 @@ export const convertTemplateMessageComponentToPreviewInput = (
       content = (child as LegacyTextComponent).content || "";
     } else if (child.type === ComponentType.LegacyEmbedContainer) {
       embeds = child.children.map((embedChild) =>
-        convertLegacyEmbedToPreviewEmbed(embedChild as LegacyEmbedComponent),
+        convertLegacyEmbedToPreviewEmbed(embedChild as LegacyEmbedComponent)
       );
     }
   });

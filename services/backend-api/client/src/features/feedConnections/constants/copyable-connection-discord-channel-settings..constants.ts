@@ -1,9 +1,7 @@
 export enum CopyableConnectionDiscordChannelSettings {
-  Channel = "channel",
   Embeds = "embeds",
   WebhookName = "webhookName",
   WebhookIconUrl = "webhookIconUrl",
-  WebhookThread = "webhookThread",
   PlaceholderLimits = "placeholderLimits",
   Content = "content",
   ContentFormatTables = "contentFormatTables",

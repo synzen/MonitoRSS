@@ -40,7 +40,16 @@ export const AddComponentButton: React.FC<AddComponentButtonProps> = ({
           colorScheme="twitter"
           aria-label={`Add new component under ${getMessageBuilderComponentLabel(component.type)}`}
           onClick={canHaveChildren ? undefined : (e) => e.preventDefault()}
-          onKeyDown={canHaveChildren ? undefined : (e) => e.preventDefault()}
+          // Only block activation keys — allow Tab and other navigation keys through
+          onKeyDown={
+            canHaveChildren
+              ? undefined
+              : (e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                  }
+                }
+          }
           {...buttonProps}
         >
           New Component
@@ -73,7 +82,7 @@ export const AddComponentButton: React.FC<AddComponentButtonProps> = ({
                 color="white"
                 onClick={() => onAddChild(ComponentType.LegacyEmbedContainer)}
                 isDisabled={component.children?.some(
-                  (c) => c.type === ComponentType.LegacyEmbedContainer,
+                  (c) => c.type === ComponentType.LegacyEmbedContainer
                 )}
               >
                 Add {getMessageBuilderComponentLabel(ComponentType.LegacyEmbedContainer)}
@@ -105,7 +114,7 @@ export const AddComponentButton: React.FC<AddComponentButtonProps> = ({
               color="white"
               onClick={() => onAddChild(ComponentType.LegacyEmbedAuthor)}
               isDisabled={component.children?.some(
-                (c) => c.type === ComponentType.LegacyEmbedAuthor,
+                (c) => c.type === ComponentType.LegacyEmbedAuthor
               )}
             >
               Add Author
@@ -114,7 +123,7 @@ export const AddComponentButton: React.FC<AddComponentButtonProps> = ({
               color="white"
               onClick={() => onAddChild(ComponentType.LegacyEmbedTitle)}
               isDisabled={component.children?.some(
-                (c) => c.type === ComponentType.LegacyEmbedTitle,
+                (c) => c.type === ComponentType.LegacyEmbedTitle
               )}
             >
               Add Title
@@ -123,7 +132,7 @@ export const AddComponentButton: React.FC<AddComponentButtonProps> = ({
               color="white"
               onClick={() => onAddChild(ComponentType.LegacyEmbedDescription)}
               isDisabled={component.children?.some(
-                (c) => c.type === ComponentType.LegacyEmbedDescription,
+                (c) => c.type === ComponentType.LegacyEmbedDescription
               )}
             >
               Add Description
@@ -132,7 +141,7 @@ export const AddComponentButton: React.FC<AddComponentButtonProps> = ({
               color="white"
               onClick={() => onAddChild(ComponentType.LegacyEmbedImage)}
               isDisabled={component.children?.some(
-                (c) => c.type === ComponentType.LegacyEmbedImage,
+                (c) => c.type === ComponentType.LegacyEmbedImage
               )}
             >
               Add Image
@@ -141,7 +150,7 @@ export const AddComponentButton: React.FC<AddComponentButtonProps> = ({
               color="white"
               onClick={() => onAddChild(ComponentType.LegacyEmbedThumbnail)}
               isDisabled={component.children?.some(
-                (c) => c.type === ComponentType.LegacyEmbedThumbnail,
+                (c) => c.type === ComponentType.LegacyEmbedThumbnail
               )}
             >
               Add Thumbnail
@@ -150,7 +159,7 @@ export const AddComponentButton: React.FC<AddComponentButtonProps> = ({
               color="white"
               onClick={() => onAddChild(ComponentType.LegacyEmbedFooter)}
               isDisabled={component.children?.some(
-                (c) => c.type === ComponentType.LegacyEmbedFooter,
+                (c) => c.type === ComponentType.LegacyEmbedFooter
               )}
             >
               Add Footer
@@ -159,7 +168,7 @@ export const AddComponentButton: React.FC<AddComponentButtonProps> = ({
               color="white"
               onClick={() => onAddChild(ComponentType.LegacyEmbedTimestamp)}
               isDisabled={component.children?.some(
-                (c) => c.type === ComponentType.LegacyEmbedTimestamp,
+                (c) => c.type === ComponentType.LegacyEmbedTimestamp
               )}
             >
               Add Timestamp

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useContext } from "react";
 import {
   Box,
   Flex,
@@ -76,10 +76,11 @@ import {
   usePageAlertContext,
 } from "../contexts/PageAlertContext";
 import convertMessageBuilderStateToConnectionUpdate from "./MessageBuilder/utils/convertMessageBuilderStateToConnectionUpdate";
-import { pages } from "../constants";
+import { pages, BlockableFeature } from "../constants";
 import { UserFeedTabSearchParam } from "../constants/userFeedTabSearchParam";
+import { PricingDialogContext } from "../contexts";
 import { MessageBuilderTour } from "../components/MessageBuilderTour";
-import { useMessageBuilderTour, useIsMessageBuilderDesktop } from "../hooks";
+import { useMessageBuilderTour, useIsFeatureAllowed } from "../hooks";
 import { MESSAGE_BUILDER_MOBILE_BREAKPOINT } from "./MessageBuilder/constants/MessageBuilderMobileBreakpoint";
 import { useUserFeedArticles } from "../features/feed/hooks";
 import { TemplateGalleryModal } from "../features/templates/components/TemplateGalleryModal";
@@ -101,7 +102,7 @@ function TreeFocusRestorer({ treeRef }: { treeRef: React.RefObject<HTMLDivElemen
     requestAnimationFrame(() => {
       if (document.activeElement && document.activeElement !== document.body) return;
       const selected = treeRef.current?.querySelector(
-        `[data-id="${currentSelectedId}"]`,
+        `[data-id="${currentSelectedId}"]`
       ) as HTMLElement | null;
       selected?.focus();
     });
@@ -127,6 +128,20 @@ function countComponentNodes(component: Component | null | undefined): number {
   return count;
 }
 
+function collectComponentIds(component: Component | null | undefined): string[] {
+  if (!component) return [];
+  const ids: string[] = [component.id];
+  if (component.children) {
+    for (const child of component.children) {
+      ids.push(...collectComponentIds(child as Component));
+    }
+  }
+  if ("accessory" in component && component.accessory) {
+    ids.push(...collectComponentIds(component.accessory as Component));
+  }
+  return ids;
+}
+
 const SIDE_PANEL_WIDTH = {
   base: "350px",
   "2xl": "500px",
@@ -144,6 +159,7 @@ const MessageBuilderContent: React.FC = () => {
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const [isProblemsCollapsed, setIsProblemsCollapsed] = useState(false);
   const messageComponent = watch("messageComponent");
+  const allComponentIds = useMemo(() => collectComponentIds(messageComponent), [messageComponent]);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
     isOpen: isProblemsDialogOpen,
@@ -166,7 +182,21 @@ const MessageBuilderContent: React.FC = () => {
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
   const { userFeed, connection } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
   const { resetTour, resetTrigger } = useMessageBuilderTour();
-  const isDesktop = useIsMessageBuilderDesktop();
+
+  // Branding state
+  const existingWebhookName = connection.details.webhook?.name || "";
+  const existingWebhookIconUrl = connection.details.webhook?.iconUrl || "";
+  const [brandingDisplayName, setBrandingDisplayName] = useState(existingWebhookName);
+  const [brandingAvatarUrl, setBrandingAvatarUrl] = useState(existingWebhookIconUrl);
+  const skipBrandingRef = useRef(false);
+  const { allowed: webhooksAllowed } = useIsFeatureAllowed({
+    feature: BlockableFeature.DiscordWebhooks,
+  });
+  const { onOpen: onOpenPricingDialog } = useContext(PricingDialogContext);
+  const brandingChanged =
+    brandingDisplayName !== existingWebhookName || brandingAvatarUrl !== existingWebhookIconUrl;
+  const hasBrandingValues = !webhooksAllowed && !!brandingDisplayName.trim();
+  const hasAnyChanges = formState.isDirty || brandingChanged;
 
   // Template gallery state
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);
@@ -246,7 +276,7 @@ const MessageBuilderContent: React.FC = () => {
   // If the user attempts to close the tab with unsaved changes, ask for confirmation
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (formState.isDirty) {
+      if (hasAnyChanges) {
         event.preventDefault();
       }
     };
@@ -256,7 +286,7 @@ const MessageBuilderContent: React.FC = () => {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [formState.isDirty]);
+  }, [hasAnyChanges]);
 
   const handleSave = handleSubmit(
     async (data) => {
@@ -266,8 +296,27 @@ const MessageBuilderContent: React.FC = () => {
 
       try {
         const connectionDetails = convertMessageBuilderStateToConnectionUpdate(
-          data.messageComponent,
+          data.messageComponent
         );
+
+        const shouldSkipBranding = skipBrandingRef.current;
+        skipBrandingRef.current = false;
+
+        const channelId = connection.details.webhook?.channelId || connection.details.channel?.id;
+
+        if (
+          webhooksAllowed &&
+          !shouldSkipBranding &&
+          brandingDisplayName &&
+          brandingChanged &&
+          channelId
+        ) {
+          connectionDetails.applicationWebhook = {
+            name: brandingDisplayName,
+            iconUrl: brandingAvatarUrl || undefined,
+            channelId,
+          };
+        }
 
         await updateConnection({
           feedId,
@@ -291,11 +340,11 @@ const MessageBuilderContent: React.FC = () => {
       if (problems.length > 0) {
         onProblemsDialogOpen();
       }
-    },
+    }
   );
 
   const handleDiscard = () => {
-    if (!formState.isDirty) {
+    if (!hasAnyChanges) {
       return;
     }
 
@@ -304,6 +353,8 @@ const MessageBuilderContent: React.FC = () => {
 
   const confirmDiscard = () => {
     resetMessage();
+    setBrandingDisplayName(existingWebhookName);
+    setBrandingAvatarUrl(existingWebhookIconUrl);
     onClose();
   };
 
@@ -482,17 +533,16 @@ const MessageBuilderContent: React.FC = () => {
                     </Text>
                   </HStack>
                   <HStack spacing={3} flexWrap="wrap">
-                    {isDesktop && (
-                      <Button
-                        variant="outline"
-                        colorScheme="gray"
-                        size="sm"
-                        onClick={resetTour}
-                        leftIcon={<InfoIcon />}
-                      >
-                        Take Tour
-                      </Button>
-                    )}
+                    <Button
+                      display={{ base: "none", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "inline-flex" }}
+                      variant="outline"
+                      colorScheme="gray"
+                      size="sm"
+                      onClick={resetTour}
+                      leftIcon={<InfoIcon />}
+                    >
+                      Take Tour
+                    </Button>
                     <Button
                       ref={templatesButtonRef}
                       variant="outline"
@@ -510,18 +560,38 @@ const MessageBuilderContent: React.FC = () => {
                         colorScheme="red"
                         size="sm"
                         onClick={handleDiscard}
-                        aria-disabled={formState.isDirty === false}
+                        aria-disabled={!hasAnyChanges}
                       >
                         Discard Changes
                       </Button>
-                      <Button
-                        colorScheme="blue"
-                        size="sm"
-                        onClick={handleSave}
-                        aria-disabled={updateStatus === "loading" || !formState.isDirty}
-                      >
-                        {updateStatus === "loading" ? "Saving Changes..." : "Save Changes"}
-                      </Button>
+                      {hasBrandingValues ? (
+                        <>
+                          <Button
+                            variant="outline"
+                            colorScheme="blue"
+                            size="sm"
+                            onClick={() => {
+                              skipBrandingRef.current = true;
+                              handleSave();
+                            }}
+                            aria-disabled={updateStatus === "loading" || !hasAnyChanges}
+                          >
+                            {updateStatus === "loading" ? "Saving..." : "Save without branding"}
+                          </Button>
+                          <Button colorScheme="blue" size="sm" onClick={onOpenPricingDialog}>
+                            Upgrade to save with branding
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          colorScheme="blue"
+                          size="sm"
+                          onClick={handleSave}
+                          aria-disabled={updateStatus === "loading" || !hasAnyChanges}
+                        >
+                          {updateStatus === "loading" ? "Saving Changes..." : "Save Changes"}
+                        </Button>
+                      )}
                     </HStack>
                   </HStack>
                 </HStack>
@@ -530,68 +600,77 @@ const MessageBuilderContent: React.FC = () => {
               {/* Main Content */}
               <Flex flex={1} bg="gray.900" position="relative">
                 {/* Left Panel - Component Tree */}
-                {isDesktop && (
+                <Box
+                  display={{ base: "none", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "block" }}
+                  minWidth={SIDE_PANEL_WIDTH}
+                  maxWidth={SIDE_PANEL_WIDTH}
+                  width={SIDE_PANEL_WIDTH}
+                >
                   <Box
-                    minWidth={SIDE_PANEL_WIDTH}
-                    maxWidth={SIDE_PANEL_WIDTH}
-                    width={SIDE_PANEL_WIDTH}
+                    bg="gray.800"
+                    borderRight="1px"
+                    borderColor="gray.600"
+                    height="100%"
+                    width="100%"
+                    overflowY="auto"
+                    overflowX="hidden"
+                    data-tour-target="components-section"
                   >
-                    <Box
-                      bg="gray.800"
-                      borderRight="1px"
-                      borderColor="gray.600"
-                      height="100%"
-                      width="100%"
-                      overflowY="auto"
-                      overflowX="hidden"
-                      data-tour-target="components-section"
-                    >
-                      <VStack align="stretch" spacing={0} minWidth={200} height="100%">
-                        <ComponentTreeToolbar />
-                        {messageComponent && (
-                          <div
-                            ref={desktopTreeRef}
-                            key={countComponentNodes(messageComponent)}
-                            role="tree"
-                            aria-label="Message Components"
+                    <VStack align="stretch" spacing={0} minWidth={200} height="100%">
+                      <ComponentTreeToolbar />
+                      {messageComponent && (
+                        <div
+                          ref={desktopTreeRef}
+                          key={countComponentNodes(messageComponent)}
+                          role="tree"
+                          aria-label="Message Components"
+                        >
+                          <TreeFocusRestorer treeRef={desktopTreeRef} />
+                          <NavigableTreeItem
+                            isRootItem
+                            id={messageComponent.id}
+                            ariaLabel="Message Root"
                           >
-                            <TreeFocusRestorer treeRef={desktopTreeRef} />
-                            <NavigableTreeItem
-                              isRootItem
-                              id={messageComponent.id}
-                              ariaLabel="Message Root"
-                            >
-                              <ComponentTreeItem
-                                component={messageComponent}
-                                scrollToComponentId={scrollToComponentId}
-                                componentIdsWithErrors={componentIdsWithErrors}
-                                componentIdsWithWarnings={componentIdsWithWarnings}
-                              />
-                            </NavigableTreeItem>
-                          </div>
-                        )}
-                      </VStack>
-                    </Box>
-                  </Box>
-                )}
-                {/* Middle Panel - Properties */}
-                {isDesktop && (
-                  <Box minWidth={SIDE_PANEL_WIDTH} maxWidth={SIDE_PANEL_WIDTH}>
-                    <Box
-                      bg="gray.800"
-                      borderRight="1px"
-                      borderColor="gray.600"
-                      height="100%"
-                      width="100%"
-                      overflowY="auto"
-                      data-tour-target="properties-panel"
-                    >
-                      {currentSelectedId && (
-                        <ComponentPropertiesPanel selectedComponentId={currentSelectedId} />
+                            <ComponentTreeItem
+                              component={messageComponent}
+                              scrollToComponentId={scrollToComponentId}
+                              componentIdsWithErrors={componentIdsWithErrors}
+                              componentIdsWithWarnings={componentIdsWithWarnings}
+                            />
+                          </NavigableTreeItem>
+                        </div>
                       )}
-                    </Box>
+                    </VStack>
                   </Box>
-                )}
+                </Box>
+                {/* Middle Panel - Properties
+                    All component property panels are pre-rendered with the hidden
+                    attribute so Google Translate can process their text on initial
+                    page load. Switching the selected component just toggles hidden
+                    instead of creating/destroying DOM nodes. Without this, Google
+                    Translate's MutationObserver inconsistently fails to re-translate
+                    new nodes that React inserts when switching between components. */}
+                <Box
+                  display={{ base: "none", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "block" }}
+                  minWidth={SIDE_PANEL_WIDTH}
+                  maxWidth={SIDE_PANEL_WIDTH}
+                >
+                  <Box
+                    bg="gray.800"
+                    borderRight="1px"
+                    borderColor="gray.600"
+                    height="100%"
+                    width="100%"
+                    overflowY="auto"
+                    data-tour-target="properties-panel"
+                  >
+                    {allComponentIds.map((id) => (
+                      <div key={id} hidden={id !== currentSelectedId}>
+                        <ComponentPropertiesPanel selectedComponentId={id} />
+                      </div>
+                    ))}
+                  </Box>
+                </Box>
                 {/* Right Panel - Discord Preview and Problems */}
                 <Flex flex={1} direction="column" bg="gray.800" maxW={CENTER_PANEL_WIDTH}>
                   <Box
@@ -611,120 +690,131 @@ const MessageBuilderContent: React.FC = () => {
                       <DiscordMessagePreview
                         maxHeight={isProblemsCollapsed ? "none" : undefined}
                         onResolvedMessages={setResolvedMessages}
+                        brandingDisplayName={brandingDisplayName}
+                        brandingAvatarUrl={brandingAvatarUrl}
+                        onBrandingDisplayNameChange={setBrandingDisplayName}
+                        onBrandingAvatarUrlChange={setBrandingAvatarUrl}
+                        webhooksAllowed={webhooksAllowed}
+                        brandingChanged={brandingChanged}
                       />
                     </Box>
                   </Box>
-                  {isDesktop && (
-                    <Box borderTop="1px" borderColor="gray.600" data-tour-target="problems-section">
-                      <Box
-                        as="button"
-                        width="100%"
-                        p={4}
-                        borderBottom="1px"
-                        borderColor="gray.600"
-                        bg="transparent"
-                        cursor="pointer"
-                        textAlign="left"
-                        onClick={() => setIsProblemsCollapsed(!isProblemsCollapsed)}
-                        aria-expanded={!isProblemsCollapsed}
-                        aria-controls="problems-content"
-                        _hover={{ bg: "gray.700" }}
-                        _focus={{ outline: "2px solid", outlineColor: "blue.400" }}
-                        transition="background-color 0.2s"
-                      >
-                        <HStack spacing={2} align="center" justify="space-between">
-                          <HStack spacing={2} align="center">
-                            <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
-                              Problems
-                            </Text>
-                            <Text color="gray.400" aria-label={`${allProblems.length} found`}>
-                              ({allProblems.length})
-                            </Text>
-                          </HStack>
-                          <Icon
-                            as={isProblemsCollapsed ? FaChevronUp : FaChevronDown}
-                            color="gray.400"
-                            aria-hidden
-                          />
+                  <Box
+                    display={{ base: "none", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "block" }}
+                    borderTop="1px"
+                    borderColor="gray.600"
+                    data-tour-target="problems-section"
+                  >
+                    <Box
+                      as="button"
+                      width="100%"
+                      p={4}
+                      borderBottom="1px"
+                      borderColor="gray.600"
+                      bg="transparent"
+                      cursor="pointer"
+                      textAlign="left"
+                      onClick={() => setIsProblemsCollapsed(!isProblemsCollapsed)}
+                      aria-expanded={!isProblemsCollapsed}
+                      aria-controls="problems-content"
+                      _hover={{ bg: "gray.700" }}
+                      _focus={{ outline: "2px solid", outlineColor: "blue.400" }}
+                      transition="background-color 0.2s"
+                    >
+                      <HStack spacing={2} align="center" justify="space-between">
+                        <HStack spacing={2} align="center">
+                          <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
+                            Problems
+                          </Text>
+                          <Text color="gray.400" aria-label={`${allProblems.length} found`}>
+                            ({allProblems.length})
+                          </Text>
                         </HStack>
+                        <Icon
+                          as={isProblemsCollapsed ? FaChevronUp : FaChevronDown}
+                          color="gray.400"
+                          aria-hidden
+                        />
+                      </HStack>
+                    </Box>
+                    {!isProblemsCollapsed && (
+                      <Box id="problems-content" role="region" aria-labelledby="problems-heading">
+                        <ProblemsSection
+                          problems={allProblems}
+                          onClickComponentPath={handlePathClick}
+                        />
                       </Box>
-                      {!isProblemsCollapsed && (
-                        <Box id="problems-content" role="region" aria-labelledby="problems-heading">
+                    )}
+                  </Box>
+                  {/* Problems Section - Mobile Tabs */}
+                  <Box
+                    display={{ base: "block", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "none" }}
+                    borderTop="1px"
+                    borderColor="gray.600"
+                  >
+                    <Tabs
+                      colorScheme="blue"
+                      variant="line"
+                      index={selectedTabIndex}
+                      onChange={setSelectedTabIndex}
+                    >
+                      <TabList borderBottom="1px" borderColor="gray.600" bg="gray.700">
+                        <Tab
+                          color="gray.300"
+                          _selected={{ color: "white", borderColor: "blue.400" }}
+                        >
+                          Message Components ({messageComponent?.children?.length || 0})
+                        </Tab>
+                        <Tab
+                          color="gray.300"
+                          _selected={{ color: "white", borderColor: "blue.400" }}
+                        >
+                          <HStack>
+                            {allProblems.length > 0 && (
+                              <WarningIcon
+                                color={problems.length > 0 ? "red.400" : "orange.400"}
+                                aria-hidden
+                              />
+                            )}
+                            <Text>Problems ({allProblems.length})</Text>
+                          </HStack>
+                        </Tab>
+                      </TabList>
+                      <TabPanels>
+                        <TabPanel p={0}>
+                          <ComponentTreeToolbar />
+                          {messageComponent && (
+                            <div
+                              ref={mobileTreeRef}
+                              key={countComponentNodes(messageComponent)}
+                              role="tree"
+                              aria-label="Message Components"
+                            >
+                              <TreeFocusRestorer treeRef={mobileTreeRef} />
+                              <NavigableTreeItem
+                                isRootItem
+                                id={messageComponent.id}
+                                ariaLabel="Message Components Root"
+                              >
+                                <ComponentTreeItem
+                                  component={messageComponent}
+                                  scrollToComponentId={scrollToComponentId}
+                                  componentIdsWithErrors={componentIdsWithErrors}
+                                  componentIdsWithWarnings={componentIdsWithWarnings}
+                                />
+                              </NavigableTreeItem>
+                            </div>
+                          )}
+                        </TabPanel>
+                        <TabPanel p={0}>
                           <ProblemsSection
                             problems={allProblems}
                             onClickComponentPath={handlePathClick}
                           />
-                        </Box>
-                      )}
-                    </Box>
-                  )}
-                  {/* Problems Section - Mobile Tabs */}
-                  {!isDesktop && (
-                    <Box borderTop="1px" borderColor="gray.600">
-                      <Tabs
-                        colorScheme="blue"
-                        variant="line"
-                        index={selectedTabIndex}
-                        onChange={setSelectedTabIndex}
-                      >
-                        <TabList borderBottom="1px" borderColor="gray.600" bg="gray.700">
-                          <Tab
-                            color="gray.300"
-                            _selected={{ color: "white", borderColor: "blue.400" }}
-                          >
-                            Message Components ({messageComponent?.children?.length || 0})
-                          </Tab>
-                          <Tab
-                            color="gray.300"
-                            _selected={{ color: "white", borderColor: "blue.400" }}
-                          >
-                            <HStack>
-                              {allProblems.length > 0 && (
-                                <WarningIcon
-                                  color={problems.length > 0 ? "red.400" : "orange.400"}
-                                  aria-hidden
-                                />
-                              )}
-                              <Text>Problems ({allProblems.length})</Text>
-                            </HStack>
-                          </Tab>
-                        </TabList>
-                        <TabPanels>
-                          <TabPanel p={0}>
-                            <ComponentTreeToolbar />
-                            {messageComponent && (
-                              <div
-                                ref={mobileTreeRef}
-                                key={countComponentNodes(messageComponent)}
-                                role="tree"
-                                aria-label="Message Components"
-                              >
-                                <TreeFocusRestorer treeRef={mobileTreeRef} />
-                                <NavigableTreeItem
-                                  isRootItem
-                                  id={messageComponent.id}
-                                  ariaLabel="Message Components Root"
-                                >
-                                  <ComponentTreeItem
-                                    component={messageComponent}
-                                    scrollToComponentId={scrollToComponentId}
-                                    componentIdsWithErrors={componentIdsWithErrors}
-                                    componentIdsWithWarnings={componentIdsWithWarnings}
-                                  />
-                                </NavigableTreeItem>
-                              </div>
-                            )}
-                          </TabPanel>
-                          <TabPanel p={0}>
-                            <ProblemsSection
-                              problems={allProblems}
-                              onClickComponentPath={handlePathClick}
-                            />
-                          </TabPanel>
-                        </TabPanels>
-                      </Tabs>
-                    </Box>
-                  )}
+                        </TabPanel>
+                      </TabPanels>
+                    </Tabs>
+                  </Box>
                 </Flex>
               </Flex>
             </Flex>
@@ -759,6 +849,7 @@ const MessageBuilderContent: React.FC = () => {
             <MessageBuilderTour resetTrigger={resetTrigger} />
             {/* Template Gallery Modal */}
             <TemplateGalleryModal
+              mode="picker"
               isOpen={isTemplatesOpen}
               onClose={handleCloseTemplatesModal}
               templates={TEMPLATES}
@@ -771,7 +862,7 @@ const MessageBuilderContent: React.FC = () => {
               onArticleChange={setSelectedArticleId}
               isLoadingArticles={galleryArticlesStatus === "loading"}
               feedId={feedId!}
-              connectionId={connectionId}
+              connectionId={connectionId!}
               userFeed={userFeed}
               connection={connection}
               modalTitle="Browse Templates"

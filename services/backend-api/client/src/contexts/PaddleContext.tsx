@@ -80,6 +80,7 @@ interface ContextProps {
   openCheckout: (p: {
     prices: Array<{ priceId: string; quantity: number }>;
     frameTarget?: string;
+    displayMode?: "inline" | "overlay";
   }) => void;
   getPricePreview: (
     pricesToGet: Array<{ priceId: string; quantity: number }>
@@ -378,9 +379,11 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
     ({
       prices,
       frameTarget,
+      displayMode,
     }: {
       prices: Array<{ priceId: string; quantity: number }>;
       frameTarget?: string;
+      displayMode?: "inline" | "overlay";
     }) => {
       setIsSubscriptionCreated(false);
 
@@ -400,6 +403,8 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
         return;
       }
 
+      const useOverlay = displayMode === "overlay";
+
       paddle?.Checkout.open({
         items: prices.map(({ priceId, quantity }) => ({
           priceId,
@@ -408,16 +413,22 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
         customer: {
           email: user.result.email,
         },
-        settings: {
-          displayMode: "inline",
-          frameTarget: frameTarget || "checkout-modal",
-          frameInitialHeight: 634,
-          allowLogout: false,
-          variant: "one-page",
-          showAddDiscounts: false,
-          frameStyle:
-            "width: 100%; height: 100%; min-width: 312px; min-height:634px; padding-left: 8px; padding-right: 8px;",
-        },
+        settings: useOverlay
+          ? {
+              displayMode: "overlay",
+              theme: "dark",
+              allowLogout: false,
+            }
+          : {
+              displayMode: "inline",
+              frameTarget: frameTarget || "checkout-modal",
+              frameInitialHeight: 634,
+              allowLogout: false,
+              variant: "one-page",
+              showAddDiscounts: false,
+              frameStyle:
+                "width: 100%; height: 100%; min-width: 312px; min-height:634px; padding-left: 8px; padding-right: 8px;",
+            },
         customData: {
           userId: user.result.id,
         },
