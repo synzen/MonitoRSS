@@ -35,14 +35,14 @@ export const UserFeedConnectionProvider = ({
   const { feed, status } = useUserFeed({ feedId });
   const connection = feed?.connections.find(
     (c) => c.id === connectionId,
-  ) as FeedDiscordChannelConnection;
+  ) as FeedDiscordChannelConnection | undefined;
 
-  if (status === "loading" || !feed || !connection) {
-    return <Spinner />;
-  }
+  const value: ContextProps = useMemo(() => {
+    if (!feed || !connection) {
+      return undefined;
+    }
 
-  const value: ContextProps = useMemo(
-    () => ({
+    return {
       userFeed: feed,
       connection,
       articleFormatOptions: {
@@ -56,9 +56,12 @@ export const UserFeedConnectionProvider = ({
         customPlaceholders: connection.customPlaceholders,
         ...articleFormatOptions,
       },
-    }),
-    [feed],
-  );
+    };
+  }, [feed, connection, articleFormatOptions]);
+
+  if (status === "loading" || !value) {
+    return <Spinner />;
+  }
 
   return (
     <UserFeedConnectionContext.Provider value={value}>
