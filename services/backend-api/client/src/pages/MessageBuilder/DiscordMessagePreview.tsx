@@ -23,6 +23,7 @@ import { PageAlertContextOutlet, PageAlertProvider } from "../../contexts/PageAl
 import { useCreateConnectionPreview } from "../../features/feedConnections/hooks";
 import { FeedConnectionType, FeedDiscordChannelConnection } from "../../types";
 import { useDebounce } from "../../hooks";
+import { useDiscordBot } from "../../features/discordUser";
 import {
   InlineErrorAlert,
   DiscordMessageDisplay,
@@ -100,11 +101,12 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
   const messageComponent = watch("messageComponent");
   const { currentArticle } = useMessageBuilderContext();
   const { connection, userFeed } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
+  const { data: bot } = useDiscordBot();
 
   const previewData = convertMessageBuilderStateToConnectionPreviewInput(
     userFeed,
     connection,
-    messageComponent,
+    messageComponent
   );
 
   const debouncedPreviewData = useDebounce(previewData, 500);
@@ -282,7 +284,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
               />
               <Avatar
                 size="2xs"
-                src={brandingAvatarUrl || DISCORD_DEFAULT_AVATAR_URL}
+                src={brandingAvatarUrl || bot?.result.avatar || DISCORD_DEFAULT_AVATAR_URL}
                 bg="gray.500"
               />
               <Text as="span">Branding: {brandingSummary}</Text>
@@ -334,7 +336,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
             emptyMessage={showEmptyState ? "No components added yet" : undefined}
             showVerifiedInAppBadge={!connection.details.webhook}
             username={brandingDisplayName || undefined}
-            avatarUrl={brandingAvatarUrl || undefined}
+            avatarUrl={brandingAvatarUrl || bot?.result.avatar || undefined}
           />
         </MentionDataProvider>
         <Text fontSize="sm" color="gray.400" mt={2} textAlign="left">

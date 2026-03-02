@@ -20,6 +20,7 @@ import { DiscordMessageDisplay } from "../../../../components/DiscordMessageDisp
 import { TestSendFeedback } from "../../types";
 import { Article, Branding } from "./types";
 import { useBrandingContext } from "./BrandingContext";
+import { useDiscordBot } from "../../../discordUser";
 
 export interface PreviewColumnProps {
   articles: Article[];
@@ -68,6 +69,8 @@ export const PreviewColumn = ({
     webhooksAllowed,
     hasBrandingValues,
   } = useBrandingContext();
+  const { data: bot } = useDiscordBot();
+  const resolvedAvatarUrl = brandingAvatarUrl || bot?.result.avatar || undefined;
 
   return (
     <Box
@@ -179,9 +182,9 @@ export const PreviewColumn = ({
               currentFormatMessages.length > 0 && (
                 <DiscordMessageDisplay
                   messages={currentFormatMessages}
-                  maxHeight={200}
+                  maxHeight={{ base: 250, lg: 200 }}
                   username={brandingDisplayName || undefined}
-                  avatarUrl={brandingAvatarUrl || undefined}
+                  avatarUrl={resolvedAvatarUrl}
                   showVerifiedInAppBadge={!hasBrandingValues}
                 />
               )}
@@ -217,9 +220,9 @@ export const PreviewColumn = ({
               previewMessages.length > 0 && (
                 <DiscordMessageDisplay
                   messages={previewMessages}
-                  maxHeight={200}
+                  maxHeight={{ base: 250, lg: 200 }}
                   username={brandingDisplayName || undefined}
-                  avatarUrl={brandingAvatarUrl || undefined}
+                  avatarUrl={resolvedAvatarUrl}
                   showVerifiedInAppBadge={!hasBrandingValues}
                 />
               )}
@@ -263,9 +266,9 @@ export const PreviewColumn = ({
             previewMessages.length > 0 && (
               <DiscordMessageDisplay
                 messages={previewMessages}
-                maxHeight={{ base: 200, lg: 350 }}
+                maxHeight={{ base: 300, lg: 350 }}
                 username={brandingDisplayName || undefined}
-                avatarUrl={brandingAvatarUrl || undefined}
+                avatarUrl={resolvedAvatarUrl}
                 showVerifiedInAppBadge={!hasBrandingValues}
               />
             )}
