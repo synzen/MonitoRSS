@@ -40,6 +40,31 @@ export class CacheStorageService {
     }
   }
 
+  async setNX({
+    key,
+    body,
+    expSeconds,
+  }: {
+    body: string;
+    key: string;
+    expSeconds?: number;
+  }): Promise<boolean> {
+    try {
+      const result = await this.redisClient.set(this.generateKey(key), body, {
+        EX: expSeconds,
+        NX: true,
+      });
+
+      return result === 'OK';
+    } catch (err) {
+      logger.error(`Failed to setNX content in cache storage`, {
+        err: (err as Error).stack,
+      });
+
+      return false;
+    }
+  }
+
   async del(key: string) {
     try {
       await this.redisClient.del(this.generateKey(key));

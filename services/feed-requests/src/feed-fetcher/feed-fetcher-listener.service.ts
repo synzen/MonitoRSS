@@ -119,14 +119,15 @@ export class FeedFetcherListenerService {
             );
           }
 
-          const currentlyProcessing = await this.cacheStorageService.set({
-            key: this.calculateCurrentlyProcessingCacheKeyForMessage(message),
+          const cacheKey =
+            this.calculateCurrentlyProcessingCacheKeyForMessage(message);
+          const wasSet = await this.cacheStorageService.setNX({
+            key: cacheKey,
             body: '1',
-            getOldValue: true,
             expSeconds: Math.floor(rateSeconds * 0.75),
           });
 
-          if (currentlyProcessing) {
+          if (!wasSet) {
             logger.info(
               `Request with key ${
                 lookupKey || url
@@ -526,6 +527,18 @@ export class FeedFetcherListenerService {
           lookupKey,
         },
       );
+
+      if (debug) {
+        logger.info(
+          `DEBUG ${lookupKey || url}: Publishing url.fetch.completed event`,
+          {
+            url,
+            lookupKey,
+            rateSeconds,
+          },
+        );
+      }
+
       this.amqpConnection.publish<{
         data: {
           lookupKey?: string;
