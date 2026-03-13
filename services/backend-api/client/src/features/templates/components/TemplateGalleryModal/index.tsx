@@ -34,6 +34,7 @@ import { PreviewColumn } from "./PreviewColumn";
 import { ModalFooterActions } from "./ModalFooterActions";
 import { BrandingProvider, useBrandingContext } from "./BrandingContext";
 import { Branding, Article } from "./types";
+import ApiAdapterError from "../../../../utils/ApiAdapterError";
 
 export type { Article } from "./types";
 export type { Branding } from "./types";
@@ -233,6 +234,7 @@ const TemplateGalleryModalInner = (props: TemplateGalleryModalProps) => {
   const {
     data: previewData,
     isError: isPreviewError,
+    error: previewError,
     fetchStatus,
   } = useTemplatePreview({
     template: selectedTemplate,
@@ -248,6 +250,7 @@ const TemplateGalleryModalInner = (props: TemplateGalleryModalProps) => {
   const {
     data: currentFormatData,
     isError: isCurrentFormatError,
+    error: currentFormatError,
     fetchStatus: currentFormatFetchStatus,
   } = useCurrentFormatPreview({
     currentMessageComponent,
@@ -354,6 +357,10 @@ const TemplateGalleryModalInner = (props: TemplateGalleryModalProps) => {
     />
   );
 
+  const previewErrorAdapter = previewError instanceof ApiAdapterError ? previewError : undefined;
+  const currentFormatErrorAdapter =
+    currentFormatError instanceof ApiAdapterError ? currentFormatError : undefined;
+
   const previewColumnElement = (
     <PreviewColumn
       articles={articles}
@@ -363,10 +370,12 @@ const TemplateGalleryModalInner = (props: TemplateGalleryModalProps) => {
       previewMessages={previewMessages}
       isActuallyLoading={isActuallyLoading}
       isPreviewError={isPreviewError}
+      previewError={previewErrorAdapter}
       showComparisonPreview={showComparisonPreview}
       currentFormatMessages={currentFormatMessages}
       isCurrentFormatLoading={isCurrentFormatLoading}
       isCurrentFormatError={isCurrentFormatError}
+      currentFormatError={currentFormatErrorAdapter}
       onTestSend={onTestSend}
       isTestSendLoading={isTestSendLoading}
       canTestSend={canTestSend}

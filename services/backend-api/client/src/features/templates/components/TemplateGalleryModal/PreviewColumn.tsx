@@ -21,6 +21,12 @@ import { TestSendFeedback } from "../../types";
 import { Article, Branding } from "./types";
 import { useBrandingContext } from "./BrandingContext";
 import { useDiscordBot } from "../../../discordUser";
+import ApiAdapterError from "../../../../utils/ApiAdapterError";
+
+const ARTICLE_NOT_FOUND_CODE = "FEED_ARTICLE_NOT_FOUND";
+
+const ARTICLE_NOT_FOUND_MESSAGE =
+  "The selected article is no longer available. Please choose a different article above to preview.";
 
 export interface PreviewColumnProps {
   articles: Article[];
@@ -30,16 +36,37 @@ export interface PreviewColumnProps {
   previewMessages: Array<Record<string, unknown>>;
   isActuallyLoading: boolean;
   isPreviewError: boolean;
+  previewError?: ApiAdapterError;
   showComparisonPreview?: boolean;
   currentFormatMessages: Array<Record<string, unknown>>;
   isCurrentFormatLoading: boolean;
   isCurrentFormatError: boolean;
+  currentFormatError?: ApiAdapterError;
   onTestSend?: (branding?: Branding) => void;
   isTestSendLoading?: boolean;
   canTestSend: boolean;
   hasArticles: boolean;
   testSendFeedback?: TestSendFeedback | null;
 }
+
+const getErrorAlert = (
+  errorCode?: string,
+  errorMessage?: string,
+  fallbackMessage?: string,
+): { status: "warning" | "error"; message: string } => {
+  if (errorCode === ARTICLE_NOT_FOUND_CODE) {
+    return { status: "warning", message: ARTICLE_NOT_FOUND_MESSAGE };
+  }
+
+  if (errorCode && errorMessage) {
+    return { status: "error", message: errorMessage };
+  }
+
+  return {
+    status: "error",
+    message: fallbackMessage || "Failed to load preview. Please try again.",
+  };
+};
 
 export const PreviewColumn = ({
   articles,
@@ -49,10 +76,12 @@ export const PreviewColumn = ({
   previewMessages,
   isActuallyLoading,
   isPreviewError,
+  previewError,
   showComparisonPreview,
   currentFormatMessages,
   isCurrentFormatLoading,
   isCurrentFormatError,
+  currentFormatError,
   onTestSend,
   isTestSendLoading,
   canTestSend,
@@ -171,12 +200,21 @@ export const PreviewColumn = ({
               Current Format
             </Text>
             {isCurrentFormatLoading && <Skeleton height="200px" borderRadius="md" />}
-            {!isCurrentFormatLoading && isCurrentFormatError && (
-              <Alert status="error" borderRadius="md">
-                <AlertIcon />
-                Failed to load current format preview.
-              </Alert>
-            )}
+            {!isCurrentFormatLoading &&
+              isCurrentFormatError &&
+              (() => {
+                const alert = getErrorAlert(
+                  currentFormatError?.errorCode,
+                  currentFormatError?.message,
+                  "Failed to load current format preview.",
+                );
+                return (
+                  <Alert status={alert.status} borderRadius="md">
+                    <AlertIcon />
+                    <AlertDescription>{alert.message}</AlertDescription>
+                  </Alert>
+                );
+              })()}
             {!isCurrentFormatLoading &&
               !isCurrentFormatError &&
               currentFormatMessages.length > 0 && (
@@ -208,12 +246,22 @@ export const PreviewColumn = ({
             {selectedTemplateId && isActuallyLoading && (
               <Skeleton height="200px" borderRadius="md" />
             )}
-            {selectedTemplateId && !isActuallyLoading && isPreviewError && (
-              <Alert status="error" borderRadius="md">
-                <AlertIcon />
-                Failed to load template preview.
-              </Alert>
-            )}
+            {selectedTemplateId &&
+              !isActuallyLoading &&
+              isPreviewError &&
+              (() => {
+                const alert = getErrorAlert(
+                  previewError?.errorCode,
+                  previewError?.message,
+                  "Failed to load template preview.",
+                );
+                return (
+                  <Alert status={alert.status} borderRadius="md">
+                    <AlertIcon />
+                    <AlertDescription>{alert.message}</AlertDescription>
+                  </Alert>
+                );
+              })()}
             {selectedTemplateId &&
               !isActuallyLoading &&
               !isPreviewError &&
@@ -254,12 +302,18 @@ export const PreviewColumn = ({
           {selectedTemplateId && isActuallyLoading && (
             <Skeleton height="300px" borderRadius="md" aria-label="Loading preview" />
           )}
-          {selectedTemplateId && !isActuallyLoading && isPreviewError && (
-            <Alert status="error" borderRadius="md">
-              <AlertIcon />
-              Failed to load preview. Please try again.
-            </Alert>
-          )}
+          {selectedTemplateId &&
+            !isActuallyLoading &&
+            isPreviewError &&
+            (() => {
+              const alert = getErrorAlert(previewError?.errorCode, previewError?.message);
+              return (
+                <Alert status={alert.status} borderRadius="md">
+                  <AlertIcon />
+                  <AlertDescription>{alert.message}</AlertDescription>
+                </Alert>
+              );
+            })()}
           {selectedTemplateId &&
             !isActuallyLoading &&
             !isPreviewError &&
