@@ -26,6 +26,10 @@ export class AppModule implements OnApplicationShutdown {
       replicaUris.push(replica1);
     }
 
+    const prefetchCount = configVals.FEED_REQUESTS_RABBITMQ_PREFETCH_COUNT;
+    const poolMax =
+      configVals.FEED_REQUESTS_POSTGRES_POOL_MAX ?? prefetchCount * 3;
+
     logger.info(`${replicaUris.length} read replicas discovered`);
 
     return {
@@ -46,6 +50,7 @@ export class AppModule implements OnApplicationShutdown {
           // loadStrategy: LoadStrategy.JOINED,
           pool: {
             min: 0,
+            max: poolMax,
           },
           preferReadReplicas: replicaUris.length > 0,
           replicas: replicaUris.map((url) => ({
