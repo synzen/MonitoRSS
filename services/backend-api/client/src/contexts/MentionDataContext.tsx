@@ -71,7 +71,11 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
       const existingData = queryClient.getQueryData(queryKey);
       const existingState = queryClient.getQueryState(queryKey);
 
-      if (existingData !== undefined || existingState?.fetchStatus === "fetching") {
+      if (
+        existingData !== undefined ||
+        existingState?.fetchStatus === "fetching" ||
+        existingState?.status === "error"
+      ) {
         return;
       }
 
@@ -86,6 +90,7 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
             return result?.result ? { displayName: result.result.displayName } : null;
           },
         })
+        .catch(() => {})
         .finally(() => {
           setLoadingUserIds((prev) => {
             const next = new Set(prev);
@@ -95,7 +100,7 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
           });
         });
     },
-    [serverId, queryClient],
+    [serverId, queryClient]
   );
 
   const requestRolesFetch = useCallback(() => {
@@ -106,7 +111,11 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
     const existingData = queryClient.getQueryData(queryKey);
     const existingState = queryClient.getQueryState(queryKey);
 
-    if (existingData !== undefined || existingState?.fetchStatus === "fetching") {
+    if (
+      existingData !== undefined ||
+      existingState?.fetchStatus === "fetching" ||
+      existingState?.status === "error"
+    ) {
       return;
     }
 
@@ -117,6 +126,7 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
         queryKey: [...queryKey],
         queryFn: () => getServerRoles({ serverId }),
       })
+      .catch(() => {})
       .finally(() => {
         setIsRolesLoading(false);
       });
@@ -130,7 +140,11 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
     const existingData = queryClient.getQueryData(queryKey);
     const existingState = queryClient.getQueryState(queryKey);
 
-    if (existingData !== undefined || existingState?.fetchStatus === "fetching") {
+    if (
+      existingData !== undefined ||
+      existingState?.fetchStatus === "fetching" ||
+      existingState?.status === "error"
+    ) {
       return;
     }
 
@@ -141,6 +155,7 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
         queryKey: [...queryKey],
         queryFn: () => getServerChannels({ serverId, types: [GetDiscordChannelType.All] }),
       })
+      .catch(() => {})
       .finally(() => {
         setIsChannelsLoading(false);
       });
@@ -151,12 +166,12 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
       if (!serverId) return null;
 
       const data = queryClient.getQueryData<UserData | null>(
-        discordServerQueryKeys.serverMember(serverId, userId),
+        discordServerQueryKeys.serverMember(serverId, userId)
       );
 
       return data ?? null;
     },
-    [serverId, queryClient],
+    [serverId, queryClient]
   );
 
   const getRole = useCallback(
@@ -164,12 +179,12 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
       if (!serverId) return null;
 
       const data = queryClient.getQueryData<RolesResponse>(
-        discordServerQueryKeys.serverRoles(serverId),
+        discordServerQueryKeys.serverRoles(serverId)
       );
 
       return data?.results?.find((role) => role.id === roleId) ?? null;
     },
-    [serverId, queryClient],
+    [serverId, queryClient]
   );
 
   const getChannel = useCallback(
@@ -177,19 +192,19 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
       if (!serverId) return null;
 
       const data = queryClient.getQueryData<ChannelsResponse>(
-        discordServerQueryKeys.allChannels(serverId),
+        discordServerQueryKeys.allChannels(serverId)
       );
 
       return data?.results?.find((channel) => channel.id === channelId) ?? null;
     },
-    [serverId, queryClient],
+    [serverId, queryClient]
   );
 
   const isUserLoading = useCallback(
     (userId: string): boolean => {
       return loadingUserIds.has(userId);
     },
-    [loadingUserIds],
+    [loadingUserIds]
   );
 
   const contextValue: MentionDataContextType = useMemo(
@@ -214,7 +229,7 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
       requestUserFetch,
       requestRolesFetch,
       requestChannelsFetch,
-    ],
+    ]
   );
 
   return <MentionDataContext.Provider value={contextValue}>{children}</MentionDataContext.Provider>;
