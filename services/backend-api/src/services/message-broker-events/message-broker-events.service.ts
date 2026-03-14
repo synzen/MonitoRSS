@@ -199,37 +199,10 @@ export class MessageBrokerEventsService {
           });
         }
 
-        const allConnections = Object.values(feed.connections).flat() as Array<{
-          customPlaceholders?: unknown[];
-        }>;
-        const hasCustomPlaceholders = allConnections.some(
-          (c) => !!c.customPlaceholders?.length,
+        await this.emitDeliverFeedArticlesEventWithPremiumCheck(
+          feed,
+          feed.users[0],
         );
-        const hasExternalProperties =
-          feed.externalProperties && feed.externalProperties.length > 0;
-        const hasPremiumFeatures =
-          hasCustomPlaceholders || hasExternalProperties;
-
-        let allowCustomPlaceholders = false;
-        let allowExternalProperties = false;
-
-        if (hasPremiumFeatures) {
-          const benefits =
-            await this.deps.supportersService.getBenefitsOfDiscordUser(
-              feed.user.discordUserId,
-            );
-
-          allowCustomPlaceholders = benefits.allowCustomPlaceholders;
-          allowExternalProperties = benefits.allowExternalProperties;
-        }
-
-        await this.emitDeliverFeedArticlesEvent({
-          userFeed: feed,
-          maxDailyArticles: feed.maxDailyArticles || 0,
-          parseCustomPlaceholders: allowCustomPlaceholders,
-          parseExternalProperties: allowExternalProperties,
-          user: feed.users[0],
-        });
       } catch (err) {
         logger.error(
           `Failed to emit deliver feed articles event for feed ${feed.id}: ${
@@ -424,6 +397,41 @@ export class MessageBrokerEventsService {
         break;
       }
     }
+  }
+
+  async emitDeliverFeedArticlesEventWithPremiumCheck(
+    userFeed: UserFeedForDelivery | IUserFeed,
+    user?: UserForDelivery,
+  ): Promise<void> {
+    const allConnections = Object.values(userFeed.connections).flat() as Array<{
+      customPlaceholders?: unknown[];
+    }>;
+    const hasCustomPlaceholders = allConnections.some(
+      (c) => !!c.customPlaceholders?.length,
+    );
+    const hasExternalProperties =
+      userFeed.externalProperties && userFeed.externalProperties.length > 0;
+
+    let allowCustomPlaceholders = false;
+    let allowExternalProperties = false;
+
+    if (hasCustomPlaceholders || hasExternalProperties) {
+      const benefits =
+        await this.deps.supportersService.getBenefitsOfDiscordUser(
+          userFeed.user.discordUserId,
+        );
+
+      allowCustomPlaceholders = benefits.allowCustomPlaceholders;
+      allowExternalProperties = benefits.allowExternalProperties;
+    }
+
+    await this.emitDeliverFeedArticlesEvent({
+      userFeed,
+      maxDailyArticles: userFeed.maxDailyArticles || 0,
+      parseCustomPlaceholders: allowCustomPlaceholders,
+      parseExternalProperties: allowExternalProperties,
+      user,
+    });
   }
 
   async emitDeliverFeedArticlesEvent({
