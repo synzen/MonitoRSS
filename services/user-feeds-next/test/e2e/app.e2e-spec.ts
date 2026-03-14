@@ -1,7 +1,12 @@
 import { describe, it, before, after } from "node:test";
 import * as assert from "node:assert";
 import { randomUUID } from "crypto";
-import { ArticleDeliveryStatus } from "../../src/delivery";
+import {
+  ArticleDeliveryStatus,
+  ArticleDeliveryErrorCode,
+  ArticleDeliveryRejectedCode,
+} from "../../src/delivery";
+import { MessageBrokerQueue } from "../../src/shared/constants";
 import getTestRssFeed, { DEFAULT_TEST_ARTICLES } from "../data/test-rss-feed";
 import { createTestContext } from "../helpers/test-context";
 import {
@@ -202,6 +207,115 @@ describe("App (e2e)", { concurrency: true }, () => {
       assert.ok(payload.content.includes("*italic*"));
       assert.ok(!payload.content.includes("<strong>"));
       assert.ok(!payload.content.includes("<em>"));
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("rejects articles and emits disable event when content resolves to empty and there are no embeds", async () => {
+    const ctx = createTestContext(stores);
+
+    const event = {
+      ...ctx.testFeedV2Event,
+      data: {
+        ...ctx.testFeedV2Event.data,
+        mediums: [
+          {
+            ...ctx.testFeedV2Event.data.mediums[0]!,
+            details: {
+              ...ctx.testFeedV2Event.data.mediums[0]!.details,
+              content: "{{undefined}}",
+              embeds: [],
+            },
+          },
+        ],
+      },
+    };
+
+    try {
+      await ctx.seedArticles(event);
+
+      ctx.setFeedResponse(() => ({
+        body: getTestRssFeed(
+          [{ guid: "new-article", title: "New Article" }],
+          true
+        ),
+        hash: randomUUID(),
+      }));
+
+      const results = await ctx.handleEvent(event);
+
+      assert.notStrictEqual(results, null, "Results should not be null");
+      assert.ok(results!.length > 0, "Should have at least one delivery state");
+      assert.strictEqual(
+        results![0]!.status,
+        ArticleDeliveryStatus.Rejected,
+        `Expected Rejected status but got ${results![0]!.status}`
+      );
+      assert.strictEqual(
+        results![0]!.errorCode,
+        ArticleDeliveryErrorCode.NoPayloadForMedium
+      );
+
+      const calls = ctx.getQueuePublisherCalls();
+      assert.strictEqual(calls.length, 1, `Expected 1 queue publish call but got ${calls.length}`);
+      assert.strictEqual(
+        calls[0]!.queue,
+        MessageBrokerQueue.FeedRejectedArticleDisableConnection
+      );
+      const publishedData = (calls[0]!.message as { data: { rejectedCode: string; feed: { id: string }; medium: { id: string } } }).data;
+      assert.strictEqual(publishedData.rejectedCode, ArticleDeliveryRejectedCode.BadRequest);
+      assert.strictEqual(publishedData.feed.id, event.data.feed.id);
+      assert.strictEqual(publishedData.medium.id, event.data.mediums[0]!.id);
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("does not silently drop articles when all payloads resolve to empty", async () => {
+    const ctx = createTestContext(stores);
+
+    const event = {
+      ...ctx.testFeedV2Event,
+      data: {
+        ...ctx.testFeedV2Event.data,
+        mediums: [
+          {
+            ...ctx.testFeedV2Event.data.mediums[0]!,
+            details: {
+              ...ctx.testFeedV2Event.data.mediums[0]!.details,
+              content: "{{nonexistent}}",
+              embeds: [],
+            },
+          },
+        ],
+      },
+    };
+
+    try {
+      await ctx.seedArticles(event);
+
+      ctx.setFeedResponse(() => ({
+        body: getTestRssFeed(
+          [{ guid: "new-article", title: "New Article" }],
+          true
+        ),
+        hash: randomUUID(),
+      }));
+
+      const results = await ctx.handleEvent(event);
+
+      assert.notStrictEqual(results, null, "Results should not be null");
+      assert.strictEqual(
+        results!.length,
+        1,
+        `Expected 1 delivery state but got ${results!.length}`
+      );
+      assert.strictEqual(
+        results![0]!.status,
+        ArticleDeliveryStatus.Rejected,
+        "Article should be rejected, not silently dropped"
+      );
     } finally {
       ctx.cleanup();
     }

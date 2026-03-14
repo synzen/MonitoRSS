@@ -291,6 +291,46 @@ async function emitRejectionEvent(
   );
 }
 
+/**
+ * Map an ArticleDeliveryState to a MediumRejectionEvent.
+ * Returns null if the state is not a rejection or doesn't map to a rejection type.
+ */
+function getRejectionEventFromDeliveryState(
+  feedId: string,
+  state: ArticleDeliveryState
+): MediumRejectionEvent | null {
+  if (state.status !== ArticleDeliveryStatus.Rejected) {
+    return null;
+  }
+
+  switch (state.errorCode) {
+    case ArticleDeliveryErrorCode.NoChannelOrWebhook:
+    case ArticleDeliveryErrorCode.ThirdPartyNotFound:
+      return {
+        type: "notFound",
+        data: { feedId, mediumId: state.mediumId },
+      };
+    case ArticleDeliveryErrorCode.ThirdPartyForbidden:
+      return {
+        type: "missingPermissions",
+        data: { feedId, mediumId: state.mediumId },
+      };
+    case ArticleDeliveryErrorCode.ThirdPartyBadRequest:
+    case ArticleDeliveryErrorCode.NoPayloadForMedium:
+      return {
+        type: "badFormat",
+        data: {
+          feedId,
+          mediumId: state.mediumId,
+          articleId: state.article?.flattened.id,
+          responseBody: state.externalDetail || "",
+        },
+      };
+    default:
+      return null;
+  }
+}
+
 export function parseFeedV2Event(event: unknown): FeedV2Event | null {
   try {
     return feedV2EventSchema.parse(event);
@@ -322,6 +362,7 @@ export async function handleFeedV2Event(
     deliveryRecordStore?: DeliveryRecordStore;
     discordClient?: DiscordRestClient;
     publisher?: FeedRetryPublisher;
+    queuePublisher: QueuePublisher;
     feedRequestsServiceHost: string;
   }
 ): Promise<ArticleDeliveryState[] | null> {
@@ -333,6 +374,7 @@ export async function handleFeedV2Event(
     deliveryRecordStore = inMemoryDeliveryRecordStore,
     discordClient = inMemoryDiscordRestClient,
     publisher,
+    queuePublisher,
     feedRequestsServiceHost,
   } = options;
   const { feed } = event.data;
@@ -364,6 +406,7 @@ export async function handleFeedV2Event(
           deliveryRecordStore,
           discordClient,
           publisher,
+          queuePublisher,
           debugLog,
           feedRequestsServiceHost,
         });
@@ -429,6 +472,7 @@ async function handleFeedV2EventInternal({
   deliveryRecordStore,
   discordClient,
   publisher,
+  queuePublisher,
   debugLog,
   feedRequestsServiceHost,
 }: {
@@ -441,6 +485,7 @@ async function handleFeedV2EventInternal({
   deliveryRecordStore: DeliveryRecordStore;
   discordClient: DiscordRestClient;
   publisher?: FeedRetryPublisher;
+  queuePublisher: QueuePublisher;
   debugLog: (message: string, data?: Record<string, unknown>) => void;
   feedRequestsServiceHost: string;
 }): Promise<ArticleDeliveryState[] | null> {
@@ -718,6 +763,15 @@ async function handleFeedV2EventInternal({
     `Delivery complete: ${sent} sent, ${filtered} filtered, ${rateLimited} rate-limited, ${failed} failed`,
     { feedId: feed.id }
   );
+
+  // Emit rejection events to disable connections with invalid configurations
+  for (const state of deliveryResults) {
+    const rejectionEvent = getRejectionEventFromDeliveryState(feed.id, state);
+
+    if (rejectionEvent) {
+      await emitRejectionEvent(rejectionEvent, queuePublisher);
+    }
+  }
 
   // Save the response hash after successful delivery
   if (feedResult.bodyHash) {
