@@ -1,8 +1,15 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
 import { generateDeliveryPreview } from "./generate-delivery-preview";
-import { ArticleDeliveryOutcome, DeliveryPreviewStage, DeliveryPreviewStageStatus } from "./types";
-import type { DeliveryPreviewDependencies, DeliveryPreviewInput } from "./generate-delivery-preview";
+import {
+  ArticleDeliveryOutcome,
+  DeliveryPreviewStage,
+  DeliveryPreviewStageStatus,
+} from "./types";
+import type {
+  DeliveryPreviewDependencies,
+  DeliveryPreviewInput,
+} from "./generate-delivery-preview";
 import {
   inMemoryArticleFieldStore,
   clearInMemoryStore,
@@ -25,7 +32,7 @@ import {
 function createArticle(
   id: string,
   fields: Record<string, string> = {},
-  raw: Record<string, string> = {}
+  raw: Record<string, string> = {},
 ): Article {
   return {
     flattened: {
@@ -52,7 +59,7 @@ describe("generateDeliveryPreview", () => {
   function createInput(
     articles: Article[],
     targetArticles?: Article[],
-    overrides: Partial<DeliveryPreviewInput> = {}
+    overrides: Partial<DeliveryPreviewInput> = {},
   ): DeliveryPreviewInput {
     return {
       feed: {
@@ -76,7 +83,10 @@ describe("generateDeliveryPreview", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.FirstRunBaseline);
+      assert.strictEqual(
+        results[0]?.mediumResults[0]?.outcome,
+        ArticleDeliveryOutcome.FirstRunBaseline,
+      );
       assert.ok(results[0]?.mediumResults[0]?.outcomeReason?.includes("first"));
     });
   });
@@ -95,15 +105,22 @@ describe("generateDeliveryPreview", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.DuplicateId);
-      assert.ok(results[0]?.mediumResults[0]?.outcomeReason?.includes("already"));
+      assert.strictEqual(
+        results[0]?.mediumResults[0]?.outcome,
+        ArticleDeliveryOutcome.DuplicateId,
+      );
+      assert.ok(
+        results[0]?.mediumResults[0]?.outcomeReason?.includes("already"),
+      );
     });
   });
 
   describe("BlockedByComparison outcome", () => {
     it("returns BlockedByComparison when blocking comparison field blocks article", async () => {
       // First article with specific title
-      const existingArticle = createArticle("article-old", { title: "Same Title" });
+      const existingArticle = createArticle("article-old", {
+        title: "Same Title",
+      });
       // New article with same title but different ID
       const newArticle = createArticle("article-new", { title: "Same Title" });
 
@@ -122,15 +139,20 @@ describe("generateDeliveryPreview", () => {
         await inMemoryArticleFieldStore.storeArticles(
           "feed-1",
           [existingArticle],
-          ["title"]
+          ["title"],
         );
-        await inMemoryArticleFieldStore.storeComparisonNames("feed-1", ["title"]);
+        await inMemoryArticleFieldStore.storeComparisonNames("feed-1", [
+          "title",
+        ]);
         await inMemoryArticleFieldStore.flushPendingInserts();
       });
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.BlockedByComparison);
+      assert.strictEqual(
+        results[0]?.mediumResults[0]?.outcome,
+        ArticleDeliveryOutcome.BlockedByComparison,
+      );
       assert.ok(results[0]?.mediumResults[0]?.outcomeReason?.includes("block"));
     });
   });
@@ -148,31 +170,42 @@ describe("generateDeliveryPreview", () => {
       });
 
       // Store the article with original title
-      const originalArticle = createArticle("article-1", { title: "Original Title" });
+      const originalArticle = createArticle("article-1", {
+        title: "Original Title",
+      });
       await inMemoryArticleFieldStore.startContext(async () => {
         await inMemoryArticleFieldStore.storeArticles(
           "feed-1",
           [originalArticle],
-          ["title"]
+          ["title"],
         );
-        await inMemoryArticleFieldStore.storeComparisonNames("feed-1", ["title"]);
+        await inMemoryArticleFieldStore.storeComparisonNames("feed-1", [
+          "title",
+        ]);
         await inMemoryArticleFieldStore.flushPendingInserts();
       });
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.WouldDeliverPassingComparison);
-      assert.ok(results[0]?.mediumResults[0]?.outcomeReason?.includes("changed"));
+      assert.strictEqual(
+        results[0]?.mediumResults[0]?.outcome,
+        ArticleDeliveryOutcome.WouldDeliverPassingComparison,
+      );
+      assert.ok(
+        results[0]?.mediumResults[0]?.outcomeReason?.includes("changed"),
+      );
     });
   });
 
   describe("FilteredByDateCheck outcome", () => {
     it("returns FilteredByDateCheck when article is too old", async () => {
-      const oldDate = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString();
+      const oldDate = new Date(
+        Date.now() - 1000 * 60 * 60 * 24 * 30,
+      ).toISOString();
       const oldArticle = createArticle(
         "article-old",
         { title: "Old Article" },
-        { date: oldDate }
+        { date: oldDate },
       );
       const deps = createMockDependencies();
       const input = createInput([oldArticle], [oldArticle], {
@@ -189,13 +222,20 @@ describe("generateDeliveryPreview", () => {
       // Store a baseline article first
       const baselineArticle = createArticle("baseline", { title: "Baseline" });
       await inMemoryArticleFieldStore.startContext(async () => {
-        await inMemoryArticleFieldStore.storeArticles("feed-1", [baselineArticle], []);
+        await inMemoryArticleFieldStore.storeArticles(
+          "feed-1",
+          [baselineArticle],
+          [],
+        );
         await inMemoryArticleFieldStore.flushPendingInserts();
       });
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.FilteredByDateCheck);
+      assert.strictEqual(
+        results[0]?.mediumResults[0]?.outcome,
+        ArticleDeliveryOutcome.FilteredByDateCheck,
+      );
       assert.ok(results[0]?.mediumResults[0]?.outcomeReason?.includes("old"));
     });
   });
@@ -212,7 +252,11 @@ describe("generateDeliveryPreview", () => {
       // Store baseline to make it not first run
       const baselineArticle = createArticle("baseline", { title: "Baseline" });
       await inMemoryArticleFieldStore.startContext(async () => {
-        await inMemoryArticleFieldStore.storeArticles("feed-1", [baselineArticle], []);
+        await inMemoryArticleFieldStore.storeArticles(
+          "feed-1",
+          [baselineArticle],
+          [],
+        );
         await inMemoryArticleFieldStore.flushPendingInserts();
       });
 
@@ -226,7 +270,7 @@ describe("generateDeliveryPreview", () => {
             status: ArticleDeliveryStatus.Sent,
             articleIdHash: `hash-${i}`,
             article: createArticle(`${i}`),
-          })
+          }),
         );
         await deliveryRecordStore.store("feed-1", deliveries);
       });
@@ -237,7 +281,10 @@ describe("generateDeliveryPreview", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.RateLimitedFeed);
+      assert.strictEqual(
+        results[0]?.mediumResults[0]?.outcome,
+        ArticleDeliveryOutcome.RateLimitedFeed,
+      );
       assert.ok(results[0]?.mediumResults[0]?.outcomeReason?.includes("limit"));
     });
   });
@@ -251,13 +298,20 @@ describe("generateDeliveryPreview", () => {
       // Store baseline to make it not first run
       const baselineArticle = createArticle("baseline", { title: "Baseline" });
       await inMemoryArticleFieldStore.startContext(async () => {
-        await inMemoryArticleFieldStore.storeArticles("feed-1", [baselineArticle], []);
+        await inMemoryArticleFieldStore.storeArticles(
+          "feed-1",
+          [baselineArticle],
+          [],
+        );
         await inMemoryArticleFieldStore.flushPendingInserts();
       });
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.WouldDeliver);
+      assert.strictEqual(
+        results[0]?.mediumResults[0]?.outcome,
+        ArticleDeliveryOutcome.WouldDeliver,
+      );
       assert.ok(results[0]?.mediumResults[0]?.outcomeReason?.includes("pass"));
     });
   });
@@ -269,10 +323,12 @@ describe("generateDeliveryPreview", () => {
       const input = createInput([article]);
 
       const { results } = await generateDeliveryPreview(input, deps);
-      const mediumResult = results[0]?.mediumResults[0] as { stages: Array<{ stage: DeliveryPreviewStage }> };
+      const mediumResult = results[0]?.mediumResults[0] as {
+        stages: Array<{ stage: DeliveryPreviewStage }>;
+      };
 
       const feedState = mediumResult.stages.find(
-        (s) => s.stage === DeliveryPreviewStage.FeedState
+        (s) => s.stage === DeliveryPreviewStage.FeedState,
       );
       assert.notStrictEqual(feedState, undefined);
     });
@@ -292,7 +348,10 @@ describe("generateDeliveryPreview", () => {
             type: ExpressionType.Relational,
             op: RelationalExpressionOperator.Contains,
             left: { type: RelationalExpressionLeft.Article, value: "title" },
-            right: { type: RelationalExpressionRight.String, value: "REQUIRED_KEYWORD" },
+            right: {
+              type: RelationalExpressionRight.String,
+              value: "REQUIRED_KEYWORD",
+            },
           },
         ],
       };
@@ -311,14 +370,23 @@ describe("generateDeliveryPreview", () => {
       // Store baseline to make it not first run
       const baselineArticle = createArticle("baseline", { title: "Baseline" });
       await inMemoryArticleFieldStore.startContext(async () => {
-        await inMemoryArticleFieldStore.storeArticles("feed-1", [baselineArticle], []);
+        await inMemoryArticleFieldStore.storeArticles(
+          "feed-1",
+          [baselineArticle],
+          [],
+        );
         await inMemoryArticleFieldStore.flushPendingInserts();
       });
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.FilteredByMediumFilter);
-      assert.ok(results[0]?.mediumResults[0]?.outcomeReason?.includes("filter"));
+      assert.strictEqual(
+        results[0]?.mediumResults[0]?.outcome,
+        ArticleDeliveryOutcome.FilteredByMediumFilter,
+      );
+      assert.ok(
+        results[0]?.mediumResults[0]?.outcomeReason?.includes("filter"),
+      );
     });
 
     it("records MediumFilter stage when filter is evaluated", async () => {
@@ -353,18 +421,30 @@ describe("generateDeliveryPreview", () => {
       // Store baseline to make it not first run
       const baselineArticle = createArticle("baseline", { title: "Baseline" });
       await inMemoryArticleFieldStore.startContext(async () => {
-        await inMemoryArticleFieldStore.storeArticles("feed-1", [baselineArticle], []);
+        await inMemoryArticleFieldStore.storeArticles(
+          "feed-1",
+          [baselineArticle],
+          [],
+        );
         await inMemoryArticleFieldStore.flushPendingInserts();
       });
 
       const { results } = await generateDeliveryPreview(input, deps);
-      const mediumResult = results[0]?.mediumResults[0] as { stages: Array<{ stage: DeliveryPreviewStage; status: DeliveryPreviewStageStatus }> };
+      const mediumResult = results[0]?.mediumResults[0] as {
+        stages: Array<{
+          stage: DeliveryPreviewStage;
+          status: DeliveryPreviewStageStatus;
+        }>;
+      };
 
       const mediumFilterStage = mediumResult.stages.find(
-        (s) => s.stage === DeliveryPreviewStage.MediumFilter
+        (s) => s.stage === DeliveryPreviewStage.MediumFilter,
       );
       assert.notStrictEqual(mediumFilterStage, undefined);
-      assert.strictEqual(mediumFilterStage!.status, DeliveryPreviewStageStatus.Passed);
+      assert.strictEqual(
+        mediumFilterStage!.status,
+        DeliveryPreviewStageStatus.Passed,
+      );
     });
   });
 
@@ -380,7 +460,11 @@ describe("generateDeliveryPreview", () => {
       // Store baseline to make it not first run
       const baselineArticle = createArticle("baseline", { title: "Baseline" });
       await inMemoryArticleFieldStore.startContext(async () => {
-        await inMemoryArticleFieldStore.storeArticles("feed-1", [baselineArticle], []);
+        await inMemoryArticleFieldStore.storeArticles(
+          "feed-1",
+          [baselineArticle],
+          [],
+        );
         await inMemoryArticleFieldStore.flushPendingInserts();
       });
 
@@ -394,7 +478,7 @@ describe("generateDeliveryPreview", () => {
             status: ArticleDeliveryStatus.Sent,
             articleIdHash: `hash-${i}`,
             article: createArticle(`${i}`),
-          })
+          }),
         );
         await deliveryRecordStore.store("feed-1", deliveries);
       });
@@ -413,8 +497,13 @@ describe("generateDeliveryPreview", () => {
 
       const { results } = await generateDeliveryPreview(input, deps);
 
-      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.RateLimitedMedium);
-      assert.ok(results[0]?.mediumResults[0]?.outcomeReason?.includes("rate limit"));
+      assert.strictEqual(
+        results[0]?.mediumResults[0]?.outcome,
+        ArticleDeliveryOutcome.RateLimitedMedium,
+      );
+      assert.ok(
+        results[0]?.mediumResults[0]?.outcomeReason?.includes("rate limit"),
+      );
     });
   });
 });
@@ -434,7 +523,7 @@ describe("generateDeliveryPreview (batch)", () => {
   function createBatchInput(
     allArticles: Article[],
     targetArticles?: Article[],
-    overrides: Partial<DeliveryPreviewInput> = {}
+    overrides: Partial<DeliveryPreviewInput> = {},
   ): DeliveryPreviewInput {
     return {
       feed: {
@@ -464,11 +553,10 @@ describe("generateDeliveryPreview (batch)", () => {
 
       assert.strictEqual(response.results.length, 3);
       assert.strictEqual(response.errors.length, 0);
-      assert.deepStrictEqual(response.results.map((r: { articleId: string }) => r.articleId), [
-        "article-1",
-        "article-2",
-        "article-3",
-      ]);
+      assert.deepStrictEqual(
+        response.results.map((r: { articleId: string }) => r.articleId),
+        ["article-1", "article-2", "article-3"],
+      );
     });
   });
 
@@ -502,8 +590,14 @@ describe("generateDeliveryPreview (batch)", () => {
       const response = await generateDeliveryPreview(input, deps);
 
       // Both should have FirstRunBaseline since no prior articles
-      assert.strictEqual(response.results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.FirstRunBaseline);
-      assert.strictEqual(response.results[1]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.FirstRunBaseline);
+      assert.strictEqual(
+        response.results[0]?.mediumResults[0]?.outcome,
+        ArticleDeliveryOutcome.FirstRunBaseline,
+      );
+      assert.strictEqual(
+        response.results[1]?.mediumResults[0]?.outcome,
+        ArticleDeliveryOutcome.FirstRunBaseline,
+      );
     });
   });
 
@@ -519,8 +613,15 @@ describe("generateDeliveryPreview (batch)", () => {
 
       assert.strictEqual(response.results.length, 1);
       assert.strictEqual(response.results[0]?.articleId, "article-1");
-      assert.strictEqual((response.results[0]?.mediumResults[0] as Record<string, unknown>).stages, undefined);
-      assert.notStrictEqual(response.results[0]?.mediumResults[0]?.outcome, undefined);
+      assert.strictEqual(
+        (response.results[0]?.mediumResults[0] as Record<string, unknown>)
+          .stages,
+        undefined,
+      );
+      assert.notStrictEqual(
+        response.results[0]?.mediumResults[0]?.outcome,
+        undefined,
+      );
     });
 
     it("summaryOnly=false includes stages in medium results", async () => {
@@ -533,7 +634,9 @@ describe("generateDeliveryPreview (batch)", () => {
       const response = await generateDeliveryPreview(input, deps);
 
       assert.strictEqual(response.results.length, 1);
-      const mediumResult = response.results[0]?.mediumResults[0] as { stages: unknown[] };
+      const mediumResult = response.results[0]?.mediumResults[0] as {
+        stages: unknown[];
+      };
       assert.notStrictEqual(mediumResult.stages, undefined);
       assert.ok(mediumResult.stages.length > 0);
     });
@@ -568,7 +671,7 @@ describe("Aggregate outcome computation", () => {
   function createInput(
     allArticles: Article[],
     targetArticles?: Article[],
-    overrides: Partial<DeliveryPreviewInput> = {}
+    overrides: Partial<DeliveryPreviewInput> = {},
   ): DeliveryPreviewInput {
     return {
       feed: {
@@ -593,7 +696,10 @@ describe("Aggregate outcome computation", () => {
           type: ExpressionType.Relational,
           op: RelationalExpressionOperator.Contains,
           left: { type: RelationalExpressionLeft.Article, value: "title" },
-          right: { type: RelationalExpressionRight.String, value: requiredKeyword },
+          right: {
+            type: RelationalExpressionRight.String,
+            value: requiredKeyword,
+          },
         },
       ],
     };
@@ -602,7 +708,11 @@ describe("Aggregate outcome computation", () => {
   async function storeBaseline() {
     const baselineArticle = createArticle("baseline", { title: "Baseline" });
     await inMemoryArticleFieldStore.startContext(async () => {
-      await inMemoryArticleFieldStore.storeArticles("feed-1", [baselineArticle], []);
+      await inMemoryArticleFieldStore.storeArticles(
+        "feed-1",
+        [baselineArticle],
+        [],
+      );
       await inMemoryArticleFieldStore.flushPendingInserts();
     });
   }
@@ -617,14 +727,20 @@ describe("Aggregate outcome computation", () => {
       const input = createInput([article], [article], {
         mediums: [
           { id: "medium-1" }, // No filter → passes
-          { id: "medium-2", filters: { expression: createBlockingFilter("SPORTS") } }, // Blocks
+          {
+            id: "medium-2",
+            filters: { expression: createBlockingFilter("SPORTS") },
+          }, // Blocks
         ],
       });
 
       const { results } = await generateDeliveryPreview(input, deps);
 
       assert.strictEqual(results.length, 1);
-      assert.strictEqual(results[0]?.outcome, ArticleDeliveryOutcome.MixedResults);
+      assert.strictEqual(
+        results[0]?.outcome,
+        ArticleDeliveryOutcome.MixedResults,
+      );
       assert.ok(results[0]?.outcomeReason?.includes("Mixed results"));
     });
 
@@ -644,7 +760,10 @@ describe("Aggregate outcome computation", () => {
       const { results } = await generateDeliveryPreview(input, deps);
 
       assert.strictEqual(results.length, 1);
-      assert.strictEqual(results[0]?.outcome, ArticleDeliveryOutcome.WouldDeliver);
+      assert.strictEqual(
+        results[0]?.outcome,
+        ArticleDeliveryOutcome.WouldDeliver,
+      );
       assert.ok(results[0]?.outcomeReason?.includes("pass"));
     });
 
@@ -660,27 +779,36 @@ describe("Aggregate outcome computation", () => {
 
       // Store 5 deliveries to medium-2 to exceed its limit
       await deliveryRecordStore.startContext(async () => {
-        const deliveries: ArticleDeliveryState[] = Array.from({ length: 5 }, (_, i): ArticleDeliveryState => ({
-          id: `delivery-m2-${i}`,
-          mediumId: "medium-2",
-          status: ArticleDeliveryStatus.Sent as const,
-          articleIdHash: `hash-m2-${i}`,
-          article: createArticle(`m2-${i}`),
-        }));
+        const deliveries: ArticleDeliveryState[] = Array.from(
+          { length: 5 },
+          (_, i): ArticleDeliveryState => ({
+            id: `delivery-m2-${i}`,
+            mediumId: "medium-2",
+            status: ArticleDeliveryStatus.Sent as const,
+            articleIdHash: `hash-m2-${i}`,
+            article: createArticle(`m2-${i}`),
+          }),
+        );
         await deliveryRecordStore.store("feed-1", deliveries);
       });
 
       const input = createInput([article], [article], {
         mediums: [
           { id: "medium-1" }, // No restrictions → WouldDeliver
-          { id: "medium-2", rateLimits: [{ limit: 5, timeWindowSeconds: 86400 }] }, // Rate limit exceeded → RateLimitedMedium
+          {
+            id: "medium-2",
+            rateLimits: [{ limit: 5, timeWindowSeconds: 86400 }],
+          }, // Rate limit exceeded → RateLimitedMedium
         ],
       });
 
       const { results } = await generateDeliveryPreview(input, deps);
 
       assert.strictEqual(results.length, 1);
-      assert.strictEqual(results[0]?.outcome, ArticleDeliveryOutcome.MixedResults);
+      assert.strictEqual(
+        results[0]?.outcome,
+        ArticleDeliveryOutcome.MixedResults,
+      );
       assert.ok(results[0]?.outcomeReason?.includes("Mixed results"));
     });
 
@@ -693,14 +821,20 @@ describe("Aggregate outcome computation", () => {
       const input = createInput([article], [article], {
         mediums: [
           { id: "medium-1" }, // No filter → WouldDeliver
-          { id: "medium-2", filters: { expression: createBlockingFilter("SPORTS") } }, // Filter blocks → FilteredByMediumFilter
+          {
+            id: "medium-2",
+            filters: { expression: createBlockingFilter("SPORTS") },
+          }, // Filter blocks → FilteredByMediumFilter
         ],
       });
 
       const { results } = await generateDeliveryPreview(input, deps);
 
       assert.strictEqual(results.length, 1);
-      assert.strictEqual(results[0]?.outcome, ArticleDeliveryOutcome.MixedResults);
+      assert.strictEqual(
+        results[0]?.outcome,
+        ArticleDeliveryOutcome.MixedResults,
+      );
       assert.ok(results[0]?.outcomeReason?.includes("Mixed results"));
     });
 
@@ -716,27 +850,39 @@ describe("Aggregate outcome computation", () => {
 
       // Store 5 deliveries to medium-2 to exceed its limit
       await deliveryRecordStore.startContext(async () => {
-        const deliveries: ArticleDeliveryState[] = Array.from({ length: 5 }, (_, i): ArticleDeliveryState => ({
-          id: `delivery-m2-${i}`,
-          mediumId: "medium-2",
-          status: ArticleDeliveryStatus.Sent as const,
-          articleIdHash: `hash-m2-${i}`,
-          article: createArticle(`m2-${i}`),
-        }));
+        const deliveries: ArticleDeliveryState[] = Array.from(
+          { length: 5 },
+          (_, i): ArticleDeliveryState => ({
+            id: `delivery-m2-${i}`,
+            mediumId: "medium-2",
+            status: ArticleDeliveryStatus.Sent as const,
+            articleIdHash: `hash-m2-${i}`,
+            article: createArticle(`m2-${i}`),
+          }),
+        );
         await deliveryRecordStore.store("feed-1", deliveries);
       });
 
       const input = createInput([article], [article], {
         mediums: [
-          { id: "medium-1", filters: { expression: createBlockingFilter("SPORTS") } }, // Filter blocks → FilteredByMediumFilter
-          { id: "medium-2", rateLimits: [{ limit: 5, timeWindowSeconds: 86400 }] }, // Rate limit exceeded → RateLimitedMedium
+          {
+            id: "medium-1",
+            filters: { expression: createBlockingFilter("SPORTS") },
+          }, // Filter blocks → FilteredByMediumFilter
+          {
+            id: "medium-2",
+            rateLimits: [{ limit: 5, timeWindowSeconds: 86400 }],
+          }, // Rate limit exceeded → RateLimitedMedium
         ],
       });
 
       const { results } = await generateDeliveryPreview(input, deps);
 
       assert.strictEqual(results.length, 1);
-      assert.strictEqual(results[0]?.outcome, ArticleDeliveryOutcome.MixedResults);
+      assert.strictEqual(
+        results[0]?.outcome,
+        ArticleDeliveryOutcome.MixedResults,
+      );
       assert.ok(results[0]?.outcomeReason?.includes("Mixed results"));
     });
   });
@@ -757,7 +903,7 @@ describe("Multiple mediums with different outcomes", () => {
   function createInput(
     allArticles: Article[],
     targetArticles?: Article[],
-    overrides: Partial<DeliveryPreviewInput> = {}
+    overrides: Partial<DeliveryPreviewInput> = {},
   ): DeliveryPreviewInput {
     return {
       feed: {
@@ -782,7 +928,10 @@ describe("Multiple mediums with different outcomes", () => {
           type: ExpressionType.Relational,
           op: RelationalExpressionOperator.Contains,
           left: { type: RelationalExpressionLeft.Article, value: "title" },
-          right: { type: RelationalExpressionRight.String, value: requiredKeyword },
+          right: {
+            type: RelationalExpressionRight.String,
+            value: requiredKeyword,
+          },
         },
       ],
     };
@@ -791,7 +940,11 @@ describe("Multiple mediums with different outcomes", () => {
   async function storeBaseline() {
     const baselineArticle = createArticle("baseline", { title: "Baseline" });
     await inMemoryArticleFieldStore.startContext(async () => {
-      await inMemoryArticleFieldStore.storeArticles("feed-1", [baselineArticle], []);
+      await inMemoryArticleFieldStore.storeArticles(
+        "feed-1",
+        [baselineArticle],
+        [],
+      );
       await inMemoryArticleFieldStore.flushPendingInserts();
     });
   }
@@ -806,7 +959,10 @@ describe("Multiple mediums with different outcomes", () => {
       const input = createInput([article], [article], {
         mediums: [
           { id: "medium-1" }, // No filter → passes
-          { id: "medium-2", filters: { expression: createBlockingFilter("SPORTS") } }, // Blocks
+          {
+            id: "medium-2",
+            filters: { expression: createBlockingFilter("SPORTS") },
+          }, // Blocks
         ],
       });
 
@@ -815,9 +971,15 @@ describe("Multiple mediums with different outcomes", () => {
       assert.strictEqual(results.length, 1);
       assert.strictEqual(results[0]?.mediumResults.length, 2);
       assert.strictEqual(results[0]?.mediumResults[0]?.mediumId, "medium-1");
-      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.WouldDeliver);
+      assert.strictEqual(
+        results[0]?.mediumResults[0]?.outcome,
+        ArticleDeliveryOutcome.WouldDeliver,
+      );
       assert.strictEqual(results[0]?.mediumResults[1]?.mediumId, "medium-2");
-      assert.strictEqual(results[0]?.mediumResults[1]?.outcome, ArticleDeliveryOutcome.FilteredByMediumFilter);
+      assert.strictEqual(
+        results[0]?.mediumResults[1]?.outcome,
+        ArticleDeliveryOutcome.FilteredByMediumFilter,
+      );
     });
   });
 
@@ -835,28 +997,40 @@ describe("Multiple mediums with different outcomes", () => {
       // Store 5 deliveries to BOTH mediums
       await deliveryRecordStore.startContext(async () => {
         const deliveries: ArticleDeliveryState[] = [
-          ...Array.from({ length: 5 }, (_, i): ArticleDeliveryState => ({
-            id: `delivery-m1-${i}`,
-            mediumId: "medium-1",
-            status: ArticleDeliveryStatus.Sent as const,
-            articleIdHash: `hash-m1-${i}`,
-            article: createArticle(`m1-${i}`),
-          })),
-          ...Array.from({ length: 5 }, (_, i): ArticleDeliveryState => ({
-            id: `delivery-m2-${i}`,
-            mediumId: "medium-2",
-            status: ArticleDeliveryStatus.Sent as const,
-            articleIdHash: `hash-m2-${i}`,
-            article: createArticle(`m2-${i}`),
-          })),
+          ...Array.from(
+            { length: 5 },
+            (_, i): ArticleDeliveryState => ({
+              id: `delivery-m1-${i}`,
+              mediumId: "medium-1",
+              status: ArticleDeliveryStatus.Sent as const,
+              articleIdHash: `hash-m1-${i}`,
+              article: createArticle(`m1-${i}`),
+            }),
+          ),
+          ...Array.from(
+            { length: 5 },
+            (_, i): ArticleDeliveryState => ({
+              id: `delivery-m2-${i}`,
+              mediumId: "medium-2",
+              status: ArticleDeliveryStatus.Sent as const,
+              articleIdHash: `hash-m2-${i}`,
+              article: createArticle(`m2-${i}`),
+            }),
+          ),
         ];
         await deliveryRecordStore.store("feed-1", deliveries);
       });
 
       const input = createInput([article], [article], {
         mediums: [
-          { id: "medium-1", rateLimits: [{ limit: 10, timeWindowSeconds: 86400 }] }, // 5 of 10, under limit
-          { id: "medium-2", rateLimits: [{ limit: 5, timeWindowSeconds: 86400 }] }, // 5 of 5, at limit
+          {
+            id: "medium-1",
+            rateLimits: [{ limit: 10, timeWindowSeconds: 86400 }],
+          }, // 5 of 10, under limit
+          {
+            id: "medium-2",
+            rateLimits: [{ limit: 5, timeWindowSeconds: 86400 }],
+          }, // 5 of 5, at limit
         ],
       });
 
@@ -865,9 +1039,15 @@ describe("Multiple mediums with different outcomes", () => {
       assert.strictEqual(results.length, 1);
       assert.strictEqual(results[0]?.mediumResults.length, 2);
       assert.strictEqual(results[0]?.mediumResults[0]?.mediumId, "medium-1");
-      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.WouldDeliver);
+      assert.strictEqual(
+        results[0]?.mediumResults[0]?.outcome,
+        ArticleDeliveryOutcome.WouldDeliver,
+      );
       assert.strictEqual(results[0]?.mediumResults[1]?.mediumId, "medium-2");
-      assert.strictEqual(results[0]?.mediumResults[1]?.outcome, ArticleDeliveryOutcome.RateLimitedMedium);
+      assert.strictEqual(
+        results[0]?.mediumResults[1]?.outcome,
+        ArticleDeliveryOutcome.RateLimitedMedium,
+      );
     });
   });
 
@@ -884,21 +1064,30 @@ describe("Multiple mediums with different outcomes", () => {
 
       // Store 5 deliveries to medium-3 to exceed its limit
       await deliveryRecordStore.startContext(async () => {
-        const deliveries: ArticleDeliveryState[] = Array.from({ length: 5 }, (_, i): ArticleDeliveryState => ({
-          id: `delivery-m3-${i}`,
-          mediumId: "medium-3",
-          status: ArticleDeliveryStatus.Sent as const,
-          articleIdHash: `hash-m3-${i}`,
-          article: createArticle(`m3-${i}`),
-        }));
+        const deliveries: ArticleDeliveryState[] = Array.from(
+          { length: 5 },
+          (_, i): ArticleDeliveryState => ({
+            id: `delivery-m3-${i}`,
+            mediumId: "medium-3",
+            status: ArticleDeliveryStatus.Sent as const,
+            articleIdHash: `hash-m3-${i}`,
+            article: createArticle(`m3-${i}`),
+          }),
+        );
         await deliveryRecordStore.store("feed-1", deliveries);
       });
 
       const input = createInput([article], [article], {
         mediums: [
           { id: "medium-1" }, // No restrictions → WouldDeliver
-          { id: "medium-2", filters: { expression: createBlockingFilter("SPORTS") } }, // Filter blocks → FilteredByMediumFilter
-          { id: "medium-3", rateLimits: [{ limit: 5, timeWindowSeconds: 86400 }] }, // Rate limit exceeded → RateLimitedMedium
+          {
+            id: "medium-2",
+            filters: { expression: createBlockingFilter("SPORTS") },
+          }, // Filter blocks → FilteredByMediumFilter
+          {
+            id: "medium-3",
+            rateLimits: [{ limit: 5, timeWindowSeconds: 86400 }],
+          }, // Rate limit exceeded → RateLimitedMedium
         ],
       });
 
@@ -907,11 +1096,20 @@ describe("Multiple mediums with different outcomes", () => {
       assert.strictEqual(results.length, 1);
       assert.strictEqual(results[0]?.mediumResults.length, 3);
       assert.strictEqual(results[0]?.mediumResults[0]?.mediumId, "medium-1");
-      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.WouldDeliver);
+      assert.strictEqual(
+        results[0]?.mediumResults[0]?.outcome,
+        ArticleDeliveryOutcome.WouldDeliver,
+      );
       assert.strictEqual(results[0]?.mediumResults[1]?.mediumId, "medium-2");
-      assert.strictEqual(results[0]?.mediumResults[1]?.outcome, ArticleDeliveryOutcome.FilteredByMediumFilter);
+      assert.strictEqual(
+        results[0]?.mediumResults[1]?.outcome,
+        ArticleDeliveryOutcome.FilteredByMediumFilter,
+      );
       assert.strictEqual(results[0]?.mediumResults[2]?.mediumId, "medium-3");
-      assert.strictEqual(results[0]?.mediumResults[2]?.outcome, ArticleDeliveryOutcome.RateLimitedMedium);
+      assert.strictEqual(
+        results[0]?.mediumResults[2]?.outcome,
+        ArticleDeliveryOutcome.RateLimitedMedium,
+      );
     });
   });
 
@@ -928,13 +1126,16 @@ describe("Multiple mediums with different outcomes", () => {
 
       // Store 5 deliveries to medium-2 to exceed its limit
       await deliveryRecordStore.startContext(async () => {
-        const deliveries: ArticleDeliveryState[] = Array.from({ length: 5 }, (_, i): ArticleDeliveryState => ({
-          id: `delivery-m2-${i}`,
-          mediumId: "medium-2",
-          status: ArticleDeliveryStatus.Sent as const,
-          articleIdHash: `hash-m2-${i}`,
-          article: createArticle(`m2-${i}`),
-        }));
+        const deliveries: ArticleDeliveryState[] = Array.from(
+          { length: 5 },
+          (_, i): ArticleDeliveryState => ({
+            id: `delivery-m2-${i}`,
+            mediumId: "medium-2",
+            status: ArticleDeliveryStatus.Sent as const,
+            articleIdHash: `hash-m2-${i}`,
+            article: createArticle(`m2-${i}`),
+          }),
+        );
         await deliveryRecordStore.store("feed-1", deliveries);
       });
 
@@ -944,7 +1145,11 @@ describe("Multiple mediums with different outcomes", () => {
       const input = createInput([article], [article], {
         mediums: [
           { id: "medium-1", filters: { expression: passingFilter } }, // Filter passes, no rate limit → WouldDeliver
-          { id: "medium-2", filters: { expression: passingFilter }, rateLimits: [{ limit: 5, timeWindowSeconds: 86400 }] }, // Filter passes, rate limit exceeded → RateLimitedMedium
+          {
+            id: "medium-2",
+            filters: { expression: passingFilter },
+            rateLimits: [{ limit: 5, timeWindowSeconds: 86400 }],
+          }, // Filter passes, rate limit exceeded → RateLimitedMedium
         ],
       });
 
@@ -953,9 +1158,15 @@ describe("Multiple mediums with different outcomes", () => {
       assert.strictEqual(results.length, 1);
       assert.strictEqual(results[0]?.mediumResults.length, 2);
       assert.strictEqual(results[0]?.mediumResults[0]?.mediumId, "medium-1");
-      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.WouldDeliver);
+      assert.strictEqual(
+        results[0]?.mediumResults[0]?.outcome,
+        ArticleDeliveryOutcome.WouldDeliver,
+      );
       assert.strictEqual(results[0]?.mediumResults[1]?.mediumId, "medium-2");
-      assert.strictEqual(results[0]?.mediumResults[1]?.outcome, ArticleDeliveryOutcome.RateLimitedMedium);
+      assert.strictEqual(
+        results[0]?.mediumResults[1]?.outcome,
+        ArticleDeliveryOutcome.RateLimitedMedium,
+      );
     });
   });
 
@@ -974,7 +1185,10 @@ describe("Multiple mediums with different outcomes", () => {
       const input = createInput([article], [article], {
         mediums: [
           { id: "medium-1" }, // No filter
-          { id: "medium-2", filters: { expression: createBlockingFilter("Test") } }, // Filter that would pass
+          {
+            id: "medium-2",
+            filters: { expression: createBlockingFilter("Test") },
+          }, // Filter that would pass
         ],
       });
 
@@ -984,9 +1198,82 @@ describe("Multiple mediums with different outcomes", () => {
       assert.strictEqual(results[0]?.mediumResults.length, 2);
       // Both should have DuplicateId because shared stage applies before medium-specific stages
       assert.strictEqual(results[0]?.mediumResults[0]?.mediumId, "medium-1");
-      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.DuplicateId);
+      assert.strictEqual(
+        results[0]?.mediumResults[0]?.outcome,
+        ArticleDeliveryOutcome.DuplicateId,
+      );
       assert.strictEqual(results[0]?.mediumResults[1]?.mediumId, "medium-2");
-      assert.strictEqual(results[0]?.mediumResults[1]?.outcome, ArticleDeliveryOutcome.DuplicateId);
+      assert.strictEqual(
+        results[0]?.mediumResults[1]?.outcome,
+        ArticleDeliveryOutcome.DuplicateId,
+      );
+    });
+  });
+
+  describe("Article date fields", () => {
+    it("includes articlePublishedDate from raw.pubdate", async () => {
+      const pubdate = new Date().toISOString();
+      const article = createArticle(
+        "article-1",
+        { title: "Test" },
+        { pubdate },
+      );
+      const deps = createMockDependencies();
+
+      await storeBaseline();
+
+      const input = createInput([article], [article]);
+      const { results } = await generateDeliveryPreview(input, deps);
+
+      assert.strictEqual(
+        (results[0] as { articlePublishedDate: string }).articlePublishedDate,
+        pubdate,
+      );
+    });
+
+    it("falls back to raw.date when pubdate is not available", async () => {
+      const date = new Date().toISOString();
+      const article = createArticle("article-1", { title: "Test" }, { date });
+      const deps = createMockDependencies();
+
+      await storeBaseline();
+
+      const input = createInput([article], [article]);
+      const { results } = await generateDeliveryPreview(input, deps);
+
+      assert.strictEqual(
+        (results[0] as { articlePublishedDate: string }).articlePublishedDate,
+        date,
+      );
+    });
+
+    it("returns null articlePublishedDate when no raw dates", async () => {
+      const article = createArticle("article-1", { title: "Test" });
+      const deps = createMockDependencies();
+
+      await storeBaseline();
+
+      const input = createInput([article], [article]);
+      const { results } = await generateDeliveryPreview(input, deps);
+
+      assert.strictEqual(
+        (results[0] as { articlePublishedDate: string | null })
+          .articlePublishedDate,
+        null,
+      );
+    });
+
+    it("returns null articleStoredDate for first-run articles", async () => {
+      const article = createArticle("article-1", { title: "Test" });
+      const deps = createMockDependencies();
+      const input = createInput([article], [article]);
+
+      const { results } = await generateDeliveryPreview(input, deps);
+
+      assert.strictEqual(
+        (results[0] as { articleStoredDate: string | null }).articleStoredDate,
+        null,
+      );
     });
   });
 
@@ -1020,9 +1307,15 @@ describe("Multiple mediums with different outcomes", () => {
       assert.strictEqual(results[0]?.articleId, "article-1");
       assert.strictEqual(results[0]?.mediumResults.length, 2);
       assert.strictEqual(results[0]?.mediumResults[0]?.mediumId, "medium-1");
-      assert.strictEqual(results[0]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.WouldDeliver);
+      assert.strictEqual(
+        results[0]?.mediumResults[0]?.outcome,
+        ArticleDeliveryOutcome.WouldDeliver,
+      );
       assert.strictEqual(results[0]?.mediumResults[1]?.mediumId, "medium-2");
-      assert.strictEqual(results[0]?.mediumResults[1]?.outcome, ArticleDeliveryOutcome.FilteredByMediumFilter);
+      assert.strictEqual(
+        results[0]?.mediumResults[1]?.outcome,
+        ArticleDeliveryOutcome.FilteredByMediumFilter,
+      );
 
       // Article 2: "Tech News"
       // - Medium-1 (Sports filter): fails → FilteredByMediumFilter
@@ -1030,9 +1323,15 @@ describe("Multiple mediums with different outcomes", () => {
       assert.strictEqual(results[1]?.articleId, "article-2");
       assert.strictEqual(results[1]?.mediumResults.length, 2);
       assert.strictEqual(results[1]?.mediumResults[0]?.mediumId, "medium-1");
-      assert.strictEqual(results[1]?.mediumResults[0]?.outcome, ArticleDeliveryOutcome.FilteredByMediumFilter);
+      assert.strictEqual(
+        results[1]?.mediumResults[0]?.outcome,
+        ArticleDeliveryOutcome.FilteredByMediumFilter,
+      );
       assert.strictEqual(results[1]?.mediumResults[1]?.mediumId, "medium-2");
-      assert.strictEqual(results[1]?.mediumResults[1]?.outcome, ArticleDeliveryOutcome.WouldDeliver);
+      assert.strictEqual(
+        results[1]?.mediumResults[1]?.outcome,
+        ArticleDeliveryOutcome.WouldDeliver,
+      );
     });
   });
 });

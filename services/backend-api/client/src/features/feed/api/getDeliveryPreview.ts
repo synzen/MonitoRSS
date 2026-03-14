@@ -175,6 +175,8 @@ function transformResponse(
       articleId: article.articleId,
       articleIdHash: article.articleIdHash,
       articleTitle: article.articleTitle,
+      articlePublishedDate: article.articlePublishedDate,
+      articleStoredDate: article.articleStoredDate,
       outcome: article.outcome,
       outcomeReason: article.outcomeReason,
       mediumResults: article.mediumResults.map((medium): MediumDeliveryResult => {

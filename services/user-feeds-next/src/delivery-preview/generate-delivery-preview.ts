@@ -42,7 +42,7 @@ export interface DeliveryPreviewDependencies {
  * This prevents delivery preview runs from modifying the database.
  */
 function createReadOnlyArticleFieldStore(
-  store: ArticleFieldStore
+  store: ArticleFieldStore,
 ): ArticleFieldStore {
   return {
     ...store,
@@ -83,7 +83,9 @@ function separateStages(stages: DeliveryPreviewStageResult[]): {
       stage.stage === DeliveryPreviewStage.MediumRateLimit
     ) {
       const mediumId =
-        stage.details && "mediumId" in stage.details ? (stage.details.mediumId as string) : null;
+        stage.details && "mediumId" in stage.details
+          ? (stage.details.mediumId as string)
+          : null;
       if (mediumId) {
         const existing = mediumStagesMap.get(mediumId) || [];
         existing.push(stage);
@@ -112,47 +114,59 @@ function isPassed(stage: DeliveryPreviewStageResult): boolean {
 /**
  * Determine the delivery outcome based on recorded delivery preview stages.
  */
-function determineOutcome(
-  stages: DeliveryPreviewStageResult[]
-): { outcome: ArticleDeliveryOutcome; outcomeReason: string } {
+function determineOutcome(stages: DeliveryPreviewStageResult[]): {
+  outcome: ArticleDeliveryOutcome;
+  outcomeReason: string;
+} {
   // Check FeedState for first run
-  const feedState = stages.find((s) => s.stage === DeliveryPreviewStage.FeedState);
-  if (feedState && feedState.details && "isFirstRun" in feedState.details && feedState.details.isFirstRun) {
+  const feedState = stages.find(
+    (s) => s.stage === DeliveryPreviewStage.FeedState,
+  );
+  if (
+    feedState &&
+    feedState.details &&
+    "isFirstRun" in feedState.details &&
+    feedState.details.isFirstRun
+  ) {
     return {
       outcome: ArticleDeliveryOutcome.FirstRunBaseline,
-      outcomeReason: "Feed has no prior articles stored. This is a first-run baseline - all current articles will be stored but not delivered.",
+      outcomeReason:
+        "Feed has no prior articles stored. This is a first-run baseline - all current articles will be stored but not delivered.",
     };
   }
 
   // Check IdComparison for duplicate
   const idComparison = stages.find(
-    (s) => s.stage === DeliveryPreviewStage.IdComparison
+    (s) => s.stage === DeliveryPreviewStage.IdComparison,
   );
   if (idComparison && isFailed(idComparison)) {
     // Check if there's a passing comparison that allows delivery
     const passingComparison = stages.find(
-      (s) => s.stage === DeliveryPreviewStage.PassingComparison
+      (s) => s.stage === DeliveryPreviewStage.PassingComparison,
     );
     if (passingComparison && isPassed(passingComparison)) {
       return {
         outcome: ArticleDeliveryOutcome.WouldDeliverPassingComparison,
-        outcomeReason: "Article ID was already seen, but passes because a comparison field has changed.",
+        outcomeReason:
+          "Article ID was already seen, but passes because a comparison field has changed.",
       };
     }
 
     return {
       outcome: ArticleDeliveryOutcome.DuplicateId,
-      outcomeReason: "Article ID has already been seen and stored. It will not be delivered again.",
+      outcomeReason:
+        "Article ID has already been seen and stored. It will not be delivered again.",
     };
   }
 
   // Check BlockingComparison
   const blockingComparison = stages.find(
-    (s) => s.stage === DeliveryPreviewStage.BlockingComparison
+    (s) => s.stage === DeliveryPreviewStage.BlockingComparison,
   );
   if (blockingComparison && isFailed(blockingComparison)) {
     const blockedByFields =
-      blockingComparison.details && "blockedByFields" in blockingComparison.details
+      blockingComparison.details &&
+      "blockedByFields" in blockingComparison.details
         ? (blockingComparison.details.blockedByFields as string[]).join(", ")
         : "unknown fields";
     return {
@@ -162,18 +176,21 @@ function determineOutcome(
   }
 
   // Check DateCheck
-  const dateCheck = stages.find((s) => s.stage === DeliveryPreviewStage.DateCheck);
+  const dateCheck = stages.find(
+    (s) => s.stage === DeliveryPreviewStage.DateCheck,
+  );
   if (dateCheck && isFailed(dateCheck)) {
     return {
       outcome: ArticleDeliveryOutcome.FilteredByDateCheck,
-      outcomeReason: "Article is older than the configured date threshold and will not be delivered.",
+      outcomeReason:
+        "Article is older than the configured date threshold and will not be delivered.",
     };
   }
 
   // Check feed rate limit
   const feedRateLimit = stages.find(
     (s): s is FeedRateLimitDeliveryPreviewResult =>
-      s.stage === DeliveryPreviewStage.FeedRateLimit
+      s.stage === DeliveryPreviewStage.FeedRateLimit,
   );
   if (feedRateLimit && isFailed(feedRateLimit)) {
     return {
@@ -185,7 +202,7 @@ function determineOutcome(
   // Check medium rate limits
   const exceededMediumRateLimit = stages.find(
     (s): s is MediumRateLimitDeliveryPreviewResult =>
-      s.stage === DeliveryPreviewStage.MediumRateLimit && isFailed(s)
+      s.stage === DeliveryPreviewStage.MediumRateLimit && isFailed(s),
   );
   if (exceededMediumRateLimit) {
     return {
@@ -196,12 +213,13 @@ function determineOutcome(
 
   // Check medium filters
   const mediumFilter = stages.find(
-    (s) => s.stage === DeliveryPreviewStage.MediumFilter
+    (s) => s.stage === DeliveryPreviewStage.MediumFilter,
   );
   if (mediumFilter && isFailed(mediumFilter)) {
     return {
       outcome: ArticleDeliveryOutcome.FilteredByMediumFilter,
-      outcomeReason: "Article filtered out by this connection's filter expression.",
+      outcomeReason:
+        "Article filtered out by this connection's filter expression.",
     };
   }
 
@@ -234,7 +252,10 @@ const OUTCOME_PRIORITY: ArticleDeliveryOutcome[] = [
  * Returns MixedResults if mediums have different outcomes, otherwise returns any medium's outcome.
  */
 function computeAggregateOutcome(
-  mediumResults: Array<{ outcome: ArticleDeliveryOutcome; outcomeReason: string }>
+  mediumResults: Array<{
+    outcome: ArticleDeliveryOutcome;
+    outcomeReason: string;
+  }>,
 ): { outcome: ArticleDeliveryOutcome; outcomeReason: string } {
   if (mediumResults.length === 0) {
     return {
@@ -244,7 +265,7 @@ function computeAggregateOutcome(
   }
 
   // Check if all mediums have the same outcome
-  const uniqueOutcomes = new Set(mediumResults.map(m => m.outcome));
+  const uniqueOutcomes = new Set(mediumResults.map((m) => m.outcome));
   const hasMixedResults = uniqueOutcomes.size > 1;
 
   if (hasMixedResults) {
@@ -296,7 +317,7 @@ export interface DeliveryPreviewInput {
  */
 export async function generateDeliveryPreview(
   input: DeliveryPreviewInput,
-  deps: DeliveryPreviewDependencies
+  deps: DeliveryPreviewDependencies,
 ): Promise<DeliveryPreviewResponse> {
   // Handle empty target articles
   if (input.targetArticles.length === 0) {
@@ -305,117 +326,142 @@ export async function generateDeliveryPreview(
 
   // Build set of target ID hashes for delivery preview context
   const targetIdHashes = new Set<string>(
-    input.targetArticles.map((a) => a.flattened.idHash)
+    input.targetArticles.map((a) => a.flattened.idHash),
+  );
+
+  // Query stored dates for target articles (uses the real store, read-only query)
+  const storedDatesMap = await deps.articleFieldStore.findStoredArticleDates(
+    input.feed.id,
+    Array.from(targetIdHashes),
   );
 
   // Run delivery preview context with ALL target hashes - ONE call to getArticlesToDeliver
   const readOnlyStore = createReadOnlyArticleFieldStore(deps.articleFieldStore);
 
   // Build results inside the context so we can access delivery preview results
-  const results = await startDeliveryPreviewContext(targetIdHashes, async () => {
-    // Run comparison logic on ALL articles (will record delivery previews for targets)
-    const comparisonResult = await getArticlesToDeliver(
-      readOnlyStore,
-      input.feed.id,
-      input.allArticles,
-      {
-        blockingComparisons: input.feed.blockingComparisons,
-        passingComparisons: input.feed.passingComparisons,
-        dateChecks: input.feed.dateChecks,
-      }
-    );
-
-    // Build delivery mediums with placeholder details (no actual delivery)
-    const deliveryMediums: DeliveryMedium[] = input.mediums.map((m) => ({
-      id: m.id,
-      filters: m.filters,
-      rateLimits: m.rateLimits,
-      details: {
-        guildId: "diagnostic",
-        channel: { id: "diagnostic" },
-      },
-    }));
-
-    // For each target in deliverable, run delivery simulation
-    for (const target of input.targetArticles) {
-      const targetInDeliverable = comparisonResult.articlesToDeliver.find(
-        (a) => a.flattened.idHash === target.flattened.idHash
+  const results = await startDeliveryPreviewContext(
+    targetIdHashes,
+    async () => {
+      // Run comparison logic on ALL articles (will record delivery previews for targets)
+      const comparisonResult = await getArticlesToDeliver(
+        readOnlyStore,
+        input.feed.id,
+        input.allArticles,
+        {
+          blockingComparisons: input.feed.blockingComparisons,
+          passingComparisons: input.feed.passingComparisons,
+          dateChecks: input.feed.dateChecks,
+        },
       );
-      if (targetInDeliverable) {
-        await deliverArticles([targetInDeliverable], deliveryMediums, {
-          feedId: input.feed.id,
-          feedUrl: "diagnostic://placeholder",
-          articleDayLimit: input.articleDayLimit,
-          deliveryRecordStore: deps.deliveryRecordStore,
-          discordClient: createTestDiscordRestClient(),
-        });
-      }
-    }
 
-    // Build results inside context to access delivery preview data
-    const builtResults: (ArticleDeliveryResult | ArticleDeliverySummary)[] = [];
+      // Build delivery mediums with placeholder details (no actual delivery)
+      const deliveryMediums: DeliveryMedium[] = input.mediums.map((m) => ({
+        id: m.id,
+        filters: m.filters,
+        rateLimits: m.rateLimits,
+        details: {
+          guildId: "diagnostic",
+          channel: { id: "diagnostic" },
+        },
+      }));
 
-    for (const article of input.targetArticles) {
-      const allStages = getDeliveryPreviewResultsForArticle(article.flattened.idHash);
-      const { sharedStages, mediumStagesMap } = separateStages(allStages);
-
-      // Build per-medium results
-      const mediumResults: (MediumDeliveryResult | MediumDeliverySummary)[] = [];
-
-      for (const medium of input.mediums) {
-        const mediumSpecificStages = mediumStagesMap.get(medium.id) || [];
-        const combinedStages = [...sharedStages, ...mediumSpecificStages];
-        // Fill in skipped stages to return complete list
-        const completeStages = buildCompleteStageList(combinedStages);
-        const { outcome, outcomeReason } = determineOutcome(completeStages);
-
-        if (input.summaryOnly) {
-          mediumResults.push({
-            mediumId: medium.id,
-            outcome,
-            outcomeReason,
-          });
-        } else {
-          mediumResults.push({
-            mediumId: medium.id,
-            outcome,
-            outcomeReason,
-            stages: completeStages,
+      // For each target in deliverable, run delivery simulation
+      for (const target of input.targetArticles) {
+        const targetInDeliverable = comparisonResult.articlesToDeliver.find(
+          (a) => a.flattened.idHash === target.flattened.idHash,
+        );
+        if (targetInDeliverable) {
+          await deliverArticles([targetInDeliverable], deliveryMediums, {
+            feedId: input.feed.id,
+            feedUrl: "diagnostic://placeholder",
+            articleDayLimit: input.articleDayLimit,
+            deliveryRecordStore: deps.deliveryRecordStore,
+            discordClient: createTestDiscordRestClient(),
           });
         }
       }
 
-      // When there are no mediums, compute outcome from shared stages directly
-      if (input.mediums.length === 0) {
-        const completeStages = buildCompleteStageList(sharedStages);
-        const { outcome, outcomeReason } = determineOutcome(completeStages);
+      // Build results inside context to access delivery preview data
+      const builtResults: (ArticleDeliveryResult | ArticleDeliverySummary)[] =
+        [];
 
-        builtResults.push({
-          articleId: article.flattened.id,
-          articleIdHash: article.flattened.idHash,
-          articleTitle: article.flattened.title || null,
-          outcome,
-          outcomeReason,
-          mediumResults: [],
-        });
-      } else {
-        // Compute aggregate article-level outcome from per-medium outcomes
-        const { outcome: articleOutcome, outcomeReason: articleOutcomeReason } =
-          computeAggregateOutcome(mediumResults);
+      for (const article of input.targetArticles) {
+        const allStages = getDeliveryPreviewResultsForArticle(
+          article.flattened.idHash,
+        );
+        const { sharedStages, mediumStagesMap } = separateStages(allStages);
 
-        builtResults.push({
-          articleId: article.flattened.id,
-          articleIdHash: article.flattened.idHash,
-          articleTitle: article.flattened.title || null,
-          outcome: articleOutcome,
-          outcomeReason: articleOutcomeReason,
-          mediumResults,
-        });
+        // Build per-medium results
+        const mediumResults: (MediumDeliveryResult | MediumDeliverySummary)[] =
+          [];
+
+        for (const medium of input.mediums) {
+          const mediumSpecificStages = mediumStagesMap.get(medium.id) || [];
+          const combinedStages = [...sharedStages, ...mediumSpecificStages];
+          // Fill in skipped stages to return complete list
+          const completeStages = buildCompleteStageList(combinedStages);
+          const { outcome, outcomeReason } = determineOutcome(completeStages);
+
+          if (input.summaryOnly) {
+            mediumResults.push({
+              mediumId: medium.id,
+              outcome,
+              outcomeReason,
+            });
+          } else {
+            mediumResults.push({
+              mediumId: medium.id,
+              outcome,
+              outcomeReason,
+              stages: completeStages,
+            });
+          }
+        }
+
+        // When there are no mediums, compute outcome from shared stages directly
+        if (input.mediums.length === 0) {
+          const completeStages = buildCompleteStageList(sharedStages);
+          const { outcome, outcomeReason } = determineOutcome(completeStages);
+
+          builtResults.push({
+            articleId: article.flattened.id,
+            articleIdHash: article.flattened.idHash,
+            articleTitle: article.flattened.title || null,
+            articlePublishedDate:
+              article.raw.pubdate || article.raw.date || null,
+            articleStoredDate:
+              storedDatesMap.get(article.flattened.idHash)?.toISOString() ||
+              null,
+            outcome,
+            outcomeReason,
+            mediumResults: [],
+          });
+        } else {
+          // Compute aggregate article-level outcome from per-medium outcomes
+          const {
+            outcome: articleOutcome,
+            outcomeReason: articleOutcomeReason,
+          } = computeAggregateOutcome(mediumResults);
+
+          builtResults.push({
+            articleId: article.flattened.id,
+            articleIdHash: article.flattened.idHash,
+            articleTitle: article.flattened.title || null,
+            articlePublishedDate:
+              article.raw.pubdate || article.raw.date || null,
+            articleStoredDate:
+              storedDatesMap.get(article.flattened.idHash)?.toISOString() ||
+              null,
+            outcome: articleOutcome,
+            outcomeReason: articleOutcomeReason,
+            mediumResults,
+          });
+        }
       }
-    }
 
-    return builtResults;
-  });
+      return builtResults;
+    },
+  );
 
   return { results, errors: [], stages: CANONICAL_STAGES };
 }

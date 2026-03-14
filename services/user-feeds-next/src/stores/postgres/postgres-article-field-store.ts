@@ -22,14 +22,14 @@ export function createPostgresArticleFieldStore(pool: Pool): ArticleFieldStore {
     async hasPriorArticlesStored(feedId: string): Promise<boolean> {
       const { rows } = await pool.query(
         `SELECT 1 AS result FROM feed_article_field_partitioned WHERE feed_id = $1 LIMIT 1`,
-        [feedId]
+        [feedId],
       );
       return !!rows[0];
     },
 
     async findStoredArticleIds(
       feedId: string,
-      idHashes: string[]
+      idHashes: string[],
     ): Promise<Set<string>> {
       if (idHashes.length === 0) {
         return new Set();
@@ -39,16 +39,43 @@ export function createPostgresArticleFieldStore(pool: Pool): ArticleFieldStore {
       const { rows } = await pool.query(
         `SELECT field_hashed_value FROM feed_article_field_partitioned
          WHERE feed_id = $1 AND field_name = 'id' AND field_hashed_value IN (${placeholders})`,
-        [feedId, ...idHashes]
+        [feedId, ...idHashes],
       );
 
       return new Set(rows.map((r) => r.field_hashed_value as string));
     },
 
+    async findStoredArticleDates(
+      feedId: string,
+      idHashes: string[],
+    ): Promise<Map<string, Date>> {
+      if (idHashes.length === 0) {
+        return new Map();
+      }
+
+      const placeholders = idHashes.map((_, i) => `$${i + 2}`).join(", ");
+      const { rows } = await pool.query(
+        `SELECT field_hashed_value, MIN(created_at) AS created_at
+         FROM feed_article_field_partitioned
+         WHERE feed_id = $1 AND field_name = 'id' AND field_hashed_value IN (${placeholders})
+         GROUP BY field_hashed_value`,
+        [feedId, ...idHashes],
+      );
+
+      const result = new Map<string, Date>();
+      for (const row of rows) {
+        result.set(
+          row.field_hashed_value as string,
+          new Date(row.created_at as string),
+        );
+      }
+      return result;
+    },
+
     async findStoredArticleIdsPartitioned(
       feedId: string,
       idHashes: string[],
-      olderThanOneMonth: boolean
+      olderThanOneMonth: boolean,
     ): Promise<Set<string>> {
       if (idHashes.length === 0) {
         return new Set();
@@ -67,7 +94,7 @@ export function createPostgresArticleFieldStore(pool: Pool): ArticleFieldStore {
           `SELECT field_hashed_value FROM feed_article_field_partitioned
            WHERE ${dateCondition} AND feed_id = $1 AND field_name = 'id'
              AND field_hashed_value IN (${placeholders})`,
-          [feedId, oneMonthAgo, ...idHashes]
+          [feedId, oneMonthAgo, ...idHashes],
         );
         rows = result.rows;
       } else {
@@ -81,14 +108,14 @@ export function createPostgresArticleFieldStore(pool: Pool): ArticleFieldStore {
           const placeholders = idHashes.map((_, i) => `($${i + 1})`).join(", ");
           await client.query(
             `CREATE TEMP TABLE ${temporaryTableName} AS SELECT * FROM (VALUES ${placeholders}) AS t(id)`,
-            idHashes
+            idHashes,
           );
 
           const result = await client.query(
             `SELECT field_hashed_value FROM feed_article_field_partitioned
              INNER JOIN ${temporaryTableName} t ON (field_hashed_value = t.id)
              WHERE ${dateCondition} AND feed_id = $1 AND field_name = 'id'`,
-            [feedId, oneMonthAgo]
+            [feedId, oneMonthAgo],
           );
           rows = result.rows;
 
@@ -107,7 +134,7 @@ export function createPostgresArticleFieldStore(pool: Pool): ArticleFieldStore {
 
     async someFieldsExist(
       feedId: string,
-      fields: Array<{ name: string; hashedValue: string }>
+      fields: Array<{ name: string; hashedValue: string }>,
     ): Promise<boolean> {
       if (fields.length === 0) {
         return false;
@@ -116,7 +143,7 @@ export function createPostgresArticleFieldStore(pool: Pool): ArticleFieldStore {
       const conditions = fields
         .map(
           (_, i) =>
-            `(field_name = $${i * 2 + 2} AND field_hashed_value = $${i * 2 + 3})`
+            `(field_name = $${i * 2 + 2} AND field_hashed_value = $${i * 2 + 3})`,
         )
         .join(" OR ");
 
@@ -127,7 +154,7 @@ export function createPostgresArticleFieldStore(pool: Pool): ArticleFieldStore {
 
       const { rows } = await pool.query(
         `SELECT 1 FROM ${TABLE_NAME} WHERE feed_id = $1 AND (${conditions}) LIMIT 1`,
-        params
+        params,
       );
 
       return rows.length > 0;
@@ -136,14 +163,14 @@ export function createPostgresArticleFieldStore(pool: Pool): ArticleFieldStore {
     async storeArticles(
       feedId: string,
       articles: Article[],
-      comparisonFields: string[]
+      comparisonFields: string[],
     ): Promise<void> {
       const store = asyncLocalStorage.getStore();
 
       if (!store) {
         throw new Error(
           "No context was started for ArticleFieldStore. " +
-            "Call storeArticles within a startContext callback."
+            "Call storeArticles within a startContext callback.",
         );
       }
 
@@ -176,7 +203,7 @@ export function createPostgresArticleFieldStore(pool: Pool): ArticleFieldStore {
     async getStoredComparisonNames(feedId: string): Promise<Set<string>> {
       const { rows } = await pool.query(
         `SELECT field_name FROM feed_article_custom_comparison WHERE feed_id = $1`,
-        [feedId]
+        [feedId],
       );
 
       return new Set(rows.map((r) => r.field_name as string));
@@ -184,7 +211,7 @@ export function createPostgresArticleFieldStore(pool: Pool): ArticleFieldStore {
 
     async storeComparisonNames(
       feedId: string,
-      comparisonFields: string[]
+      comparisonFields: string[],
     ): Promise<void> {
       for (const fieldName of comparisonFields) {
         try {
@@ -192,7 +219,7 @@ export function createPostgresArticleFieldStore(pool: Pool): ArticleFieldStore {
             `INSERT INTO feed_article_custom_comparison (feed_id, field_name, created_at)
              VALUES ($1, $2, $3)
              ON CONFLICT (feed_id, field_name) DO NOTHING`,
-            [feedId, fieldName, new Date()]
+            [feedId, fieldName, new Date()],
           );
         } catch {
           // Ignore unique constraint violations
@@ -203,11 +230,11 @@ export function createPostgresArticleFieldStore(pool: Pool): ArticleFieldStore {
     async clear(feedId: string): Promise<void> {
       await pool.query(
         `DELETE FROM feed_article_field_partitioned WHERE feed_id = $1`,
-        [feedId]
+        [feedId],
       );
       await pool.query(
         `DELETE FROM feed_article_custom_comparison WHERE feed_id = $1`,
-        [feedId]
+        [feedId],
       );
     },
 
@@ -247,7 +274,7 @@ export function createPostgresArticleFieldStore(pool: Pool): ArticleFieldStore {
           `INSERT INTO feed_article_field_partitioned
            (feed_id, field_name, field_hashed_value, created_at)
            VALUES ${placeholders}`,
-          allValues
+          allValues,
         );
 
         return { affectedRows: result.rowCount ?? 0 };

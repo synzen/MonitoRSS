@@ -71,7 +71,7 @@ export async function handleDeliveryPreview(
   feedRequestsServiceHost: string,
   articleFieldStore: ArticleFieldStore,
   deliveryRecordStore: DeliveryRecordStore,
-  responseHashStore: ResponseHashStore
+  responseHashStore: ResponseHashStore,
 ): Promise<Response> {
   return withAuth(req, async () => {
     try {
@@ -82,7 +82,7 @@ export async function handleDeliveryPreview(
       const hashToCompare = await getHashToCompare(
         input.feed.id,
         articleFieldStore,
-        responseHashStore
+        responseHashStore,
       );
 
       // Use shared processing to fetch and parse feed with the delivery preview endpoint
@@ -99,7 +99,7 @@ export async function handleDeliveryPreview(
           stalenessThresholdSeconds: input.feed.refreshRateSeconds,
           hashToCompare,
         },
-        { fetchFeedFn: fetchFeedForDeliveryPreview }
+        { fetchFeedFn: fetchFeedForDeliveryPreview },
       );
 
       // Handle matched-hash by re-fetching without hash comparison to get articles
@@ -117,7 +117,7 @@ export async function handleDeliveryPreview(
             feedRequestsServiceHost,
             stalenessThresholdSeconds: input.feed.refreshRateSeconds,
           },
-          { fetchFeedFn: fetchFeedForDeliveryPreview }
+          { fetchFeedFn: fetchFeedForDeliveryPreview },
         );
 
         // If re-fetch fails, treat as error (shouldn't happen normally)
@@ -143,13 +143,21 @@ export async function handleDeliveryPreview(
         const total = allArticles.length;
         const targetArticles = allArticles.slice(
           input.skip,
-          input.skip + input.limit
+          input.skip + input.limit,
+        );
+
+        const storedDatesMap = await articleFieldStore.findStoredArticleDates(
+          input.feed.id,
+          targetArticles.map((a) => a.flattened.idHash),
         );
 
         const results = targetArticles.map((article) => ({
           articleId: article.flattened.id,
           articleIdHash: article.flattened.idHash,
           articleTitle: article.flattened.title || null,
+          articlePublishedDate: article.raw.pubdate || article.raw.date || null,
+          articleStoredDate:
+            storedDatesMap.get(article.flattened.idHash)?.toISOString() || null,
           outcome: ArticleDeliveryOutcome.FeedUnchanged,
           outcomeReason:
             "Feed content unchanged since last check. Articles will be processed when new content is detected.",
@@ -162,14 +170,19 @@ export async function handleDeliveryPreview(
           })),
         }));
 
-        return jsonResponse({ results, errors: [], total, stages: CANONICAL_STAGES });
+        return jsonResponse({
+          results,
+          errors: [],
+          total,
+          stages: CANONICAL_STAGES,
+        });
       }
 
       if (
         feedResult.status === "fetch-error" ||
         feedResult.status === "parse-error"
       ) {
-        endDeliveryPreviewEarly()
+        endDeliveryPreviewEarly();
         return createErrorResponse(feedResult);
       }
 
@@ -178,7 +191,7 @@ export async function handleDeliveryPreview(
       const total = allArticles.length;
       const targetArticles = allArticles.slice(
         input.skip,
-        input.skip + input.limit
+        input.skip + input.limit,
       );
 
       // Map mediums to properly type the filter expressions
@@ -189,7 +202,7 @@ export async function handleDeliveryPreview(
           filters: m.filters
             ? { expression: m.filters.expression as LogicalExpression }
             : undefined,
-        })
+        }),
       );
 
       const { results, errors } = await generateDeliveryPreview(
@@ -209,7 +222,7 @@ export async function handleDeliveryPreview(
         {
           articleFieldStore,
           deliveryRecordStore,
-        }
+        },
       );
 
       return jsonResponse({ results, errors, total, stages: CANONICAL_STAGES });
@@ -221,7 +234,7 @@ export async function handleDeliveryPreview(
             path: issue.path,
             message: issue.message,
           })),
-          400
+          400,
         );
       }
 

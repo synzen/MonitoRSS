@@ -61,7 +61,7 @@ export interface ArticleFieldStore {
    */
   findStoredArticleIds(
     feedId: string,
-    idHashes: string[]
+    idHashes: string[],
   ): Promise<Set<string>>;
 
   /**
@@ -75,7 +75,7 @@ export interface ArticleFieldStore {
   findStoredArticleIdsPartitioned(
     feedId: string,
     idHashes: string[],
-    olderThanOneMonth: boolean
+    olderThanOneMonth: boolean,
   ): Promise<Set<string>>;
 
   /**
@@ -83,7 +83,7 @@ export interface ArticleFieldStore {
    */
   someFieldsExist(
     feedId: string,
-    fields: Array<{ name: string; hashedValue: string }>
+    fields: Array<{ name: string; hashedValue: string }>,
   ): Promise<boolean>;
 
   /**
@@ -92,7 +92,7 @@ export interface ArticleFieldStore {
   storeArticles(
     feedId: string,
     articles: Article[],
-    comparisonFields: string[]
+    comparisonFields: string[],
   ): Promise<void>;
 
   /**
@@ -108,8 +108,17 @@ export interface ArticleFieldStore {
    */
   storeComparisonNames(
     feedId: string,
-    comparisonFields: string[]
+    comparisonFields: string[],
   ): Promise<void>;
+
+  /**
+   * Find the earliest stored date (created_at) for article ID hashes.
+   * Returns a map from idHash to the Date when the bot first stored that article.
+   */
+  findStoredArticleDates(
+    feedId: string,
+    idHashes: string[],
+  ): Promise<Map<string, Date>>;
 
   /**
    * Clear all stored data for a feed.
@@ -153,19 +162,19 @@ const inMemoryComparisonNames: Map<string, Set<string>> = new Map();
 export const inMemoryArticleFieldStore: ArticleFieldStore = {
   async hasPriorArticlesStored(feedId: string): Promise<boolean> {
     return inMemoryStore.some(
-      (f) => f.feedId === feedId && f.fieldName === "id"
+      (f) => f.feedId === feedId && f.fieldName === "id",
     );
   },
 
   async findStoredArticleIds(
     feedId: string,
-    idHashes: string[]
+    idHashes: string[],
   ): Promise<Set<string>> {
     const found = new Set<string>();
     for (const hash of idHashes) {
       const exists = inMemoryStore.some(
         (f) =>
-          f.feedId === feedId && f.fieldName === "id" && f.hashedValue === hash
+          f.feedId === feedId && f.fieldName === "id" && f.hashedValue === hash,
       );
       if (exists) {
         found.add(hash);
@@ -177,7 +186,7 @@ export const inMemoryArticleFieldStore: ArticleFieldStore = {
   async findStoredArticleIdsPartitioned(
     feedId: string,
     idHashes: string[],
-    olderThanOneMonth: boolean
+    olderThanOneMonth: boolean,
   ): Promise<Set<string>> {
     const oneMonthAgo = dayjs().subtract(1, "month").toDate();
     const found = new Set<string>();
@@ -185,7 +194,7 @@ export const inMemoryArticleFieldStore: ArticleFieldStore = {
     for (const hash of idHashes) {
       const entry = inMemoryStore.find(
         (f) =>
-          f.feedId === feedId && f.fieldName === "id" && f.hashedValue === hash
+          f.feedId === feedId && f.fieldName === "id" && f.hashedValue === hash,
       );
 
       if (entry) {
@@ -201,14 +210,14 @@ export const inMemoryArticleFieldStore: ArticleFieldStore = {
 
   async someFieldsExist(
     feedId: string,
-    fields: Array<{ name: string; hashedValue: string }>
+    fields: Array<{ name: string; hashedValue: string }>,
   ): Promise<boolean> {
     for (const field of fields) {
       const exists = inMemoryStore.some(
         (f) =>
           f.feedId === feedId &&
           f.fieldName === field.name &&
-          f.hashedValue === field.hashedValue
+          f.hashedValue === field.hashedValue,
       );
       if (exists) {
         return true;
@@ -220,7 +229,7 @@ export const inMemoryArticleFieldStore: ArticleFieldStore = {
   async storeArticles(
     feedId: string,
     articles: Article[],
-    comparisonFields: string[]
+    comparisonFields: string[],
   ): Promise<void> {
     const now = new Date();
     const asyncStore = articleFieldAsyncStorage.getStore();
@@ -228,7 +237,7 @@ export const inMemoryArticleFieldStore: ArticleFieldStore = {
     if (!asyncStore) {
       throw new Error(
         "No context was started for ArticleFieldStore. " +
-          "Call storeArticles within a startContext callback."
+          "Call storeArticles within a startContext callback.",
       );
     }
 
@@ -259,6 +268,10 @@ export const inMemoryArticleFieldStore: ArticleFieldStore = {
     }
   },
 
+  async findStoredArticleDates(): Promise<Map<string, Date>> {
+    return new Map();
+  },
+
   async clear(feedId: string): Promise<void> {
     // Remove all entries for this feed
     let i = inMemoryStore.length;
@@ -277,7 +290,7 @@ export const inMemoryArticleFieldStore: ArticleFieldStore = {
 
   async storeComparisonNames(
     feedId: string,
-    comparisonFields: string[]
+    comparisonFields: string[],
   ): Promise<void> {
     let stored = inMemoryComparisonNames.get(feedId);
     if (!stored) {
@@ -336,7 +349,7 @@ async function articleFieldsSeenBefore(
   store: ArticleFieldStore,
   feedId: string,
   article: Article,
-  fieldKeys: string[]
+  fieldKeys: string[],
 ): Promise<boolean> {
   const queries: Array<{ name: string; hashedValue: string }> = [];
 
@@ -389,10 +402,10 @@ interface FilterForNewArticlesResult {
 async function filterForNewArticles(
   store: ArticleFieldStore,
   feedId: string,
-  articles: Article[]
+  articles: Article[],
 ): Promise<FilterForNewArticlesResult> {
   const articleMap = new Map(
-    articles.map((article) => [article.flattened.idHash, article])
+    articles.map((article) => [article.flattened.idHash, article]),
   );
   const idHashes = Array.from(articleMap.keys());
 
@@ -400,7 +413,7 @@ async function filterForNewArticles(
   const idsStoredInPastMonth = await store.findStoredArticleIdsPartitioned(
     feedId,
     idHashes,
-    false // NOT older than one month = stored within past month
+    false, // NOT older than one month = stored within past month
   );
 
   // Filter to get candidates (articles NOT in past month)
@@ -416,7 +429,7 @@ async function filterForNewArticles(
     await store.findStoredArticleIdsPartitioned(
       feedId,
       candidateIds,
-      true // older than one month
+      true, // older than one month
     );
 
   // These old articles need to be re-stored with current timestamp
@@ -446,7 +459,7 @@ async function checkBlockingComparisons(
   store: ArticleFieldStore,
   feedId: string,
   blockingComparisons: string[],
-  newArticles: Article[]
+  newArticles: Article[],
 ): Promise<Article[]> {
   if (blockingComparisons.length === 0) {
     return newArticles;
@@ -458,10 +471,10 @@ async function checkBlockingComparisons(
         store,
         feedId,
         article,
-        blockingComparisons
+        blockingComparisons,
       );
       return shouldBlock ? null : article;
-    })
+    }),
   );
 
   return results.filter((article): article is Article => article !== null);
@@ -475,7 +488,7 @@ async function checkPassingComparisons(
   store: ArticleFieldStore,
   feedId: string,
   passingComparisons: string[],
-  seenArticles: Article[]
+  seenArticles: Article[],
 ): Promise<Article[]> {
   if (passingComparisons.length === 0) {
     return [];
@@ -487,11 +500,11 @@ async function checkPassingComparisons(
         store,
         feedId,
         article,
-        passingComparisons
+        passingComparisons,
       );
       // Pass if NOT all fields seen (i.e., something changed)
       return allFieldsSeen ? null : article;
-    })
+    }),
   );
 
   return results.filter((article): article is Article => article !== null);
@@ -506,7 +519,7 @@ interface ArticleDateCheckInfo {
 function getArticleDateCheckInfo(
   article: Article,
   threshold: number,
-  placeholders: string[]
+  placeholders: string[],
 ): ArticleDateCheckInfo {
   for (const placeholder of placeholders) {
     const raw = article.raw[placeholder as keyof typeof article.raw];
@@ -524,7 +537,7 @@ function getArticleDateCheckInfo(
 
 function filterArticlesBasedOnDateChecks(
   articles: Article[],
-  dateChecks?: DateCheckOptions
+  dateChecks?: DateCheckOptions,
 ): Article[] {
   if (!dateChecks?.oldArticleDateDiffMsThreshold) {
     return articles;
@@ -535,7 +548,11 @@ function filterArticlesBasedOnDateChecks(
     dateChecks.datePlaceholderReferences || DEFAULT_DATE_PLACEHOLDERS;
 
   return articles.filter((article) => {
-    const { passes } = getArticleDateCheckInfo(article, threshold, placeholders);
+    const { passes } = getArticleDateCheckInfo(
+      article,
+      threshold,
+      placeholders,
+    );
     return passes;
   });
 }
@@ -551,7 +568,7 @@ export async function getArticlesToDeliver(
     blockingComparisons: string[];
     passingComparisons: string[];
     dateChecks?: DateCheckOptions;
-  }
+  },
 ): Promise<ArticleComparisonResult> {
   const { blockingComparisons, passingComparisons, dateChecks } = options;
 
@@ -612,31 +629,33 @@ export async function getArticlesToDeliver(
   }));
 
   const activeBlockingComparisons = blockingComparisons.filter((name) =>
-    storedComparisonNames.has(name)
+    storedComparisonNames.has(name),
   );
   const activePassingComparisons = passingComparisons.filter((name) =>
-    storedComparisonNames.has(name)
+    storedComparisonNames.has(name),
   );
 
   // Find comparisons that are NOT yet stored (newly added by user)
   const allComparisons = [...blockingComparisons, ...passingComparisons];
   const unstoredComparisons = allComparisons.filter(
-    (name) => !storedComparisonNames.has(name)
+    (name) => !storedComparisonNames.has(name),
   );
 
   // Filter for new articles by ID (two-pass partitioned lookup)
   const { newArticles, articlesToRestore } = await filterForNewArticles(
     store,
     feedId,
-    articles
+    articles,
   );
 
   const newArticleHashes = new Set(newArticles.map((a) => a.flattened.idHash));
-  const restoreHashes = new Set(articlesToRestore.map((a) => a.flattened.idHash));
+  const restoreHashes = new Set(
+    articlesToRestore.map((a) => a.flattened.idHash),
+  );
 
   // Get seen articles (existing IDs)
   const seenArticles = articles.filter(
-    (a) => !newArticleHashes.has(a.flattened.idHash)
+    (a) => !newArticleHashes.has(a.flattened.idHash),
   );
 
   // Check blocking comparisons on NEW articles (only using active comparisons)
@@ -644,7 +663,7 @@ export async function getArticlesToDeliver(
     store,
     feedId,
     activeBlockingComparisons,
-    newArticles
+    newArticles,
   );
 
   // Check passing comparisons on SEEN articles (only using active comparisons)
@@ -653,10 +672,10 @@ export async function getArticlesToDeliver(
     store,
     feedId,
     activePassingComparisons,
-    seenArticles
+    seenArticles,
   );
   const passedViaComparisonHashes = new Set(
-    articlesPassedComparisons.map((a) => a.flattened.idHash)
+    articlesPassedComparisons.map((a) => a.flattened.idHash),
   );
 
   // Record IdComparison delivery preview - O(T)
@@ -666,7 +685,9 @@ export async function getArticlesToDeliver(
 
     return {
       stage: DeliveryPreviewStage.IdComparison,
-      status: isNew ? DeliveryPreviewStageStatus.Passed : DeliveryPreviewStageStatus.Failed,
+      status: isNew
+        ? DeliveryPreviewStageStatus.Passed
+        : DeliveryPreviewStageStatus.Failed,
       details: {
         articleIdHash: hash,
         foundInHotPartition: !isNew && !isRestored,
@@ -678,13 +699,17 @@ export async function getArticlesToDeliver(
 
   // Record BlockingComparison delivery preview for new target articles - O(T)
   if (blockingComparisons.length > 0) {
-  const pastBlocksHashes = new Set(articlesPastBlocks.map((a) => a.flattened.idHash));
+    const pastBlocksHashes = new Set(
+      articlesPastBlocks.map((a) => a.flattened.idHash),
+    );
     recordDeliveryPreviewForTargetArticles(getArticleMap(), (_, hash) => {
       if (!newArticleHashes.has(hash)) return null; // Only record for new articles
       const passed = pastBlocksHashes.has(hash);
       return {
         stage: DeliveryPreviewStage.BlockingComparison,
-        status: passed ? DeliveryPreviewStageStatus.Passed : DeliveryPreviewStageStatus.Failed,
+        status: passed
+          ? DeliveryPreviewStageStatus.Passed
+          : DeliveryPreviewStageStatus.Failed,
         details: {
           comparisonFields: blockingComparisons,
           activeFields: activeBlockingComparisons,
@@ -703,7 +728,9 @@ export async function getArticlesToDeliver(
       const passed = passedViaComparisonHashes.has(hash);
       return {
         stage: DeliveryPreviewStage.PassingComparison,
-        status: passed ? DeliveryPreviewStageStatus.Passed : DeliveryPreviewStageStatus.Failed,
+        status: passed
+          ? DeliveryPreviewStageStatus.Passed
+          : DeliveryPreviewStageStatus.Failed,
         details: {
           comparisonFields: passingComparisons,
           activeFields: activePassingComparisons,
@@ -722,12 +749,14 @@ export async function getArticlesToDeliver(
   // Apply date checks
   const articlesToDeliver = filterArticlesBasedOnDateChecks(
     candidateArticles,
-    dateChecks
+    dateChecks,
   );
 
   // Record DateCheck delivery preview for candidate target articles - O(T)
   if (dateChecks?.oldArticleDateDiffMsThreshold) {
-    const candidateHashes = new Set(candidateArticles.map((a) => a.flattened.idHash));
+    const candidateHashes = new Set(
+      candidateArticles.map((a) => a.flattened.idHash),
+    );
     const placeholders =
       dateChecks.datePlaceholderReferences || DEFAULT_DATE_PLACEHOLDERS;
     const threshold = dateChecks.oldArticleDateDiffMsThreshold;
@@ -738,12 +767,14 @@ export async function getArticlesToDeliver(
       const { articleDate, ageMs, passes } = getArticleDateCheckInfo(
         article,
         threshold,
-        placeholders
+        placeholders,
       );
 
       return {
         stage: DeliveryPreviewStage.DateCheck,
-        status: passes ? DeliveryPreviewStageStatus.Passed : DeliveryPreviewStageStatus.Failed,
+        status: passes
+          ? DeliveryPreviewStageStatus.Passed
+          : DeliveryPreviewStageStatus.Failed,
         details: {
           articleDate,
           threshold,
@@ -780,7 +811,7 @@ export async function getArticlesToDeliver(
     await store.storeArticles(
       feedId,
       articlesPassedComparisons,
-      passingComparisons
+      passingComparisons,
     );
   }
 
