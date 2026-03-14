@@ -10,9 +10,12 @@ import {
   handleGetArticlesError,
   GetFeedArticlesRequestStatus,
 } from "../utils";
-import { getArticlesInputSchema } from "../schemas";
+import {
+  getArticlesInputSchema,
+  GetUserFeedArticlesFilterReturnType,
+} from "../schemas";
 import { findOrFetchFeedArticles } from "../../feeds/services/articles.service";
-import { queryForArticles } from "../../feeds/services/feeds.service";
+import { paginateArticles } from "../../feeds/services/feeds.service";
 import {
   formatArticleForDiscord,
   CustomPlaceholderStepType,
@@ -21,6 +24,12 @@ import {
   CustomPlaceholderRegexEvalException,
   FiltersRegexEvalException,
 } from "../../articles/formatter/exceptions";
+import { enrichFlattenedArticle } from "../../articles/parser";
+import {
+  evaluateExpression,
+  buildFilterReferences,
+  type LogicalExpression,
+} from "../../articles/filters";
 
 /**
  * Convert schema custom placeholders to the format expected by formatArticleForDiscord.
@@ -101,6 +110,7 @@ export async function handleGetArticles(
             }
           : null,
         feedRequestsServiceHost,
+        lightweight: true,
       });
 
       if (fetchResult.articles.length === 0) {
@@ -118,8 +128,46 @@ export async function handleGetArticles(
         });
       }
 
-      // Format articles for Discord
-      const formattedArticles = fetchResult.articles.map(
+      // Step 1: Paginate on lightweight (unformatted) articles
+      const {
+        articles: paginatedArticles,
+        totalArticles,
+        properties,
+      } = paginateArticles({
+        articles: fetchResult.articles,
+        limit: input.limit,
+        skip: input.skip,
+        random: input.random,
+        selectProperties: input.selectProperties,
+        selectPropertyTypes: input.selectPropertyTypes,
+        customPlaceholders: input.formatter.customPlaceholders,
+        filters: {
+          articleId: input.filters?.articleId,
+          articleIdHashes: input.filters?.articleIdHashes,
+          search: input.filters?.search,
+        },
+      });
+
+      // Step 2: Enrich the paginated subset with extracted::/processed:: fields
+      const enrichedArticles = paginatedArticles.map((article) => ({
+        ...article,
+        flattened: {
+          ...enrichFlattenedArticle(
+            // Strip id/idHash before enrichment (they're not content fields)
+            Object.fromEntries(
+              Object.entries(article.flattened).filter(
+                ([k]) => k !== "id" && k !== "idHash"
+              )
+            ),
+            {}
+          ),
+          id: article.flattened.id,
+          idHash: article.flattened.idHash,
+        },
+      }));
+
+      // Step 3: Format only the paginated subset for Discord
+      const formattedArticles = enrichedArticles.map(
         (article) =>
           formatArticleForDiscord(article, {
             ...input.formatter.options,
@@ -129,25 +177,49 @@ export async function handleGetArticles(
           }).article
       );
 
-      const {
-        articles: matchedArticles,
-        properties,
-        filterEvalResults,
-        totalArticles,
-      } = await queryForArticles({
-        articles: formattedArticles,
-        limit: input.limit,
-        skip: input.skip,
-        selectProperties: input.selectProperties,
-        filters: input.filters,
-        random: input.random,
-        selectPropertyTypes: input.selectPropertyTypes,
-        customPlaceholders: input.formatter.customPlaceholders,
+      // Step 4: Trim to selected properties
+      const trimmedArticles = formattedArticles.map((article) => {
+        const trimmed = {
+          ...article,
+          flattened: {
+            id: article.flattened.id,
+            idHash: article.flattened.idHash,
+          } as Record<string, string> & { id: string; idHash: string },
+        };
+
+        properties.forEach((property) => {
+          trimmed.flattened[property] = article.flattened[property] || "";
+        });
+
+        return trimmed;
       });
+
+      // Step 5: Evaluate filter expressions on formatted articles if requested
+      let filterEvalResults: Array<{ passed: boolean }> | undefined;
+
+      if (
+        input.filters?.returnType ===
+        GetUserFeedArticlesFilterReturnType.IncludeEvaluationResults
+      ) {
+        if (input.filters.expression) {
+          filterEvalResults = await Promise.all(
+            formattedArticles.map(async (article) => {
+              const { result: passed } = evaluateExpression(
+                input.filters!.expression as unknown as LogicalExpression,
+                buildFilterReferences(article)
+              );
+
+              return { passed };
+            })
+          );
+        } else {
+          filterEvalResults = formattedArticles.map(() => ({ passed: true }));
+        }
+      }
 
       // Filter external content errors to only include those for returned articles
       const returnedArticleIds = new Set(
-        matchedArticles.map((a) => a.flattened.id)
+        trimmedArticles.map((a) => a.flattened.id)
       );
       const filteredErrors = fetchResult.externalContentErrors?.filter((err) =>
         returnedArticleIds.has(err.articleId)
@@ -156,7 +228,7 @@ export async function handleGetArticles(
       return jsonResponse({
         result: {
           requestStatus: GetFeedArticlesRequestStatus.Success,
-          articles: matchedArticles.map((a) => a.flattened),
+          articles: trimmedArticles.map((a) => a.flattened),
           totalArticles,
           filterStatuses: filterEvalResults,
           selectedProperties: properties,

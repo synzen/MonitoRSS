@@ -27,6 +27,7 @@ export interface CacheKeyOptions {
   formatOptions: FormatOptions;
   externalFeedProperties?: ExternalFeedProperty[];
   requestLookupDetails?: RequestLookupDetails | null;
+  lightweight?: boolean;
 }
 
 export interface CachedArticles {

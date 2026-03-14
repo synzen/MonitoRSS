@@ -523,6 +523,12 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
   describe("POST /v1/user-feeds/preview", () => {
     const endpoint = "/v1/user-feeds/preview";
 
+    // connectionCreatedAt must be after the inlineItalicFormatting cutoff (2026-01-11)
+    // to enable <b>→** and <i>→* conversion
+    const FORMATTER_WITH_INLINE = {
+      connectionCreatedAt: "2026-02-01T00:00:00.000Z",
+    };
+
     it("formats HTML to Discord markdown in preview response", async () => {
       const response = await fetch(`${baseUrl}${endpoint}`, {
         method: "POST",
@@ -540,6 +546,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
             content: "{{rss:title__#}}",
             embeds: [],
             components: null,
+            formatter: FORMATTER_WITH_INLINE,
           },
         }),
       });
@@ -577,6 +584,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
             content: "{{custom::extracted}}",
             embeds: [],
             components: null,
+            formatter: FORMATTER_WITH_INLINE,
             customPlaceholders: [
               {
                 id: "cp-1",
@@ -603,8 +611,8 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       assert.ok(messages.length > 0);
 
       const content = messages[0]?.content as string;
-      // Regex extracts "Bold Title" from "**Bold Title** and\n*italic*"
-      assert.strictEqual(content, "Bold Title and\n*italic*");
+      // Regex extracts "Bold Title" from "**Bold Title** and *italic*"
+      assert.strictEqual(content, "Bold Title and *italic*");
     });
 
     it("applies uppercase custom placeholder in preview response", async () => {
@@ -623,6 +631,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
             content: "{{custom::upper}}",
             embeds: [],
             components: null,
+            formatter: FORMATTER_WITH_INLINE,
             customPlaceholders: [
               {
                 id: "cp-1",
@@ -640,7 +649,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       const messages = body.messages as JsonBody[];
 
       const content = messages[0]?.content as string;
-      assert.strictEqual(content, "**BOLD TITLE** AND\n*ITALIC*");
+      assert.strictEqual(content, "**BOLD TITLE** AND *ITALIC*");
     });
 
     it("applies lowercase custom placeholder in preview response", async () => {
@@ -659,6 +668,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
             content: "{{custom::lower}}",
             embeds: [],
             components: null,
+            formatter: FORMATTER_WITH_INLINE,
             customPlaceholders: [
               {
                 id: "cp-1",
@@ -676,7 +686,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       const messages = body.messages as JsonBody[];
 
       const content = messages[0]?.content as string;
-      assert.strictEqual(content, "**bold title** and\n*italic*");
+      assert.strictEqual(content, "**bold title** and *italic*");
     });
 
     it("applies url encode custom placeholder in preview response", async () => {
@@ -695,6 +705,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
             content: "{{custom::encoded}}",
             embeds: [],
             components: null,
+            formatter: FORMATTER_WITH_INLINE,
             customPlaceholders: [
               {
                 id: "cp-1",
@@ -712,9 +723,8 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       const messages = body.messages as JsonBody[];
 
       const content = messages[0]?.content as string;
-      // Spaces and newlines should be encoded (asterisks are not encoded by encodeURIComponent)
+      // Spaces should be encoded (asterisks are not encoded by encodeURIComponent)
       assert.ok(content.includes("%20"));
-      assert.ok(content.includes("%0A"));
     });
 
     it("applies chained custom placeholder steps in preview response", async () => {
@@ -733,6 +743,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
             content: "{{custom::chained}}",
             embeds: [],
             components: null,
+            formatter: FORMATTER_WITH_INLINE,
             customPlaceholders: [
               {
                 id: "cp-1",
@@ -758,7 +769,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
 
       const content = messages[0]?.content as string;
       // First regex extracts "Bold Title", then uppercase makes it "BOLD TITLE"
-      assert.strictEqual(content, "BOLD TITLE AND\n*ITALIC*");
+      assert.strictEqual(content, "BOLD TITLE AND *ITALIC*");
     });
 
     it("returns customPlaceholderPreviews when includeCustomPlaceholderPreviews is true", async () => {
@@ -778,6 +789,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
             content: "{{custom::preview}}",
             embeds: [],
             components: null,
+            formatter: FORMATTER_WITH_INLINE,
             customPlaceholders: [
               {
                 id: "cp-1",
@@ -809,9 +821,9 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       // Each preview array shows: [original, after step 1, after step 2, ...]
       const placeholderPreview = previews[0] as string[];
       assert.strictEqual(placeholderPreview.length, 3);
-      assert.strictEqual(placeholderPreview[0], "**Bold Title** and\n*italic*"); // original
-      assert.strictEqual(placeholderPreview[1], "Bold Title and\n*italic*"); // after regex
-      assert.strictEqual(placeholderPreview[2], "BOLD TITLE AND\n*ITALIC*"); // after uppercase
+      assert.strictEqual(placeholderPreview[0], "**Bold Title** and *italic*"); // original
+      assert.strictEqual(placeholderPreview[1], "Bold Title and *italic*"); // after regex
+      assert.strictEqual(placeholderPreview[2], "BOLD TITLE AND *ITALIC*"); // after uppercase
     });
 
     it("returns 422 for invalid regex in custom placeholder", async () => {
@@ -1190,6 +1202,223 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       });
 
       assert.strictEqual(response.status, 400);
+    });
+
+    describe("pagination and formatting", () => {
+      const PAGINATION_FEED_URL =
+        "https://example.com/pagination-test-feed.xml";
+      const PAGINATION_RSS_CONTENT = `<?xml version="1.0" encoding="UTF-8"?>
+        <rss version="2.0">
+          <channel>
+            <title>Pagination Test Feed</title>
+            <item>
+              <guid>article-1</guid>
+              <title>&lt;b&gt;First&lt;/b&gt; Article</title>
+              <description>&lt;p&gt;Description with &lt;a href="https://example.com"&gt;link&lt;/a&gt;&lt;/p&gt;</description>
+              <pubDate>${new Date("2024-01-05").toUTCString()}</pubDate>
+            </item>
+            <item>
+              <guid>article-2</guid>
+              <title>&lt;b&gt;Second&lt;/b&gt; Article</title>
+              <description>&lt;p&gt;Another description&lt;/p&gt;</description>
+              <pubDate>${new Date("2024-01-04").toUTCString()}</pubDate>
+            </item>
+            <item>
+              <guid>article-3</guid>
+              <title>Third Article with UniqueKeyword123</title>
+              <description>&lt;p&gt;Third description&lt;/p&gt;</description>
+              <pubDate>${new Date("2024-01-03").toUTCString()}</pubDate>
+            </item>
+            <item>
+              <guid>article-4</guid>
+              <title>Fourth Article</title>
+              <description>&lt;p&gt;Fourth description&lt;/p&gt;</description>
+              <pubDate>${new Date("2024-01-02").toUTCString()}</pubDate>
+            </item>
+            <item>
+              <guid>article-5</guid>
+              <title>Fifth Article</title>
+              <description>&lt;p&gt;Fifth description&lt;/p&gt;</description>
+              <pubDate>${new Date("2024-01-01").toUTCString()}</pubDate>
+            </item>
+          </channel>
+        </rss>`;
+
+      before(() => {
+        const testServer = getTestFeedRequestsServer();
+        testServer.registerUrl(PAGINATION_FEED_URL, () => ({
+          body: PAGINATION_RSS_CONTENT,
+          hash: "pagination-test-hash",
+        }));
+      });
+
+      after(() => {
+        const testServer = getTestFeedRequestsServer();
+        testServer.unregisterUrl(PAGINATION_FEED_URL);
+      });
+
+      it("paginates articles correctly", async () => {
+        // First page: 2 articles
+        const response1 = await fetch(`${baseUrl}${endpoint}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": TEST_API_KEY,
+          },
+          body: JSON.stringify({
+            url: PAGINATION_FEED_URL,
+            limit: 2,
+            skip: 0,
+            selectProperties: ["id", "title"],
+            formatter: { options: {} },
+          }),
+        });
+
+        assert.strictEqual(response1.status, 200);
+        const body1 = (await response1.json()) as JsonBody;
+        const result1 = body1.result as JsonBody;
+        assert.strictEqual(result1.totalArticles, 5);
+        assert.strictEqual((result1.articles as unknown[]).length, 2);
+
+        // Second page: 2 different articles
+        const response2 = await fetch(`${baseUrl}${endpoint}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": TEST_API_KEY,
+          },
+          body: JSON.stringify({
+            url: PAGINATION_FEED_URL,
+            limit: 2,
+            skip: 2,
+            selectProperties: ["id", "title"],
+            formatter: { options: {} },
+          }),
+        });
+
+        assert.strictEqual(response2.status, 200);
+        const body2 = (await response2.json()) as JsonBody;
+        const result2 = body2.result as JsonBody;
+        assert.strictEqual(result2.totalArticles, 5);
+        assert.strictEqual((result2.articles as unknown[]).length, 2);
+
+        // Verify different articles on each page
+        const page1Ids = (result1.articles as JsonBody[]).map((a) => a.id);
+        const page2Ids = (result2.articles as JsonBody[]).map((a) => a.id);
+        const overlap = page1Ids.filter((id) => page2Ids.includes(id));
+        assert.strictEqual(overlap.length, 0);
+      });
+
+      it("searches articles correctly", async () => {
+        const response = await fetch(`${baseUrl}${endpoint}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": TEST_API_KEY,
+          },
+          body: JSON.stringify({
+            url: PAGINATION_FEED_URL,
+            limit: 10,
+            skip: 0,
+            selectProperties: ["id", "title"],
+            formatter: { options: {} },
+            filters: {
+              search: "UniqueKeyword123",
+            },
+          }),
+        });
+
+        assert.strictEqual(response.status, 200);
+        const body = (await response.json()) as JsonBody;
+        const result = body.result as JsonBody;
+        assert.strictEqual(result.totalArticles, 1);
+        assert.strictEqual((result.articles as unknown[]).length, 1);
+        const article = (result.articles as JsonBody[])[0]!;
+        assert.ok(
+          (article.title as string).includes("UniqueKeyword123")
+        );
+      });
+
+      it("evaluates filter expressions on formatted articles", async () => {
+        const response = await fetch(`${baseUrl}${endpoint}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": TEST_API_KEY,
+          },
+          body: JSON.stringify({
+            url: PAGINATION_FEED_URL,
+            limit: 10,
+            skip: 0,
+            selectProperties: ["id", "title"],
+            formatter: { options: {} },
+            filters: {
+              returnType: "INCLUDE_EVAL_RESULTS",
+              expression: {
+                type: "LOGICAL",
+                op: "AND",
+                children: [
+                  {
+                    type: "RELATIONAL",
+                    op: "CONTAINS",
+                    left: {
+                      type: "ARTICLE",
+                      value: "title",
+                    },
+                    right: {
+                      type: "STRING",
+                      value: "Third",
+                    },
+                  },
+                ],
+              },
+            },
+          }),
+        });
+
+        assert.strictEqual(response.status, 200);
+        const body = (await response.json()) as JsonBody;
+        const result = body.result as JsonBody;
+        assert.ok(Array.isArray(result.filterStatuses));
+        const statuses = result.filterStatuses as Array<{ passed: boolean }>;
+        assert.strictEqual(statuses.length, 5);
+
+        // Only the article with "Third" in the title should pass
+        const passedCount = statuses.filter((s) => s.passed).length;
+        assert.strictEqual(passedCount, 1);
+      });
+
+      it("returns formatted article values with HTML tags processed", async () => {
+        const response = await fetch(`${baseUrl}${endpoint}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": TEST_API_KEY,
+          },
+          body: JSON.stringify({
+            url: PAGINATION_FEED_URL,
+            limit: 1,
+            skip: 0,
+            selectProperties: ["id", "title"],
+            formatter: { options: {} },
+          }),
+        });
+
+        assert.strictEqual(response.status, 200);
+        const body = (await response.json()) as JsonBody;
+        const result = body.result as JsonBody;
+        const articles = result.articles as JsonBody[];
+        assert.ok(articles.length > 0);
+
+        // The first article (by date) has HTML <b>First</b> in title.
+        // After formatting, raw HTML tags should be stripped/converted.
+        const firstArticle = articles[0]!;
+        const title = firstArticle.title as string;
+        assert.ok(
+          title.includes("First") && !title.includes("<b>"),
+          `Expected HTML tags to be processed in title, got: ${title}`
+        );
+      });
     });
   });
 

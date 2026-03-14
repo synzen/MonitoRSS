@@ -44,6 +44,7 @@ export interface FindOrFetchFeedArticlesOptions extends FetchFeedArticleOptions 
   executeFetch?: boolean;
   executeFetchIfStale?: boolean;
   parsedArticlesCacheStore?: ParsedArticlesCacheStore;
+  lightweight?: boolean;
 }
 
 export interface FetchFeedArticlesResult {
@@ -123,8 +124,11 @@ export async function findOrFetchFeedArticles(
       dateTimezone: options.formatOptions?.dateTimezone,
       dateLocale: options.formatOptions?.dateLocale,
     },
-    externalFeedProperties: options.externalFeedProperties,
+    externalFeedProperties: options.lightweight
+      ? undefined
+      : options.externalFeedProperties,
     requestLookupDetails: options.requestLookupDetails ?? undefined,
+    lightweight: options.lightweight,
   };
 
   // Check cache first
@@ -177,6 +181,7 @@ export async function findOrFetchFeedArticles(
   try {
     const parsed = await parseArticlesFromXml(result.body, {
       formatOptions: options.formatOptions,
+      lightweight: options.lightweight,
     });
     articles = parsed.articles;
     feed = parsed.feed;
@@ -212,9 +217,9 @@ export async function findOrFetchFeedArticles(
     throw err;
   }
 
-  // Inject external content if external properties are specified
+  // Inject external content if external properties are specified (skip in lightweight mode)
   let externalContentErrors: ExternalContentError[] = [];
-  if (options.externalFeedProperties?.length) {
+  if (!options.lightweight && options.externalFeedProperties?.length) {
     externalContentErrors = await injectExternalContent(
       articles,
       options.externalFeedProperties,

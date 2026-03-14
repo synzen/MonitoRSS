@@ -1,6 +1,8 @@
 export {
   parseArticlesFromXml,
   flattenArticle,
+  flattenArticleLightweight,
+  enrichFlattenedArticle,
   FeedParseTimeoutException,
   InvalidFeedException,
 } from "./article-parser";
