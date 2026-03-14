@@ -292,13 +292,17 @@ async function emitRejectionEvent(
 }
 
 /**
- * Map a rejected ArticleDeliveryState to a MediumRejectionEvent.
- * Returns null if the error code doesn't map to a rejection type.
+ * Map an ArticleDeliveryState to a MediumRejectionEvent.
+ * Returns null if the state is not a rejection or doesn't map to a rejection type.
  */
 function getRejectionEventFromDeliveryState(
   feedId: string,
-  state: ArticleDeliveryState & { status: ArticleDeliveryStatus.Rejected }
+  state: ArticleDeliveryState
 ): MediumRejectionEvent | null {
+  if (state.status !== ArticleDeliveryStatus.Rejected) {
+    return null;
+  }
+
   switch (state.errorCode) {
     case ArticleDeliveryErrorCode.NoChannelOrWebhook:
     case ArticleDeliveryErrorCode.ThirdPartyNotFound:
@@ -762,16 +766,7 @@ async function handleFeedV2EventInternal({
 
   // Emit rejection events to disable connections with invalid configurations
   for (const state of deliveryResults) {
-    if (state.status !== ArticleDeliveryStatus.Rejected) {
-      continue;
-    }
-
-    const rejectionEvent = getRejectionEventFromDeliveryState(
-      feed.id,
-      state as ArticleDeliveryState & {
-        status: ArticleDeliveryStatus.Rejected;
-      }
-    );
+    const rejectionEvent = getRejectionEventFromDeliveryState(feed.id, state);
 
     if (rejectionEvent) {
       await emitRejectionEvent(rejectionEvent, queuePublisher);
