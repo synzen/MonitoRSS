@@ -17,6 +17,11 @@ interface TestArticle {
   [key: string]: string | undefined;
 }
 
+export interface QueuePublisherCall {
+  queue: string;
+  message: unknown;
+}
+
 export interface TestContext {
   feedUrl: string;
   discordClient: TestDiscordRestClient;
@@ -36,6 +41,9 @@ export interface TestContext {
   /** Seed initial articles and clear Discord captures */
   seedArticles(event?: FeedV2Event): Promise<void>;
 
+  /** Get all queue publisher calls */
+  getQueuePublisherCalls(): QueuePublisherCall[];
+
   /** Cleanup this test's state */
   cleanup(): void;
 }
@@ -52,6 +60,7 @@ export function createTestContext(
   const testServer = getTestFeedRequestsServer();
   const feedUrl = testServer.generateTestUrl();
   const discordClient = createTestDiscordRestClient();
+  const queuePublisherCalls: QueuePublisherCall[] = [];
 
   // Create event with unique URL
   const baseEvent = generateTestFeedV2Event({ feedUrl });
@@ -75,6 +84,10 @@ export function createTestContext(
     body: getTestRssFeed(options?.initialArticles),
   }));
 
+  const queuePublisher = async (queue: string, message: unknown) => {
+    queuePublisherCalls.push({ queue, message });
+  };
+
   return {
     feedUrl,
     discordClient,
@@ -95,6 +108,7 @@ export function createTestContext(
         responseHashStore: stores.responseHashStore,
         feedRetryStore: stores.feedRetryStore,
         feedRequestsServiceHost: stores.feedRequestsServiceHost,
+        queuePublisher,
         discordClient,
       });
     },
@@ -102,10 +116,16 @@ export function createTestContext(
     async seedArticles(event?: FeedV2Event) {
       await this.handleEvent(event);
       discordClient.clear();
+      queuePublisherCalls.length = 0;
+    },
+
+    getQueuePublisherCalls() {
+      return [...queuePublisherCalls];
     },
 
     cleanup() {
       testServer.clearUrl(feedUrl);
+      queuePublisherCalls.length = 0;
     },
   };
 }

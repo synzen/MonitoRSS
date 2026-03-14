@@ -1223,6 +1223,34 @@ async function sendArticleToMedium(
       throw new Error("No channel or webhook specified for Discord medium");
     }
 
+    if (deliveryStates.length === 0) {
+      logger.warn(
+        "No Discord payloads generated for article - content and embeds are both empty after placeholder resolution",
+        {
+          feedId,
+          mediumId: medium.id,
+          articleId: formattedArticle.flattened.id,
+        }
+      );
+
+      return [
+        {
+          id: generateDeliveryId(),
+          mediumId: medium.id,
+          status: ArticleDeliveryStatus.Rejected,
+          errorCode: ArticleDeliveryErrorCode.NoPayloadForMedium,
+          internalMessage:
+            "No Discord payloads were generated for this article. " +
+            "The message content and embeds are both empty after placeholder resolution.",
+          externalDetail:
+            "No Discord payloads were generated for this article. " +
+            "Check that your message content or embeds contain valid placeholders.",
+          articleIdHash: formattedArticle.flattened.idHash,
+          article: formattedArticle,
+        },
+      ];
+    }
+
     // Decrement rate limit counters after successful delivery
     limitState.remaining--;
     limitState.remainingInMedium--;

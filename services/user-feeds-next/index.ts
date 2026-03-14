@@ -475,6 +475,7 @@ async function startServiceMode(
           responseHashStore: infrastructure.responseHashStore,
           feedRetryStore: infrastructure.feedRetryStore,
           discordClient: infrastructure.discordClient!,
+          queuePublisher: publisher,
           feedRequestsServiceHost: infrastructure.feedRequestsServiceHost,
         });
       } catch (err) {
