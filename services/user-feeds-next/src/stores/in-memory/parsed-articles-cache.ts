@@ -129,6 +129,7 @@ export function calculateCacheKeyForArticles(params: {
           key: options.requestLookupDetails.key,
         }
       : undefined,
+    lightweight: options.lightweight || undefined,
   };
 
   // Delete format options if every field is undefined

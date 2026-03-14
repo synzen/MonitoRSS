@@ -1,4 +1,5 @@
 import pRetry from "p-retry";
+import { Agent } from "undici";
 import {
   FeedRequestBadStatusCodeException,
   FeedRequestFetchException,
@@ -17,6 +18,36 @@ import {
 } from "./types";
 
 const API_KEY = process.env.USER_FEEDS_FEED_REQUESTS_API_KEY || "";
+
+const feedRequestsAgent = new Agent({
+  connections: 50,
+  pipelining: 1,
+  keepAliveTimeout: 30_000,
+  keepAliveMaxTimeout: 60_000,
+});
+
+function getErrorDetails(err: unknown): string {
+  const parts: string[] = [];
+  let current = err;
+
+  while (current instanceof Error) {
+    const e = current as Error & { code?: string };
+    let part = e.message;
+
+    if (e.code) {
+      part += ` [${e.code}]`;
+    }
+
+    parts.push(part);
+    current = e.cause;
+  }
+
+  if (current !== undefined && !(current instanceof Error)) {
+    parts.push(String(current));
+  }
+
+  return parts.join(" -> ");
+}
 
 export async function fetchFeed(
   url: string,
@@ -54,7 +85,8 @@ export async function fetchFeed(
             accept: "application/json",
             "api-key": API_KEY,
           },
-        }),
+          dispatcher: feedRequestsAgent,
+        } as RequestInit),
       {
         retries: options?.retries ?? 2,
         randomize: true,
@@ -62,7 +94,7 @@ export async function fetchFeed(
     );
   } catch (err) {
     throw new FeedRequestNetworkException(
-      `Failed to execute request to feed requests API: ${(err as Error).message}`
+      `Failed to execute request to feed requests API: ${getErrorDetails(err)}`
     );
   }
 
@@ -194,7 +226,8 @@ export async function fetchFeedForDeliveryPreview(
             accept: "application/json",
             "api-key": API_KEY,
           },
-        }),
+          dispatcher: feedRequestsAgent,
+        } as RequestInit),
       {
         retries: 2,
         randomize: true,
@@ -202,7 +235,7 @@ export async function fetchFeedForDeliveryPreview(
     );
   } catch (err) {
     throw new FeedRequestNetworkException(
-      `Failed to execute request to feed requests API: ${(err as Error).message}`
+      `Failed to execute request to feed requests API: ${getErrorDetails(err)}`
     );
   }
 

@@ -4,56 +4,48 @@
  */
 
 import type { Article } from "../../articles/parser";
-import {
-  evaluateExpression,
-  buildFilterReferences,
-  type LogicalExpression,
-} from "../../articles/filters";
 import { INJECTED_ARTICLE_PLACEHOLDER_PREFIX } from "../../shared/constants";
 import {
-  GetUserFeedArticlesFilterReturnType,
   SelectPropertyType,
   type CustomPlaceholder,
 } from "../../http/schemas";
 import { getNumbersInRange } from "./utils";
 
-export interface QueryForArticlesInput {
+export interface PaginateArticlesInput {
   articles: Article[];
   limit: number;
   skip: number;
   random?: boolean;
   selectProperties?: string[];
   selectPropertyTypes?: SelectPropertyType[];
+  customPlaceholders?: CustomPlaceholder[] | null;
   filters?: {
-    returnType?: GetUserFeedArticlesFilterReturnType;
-    expression?: Record<string, unknown>;
     articleId?: string;
     articleIdHashes?: string[];
     search?: string;
   };
-  customPlaceholders?: CustomPlaceholder[] | null;
 }
 
-export interface QueryForArticlesOutput {
+export interface PaginateArticlesOutput {
   articles: Article[];
-  properties: string[];
   totalArticles: number;
-  filterEvalResults?: Array<{ passed: boolean }>;
+  properties: string[];
 }
 
 /**
- * Query for articles with filtering, sorting, and pagination.
+ * Paginate articles: sort, filter by ID/search, and apply skip/limit.
+ * Does NOT trim properties or evaluate filter expressions — those happen after formatting.
  */
-export async function queryForArticles({
+export function paginateArticles({
   articles,
   limit,
   skip,
   random,
   selectProperties,
   selectPropertyTypes,
-  filters,
   customPlaceholders,
-}: QueryForArticlesInput): Promise<QueryForArticlesOutput> {
+  filters,
+}: PaginateArticlesInput): PaginateArticlesOutput {
   const placeholdersFromCustomPlaceholders =
     customPlaceholders?.map((c) => c.sourcePlaceholder) || [];
   const properties = queryForArticleProperties(
@@ -63,12 +55,7 @@ export async function queryForArticles({
   );
 
   if (articles.length === 0) {
-    return {
-      articles: [],
-      properties,
-      totalArticles: 0,
-      filterEvalResults: [],
-    };
+    return { articles: [], properties, totalArticles: 0 };
   }
 
   // Sort by date, latest first
@@ -106,7 +93,7 @@ export async function queryForArticles({
     const filtersSearch = filters?.search;
 
     if (filtersSearch && typeof filtersSearch === "string") {
-      matchedArticles = articles.filter((article) => {
+      matchedArticles = matchedArticles.filter((article) => {
         return properties.some((property) =>
           article.flattened[property]
             ?.toLowerCase()
@@ -134,54 +121,10 @@ export async function queryForArticles({
     }
   }
 
-  // Trim articles to only include selected properties
-  const matchedArticlesWithProperties = matchedArticles.map((article) => {
-    const trimmed: Article = {
-      ...article,
-      flattened: {
-        id: article.flattened.id,
-        idHash: article.flattened.idHash,
-      },
-      raw: article.raw,
-    };
-
-    properties.forEach((property) => {
-      trimmed.flattened[property] = article.flattened[property] || "";
-    });
-
-    return trimmed;
-  });
-
-  // Evaluate filter expressions if requested
-  let filterEvalResults: Array<{ passed: boolean }> | undefined;
-
-  if (
-    filters?.returnType ===
-    GetUserFeedArticlesFilterReturnType.IncludeEvaluationResults
-  ) {
-    if (filters.expression) {
-      filterEvalResults = await Promise.all(
-        matchedArticles.map(async (article) => {
-          const { result: passed } = evaluateExpression(
-            filters.expression as unknown as LogicalExpression,
-            buildFilterReferences(article)
-          );
-
-          return {
-            passed,
-          };
-        })
-      );
-    } else {
-      filterEvalResults = matchedArticles.map(() => ({ passed: true }));
-    }
-  }
-
   return {
-    articles: matchedArticlesWithProperties,
+    articles: matchedArticles,
     totalArticles: totalMatchedArticles,
     properties,
-    filterEvalResults,
   };
 }
 

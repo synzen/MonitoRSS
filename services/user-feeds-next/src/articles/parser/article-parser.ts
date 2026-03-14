@@ -166,6 +166,130 @@ export function flattenArticle(
 }
 
 /**
+ * Lightweight flatten: same as flattenArticle but skips extractExtraInfo and runPostProcessRules.
+ * Used for pagination/search where extracted::/processed:: fields aren't needed.
+ */
+export function flattenArticleLightweight(
+  input: Record<string, unknown>,
+  options: {
+    formatOptions?: UserFeedFormatOptions;
+    useParserRules?: PostProcessParserRule[];
+  }
+): FlattenedArticleWithoutId {
+  const flattened = flatten(input, {
+    delimiter: ARTICLE_FIELD_DELIMITER,
+  }) as Record<string, unknown>;
+
+  const newRecord: FlattenedArticleWithoutId = runPreProcessRules(input);
+
+  Object.entries(flattened).forEach(([key, value]) => {
+    if (!value) {
+      return;
+    }
+
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+
+      if (trimmed.length) {
+        newRecord[key] = trimmed;
+      }
+
+      return;
+    }
+
+    if (value instanceof Date) {
+      const requestedTimezone = options.formatOptions?.dateTimezone || "UTC";
+      let dateVal;
+
+      try {
+        // eslint-disable-next-line no-control-regex
+        if (/[^\x00-\x7F]/.test(requestedTimezone)) {
+          throw new Error("Invalid timezone");
+        }
+        dateVal = dayjs(value).tz(requestedTimezone);
+      } catch {
+        logger.debug(`Invalid timezone "${requestedTimezone}", falling back to UTC`);
+        dateVal = dayjs(value).utc();
+      }
+
+      dateVal = dateVal.locale(options.formatOptions?.dateLocale || "en");
+      let stringDate = dateVal.format();
+
+      try {
+        if (options.formatOptions?.dateFormat) {
+          stringDate = dateVal.format(options.formatOptions.dateFormat);
+        }
+      } catch {
+        // Ignore format errors
+      }
+
+      newRecord[key] = stringDate;
+
+      return;
+    }
+
+    if ({}.constructor === value.constructor) {
+      if (Object.keys(value as object).length) {
+        throw new Error(
+          "Non-empty object found in flattened record. " +
+            'Check that "flatten" is working as intended'
+        );
+      }
+
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      if (value.length) {
+        throw new Error(
+          "Non-empty array found in flattened record. " +
+            'Check that "flatten" is working as intended'
+        );
+      }
+
+      return;
+    }
+
+    newRecord[key] = String(value);
+  });
+
+  return newRecord;
+}
+
+/**
+ * Enrich a lightweight-flattened article with extracted:: and processed:: fields.
+ * Runs the expensive operations that flattenArticleLightweight skips.
+ */
+export function enrichFlattenedArticle(
+  flattened: FlattenedArticleWithoutId,
+  options: { useParserRules?: PostProcessParserRule[] }
+): FlattenedArticleWithoutId {
+  const enriched = { ...flattened };
+
+  const entries = Object.entries(flattened);
+
+  for (let i = 0; i < entries.length; i++) {
+    const [key, value] = entries[i]!;
+
+    const { images: imageList, anchors: anchorList } = extractExtraInfo(value);
+
+    if (imageList.length) {
+      for (let j = 0; j < imageList.length; j++) {
+        enriched[`extracted::${key}::image${j + 1}`] = imageList[j]!;
+      }
+    }
+
+    if (anchorList.length) {
+      for (let j = 0; j < anchorList.length; j++) {
+        enriched[`extracted::${key}::anchor${j + 1}`] = anchorList[j]!;
+      }
+    }
+  }
+
+  return runPostProcessRules(enriched, options.useParserRules);
+}
+
+/**
  * Parse RSS/Atom XML into articles.
  */
 export async function parseArticlesFromXml(
@@ -176,6 +300,7 @@ export async function parseArticlesFromXml(
     useParserRules?: PostProcessParserRule[];
     externalFeedProperties?: ExternalFeedProperty[];
     externalFetchFn?: ExternalFetchFn;
+    lightweight?: boolean;
   } = {}
 ): Promise<ParseArticlesResult> {
   const feedparser = new FeedParser({});
@@ -240,7 +365,10 @@ export async function parseArticlesFromXml(
             idType
           );
 
-          const flattened = flattenArticle(rawArticle as never, {
+          const flattenFn = options.lightweight
+            ? flattenArticleLightweight
+            : flattenArticle;
+          const flattened = flattenFn(rawArticle as never, {
             formatOptions: options.formatOptions,
             useParserRules: options.useParserRules,
           });
@@ -287,8 +415,9 @@ export async function parseArticlesFromXml(
           idHashes.add(idHash);
         }
 
-        // Inject external content if configured
+        // Inject external content if configured (skip in lightweight mode)
         if (
+          !options.lightweight &&
           options.externalFeedProperties?.length &&
           options.externalFetchFn &&
           mappedArticles.length <= MAX_ARTICLE_INJECTION_ARTICLE_COUNT

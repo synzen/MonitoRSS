@@ -30,6 +30,7 @@ function createEventWithPlaceholderLimits(
   options?: {
     content?: string;
     embeds?: EmbedInput[];
+    enablePlaceholderFallback?: boolean;
   }
 ): FeedV2Event {
   return {
@@ -48,6 +49,9 @@ function createEventWithPlaceholderLimits(
             content:
               options?.content ?? baseEvent.data.mediums[0]!.details.content,
             embeds: (options?.embeds ?? []) as MediumDetails["embeds"],
+            enablePlaceholderFallback:
+              options?.enablePlaceholderFallback ??
+              baseEvent.data.mediums[0]!.details.enablePlaceholderFallback,
           },
         },
       ],
@@ -612,6 +616,7 @@ describe("Discord Payload Placeholder Limits (e2e)", { concurrency: true }, () =
         ],
         {
           content: "{{summary||description}}",
+          enablePlaceholderFallback: true,
         }
       );
 
@@ -653,18 +658,19 @@ describe("Discord Payload Placeholder Limits (e2e)", { concurrency: true }, () =
         ctx.testFeedV2Event,
         [
           {
-            placeholder: "summary",
+            placeholder: "link",
             characterCount: 20,
-            appendString: " [sum]",
+            appendString: " [link]",
           },
           {
-            placeholder: "description",
+            placeholder: "title",
             characterCount: 25,
-            appendString: " [desc]",
+            appendString: " [title]",
           },
         ],
         {
-          content: "{{summary||description}}",
+          content: "{{link||title}}",
+          enablePlaceholderFallback: true,
         }
       );
 
@@ -675,10 +681,10 @@ describe("Discord Payload Placeholder Limits (e2e)", { concurrency: true }, () =
           body: getTestRssFeed(
             [
               {
-                guid: "fallback-limit-description-test",
-                // No summary - will fall back to description
-                description:
-                  "This is a long description that should be truncated to 25 chars",
+                guid: "fallback-limit-title-test",
+                // No link - will fall back to title
+                title:
+                  "This is a long title that should be truncated to 25 chars",
               },
             ],
             true
@@ -691,10 +697,10 @@ describe("Discord Payload Placeholder Limits (e2e)", { concurrency: true }, () =
         assert.notStrictEqual(results, null);
 
         const payload = getDiscordPayload(ctx);
-        // Description limit (25) + append string (7) = 32 max
-        assert.ok(payload.content.length <= 32);
-        assert.ok(payload.content.includes("[desc]"));
-        assert.ok(!payload.content.includes("[sum]"));
+        // Title limit (25) + append string (8) = 33 max
+        assert.ok(payload.content.length <= 33);
+        assert.ok(payload.content.includes("[title]"));
+        assert.ok(!payload.content.includes("[link]"));
       } finally {
         ctx.cleanup();
       }
@@ -714,6 +720,7 @@ describe("Discord Payload Placeholder Limits (e2e)", { concurrency: true }, () =
         ],
         {
           content: "{{summary||text::No summary available}}",
+          enablePlaceholderFallback: true,
         }
       );
 
