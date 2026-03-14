@@ -2,6 +2,7 @@ import {
   Badge,
   Box,
   Button,
+  Grid,
   Stack,
   Table,
   TableContainer,
@@ -10,11 +11,13 @@ import {
   Text,
   Th,
   Thead,
+  Tooltip,
   Tr,
   useDisclosure,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
+import dayjs from "dayjs";
 import {
   ArticleDeliveryOutcome,
   ArticleDeliveryResult,
@@ -190,6 +193,94 @@ export const ArticleDeliveryDetails = ({ result, lastRequestAtUnix }: Props) => 
           <Text color="whiteAlpha.800" fontSize="sm">
             {getDisplayText()}
           </Text>
+        </Box>
+        <Box>
+          <Text fontWeight="semibold" mb={2}>
+            Dates
+          </Text>
+          <Grid as="dl" templateColumns="140px 1fr" gap={1} fontSize="sm" m={0}>
+            <Text as="dt" color="gray.400">
+              Published
+            </Text>
+            <Box as="dd" ml={0}>
+              {result.articlePublishedDate ? (
+                <Tooltip
+                  label={dayjs(result.articlePublishedDate).format("DD MMM YYYY, HH:mm:ss")}
+                  hasArrow
+                >
+                  <Text
+                    as="time"
+                    dateTime={result.articlePublishedDate}
+                    tabIndex={0}
+                    cursor="default"
+                    color="gray.300"
+                    display="inline"
+                    borderBottom="1px dashed"
+                    borderColor="whiteAlpha.300"
+                    sx={{ cursor: "help" }}
+                  >
+                    {dayjs(result.articlePublishedDate).fromNow()}
+                  </Text>
+                </Tooltip>
+              ) : (
+                <Tooltip
+                  label="This feed does not include a published date for this article"
+                  hasArrow
+                >
+                  <Text
+                    tabIndex={0}
+                    color="gray.400"
+                    display="inline"
+                    borderBottom="1px dashed"
+                    borderColor="whiteAlpha.200"
+                    sx={{ cursor: "help" }}
+                    aria-label="Not available. This feed does not include a published date for this article."
+                  >
+                    --
+                  </Text>
+                </Tooltip>
+              )}
+            </Box>
+            <Text as="dt" color="gray.400">
+              First detected
+            </Text>
+            <Box as="dd" ml={0}>
+              {result.articleStoredDate ? (
+                <Tooltip
+                  label={dayjs(result.articleStoredDate).format("DD MMM YYYY, HH:mm:ss")}
+                  hasArrow
+                >
+                  <Text
+                    as="time"
+                    dateTime={result.articleStoredDate}
+                    tabIndex={0}
+                    cursor="default"
+                    color="gray.300"
+                    display="inline"
+                    borderBottom="1px dashed"
+                    borderColor="whiteAlpha.300"
+                    sx={{ cursor: "help" }}
+                  >
+                    {dayjs(result.articleStoredDate).fromNow()}
+                  </Text>
+                </Tooltip>
+              ) : (
+                <Tooltip label="This article has not been stored yet" hasArrow>
+                  <Text
+                    tabIndex={0}
+                    color="gray.400"
+                    display="inline"
+                    borderBottom="1px dashed"
+                    borderColor="whiteAlpha.200"
+                    sx={{ cursor: "help" }}
+                    aria-label="Not available. This article has not been stored yet."
+                  >
+                    --
+                  </Text>
+                </Tooltip>
+              )}
+            </Box>
+          </Grid>
         </Box>
         {!isLearningPhase && result.mediumResults.length > 0 && (
           <Box>

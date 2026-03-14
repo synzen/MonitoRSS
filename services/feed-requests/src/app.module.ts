@@ -27,8 +27,7 @@ export class AppModule implements OnApplicationShutdown {
     }
 
     const prefetchCount = configVals.FEED_REQUESTS_RABBITMQ_PREFETCH_COUNT;
-    const poolMax =
-      configVals.FEED_REQUESTS_POSTGRES_POOL_MAX ?? prefetchCount * 3;
+    const poolMax = prefetchCount * 3;
 
     logger.info(`${replicaUris.length} read replicas discovered`);
 

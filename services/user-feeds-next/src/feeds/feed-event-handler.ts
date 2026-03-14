@@ -477,6 +477,9 @@ async function handleFeedV2EventInternal({
       feedId: feed.id,
       requestStatus: feedResult.status,
     });
+    debugLog(
+      `Debug feed ${feed.id}: No response body - pending request or matched hash`
+    );
     return null;
   }
 
@@ -489,6 +492,10 @@ async function handleFeedV2EventInternal({
         message: feedResult.message,
       }
     );
+    debugLog(
+      `Debug feed ${feed.id}: Ignoring feed event due to fetch error: ${feedResult.errorType}`,
+      { message: feedResult.message }
+    );
     return null;
   }
 
@@ -497,6 +504,7 @@ async function handleFeedV2EventInternal({
       logger.error(`Feed parse timed out for ${feed.url}`, {
         feedId: feed.id,
       });
+      debugLog(`Debug feed ${feed.id}: Feed parse timed out`);
       return null;
     }
 
@@ -506,6 +514,10 @@ async function handleFeedV2EventInternal({
       feedUrl: feed.url,
       message: feedResult.message,
     });
+    debugLog(
+      `Debug feed ${feed.id}: Ignoring feed event due to invalid feed`,
+      { message: feedResult.message }
+    );
 
     if (publisher) {
       const { disabled } = await handleFeedParseFailure({
@@ -626,9 +638,15 @@ async function handleFeedV2EventInternal({
       `passed comparisons: ${comparisonResult.articlesPassed.length}`,
     { feedId: feed.id }
   );
+  debugLog(
+    `Debug feed ${feed.id}: Articles to deliver: ${comparisonResult.articlesToDeliver.length}, ` +
+      `blocked: ${comparisonResult.articlesBlocked.length}, ` +
+      `passed comparisons: ${comparisonResult.articlesPassed.length}`
+  );
 
   if (comparisonResult.articlesToDeliver.length === 0) {
     logger.debug("No new articles to deliver", { feedId: feed.id });
+    debugLog(`Debug feed ${feed.id}: No new articles to deliver, returning early`);
 
     // Save the response hash since we successfully processed the feed
     if (feedResult.bodyHash) {
@@ -717,6 +735,9 @@ async function handleFeedV2EventInternal({
   logger.debug(
     `Delivery complete: ${sent} sent, ${filtered} filtered, ${rateLimited} rate-limited, ${failed} failed`,
     { feedId: feed.id }
+  );
+  debugLog(
+    `Debug feed ${feed.id}: Delivery complete: ${sent} sent, ${filtered} filtered, ${rateLimited} rate-limited, ${failed} failed, total ${deliveryResults.length}`
   );
 
   // Save the response hash after successful delivery
