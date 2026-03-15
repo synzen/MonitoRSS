@@ -317,6 +317,42 @@ export class FeedFetcherController {
         url: data.url,
         lookupKey: data.lookupDetails?.key,
       });
+
+      // Check staleness on error records too - a stale error should not prevent
+      // a fresh fetch attempt (e.g. a transient network error days ago)
+      if (latestRequest && data.executeFetchIfStale) {
+        const isErrorStale =
+          dayjs().diff(latestRequest.request.createdAt, 'second') >
+          stalenessThresholdSeconds;
+
+        if (isErrorStale) {
+          const { request } =
+            await this.feedFetcherService.fetchAndSaveResponse(data.url, {
+              saveResponseToObjectStorage: data.debug,
+              lookupDetails: data.lookupDetails
+                ? data.lookupDetails
+                : undefined,
+              source: undefined,
+              headers: data.lookupDetails?.headers,
+            });
+
+          await this.partitionedRequestsStoreService.flushInserts([request]);
+
+          // Try to get a request with body first (in case the re-fetch succeeded)
+          latestRequest = await this.feedFetcherService.getLatestRequest({
+            url: data.url,
+            lookupKey: data.lookupDetails?.key,
+          });
+
+          if (!latestRequest) {
+            latestRequest =
+              await this.feedFetcherService.getLatestRequestNon304({
+                url: data.url,
+                lookupKey: data.lookupDetails?.key,
+              });
+          }
+        }
+      }
     }
 
     // Only fetch fresh if there's no non-304 request
