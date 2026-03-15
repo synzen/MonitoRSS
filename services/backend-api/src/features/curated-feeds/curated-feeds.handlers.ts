@@ -6,6 +6,11 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 let cachedResponse: GetCuratedFeedsResponse | null = null;
 let cachedAt = 0;
 
+export function clearCuratedFeedsCache(): void {
+  cachedResponse = null;
+  cachedAt = 0;
+}
+
 export async function getCuratedFeedsHandler(
   request: FastifyRequest,
   reply: FastifyReply,

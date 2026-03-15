@@ -796,6 +796,9 @@ export class FeedConnectionsDiscordChannelsService {
             currentConnection.details.webhook.iconUrl =
               sourceConnection.details.webhook.iconUrl;
           }
+
+          currentConnection.details.webhook.threadId =
+            sourceConnection.details.webhook.threadId;
         }
       }
 

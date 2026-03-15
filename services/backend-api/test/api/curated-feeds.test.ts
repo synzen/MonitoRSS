@@ -5,8 +5,9 @@ import {
   type AppTestContext,
 } from "../helpers/test-context";
 import { generateSnowflake } from "../helpers/test-id";
+import { clearCuratedFeedsCache } from "../../src/features/curated-feeds/curated-feeds.handlers";
 
-describe("GET /api/v1/curated-feeds", { concurrency: true }, () => {
+describe("GET /api/v1/curated-feeds", { concurrency: false }, () => {
   describe("Authentication", { concurrency: true }, () => {
     let ctx: AppTestContext;
 
@@ -28,6 +29,7 @@ describe("GET /api/v1/curated-feeds", { concurrency: true }, () => {
     let ctx: AppTestContext;
 
     before(async () => {
+      clearCuratedFeedsCache();
       ctx = await createAppTestContext();
     });
 
@@ -57,6 +59,7 @@ describe("GET /api/v1/curated-feeds", { concurrency: true }, () => {
     let ctx: AppTestContext;
 
     before(async () => {
+      clearCuratedFeedsCache();
       ctx = await createAppTestContext();
 
       await ctx.container.curatedCategoryRepository.replaceAll([
@@ -166,6 +169,7 @@ describe("GET /api/v1/curated-feeds", { concurrency: true }, () => {
     let ctx: AppTestContext;
 
     before(async () => {
+      clearCuratedFeedsCache();
       ctx = await createAppTestContext();
 
       await ctx.container.curatedFeedRepository.replaceAll([
