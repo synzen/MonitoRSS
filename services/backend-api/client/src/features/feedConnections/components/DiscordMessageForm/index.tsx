@@ -76,17 +76,18 @@ const DiscordChannelConnectionPreview = lazyWithRetries(() =>
 
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
-interface BrandingExtra {
+export interface SaveExtra {
   applicationWebhook?: {
     name?: string;
     iconUrl?: string;
     channelId: string;
     threadId?: string;
   };
+  channelId?: string;
 }
 
 interface Props {
-  onClickSave: (data: DiscordMessageFormData, extra?: BrandingExtra) => Promise<void>;
+  onClickSave: (data: DiscordMessageFormData, extra?: SaveExtra) => Promise<void>;
   articleIdToPreview?: string;
   guildId: string | undefined;
 }
@@ -241,7 +242,7 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
         forumThreadTags: formData.forumThreadTags || [],
       };
 
-      let brandingExtra: BrandingExtra | undefined;
+      let brandingExtra: SaveExtra | undefined;
       const shouldSkipBranding = skipBrandingRef.current;
       skipBrandingRef.current = false;
 
@@ -252,14 +253,22 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
         const channelId = getConnectionWebhookChannelId(connection);
 
         if (channelId) {
-          brandingExtra = {
-            applicationWebhook: {
-              name: webhookDisplayName || undefined,
-              iconUrl: webhookAvatarUrl || undefined,
+          const hasBrandingValues = !!webhookDisplayName.trim() || !!webhookAvatarUrl.trim();
+
+          if (hasBrandingValues) {
+            brandingExtra = {
+              applicationWebhook: {
+                name: webhookDisplayName || undefined,
+                iconUrl: webhookAvatarUrl || undefined,
+                channelId,
+                threadId: getConnectionWebhookThreadId(connection),
+              },
+            };
+          } else {
+            brandingExtra = {
               channelId,
-              threadId: getConnectionWebhookThreadId(connection),
-            },
-          };
+            };
+          }
         }
       }
 

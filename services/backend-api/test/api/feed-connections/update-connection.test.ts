@@ -65,6 +65,9 @@ interface CreateTestFeedOptions {
         id: string;
         token: string;
         guildId: string;
+        name?: string;
+        iconUrl?: string;
+        channelId?: string;
         isApplicationOwned?: boolean;
       };
       content?: string;
@@ -1347,6 +1350,54 @@ describe(
           "https://example.com/new-icon.png",
         );
         assert.strictEqual(storedConnection?.details.channel, undefined);
+      });
+
+      it("removes webhook when updating with channelId on a connection that had a webhook", async () => {
+        const discordUserId = generateSnowflake();
+        const user = await ctx.asUser(discordUserId);
+        const guildId = generateSnowflake();
+        const channelId = generateSnowflake();
+        const webhookId = generateSnowflake();
+
+        setupDiscordMocks(channelId, guildId, user.accessToken.access_token);
+
+        const { feedId, connectionId } = await createTestFeedWithConnection(
+          ctx,
+          {
+            discordUserId,
+            connectionOverrides: {
+              details: {
+                channel: null,
+                webhook: {
+                  id: webhookId,
+                  token: "wh-token",
+                  name: "Old Name",
+                  iconUrl: "https://example.com/old-icon.png",
+                  guildId,
+                  channelId,
+                  isApplicationOwned: true,
+                },
+              },
+            },
+          },
+        );
+
+        const response = await user.fetch(testUrl(feedId, connectionId), {
+          method: "PATCH",
+          body: JSON.stringify({
+            channelId,
+          }),
+        });
+
+        assert.strictEqual(response.status, 200);
+
+        const feed = await ctx.container.userFeedRepository.findById(feedId);
+        const storedConnection = feed?.connections.discordChannels.find(
+          (c) => c.id === connectionId,
+        );
+
+        assert.strictEqual(storedConnection?.details.webhook, undefined);
+        assert.strictEqual(storedConnection?.details.channel?.id, channelId);
       });
 
       it("accepts content null and componentRows null for V2 mode", async () => {

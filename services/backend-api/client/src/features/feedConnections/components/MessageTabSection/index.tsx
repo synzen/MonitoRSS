@@ -44,7 +44,7 @@ import { Link } from "react-router-dom";
 import { DiscordMessageFormData } from "../../../../types/discord";
 import { useUserFeedArticles } from "../../../feed/hooks";
 import { ArticlePlaceholderTable } from "../ArticlePlaceholderTable";
-import { DiscordMessageForm } from "../DiscordMessageForm";
+import { DiscordMessageForm, SaveExtra } from "../DiscordMessageForm";
 import { ArticleSelectDialog } from "../../../feed/components";
 import getChakraColor from "../../../../utils/getChakraColor";
 import { pages } from "../../../../constants";
@@ -56,12 +56,7 @@ import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 import { FeedDiscordChannelConnection } from "../../../../types";
 
 interface Props {
-  onMessageUpdated: (
-    data: DiscordMessageFormData,
-    extra?: {
-      applicationWebhook?: { name?: string; iconUrl?: string; channelId: string };
-    },
-  ) => Promise<void>;
+  onMessageUpdated: (data: DiscordMessageFormData, extra?: SaveExtra) => Promise<void>;
   guildId: string | undefined;
 }
 

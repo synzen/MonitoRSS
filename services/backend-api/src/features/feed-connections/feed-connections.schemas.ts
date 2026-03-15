@@ -252,6 +252,7 @@ export const SendConnectionTestArticleBodySchema = Type.Object(
       ]),
     ),
     applicationWebhook: Type.Optional(ApplicationWebhookSchema),
+    sendAsBot: Type.Optional(Type.Boolean()),
   },
   { additionalProperties: false },
 );

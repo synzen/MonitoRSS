@@ -106,7 +106,7 @@ function TreeFocusRestorer({ treeRef }: { treeRef: React.RefObject<HTMLDivElemen
     requestAnimationFrame(() => {
       if (document.activeElement && document.activeElement !== document.body) return;
       const selected = treeRef.current?.querySelector(
-        `[data-id="${currentSelectedId}"]`,
+        `[data-id="${currentSelectedId}"]`
       ) as HTMLElement | null;
       selected?.focus();
     });
@@ -300,7 +300,7 @@ const MessageBuilderContent: React.FC = () => {
 
       try {
         const connectionDetails = convertMessageBuilderStateToConnectionUpdate(
-          data.messageComponent,
+          data.messageComponent
         );
 
         const shouldSkipBranding = skipBrandingRef.current;
@@ -309,12 +309,18 @@ const MessageBuilderContent: React.FC = () => {
         const channelId = getConnectionWebhookChannelId(connection);
 
         if (webhooksAllowed && !shouldSkipBranding && brandingChanged && channelId) {
-          connectionDetails.applicationWebhook = {
-            name: brandingDisplayName || undefined,
-            iconUrl: brandingAvatarUrl || undefined,
-            channelId,
-            threadId: getConnectionWebhookThreadId(connection),
-          };
+          const hasBrandingValues = !!brandingDisplayName.trim() || !!brandingAvatarUrl.trim();
+
+          if (hasBrandingValues) {
+            connectionDetails.applicationWebhook = {
+              name: brandingDisplayName || undefined,
+              iconUrl: brandingAvatarUrl || undefined,
+              channelId,
+              threadId: getConnectionWebhookThreadId(connection),
+            };
+          } else {
+            connectionDetails.channelId = channelId;
+          }
         }
 
         await updateConnection({
@@ -344,7 +350,7 @@ const MessageBuilderContent: React.FC = () => {
       if (problems.length > 0) {
         onProblemsDialogOpen();
       }
-    },
+    }
   );
 
   const handleDiscard = () => {

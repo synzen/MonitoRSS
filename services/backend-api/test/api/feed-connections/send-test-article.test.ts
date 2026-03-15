@@ -600,6 +600,55 @@ describe(
       assert.strictEqual(body.code, "WEBHOOKS_MANAGE_MISSING_PERMISSIONS");
     });
 
+    it("returns 201 when sendAsBot is true and connection has a webhook", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+      const channelId = generateSnowflake();
+      const webhookId = generateSnowflake();
+
+      const connectionId = generateTestId();
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Test Feed",
+        url: `https://example.com/feed-${generateTestId()}.xml`,
+        user: { id: generateTestId(), discordUserId },
+        connections: {
+          discordChannels: [
+            {
+              id: connectionId,
+              name: "test-conn",
+              details: {
+                webhook: {
+                  id: webhookId,
+                  token: "wh-token",
+                  name: "Old Webhook Name",
+                  channelId,
+                  guildId: "guild-1",
+                  isApplicationOwned: true,
+                },
+                embeds: [],
+                formatter: {},
+              },
+            } as never,
+          ],
+        },
+      });
+
+      const response = await user.fetch(testUrl(feed.id, connectionId), {
+        method: "POST",
+        body: JSON.stringify({
+          article: { id: "article-1" },
+          sendAsBot: true,
+        }),
+      });
+
+      assert.strictEqual(response.status, 201);
+
+      const body = (await response.json()) as {
+        result: { status: string; apiPayload?: Record<string, unknown> };
+      };
+      assert.strictEqual(body.result.status, "SUCCESS");
+    });
+
     it("returns 201 when thread and forum preview fields are supplied", async () => {
       const discordUserId = generateSnowflake();
       const user = await ctx.asUser(discordUserId);

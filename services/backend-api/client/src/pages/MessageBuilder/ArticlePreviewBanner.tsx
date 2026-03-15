@@ -75,13 +75,20 @@ export const ArticlePreviewBanner: React.FC<ArticlePreviewBannerProps> = ({
             id: currentArticleId,
           },
           ...messageComponentData,
-          applicationWebhook: brandingDisplayName?.trim()
-            ? {
-                channelId: getConnectionWebhookChannelId(connection) || "",
-                name: brandingDisplayName.trim(),
-                iconUrl: brandingAvatarUrl?.trim() || undefined,
-              }
-            : undefined,
+          applicationWebhook:
+            brandingDisplayName?.trim() || brandingAvatarUrl?.trim()
+              ? {
+                  channelId: getConnectionWebhookChannelId(connection) || "",
+                  name: brandingDisplayName?.trim() || "",
+                  iconUrl: brandingAvatarUrl?.trim() || undefined,
+                }
+              : undefined,
+          sendAsBot:
+            !brandingDisplayName?.trim() &&
+            !brandingAvatarUrl?.trim() &&
+            !!connection.details.webhook
+              ? true
+              : undefined,
         },
       };
 

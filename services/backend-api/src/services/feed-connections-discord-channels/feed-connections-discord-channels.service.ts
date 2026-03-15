@@ -919,6 +919,7 @@ export class FeedConnectionsDiscordChannelsService {
         iconUrl?: string;
         threadId?: string;
       };
+      sendAsBot?: boolean;
       previewInput?: SendTestArticlePreviewInput;
     },
   ): Promise<SendTestArticleResult> {
@@ -1013,6 +1014,7 @@ export class FeedConnectionsDiscordChannelsService {
           userFeed,
           connection,
           details?.applicationWebhook,
+          details?.sendAsBot,
         )),
         forumThreadTitle:
           previewInput?.forumThreadTitle || connection.details.forumThreadTitle,
@@ -1521,6 +1523,7 @@ export class FeedConnectionsDiscordChannelsService {
       iconUrl?: string;
       threadId?: string;
     },
+    sendAsBot?: boolean,
   ): Promise<{
     channel?: { id: string; type?: string };
     webhook?: {
@@ -1532,6 +1535,20 @@ export class FeedConnectionsDiscordChannelsService {
       threadId?: string;
     };
   }> {
+    if (sendAsBot) {
+      const channelId =
+        connection.details.webhook?.channelId || connection.details.channel?.id;
+
+      if (!channelId) {
+        throw new MissingDiscordChannelException();
+      }
+
+      return {
+        channel: { id: channelId },
+        webhook: undefined,
+      };
+    }
+
     if (applicationWebhook) {
       const channelId =
         applicationWebhook.channelId ||
