@@ -59,7 +59,7 @@ interface Props {
   onMessageUpdated: (
     data: DiscordMessageFormData,
     extra?: {
-      applicationWebhook?: { name: string; iconUrl?: string; channelId: string };
+      applicationWebhook?: { name?: string; iconUrl?: string; channelId: string };
     },
   ) => Promise<void>;
   guildId: string | undefined;

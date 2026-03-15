@@ -77,7 +77,7 @@ type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
 interface BrandingExtra {
   applicationWebhook?: {
-    name: string;
+    name?: string;
     iconUrl?: string;
     channelId: string;
   };
@@ -246,13 +246,13 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
       const brandingChanged =
         webhookDisplayName !== existingWebhookName || webhookAvatarUrl !== existingWebhookIconUrl;
 
-      if (webhooksAllowed && !shouldSkipBranding && webhookDisplayName && brandingChanged) {
+      if (webhooksAllowed && !shouldSkipBranding && brandingChanged) {
         const channelId = connection.details.webhook?.channelId || connection.details.channel?.id;
 
         if (channelId) {
           brandingExtra = {
             applicationWebhook: {
-              name: webhookDisplayName,
+              name: webhookDisplayName || undefined,
               iconUrl: webhookAvatarUrl || undefined,
               channelId,
             },

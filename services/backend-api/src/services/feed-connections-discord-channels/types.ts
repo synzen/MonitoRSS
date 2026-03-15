@@ -88,7 +88,7 @@ export interface UpdateDiscordChannelConnectionDetailsInput {
   };
   applicationWebhook?: {
     channelId: string;
-    name: string;
+    name?: string;
     iconUrl?: string;
     threadId?: string;
   };

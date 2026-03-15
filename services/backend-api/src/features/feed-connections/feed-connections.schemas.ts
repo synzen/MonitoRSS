@@ -42,6 +42,16 @@ const ApplicationWebhookSchema = Type.Object(
   { additionalProperties: false },
 );
 
+const UpdateApplicationWebhookSchema = Type.Object(
+  {
+    channelId: Type.String({ minLength: 1 }),
+    name: Type.Optional(Type.String()),
+    iconUrl: Type.Optional(Type.String()),
+    threadId: Type.Optional(Type.String()),
+  },
+  { additionalProperties: false },
+);
+
 export const ConnectionActionParamsSchema = Type.Object({
   feedId: Type.String({ minLength: 1 }),
   connectionId: Type.String({ minLength: 1 }),
@@ -412,7 +422,7 @@ export const UpdateDiscordChannelConnectionBodySchema = Type.Object(
     channelId: Type.Optional(Type.String()),
     channelNewThreadTitle: Type.Optional(Type.String()),
     channelNewThreadExcludesPreview: Type.Optional(Type.Boolean()),
-    applicationWebhook: Type.Optional(ApplicationWebhookSchema),
+    applicationWebhook: Type.Optional(UpdateApplicationWebhookSchema),
     content: Type.Optional(Type.Union([Type.String(), Type.Null()])),
     forumThreadTitle: Type.Optional(Type.String({ maxLength: 100 })),
     forumThreadTags: Type.Optional(Type.Array(ForumThreadTagSchema)),
