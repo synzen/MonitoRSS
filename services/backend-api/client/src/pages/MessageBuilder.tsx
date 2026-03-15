@@ -69,7 +69,11 @@ import {
 } from "../contexts/UserFeedConnectionContext";
 import { FeedConnectionType, FeedDiscordChannelConnection } from "../types";
 import MessageBuilderFormState from "./MessageBuilder/types/MessageBuilderFormState";
-import { useUpdateDiscordChannelConnection } from "../features/feedConnections";
+import {
+  useUpdateDiscordChannelConnection,
+  getConnectionWebhookChannelId,
+  getConnectionWebhookThreadId,
+} from "../features/feedConnections";
 import {
   PageAlertContextOutlet,
   PageAlertProvider,
@@ -302,13 +306,14 @@ const MessageBuilderContent: React.FC = () => {
         const shouldSkipBranding = skipBrandingRef.current;
         skipBrandingRef.current = false;
 
-        const channelId = connection.details.webhook?.channelId || connection.details.channel?.id;
+        const channelId = getConnectionWebhookChannelId(connection);
 
         if (webhooksAllowed && !shouldSkipBranding && brandingChanged && channelId) {
           connectionDetails.applicationWebhook = {
             name: brandingDisplayName || undefined,
             iconUrl: brandingAvatarUrl || undefined,
             channelId,
+            threadId: getConnectionWebhookThreadId(connection),
           };
         }
 

@@ -16,7 +16,10 @@ import {
   HStack,
   Input,
 } from "@chakra-ui/react";
-import { DiscordMessageDisplay } from "../../../../components/DiscordMessageDisplay";
+import {
+  DiscordMessageDisplay,
+  resolvePreviewAvatarUrl,
+} from "../../../../components/DiscordMessageDisplay";
 import { TestSendFeedback } from "../../types";
 import { Article, Branding } from "./types";
 import { useBrandingContext } from "./BrandingContext";
@@ -70,7 +73,11 @@ export const PreviewColumn = ({
     hasBrandingValues,
   } = useBrandingContext();
   const { data: bot } = useDiscordBot();
-  const resolvedAvatarUrl = brandingAvatarUrl || bot?.result.avatar || undefined;
+  const resolvedAvatarUrl = resolvePreviewAvatarUrl({
+    brandingAvatarUrl,
+    brandingDisplayName,
+    botAvatarUrl: bot?.result.avatar,
+  });
 
   return (
     <Box

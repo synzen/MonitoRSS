@@ -24,11 +24,7 @@ import { useCreateConnectionPreview } from "../../features/feedConnections/hooks
 import { FeedConnectionType, FeedDiscordChannelConnection } from "../../types";
 import { useDebounce } from "../../hooks";
 import { useDiscordBot } from "../../features/discordUser";
-import {
-  InlineErrorAlert,
-  DiscordMessageDisplay,
-  DISCORD_DEFAULT_AVATAR_URL,
-} from "../../components";
+import { InlineErrorAlert, DiscordMessageDisplay, resolvePreviewAvatarUrl } from "../../components";
 import convertMessageBuilderStateToConnectionPreviewInput, {
   V2_COMPONENT_TYPE,
 } from "./utils/convertMessageBuilderStateToConnectionPreviewInput";
@@ -189,6 +185,11 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
     );
   }
 
+  const resolvedAvatarUrl = resolvePreviewAvatarUrl({
+    brandingAvatarUrl,
+    brandingDisplayName,
+    botAvatarUrl: bot?.result.avatar,
+  });
   const brandingSummary = brandingDisplayName.trim() || "Default";
 
   return (
@@ -282,11 +283,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
                   },
                 }}
               />
-              <Avatar
-                size="2xs"
-                src={brandingAvatarUrl || bot?.result.avatar || DISCORD_DEFAULT_AVATAR_URL}
-                bg="gray.500"
-              />
+              <Avatar size="2xs" src={resolvedAvatarUrl} bg="gray.500" />
               <Text as="span">Branding: {brandingSummary}</Text>
               {!webhooksAllowed && (
                 <>
@@ -336,7 +333,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
             emptyMessage={showEmptyState ? "No components added yet" : undefined}
             showVerifiedInAppBadge={!connection.details.webhook}
             username={brandingDisplayName || undefined}
-            avatarUrl={brandingAvatarUrl || bot?.result.avatar || undefined}
+            avatarUrl={resolvedAvatarUrl}
           />
         </MentionDataProvider>
         <Text fontSize="sm" color="gray.400" mt={2} textAlign="left">

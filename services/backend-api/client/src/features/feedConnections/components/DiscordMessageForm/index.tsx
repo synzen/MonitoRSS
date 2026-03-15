@@ -38,6 +38,7 @@ import { DiscordMessageForumThreadForm } from "./DiscordMessageForumThreadForm";
 import { DiscordMessageMentionForm } from "./DiscordMessageMentionForm";
 import { DiscordMessagePlaceholderLimitsForm } from "./DiscordMessagePlaceholderLimitsForm";
 import { CreateDiscordChannelConnectionPreviewInput } from "../../api";
+import { getConnectionWebhookChannelId, getConnectionWebhookThreadId } from "../../utils";
 import { PricingDialogContext, SendTestArticleContext } from "../../../../contexts";
 import { useIsFeatureAllowed } from "../../../../hooks";
 import { BlockableFeature } from "../../../../constants";
@@ -80,6 +81,7 @@ interface BrandingExtra {
     name?: string;
     iconUrl?: string;
     channelId: string;
+    threadId?: string;
   };
 }
 
@@ -247,7 +249,7 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
         webhookDisplayName !== existingWebhookName || webhookAvatarUrl !== existingWebhookIconUrl;
 
       if (webhooksAllowed && !shouldSkipBranding && brandingChanged) {
-        const channelId = connection.details.webhook?.channelId || connection.details.channel?.id;
+        const channelId = getConnectionWebhookChannelId(connection);
 
         if (channelId) {
           brandingExtra = {
@@ -255,6 +257,7 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
               name: webhookDisplayName || undefined,
               iconUrl: webhookAvatarUrl || undefined,
               channelId,
+              threadId: getConnectionWebhookThreadId(connection),
             },
           };
         }

@@ -37,6 +37,28 @@ const DISCORD_V2_COMPONENT_TYPE = {
 export const DISCORD_DEFAULT_AVATAR_URL = "https://cdn.discordapp.com/embed/avatars/0.png";
 export const MONITORSS_USERNAME = "MonitoRSS";
 
+/**
+ * When branding is active (custom name or avatar), Discord uses its own default avatar
+ * if no custom avatar is specified — not the bot's avatar.
+ */
+export function resolvePreviewAvatarUrl({
+  brandingAvatarUrl,
+  brandingDisplayName,
+  botAvatarUrl,
+}: {
+  brandingAvatarUrl?: string | null;
+  brandingDisplayName?: string | null;
+  botAvatarUrl?: string | null;
+}): string {
+  if (brandingAvatarUrl) return brandingAvatarUrl;
+
+  const hasBranding = !!brandingDisplayName?.trim() || !!brandingAvatarUrl?.trim();
+
+  if (hasBranding) return DISCORD_DEFAULT_AVATAR_URL;
+
+  return botAvatarUrl || DISCORD_DEFAULT_AVATAR_URL;
+}
+
 const buttonColors: Record<string, { bg: string; color: string; border: string }> = {
   Primary: {
     bg: "#5865f2",
