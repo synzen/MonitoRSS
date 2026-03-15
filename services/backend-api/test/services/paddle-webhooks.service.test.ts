@@ -164,7 +164,7 @@ describe("PaddleWebhooksService", { concurrency: true }, () => {
       );
     });
 
-    it("throws when userId missing in custom_data", async () => {
+    it("throws when userId missing in custom_data and email lookup fails", async () => {
       const ctx = harness.createContext();
       const event = ctx.createSubscriptionActivatedEvent({
         custom_data: { userId: undefined },
@@ -173,19 +173,19 @@ describe("PaddleWebhooksService", { concurrency: true }, () => {
       await assert.rejects(
         () => ctx.service.handleSubscriptionUpdatedEvent(event),
         {
-          message: /Could not find user id in custom_data/,
+          message: /Could not resolve discord user ID/,
         },
       );
     });
 
-    it("throws when user not found", async () => {
+    it("throws when user not found by id or email", async () => {
       const ctx = harness.createContext();
       const event = ctx.createSubscriptionUpdatedEvent();
 
       await assert.rejects(
         () => ctx.service.handleSubscriptionUpdatedEvent(event),
         {
-          message: /Could not find user with user ID/,
+          message: /Could not resolve discord user ID/,
         },
       );
     });
