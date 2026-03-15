@@ -10,8 +10,8 @@ import { useDebounce } from "../../../../hooks";
 import { useDiscordBot } from "../../../discordUser";
 import {
   InlineErrorAlert,
-  DISCORD_DEFAULT_AVATAR_URL,
   MONITORSS_USERNAME,
+  resolvePreviewAvatarUrl,
 } from "../../../../components";
 import { MentionDataProvider, useMentionData } from "../../../../contexts/MentionDataContext";
 
@@ -150,11 +150,11 @@ export const DiscordChannelConnectionPreview = ({
       <MentionDataProvider serverId={connection?.details.channel?.guildId}>
         <DiscordViewWithMentions
           username={usernameOverride || bot?.result.username || MONITORSS_USERNAME}
-          avatarUrl={
-            avatarUrlOverride ||
-            bot?.result.avatar ||
-            DISCORD_DEFAULT_AVATAR_URL
-          }
+          avatarUrl={resolvePreviewAvatarUrl({
+            brandingAvatarUrl: avatarUrlOverride,
+            brandingDisplayName: usernameOverride,
+            botAvatarUrl: bot?.result.avatar,
+          })}
           messages={connectionPreview?.result.messages || []}
         />
       </MentionDataProvider>

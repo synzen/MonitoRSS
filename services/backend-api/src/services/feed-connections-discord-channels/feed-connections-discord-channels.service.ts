@@ -108,7 +108,9 @@ export class FeedConnectionsDiscordChannelsService {
       let channel: DiscordGuildChannel;
       const threadId = applicationWebhook?.threadId || inputWebhook?.threadId;
       const iconUrl = inputWebhook?.iconUrl || applicationWebhook?.iconUrl;
-      const name = inputWebhook?.name || applicationWebhook?.name;
+      const name = await this.resolveWebhookName(
+        inputWebhook?.name || applicationWebhook?.name,
+      );
 
       if (inputWebhook) {
         ({ webhook, channel } = await this.assertDiscordWebhookCanBeUsed(
@@ -323,9 +325,10 @@ export class FeedConnectionsDiscordChannelsService {
       const threadId =
         updates.details.webhook?.threadId ||
         updates.details.applicationWebhook?.threadId;
-      const name =
+      const name = await this.resolveWebhookName(
         updates.details.webhook?.name ||
-        updates.details.applicationWebhook?.name;
+          updates.details.applicationWebhook?.name,
+      );
       const iconUrl =
         updates.details.webhook?.iconUrl ||
         updates.details.applicationWebhook?.iconUrl;
@@ -1576,6 +1579,22 @@ export class FeedConnectionsDiscordChannelsService {
           }
         : undefined,
     };
+  }
+
+  private async resolveWebhookName(
+    name: string | undefined,
+  ): Promise<string | undefined> {
+    if (name) {
+      return name;
+    }
+
+    try {
+      const bot = await this.deps.discordApiService.getBot();
+
+      return bot.username;
+    } catch {
+      return undefined;
+    }
   }
 
   private async getOrCreateApplicationWebhook({

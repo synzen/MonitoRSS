@@ -19,6 +19,7 @@ import { SendTestArticleContext } from "../../contexts";
 import { useUserFeedConnectionContext } from "../../contexts/UserFeedConnectionContext";
 import { useUserFeedContext } from "../../contexts/UserFeedContext";
 import { CreateDiscordChannelConnectionPreviewInput } from "../../features/feedConnections/api";
+import { getConnectionWebhookChannelId } from "../../features/feedConnections/utils";
 import { usePageAlertContext } from "../../contexts/PageAlertContext";
 import MessageBuilderFormState from "./types/MessageBuilderFormState";
 import { FeedDiscordChannelConnection } from "../../types";
@@ -76,8 +77,7 @@ export const ArticlePreviewBanner: React.FC<ArticlePreviewBannerProps> = ({
           ...messageComponentData,
           applicationWebhook: brandingDisplayName?.trim()
             ? {
-                channelId:
-                  connection.details.channel?.id || connection.details.webhook?.channelId || "",
+                channelId: getConnectionWebhookChannelId(connection) || "",
                 name: brandingDisplayName.trim(),
                 iconUrl: brandingAvatarUrl?.trim() || undefined,
               }
