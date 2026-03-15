@@ -21,6 +21,44 @@ async function getDiscordUserId(): Promise<string> {
   return data.id;
 }
 
+export async function setSupporterStatusInDb(
+  discordUserId?: string,
+): Promise<void> {
+  const userId = discordUserId || (await getDiscordUserId());
+  const expireAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+
+  const client = new MongoClient(MONGO_URI, { directConnection: true });
+
+  try {
+    await client.connect();
+    await client
+      .db()
+      .collection("supporters")
+      .updateOne(
+        { _id: userId },
+        { $set: { expireAt, guilds: [] } },
+        { upsert: true },
+      );
+  } finally {
+    await client.close();
+  }
+}
+
+export async function clearSupporterStatusInDb(
+  discordUserId?: string,
+): Promise<void> {
+  const userId = discordUserId || (await getDiscordUserId());
+
+  const client = new MongoClient(MONGO_URI, { directConnection: true });
+
+  try {
+    await client.connect();
+    await client.db().collection("supporters").deleteOne({ _id: userId });
+  } finally {
+    await client.close();
+  }
+}
+
 export async function setCancellationDateInDb(
   discordUserId?: string,
 ): Promise<void> {
