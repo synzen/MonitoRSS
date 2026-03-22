@@ -256,9 +256,10 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
           ...(branding?.name
             ? {
                 applicationWebhook: {
-                  channelId: threadId || inputChannelId,
+                  channelId: inputChannelId,
                   name: branding.name,
                   iconUrl: branding.iconUrl,
+                  threadId: threadId || undefined,
                 },
               }
             : { channelId: threadId || inputChannelId }),
@@ -337,8 +338,8 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                 applicationWebhook: {
                   name: brandingDisplayName.trim(),
                   iconUrl: brandingAvatarUrl?.trim() || undefined,
-                  channelId: threadId || inputChannelId,
-                  threadId: undefined as string | undefined,
+                  channelId: inputChannelId,
+                  threadId: threadId || (undefined as string | undefined),
                 },
               }
             : {};

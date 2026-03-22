@@ -36,7 +36,10 @@ export const DEFAULT_TEMPLATE: Template = {
     }
 
     if (!content) {
-      content = `{{${titleField}}}`;
+      const descriptionField = fields?.description[0]?.field;
+      const fallbackField = titleField ?? descriptionField ?? "title||New untitled article";
+
+      content = `{{${fallbackField}}}`;
     }
 
     return {
@@ -45,6 +48,7 @@ export const DEFAULT_TEMPLATE: Template = {
       name: "Simple Text Template",
       stripImages: true,
       ignoreNewLines: true,
+      enablePlaceholderFallback: true,
       children: [
         {
           type: ComponentType.LegacyText,
@@ -72,14 +76,15 @@ export const RICH_EMBED_TEMPLATE: Template = {
 
     const hasImage = !!imageField;
     const hasTitle = !!titleField;
+    const safeTitleField = titleField ?? "title||New untitled article";
 
     const titleComponent = {
       type: ComponentType.V2TextDisplay as const,
       id: "rich-embed-title",
       name: "Title",
       content: linkField
-        ? `### [{{${titleField}}}]({{${linkField}}})${authorField ? "\n**{{author}}**" : ""}`
-        : `### {{${titleField}}}${authorField ? "\n**{{author}}**" : ""}`,
+        ? `### [{{${safeTitleField}}}]({{${linkField}}})${authorField ? "\n**{{author}}**" : ""}`
+        : `### {{${safeTitleField}}}${authorField ? "\n**{{author}}**" : ""}`,
     };
 
     const headerComponent = hasImage
@@ -109,6 +114,7 @@ export const RICH_EMBED_TEMPLATE: Template = {
       ],
       stripImages: true,
       ignoreNewLines: true,
+      enablePlaceholderFallback: true,
       children: [
         {
           type: ComponentType.V2Container,

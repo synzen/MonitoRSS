@@ -60,6 +60,7 @@ export enum ArticleDeliveryErrorCode {
   ThirdPartyForbidden = "user-feeds/third-party-forbidden",
   ThirdPartyNotFound = "user-feeds/third-party-not-found",
   ArticleProcessingError = "user-feeds/article-processing-error",
+  NoPayloadForMedium = "user-feeds/no-payload-for-medium",
 }
 
 /**

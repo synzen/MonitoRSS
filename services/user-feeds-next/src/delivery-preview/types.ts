@@ -230,6 +230,8 @@ export interface ArticleDeliveryResult {
   articleId: string;
   articleIdHash: string;
   articleTitle: string | null;
+  articlePublishedDate: string | null;
+  articleStoredDate: string | null;
   outcome: ArticleDeliveryOutcome;
   outcomeReason: string;
   mediumResults: MediumDeliveryResult[];
@@ -242,6 +244,8 @@ export interface ArticleDeliverySummary {
   articleId: string;
   articleIdHash: string;
   articleTitle: string | null;
+  articlePublishedDate: string | null;
+  articleStoredDate: string | null;
   outcome: ArticleDeliveryOutcome;
   outcomeReason: string;
   mediumResults: MediumDeliverySummary[];

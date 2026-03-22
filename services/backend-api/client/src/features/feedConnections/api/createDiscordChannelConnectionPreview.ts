@@ -71,6 +71,7 @@ export interface CreateDiscordChannelConnectionPreviewInput {
       name: string;
       iconUrl?: string;
     };
+    sendAsBot?: boolean;
     componentsV2?: Array<{
       type: string;
       content?: string;

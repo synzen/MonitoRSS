@@ -1,280 +1,213 @@
+/* eslint-disable max-len */
 import dayjs from 'dayjs';
 import { RequestStatus } from './constants';
-import { GetFeedRequestsInputDto } from './dto';
 import { FeedFetcherController } from './feed-fetcher.controller';
-import { FeedFetcherService } from './feed-fetcher.service';
+import { PartitionedRequestInsert } from '../partitioned-requests-store/types/partitioned-request.type';
+import { randomUUID } from 'crypto';
 
+jest.mock('undici', () => ({ request: jest.fn() }));
 jest.mock('../utils/logger');
+
+function createMockRequest(
+  status: RequestStatus,
+  createdAt: Date,
+  statusCode?: number,
+) {
+  return {
+    request: {
+      status,
+      createdAt,
+      response: statusCode ? { statusCode, textHash: null } : null,
+    },
+    decodedResponseText: '',
+  };
+}
+
+function createMockInsert(
+  url: string,
+  status: RequestStatus,
+  statusCode?: number,
+): PartitionedRequestInsert {
+  return {
+    id: randomUUID(),
+    status,
+    source: null,
+    fetchOptions: null,
+    url,
+    lookupKey: url,
+    createdAt: new Date(),
+    nextRetryDate: null,
+    errorMessage: null,
+    requestInitiatedAt: new Date(),
+    response: statusCode
+      ? {
+          statusCode,
+          textHash: null,
+          s3ObjectKey: null,
+          redisCacheKey: null,
+          headers: {},
+          body: null,
+        }
+      : null,
+  };
+}
 
 describe('FeedFetcherController', () => {
   let controller: FeedFetcherController;
-  const feedFetcherService: FeedFetcherService = {
-    fetchAndSaveResponse: jest.fn(),
-    getLatestRequest: jest.fn(),
-    getRequests: jest.fn(),
-    countRequests: jest.fn(),
-  } as never;
+  let feedFetcherService: Record<string, jest.Mock>;
+  let partitionedRequestsStoreService: Record<string, jest.Mock>;
+  const url = 'https://example.com/feed.xml';
 
   beforeEach(() => {
-    controller = new FeedFetcherController(feedFetcherService);
-  });
-
-  describe('getRequests', () => {
-    const input: GetFeedRequestsInputDto = {
-      skip: 1,
-      limit: 1,
-      url: 'url',
+    feedFetcherService = {
+      fetchAndSaveResponse: jest.fn(),
+      getLatestRequest: jest.fn(),
+      getLatestRequestNon304: jest.fn(),
+      getRequests: jest.fn(),
+      getLatestRetryDate: jest.fn(),
+      decodeResponseContent: jest.fn().mockResolvedValue(''),
     };
 
-    it('returns the requests', async () => {
-      const mockRequests = [
-        {
-          id: 1,
-          createdAt: new Date(),
-          nextRetryTimestamp: new Date(2022),
-          status: RequestStatus.FETCH_ERROR,
-        },
-        {
-          id: 2,
-          createdAt: new Date(),
-          status: RequestStatus.OK,
-        },
-      ];
+    partitionedRequestsStoreService = {
+      flushInserts: jest.fn(),
+      getLatestRequestAnyStatus: jest.fn(),
+      getLatestRequestWithResponseBody: jest.fn(),
+    };
 
-      jest
-        .spyOn(feedFetcherService, 'getRequests')
-        .mockResolvedValue(mockRequests as never);
+    const configService = {
+      getOrThrow: jest.fn().mockReturnValue('test-api-key'),
+    };
 
-      jest.spyOn(feedFetcherService, 'countRequests').mockResolvedValue(2);
-
-      const result = await controller.getRequests(input);
-
-      expect(result).toEqual({
-        result: {
-          requests: [
-            {
-              id: 1,
-              createdAt: dayjs(mockRequests[0].createdAt).unix(),
-              status: RequestStatus.FETCH_ERROR,
-            },
-            {
-              id: 2,
-              createdAt: dayjs(mockRequests[1].createdAt).unix(),
-              status: RequestStatus.OK,
-            },
-          ],
-          totalRequests: 2,
-          nextRetryTimestamp: dayjs(mockRequests[0].nextRetryTimestamp).unix(),
-        },
-      });
-    });
-
-    it('returns null for retry date if latest request is not failed', async () => {
-      const mockRequests = [
-        {
-          id: 1,
-          createdAt: new Date(),
-          status: RequestStatus.OK,
-        },
-      ];
-
-      jest
-        .spyOn(feedFetcherService, 'getRequests')
-        .mockResolvedValue(mockRequests as never);
-
-      const result = await controller.getRequests(input);
-
-      expect(result).toMatchObject({
-        result: {
-          nextRetryTimestamp: null,
-        },
-      });
-    });
+    controller = new FeedFetcherController(
+      feedFetcherService as never,
+      {} as never,
+      configService as never,
+      { getLimitForUrl: jest.fn().mockReturnValue(null) } as never,
+      partitionedRequestsStoreService as never,
+    );
   });
 
   describe('fetchFeed', () => {
-    it('runs the actual fetch if execute fetch is true', async () => {
-      const data = {
-        url: 'https://example.com',
-        executeFetch: true,
-      };
+    describe('stale error record handling', () => {
+      it('re-fetches when the only record is a stale error and executeFetchIfStale is true', async () => {
+        const staleDate = dayjs().subtract(3, 'day').toDate();
 
-      await controller.fetchFeed(data);
+        feedFetcherService.getLatestRequest.mockResolvedValue(null);
+        feedFetcherService.getLatestRequestNon304.mockResolvedValueOnce(
+          createMockRequest(RequestStatus.BAD_STATUS_CODE, staleDate, 500),
+        );
 
-      expect(feedFetcherService.fetchAndSaveResponse).toHaveBeenCalledWith(
-        data.url,
-      );
-    });
+        const successInsert = createMockInsert(url, RequestStatus.OK, 200);
+        feedFetcherService.fetchAndSaveResponse.mockResolvedValue({
+          request: successInsert,
+        });
 
-    it('returns returns pending request status if there is no latest request', async () => {
-      const data = {
-        url: 'https://www.example.com',
-      };
+        // After re-fetch, getLatestRequest returns the new successful request
+        feedFetcherService.getLatestRequest.mockResolvedValueOnce(null);
+        feedFetcherService.getLatestRequest.mockResolvedValueOnce(
+          createMockRequest(RequestStatus.OK, new Date(), 200),
+        );
 
-      jest
-        .spyOn(feedFetcherService, 'getLatestRequest')
-        .mockResolvedValue(null);
+        const result = await controller.fetchFeed({
+          url,
+          executeFetchIfStale: true,
+        });
 
-      const result = await controller.fetchFeed(data);
+        expect(feedFetcherService.fetchAndSaveResponse).toHaveBeenCalled();
+        expect(result.requestStatus).toBe('SUCCESS');
+      });
 
-      expect(result).toEqual({
-        requestStatus: 'pending',
+      it('does not re-fetch when the error record is recent', async () => {
+        const recentDate = new Date();
+
+        feedFetcherService.getLatestRequest.mockResolvedValue(null);
+        feedFetcherService.getLatestRequestNon304.mockResolvedValue(
+          createMockRequest(RequestStatus.BAD_STATUS_CODE, recentDate, 500),
+        );
+
+        const result = await controller.fetchFeed({
+          url,
+          executeFetchIfStale: true,
+        });
+
+        expect(feedFetcherService.fetchAndSaveResponse).not.toHaveBeenCalled();
+        expect(result.requestStatus).toBe('BAD_STATUS_CODE');
+      });
+
+      it('re-fetches stale error and returns new error if feed still fails', async () => {
+        const staleDate = dayjs().subtract(3, 'day').toDate();
+
+        feedFetcherService.getLatestRequest.mockResolvedValue(null);
+        feedFetcherService.getLatestRequestNon304.mockResolvedValueOnce(
+          createMockRequest(RequestStatus.BAD_STATUS_CODE, staleDate, 500),
+        );
+
+        const failInsert = createMockInsert(
+          url,
+          RequestStatus.BAD_STATUS_CODE,
+          503,
+        );
+        feedFetcherService.fetchAndSaveResponse.mockResolvedValue({
+          request: failInsert,
+        });
+
+        // After re-fetch, still no successful request
+        feedFetcherService.getLatestRequest.mockResolvedValue(null);
+        feedFetcherService.getLatestRequestNon304.mockResolvedValueOnce(
+          createMockRequest(RequestStatus.BAD_STATUS_CODE, new Date(), 503),
+        );
+
+        const result = await controller.fetchFeed({
+          url,
+          executeFetchIfStale: true,
+        });
+
+        expect(feedFetcherService.fetchAndSaveResponse).toHaveBeenCalled();
+        expect(result.requestStatus).toBe('BAD_STATUS_CODE');
+        expect((result as any).response.statusCode).toBe(503);
+      });
+
+      it('does not re-fetch error records when executeFetchIfStale is false', async () => {
+        const staleDate = dayjs().subtract(3, 'day').toDate();
+
+        feedFetcherService.getLatestRequest.mockResolvedValue(null);
+        feedFetcherService.getLatestRequestNon304.mockResolvedValue(
+          createMockRequest(RequestStatus.BAD_STATUS_CODE, staleDate, 500),
+        );
+
+        const result = await controller.fetchFeed({ url });
+
+        expect(feedFetcherService.fetchAndSaveResponse).not.toHaveBeenCalled();
+        expect(result.requestStatus).toBe('BAD_STATUS_CODE');
+      });
+
+      it('respects custom stalenessThresholdSeconds', async () => {
+        // 10 minutes ago — stale with 5 min threshold, fresh with 30 min default
+        const tenMinAgo = dayjs().subtract(10, 'minute').toDate();
+
+        feedFetcherService.getLatestRequest.mockResolvedValue(null);
+        feedFetcherService.getLatestRequestNon304.mockResolvedValueOnce(
+          createMockRequest(RequestStatus.FETCH_ERROR, tenMinAgo),
+        );
+
+        const successInsert = createMockInsert(url, RequestStatus.OK, 200);
+        feedFetcherService.fetchAndSaveResponse.mockResolvedValue({
+          request: successInsert,
+        });
+        feedFetcherService.getLatestRequest.mockResolvedValueOnce(null);
+        feedFetcherService.getLatestRequest.mockResolvedValueOnce(
+          createMockRequest(RequestStatus.OK, new Date(), 200),
+        );
+
+        const result = await controller.fetchFeed({
+          url,
+          executeFetchIfStale: true,
+          stalenessThresholdSeconds: 300,
+        });
+
+        expect(feedFetcherService.fetchAndSaveResponse).toHaveBeenCalled();
+        expect(result.requestStatus).toBe('SUCCESS');
       });
     });
-
-    it('creates a new request if executeIfNotExists is true', async () => {
-      const data = {
-        url: 'https://www.example.com',
-        executeFetchIfNotExists: true,
-      };
-
-      jest
-        .spyOn(feedFetcherService, 'getLatestRequest')
-        .mockResolvedValue(null);
-
-      jest.spyOn(feedFetcherService, 'fetchAndSaveResponse').mockResolvedValue({
-        status: RequestStatus.OK,
-        response: {
-          statusCode: 200,
-        },
-      } as never);
-
-      const result = await controller.fetchFeed(data);
-
-      expect(result).toMatchObject({
-        requestStatus: 'success',
-      });
-    });
-
-    it('returns error if latest request is a fetch error', async () => {
-      const data = {
-        url: 'https://www.example.com',
-      };
-
-      jest.spyOn(feedFetcherService, 'getLatestRequest').mockResolvedValue({
-        status: RequestStatus.FETCH_ERROR,
-      } as never);
-
-      const result = await controller.fetchFeed(data);
-
-      expect(result).toEqual({
-        requestStatus: 'error',
-      });
-    });
-
-    it('returns error if there is no response', async () => {
-      const data = {
-        url: 'https://www.example.com',
-      };
-
-      jest.spyOn(feedFetcherService, 'getLatestRequest').mockResolvedValue({
-        status: RequestStatus.OK,
-        response: undefined,
-      } as never);
-
-      const result = await controller.fetchFeed(data);
-
-      expect(result).toEqual({
-        requestStatus: 'error',
-      });
-    });
-
-    it('returns the response if request status was ok', async () => {
-      const data = {
-        url: 'https://www.example.com',
-      };
-
-      jest.spyOn(feedFetcherService, 'getLatestRequest').mockResolvedValue({
-        status: RequestStatus.OK,
-        response: {
-          text: 'response body',
-          statusCode: 200,
-        },
-      } as never);
-
-      const result = await controller.fetchFeed(data);
-
-      expect(result).toEqual({
-        requestStatus: 'success',
-        response: {
-          body: 'response body',
-          statusCode: 200,
-        },
-      });
-    });
-
-    it('returns parse error if the latest request had a parse error', async () => {
-      const data = {
-        url: 'https://www.example.com',
-      };
-
-      jest.spyOn(feedFetcherService, 'getLatestRequest').mockResolvedValue({
-        status: RequestStatus.PARSE_ERROR,
-        response: {
-          statusCode: 200,
-        },
-      } as never);
-
-      const result = await controller.fetchFeed(data);
-
-      expect(result).toEqual({
-        requestStatus: 'parse_error',
-        response: {
-          statusCode: 200,
-        },
-      });
-    });
-
-    it('returns request status error with response status code if request is failed', async () => {
-      const data = {
-        url: 'https://www.example.com',
-      };
-
-      jest.spyOn(feedFetcherService, 'getLatestRequest').mockResolvedValue({
-        status: RequestStatus.FETCH_ERROR,
-        response: {
-          statusCode: 404,
-        },
-      } as never);
-
-      const result = await controller.fetchFeed(data);
-
-      expect(result).toEqual({
-        requestStatus: 'error',
-        response: {
-          statusCode: 404,
-        },
-      });
-    });
-
-    it('throws the error if there is an unhandled status', async () => {
-      const data = {
-        url: 'https://www.example.com',
-      };
-
-      jest.spyOn(feedFetcherService, 'getLatestRequest').mockResolvedValue({
-        status: 'unhandled',
-        response: {},
-      } as never);
-
-      await expect(controller.fetchFeed(data)).rejects.toThrowError(
-        'Unhandled request status: unhandled',
-      );
-    });
-  });
-
-  it('throws if execute fetch failed', async () => {
-    const data = {
-      url: 'https://example.com',
-      executeFetch: true,
-    };
-
-    const error = new Error('custom error');
-
-    jest
-      .spyOn(feedFetcherService, 'fetchAndSaveResponse')
-      .mockRejectedValue(error);
-
-    await expect(controller.fetchFeed(data)).rejects.toThrow(error);
   });
 });

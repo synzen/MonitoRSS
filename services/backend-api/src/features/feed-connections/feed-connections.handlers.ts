@@ -1,4 +1,5 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
+import logger from "../../infra/logger";
 import { NotFoundError, ApiErrorCode } from "../../infra/error-handler";
 import {
   FeedConnectionType,
@@ -154,6 +155,7 @@ export async function createDiscordChannelConnectionHandler(
     feedConnectionsDiscordChannelsService,
     usersService,
     config,
+    messageBrokerEventsService,
   } = request.container;
   const { discordUserId, accessToken } = request;
   const { feedId } = request.params;
@@ -204,6 +206,23 @@ export async function createDiscordChannelConnectionHandler(
         formatter: formatter || undefined,
       },
     });
+
+  try {
+    const updatedFeed = await userFeedRepository.findById(feedId);
+
+    if (updatedFeed) {
+      await messageBrokerEventsService.emitDeliverFeedArticlesEventWithPremiumCheck(
+        updatedFeed,
+      );
+    }
+  } catch (err) {
+    logger.error(
+      `Failed to trigger immediate feed processing after connection creation for feed ${feedId}`,
+      {
+        stack: (err as Error).stack,
+      },
+    );
+  }
 
   return reply.status(201).send({
     result: formatDiscordChannelConnectionResponse(connection),
@@ -275,6 +294,7 @@ export async function sendTestArticleHandler(
     {
       article: body.article,
       applicationWebhook: body.applicationWebhook,
+      sendAsBot: body.sendAsBot,
       previewInput: {
         content: body.content ?? undefined,
         embeds: body.embeds,

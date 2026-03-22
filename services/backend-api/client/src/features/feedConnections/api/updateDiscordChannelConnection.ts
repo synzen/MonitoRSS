@@ -47,7 +47,7 @@ export interface UpdateDiscordChannelConnectionInput {
       threadId?: string | null;
     } | null;
     applicationWebhook?: {
-      name: string;
+      name?: string;
       iconUrl?: string | null;
       channelId: string;
       threadId?: string | null;

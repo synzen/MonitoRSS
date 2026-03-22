@@ -19,6 +19,7 @@ import { SendTestArticleContext } from "../../contexts";
 import { useUserFeedConnectionContext } from "../../contexts/UserFeedConnectionContext";
 import { useUserFeedContext } from "../../contexts/UserFeedContext";
 import { CreateDiscordChannelConnectionPreviewInput } from "../../features/feedConnections/api";
+import { getConnectionWebhookChannelId } from "../../features/feedConnections/utils";
 import { usePageAlertContext } from "../../contexts/PageAlertContext";
 import MessageBuilderFormState from "./types/MessageBuilderFormState";
 import { FeedDiscordChannelConnection } from "../../types";
@@ -74,14 +75,20 @@ export const ArticlePreviewBanner: React.FC<ArticlePreviewBannerProps> = ({
             id: currentArticleId,
           },
           ...messageComponentData,
-          applicationWebhook: brandingDisplayName?.trim()
-            ? {
-                channelId:
-                  connection.details.channel?.id || connection.details.webhook?.channelId || "",
-                name: brandingDisplayName.trim(),
-                iconUrl: brandingAvatarUrl?.trim() || undefined,
-              }
-            : undefined,
+          applicationWebhook:
+            brandingDisplayName?.trim() || brandingAvatarUrl?.trim()
+              ? {
+                  channelId: getConnectionWebhookChannelId(connection) || "",
+                  name: brandingDisplayName?.trim() || "",
+                  iconUrl: brandingAvatarUrl?.trim() || undefined,
+                }
+              : undefined,
+          sendAsBot:
+            !brandingDisplayName?.trim() &&
+            !brandingAvatarUrl?.trim() &&
+            !!connection.details.webhook
+              ? true
+              : undefined,
         },
       };
 

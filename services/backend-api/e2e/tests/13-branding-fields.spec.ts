@@ -3,7 +3,12 @@ import {
   getTestServerName,
   getTestChannelName,
   getTestChannelId,
+  createWebhookConnection,
 } from "../helpers/api";
+import {
+  setSupporterStatusInDb,
+  clearSupporterStatusInDb,
+} from "../helpers/paddle-db";
 
 async function navigateToTemplateModal(
   page: Page,
@@ -495,5 +500,118 @@ test.describe("Branding Fields - Message Builder", () => {
     await expect(page.getByRole("dialog").getByText("Pricing")).toBeVisible({
       timeout: 10000,
     });
+  });
+
+  test("can clear branding display name and save successfully", async ({
+    page,
+    testFeed,
+  }) => {
+    const channelId = getTestChannelId();
+    test.skip(!channelId, "channelId must be configured in e2econfig.json");
+
+    await setSupporterStatusInDb();
+
+    try {
+      const connection = await createWebhookConnection(
+        page,
+        testFeed.id,
+        channelId!,
+        {
+          name: `Branding Clear Test ${Date.now()}`,
+          webhookName: "Original Branding Name",
+        },
+      );
+
+      await page.goto(
+        `/feeds/${testFeed.id}/discord-channel-connections/${connection.id}/message-builder`,
+      );
+
+      // Dismiss the welcome dialog
+      const welcomeDialog = page.getByRole("dialog", {
+        name: "Welcome to your Message Builder!",
+      });
+      await expect(welcomeDialog).toBeVisible({ timeout: 10000 });
+      await welcomeDialog
+        .getByRole("button", {
+          name: "Skip the message builder tour and start using the feature",
+        })
+        .click();
+      await expect(welcomeDialog).not.toBeVisible({ timeout: 5000 });
+
+      // Wait for article to load in preview
+      await expect(
+        page.getByText("Previewing Article", { exact: true }),
+      ).toBeVisible({ timeout: 15000 });
+
+      // Expand the branding section (collapsed by default for paid users)
+      const brandingSummary = page.locator("summary").filter({
+        hasText: "Branding:",
+      });
+      await expect(brandingSummary).toBeVisible({ timeout: 5000 });
+      await brandingSummary.click();
+
+      // Verify existing branding is shown
+      const displayNameInput = page.getByLabel("Display Name");
+      await expect(displayNameInput).toBeVisible({ timeout: 5000 });
+      await expect(displayNameInput).toHaveValue("Original Branding Name", {
+        timeout: 5000,
+      });
+
+      // Clear the display name
+      await displayNameInput.clear();
+
+      // The save button should be enabled since branding changed
+      const saveButton = page.getByRole("button", { name: "Save Changes" });
+      await expect(saveButton).not.toHaveAttribute("aria-disabled", "true", {
+        timeout: 5000,
+      });
+
+      // Save changes
+      await saveButton.click();
+
+      // Verify save succeeded - button should go back to aria-disabled
+      await expect(saveButton).toHaveAttribute("aria-disabled", "true", {
+        timeout: 30000,
+      });
+
+      // Verify the branding summary shows "Default"
+      await expect(brandingSummary).toContainText("Default");
+
+      // Reload and verify the clear persisted
+      await page.reload();
+
+      // Dismiss welcome dialog again after reload
+      const welcomeDialogAfterReload = page.getByRole("dialog", {
+        name: "Welcome to your Message Builder!",
+      });
+      if (
+        await welcomeDialogAfterReload
+          .isVisible({ timeout: 5000 })
+          .catch(() => false)
+      ) {
+        await welcomeDialogAfterReload
+          .getByRole("button", {
+            name: "Skip the message builder tour and start using the feature",
+          })
+          .click();
+      }
+
+      // Wait for article to load
+      await expect(
+        page.getByText("Previewing Article", { exact: true }),
+      ).toBeVisible({ timeout: 15000 });
+
+      // Verify the display name field is empty
+      await expect(page.getByLabel("Display Name")).toHaveValue("", {
+        timeout: 5000,
+      });
+
+      // Verify the branding summary shows "Default"
+      await expect(
+        page.locator("summary").filter({ hasText: "Branding:" }),
+      ).toContainText("Default");
+    } finally {
+      await clearSupporterStatusInDb();
+    }
   });
 });
