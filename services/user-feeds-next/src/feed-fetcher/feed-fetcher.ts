@@ -1,5 +1,4 @@
 import pRetry from "p-retry";
-import { Agent } from "undici";
 import {
   FeedRequestBadStatusCodeException,
   FeedRequestFetchException,
@@ -18,13 +17,6 @@ import {
 } from "./types";
 
 const API_KEY = process.env.USER_FEEDS_FEED_REQUESTS_API_KEY || "";
-
-const feedRequestsAgent = new Agent({
-  connections: 50,
-  pipelining: 1,
-  keepAliveTimeout: 30_000,
-  keepAliveMaxTimeout: 60_000,
-});
 
 function getErrorDetails(err: unknown): string {
   const parts: string[] = [];
@@ -85,7 +77,6 @@ export async function fetchFeed(
             accept: "application/json",
             "api-key": API_KEY,
           },
-          dispatcher: feedRequestsAgent,
         } as RequestInit),
       {
         retries: options?.retries ?? 2,
@@ -226,7 +217,6 @@ export async function fetchFeedForDeliveryPreview(
             accept: "application/json",
             "api-key": API_KEY,
           },
-          dispatcher: feedRequestsAgent,
         } as RequestInit),
       {
         retries: 2,
