@@ -40,6 +40,7 @@ export interface ParseArticlesOptions {
   useParserRules?: PostProcessParserRule[];
   externalFeedProperties?: ExternalFeedProperty[];
   externalFetchFn?: ExternalFetchFn;
+  lightweight?: boolean;
 }
 
 /**

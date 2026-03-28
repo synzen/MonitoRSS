@@ -61,6 +61,22 @@ export function flattenArticle(
     useParserRules?: PostProcessParserRule[];
   }
 ): FlattenedArticleWithoutId {
+  const base = flattenArticleLightweight(input, options);
+
+  return enrichFlattenedArticle(base, options);
+}
+
+/**
+ * Lightweight flatten: same as flattenArticle but skips extractExtraInfo and runPostProcessRules.
+ * Used for pagination/search where extracted::/processed:: fields aren't needed.
+ */
+export function flattenArticleLightweight(
+  input: Record<string, unknown>,
+  options: {
+    formatOptions?: UserFeedFormatOptions;
+    useParserRules?: PostProcessParserRule[];
+  }
+): FlattenedArticleWithoutId {
   const flattened = flatten(input, {
     delimiter: ARTICLE_FIELD_DELIMITER,
   }) as Record<string, unknown>;
@@ -89,7 +105,6 @@ export function flattenArticle(
       try {
         // eslint-disable-next-line no-control-regex
         if (/[^\x00-\x7F]/.test(requestedTimezone)) {
-          // Non-ASCII characters (e.g., Unicode minus) aren't valid in timezones
           throw new Error("Invalid timezone");
         }
         dateVal = dayjs(value).tz(requestedTimezone);
@@ -139,8 +154,20 @@ export function flattenArticle(
     newRecord[key] = String(value);
   });
 
-  // Extract images and anchors from HTML content
-  const entries = Object.entries(newRecord);
+  return newRecord;
+}
+
+/**
+ * Enrich a lightweight-flattened article with extracted:: and processed:: fields.
+ * Runs the expensive operations that flattenArticleLightweight skips.
+ */
+export function enrichFlattenedArticle(
+  flattened: FlattenedArticleWithoutId,
+  options: { useParserRules?: PostProcessParserRule[] }
+): FlattenedArticleWithoutId {
+  const enriched = { ...flattened };
+
+  const entries = Object.entries(flattened);
 
   for (let i = 0; i < entries.length; i++) {
     const [key, value] = entries[i]!;
@@ -149,20 +176,18 @@ export function flattenArticle(
 
     if (imageList.length) {
       for (let j = 0; j < imageList.length; j++) {
-        const image = imageList[j];
-        newRecord[`extracted::${key}::image${j + 1}`] = image!;
+        enriched[`extracted::${key}::image${j + 1}`] = imageList[j]!;
       }
     }
 
     if (anchorList.length) {
       for (let j = 0; j < anchorList.length; j++) {
-        const anchor = anchorList[j];
-        newRecord[`extracted::${key}::anchor${j + 1}`] = anchor!;
+        enriched[`extracted::${key}::anchor${j + 1}`] = anchorList[j]!;
       }
     }
   }
 
-  return runPostProcessRules(newRecord, options.useParserRules);
+  return runPostProcessRules(enriched, options.useParserRules);
 }
 
 /**
@@ -176,6 +201,7 @@ export async function parseArticlesFromXml(
     useParserRules?: PostProcessParserRule[];
     externalFeedProperties?: ExternalFeedProperty[];
     externalFetchFn?: ExternalFetchFn;
+    lightweight?: boolean;
   } = {}
 ): Promise<ParseArticlesResult> {
   const feedparser = new FeedParser({});
@@ -240,7 +266,10 @@ export async function parseArticlesFromXml(
             idType
           );
 
-          const flattened = flattenArticle(rawArticle as never, {
+          const flattenFn = options.lightweight
+            ? flattenArticleLightweight
+            : flattenArticle;
+          const flattened = flattenFn(rawArticle as never, {
             formatOptions: options.formatOptions,
             useParserRules: options.useParserRules,
           });
@@ -287,8 +316,9 @@ export async function parseArticlesFromXml(
           idHashes.add(idHash);
         }
 
-        // Inject external content if configured
+        // Inject external content if configured (skip in lightweight mode)
         if (
+          !options.lightweight &&
           options.externalFeedProperties?.length &&
           options.externalFetchFn &&
           mappedArticles.length <= MAX_ARTICLE_INJECTION_ARTICLE_COUNT

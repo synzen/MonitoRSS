@@ -18,6 +18,29 @@ import {
 
 const API_KEY = process.env.USER_FEEDS_FEED_REQUESTS_API_KEY || "";
 
+function getErrorDetails(err: unknown): string {
+  const parts: string[] = [];
+  let current = err;
+
+  while (current instanceof Error) {
+    const e = current as Error & { code?: string };
+    let part = e.message;
+
+    if (e.code) {
+      part += ` [${e.code}]`;
+    }
+
+    parts.push(part);
+    current = e.cause;
+  }
+
+  if (current !== undefined && !(current instanceof Error)) {
+    parts.push(String(current));
+  }
+
+  return parts.join(" -> ");
+}
+
 export async function fetchFeed(
   url: string,
   options: {
@@ -54,7 +77,7 @@ export async function fetchFeed(
             accept: "application/json",
             "api-key": API_KEY,
           },
-        }),
+        } as RequestInit),
       {
         retries: options?.retries ?? 2,
         randomize: true,
@@ -62,7 +85,7 @@ export async function fetchFeed(
     );
   } catch (err) {
     throw new FeedRequestNetworkException(
-      `Failed to execute request to feed requests API: ${(err as Error).message}`
+      `Failed to execute request to feed requests API: ${getErrorDetails(err)}`
     );
   }
 
@@ -194,7 +217,7 @@ export async function fetchFeedForDeliveryPreview(
             accept: "application/json",
             "api-key": API_KEY,
           },
-        }),
+        } as RequestInit),
       {
         retries: 2,
         randomize: true,
@@ -202,7 +225,7 @@ export async function fetchFeedForDeliveryPreview(
     );
   } catch (err) {
     throw new FeedRequestNetworkException(
-      `Failed to execute request to feed requests API: ${(err as Error).message}`
+      `Failed to execute request to feed requests API: ${getErrorDetails(err)}`
     );
   }
 
