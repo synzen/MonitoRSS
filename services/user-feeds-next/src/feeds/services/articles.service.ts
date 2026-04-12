@@ -4,6 +4,7 @@
  */
 
 import { fetchFeed, FeedResponseRequestStatus } from "../../feed-fetcher";
+import { FeedRequestBadStatusCodeException } from "../../feed-fetcher/exceptions";
 import {
   injectExternalContent,
   InvalidFeedException,
@@ -112,11 +113,10 @@ function tryGetRedditRssUrl(url: string): string | null {
  */
 export async function findOrFetchFeedArticles(
   url: string,
-  options: FindOrFetchFeedArticlesOptions
+  options: FindOrFetchFeedArticlesOptions,
 ): Promise<FetchFeedArticlesResult> {
-  const {
-    parsedArticlesCacheStore = inMemoryParsedArticlesCacheStore,
-  } = options;
+  const { parsedArticlesCacheStore = inMemoryParsedArticlesCacheStore } =
+    options;
 
   const cacheKeyOptions: CacheKeyOptions = {
     formatOptions: {
@@ -132,10 +132,13 @@ export async function findOrFetchFeedArticles(
   };
 
   // Check cache first
-  const cachedArticles = await getFeedArticlesFromCache(parsedArticlesCacheStore, {
-    url,
-    options: cacheKeyOptions,
-  });
+  const cachedArticles = await getFeedArticlesFromCache(
+    parsedArticlesCacheStore,
+    {
+      url,
+      options: cacheKeyOptions,
+    },
+  );
 
   if (cachedArticles) {
     await refreshFeedArticlesCacheExpiration(parsedArticlesCacheStore, {
@@ -153,13 +156,33 @@ export async function findOrFetchFeedArticles(
     };
   }
 
-  const result = await fetchFeed(url, {
-    executeFetch: options.executeFetch,
-    executeFetchIfNotInCache: true,
-    executeFetchIfStale: options.executeFetchIfStale,
-    lookupDetails: options.requestLookupDetails,
-    serviceHost: options.feedRequestsServiceHost,
-  });
+  let result;
+
+  try {
+    result = await fetchFeed(url, {
+      executeFetch: options.executeFetch,
+      executeFetchIfNotInCache: true,
+      executeFetchIfStale: options.executeFetchIfStale,
+      lookupDetails: options.requestLookupDetails,
+      serviceHost: options.feedRequestsServiceHost,
+    });
+  } catch (err) {
+    if (
+      err instanceof FeedRequestBadStatusCodeException &&
+      options.findRssFromHtml
+    ) {
+      const redditRssUrl = tryGetRedditRssUrl(url);
+
+      if (redditRssUrl) {
+        return findOrFetchFeedArticles(redditRssUrl, {
+          ...options,
+          findRssFromHtml: false,
+        });
+      }
+    }
+
+    throw err;
+  }
 
   if (result.requestStatus !== FeedResponseRequestStatus.Success) {
     // Feed not ready, return empty
@@ -231,7 +254,7 @@ export async function findOrFetchFeedArticles(
           return { body: null };
         }
       },
-      { includeHtmlInErrors: options.includeHtmlInErrors }
+      { includeHtmlInErrors: options.includeHtmlInErrors },
     );
   }
 
@@ -260,7 +283,7 @@ export async function findOrFetchFeedArticles(
 export async function fetchFeedArticle(
   url: string,
   articleId: string,
-  options: FetchFeedArticleOptions
+  options: FetchFeedArticleOptions,
 ): Promise<Article | null> {
   const { output } = await findOrFetchFeedArticles(url, options);
 
@@ -268,7 +291,7 @@ export async function fetchFeedArticle(
 
   if (!article) {
     throw new FeedArticleNotFoundException(
-      `Article with ID "${articleId}" not found in feed`
+      `Article with ID "${articleId}" not found in feed`,
     );
   }
 
@@ -280,7 +303,7 @@ export async function fetchFeedArticle(
  */
 export async function fetchRandomFeedArticle(
   url: string,
-  options: FetchFeedArticleOptions
+  options: FetchFeedArticleOptions,
 ): Promise<Article | null> {
   const { output } = await findOrFetchFeedArticles(url, options);
 
