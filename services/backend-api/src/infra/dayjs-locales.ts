@@ -147,3 +147,4 @@ import dayjs from "dayjs";
 // Optionally, set a default locale
 dayjs.extend(require("dayjs/plugin/utc"));
 dayjs.extend(require("dayjs/plugin/timezone"));
+dayjs.extend(require('dayjs/plugin/advancedFormat'));
