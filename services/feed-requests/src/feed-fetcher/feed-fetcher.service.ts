@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import logger from '../utils/logger';
+import contextLogger from '../shared/utils/log-context';
 import { RequestStatus } from './constants';
 import { Request, Response } from './entities';
 import { deflate, inflate, gunzip } from 'zlib';
@@ -285,9 +285,7 @@ export class FeedFetcherService {
 
     try {
       if (options?.saveResponseToObjectStorage) {
-        logger.info(
-          `DEBUG: Fetching ${url} and saving to object storage for url ${url}`,
-        );
+        contextLogger.info(`Fetching ${url} and saving to object storage`);
       }
 
       const res = await this.fetchFeedResponse(
@@ -318,7 +316,7 @@ export class FeedFetcherService {
         text = res.status === HttpStatus.NOT_MODIFIED ? '' : await res.text();
 
         if (request.status !== RequestStatus.OK) {
-          logger.debug(`Bad status code ${res.status} for url ${url}`, {
+          contextLogger.debug(`Bad status code ${res.status} for url ${url}`, {
             responseText: text,
           });
         }
@@ -342,7 +340,7 @@ export class FeedFetcherService {
                 body: compressedText,
               });
             } catch (err) {
-              logger.error(
+              contextLogger.error(
                 `Failed to upload feed hmtl content to object file storage`,
                 {
                   stack: (err as Error).stack,
@@ -366,7 +364,7 @@ export class FeedFetcherService {
             throw err;
           }
 
-          logger.error(
+          contextLogger.error(
             `Failed to upload feed html content for url ${url} to cache`,
             {
               stack: (err as Error).stack,
@@ -378,7 +376,7 @@ export class FeedFetcherService {
           request.status = RequestStatus.REFUSED_LARGE_FEED;
         } else {
           request.status = RequestStatus.PARSE_ERROR;
-          logger.debug(`Failed to parse response text of url ${url}`, {
+          contextLogger.debug(`Failed to parse response text of url ${url}`, {
             stack: (err as Error).stack,
           });
         }
@@ -419,8 +417,8 @@ export class FeedFetcherService {
       };
 
       if (options?.saveResponseToObjectStorage) {
-        logger.info(
-          `DEBUG: Marking ${url} for persistence`,
+        contextLogger.info(
+          `Marking ${url} for persistence`,
           partitionedRequest,
         );
       }
@@ -430,7 +428,7 @@ export class FeedFetcherService {
         responseText: text,
       };
     } catch (err) {
-      logger.debug(`Failed to fetch url ${url}`, {
+      contextLogger.debug(`Failed to fetch url ${url}`, {
         stack: (err as Error).stack,
       });
 
@@ -506,7 +504,7 @@ export class FeedFetcherService {
     };
 
     if (log) {
-      logger.info(`TESTLOGGER: Fetching ${url}`, {
+      contextLogger.info(`Fetching ${url}`, {
         url,
         options: useOptions,
       });
