@@ -18,6 +18,7 @@ import retryUntilTrue, {
 import calculateResponseFreshnessLifetime from '../shared/utils/calculate-response-freshness-lifetime';
 import calculateCurrentResponseAge from '../shared/utils/calculate-current-response-age';
 import { CacheStorageService } from '../cache-storage/cache-storage.service';
+import contextLogger, { logContextStorage } from '../shared/utils/log-context';
 
 interface BatchRequestMessage {
   timestamp: number;
@@ -111,135 +112,144 @@ export class FeedFetcherListenerService {
       const results = await Promise.allSettled(
         batchRequest.data.map(async (message) => {
           const { url, lookupKey, saveToObjectStorage, headers } = message;
-          let request: PartitionedRequestInsert | undefined = undefined;
+          const logPrefix = saveToObjectStorage
+            ? `DEBUG ${lookupKey || url}:`
+            : '';
 
-          if (saveToObjectStorage) {
-            logger.info(
-              `DEBUG: Beginning to process fetch request in batch request for ${url} with rate ${rateSeconds}s`,
-            );
-          }
+          return logContextStorage.run({ prefix: logPrefix }, async () => {
+            let request: PartitionedRequestInsert | undefined = undefined;
 
-          const cacheKey =
-            this.calculateCurrentlyProcessingCacheKeyForMessage(message);
-          const wasSet = await this.cacheStorageService.setNX({
-            key: cacheKey,
-            body: '1',
-            expSeconds: Math.floor(rateSeconds * 0.75),
-          });
-
-          if (!wasSet) {
-            logger.info(
-              `Request with key ${
-                lookupKey || url
-              } with rate ${rateSeconds} is already being processed, skipping`,
-            );
-
-            return;
-          }
-
-          const recentlyProcessed =
-            await this.partitionedRequestsStoreService.wasRequestedInPastSeconds(
-              lookupKey || url,
-              Math.round(rateSeconds * 0.5),
-            );
-
-          if (recentlyProcessed) {
-            // Check is necessary if a feed is checked on both 10m and 2m intervals for example
-            logger.info(
-              `Request with key ${
-                lookupKey || url
-              } with rate ${rateSeconds} was recently processed, skipping`,
-            );
-
-            fetchCompletedToEmit.push({
-              lookupKey,
-              url,
-              rateSeconds,
-              debug: saveToObjectStorage,
-            });
-
-            return;
-          }
-
-          try {
-            await retryUntilTrue(
-              async () => {
-                const { isRateLimited } =
-                  await this.hostRateLimiterService.incrementUrlCount(url);
-
-                if (isRateLimited) {
-                  logger.info(
-                    `Host of ${url} is still rate limited, retrying later`,
-                  );
-                }
-
-                return !isRateLimited;
-              },
-              5000,
-              (rateSeconds * 1000) / 1.5, // 1.5 is the backoff factor of retryUntilTrue
-            );
-
-            const result = await this.handleBrokerFetchRequest({
-              lookupKey,
-              url,
-              rateSeconds,
-              saveToObjectStorage,
-              headers,
-            });
-
-            if (result) {
-              request = result.request;
+            if (saveToObjectStorage) {
+              contextLogger.info(
+                `Beginning to process fetch request in batch request for ${url} with rate ${rateSeconds}s`,
+              );
             }
 
-            if (result.request) {
-              requestInsertsToFlush.push(result.request);
+            const cacheKey =
+              this.calculateCurrentlyProcessingCacheKeyForMessage(message);
+            const lockExpSeconds = Math.min(
+              Math.floor(rateSeconds * 0.75),
+              120,
+            );
+            const wasSet = await this.cacheStorageService.setNX({
+              key: cacheKey,
+              body: '1',
+              expSeconds: lockExpSeconds,
+            });
+
+            if (!wasSet) {
+              contextLogger.info(
+                `Request with key ${
+                  lookupKey || url
+                } with rate ${rateSeconds} is already being processed, skipping`,
+              );
+
+              return;
             }
 
-            if (result.emitFetchCompleted) {
+            const recentlyProcessed =
+              await this.partitionedRequestsStoreService.wasRequestedInPastSeconds(
+                lookupKey || url,
+                Math.round(rateSeconds * 0.5),
+              );
+
+            if (recentlyProcessed) {
+              contextLogger.info(
+                `Request with key ${
+                  lookupKey || url
+                } with rate ${rateSeconds} was recently processed, skipping`,
+              );
+
               fetchCompletedToEmit.push({
                 lookupKey,
                 url,
                 rateSeconds,
                 debug: saveToObjectStorage,
               });
+
+              return;
             }
-          } catch (err) {
-            if (err instanceof RetryException) {
-              logger.error(
-                `Error while retrying due to host rate limits: ${err.message}`,
-                {
+
+            try {
+              await retryUntilTrue(
+                async () => {
+                  const { isRateLimited } =
+                    await this.hostRateLimiterService.incrementUrlCount(url);
+
+                  if (isRateLimited) {
+                    contextLogger.info(
+                      `Host of ${url} is still rate limited, retrying later`,
+                    );
+                  }
+
+                  return !isRateLimited;
+                },
+                5000,
+                (rateSeconds * 1000) / 1.5, // 1.5 is the backoff factor of retryUntilTrue
+              );
+
+              const result = await this.handleBrokerFetchRequest({
+                lookupKey,
+                url,
+                rateSeconds,
+                saveToObjectStorage,
+                headers,
+              });
+
+              if (result) {
+                request = result.request;
+              }
+
+              if (result.request) {
+                requestInsertsToFlush.push(result.request);
+              }
+
+              if (result.emitFetchCompleted) {
+                fetchCompletedToEmit.push({
+                  lookupKey,
+                  url,
+                  rateSeconds,
+                  debug: saveToObjectStorage,
+                });
+              }
+            } catch (err) {
+              if (err instanceof RetryException) {
+                contextLogger.error(
+                  `Error while retrying due to host rate limits: ${err.message}`,
+                  {
+                    event: message,
+                    err: (err as Error).stack,
+                  },
+                );
+              } else {
+                contextLogger.error(`Error processing fetch request message`, {
                   event: message,
                   err: (err as Error).stack,
-                },
-              );
-            } else {
-              logger.error(`Error processing fetch request message`, {
-                event: message,
-                err: (err as Error).stack,
-              });
-            }
-          } finally {
-            if (batchRequest.timestamp) {
-              const nowTs = Date.now();
-              const finishedTs = nowTs - batchRequest.timestamp;
+                });
+              }
+            } finally {
+              if (batchRequest.timestamp) {
+                const nowTs = Date.now();
+                const finishedTs = nowTs - batchRequest.timestamp;
 
-              logger.datadog(
-                `Finished handling feed requests batch event URL in ${finishedTs}s`,
-                {
-                  duration: finishedTs,
-                  url,
-                  lookupKey,
-                  requestStatus: request?.status,
-                  statusCode: request?.response?.statusCode,
-                  errorMessage: request?.errorMessage,
-                },
+                contextLogger.datadog(
+                  `Finished handling feed requests batch event URL in ${finishedTs}s`,
+                  {
+                    duration: finishedTs,
+                    url,
+                    lookupKey,
+                    requestStatus: request?.status,
+                    statusCode: request?.response?.statusCode,
+                    errorMessage: request?.errorMessage,
+                  },
+                );
+              }
+
+              await this.cacheStorageService.del(
+                this.calculateCurrentlyProcessingCacheKeyForMessage(message),
               );
             }
-
-            await this.cacheStorageService.del(
-              this.calculateCurrentlyProcessingCacheKeyForMessage(message),
-            );
-          }
+          });
         }),
       );
 
@@ -300,7 +310,7 @@ export class FeedFetcherListenerService {
       });
 
     if (skip) {
-      logger.debug(
+      contextLogger.debug(
         `Request ${url} with rate ${rateSeconds} has ` +
           `recently failed and will be skipped until ${nextRetryDate}`,
       );
@@ -314,7 +324,7 @@ export class FeedFetcherListenerService {
       });
 
     if (isCacheStillActive) {
-      logger.debug(
+      contextLogger.debug(
         `Request with lookup key ${
           lookupKey || url
         } still has active cache-control, skipping`,
@@ -324,8 +334,8 @@ export class FeedFetcherListenerService {
     }
 
     if (data.saveToObjectStorage) {
-      logger.info(
-        `DEBUG: About to fetch and response for ${url} for refresh rate ${data.rateSeconds}s`,
+      contextLogger.info(
+        `About to fetch and save response for ${url} for refresh rate ${data.rateSeconds}s`,
       );
     }
 
@@ -358,7 +368,7 @@ export class FeedFetcherListenerService {
 
       this.emitFailingUrl({ lookupKey, url });
 
-      logger.debug(
+      contextLogger.debug(
         `Request with url ${url} failed, next retry date: ${nextRetryDate}`,
       );
 
@@ -409,7 +419,7 @@ export class FeedFetcherListenerService {
       );
 
     if (!latestNextRetryDate) {
-      logger.error(
+      contextLogger.error(
         `Request for ${lookupKey} has previously failed, but there is no` +
           ` nextRetryDate set. All failed requests handled via broker events` +
           ` should have retry dates. Continuing with request as fallback behavior.`,
@@ -443,7 +453,7 @@ export class FeedFetcherListenerService {
     lookupKey: string | undefined;
   }) {
     try {
-      logger.info(
+      contextLogger.info(
         `Emitting rejected url for feeds with url "${url}", lookupkey ${lookupKey} `,
         {
           url,
@@ -461,7 +471,7 @@ export class FeedFetcherListenerService {
         },
       });
     } catch (err) {
-      logger.error(`Failed to publish rejected url event: ${url}`, {
+      contextLogger.error(`Failed to publish rejected url event: ${url}`, {
         stack: (err as Error).stack,
         url,
       });
@@ -470,7 +480,7 @@ export class FeedFetcherListenerService {
 
   emitFailedUrl({ lookupKey, url }: { lookupKey?: string; url: string }) {
     try {
-      logger.info(
+      contextLogger.info(
         `Disabling feeds with lookup key "${lookupKey}" and url ${url} due to failure threshold `,
       );
 
@@ -483,7 +493,7 @@ export class FeedFetcherListenerService {
         },
       });
     } catch (err) {
-      logger.error(`Failed to publish failed url event: ${lookupKey}`, {
+      contextLogger.error(`Failed to publish failed url event: ${lookupKey}`, {
         stack: (err as Error).stack,
         lookupKey,
       });
@@ -501,7 +511,7 @@ export class FeedFetcherListenerService {
         },
       });
     } catch (err) {
-      logger.error(`Failed to publish failing lookup key event`, {
+      contextLogger.error(`Failed to publish failing lookup key event`, {
         stack: (err as Error).stack,
         lookupKey,
       });
@@ -520,17 +530,9 @@ export class FeedFetcherListenerService {
     debug?: boolean;
   }) {
     try {
-      logger.debug(
-        `Emitting fetch completed event for feeds with url "${url}", lookupkey ${lookupKey} `,
-        {
-          url,
-          lookupKey,
-        },
-      );
-
       if (debug) {
-        logger.info(
-          `DEBUG ${lookupKey || url}: Publishing url.fetch.completed event`,
+        contextLogger.info(
+          `Publishing url.fetch.completed event for feeds with url "${url}", lookupkey ${lookupKey}`,
           {
             url,
             lookupKey,
@@ -555,10 +557,13 @@ export class FeedFetcherListenerService {
         },
       });
     } catch (err) {
-      logger.error(`Failed to publish fetch completed event: ${lookupKey}`, {
-        stack: (err as Error).stack,
-        lookupKey,
-      });
+      contextLogger.error(
+        `Failed to publish fetch completed event: ${lookupKey}`,
+        {
+          stack: (err as Error).stack,
+          lookupKey,
+        },
+      );
     }
   }
 
