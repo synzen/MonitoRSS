@@ -60,22 +60,8 @@ export default defineConfig({
           if (id.includes("node_modules/highlight.js/")) {
             return "vendor-hljs";
           }
-          if (
-            id.includes("node_modules/@chakra-ui/") ||
-            id.includes("node_modules/@emotion/") ||
-            id.includes("node_modules/framer-motion")
-          ) {
-            return "vendor-chakra";
-          }
           if (id.includes("node_modules/@sentry/")) {
             return "vendor-sentry";
-          }
-          if (
-            id.includes("node_modules/react/") ||
-            id.includes("node_modules/react-dom/") ||
-            id.includes("node_modules/react-router")
-          ) {
-            return "vendor-react";
           }
         },
       },
