@@ -4,5 +4,5 @@
     "noEmit": true
   },
   "include": ["index.ts", "src/**/*", "test/**/*"],
-  "exclude": ["dist", "src/articles/parser/worker/worker-pool.ts", "src/articles/parser/worker/feed-parser-worker.ts"]
+  "exclude": ["dist"]
 }
