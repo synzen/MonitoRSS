@@ -38,7 +38,6 @@ import {
   pruneOldPartitions,
 } from "./src/stores/postgres";
 import { createHttpServer } from "./src/http";
-import { terminateFeedParserPool } from "./src/articles/parser/worker";
 
 import "dayjs/locale/af";
 import "dayjs/locale/am";
@@ -328,12 +327,9 @@ async function initializeSharedInfrastructure(): Promise<SharedInfrastructure> {
 }
 
 /**
- * Close shared infrastructure (Redis, PostgreSQL, worker pool).
+ * Close shared infrastructure (Redis, PostgreSQL).
  */
 async function closeSharedInfrastructure(): Promise<void> {
-  // Terminate worker pool
-  await terminateFeedParserPool();
-
   await closeRedisClient();
 
   if (pool) {

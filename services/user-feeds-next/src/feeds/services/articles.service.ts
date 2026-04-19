@@ -8,12 +8,12 @@ import { FeedRequestBadStatusCodeException } from "../../feed-fetcher/exceptions
 import {
   injectExternalContent,
   InvalidFeedException,
+  parseArticlesFromXml,
   type Article,
   type UserFeedFormatOptions,
   type ExternalFeedProperty,
   type ExternalContentError,
 } from "../../articles/parser";
-import { parseArticlesFromXmlWithWorkers as parseArticlesFromXml } from "../../articles/parser/worker";
 import { FeedArticleNotFoundException } from "../../feed-fetcher/exceptions";
 import { parse as parseHtml, valid as isValidHtml } from "node-html-parser";
 import {

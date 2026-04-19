@@ -18,5 +18,5 @@
     "noPropertyAccessFromIndexSignature": false
   },
   "include": ["index.ts", "src/**/*"],
-  "exclude": ["dist", "src/**/*.test.ts", "test/**/*", "src/articles/parser/worker/worker-pool.ts", "src/articles/parser/worker/feed-parser-worker.ts"]
+  "exclude": ["dist", "src/**/*.test.ts", "test/**/*"]
 }

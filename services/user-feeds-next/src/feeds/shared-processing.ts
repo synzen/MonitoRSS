@@ -16,9 +16,9 @@ import {
   FeedParseTimeoutException,
   InvalidFeedException,
   getParserRules,
+  parseArticlesFromXml,
   type ExternalFeedProperty,
 } from "../articles/parser";
-import { parseArticlesFromXmlWithWorkers as parseArticlesFromXml } from "../articles/parser/worker";
 import type { Article } from "../articles/parser";
 
 // ============================================================================
