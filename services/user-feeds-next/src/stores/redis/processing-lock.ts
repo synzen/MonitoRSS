@@ -24,30 +24,6 @@ export interface ProcessingLock {
 }
 
 /**
- * Create an in-memory processing lock.
- * Suitable for testing and single-instance deployments.
- */
-export function createInMemoryProcessingLock(): ProcessingLock {
-  const locks = new Set<string>();
-
-  return {
-    async acquire(feedId: string): Promise<boolean> {
-      const key = `processing-${feedId}`;
-      if (locks.has(key)) {
-        return false;
-      }
-      locks.add(key);
-      return true;
-    },
-
-    async release(feedId: string): Promise<void> {
-      const key = `processing-${feedId}`;
-      locks.delete(key);
-    },
-  };
-}
-
-/**
  * Create a Redis-backed processing lock.
  * Uses SET with GET option for atomic check-and-set.
  * Matches the pattern in user-feeds/src/feed-event-handler/feed-event-handler.service.ts:68-97
@@ -94,8 +70,3 @@ export function createRedisProcessingLock(
   };
 }
 
-/**
- * Default in-memory processing lock singleton.
- * Used when Redis is not configured.
- */
-export const inMemoryProcessingLock = createInMemoryProcessingLock();

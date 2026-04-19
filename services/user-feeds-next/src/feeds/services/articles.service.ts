@@ -20,8 +20,7 @@ import {
   getFeedArticlesFromCache,
   setFeedArticlesInCache,
   refreshFeedArticlesCacheExpiration,
-  inMemoryParsedArticlesCacheStore,
-} from "../../stores/in-memory/parsed-articles-cache";
+} from "../../stores/parsed-articles-cache-helpers";
 import type {
   ParsedArticlesCacheStore,
   CacheKeyOptions,
@@ -38,13 +37,13 @@ export interface FetchFeedArticleOptions {
     headers?: Record<string, string>;
   } | null;
   feedRequestsServiceHost: string;
+  parsedArticlesCacheStore: ParsedArticlesCacheStore;
 }
 
 export interface FindOrFetchFeedArticlesOptions extends FetchFeedArticleOptions {
   findRssFromHtml?: boolean;
   executeFetch?: boolean;
   executeFetchIfStale?: boolean;
-  parsedArticlesCacheStore?: ParsedArticlesCacheStore;
   lightweight?: boolean;
 }
 
@@ -115,8 +114,7 @@ export async function findOrFetchFeedArticles(
   url: string,
   options: FindOrFetchFeedArticlesOptions,
 ): Promise<FetchFeedArticlesResult> {
-  const { parsedArticlesCacheStore = inMemoryParsedArticlesCacheStore } =
-    options;
+  const { parsedArticlesCacheStore } = options;
 
   const cacheKeyOptions: CacheKeyOptions = {
     formatOptions: {

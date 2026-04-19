@@ -38,8 +38,6 @@ export {
   type TestDiscordRestClient,
   type CapturedDiscordPayload,
   createTestDiscordRestClient,
-  createInMemoryDiscordRestClient,
-  inMemoryDiscordRestClient,
 } from "./mediums/discord/discord-rest-client";
 
 // Re-export production Discord REST client factory

@@ -5,7 +5,6 @@ import type { ExternalFeedProperty } from "../articles/parser";
 import { fetchAndParseFeed, getHashToCompare } from "./shared-processing";
 import {
   getArticlesToDeliver,
-  inMemoryArticleFieldStore,
   type ArticleFieldStore,
 } from "../articles/comparison";
 import {
@@ -17,14 +16,10 @@ import {
   type DiscordDeliveryResult,
   type MediumRejectionEvent,
   type DiscordRestClient,
-  inMemoryDiscordRestClient,
 } from "../delivery";
 import type { LogicalExpression } from "../articles/filters";
 import { MessageBrokerQueue } from "../shared/constants";
-import {
-  updateFeedArticlesInCache,
-  inMemoryParsedArticlesCacheStore,
-} from "../stores/in-memory/parsed-articles-cache";
+import { updateFeedArticlesInCache } from "../stores/parsed-articles-cache-helpers";
 import type {
   ParsedArticlesCacheStore,
   CacheKeyOptions,
@@ -32,13 +27,11 @@ import type {
 import {
   handleFeedParseFailure,
   handleFeedParseSuccess,
-  inMemoryFeedRetryStore,
-} from "../stores/in-memory/feed-retry-store";
+} from "../stores/feed-retry-helpers";
 import type {
   FeedRetryStore,
   FeedRetryPublisher,
 } from "../stores/interfaces/feed-retry-store";
-import { inMemoryDeliveryRecordStore } from "../stores/in-memory/delivery-record-store";
 import {
   type DeliveryRecordStore,
   type ArticleDeliveryState,
@@ -68,40 +61,6 @@ export interface ResponseHashStore {
    * Remove the hash for a feed.
    */
   remove(feedId: string): Promise<void>;
-}
-
-// ============================================================================
-// In-Memory Response Hash Store
-// ============================================================================
-
-const responseHashMap = new Map<string, string>();
-
-/**
- * In-memory response hash store.
- * Suitable for development and single-instance deployments.
- */
-export const inMemoryResponseHashStore: ResponseHashStore = {
-  async get(feedId: string): Promise<string | null> {
-    return responseHashMap.get(feedId) ?? null;
-  },
-
-  async set(feedId: string, hash: string): Promise<void> {
-    if (!hash) {
-      throw new Error("Hash is required");
-    }
-    responseHashMap.set(feedId, hash);
-  },
-
-  async remove(feedId: string): Promise<void> {
-    responseHashMap.delete(feedId);
-  },
-};
-
-/**
- * Clear the in-memory response hash store (for testing).
- */
-export function clearResponseHashStore(): void {
-  responseHashMap.clear();
 }
 
 // ============================================================================
@@ -147,16 +106,12 @@ export function parseFeedDeletedEvent(event: unknown): FeedDeletedEvent | null {
 export async function handleFeedDeletedEvent(
   event: FeedDeletedEvent,
   options: {
-    responseHashStore?: ResponseHashStore;
-    articleFieldStore?: ArticleFieldStore;
-    feedRetryStore?: FeedRetryStore;
-  } = {}
+    responseHashStore: ResponseHashStore;
+    articleFieldStore: ArticleFieldStore;
+    feedRetryStore: FeedRetryStore;
+  }
 ): Promise<void> {
-  const {
-    responseHashStore = inMemoryResponseHashStore,
-    articleFieldStore = inMemoryArticleFieldStore,
-    feedRetryStore = inMemoryFeedRetryStore,
-  } = options;
+  const { responseHashStore, articleFieldStore, feedRetryStore } = options;
   const feedId = event.data.feed.id;
 
   logger.debug("Received feed deleted event", { event });
@@ -355,24 +310,24 @@ export function parseFeedV2Event(event: unknown): FeedV2Event | null {
 export async function handleFeedV2Event(
   event: FeedV2Event,
   options: {
-    responseHashStore?: ResponseHashStore;
-    articleFieldStore?: ArticleFieldStore;
-    parsedArticlesCacheStore?: ParsedArticlesCacheStore;
-    feedRetryStore?: FeedRetryStore;
-    deliveryRecordStore?: DeliveryRecordStore;
-    discordClient?: DiscordRestClient;
+    responseHashStore: ResponseHashStore;
+    articleFieldStore: ArticleFieldStore;
+    parsedArticlesCacheStore: ParsedArticlesCacheStore;
+    feedRetryStore: FeedRetryStore;
+    deliveryRecordStore: DeliveryRecordStore;
+    discordClient: DiscordRestClient;
     publisher?: FeedRetryPublisher;
     queuePublisher: QueuePublisher;
     feedRequestsServiceHost: string;
   }
 ): Promise<ArticleDeliveryState[] | null> {
   const {
-    responseHashStore = inMemoryResponseHashStore,
-    articleFieldStore = inMemoryArticleFieldStore,
-    parsedArticlesCacheStore = inMemoryParsedArticlesCacheStore,
-    feedRetryStore = inMemoryFeedRetryStore,
-    deliveryRecordStore = inMemoryDeliveryRecordStore,
-    discordClient = inMemoryDiscordRestClient,
+    responseHashStore,
+    articleFieldStore,
+    parsedArticlesCacheStore,
+    feedRetryStore,
+    deliveryRecordStore,
+    discordClient,
     publisher,
     queuePublisher,
     feedRequestsServiceHost,

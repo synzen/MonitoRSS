@@ -7,7 +7,6 @@ import {
   handleArticleDeliveryResult,
   parseFeedDeletedEvent,
   handleFeedDeletedEvent,
-  inMemoryResponseHashStore,
   type ResponseHashStore,
 } from "./src/feeds/feed-event-handler";
 import { MessageBrokerQueue } from "./src/shared/constants";
@@ -21,18 +20,11 @@ import {
   closeRedisClient,
   createRedisParsedArticlesCacheStore,
   createRedisProcessingLock,
-  inMemoryProcessingLock,
   type ProcessingLock,
 } from "./src/stores/redis";
-import { inMemoryParsedArticlesCacheStore } from "./src/stores/in-memory/parsed-articles-cache";
 import type { ParsedArticlesCacheStore } from "./src/stores/interfaces/parsed-articles-cache";
-import {
-  inMemoryArticleFieldStore,
-  type ArticleFieldStore,
-} from "./src/articles/comparison";
-import { inMemoryDeliveryRecordStore } from "./src/stores/in-memory/delivery-record-store";
+import { type ArticleFieldStore } from "./src/articles/comparison";
 import type { DeliveryRecordStore } from "./src/stores/interfaces/delivery-record-store";
-import { inMemoryFeedRetryStore } from "./src/stores/in-memory/feed-retry-store";
 import type { FeedRetryStore } from "./src/stores/interfaces/feed-retry-store";
 import type { Pool } from "pg";
 import {
@@ -252,69 +244,58 @@ interface SharedInfrastructure {
  * Initialize shared infrastructure (Redis, PostgreSQL, stores) used by all modes.
  */
 async function initializeSharedInfrastructure(): Promise<SharedInfrastructure> {
-  // Initialize Redis if configured, otherwise fall back to in-memory stores
-  let parsedArticlesCacheStore: ParsedArticlesCacheStore =
-    inMemoryParsedArticlesCacheStore;
-  let processingLock: ProcessingLock = inMemoryProcessingLock;
-
-  if (REDIS_URI) {
-    const redisClient = await initializeRedisClient({
-      uri: REDIS_URI,
-      disableCluster: REDIS_DISABLE_CLUSTER,
-    });
-    parsedArticlesCacheStore = createRedisParsedArticlesCacheStore(redisClient);
-    processingLock = createRedisProcessingLock(redisClient);
-    logger.info("Using Redis-backed cache store and processing lock");
-  } else {
-    logger.info("No Redis URI configured, using in-memory stores");
+  if (!REDIS_URI) {
+    throw new Error("USER_FEEDS_REDIS_URI is required");
+  }
+  if (!POSTGRES_URI) {
+    throw new Error("USER_FEEDS_POSTGRES_URI is required");
   }
 
-  // Initialize PostgreSQL stores if configured, otherwise fall back to in-memory
-  let deliveryRecordStore: DeliveryRecordStore = inMemoryDeliveryRecordStore;
-  let articleFieldStore: ArticleFieldStore = inMemoryArticleFieldStore;
-  let responseHashStore: ResponseHashStore = inMemoryResponseHashStore;
-  let feedRetryStore: FeedRetryStore = inMemoryFeedRetryStore;
+  const redisClient = await initializeRedisClient({
+    uri: REDIS_URI,
+    disableCluster: REDIS_DISABLE_CLUSTER,
+  });
+  const parsedArticlesCacheStore: ParsedArticlesCacheStore =
+    createRedisParsedArticlesCacheStore(redisClient);
+  const processingLock: ProcessingLock = createRedisProcessingLock(redisClient);
 
-  if (POSTGRES_URI) {
-    pool = initPool(POSTGRES_URI);
-    logger.info("Successfully connected to PostgreSQL");
+  pool = initPool(POSTGRES_URI);
+  logger.info("Successfully connected to PostgreSQL");
 
-    deliveryRecordStore = createPostgresDeliveryRecordStore(pool);
-    articleFieldStore = createPostgresArticleFieldStore(pool);
-    responseHashStore = createPostgresResponseHashStore(pool);
-    feedRetryStore = createPostgresFeedRetryStore(pool);
+  const deliveryRecordStore: DeliveryRecordStore =
+    createPostgresDeliveryRecordStore(pool);
+  const articleFieldStore: ArticleFieldStore =
+    createPostgresArticleFieldStore(pool);
+  const responseHashStore: ResponseHashStore =
+    createPostgresResponseHashStore(pool);
+  const feedRetryStore: FeedRetryStore = createPostgresFeedRetryStore(pool);
 
-    // Run partition management on startup
-    await ensurePartitionsExist(pool);
-    await pruneOldPartitions(pool, {
-      articlePersistenceMonths: ARTICLE_PERSISTENCE_MONTHS,
-      deliveryRecordPersistenceMonths: DELIVERY_RECORD_PERSISTENCE_MONTHS,
-    });
+  await ensurePartitionsExist(pool);
+  await pruneOldPartitions(pool, {
+    articlePersistenceMonths: ARTICLE_PERSISTENCE_MONTHS,
+    deliveryRecordPersistenceMonths: DELIVERY_RECORD_PERSISTENCE_MONTHS,
+  });
 
-    // Schedule recurring partition management
-    setInterval(async () => {
-      logger.info("Running recurring task to prune and create partitions...");
-      try {
-        await ensurePartitionsExist(pool!);
-        await pruneOldPartitions(pool!, {
-          articlePersistenceMonths: ARTICLE_PERSISTENCE_MONTHS,
-          deliveryRecordPersistenceMonths: DELIVERY_RECORD_PERSISTENCE_MONTHS,
-        });
-        logger.info(
-          "Recurring task to prune and create partitions ran successfully"
-        );
-      } catch (err) {
-        logger.error(
-          "Failed to run recurring task to prune and create partitions",
-          {
-            error: (err as Error).stack,
-          }
-        );
-      }
-    }, PARTITION_MANAGEMENT_INTERVAL_MS);
-  } else {
-    logger.info("No PostgreSQL URI configured, using in-memory stores");
-  }
+  setInterval(async () => {
+    logger.info("Running recurring task to prune and create partitions...");
+    try {
+      await ensurePartitionsExist(pool!);
+      await pruneOldPartitions(pool!, {
+        articlePersistenceMonths: ARTICLE_PERSISTENCE_MONTHS,
+        deliveryRecordPersistenceMonths: DELIVERY_RECORD_PERSISTENCE_MONTHS,
+      });
+      logger.info(
+        "Recurring task to prune and create partitions ran successfully"
+      );
+    } catch (err) {
+      logger.error(
+        "Failed to run recurring task to prune and create partitions",
+        {
+          error: (err as Error).stack,
+        }
+      );
+    }
+  }, PARTITION_MANAGEMENT_INTERVAL_MS);
 
   // Create Discord REST client if credentials are available
   let discordClient: SharedInfrastructure["discordClient"] = null;
@@ -389,6 +370,7 @@ async function startApiMode(
       feedRequestsServiceHost: infrastructure.feedRequestsServiceHost,
       articleFieldStore: infrastructure.articleFieldStore,
       responseHashStore: infrastructure.responseHashStore,
+      parsedArticlesCacheStore: infrastructure.parsedArticlesCacheStore,
     },
     HTTP_PORT
   );

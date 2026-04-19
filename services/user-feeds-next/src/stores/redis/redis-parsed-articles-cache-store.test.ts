@@ -1,4 +1,4 @@
-import { describe, it, beforeEach } from "node:test";
+import { describe, it, before, after, beforeEach } from "node:test";
 import assert from "node:assert";
 import {
   calculateCacheKeyForArticles,
@@ -8,14 +8,27 @@ import {
   updateFeedArticlesInCache,
   invalidateFeedArticlesCache,
   refreshFeedArticlesCacheExpiration,
-  clearInMemoryParsedArticlesCache,
-  inMemoryParsedArticlesCacheStore,
-} from "./parsed-articles-cache";
+} from "../parsed-articles-cache-helpers";
 import type {
   CacheKeyOptions,
   CachedArticles,
 } from "../interfaces/parsed-articles-cache";
 import type { Article } from "../../articles/parser";
+import {
+  setupTestDatabase,
+  teardownTestDatabase,
+  type TestStores,
+} from "../../../test/helpers/setup-integration-tests";
+
+let stores: TestStores;
+
+before(async () => {
+  stores = await setupTestDatabase();
+});
+
+after(async () => {
+  await teardownTestDatabase();
+});
 
 function createArticle(
   id: string,
@@ -32,8 +45,8 @@ function createArticle(
 }
 
 describe("parsed-articles-cache", () => {
-  beforeEach(() => {
-    clearInMemoryParsedArticlesCache();
+  beforeEach(async () => {
+    await stores.truncate();
   });
 
   describe("calculateCacheKeyForArticles", () => {
@@ -152,8 +165,11 @@ describe("parsed-articles-cache", () => {
     });
   });
 
-  describe("inMemoryParsedArticlesCacheStore", () => {
-    const store = inMemoryParsedArticlesCacheStore;
+  describe("ParsedArticlesCacheStore", () => {
+    let store: TestStores["parsedArticlesCacheStore"];
+    beforeEach(() => {
+      store = stores.parsedArticlesCacheStore;
+    });
 
     it("returns false for non-existent key", async () => {
       assert.strictEqual(await store.exists("nonexistent"), false);
@@ -185,9 +201,9 @@ describe("parsed-articles-cache", () => {
       assert.ok(ttl <= 60);
     });
 
-    it("returns -1 TTL for non-existent key", async () => {
+    it("returns negative TTL for non-existent key", async () => {
       const ttl = await store.ttl("nonexistent");
-      assert.strictEqual(ttl, -1);
+      assert.ok(ttl < 0);
     });
 
     it("preserves old TTL when useOldTTL is true", async () => {
@@ -218,7 +234,10 @@ describe("parsed-articles-cache", () => {
   });
 
   describe("cache operations", () => {
-    const store = inMemoryParsedArticlesCacheStore;
+    let store: TestStores["parsedArticlesCacheStore"];
+    beforeEach(() => {
+      store = stores.parsedArticlesCacheStore;
+    });
     const testParams = {
       url: "https://example.com/feed.xml",
       options: { formatOptions: {} } as CacheKeyOptions,
@@ -298,7 +317,10 @@ describe("parsed-articles-cache", () => {
   });
 
   describe("updateFeedArticlesInCache", () => {
-    const store = inMemoryParsedArticlesCacheStore;
+    let store: TestStores["parsedArticlesCacheStore"];
+    beforeEach(() => {
+      store = stores.parsedArticlesCacheStore;
+    });
     const testParams = {
       url: "https://example.com/feed.xml",
       options: { formatOptions: {} } as CacheKeyOptions,

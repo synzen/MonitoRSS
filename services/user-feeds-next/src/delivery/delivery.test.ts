@@ -1,4 +1,4 @@
-import { describe, it } from "node:test";
+import { describe, it, before, after, beforeEach } from "node:test";
 import assert from "node:assert";
 import type { JobResponse } from "@synzen/discord-rest";
 import type {
@@ -13,8 +13,12 @@ import {
   getUnderLimitCheck,
   createTestDiscordRestClient,
 } from ".";
-import { createInMemoryDeliveryRecordStore } from "../stores/in-memory/delivery-record-store";
 import type { ArticleDeliveryState } from "../stores/interfaces/delivery-record-store";
+import {
+  setupTestDatabase,
+  teardownTestDatabase,
+  type TestStores,
+} from "../../test/helpers/setup-integration-tests";
 import type { Article } from "../articles/parser";
 import {
   ExpressionType,
@@ -24,6 +28,25 @@ import {
   RelationalExpressionRight,
   type LogicalExpression,
 } from "../articles/filters";
+import {
+  DeliveryPreviewStage,
+  DeliveryPreviewStageStatus,
+  type DeliveryPreviewStageResult,
+} from "../delivery-preview";
+
+let stores: TestStores;
+
+before(async () => {
+  stores = await setupTestDatabase();
+});
+
+after(async () => {
+  await teardownTestDatabase();
+});
+
+beforeEach(async () => {
+  await stores.truncate();
+});
 
 function createJobData(overrides?: Partial<JobData>): JobData {
   return {
@@ -387,7 +410,7 @@ describe("delivery", () => {
 
   describe("getUnderLimitCheck", () => {
     it("returns MAX_SAFE_INTEGER remaining when no limits provided", async () => {
-      const store = createInMemoryDeliveryRecordStore();
+      const store = stores.deliveryRecordStore;
 
       const result = await getUnderLimitCheck(store, { feedId: "feed-1" }, []);
 
@@ -396,7 +419,7 @@ describe("delivery", () => {
     });
 
     it("returns full limit when no deliveries exist", async () => {
-      const store = createInMemoryDeliveryRecordStore();
+      const store = stores.deliveryRecordStore;
 
       const result = await getUnderLimitCheck(store, { feedId: "feed-1" }, [
         { limit: 100, timeWindowSeconds: 86400 },
@@ -407,7 +430,7 @@ describe("delivery", () => {
     });
 
     it("returns remaining based on delivery count", async () => {
-      const store = createInMemoryDeliveryRecordStore();
+      const store = stores.deliveryRecordStore;
 
       // Store some deliveries
       await store.startContext(async () => {
@@ -427,7 +450,7 @@ describe("delivery", () => {
     });
 
     it("returns 0 remaining when at limit", async () => {
-      const store = createInMemoryDeliveryRecordStore();
+      const store = stores.deliveryRecordStore;
 
       // Store deliveries up to limit
       await store.startContext(async () => {
@@ -446,7 +469,7 @@ describe("delivery", () => {
     });
 
     it("returns minimum remaining across multiple limits", async () => {
-      const store = createInMemoryDeliveryRecordStore();
+      const store = stores.deliveryRecordStore;
 
       await store.startContext(async () => {
         await store.store("feed-1", [
@@ -465,7 +488,7 @@ describe("delivery", () => {
     });
 
     it("filters by mediumId when provided", async () => {
-      const store = createInMemoryDeliveryRecordStore();
+      const store = stores.deliveryRecordStore;
 
       await store.startContext(async () => {
         await store.store("feed-1", [
@@ -483,8 +506,6 @@ describe("delivery", () => {
     });
   });
 });
-
-import { DeliveryPreviewStage, DeliveryPreviewStageStatus, type DeliveryPreviewStageResult } from "../delivery-preview";
 
 describe("diagnostic recording in delivery", () => {
   it("records FeedRateLimit diagnostic when feed rate limit is checked", async () => {
@@ -667,7 +688,7 @@ describe("diagnostic recording during deliverArticles execution", () => {
       await import("../delivery-preview");
     const { deliverArticles } = await import(".");
 
-    const store = createInMemoryDeliveryRecordStore();
+    const store = stores.deliveryRecordStore;
     const article: Article = {
       flattened: {
         id: "article-1",
@@ -735,7 +756,7 @@ describe("diagnostic recording during deliverArticles execution", () => {
       await import("../delivery-preview");
     const { deliverArticles } = await import(".");
 
-    const store = createInMemoryDeliveryRecordStore();
+    const store = stores.deliveryRecordStore;
     const article: Article = {
       flattened: {
         id: "article-1",
@@ -806,7 +827,7 @@ describe("filter execution order - filters should operate on formatted content",
       await import("../delivery-preview");
     const { deliverArticles } = await import(".");
 
-    const store = createInMemoryDeliveryRecordStore();
+    const store = stores.deliveryRecordStore;
     // Article with raw HTML that will be formatted to markdown
     const article: Article = {
       flattened: {
@@ -872,7 +893,7 @@ describe("filter execution order - filters should operate on formatted content",
       await import("../delivery-preview");
     const { deliverArticles } = await import(".");
 
-    const store = createInMemoryDeliveryRecordStore();
+    const store = stores.deliveryRecordStore;
     const article: Article = {
       flattened: {
         id: "article-html-2",
@@ -937,7 +958,7 @@ describe("filter execution order - filters should operate on formatted content",
       await import("../delivery-preview");
     const { deliverArticles } = await import(".");
 
-    const store = createInMemoryDeliveryRecordStore();
+    const store = stores.deliveryRecordStore;
     const article: Article = {
       flattened: {
         id: "article-cp-1",
@@ -1010,7 +1031,7 @@ describe("filter execution order - filters should operate on formatted content",
       await import("../delivery-preview");
     const { deliverArticles } = await import(".");
 
-    const store = createInMemoryDeliveryRecordStore();
+    const store = stores.deliveryRecordStore;
     const article: Article = {
       flattened: {
         id: "article-explain-1",

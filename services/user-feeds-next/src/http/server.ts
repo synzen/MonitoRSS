@@ -7,6 +7,7 @@ import type { DeliveryRecordStore } from "../stores/interfaces/delivery-record-s
 import type { DiscordRestClient } from "../delivery/mediums/discord/discord-rest-client";
 import type { ArticleFieldStore } from "../articles/comparison";
 import type { ResponseHashStore } from "../feeds/feed-event-handler";
+import type { ParsedArticlesCacheStore } from "../stores/interfaces/parsed-articles-cache";
 import {
   handleFilterValidation,
   handleValidateDiscordPayload,
@@ -31,6 +32,7 @@ import {
 export interface HttpServerContext {
   deliveryRecordStore: DeliveryRecordStore;
   discordClient: DiscordRestClient;
+  parsedArticlesCacheStore: ParsedArticlesCacheStore;
   /** Override the feed requests service host (for testing) */
   feedRequestsServiceHost: string;
   /** Article field store for delivery preview */
@@ -64,18 +66,35 @@ export async function createHttpServer(
 
   app.post(
     "/v1/user-feeds/get-articles",
-    adaptHandler((req) => handleGetArticles(req, context.feedRequestsServiceHost))
+    adaptHandler((req) =>
+      handleGetArticles(
+        req,
+        context.feedRequestsServiceHost,
+        context.parsedArticlesCacheStore
+      )
+    )
   );
 
   app.post(
     "/v1/user-feeds/preview",
-    adaptHandler((req) => handlePreview(req, context.feedRequestsServiceHost))
+    adaptHandler((req) =>
+      handlePreview(
+        req,
+        context.feedRequestsServiceHost,
+        context.parsedArticlesCacheStore
+      )
+    )
   );
 
   app.post(
     "/v1/user-feeds/test",
     adaptHandler((req) =>
-      handleTest(req, context.discordClient, context.feedRequestsServiceHost)
+      handleTest(
+        req,
+        context.discordClient,
+        context.feedRequestsServiceHost,
+        context.parsedArticlesCacheStore
+      )
     )
   );
 

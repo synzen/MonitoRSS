@@ -1,4 +1,4 @@
-import { describe, it } from "node:test";
+import { describe, it, before, after } from "node:test";
 import assert from "node:assert";
 import type { JobResponse } from "@synzen/discord-rest";
 import type { JobResponseError } from "@synzen/discord-rest/dist/RESTConsumer";
@@ -8,7 +8,21 @@ import {
 } from "./feed-event-handler";
 import type { DiscordDeliveryResult } from "../delivery";
 import { MessageBrokerQueue } from "../shared/constants";
-import { inMemoryDeliveryRecordStore } from "../stores/in-memory/delivery-record-store";
+import {
+  setupTestDatabase,
+  teardownTestDatabase,
+  type TestStores,
+} from "../../test/helpers/setup-integration-tests";
+
+let stores: TestStores;
+
+before(async () => {
+  stores = await setupTestDatabase();
+});
+
+after(async () => {
+  await teardownTestDatabase();
+});
 
 function createJobData(meta?: Record<string, unknown>) {
   return {
@@ -77,7 +91,7 @@ describe("feed-event-handler", () => {
       await handleArticleDeliveryResult(
         deliveryResult,
         publisher,
-        inMemoryDeliveryRecordStore
+        stores.deliveryRecordStore
       );
 
       assert.strictEqual(messages.length, 0);
@@ -99,7 +113,7 @@ describe("feed-event-handler", () => {
       await handleArticleDeliveryResult(
         deliveryResult,
         publisher,
-        inMemoryDeliveryRecordStore
+        stores.deliveryRecordStore
       );
 
       assert.strictEqual(messages.length, 1);
@@ -127,7 +141,7 @@ describe("feed-event-handler", () => {
       await handleArticleDeliveryResult(
         deliveryResult,
         publisher,
-        inMemoryDeliveryRecordStore
+        stores.deliveryRecordStore
       );
 
       assert.strictEqual(messages.length, 1);
@@ -153,7 +167,7 @@ describe("feed-event-handler", () => {
       await handleArticleDeliveryResult(
         deliveryResult,
         publisher,
-        inMemoryDeliveryRecordStore
+        stores.deliveryRecordStore
       );
 
       assert.strictEqual(messages.length, 1);
@@ -175,7 +189,7 @@ describe("feed-event-handler", () => {
       await handleArticleDeliveryResult(
         deliveryResult,
         publisher,
-        inMemoryDeliveryRecordStore
+        stores.deliveryRecordStore
       );
 
       assert.strictEqual(messages.length, 0);
@@ -192,7 +206,7 @@ describe("feed-event-handler", () => {
       await handleArticleDeliveryResult(
         deliveryResult,
         publisher,
-        inMemoryDeliveryRecordStore
+        stores.deliveryRecordStore
       );
 
       assert.strictEqual(messages.length, 0);

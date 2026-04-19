@@ -1,4 +1,4 @@
-import { describe, it, beforeEach } from "node:test";
+import { describe, it, before, after, beforeEach } from "node:test";
 import assert from "node:assert";
 import { generateDeliveryPreview } from "./generate-delivery-preview";
 import {
@@ -11,14 +11,24 @@ import type {
   DeliveryPreviewInput,
 } from "./generate-delivery-preview";
 import {
-  inMemoryArticleFieldStore,
-  clearInMemoryStore,
-} from "../articles/comparison";
-import { createInMemoryDeliveryRecordStore } from "../stores/in-memory/delivery-record-store";
-import {
   ArticleDeliveryStatus,
   type ArticleDeliveryState,
 } from "../stores/interfaces/delivery-record-store";
+import {
+  setupTestDatabase,
+  teardownTestDatabase,
+  type TestStores,
+} from "../../test/helpers/setup-integration-tests";
+
+let stores: TestStores;
+
+before(async () => {
+  stores = await setupTestDatabase();
+});
+
+after(async () => {
+  await teardownTestDatabase();
+});
 import type { Article } from "../articles/parser";
 import {
   ExpressionType,
@@ -45,14 +55,14 @@ function createArticle(
 }
 
 describe("generateDeliveryPreview", () => {
-  beforeEach(() => {
-    clearInMemoryStore();
+  beforeEach(async () => {
+    await stores.truncate();
   });
 
   function createMockDependencies(): DeliveryPreviewDependencies {
     return {
-      articleFieldStore: inMemoryArticleFieldStore,
-      deliveryRecordStore: createInMemoryDeliveryRecordStore(),
+      articleFieldStore: stores.articleFieldStore,
+      deliveryRecordStore: stores.deliveryRecordStore,
     };
   }
 
@@ -98,9 +108,9 @@ describe("generateDeliveryPreview", () => {
       const input = createInput(articles);
 
       // First run to store the article
-      await inMemoryArticleFieldStore.startContext(async () => {
-        await inMemoryArticleFieldStore.storeArticles("feed-1", articles, []);
-        await inMemoryArticleFieldStore.flushPendingInserts();
+      await stores.articleFieldStore.startContext(async () => {
+        await stores.articleFieldStore.storeArticles("feed-1", articles, []);
+        await stores.articleFieldStore.flushPendingInserts();
       });
 
       const { results } = await generateDeliveryPreview(input, deps);
@@ -135,16 +145,16 @@ describe("generateDeliveryPreview", () => {
       });
 
       // Store the first article with blocking comparison
-      await inMemoryArticleFieldStore.startContext(async () => {
-        await inMemoryArticleFieldStore.storeArticles(
+      await stores.articleFieldStore.startContext(async () => {
+        await stores.articleFieldStore.storeArticles(
           "feed-1",
           [existingArticle],
           ["title"],
         );
-        await inMemoryArticleFieldStore.storeComparisonNames("feed-1", [
+        await stores.articleFieldStore.storeComparisonNames("feed-1", [
           "title",
         ]);
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
       });
 
       const { results } = await generateDeliveryPreview(input, deps);
@@ -173,16 +183,16 @@ describe("generateDeliveryPreview", () => {
       const originalArticle = createArticle("article-1", {
         title: "Original Title",
       });
-      await inMemoryArticleFieldStore.startContext(async () => {
-        await inMemoryArticleFieldStore.storeArticles(
+      await stores.articleFieldStore.startContext(async () => {
+        await stores.articleFieldStore.storeArticles(
           "feed-1",
           [originalArticle],
           ["title"],
         );
-        await inMemoryArticleFieldStore.storeComparisonNames("feed-1", [
+        await stores.articleFieldStore.storeComparisonNames("feed-1", [
           "title",
         ]);
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
       });
 
       const { results } = await generateDeliveryPreview(input, deps);
@@ -221,13 +231,13 @@ describe("generateDeliveryPreview", () => {
 
       // Store a baseline article first
       const baselineArticle = createArticle("baseline", { title: "Baseline" });
-      await inMemoryArticleFieldStore.startContext(async () => {
-        await inMemoryArticleFieldStore.storeArticles(
+      await stores.articleFieldStore.startContext(async () => {
+        await stores.articleFieldStore.storeArticles(
           "feed-1",
           [baselineArticle],
           [],
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
       });
 
       const { results } = await generateDeliveryPreview(input, deps);
@@ -243,21 +253,21 @@ describe("generateDeliveryPreview", () => {
   describe("RateLimitedFeed outcome", () => {
     it("returns RateLimitedFeed when feed daily limit exceeded", async () => {
       const article = createArticle("article-new", { title: "New Article" });
-      const deliveryRecordStore = createInMemoryDeliveryRecordStore();
+      const deliveryRecordStore = stores.deliveryRecordStore;
       const deps: DeliveryPreviewDependencies = {
-        articleFieldStore: inMemoryArticleFieldStore,
+        articleFieldStore: stores.articleFieldStore,
         deliveryRecordStore,
       };
 
       // Store baseline to make it not first run
       const baselineArticle = createArticle("baseline", { title: "Baseline" });
-      await inMemoryArticleFieldStore.startContext(async () => {
-        await inMemoryArticleFieldStore.storeArticles(
+      await stores.articleFieldStore.startContext(async () => {
+        await stores.articleFieldStore.storeArticles(
           "feed-1",
           [baselineArticle],
           [],
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
       });
 
       // Store enough deliveries to exceed limit
@@ -297,13 +307,13 @@ describe("generateDeliveryPreview", () => {
 
       // Store baseline to make it not first run
       const baselineArticle = createArticle("baseline", { title: "Baseline" });
-      await inMemoryArticleFieldStore.startContext(async () => {
-        await inMemoryArticleFieldStore.storeArticles(
+      await stores.articleFieldStore.startContext(async () => {
+        await stores.articleFieldStore.storeArticles(
           "feed-1",
           [baselineArticle],
           [],
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
       });
 
       const { results } = await generateDeliveryPreview(input, deps);
@@ -369,13 +379,13 @@ describe("generateDeliveryPreview", () => {
 
       // Store baseline to make it not first run
       const baselineArticle = createArticle("baseline", { title: "Baseline" });
-      await inMemoryArticleFieldStore.startContext(async () => {
-        await inMemoryArticleFieldStore.storeArticles(
+      await stores.articleFieldStore.startContext(async () => {
+        await stores.articleFieldStore.storeArticles(
           "feed-1",
           [baselineArticle],
           [],
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
       });
 
       const { results } = await generateDeliveryPreview(input, deps);
@@ -420,13 +430,13 @@ describe("generateDeliveryPreview", () => {
 
       // Store baseline to make it not first run
       const baselineArticle = createArticle("baseline", { title: "Baseline" });
-      await inMemoryArticleFieldStore.startContext(async () => {
-        await inMemoryArticleFieldStore.storeArticles(
+      await stores.articleFieldStore.startContext(async () => {
+        await stores.articleFieldStore.storeArticles(
           "feed-1",
           [baselineArticle],
           [],
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
       });
 
       const { results } = await generateDeliveryPreview(input, deps);
@@ -451,21 +461,21 @@ describe("generateDeliveryPreview", () => {
   describe("RateLimitedMedium outcome", () => {
     it("returns RateLimitedMedium when medium rate limit exceeded", async () => {
       const article = createArticle("article-new", { title: "New Article" });
-      const deliveryRecordStore = createInMemoryDeliveryRecordStore();
+      const deliveryRecordStore = stores.deliveryRecordStore;
       const deps: DeliveryPreviewDependencies = {
-        articleFieldStore: inMemoryArticleFieldStore,
+        articleFieldStore: stores.articleFieldStore,
         deliveryRecordStore,
       };
 
       // Store baseline to make it not first run
       const baselineArticle = createArticle("baseline", { title: "Baseline" });
-      await inMemoryArticleFieldStore.startContext(async () => {
-        await inMemoryArticleFieldStore.storeArticles(
+      await stores.articleFieldStore.startContext(async () => {
+        await stores.articleFieldStore.storeArticles(
           "feed-1",
           [baselineArticle],
           [],
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
       });
 
       // Store enough deliveries to medium-1 to exceed its limit
@@ -509,14 +519,14 @@ describe("generateDeliveryPreview", () => {
 });
 
 describe("generateDeliveryPreview (batch)", () => {
-  beforeEach(() => {
-    clearInMemoryStore();
+  beforeEach(async () => {
+    await stores.truncate();
   });
 
   function createMockDependencies(): DeliveryPreviewDependencies {
     return {
-      articleFieldStore: inMemoryArticleFieldStore,
-      deliveryRecordStore: createInMemoryDeliveryRecordStore(),
+      articleFieldStore: stores.articleFieldStore,
+      deliveryRecordStore: stores.deliveryRecordStore,
     };
   }
 
@@ -657,14 +667,14 @@ describe("generateDeliveryPreview (batch)", () => {
 });
 
 describe("Aggregate outcome computation", () => {
-  beforeEach(() => {
-    clearInMemoryStore();
+  beforeEach(async () => {
+    await stores.truncate();
   });
 
   function createMockDependencies(): DeliveryPreviewDependencies {
     return {
-      articleFieldStore: inMemoryArticleFieldStore,
-      deliveryRecordStore: createInMemoryDeliveryRecordStore(),
+      articleFieldStore: stores.articleFieldStore,
+      deliveryRecordStore: stores.deliveryRecordStore,
     };
   }
 
@@ -707,13 +717,13 @@ describe("Aggregate outcome computation", () => {
 
   async function storeBaseline() {
     const baselineArticle = createArticle("baseline", { title: "Baseline" });
-    await inMemoryArticleFieldStore.startContext(async () => {
-      await inMemoryArticleFieldStore.storeArticles(
+    await stores.articleFieldStore.startContext(async () => {
+      await stores.articleFieldStore.storeArticles(
         "feed-1",
         [baselineArticle],
         [],
       );
-      await inMemoryArticleFieldStore.flushPendingInserts();
+      await stores.articleFieldStore.flushPendingInserts();
     });
   }
 
@@ -769,9 +779,9 @@ describe("Aggregate outcome computation", () => {
 
     it("returns MixedResults when one medium would deliver and another is rate limited", async () => {
       const article = createArticle("article-1", { title: "New Article" });
-      const deliveryRecordStore = createInMemoryDeliveryRecordStore();
+      const deliveryRecordStore = stores.deliveryRecordStore;
       const deps: DeliveryPreviewDependencies = {
-        articleFieldStore: inMemoryArticleFieldStore,
+        articleFieldStore: stores.articleFieldStore,
         deliveryRecordStore,
       };
 
@@ -840,9 +850,9 @@ describe("Aggregate outcome computation", () => {
 
     it("returns MixedResults when one medium is rate limited and another is filtered", async () => {
       const article = createArticle("article-1", { title: "Tech News" });
-      const deliveryRecordStore = createInMemoryDeliveryRecordStore();
+      const deliveryRecordStore = stores.deliveryRecordStore;
       const deps: DeliveryPreviewDependencies = {
-        articleFieldStore: inMemoryArticleFieldStore,
+        articleFieldStore: stores.articleFieldStore,
         deliveryRecordStore,
       };
 
@@ -889,14 +899,14 @@ describe("Aggregate outcome computation", () => {
 });
 
 describe("Multiple mediums with different outcomes", () => {
-  beforeEach(() => {
-    clearInMemoryStore();
+  beforeEach(async () => {
+    await stores.truncate();
   });
 
   function createMockDependencies(): DeliveryPreviewDependencies {
     return {
-      articleFieldStore: inMemoryArticleFieldStore,
-      deliveryRecordStore: createInMemoryDeliveryRecordStore(),
+      articleFieldStore: stores.articleFieldStore,
+      deliveryRecordStore: stores.deliveryRecordStore,
     };
   }
 
@@ -939,13 +949,13 @@ describe("Multiple mediums with different outcomes", () => {
 
   async function storeBaseline() {
     const baselineArticle = createArticle("baseline", { title: "Baseline" });
-    await inMemoryArticleFieldStore.startContext(async () => {
-      await inMemoryArticleFieldStore.storeArticles(
+    await stores.articleFieldStore.startContext(async () => {
+      await stores.articleFieldStore.storeArticles(
         "feed-1",
         [baselineArticle],
         [],
       );
-      await inMemoryArticleFieldStore.flushPendingInserts();
+      await stores.articleFieldStore.flushPendingInserts();
     });
   }
 
@@ -986,9 +996,9 @@ describe("Multiple mediums with different outcomes", () => {
   describe("Different medium rate limits - same article, different outcomes", () => {
     it("returns WouldDeliver for medium under limit and RateLimitedMedium for medium over limit", async () => {
       const article = createArticle("article-1", { title: "New Article" });
-      const deliveryRecordStore = createInMemoryDeliveryRecordStore();
+      const deliveryRecordStore = stores.deliveryRecordStore;
       const deps: DeliveryPreviewDependencies = {
-        articleFieldStore: inMemoryArticleFieldStore,
+        articleFieldStore: stores.articleFieldStore,
         deliveryRecordStore,
       };
 
@@ -1054,9 +1064,9 @@ describe("Multiple mediums with different outcomes", () => {
   describe("Mixed outcomes - three mediums with three different outcomes", () => {
     it("returns WouldDeliver, FilteredByMediumFilter, and RateLimitedMedium for same article", async () => {
       const article = createArticle("article-1", { title: "Tech News" });
-      const deliveryRecordStore = createInMemoryDeliveryRecordStore();
+      const deliveryRecordStore = stores.deliveryRecordStore;
       const deps: DeliveryPreviewDependencies = {
-        articleFieldStore: inMemoryArticleFieldStore,
+        articleFieldStore: stores.articleFieldStore,
         deliveryRecordStore,
       };
 
@@ -1116,9 +1126,9 @@ describe("Multiple mediums with different outcomes", () => {
   describe("Filter passes but rate limit blocks", () => {
     it("returns WouldDeliver when filter passes and under limit, RateLimitedMedium when filter passes but over limit", async () => {
       const article = createArticle("article-1", { title: "Sports Update" });
-      const deliveryRecordStore = createInMemoryDeliveryRecordStore();
+      const deliveryRecordStore = stores.deliveryRecordStore;
       const deps: DeliveryPreviewDependencies = {
-        articleFieldStore: inMemoryArticleFieldStore,
+        articleFieldStore: stores.articleFieldStore,
         deliveryRecordStore,
       };
 
@@ -1176,9 +1186,9 @@ describe("Multiple mediums with different outcomes", () => {
       const deps = createMockDependencies();
 
       // Store the article so it's a duplicate
-      await inMemoryArticleFieldStore.startContext(async () => {
-        await inMemoryArticleFieldStore.storeArticles("feed-1", [article], []);
-        await inMemoryArticleFieldStore.flushPendingInserts();
+      await stores.articleFieldStore.startContext(async () => {
+        await stores.articleFieldStore.storeArticles("feed-1", [article], []);
+        await stores.articleFieldStore.flushPendingInserts();
       });
 
       // Different medium configurations that would pass if not for duplicate

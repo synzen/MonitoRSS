@@ -107,6 +107,7 @@ export function createTestContext(
         deliveryRecordStore: stores.deliveryRecordStore,
         responseHashStore: stores.responseHashStore,
         feedRetryStore: stores.feedRetryStore,
+        parsedArticlesCacheStore: stores.parsedArticlesCacheStore,
         feedRequestsServiceHost: stores.feedRequestsServiceHost,
         queuePublisher,
         discordClient,

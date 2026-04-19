@@ -65,6 +65,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
         feedRequestsServiceHost: stores.feedRequestsServiceHost,
         articleFieldStore: stores.articleFieldStore,
         responseHashStore: stores.responseHashStore,
+        parsedArticlesCacheStore: stores.parsedArticlesCacheStore,
       },
       TEST_PORT
     );

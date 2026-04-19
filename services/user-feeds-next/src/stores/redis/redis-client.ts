@@ -1,5 +1,7 @@
 import { createClient, createCluster } from "redis";
-import type { RedisClientType, RedisClusterType } from "redis";
+import type { RedisClusterType } from "redis";
+import type { RedisClientType } from "redis";
+export type { RedisClientType } from "redis";
 import { logger } from "../../shared/utils";
 
 export type RedisClient = RedisClientType | RedisClusterType;
@@ -41,6 +43,19 @@ export async function initializeRedisClient(
   logger.info("Successfully connected to Redis");
 
   return client;
+}
+
+/**
+ * Create a standalone (non-cluster) Redis client and connect it.
+ * Unlike initializeRedisClient, does not touch the module-level singleton.
+ */
+export async function createStandaloneRedisClient(
+  uri: string,
+  database?: number
+): Promise<RedisClientType> {
+  const c: RedisClientType = createClient({ url: uri, database });
+  await c.connect();
+  return c;
 }
 
 /**

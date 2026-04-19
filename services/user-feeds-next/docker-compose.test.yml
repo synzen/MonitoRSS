@@ -14,6 +14,7 @@ services:
 
   redis:
     image: redis:7.0.7-alpine
+    command: redis-server --databases 64
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -32,6 +33,7 @@ services:
     environment:
       USER_FEEDS_POSTGRES_URI: postgres://postgres:postgres@postgres:5432/userfeeds_test
       USER_FEEDS_REDIS_URI: redis://redis:6379
+      USER_FEEDS_REDIS_DISABLE_CLUSTER: "true"
       USER_FEEDS_API_KEY: test-api-key
     volumes:
       - ./src:/app/src

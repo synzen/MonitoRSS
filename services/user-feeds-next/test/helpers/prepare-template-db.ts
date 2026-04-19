@@ -1,5 +1,6 @@
 import { Client, Pool } from "pg";
 import { runMigrations, ensurePartitionsExist } from "../../src/stores/postgres";
+import { createStandaloneRedisClient } from "../../src/stores/redis";
 import { TEMPLATE_DB_NAME, getAdminUri, getTemplateDbUri } from "./test-constants";
 
 async function prepareTemplateDatabase(): Promise<void> {
@@ -24,6 +25,15 @@ async function prepareTemplateDatabase(): Promise<void> {
     await ensurePartitionsExist(templatePool);
   } finally {
     await templatePool.end();
+  }
+
+  // Reset Redis state (counter + any leftover DB contents) so each run starts clean.
+  const redisUri = process.env.USER_FEEDS_REDIS_URI ?? "redis://localhost:6379";
+  const redis = await createStandaloneRedisClient(redisUri, 0);
+  try {
+    await redis.flushAll();
+  } finally {
+    await redis.disconnect();
   }
 
   console.log("Template database prepared successfully");

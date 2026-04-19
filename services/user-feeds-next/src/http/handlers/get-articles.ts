@@ -15,6 +15,7 @@ import {
   GetUserFeedArticlesFilterReturnType,
 } from "../schemas";
 import { findOrFetchFeedArticles } from "../../feeds/services/articles.service";
+import type { ParsedArticlesCacheStore } from "../../stores/interfaces/parsed-articles-cache";
 import { paginateArticles } from "../../feeds/services/feeds.service";
 import {
   formatArticleForDiscord,
@@ -76,7 +77,8 @@ function convertCustomPlaceholders(
 
 export async function handleGetArticles(
   req: Request,
-  feedRequestsServiceHost: string
+  feedRequestsServiceHost: string,
+  parsedArticlesCacheStore: ParsedArticlesCacheStore
 ): Promise<Response> {
   return withAuth(req, async () => {
     const body = await parseJsonBody<unknown>(req);
@@ -110,6 +112,7 @@ export async function handleGetArticles(
             }
           : null,
         feedRequestsServiceHost,
+        parsedArticlesCacheStore,
         lightweight: true,
       });
 
