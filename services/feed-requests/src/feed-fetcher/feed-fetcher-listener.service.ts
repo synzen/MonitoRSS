@@ -147,30 +147,30 @@ export class FeedFetcherListenerService {
               return;
             }
 
-            const recentlyProcessed =
-              await this.partitionedRequestsStoreService.wasRequestedInPastSeconds(
-                lookupKey || url,
-                Math.round(rateSeconds * 0.5),
-              );
-
-            if (recentlyProcessed) {
-              contextLogger.info(
-                `Request with key ${
-                  lookupKey || url
-                } with rate ${rateSeconds} was recently processed, skipping`,
-              );
-
-              fetchCompletedToEmit.push({
-                lookupKey,
-                url,
-                rateSeconds,
-                debug: saveToObjectStorage,
-              });
-
-              return;
-            }
-
             try {
+              const recentlyProcessed =
+                await this.partitionedRequestsStoreService.wasRequestedInPastSeconds(
+                  lookupKey || url,
+                  Math.round(rateSeconds * 0.5),
+                );
+
+              if (recentlyProcessed) {
+                contextLogger.info(
+                  `Request with key ${
+                    lookupKey || url
+                  } with rate ${rateSeconds} was recently processed, skipping`,
+                );
+
+                fetchCompletedToEmit.push({
+                  lookupKey,
+                  url,
+                  rateSeconds,
+                  debug: saveToObjectStorage,
+                });
+
+                return;
+              }
+
               await retryUntilTrue(
                 async () => {
                   const { isRateLimited } =
@@ -245,9 +245,7 @@ export class FeedFetcherListenerService {
                 );
               }
 
-              await this.cacheStorageService.del(
-                this.calculateCurrentlyProcessingCacheKeyForMessage(message),
-              );
+              await this.cacheStorageService.del(cacheKey);
             }
           });
         }),
