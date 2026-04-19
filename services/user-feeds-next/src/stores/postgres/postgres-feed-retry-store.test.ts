@@ -1,11 +1,10 @@
-import { describe, it, beforeEach } from "node:test";
+import { describe, it, before, after, beforeEach } from "node:test";
 import assert from "node:assert";
 import dayjs from "dayjs";
 import {
-  createInMemoryFeedRetryStore,
   handleFeedParseFailure,
   handleFeedParseSuccess,
-} from "./feed-retry-store";
+} from "../feed-retry-helpers";
 import {
   MAX_RETRY_ATTEMPTS,
   RETRY_CUTOFF_DAYS,
@@ -13,13 +12,29 @@ import {
   type FeedRetryPublisher,
 } from "../interfaces/feed-retry-store";
 import { MessageBrokerQueue, FeedRejectedDisabledCode } from "../../shared/constants";
+import {
+  setupTestDatabase,
+  teardownTestDatabase,
+  type TestStores,
+} from "../../../test/helpers/setup-integration-tests";
+
+let stores: TestStores;
+
+before(async () => {
+  stores = await setupTestDatabase();
+});
+
+after(async () => {
+  await teardownTestDatabase();
+});
 
 describe("Feed Retry Store", () => {
-  describe("createInMemoryFeedRetryStore", () => {
+  describe("FeedRetryStore", () => {
     let store: FeedRetryStore;
 
-    beforeEach(() => {
-      store = createInMemoryFeedRetryStore();
+    beforeEach(async () => {
+      await stores.truncate();
+      store = stores.feedRetryStore;
     });
 
     it("should return null for non-existent feed", async () => {
@@ -103,8 +118,9 @@ describe("Feed Retry Store", () => {
       message: { feed_id: string; disabled_code: FeedRejectedDisabledCode };
     }>;
 
-    beforeEach(() => {
-      store = createInMemoryFeedRetryStore();
+    beforeEach(async () => {
+      await stores.truncate();
+      store = stores.feedRetryStore;
       publishedMessages = [];
       publisher = {
         publish: async (queue, message) => {
@@ -265,8 +281,9 @@ describe("Feed Retry Store", () => {
   describe("handleFeedParseSuccess", () => {
     let store: FeedRetryStore;
 
-    beforeEach(() => {
-      store = createInMemoryFeedRetryStore();
+    beforeEach(async () => {
+      await stores.truncate();
+      store = stores.feedRetryStore;
     });
 
     it("should remove retry record on success", async () => {

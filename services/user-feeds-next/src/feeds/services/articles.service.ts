@@ -8,20 +8,19 @@ import { FeedRequestBadStatusCodeException } from "../../feed-fetcher/exceptions
 import {
   injectExternalContent,
   InvalidFeedException,
+  parseArticlesFromXml,
   type Article,
   type UserFeedFormatOptions,
   type ExternalFeedProperty,
   type ExternalContentError,
 } from "../../articles/parser";
-import { parseArticlesFromXmlWithWorkers as parseArticlesFromXml } from "../../articles/parser/worker";
 import { FeedArticleNotFoundException } from "../../feed-fetcher/exceptions";
 import { parse as parseHtml, valid as isValidHtml } from "node-html-parser";
 import {
   getFeedArticlesFromCache,
   setFeedArticlesInCache,
   refreshFeedArticlesCacheExpiration,
-  inMemoryParsedArticlesCacheStore,
-} from "../../stores/in-memory/parsed-articles-cache";
+} from "../../stores/parsed-articles-cache-helpers";
 import type {
   ParsedArticlesCacheStore,
   CacheKeyOptions,
@@ -38,13 +37,13 @@ export interface FetchFeedArticleOptions {
     headers?: Record<string, string>;
   } | null;
   feedRequestsServiceHost: string;
+  parsedArticlesCacheStore: ParsedArticlesCacheStore;
 }
 
 export interface FindOrFetchFeedArticlesOptions extends FetchFeedArticleOptions {
   findRssFromHtml?: boolean;
   executeFetch?: boolean;
   executeFetchIfStale?: boolean;
-  parsedArticlesCacheStore?: ParsedArticlesCacheStore;
   lightweight?: boolean;
 }
 
@@ -115,8 +114,7 @@ export async function findOrFetchFeedArticles(
   url: string,
   options: FindOrFetchFeedArticlesOptions,
 ): Promise<FetchFeedArticlesResult> {
-  const { parsedArticlesCacheStore = inMemoryParsedArticlesCacheStore } =
-    options;
+  const { parsedArticlesCacheStore } = options;
 
   const cacheKeyOptions: CacheKeyOptions = {
     formatOptions: {

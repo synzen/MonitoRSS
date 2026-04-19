@@ -1,112 +1,20 @@
-/**
- * Parsed Articles Cache - In-Memory Implementation
- *
- * This module provides in-memory caching for parsed feed articles.
- * When articles are parsed from XML, they can be cached to avoid re-parsing
- * on subsequent requests for the same feed URL + options combination.
- *
- * Matches the behavior in user-feeds/src/articles/articles.service.ts
- */
-
 import { deflate, inflate } from "zlib";
 import { promisify } from "util";
 import { createHash } from "crypto";
-import type { Article } from "../../articles/parser";
+import type { Article } from "../articles/parser";
 import {
   type ParsedArticlesCacheStore,
   type CacheKeyOptions,
   type CachedArticles,
   type FormatOptions,
-} from "../interfaces/parsed-articles-cache";
+} from "./interfaces/parsed-articles-cache";
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);
 const sha1 = createHash("sha1");
 
-// ============================================================================
-// In-Memory Cache Store (for development/testing)
-// ============================================================================
+const DEFAULT_EXPIRE_SECONDS = 60 * 5;
 
-interface InMemoryCacheEntry {
-  value: string;
-  expiresAt: number;
-}
-
-const inMemoryCache: Map<string, InMemoryCacheEntry> = new Map();
-
-export const inMemoryParsedArticlesCacheStore: ParsedArticlesCacheStore = {
-  async exists(key: string): Promise<boolean> {
-    const entry = inMemoryCache.get(key);
-    if (!entry) return false;
-
-    if (Date.now() > entry.expiresAt) {
-      inMemoryCache.delete(key);
-      return false;
-    }
-
-    return true;
-  },
-
-  async get(key: string): Promise<string | null> {
-    const entry = inMemoryCache.get(key);
-    if (!entry) return null;
-
-    if (Date.now() > entry.expiresAt) {
-      inMemoryCache.delete(key);
-      return null;
-    }
-
-    return entry.value;
-  },
-
-  async set(
-    key: string,
-    value: string,
-    options: { expSeconds: number; useOldTTL?: boolean }
-  ): Promise<void> {
-    let expSeconds = options.expSeconds;
-
-    if (options.useOldTTL) {
-      const existingTTL = await this.ttl(key);
-      if (existingTTL > 0) {
-        expSeconds = existingTTL;
-      }
-    }
-
-    inMemoryCache.set(key, {
-      value,
-      expiresAt: Date.now() + expSeconds * 1000,
-    });
-  },
-
-  async del(key: string): Promise<void> {
-    inMemoryCache.delete(key);
-  },
-
-  async ttl(key: string): Promise<number> {
-    const entry = inMemoryCache.get(key);
-    if (!entry) return -1;
-
-    const remaining = Math.floor((entry.expiresAt - Date.now()) / 1000);
-    return remaining > 0 ? remaining : -1;
-  },
-
-  async expire(key: string, seconds: number): Promise<void> {
-    const entry = inMemoryCache.get(key);
-    if (!entry) return;
-
-    entry.expiresAt = Date.now() + seconds * 1000;
-  },
-};
-
-// ============================================================================
-// Cache Key Calculation
-// ============================================================================
-
-/**
- * Calculate the cache key for articles based on URL and options.
- * Matches the behavior in user-feeds.
- */
 export function calculateCacheKeyForArticles(params: {
   url: string;
   options: CacheKeyOptions;
@@ -132,7 +40,6 @@ export function calculateCacheKeyForArticles(params: {
     lightweight: options.lightweight || undefined,
   };
 
-  // Delete format options if every field is undefined
   if (
     Object.keys(normalizedOptions?.formatOptions || {}).every(
       (key) =>
@@ -158,15 +65,6 @@ export function calculateCacheKeyForArticles(params: {
     .digest("hex")}`;
 }
 
-// ============================================================================
-// Cache Operations
-// ============================================================================
-
-const DEFAULT_EXPIRE_SECONDS = 60 * 5; // 5 minutes
-
-/**
- * Check if feed articles exist in the cache.
- */
 export async function doFeedArticlesExistInCache(
   store: ParsedArticlesCacheStore,
   params: {
@@ -178,9 +76,6 @@ export async function doFeedArticlesExistInCache(
   return store.exists(key);
 }
 
-/**
- * Get feed articles from the cache.
- */
 export async function getFeedArticlesFromCache(
   store: ParsedArticlesCacheStore,
   params: {
@@ -202,14 +97,10 @@ export async function getFeedArticlesFromCache(
 
     return JSON.parse(jsonText) as CachedArticles;
   } catch {
-    // Invalid cache entry, treat as cache miss
     return null;
   }
 }
 
-/**
- * Set feed articles in the cache.
- */
 export async function setFeedArticlesInCache(
   store: ParsedArticlesCacheStore,
   params: {
@@ -231,9 +122,6 @@ export async function setFeedArticlesInCache(
   });
 }
 
-/**
- * Invalidate feed articles cache.
- */
 export async function invalidateFeedArticlesCache(
   store: ParsedArticlesCacheStore,
   params: {
@@ -245,9 +133,6 @@ export async function invalidateFeedArticlesCache(
   await store.del(key);
 }
 
-/**
- * Refresh feed articles cache expiration.
- */
 export async function refreshFeedArticlesCacheExpiration(
   store: ParsedArticlesCacheStore,
   params: {
@@ -259,11 +144,6 @@ export async function refreshFeedArticlesCacheExpiration(
   await store.expire(key, DEFAULT_EXPIRE_SECONDS);
 }
 
-/**
- * Update feed articles in cache if they already exist.
- * This is called after parsing articles to keep cached data fresh.
- * Matches the behavior of updateFeedArticlesInCache in user-feeds.
- */
 export async function updateFeedArticlesInCache(
   store: ParsedArticlesCacheStore,
   params: {
@@ -294,11 +174,4 @@ export async function updateFeedArticlesInCache(
       useOldTTL: true,
     }
   );
-}
-
-/**
- * Clear the in-memory cache (for testing).
- */
-export function clearInMemoryParsedArticlesCache(): void {
-  inMemoryCache.clear();
 }

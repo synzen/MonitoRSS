@@ -946,7 +946,7 @@ describe("article-formatter", () => {
       it("does not add newlines around em tags with inlineItalicFormatting", () => {
         const value = "celebrates sports <em>in games</em>, and that's where";
         const result = formatValueForDiscord(value, {
-          connectionCreatedAt: "2025-03-01T00:00:00.000Z",
+          connectionCreatedAt: "2026-02-01T00:00:00.000Z",
         });
         assert.strictEqual(
           result.value,
@@ -959,7 +959,7 @@ describe("article-formatter", () => {
       it("converts i tags to italics with inlineItalicFormatting", () => {
         const value = "<i>hello world</i>";
         const result = formatValueForDiscord(value, {
-          connectionCreatedAt: "2025-03-01T00:00:00.000Z",
+          connectionCreatedAt: "2026-02-01T00:00:00.000Z",
         });
         assert.strictEqual(result.value, "*hello world*");
       });
@@ -967,7 +967,7 @@ describe("article-formatter", () => {
       it("does not add newlines around i tags with inlineItalicFormatting", () => {
         const value = "celebrates sports <i>in games</i>, and that's where";
         const result = formatValueForDiscord(value, {
-          connectionCreatedAt: "2025-03-01T00:00:00.000Z",
+          connectionCreatedAt: "2026-02-01T00:00:00.000Z",
         });
         assert.strictEqual(
           result.value,
@@ -979,6 +979,33 @@ describe("article-formatter", () => {
         const value = "<i>hello world</i>";
         const result = formatValueForDiscord(value);
         // Without inlineItalicFormatting, <i> tags are not handled and get stripped
+        assert.strictEqual(result.value, "hello world");
+      });
+    });
+
+    describe("b", () => {
+      it("converts b tags to bold with inlineItalicFormatting", () => {
+        const value = "<b>hello world</b>";
+        const result = formatValueForDiscord(value, {
+          connectionCreatedAt: "2026-02-01T00:00:00.000Z",
+        });
+        assert.strictEqual(result.value, "**hello world**");
+      });
+
+      it("does not add newlines around b tags with inlineItalicFormatting", () => {
+        const value = "celebrates sports <b>in games</b>, and that's where";
+        const result = formatValueForDiscord(value, {
+          connectionCreatedAt: "2026-02-01T00:00:00.000Z",
+        });
+        assert.strictEqual(
+          result.value,
+          "celebrates sports **in games** , and that's where"
+        );
+      });
+
+      it("does not convert b tags without inlineItalicFormatting (legacy)", () => {
+        const value = "<b>hello world</b>";
+        const result = formatValueForDiscord(value);
         assert.strictEqual(result.value, "hello world");
       });
     });

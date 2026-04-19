@@ -36,6 +36,7 @@ import {
   type TestDiscordMediumDetails,
 } from "../../delivery/mediums/discord/discord-test-delivery";
 import type { DiscordRestClient } from "../../delivery/mediums/discord/discord-rest-client";
+import type { ParsedArticlesCacheStore } from "../../stores/interfaces/parsed-articles-cache";
 import { TestDeliveryMedium, TestDeliveryStatus } from "../../shared/constants";
 
 /**
@@ -94,7 +95,8 @@ function convertCustomPlaceholders(
 export async function handleTest(
   req: Request,
   discordClient: DiscordRestClient,
-  feedRequestsServiceHost: string
+  feedRequestsServiceHost: string,
+  parsedArticlesCacheStore: ParsedArticlesCacheStore
 ): Promise<Response> {
   return withAuth(req, async () => {
     try {
@@ -171,6 +173,7 @@ export async function handleTest(
                 }
               : null,
             feedRequestsServiceHost,
+            parsedArticlesCacheStore,
           });
         } else {
           article = await fetchFeedArticle(feed.url, dtoArticle.id, {
@@ -186,6 +189,7 @@ export async function handleTest(
                 }
               : null,
             feedRequestsServiceHost,
+            parsedArticlesCacheStore,
           });
         }
 

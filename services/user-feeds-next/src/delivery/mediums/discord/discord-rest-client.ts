@@ -224,18 +224,3 @@ export function createTestDiscordRestClient(): TestDiscordRestClient {
   };
 }
 
-// ============================================================================
-// In-Memory Implementation (alias for test client)
-// ============================================================================
-
-/**
- * Create an in-memory Discord REST client.
- * Alias for createTestDiscordRestClient for consistency with other stores.
- */
-export const createInMemoryDiscordRestClient = createTestDiscordRestClient;
-
-/**
- * Default in-memory Discord REST client singleton.
- * Useful for simple cases, but prefer creating instances for test isolation.
- */
-export const inMemoryDiscordRestClient = createTestDiscordRestClient();

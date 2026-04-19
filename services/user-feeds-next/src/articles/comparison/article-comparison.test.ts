@@ -1,11 +1,24 @@
-import { describe, it, beforeEach } from "node:test";
+import { describe, it, before, after, beforeEach } from "node:test";
 import assert from "node:assert";
 import {
   getArticlesToDeliver,
-  inMemoryArticleFieldStore,
-  clearInMemoryStore,
   type ArticleFieldStore,
 } from ".";
+import {
+  setupTestDatabase,
+  teardownTestDatabase,
+  type TestStores,
+} from "../../../test/helpers/setup-integration-tests";
+
+let stores: TestStores;
+
+before(async () => {
+  stores = await setupTestDatabase();
+});
+
+after(async () => {
+  await teardownTestDatabase();
+});
 import type { Article } from "../parser";
 import { DeliveryPreviewStage, DeliveryPreviewStageStatus, type DeliveryPreviewStageResult } from "../../delivery-preview";
 
@@ -24,8 +37,8 @@ function createArticle(
 }
 
 describe("article-comparison", () => {
-  beforeEach(() => {
-    clearInMemoryStore();
+  beforeEach(async () => {
+    await stores.truncate();
   });
 
   /**
@@ -70,6 +83,7 @@ describe("article-comparison", () => {
       storeArticles: async (_feedId, articles, _comparisonFields) => {
         storedArticles.push(articles);
       },
+      findStoredArticleDates: async () => new Map(),
       getStoredComparisonNames: async () => comparisonNames,
       storeComparisonNames: async (_feedId, names) => {
         for (const name of names) {
@@ -84,38 +98,38 @@ describe("article-comparison", () => {
 
   describe("getArticlesToDeliver", () => {
     it("delivers nothing on first run (stores articles)", async () => {
-      await inMemoryArticleFieldStore.startContext(async () => {
+      await stores.articleFieldStore.startContext(async () => {
         const articles = [
           createArticle("1", { title: "Article 1" }),
           createArticle("2", { title: "Article 2" }),
         ];
 
         const result = await getArticlesToDeliver(
-          inMemoryArticleFieldStore,
+          stores.articleFieldStore,
           "feed-1",
           articles,
           { blockingComparisons: [], passingComparisons: [] }
         );
 
         assert.strictEqual(result.articlesToDeliver.length, 0);
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
       });
     });
 
     it("delivers new articles on subsequent runs", async () => {
-      await inMemoryArticleFieldStore.startContext(async () => {
+      await stores.articleFieldStore.startContext(async () => {
         // First run - stores articles
         await getArticlesToDeliver(
-          inMemoryArticleFieldStore,
+          stores.articleFieldStore,
           "feed-1",
           [createArticle("1", { title: "Article 1" })],
           { blockingComparisons: [], passingComparisons: [] }
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
 
         // Second run - new article should be delivered
         const result = await getArticlesToDeliver(
-          inMemoryArticleFieldStore,
+          stores.articleFieldStore,
           "feed-1",
           [
             createArticle("1", { title: "Article 1" }),
@@ -123,7 +137,7 @@ describe("article-comparison", () => {
           ],
           { blockingComparisons: [], passingComparisons: [] }
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
 
         assert.strictEqual(result.articlesToDeliver.length, 1);
         assert.strictEqual(result.articlesToDeliver[0]!.flattened.id, "2");
@@ -131,19 +145,19 @@ describe("article-comparison", () => {
     });
 
     it("blocks articles with seen blocking comparison fields", async () => {
-      await inMemoryArticleFieldStore.startContext(async () => {
+      await stores.articleFieldStore.startContext(async () => {
         // First run
         await getArticlesToDeliver(
-          inMemoryArticleFieldStore,
+          stores.articleFieldStore,
           "feed-1",
           [createArticle("1", { title: "Same Title" })],
           { blockingComparisons: ["title"], passingComparisons: [] }
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
 
         // Second run - new ID but same title should be blocked
         const result = await getArticlesToDeliver(
-          inMemoryArticleFieldStore,
+          stores.articleFieldStore,
           "feed-1",
           [
             createArticle("1", { title: "Same Title" }),
@@ -151,7 +165,7 @@ describe("article-comparison", () => {
           ],
           { blockingComparisons: ["title"], passingComparisons: [] }
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
 
         assert.strictEqual(result.articlesToDeliver.length, 0);
         assert.strictEqual(result.articlesBlocked.length, 1);
@@ -159,24 +173,24 @@ describe("article-comparison", () => {
     });
 
     it("passes articles with changed passing comparison fields", async () => {
-      await inMemoryArticleFieldStore.startContext(async () => {
+      await stores.articleFieldStore.startContext(async () => {
         // First run
         await getArticlesToDeliver(
-          inMemoryArticleFieldStore,
+          stores.articleFieldStore,
           "feed-1",
           [createArticle("1", { title: "Original Title" })],
           { blockingComparisons: [], passingComparisons: ["title"] }
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
 
         // Second run - same ID but different title should pass
         const result = await getArticlesToDeliver(
-          inMemoryArticleFieldStore,
+          stores.articleFieldStore,
           "feed-1",
           [createArticle("1", { title: "Updated Title" })],
           { blockingComparisons: [], passingComparisons: ["title"] }
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
 
         assert.strictEqual(result.articlesToDeliver.length, 1);
         assert.strictEqual(result.articlesPassed.length, 1);
@@ -184,48 +198,48 @@ describe("article-comparison", () => {
     });
 
     it("does not deliver seen articles with unchanged passing comparisons", async () => {
-      await inMemoryArticleFieldStore.startContext(async () => {
+      await stores.articleFieldStore.startContext(async () => {
         // First run
         await getArticlesToDeliver(
-          inMemoryArticleFieldStore,
+          stores.articleFieldStore,
           "feed-1",
           [createArticle("1", { title: "Same Title" })],
           { blockingComparisons: [], passingComparisons: ["title"] }
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
 
         // Second run - same ID and same title should not deliver
         const result = await getArticlesToDeliver(
-          inMemoryArticleFieldStore,
+          stores.articleFieldStore,
           "feed-1",
           [createArticle("1", { title: "Same Title" })],
           { blockingComparisons: [], passingComparisons: ["title"] }
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
 
         assert.strictEqual(result.articlesToDeliver.length, 0);
       });
     });
 
     it("isolates articles by feed ID", async () => {
-      await inMemoryArticleFieldStore.startContext(async () => {
+      await stores.articleFieldStore.startContext(async () => {
         // Store article for feed-1
         await getArticlesToDeliver(
-          inMemoryArticleFieldStore,
+          stores.articleFieldStore,
           "feed-1",
           [createArticle("1", { title: "Article 1" })],
           { blockingComparisons: [], passingComparisons: [] }
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
 
         // Same article ID for feed-2 should be new
         const result = await getArticlesToDeliver(
-          inMemoryArticleFieldStore,
+          stores.articleFieldStore,
           "feed-2",
           [createArticle("1", { title: "Article 1" })],
           { blockingComparisons: [], passingComparisons: [] }
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
 
         // First run for feed-2, so nothing delivered
         assert.strictEqual(result.articlesToDeliver.length, 0);
@@ -390,21 +404,21 @@ describe("article-comparison", () => {
      */
 
     it("does not use a new blocking comparison until it has been stored", async () => {
-      await inMemoryArticleFieldStore.startContext(async () => {
+      await stores.articleFieldStore.startContext(async () => {
         // First run - no prior articles, store articles with "author" comparison
         await getArticlesToDeliver(
-          inMemoryArticleFieldStore,
+          stores.articleFieldStore,
           "comparison-feed-1",
           [createArticle("1", { author: "John" })],
           { blockingComparisons: ["author"], passingComparisons: [] }
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
 
         // Second run - add a NEW blocking comparison "category" that wasn't stored yet
         // The article has a matching "author" but matching should be blocked since author was stored
         // The article also has a matching "category" but it won't be used because it's new
         const result = await getArticlesToDeliver(
-          inMemoryArticleFieldStore,
+          stores.articleFieldStore,
           "comparison-feed-1",
           [
             createArticle("2", { author: "John", category: "Tech" }), // new article with matching author
@@ -414,7 +428,7 @@ describe("article-comparison", () => {
             passingComparisons: [],
           }
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
 
         // Article 2 should be blocked because author matches (author was stored)
         // Even though category is a new comparison, it's now stored, so it won't affect this run
@@ -424,24 +438,24 @@ describe("article-comparison", () => {
     });
 
     it("uses blocking comparison after it has been stored", async () => {
-      await inMemoryArticleFieldStore.startContext(async () => {
+      await stores.articleFieldStore.startContext(async () => {
         // First run - store articles with "author" comparison
         await getArticlesToDeliver(
-          inMemoryArticleFieldStore,
+          stores.articleFieldStore,
           "comparison-feed-2",
           [createArticle("1", { author: "John" })],
           { blockingComparisons: ["author"], passingComparisons: [] }
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
 
         // Second run - new article with different author should pass
         const result = await getArticlesToDeliver(
-          inMemoryArticleFieldStore,
+          stores.articleFieldStore,
           "comparison-feed-2",
           [createArticle("2", { author: "Jane" })],
           { blockingComparisons: ["author"], passingComparisons: [] }
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
 
         assert.strictEqual(result.articlesToDeliver.length, 1);
         assert.strictEqual(result.articlesBlocked.length, 0);
@@ -507,28 +521,28 @@ describe("article-comparison", () => {
         createArticle("ctx-2", { title: "Context Article 2" }),
       ];
 
-      await inMemoryArticleFieldStore.startContext(async () => {
+      await stores.articleFieldStore.startContext(async () => {
         // Store articles within context (should be pending)
-        await inMemoryArticleFieldStore.storeArticles("feed-ctx", articles, []);
+        await stores.articleFieldStore.storeArticles("feed-ctx", articles, []);
 
         // Before flush, articles should NOT be visible (in pending state)
         // Note: The in-memory store accumulates in pendingInserts within context
         // and only moves to the actual store on flush
 
         // Flush pending inserts
-        const result = await inMemoryArticleFieldStore.flushPendingInserts();
+        const result = await stores.articleFieldStore.flushPendingInserts();
         assert.strictEqual(result.affectedRows, 2); // 2 article IDs
 
         // After flush, articles should be visible
         const hasPrior =
-          await inMemoryArticleFieldStore.hasPriorArticlesStored("feed-ctx");
+          await stores.articleFieldStore.hasPriorArticlesStored("feed-ctx");
         assert.strictEqual(hasPrior, true);
       });
     });
 
     it("throws when flushPendingInserts called without context", async () => {
       await assert.rejects(
-        inMemoryArticleFieldStore.flushPendingInserts(),
+        stores.articleFieldStore.flushPendingInserts(),
         { message: /No context was started for ArticleFieldStore/ }
       );
     });
@@ -536,19 +550,19 @@ describe("article-comparison", () => {
     it("clears pending inserts after flush", async () => {
       const articles = [createArticle("flush-1")];
 
-      await inMemoryArticleFieldStore.startContext(async () => {
-        await inMemoryArticleFieldStore.storeArticles(
+      await stores.articleFieldStore.startContext(async () => {
+        await stores.articleFieldStore.storeArticles(
           "feed-flush",
           articles,
           []
         );
 
         // First flush should have affected rows
-        const result1 = await inMemoryArticleFieldStore.flushPendingInserts();
+        const result1 = await stores.articleFieldStore.flushPendingInserts();
         assert.strictEqual(result1.affectedRows, 1);
 
         // Second flush should have no affected rows (buffer cleared)
-        const result2 = await inMemoryArticleFieldStore.flushPendingInserts();
+        const result2 = await stores.articleFieldStore.flushPendingInserts();
         assert.strictEqual(result2.affectedRows, 0);
       });
     });
@@ -557,7 +571,7 @@ describe("article-comparison", () => {
       const articles = [createArticle("no-ctx-1")];
 
       await assert.rejects(
-        inMemoryArticleFieldStore.storeArticles("feed-no-ctx", articles, []),
+        stores.articleFieldStore.storeArticles("feed-no-ctx", articles, []),
         { message: /No context was started for ArticleFieldStore/ }
       );
     });
@@ -567,14 +581,14 @@ describe("article-comparison", () => {
         createArticle("fields-1", { title: "Title 1", author: "Author 1" }),
       ];
 
-      await inMemoryArticleFieldStore.startContext(async () => {
-        await inMemoryArticleFieldStore.storeArticles("feed-fields", articles, [
+      await stores.articleFieldStore.startContext(async () => {
+        await stores.articleFieldStore.storeArticles("feed-fields", articles, [
           "title",
           "author",
         ]);
 
         // Should flush: 1 article ID + 2 comparison fields = 3 inserts
-        const result = await inMemoryArticleFieldStore.flushPendingInserts();
+        const result = await stores.articleFieldStore.flushPendingInserts();
         assert.strictEqual(result.affectedRows, 3);
       });
     });
@@ -585,21 +599,21 @@ describe("article-comparison", () => {
 
       // Run two contexts concurrently
       const [result1, result2] = await Promise.all([
-        inMemoryArticleFieldStore.startContext(async () => {
-          await inMemoryArticleFieldStore.storeArticles(
+        stores.articleFieldStore.startContext(async () => {
+          await stores.articleFieldStore.storeArticles(
             "feed-iso-1",
             articles1,
             []
           );
-          return inMemoryArticleFieldStore.flushPendingInserts();
+          return stores.articleFieldStore.flushPendingInserts();
         }),
-        inMemoryArticleFieldStore.startContext(async () => {
-          await inMemoryArticleFieldStore.storeArticles(
+        stores.articleFieldStore.startContext(async () => {
+          await stores.articleFieldStore.storeArticles(
             "feed-iso-2",
             articles2,
             []
           );
-          return inMemoryArticleFieldStore.flushPendingInserts();
+          return stores.articleFieldStore.flushPendingInserts();
         }),
       ]);
 
@@ -609,9 +623,9 @@ describe("article-comparison", () => {
 
       // Both feeds should have articles stored
       const hasPrior1 =
-        await inMemoryArticleFieldStore.hasPriorArticlesStored("feed-iso-1");
+        await stores.articleFieldStore.hasPriorArticlesStored("feed-iso-1");
       const hasPrior2 =
-        await inMemoryArticleFieldStore.hasPriorArticlesStored("feed-iso-2");
+        await stores.articleFieldStore.hasPriorArticlesStored("feed-iso-2");
       assert.strictEqual(hasPrior1, true);
       assert.strictEqual(hasPrior2, true);
     });
@@ -622,12 +636,12 @@ describe("article-comparison", () => {
       const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
         await import("../../delivery-preview/delivery-preview-context");
 
-      await inMemoryArticleFieldStore.startContext(async () => {
+      await stores.articleFieldStore.startContext(async () => {
         let diagnostics: DeliveryPreviewStageResult[] = [];
 
         await startDeliveryPreviewContext("hash-1", async () => {
           await getArticlesToDeliver(
-            inMemoryArticleFieldStore,
+            stores.articleFieldStore,
             "diag-feed-1",
             [createArticle("1", { title: "Test" })],
             { blockingComparisons: [], passingComparisons: [] }
@@ -653,22 +667,22 @@ describe("article-comparison", () => {
       const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
         await import("../../delivery-preview/delivery-preview-context");
 
-      await inMemoryArticleFieldStore.startContext(async () => {
+      await stores.articleFieldStore.startContext(async () => {
         // First run to establish baseline
         await getArticlesToDeliver(
-          inMemoryArticleFieldStore,
+          stores.articleFieldStore,
           "diag-feed-2",
           [createArticle("1", { title: "Article 1" })],
           { blockingComparisons: [], passingComparisons: [] }
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
 
         let diagnostics: DeliveryPreviewStageResult[] = [];
 
         // Second run with diagnostic context for a new article
         await startDeliveryPreviewContext("hash-2", async () => {
           await getArticlesToDeliver(
-            inMemoryArticleFieldStore,
+            stores.articleFieldStore,
             "diag-feed-2",
             [
               createArticle("1", { title: "Article 1" }),
@@ -694,22 +708,22 @@ describe("article-comparison", () => {
       const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
         await import("../../delivery-preview/delivery-preview-context");
 
-      await inMemoryArticleFieldStore.startContext(async () => {
+      await stores.articleFieldStore.startContext(async () => {
         // First run
         await getArticlesToDeliver(
-          inMemoryArticleFieldStore,
+          stores.articleFieldStore,
           "diag-feed-3",
           [createArticle("1", { title: "Same Title" })],
           { blockingComparisons: ["title"], passingComparisons: [] }
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
 
         let diagnostics: DeliveryPreviewStageResult[] = [];
 
         // Second run with same title (should be blocked)
         await startDeliveryPreviewContext("hash-2", async () => {
           await getArticlesToDeliver(
-            inMemoryArticleFieldStore,
+            stores.articleFieldStore,
             "diag-feed-3",
             [createArticle("2", { title: "Same Title" })],
             { blockingComparisons: ["title"], passingComparisons: [] }
@@ -736,22 +750,22 @@ describe("article-comparison", () => {
       const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
         await import("../../delivery-preview/delivery-preview-context");
 
-      await inMemoryArticleFieldStore.startContext(async () => {
+      await stores.articleFieldStore.startContext(async () => {
         // First run
         await getArticlesToDeliver(
-          inMemoryArticleFieldStore,
+          stores.articleFieldStore,
           "diag-feed-4",
           [createArticle("1", { title: "Original Title" })],
           { blockingComparisons: [], passingComparisons: ["title"] }
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
 
         let diagnostics: DeliveryPreviewStageResult[] = [];
 
         // Second run with changed title (should pass)
         await startDeliveryPreviewContext("hash-1", async () => {
           await getArticlesToDeliver(
-            inMemoryArticleFieldStore,
+            stores.articleFieldStore,
             "diag-feed-4",
             [createArticle("1", { title: "Updated Title" })],
             { blockingComparisons: [], passingComparisons: ["title"] }
@@ -778,15 +792,15 @@ describe("article-comparison", () => {
       const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
         await import("../../delivery-preview/delivery-preview-context");
 
-      await inMemoryArticleFieldStore.startContext(async () => {
+      await stores.articleFieldStore.startContext(async () => {
         // First run to establish baseline
         await getArticlesToDeliver(
-          inMemoryArticleFieldStore,
+          stores.articleFieldStore,
           "diag-feed-5",
           [createArticle("1")],
           { blockingComparisons: [], passingComparisons: [] }
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
 
         let diagnostics: DeliveryPreviewStageResult[] = [];
 
@@ -801,7 +815,7 @@ describe("article-comparison", () => {
 
         await startDeliveryPreviewContext("hash-2", async () => {
           await getArticlesToDeliver(
-            inMemoryArticleFieldStore,
+            stores.articleFieldStore,
             "diag-feed-5",
             [articleWithOldDate],
             {
@@ -826,9 +840,9 @@ describe("article-comparison", () => {
     it("does not record diagnostics outside diagnostic context", async () => {
       const { getAllDeliveryPreviewResults } = await import("../../delivery-preview/delivery-preview-context");
 
-      await inMemoryArticleFieldStore.startContext(async () => {
+      await stores.articleFieldStore.startContext(async () => {
         await getArticlesToDeliver(
-          inMemoryArticleFieldStore,
+          stores.articleFieldStore,
           "diag-feed-6",
           [createArticle("1")],
           { blockingComparisons: [], passingComparisons: [] }
@@ -848,12 +862,12 @@ describe("article-comparison", () => {
         getDeliveryPreviewResultsForArticle,
       } = await import("../../delivery-preview/delivery-preview-context");
 
-      await inMemoryArticleFieldStore.startContext(async () => {
+      await stores.articleFieldStore.startContext(async () => {
         const targetHashes = new Set(["hash-1", "hash-2"]);
 
         await startDeliveryPreviewContext(targetHashes, async () => {
           await getArticlesToDeliver(
-            inMemoryArticleFieldStore,
+            stores.articleFieldStore,
             "multi-diag-feed-1",
             [
               createArticle("1", { title: "Article 1" }),
@@ -895,22 +909,22 @@ describe("article-comparison", () => {
         getDeliveryPreviewResultsForArticle,
       } = await import("../../delivery-preview/delivery-preview-context");
 
-      await inMemoryArticleFieldStore.startContext(async () => {
+      await stores.articleFieldStore.startContext(async () => {
         // First run to establish baseline
         await getArticlesToDeliver(
-          inMemoryArticleFieldStore,
+          stores.articleFieldStore,
           "multi-diag-feed-2",
           [createArticle("1", { title: "Article 1" })],
           { blockingComparisons: [], passingComparisons: [] }
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
 
         const targetHashes = new Set(["hash-1", "hash-2"]);
 
         // Second run - hash-1 is seen, hash-2 is new
         await startDeliveryPreviewContext(targetHashes, async () => {
           await getArticlesToDeliver(
-            inMemoryArticleFieldStore,
+            stores.articleFieldStore,
             "multi-diag-feed-2",
             [
               createArticle("1", { title: "Article 1" }),
@@ -949,22 +963,22 @@ describe("article-comparison", () => {
         getDeliveryPreviewResultsForArticle,
       } = await import("../../delivery-preview/delivery-preview-context");
 
-      await inMemoryArticleFieldStore.startContext(async () => {
+      await stores.articleFieldStore.startContext(async () => {
         // First run
         await getArticlesToDeliver(
-          inMemoryArticleFieldStore,
+          stores.articleFieldStore,
           "multi-diag-feed-3",
           [createArticle("1", { title: "Same Title" })],
           { blockingComparisons: ["title"], passingComparisons: [] }
         );
-        await inMemoryArticleFieldStore.flushPendingInserts();
+        await stores.articleFieldStore.flushPendingInserts();
 
         const targetHashes = new Set(["hash-2", "hash-3"]);
 
         // Second run - both new articles with same title should be blocked
         await startDeliveryPreviewContext(targetHashes, async () => {
           await getArticlesToDeliver(
-            inMemoryArticleFieldStore,
+            stores.articleFieldStore,
             "multi-diag-feed-3",
             [
               createArticle("2", { title: "Same Title" }),
@@ -998,13 +1012,13 @@ describe("article-comparison", () => {
         getAllDeliveryPreviewResults,
       } = await import("../../delivery-preview/delivery-preview-context");
 
-      await inMemoryArticleFieldStore.startContext(async () => {
+      await stores.articleFieldStore.startContext(async () => {
         // Only target hash-1, but process multiple articles
         const targetHashes = new Set(["hash-1"]);
 
         await startDeliveryPreviewContext(targetHashes, async () => {
           await getArticlesToDeliver(
-            inMemoryArticleFieldStore,
+            stores.articleFieldStore,
             "multi-diag-feed-4",
             [
               createArticle("1", { title: "Article 1" }),

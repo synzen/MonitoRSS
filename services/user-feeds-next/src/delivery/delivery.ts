@@ -43,9 +43,6 @@ import {
   generateDeliveryId,
 } from "../stores/interfaces/delivery-record-store";
 import {
-  inMemoryDeliveryRecordStore,
-} from "../stores/in-memory/delivery-record-store";
-import {
   isDeliveryPreviewMode,
   recordDeliveryPreviewForArticle,
   DeliveryPreviewStage,
@@ -1313,12 +1310,11 @@ export async function deliverArticles(
     feedId: string;
     feedUrl: string;
     articleDayLimit: number;
-    deliveryRecordStore?: DeliveryRecordStore;
+    deliveryRecordStore: DeliveryRecordStore;
     discordClient: DiscordRestClient;
   }
 ): Promise<ArticleDeliveryState[]> {
-  const deliveryRecordStore =
-    options.deliveryRecordStore ?? inMemoryDeliveryRecordStore;
+  const { deliveryRecordStore } = options;
   let articleStates: ArticleDeliveryState[] = [];
 
   // Pre-query feed-level rate limit (matching user-feeds pattern)

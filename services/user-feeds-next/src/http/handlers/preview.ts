@@ -7,6 +7,7 @@ import { z } from "zod";
 import { withAuth } from "../middleware";
 import { jsonResponse, parseJsonBody, handleError } from "../utils";
 import { fetchFeedArticle } from "../../feeds/services/articles.service";
+import type { ParsedArticlesCacheStore } from "../../stores/interfaces/parsed-articles-cache";
 import {
   discordMediumPayloadDetailsSchema,
   externalFeedPropertySchema,
@@ -35,7 +36,8 @@ enum TestDeliveryStatus {
 
 export async function handlePreview(
   req: Request,
-  feedRequestsServiceHost: string
+  feedRequestsServiceHost: string,
+  parsedArticlesCacheStore: ParsedArticlesCacheStore
 ): Promise<Response> {
   return withAuth(req, async () => {
     try {
@@ -108,6 +110,7 @@ export async function handlePreview(
                 }
               : null,
             feedRequestsServiceHost,
+            parsedArticlesCacheStore,
           }
         );
 
