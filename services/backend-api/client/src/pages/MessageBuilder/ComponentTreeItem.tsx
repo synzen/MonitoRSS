@@ -29,7 +29,7 @@ interface ComponentTreeItemProps {
   isAccessory?: boolean;
 }
 
-export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
+const ComponentTreeItemInner: React.FC<ComponentTreeItemProps> = ({
   component,
   depth = 0,
   scrollToComponentId,
@@ -55,8 +55,8 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
     if (added) {
       notifyInfo(
         `Successfully added ${getMessageBuilderComponentLabel(
-          childType
-        )} component under ${getMessageBuilderComponentLabel(component.type)}`
+          childType,
+        )} component under ${getMessageBuilderComponentLabel(component.type)}`,
       );
     }
   };
@@ -223,3 +223,19 @@ export const ComponentTreeItem: React.FC<ComponentTreeItemProps> = ({
     </VStack>
   );
 };
+
+// Re-render only when something the item visually depends on changes. When a
+// sibling subtree's content updates, our `component` reference stays referentially
+// equal (RHF setValue only clones the path down to the modified node), so we skip.
+export const ComponentTreeItem = React.memo(ComponentTreeItemInner, (prev, next) => {
+  if (prev.component !== next.component) return false;
+  if (prev.depth !== next.depth) return false;
+  if (prev.isAccessory !== next.isAccessory) return false;
+  if (prev.scrollToComponentId !== next.scrollToComponentId) return false;
+
+  const id = prev.component.id;
+  if (prev.componentIdsWithErrors.has(id) !== next.componentIdsWithErrors.has(id)) return false;
+  if (prev.componentIdsWithWarnings.has(id) !== next.componentIdsWithWarnings.has(id)) return false;
+
+  return true;
+});

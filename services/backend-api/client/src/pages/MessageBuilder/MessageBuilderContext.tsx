@@ -574,7 +574,7 @@ export const MessageBuilderProvider: React.FC<{
   children: ReactNode;
 }> = ({ children, defaultValues }) => {
   const formMethods = useForm<MessageBuilderFormState>({
-    mode: "onChange",
+    mode: "onBlur",
     resolver: yupResolver(validationSchema),
     defaultValues,
   });

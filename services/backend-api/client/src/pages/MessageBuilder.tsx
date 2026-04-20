@@ -106,7 +106,7 @@ function TreeFocusRestorer({ treeRef }: { treeRef: React.RefObject<HTMLDivElemen
     requestAnimationFrame(() => {
       if (document.activeElement && document.activeElement !== document.body) return;
       const selected = treeRef.current?.querySelector(
-        `[data-id="${currentSelectedId}"]`
+        `[data-id="${currentSelectedId}"]`,
       ) as HTMLElement | null;
       selected?.focus();
     });
@@ -114,6 +114,26 @@ function TreeFocusRestorer({ treeRef }: { treeRef: React.RefObject<HTMLDivElemen
 
   return null;
 }
+
+// Pre-mounts one ComponentPropertiesPanel per component id (for Google Translate
+// compatibility - nodes must exist in the DOM on initial render). When a panel
+// is not the currently selected one, React.memo short-circuits its re-render so
+// keystrokes on another panel do not walk the tree and re-render N hidden panels.
+// Inactive panels keep their last DOM (which Google Translate has translated);
+// when they become active again, they re-render with fresh form state.
+const PreRenderedPanelSlot = React.memo<{ id: string; isActive: boolean }>(
+  ({ id }) => <ComponentPropertiesPanel selectedComponentId={id} />,
+  (prev, next) => {
+    // Only re-render when the panel becomes active or changes its id.
+    // When inactive (was and is), skip - keeps DOM stable for Google Translate.
+    if (prev.id !== next.id) return false;
+    if (prev.isActive !== next.isActive) return false;
+    if (next.isActive) return false;
+
+    return true;
+  },
+);
+PreRenderedPanelSlot.displayName = "PreRenderedPanelSlot";
 
 // Used as a React key on the tree container so it remounts when components are
 // added or removed. Google Translate does not re-translate text that React swaps
@@ -158,12 +178,26 @@ const CENTER_PANEL_WIDTH = {
 
 const MessageBuilderContent: React.FC = () => {
   const { resetMessage } = useMessageBuilderContext();
-  const { watch, handleSubmit, formState, setValue } = useFormContext<MessageBuilderFormState>();
+  const { watch, handleSubmit, formState, setValue, trigger } =
+    useFormContext<MessageBuilderFormState>();
   const { setCurrentSelectedId } = useNavigableTreeContext();
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const [isProblemsCollapsed, setIsProblemsCollapsed] = useState(false);
   const messageComponent = watch("messageComponent");
   const allComponentIds = useMemo(() => collectComponentIds(messageComponent), [messageComponent]);
+
+  // Content edits skip shouldValidate for performance; run Yup shortly after the
+  // user pauses so problem markers stay current without blocking each keystroke.
+  const isDirty = formState.isDirty;
+  useEffect(() => {
+    if (!isDirty) return undefined;
+
+    const handle = setTimeout(() => {
+      trigger("messageComponent");
+    }, 400);
+
+    return () => clearTimeout(handle);
+  }, [messageComponent, isDirty, trigger]);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
     isOpen: isProblemsDialogOpen,
@@ -300,7 +334,7 @@ const MessageBuilderContent: React.FC = () => {
 
       try {
         const connectionDetails = convertMessageBuilderStateToConnectionUpdate(
-          data.messageComponent
+          data.messageComponent,
         );
 
         const shouldSkipBranding = skipBrandingRef.current;
@@ -350,7 +384,7 @@ const MessageBuilderContent: React.FC = () => {
       if (problems.length > 0) {
         onProblemsDialogOpen();
       }
-    }
+    },
   );
 
   const handleDiscard = () => {
@@ -676,7 +710,7 @@ const MessageBuilderContent: React.FC = () => {
                   >
                     {allComponentIds.map((id) => (
                       <div key={id} hidden={id !== currentSelectedId}>
-                        <ComponentPropertiesPanel selectedComponentId={id} />
+                        <PreRenderedPanelSlot id={id} isActive={id === currentSelectedId} />
                       </div>
                     ))}
                   </Box>
