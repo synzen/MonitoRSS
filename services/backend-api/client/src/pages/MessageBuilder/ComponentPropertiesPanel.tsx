@@ -966,11 +966,14 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     ? getMessageBuilderComponentFormPathsById(messageComponent, selectedComponentId)
     : null;
 
+  // Intentionally skip shouldValidate on content edits. Validation is expensive
+  // (recursive Yup over the whole tree) and runs from handleSubmit on save,
+  // from structural mutations (add/delete/move/switch) in MessageBuilderContext,
+  // and from a debounced trigger in MessageBuilderContent for live problem markers.
   const updateValue = (value: Component) => {
     setValue(formPath as any, value, {
       shouldDirty: true,
       shouldTouch: true,
-      shouldValidate: true,
     });
   };
 

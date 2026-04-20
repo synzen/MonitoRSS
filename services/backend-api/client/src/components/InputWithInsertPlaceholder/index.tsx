@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react";
+import React, { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import {
   VStack,
   Textarea,
@@ -28,6 +28,8 @@ interface Props {
   guildId?: string;
 }
 
+const DEBOUNCE_MS = 200;
+
 export const InputWithInsertPlaceholder: React.FC<Props> = ({
   value,
   onChange,
@@ -41,33 +43,102 @@ export const InputWithInsertPlaceholder: React.FC<Props> = ({
   isRequired,
   guildId,
 }) => {
-  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const [isMentionDialogOpen, setIsMentionDialogOpen] = React.useState(false);
-  const inputRef = React.useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isMentionDialogOpen, setIsMentionDialogOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
 
-  const handleInsertPlaceholder = React.useCallback(
-    (tag: string) => {
-      if (inputRef.current) {
-        const input = inputRef.current;
-        const start = input.selectionStart || 0;
-        const end = input.selectionEnd || 0;
+  // Local state buffers keystrokes so the parent form (Yup validation, watch
+  // subscribers, full tree re-render) only runs after the user pauses typing.
+  const [localValue, setLocalValue] = useState(value);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const pendingValueRef = useRef<string | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-        const currentValue = input.value;
+  // Sync from parent when it changes externally (selection change, placeholder insert,
+  // programmatic reset). Ignore when the incoming value matches what we just flushed.
+  useEffect(() => {
+    if (pendingValueRef.current !== null && pendingValueRef.current === value) {
+      pendingValueRef.current = null;
 
-        if (!start && !end) {
-          const newValue = currentValue + tag;
-          onChange(newValue);
+      return;
+    }
 
-          input.setSelectionRange(newValue.length, newValue.length);
-        } else {
-          const newValue = currentValue.substring(0, start) + tag + currentValue.substring(end);
+    setLocalValue(value);
+  }, [value]);
 
-          onChange(newValue);
-          input.setSelectionRange(start + tag.length, start + tag.length);
-        }
+  const flush = useCallback((next: string) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+
+    pendingValueRef.current = next;
+    onChangeRef.current(next);
+  }, []);
+
+  const scheduleFlush = useCallback(
+    (next: string) => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
       }
+
+      debounceTimerRef.current = setTimeout(() => {
+        debounceTimerRef.current = null;
+        flush(next);
+      }, DEBOUNCE_MS);
     },
-    [onChange],
+    [flush],
+  );
+
+  // Flush any pending edit on unmount so switching components doesn't lose it.
+  const localValueRef = useRef(localValue);
+  localValueRef.current = localValue;
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        onChangeRef.current(localValueRef.current);
+      }
+    };
+  }, []);
+
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const next = e.target.value;
+      setLocalValue(next);
+      scheduleFlush(next);
+    },
+    [scheduleFlush],
+  );
+
+  const handleInsertPlaceholder = useCallback(
+    (tag: string) => {
+      if (!inputRef.current) {
+        return;
+      }
+
+      const input = inputRef.current;
+      const start = input.selectionStart || 0;
+      const end = input.selectionEnd || 0;
+      const currentValue = input.value;
+
+      let nextValue: string;
+      let nextCaret: number;
+
+      if (!start && !end) {
+        nextValue = currentValue + tag;
+        nextCaret = nextValue.length;
+      } else {
+        nextValue = currentValue.substring(0, start) + tag + currentValue.substring(end);
+        nextCaret = start + tag.length;
+      }
+
+      setLocalValue(nextValue);
+      flush(nextValue);
+      input.setSelectionRange(nextCaret, nextCaret);
+    },
+    [flush],
   );
 
   return (
@@ -80,8 +151,8 @@ export const InputWithInsertPlaceholder: React.FC<Props> = ({
           {as === "textarea" ? (
             <Textarea
               ref={inputRef as React.RefObject<HTMLTextAreaElement>}
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
+              value={localValue}
+              onChange={handleChange}
               placeholder={placeholder}
               rows={rows}
               bg="gray.700"
@@ -91,8 +162,8 @@ export const InputWithInsertPlaceholder: React.FC<Props> = ({
           ) : (
             <Input
               ref={inputRef as React.RefObject<HTMLInputElement>}
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
+              value={localValue}
+              onChange={handleChange}
               placeholder={placeholder}
               bg="gray.700"
               color="white"
