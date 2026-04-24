@@ -223,14 +223,14 @@ setup().then(async (initializedData) => {
    */
   consumer.on('globalBlock', (blockType, durationMs, debugDetails) => {
     let errorMessage: string
-    let exit = false
-    
+    let isHardBlock = false
+
     if (blockType === GLOBAL_BLOCK_TYPE.GLOBAL_RATE_LIMIT) {
       errorMessage = `Global block: Global rate limit hit (retry after ${durationMs}ms)`
-      exit = true
+      isHardBlock = true
     } else if (blockType === GLOBAL_BLOCK_TYPE.CLOUDFLARE_RATE_LIMIT) {
       errorMessage = `Global block: Cloudflare rate limit hit (retry after ${durationMs}ms)`
-      exit = true
+      isHardBlock = true
     } else if (blockType === GLOBAL_BLOCK_TYPE.INVALID_REQUEST) {
       errorMessage = `Global block: Invalid requests threshold reached, delaying all requests by ${durationMs}ms`
     } else {
@@ -243,7 +243,9 @@ setup().then(async (initializedData) => {
     })
     log.warn(errorMessage)
 
-    if (exit) {
+    // don't exit by default ÔÇö the library handles back-off internally;
+    // exiting repeatedly exhausts the docker restart budget and halts delivery
+    if (isHardBlock && config.exitOnGlobalBlock) {
       process.exit(0)
     }
   })

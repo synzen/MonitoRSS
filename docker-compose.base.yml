@@ -68,7 +68,7 @@ services:
       - monitorss-default
 
   discord-rest-listener-service:
-    restart: on-failure:10
+    restart: unless-stopped
     build:
       context: services/discord-rest-listener
       dockerfile: Dockerfile
@@ -81,6 +81,7 @@ services:
     environment:
       - DISCORD_REST_LISTENER_RABBITMQ_URI=${DISCORD_REST_LISTENER_RABBITMQ_URI:-amqp://rabbitmq-broker:5672}
       - DISCORD_REST_LISTENER_MAX_REQ_PER_SEC=${DISCORD_REST_LISTENER_MAX_REQ_PER_SEC:-40}
+      - DISCORD_REST_LISTENER_EXIT_ON_GLOBAL_BLOCK=${DISCORD_REST_LISTENER_EXIT_ON_GLOBAL_BLOCK:-false}
     networks:
       - monitorss-default
 

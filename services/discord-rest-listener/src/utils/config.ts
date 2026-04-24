@@ -11,6 +11,8 @@ const config = {
     (process.env.DISCORD_REST_LISTENER_RABBITMQ_URI as string) || ""
   ),
   discordClientId: process.env.DISCORD_REST_LISTENER_BOT_CLIENT_ID,
+  exitOnGlobalBlock:
+    process.env.DISCORD_REST_LISTENER_EXIT_ON_GLOBAL_BLOCK === "true",
   datadog: {
     apiKey: process.env.DISCORD_REST_LISTENER_DATADOG_API_KEY,
     host: process.env.DISCORD_REST_LISTENER_DATADOG_HOST,
