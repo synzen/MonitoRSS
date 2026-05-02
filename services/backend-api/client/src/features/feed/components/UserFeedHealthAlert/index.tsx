@@ -11,7 +11,7 @@ import {
 import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { UserFeedDisabledCode } from "../../types";
+import { UserFeedDisabledCode, UserFeedRequestStatus } from "../../types";
 import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
 import {
   getErrorMessageForArticleRequestStatus,
@@ -72,12 +72,12 @@ export const UserFeedHealthAlert = () => {
     }
   };
 
-  const nextRetryTimestamp = data?.result.nextRetryTimestamp
-    ? dayjs.unix(data.result.nextRetryTimestamp)
-    : null;
+  const latestRequest = data?.result.requests?.[0];
+  const isFailing = !!latestRequest && latestRequest.status !== UserFeedRequestStatus.OK;
+  const nextRetryAt = data?.result.nextRetryAtIso ? dayjs(data.result.nextRetryAtIso) : null;
 
   if (
-    !nextRetryTimestamp ||
+    !isFailing ||
     status === "loading" ||
     userFeed.disabledCode === UserFeedDisabledCode.FailedRequests
   ) {
@@ -86,7 +86,7 @@ export const UserFeedHealthAlert = () => {
 
   const fallbackNextRetryTimestamp = dayjs().add(userFeed.refreshRateSeconds, "seconds");
 
-  const firstStatusCode = data?.result.requests?.[0]?.response?.statusCode;
+  const firstStatusCode = latestRequest?.response?.statusCode;
 
   return (
     <Stack>
@@ -97,8 +97,8 @@ export const UserFeedHealthAlert = () => {
             <Flex flexDirection="column" gap={4}>
               We&apos;ve been unable to successfully fetch this feed. Attempts will continue
               automatically. The next earliest automatic attempt will be on{" "}
-              {(nextRetryTimestamp || fallbackNextRetryTimestamp).format("DD MMM YYYY, HH:mm:ss")}.
-              You may also manually attempt a request via the button below.
+              {(nextRetryAt || fallbackNextRetryTimestamp).format("DD MMM YYYY, HH:mm:ss")}. You may
+              also manually attempt a request via the button below.
               <HStack>
                 <Button isLoading={manualRequestStatus === "loading"} onClick={handleManualAttempt}>
                   <span>Retry feed request</span>

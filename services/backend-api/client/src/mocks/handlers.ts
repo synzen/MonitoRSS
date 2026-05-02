@@ -700,7 +700,8 @@ const handlers = [
     return HttpResponse.json<GetUserFeedRequestsOutput>({
       result: {
         requests: mockUserFeedRequests,
-        nextRetryTimestamp: Math.floor(Date.now() / 1000) + 3600,
+        nextRetryAtIso: new Date(Date.now() + 3600 * 1000).toISOString(),
+        nextRetryReason: "REFRESH_RATE",
         feedHostGlobalRateLimit: null,
       },
     });

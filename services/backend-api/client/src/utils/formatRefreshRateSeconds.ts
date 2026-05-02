@@ -19,17 +19,18 @@ export const formatRefreshRateSeconds = (num: number) => {
   return displayDuration;
 };
 
-export const getNextCheckText = (
-  lastRequestAtUnix: number | undefined,
-  refreshRateSeconds: number,
-): string => {
-  if (!lastRequestAtUnix) {
+export const getNextCheckText = (nextRetryAtIso?: string | null): string => {
+  if (!nextRetryAtIso) {
     return "";
   }
 
-  const nowSeconds = Date.now() / 1000;
-  const secondsSinceLastCheck = nowSeconds - lastRequestAtUnix;
-  const secondsRemaining = refreshRateSeconds - secondsSinceLastCheck;
+  const nextRetryMs = new Date(nextRetryAtIso).getTime();
+
+  if (Number.isNaN(nextRetryMs)) {
+    return "";
+  }
+
+  const secondsRemaining = (nextRetryMs - Date.now()) / 1000;
 
   if (secondsRemaining <= 0) {
     return "Next check expected shortly.";
