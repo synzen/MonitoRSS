@@ -40,7 +40,7 @@ dayjs.extend(relativeTime);
 export const getPatternAlert = (
   results: ArticleDeliveryResult[],
   refreshRateSeconds: number,
-  lastRequestAtUnix?: number,
+  nextRetryAtIso?: string | null,
 ): { type: "info" | "warning"; message: string } | null => {
   if (results.length === 0) return null;
 
@@ -65,7 +65,7 @@ export const getPatternAlert = (
   // First run is a feed-level state - if any article has it, all do
   if (outcome === ArticleDeliveryOutcome.FirstRunBaseline && count >= 1) {
     const formattedTime = formatRefreshRateSeconds(refreshRateSeconds);
-    const nextCheckText = getNextCheckText(lastRequestAtUnix, refreshRateSeconds);
+    const nextCheckText = getNextCheckText(nextRetryAtIso);
     const nextCheckSuffix = nextCheckText ? ` ${nextCheckText}` : "";
 
     return {
@@ -113,7 +113,9 @@ export interface DeliveryPreviewPresentationalProps {
   feedState?: FeedState | null;
   feedId: string;
   refreshRateSeconds: number;
-  lastRequestAtUnix?: number;
+  nextRetryAtIso?: string | null;
+  nextRetryReason?: "REFRESH_RATE" | "HOST_CACHE" | "FAILED_RETRY_BACKOFF" | null;
+  cacheDurationMs?: number | null;
   addConnectionUrl: string;
   lastCheckedFormatted?: string;
   onRefresh?: () => void;
@@ -131,7 +133,9 @@ export const DeliveryPreviewPresentational = ({
   feedState = null,
   feedId,
   refreshRateSeconds,
-  lastRequestAtUnix,
+  nextRetryAtIso,
+  nextRetryReason,
+  cacheDurationMs,
   addConnectionUrl,
   lastCheckedFormatted = "Never",
   onRefresh = () => {},
@@ -139,7 +143,7 @@ export const DeliveryPreviewPresentational = ({
 }: DeliveryPreviewPresentationalProps) => {
   const hasFeedLevelState = !!feedState;
   const hasNoData = results.length === 0 && !isLoading && !hasFeedLevelState;
-  const patternAlert = getPatternAlert(results, refreshRateSeconds, lastRequestAtUnix);
+  const patternAlert = getPatternAlert(results, refreshRateSeconds, nextRetryAtIso);
 
   return (
     <Stack spacing={4} mb={8} border="solid 1px" borderColor="gray.700" borderRadius="md">
@@ -235,7 +239,12 @@ export const DeliveryPreviewPresentational = ({
             {isFetching && results.length === 0 ? (
               <DeliveryPreviewAccordionSkeleton />
             ) : (
-              <DeliveryPreviewAccordion results={results} lastRequestAtUnix={lastRequestAtUnix} />
+              <DeliveryPreviewAccordion
+                results={results}
+                nextRetryAtIso={nextRetryAtIso}
+                nextRetryReason={nextRetryReason}
+                cacheDurationMs={cacheDurationMs}
+              />
             )}
             <Flex justifyContent="space-between" alignItems="center">
               <Text fontSize="sm" color="whiteAlpha.600">
@@ -281,7 +290,9 @@ export const DeliveryPreview = () => {
     data: { skip: 0, limit: 1 },
   });
 
-  const lastRequestAtUnix = requestsData?.result.requests[0]?.createdAt;
+  const nextRetryAtIso = requestsData?.result.nextRetryAtIso;
+  const nextRetryReason = requestsData?.result.nextRetryReason;
+  const latestFreshnessLifetimeMs = requestsData?.result.requests?.[0]?.freshnessLifetimeMs;
 
   const activeConnections = userFeed.connections.filter((c) => !c.disabledCode);
   const hasNoConnections = activeConnections.length === 0;
@@ -306,7 +317,9 @@ export const DeliveryPreview = () => {
       feedState={feedState}
       feedId={userFeed.id}
       refreshRateSeconds={getEffectiveRefreshRateSeconds(userFeed)}
-      lastRequestAtUnix={lastRequestAtUnix}
+      nextRetryAtIso={nextRetryAtIso}
+      nextRetryReason={nextRetryReason}
+      cacheDurationMs={latestFreshnessLifetimeMs}
       addConnectionUrl={pages.userFeed(userFeed.id, { tab: UserFeedTabSearchParam.Connections })}
       lastCheckedFormatted={formatLastChecked()}
       onRefresh={refresh}

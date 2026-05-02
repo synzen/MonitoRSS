@@ -1,4 +1,4 @@
-import { array, InferType, number, object } from "yup";
+import { array, InferType, number, object, string } from "yup";
 import fetchRest from "../../../utils/fetchRest";
 import { UserFeedRequestSchema } from "../types";
 
@@ -16,7 +16,11 @@ const GetUserFeedRequestsOutputSchema = object({
   result: object()
     .shape({
       requests: array(UserFeedRequestSchema).required(),
-      nextRetryTimestamp: number().nullable().default(null),
+      nextRetryAtIso: string().nullable().default(null),
+      nextRetryReason: string()
+        .oneOf(["REFRESH_RATE", "HOST_CACHE", "FAILED_RETRY_BACKOFF"])
+        .nullable()
+        .default(null),
       feedHostGlobalRateLimit: object({
         intervalSec: number().required(),
         requestLimit: number().required(),

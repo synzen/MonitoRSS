@@ -317,3 +317,234 @@ describe(
     });
   },
 );
+
+describe("GET /api/v1/user-feeds/:feedId/requests nextRetryAtIso", () => {
+  it("uses refresh rate when latest request is OK and no freshness lifetime", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const feedUrl = "https://example.com/next-retry-ok-test.xml";
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Feed Next Retry OK",
+      url: feedUrl,
+      user: { id: generateTestId(), discordUserId },
+      refreshRateSeconds: 600,
+    });
+
+    const createdAtUnix = Math.floor(Date.now() / 1000) - 60;
+
+    feedApiMockServer.registerRoute("GET", "/v1/feed-requests", {
+      status: 200,
+      body: {
+        result: {
+          requests: [
+            {
+              id: "req-1",
+              url: feedUrl,
+              status: "OK",
+              createdAt: createdAtUnix,
+              createdAtIso: new Date(createdAtUnix * 1000).toISOString(),
+              response: { statusCode: 200, headers: {} },
+              freshnessLifetimeMs: 0,
+            },
+          ],
+          nextRetryTimestamp: null,
+        },
+      },
+    });
+
+    const response = await user.fetch(
+      `/api/v1/user-feeds/${feed.id}/requests`,
+      { method: "GET" },
+    );
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as {
+      result: { nextRetryAtIso: string | null; nextRetryReason: string | null };
+    };
+    assert.strictEqual(
+      body.result.nextRetryAtIso,
+      new Date((createdAtUnix + 600) * 1000).toISOString(),
+    );
+    assert.strictEqual(body.result.nextRetryReason, "REFRESH_RATE");
+  });
+
+  it("uses freshness lifetime when it exceeds the refresh rate", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const feedUrl = "https://example.com/next-retry-freshness-test.xml";
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Feed Next Retry Freshness",
+      url: feedUrl,
+      user: { id: generateTestId(), discordUserId },
+      refreshRateSeconds: 600,
+    });
+
+    const createdAtUnix = Math.floor(Date.now() / 1000) - 60;
+    const freshnessMs = 60 * 60 * 1000;
+
+    feedApiMockServer.registerRoute("GET", "/v1/feed-requests", {
+      status: 200,
+      body: {
+        result: {
+          requests: [
+            {
+              id: "req-1",
+              url: feedUrl,
+              status: "OK",
+              createdAt: createdAtUnix,
+              createdAtIso: new Date(createdAtUnix * 1000).toISOString(),
+              response: { statusCode: 200, headers: {} },
+              freshnessLifetimeMs: freshnessMs,
+            },
+          ],
+          nextRetryTimestamp: null,
+        },
+      },
+    });
+
+    const response = await user.fetch(
+      `/api/v1/user-feeds/${feed.id}/requests`,
+      { method: "GET" },
+    );
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as {
+      result: { nextRetryAtIso: string | null; nextRetryReason: string | null };
+    };
+    assert.strictEqual(
+      body.result.nextRetryAtIso,
+      new Date((createdAtUnix + freshnessMs / 1000) * 1000).toISOString(),
+    );
+    assert.strictEqual(body.result.nextRetryReason, "HOST_CACHE");
+  });
+
+  it("uses upstream nextRetryTimestamp when latest request is not OK", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const feedUrl = "https://example.com/next-retry-failed-test.xml";
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Feed Next Retry Failed",
+      url: feedUrl,
+      user: { id: generateTestId(), discordUserId },
+      refreshRateSeconds: 600,
+    });
+
+    const createdAtUnix = Math.floor(Date.now() / 1000) - 60;
+    const upstreamNextRetry = Math.floor(Date.now() / 1000) + 1800;
+
+    feedApiMockServer.registerRoute("GET", "/v1/feed-requests", {
+      status: 200,
+      body: {
+        result: {
+          requests: [
+            {
+              id: "req-1",
+              url: feedUrl,
+              status: "FETCH_ERROR",
+              createdAt: createdAtUnix,
+              createdAtIso: new Date(createdAtUnix * 1000).toISOString(),
+              response: { statusCode: null, headers: null },
+            },
+          ],
+          nextRetryTimestamp: upstreamNextRetry,
+        },
+      },
+    });
+
+    const response = await user.fetch(
+      `/api/v1/user-feeds/${feed.id}/requests`,
+      { method: "GET" },
+    );
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as {
+      result: { nextRetryAtIso: string | null; nextRetryReason: string | null };
+    };
+    assert.strictEqual(
+      body.result.nextRetryAtIso,
+      new Date(upstreamNextRetry * 1000).toISOString(),
+    );
+    assert.strictEqual(body.result.nextRetryReason, "FAILED_RETRY_BACKOFF");
+  });
+
+  it("returns null when latest request is not OK and upstream has no retry timestamp", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const feedUrl = "https://example.com/next-retry-no-upstream-test.xml";
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Feed Next Retry No Upstream",
+      url: feedUrl,
+      user: { id: generateTestId(), discordUserId },
+      refreshRateSeconds: 600,
+    });
+
+    const createdAtUnix = Math.floor(Date.now() / 1000) - 60;
+
+    feedApiMockServer.registerRoute("GET", "/v1/feed-requests", {
+      status: 200,
+      body: {
+        result: {
+          requests: [
+            {
+              id: "req-1",
+              url: feedUrl,
+              status: "FETCH_ERROR",
+              createdAt: createdAtUnix,
+              createdAtIso: new Date(createdAtUnix * 1000).toISOString(),
+              response: { statusCode: null, headers: null },
+            },
+          ],
+          nextRetryTimestamp: null,
+        },
+      },
+    });
+
+    const response = await user.fetch(
+      `/api/v1/user-feeds/${feed.id}/requests`,
+      { method: "GET" },
+    );
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as {
+      result: { nextRetryAtIso: string | null; nextRetryReason: string | null };
+    };
+    assert.strictEqual(body.result.nextRetryAtIso, null);
+    assert.strictEqual(body.result.nextRetryReason, null);
+  });
+
+  it("returns null when there are no requests", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const feedUrl = "https://example.com/next-retry-empty-test.xml";
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Feed Next Retry Empty",
+      url: feedUrl,
+      user: { id: generateTestId(), discordUserId },
+      refreshRateSeconds: 600,
+    });
+
+    feedApiMockServer.registerRoute("GET", "/v1/feed-requests", {
+      status: 200,
+      body: {
+        result: { requests: [], nextRetryTimestamp: null },
+      },
+    });
+
+    const response = await user.fetch(
+      `/api/v1/user-feeds/${feed.id}/requests`,
+      { method: "GET" },
+    );
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as {
+      result: { nextRetryAtIso: string | null; nextRetryReason: string | null };
+    };
+    assert.strictEqual(body.result.nextRetryAtIso, null);
+    assert.strictEqual(body.result.nextRetryReason, null);
+  });
+});

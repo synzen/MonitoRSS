@@ -59,6 +59,8 @@ import { UserFeedTargetFeedSelectionType } from "../feed-connections-discord-cha
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
+type NextRetryReason = "REFRESH_RATE" | "HOST_CACHE" | "FAILED_RETRY_BACKOFF";
+
 const MESSAGE_BROKER_QUEUE_FEED_DELETED = "feed-deleted";
 
 const DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS = [
@@ -418,11 +420,85 @@ export class UserFeedsService {
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
     });
 
-    return this.deps.feedFetcherApiService.getRequests({
+    const response = (await this.deps.feedFetcherApiService.getRequests({
       query,
       url: lookupDetails?.url || url,
       requestLookupKey: lookupDetails?.key,
-    });
+    })) as {
+      result?: {
+        requests?: Array<{
+          createdAt: number;
+          status: string;
+          freshnessLifetimeMs?: number | null;
+        }>;
+        nextRetryTimestamp?: number | null;
+        nextRetryAtIso?: string | null;
+        nextRetryReason?: NextRetryReason | null;
+      };
+    };
+
+    if (response?.result) {
+      const next = this.computeNextRetry({
+        feed,
+        latestRequest: response.result.requests?.[0],
+        nextRetryTimestamp: response.result.nextRetryTimestamp,
+      });
+      response.result.nextRetryAtIso = next.atIso;
+      response.result.nextRetryReason = next.reason;
+      delete response.result.nextRetryTimestamp;
+    }
+
+    return response;
+  }
+
+  private computeNextRetry({
+    feed,
+    latestRequest,
+    nextRetryTimestamp,
+  }: {
+    feed: IUserFeed;
+    latestRequest?: {
+      createdAt: number;
+      status: string;
+      freshnessLifetimeMs?: number | null;
+    };
+    nextRetryTimestamp?: number | null;
+  }): { atIso: string | null; reason: NextRetryReason | null } {
+    if (!latestRequest) {
+      return { atIso: null, reason: null };
+    }
+
+    if (latestRequest.status !== "OK") {
+      if (!nextRetryTimestamp) {
+        return { atIso: null, reason: null };
+      }
+
+      return {
+        atIso: new Date(nextRetryTimestamp * 1000).toISOString(),
+        reason: "FAILED_RETRY_BACKOFF",
+      };
+    }
+
+    const refreshRateSeconds = getEffectiveRefreshRateSeconds(feed);
+
+    if (!refreshRateSeconds) {
+      return { atIso: null, reason: null };
+    }
+
+    const freshnessSeconds = latestRequest.freshnessLifetimeMs
+      ? latestRequest.freshnessLifetimeMs / 1000
+      : 0;
+    const cacheGated = freshnessSeconds > refreshRateSeconds;
+    const effectiveIntervalSeconds = cacheGated
+      ? freshnessSeconds
+      : refreshRateSeconds;
+
+    return {
+      atIso: new Date(
+        (latestRequest.createdAt + effectiveIntervalSeconds) * 1000,
+      ).toISOString(),
+      reason: cacheGated ? "HOST_CACHE" : "REFRESH_RATE",
+    };
   }
 
   async getDeliveryLogs(
