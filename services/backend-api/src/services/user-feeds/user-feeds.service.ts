@@ -1155,7 +1155,7 @@ export class UserFeedsService {
       await this.deps.usersService.getOrCreateUserByDiscordId(discordUserId);
 
     const lookupDetails = getFeedRequestLookupDetails({
-      feed: { url, feedRequestLookupKey: undefined },
+      feed: { url, feedRequestLookupKey: randomUUID() },
       user: {
         externalCredentials: user.externalCredentials?.map((c) => ({
           type: c.type,
@@ -1191,7 +1191,7 @@ export class UserFeedsService {
       await this.deps.usersService.getOrCreateUserByDiscordId(discordUserId);
 
     const lookupDetails = getFeedRequestLookupDetails({
-      feed: { url, feedRequestLookupKey: undefined },
+      feed: { url, feedRequestLookupKey: randomUUID() },
       user: {
         externalCredentials: user.externalCredentials?.map((c) => ({
           type: c.type,
