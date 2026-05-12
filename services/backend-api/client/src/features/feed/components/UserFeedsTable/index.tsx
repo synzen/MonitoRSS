@@ -184,15 +184,6 @@ export const UserFeedsTable: React.FC = () => {
     [setStatusFilters],
   );
 
-  if (status === "error") {
-    return (
-      <Alert status="error">
-        <AlertIcon />
-        {error?.message}
-      </Alert>
-    );
-  }
-
   const isInitiallyLoading = status === "loading" && !data;
 
   const isFilteredEmpty = !isInitiallyLoading && flatData.length === 0 && hasActiveFilters;
@@ -224,6 +215,15 @@ export const UserFeedsTable: React.FC = () => {
     onStatusSelect([]);
     searchInputRef.current?.focus();
   }, [onSearchClear, onStatusSelect]);
+
+  if (status === "error") {
+    return (
+      <Alert status="error">
+        <AlertIcon />
+        {error?.message}
+      </Alert>
+    );
+  }
 
   return (
     <Stack spacing={4}>
