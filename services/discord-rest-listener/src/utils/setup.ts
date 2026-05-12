@@ -26,6 +26,7 @@ async function setup () {
     entities: [DeliveryRecord, GeneralStat, Feed, Profile],
     clientUrl: config.databaseURI,
     ensureIndexes: true,
+    allowGlobalContext: true,
   })
   log.info('Connected to Mongo')
   const u = new URL(config.databaseURI)
