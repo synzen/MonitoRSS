@@ -12,5 +12,5 @@
     "declaration": false,
     "noImplicitAny": false
   },
-  "include": ["index.ts", "discover.ts"]
+  "include": ["index.ts", "discover.ts", "backfill-search-terms.ts"]
 }

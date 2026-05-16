@@ -77,6 +77,8 @@ const EXCLUDED_TERMS = [
   "reddit",
   "nitter",
   "rss",
+  "feed",
+  "feeds",
 ];
 
 const CATEGORIES = [
@@ -553,9 +555,7 @@ async function step4_validateFeeds(
           rawXml: xml,
         });
       } catch (err) {
-        console.log(
-          `  FAIL (${(err as Error).message}): ${candidate.url}`,
-        );
+        console.log(`  FAIL (${(err as Error).message}): ${candidate.url}`);
       }
     })().then(() => {
       executing.splice(executing.indexOf(promise), 1);
@@ -581,9 +581,9 @@ function step5_classifyFeeds(feeds: ValidatedFeed[]): ClassifiedFeed[] {
 
   const BATCH_SIZE = 30;
   const categoryIds = CATEGORIES.map((c) => c.id);
-  const categoryDefs = CATEGORIES.map(
-    (c) => `${c.id}: ${c.description}`,
-  ).join("\n");
+  const categoryDefs = CATEGORIES.map((c) => `${c.id}: ${c.description}`).join(
+    "\n",
+  );
   const classified: ClassifiedFeed[] = [];
 
   for (let i = 0; i < feeds.length; i += BATCH_SIZE) {
@@ -697,7 +697,9 @@ async function step6_writeCandidates(
     .find({}, { projection: { url: 1, _id: 0 } })
     .toArray();
   const existingUrlSet = new Set(
-    existingUrls.map((f) => (f.url as string).toLowerCase().replace(/\/+$/, "")),
+    existingUrls.map((f) =>
+      (f.url as string).toLowerCase().replace(/\/+$/, ""),
+    ),
   );
 
   const newFeeds = feeds.filter((f) => {
@@ -765,9 +767,7 @@ async function step6_writeCandidates(
       if ((err as { code?: number }).code === 11000) {
         console.log(`  Skipped duplicate: ${feed.url}`);
       } else {
-        console.error(
-          `  Error writing ${feed.url}: ${(err as Error).message}`,
-        );
+        console.error(`  Error writing ${feed.url}: ${(err as Error).message}`);
       }
     }
   }
@@ -896,10 +896,7 @@ async function discoveryMode(client: MongoClient): Promise<void> {
 // Review Mode
 // ---------------------------------------------------------------------------
 
-function askQuestion(
-  rl: readline.Interface,
-  prompt: string,
-): Promise<string> {
+function askQuestion(rl: readline.Interface, prompt: string): Promise<string> {
   return new Promise((resolve) => rl.question(prompt, resolve));
 }
 
@@ -937,9 +934,7 @@ async function reviewMode(client: MongoClient): Promise<void> {
       console.log(`  Category:    ${c.category}`);
       console.log(`  Domain:      ${c.domain}`);
       console.log(`  Description: ${c.description}`);
-      console.log(
-        `  Terms:       ${(c.searchTerms as string[]).join(", ")}`,
-      );
+      console.log(`  Terms:       ${(c.searchTerms as string[]).join(", ")}`);
       console.log();
 
       const answer = await askQuestion(
@@ -949,6 +944,7 @@ async function reviewMode(client: MongoClient): Promise<void> {
       const choice = answer.trim().toLowerCase();
 
       if (choice === "a" || choice === "approve") {
+        const candidateTerms = (c.searchTerms as string[] | undefined) || [];
         await curatedCollection.updateOne(
           { url: c.url },
           {
@@ -960,6 +956,9 @@ async function reviewMode(client: MongoClient): Promise<void> {
               description: c.description,
               disabled: false,
             },
+            ...(candidateTerms.length > 0
+              ? { $addToSet: { searchTerms: { $each: candidateTerms } } }
+              : {}),
             $setOnInsert: { createdAt: new Date() },
           },
           { upsert: true },
@@ -1072,7 +1071,9 @@ async function main(): Promise<void> {
       const url = getArgValue("--url");
       const term = getArgValue("--term");
       if (!url || !term) {
-        throw new Error("--add requires --url <feed-url> and --term <search-term>");
+        throw new Error(
+          "--add requires --url <feed-url> and --term <search-term>",
+        );
       }
       await addMode(client, url, term);
     } else if (isReview) {
