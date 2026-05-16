@@ -70,7 +70,7 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
   useEffect(
     () => {
       const atLeastOneRequiredValueExists = EMBED_REQUIRES_ONE_OF.some((key) =>
-        getNestedField(embed, key)
+        getNestedField(embed, key),
       );
 
       if (!atLeastOneRequiredValueExists) {
@@ -92,13 +92,13 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
         });
       }
     },
-    EMBED_REQUIRES_ONE_OF.map((key) => getNestedField(embed, key))
+    EMBED_REQUIRES_ONE_OF.map((key) => getNestedField(embed, key)),
   );
 
   const getEmbedError = (fieldName: string) => {
     const error: FieldError | undefined = getNestedField(
       (errors.embeds as any)?.[index],
-      fieldName
+      fieldName,
     );
 
     return error ? error.message : undefined;
@@ -169,7 +169,7 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                               onChange={(c) => {
                                 const hexColorAsNumberString = parseInt(
                                   c.hex.replace("#", ""),
-                                  16
+                                  16,
                                 ).toString();
 
                                 field.onChange(hexColorAsNumberString);
@@ -484,7 +484,7 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                                       {
                                         shouldDirty: true,
                                         shouldTouch: true,
-                                      }
+                                      },
                                     )
                                   }
                                 />
@@ -509,7 +509,7 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                                       {
                                         shouldDirty: true,
                                         shouldTouch: true,
-                                      }
+                                      },
                                     )
                                   }
                                 />
@@ -525,7 +525,7 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                                       {
                                         shouldDirty: true,
                                         shouldTouch: true,
-                                      }
+                                      },
                                     )
                                   }
                                 />
@@ -620,7 +620,7 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                           <br />
                           <FormHelperText margin="0">
                             {t(
-                              "features.feedConnections.components.embedForm.timestampNoneHelperText"
+                              "features.feedConnections.components.embedForm.timestampNoneHelperText",
                             )}
                           </FormHelperText>
                         </Radio>
@@ -629,7 +629,7 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                           <br />
                           <FormHelperText margin="0">
                             {t(
-                              "features.feedConnections.components.embedForm.timestampArticleHelperText"
+                              "features.feedConnections.components.embedForm.timestampArticleHelperText",
                             )}
                           </FormHelperText>
                         </Radio>
@@ -638,7 +638,7 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                           <br />
                           <FormHelperText margin="0">
                             {t(
-                              "features.feedConnections.components.embedForm.timestampNowHelperText"
+                              "features.feedConnections.components.embedForm.timestampNowHelperText",
                             )}
                           </FormHelperText>
                         </Radio>

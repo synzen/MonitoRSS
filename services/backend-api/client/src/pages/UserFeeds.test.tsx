@@ -86,6 +86,7 @@ const {
           .join(", ");
       },
       isLoading: false,
+      isFetching: false,
       error: null,
       refetch: vi.fn(),
     };

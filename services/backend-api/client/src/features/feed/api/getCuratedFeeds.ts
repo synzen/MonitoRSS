@@ -24,8 +24,24 @@ const GetCuratedFeedsOutputSchema = object({
 
 export type GetCuratedFeedsOutput = InferType<typeof GetCuratedFeedsOutputSchema>;
 
-export const getCuratedFeeds = async (): Promise<GetCuratedFeedsOutput> => {
-  const res = await fetchRest("/api/v1/curated-feeds", {
+export interface GetCuratedFeedsInput {
+  q?: string;
+  category?: string;
+  limit?: number;
+}
+
+export const getCuratedFeeds = async (
+  input: GetCuratedFeedsInput = {},
+): Promise<GetCuratedFeedsOutput> => {
+  const params = new URLSearchParams();
+  if (input.q) params.set("q", input.q);
+  if (input.category) params.set("category", input.category);
+  if (input.limit != null) params.set("limit", String(input.limit));
+
+  const queryString = params.toString();
+  const url = queryString ? `/api/v1/curated-feeds?${queryString}` : "/api/v1/curated-feeds";
+
+  const res = await fetchRest(url, {
     validateSchema: GetCuratedFeedsOutputSchema,
   });
 

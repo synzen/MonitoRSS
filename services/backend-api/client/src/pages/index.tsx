@@ -14,31 +14,31 @@ import { MultiSelectUserFeedProvider } from "../contexts/MultiSelectUserFeedCont
 import { lazyWithRetries } from "../utils/lazyImportWithRetry";
 
 const MessageBuilder = lazyWithRetries(() =>
-  import("./MessageBuilder").then(({ MessageBuilder: c }) => ({ default: c }))
+  import("./MessageBuilder").then(({ MessageBuilder: c }) => ({ default: c })),
 );
 
 const UserFeeds = lazyWithRetries(() =>
-  import("./UserFeeds").then(({ UserFeeds: c }) => ({ default: c }))
+  import("./UserFeeds").then(({ UserFeeds: c }) => ({ default: c })),
 );
 
 const UserFeed = lazyWithRetries(() =>
-  import("./UserFeed").then(({ UserFeed: c }) => ({ default: c }))
+  import("./UserFeed").then(({ UserFeed: c }) => ({ default: c })),
 );
 
 const ConnectionDiscordChannelSettings = lazyWithRetries(() =>
   import("./ConnectionDiscordChannelSettings").then(({ ConnectionDiscordChannelSettings: c }) => ({
     default: c,
-  }))
+  })),
 );
 
 const AddUserFeeds = lazyWithRetries(() => import("./AddUserFeeds"));
 
 const UserSettings = lazyWithRetries(() =>
-  import("./UserSettings").then(({ UserSettings: c }) => ({ default: c }))
+  import("./UserSettings").then(({ UserSettings: c }) => ({ default: c })),
 );
 
 const Checkout = lazyWithRetries(() =>
-  import("./Checkout").then(({ Checkout: c }) => ({ default: c }))
+  import("./Checkout").then(({ Checkout: c }) => ({ default: c })),
 );
 
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);

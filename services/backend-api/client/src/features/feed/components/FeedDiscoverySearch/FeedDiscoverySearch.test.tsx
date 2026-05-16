@@ -90,6 +90,7 @@ vi.mock("../../hooks", () => ({
       getHighlightFeeds: () => [],
       getCategoryPreviewText: () => "",
       isLoading: false,
+      isFetching: false,
       error: null,
       refetch: vi.fn(),
     };
@@ -443,6 +444,7 @@ describe("FeedDiscoverySearch", () => {
             getHighlightFeeds: () => [],
             getCategoryPreviewText: () => "",
             isLoading: false as const,
+            isFetching: false as const,
             error: null,
             refetch: vi.fn(),
           };
@@ -476,6 +478,7 @@ describe("FeedDiscoverySearch", () => {
             getHighlightFeeds: () => [],
             getCategoryPreviewText: () => "",
             isLoading: false as const,
+            isFetching: false as const,
             error: null,
             refetch: vi.fn(),
           };
@@ -486,6 +489,7 @@ describe("FeedDiscoverySearch", () => {
           getHighlightFeeds: () => [],
           getCategoryPreviewText: () => "",
           isLoading: false as const,
+            isFetching: false as const,
           error: null,
           refetch: vi.fn(),
         };

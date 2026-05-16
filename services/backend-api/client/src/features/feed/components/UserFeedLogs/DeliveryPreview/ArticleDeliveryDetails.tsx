@@ -77,10 +77,10 @@ export const getExplanationText = (
   refreshRateSeconds: number,
   nextRetryAtIso?: string | null,
   nextRetryReason?: "REFRESH_RATE" | "HOST_CACHE" | "FAILED_RETRY_BACKOFF" | null,
-  cacheDurationMs?: number | null
+  cacheDurationMs?: number | null,
 ): string => {
   const refreshRateText = `Your feed checks for new content every ${formatRefreshRateSeconds(
-    refreshRateSeconds
+    refreshRateSeconds,
   )}.`;
   const nextCheckText = getNextCheckText(nextRetryAtIso);
 
@@ -208,7 +208,7 @@ export const ArticleDeliveryDetails = ({
       effectiveRefreshRateSeconds,
       nextRetryAtIso,
       nextRetryReason,
-      cacheDurationMs
+      cacheDurationMs,
     );
   };
 

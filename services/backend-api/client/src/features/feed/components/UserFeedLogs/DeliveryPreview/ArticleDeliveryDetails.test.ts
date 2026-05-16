@@ -17,7 +17,7 @@ describe("getExplanationText", () => {
         600,
         futureIso(),
         "HOST_CACHE",
-        3_600_000
+        3_600_000,
       );
 
       expect(text).toContain("Your feed checks for new content every 10 minutes.");
@@ -31,7 +31,7 @@ describe("getExplanationText", () => {
         600,
         futureIso(),
         "REFRESH_RATE",
-        null
+        null,
       );
 
       expect(text).toContain("Your feed checks for new content every 10 minutes.");
@@ -45,7 +45,7 @@ describe("getExplanationText", () => {
         600,
         futureIso(),
         "HOST_CACHE",
-        null
+        null,
       );
 
       expect(text).not.toContain("feed host limits how often new responses");
@@ -58,7 +58,7 @@ describe("getExplanationText", () => {
         600,
         null,
         "REFRESH_RATE",
-        null
+        null,
       );
 
       expect(text).toContain("Your feed checks for new content every 10 minutes.");
@@ -73,7 +73,7 @@ describe("getExplanationText", () => {
         600,
         futureIso(),
         "HOST_CACHE",
-        3_600_000
+        3_600_000,
       );
 
       expect(text).toContain("This article was seen before");
@@ -88,7 +88,7 @@ describe("getExplanationText", () => {
         600,
         futureIso(),
         "HOST_CACHE",
-        3_600_000
+        3_600_000,
       );
 
       expect(text).toContain("MonitoRSS has already seen this article");

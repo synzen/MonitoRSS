@@ -104,7 +104,7 @@ export const BrandingProvider = ({ children, disabledReason, isOpen }: BrandingP
       hasBrandingValues,
       getBranding,
       clearBranding,
-    ]
+    ],
   );
 
   return <BrandingContext.Provider value={value}>{children}</BrandingContext.Provider>;

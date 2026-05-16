@@ -14,6 +14,12 @@ export interface ICuratedFeed {
 
 export interface ICuratedFeedRepository {
   getAll(): Promise<ICuratedFeed[]>;
+  findActivePopular(limit: number): Promise<ICuratedFeed[]>;
+  findActiveByCategory(
+    category: string,
+    limit: number,
+  ): Promise<ICuratedFeed[]>;
+  searchActive(query: string, limit: number): Promise<ICuratedFeed[]>;
   replaceAll(
     feeds: Omit<ICuratedFeed, "id">[],
     session?: ClientSession,

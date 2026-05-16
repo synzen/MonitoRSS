@@ -84,6 +84,7 @@ vi.mock("../../hooks", () => ({
         })),
       getCategoryPreviewText: () => "",
       isLoading: false,
+      isFetching: false,
       error: null,
       refetch: vi.fn(),
     };

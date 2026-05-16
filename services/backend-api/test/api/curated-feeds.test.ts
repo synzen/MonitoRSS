@@ -55,7 +55,7 @@ describe("GET /api/v1/curated-feeds", { concurrency: false }, () => {
     });
   });
 
-  describe("Seeded data", { concurrency: true }, () => {
+  describe("Default mode (no query params)", { concurrency: true }, () => {
     let ctx: AppTestContext;
 
     before(async () => {
@@ -69,19 +69,27 @@ describe("GET /api/v1/curated-feeds", { concurrency: false }, () => {
 
       await ctx.container.curatedFeedRepository.replaceAll([
         {
-          url: "https://example.com/gaming-feed",
-          title: "Gaming News",
+          url: "https://example.com/gaming-popular",
+          title: "Gaming News Popular",
           category: "gaming",
           domain: "example.com",
-          description: "Latest gaming news and reviews",
+          description: "Popular gaming feed",
           popular: true,
         },
         {
-          url: "https://example.com/tech-feed",
-          title: "Tech Daily",
+          url: "https://example.com/tech-popular",
+          title: "Tech Daily Popular",
           category: "tech",
           domain: "example.com",
-          description: "Technology news and updates",
+          description: "Popular tech feed",
+          popular: true,
+        },
+        {
+          url: "https://example.com/gaming-unpopular",
+          title: "Gaming Niche",
+          category: "gaming",
+          domain: "example.com",
+          description: "Not popular",
         },
       ]);
     });
@@ -90,7 +98,8 @@ describe("GET /api/v1/curated-feeds", { concurrency: false }, () => {
       await ctx.teardown();
     });
 
-    it("returns seeded categories and feeds", async () => {
+    it("returns only popular feeds and full category list", async () => {
+      clearCuratedFeedsCache();
       const user = await ctx.asUser(generateSnowflake());
       const response = await user.fetch("/api/v1/curated-feeds");
 
@@ -111,57 +120,181 @@ describe("GET /api/v1/curated-feeds", { concurrency: false }, () => {
 
       assert.strictEqual(body.result.categories.length, 2);
       assert.strictEqual(body.result.feeds.length, 2);
+      assert.ok(body.result.feeds.every((f) => f.popular === true));
+    });
+  });
 
-      const gaming = body.result.categories.find((c) => c.id === "gaming");
-      assert.ok(gaming);
-      assert.strictEqual(gaming.label, "Gaming");
+  describe("Search mode (?q)", { concurrency: true }, () => {
+    let ctx: AppTestContext;
 
-      const tech = body.result.categories.find((c) => c.id === "tech");
-      assert.ok(tech);
-      assert.strictEqual(tech.label, "Tech & Security");
+    before(async () => {
+      clearCuratedFeedsCache();
+      ctx = await createAppTestContext();
+
+      await ctx.container.curatedFeedRepository.replaceAll([
+        {
+          url: "https://example.com/hacker-feed",
+          title: "The Hacker News",
+          category: "tech",
+          domain: "thehackernews.com",
+          description: "Cybersecurity news",
+          popular: true,
+        },
+        {
+          url: "https://example.com/other",
+          title: "Cooking Daily",
+          category: "food",
+          domain: "cookingdaily.com",
+          description: "Recipes for everyone",
+        },
+      ]);
     });
 
-    it("returns correct feed shape with all required fields", async () => {
+    after(async () => {
+      await ctx.teardown();
+    });
+
+    it("returns 400 when q is shorter than 3 characters", async () => {
       const user = await ctx.asUser(generateSnowflake());
-      const response = await user.fetch("/api/v1/curated-feeds");
+      const response = await user.fetch("/api/v1/curated-feeds?q=hi");
+      assert.strictEqual(response.status, 400);
+    });
+
+    it("returns feeds matching the query across title/domain/description", async () => {
+      const user = await ctx.asUser(generateSnowflake());
+      const response = await user.fetch("/api/v1/curated-feeds?q=hacker");
 
       assert.strictEqual(response.status, 200);
       const body = (await response.json()) as {
-        result: {
-          categories: Array<{ id: string; label: string }>;
-          feeds: Array<{
-            url: string;
-            title: string;
-            category: string;
-            domain: string;
-            description: string;
-            popular?: boolean;
-          }>;
-        };
+        result: { feeds: Array<{ title: string }> };
       };
 
-      const gamingFeed = body.result.feeds.find(
-        (f) => f.url === "https://example.com/gaming-feed",
-      );
-      assert.ok(gamingFeed);
-      assert.strictEqual(gamingFeed.title, "Gaming News");
-      assert.strictEqual(gamingFeed.category, "gaming");
-      assert.strictEqual(gamingFeed.domain, "example.com");
-      assert.strictEqual(
-        gamingFeed.description,
-        "Latest gaming news and reviews",
-      );
-      assert.strictEqual(gamingFeed.popular, true);
+      assert.strictEqual(body.result.feeds.length, 1);
+      assert.strictEqual(body.result.feeds[0]?.title, "The Hacker News");
+    });
 
-      const techFeed = body.result.feeds.find(
-        (f) => f.url === "https://example.com/tech-feed",
+    it("matches case-insensitively", async () => {
+      const user = await ctx.asUser(generateSnowflake());
+      const response = await user.fetch("/api/v1/curated-feeds?q=HACKER");
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { feeds: Array<{ title: string }> };
+      };
+      assert.strictEqual(body.result.feeds.length, 1);
+    });
+  });
+
+  describe("Category mode (?category)", { concurrency: true }, () => {
+    let ctx: AppTestContext;
+
+    before(async () => {
+      clearCuratedFeedsCache();
+      ctx = await createAppTestContext();
+
+      await ctx.container.curatedFeedRepository.replaceAll([
+        {
+          url: "https://example.com/gaming-a",
+          title: "Gaming A",
+          category: "gaming",
+          domain: "example.com",
+          description: "g a",
+        },
+        {
+          url: "https://example.com/gaming-b",
+          title: "Gaming B",
+          category: "gaming",
+          domain: "example.com",
+          description: "g b",
+        },
+        {
+          url: "https://example.com/tech-a",
+          title: "Tech A",
+          category: "tech",
+          domain: "example.com",
+          description: "t a",
+        },
+      ]);
+    });
+
+    after(async () => {
+      await ctx.teardown();
+    });
+
+    it("returns only feeds in the requested category", async () => {
+      const user = await ctx.asUser(generateSnowflake());
+      const response = await user.fetch(
+        "/api/v1/curated-feeds?category=gaming",
       );
-      assert.ok(techFeed);
-      assert.strictEqual(techFeed.title, "Tech Daily");
-      assert.strictEqual(techFeed.category, "tech");
-      assert.strictEqual(techFeed.domain, "example.com");
-      assert.strictEqual(techFeed.description, "Technology news and updates");
-      assert.strictEqual(techFeed.popular, undefined);
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { feeds: Array<{ category: string }> };
+      };
+
+      assert.strictEqual(body.result.feeds.length, 2);
+      assert.ok(body.result.feeds.every((f) => f.category === "gaming"));
+    });
+  });
+
+  describe("Conflicting query params", { concurrency: true }, () => {
+    let ctx: AppTestContext;
+
+    before(async () => {
+      clearCuratedFeedsCache();
+      ctx = await createAppTestContext();
+    });
+
+    after(async () => {
+      await ctx.teardown();
+    });
+
+    it("returns 400 when both q and category are provided", async () => {
+      const user = await ctx.asUser(generateSnowflake());
+      const response = await user.fetch(
+        "/api/v1/curated-feeds?q=hello&category=tech",
+      );
+      assert.strictEqual(response.status, 400);
+    });
+  });
+
+  describe("Result cap", { concurrency: true }, () => {
+    let ctx: AppTestContext;
+
+    before(async () => {
+      clearCuratedFeedsCache();
+      ctx = await createAppTestContext();
+
+      const feeds = Array.from({ length: 40 }, (_, i) => ({
+        url: `https://example.com/feed-${i}`,
+        title: `Feed ${i}`,
+        category: "tech",
+        domain: "example.com",
+        description: "A tech feed",
+        popular: true,
+      }));
+
+      await ctx.container.curatedFeedRepository.replaceAll(feeds);
+    });
+
+    after(async () => {
+      await ctx.teardown();
+    });
+
+    it("caps default response at 25 feeds even when more are popular", async () => {
+      clearCuratedFeedsCache();
+      const user = await ctx.asUser(generateSnowflake());
+      const response = await user.fetch("/api/v1/curated-feeds");
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { feeds: unknown[] };
+      };
+      assert.strictEqual(body.result.feeds.length, 25);
+    });
+
+    it("returns 400 when limit exceeds 25", async () => {
+      const user = await ctx.asUser(generateSnowflake());
+      const response = await user.fetch("/api/v1/curated-feeds?limit=50");
+      assert.strictEqual(response.status, 400);
     });
   });
 
@@ -179,6 +312,7 @@ describe("GET /api/v1/curated-feeds", { concurrency: false }, () => {
           category: "tech",
           domain: "example.com",
           description: "An active feed",
+          popular: true,
         },
         {
           url: "https://example.com/disabled-feed",
@@ -186,6 +320,7 @@ describe("GET /api/v1/curated-feeds", { concurrency: false }, () => {
           category: "tech",
           domain: "example.com",
           description: "A disabled feed",
+          popular: true,
           disabled: true,
         },
       ]);
@@ -195,14 +330,14 @@ describe("GET /api/v1/curated-feeds", { concurrency: false }, () => {
       await ctx.teardown();
     });
 
-    it("excludes disabled feeds from results", async () => {
+    it("excludes disabled feeds from default response", async () => {
+      clearCuratedFeedsCache();
       const user = await ctx.asUser(generateSnowflake());
       const response = await user.fetch("/api/v1/curated-feeds");
 
       assert.strictEqual(response.status, 200);
       const body = (await response.json()) as {
         result: {
-          categories: Array<{ id: string; label: string }>;
           feeds: Array<{
             url: string;
             title: string;

@@ -56,10 +56,7 @@ export const DiscordChannelName: React.FC<Props> = ({
 
   const channelFound = channelNamesById.has(channelId);
 
-  const {
-    data: threadsData,
-    status: threadsStatus,
-  } = useDiscordServerActiveThreads({
+  const { data: threadsData, status: threadsStatus } = useDiscordServerActiveThreads({
     serverId: !channelFound && status === "success" ? serverId : undefined,
   });
 
