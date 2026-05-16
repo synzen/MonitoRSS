@@ -173,8 +173,6 @@ export const UrlValidationResult = ({
           onAdd={() => handleAdd(displayTitle)}
           onRemove={onFeedRemoved ? handleRemove : undefined}
           feedSettingsUrl={addedFeedId ? pages.userFeed(addedFeedId) : undefined}
-          previewEnabled
-          previewOpen={hasResolvedUrl}
           fullWidthAction
           redirectedFrom={redirectedFrom}
         />

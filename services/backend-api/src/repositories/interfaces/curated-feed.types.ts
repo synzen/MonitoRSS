@@ -14,6 +14,7 @@ export interface ICuratedFeed {
 
 export interface ICuratedFeedRepository {
   getAll(): Promise<ICuratedFeed[]>;
+  findActiveById(id: string): Promise<ICuratedFeed | null>;
   findActivePopular(limit: number): Promise<ICuratedFeed[]>;
   findActiveByCategory(
     category: string,

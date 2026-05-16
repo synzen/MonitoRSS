@@ -39,7 +39,7 @@ interface FeedDiscoverySearchProps {
   feedActionStates: Record<string, FeedActionState>;
   isAtLimit: boolean;
   onAdd: (feed: CuratedFeed) => void;
-  onRemove?: (feedUrl: string) => void;
+  onRemove?: (feedKey: string) => void;
   searchInputRef?: RefObject<HTMLInputElement>;
   onSearchChange?: (query: string) => void;
   onFeedAdded?: (feedId: string, feedUrl: string) => void;
@@ -342,17 +342,17 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
             {state.visibleResults.map((feed, index) => {
               const cardProps = getFeedCardPropsFromState(
                 state.feedActionStates,
-                feed.url,
+                feed.id,
                 state.isAtLimit,
               );
 
               return (
-                <Box as="li" key={feed.url} data-feed-index={index}>
+                <Box as="li" key={feed.id} data-feed-index={index}>
                   <FeedCard
                     feed={feed}
                     state={cardProps.state}
                     onAdd={() => state.onAdd(feed)}
-                    onRemove={state.onRemove ? () => state.onRemove!(feed.url) : undefined}
+                    onRemove={state.onRemove ? () => state.onRemove!(feed.id) : undefined}
                     errorMessage={cardProps.errorMessage}
                     errorCode={cardProps.errorCode}
                     isCurated

@@ -11,7 +11,7 @@ const mockCategories = [
 
 const mockPopularFeeds = [
   {
-    url: "https://feeds.feedburner.com/ign/games",
+    id: "mock0000000000000000000ign",
     title: "IGN",
     category: "gaming",
     domain: "ign.com",
@@ -19,7 +19,7 @@ const mockPopularFeeds = [
     popular: true,
   },
   {
-    url: "https://store.steampowered.com/feeds/news.xml",
+    id: "mock00000000000000000steam",
     title: "Steam News",
     category: "gaming",
     domain: "store.steampowered.com",
@@ -31,7 +31,7 @@ const mockPopularFeeds = [
 const mockGamingCategoryFeeds = [
   ...mockPopularFeeds,
   {
-    url: "https://www.pcgamer.com/rss/",
+    id: "mock0000000000000000pcgamer",
     title: "PC Gamer",
     category: "gaming",
     domain: "pcgamer.com",
@@ -41,7 +41,7 @@ const mockGamingCategoryFeeds = [
 
 const mockSearchFeeds = [
   {
-    url: "https://feeds.feedburner.com/TheHackersNews",
+    id: "mock0000000000000000hackers",
     title: "The Hacker News",
     category: "tech",
     domain: "thehackernews.com",

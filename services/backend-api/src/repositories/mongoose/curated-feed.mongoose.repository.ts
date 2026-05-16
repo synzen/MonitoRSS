@@ -73,6 +73,19 @@ export class CuratedFeedMongooseRepository
     );
   }
 
+  async findActiveById(id: string): Promise<ICuratedFeed | null> {
+    if (!Types.ObjectId.isValid(id)) {
+      return null;
+    }
+    const doc = await this.model
+      .findOne({ _id: new Types.ObjectId(id), disabled: { $ne: true } })
+      .lean();
+    if (!doc) {
+      return null;
+    }
+    return this.toEntity(doc as CuratedFeedDoc & { _id: Types.ObjectId });
+  }
+
   async findActivePopular(limit: number): Promise<ICuratedFeed[]> {
     const docs = await this.model
       .find({ disabled: { $ne: true }, popular: true })

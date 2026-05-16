@@ -7,7 +7,7 @@ export const CuratedCategorySchema = Type.Object({
 export type CuratedCategory = Static<typeof CuratedCategorySchema>;
 
 export const CuratedFeedSchema = Type.Object({
-  url: Type.String(),
+  id: Type.String(),
   title: Type.String(),
   category: Type.String(),
   domain: Type.String(),
@@ -15,6 +15,13 @@ export const CuratedFeedSchema = Type.Object({
   popular: Type.Optional(Type.Boolean()),
 });
 export type CuratedFeed = Static<typeof CuratedFeedSchema>;
+
+export const PreviewCuratedFeedParamsSchema = Type.Object({
+  id: Type.String({ minLength: 1 }),
+});
+export type PreviewCuratedFeedParams = Static<
+  typeof PreviewCuratedFeedParamsSchema
+>;
 
 export const MAX_CURATED_FEEDS_LIMIT = 25;
 export const MIN_CURATED_FEEDS_SEARCH_LENGTH = 3;

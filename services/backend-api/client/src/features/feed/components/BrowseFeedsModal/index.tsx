@@ -39,7 +39,7 @@ interface BrowseFeedsModalProps {
   feedActionStates: Record<string, FeedActionState>;
   isAtLimit: boolean;
   onAdd: (feed: CuratedFeed) => void;
-  onRemove?: (feedUrl: string) => void;
+  onRemove?: (feedKey: string) => void;
   onFeedAdded?: (feedId: string, feedUrl: string) => void;
   onFeedRemoved?: (feedUrl: string) => void;
 }
@@ -281,17 +281,17 @@ export const BrowseFeedsModal = ({
                             {feeds.map((feed) => {
                               const cardProps = getFeedCardPropsFromState(
                                 feedActionStates,
-                                feed.url,
+                                feed.id,
                                 isAtLimit,
                               );
 
                               return (
-                                <Box as="li" key={feed.url}>
+                                <Box as="li" key={feed.id}>
                                   <FeedCard
                                     feed={feed}
                                     state={cardProps.state}
                                     onAdd={() => onAdd(feed)}
-                                    onRemove={onRemove ? () => onRemove(feed.url) : undefined}
+                                    onRemove={onRemove ? () => onRemove(feed.id) : undefined}
                                     errorMessage={cardProps.errorMessage}
                                     errorCode={cardProps.errorCode}
                                     isCurated
@@ -333,17 +333,17 @@ export const BrowseFeedsModal = ({
                       {visibleFeeds.map((feed, index) => {
                         const cardProps = getFeedCardPropsFromState(
                           feedActionStates,
-                          feed.url,
+                          feed.id,
                           isAtLimit,
                         );
 
                         return (
-                          <Box as="li" key={feed.url} data-category-feed-index={index}>
+                          <Box as="li" key={feed.id} data-category-feed-index={index}>
                             <FeedCard
                               feed={feed}
                               state={cardProps.state}
                               onAdd={() => onAdd(feed)}
-                              onRemove={onRemove ? () => onRemove(feed.url) : undefined}
+                              onRemove={onRemove ? () => onRemove(feed.id) : undefined}
                               errorMessage={cardProps.errorMessage}
                               errorCode={cardProps.errorCode}
                               isCurated

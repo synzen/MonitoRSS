@@ -581,7 +581,7 @@ const handlers = [
 
     await delay(500);
 
-    if (url.includes("bulk")) {
+    if (url && url.includes("bulk")) {
       await delay(1000);
       const shouldReturnError = Math.random() > 1;
 

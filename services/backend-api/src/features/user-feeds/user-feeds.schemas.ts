@@ -13,7 +13,8 @@ import {
 import { AjvKeyword } from "../../infra/ajv-plugins";
 
 export const CreateUserFeedBodySchema = Type.Object({
-  url: Type.String({ minLength: 1 }),
+  url: Type.Optional(Type.String({ minLength: 1 })),
+  curatedFeedId: Type.Optional(Type.String({ minLength: 1 })),
   title: Type.Optional(Type.String()),
   sourceFeedId: Type.Optional(Type.String()),
 });
@@ -31,12 +32,14 @@ export const ValidateUrlBodySchema = Type.Object({
 });
 export type ValidateUrlBody = Static<typeof ValidateUrlBodySchema>;
 
+/** @deprecated Kept for backwards compatibility. New clients should call POST /api/v1/curated-feeds/:id/preview instead. */
 export const PreviewByUrlBodySchema = Type.Object(
   {
     url: Type.String({ minLength: 1 }),
   },
   { additionalProperties: false },
 );
+/** @deprecated Kept for backwards compatibility. */
 export type PreviewByUrlBody = Static<typeof PreviewByUrlBodySchema>;
 
 export const CloneUserFeedBodySchema = Type.Object(

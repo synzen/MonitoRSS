@@ -30,18 +30,18 @@ const {
 
   function makeFeed(
     overrides: Partial<{
-      url: string;
+      id: string;
       title: string;
       category: string;
       domain: string;
       description: string;
-    }> & { url: string },
+    }> & { id: string },
   ) {
     return {
-      title: `Feed ${overrides.url}`,
+      title: `Feed ${overrides.id}`,
       category: "gaming",
       domain: "example.com",
-      description: `Description for ${overrides.url}`,
+      description: `Description for ${overrides.id}`,
       ...overrides,
     };
   }
@@ -49,7 +49,7 @@ const {
   const _allFeeds = _mockCategories.flatMap((cat) =>
     Array.from({ length: 3 }, (_, i) =>
       makeFeed({
-        url: `https://example.com/${cat.id}-${i}`,
+        id: `mock-${cat.id}-${i}`,
         title: `${cat.label} Feed ${i}`,
         category: cat.id,
       }),
@@ -149,7 +149,7 @@ vi.mock("../features/feed", async () => {
         <button
           onClick={() =>
             onAdd({
-              url: "https://example.com/gaming-0",
+              id: "mock-gaming-0",
               title: "Gaming Feed 0",
               category: "gaming",
               domain: "example.com",
@@ -209,7 +209,7 @@ vi.mock("../features/feed", async () => {
           <button
             onClick={() =>
               onAdd({
-                url: "https://example.com/test-feed",
+                id: "mock-test-feed",
                 title: "Test Feed",
                 category: "gaming",
                 domain: "example.com",

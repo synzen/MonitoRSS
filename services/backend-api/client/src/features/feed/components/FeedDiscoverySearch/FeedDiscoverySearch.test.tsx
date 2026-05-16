@@ -14,7 +14,7 @@ const mockCategories = [
 
 const mockFeeds: CuratedFeed[] = [
   {
-    url: "https://feeds.feedburner.com/ign/games",
+    id: "mock-ign",
     title: "IGN",
     category: "gaming",
     domain: "ign.com",
@@ -22,28 +22,28 @@ const mockFeeds: CuratedFeed[] = [
     popular: true,
   },
   {
-    url: "https://www.pcgamer.com/rss/",
+    id: "mock-pcgamer",
     title: "PC Gamer",
     category: "gaming",
     domain: "pcgamer.com",
     description: "PC gaming news",
   },
   {
-    url: "https://store.steampowered.com/feeds/news.xml",
+    id: "mock-steam",
     title: "Steam News",
     category: "gaming",
     domain: "store.steampowered.com",
     description: "Steam platform updates",
   },
   {
-    url: "https://feeds.feedburner.com/TheHackersNews",
+    id: "mock-hackers",
     title: "The Hacker News",
     category: "tech",
     domain: "thehackernews.com",
     description: "Cybersecurity news",
   },
   {
-    url: "https://feeds.feedburner.com/TechCrunch",
+    id: "mock-techcrunch",
     title: "TechCrunch",
     category: "tech",
     domain: "techcrunch.com",
@@ -53,7 +53,7 @@ const mockFeeds: CuratedFeed[] = [
 
 function generateManyFeeds(count: number): CuratedFeed[] {
   return Array.from({ length: count }, (_, i) => ({
-    url: `https://example.com/feed-${i}`,
+    id: `mock-feed-${i}`,
     title: `Test Feed ${i}`,
     category: "gaming",
     domain: "example.com",
@@ -110,8 +110,8 @@ vi.mock("../../hooks/useCreateUserFeedUrlValidation", () => ({
   }),
 }));
 
-vi.mock("../../hooks/useFeedPreviewByUrl", () => ({
-  useFeedPreviewByUrl: () => ({
+vi.mock("../../hooks/useCuratedFeedPreview", () => ({
+  useCuratedFeedPreview: () => ({
     mutateAsync: vi.fn(),
     status: "idle",
     error: null,
@@ -489,7 +489,7 @@ describe("FeedDiscoverySearch", () => {
           getHighlightFeeds: () => [],
           getCategoryPreviewText: () => "",
           isLoading: false as const,
-            isFetching: false as const,
+          isFetching: false as const,
           error: null,
           refetch: vi.fn(),
         };
@@ -574,7 +574,7 @@ describe("FeedDiscoverySearch", () => {
       expect(onAdd).toHaveBeenCalledTimes(1);
       expect(onAdd).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: "https://feeds.feedburner.com/ign/games",
+          id: "mock-ign",
           title: "IGN",
         }),
       );

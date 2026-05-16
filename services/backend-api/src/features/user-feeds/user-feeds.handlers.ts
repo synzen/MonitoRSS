@@ -55,8 +55,31 @@ export async function createUserFeedHandler(
   request: FastifyRequest<{ Body: CreateUserFeedBody }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedsService, supportersService } = request.container;
+  const { userFeedsService, supportersService, curatedFeedRepository } =
+    request.container;
   const { discordUserId, accessToken } = request;
+  const { url, curatedFeedId, title, sourceFeedId } = request.body;
+
+  if (!!url === !!curatedFeedId) {
+    throw new BadRequestError(
+      ApiErrorCode.INVALID_REQUEST,
+      "Provide exactly one of 'url' or 'curatedFeedId'",
+    );
+  }
+
+  let resolvedUrl = url;
+  let resolvedTitle = title;
+
+  if (curatedFeedId) {
+    const curated = await curatedFeedRepository.findActiveById(curatedFeedId);
+
+    if (!curated) {
+      throw new NotFoundError(ApiErrorCode.CURATED_FEED_NOT_FOUND);
+    }
+
+    resolvedUrl = curated.url;
+    resolvedTitle = title ?? curated.title;
+  }
 
   const feed = await userFeedsService.addFeed(
     {
@@ -64,9 +87,9 @@ export async function createUserFeedHandler(
       userAccessToken: accessToken.access_token,
     },
     {
-      url: request.body.url,
-      title: request.body.title,
-      sourceFeedId: request.body.sourceFeedId,
+      url: resolvedUrl!,
+      title: resolvedTitle,
+      sourceFeedId,
     },
   );
 
@@ -172,6 +195,7 @@ export async function validateFeedUrlHandler(
   return reply.status(200).send({ result });
 }
 
+/** @deprecated Kept for backwards compatibility. New clients should call POST /api/v1/curated-feeds/:id/preview instead. */
 export async function previewFeedByUrlHandler(
   request: FastifyRequest<{ Body: PreviewByUrlBody }>,
   reply: FastifyReply,

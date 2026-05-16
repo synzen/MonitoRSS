@@ -2,9 +2,14 @@ import type { FastifyRequest, FastifyReply } from "fastify";
 import type {
   GetCuratedFeedsQuery,
   GetCuratedFeedsResponse,
+  PreviewCuratedFeedParams,
 } from "./curated-feeds.schemas";
 import { MAX_CURATED_FEEDS_LIMIT } from "./curated-feeds.schemas";
-import { BadRequestError, ApiErrorCode } from "../../infra/error-handler";
+import {
+  BadRequestError,
+  NotFoundError,
+  ApiErrorCode,
+} from "../../infra/error-handler";
 import type { ICuratedFeed } from "../../repositories/interfaces/curated-feed.types";
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -21,7 +26,7 @@ function toResponseFeed(
   f: ICuratedFeed,
 ): GetCuratedFeedsResponse["result"]["feeds"][number] {
   const feed: GetCuratedFeedsResponse["result"]["feeds"][number] = {
-    url: f.url,
+    id: f.id,
     title: f.title,
     category: f.category,
     domain: f.domain,
@@ -114,4 +119,26 @@ export async function getCuratedFeedsHandler(
   };
 
   return reply.send(response);
+}
+
+export async function previewCuratedFeedHandler(
+  request: FastifyRequest<{ Params: PreviewCuratedFeedParams }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { curatedFeedRepository, userFeedsService } = request.container;
+  const { discordUserId } = request;
+  const { id } = request.params;
+
+  const curated = await curatedFeedRepository.findActiveById(id);
+
+  if (!curated) {
+    throw new NotFoundError(ApiErrorCode.CURATED_FEED_NOT_FOUND);
+  }
+
+  const result = await userFeedsService.previewFeedByUrl(
+    { discordUserId },
+    { url: curated.url },
+  );
+
+  return reply.status(200).send({ result });
 }

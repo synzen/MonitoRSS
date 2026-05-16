@@ -90,6 +90,7 @@ export async function userFeedsRoutes(app: FastifyInstance): Promise<void> {
     ),
   });
 
+  // @deprecated Kept for backwards compatibility. Prefer POST /api/v1/curated-feeds/:id/preview.
   app.post<{ Body: PreviewByUrlBody }>("/preview-by-url", {
     schema: { body: PreviewByUrlBodySchema },
     handler: previewFeedByUrlHandler,

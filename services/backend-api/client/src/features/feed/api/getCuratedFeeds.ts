@@ -7,7 +7,7 @@ const CuratedCategorySchema = object({
 }).required();
 
 const CuratedFeedSchema = object({
-  url: string().required(),
+  id: string().required(),
   title: string().required(),
   category: string().required(),
   domain: string().required(),

@@ -53,6 +53,18 @@ describe("GET /api/v1/curated-feeds", { concurrency: false }, () => {
       assert.deepStrictEqual(body.result.categories, []);
       assert.deepStrictEqual(body.result.feeds, []);
     });
+
+    it("never exposes feed urls in the response", async () => {
+      const user = await ctx.asUser(generateSnowflake());
+      const response = await user.fetch("/api/v1/curated-feeds");
+      const body = (await response.json()) as {
+        result: { feeds: Array<Record<string, unknown>> };
+      };
+      for (const feed of body.result.feeds) {
+        assert.strictEqual(feed.url, undefined);
+        assert.ok(typeof feed.id === "string");
+      }
+    });
   });
 
   describe("Default mode (no query params)", { concurrency: true }, () => {
@@ -108,7 +120,7 @@ describe("GET /api/v1/curated-feeds", { concurrency: false }, () => {
         result: {
           categories: Array<{ id: string; label: string }>;
           feeds: Array<{
-            url: string;
+            id: string;
             title: string;
             category: string;
             domain: string;
@@ -121,6 +133,7 @@ describe("GET /api/v1/curated-feeds", { concurrency: false }, () => {
       assert.strictEqual(body.result.categories.length, 2);
       assert.strictEqual(body.result.feeds.length, 2);
       assert.ok(body.result.feeds.every((f) => f.popular === true));
+      assert.ok(body.result.feeds.every((f) => typeof f.id === "string"));
     });
   });
 
@@ -339,7 +352,7 @@ describe("GET /api/v1/curated-feeds", { concurrency: false }, () => {
       const body = (await response.json()) as {
         result: {
           feeds: Array<{
-            url: string;
+            id: string;
             title: string;
           }>;
         };
@@ -348,7 +361,8 @@ describe("GET /api/v1/curated-feeds", { concurrency: false }, () => {
       assert.strictEqual(body.result.feeds.length, 1);
       const feed = body.result.feeds[0];
       assert.ok(feed);
-      assert.strictEqual(feed.url, "https://example.com/active-feed");
+      assert.strictEqual(feed.title, "Active Feed");
+      assert.ok(typeof feed.id === "string");
     });
   });
 });
