@@ -7,6 +7,7 @@ export interface ICuratedFeed {
   category: string;
   domain: string;
   description: string;
+  searchTerms?: string[];
   popular?: boolean;
   disabled?: boolean;
   createdAt?: Date;

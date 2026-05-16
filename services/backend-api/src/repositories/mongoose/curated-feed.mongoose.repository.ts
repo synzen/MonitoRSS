@@ -19,6 +19,7 @@ const CuratedFeedSchema = new Schema(
     category: { type: String, required: true },
     domain: { type: String, required: true },
     description: { type: String, required: true },
+    searchTerms: { type: [String], default: undefined },
     popular: { type: Boolean },
     disabled: { type: Boolean },
     createdAt: { type: Date },
@@ -29,6 +30,7 @@ const CuratedFeedSchema = new Schema(
 CuratedFeedSchema.index({ url: 1 }, { unique: true });
 CuratedFeedSchema.index({ category: 1, disabled: 1 });
 CuratedFeedSchema.index({ popular: 1, disabled: 1 });
+CuratedFeedSchema.index({ searchTerms: 1, disabled: 1 });
 
 type CuratedFeedDoc = InferSchemaType<typeof CuratedFeedSchema>;
 
@@ -60,6 +62,7 @@ export class CuratedFeedMongooseRepository
       category: doc.category,
       domain: doc.domain,
       description: doc.description,
+      searchTerms: doc.searchTerms?.length ? doc.searchTerms : undefined,
       popular: doc.popular || undefined,
       disabled: doc.disabled || undefined,
       createdAt: doc.createdAt || undefined,
@@ -118,6 +121,7 @@ export class CuratedFeedMongooseRepository
           { title: pattern },
           { domain: pattern },
           { description: pattern },
+          { searchTerms: pattern },
         ],
       })
       .limit(limit)

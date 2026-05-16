@@ -160,6 +160,14 @@ describe("GET /api/v1/curated-feeds", { concurrency: false }, () => {
           domain: "cookingdaily.com",
           description: "Recipes for everyone",
         },
+        {
+          url: "https://example.com/ffxiv-lodestone",
+          title: "Final Fantasy XIV Lodestone",
+          category: "specific-games",
+          domain: "finalfantasyxiv.com",
+          description: "Official news and updates",
+          searchTerms: ["ffxiv", "ff14"],
+        },
       ]);
     });
 
@@ -194,6 +202,22 @@ describe("GET /api/v1/curated-feeds", { concurrency: false }, () => {
         result: { feeds: Array<{ title: string }> };
       };
       assert.strictEqual(body.result.feeds.length, 1);
+    });
+
+    it("matches feeds whose searchTerms contain the query even when title/description do not", async () => {
+      const user = await ctx.asUser(generateSnowflake());
+      const response = await user.fetch("/api/v1/curated-feeds?q=ffxiv");
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { feeds: Array<{ title: string }> };
+      };
+
+      assert.strictEqual(body.result.feeds.length, 1);
+      assert.strictEqual(
+        body.result.feeds[0]?.title,
+        "Final Fantasy XIV Lodestone",
+      );
     });
   });
 
