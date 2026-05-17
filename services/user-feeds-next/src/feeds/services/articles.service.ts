@@ -4,7 +4,6 @@
  */
 
 import { fetchFeed, FeedResponseRequestStatus } from "../../feed-fetcher";
-import { FeedRequestBadStatusCodeException } from "../../feed-fetcher/exceptions";
 import {
   injectExternalContent,
   InvalidFeedException,
@@ -172,33 +171,13 @@ export async function findOrFetchFeedArticles(
     };
   }
 
-  let result;
-
-  try {
-    result = await fetchFeed(url, {
-      executeFetch: options.executeFetch,
-      executeFetchIfNotInCache: true,
-      executeFetchIfStale: options.executeFetchIfStale,
-      lookupDetails: options.requestLookupDetails,
-      serviceHost: options.feedRequestsServiceHost,
-    });
-  } catch (err) {
-    if (
-      err instanceof FeedRequestBadStatusCodeException &&
-      options.findRssFromHtml
-    ) {
-      const redditRssUrl = tryGetRedditRssUrl(url);
-
-      if (redditRssUrl) {
-        return findOrFetchFeedArticles(redditRssUrl, {
-          ...options,
-          findRssFromHtml: false,
-        });
-      }
-    }
-
-    throw err;
-  }
+  const result = await fetchFeed(url, {
+    executeFetch: options.executeFetch,
+    executeFetchIfNotInCache: true,
+    executeFetchIfStale: options.executeFetchIfStale,
+    lookupDetails: options.requestLookupDetails,
+    serviceHost: options.feedRequestsServiceHost,
+  });
 
   if (result.requestStatus !== FeedResponseRequestStatus.Success) {
     // Feed not ready, return empty
@@ -237,16 +216,6 @@ export async function findOrFetchFeedArticles(
           : rssUrl;
 
         return findOrFetchFeedArticles(absoluteRssUrl, {
-          ...options,
-          findRssFromHtml: false,
-        });
-      }
-
-      // Reddit-specific URL transformation (safety net — usually handled preemptively)
-      const redditRssUrl = tryGetRedditRssUrl(url);
-
-      if (redditRssUrl) {
-        return findOrFetchFeedArticles(redditRssUrl, {
           ...options,
           findRssFromHtml: false,
         });
