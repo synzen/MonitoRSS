@@ -3,6 +3,7 @@
   "main": "dist/index.js",
   "private": true,
   "dependencies": {
+    "@monitorss/contracts": "^0.1.0",
     "@monitorss/logger": "^1.1.2",
     "@synzen/discord-rest": "0.7.0-beta.16",
     "@types/feedparser": "^2.2.8",

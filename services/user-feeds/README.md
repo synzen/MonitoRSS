@@ -1,73 +1,32 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# services/user-feeds (RETIRED — stub directory)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+This directory is a **stub** retained for backwards-compatibility with self-hosters whose `docker-compose` overlays may still reference the legacy `user-feeds-service` / `user-feeds-postgres-migration` services defined in `docker-compose.base.yml`.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## What was here
 
-## Description
+The original `services/user-feeds/` was a NestJS + MikroORM article-delivery pipeline service. It was replaced in production by `services/user-feeds-next/` (plain Fastify + raw `pg`).
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Why this stub exists
 
-## Installation
+- `docker-compose.base.yml` still defines `user-feeds-service` and `user-feeds-postgres-migration` so that no self-hoster's existing overlay breaks on upgrade.
+- The production compose (`docker-compose.yml`) and dev compose (`docker-compose.dev.yml`) both use `extends: user-feeds-next-service` for the `user-feeds-service` name — so the *aliases* in those overlays point at the new service, even though the legacy definitions in base remain.
+- Removing the full source tree (per ADR-005) without this stub would break `docker-compose -f docker-compose.base.yml build` calls.
 
-```bash
-$ npm install
+The stub `Dockerfile` produces a tiny Alpine-based image that does nothing. It exists so the build does not fail; it is not intended to run.
+
+## What to do if you're maintaining a self-hosted instance
+
+Use `user-feeds-next-service` going forward. The existing `user-feeds-service` alias in the standard compose overlays already resolves to it. If you've cloned the legacy `user-feeds-service` definition into your own overlay (rare), update your overlay to:
+
+```yaml
+user-feeds-service:
+  extends:
+    file: ./docker-compose.base.yml
+    service: user-feeds-next-service
+  # ...your overrides
 ```
 
-## Running the app
+## See also
 
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Test
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
+- `docs/adr/005-user-feeds-and-backend-api-next-deletion.md`
+- `services/user-feeds-next/` — the canonical implementation

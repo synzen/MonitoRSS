@@ -1,31 +1,26 @@
-FROM node:22 AS build
+# Stub Dockerfile.
+#
+# The original `services/user-feeds/` service (NestJS + MikroORM) was retired in
+# production and replaced by `services/user-feeds-next/`. See:
+#   - docs/adr/005-user-feeds-and-backend-api-next-deletion.md
+#   - services/user-feeds/README.md
+#
+# This stub exists only because `docker-compose.base.yml` still defines the
+# legacy `user-feeds-service` and `user-feeds-postgres-migration` services for
+# backwards-compatibility with self-hosters whose compose overlays may still
+# reference them. The production and dev compose overlays do NOT build from this
+# stub; they `extends:` `user-feeds-next-service` instead.
+#
+# If you find yourself actually invoking a build of the legacy service:
+#   - Stop. Use user-feeds-next-service instead.
+#   - Migrate your compose overlay to `extends: user-feeds-next-service`.
+
+FROM alpine:3.20 AS build
 
 WORKDIR /usr/src/app
 
-COPY package*.json ./
+RUN echo "This is the legacy user-feeds stub image. It does nothing." > /usr/src/app/README
 
-RUN npm install
-
-COPY . ./
-
-RUN npm run build
-
-# There seems to be a bug where nest build completes before it actually finishes building
-RUN sleep 1
-
-FROM build AS build-prod
-
-WORKDIR /usr/src/app
-COPY --from=build /usr/src/app ./
-
-RUN npm prune --production
-
-FROM node:22-alpine AS prod
-
-WORKDIR /usr/src/app
-
-COPY --from=build-prod /usr/src/app/package*.json ./
-COPY --from=build-prod /usr/src/app/node_modules node_modules
-COPY --from=build-prod /usr/src/app/dist dist
-
-CMD [ "node", "./dist/main" ]
+# Provide a no-op command so `docker compose run user-feeds-service` exits cleanly
+# instead of crashing in a confusing way.
+CMD ["sh", "-c", "echo 'Legacy user-feeds service is retired. Use user-feeds-next-service.'; exit 0"]
