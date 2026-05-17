@@ -79,41 +79,59 @@ function extractRssFromHtml(html: string): string | null {
 
 /**
  * Try to get RSS URL for Reddit pages by appending .rss to the path.
+ * Preserves the input host so that oauth.reddit.com URLs (used for OAuth-authenticated
+ * fetches) keep hitting the OAuth endpoint instead of getting rewritten to www.reddit.com.
  */
-function tryGetRedditRssUrl(url: string): string | null {
+export function tryGetRedditRssUrl(url: string): string | null {
+  let parsed: URL;
+
   try {
-    const parsed = new URL(url);
-    const hostname = parsed.hostname.toLowerCase();
-
-    if (
-      hostname === "reddit.com" ||
-      hostname === "www.reddit.com" ||
-      hostname === "old.reddit.com"
-    ) {
-      if (parsed.pathname.endsWith(".rss")) {
-        return null;
-      }
-
-      // Remove trailing slashes so we can append .rss directly
-      // e.g., "/r/subreddit/top/" -> "/r/subreddit/top" -> "/r/subreddit/top.rss"
-      const cleanPath = parsed.pathname.replace(/\/+$/, "");
-
-      return `https://www.reddit.com${cleanPath}.rss`;
-    }
-
-    return null;
+    parsed = new URL(url);
   } catch {
     return null;
   }
+
+  const hostname = parsed.hostname.toLowerCase();
+
+  if (
+    hostname !== "reddit.com" &&
+    hostname !== "www.reddit.com" &&
+    hostname !== "old.reddit.com" &&
+    hostname !== "oauth.reddit.com"
+  ) {
+    return null;
+  }
+
+  if (parsed.pathname.endsWith(".rss")) {
+    return null;
+  }
+
+  const cleaned = parsed.pathname.replace(/\/+$/, "");
+
+  return `${parsed.protocol}//${parsed.host}${cleaned}.rss${parsed.search}`;
 }
 
 /**
  * Fetch and parse articles from a feed URL.
  */
 export async function findOrFetchFeedArticles(
-  url: string,
-  options: FindOrFetchFeedArticlesOptions,
+  inputUrl: string,
+  inputOptions: FindOrFetchFeedArticlesOptions,
 ): Promise<FetchFeedArticlesResult> {
+  const url = tryGetRedditRssUrl(inputUrl) ?? inputUrl;
+
+  const lookupDetailsUrl = inputOptions.requestLookupDetails?.url;
+  const options =
+    lookupDetailsUrl && inputOptions.requestLookupDetails
+      ? {
+          ...inputOptions,
+          requestLookupDetails: {
+            ...inputOptions.requestLookupDetails,
+            url: tryGetRedditRssUrl(lookupDetailsUrl) ?? lookupDetailsUrl,
+          },
+        }
+      : inputOptions;
+
   const { parsedArticlesCacheStore } = options;
 
   const cacheKeyOptions: CacheKeyOptions = {
@@ -224,7 +242,7 @@ export async function findOrFetchFeedArticles(
         });
       }
 
-      // Try Reddit-specific URL transformation
+      // Reddit-specific URL transformation (safety net — usually handled preemptively)
       const redditRssUrl = tryGetRedditRssUrl(url);
 
       if (redditRssUrl) {

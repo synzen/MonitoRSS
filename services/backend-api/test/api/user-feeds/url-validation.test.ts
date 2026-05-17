@@ -304,6 +304,37 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
     assert.strictEqual(body.code, "FEED_NOT_FOUND");
   });
 
+  it("returns resolvedToUrl with .rss appended for bare reddit subreddit URLs", async () => {
+    const user = await ctx.asUser(generateSnowflake());
+    const inputUrl = "https://www.reddit.com/r/russian_memes_only";
+    const resolvedUrl = "https://www.reddit.com/r/russian_memes_only.rss";
+
+    feedApiMockServer.registerRoute("POST", "/v1/user-feeds/get-articles", {
+      status: 200,
+      body: {
+        result: {
+          requestStatus: "SUCCESS",
+          articles: [],
+          totalArticles: 0,
+          selectedProperties: [],
+          url: resolvedUrl,
+          feedTitle: "russian_memes_only",
+        },
+      },
+    });
+
+    const response = await user.fetch("/api/v1/user-feeds/url-validation", {
+      method: "POST",
+      body: JSON.stringify({ url: inputUrl }),
+    });
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as {
+      result: { resolvedToUrl: string | null; feedTitle?: string };
+    };
+    assert.strictEqual(body.result.resolvedToUrl, resolvedUrl);
+  });
+
   it("returns 400 with BANNED_FEED when feed is banned", async () => {
     const user = await ctx.asUser(generateSnowflake());
     const feedUrl = "https://example.com/banned-validation-feed.xml";
