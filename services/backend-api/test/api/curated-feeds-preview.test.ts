@@ -125,6 +125,33 @@ describe("POST /api/v1/curated-feeds/:id/preview", () => {
     assert.strictEqual(body.result.articles[1]!.title, "Second Article");
   });
 
+  it("accepts the request shape the frontend sends (Content-Type json, empty object body)", async () => {
+    const user = await ctx.asUser(generateSnowflake());
+    const feedUrl = "https://example.com/curated-json-body.xml";
+    const id = await seedCuratedFeed(feedUrl);
+
+    feedApiMockServer.registerRoute("POST", "/v1/user-feeds/get-articles", {
+      status: 200,
+      body: {
+        result: {
+          requestStatus: "SUCCESS",
+          articles: [],
+          totalArticles: 0,
+          selectedProperties: [],
+          url: feedUrl,
+        },
+      },
+    });
+
+    const response = await user.fetch(`/api/v1/curated-feeds/${id}/preview`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+
+    assert.strictEqual(response.status, 200);
+  });
+
   it("returns 200 with empty articles when mock returns TIMED_OUT", async () => {
     const user = await ctx.asUser(generateSnowflake());
     const id = await seedCuratedFeed("https://example.com/slow.xml");

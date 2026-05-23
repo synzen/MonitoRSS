@@ -33,6 +33,7 @@ export const getCuratedFeedPreview = async (
       validateSchema: GetCuratedFeedPreviewOutputSchema,
       requestOptions: {
         method: "POST",
+        body: JSON.stringify({}),
       },
     },
   );
