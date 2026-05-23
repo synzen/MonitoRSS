@@ -1,12 +1,17 @@
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert";
+import { randomUUID } from "crypto";
 import type { JobResponse } from "@synzen/discord-rest";
 import type { JobResponseError } from "@synzen/discord-rest/dist/RESTConsumer";
 import {
   handleArticleDeliveryResult,
   type QueuePublisher,
 } from "./feed-event-handler";
-import type { DiscordDeliveryResult } from "../delivery";
+import {
+  type DiscordDeliveryResult,
+  ArticleDeliveryStatus,
+  ArticleDeliveryContentType,
+} from "../delivery";
 import { MessageBrokerQueue } from "../shared/constants";
 import {
   setupTestDatabase,
@@ -210,6 +215,133 @@ describe("feed-event-handler", () => {
       );
 
       assert.strictEqual(messages.length, 0);
+    });
+  });
+
+  describe("handleArticleDeliveryResult — Postgres status transitions", () => {
+    async function insertPendingRecord(deliveryId: string, feedId = "feed-pg", mediumId = "medium-pg") {
+      await stores.deliveryRecordStore.startContext(async () => {
+        await stores.deliveryRecordStore.store(feedId, [
+          {
+            id: deliveryId,
+            status: ArticleDeliveryStatus.PendingDelivery,
+            mediumId,
+            contentType: ArticleDeliveryContentType.DiscordArticleMessage,
+            articleIdHash: `hash-${deliveryId}`,
+            article: null,
+          },
+        ]);
+      });
+    }
+
+    async function queryRecordStatus(deliveryId: string): Promise<string | null> {
+      const { rows } = await stores.pool.query(
+        `SELECT status FROM delivery_record_partitioned WHERE id = $1`,
+        [deliveryId]
+      );
+      return rows[0]?.status ?? null;
+    }
+
+    it("updates delivery record from pending-delivery to sent on 200 result", async () => {
+      const deliveryId = randomUUID();
+      await insertPendingRecord(deliveryId);
+
+      const { publisher } = createMockPublisher();
+      await handleArticleDeliveryResult(
+        {
+          job: createJobData({ feedId: "feed-pg", mediumId: "medium-pg", id: deliveryId }),
+          result: createSuccessResult(200, { id: "msg-123" }),
+        },
+        publisher,
+        stores.deliveryRecordStore
+      );
+
+      assert.strictEqual(await queryRecordStatus(deliveryId), "sent");
+    });
+
+    it("updates delivery record to rejected on 400 result", async () => {
+      const deliveryId = randomUUID();
+      await insertPendingRecord(deliveryId);
+
+      const { publisher } = createMockPublisher();
+      await handleArticleDeliveryResult(
+        {
+          job: createJobData({ feedId: "feed-pg", mediumId: "medium-pg", id: deliveryId }),
+          result: createSuccessResult(400, { code: 50035, message: "Bad embed" }),
+        },
+        publisher,
+        stores.deliveryRecordStore
+      );
+
+      assert.strictEqual(await queryRecordStatus(deliveryId), "rejected");
+    });
+
+    it("updates delivery record to failed on 5xx result", async () => {
+      const deliveryId = randomUUID();
+      await insertPendingRecord(deliveryId);
+
+      const { publisher } = createMockPublisher();
+      await handleArticleDeliveryResult(
+        {
+          job: createJobData({ feedId: "feed-pg", mediumId: "medium-pg", id: deliveryId }),
+          result: createSuccessResult(500, { message: "Internal Server Error" }),
+        },
+        publisher,
+        stores.deliveryRecordStore
+      );
+
+      assert.strictEqual(await queryRecordStatus(deliveryId), "failed");
+    });
+
+    it("updates delivery record to failed on error state result", async () => {
+      const deliveryId = randomUUID();
+      await insertPendingRecord(deliveryId);
+
+      const { publisher } = createMockPublisher();
+      await handleArticleDeliveryResult(
+        {
+          job: createJobData({ feedId: "feed-pg", mediumId: "medium-pg", id: deliveryId }),
+          result: createErrorResult("Connection timeout"),
+        },
+        publisher,
+        stores.deliveryRecordStore
+      );
+
+      assert.strictEqual(await queryRecordStatus(deliveryId), "failed");
+    });
+
+    it("skips update when meta.id is missing — record stays pending-delivery", async () => {
+      const deliveryId = randomUUID();
+      await insertPendingRecord(deliveryId);
+
+      const { publisher } = createMockPublisher();
+      await handleArticleDeliveryResult(
+        {
+          job: createJobData({ feedId: "feed-pg", mediumId: "medium-pg" }),
+          result: createSuccessResult(200, { id: "msg-123" }),
+        },
+        publisher,
+        stores.deliveryRecordStore
+      );
+
+      assert.strictEqual(await queryRecordStatus(deliveryId), "pending-delivery");
+    });
+
+    it("handles ID mismatch gracefully — record stays pending-delivery", async () => {
+      const deliveryId = randomUUID();
+      await insertPendingRecord(deliveryId);
+
+      const { publisher } = createMockPublisher();
+      await handleArticleDeliveryResult(
+        {
+          job: createJobData({ feedId: "feed-pg", mediumId: "medium-pg", id: "nonexistent-id" }),
+          result: createSuccessResult(200, { id: "msg-123" }),
+        },
+        publisher,
+        stores.deliveryRecordStore
+      );
+
+      assert.strictEqual(await queryRecordStatus(deliveryId), "pending-delivery");
     });
   });
 });

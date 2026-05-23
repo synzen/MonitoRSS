@@ -1,7 +1,7 @@
 import { describe, it, before, after } from "node:test"
 import assert from "node:assert/strict"
 import { ObjectId } from "@mikro-orm/mongodb"
-import { createTestContext, type TestContext } from "../helpers/test-context"
+import { type TestContext, createTestContext } from "../helpers/test-context"
 import DeliveryRecord from "../../src/entities/DeliveryRecord"
 import GeneralStat from "../../src/entities/GeneralStat"
 import Feed from "../../src/entities/Feed"
@@ -61,12 +61,13 @@ describe("consumer integration", () => {
     assert.ok(stat, "ARTICLES_SENT stat exists")
     assert.ok((stat!.data as number) >= 1)
 
-    const [resultMessage] = (await ctx.awaitDeliveryResults(1, 5000)) as Array<{
+    const resultMessage = (await ctx.awaitDeliveryResultForJob(jobId, 5000)) as {
       job: { id: string }
       result: { status: number }
-    }>
-    assert.equal(resultMessage.job.id, jobId)
-    assert.equal(resultMessage.result.status, 200)
+    } | null
+    assert.ok(resultMessage, "delivery result was never published")
+    assert.equal(resultMessage!.job.id, jobId)
+    assert.equal(resultMessage!.result.status, 200)
   })
 
   it("[CONTRACT] emitDeliveryResult=false: writes DeliveryRecord but publishes nothing to result queue", async () => {
@@ -340,3 +341,4 @@ async function seedFeed(ctx: TestContext, feedId: string): Promise<void> {
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms))
 }
+

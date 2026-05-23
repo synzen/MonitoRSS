@@ -48,6 +48,11 @@ export interface TestContext {
   publishJob: (options?: PublishJobOptions) => Promise<{ jobId: string; route: string }>
   /** Reads up to `count` messages from the FeedArticleDeliveryResult queue with a timeout. */
   awaitDeliveryResults: (count: number, timeoutMs?: number) => Promise<unknown[]>
+  /**
+   * Poll the delivery result queue for a message matching `jobId`.
+   * Non-matching messages are nack'd back to the queue so parallel tests don't lose them.
+   */
+  awaitDeliveryResultForJob: (jobId: string, timeoutMs?: number) => Promise<unknown | null>
   /** Wait for the predicate to become true. Useful for waiting on DB writes triggered by async event handlers. */
   waitFor: typeof waitFor
   cleanup: () => Promise<void>
@@ -59,6 +64,7 @@ export interface CreateTestContextOptions {
    * Set false if a test wants to publish to an arbitrary external host (it won't actually call out).
    */
   routeToFakeDiscord?: boolean
+  configOverrides?: Partial<import("../../src/schemas/ConfigSchema").ConfigType>
 }
 
 export async function createTestContext(
@@ -87,7 +93,7 @@ export async function createTestContext(
       exit: (code) => {
         exitCalls.push({ code })
       },
-      config: env.config,
+      config: { ...env.config, ...options.configOverrides },
     })
 
     producer = new RESTProducer(env.config.rabbitmqUri, {
@@ -153,6 +159,31 @@ export async function createTestContext(
         count,
         timeoutMs
       )
+    },
+
+    async awaitDeliveryResultForJob(jobId, timeoutMs = 5000) {
+      const deadline = Date.now() + timeoutMs
+      while (Date.now() < deadline) {
+        const msg = await readyRabbit.channel.get(AmqpChannel.FeedArticleDeliveryResult, { noAck: false })
+        if (msg === false) {
+          await new Promise((r) => setTimeout(r, 200))
+          continue
+        }
+        let parsed: { job?: { id?: string }; [k: string]: unknown }
+        try {
+          parsed = JSON.parse(msg.content.toString())
+        } catch {
+          readyRabbit.channel.ack(msg)
+          continue
+        }
+        if (parsed.job?.id === jobId) {
+          readyRabbit.channel.ack(msg)
+          return parsed
+        }
+        readyRabbit.channel.nack(msg, false, true)
+        await new Promise((r) => setTimeout(r, 50))
+      }
+      return null
     },
 
     waitFor,

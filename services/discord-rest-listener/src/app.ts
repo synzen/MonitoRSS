@@ -83,14 +83,14 @@ export interface ConsumerAppHandle {
 export async function createConsumerApp(deps: ConsumerAppDeps): Promise<ConsumerAppHandle> {
   const { exit, config } = deps
   const initializedData = await setup(config)
-  const { orm, amqpChannelWrapper } = initializedData
+  const { orm, amqpChannelWrapper, pollInterval } = initializedData
   const producer = new RESTProducer(config.rabbitmqUri, {
     clientId: config.discordClientId
   })
   const consumer = new RESTConsumer(config.rabbitmqUri, {
     authHeader: `Bot ${config.token}`,
     clientId: config.discordClientId,
-    rejectJobsAfterDurationMs: 1000 * 60 * 20,
+    rejectJobsAfterDurationMs: config.rejectJobsAfterDurationMs ?? 1000 * 60 * 20,
     checkIsDuplicate: async (deliveryId) => {
       const count = await orm.em.count(DeliveryRecord, {
         deliveryId,
@@ -223,6 +223,25 @@ export async function createConsumerApp(deps: ConsumerAppDeps): Promise<Consumer
     })
     const jobDuration = dayjs().utc().valueOf() - job.startTimestamp
 
+    try {
+      if (job.meta?.emitDeliveryResult) {
+        await amqpChannelWrapper.sendToQueue(AmqpChannel.FeedArticleDeliveryResult, Buffer.from(JSON.stringify({
+          job,
+          result: {
+            state: 'error',
+            message: error.message,
+          },
+        })), {
+          persistent: true,
+        })
+      }
+    } catch (err) {
+      log.debug(`Failed to send feed delivery error result to queue`, err)
+      logDatadog('error', `Failed to send feed delivery error result to queue`, {
+        stack: (err as Error).stack
+      })
+    }
+
     if (!job.meta?.articleID) {
       return
     }
@@ -273,6 +292,7 @@ export async function createConsumerApp(deps: ConsumerAppDeps): Promise<Consumer
     consumer,
     producer,
     close: async () => {
+      clearInterval(pollInterval)
       await consumer.close()
       await producer.close()
       await orm.close(true)

@@ -6,6 +6,7 @@ export const ConfigSchema = z.object({
   maxRequestsPerSecond: z.number(),
   rabbitmqUri: z.string(),
   discordClientId: z.string(),
+  rejectJobsAfterDurationMs: z.number().optional(),
   datadog: z.object({
     apiKey: z.string().optional(),
     host: z.string().optional(),

@@ -5,6 +5,7 @@ export interface FakeDiscordResponse {
   status: number
   headers?: Record<string, string>
   body?: unknown
+  hang?: boolean
 }
 
 export type ResponseProvider = (
@@ -76,6 +77,10 @@ export async function startFakeDiscordServer(): Promise<FakeDiscordServer> {
           status: 500,
           body: { error: (err as Error).message },
         }
+      }
+
+      if (response.hang) {
+        return
       }
 
       const headers: Record<string, string> = {
