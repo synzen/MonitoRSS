@@ -629,6 +629,31 @@ describe("article-comparison", () => {
       assert.strictEqual(hasPrior1, true);
       assert.strictEqual(hasPrior2, true);
     });
+
+    it("flushes large batches without exceeding pg parameter limits", async () => {
+      // Regression test: a single INSERT carrying ~6000 rows previously failed
+      // in pg with "bind message has N parameter formats but 0 parameters".
+      const articleCount = 6000;
+      const articles = Array.from({ length: articleCount }, (_, i) =>
+        createArticle(`bulk-${i}`)
+      );
+
+      await stores.articleFieldStore.startContext(async () => {
+        await stores.articleFieldStore.storeArticles(
+          "feed-bulk",
+          articles,
+          []
+        );
+
+        const { affectedRows } =
+          await stores.articleFieldStore.flushPendingInserts();
+        assert.strictEqual(affectedRows, articleCount);
+      });
+
+      const hasPrior =
+        await stores.articleFieldStore.hasPriorArticlesStored("feed-bulk");
+      assert.strictEqual(hasPrior, true);
+    });
   });
 
   describe("diagnostic recording", () => {
