@@ -86,6 +86,7 @@ export function useCuratedFeeds(options?: UseCuratedFeedsOptions): UseCuratedFee
     {
       enabled: callerEnabled && !searchTooShort,
       staleTime: STALE_TIME_MS,
+      keepPreviousData: true,
     },
   );
 
