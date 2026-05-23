@@ -3,11 +3,11 @@ import DeliveryRecord from "../entities/DeliveryRecord"
 import Feed from "../entities/Feed"
 import GeneralStat from "../entities/GeneralStat"
 import Profile from "../entities/Profile"
-import config from "./config"
 import log from "./log"
 import amqp, { Channel } from 'amqp-connection-manager'
 import { AmqpChannel } from "../constants/amqpChannels"
 import { URL } from "url"
+import type { ConfigType } from "../schemas/ConfigSchema"
 
 const pollDb = (orm: MikroORM, dbName: string) => {
   setInterval(() => {
@@ -20,7 +20,7 @@ const pollDb = (orm: MikroORM, dbName: string) => {
   }, 10000)
 }
 
-async function setup () {
+async function setup (config: ConfigType) {
   log.info('Connecting to Mongo')
   const orm = await MikroORM.init({
     entities: [DeliveryRecord, GeneralStat, Feed, Profile],
@@ -32,7 +32,7 @@ async function setup () {
   const u = new URL(config.databaseURI)
   const databaseName = u.pathname.substring(1).split('?')[0]
   pollDb(orm, databaseName)
-  
+
 
   const amqpConnection = amqp.connect([config.rabbitmqUri])
 
