@@ -5,10 +5,7 @@
 
 import type { Article } from "../../articles/parser";
 import { INJECTED_ARTICLE_PLACEHOLDER_PREFIX } from "../../shared/constants";
-import {
-  SelectPropertyType,
-  type CustomPlaceholder,
-} from "../../http/schemas";
+import { SelectPropertyType, type CustomPlaceholder } from "../../http/schemas";
 import { getNumbersInRange } from "./utils";
 
 export interface PaginateArticlesInput {
@@ -29,7 +26,6 @@ export interface PaginateArticlesInput {
 export interface PaginateArticlesOutput {
   articles: Article[];
   totalArticles: number;
-  properties: string[];
 }
 
 /**
@@ -46,16 +42,8 @@ export function paginateArticles({
   customPlaceholders,
   filters,
 }: PaginateArticlesInput): PaginateArticlesOutput {
-  const placeholdersFromCustomPlaceholders =
-    customPlaceholders?.map((c) => c.sourcePlaceholder) || [];
-  const properties = queryForArticleProperties(
-    articles,
-    selectProperties?.concat(placeholdersFromCustomPlaceholders),
-    selectPropertyTypes
-  );
-
   if (articles.length === 0) {
-    return { articles: [], properties, totalArticles: 0 };
+    return { articles: [], totalArticles: 0 };
   }
 
   // Sort by date, latest first
@@ -72,7 +60,7 @@ export function paginateArticles({
       }
 
       return 0;
-    }
+    },
   );
   let totalMatchedArticles = articles.length;
 
@@ -85,7 +73,7 @@ export function paginateArticles({
     matchedArticles = articles.filter(
       (article) =>
         targetIds.has(article.flattened.id) ||
-        targetIds.has(article.flattened.idHash)
+        targetIds.has(article.flattened.idHash),
     );
     totalMatchedArticles = matchedArticles.length;
   } else {
@@ -93,11 +81,19 @@ export function paginateArticles({
     const filtersSearch = filters?.search;
 
     if (filtersSearch && typeof filtersSearch === "string") {
+      const placeholdersFromCustomPlaceholders =
+        customPlaceholders?.map((c) => c.sourcePlaceholder) || [];
+      const searchProperties = queryForArticleProperties(
+        articles,
+        selectProperties?.concat(placeholdersFromCustomPlaceholders),
+        selectPropertyTypes,
+      );
+
       matchedArticles = matchedArticles.filter((article) => {
-        return properties.some((property) =>
+        return searchProperties.some((property) =>
           article.flattened[property]
             ?.toLowerCase()
-            .includes(filtersSearch.toLowerCase())
+            .includes(filtersSearch.toLowerCase()),
         );
       });
 
@@ -124,17 +120,16 @@ export function paginateArticles({
   return {
     articles: matchedArticles,
     totalArticles: totalMatchedArticles,
-    properties,
   };
 }
 
 /**
  * Get properties to include in response.
  */
-function queryForArticleProperties(
+export function queryForArticleProperties(
   articles: Article[],
   requestedProperties?: string[],
-  selectPropertyTypes?: SelectPropertyType[]
+  selectPropertyTypes?: SelectPropertyType[],
 ): string[] {
   let properties: string[] = requestedProperties || [];
 
@@ -147,7 +142,7 @@ function queryForArticleProperties(
       Object.entries(a.flattened).forEach(([key, value]) => {
         const isUrl = value?.startsWith("http");
         const isExternalInjection = key.startsWith(
-          INJECTED_ARTICLE_PLACEHOLDER_PREFIX
+          INJECTED_ARTICLE_PLACEHOLDER_PREFIX,
         );
 
         if (
@@ -169,7 +164,7 @@ function queryForArticleProperties(
     });
   } else if (properties.includes("*")) {
     properties = Array.from(
-      new Set(articles.flatMap((article) => Object.keys(article.flattened)))
+      new Set(articles.flatMap((article) => Object.keys(article.flattened))),
     );
   }
 
