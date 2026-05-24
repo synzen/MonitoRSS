@@ -18,9 +18,21 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
     const buttonSchema = baseSchema.shape({
       label: yup
         .string()
-        .required("Expected non-empty Button label")
-        .max(80, "Expected Button label to have at most 80 characters"),
+        .max(80, "Expected Button label to have at most 80 characters")
+        .when("emoji", {
+          is: (emoji: any) => !emoji,
+          then: (schema) => schema.required("Button requires a label or emoji"),
+          otherwise: (schema) => schema.nullable(),
+        }),
       style: yup.string(),
+      emoji: yup
+        .object({
+          id: yup.string().optional(),
+          name: yup.string().required(),
+          animated: yup.boolean().optional(),
+        })
+        .optional()
+        .nullable(),
       href: yup.string().when("style", {
         is: DiscordButtonStyle.Link,
         then: (schema) =>
@@ -89,7 +101,7 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
             .test("max-embed-fields", "Expected fewer than 25 embed fields", (children) => {
               if (!children) return true;
               const fieldCount = children.filter(
-                (child) => child.type === ComponentType.LegacyEmbedField,
+                (child) => child.type === ComponentType.LegacyEmbedField
               ).length;
 
               return fieldCount <= 25;
@@ -205,7 +217,7 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
                   accessory.type === ComponentType.V2Button ||
                   accessory.type === ComponentType.V2Thumbnail
                 );
-              },
+              }
             )
             .test(
               "validate-accessory-fields",
@@ -235,7 +247,7 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
                 }
 
                 return true;
-              },
+              }
             )
             .required("Expected Section to have an accessory component"),
         });

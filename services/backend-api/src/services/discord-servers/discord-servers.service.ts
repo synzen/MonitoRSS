@@ -10,6 +10,7 @@ import {
   type DiscordGuildRole,
   type DiscordGuildMember,
   type DiscordGuildChannel,
+  type DiscordGuildEmoji,
 } from "../../shared/types/discord.types";
 import type { DetailedFeed } from "../feeds/types";
 import { DiscordAPIError } from "../../shared/exceptions/discord-api.error";
@@ -235,6 +236,14 @@ export class DiscordServersService {
         `/guilds/${serverId}/roles`,
       );
     return roles;
+  }
+
+  async getEmojisOfServer(serverId: string): Promise<DiscordGuildEmoji[]> {
+    const emojis: DiscordGuildEmoji[] =
+      await this.deps.discordApiService.executeBotRequest(
+        `/guilds/${serverId}/emojis`,
+      );
+    return emojis;
   }
 
   async searchMembersOfServer(

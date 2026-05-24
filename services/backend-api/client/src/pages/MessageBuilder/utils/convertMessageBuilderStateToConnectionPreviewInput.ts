@@ -54,6 +54,13 @@ const convertV2ButtonToAPI = (button: ButtonComponent) => ({
   label: button.label || undefined,
   url: button.href || undefined,
   disabled: button.disabled || false,
+  emoji: button.emoji
+    ? {
+        id: button.emoji.id || undefined,
+        name: button.emoji.name,
+        animated: button.emoji.animated || undefined,
+      }
+    : undefined,
 });
 
 const convertV2TextDisplayToAPI = (textDisplay: TextDisplayComponent) => ({
@@ -147,7 +154,7 @@ const convertV2ContainerToAPI = (container: ContainerComponent) => ({
 const convertV2RootToPreviewInput = (
   userFeed: UserFeed,
   connection: FeedDiscordChannelConnection,
-  messageComponent: V2MessageComponentRoot,
+  messageComponent: V2MessageComponentRoot
 ): Omit<CreateDiscordChannelConnectionPreviewInput["data"], "article"> => {
   const componentsV2: CreateDiscordChannelConnectionPreviewInput["data"]["componentsV2"] = [];
 
@@ -189,7 +196,7 @@ const convertV2RootToPreviewInput = (
 const convertMessageBuilderStateToConnectionPreviewInput = (
   userFeed: UserFeed,
   connection: FeedDiscordChannelConnection,
-  messageComponent?: MessageComponentRoot,
+  messageComponent?: MessageComponentRoot
 ): Omit<CreateDiscordChannelConnectionPreviewInput["data"], "article"> => {
   if (!messageComponent) {
     return {};
@@ -257,7 +264,7 @@ const convertMessageBuilderStateToConnectionPreviewInput = (
   });
 
   const legacyTextComponent = messageComponent.children.find(
-    (c) => c.type === ComponentType.LegacyText,
+    (c) => c.type === ComponentType.LegacyText
   );
 
   return {

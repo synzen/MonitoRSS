@@ -94,3 +94,13 @@ export interface PartialUserGuild {
   owner: boolean;
   permissions: string;
 }
+
+export interface DiscordGuildEmoji {
+  id: string | null;
+  name: string | null;
+  roles?: string[];
+  require_colons?: boolean;
+  managed?: boolean;
+  animated?: boolean;
+  available?: boolean;
+}

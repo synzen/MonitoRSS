@@ -54,7 +54,7 @@ export default {
     },
     {
       names: ["relaxed"],
-      surrogates: "☺",
+      surrogates: "☺️",
     },
     {
       names: ["yum"],
@@ -174,7 +174,7 @@ export default {
     },
     {
       names: ["frowning2", "white_frowning_face"],
-      surrogates: "☹",
+      surrogates: "☹️",
     },
     {
       names: ["persevere"],
@@ -385,7 +385,7 @@ export default {
     },
     {
       names: ["v"],
-      surrogates: "✌",
+      surrogates: "✌️",
       hasDiversity: !0,
     },
     {
@@ -415,7 +415,7 @@ export default {
     },
     {
       names: ["point_up"],
-      surrogates: "☝",
+      surrogates: "☝️",
       hasDiversity: !0,
     },
     {
@@ -460,7 +460,7 @@ export default {
     },
     {
       names: ["writing_hand"],
-      surrogates: "✍",
+      surrogates: "✍️",
       hasDiversity: !0,
     },
     {
@@ -831,7 +831,7 @@ export default {
     },
     {
       names: ["helmet_with_cross", "helmet_with_white_cross"],
-      surrogates: "⛑",
+      surrogates: "⛑️",
     },
     {
       names: ["mortar_board"],
@@ -1299,7 +1299,7 @@ export default {
     },
     {
       names: ["shamrock"],
-      surrogates: "☘",
+      surrogates: "☘️",
     },
     {
       names: ["four_leaf_clover"],
@@ -1463,11 +1463,11 @@ export default {
     },
     {
       names: ["comet"],
-      surrogates: "☄",
+      surrogates: "☄️",
     },
     {
       names: ["sunny"],
-      surrogates: "☀",
+      surrogates: "☀️",
     },
     {
       names: ["white_sun_small_cloud", "white_sun_with_small_cloud"],
@@ -1487,7 +1487,7 @@ export default {
     },
     {
       names: ["cloud"],
-      surrogates: "☁",
+      surrogates: "☁️",
     },
     {
       names: ["cloud_rain", "cloud_with_rain"],
@@ -1495,7 +1495,7 @@ export default {
     },
     {
       names: ["thunder_cloud_rain", "thunder_cloud_and_rain"],
-      surrogates: "⛈",
+      surrogates: "⛈️",
     },
     {
       names: ["cloud_lightning", "cloud_with_lightning"],
@@ -1515,7 +1515,7 @@ export default {
     },
     {
       names: ["snowflake"],
-      surrogates: "❄",
+      surrogates: "❄️",
     },
     {
       names: ["cloud_snow", "cloud_with_snow"],
@@ -1523,7 +1523,7 @@ export default {
     },
     {
       names: ["snowman2"],
-      surrogates: "☃",
+      surrogates: "☃️",
     },
     {
       names: ["snowman"],
@@ -1547,7 +1547,7 @@ export default {
     },
     {
       names: ["umbrella2"],
-      surrogates: "☂",
+      surrogates: "☂️",
     },
     {
       names: ["umbrella"],
@@ -2032,7 +2032,7 @@ export default {
     },
     {
       names: ["skier"],
-      surrogates: "⛷",
+      surrogates: "⛷️",
       hasDiversity: !0,
     },
     {
@@ -2042,7 +2042,7 @@ export default {
     },
     {
       names: ["ice_skate"],
-      surrogates: "⛸",
+      surrogates: "⛸️",
     },
     {
       names: ["bow_and_arrow", "archery"],
@@ -2074,7 +2074,7 @@ export default {
     },
     {
       names: ["basketball_player", "person_with_ball"],
-      surrogates: "⛹",
+      surrogates: "⛹️",
       hasDiversity: !0,
     },
     {
@@ -2415,7 +2415,7 @@ export default {
     },
     {
       names: ["airplane"],
-      surrogates: "✈",
+      surrogates: "✈️",
     },
     {
       names: ["airplane_departure"],
@@ -2439,7 +2439,7 @@ export default {
     },
     {
       names: ["ferry"],
-      surrogates: "⛴",
+      surrogates: "⛴️",
     },
     {
       names: ["cruise_ship", "passenger_ship"],
@@ -2527,7 +2527,7 @@ export default {
     },
     {
       names: ["mountain"],
-      surrogates: "⛰",
+      surrogates: "⛰️",
     },
     {
       names: ["mountain_snow", "snow_capped_mountain"],
@@ -2723,7 +2723,7 @@ export default {
     },
     {
       names: ["shinto_shrine"],
-      surrogates: "⛩",
+      surrogates: "⛩️",
     },
     {
       names: ["scooter"],
@@ -2757,7 +2757,7 @@ export default {
     },
     {
       names: ["keyboard"],
-      surrogates: "⌨",
+      surrogates: "⌨️",
     },
     {
       names: ["desktop", "desktop_computer"],
@@ -2833,7 +2833,7 @@ export default {
     },
     {
       names: ["telephone"],
-      surrogates: "☎",
+      surrogates: "☎️",
     },
     {
       names: ["pager"],
@@ -2865,11 +2865,11 @@ export default {
     },
     {
       names: ["stopwatch"],
-      surrogates: "⏱",
+      surrogates: "⏱️",
     },
     {
       names: ["timer", "timer_clock"],
-      surrogates: "⏲",
+      surrogates: "⏲️",
     },
     {
       names: ["alarm_clock"],
@@ -2953,7 +2953,7 @@ export default {
     },
     {
       names: ["scales"],
-      surrogates: "⚖",
+      surrogates: "⚖️",
     },
     {
       names: ["wrench"],
@@ -2965,7 +2965,7 @@ export default {
     },
     {
       names: ["hammer_pick", "hammer_and_pick"],
-      surrogates: "⚒",
+      surrogates: "⚒️",
     },
     {
       names: ["tools", "hammer_and_wrench"],
@@ -2973,7 +2973,7 @@ export default {
     },
     {
       names: ["pick"],
-      surrogates: "⛏",
+      surrogates: "⛏️",
     },
     {
       names: ["nut_and_bolt"],
@@ -2981,11 +2981,11 @@ export default {
     },
     {
       names: ["gear"],
-      surrogates: "⚙",
+      surrogates: "⚙️",
     },
     {
       names: ["chains"],
-      surrogates: "⛓",
+      surrogates: "⛓️",
     },
     {
       names: ["gun"],
@@ -3005,7 +3005,7 @@ export default {
     },
     {
       names: ["crossed_swords"],
-      surrogates: "⚔",
+      surrogates: "⚔️",
     },
     {
       names: ["shield"],
@@ -3017,15 +3017,15 @@ export default {
     },
     {
       names: ["skull_crossbones", "skull_and_crossbones"],
-      surrogates: "☠",
+      surrogates: "☠️",
     },
     {
       names: ["coffin"],
-      surrogates: "⚰",
+      surrogates: "⚰️",
     },
     {
       names: ["urn", "funeral_urn"],
-      surrogates: "⚱",
+      surrogates: "⚱️",
     },
     {
       names: ["amphora"],
@@ -3045,7 +3045,7 @@ export default {
     },
     {
       names: ["alembic"],
-      surrogates: "⚗",
+      surrogates: "⚗️",
     },
     {
       names: ["telescope"],
@@ -3130,7 +3130,7 @@ export default {
     },
     {
       names: ["beach_umbrella", "umbrella_on_ground"],
-      surrogates: "⛱",
+      surrogates: "⛱️",
     },
     {
       names: ["moyai"],
@@ -3182,7 +3182,7 @@ export default {
     },
     {
       names: ["envelope"],
-      surrogates: "✉",
+      surrogates: "✉️",
     },
     {
       names: ["envelope_with_arrow"],
@@ -3370,7 +3370,7 @@ export default {
     },
     {
       names: ["scissors"],
-      surrogates: "✂",
+      surrogates: "✂️",
     },
     {
       names: ["triangular_ruler"],
@@ -3426,7 +3426,7 @@ export default {
     },
     {
       names: ["black_nib"],
-      surrogates: "✒",
+      surrogates: "✒️",
     },
     {
       names: ["pencil"],
@@ -3434,7 +3434,7 @@ export default {
     },
     {
       names: ["pencil2"],
-      surrogates: "✏",
+      surrogates: "✏️",
     },
     {
       names: ["crayon", "lower_left_crayon"],
@@ -3468,7 +3468,7 @@ export default {
     },
     {
       names: ["heart"],
-      surrogates: "❤",
+      surrogates: "❤️",
     },
     {
       names: ["yellow_heart"],
@@ -3492,7 +3492,7 @@ export default {
     },
     {
       names: ["heart_exclamation", "heavy_heart_exclamation_mark_ornament"],
-      surrogates: "❣",
+      surrogates: "❣️",
     },
     {
       names: ["two_hearts"],
@@ -3528,15 +3528,15 @@ export default {
     },
     {
       names: ["peace", "peace_symbol"],
-      surrogates: "☮",
+      surrogates: "☮️",
     },
     {
       names: ["cross", "latin_cross"],
-      surrogates: "✝",
+      surrogates: "✝️",
     },
     {
       names: ["star_and_crescent"],
-      surrogates: "☪",
+      surrogates: "☪️",
     },
     {
       names: ["om_symbol"],
@@ -3544,11 +3544,11 @@ export default {
     },
     {
       names: ["wheel_of_dharma"],
-      surrogates: "☸",
+      surrogates: "☸️",
     },
     {
       names: ["star_of_david"],
-      surrogates: "✡",
+      surrogates: "✡️",
     },
     {
       names: ["six_pointed_star"],
@@ -3560,11 +3560,11 @@ export default {
     },
     {
       names: ["yin_yang"],
-      surrogates: "☯",
+      surrogates: "☯️",
     },
     {
       names: ["orthodox_cross"],
-      surrogates: "☦",
+      surrogates: "☦️",
     },
     {
       names: ["place_of_worship", "worship_symbol"],
@@ -3628,7 +3628,7 @@ export default {
     },
     {
       names: ["atom", "atom_symbol"],
-      surrogates: "⚛",
+      surrogates: "⚛️",
     },
     {
       names: ["u7a7a"],
@@ -3640,11 +3640,11 @@ export default {
     },
     {
       names: ["radioactive", "radioactive_sign"],
-      surrogates: "☢",
+      surrogates: "☢️",
     },
     {
       names: ["biohazard", "biohazard_sign"],
-      surrogates: "☣",
+      surrogates: "☣️",
     },
     {
       names: ["mobile_phone_off"],
@@ -3676,7 +3676,7 @@ export default {
     },
     {
       names: ["eight_pointed_black_star"],
-      surrogates: "✴",
+      surrogates: "✴️",
     },
     {
       names: ["vs"],
@@ -3764,7 +3764,7 @@ export default {
     },
     {
       names: ["hotsprings"],
-      surrogates: "♨",
+      surrogates: "♨️",
     },
     {
       names: ["no_pedestrians"],
@@ -3808,11 +3808,11 @@ export default {
     },
     {
       names: ["bangbang"],
-      surrogates: "‼",
+      surrogates: "‼️",
     },
     {
       names: ["interrobang"],
-      surrogates: "⁉",
+      surrogates: "⁉️",
     },
     {
       names: ["low_brightness"],
@@ -3828,7 +3828,7 @@ export default {
     },
     {
       names: ["fleur_de_lis"],
-      surrogates: "⚜",
+      surrogates: "⚜️",
     },
     {
       names: ["part_alternation_mark"],
@@ -3836,7 +3836,7 @@ export default {
     },
     {
       names: ["warning"],
-      surrogates: "⚠",
+      surrogates: "⚠️",
     },
     {
       names: ["children_crossing"],
@@ -3848,7 +3848,7 @@ export default {
     },
     {
       names: ["recycle"],
-      surrogates: "♻",
+      surrogates: "♻️",
     },
     {
       names: ["u6307"],
@@ -3860,11 +3860,11 @@ export default {
     },
     {
       names: ["sparkle"],
-      surrogates: "❇",
+      surrogates: "❇️",
     },
     {
       names: ["eight_spoked_asterisk"],
-      surrogates: "✳",
+      surrogates: "✳️",
     },
     {
       names: ["negative_squared_cross_mark"],
@@ -3892,7 +3892,7 @@ export default {
     },
     {
       names: ["m"],
-      surrogates: "Ⓜ",
+      surrogates: "Ⓜ️",
     },
     {
       names: ["atm"],
@@ -3996,43 +3996,43 @@ export default {
     },
     {
       names: ["zero"],
-      surrogates: "0⃣",
+      surrogates: "0️⃣",
     },
     {
       names: ["one"],
-      surrogates: "1⃣",
+      surrogates: "1️⃣",
     },
     {
       names: ["two"],
-      surrogates: "2⃣",
+      surrogates: "2️⃣",
     },
     {
       names: ["three"],
-      surrogates: "3⃣",
+      surrogates: "3️⃣",
     },
     {
       names: ["four"],
-      surrogates: "4⃣",
+      surrogates: "4️⃣",
     },
     {
       names: ["five"],
-      surrogates: "5⃣",
+      surrogates: "5️⃣",
     },
     {
       names: ["six"],
-      surrogates: "6⃣",
+      surrogates: "6️⃣",
     },
     {
       names: ["seven"],
-      surrogates: "7⃣",
+      surrogates: "7️⃣",
     },
     {
       names: ["eight"],
-      surrogates: "8⃣",
+      surrogates: "8️⃣",
     },
     {
       names: ["nine"],
-      surrogates: "9⃣",
+      surrogates: "9️⃣",
     },
     {
       names: ["keycap_ten"],
@@ -4040,31 +4040,31 @@ export default {
     },
     {
       names: ["arrow_forward"],
-      surrogates: "▶",
+      surrogates: "▶️",
     },
     {
       names: ["pause_button", "double_vertical_bar"],
-      surrogates: "⏸",
+      surrogates: "⏸️",
     },
     {
       names: ["play_pause"],
-      surrogates: "⏯",
+      surrogates: "⏯️",
     },
     {
       names: ["stop_button"],
-      surrogates: "⏹",
+      surrogates: "⏹️",
     },
     {
       names: ["record_button"],
-      surrogates: "⏺",
+      surrogates: "⏺️",
     },
     {
       names: ["track_next", "next_track"],
-      surrogates: "⏭",
+      surrogates: "⏭️",
     },
     {
       names: ["track_previous", "previous_track"],
-      surrogates: "⏮",
+      surrogates: "⏮️",
     },
     {
       names: ["fast_forward"],
@@ -4088,7 +4088,7 @@ export default {
     },
     {
       names: ["arrow_backward"],
-      surrogates: "◀",
+      surrogates: "◀️",
     },
     {
       names: ["arrow_up_small"],
@@ -4108,43 +4108,43 @@ export default {
     },
     {
       names: ["arrow_right"],
-      surrogates: "➡",
+      surrogates: "➡️",
     },
     {
       names: ["arrow_left"],
-      surrogates: "⬅",
+      surrogates: "⬅️",
     },
     {
       names: ["arrow_up"],
-      surrogates: "⬆",
+      surrogates: "⬆️",
     },
     {
       names: ["arrow_down"],
-      surrogates: "⬇",
+      surrogates: "⬇️",
     },
     {
       names: ["arrow_upper_right"],
-      surrogates: "↗",
+      surrogates: "↗️",
     },
     {
       names: ["arrow_lower_right"],
-      surrogates: "↘",
+      surrogates: "↘️",
     },
     {
       names: ["arrow_lower_left"],
-      surrogates: "↙",
+      surrogates: "↙️",
     },
     {
       names: ["arrow_upper_left"],
-      surrogates: "↖",
+      surrogates: "↖️",
     },
     {
       names: ["arrow_up_down"],
-      surrogates: "↕",
+      surrogates: "↕️",
     },
     {
       names: ["left_right_arrow"],
-      surrogates: "↔",
+      surrogates: "↔️",
     },
     {
       names: ["arrows_counterclockwise"],
@@ -4152,31 +4152,31 @@ export default {
     },
     {
       names: ["arrow_right_hook"],
-      surrogates: "↪",
+      surrogates: "↪️",
     },
     {
       names: ["leftwards_arrow_with_hook"],
-      surrogates: "↩",
+      surrogates: "↩️",
     },
     {
       names: ["arrow_heading_up"],
-      surrogates: "⤴",
+      surrogates: "⤴️",
     },
     {
       names: ["arrow_heading_down"],
-      surrogates: "⤵",
+      surrogates: "⤵️",
     },
     {
       names: ["hash"],
-      surrogates: "#⃣",
+      surrogates: "#️⃣",
     },
     {
       names: ["asterisk", "keycap_asterisk"],
-      surrogates: "*⃣",
+      surrogates: "*️⃣",
     },
     {
       names: ["information_source"],
-      surrogates: "ℹ",
+      surrogates: "ℹ️",
     },
     {
       names: ["abc"],
@@ -4212,7 +4212,7 @@ export default {
     },
     {
       names: ["heavy_check_mark"],
-      surrogates: "✔",
+      surrogates: "✔️",
     },
     {
       names: ["arrows_clockwise"],
@@ -4232,7 +4232,7 @@ export default {
     },
     {
       names: ["heavy_multiplication_x"],
-      surrogates: "✖",
+      surrogates: "✖️",
     },
     {
       names: ["heavy_dollar_sign"],
@@ -4244,15 +4244,15 @@ export default {
     },
     {
       names: ["copyright"],
-      surrogates: "©",
+      surrogates: "©️",
     },
     {
       names: ["registered"],
-      surrogates: "®",
+      surrogates: "®️",
     },
     {
       names: ["tm"],
-      surrogates: "™",
+      surrogates: "™️",
     },
     {
       names: ["end"],
@@ -4276,7 +4276,7 @@ export default {
     },
     {
       names: ["ballot_box_with_check"],
-      surrogates: "☑",
+      surrogates: "☑️",
     },
     {
       names: ["radio_button"],
@@ -4320,11 +4320,11 @@ export default {
     },
     {
       names: ["black_small_square"],
-      surrogates: "▪",
+      surrogates: "▪️",
     },
     {
       names: ["white_small_square"],
-      surrogates: "▫",
+      surrogates: "▫️",
     },
     {
       names: ["black_large_square"],
@@ -4340,11 +4340,11 @@ export default {
     },
     {
       names: ["black_medium_square"],
-      surrogates: "◼",
+      surrogates: "◼️",
     },
     {
       names: ["white_medium_square"],
-      surrogates: "◻",
+      surrogates: "◻️",
     },
     {
       names: ["black_medium_small_square"],
@@ -4404,19 +4404,19 @@ export default {
     },
     {
       names: ["spades"],
-      surrogates: "♠",
+      surrogates: "♠️",
     },
     {
       names: ["clubs"],
-      surrogates: "♣",
+      surrogates: "♣️",
     },
     {
       names: ["hearts"],
-      surrogates: "♥",
+      surrogates: "♥️",
     },
     {
       names: ["diamonds"],
-      surrogates: "♦",
+      surrogates: "♦️",
     },
     {
       names: ["flower_playing_cards"],
@@ -4540,7 +4540,7 @@ export default {
     },
     {
       names: ["eject", "eject_symbol"],
-      surrogates: "⏏",
+      surrogates: "⏏️",
     },
     {
       names: ["black_heart"],

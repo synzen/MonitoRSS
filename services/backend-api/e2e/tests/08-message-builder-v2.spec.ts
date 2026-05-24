@@ -721,4 +721,146 @@ test.describe("Message Builder V2", () => {
       modal.getByText("Article sent to Discord successfully!"),
     ).toBeVisible({ timeout: 30000 });
   });
+
+  test("can add emoji to button, preview it, save, and verify persistence", async ({
+    page,
+    testFeedWithConnection,
+  }, testInfo) => {
+    testInfo.setTimeout(120000);
+    const { feed, connection } = testFeedWithConnection;
+
+    await page.goto(
+      `/feeds/${feed.id}/discord-channel-connections/${connection.id}/message-builder`,
+    );
+
+    // Dismiss the welcome dialog
+    const welcomeDialog = page.getByRole("dialog", {
+      name: "Welcome to your Message Builder!",
+    });
+    await expect(welcomeDialog).toBeVisible({ timeout: 10000 });
+    await welcomeDialog
+      .getByRole("button", {
+        name: "Skip the message builder tour and start using the feature",
+      })
+      .click();
+    await expect(welcomeDialog).not.toBeVisible({ timeout: 5000 });
+
+    await expect(
+      page.getByText("Previewing Article", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+
+    const tree = page.getByRole("tree");
+    const previewLoadingBar = page.getByLabel("Updating message preview");
+
+    async function waitForPreview() {
+      await expect(previewLoadingBar).not.toBeVisible({ timeout: 30000 });
+      await expect(page.getByText("Failed to load preview.")).not.toBeVisible();
+    }
+
+    // Switch to Components V2
+    await tree.getByRole("treeitem").first().click();
+    await page.getByRole("radiogroup").getByText("Components V2").click();
+    const switchButton = page.getByRole("button", { name: "Switch Format" });
+    if (await switchButton.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await switchButton.click();
+    }
+    await expect(
+      tree.getByRole("treeitem").first().getByText("Components V2"),
+    ).toBeVisible({ timeout: 10000 });
+
+    async function addComponent(parentText: string, menuItemName: string) {
+      await tree.getByText(parentText, { exact: true }).first().click();
+      await page.getByRole("button", { name: /New Component/i }).click();
+      await page.getByRole("menuitem", { name: menuItemName }).click();
+    }
+
+    // Add Action Row with Button
+    await addComponent("Components V2", "Add Action Row");
+    await addComponent("Action Row", "Add Button");
+
+    // Select the button and configure label + style
+    await tree.getByRole("treeitem", { name: "Button" }).click();
+    await page.getByRole("textbox", { name: "Button Label" }).fill("Read More");
+    await page
+      .getByRole("combobox", { name: "Button Style" })
+      .selectOption("Link");
+    await page.getByRole("textbox", { name: "Link URL" }).fill("{{link}}");
+
+    // Open the emoji picker
+    await page.getByRole("button", { name: "Choose emoji for button" }).click();
+
+    // Verify the emoji picker dialog is visible
+    const emojiPicker = page.getByRole("dialog", { name: "Emoji picker" });
+    await expect(emojiPicker).toBeVisible({ timeout: 5000 });
+
+    // Verify both tabs are visible
+    await expect(
+      emojiPicker.getByRole("tab", { name: "Default" }),
+    ).toBeVisible();
+    await expect(
+      emojiPicker.getByRole("tab", { name: "Server" }),
+    ).toBeVisible();
+
+    // Select the grinning emoji (first in the People category)
+    await emojiPicker.getByRole("option", { name: "grinning" }).click();
+
+    // Picker should close after selection
+    await expect(emojiPicker).not.toBeVisible({ timeout: 3000 });
+
+    // Verify the trigger button now shows the selected emoji
+    await expect(
+      page.getByRole("button", { name: /Change emoji, currently/ }),
+    ).toBeVisible();
+
+    // Verify the remove button is visible
+    await expect(
+      page.getByRole("button", { name: "Remove selected emoji" }),
+    ).toBeVisible();
+
+    // Wait for preview to update with emoji
+    await waitForPreview();
+
+    // Save changes
+    await expect(
+      page.getByRole("button", { name: "Save Changes" }),
+    ).toBeEnabled({ timeout: 10000 });
+    await page.getByRole("button", { name: "Save Changes" }).click();
+    await expect(
+      page.getByText("You are previewing unsaved changes"),
+    ).not.toBeVisible({ timeout: 30000 });
+
+    // Reload to verify persistence
+    await page.reload();
+
+    const welcomeDialog2 = page.getByRole("dialog", {
+      name: "Welcome to your Message Builder!",
+    });
+    if (await welcomeDialog2.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await welcomeDialog2
+        .getByRole("button", {
+          name: "Skip the message builder tour and start using the feature",
+        })
+        .click();
+    }
+
+    await expect(
+      page.getByText("Previewing Article", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+
+    // Select the button in the tree
+    await tree.getByRole("treeitem", { name: "Button" }).click();
+
+    // Verify emoji persisted — the trigger should show "Change emoji" state
+    await expect(
+      page.getByRole("button", { name: /Change emoji, currently/ }),
+    ).toBeVisible({ timeout: 10000 });
+
+    // Test clearing the emoji
+    await page.getByRole("button", { name: "Remove selected emoji" }).click();
+
+    // Verify trigger reverts to "Choose emoji" state
+    await expect(
+      page.getByRole("button", { name: "Choose emoji for button" }),
+    ).toBeVisible({ timeout: 5000 });
+  });
 });

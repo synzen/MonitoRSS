@@ -28,6 +28,11 @@ export interface UpdateDiscordChannelConnectionInput {
         label?: string;
         url?: string | null;
         disabled?: boolean;
+        emoji?: {
+          id?: string | null;
+          name: string;
+          animated?: boolean;
+        } | null;
       }>;
       accessory?: {
         type: string;
@@ -38,6 +43,11 @@ export interface UpdateDiscordChannelConnectionInput {
         media?: {
           url: string;
         };
+        emoji?: {
+          id?: string | null;
+          name: string;
+          animated?: boolean;
+        } | null;
       } | null;
     }> | null;
     webhook?: {
@@ -134,7 +144,7 @@ export type UpdateDiscordChannelConnectionOutput = InferType<
 >;
 
 export const updateDiscordChannelConnection = async (
-  options: UpdateDiscordChannelConnectionInput,
+  options: UpdateDiscordChannelConnectionInput
 ): Promise<UpdateDiscordChannelConnectionOutput> => {
   const res = await fetchRest(
     `/api/v1/user-feeds/${options.feedId}/connections/discord-channels/${options.connectionId}`,
@@ -144,7 +154,7 @@ export const updateDiscordChannelConnection = async (
         method: "PATCH",
         body: JSON.stringify(options.details),
       },
-    },
+    }
   );
 
   return res as UpdateDiscordChannelConnectionOutput;

@@ -32,6 +32,7 @@ import { ConfirmModal } from "../../components/ConfirmModal";
 
 import { useMessageBuilderContext } from "./MessageBuilderContext";
 import { DiscordButtonStyle } from "./constants/DiscordButtonStyle";
+import { EmojiPicker } from "./components/EmojiPicker";
 import MessageBuilderFormState from "./types/MessageBuilderFormState";
 import { LegacyRootProperties } from "./componentProperties/LegacyRootProperties";
 import { LegacyTextProperties } from "./componentProperties/LegacyTextProperties";
@@ -67,7 +68,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   const guildId = connection?.details.channel?.guildId || connection?.details.webhook?.guildId;
   const { target: selectedComponent } = findMessageBuilderComponentById(
     messageComponent,
-    selectedComponentId,
+    selectedComponentId
   );
 
   const renderComponentDescription = (component: Component) => {
@@ -146,7 +147,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["color"],
+        ["color"]
       );
 
       return (
@@ -198,7 +199,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                       onChange={(c) => {
                         const hexColorAsNumberString = parseInt(
                           c.hex.replace("#", ""),
-                          16,
+                          16
                         ).toString();
                         onChange({
                           ...component,
@@ -233,7 +234,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["authorName", "authorUrl", "authorIconUrl"],
+        ["authorName", "authorUrl", "authorIconUrl"]
       );
 
       return (
@@ -278,7 +279,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["title", "titleUrl"],
+        ["title", "titleUrl"]
       );
 
       return (
@@ -313,7 +314,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["description"],
+        ["description"]
       );
 
       return (
@@ -339,7 +340,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["imageUrl"],
+        ["imageUrl"]
       );
 
       return (
@@ -364,7 +365,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["thumbnailUrl"],
+        ["thumbnailUrl"]
       );
 
       return (
@@ -389,7 +390,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["footerText", "footerIconUrl"],
+        ["footerText", "footerIconUrl"]
       );
 
       return (
@@ -423,7 +424,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["fieldName", "fieldValue"],
+        ["fieldName", "fieldValue"]
       );
 
       return (
@@ -474,7 +475,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["timestamp"],
+        ["timestamp"]
       );
 
       return (
@@ -530,7 +531,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["content"],
+        ["content"]
       );
 
       return (
@@ -551,7 +552,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["label", "href", "style"],
+        ["label", "href", "style"]
       );
 
       return (
@@ -564,9 +565,19 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             error={labelError?.message}
             isInvalid={!!labelError}
             as="input"
-            isRequired
+            isRequired={!component.emoji}
             guildId={guildId}
           />
+          <FormControl>
+            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+              Emoji
+            </FormLabel>
+            <EmojiPicker
+              value={component.emoji}
+              onChange={(emoji) => onChange({ ...component, emoji })}
+              guildId={guildId}
+            />
+          </FormControl>
           <FormControl isInvalid={!!styleError} isRequired>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               Button Style
@@ -617,7 +628,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["spacing", "visual"],
+        ["spacing", "visual"]
       );
 
       return (
@@ -662,7 +673,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["mediaUrl", "description"],
+        ["mediaUrl", "description"]
       );
 
       return (
@@ -715,7 +726,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["accentColor"],
+        ["accentColor"]
       );
 
       return (
@@ -828,7 +839,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["mediaUrl", "description"],
+        ["mediaUrl", "description"]
       );
 
       return (
@@ -878,7 +889,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["label", "url"],
+        ["label", "url"]
       );
 
       return (
@@ -919,7 +930,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
     const findParentAndIndex = (
       comp: Component,
-      targetId: string,
+      targetId: string
     ): { parent: Component; index: number; total: number } | null => {
       if (comp.children) {
         for (let i = 0; i < comp.children.length; i += 1) {
@@ -1054,7 +1065,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                     selectedComponent.id,
                     selectedComponent.type === ComponentType.LegacyActionRow
                       ? ComponentType.LegacyButton
-                      : ComponentType.V2Button,
+                      : ComponentType.V2Button
                   )
                 }
               >
