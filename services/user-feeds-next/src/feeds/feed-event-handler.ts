@@ -715,8 +715,16 @@ async function handleFeedV2EventInternal({
     }
   );
 
-  // Store delivery records (flush=false, will be flushed in finally block)
-  await deliveryRecordStore.store(feed.id, deliveryResults, false);
+  // Store non-enqueued delivery records (flush=false, will be flushed in finally block).
+  // PendingDelivery states are already stored+flushed inside enqueueMessages before
+  // publishing to RabbitMQ, to avoid a race where the delivery result arrives before
+  // the INSERT commits.
+  const nonEnqueuedResults = deliveryResults.filter(
+    (r) => r.status !== ArticleDeliveryStatus.PendingDelivery
+  );
+  if (nonEnqueuedResults.length > 0) {
+    await deliveryRecordStore.store(feed.id, nonEnqueuedResults, false);
+  }
 
   // Log delivery results
   const sent = deliveryResults.filter(

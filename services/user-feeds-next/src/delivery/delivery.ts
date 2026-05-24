@@ -371,6 +371,7 @@ export {
 
 export interface EnqueueMessagesOptions {
   discordClient: DiscordRestClient;
+  deliveryRecordStore: DeliveryRecordStore;
   apiUrl: string;
   bodies: DiscordMessageApiPayload[];
   article: Article;
@@ -393,6 +394,7 @@ async function enqueueMessages(
 ): Promise<ArticleDeliveryState[]> {
   const {
     discordClient,
+    deliveryRecordStore,
     apiUrl,
     bodies,
     article,
@@ -405,32 +407,20 @@ async function enqueueMessages(
     parentDeliveryId: existingParentId,
   } = options;
 
-  const deliveryStates: ArticleDeliveryState[] = [];
   const parentDeliveryId = existingParentId || generateDeliveryId();
+
+  // Phase 1: Build delivery states and enqueue payloads (no side effects)
+  const deliveryStates: ArticleDeliveryState[] = [];
+  const enqueuePayloads: Array<{
+    url: string;
+    options: { method: "POST"; body: string };
+    meta: Record<string, unknown>;
+  }> = [];
 
   for (let idx = 0; idx < bodies.length; idx++) {
     const body = bodies[idx];
     const isFirst = idx === 0 && !existingParentId;
     const deliveryId = isFirst ? parentDeliveryId : generateDeliveryId();
-
-    await discordClient.enqueue(
-      apiUrl,
-      {
-        method: "POST",
-        body: JSON.stringify(body),
-      },
-      {
-        id: deliveryId,
-        articleID: article.flattened.id,
-        feedURL: feedUrl,
-        ...(channelId ? { channel: channelId } : {}),
-        ...(webhookId ? { webhookId } : {}),
-        feedId,
-        guildId,
-        mediumId,
-        emitDeliveryResult: true,
-      }
-    );
 
     deliveryStates.push({
       id: deliveryId,
@@ -441,6 +431,30 @@ async function enqueueMessages(
       parent: isFirst ? undefined : parentDeliveryId,
       article,
     });
+
+    enqueuePayloads.push({
+      url: apiUrl,
+      options: { method: "POST", body: JSON.stringify(body) },
+      meta: {
+        id: deliveryId,
+        articleID: article.flattened.id,
+        feedURL: feedUrl,
+        ...(channelId ? { channel: channelId } : {}),
+        ...(webhookId ? { webhookId } : {}),
+        feedId,
+        guildId,
+        mediumId,
+        emitDeliveryResult: true,
+      },
+    });
+  }
+
+  // Phase 2: Store + flush delivery records to Postgres before publishing
+  await deliveryRecordStore.store(feedId, deliveryStates, true);
+
+  // Phase 3: Enqueue messages to RabbitMQ (records already committed)
+  for (const payload of enqueuePayloads) {
+    await discordClient.enqueue(payload.url, payload.options, payload.meta as never);
   }
 
   return deliveryStates;
@@ -549,6 +563,7 @@ function parseThreadCreateResponseToDeliveryStates(
 
 interface DeliverArticleContext {
   discordClient: DiscordRestClient;
+  deliveryRecordStore: DeliveryRecordStore;
   mediumId: string;
   feedId: string;
   feedUrl: string;
@@ -703,6 +718,7 @@ async function deliverToWebhookForum(
 
   const additionalDeliveryStates = await enqueueMessages({
     discordClient: context.discordClient,
+    deliveryRecordStore: context.deliveryRecordStore,
     apiUrl: channelApiUrl,
     bodies: bodies.slice(1),
     article,
@@ -801,6 +817,7 @@ async function deliverToChannelForum(
 
   const additionalDeliveryStates = await enqueueMessages({
     discordClient: context.discordClient,
+    deliveryRecordStore: context.deliveryRecordStore,
     apiUrl: channelApiUrl,
     bodies: bodies.slice(1),
     article,
@@ -986,6 +1003,7 @@ async function deliverToChannel(
 
   const allRecords = await enqueueMessages({
     discordClient: context.discordClient,
+    deliveryRecordStore: context.deliveryRecordStore,
     apiUrl,
     bodies: bodies.slice(currentBodiesIndex),
     article,
@@ -1038,6 +1056,7 @@ async function deliverToWebhook(
 
   const deliveryStates = await enqueueMessages({
     discordClient: context.discordClient,
+    deliveryRecordStore: context.deliveryRecordStore,
     apiUrl,
     bodies,
     article,
@@ -1079,6 +1098,7 @@ async function sendArticleToMedium(
   feedId: string,
   feedUrl: string,
   discordClient: DiscordRestClient,
+  deliveryRecordStore: DeliveryRecordStore,
   filterReferences?: Map<string, string>
 ): Promise<ArticleDeliveryState[]> {
   try {
@@ -1166,6 +1186,7 @@ async function sendArticleToMedium(
 
     const context: DeliverArticleContext = {
       discordClient,
+      deliveryRecordStore,
       mediumId: medium.id,
       feedId,
       feedUrl,
@@ -1386,7 +1407,8 @@ export async function deliverArticles(
         limitState,
         options.feedId,
         options.feedUrl,
-        options.discordClient
+        options.discordClient,
+        options.deliveryRecordStore
       );
       articleStates = articleStates.concat(states);
     }

@@ -360,6 +360,46 @@ describe("App (e2e)", { concurrency: true }, () => {
     }
   });
 
+  it("delivery record exists in Postgres at the moment enqueue fires", async () => {
+    const ctx = createTestContext(stores);
+
+    try {
+      await ctx.seedArticles();
+
+      ctx.setFeedResponse(() => ({
+        body: getTestRssFeed(
+          [{ guid: "insert-before-enqueue", title: "Insert Before Enqueue" }],
+          true
+        ),
+        hash: randomUUID(),
+      }));
+
+      let recordFoundDuringEnqueue = false;
+      ctx.discordClient.setOnEnqueue(async (meta) => {
+        const { rows } = await stores.pool.query(
+          `SELECT status FROM delivery_record_partitioned WHERE id = $1`,
+          [meta.id]
+        );
+        recordFoundDuringEnqueue = !!rows[0];
+      });
+
+      const results = await ctx.handleEvent();
+
+      assert.notStrictEqual(results, null);
+      assert.ok(results!.length > 0);
+      assert.strictEqual(results![0]!.status, ArticleDeliveryStatus.PendingDelivery);
+      assert.strictEqual(
+        recordFoundDuringEnqueue,
+        true,
+        "Delivery record must exist in Postgres at the moment enqueue fires — " +
+          "INSERT must be flushed before publishing to RabbitMQ to prevent the " +
+          "delivery result from arriving before the record exists"
+      );
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
   it("delivery lifecycle: pending record transitions to sent after simulated delivery result", async () => {
     const ctx = createTestContext(stores);
 
