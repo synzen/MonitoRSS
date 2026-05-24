@@ -1,5 +1,5 @@
 import type { Pool } from "pg";
-import type { ResponseHashStore } from "../../feeds/feed-event-handler";
+import type { ResponseHashStore } from "../interfaces/response-hash-store";
 import { logger } from "../../shared/utils";
 
 export function createPostgresResponseHashStore(pool: Pool): ResponseHashStore {

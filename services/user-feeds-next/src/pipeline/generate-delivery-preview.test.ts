@@ -5,7 +5,7 @@ import {
   ArticleDeliveryOutcome,
   DeliveryPreviewStage,
   DeliveryPreviewStageStatus,
-} from "./types";
+} from "../shared/delivery-preview";
 import type {
   DeliveryPreviewDependencies,
   DeliveryPreviewInput,
@@ -624,7 +624,7 @@ describe("generateDeliveryPreview (batch)", () => {
       assert.strictEqual(response.results.length, 1);
       assert.strictEqual(response.results[0]?.articleId, "article-1");
       assert.strictEqual(
-        (response.results[0]?.mediumResults[0] as Record<string, unknown>)
+        (response.results[0]?.mediumResults[0] as unknown as Record<string, unknown>)
           .stages,
         undefined,
       );

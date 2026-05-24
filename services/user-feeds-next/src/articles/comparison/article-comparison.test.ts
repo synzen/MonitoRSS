@@ -20,7 +20,7 @@ after(async () => {
   await teardownTestDatabase();
 });
 import type { Article } from "../parser";
-import { DeliveryPreviewStage, DeliveryPreviewStageStatus, type DeliveryPreviewStageResult } from "../../delivery-preview";
+import { DeliveryPreviewStage, DeliveryPreviewStageStatus, type DeliveryPreviewStageResult } from "../../shared/delivery-preview";
 
 function createArticle(
   id: string,
@@ -659,7 +659,7 @@ describe("article-comparison", () => {
   describe("diagnostic recording", () => {
     it("records FeedState diagnostic on first run", async () => {
       const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
-        await import("../../delivery-preview/delivery-preview-context");
+        await import("../../shared/delivery-preview/delivery-preview-context");
 
       await stores.articleFieldStore.startContext(async () => {
         let diagnostics: DeliveryPreviewStageResult[] = [];
@@ -690,7 +690,7 @@ describe("article-comparison", () => {
 
     it("records IdComparison diagnostic for new articles", async () => {
       const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
-        await import("../../delivery-preview/delivery-preview-context");
+        await import("../../shared/delivery-preview/delivery-preview-context");
 
       await stores.articleFieldStore.startContext(async () => {
         // First run to establish baseline
@@ -731,7 +731,7 @@ describe("article-comparison", () => {
 
     it("records BlockingComparison diagnostic when article is blocked", async () => {
       const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
-        await import("../../delivery-preview/delivery-preview-context");
+        await import("../../shared/delivery-preview/delivery-preview-context");
 
       await stores.articleFieldStore.startContext(async () => {
         // First run
@@ -773,7 +773,7 @@ describe("article-comparison", () => {
 
     it("records PassingComparison diagnostic when article passes", async () => {
       const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
-        await import("../../delivery-preview/delivery-preview-context");
+        await import("../../shared/delivery-preview/delivery-preview-context");
 
       await stores.articleFieldStore.startContext(async () => {
         // First run
@@ -815,7 +815,7 @@ describe("article-comparison", () => {
 
     it("records DateCheck diagnostic when article is filtered by date", async () => {
       const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
-        await import("../../delivery-preview/delivery-preview-context");
+        await import("../../shared/delivery-preview/delivery-preview-context");
 
       await stores.articleFieldStore.startContext(async () => {
         // First run to establish baseline
@@ -863,7 +863,7 @@ describe("article-comparison", () => {
     });
 
     it("does not record diagnostics outside diagnostic context", async () => {
-      const { getAllDeliveryPreviewResults } = await import("../../delivery-preview/delivery-preview-context");
+      const { getAllDeliveryPreviewResults } = await import("../../shared/delivery-preview/delivery-preview-context");
 
       await stores.articleFieldStore.startContext(async () => {
         await getArticlesToDeliver(
@@ -885,7 +885,7 @@ describe("article-comparison", () => {
       const {
         startDeliveryPreviewContext,
         getDeliveryPreviewResultsForArticle,
-      } = await import("../../delivery-preview/delivery-preview-context");
+      } = await import("../../shared/delivery-preview/delivery-preview-context");
 
       await stores.articleFieldStore.startContext(async () => {
         const targetHashes = new Set(["hash-1", "hash-2"]);
@@ -932,7 +932,7 @@ describe("article-comparison", () => {
       const {
         startDeliveryPreviewContext,
         getDeliveryPreviewResultsForArticle,
-      } = await import("../../delivery-preview/delivery-preview-context");
+      } = await import("../../shared/delivery-preview/delivery-preview-context");
 
       await stores.articleFieldStore.startContext(async () => {
         // First run to establish baseline
@@ -986,7 +986,7 @@ describe("article-comparison", () => {
       const {
         startDeliveryPreviewContext,
         getDeliveryPreviewResultsForArticle,
-      } = await import("../../delivery-preview/delivery-preview-context");
+      } = await import("../../shared/delivery-preview/delivery-preview-context");
 
       await stores.articleFieldStore.startContext(async () => {
         // First run
@@ -1035,7 +1035,7 @@ describe("article-comparison", () => {
         startDeliveryPreviewContext,
         getDeliveryPreviewResultsForArticle,
         getAllDeliveryPreviewResults,
-      } = await import("../../delivery-preview/delivery-preview-context");
+      } = await import("../../shared/delivery-preview/delivery-preview-context");
 
       await stores.articleFieldStore.startContext(async () => {
         // Only target hash-1, but process multiple articles

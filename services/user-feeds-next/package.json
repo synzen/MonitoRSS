@@ -32,7 +32,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node ./dist/index.js",
-    "test": "./test.sh"
+    "test": "./test.sh",
+    "lint": "eslint src/"
   },
   "devDependencies": {
     "@types/flat": "^5.0.5",
@@ -40,8 +41,15 @@
     "@types/node": "^22.0.0",
     "@types/object-path": "^0.11.4",
     "@types/pg": "^8.16.0",
+    "@typescript-eslint/eslint-plugin": "^8.59.4",
+    "@typescript-eslint/parser": "^8.59.4",
+    "eslint": "^9.39.4",
+    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint-plugin-boundaries": "^6.0.2",
+    "eslint-plugin-import": "^2.32.0",
     "prettier": "3.7.4",
-    "tsx": "^4.19.0"
+    "tsx": "^4.19.0",
+    "typescript-eslint": "^8.59.4"
   },
   "peerDependencies": {
     "typescript": "^5"

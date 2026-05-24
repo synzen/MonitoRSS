@@ -7,7 +7,7 @@ import {
   DeliveryPreviewStage,
   DeliveryPreviewStageStatus,
   endDeliveryPreviewEarly,
-} from "../../delivery-preview";
+} from "../../shared/delivery-preview";
 
 const sha1 = createHash("sha1");
 

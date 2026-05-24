@@ -15,8 +15,7 @@ import {
   startDeliveryPreviewContext,
   getDeliveryPreviewResultsForArticle,
   getAllDeliveryPreviewResults,
-} from "./delivery-preview-context";
-import {
+  buildCompleteStageList,
   ArticleDeliveryOutcome,
   CANONICAL_STAGES,
   DeliveryPreviewStage,
@@ -29,8 +28,7 @@ import {
   type MediumRateLimitDeliveryPreviewResult,
   type MediumDeliveryResult,
   type MediumDeliverySummary,
-} from "./types";
-import { buildCompleteStageList } from "./stage-builder";
+} from "../shared/delivery-preview";
 
 export interface DeliveryPreviewDependencies {
   articleFieldStore: ArticleFieldStore;

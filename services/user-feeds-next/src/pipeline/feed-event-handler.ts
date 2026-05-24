@@ -10,15 +10,10 @@ import {
 import {
   deliverArticles,
   ArticleDeliveryStatus,
-  ArticleDeliveryRejectedCode,
-  processDeliveryResult,
   type DeliveryMedium,
-  type DiscordDeliveryResult,
-  type MediumRejectionEvent,
   type DiscordRestClient,
 } from "../delivery";
 import type { LogicalExpression } from "../articles/filters";
-import { MessageBrokerQueue } from "../shared/constants";
 import { updateFeedArticlesInCache } from "../stores/parsed-articles-cache-helpers";
 import type {
   ParsedArticlesCacheStore,
@@ -35,256 +30,23 @@ import type {
 import {
   type DeliveryRecordStore,
   type ArticleDeliveryState,
-  ArticleDeliveryErrorCode,
 } from "../stores/interfaces/delivery-record-store";
+import {
+  emitRejectionEvent,
+  getRejectionEventFromDeliveryState,
+} from "./delivery-result-handler";
+import type { ResponseHashStore } from "./feed-cleanup-handler";
 
-// ============================================================================
-// Response Hash Store Interface
-// ============================================================================
-
-/**
- * Interface for response hash storage.
- * Stores feed response hashes to skip processing when content hasn't changed.
- */
-export interface ResponseHashStore {
-  /**
-   * Get the stored hash for a feed.
-   */
-  get(feedId: string): Promise<string | null>;
-
-  /**
-   * Set the hash for a feed. Requires hash to be non-empty.
-   */
-  set(feedId: string, hash: string): Promise<void>;
-
-  /**
-   * Remove the hash for a feed.
-   */
-  remove(feedId: string): Promise<void>;
-}
-
-// ============================================================================
-// Feed Deleted Event
-// ============================================================================
-
-/**
- * Schema for feed deleted events.
- */
-export const feedDeletedEventSchema = z.object({
-  data: z.object({
-    feed: z.object({
-      id: z.string(),
-    }),
-  }),
-});
-
-export type FeedDeletedEvent = z.infer<typeof feedDeletedEventSchema>;
-
-/**
- * Parse and validate a feed deleted event.
- */
-export function parseFeedDeletedEvent(event: unknown): FeedDeletedEvent | null {
-  try {
-    return feedDeletedEventSchema.parse(event);
-  } catch (err) {
-    if (err instanceof z.ZodError) {
-      logger.error("Validation failed on incoming Feed Deleted event", {
-        errors: err.issues,
-      });
-    } else {
-      logger.error("Failed to parse Feed Deleted event", {
-        error: (err as Error).stack,
-      });
-    }
-    return null;
-  }
-}
-
-/**
- * Handle a feed deleted event - clean up stored data.
- */
-export async function handleFeedDeletedEvent(
-  event: FeedDeletedEvent,
-  options: {
-    responseHashStore: ResponseHashStore;
-    articleFieldStore: ArticleFieldStore;
-    feedRetryStore: FeedRetryStore;
-  }
-): Promise<void> {
-  const { responseHashStore, articleFieldStore, feedRetryStore } = options;
-  const feedId = event.data.feed.id;
-
-  logger.debug("Received feed deleted event", { event });
-
-  // Remove the response hash
-  await responseHashStore.remove(feedId);
-
-  // Clear article field store for this feed
-  await articleFieldStore.clear(feedId);
-
-  // Clear any retry records for this feed
-  await feedRetryStore.remove(feedId);
-
-  logger.debug(`Deleted feed info for feed ${feedId}`);
-}
-
-// ============================================================================
-// Queue Publisher Type
-// ============================================================================
-
-/**
- * Publisher function type for sending messages to a queue.
- */
-export type QueuePublisher = (queue: string, message: unknown) => Promise<void>;
-
-/**
- * Handle an article delivery result callback from the Discord REST listener.
- * This processes the result, classifies errors, updates delivery records, and emits rejection events.
- */
-export async function handleArticleDeliveryResult(
-  deliveryResult: DiscordDeliveryResult,
-  publisher: QueuePublisher,
-  deliveryRecordStore: DeliveryRecordStore
-): Promise<void> {
-  const { processed, rejectionEvent } = processDeliveryResult(deliveryResult);
-
-  logger.debug(
-    `Delivery result for medium ${processed.meta.mediumId}: status=${processed.status}`,
-    {
-      feedId: processed.meta.feedId,
-      errorCode: processed.errorCode,
-    }
-  );
-
-  // Update the delivery record status in the database
-  const deliveryId = deliveryResult.job.meta?.id;
-  if (deliveryId) {
-    try {
-      await deliveryRecordStore.updateDeliveryStatus(deliveryId, {
-        status: processed.status,
-        errorCode: processed.errorCode,
-        internalMessage: processed.internalMessage,
-        externalDetail: processed.externalDetail,
-      });
-    } catch (err) {
-      logger.warn("Failed to update delivery record status", {
-        deliveryId,
-        error: (err as Error).message,
-      });
-    }
-  }
-
-  // Emit rejection event if the medium should be disabled
-  if (rejectionEvent) {
-    await emitRejectionEvent(rejectionEvent, publisher);
-  }
-}
-
-/**
- * Emit a rejection event to disable a medium connection.
- */
-async function emitRejectionEvent(
-  event: MediumRejectionEvent,
-  publisher: QueuePublisher
-): Promise<void> {
-  let rejectedCode: ArticleDeliveryRejectedCode;
-  let feedId: string;
-  let mediumId: string;
-  let payload: Record<string, unknown>;
-
-  switch (event.type) {
-    case "badFormat":
-      rejectedCode = ArticleDeliveryRejectedCode.BadRequest;
-      feedId = event.data.feedId;
-      mediumId = event.data.mediumId;
-      payload = {
-        data: {
-          rejectedCode,
-          articleId: event.data.articleId,
-          rejectedMessage: event.data.responseBody,
-          medium: { id: mediumId },
-          feed: { id: feedId },
-        },
-      };
-      break;
-
-    case "missingPermissions":
-      rejectedCode = ArticleDeliveryRejectedCode.Forbidden;
-      feedId = event.data.feedId;
-      mediumId = event.data.mediumId;
-      payload = {
-        data: {
-          rejectedCode,
-          medium: { id: mediumId },
-          feed: { id: feedId },
-        },
-      };
-      break;
-
-    case "notFound":
-      rejectedCode = ArticleDeliveryRejectedCode.MediumNotFound;
-      feedId = event.data.feedId;
-      mediumId = event.data.mediumId;
-      payload = {
-        data: {
-          rejectedCode,
-          medium: { id: mediumId },
-          feed: { id: feedId },
-        },
-      };
-      break;
-  }
-
-  logger.debug(`Emitting rejection event: ${rejectedCode}`, {
-    feedId,
-    mediumId,
-  });
-
-  await publisher(
-    MessageBrokerQueue.FeedRejectedArticleDisableConnection,
-    payload
-  );
-}
-
-/**
- * Map an ArticleDeliveryState to a MediumRejectionEvent.
- * Returns null if the state is not a rejection or doesn't map to a rejection type.
- */
-function getRejectionEventFromDeliveryState(
-  feedId: string,
-  state: ArticleDeliveryState
-): MediumRejectionEvent | null {
-  if (state.status !== ArticleDeliveryStatus.Rejected) {
-    return null;
-  }
-
-  switch (state.errorCode) {
-    case ArticleDeliveryErrorCode.NoChannelOrWebhook:
-    case ArticleDeliveryErrorCode.ThirdPartyNotFound:
-      return {
-        type: "notFound",
-        data: { feedId, mediumId: state.mediumId },
-      };
-    case ArticleDeliveryErrorCode.ThirdPartyForbidden:
-      return {
-        type: "missingPermissions",
-        data: { feedId, mediumId: state.mediumId },
-      };
-    case ArticleDeliveryErrorCode.ThirdPartyBadRequest:
-    case ArticleDeliveryErrorCode.NoPayloadForMedium:
-      return {
-        type: "badFormat",
-        data: {
-          feedId,
-          mediumId: state.mediumId,
-          articleId: state.article?.flattened.id,
-          responseBody: state.externalDetail || "",
-        },
-      };
-    default:
-      return null;
-  }
-}
+// Re-export for backwards compatibility with direct imports
+export type { QueuePublisher } from "./delivery-result-handler";
+export { handleArticleDeliveryResult } from "./delivery-result-handler";
+export type { ResponseHashStore } from "./feed-cleanup-handler";
+export {
+  feedDeletedEventSchema,
+  type FeedDeletedEvent,
+  parseFeedDeletedEvent,
+  handleFeedDeletedEvent,
+} from "./feed-cleanup-handler";
 
 export function parseFeedV2Event(event: unknown): FeedV2Event | null {
   try {
@@ -317,7 +79,7 @@ export async function handleFeedV2Event(
     deliveryRecordStore: DeliveryRecordStore;
     discordClient: DiscordRestClient;
     publisher?: FeedRetryPublisher;
-    queuePublisher: QueuePublisher;
+    queuePublisher: (queue: string, message: unknown) => Promise<void>;
     feedRequestsServiceHost: string;
   }
 ): Promise<ArticleDeliveryState[] | null> {
@@ -336,7 +98,6 @@ export async function handleFeedV2Event(
   const isDebugFeed = event.debug === true;
   const startTime = Date.now();
 
-  // Helper function for debug logging
   const debugLog = (message: string, data?: Record<string, unknown>) => {
     if (isDebugFeed) {
       logger.datadog(message, data);
@@ -344,7 +105,6 @@ export async function handleFeedV2Event(
     logger.debug(message, data);
   };
 
-  // Wrap processing in nested contexts for batched inserts (matching user-feeds pattern)
   let numberOfArticles = 0;
   let eventError: string | undefined;
 
@@ -371,7 +131,6 @@ export async function handleFeedV2Event(
         eventError = (err as Error).stack;
         throw err;
       } finally {
-        // Flush pending inserts at the end (matching user-feeds order)
         try {
           const { affectedRows: articleRows } =
             await articleFieldStore.flushPendingInserts();
@@ -398,7 +157,6 @@ export async function handleFeedV2Event(
           });
         }
 
-        // Log timing information
         const finishedTs = Date.now() - startTime;
         logger.datadog(
           !eventError
@@ -440,11 +198,10 @@ async function handleFeedV2EventInternal({
   deliveryRecordStore: DeliveryRecordStore;
   discordClient: DiscordRestClient;
   publisher?: FeedRetryPublisher;
-  queuePublisher: QueuePublisher;
+  queuePublisher: (queue: string, message: unknown) => Promise<void>;
   debugLog: (message: string, data?: Record<string, unknown>) => void;
   feedRequestsServiceHost: string;
 }): Promise<ArticleDeliveryState[] | null> {
-  // Get the stored hash if we have prior articles stored
   const hashToCompare = await getHashToCompare(
     feed.id,
     articleFieldStore,
@@ -454,12 +211,10 @@ async function handleFeedV2EventInternal({
     logger.debug(`No prior articles stored for feed ${feed.id}`);
   }
 
-  // Get external properties for parsing
   const externalFeedProperties = event.data.feed.externalProperties as
     | ExternalFeedProperty[]
     | undefined;
 
-  // Use shared processing to fetch and parse feed
   const feedResult = await fetchAndParseFeed({
     feed: {
       url: feed.url,
@@ -471,7 +226,6 @@ async function handleFeedV2EventInternal({
     hashToCompare,
   });
 
-  // Handle non-success results
   if (feedResult.status === "matched-hash") {
     logger.debug(`No response body - pending request or matched hash`, {
       feedId: feed.id,
@@ -508,7 +262,6 @@ async function handleFeedV2EventInternal({
       return null;
     }
 
-    // Handle invalid feed (retry logic)
     logger.info(`Ignoring feed event due to invalid feed`, {
       feedId: feed.id,
       feedUrl: feed.url,
@@ -536,7 +289,6 @@ async function handleFeedV2EventInternal({
     return null;
   }
 
-  // Success - extract articles
   const articles = feedResult.articles;
 
   logger.debug(`Found articles`, {
@@ -552,14 +304,11 @@ async function handleFeedV2EventInternal({
     level: "debug",
   });
 
-  // Clear any retry records on successful parse
   await handleFeedParseSuccess({
     feedId: feed.id,
     store: feedRetryStore,
   });
 
-  // Update parsed articles cache if they already exist in cache
-  // This keeps cached article data fresh while preserving TTL
   const cacheKeyOptions: CacheKeyOptions = {
     formatOptions: {
       dateFormat: event.data.feed.formatOptions?.dateFormat,
@@ -578,7 +327,6 @@ async function handleFeedV2EventInternal({
     articles,
   });
 
-  // Determine which articles to deliver (comparison logic)
   const comparisonResult = await getArticlesToDeliver(
     articleFieldStore,
     feed.id,
@@ -597,7 +345,6 @@ async function handleFeedV2EventInternal({
     }
   );
 
-  // Log detailed comparison results for debug feeds
   debugLog(
     `Debug feed ${feed.id}: ${comparisonResult.articlesToDeliver.length} new articles determined from ID checks`,
     {
@@ -648,7 +395,6 @@ async function handleFeedV2EventInternal({
     logger.debug("No new articles to deliver", { feedId: feed.id });
     debugLog(`Debug feed ${feed.id}: No new articles to deliver, returning early`);
 
-    // Save the response hash since we successfully processed the feed
     if (feedResult.bodyHash) {
       await responseHashStore.set(feed.id, feedResult.bodyHash);
     }
@@ -656,7 +402,6 @@ async function handleFeedV2EventInternal({
     return [];
   }
 
-  // Deliver articles to all mediums
   const mediums = event.data.mediums.map((m) => ({
     id: m.id,
     filters: m.filters
@@ -715,18 +460,6 @@ async function handleFeedV2EventInternal({
     }
   );
 
-  // Store non-enqueued delivery records (flush=false, will be flushed in finally block).
-  // PendingDelivery states are already stored+flushed inside enqueueMessages before
-  // publishing to RabbitMQ, to avoid a race where the delivery result arrives before
-  // the INSERT commits.
-  const nonEnqueuedResults = deliveryResults.filter(
-    (r) => r.status !== ArticleDeliveryStatus.PendingDelivery
-  );
-  if (nonEnqueuedResults.length > 0) {
-    await deliveryRecordStore.store(feed.id, nonEnqueuedResults, false);
-  }
-
-  // Log delivery results
   const sent = deliveryResults.filter(
     (r) => r.status === ArticleDeliveryStatus.Sent
   ).length;
@@ -748,7 +481,6 @@ async function handleFeedV2EventInternal({
     `Debug feed ${feed.id}: Delivery complete: ${sent} sent, ${filtered} filtered, ${rateLimited} rate-limited, ${failed} failed, total ${deliveryResults.length}`
   );
 
-  // Emit rejection events to disable connections with invalid configurations
   for (const state of deliveryResults) {
     const rejectionEvent = getRejectionEventFromDeliveryState(feed.id, state);
 
@@ -757,7 +489,6 @@ async function handleFeedV2EventInternal({
     }
   }
 
-  // Save the response hash after successful delivery
   if (feedResult.bodyHash) {
     await responseHashStore.set(feed.id, feedResult.bodyHash);
   }

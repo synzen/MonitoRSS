@@ -13,13 +13,13 @@ import {
 } from "../../src/stores/redis";
 import type { ArticleFieldStore } from "../../src/articles/comparison";
 import type { DeliveryRecordStore } from "../../src/stores/interfaces/delivery-record-store";
-import type { ResponseHashStore } from "../../src/feeds/feed-event-handler";
+import type { ResponseHashStore } from "../../src/stores/interfaces/response-hash-store";
 import type { FeedRetryStore } from "../../src/stores/interfaces/feed-retry-store";
 import type { ParsedArticlesCacheStore } from "../../src/stores/interfaces/parsed-articles-cache";
 import {
   createTestDiscordRestClient,
   type DiscordRestClient,
-} from "../../src/delivery/mediums/discord/discord-rest-client";
+} from "../../src/delivery/discord/discord-rest-client";
 import {
   createTestFeedRequestsServer,
   type TestFeedRequestsServer,

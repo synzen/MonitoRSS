@@ -9,21 +9,23 @@ import { jsonResponse, parseJsonBody } from "../utils";
 import { deliveryPreviewInputSchema } from "../schemas";
 import {
   generateDeliveryPreview,
+  type DeliveryPreviewInput,
+} from "../../pipeline/generate-delivery-preview";
+import {
   FeedState,
   ArticleDeliveryOutcome,
   CANONICAL_STAGES,
-  type DeliveryPreviewInput,
   endDeliveryPreviewEarly,
-} from "../../delivery-preview";
+} from "../../shared/delivery-preview";
 import type { ArticleFieldStore } from "../../articles/comparison";
 import type { DeliveryRecordStore } from "../../stores/interfaces/delivery-record-store";
-import type { ResponseHashStore } from "../../feeds/feed-event-handler";
+import type { ResponseHashStore } from "../../stores/interfaces/response-hash-store";
 import type { LogicalExpression } from "../../articles/filters";
 import {
   fetchAndParseFeed,
   getHashToCompare,
   type FeedProcessingResult,
-} from "../../feeds/shared-processing";
+} from "../../pipeline/shared-processing";
 import { fetchFeedForDeliveryPreview } from "../../feed-fetcher";
 
 type FeedErrorResult = Extract<

@@ -14,7 +14,7 @@ import {
   ArticleDeliveryStatus,
   ArticleDeliveryContentType,
 } from "../../src/stores/interfaces/delivery-record-store";
-import { ArticleDeliveryOutcome } from "../../src/delivery-preview";
+import { ArticleDeliveryOutcome } from "../../src/shared/delivery-preview";
 import { FeedResponseRequestStatus } from "../../src/feed-fetcher";
 import { createHash } from "crypto";
 
@@ -196,8 +196,8 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       const result = body.result as JsonBody;
       const errors = result.errors as string[];
       assert.ok(errors.length > 0);
-      assert.ok(errors[0].includes("type"));
-      assert.ok(errors[0].includes("LOGICAL"));
+      assert.ok(errors[0]!.includes("type"));
+      assert.ok(errors[0]!.includes("LOGICAL"));
     });
 
     it("returns errors for invalid operator", async () => {
@@ -221,7 +221,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       const result = body.result as JsonBody;
       const errors = result.errors as string[];
       assert.ok(errors.length > 0);
-      assert.ok(errors[0].includes("op"));
+      assert.ok(errors[0]!.includes("op"));
     });
 
     it("returns errors for missing children", async () => {
@@ -245,7 +245,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       const result = body.result as JsonBody;
       const errors = result.errors as string[];
       assert.ok(errors.length > 0);
-      assert.ok(errors[0].includes("children"));
+      assert.ok(errors[0]!.includes("children"));
     });
 
     it("returns errors for invalid child expression type", async () => {
@@ -274,7 +274,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       const result = body.result as JsonBody;
       const errors = result.errors as string[];
       assert.ok(errors.length > 0);
-      assert.ok(errors[0].includes("type"));
+      assert.ok(errors[0]!.includes("type"));
     });
 
     it("validates nested logical expressions", async () => {
@@ -2375,7 +2375,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
         assert.strictEqual(feedState.state, "parse-error");
         assert.strictEqual(feedState.errorType, "invalid");
         assert.strictEqual(errors.length, 1);
-        assert.ok(errors[0]!.message.includes("parse error"));
+        assert.ok((errors[0]!.message as string).includes("parse error"));
       } finally {
         testServer.unregisterUrl(INVALID_XML_FEED_URL);
       }
@@ -2423,7 +2423,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
         assert.strictEqual(feedState.state, "fetch-error");
         assert.strictEqual(feedState.errorType, "timeout");
         assert.strictEqual(errors.length, 1);
-        assert.ok(errors[0]!.message.includes("timeout"));
+        assert.ok((errors[0]!.message as string).includes("timeout"));
       } finally {
         testServer.unregisterUrl(TIMEOUT_FEED_URL);
       }
@@ -2473,7 +2473,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
         assert.strictEqual(feedState.errorType, "bad-status-code");
         assert.strictEqual(feedState.httpStatusCode, 503);
         assert.strictEqual(errors.length, 1);
-        assert.ok(errors[0]!.message.includes("bad-status-code"));
+        assert.ok((errors[0]!.message as string).includes("bad-status-code"));
       } finally {
         testServer.unregisterUrl(BAD_STATUS_FEED_URL);
       }
@@ -2521,7 +2521,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
         assert.strictEqual(feedState.state, "fetch-error");
         assert.strictEqual(feedState.errorType, "fetch");
         assert.strictEqual(errors.length, 1);
-        assert.ok(errors[0]!.message.includes("fetch"));
+        assert.ok((errors[0]!.message as string).includes("fetch"));
       } finally {
         testServer.unregisterUrl(FETCH_ERROR_FEED_URL);
       }
@@ -2570,7 +2570,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
         assert.strictEqual(feedState.state, "fetch-error");
         assert.strictEqual(feedState.errorType, "internal");
         assert.strictEqual(errors.length, 1);
-        assert.ok(errors[0]!.message.includes("internal"));
+        assert.ok((errors[0]!.message as string).includes("internal"));
       } finally {
         testServer.unregisterUrl(INTERNAL_ERROR_FEED_URL);
       }
@@ -2618,7 +2618,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
         assert.strictEqual(feedState.state, "fetch-error");
         assert.strictEqual(feedState.errorType, "parse");
         assert.strictEqual(errors.length, 1);
-        assert.ok(errors[0]!.message.includes("parse"));
+        assert.ok((errors[0]!.message as string).includes("parse"));
       } finally {
         testServer.unregisterUrl(PARSE_ERROR_FEED_URL);
       }

@@ -14,7 +14,7 @@ import {
 import {
   CustomPlaceholderRegexEvalException,
   FiltersRegexEvalException,
-} from "../../articles/formatter/exceptions";
+} from "../../formatting/exceptions";
 import {
   FeedParseTimeoutException,
   InvalidFeedException,

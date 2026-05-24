@@ -472,7 +472,7 @@ describe("article-parser", () => {
         useParserRules: [],
       });
 
-      assert.ok(/^\d+$/.test(flattenedArticle.a));
+      assert.ok(flattenedArticle.a && /^\d+$/.test(flattenedArticle.a));
     });
 
     it("works with custom timezones", () => {

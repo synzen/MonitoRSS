@@ -14,20 +14,18 @@ import {
   getArticlesInputSchema,
   GetUserFeedArticlesFilterReturnType,
 } from "../schemas";
-import { findOrFetchFeedArticles } from "../../feeds/services/articles.service";
+import { findOrFetchFeedArticles } from "../../pipeline/services/articles.service";
 import type { ParsedArticlesCacheStore } from "../../stores/interfaces/parsed-articles-cache";
 import {
   paginateArticles,
   queryForArticleProperties,
-} from "../../feeds/services/feeds.service";
-import {
-  formatArticleForDiscord,
-  CustomPlaceholderStepType,
-} from "../../articles/formatter";
+} from "../../pipeline/services/feeds.service";
+import { formatArticleForDiscord } from "../../delivery/discord/html-to-discord";
+import { CustomPlaceholderStepType, type CustomPlaceholder } from "../../formatting";
 import {
   CustomPlaceholderRegexEvalException,
   FiltersRegexEvalException,
-} from "../../articles/formatter/exceptions";
+} from "../../formatting/exceptions";
 import { enrichFlattenedArticle } from "../../articles/parser";
 import {
   evaluateExpression,
@@ -142,7 +140,7 @@ export async function handleGetArticles(
         random: input.random,
         selectProperties: input.selectProperties,
         selectPropertyTypes: input.selectPropertyTypes,
-        customPlaceholders: input.formatter.customPlaceholders,
+        customPlaceholders: input.formatter.customPlaceholders as CustomPlaceholder[] | null | undefined,
         filters: {
           articleId: input.filters?.articleId,
           articleIdHashes: input.filters?.articleIdHashes,

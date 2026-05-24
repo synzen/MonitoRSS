@@ -15,7 +15,7 @@ import type {
   DiscordApiRequestOptions,
   DiscordApiResponse,
 } from "./discord-rest-client";
-import { logger } from "../../../shared/utils";
+import { logger } from "../../shared/utils";
 
 // ============================================================================
 // Configuration

@@ -4,9 +4,9 @@
 
 import Fastify, { type FastifyInstance } from "fastify";
 import type { DeliveryRecordStore } from "../stores/interfaces/delivery-record-store";
-import type { DiscordRestClient } from "../delivery/mediums/discord/discord-rest-client";
+import type { DiscordRestClient } from "../delivery/discord/discord-rest-client";
 import type { ArticleFieldStore } from "../articles/comparison";
-import type { ResponseHashStore } from "../feeds/feed-event-handler";
+import type { ResponseHashStore } from "../stores/interfaces/response-hash-store";
 import type { ParsedArticlesCacheStore } from "../stores/interfaces/parsed-articles-cache";
 import {
   handleFilterValidation,

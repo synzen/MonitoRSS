@@ -72,3 +72,8 @@ export enum TestDeliveryStatus {
 export enum DiscordSendArticleOperationType {
   CreateThreadOnMessage = "CREATE_THREAD_ON_MESSAGE",
 }
+
+export enum SelectPropertyType {
+  Url = "url",
+  ExternalInjections = "externalInjections",
+}

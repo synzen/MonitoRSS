@@ -5,8 +5,8 @@ import {
 import {
   createTestDiscordRestClient,
   type TestDiscordRestClient,
-} from "../../src/delivery/mediums/discord/discord-rest-client";
-import { handleFeedV2Event } from "../../src/feeds/feed-event-handler";
+} from "../../src/delivery/discord/discord-rest-client";
+import { handleFeedV2Event } from "../../src/pipeline/feed-event-handler";
 import generateTestFeedV2Event from "../data/test-feed-v2-event";
 import getTestRssFeed from "../data/test-rss-feed";
 import type { FeedV2Event } from "../../src/shared/schemas";

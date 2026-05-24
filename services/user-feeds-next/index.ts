@@ -8,7 +8,7 @@ import {
   parseFeedDeletedEvent,
   handleFeedDeletedEvent,
   type ResponseHashStore,
-} from "./src/feeds/feed-event-handler";
+} from "./src/pipeline/feed-event-handler";
 import { MessageBrokerQueue } from "./src/shared/constants";
 import {
   createSynzenDiscordRestClient,

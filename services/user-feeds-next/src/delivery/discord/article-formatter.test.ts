@@ -3,27 +3,32 @@ import assert, { deepStrictEqual } from "node:assert";
 import {
   replaceTemplateString,
   applySplit,
-  generateDiscordPayloads,
-  formatValueForDiscord,
-  formatArticleForDiscord,
-  getNestedPrimitiveValue,
   processCustomPlaceholders,
   CustomPlaceholderStepType,
-  DiscordComponentType,
-  DISCORD_COMPONENTS_V2_FLAG,
+} from "../../formatting";
+import {
+  formatValueForDiscord,
+  formatArticleForDiscord,
+} from "./html-to-discord";
+import {
+  generateDiscordPayloads,
   generateThreadName,
   buildForumThreadBody,
   getForumTagsToSend,
   enhancePayloadsWithWebhookDetails,
-} from ".";
+} from "./discord-payload-builder";
+import {
+  DiscordComponentType,
+  DISCORD_COMPONENTS_V2_FLAG,
+} from "./formatting-types";
 import {
   ExpressionType,
   LogicalExpressionOperator,
   RelationalExpressionOperator,
   RelationalExpressionLeft,
   RelationalExpressionRight,
-} from "../filters";
-import type { Article, FlattenedArticle } from "../parser";
+} from "../../articles/filters";
+import type { Article, FlattenedArticle } from "../../articles/parser";
 
 function createArticle(flattened: Record<string, string>): Article {
   return {
@@ -772,7 +777,7 @@ describe("article-formatter", () => {
           stripImages: false,
         }
       );
-      deepStrictEqual(result.customPlaceholderPreviews[0][0], "(VOSTFR)");
+      deepStrictEqual(result.customPlaceholderPreviews[0]![0], "(VOSTFR)");
     });
   });
 
@@ -1255,66 +1260,6 @@ Centro comercial Moctezuma   Francisco Chang   Mexico
         "codingh",
         "ere!",
       ]);
-    });
-  });
-
-  describe("getNestedPrimitiveValue", () => {
-    it("returns a nested string", () => {
-      const obj = { foo: { bar: { a: "1" } } };
-      const val = getNestedPrimitiveValue(obj, "foo__bar__a");
-      assert.strictEqual(val, "1");
-    });
-
-    it("returns nested numbers as strings", () => {
-      const obj = { foo: { bar: { a: 1 } } };
-      const val = getNestedPrimitiveValue(obj, "foo__bar__a");
-      assert.strictEqual(val, "1");
-    });
-
-    it("returns nested dates as strings", () => {
-      const date = new Date("2021-01-01");
-      const obj = { foo: { bar: { a: date } } };
-      const val = getNestedPrimitiveValue(obj, "foo__bar__a");
-      assert.strictEqual(val, date.toISOString());
-    });
-
-    it("returns invalid dates as null", () => {
-      const date = new Date("abc");
-      const obj = { foo: { bar: { a: date } } };
-      const val = getNestedPrimitiveValue(obj, "foo__bar__a");
-      assert.strictEqual(val, null);
-    });
-
-    it("returns objects as null", () => {
-      const obj = { foo: { bar: { a: {} } } };
-      const val = getNestedPrimitiveValue(obj, "foo__bar__a");
-      assert.strictEqual(val, null);
-    });
-
-    it("returns arrays as null", () => {
-      const obj = { foo: { bar: { a: [] } } };
-      const val = getNestedPrimitiveValue(obj, "foo__bar__a");
-      assert.strictEqual(val, null);
-    });
-
-    it("returns non-existent fields as null", () => {
-      const obj = { foo: {} };
-      const val = getNestedPrimitiveValue(obj as never, "foo__bar__a");
-      assert.strictEqual(val, null);
-    });
-
-    it("returns array index values", () => {
-      const obj = { foo: { bar: { a: ["a", "b"] } } };
-      const val = getNestedPrimitiveValue(obj, "foo__bar__a__1");
-      assert.strictEqual(val, "b");
-    });
-
-    it("returns null/undefined as null", () => {
-      const obj = { foo: { bar: { a: undefined as unknown } } };
-      assert.strictEqual(getNestedPrimitiveValue(obj, "foo__bar__a"), null);
-
-      obj.foo.bar.a = null;
-      assert.strictEqual(getNestedPrimitiveValue(obj, "foo__bar__a"), null);
     });
   });
 

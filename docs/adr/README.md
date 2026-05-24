@@ -23,6 +23,7 @@ Each ADR follows the [Michael Nygard one-pager template](https://cognitect.com/b
 | [005](005-user-feeds-and-backend-api-next-deletion.md) | Cutover record: delete `services/user-feeds/` and `services/backend-api-next/` | Accepted |
 | [006](006-npm-workspaces.md) | Convert repo to npm workspaces (internal packages by symlink, not publish) | Accepted |
 | [007](007-packages-contracts.md) | `packages/contracts` is the single source of truth for RabbitMQ event names and payload schemas | Accepted |
+| [008](008-user-feeds-next-internal-architecture.md) | `user-feeds-next` internal architecture: pipeline with domain-partitioned modules | Accepted |
 
 ## Per-service ADRs
 
@@ -41,7 +42,7 @@ When in doubt, write the ADR. They're cheap.
 
 ## When NOT to write an ADR
 
-- Style preferences (prettier rules, naming conventions). Those go in `CLAUDE.md` or an `.editorconfig`.
+- Style preferences (prettier rules, naming conventions).
 - Implementation details visible from the code itself.
 - Decisions specific to a single PR that don't constrain future work.
 

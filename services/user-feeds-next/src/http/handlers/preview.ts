@@ -6,23 +6,20 @@
 import { z } from "zod";
 import { withAuth } from "../middleware";
 import { jsonResponse, parseJsonBody, handleError } from "../utils";
-import { fetchFeedArticle } from "../../feeds/services/articles.service";
+import { fetchFeedArticle } from "../../pipeline/services/articles.service";
 import type { ParsedArticlesCacheStore } from "../../stores/interfaces/parsed-articles-cache";
 import {
   discordMediumPayloadDetailsSchema,
   externalFeedPropertySchema,
   feedV2EventRequestLookupDetails,
 } from "../../shared/schemas/feed-v2-event.schema";
-import {
-  generateDiscordPayloads,
-  formatArticleForDiscord,
-  CustomPlaceholderStepType,
-  type CustomPlaceholder,
-} from "../../articles/formatter";
+import { generateDiscordPayloads } from "../../delivery/discord/discord-payload-builder";
+import { formatArticleForDiscord } from "../../delivery/discord/html-to-discord";
+import { CustomPlaceholderStepType, type CustomPlaceholder } from "../../formatting";
 import {
   CustomPlaceholderRegexEvalException,
   FiltersRegexEvalException,
-} from "../../articles/formatter/exceptions";
+} from "../../formatting/exceptions";
 import { FeedArticleNotFoundException } from "../../feed-fetcher/exceptions";
 
 enum TestDeliveryMedium {

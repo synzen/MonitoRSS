@@ -5,7 +5,8 @@
 
 import type { Article } from "../../articles/parser";
 import { INJECTED_ARTICLE_PLACEHOLDER_PREFIX } from "../../shared/constants";
-import { SelectPropertyType, type CustomPlaceholder } from "../../http/schemas";
+import { SelectPropertyType } from "../../shared/constants";
+import type { CustomPlaceholder } from "../../formatting";
 import { getNumbersInRange } from "./utils";
 
 export interface PaginateArticlesInput {

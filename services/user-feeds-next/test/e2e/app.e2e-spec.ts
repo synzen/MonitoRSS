@@ -3,10 +3,12 @@ import * as assert from "node:assert";
 import { randomUUID } from "crypto";
 import {
   ArticleDeliveryStatus,
-  ArticleDeliveryErrorCode,
   ArticleDeliveryRejectedCode,
 } from "../../src/delivery";
-import { handleArticleDeliveryResult } from "../../src/feeds/feed-event-handler";
+import {
+  ArticleDeliveryErrorCode,
+} from "../../src/stores/interfaces/delivery-record-store";
+import { handleArticleDeliveryResult } from "../../src/pipeline/feed-event-handler";
 import { MessageBrokerQueue } from "../../src/shared/constants";
 import getTestRssFeed, { DEFAULT_TEST_ARTICLES } from "../data/test-rss-feed";
 import { createTestContext } from "../helpers/test-context";

@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
-import { CustomPlaceholderStepType } from "../../articles/formatter";
+import {
+  CustomPlaceholderStepType,
+  SelectPropertyType,
+} from "../../shared/constants";
 
 /**
  * Filter return type enum.
@@ -13,13 +16,7 @@ export enum GetUserFeedArticlesFilterReturnType {
   IncludeEvaluationResults = "INCLUDE_EVAL_RESULTS",
 }
 
-/**
- * Select property type enum.
- */
-export enum SelectPropertyType {
-  Url = "url",
-  ExternalInjections = "externalInjections",
-}
+export { SelectPropertyType };
 
 /**
  * Custom placeholder step schema.

@@ -5,14 +5,16 @@ import type {
   JobData,
   JobResponseError,
 } from "@synzen/discord-rest/dist/RESTConsumer";
+import { processDeliveryResult } from "./discord/result-processor";
+import { getUnderLimitCheck } from "./rate-limiting";
 import {
-  processDeliveryResult,
   ArticleDeliveryStatus,
-  ArticleDeliveryErrorCode,
-  type DiscordDeliveryResult,
-  getUnderLimitCheck,
   createTestDiscordRestClient,
 } from ".";
+import {
+  ArticleDeliveryErrorCode,
+} from "../stores/interfaces/delivery-record-store";
+import type { DiscordDeliveryResult } from "./types";
 import type { ArticleDeliveryState } from "../stores/interfaces/delivery-record-store";
 import {
   setupTestDatabase,
@@ -32,7 +34,7 @@ import {
   DeliveryPreviewStage,
   DeliveryPreviewStageStatus,
   type DeliveryPreviewStageResult,
-} from "../delivery-preview";
+} from "../shared/delivery-preview";
 
 let stores: TestStores;
 
@@ -510,8 +512,8 @@ describe("delivery", () => {
 describe("diagnostic recording in delivery", () => {
   it("records FeedRateLimit diagnostic when feed rate limit is checked", async () => {
     const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
-      await import("../delivery-preview");
-    const { recordRateLimitDiagnostic } = await import(".");
+      await import("../shared/delivery-preview");
+    const { recordRateLimitDiagnostic } = await import("./discord/preview-diagnostics");
 
     let previews: DeliveryPreviewStageResult[] = [];
 
@@ -537,8 +539,8 @@ describe("diagnostic recording in delivery", () => {
 
   it("records MediumRateLimit diagnostic when medium rate limit is checked", async () => {
     const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
-      await import("../delivery-preview");
-    const { recordRateLimitDiagnostic } = await import(".");
+      await import("../shared/delivery-preview");
+    const { recordRateLimitDiagnostic } = await import("./discord/preview-diagnostics");
 
     let previews: DeliveryPreviewStageResult[] = [];
 
@@ -565,8 +567,8 @@ describe("diagnostic recording in delivery", () => {
 
   it("records failed rate limit diagnostic when limit exceeded", async () => {
     const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
-      await import("../delivery-preview");
-    const { recordRateLimitDiagnostic } = await import(".");
+      await import("../shared/delivery-preview");
+    const { recordRateLimitDiagnostic } = await import("./discord/preview-diagnostics");
 
     let previews: DeliveryPreviewStageResult[] = [];
 
@@ -592,8 +594,8 @@ describe("diagnostic recording in delivery", () => {
 
   it("records MediumFilter diagnostic when filter is evaluated", async () => {
     const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
-      await import("../delivery-preview");
-    const { recordMediumFilterDiagnostic } = await import(".");
+      await import("../shared/delivery-preview");
+    const { recordMediumFilterDiagnostic } = await import("./discord/preview-diagnostics");
 
     let previews: DeliveryPreviewStageResult[] = [];
 
@@ -618,8 +620,8 @@ describe("diagnostic recording in delivery", () => {
 
   it("records failed MediumFilter diagnostic when filter blocks article", async () => {
     const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
-      await import("../delivery-preview");
-    const { recordMediumFilterDiagnostic } = await import(".");
+      await import("../shared/delivery-preview");
+    const { recordMediumFilterDiagnostic } = await import("./discord/preview-diagnostics");
 
     let previews: DeliveryPreviewStageResult[] = [];
 
@@ -654,9 +656,9 @@ describe("diagnostic recording in delivery", () => {
   });
 
   it("does not record previews outside diagnostic context", async () => {
-    const { getDeliveryPreviewResultsForArticle } = await import("../delivery-preview");
+    const { getDeliveryPreviewResultsForArticle } = await import("../shared/delivery-preview");
     const { recordRateLimitDiagnostic, recordMediumFilterDiagnostic } =
-      await import(".");
+      await import("./discord/preview-diagnostics");
 
     // Call outside diagnostic context - should not throw
     recordRateLimitDiagnostic({
@@ -685,8 +687,8 @@ describe("diagnostic recording in delivery", () => {
 describe("diagnostic recording during deliverArticles execution", () => {
   it("records MediumFilter diagnostic when medium filter is evaluated during delivery", async () => {
     const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
-      await import("../delivery-preview");
-    const { deliverArticles } = await import(".");
+      await import("../shared/delivery-preview");
+    const { deliverArticles } = await import("./discord/delivery-routing");
 
     const store = stores.deliveryRecordStore;
     const article: Article = {
@@ -753,8 +755,8 @@ describe("diagnostic recording during deliverArticles execution", () => {
 
   it("records failed MediumFilter diagnostic when filter blocks article during delivery", async () => {
     const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
-      await import("../delivery-preview");
-    const { deliverArticles } = await import(".");
+      await import("../shared/delivery-preview");
+    const { deliverArticles } = await import("./discord/delivery-routing");
 
     const store = stores.deliveryRecordStore;
     const article: Article = {
@@ -824,8 +826,8 @@ describe("diagnostic recording during deliverArticles execution", () => {
 describe("filter execution order - filters should operate on formatted content", () => {
   it("should match filter on formatted markdown content, not raw HTML", async () => {
     const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
-      await import("../delivery-preview");
-    const { deliverArticles } = await import(".");
+      await import("../shared/delivery-preview");
+    const { deliverArticles } = await import("./discord/delivery-routing");
 
     const store = stores.deliveryRecordStore;
     // Article with raw HTML that will be formatted to markdown
@@ -890,8 +892,8 @@ describe("filter execution order - filters should operate on formatted content",
 
   it("should NOT match raw HTML tags in filter after formatting", async () => {
     const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
-      await import("../delivery-preview");
-    const { deliverArticles } = await import(".");
+      await import("../shared/delivery-preview");
+    const { deliverArticles } = await import("./discord/delivery-routing");
 
     const store = stores.deliveryRecordStore;
     const article: Article = {
@@ -955,8 +957,8 @@ describe("filter execution order - filters should operate on formatted content",
 
   it("should allow filtering on custom placeholder values", async () => {
     const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
-      await import("../delivery-preview");
-    const { deliverArticles } = await import(".");
+      await import("../shared/delivery-preview");
+    const { deliverArticles } = await import("./discord/delivery-routing");
 
     const store = stores.deliveryRecordStore;
     const article: Article = {
@@ -1028,8 +1030,8 @@ describe("filter execution order - filters should operate on formatted content",
 
   it("should show formatted content in explainBlocked diagnostic", async () => {
     const { startDeliveryPreviewContext, getDeliveryPreviewResultsForArticle } =
-      await import("../delivery-preview");
-    const { deliverArticles } = await import(".");
+      await import("../shared/delivery-preview");
+    const { deliverArticles } = await import("./discord/delivery-routing");
 
     const store = stores.deliveryRecordStore;
     const article: Article = {
