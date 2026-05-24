@@ -136,6 +136,12 @@ export interface TestDiscordRestClient extends DiscordRestClient {
    * Configure the response for the next API request call.
    */
   setApiResponse(response: Partial<DiscordApiResponse>): void;
+
+  /**
+   * Register a callback that fires during enqueue(), before the response is returned.
+   * Useful for verifying database state at the moment RabbitMQ would receive the message.
+   */
+  setOnEnqueue(cb: (meta: DiscordEnqueueMeta) => Promise<void> | void): void;
 }
 
 /**
@@ -156,6 +162,7 @@ export function createTestDiscordRestClient(): TestDiscordRestClient {
 
   let nextEnqueueResponse: Partial<DiscordEnqueueResult> = {};
   let nextApiResponse: Partial<DiscordApiResponse> = {};
+  let onEnqueueCb: ((meta: DiscordEnqueueMeta) => Promise<void> | void) | null = null;
 
   return {
     capturedPayloads,
@@ -164,6 +171,7 @@ export function createTestDiscordRestClient(): TestDiscordRestClient {
       capturedPayloads.length = 0;
       nextEnqueueResponse = {};
       nextApiResponse = {};
+      onEnqueueCb = null;
     },
 
     setEnqueueResponse(response: Partial<DiscordEnqueueResult>) {
@@ -172,6 +180,10 @@ export function createTestDiscordRestClient(): TestDiscordRestClient {
 
     setApiResponse(response: Partial<DiscordApiResponse>) {
       nextApiResponse = response;
+    },
+
+    setOnEnqueue(cb: (meta: DiscordEnqueueMeta) => Promise<void> | void) {
+      onEnqueueCb = cb;
     },
 
     async enqueue(
@@ -185,6 +197,10 @@ export function createTestDiscordRestClient(): TestDiscordRestClient {
         options,
         meta,
       });
+
+      if (onEnqueueCb) {
+        await onEnqueueCb(meta);
+      }
 
       const response: DiscordEnqueueResult = {
         state: "success",

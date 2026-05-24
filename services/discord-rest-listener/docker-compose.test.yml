@@ -1,0 +1,41 @@
+services:
+  mongo:
+    image: mongo:7
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_listener", "5672"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 15s
+
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      mongo:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      DISCORD_REST_LISTENER_MONGO_URI: mongodb://mongo:27017
+      DISCORD_REST_LISTENER_RABBITMQ_URI: amqp://rabbitmq:5672
+      DISCORD_REST_LISTENER_BOT_TOKEN: test-bot-token
+      DISCORD_REST_LISTENER_BOT_CLIENT_ID: test-client-id
+      DISCORD_REST_LISTENER_MAX_REQ_PER_SEC: "25"
+      TS_NODE_TRANSPILE_ONLY: "true"
+      TS_NODE_FILES: "true"
+      NODE_OPTIONS: "--require ts-node/register"
+    volumes:
+      - ./src:/app/src
+      - ./test:/app/test
+      - ./tsconfig.json:/app/tsconfig.json
+    command: sh -c "${TEST_COMMAND}"
