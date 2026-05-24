@@ -464,19 +464,17 @@ test.describe("Feed Discovery", () => {
       await expect(showDetailsButton).toBeVisible();
       await showDetailsButton.click();
 
+      // The details panel surfaces the raw error message, but never the feed URL.
+      await expect(page.getByText("Error", { exact: true })).toBeVisible();
       await expect(
         page.getByText(/host\.docker\.internal:3001\/feed-500/),
-      ).toBeVisible();
+      ).toHaveCount(0);
 
       const hideDetailsButton = page.getByRole("button", {
         name: /hide details/i,
       });
       await expect(hideDetailsButton).toBeVisible();
       await hideDetailsButton.click();
-
-      await expect(
-        page.getByText(/host\.docker\.internal:3001\/feed-500/),
-      ).not.toBeVisible();
     });
   });
 

@@ -8,7 +8,7 @@
     "access": "public"
   },
   "scripts": {
-    "prepublish": "tsc",
+    "prepare": "tsc",
     "build": "tsc",
     "test": "jest"
   },

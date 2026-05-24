@@ -142,3 +142,5 @@ nul
 dist
 auth*.json
 **/e2e/test-results/*
+_bmad
+_bmad-output

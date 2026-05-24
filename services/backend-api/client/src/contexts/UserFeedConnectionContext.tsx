@@ -33,9 +33,9 @@ export const UserFeedConnectionProvider = ({
   children: ReactNode;
 }) => {
   const { feed, status } = useUserFeed({ feedId });
-  const connection = feed?.connections.find(
-    (c) => c.id === connectionId,
-  ) as FeedDiscordChannelConnection | undefined;
+  const connection = feed?.connections.find((c) => c.id === connectionId) as
+    | FeedDiscordChannelConnection
+    | undefined;
 
   const value: ContextProps = useMemo(() => {
     if (!feed || !connection) {

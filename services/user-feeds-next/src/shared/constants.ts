@@ -39,14 +39,11 @@ export const MAX_ARTICLE_INJECTION_ARTICLE_COUNT = 50;
 
 /**
  * Message broker queue names for RabbitMQ.
+ *
+ * Canonical definition lives in `@monitorss/contracts`. This re-export keeps
+ * existing imports working; new code should import from "@monitorss/contracts" directly.
  */
-export enum MessageBrokerQueue {
-  FeedDeliverArticles = "feed.deliver-articles",
-  FeedArticleDeliveryResult = "feed.article-delivery-result",
-  FeedRejectedArticleDisableConnection = "feed.rejected-article.disable-connection",
-  FeedDeleted = "feed.deleted",
-  FeedRejectedDisableFeed = "feed.rejected.disable-feed",
-}
+export { MessageBrokerQueue } from "@monitorss/contracts";
 
 /**
  * Codes indicating why a feed was disabled.

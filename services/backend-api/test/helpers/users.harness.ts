@@ -124,8 +124,7 @@ export function createUsersHarness(): UsersHarness {
 
       const userRepository: MockUserRepository = {
         findByEmail: mock.fn(
-          options.userRepository?.findByEmail ??
-            (() => Promise.resolve(null)),
+          options.userRepository?.findByEmail ?? (() => Promise.resolve(null)),
         ),
         findByDiscordId: mock.fn(
           options.userRepository?.findByDiscordId ??

@@ -47,13 +47,17 @@ const getStatusBorderColor = (outcome: ArticleDeliveryOutcome): string => {
 interface DeliveryPreviewAccordionItemProps {
   result: ArticleDeliveryResult;
   isFirst: boolean;
-  lastRequestAtUnix?: number;
+  nextRetryAtIso?: string | null;
+  nextRetryReason?: "REFRESH_RATE" | "HOST_CACHE" | "FAILED_RETRY_BACKOFF" | null;
+  cacheDurationMs?: number | null;
 }
 
 const DeliveryPreviewAccordionItem = ({
   result,
   isFirst,
-  lastRequestAtUnix,
+  nextRetryAtIso,
+  nextRetryReason,
+  cacheDurationMs,
 }: DeliveryPreviewAccordionItemProps) => {
   const displayOutcome = getOutcomeLabel(result.outcome);
   const colorScheme = getOutcomeColorScheme(result.outcome);
@@ -86,7 +90,12 @@ const DeliveryPreviewAccordionItem = ({
         <AccordionIcon ml={2} />
       </AccordionButton>
       <AccordionPanel p={0}>
-        <ArticleDeliveryDetails result={result} lastRequestAtUnix={lastRequestAtUnix} />
+        <ArticleDeliveryDetails
+          result={result}
+          nextRetryAtIso={nextRetryAtIso}
+          nextRetryReason={nextRetryReason}
+          cacheDurationMs={cacheDurationMs}
+        />
       </AccordionPanel>
     </AccordionItem>
   );
@@ -94,12 +103,16 @@ const DeliveryPreviewAccordionItem = ({
 
 interface DeliveryPreviewAccordionProps {
   results: ArticleDeliveryResult[];
-  lastRequestAtUnix?: number;
+  nextRetryAtIso?: string | null;
+  nextRetryReason?: "REFRESH_RATE" | "HOST_CACHE" | "FAILED_RETRY_BACKOFF" | null;
+  cacheDurationMs?: number | null;
 }
 
 export const DeliveryPreviewAccordion = ({
   results,
-  lastRequestAtUnix,
+  nextRetryAtIso,
+  nextRetryReason,
+  cacheDurationMs,
 }: DeliveryPreviewAccordionProps) => (
   <Box {...ARTICLE_LIST_CONTAINER_PROPS}>
     <Accordion allowMultiple>
@@ -108,7 +121,9 @@ export const DeliveryPreviewAccordion = ({
           key={result.articleId}
           result={result}
           isFirst={index === 0}
-          lastRequestAtUnix={lastRequestAtUnix}
+          nextRetryAtIso={nextRetryAtIso}
+          nextRetryReason={nextRetryReason}
+          cacheDurationMs={cacheDurationMs}
         />
       ))}
     </Accordion>

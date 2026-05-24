@@ -1,5 +1,5 @@
 export interface CuratedFeed {
-  url: string;
+  id: string;
   title: string;
   category: string;
   domain: string;

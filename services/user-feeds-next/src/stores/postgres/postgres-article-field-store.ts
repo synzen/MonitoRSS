@@ -11,6 +11,12 @@ import { logger } from "../../shared/utils";
 
 const TABLE_NAME = "feed_article_field_partitioned";
 
+// PostgreSQL's wire protocol caps parameters per query at 65535 (uint16). Even
+// well below that, very large INSERT batches have produced "bind message has N
+// parameter formats but 0 parameters" failures from pg, so we cap each INSERT
+// at MAX_ROWS_PER_INSERT rows (* 4 columns = parameters per query).
+const MAX_ROWS_PER_INSERT = 1000;
+
 interface AsyncStore {
   pendingInserts: PendingArticleFieldInsert[];
 }
@@ -255,35 +261,54 @@ export function createPostgresArticleFieldStore(pool: Pool): ArticleFieldStore {
         return { affectedRows: 0 };
       }
 
+      const client = await pool.connect();
+
       try {
-        const allValues = inserts.flatMap((r) => [
-          r.feedId,
-          r.fieldName,
-          r.hashedValue,
-          r.createdAt,
-        ]);
+        await client.query("BEGIN");
 
-        const placeholders = inserts
-          .map((_, i) => {
-            const base = i * 4;
-            return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4})`;
-          })
-          .join(", ");
+        let affectedRows = 0;
+        for (let i = 0; i < inserts.length; i += MAX_ROWS_PER_INSERT) {
+          const chunk = inserts.slice(i, i + MAX_ROWS_PER_INSERT);
 
-        const result = await pool.query(
-          `INSERT INTO feed_article_field_partitioned
-           (feed_id, field_name, field_hashed_value, created_at)
-           VALUES ${placeholders}`,
-          allValues,
-        );
+          const values = chunk.flatMap((r) => [
+            r.feedId,
+            r.fieldName,
+            r.hashedValue,
+            r.createdAt,
+          ]);
 
-        return { affectedRows: result.rowCount ?? 0 };
+          const placeholders = chunk
+            .map((_, j) => {
+              const base = j * 4;
+              return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4})`;
+            })
+            .join(", ");
+
+          const result = await client.query(
+            `INSERT INTO feed_article_field_partitioned
+             (feed_id, field_name, field_hashed_value, created_at)
+             VALUES ${placeholders}`,
+            values,
+          );
+          affectedRows += result.rowCount ?? 0;
+        }
+
+        await client.query("COMMIT");
+        return { affectedRows };
       } catch (err) {
+        try {
+          await client.query("ROLLBACK");
+        } catch (rollbackErr) {
+          logger.error("Failed to rollback article field insert transaction", {
+            stack: (rollbackErr as Error).stack,
+          });
+        }
         logger.error("Error inserting into feed_article_field_partitioned", {
           stack: (err as Error).stack,
         });
         throw err;
       } finally {
+        client.release();
         store.pendingInserts = [];
       }
     },

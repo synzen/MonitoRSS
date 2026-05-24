@@ -39,10 +39,18 @@ export function isExpectedResolutionUrl(url: string): boolean {
   }
 }
 
-function getPlatformHint(query: string): PlatformHintEntry | null {
+export function getPlatformHint(query: string): PlatformHintEntry | null {
   const q = query.toLowerCase().trim();
 
   return PLATFORM_HINTS.find((hint) => hint.keywords.some((kw) => q.includes(kw))) ?? null;
+}
+
+export function getNoResultsAnnouncement(query: string): string {
+  const hint = getPlatformHint(query);
+  if (hint) {
+    return `${hint.description} For example: ${hint.example}`;
+  }
+  return `No results for ${query}. Many websites have feeds - try pasting a URL (e.g., a YouTube channel or news site) and we'll check automatically.`;
 }
 
 export const PlatformHint = ({ query }: { query: string }) => {
@@ -51,9 +59,6 @@ export const PlatformHint = ({ query }: { query: string }) => {
   if (hint) {
     return (
       <Box borderWidth="1px" borderColor="blue.700" borderRadius="md" bg="blue.900" px={4} py={3}>
-        <Text fontSize="sm" color="gray.300" mb={2}>
-          No results for &ldquo;{query}&rdquo;
-        </Text>
         <Text fontSize="sm" color="gray.100">
           {hint.description}
         </Text>

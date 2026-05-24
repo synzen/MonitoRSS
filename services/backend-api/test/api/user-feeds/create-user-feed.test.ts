@@ -825,4 +825,80 @@ describe("POST /api/v1/user-feeds", () => {
       "Response should have refreshRateOptions array",
     );
   });
+
+  it("returns 400 when both url and curatedFeedId are provided", async () => {
+    const user = await ctx.asUser(generateSnowflake());
+
+    const response = await user.fetch("/api/v1/user-feeds", {
+      method: "POST",
+      body: JSON.stringify({
+        url: "https://example.com/feed.xml",
+        curatedFeedId: "507f1f77bcf86cd799439011",
+      }),
+    });
+    assert.strictEqual(response.status, 400);
+  });
+
+  it("returns 404 when curatedFeedId does not resolve", async () => {
+    const user = await ctx.asUser(generateSnowflake());
+
+    const response = await user.fetch("/api/v1/user-feeds", {
+      method: "POST",
+      body: JSON.stringify({ curatedFeedId: "507f1f77bcf86cd799439011" }),
+    });
+    assert.strictEqual(response.status, 404);
+  });
+
+  it("returns 404 when curatedFeedId is an invalid ObjectId", async () => {
+    const user = await ctx.asUser(generateSnowflake());
+
+    const response = await user.fetch("/api/v1/user-feeds", {
+      method: "POST",
+      body: JSON.stringify({ curatedFeedId: "not-an-object-id" }),
+    });
+    assert.strictEqual(response.status, 404);
+  });
+
+  it("creates a user feed from a curatedFeedId", async () => {
+    const user = await ctx.asUser(generateSnowflake());
+    const curatedUrl = "https://example.com/curated.xml";
+
+    await ctx.container.curatedFeedRepository.replaceAll([
+      {
+        url: curatedUrl,
+        title: "Curated Title",
+        category: "tech",
+        domain: "example.com",
+        description: "A curated feed",
+      },
+    ]);
+    const curated = await ctx.container.curatedFeedRepository.getAll();
+    const curatedFeedId = curated[0]!.id;
+
+    feedApiMockServer.registerRoute("POST", "/v1/user-feeds/get-articles", {
+      status: 200,
+      body: {
+        result: {
+          requestStatus: "SUCCESS",
+          articles: [],
+          totalArticles: 0,
+          selectedProperties: [],
+          url: curatedUrl,
+          feedTitle: "Curated Title",
+        },
+      },
+    });
+
+    const response = await user.fetch("/api/v1/user-feeds", {
+      method: "POST",
+      body: JSON.stringify({ curatedFeedId }),
+    });
+
+    assert.strictEqual(response.status, 201);
+    const body = (await response.json()) as {
+      result: { id: string; title: string; url: string };
+    };
+    assert.strictEqual(body.result.url, curatedUrl);
+    assert.strictEqual(body.result.title, "Curated Title");
+  });
 });

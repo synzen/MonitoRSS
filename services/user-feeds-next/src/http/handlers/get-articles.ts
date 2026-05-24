@@ -16,7 +16,10 @@ import {
 } from "../schemas";
 import { findOrFetchFeedArticles } from "../../feeds/services/articles.service";
 import type { ParsedArticlesCacheStore } from "../../stores/interfaces/parsed-articles-cache";
-import { paginateArticles } from "../../feeds/services/feeds.service";
+import {
+  paginateArticles,
+  queryForArticleProperties,
+} from "../../feeds/services/feeds.service";
 import {
   formatArticleForDiscord,
   CustomPlaceholderStepType,
@@ -53,7 +56,7 @@ function convertCustomPlaceholders(
         }>;
       }>
     | null
-    | undefined
+    | undefined,
 ) {
   if (!schemaPlaceholders?.length) {
     return undefined;
@@ -78,7 +81,7 @@ function convertCustomPlaceholders(
 export async function handleGetArticles(
   req: Request,
   feedRequestsServiceHost: string,
-  parsedArticlesCacheStore: ParsedArticlesCacheStore
+  parsedArticlesCacheStore: ParsedArticlesCacheStore,
 ): Promise<Response> {
   return withAuth(req, async () => {
     const body = await parseJsonBody<unknown>(req);
@@ -132,11 +135,7 @@ export async function handleGetArticles(
       }
 
       // Step 1: Paginate on lightweight (unformatted) articles
-      const {
-        articles: paginatedArticles,
-        totalArticles,
-        properties,
-      } = paginateArticles({
+      const { articles: paginatedArticles, totalArticles } = paginateArticles({
         articles: fetchResult.articles,
         limit: input.limit,
         skip: input.skip,
@@ -159,15 +158,26 @@ export async function handleGetArticles(
             // Strip id/idHash before enrichment (they're not content fields)
             Object.fromEntries(
               Object.entries(article.flattened).filter(
-                ([k]) => k !== "id" && k !== "idHash"
-              )
+                ([k]) => k !== "id" && k !== "idHash",
+              ),
             ),
-            {}
+            {},
           ),
           id: article.flattened.id,
           idHash: article.flattened.idHash,
         },
       }));
+
+      // Compute response properties AFTER enrichment so wildcard / selectPropertyTypes
+      // expansion sees extracted::/processed:: keys added in Step 2.
+      const properties = queryForArticleProperties(
+        enrichedArticles,
+        input.selectProperties?.concat(
+          input.formatter.customPlaceholders?.map((c) => c.sourcePlaceholder) ??
+            [],
+        ),
+        input.selectPropertyTypes,
+      );
 
       // Step 3: Format only the paginated subset for Discord
       const formattedArticles = enrichedArticles.map(
@@ -175,9 +185,9 @@ export async function handleGetArticles(
           formatArticleForDiscord(article, {
             ...input.formatter.options,
             customPlaceholders: convertCustomPlaceholders(
-              input.formatter.customPlaceholders
+              input.formatter.customPlaceholders,
             ),
-          }).article
+          }).article,
       );
 
       // Step 4: Trim to selected properties
@@ -209,11 +219,11 @@ export async function handleGetArticles(
             formattedArticles.map(async (article) => {
               const { result: passed } = evaluateExpression(
                 input.filters!.expression as unknown as LogicalExpression,
-                buildFilterReferences(article)
+                buildFilterReferences(article),
               );
 
               return { passed };
-            })
+            }),
           );
         } else {
           filterEvalResults = formattedArticles.map(() => ({ passed: true }));
@@ -222,10 +232,10 @@ export async function handleGetArticles(
 
       // Filter external content errors to only include those for returned articles
       const returnedArticleIds = new Set(
-        trimmedArticles.map((a) => a.flattened.id)
+        trimmedArticles.map((a) => a.flattened.id),
       );
       const filteredErrors = fetchResult.externalContentErrors?.filter((err) =>
-        returnedArticleIds.has(err.articleId)
+        returnedArticleIds.has(err.articleId),
       );
 
       return jsonResponse({
@@ -254,7 +264,7 @@ export async function handleGetArticles(
             message: err.message,
             errors: err.regexErrors,
           },
-          422
+          422,
         );
       }
 
@@ -266,7 +276,7 @@ export async function handleGetArticles(
             message: err.message,
             errors: err.regexErrors,
           },
-          422
+          422,
         );
       }
 

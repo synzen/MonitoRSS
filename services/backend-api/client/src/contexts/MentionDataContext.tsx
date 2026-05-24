@@ -100,7 +100,7 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
           });
         });
     },
-    [serverId, queryClient]
+    [serverId, queryClient],
   );
 
   const requestRolesFetch = useCallback(() => {
@@ -166,12 +166,12 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
       if (!serverId) return null;
 
       const data = queryClient.getQueryData<UserData | null>(
-        discordServerQueryKeys.serverMember(serverId, userId)
+        discordServerQueryKeys.serverMember(serverId, userId),
       );
 
       return data ?? null;
     },
-    [serverId, queryClient]
+    [serverId, queryClient],
   );
 
   const getRole = useCallback(
@@ -179,12 +179,12 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
       if (!serverId) return null;
 
       const data = queryClient.getQueryData<RolesResponse>(
-        discordServerQueryKeys.serverRoles(serverId)
+        discordServerQueryKeys.serverRoles(serverId),
       );
 
       return data?.results?.find((role) => role.id === roleId) ?? null;
     },
-    [serverId, queryClient]
+    [serverId, queryClient],
   );
 
   const getChannel = useCallback(
@@ -192,19 +192,19 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
       if (!serverId) return null;
 
       const data = queryClient.getQueryData<ChannelsResponse>(
-        discordServerQueryKeys.allChannels(serverId)
+        discordServerQueryKeys.allChannels(serverId),
       );
 
       return data?.results?.find((channel) => channel.id === channelId) ?? null;
     },
-    [serverId, queryClient]
+    [serverId, queryClient],
   );
 
   const isUserLoading = useCallback(
     (userId: string): boolean => {
       return loadingUserIds.has(userId);
     },
-    [loadingUserIds]
+    [loadingUserIds],
   );
 
   const contextValue: MentionDataContextType = useMemo(
@@ -229,7 +229,7 @@ export const MentionDataProvider: React.FC<MentionDataProviderProps> = ({ server
       requestUserFetch,
       requestRolesFetch,
       requestChannelsFetch,
-    ]
+    ],
   );
 
   return <MentionDataContext.Provider value={contextValue}>{children}</MentionDataContext.Provider>;

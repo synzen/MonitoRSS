@@ -9,9 +9,9 @@ const mockCategories = [
   { id: "tech", label: "Tech & Security" },
 ];
 
-const mockFeeds = [
+const mockPopularFeeds = [
   {
-    url: "https://feeds.feedburner.com/ign/games",
+    id: "mock0000000000000000000ign",
     title: "IGN",
     category: "gaming",
     domain: "ign.com",
@@ -19,47 +19,40 @@ const mockFeeds = [
     popular: true,
   },
   {
-    url: "https://store.steampowered.com/feeds/news.xml",
+    id: "mock00000000000000000steam",
     title: "Steam News",
     category: "gaming",
     domain: "store.steampowered.com",
     description: "Steam platform updates",
     popular: true,
   },
+];
+
+const mockGamingCategoryFeeds = [
+  ...mockPopularFeeds,
   {
-    url: "https://www.pcgamer.com/rss/",
+    id: "mock0000000000000000pcgamer",
     title: "PC Gamer",
     category: "gaming",
     domain: "pcgamer.com",
     description: "PC gaming news",
   },
+];
+
+const mockSearchFeeds = [
   {
-    url: "https://example.com/gaming4",
-    title: "Gaming Feed 4",
-    category: "gaming",
-    domain: "example.com",
-    description: "Another gaming feed",
-  },
-  {
-    url: "https://feeds.feedburner.com/TheHackersNews",
+    id: "mock0000000000000000hackers",
     title: "The Hacker News",
     category: "tech",
     domain: "thehackernews.com",
     description: "Cybersecurity news",
-  },
-  {
-    url: "https://news.ycombinator.com/rss",
-    title: "Hacker News (YC)",
-    category: "tech",
-    domain: "news.ycombinator.com",
-    description: "Social tech news",
   },
 ];
 
 const mockGetCuratedFeeds = vi.fn();
 
 vi.mock("../api", () => ({
-  getCuratedFeeds: () => mockGetCuratedFeeds(),
+  getCuratedFeeds: (input?: { q?: string; category?: string }) => mockGetCuratedFeeds(input),
 }));
 
 function createWrapper() {
@@ -74,8 +67,20 @@ function createWrapper() {
 describe("useCuratedFeeds", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockGetCuratedFeeds.mockResolvedValue({
-      result: { categories: mockCategories, feeds: mockFeeds },
+    mockGetCuratedFeeds.mockImplementation((input?: { q?: string; category?: string }) => {
+      if (input?.q) {
+        return Promise.resolve({
+          result: { categories: mockCategories, feeds: mockSearchFeeds },
+        });
+      }
+      if (input?.category === "gaming") {
+        return Promise.resolve({
+          result: { categories: mockCategories, feeds: mockGamingCategoryFeeds },
+        });
+      }
+      return Promise.resolve({
+        result: { categories: mockCategories, feeds: mockPopularFeeds },
+      });
     });
   });
 
@@ -119,22 +124,8 @@ describe("useCuratedFeeds", () => {
     });
   });
 
-  describe("refetch", () => {
-    it("exposes refetch function", async () => {
-      const { result } = renderHook(() => useCuratedFeeds(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
-
-      expect(typeof result.current.refetch).toBe("function");
-    });
-  });
-
-  describe("data.feeds", () => {
-    it("returns all feeds when no params given", async () => {
+  describe("default mode (no options)", () => {
+    it("calls API without params and returns popular feeds", async () => {
       const { result } = renderHook(() => useCuratedFeeds(), {
         wrapper: createWrapper(),
       });
@@ -143,10 +134,13 @@ describe("useCuratedFeeds", () => {
         expect(result.current.data).toBeDefined();
       });
 
-      expect(result.current.data!.feeds.length).toBe(mockFeeds.length);
+      expect(mockGetCuratedFeeds).toHaveBeenCalledWith(undefined);
+      expect(result.current.data!.feeds.length).toBe(mockPopularFeeds.length);
     });
+  });
 
-    it("filters feeds by category", async () => {
+  describe("category mode", () => {
+    it("calls API with category param", async () => {
       const { result } = renderHook(() => useCuratedFeeds({ category: "gaming" }), {
         wrapper: createWrapper(),
       });
@@ -155,53 +149,13 @@ describe("useCuratedFeeds", () => {
         expect(result.current.data).toBeDefined();
       });
 
-      expect(result.current.data!.feeds.length).toBeGreaterThan(0);
-      expect(result.current.data!.feeds.every((f) => f.category === "gaming")).toBe(true);
+      expect(mockGetCuratedFeeds).toHaveBeenCalledWith({ category: "gaming" });
+      expect(result.current.data!.feeds.length).toBe(mockGamingCategoryFeeds.length);
     });
+  });
 
-    it("returns empty array for unknown category", async () => {
-      const { result } = renderHook(() => useCuratedFeeds({ category: "nonexistent" }), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.data).toBeDefined();
-      });
-
-      expect(result.current.data!.feeds).toEqual([]);
-    });
-
-    it("filters feeds by search query", async () => {
-      const { result } = renderHook(() => useCuratedFeeds({ search: "steam" }), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.data).toBeDefined();
-      });
-
-      expect(result.current.data!.feeds.length).toBeGreaterThan(0);
-      expect(result.current.data!.feeds.some((f) => f.title === "Steam News")).toBe(true);
-    });
-
-    it("search is case-insensitive", async () => {
-      const wrapper = createWrapper();
-      const { result: lower } = renderHook(() => useCuratedFeeds({ search: "steam" }), {
-        wrapper,
-      });
-      const { result: upper } = renderHook(() => useCuratedFeeds({ search: "STEAM" }), {
-        wrapper,
-      });
-
-      await waitFor(() => {
-        expect(lower.current.data).toBeDefined();
-        expect(upper.current.data).toBeDefined();
-      });
-
-      expect(lower.current.data!.feeds).toEqual(upper.current.data!.feeds);
-    });
-
-    it("search matches partial titles", async () => {
+  describe("search mode", () => {
+    it("calls API with q param when search is at least 3 chars", async () => {
       const { result } = renderHook(() => useCuratedFeeds({ search: "hack" }), {
         wrapper: createWrapper(),
       });
@@ -210,86 +164,35 @@ describe("useCuratedFeeds", () => {
         expect(result.current.data).toBeDefined();
       });
 
-      expect(result.current.data!.feeds.length).toBeGreaterThanOrEqual(2);
-      expect(result.current.data!.feeds.some((f) => f.title === "Hacker News (YC)")).toBe(true);
-      expect(result.current.data!.feeds.some((f) => f.title === "The Hacker News")).toBe(true);
+      expect(mockGetCuratedFeeds).toHaveBeenCalledWith({ q: "hack" });
+      expect(result.current.data!.feeds).toEqual(mockSearchFeeds);
     });
 
-    it("returns empty feeds array for no search matches", async () => {
-      const { result } = renderHook(() => useCuratedFeeds({ search: "zzzznonexistent" }), {
+    it("skips the API call when search is shorter than 3 chars", async () => {
+      const { result } = renderHook(() => useCuratedFeeds({ search: "hi" }), {
         wrapper: createWrapper(),
       });
 
-      await waitFor(() => {
-        expect(result.current.data).toBeDefined();
-      });
+      await new Promise((r) => setTimeout(r, 30));
 
-      expect(result.current.data!.feeds).toEqual([]);
+      expect(mockGetCuratedFeeds).not.toHaveBeenCalled();
+      expect(result.current.data).toBeUndefined();
     });
 
-    it("search matches description", async () => {
-      const { result } = renderHook(() => useCuratedFeeds({ search: "cybersecurity" }), {
+    it("trims whitespace when computing search length", async () => {
+      const { result } = renderHook(() => useCuratedFeeds({ search: "  hi  " }), {
         wrapper: createWrapper(),
       });
 
-      await waitFor(() => {
-        expect(result.current.data).toBeDefined();
-      });
+      await new Promise((r) => setTimeout(r, 30));
 
-      expect(result.current.data!.feeds.some((f) => f.title === "The Hacker News")).toBe(true);
-    });
-
-    it("search matches domain", async () => {
-      const { result } = renderHook(() => useCuratedFeeds({ search: "ign.com" }), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.data).toBeDefined();
-      });
-
-      expect(result.current.data!.feeds.some((f) => f.title === "IGN")).toBe(true);
-    });
-
-    it("title matches rank above description matches", async () => {
-      const { result } = renderHook(() => useCuratedFeeds({ search: "gaming" }), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.data).toBeDefined();
-      });
-
-      const feeds = result.current.data!.feeds;
-      expect(feeds.length).toBeGreaterThan(0);
-
-      const gamingFeed4Index = feeds.findIndex((f) => f.title === "Gaming Feed 4");
-      const pcGamerIndex = feeds.findIndex((f) => f.title === "PC Gamer");
-
-      expect(gamingFeed4Index).toBeGreaterThanOrEqual(0);
-      expect(pcGamerIndex).toBeGreaterThanOrEqual(0);
-      expect(gamingFeed4Index).toBeLessThan(pcGamerIndex);
-    });
-
-    it("preserves popular field on feed entries", async () => {
-      const { result } = renderHook(() => useCuratedFeeds(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.data).toBeDefined();
-      });
-
-      const popularFeeds = result.current.data!.feeds.filter((f) => f.popular);
-      expect(popularFeeds.length).toBeGreaterThan(0);
-      popularFeeds.forEach((f) => {
-        expect(f.popular).toBe(true);
-      });
+      expect(mockGetCuratedFeeds).not.toHaveBeenCalled();
+      expect(result.current.data).toBeUndefined();
     });
   });
 
   describe("data.categories", () => {
-    it("returns all categories with counts", async () => {
+    it("returns categories with counts derived from returned feeds", async () => {
       const { result } = renderHook(() => useCuratedFeeds(), {
         wrapper: createWrapper(),
       });
@@ -299,30 +202,16 @@ describe("useCuratedFeeds", () => {
       });
 
       expect(result.current.data!.categories.length).toBe(mockCategories.length);
-      result.current.data!.categories.forEach((cat) => {
-        expect(cat).toHaveProperty("id");
-        expect(cat).toHaveProperty("label");
-        expect(cat).toHaveProperty("count");
-        expect(cat.count).toBe(mockFeeds.filter((f) => f.category === cat.id).length);
-      });
-    });
-
-    it("returns full category list regardless of feed filter", async () => {
-      const { result } = renderHook(() => useCuratedFeeds({ category: "gaming" }), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.data).toBeDefined();
-      });
-
-      expect(result.current.data!.categories.length).toBe(mockCategories.length);
+      const gaming = result.current.data!.categories.find((c) => c.id === "gaming");
+      expect(gaming?.count).toBe(2);
+      const tech = result.current.data!.categories.find((c) => c.id === "tech");
+      expect(tech?.count).toBe(0);
     });
   });
 
   describe("getHighlightFeeds", () => {
-    it("returns first 3 feeds per category", async () => {
-      const { result } = renderHook(() => useCuratedFeeds(), {
+    it("returns up to 3 feeds per category from loaded set", async () => {
+      const { result } = renderHook(() => useCuratedFeeds({ category: "gaming" }), {
         wrapper: createWrapper(),
       });
 
@@ -332,15 +221,13 @@ describe("useCuratedFeeds", () => {
 
       const highlights = result.current.getHighlightFeeds();
       expect(highlights.length).toBe(mockCategories.length);
-      highlights.forEach(({ feeds: catFeeds }) => {
-        expect(catFeeds.length).toBeLessThanOrEqual(3);
-        expect(catFeeds.length).toBeGreaterThan(0);
-      });
+      const gamingHighlight = highlights.find((h) => h.category.id === "gaming");
+      expect(gamingHighlight?.feeds.length).toBeLessThanOrEqual(3);
     });
   });
 
   describe("getCategoryPreviewText", () => {
-    it("returns comma-separated titles with ellipsis when more than 3", async () => {
+    it("returns comma-separated titles when 3 or fewer feeds present", async () => {
       const { result } = renderHook(() => useCuratedFeeds(), {
         wrapper: createWrapper(),
       });
@@ -350,10 +237,8 @@ describe("useCuratedFeeds", () => {
       });
 
       const text = result.current.getCategoryPreviewText("gaming");
-      const parts = text.split(", ");
-
-      expect(parts.length).toBe(3);
-      expect(text.endsWith("...")).toBe(true);
+      expect(text).toContain("IGN");
+      expect(text).toContain("Steam News");
     });
   });
 });

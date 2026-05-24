@@ -36,7 +36,9 @@ import {
 
 interface Props {
   result: ArticleDeliveryResult;
-  lastRequestAtUnix?: number;
+  nextRetryAtIso?: string | null;
+  nextRetryReason?: "REFRESH_RATE" | "HOST_CACHE" | "FAILED_RETRY_BACKOFF" | null;
+  cacheDurationMs?: number | null;
 }
 
 const getOutcomeLabel = (outcome: ArticleDeliveryOutcome): string => {
@@ -68,14 +70,30 @@ const getOutcomeLabel = (outcome: ArticleDeliveryOutcome): string => {
   }
 };
 
-const getExplanationText = (
+const humanizeMs = (ms: number) => dayjs.duration(ms, "milliseconds").humanize();
+
+export const getExplanationText = (
   outcome: ArticleDeliveryOutcome,
   refreshRateSeconds: number,
-  lastRequestAtUnix?: number,
+  nextRetryAtIso?: string | null,
+  nextRetryReason?: "REFRESH_RATE" | "HOST_CACHE" | "FAILED_RETRY_BACKOFF" | null,
+  cacheDurationMs?: number | null,
 ): string => {
-  const refreshRateText = `Your feed checks for new content every ${formatRefreshRateSeconds(refreshRateSeconds)}.`;
-  const nextCheckText = getNextCheckText(lastRequestAtUnix, refreshRateSeconds);
-  const timingText = nextCheckText ? `${refreshRateText} ${nextCheckText}` : refreshRateText;
+  const refreshRateText = `Your feed checks for new content every ${formatRefreshRateSeconds(
+    refreshRateSeconds,
+  )}.`;
+  const nextCheckText = getNextCheckText(nextRetryAtIso);
+
+  let timingText: string;
+
+  if (nextRetryReason === "HOST_CACHE" && cacheDurationMs) {
+    const cacheText = humanizeMs(cacheDurationMs);
+    timingText = `${refreshRateText} However, the feed host limits how often new responses are available (about ${cacheText}).${
+      nextCheckText ? ` ${nextCheckText}` : ""
+    }`;
+  } else {
+    timingText = nextCheckText ? `${refreshRateText} ${nextCheckText}` : refreshRateText;
+  }
 
   switch (outcome) {
     case ArticleDeliveryOutcome.WouldDeliver:
@@ -150,7 +168,12 @@ const ConnectionResultRow = ({ mediumResult }: ConnectionResultRowProps) => {
   );
 };
 
-export const ArticleDeliveryDetails = ({ result, lastRequestAtUnix }: Props) => {
+export const ArticleDeliveryDetails = ({
+  result,
+  nextRetryAtIso,
+  nextRetryReason,
+  cacheDurationMs,
+}: Props) => {
   const { userFeed } = useUserFeedContext();
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -170,7 +193,7 @@ export const ArticleDeliveryDetails = ({ result, lastRequestAtUnix }: Props) => 
     if (isLearningPhase) {
       const plural = connectionCount !== 1 ? "s" : "";
       const formattedTime = formatRefreshRateSeconds(effectiveRefreshRateSeconds);
-      const nextCheckText = getNextCheckText(lastRequestAtUnix, effectiveRefreshRateSeconds);
+      const nextCheckText = getNextCheckText(nextRetryAtIso);
       const nextCheckSuffix = nextCheckText ? ` ${nextCheckText}` : "";
 
       return `Skipped (Learning Phase): This article existed before the feed was added. MonitoRSS skips pre-existing articles to avoid flooding your channel with old content. New articles will be delivered to all ${connectionCount} connection${plural} once learning completes (within ${formattedTime}).${nextCheckSuffix}`;
@@ -180,7 +203,13 @@ export const ArticleDeliveryDetails = ({ result, lastRequestAtUnix }: Props) => 
       return "This article would deliver to some connections but not others.";
     }
 
-    return getExplanationText(result.outcome, effectiveRefreshRateSeconds, lastRequestAtUnix);
+    return getExplanationText(
+      result.outcome,
+      effectiveRefreshRateSeconds,
+      nextRetryAtIso,
+      nextRetryReason,
+      cacheDurationMs,
+    );
   };
 
   return (

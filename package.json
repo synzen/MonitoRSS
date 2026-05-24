@@ -1,0 +1,15 @@
+{
+  "name": "monitorss",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "services/backend-api",
+    "services/bot-presence",
+    "services/discord-rest-listener",
+    "services/feed-requests",
+    "services/user-feeds-next"
+  ],
+  "scripts": {
+    "build:packages": "npm run build --workspace=packages/contracts --workspace=packages/logger"
+  }
+}

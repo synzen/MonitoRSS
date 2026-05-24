@@ -102,7 +102,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
   const previewData = convertMessageBuilderStateToConnectionPreviewInput(
     userFeed,
     connection,
-    messageComponent
+    messageComponent,
   );
 
   const debouncedPreviewData = useDebounce(previewData, 500);

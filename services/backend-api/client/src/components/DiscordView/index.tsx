@@ -26,7 +26,7 @@ const MessageTimestamp = (
     compactMode?: boolean;
   } = {
     compactMode: false,
-  }
+  },
 ) => {
   const m = dayjs();
 

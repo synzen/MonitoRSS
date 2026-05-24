@@ -13,8 +13,8 @@ dayjs.extend(relativeTime);
 const mockMutateAsync = vi.fn();
 const mockReset = vi.fn();
 
-vi.mock("../../hooks/useFeedPreviewByUrl", () => ({
-  useFeedPreviewByUrl: () => ({
+vi.mock("../../hooks/useCuratedFeedPreview", () => ({
+  useCuratedFeedPreview: () => ({
     mutateAsync: mockMutateAsync,
     status: "idle",
     error: null,
@@ -27,7 +27,7 @@ const defaultFeed = {
   title: "IGN",
   domain: "ign.com",
   description: "Video game news and reviews",
-  url: "https://ign.com/rss/articles/feed",
+  id: "mock-ign",
 };
 
 const renderCard = (props: Partial<React.ComponentProps<typeof FeedCard>> = {}) => {
@@ -279,7 +279,7 @@ describe("FeedCard", () => {
       expect(screen.getByRole("button", { name: /show details/i })).toBeInTheDocument();
     });
 
-    it("clicking 'Show details' reveals feed URL and technical error", () => {
+    it("clicking 'Show details' reveals the technical error", () => {
       renderCard({
         state: "error",
         isCurated: true,
@@ -289,10 +289,11 @@ describe("FeedCard", () => {
 
       fireEvent.click(screen.getByRole("button", { name: /show details/i }));
 
-      expect(screen.getByText(/https:\/\/ign\.com\/rss\/articles\/feed/)).toBeInTheDocument();
       expect(
         screen.getByText(/Failed to get feed articles - requesting the feed took too long/),
       ).toBeInTheDocument();
+      // Curated feed URLs must never appear in the details panel.
+      expect(screen.queryByText(/https?:\/\//)).not.toBeInTheDocument();
     });
 
     it("clicking 'Hide details' collapses the detail area", () => {
@@ -304,10 +305,13 @@ describe("FeedCard", () => {
       });
 
       fireEvent.click(screen.getByRole("button", { name: /show details/i }));
-      expect(screen.getByText(/https:\/\/ign\.com\/rss\/articles\/feed/)).toBeVisible();
+      const errorText = screen.getByText(
+        /Failed to get feed articles - requesting the feed took too long/,
+      );
+      expect(errorText).toBeVisible();
 
       fireEvent.click(screen.getByRole("button", { name: /hide details/i }));
-      expect(screen.getByText(/https:\/\/ign\.com\/rss\/articles\/feed/)).not.toBeVisible();
+      expect(errorText).not.toBeVisible();
     });
 
     it("'Show details' toggle has aria-expanded attribute", () => {

@@ -80,6 +80,15 @@ import {
   CreateUserFeedDeduplicatedUrlsOutput,
 } from "../features/feed/api/createUserFeedDeduplicatedUrls";
 import { UserFeedUrlRequestStatus } from "../features/feed/types/UserFeedUrlRequestStatus";
+import curatedFeedsMock from "./data/curatedFeedsMock.json";
+import { GetCuratedFeedsOutput } from "../features/feed/api/getCuratedFeeds";
+
+const CURATED_FEEDS_MAX_LIMIT = 25;
+const CURATED_FEEDS_MIN_SEARCH_LENGTH = 3;
+
+function escapeRegex(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 const handlers = [
   http.get("/api/v1/subscription-products/update-preview", async () => {
@@ -125,6 +134,57 @@ const handlers = [
         status: 204,
       },
     );
+  }),
+  http.get("/api/v1/curated-feeds", async ({ request }) => {
+    await delay(800);
+
+    const url = new URL(request.url);
+    const q = url.searchParams.get("q") ?? undefined;
+    const category = url.searchParams.get("category") ?? undefined;
+    const rawLimit = url.searchParams.get("limit");
+    const limit = rawLimit
+      ? Math.min(parseInt(rawLimit, 10) || CURATED_FEEDS_MAX_LIMIT, CURATED_FEEDS_MAX_LIMIT)
+      : CURATED_FEEDS_MAX_LIMIT;
+
+    if (q && category) {
+      return HttpResponse.json(
+        generateMockApiErrorResponse({
+          code: "INVALID_REQUEST",
+          message: "Provide either 'q' or 'category', not both",
+        }),
+        { status: 400 },
+      );
+    }
+
+    if (q && q.length < CURATED_FEEDS_MIN_SEARCH_LENGTH) {
+      return HttpResponse.json(
+        generateMockApiErrorResponse({
+          code: "VALIDATION_FAILED",
+          message: `q must be at least ${CURATED_FEEDS_MIN_SEARCH_LENGTH} characters`,
+        }),
+        { status: 400 },
+      );
+    }
+
+    let feeds = curatedFeedsMock.feeds;
+
+    if (q) {
+      const pattern = new RegExp(escapeRegex(q), "i");
+      feeds = feeds.filter(
+        (f) => pattern.test(f.title) || pattern.test(f.domain) || pattern.test(f.description),
+      );
+    } else if (category) {
+      feeds = feeds.filter((f) => f.category === category);
+    } else {
+      feeds = feeds.filter((f) => f.popular === true);
+    }
+
+    return HttpResponse.json<GetCuratedFeedsOutput>({
+      result: {
+        categories: curatedFeedsMock.categories,
+        feeds: feeds.slice(0, limit),
+      },
+    });
   }),
   http.get("/api/v1/users/@me", async () => {
     await delay(500);
@@ -521,7 +581,7 @@ const handlers = [
 
     await delay(500);
 
-    if (url.includes("bulk")) {
+    if (url && url.includes("bulk")) {
       await delay(1000);
       const shouldReturnError = Math.random() > 1;
 
@@ -700,7 +760,8 @@ const handlers = [
     return HttpResponse.json<GetUserFeedRequestsOutput>({
       result: {
         requests: mockUserFeedRequests,
-        nextRetryTimestamp: Math.floor(Date.now() / 1000) + 3600,
+        nextRetryAtIso: new Date(Date.now() + 3600 * 1000).toISOString(),
+        nextRetryReason: "REFRESH_RATE",
         feedHostGlobalRateLimit: null,
       },
     });

@@ -1,18 +1,9 @@
 import { Connection } from "rabbitmq-client";
 import logger from "./logger";
 
-export enum MessageBrokerQueue {
-  UrlFetchCompleted = "url.fetch.completed",
-  UrlFetchBatch = "url.fetch-batch",
-  UrlFailing = "url.failing",
-  UrlFailedDisableFeeds = "url.failed.disable-feeds",
-  UrlRejectedDisableFeeds = "url.rejected.disable-feeds",
-  FeedRejectedArticleDisableConnection = "feed.rejected-article.disable-connection",
-  FeedDeliverArticles = "feed.deliver-articles",
-  FeedDeleted = "feed.deleted",
-  FeedRejectedDisableFeed = "feed.rejected.disable-feed",
-  SyncSupporterDiscordRoles = "sync-supporter-discord-roles",
-}
+// Re-export the canonical MessageBrokerQueue enum so existing imports keep working.
+// New code should import directly from "@monitorss/contracts".
+export { MessageBrokerQueue } from "@monitorss/contracts";
 
 export async function createRabbitConnection(url: string): Promise<Connection> {
   const connection = new Connection(encodeURI(url));

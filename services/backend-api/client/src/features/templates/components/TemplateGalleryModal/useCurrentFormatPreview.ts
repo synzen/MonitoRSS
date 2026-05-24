@@ -37,7 +37,7 @@ export const useCurrentFormatPreview = ({
       const previewInputData = convertMessageBuilderStateToConnectionPreviewInput(
         userFeed,
         connection,
-        currentMessageComponent
+        currentMessageComponent,
       );
 
       const input: CreateDiscordChannelConnectionPreviewInput = {

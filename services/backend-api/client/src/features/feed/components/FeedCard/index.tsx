@@ -32,8 +32,8 @@ import { getAvatarColor } from "@/utils/getAvatarColor";
 dayjs.extend(relativeTime);
 import { getCuratedFeedErrorMessage } from "./getCuratedFeedErrorMessage";
 import { getPreviewErrorMessage } from "./getPreviewErrorMessage";
-import { useFeedPreviewByUrl } from "../../hooks/useFeedPreviewByUrl";
-import type { GetFeedPreviewByUrlOutput } from "../../api/getFeedPreviewByUrl";
+import { useCuratedFeedPreview } from "../../hooks/useCuratedFeedPreview";
+import type { GetCuratedFeedPreviewOutput } from "../../api/getCuratedFeedPreview";
 
 interface FeedCardProps {
   feed: {
@@ -41,7 +41,8 @@ interface FeedCardProps {
     domain: string;
     description: string;
     popular?: boolean;
-    url: string;
+    url?: string;
+    id?: string;
   };
   state: "default" | "adding" | "added" | "error" | "remove-error" | "limit-reached" | "removing";
   onAdd: () => void;
@@ -89,12 +90,16 @@ export const FeedCard = ({
   const [showDetails, setShowDetails] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(previewOpen);
   const [previewError, setPreviewError] = useState(false);
-  const [cachedPreview, setCachedPreview] = useState<GetFeedPreviewByUrlOutput | null>(null);
+  const [cachedPreview, setCachedPreview] = useState<GetCuratedFeedPreviewOutput | null>(null);
   const {
-    mutateAsync: fetchPreview,
+    mutateAsync: fetchPreviewMutation,
     status: previewStatus,
     data: previewData,
-  } = useFeedPreviewByUrl();
+  } = useCuratedFeedPreview();
+  const fetchPreview = useCallback(
+    () => fetchPreviewMutation({ details: { curatedFeedId: feed.id! } }),
+    [feed.id, fetchPreviewMutation],
+  );
   const initialFetchDone = useRef(false);
   const prevStateRef = useRef(state);
   const addButtonRef = useRef<HTMLButtonElement>(null);
@@ -121,11 +126,11 @@ export const FeedCard = ({
     if (previewOpen && previewEnabled && !initialFetchDone.current) {
       initialFetchDone.current = true;
 
-      fetchPreview({ details: { url: feed.url } })
+      fetchPreview()
         .then((result) => setCachedPreview(result))
         .catch(() => setPreviewError(true));
     }
-  }, [previewOpen, previewEnabled, feed.url, fetchPreview]);
+  }, [previewOpen, previewEnabled, fetchPreview]);
 
   const uniqueId = useId();
   const errorId = `feed-error-${uniqueId}`;
@@ -197,12 +202,12 @@ export const FeedCard = ({
     setPreviewError(false);
 
     try {
-      const result = await fetchPreview({ details: { url: feed.url } });
+      const result = await fetchPreview();
       setCachedPreview(result);
     } catch {
       setPreviewError(true);
     }
-  }, [feed.url, fetchPreview]);
+  }, [fetchPreview]);
 
   const resolvedPreview = cachedPreview || previewData;
   const previewArticles = resolvedPreview?.result.articles;
@@ -452,7 +457,7 @@ export const FeedCard = ({
               <Text color="red.300" fontSize="sm" role="alert" id={errorId} display="inline">
                 {displayErrorMessage}
               </Text>
-              {isCurated && (
+              {isCurated && errorMessage && (
                 <Button
                   variant="link"
                   fontSize="xs"
@@ -469,7 +474,7 @@ export const FeedCard = ({
               )}
             </Box>
           </HStack>
-          {isCurated && (
+          {isCurated && errorMessage && (
             <Box
               id={errorDetailsId}
               mt={2}
@@ -481,20 +486,10 @@ export const FeedCard = ({
             >
               <HStack spacing={1} align="baseline">
                 <Text as="dt" fontWeight="semibold" color="gray.300" flexShrink={0}>
-                  URL
+                  Error
                 </Text>
-                <Text as="dd" wordBreak="break-all">
-                  {feed.url}
-                </Text>
+                <Text as="dd">{errorMessage}</Text>
               </HStack>
-              {errorMessage && (
-                <HStack spacing={1} align="baseline" mt={1}>
-                  <Text as="dt" fontWeight="semibold" color="gray.300" flexShrink={0}>
-                    Error
-                  </Text>
-                  <Text as="dd">{errorMessage}</Text>
-                </HStack>
-              )}
             </Box>
           )}
         </Box>
@@ -626,7 +621,7 @@ export const FeedCard = ({
         </Box>
       )}
 
-      {previewEnabled && (
+      {previewEnabled && feed.id && (
         <Box
           as="details"
           mt={2}
@@ -637,7 +632,7 @@ export const FeedCard = ({
               setIsPreviewOpen(nowOpen);
               if (nowOpen && !cachedPreview) {
                 setPreviewError(false);
-                fetchPreview({ details: { url: feed.url } })
+                fetchPreview()
                   .then((result) => setCachedPreview(result))
                   .catch(() => setPreviewError(true));
               }

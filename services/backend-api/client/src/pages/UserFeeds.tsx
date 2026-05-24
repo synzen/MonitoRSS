@@ -220,22 +220,24 @@ const UserFeedsInner: React.FC = () => {
     userFeedsResults.total >= discordUserMe.maxUserFeeds
   );
 
-  const addedFeedUrls = useMemo(
+  const addedFeedKeys = useMemo(
     () =>
       Object.entries(feedActionStates)
         .filter(([, s]) => s.status === "added" || s.status === "remove-error")
-        .map(([url]) => url),
+        .map(([key]) => key),
     [feedActionStates],
   );
 
   const handleCuratedFeedAdd = useCallback(
     async (feed: CuratedFeed) => {
-      setFeedActionStates((prev) => ({ ...prev, [feed.url]: { status: "adding" } }));
+      setFeedActionStates((prev) => ({ ...prev, [feed.id]: { status: "adding" } }));
       try {
-        const { result } = await createUserFeed({ details: { url: feed.url, title: feed.title } });
+        const { result } = await createUserFeed({
+          details: { curatedFeedId: feed.id, title: feed.title },
+        });
         setFeedActionStates((prev) => ({
           ...prev,
-          [feed.url]: {
+          [feed.id]: {
             status: "added",
             settingsUrl: pages.userFeed(result.id),
             feedId: result.id,
@@ -245,7 +247,7 @@ const UserFeedsInner: React.FC = () => {
       } catch (err) {
         const apiError = err as ApiAdapterError;
         if (apiError.errorCode === ApiErrorCode.FEED_LIMIT_REACHED) {
-          setFeedActionStates((prev) => ({ ...prev, [feed.url]: { status: "limit-reached" } }));
+          setFeedActionStates((prev) => ({ ...prev, [feed.id]: { status: "limit-reached" } }));
           if (!limitAlertShownRef.current) {
             limitAlertShownRef.current = true;
             createInfoAlert({
@@ -258,7 +260,7 @@ const UserFeedsInner: React.FC = () => {
         } else {
           setFeedActionStates((prev) => ({
             ...prev,
-            [feed.url]: {
+            [feed.id]: {
               status: "error",
               message: apiError.message,
               errorCode: apiError.errorCode,
@@ -271,8 +273,8 @@ const UserFeedsInner: React.FC = () => {
   );
 
   const handleCuratedFeedRemove = useCallback(
-    async (feedUrl: string) => {
-      const currentState = feedActionStates[feedUrl];
+    async (feedKey: string) => {
+      const currentState = feedActionStates[feedKey];
       if (
         !currentState ||
         (currentState.status !== "added" && currentState.status !== "remove-error")
@@ -281,20 +283,20 @@ const UserFeedsInner: React.FC = () => {
 
       const { feedId, settingsUrl } = currentState;
 
-      setFeedActionStates((prev) => ({ ...prev, [feedUrl]: { status: "removing" } }));
+      setFeedActionStates((prev) => ({ ...prev, [feedKey]: { status: "removing" } }));
 
       try {
         await deleteUserFeed({ feedId });
         setFeedActionStates((prev) => {
           const next = { ...prev };
-          delete next[feedUrl];
+          delete next[feedKey];
           return next;
         });
         setModalSessionAddCount((prev) => Math.max(prev - 1, 0));
       } catch (err) {
         setFeedActionStates((prev) => ({
           ...prev,
-          [feedUrl]: {
+          [feedKey]: {
             status: "remove-error",
             message: (err as Error).message,
             settingsUrl,
@@ -670,7 +672,7 @@ const UserFeedsInner: React.FC = () => {
           <Box>
             <Stack spacing={6} py={8}>
               <Stack textAlign="center" spacing={2} role="status" aria-live="polite">
-                {addedFeedUrls.length > 0 ? (
+                {addedFeedKeys.length > 0 ? (
                   <Stack
                     textAlign="center"
                     spacing={3}
@@ -683,7 +685,7 @@ const UserFeedsInner: React.FC = () => {
                   >
                     <CheckCircleIcon color="green.400" boxSize={8} aria-hidden="true" />
                     <Heading as="h2" size="lg">
-                      {addedFeedUrls.length} feed{addedFeedUrls.length !== 1 ? "s" : ""} added!
+                      {addedFeedKeys.length} feed{addedFeedKeys.length !== 1 ? "s" : ""} added!
                     </Heading>
                     <Text color="gray.400">
                       Add more feeds below, or view your feeds to set up delivery.

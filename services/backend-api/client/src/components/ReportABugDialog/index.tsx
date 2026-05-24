@@ -54,11 +54,11 @@ export const ReportABugDialog = ({ trigger }: Props) => {
 
     const eventId = Sentry.captureMessage("User Feedback");
 
-    Sentry.captureUserFeedback({
-      event_id: eventId,
+    Sentry.captureFeedback({
+      associatedEventId: eventId,
       name: email,
       email,
-      comments: description,
+      message: description,
     });
 
     onClose();

@@ -3,7 +3,7 @@ import log, { logDatadog } from './utils/log'
 import setup from './utils/setup'
 import { MikroORM } from '@mikro-orm/mongodb'
 import { GLOBAL_BLOCK_TYPE, RequestTimeoutError, RESTConsumer, RESTProducer } from '@synzen/discord-rest'
-import config from './utils/config'
+import defaultConfig from './utils/config'
 import DeliveryRecord from './entities/DeliveryRecord'
 import GeneralStat from './entities/GeneralStat'
 import dayjs from 'dayjs'
@@ -11,6 +11,7 @@ import utc from 'dayjs/plugin/utc'
 import { disableFeed } from './send-failure-notification'
 import { BAD_FORMAT } from './constants/feedDisableReasons'
 import { AmqpChannel } from './constants/amqpChannels'
+import type { ConfigType } from './schemas/ConfigSchema'
 
 dayjs.extend(utc)
 
@@ -67,15 +68,29 @@ const recordArticleFailure = async (orm: MikroORM, jobMeta: JobMeta, articleMeta
   }
 }
 
-setup().then(async (initializedData) => {
-  const { orm, amqpChannelWrapper } = initializedData
+export interface ConsumerAppDeps {
+  exit: (code?: number) => void
+  config: ConfigType
+}
+
+export interface ConsumerAppHandle {
+  orm: MikroORM
+  consumer: RESTConsumer
+  producer: RESTProducer
+  close: () => Promise<void>
+}
+
+export async function createConsumerApp(deps: ConsumerAppDeps): Promise<ConsumerAppHandle> {
+  const { exit, config } = deps
+  const initializedData = await setup(config)
+  const { orm, amqpChannelWrapper, pollInterval } = initializedData
   const producer = new RESTProducer(config.rabbitmqUri, {
     clientId: config.discordClientId
   })
   const consumer = new RESTConsumer(config.rabbitmqUri, {
     authHeader: `Bot ${config.token}`,
     clientId: config.discordClientId,
-    rejectJobsAfterDurationMs: 1000 * 60 * 20,
+    rejectJobsAfterDurationMs: config.rejectJobsAfterDurationMs ?? 1000 * 60 * 20,
     checkIsDuplicate: async (deliveryId) => {
       const count = await orm.em.count(DeliveryRecord, {
         deliveryId,
@@ -129,7 +144,7 @@ setup().then(async (initializedData) => {
 
   consumer.on('jobCompleted', async (job, result) => {
     const jobDuration = dayjs().utc().valueOf() - job.startTimestamp
-    
+
     const meta = {
       route: job.route,
       duration: jobDuration,
@@ -208,6 +223,25 @@ setup().then(async (initializedData) => {
     })
     const jobDuration = dayjs().utc().valueOf() - job.startTimestamp
 
+    try {
+      if (job.meta?.emitDeliveryResult) {
+        await amqpChannelWrapper.sendToQueue(AmqpChannel.FeedArticleDeliveryResult, Buffer.from(JSON.stringify({
+          job,
+          result: {
+            state: 'error',
+            message: error.message,
+          },
+        })), {
+          persistent: true,
+        })
+      }
+    } catch (err) {
+      log.debug(`Failed to send feed delivery error result to queue`, err)
+      logDatadog('error', `Failed to send feed delivery error result to queue`, {
+        stack: (err as Error).stack
+      })
+    }
+
     if (!job.meta?.articleID) {
       return
     }
@@ -243,10 +277,8 @@ setup().then(async (initializedData) => {
     })
     log.warn(errorMessage)
 
-    // don't exit by default ÔÇö the library handles back-off internally;
-    // exiting repeatedly exhausts the docker restart budget and halts delivery
     if (isHardBlock && config.exitOnGlobalBlock) {
-      process.exit(0)
+      exit(0)
     }
   })
 
@@ -254,8 +286,26 @@ setup().then(async (initializedData) => {
   await consumer.initialize()
 
   log.info('Ready')
-}).catch(err => {
-  log.error(`Failed to start app`, err)
-  process.exit(1)
-})
 
+  return {
+    orm,
+    consumer,
+    producer,
+    close: async () => {
+      clearInterval(pollInterval)
+      await consumer.close()
+      await producer.close()
+      await orm.close(true)
+    },
+  }
+}
+
+if (require.main === module) {
+  createConsumerApp({
+    exit: process.exit.bind(process),
+    config: defaultConfig,
+  }).catch(err => {
+    log.error(`Failed to start app`, err)
+    process.exit(1)
+  })
+}

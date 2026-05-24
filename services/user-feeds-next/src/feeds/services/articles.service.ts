@@ -4,7 +4,6 @@
  */
 
 import { fetchFeed, FeedResponseRequestStatus } from "../../feed-fetcher";
-import { FeedRequestBadStatusCodeException } from "../../feed-fetcher/exceptions";
 import {
   injectExternalContent,
   InvalidFeedException,
@@ -79,41 +78,59 @@ function extractRssFromHtml(html: string): string | null {
 
 /**
  * Try to get RSS URL for Reddit pages by appending .rss to the path.
+ * Preserves the input host so that oauth.reddit.com URLs (used for OAuth-authenticated
+ * fetches) keep hitting the OAuth endpoint instead of getting rewritten to www.reddit.com.
  */
-function tryGetRedditRssUrl(url: string): string | null {
+export function tryGetRedditRssUrl(url: string): string | null {
+  let parsed: URL;
+
   try {
-    const parsed = new URL(url);
-    const hostname = parsed.hostname.toLowerCase();
-
-    if (
-      hostname === "reddit.com" ||
-      hostname === "www.reddit.com" ||
-      hostname === "old.reddit.com"
-    ) {
-      if (parsed.pathname.endsWith(".rss")) {
-        return null;
-      }
-
-      // Remove trailing slashes so we can append .rss directly
-      // e.g., "/r/subreddit/top/" -> "/r/subreddit/top" -> "/r/subreddit/top.rss"
-      const cleanPath = parsed.pathname.replace(/\/+$/, "");
-
-      return `https://www.reddit.com${cleanPath}.rss`;
-    }
-
-    return null;
+    parsed = new URL(url);
   } catch {
     return null;
   }
+
+  const hostname = parsed.hostname.toLowerCase();
+
+  if (
+    hostname !== "reddit.com" &&
+    hostname !== "www.reddit.com" &&
+    hostname !== "old.reddit.com" &&
+    hostname !== "oauth.reddit.com"
+  ) {
+    return null;
+  }
+
+  if (parsed.pathname.endsWith(".rss")) {
+    return null;
+  }
+
+  const cleaned = parsed.pathname.replace(/\/+$/, "");
+
+  return `${parsed.protocol}//${parsed.host}${cleaned}.rss${parsed.search}`;
 }
 
 /**
  * Fetch and parse articles from a feed URL.
  */
 export async function findOrFetchFeedArticles(
-  url: string,
-  options: FindOrFetchFeedArticlesOptions,
+  inputUrl: string,
+  inputOptions: FindOrFetchFeedArticlesOptions,
 ): Promise<FetchFeedArticlesResult> {
+  const url = tryGetRedditRssUrl(inputUrl) ?? inputUrl;
+
+  const lookupDetailsUrl = inputOptions.requestLookupDetails?.url;
+  const options =
+    lookupDetailsUrl && inputOptions.requestLookupDetails
+      ? {
+          ...inputOptions,
+          requestLookupDetails: {
+            ...inputOptions.requestLookupDetails,
+            url: tryGetRedditRssUrl(lookupDetailsUrl) ?? lookupDetailsUrl,
+          },
+        }
+      : inputOptions;
+
   const { parsedArticlesCacheStore } = options;
 
   const cacheKeyOptions: CacheKeyOptions = {
@@ -154,33 +171,13 @@ export async function findOrFetchFeedArticles(
     };
   }
 
-  let result;
-
-  try {
-    result = await fetchFeed(url, {
-      executeFetch: options.executeFetch,
-      executeFetchIfNotInCache: true,
-      executeFetchIfStale: options.executeFetchIfStale,
-      lookupDetails: options.requestLookupDetails,
-      serviceHost: options.feedRequestsServiceHost,
-    });
-  } catch (err) {
-    if (
-      err instanceof FeedRequestBadStatusCodeException &&
-      options.findRssFromHtml
-    ) {
-      const redditRssUrl = tryGetRedditRssUrl(url);
-
-      if (redditRssUrl) {
-        return findOrFetchFeedArticles(redditRssUrl, {
-          ...options,
-          findRssFromHtml: false,
-        });
-      }
-    }
-
-    throw err;
-  }
+  const result = await fetchFeed(url, {
+    executeFetch: options.executeFetch,
+    executeFetchIfNotInCache: true,
+    executeFetchIfStale: options.executeFetchIfStale,
+    lookupDetails: options.requestLookupDetails,
+    serviceHost: options.feedRequestsServiceHost,
+  });
 
   if (result.requestStatus !== FeedResponseRequestStatus.Success) {
     // Feed not ready, return empty
@@ -219,16 +216,6 @@ export async function findOrFetchFeedArticles(
           : rssUrl;
 
         return findOrFetchFeedArticles(absoluteRssUrl, {
-          ...options,
-          findRssFromHtml: false,
-        });
-      }
-
-      // Try Reddit-specific URL transformation
-      const redditRssUrl = tryGetRedditRssUrl(url);
-
-      if (redditRssUrl) {
-        return findOrFetchFeedArticles(redditRssUrl, {
           ...options,
           findRssFromHtml: false,
         });

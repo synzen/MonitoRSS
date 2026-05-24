@@ -7,6 +7,7 @@ export const ConfigSchema = z.object({
   rabbitmqUri: z.string(),
   discordClientId: z.string(),
   exitOnGlobalBlock: z.boolean().default(false),
+  rejectJobsAfterDurationMs: z.number().optional(),
   datadog: z.object({
     apiKey: z.string().optional(),
     host: z.string().optional(),

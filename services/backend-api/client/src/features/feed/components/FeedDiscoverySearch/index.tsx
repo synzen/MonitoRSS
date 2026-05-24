@@ -8,6 +8,9 @@ import {
   FormEvent,
 } from "react";
 import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
   Box,
   HStack,
   Text,
@@ -17,7 +20,9 @@ import {
   InputRightElement,
   IconButton,
   Button,
+  Skeleton,
   Stack,
+  VisuallyHidden,
 } from "@chakra-ui/react";
 import { SearchIcon, CloseIcon } from "@chakra-ui/icons";
 import { FeedCard } from "../FeedCard";
@@ -26,7 +31,7 @@ import type { CuratedFeed } from "../../types";
 import { useCreateUserFeedUrlValidation } from "../../hooks/useCreateUserFeedUrlValidation";
 import { UrlValidationResult } from "./UrlValidationResult";
 import type { FeedActionState } from "../../types/FeedActionState";
-import { PlatformHint } from "./PlatformHint";
+import { PlatformHint, getNoResultsAnnouncement, getPlatformHint } from "./PlatformHint";
 import { getFeedCardPropsFromState } from "../../types/FeedActionState";
 import { createDiscoverySearchEvent } from "../../api/createDiscoverySearchEvent";
 
@@ -34,7 +39,7 @@ interface FeedDiscoverySearchProps {
   feedActionStates: Record<string, FeedActionState>;
   isAtLimit: boolean;
   onAdd: (feed: CuratedFeed) => void;
-  onRemove?: (feedUrl: string) => void;
+  onRemove?: (feedKey: string) => void;
   searchInputRef?: RefObject<HTMLInputElement>;
   onSearchChange?: (query: string) => void;
   onFeedAdded?: (feedId: string, feedUrl: string) => void;
@@ -68,9 +73,22 @@ export function useFeedDiscoverySearchState({
   } = useCreateUserFeedUrlValidation();
 
   const isUrlInput = URL_PATTERN.test(activeQuery);
-  const { data } = useCuratedFeeds(
-    activeQuery && !isUrlInput ? { search: activeQuery } : undefined,
+  const hasPlatformHint = !!activeQuery && !isUrlInput && !!getPlatformHint(activeQuery);
+  const shouldFetchCurated = !!activeQuery && !isUrlInput && !hasPlatformHint;
+  const {
+    data,
+    isFetching: isCuratedFetching,
+    error: curatedError,
+    refetch: refetchCurated,
+  } = useCuratedFeeds(
+    shouldFetchCurated
+      ? { search: activeQuery }
+      : hasPlatformHint
+        ? { search: activeQuery, enabled: false }
+        : undefined,
   );
+  const isSearching = isCuratedFetching && shouldFetchCurated;
+  const hasCuratedError = !!curatedError && shouldFetchCurated;
 
   const hasActiveSearch = activeQuery.length > 0;
   const totalResults = isUrlInput ? 0 : (data?.feeds.length ?? 0);
@@ -198,6 +216,9 @@ export function useFeedDiscoverySearchState({
     totalResults,
     visibleResults,
     visibleCount,
+    isSearching,
+    hasCuratedError,
+    refetchCurated,
     setInputRef,
     getCategoryLabel,
     handleSearch,
@@ -220,8 +241,21 @@ export function useFeedDiscoverySearchState({
 
 type SearchStateReturn = ReturnType<typeof useFeedDiscoverySearchState>;
 
+function getSearchAnnouncement(state: SearchStateReturn): string {
+  if (!state.hasActiveSearch || state.isUrlInput) return "";
+  if (state.isSearching) return `Loading search results for ${state.activeQuery}`;
+  if (state.hasCuratedError) {
+    return `Failed to load search results for ${state.activeQuery}`;
+  }
+  if (state.totalResults === 0) return getNoResultsAnnouncement(state.activeQuery);
+  return `${state.totalResults} result${state.totalResults !== 1 ? "s" : ""} for ${state.activeQuery}`;
+}
+
 export const FeedDiscoverySearchInput = ({ state }: { state: SearchStateReturn }) => (
   <Box>
+    <VisuallyHidden role="status" aria-live="polite" aria-atomic="true">
+      {getSearchAnnouncement(state)}
+    </VisuallyHidden>
     <form role="search" onSubmit={state.handleSearch}>
       <HStack>
         <InputGroup>
@@ -256,10 +290,36 @@ export const FeedDiscoverySearchInput = ({ state }: { state: SearchStateReturn }
 export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn }) => {
   if (!state.hasActiveSearch) return null;
 
+  if (state.isSearching) {
+    return (
+      <Box mt={3} aria-busy="true" aria-hidden="true">
+        <Stack spacing={2}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height="64px" borderRadius="md" />
+          ))}
+        </Stack>
+      </Box>
+    );
+  }
+
+  if (state.hasCuratedError) {
+    return (
+      <Alert status="error" mt={3} borderRadius="md">
+        <AlertIcon />
+        <AlertDescription>
+          Failed to load search results.{" "}
+          <Button variant="link" colorScheme="blue" onClick={() => state.refetchCurated()}>
+            Retry
+          </Button>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
     <>
       {state.totalResults > 0 && (
-        <Box aria-live="polite" mt={3}>
+        <Box mt={3}>
           <Text fontSize="sm" color="gray.400">
             {state.totalResults} result{state.totalResults !== 1 ? "s" : ""} for &ldquo;
             {state.activeQuery}&rdquo;
@@ -267,7 +327,7 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
         </Box>
       )}
 
-      <Box aria-live="polite" mt={3}>
+      <Box mt={3}>
         {state.totalResults > 0 && (
           <Stack
             as="ul"
@@ -282,17 +342,17 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
             {state.visibleResults.map((feed, index) => {
               const cardProps = getFeedCardPropsFromState(
                 state.feedActionStates,
-                feed.url,
+                feed.id,
                 state.isAtLimit,
               );
 
               return (
-                <Box as="li" key={feed.url} data-feed-index={index}>
+                <Box as="li" key={feed.id} data-feed-index={index}>
                   <FeedCard
                     feed={feed}
                     state={cardProps.state}
                     onAdd={() => state.onAdd(feed)}
-                    onRemove={state.onRemove ? () => state.onRemove!(feed.url) : undefined}
+                    onRemove={state.onRemove ? () => state.onRemove!(feed.id) : undefined}
                     errorMessage={cardProps.errorMessage}
                     errorCode={cardProps.errorCode}
                     isCurated

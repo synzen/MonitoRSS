@@ -23,3 +23,4 @@ export * from "./getUserFeedDeliveryLogs";
 export * from "./createUserFeedManualRequest";
 export * from "./getDeliveryPreview";
 export * from "./getCuratedFeeds";
+export * from "./getCuratedFeedPreview";

@@ -12,7 +12,8 @@ import {
   Button,
   SimpleGrid,
   Heading,
-  Spinner,
+  Skeleton,
+  VisuallyHidden,
   Alert,
   AlertIcon,
   AlertDescription,
@@ -38,7 +39,7 @@ interface BrowseFeedsModalProps {
   feedActionStates: Record<string, FeedActionState>;
   isAtLimit: boolean;
   onAdd: (feed: CuratedFeed) => void;
-  onRemove?: (feedUrl: string) => void;
+  onRemove?: (feedKey: string) => void;
   onFeedAdded?: (feedId: string, feedUrl: string) => void;
   onFeedRemoved?: (feedUrl: string) => void;
 }
@@ -76,7 +77,7 @@ export const BrowseFeedsModal = ({
     prevIsOpenRef.current = false;
   }
 
-  const { data, getHighlightFeeds, isLoading, error, refetch } = useCuratedFeeds(
+  const { data, getHighlightFeeds, isFetching, error, refetch } = useCuratedFeeds(
     selectedCategory ? { category: selectedCategory } : undefined,
   );
 
@@ -161,6 +162,18 @@ export const BrowseFeedsModal = ({
   const selectedCategoryLabel =
     (data?.categories ?? []).find((c) => c.id === selectedCategory)?.label || selectedCategory;
 
+  const categoryAnnouncement = (() => {
+    if (isSearchActive) return "";
+    if (isFetching) {
+      return selectedCategoryLabel ? `Loading ${selectedCategoryLabel} feeds` : "Loading feeds";
+    }
+    if (error) return "Failed to load feeds";
+    if (!data) return "";
+    const label = selectedCategoryLabel ?? "popular";
+    if (totalFeeds === 0) return `No ${label} feeds available`;
+    return `Showing ${totalFeeds} ${label} feed${totalFeeds !== 1 ? "s" : ""}`;
+  })();
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="6xl" initialFocusRef={searchInputRef}>
       <ModalOverlay />
@@ -168,6 +181,9 @@ export const BrowseFeedsModal = ({
         <ModalHeader as="h2">Add a Feed</ModalHeader>
         <ModalCloseButton />
         <ModalBody ref={modalBodyRef} pb={6} overflowY="auto" maxH="70vh">
+          <VisuallyHidden role="status" aria-live="polite" aria-atomic="true">
+            {categoryAnnouncement}
+          </VisuallyHidden>
           <Stack spacing={4}>
             <FeedLimitBar />
             <FeedDiscoverySearchInput state={searchState} />
@@ -185,12 +201,16 @@ export const BrowseFeedsModal = ({
                 />
               </Box>
             )}
-            {isLoading && !isSearchActive && (
-              <Box display="flex" justifyContent="center" py={8}>
-                <Spinner size="lg" aria-label="Loading feeds" />
+            {isFetching && !isSearchActive && (
+              <Box aria-busy="true" aria-hidden="true">
+                <Stack spacing={2}>
+                  {[0, 1, 2, 3, 4, 5].map((i) => (
+                    <Skeleton key={i} height="64px" borderRadius="md" />
+                  ))}
+                </Stack>
               </Box>
             )}
-            {!!error && !isLoading && (
+            {!!error && !isFetching && (
               <Alert status="error">
                 <AlertIcon />
                 <AlertDescription>
@@ -216,7 +236,7 @@ export const BrowseFeedsModal = ({
             {/* key forces a full remount when category changes. Google Translate
                 does not re-translate text when React replaces children inside an already-translated
                 container; remounting creates fresh DOM nodes that Google Translate picks up. */}
-            {!isSearchActive && data && !isLoading && !error && (
+            {!isSearchActive && data && !isFetching && !error && (
               <Box
                 key={selectedCategory ?? "all"}
                 as="section"
@@ -261,17 +281,17 @@ export const BrowseFeedsModal = ({
                             {feeds.map((feed) => {
                               const cardProps = getFeedCardPropsFromState(
                                 feedActionStates,
-                                feed.url,
+                                feed.id,
                                 isAtLimit,
                               );
 
                               return (
-                                <Box as="li" key={feed.url}>
+                                <Box as="li" key={feed.id}>
                                   <FeedCard
                                     feed={feed}
                                     state={cardProps.state}
                                     onAdd={() => onAdd(feed)}
-                                    onRemove={onRemove ? () => onRemove(feed.url) : undefined}
+                                    onRemove={onRemove ? () => onRemove(feed.id) : undefined}
                                     errorMessage={cardProps.errorMessage}
                                     errorCode={cardProps.errorCode}
                                     isCurated
@@ -313,17 +333,17 @@ export const BrowseFeedsModal = ({
                       {visibleFeeds.map((feed, index) => {
                         const cardProps = getFeedCardPropsFromState(
                           feedActionStates,
-                          feed.url,
+                          feed.id,
                           isAtLimit,
                         );
 
                         return (
-                          <Box as="li" key={feed.url} data-category-feed-index={index}>
+                          <Box as="li" key={feed.id} data-category-feed-index={index}>
                             <FeedCard
                               feed={feed}
                               state={cardProps.state}
                               onAdd={() => onAdd(feed)}
-                              onRemove={onRemove ? () => onRemove(feed.url) : undefined}
+                              onRemove={onRemove ? () => onRemove(feed.id) : undefined}
                               errorMessage={cardProps.errorMessage}
                               errorCode={cardProps.errorCode}
                               isCurated

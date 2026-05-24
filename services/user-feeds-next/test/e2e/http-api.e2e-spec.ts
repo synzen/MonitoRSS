@@ -67,7 +67,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
         responseHashStore: stores.responseHashStore,
         parsedArticlesCacheStore: stores.parsedArticlesCacheStore,
       },
-      TEST_PORT
+      TEST_PORT,
     );
     baseUrl = `http://localhost:${TEST_PORT}`;
   });
@@ -79,7 +79,6 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
     testServer.unregisterUrl(TEST_FEED_URL);
     await teardownTestDatabase();
   });
-
 
   describe("POST /v1/user-feeds/filter-validation", () => {
     const endpoint = "/v1/user-feeds/filter-validation";
@@ -986,7 +985,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
         `${baseUrl}/v1/user-feeds/${feedId}/delivery-count`,
         {
           headers: { "api-key": TEST_API_KEY },
-        }
+        },
       );
 
       assert.strictEqual(response.status, 400);
@@ -998,7 +997,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
         `${baseUrl}/v1/user-feeds/${feedId}/delivery-count?timeWindowSec=3600`,
         {
           headers: { "api-key": TEST_API_KEY },
-        }
+        },
       );
 
       assert.strictEqual(response.status, 200);
@@ -1040,7 +1039,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
         `${baseUrl}/v1/user-feeds/${feedId}/delivery-count?timeWindowSec=3600`,
         {
           headers: { "api-key": TEST_API_KEY },
-        }
+        },
       );
 
       assert.strictEqual(response.status, 200);
@@ -1111,7 +1110,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
         `${baseUrl}/v1/user-feeds/${feedId}/delivery-logs?skip=0&limit=25`,
         {
           headers: { "api-key": TEST_API_KEY },
-        }
+        },
       );
 
       assert.strictEqual(response.status, 200);
@@ -1129,7 +1128,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
         `${baseUrl}/v1/user-feeds/${feedId}/delivery-logs`,
         {
           headers: { "api-key": TEST_API_KEY },
-        }
+        },
       );
 
       assert.strictEqual(response.status, 400);
@@ -1335,9 +1334,7 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
         assert.strictEqual(result.totalArticles, 1);
         assert.strictEqual((result.articles as unknown[]).length, 1);
         const article = (result.articles as JsonBody[])[0]!;
-        assert.ok(
-          (article.title as string).includes("UniqueKeyword123")
-        );
+        assert.ok((article.title as string).includes("UniqueKeyword123"));
       });
 
       it("evaluates filter expressions on formatted articles", async () => {
@@ -1417,7 +1414,50 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
         const title = firstArticle.title as string;
         assert.ok(
           title.includes("First") && !title.includes("<b>"),
-          `Expected HTML tags to be processed in title, got: ${title}`
+          `Expected HTML tags to be processed in title, got: ${title}`,
+        );
+      });
+
+      it("includes extracted:: keys when selectProperties is wildcard", async () => {
+        const response = await fetch(`${baseUrl}${endpoint}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": TEST_API_KEY,
+          },
+          body: JSON.stringify({
+            url: PAGINATION_FEED_URL,
+            limit: 1,
+            skip: 0,
+            selectProperties: ["*"],
+            formatter: { options: {} },
+          }),
+        });
+
+        assert.strictEqual(response.status, 200);
+        const body = (await response.json()) as JsonBody;
+        const result = body.result as JsonBody;
+        const articles = result.articles as JsonBody[];
+        assert.ok(articles.length > 0);
+
+        // article-1's description contains an anchor: <a href="https://example.com">link</a>.
+        // After enrichment, an extracted::description::anchor1 key should be exposed
+        // when callers ask for all properties.
+        const firstArticle = articles[0]!;
+        const extractedAnchorKey = Object.keys(firstArticle).find((k) =>
+          k.startsWith("extracted::description::anchor"),
+        );
+        assert.ok(
+          extractedAnchorKey,
+          `Expected extracted::description::anchor* key in article, got keys: ${Object.keys(firstArticle).join(", ")}`,
+        );
+
+        const selectedProperties = result.selectedProperties as string[];
+        assert.ok(
+          selectedProperties.some((p) =>
+            p.startsWith("extracted::description::anchor"),
+          ),
+          `Expected extracted::description::anchor* in selectedProperties, got: ${selectedProperties.join(", ")}`,
         );
       });
     });
@@ -1623,7 +1663,10 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
 
       const result = results[0]!;
       assert.strictEqual(result.articleId, DIAGNOSE_ARTICLE_ID_1);
-      assert.strictEqual(result.outcome, ArticleDeliveryOutcome.FirstRunBaseline);
+      assert.strictEqual(
+        result.outcome,
+        ArticleDeliveryOutcome.FirstRunBaseline,
+      );
       assert.notStrictEqual(result.outcomeReason, undefined);
       assert.deepStrictEqual(result.mediumResults, []);
     });
@@ -1793,8 +1836,15 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       const results = body.results as JsonBody[];
       const result = results[0]!;
 
-      assert.strictEqual(result.outcome, ArticleDeliveryOutcome.RateLimitedFeed);
-      assert.ok((result.outcomeReason as string).includes("daily article delivery limit"));
+      assert.strictEqual(
+        result.outcome,
+        ArticleDeliveryOutcome.RateLimitedFeed,
+      );
+      assert.ok(
+        (result.outcomeReason as string).includes(
+          "daily article delivery limit",
+        ),
+      );
     });
 
     it("returns RateLimitedMedium outcome when medium rate limit exceeded", async () => {
@@ -1856,7 +1906,10 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       const results = body.results as JsonBody[];
       const result = results[0]!;
 
-      assert.strictEqual(result.outcome, ArticleDeliveryOutcome.RateLimitedMedium);
+      assert.strictEqual(
+        result.outcome,
+        ArticleDeliveryOutcome.RateLimitedMedium,
+      );
       assert.ok((result.outcomeReason as string).includes("rate limit"));
     });
 
@@ -1919,7 +1972,10 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       const results = body.results as JsonBody[];
       const result = results[0]!;
 
-      assert.strictEqual(result.outcome, ArticleDeliveryOutcome.FilteredByMediumFilter);
+      assert.strictEqual(
+        result.outcome,
+        ArticleDeliveryOutcome.FilteredByMediumFilter,
+      );
       assert.ok((result.outcomeReason as string).includes("filtered out"));
     });
 
@@ -1945,7 +2001,11 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
 
       await articleFieldStore.startContext(async () => {
         // Store the prior article with title as comparison field
-        await articleFieldStore.storeArticles(feedId, [priorArticle], ["title"]);
+        await articleFieldStore.storeArticles(
+          feedId,
+          [priorArticle],
+          ["title"],
+        );
         // Mark "title" comparison as active
         await articleFieldStore.storeComparisonNames(feedId, ["title"]);
         await articleFieldStore.flushPendingInserts();
@@ -1977,8 +2037,13 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       const results = body.results as JsonBody[];
       const result = results[0]!;
 
-      assert.strictEqual(result.outcome, ArticleDeliveryOutcome.BlockedByComparison);
-      assert.ok((result.outcomeReason as string).includes("blocked by comparison"));
+      assert.strictEqual(
+        result.outcome,
+        ArticleDeliveryOutcome.BlockedByComparison,
+      );
+      assert.ok(
+        (result.outcomeReason as string).includes("blocked by comparison"),
+      );
     });
 
     it("returns WouldDeliverPassingComparison outcome when passing comparison field changed", async () => {
@@ -2002,9 +2067,11 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
 
       await articleFieldStore.startContext(async () => {
         // Store article with description as passing comparison
-        await articleFieldStore.storeArticles(feedId, [priorArticle], [
-          "description",
-        ]);
+        await articleFieldStore.storeArticles(
+          feedId,
+          [priorArticle],
+          ["description"],
+        );
         // Mark "description" comparison as active
         await articleFieldStore.storeComparisonNames(feedId, ["description"]);
         await articleFieldStore.flushPendingInserts();
@@ -2036,10 +2103,15 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       const results = body.results as JsonBody[];
       const result = results[0]!;
 
-      assert.strictEqual(result.outcome, 
-        ArticleDeliveryOutcome.WouldDeliverPassingComparison
+      assert.strictEqual(
+        result.outcome,
+        ArticleDeliveryOutcome.WouldDeliverPassingComparison,
       );
-      assert.ok((result.outcomeReason as string).includes("comparison field has changed"));
+      assert.ok(
+        (result.outcomeReason as string).includes(
+          "comparison field has changed",
+        ),
+      );
     });
 
     it("returns FilteredByDateCheck outcome when article is too old", async () => {
@@ -2086,7 +2158,10 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       const results = body.results as JsonBody[];
       const result = results[0]!;
 
-      assert.strictEqual(result.outcome, ArticleDeliveryOutcome.FilteredByDateCheck);
+      assert.strictEqual(
+        result.outcome,
+        ArticleDeliveryOutcome.FilteredByDateCheck,
+      );
       assert.ok((result.outcomeReason as string).includes("older than"));
     });
 
@@ -2231,7 +2306,10 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
       assert.strictEqual(results.length, 2);
 
       // All articles should have FeedUnchanged outcome
-      assert.strictEqual(results[0]!.outcome, ArticleDeliveryOutcome.FeedUnchanged);
+      assert.strictEqual(
+        results[0]!.outcome,
+        ArticleDeliveryOutcome.FeedUnchanged,
+      );
       assert.notStrictEqual(results[0]!.outcomeReason, undefined);
       assert.deepStrictEqual(results[0]!.mediumResults, []);
 
@@ -2255,7 +2333,10 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
 
         // Store a prior article so it's not a first run
         const priorArticle = {
-          flattened: { id: "prior-for-invalid-test", idHash: "prior-invalid-hash" },
+          flattened: {
+            id: "prior-for-invalid-test",
+            idHash: "prior-invalid-hash",
+          },
           raw: {},
         };
         await articleFieldStore.startContext(async () => {

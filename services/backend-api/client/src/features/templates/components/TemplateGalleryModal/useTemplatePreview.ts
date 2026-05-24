@@ -45,7 +45,7 @@ export const useTemplatePreview = ({
         const previewInputData = convertMessageBuilderStateToConnectionPreviewInput(
           userFeed,
           connection,
-          messageComponent
+          messageComponent,
         );
 
         const input: CreateDiscordChannelConnectionPreviewInput = {

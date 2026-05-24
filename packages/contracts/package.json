@@ -1,0 +1,29 @@
+{
+  "name": "@monitorss/contracts",
+  "version": "0.1.0",
+  "description": "Canonical RabbitMQ event names and Zod payload schemas for MonitoRSS services.",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "files": [
+    "build"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/synzen/MonitoRSS.git",
+    "directory": "packages/contracts"
+  },
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "prepare": "tsc"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

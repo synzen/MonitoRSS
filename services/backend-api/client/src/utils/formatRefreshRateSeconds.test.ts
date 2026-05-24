@@ -46,30 +46,31 @@ describe("formatRefreshRateSeconds", () => {
 });
 
 describe("getNextCheckText", () => {
-  it("returns empty string when lastRequestAtUnix is undefined", () => {
-    expect(getNextCheckText(undefined, 600)).toBe("");
+  it("returns empty string when nextRetryAtIso is undefined", () => {
+    expect(getNextCheckText(undefined)).toBe("");
   });
 
-  it("returns 'expected shortly' when overdue", () => {
-    const fifteenMinutesAgo = Date.now() / 1000 - 900;
-    expect(getNextCheckText(fifteenMinutesAgo, 600)).toBe("Next check expected shortly.");
+  it("returns empty string when nextRetryAtIso is null", () => {
+    expect(getNextCheckText(null)).toBe("");
   });
 
-  it("returns 'expected shortly' when exactly at refresh rate", () => {
-    const tenMinutesAgo = Date.now() / 1000 - 600;
-    expect(getNextCheckText(tenMinutesAgo, 600)).toBe("Next check expected shortly.");
+  it("returns empty string when nextRetryAtIso is invalid", () => {
+    expect(getNextCheckText("not-a-date")).toBe("");
   });
 
-  it("returns humanized time remaining when within refresh window", () => {
-    const twoMinutesAgo = Date.now() / 1000 - 120;
-    const result = getNextCheckText(twoMinutesAgo, 600);
+  it("returns 'expected shortly' when nextRetryAtIso is in the past", () => {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    expect(getNextCheckText(fiveMinutesAgo)).toBe("Next check expected shortly.");
+  });
+
+  it("returns 'expected shortly' when nextRetryAtIso is now", () => {
+    expect(getNextCheckText(new Date().toISOString())).toBe("Next check expected shortly.");
+  });
+
+  it("returns humanized time remaining when nextRetryAtIso is in the future", () => {
+    const inEightMinutes = new Date(Date.now() + 8 * 60 * 1000).toISOString();
+    const result = getNextCheckText(inEightMinutes);
     expect(result).toMatch(/^Next check expected in about .+\.$/);
     expect(result).not.toContain("shortly");
-  });
-
-  it("returns humanized time for short remaining duration", () => {
-    const nineMinutesAgo = Date.now() / 1000 - 540;
-    const result = getNextCheckText(nineMinutesAgo, 600);
-    expect(result).toMatch(/^Next check expected in about .+\.$/);
   });
 });

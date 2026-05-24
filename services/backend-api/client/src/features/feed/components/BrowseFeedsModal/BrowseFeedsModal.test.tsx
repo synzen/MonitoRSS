@@ -19,12 +19,12 @@ const mockCategories: Array<CuratedCategory & { count: number }> = [
   { id: "entertainment", label: "Entertainment", count: 5 },
 ];
 
-function makeFeed(overrides: Partial<CuratedFeed> & { url: string }): CuratedFeed {
+function makeFeed(overrides: Partial<CuratedFeed> & { id: string }): CuratedFeed {
   return {
-    title: `Feed ${overrides.url}`,
+    title: `Feed ${overrides.id}`,
     category: "gaming",
     domain: "example.com",
-    description: `Description for ${overrides.url}`,
+    description: `Description for ${overrides.id}`,
     ...overrides,
   };
 }
@@ -36,7 +36,7 @@ function makeHighlightFeeds(): CuratedFeed[] {
     for (let i = 0; i < 3; i++) {
       feeds.push(
         makeFeed({
-          url: `https://example.com/${cat.id}-${i}`,
+          id: `mock-${cat.id}-${i}`,
           title: `${cat.label} Feed ${i}`,
           category: cat.id,
           popular: i === 0,
@@ -51,7 +51,7 @@ function makeHighlightFeeds(): CuratedFeed[] {
 function makeCategoryFeeds(categoryId: string, count: number): CuratedFeed[] {
   return Array.from({ length: count }, (_, i) =>
     makeFeed({
-      url: `https://example.com/${categoryId}-feed-${i}`,
+      id: `mock-${categoryId}-feed-${i}`,
       title: `${categoryId} Feed ${i}`,
       category: categoryId,
       popular: i === 0,
@@ -84,6 +84,7 @@ vi.mock("../../hooks", () => ({
         })),
       getCategoryPreviewText: () => "",
       isLoading: false,
+      isFetching: false,
       error: null,
       refetch: vi.fn(),
     };
@@ -108,8 +109,8 @@ vi.mock("../../hooks/useCreateUserFeedUrlValidation", () => ({
   }),
 }));
 
-vi.mock("../../hooks/useFeedPreviewByUrl", () => ({
-  useFeedPreviewByUrl: () => ({
+vi.mock("../../hooks/useCuratedFeedPreview", () => ({
+  useCuratedFeedPreview: () => ({
     mutateAsync: vi.fn(),
     status: "idle",
     error: null,
@@ -537,14 +538,14 @@ describe("BrowseFeedsModal", () => {
 
       expect(onAdd).toHaveBeenCalledTimes(1);
       expect(onAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ url: firstFeed.url, title: firstFeed.title }),
+        expect.objectContaining({ id: firstFeed.id, title: firstFeed.title }),
       );
     });
 
     it("adding state shows spinner on card in category view", async () => {
       const firstFeed = allHighlightFeeds.find((f) => f.category === "gaming")!;
       const { user } = renderModal({
-        feedActionStates: { [firstFeed.url]: { status: "adding" } },
+        feedActionStates: { [firstFeed.id]: { status: "adding" } },
         initialCategory: "gaming",
       });
 
@@ -559,7 +560,7 @@ describe("BrowseFeedsModal", () => {
       const firstFeed = allHighlightFeeds.find((f) => f.category === "gaming")!;
       renderModal({
         feedActionStates: {
-          [firstFeed.url]: { status: "added", settingsUrl: "/feeds/1", feedId: "1" },
+          [firstFeed.id]: { status: "added", settingsUrl: "/feeds/1", feedId: "1" },
         },
         initialCategory: "gaming",
       });
@@ -577,7 +578,7 @@ describe("BrowseFeedsModal", () => {
         onAdd,
         initialCategory: "gaming",
         feedActionStates: {
-          [firstFeed.url]: { status: "error", message: "Network error" },
+          [firstFeed.id]: { status: "error", message: "Network error" },
         },
       });
 
@@ -595,7 +596,7 @@ describe("BrowseFeedsModal", () => {
       const gamingFeed = allHighlightFeeds.find((f) => f.category === "gaming")!;
       const { user } = renderModal({
         feedActionStates: {
-          [gamingFeed.url]: { status: "added", settingsUrl: "/feeds/1", feedId: "1" },
+          [gamingFeed.id]: { status: "added", settingsUrl: "/feeds/1", feedId: "1" },
         },
         initialCategory: "gaming",
       });
@@ -615,7 +616,7 @@ describe("BrowseFeedsModal", () => {
     it("re-opening modal preserves Added states in category view", () => {
       const firstFeed = allHighlightFeeds.find((f) => f.category === "gaming")!;
       const feedActionStates = {
-        [firstFeed.url]: { status: "added" as const, settingsUrl: "/feeds/1", feedId: "1" },
+        [firstFeed.id]: { status: "added" as const, settingsUrl: "/feeds/1", feedId: "1" },
       };
 
       const { rerender } = renderModal({ feedActionStates, initialCategory: "gaming" });
