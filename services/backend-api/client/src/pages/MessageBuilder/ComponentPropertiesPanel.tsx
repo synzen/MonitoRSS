@@ -68,7 +68,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   const guildId = connection?.details.channel?.guildId || connection?.details.webhook?.guildId;
   const { target: selectedComponent } = findMessageBuilderComponentById(
     messageComponent,
-    selectedComponentId
+    selectedComponentId,
   );
 
   const renderComponentDescription = (component: Component) => {
@@ -147,7 +147,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["color"]
+        ["color"],
       );
 
       return (
@@ -199,7 +199,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                       onChange={(c) => {
                         const hexColorAsNumberString = parseInt(
                           c.hex.replace("#", ""),
-                          16
+                          16,
                         ).toString();
                         onChange({
                           ...component,
@@ -234,7 +234,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["authorName", "authorUrl", "authorIconUrl"]
+        ["authorName", "authorUrl", "authorIconUrl"],
       );
 
       return (
@@ -279,7 +279,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["title", "titleUrl"]
+        ["title", "titleUrl"],
       );
 
       return (
@@ -314,7 +314,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["description"]
+        ["description"],
       );
 
       return (
@@ -340,7 +340,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["imageUrl"]
+        ["imageUrl"],
       );
 
       return (
@@ -365,7 +365,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["thumbnailUrl"]
+        ["thumbnailUrl"],
       );
 
       return (
@@ -390,7 +390,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["footerText", "footerIconUrl"]
+        ["footerText", "footerIconUrl"],
       );
 
       return (
@@ -424,7 +424,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["fieldName", "fieldValue"]
+        ["fieldName", "fieldValue"],
       );
 
       return (
@@ -475,7 +475,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["timestamp"]
+        ["timestamp"],
       );
 
       return (
@@ -531,7 +531,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["content"]
+        ["content"],
       );
 
       return (
@@ -552,7 +552,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["label", "href", "style"]
+        ["label", "href", "style"],
       );
 
       return (
@@ -628,7 +628,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["spacing", "visual"]
+        ["spacing", "visual"],
       );
 
       return (
@@ -673,7 +673,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["mediaUrl", "description"]
+        ["mediaUrl", "description"],
       );
 
       return (
@@ -726,7 +726,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["accentColor"]
+        ["accentColor"],
       );
 
       return (
@@ -839,7 +839,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["mediaUrl", "description"]
+        ["mediaUrl", "description"],
       );
 
       return (
@@ -889,7 +889,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
         formState.errors,
         messageComponent,
         component.id,
-        ["label", "url"]
+        ["label", "url"],
       );
 
       return (
@@ -930,7 +930,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
     const findParentAndIndex = (
       comp: Component,
-      targetId: string
+      targetId: string,
     ): { parent: Component; index: number; total: number } | null => {
       if (comp.children) {
         for (let i = 0; i < comp.children.length; i += 1) {
@@ -977,14 +977,14 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     ? getMessageBuilderComponentFormPathsById(messageComponent, selectedComponentId)
     : null;
 
-  // Intentionally skip shouldValidate on content edits. Validation is expensive
-  // (recursive Yup over the whole tree) and runs from handleSubmit on save,
-  // from structural mutations (add/delete/move/switch) in MessageBuilderContext,
-  // and from a debounced trigger in MessageBuilderContent for live problem markers.
+  // shouldValidate clears the specific field's error inline. The debounced
+  // trigger in MessageBuilderContent handles full-tree validation for other fields.
+  // InputWithInsertPlaceholder already debounces at 200ms, so this doesn't run per-keystroke.
   const updateValue = (value: Component) => {
     setValue(formPath as any, value, {
       shouldDirty: true,
       shouldTouch: true,
+      shouldValidate: true,
     });
   };
 
@@ -1065,7 +1065,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                     selectedComponent.id,
                     selectedComponent.type === ComponentType.LegacyActionRow
                       ? ComponentType.LegacyButton
-                      : ComponentType.V2Button
+                      : ComponentType.V2Button,
                   )
                 }
               >

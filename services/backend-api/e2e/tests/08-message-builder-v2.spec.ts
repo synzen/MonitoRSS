@@ -7,6 +7,7 @@ import {
   getTestForumChannelName,
   getTestServerName,
   getTestChannelId,
+  updateConnection,
 } from "../helpers/api";
 
 test.describe("Message Builder V2", () => {
@@ -77,9 +78,14 @@ test.describe("Message Builder V2", () => {
 
     // Configure component properties
 
-    // Container > Text Display
+    // Container > Text Display — verify error clears in Problems after filling
     await tree.getByRole("treeitem", { name: "Text Display" }).first().click();
     await page.getByRole("textbox", { name: "Text Content" }).fill("{{title}}");
+    // Blur by clicking the tree item (also flushes debounced input value)
+    await tree.getByRole("treeitem", { name: "Text Display" }).first().click();
+    await expect(
+      page.locator("#problems-content").getByRole("button", { name: /Container > Text Display/ }),
+    ).not.toBeVisible({ timeout: 10000 });
 
     // Media Gallery > Gallery Item
     await tree.getByRole("treeitem", { name: "Gallery Item" }).click();
@@ -137,6 +143,11 @@ test.describe("Message Builder V2", () => {
 
     // Verify preview components rendered (before save)
     await verifyPreviewComponents();
+
+    // Verify validation errors cleared after all fields are filled
+    await expect(
+      page.locator("#problems-content").getByText("No problems found"),
+    ).toBeVisible({ timeout: 15000 });
 
     // Send test article (before save)
     await page.getByRole("button", { name: /Send to Discord/i }).click();
@@ -372,8 +383,7 @@ test.describe("Message Builder V2", () => {
     });
 
     // Verify placeholder limit row is still visible in the table
-    await expect(page.getByText("{{title}}")).toBeVisible();
-    await expect(page.getByRole("cell", { name: "10" })).toBeVisible();
+    await expect(page.getByRole("row", { name: /title.*10/ })).toBeVisible();
   });
 
   test("shows resolution warnings when placeholders resolve to empty and clears them when fixed", async ({
@@ -475,12 +485,17 @@ test.describe("Message Builder V2", () => {
 
     // Verify warning text is visible
     await expect(
-      page.getByText("placeholder", { exact: false }).first(),
+      page
+        .getByText("placeholder that resolved to be empty", { exact: false })
+        .first(),
     ).toBeVisible({ timeout: 10000 });
 
-    // Verify warning indicators in tree
+    // Verify warning severity icon in problems list
     await expect(
-      page.locator('[aria-label="Warning detected"]').first(),
+      page
+        .locator('[data-tour-target="problems-section"]')
+        .getByText("Warning:", { exact: false })
+        .first(),
     ).toBeVisible({ timeout: 10000 });
 
     // Verify warnings don't block save
@@ -862,5 +877,76 @@ test.describe("Message Builder V2", () => {
     await expect(
       page.getByRole("button", { name: "Choose emoji for button" }),
     ).toBeVisible({ timeout: 5000 });
+  });
+
+  test("preview loads for pre-saved v2 components on page navigation", async ({
+    page,
+    testFeedWithConnection,
+  }) => {
+    const { feed, connection } = testFeedWithConnection;
+
+    await updateConnection(page, feed.id, connection.id, {
+      componentsV2: [
+        {
+          type: "CONTAINER",
+          spoiler: false,
+          components: [
+            {
+              type: "SECTION",
+              components: [{ type: "TEXT_DISPLAY", content: "**{{title}}**" }],
+              accessory: {
+                type: "THUMBNAIL",
+                media: { url: "https://i.imgur.com/EXAMPLE1.png" },
+              },
+            },
+            { type: "SEPARATOR", divider: true, spacing: 1 },
+            { type: "TEXT_DISPLAY", content: "{{description}}" },
+            {
+              type: "ACTION_ROW",
+              components: [
+                {
+                  type: "BUTTON",
+                  style: 5,
+                  label: "Read More",
+                  url: "{{link}}",
+                  disabled: false,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    await page.goto(
+      `/feeds/${feed.id}/discord-channel-connections/${connection.id}/message-builder`,
+    );
+
+    const welcomeDialog = page.getByRole("dialog", {
+      name: "Welcome to your Message Builder!",
+    });
+    if (await welcomeDialog.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await welcomeDialog
+        .getByRole("button", {
+          name: "Skip the message builder tour and start using the feature",
+        })
+        .click();
+    }
+
+    await expect(
+      page.getByText("Previewing Article", { exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+
+    const previewLoadingBar = page.getByLabel("Updating message preview");
+    await expect(previewLoadingBar).not.toBeVisible({ timeout: 30000 });
+    await expect(page.getByText("Failed to load preview.")).not.toBeVisible();
+
+    await expect(page.getByText("No components added yet")).not.toBeVisible({
+      timeout: 5000,
+    });
+
+    await expect(
+      page.getByText("This is test article", { exact: false }),
+    ).toBeVisible({ timeout: 15000 });
   });
 });

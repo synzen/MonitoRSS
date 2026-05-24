@@ -92,7 +92,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
 }) => {
   const {
     watch,
-    formState: { isValid, isDirty },
+    formState: { isDirty },
   } = useFormContext<MessageBuilderFormState>();
   const messageComponent = watch("messageComponent");
   const { currentArticle } = useMessageBuilderContext();
@@ -139,7 +139,8 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
     fetchStatus,
     error,
   } = useCreateConnectionPreview(FeedConnectionType.DiscordChannel, {
-    enabled: !!currentArticle?.id && isValid && !hasEmptyTextContent,
+    // Do NOT add formState.isValid here — it stays false with mode:"onBlur" + setValue/watch pattern
+    enabled: !!currentArticle?.id && !hasEmptyTextContent,
     data: {
       connectionId: connection.id,
       feedId: userFeed.id,
