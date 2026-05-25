@@ -36,7 +36,7 @@ import {
 import { WarningIcon, SettingsIcon, InfoIcon } from "@chakra-ui/icons";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { HiTemplate } from "react-icons/hi";
-import { useFormContext } from "react-hook-form";
+import { useMessageBuilderStateContext } from "./MessageBuilder/state";
 import { useParams, Link as RouterLink, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FaRightFromBracket } from "react-icons/fa6";
@@ -68,7 +68,6 @@ import {
   useUserFeedConnectionContext,
 } from "../contexts/UserFeedConnectionContext";
 import { FeedConnectionType, FeedDiscordChannelConnection } from "../types";
-import MessageBuilderFormState from "./MessageBuilder/types/MessageBuilderFormState";
 import {
   useUpdateDiscordChannelConnection,
   getConnectionWebhookChannelId,
@@ -80,7 +79,6 @@ import {
   usePageAlertContext,
 } from "../contexts/PageAlertContext";
 import convertMessageBuilderStateToConnectionUpdate from "./MessageBuilder/utils/convertMessageBuilderStateToConnectionUpdate";
-import extractMessageBuilderProblems from "./MessageBuilder/utils/extractMessageBuilderProblems";
 import { pages, BlockableFeature } from "../constants";
 import { UserFeedTabSearchParam } from "../constants/userFeedTabSearchParam";
 import { PricingDialogContext } from "../contexts";
@@ -107,7 +105,7 @@ function TreeFocusRestorer({ treeRef }: { treeRef: React.RefObject<HTMLDivElemen
     requestAnimationFrame(() => {
       if (document.activeElement && document.activeElement !== document.body) return;
       const selected = treeRef.current?.querySelector(
-        `[data-id="${currentSelectedId}"]`,
+        `[data-id="${currentSelectedId}"]`
       ) as HTMLElement | null;
       selected?.focus();
     });
@@ -132,7 +130,7 @@ const PreRenderedPanelSlot = React.memo<{ id: string; isActive: boolean }>(
     if (next.isActive) return false;
 
     return true;
-  },
+  }
 );
 PreRenderedPanelSlot.displayName = "PreRenderedPanelSlot";
 
@@ -179,37 +177,12 @@ const CENTER_PANEL_WIDTH = {
 
 const MessageBuilderContent: React.FC = () => {
   const { resetMessage } = useMessageBuilderContext();
-  const { watch, handleSubmit, formState, setValue, trigger, clearErrors } =
-    useFormContext<MessageBuilderFormState>();
+  const { messageComponent, messageComponentRef, dispatch, errors, isDirty, validate } =
+    useMessageBuilderStateContext();
   const { setCurrentSelectedId } = useNavigableTreeContext();
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const [isProblemsCollapsed, setIsProblemsCollapsed] = useState(false);
-  const messageComponent = watch("messageComponent");
   const allComponentIds = useMemo(() => collectComponentIds(messageComponent), [messageComponent]);
-
-  const isDirty = formState.isDirty;
-
-  // Debounced full-tree validation. Uses watch(callback) instead of useEffect
-  // with watch("messageComponent") because watch() returns the same object ref
-  // on nested setValue — useEffect deps would never fire.
-  // clearErrors before trigger because trigger(name) merges rather than replaces,
-  // leaving stale nested errors behind.
-  const validationVersion = useRef(0);
-  useEffect(() => {
-    const sub = watch(() => {
-      validationVersion.current += 1;
-      const capturedVersion = validationVersion.current;
-
-      setTimeout(() => {
-        if (capturedVersion === validationVersion.current) {
-          clearErrors("messageComponent");
-          trigger("messageComponent");
-        }
-      }, 400);
-    });
-
-    return () => sub.unsubscribe();
-  }, [watch, trigger]);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
@@ -247,7 +220,7 @@ const MessageBuilderContent: React.FC = () => {
   const brandingChanged =
     brandingDisplayName !== existingWebhookName || brandingAvatarUrl !== existingWebhookIconUrl;
   const hasBrandingValues = !webhooksAllowed && !!brandingDisplayName.trim();
-  const hasAnyChanges = formState.isDirty || brandingChanged;
+  const hasAnyChanges = isDirty || brandingChanged;
 
   // Template gallery state
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);
@@ -293,18 +266,11 @@ const MessageBuilderContent: React.FC = () => {
     return detectFields(galleryArticles);
   }, [galleryArticles]);
 
-  // Apply template to form state
   const handleApplyTemplate = (selectedId: string) => {
     const template = getTemplateById(selectedId) || DEFAULT_TEMPLATE;
     const newMessageComponent = template.createMessageComponent(detectedFields);
 
-    setValue("messageComponent", newMessageComponent, {
-      shouldValidate: true,
-      shouldDirty: true,
-      shouldTouch: true,
-    });
-
-    // Select the root component so the user sees something selected
+    dispatch({ type: "SET_MESSAGE_COMPONENT", messageComponent: newMessageComponent });
     setCurrentSelectedId(newMessageComponent.id);
 
     handleCloseTemplatesModal();
@@ -322,7 +288,7 @@ const MessageBuilderContent: React.FC = () => {
     componentIdsWithErrors,
     componentIdsWithWarnings,
     setResolvedMessages,
-  } = useMessageBuilderProblems(formState.errors.messageComponent, messageComponent);
+  } = useMessageBuilderProblems(errors.messageComponent, messageComponent);
 
   // If the user attempts to close the tab with unsaved changes, ask for confirmation
   useEffect(() => {
@@ -339,76 +305,66 @@ const MessageBuilderContent: React.FC = () => {
     };
   }, [hasAnyChanges]);
 
-  const handleSaveInner = handleSubmit(
-    async (data) => {
-      if (updateStatus === "loading" || !feedId || !connectionId || !data.messageComponent) {
-        return;
-      }
-
-      try {
-        const connectionDetails = convertMessageBuilderStateToConnectionUpdate(
-          data.messageComponent,
-        );
-
-        const shouldSkipBranding = skipBrandingRef.current;
-        skipBrandingRef.current = false;
-
-        const channelId = getConnectionWebhookChannelId(connection);
-
-        if (webhooksAllowed && !shouldSkipBranding && brandingChanged && channelId) {
-          const hasBrandingValues = !!brandingDisplayName.trim() || !!brandingAvatarUrl.trim();
-
-          if (hasBrandingValues) {
-            connectionDetails.applicationWebhook = {
-              name: brandingDisplayName || undefined,
-              iconUrl: brandingAvatarUrl || undefined,
-              channelId,
-              threadId: getConnectionWebhookThreadId(connection),
-            };
-          } else {
-            connectionDetails.channelId = channelId;
-          }
-        }
-
-        await updateConnection({
-          feedId,
-          connectionId,
-          details: connectionDetails,
-        });
-
-        if (!webhooksAllowed) {
-          setBrandingDisplayName(existingWebhookName);
-          setBrandingAvatarUrl(existingWebhookIconUrl);
-        }
-
-        createSuccessAlert({
-          title: "Successfully saved message format",
-          description: "Your Discord message format has been updated.",
-        });
-      } catch (error) {
-        createErrorAlert({
-          title: "Failed to save message format",
-          description: (error as Error).message,
-        });
-      }
-    },
-    (_errors) => {
-      const freshProblems = extractMessageBuilderProblems(
-        _errors.messageComponent,
-        messageComponent,
-      );
-
-      if (freshProblems.length > 0) {
-        onProblemsDialogOpen();
-      }
-    },
-  );
-
-  // trigger before handleSubmit so the resolver inside handleSubmit sees fresh
-  // validation state — otherwise it may reject a valid form due to stale errors
   const handleSave = async () => {
-    await trigger("messageComponent");
-    return handleSaveInner();
+    const currentMessageComponent = messageComponentRef.current;
+
+    if (updateStatus === "loading" || !feedId || !connectionId || !currentMessageComponent) {
+      return;
+    }
+
+    const isValid = await validate();
+
+    if (!isValid) {
+      onProblemsDialogOpen();
+
+      return;
+    }
+
+    try {
+      const connectionDetails =
+        convertMessageBuilderStateToConnectionUpdate(currentMessageComponent);
+
+      const shouldSkipBranding = skipBrandingRef.current;
+      skipBrandingRef.current = false;
+
+      const channelId = getConnectionWebhookChannelId(connection);
+
+      if (webhooksAllowed && !shouldSkipBranding && brandingChanged && channelId) {
+        const hasBrandingValues = !!brandingDisplayName.trim() || !!brandingAvatarUrl.trim();
+
+        if (hasBrandingValues) {
+          connectionDetails.applicationWebhook = {
+            name: brandingDisplayName || undefined,
+            iconUrl: brandingAvatarUrl || undefined,
+            channelId,
+            threadId: getConnectionWebhookThreadId(connection),
+          };
+        } else {
+          connectionDetails.channelId = channelId;
+        }
+      }
+
+      await updateConnection({
+        feedId,
+        connectionId,
+        details: connectionDetails,
+      });
+
+      if (!webhooksAllowed) {
+        setBrandingDisplayName(existingWebhookName);
+        setBrandingAvatarUrl(existingWebhookIconUrl);
+      }
+
+      createSuccessAlert({
+        title: "Successfully saved message format",
+        description: "Your Discord message format has been updated.",
+      });
+    } catch (error) {
+      createErrorAlert({
+        title: "Failed to save message format",
+        description: (error as Error).message,
+      });
+    }
   };
 
   const handleDiscard = () => {

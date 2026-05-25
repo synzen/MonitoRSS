@@ -33,7 +33,6 @@ import {
 } from "@chakra-ui/react";
 import { CheckIcon, InfoIcon } from "@chakra-ui/icons";
 import { FiFilter } from "react-icons/fi";
-import { Controller, useFormContext } from "react-hook-form";
 import { InputWithInsertPlaceholder } from "../../../components/InputWithInsertPlaceholder";
 import { HelpDialog } from "../../../components";
 import MessagePlaceholderText from "../../../components/MessagePlaceholderText";
@@ -43,11 +42,11 @@ import { LogicalFilterExpression } from "../../../features/feedConnections/types
 import { useUserFeedConnectionContext } from "../../../contexts/UserFeedConnectionContext";
 import { FeedDiscordChannelConnection } from "../../../types";
 import { useDiscordWebhook } from "../../../features/discordWebhooks";
-import MessageBuilderFormState from "../types/MessageBuilderFormState";
 import { useMessageBuilderContext } from "../MessageBuilderContext";
 import { ComponentType } from "../types";
 import { DiscordMessageMentionForm } from "../../../features/feedConnections/components/DiscordMessageForm/DiscordMessageMentionForm";
 import { DiscordMessagePlaceholderLimitsForm } from "../../../features/feedConnections/components/DiscordMessageForm/DiscordMessagePlaceholderLimitsForm";
+import { useMessageBuilderStateContext } from "../state";
 
 const TagCheckbox = ({
   emojiName,
@@ -188,9 +187,8 @@ const FormatRadioCard: React.FC<FormatRadioCardProps> = (props) => {
 
 export const LegacyRootProperties: React.FC = () => {
   const { updateCurrentlySelectedComponent: onChange, switchRootType } = useMessageBuilderContext();
-  const { watch, control } = useFormContext<MessageBuilderFormState>();
-  const component = watch("messageComponent");
-  const isForumChannel = watch("messageComponent.isForumChannel");
+  const { messageComponent: component, dispatch } = useMessageBuilderStateContext();
+  const isForumChannel = component?.isForumChannel;
 
   // Root type switching confirmation dialog
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -235,7 +233,7 @@ export const LegacyRootProperties: React.FC = () => {
   });
   const availableTagIds = new Set(availableTags?.map((tag) => tag.id));
   const deletedTagIds = new Set(
-    connection?.details.forumThreadTags?.filter((v) => !availableTagIds.has(v.id)).map((v) => v.id),
+    connection?.details.forumThreadTags?.filter((v) => !availableTagIds.has(v.id)).map((v) => v.id)
   );
   const showChannelNewThreadOptions = connection.details.channel?.type === "new-thread";
 
@@ -320,28 +318,22 @@ export const LegacyRootProperties: React.FC = () => {
           <Heading as="h3" size="sm" mb={-2}>
             Forum Thread
           </Heading>
-          <Controller
-            name="messageComponent.forumThreadTitle"
-            control={control}
-            render={({ field: { value, onChange: fieldOnChange } }) => {
-              return (
-                <InputWithInsertPlaceholder
-                  value={value || ""}
-                  onChange={(v) => fieldOnChange(v)}
-                  label="Forum Thread Title"
-                  placeholder="Forum thread title"
-                  as="input"
-                  helperText={
-                    <>
-                      The title of the thread that will be created per new article. You may use
-                      placeholders. The default is{" "}
-                      <MessagePlaceholderText withoutCopy>title</MessagePlaceholderText>.
-                    </>
-                  }
-                  guildId={guildId}
-                />
-              );
-            }}
+          <InputWithInsertPlaceholder
+            value={component.forumThreadTitle || ""}
+            onChange={(v) =>
+              dispatch({ type: "UPDATE_ROOT_FIELD", field: "forumThreadTitle", value: v })
+            }
+            label="Forum Thread Title"
+            placeholder="Forum thread title"
+            as="input"
+            helperText={
+              <>
+                The title of the thread that will be created per new article. You may use
+                placeholders. The default is{" "}
+                <MessagePlaceholderText withoutCopy>title</MessagePlaceholderText>.
+              </>
+            }
+            guildId={guildId}
           />
           <FormControl>
             <Text fontSize="sm" mb={2} color="gray.200">
@@ -393,7 +385,7 @@ export const LegacyRootProperties: React.FC = () => {
                         }
 
                         const existingFieldIndex = fieldsWithoutDeletedTags.findIndex(
-                          (v) => v.id === id,
+                          (v) => v.id === id
                         );
 
                         if (existingFieldIndex === -1) {
@@ -426,49 +418,41 @@ export const LegacyRootProperties: React.FC = () => {
           <Heading as="h3" size="sm" mb={-2}>
             Channel Thread
           </Heading>
-          <Controller
-            name="messageComponent.channelNewThreadTitle"
-            control={control}
-            render={({ field: { value, onChange: fieldOnChange } }) => {
-              return (
-                <InputWithInsertPlaceholder
-                  value={value || ""}
-                  onChange={(v) => fieldOnChange(v)}
-                  label="Channel Thread Title"
-                  placeholder="Channel thread title"
-                  as="input"
-                  helperText={
-                    <>
-                      The title of the thread that will be created per new article. You may use
-                      placeholders. The default is{" "}
-                      <MessagePlaceholderText withoutCopy withBrackets>
-                        title
-                      </MessagePlaceholderText>
-                      .
-                    </>
-                  }
-                  guildId={guildId}
-                />
-              );
-            }}
+          <InputWithInsertPlaceholder
+            value={component.channelNewThreadTitle || ""}
+            onChange={(v) =>
+              dispatch({ type: "UPDATE_ROOT_FIELD", field: "channelNewThreadTitle", value: v })
+            }
+            label="Channel Thread Title"
+            placeholder="Channel thread title"
+            as="input"
+            helperText={
+              <>
+                The title of the thread that will be created per new article. You may use
+                placeholders. The default is{" "}
+                <MessagePlaceholderText withoutCopy withBrackets>
+                  title
+                </MessagePlaceholderText>
+                .
+              </>
+            }
+            guildId={guildId}
           />
           <FormControl>
             <HStack justify="space-between" align="center" mb={2}>
               <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
                 Hide Message in Channel
               </FormLabel>
-              <Controller
-                name="messageComponent.channelNewThreadExcludesPreview"
-                control={control}
-                render={({ field: { value, onChange: fieldOnChange } }) => {
-                  return (
-                    <Switch
-                      isChecked={!!value}
-                      onChange={(e) => fieldOnChange(e.target.checked)}
-                      colorScheme="blue"
-                    />
-                  );
-                }}
+              <Switch
+                isChecked={!!component.channelNewThreadExcludesPreview}
+                onChange={(e) =>
+                  dispatch({
+                    type: "UPDATE_ROOT_FIELD",
+                    field: "channelNewThreadExcludesPreview",
+                    value: e.target.checked,
+                  })
+                }
+                colorScheme="blue"
               />
             </HStack>
             <FormHelperText fontSize="sm" color="gray.400">
@@ -488,18 +472,16 @@ export const LegacyRootProperties: React.FC = () => {
             <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
               Format Tables
             </FormLabel>
-            <Controller
-              name="messageComponent.formatTables"
-              control={control}
-              render={({ field: { value, onChange: fieldOnChange } }) => {
-                return (
-                  <Switch
-                    isChecked={!!value}
-                    onChange={(e) => fieldOnChange(e.target.checked)}
-                    colorScheme="blue"
-                  />
-                );
-              }}
+            <Switch
+              isChecked={!!component.formatTables}
+              onChange={(e) =>
+                dispatch({
+                  type: "UPDATE_ROOT_FIELD",
+                  field: "formatTables",
+                  value: e.target.checked,
+                })
+              }
+              colorScheme="blue"
             />
           </HStack>
           <FormHelperText fontSize="sm" color="gray.400">
@@ -512,18 +494,16 @@ export const LegacyRootProperties: React.FC = () => {
             <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
               Strip Images
             </FormLabel>
-            <Controller
-              name="messageComponent.stripImages"
-              control={control}
-              render={({ field: { value, onChange: fieldOnChange } }) => {
-                return (
-                  <Switch
-                    isChecked={!!value}
-                    onChange={(e) => fieldOnChange(e.target.checked)}
-                    colorScheme="blue"
-                  />
-                );
-              }}
+            <Switch
+              isChecked={!!component.stripImages}
+              onChange={(e) =>
+                dispatch({
+                  type: "UPDATE_ROOT_FIELD",
+                  field: "stripImages",
+                  value: e.target.checked,
+                })
+              }
+              colorScheme="blue"
             />
           </HStack>
           <FormHelperText fontSize="sm" color="gray.400">
@@ -539,18 +519,16 @@ export const LegacyRootProperties: React.FC = () => {
             <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
               Ignore New Lines
             </FormLabel>
-            <Controller
-              name="messageComponent.ignoreNewLines"
-              control={control}
-              render={({ field: { value, onChange: fieldOnChange } }) => {
-                return (
-                  <Switch
-                    isChecked={!!value}
-                    onChange={(e) => fieldOnChange(e.target.checked)}
-                    colorScheme="blue"
-                  />
-                );
-              }}
+            <Switch
+              isChecked={!!component.ignoreNewLines}
+              onChange={(e) =>
+                dispatch({
+                  type: "UPDATE_ROOT_FIELD",
+                  field: "ignoreNewLines",
+                  value: e.target.checked,
+                })
+              }
+              colorScheme="blue"
             />
           </HStack>
           <FormHelperText fontSize="sm" color="gray.400">
@@ -564,18 +542,16 @@ export const LegacyRootProperties: React.FC = () => {
             <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
               Placeholder Fallback
             </FormLabel>
-            <Controller
-              name="messageComponent.enablePlaceholderFallback"
-              control={control}
-              render={({ field: { value, onChange: fieldOnChange } }) => {
-                return (
-                  <Switch
-                    isChecked={!!value}
-                    onChange={(e) => fieldOnChange(e.target.checked)}
-                    colorScheme="blue"
-                  />
-                );
-              }}
+            <Switch
+              isChecked={!!component.enablePlaceholderFallback}
+              onChange={(e) =>
+                dispatch({
+                  type: "UPDATE_ROOT_FIELD",
+                  field: "enablePlaceholderFallback",
+                  value: e.target.checked,
+                })
+              }
+              colorScheme="blue"
             />
           </HStack>
           <FormHelperText fontSize="sm" color="gray.400">
@@ -638,7 +614,8 @@ export const LegacyRootProperties: React.FC = () => {
           smallButton
           excludeDescription
           guildId={guildId}
-          path="messageComponent.mentions"
+          value={component.mentions}
+          onChange={(v) => onChange({ ...component, mentions: v })}
         />
       </FormControl>
       <FormControl>
@@ -651,7 +628,8 @@ export const LegacyRootProperties: React.FC = () => {
         <DiscordMessagePlaceholderLimitsForm
           excludeDescription
           small
-          path="messageComponent.placeholderLimits"
+          value={component.placeholderLimits ?? []}
+          onChange={(v) => onChange({ ...component, placeholderLimits: v })}
         />
       </FormControl>
     </VStack>

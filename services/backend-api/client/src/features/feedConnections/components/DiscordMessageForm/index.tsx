@@ -35,7 +35,7 @@ import { DiscordMessageContentForm } from "./DiscordMessageContentForm";
 import { notifyError } from "../../../../utils/notifyError";
 import { FeedConnectionType, FeedDiscordChannelConnection } from "../../../../types";
 import { DiscordMessageForumThreadForm } from "./DiscordMessageForumThreadForm";
-import { DiscordMessageMentionForm } from "./DiscordMessageMentionForm";
+import { DiscordMessageMentionForm, MentionsValue } from "./DiscordMessageMentionForm";
 import { DiscordMessagePlaceholderLimitsForm } from "./DiscordMessagePlaceholderLimitsForm";
 import { CreateDiscordChannelConnectionPreviewInput } from "../../api";
 import { getConnectionWebhookChannelId, getConnectionWebhookThreadId } from "../../utils";
@@ -63,15 +63,15 @@ import {
 const DiscordMessageEmbedForm = lazyWithRetries(() =>
   import("./DiscordMessageEmbedForm").then(({ DiscordMessageEmbedForm: component }) => ({
     default: component,
-  })),
+  }))
 );
 
 const DiscordChannelConnectionPreview = lazyWithRetries(() =>
   import("./DiscordChannelConnectionPreview").then(
     ({ DiscordChannelConnectionPreview: component }) => ({
       default: component,
-    }),
-  ),
+    })
+  )
 );
 
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
@@ -325,7 +325,7 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                             <Text fontSize="sm" fontWeight={600}>
                               <Highlight
                                 query={t(
-                                  "components.discordMessageForm.previewSectionUnsavedWarning",
+                                  "components.discordMessageForm.previewSectionUnsavedWarning"
                                 )}
                                 styles={{
                                   bg: "orange.200",
@@ -397,7 +397,7 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                                 },
                                 {
                                   disableToast: true,
-                                },
+                                }
                               );
 
                               if (resultInfo?.status === "info") {
@@ -603,13 +603,22 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
               <Heading size="sm" as="h3">
                 {t("components.discordMessageMentionForm.title")}
               </Heading>
-              <DiscordMessageMentionForm guildId={guildId} />
+              <DiscordMessageMentionForm
+                guildId={guildId}
+                value={formMethods.watch("mentions") as MentionsValue | undefined}
+                onChange={(v) => formMethods.setValue("mentions", v as any, { shouldDirty: true })}
+              />
             </Stack>
             <Stack>
               <Heading size="sm" as="h3">
                 Placeholder Limits
               </Heading>
-              <DiscordMessagePlaceholderLimitsForm />
+              <DiscordMessagePlaceholderLimitsForm
+                value={formMethods.watch("placeholderLimits") ?? []}
+                onChange={(v) =>
+                  formMethods.setValue("placeholderLimits", v as any, { shouldDirty: true })
+                }
+              />
             </Stack>
             <AnimatedComponent>
               {isDirty && (

@@ -129,11 +129,19 @@ const convertV2MediaGalleryToAPI = (mediaGallery: MediaGalleryComponent) => ({
   })),
 });
 
+const isCompleteForPreview = (child: { children?: any[]; accessory?: any }) => {
+  if ("accessory" in child && !child.accessory) {
+    return false;
+  }
+
+  return true;
+};
+
 const convertV2ContainerToAPI = (container: ContainerComponent) => ({
   type: V2_COMPONENT_TYPE.Container,
   accent_color: container.accentColor ?? undefined,
   spoiler: container.spoiler ?? false,
-  components: container.children.map((child) => {
+  components: container.children.filter(isCompleteForPreview).map((child) => {
     switch (child.type) {
       case ComponentType.V2Divider:
         return convertV2DividerToAPI(child as DividerComponent);
@@ -154,11 +162,11 @@ const convertV2ContainerToAPI = (container: ContainerComponent) => ({
 const convertV2RootToPreviewInput = (
   userFeed: UserFeed,
   connection: FeedDiscordChannelConnection,
-  messageComponent: V2MessageComponentRoot
+  messageComponent: V2MessageComponentRoot,
 ): Omit<CreateDiscordChannelConnectionPreviewInput["data"], "article"> => {
   const componentsV2: CreateDiscordChannelConnectionPreviewInput["data"]["componentsV2"] = [];
 
-  messageComponent.children.forEach((child) => {
+  messageComponent.children.filter(isCompleteForPreview).forEach((child) => {
     if (child.type === ComponentType.V2Section) {
       componentsV2.push(convertV2SectionToAPI(child as SectionComponent));
     } else if (child.type === ComponentType.V2ActionRow) {
@@ -196,7 +204,7 @@ const convertV2RootToPreviewInput = (
 const convertMessageBuilderStateToConnectionPreviewInput = (
   userFeed: UserFeed,
   connection: FeedDiscordChannelConnection,
-  messageComponent?: MessageComponentRoot
+  messageComponent?: MessageComponentRoot,
 ): Omit<CreateDiscordChannelConnectionPreviewInput["data"], "article"> => {
   if (!messageComponent) {
     return {};
@@ -264,7 +272,7 @@ const convertMessageBuilderStateToConnectionPreviewInput = (
   });
 
   const legacyTextComponent = messageComponent.children.find(
-    (c) => c.type === ComponentType.LegacyText
+    (c) => c.type === ComponentType.LegacyText,
   );
 
   return {

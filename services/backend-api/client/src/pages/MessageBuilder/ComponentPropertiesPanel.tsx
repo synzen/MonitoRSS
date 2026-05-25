@@ -24,7 +24,6 @@ import {
 } from "@chakra-ui/react";
 import { DeleteIcon, ChevronUpIcon, ChevronDownIcon, CloseIcon } from "@chakra-ui/icons";
 import { SketchPicker } from "react-color";
-import { useFormContext } from "react-hook-form";
 import type { Component, ComponentPropertiesPanelProps, LegacyEmbedComponent } from "./types";
 import { ComponentType, ROOT_COMPONENT_TYPES } from "./types";
 import { InputWithInsertPlaceholder } from "../../components/InputWithInsertPlaceholder";
@@ -33,15 +32,14 @@ import { ConfirmModal } from "../../components/ConfirmModal";
 import { useMessageBuilderContext } from "./MessageBuilderContext";
 import { DiscordButtonStyle } from "./constants/DiscordButtonStyle";
 import { EmojiPicker } from "./components/EmojiPicker";
-import MessageBuilderFormState from "./types/MessageBuilderFormState";
 import { LegacyRootProperties } from "./componentProperties/LegacyRootProperties";
 import { LegacyTextProperties } from "./componentProperties/LegacyTextProperties";
 import findMessageBuilderComponentById from "./utils/findMessageBuilderComponentById";
-import getMessageBuilderComponentFormPathsById from "./utils/getMessageBuilderComponentFormPathsById";
 import getMessageBuilderFieldErrors from "./utils/getMessageBuilderFieldErrors";
 import getMessageBuilderComponentLabel from "./utils/getMessageBuilderComponentLabel";
 import { useUserFeedConnectionContext } from "../../contexts/UserFeedConnectionContext";
 import { FeedDiscordChannelConnection } from "../../types";
+import { useMessageBuilderStateContext } from "./state";
 
 const NON_REPOSITIONABLE_COMPONENTS = new Set([
   ComponentType.LegacyEmbedContainer,
@@ -62,13 +60,12 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 }) => {
   const { deleteComponent, moveComponentUp, moveComponentDown, addChildComponent } =
     useMessageBuilderContext();
-  const { watch, formState, setValue } = useFormContext<MessageBuilderFormState>();
-  const messageComponent = watch("messageComponent");
+  const { messageComponent, errors, dispatch } = useMessageBuilderStateContext();
   const { connection } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
   const guildId = connection?.details.channel?.guildId || connection?.details.webhook?.guildId;
   const { target: selectedComponent } = findMessageBuilderComponentById(
     messageComponent,
-    selectedComponentId,
+    selectedComponentId
   );
 
   const renderComponentDescription = (component: Component) => {
@@ -143,12 +140,9 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     }
 
     if (component.type === ComponentType.LegacyEmbed) {
-      const [colorError] = getMessageBuilderFieldErrors(
-        formState.errors,
-        messageComponent,
-        component.id,
-        ["color"],
-      );
+      const [colorError] = getMessageBuilderFieldErrors(errors, messageComponent, component.id, [
+        "color",
+      ]);
 
       return (
         <VStack align="stretch" spacing={6}>
@@ -199,7 +193,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                       onChange={(c) => {
                         const hexColorAsNumberString = parseInt(
                           c.hex.replace("#", ""),
-                          16,
+                          16
                         ).toString();
                         onChange({
                           ...component,
@@ -231,10 +225,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
     if (component.type === ComponentType.LegacyEmbedAuthor) {
       const [nameError, urlError, iconUrlError] = getMessageBuilderFieldErrors(
-        formState.errors,
+        errors,
         messageComponent,
         component.id,
-        ["authorName", "authorUrl", "authorIconUrl"],
+        ["authorName", "authorUrl", "authorIconUrl"]
       );
 
       return (
@@ -276,10 +270,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
     if (component.type === ComponentType.LegacyEmbedTitle) {
       const [titleError, titleUrlError] = getMessageBuilderFieldErrors(
-        formState.errors,
+        errors,
         messageComponent,
         component.id,
-        ["title", "titleUrl"],
+        ["title", "titleUrl"]
       );
 
       return (
@@ -311,10 +305,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
     if (component.type === ComponentType.LegacyEmbedDescription) {
       const [descriptionError] = getMessageBuilderFieldErrors(
-        formState.errors,
+        errors,
         messageComponent,
         component.id,
-        ["description"],
+        ["description"]
       );
 
       return (
@@ -336,12 +330,9 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     }
 
     if (component.type === ComponentType.LegacyEmbedImage) {
-      const [imageUrlError] = getMessageBuilderFieldErrors(
-        formState.errors,
-        messageComponent,
-        component.id,
-        ["imageUrl"],
-      );
+      const [imageUrlError] = getMessageBuilderFieldErrors(errors, messageComponent, component.id, [
+        "imageUrl",
+      ]);
 
       return (
         <VStack align="stretch" spacing={6}>
@@ -362,10 +353,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
     if (component.type === ComponentType.LegacyEmbedThumbnail) {
       const [thumbnailUrlError] = getMessageBuilderFieldErrors(
-        formState.errors,
+        errors,
         messageComponent,
         component.id,
-        ["thumbnailUrl"],
+        ["thumbnailUrl"]
       );
 
       return (
@@ -387,10 +378,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
     if (component.type === ComponentType.LegacyEmbedFooter) {
       const [footerTextError, footerIconUrlError] = getMessageBuilderFieldErrors(
-        formState.errors,
+        errors,
         messageComponent,
         component.id,
-        ["footerText", "footerIconUrl"],
+        ["footerText", "footerIconUrl"]
       );
 
       return (
@@ -421,10 +412,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
     if (component.type === ComponentType.LegacyEmbedField) {
       const [fieldNameError, fieldValueError] = getMessageBuilderFieldErrors(
-        formState.errors,
+        errors,
         messageComponent,
         component.id,
-        ["fieldName", "fieldValue"],
+        ["fieldName", "fieldValue"]
       );
 
       return (
@@ -472,10 +463,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
     if (component.type === ComponentType.LegacyEmbedTimestamp) {
       const [timestampError] = getMessageBuilderFieldErrors(
-        formState.errors,
+        errors,
         messageComponent,
         component.id,
-        ["timestamp"],
+        ["timestamp"]
       );
 
       return (
@@ -527,12 +518,9 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     }
 
     if (component.type === ComponentType.V2TextDisplay) {
-      const [contentError] = getMessageBuilderFieldErrors(
-        formState.errors,
-        messageComponent,
-        component.id,
-        ["content"],
-      );
+      const [contentError] = getMessageBuilderFieldErrors(errors, messageComponent, component.id, [
+        "content",
+      ]);
 
       return (
         <InputWithInsertPlaceholder
@@ -549,10 +537,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
     if (component.type === ComponentType.V2Button) {
       const [labelError, hrefError, styleError] = getMessageBuilderFieldErrors(
-        formState.errors,
+        errors,
         messageComponent,
         component.id,
-        ["label", "href", "style"],
+        ["label", "href", "style"]
       );
 
       return (
@@ -625,10 +613,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
     if (component.type === ComponentType.V2Divider) {
       const [spacingError, visualError] = getMessageBuilderFieldErrors(
-        formState.errors,
+        errors,
         messageComponent,
         component.id,
-        ["spacing", "visual"],
+        ["spacing", "visual"]
       );
 
       return (
@@ -670,10 +658,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
     if (component.type === ComponentType.V2Thumbnail) {
       const [mediaUrlError, descriptionError] = getMessageBuilderFieldErrors(
-        formState.errors,
+        errors,
         messageComponent,
         component.id,
-        ["mediaUrl", "description"],
+        ["mediaUrl", "description"]
       );
 
       return (
@@ -723,10 +711,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
     if (component.type === ComponentType.V2Container) {
       const [accentColorError] = getMessageBuilderFieldErrors(
-        formState.errors,
+        errors,
         messageComponent,
         component.id,
-        ["accentColor"],
+        ["accentColor"]
       );
 
       return (
@@ -836,10 +824,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
     if (component.type === ComponentType.V2MediaGalleryItem) {
       const [mediaUrlError, descriptionError] = getMessageBuilderFieldErrors(
-        formState.errors,
+        errors,
         messageComponent,
         component.id,
-        ["mediaUrl", "description"],
+        ["mediaUrl", "description"]
       );
 
       return (
@@ -886,10 +874,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
     if (component.type === ComponentType.LegacyButton) {
       const [labelError, urlError] = getMessageBuilderFieldErrors(
-        formState.errors,
+        errors,
         messageComponent,
         component.id,
-        ["label", "url"],
+        ["label", "url"]
       );
 
       return (
@@ -930,7 +918,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
     const findParentAndIndex = (
       comp: Component,
-      targetId: string,
+      targetId: string
     ): { parent: Component; index: number; total: number } | null => {
       if (comp.children) {
         for (let i = 0; i < comp.children.length; i += 1) {
@@ -973,19 +961,8 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     return count;
   };
 
-  const formPath = messageComponent
-    ? getMessageBuilderComponentFormPathsById(messageComponent, selectedComponentId)
-    : null;
-
-  // shouldValidate clears the specific field's error inline. The debounced
-  // trigger in MessageBuilderContent handles full-tree validation for other fields.
-  // InputWithInsertPlaceholder already debounces at 200ms, so this doesn't run per-keystroke.
   const updateValue = (value: Component) => {
-    setValue(formPath as any, value, {
-      shouldDirty: true,
-      shouldTouch: true,
-      shouldValidate: true,
-    });
+    dispatch({ type: "UPDATE_COMPONENT", componentId: selectedComponentId, component: value });
   };
 
   const positionInfo = selectedComponent ? getComponentPosition(selectedComponent) : null;
@@ -1065,7 +1042,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                     selectedComponent.id,
                     selectedComponent.type === ComponentType.LegacyActionRow
                       ? ComponentType.LegacyButton
-                      : ComponentType.V2Button,
+                      : ComponentType.V2Button
                   )
                 }
               >

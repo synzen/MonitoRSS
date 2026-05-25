@@ -10,14 +10,13 @@ import {
   chakra,
   Text,
 } from "@chakra-ui/react";
-import { useFormContext } from "react-hook-form";
 import { InputWithInsertPlaceholder } from "../../../components/InputWithInsertPlaceholder";
 import { Component, LegacyTextComponent } from "../types";
-import MessageBuilderFormState from "../types/MessageBuilderFormState";
 import getMessageBuilderFieldErrors from "../utils/getMessageBuilderFieldErrors";
 import MessagePlaceholderText from "../../../components/MessagePlaceholderText";
 import { useUserFeedConnectionContext } from "../../../contexts/UserFeedConnectionContext";
 import { FeedDiscordChannelConnection } from "../../../types";
+import { useMessageBuilderStateContext } from "../state";
 
 interface LegacyTextPropertiesProps {
   root?: Component;
@@ -32,9 +31,7 @@ export const LegacyTextProperties: React.FC<LegacyTextPropertiesProps> = ({
 }) => {
   const { connection } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
   const guildId = connection?.details.channel?.guildId || connection?.details.webhook?.guildId;
-  const {
-    formState: { errors },
-  } = useFormContext<MessageBuilderFormState>();
+  const { errors } = useMessageBuilderStateContext();
   const [contentError] = getMessageBuilderFieldErrors(errors, root, component.id, ["content"]);
 
   return (

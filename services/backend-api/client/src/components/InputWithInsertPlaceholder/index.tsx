@@ -112,6 +112,14 @@ export const InputWithInsertPlaceholder: React.FC<Props> = ({
     [scheduleFlush],
   );
 
+  const handleBlur = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+      flush(localValueRef.current);
+    }
+  }, [flush]);
+
   const handleInsertPlaceholder = useCallback(
     (tag: string) => {
       if (!inputRef.current) {
@@ -153,6 +161,7 @@ export const InputWithInsertPlaceholder: React.FC<Props> = ({
               ref={inputRef as React.RefObject<HTMLTextAreaElement>}
               value={localValue}
               onChange={handleChange}
+              onBlur={handleBlur}
               placeholder={placeholder}
               rows={rows}
               bg="gray.700"
@@ -164,6 +173,7 @@ export const InputWithInsertPlaceholder: React.FC<Props> = ({
               ref={inputRef as React.RefObject<HTMLInputElement>}
               value={localValue}
               onChange={handleChange}
+              onBlur={handleBlur}
               placeholder={placeholder}
               bg="gray.700"
               color="white"

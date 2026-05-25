@@ -4,7 +4,7 @@ import getMessageBuilderComponentLabel from "./getMessageBuilderComponentLabel";
 const getComponentPath = (
   component: Component,
   targetId: string,
-  currentPath = "",
+  currentPath = ""
 ): string | null => {
   interface StackItem {
     component: Component;
@@ -25,7 +25,7 @@ const getComponentPath = (
     // Add accessory to stack (will be processed first due to stack LIFO nature)
     if (currentComponent.type === ComponentType.V2Section && currentComponent.accessory) {
       const accessoryPath = `${path} > ${getMessageBuilderComponentLabel(
-        currentComponent.type,
+        currentComponent.type
       )} (accessory)`;
       stack.push({ component: currentComponent.accessory, path: accessoryPath });
     }

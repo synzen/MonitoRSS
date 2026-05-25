@@ -233,9 +233,8 @@ export const ComponentTreeItem = React.memo(ComponentTreeItemInner, (prev, next)
   if (prev.isAccessory !== next.isAccessory) return false;
   if (prev.scrollToComponentId !== next.scrollToComponentId) return false;
 
-  const id = prev.component.id;
-  if (prev.componentIdsWithErrors.has(id) !== next.componentIdsWithErrors.has(id)) return false;
-  if (prev.componentIdsWithWarnings.has(id) !== next.componentIdsWithWarnings.has(id)) return false;
+  if (prev.componentIdsWithErrors !== next.componentIdsWithErrors) return false;
+  if (prev.componentIdsWithWarnings !== next.componentIdsWithWarnings) return false;
 
   return true;
 });

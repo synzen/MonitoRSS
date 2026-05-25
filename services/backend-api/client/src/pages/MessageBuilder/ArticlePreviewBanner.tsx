@@ -12,7 +12,6 @@ import {
 } from "@chakra-ui/react";
 import { InfoIcon, RepeatIcon, WarningIcon } from "@chakra-ui/icons";
 import { FaRss, FaDiscord } from "react-icons/fa";
-import { useFormContext } from "react-hook-form";
 import { useMessageBuilderContext } from "./MessageBuilderContext";
 import { ArticleSelectionDialog } from "./ArticleSelectionDialog";
 import { SendTestArticleContext } from "../../contexts";
@@ -21,9 +20,9 @@ import { useUserFeedContext } from "../../contexts/UserFeedContext";
 import { CreateDiscordChannelConnectionPreviewInput } from "../../features/feedConnections/api";
 import { getConnectionWebhookChannelId } from "../../features/feedConnections/utils";
 import { usePageAlertContext } from "../../contexts/PageAlertContext";
-import MessageBuilderFormState from "./types/MessageBuilderFormState";
 import { FeedDiscordChannelConnection } from "../../types";
 import convertMessageBuilderStateToConnectionPreviewInput from "./utils/convertMessageBuilderStateToConnectionPreviewInput";
+import { useMessageBuilderStateContext } from "./state";
 
 interface ArticlePreviewBannerProps {
   brandingDisplayName?: string;
@@ -52,7 +51,7 @@ export const ArticlePreviewBanner: React.FC<ArticlePreviewBannerProps> = ({
   const { connection } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
   const { isFetching: isSendingTestArticle, sendTestArticle } = useContext(SendTestArticleContext);
   const { createErrorAlert, createInfoAlert, createSuccessAlert } = usePageAlertContext();
-  const { getValues } = useFormContext<MessageBuilderFormState>();
+  const { messageComponent } = useMessageBuilderStateContext();
 
   const handleSendToDiscord = async () => {
     if (isSendingTestArticle || !currentArticleId || !currentArticle) {
@@ -60,11 +59,10 @@ export const ArticlePreviewBanner: React.FC<ArticlePreviewBannerProps> = ({
     }
 
     try {
-      const formState = getValues();
       const messageComponentData = convertMessageBuilderStateToConnectionPreviewInput(
         userFeed,
         connection,
-        formState.messageComponent,
+        messageComponent
       );
 
       const previewInput: CreateDiscordChannelConnectionPreviewInput = {
@@ -99,7 +97,7 @@ export const ArticlePreviewBanner: React.FC<ArticlePreviewBannerProps> = ({
         },
         {
           disableToast: true,
-        },
+        }
       );
 
       if (resultInfo?.status === "info") {
