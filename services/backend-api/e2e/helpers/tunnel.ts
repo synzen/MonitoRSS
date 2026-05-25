@@ -10,13 +10,14 @@ export async function startTunnel(port: number): Promise<string> {
   const cloudflaredPath = process.env.CLOUDFLARED_PATH || "cloudflared";
 
   return new Promise<string>((resolve, reject) => {
-    const proc = spawn(cloudflaredPath, [
-      "tunnel",
-      "--url",
-      `http://localhost:${port}`,
-    ]);
+    const proc = spawn(
+      cloudflaredPath,
+      ["tunnel", "--url", `http://localhost:${port}`],
+      { detached: true, stdio: ["ignore", "pipe", "pipe"] },
+    );
 
     tunnelProcess = proc;
+    proc.unref();
     let resolved = false;
 
     if (proc.pid) {

@@ -27,6 +27,11 @@ test.describe("Comparisons Tab", () => {
     const passingSelect = page.getByLabel("Add a new passing comparison");
     await passingSelect.waitFor({ state: "visible", timeout: 10000 });
 
+    // Wait for properties to load into the select
+    await expect(passingSelect.locator("option").nth(1)).toBeAttached({
+      timeout: 10000,
+    });
+
     const options = await passingSelect.locator("option").allTextContents();
     const validOption = options.find(
       (opt) => opt && opt !== "Select a property to add",
@@ -70,6 +75,11 @@ test.describe("Comparisons Tab", () => {
 
     const blockingSelect = page.getByLabel("Add a new blocking comparison");
     await blockingSelect.waitFor({ state: "visible", timeout: 10000 });
+
+    // Wait for properties to load into the select
+    await expect(blockingSelect.locator("option").nth(1)).toBeAttached({
+      timeout: 10000,
+    });
 
     const options = await blockingSelect.locator("option").allTextContents();
     const validOption = options.find(

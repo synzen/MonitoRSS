@@ -20,10 +20,12 @@ async function selectSourcePlaceholder(
   page: import("@playwright/test").Page,
   source: string,
 ) {
-  await page.locator("#source-placeholder-select").first().click();
-  await page
-    .getByRole("option", { name: source, exact: true })
-    .click({ force: true });
+  const selectInput = page.locator("#source-placeholder-select").first();
+  await selectInput.scrollIntoViewIfNeeded();
+  await selectInput.click();
+  const option = page.getByRole("option", { name: source, exact: true });
+  await option.scrollIntoViewIfNeeded();
+  await option.click({ force: true });
 }
 
 async function addPlaceholder(

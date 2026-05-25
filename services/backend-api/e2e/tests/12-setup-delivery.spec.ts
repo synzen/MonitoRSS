@@ -69,7 +69,9 @@ test.describe("Setup Delivery Checklist", () => {
       ).toBeVisible();
 
       // Cards are expanded by default
-      await expect(page.getByText(feedWithoutConnection.title)).toBeVisible();
+      await expect(
+        page.getByText(feedWithoutConnection.title).first(),
+      ).toBeVisible();
     });
 
     test("shows feeds table alongside the checklist", async ({ page }) => {

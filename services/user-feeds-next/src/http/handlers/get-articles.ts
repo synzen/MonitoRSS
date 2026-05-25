@@ -21,7 +21,10 @@ import {
   queryForArticleProperties,
 } from "../../pipeline/services/feeds.service";
 import { formatArticleForDiscord } from "../../delivery/discord/html-to-discord";
-import { CustomPlaceholderStepType, type CustomPlaceholder } from "../../formatting";
+import {
+  CustomPlaceholderStepType,
+  type CustomPlaceholder,
+} from "../../formatting";
 import {
   CustomPlaceholderRegexEvalException,
   FiltersRegexEvalException,
@@ -140,7 +143,10 @@ export async function handleGetArticles(
         random: input.random,
         selectProperties: input.selectProperties,
         selectPropertyTypes: input.selectPropertyTypes,
-        customPlaceholders: input.formatter.customPlaceholders as CustomPlaceholder[] | null | undefined,
+        customPlaceholders: input.formatter.customPlaceholders as
+          | CustomPlaceholder[]
+          | null
+          | undefined,
         filters: {
           articleId: input.filters?.articleId,
           articleIdHashes: input.filters?.articleIdHashes,
@@ -176,6 +182,17 @@ export async function handleGetArticles(
         ),
         input.selectPropertyTypes,
       );
+
+      // Custom placeholder keys (e.g. custom::mytitle) are created in Step 3
+      // (formatting), so they don't exist in the enriched articles that
+      // queryForArticleProperties expands wildcards against. Append them after
+      // expansion so they survive the Step 4 trim.
+      for (const cp of input.formatter.customPlaceholders ?? []) {
+        const key = `custom::${cp.referenceName}`;
+        if (!properties.includes(key)) {
+          properties.push(key);
+        }
+      }
 
       // Step 3: Format only the paginated subset for Discord
       const formattedArticles = enrichedArticles.map(

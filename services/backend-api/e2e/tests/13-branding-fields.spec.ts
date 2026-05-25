@@ -38,6 +38,11 @@ async function navigateToTemplateModal(
   // Focus the channel select input, then press ArrowDown to open menu
   await page.locator("#channel-select").focus();
   await page.locator("#channel-select").press("ArrowDown");
+  // Wait for options to appear before clicking
+  await page
+    .locator('[role="option"]')
+    .first()
+    .waitFor({ state: "visible", timeout: 15000 });
   await page
     .locator('[role="option"]')
     .filter({ hasText: channelName })
@@ -88,8 +93,10 @@ test.describe("Branding Fields - Template Gallery Modal", () => {
     await expect(displayNameInput).toBeVisible();
     await expect(avatarUrlInput).toBeVisible();
 
-    // Verify "Free plan" framing is shown (free user)
-    await expect(modal.getByText(/Free plan/)).toBeVisible();
+    // Verify free user framing is shown
+    await expect(
+      modal.getByText(/Upgrade to customize your branding/),
+    ).toBeVisible();
 
     // Verify branding fields are interactive (not disabled)
     await expect(displayNameInput).toBeEnabled();
@@ -291,8 +298,10 @@ test.describe("Branding Fields - Connection Settings", () => {
     await brandingHeading.scrollIntoViewIfNeeded({ timeout: 15000 });
     await expect(brandingHeading).toBeVisible();
 
-    // Verify "Free plan" framing is shown (free user)
-    await expect(page.getByText(/Free plan/)).toBeVisible();
+    // Verify free user framing is shown
+    await expect(
+      page.getByText(/Upgrade to customize your branding/),
+    ).toBeVisible();
 
     // Verify fields are interactive (not disabled)
     const displayNameInput = page.getByRole("textbox", {
@@ -394,8 +403,10 @@ test.describe("Branding Fields - Message Builder", () => {
     await expect(displayNameInput).toBeVisible();
     await expect(avatarUrlInput).toBeVisible();
 
-    // Verify "Free plan" framing is shown (free user)
-    await expect(page.getByText(/Free plan/)).toBeVisible();
+    // Verify free user framing is shown
+    await expect(
+      page.getByText(/Upgrade to customize your branding/),
+    ).toBeVisible();
 
     // Verify chevron icon is present in the summary
     await expect(brandingSummary.locator("svg").first()).toBeVisible();

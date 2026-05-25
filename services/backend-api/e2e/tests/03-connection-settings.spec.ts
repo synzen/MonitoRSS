@@ -7,6 +7,10 @@ import {
   createConnection,
   updateConnection,
 } from "../helpers/api";
+import {
+  setSupporterStatusInDb,
+  clearSupporterStatusInDb,
+} from "../helpers/paddle-db";
 
 test.describe("Connection Settings", () => {
   test("can view connection page", async ({ page, testFeedWithConnection }) => {
@@ -84,85 +88,91 @@ test.describe("Connection Settings", () => {
     const channelId = getTestChannelId();
     test.skip(!channelId, "channelId must be configured in e2econfig.json");
 
-    const connectionName = `Branding Update Test ${Date.now()}`;
-    const connection = await createWebhookConnection(
-      page,
-      testFeed.id,
-      channelId!,
-      {
-        name: connectionName,
-        webhookName: "Original Name",
-        webhookIconUrl: "https://example.com/original-icon.png",
-      },
-    );
+    await setSupporterStatusInDb();
 
-    await page.goto(
-      `/feeds/${testFeed.id}/discord-channel-connections/${connection.id}`,
-    );
+    try {
+      const connectionName = `Branding Update Test ${Date.now()}`;
+      const connection = await createWebhookConnection(
+        page,
+        testFeed.id,
+        channelId!,
+        {
+          name: connectionName,
+          webhookName: "Original Name",
+          webhookIconUrl: "https://example.com/original-icon.png",
+        },
+      );
 
-    const displayNameValue = page.locator('[aria-labelledby="display-name"]');
-    const avatarUrlValue = page.locator('[aria-labelledby="avatar-url"]');
+      await page.goto(
+        `/feeds/${testFeed.id}/discord-channel-connections/${connection.id}`,
+      );
 
-    await expect(displayNameValue).toContainText("Original Name", {
-      timeout: 10000,
-    });
-    await expect(avatarUrlValue).toContainText(
-      "https://example.com/original-icon.png",
-    );
+      const displayNameValue = page.locator('[aria-labelledby="display-name"]');
+      const avatarUrlValue = page.locator('[aria-labelledby="avatar-url"]');
 
-    const actionsButton = page.getByRole("button", {
-      name: "Connection Actions",
-    });
-    await actionsButton.waitFor({ timeout: 10000 });
-    await actionsButton.click();
+      await expect(displayNameValue).toContainText("Original Name", {
+        timeout: 10000,
+      });
+      await expect(avatarUrlValue).toContainText(
+        "https://example.com/original-icon.png",
+      );
 
-    await page.getByRole("menuitem").filter({ hasText: "Configure" }).click();
+      const actionsButton = page.getByRole("button", {
+        name: "Connection Actions",
+      });
+      await actionsButton.waitFor({ timeout: 10000 });
+      await actionsButton.click();
 
-    await expect(
-      page.getByRole("dialog").getByText("Edit Discord Connection"),
-    ).toBeVisible({ timeout: 10000 });
+      await page.getByRole("menuitem").filter({ hasText: "Configure" }).click();
 
-    const displayNameInput = page
-      .getByRole("dialog")
-      .getByLabel("Display Name");
-    await expect(displayNameInput).toHaveValue("Original Name", {
-      timeout: 10000,
-    });
+      await expect(
+        page.getByRole("dialog").getByText("Edit Discord Connection"),
+      ).toBeVisible({ timeout: 10000 });
 
-    const avatarUrlInput = page.getByRole("dialog").getByLabel("Avatar URL");
-    await expect(avatarUrlInput).toHaveValue(
-      "https://example.com/original-icon.png",
-      { timeout: 10000 },
-    );
+      const displayNameInput = page
+        .getByRole("dialog")
+        .getByLabel("Display Name");
+      await expect(displayNameInput).toHaveValue("Original Name", {
+        timeout: 10000,
+      });
 
-    await displayNameInput.clear();
-    await displayNameInput.fill("Updated Name");
+      const avatarUrlInput = page.getByRole("dialog").getByLabel("Avatar URL");
+      await expect(avatarUrlInput).toHaveValue(
+        "https://example.com/original-icon.png",
+        { timeout: 10000 },
+      );
 
-    await avatarUrlInput.clear();
-    await avatarUrlInput.fill("https://example.com/updated-icon.png");
+      await displayNameInput.clear();
+      await displayNameInput.fill("Updated Name");
 
-    await page.getByRole("button", { name: /Save/i }).click();
+      await avatarUrlInput.clear();
+      await avatarUrlInput.fill("https://example.com/updated-icon.png");
 
-    await expect(
-      page.getByRole("dialog").getByText("Edit Discord Connection"),
-    ).not.toBeVisible({ timeout: 30000 });
+      await page.getByRole("button", { name: /Save/i }).click();
 
-    await expect(
-      page.getByText("Successfully updated connection."),
-    ).toBeVisible({ timeout: 10000 });
+      await expect(
+        page.getByRole("dialog").getByText("Edit Discord Connection"),
+      ).not.toBeVisible({ timeout: 30000 });
 
-    await page.reload();
+      await expect(
+        page.getByText("Successfully updated connection."),
+      ).toBeVisible({ timeout: 10000 });
 
-    await expect(displayNameValue).toContainText("Updated Name", {
-      timeout: 10000,
-    });
-    await expect(displayNameValue).not.toContainText("Original Name");
-    await expect(avatarUrlValue).toContainText(
-      "https://example.com/updated-icon.png",
-    );
-    await expect(avatarUrlValue).not.toContainText(
-      "https://example.com/original-icon.png",
-    );
+      await page.reload();
+
+      await expect(displayNameValue).toContainText("Updated Name", {
+        timeout: 10000,
+      });
+      await expect(displayNameValue).not.toContainText("Original Name");
+      await expect(avatarUrlValue).toContainText(
+        "https://example.com/updated-icon.png",
+      );
+      await expect(avatarUrlValue).not.toContainText(
+        "https://example.com/original-icon.png",
+      );
+    } finally {
+      await clearSupporterStatusInDb();
+    }
   });
 
   test("can clone a webhook connection with custom properties", async ({
@@ -173,118 +183,130 @@ test.describe("Connection Settings", () => {
 
     test.skip(!channelId, "channelId must be configured in e2econfig.json");
 
+    await setSupporterStatusInDb();
+
     const webhookName = "Clone Test Webhook";
     const webhookIconUrl = "https://example.com/icon.png";
     const connectionName = `Clone Test Connection ${Date.now()}`;
 
-    const connection = await createWebhookConnection(
-      page,
-      testFeed.id,
-      channelId!,
-      {
-        name: connectionName,
-        webhookName,
-        webhookIconUrl,
-      },
-    );
+    try {
+      const connection = await createWebhookConnection(
+        page,
+        testFeed.id,
+        channelId!,
+        {
+          name: connectionName,
+          webhookName,
+          webhookIconUrl,
+        },
+      );
 
-    const testFilters = {
-      expression: {
-        type: "LOGICAL",
-        op: "AND",
-        children: [
-          {
-            type: "RELATIONAL",
-            op: "CONTAINS",
-            left: { type: "ARTICLE", value: "title" },
-            right: { type: "STRING", value: "clone-filter-test" },
-          },
-        ],
-      },
-    };
-    const testRateLimits = [{ timeWindowSeconds: 120, limit: 5 }];
-    const testCustomPlaceholders = [
-      {
-        id: "cp-clone-1",
-        referenceName: "clonedPlaceholder",
-        sourcePlaceholder: "{{title}}",
-        steps: [{ id: "step-1", type: "UPPERCASE" }],
-      },
-    ];
+      const testFilters = {
+        expression: {
+          type: "LOGICAL",
+          op: "AND",
+          children: [
+            {
+              type: "RELATIONAL",
+              op: "CONTAINS",
+              left: { type: "ARTICLE", value: "title" },
+              right: { type: "STRING", value: "clone-filter-test" },
+            },
+          ],
+        },
+      };
+      const testRateLimits = [{ timeWindowSeconds: 120, limit: 5 }];
+      const testCustomPlaceholders = [
+        {
+          id: "cp-clone-1",
+          referenceName: "clonedPlaceholder",
+          sourcePlaceholder: "{{title}}",
+          steps: [{ id: "step-1", type: "UPPERCASE" }],
+        },
+      ];
 
-    await updateConnection(page, testFeed.id, connection.id, {
-      filters: testFilters,
-      rateLimits: testRateLimits,
-      customPlaceholders: testCustomPlaceholders,
-    });
+      await updateConnection(page, testFeed.id, connection.id, {
+        filters: testFilters,
+        rateLimits: testRateLimits,
+        customPlaceholders: testCustomPlaceholders,
+      });
 
-    await page.goto(
-      `/feeds/${testFeed.id}/discord-channel-connections/${connection.id}`,
-    );
+      await page.goto(
+        `/feeds/${testFeed.id}/discord-channel-connections/${connection.id}`,
+      );
 
-    await expect(
-      page.getByRole("heading", { name: connectionName }),
-    ).toBeVisible({
-      timeout: 10000,
-    });
+      await expect(
+        page.getByRole("heading", { name: connectionName }),
+      ).toBeVisible({
+        timeout: 10000,
+      });
 
-    const actionsButton = page.getByRole("button", {
-      name: "Connection Actions",
-    });
-    await actionsButton.waitFor({ timeout: 10000 });
-    await actionsButton.click();
+      const actionsButton = page.getByRole("button", {
+        name: "Connection Actions",
+      });
+      await actionsButton.waitFor({ timeout: 10000 });
+      await actionsButton.click();
 
-    await page.getByRole("menuitem").filter({ hasText: "Clone" }).click();
+      await page.getByRole("menuitem").filter({ hasText: "Clone" }).click();
 
-    await expect(
-      page.getByRole("dialog").getByText("Clone connection"),
-    ).toBeVisible({
-      timeout: 10000,
-    });
+      await expect(
+        page.getByRole("dialog").getByText("Clone connection"),
+      ).toBeVisible({
+        timeout: 10000,
+      });
 
-    const clonedName = `Cloned ${connectionName}`;
-    const nameInput = page.getByRole("dialog").locator("input").first();
-    await nameInput.clear();
-    await nameInput.fill(clonedName);
+      const clonedName = `Cloned ${connectionName}`;
+      const nameInput = page.getByRole("dialog").locator("input").first();
+      await nameInput.clear();
+      await nameInput.fill(clonedName);
 
-    await page
-      .getByRole("dialog")
-      .getByRole("button", { name: "Clone" })
-      .click();
+      await page
+        .getByRole("dialog")
+        .getByRole("button", { name: "Clone" })
+        .click();
 
-    await expect(
-      page.getByText(`Successfully created cloned connection: ${clonedName}`),
-    ).toBeVisible({ timeout: 30000 });
+      await expect(
+        page.getByText(`Successfully created cloned connection: ${clonedName}`),
+      ).toBeVisible({ timeout: 30000 });
 
-    await page.goto(`/feeds/${testFeed.id}?view=connections`);
-    await page.waitForTimeout(1000);
+      await page.goto(`/feeds/${testFeed.id}?view=connections`);
+      await page.waitForTimeout(1000);
 
-    const clonedConnectionLink = page.getByRole("link", { name: clonedName });
-    await expect(clonedConnectionLink).toBeVisible({ timeout: 10000 });
-    await clonedConnectionLink.click();
+      const clonedConnectionLink = page.getByRole("link", { name: clonedName });
+      await expect(clonedConnectionLink).toBeVisible({ timeout: 10000 });
+      await clonedConnectionLink.click();
 
-    await expect(page.getByRole("heading", { name: clonedName })).toBeVisible({
-      timeout: 10000,
-    });
+      await expect(page.getByRole("heading", { name: clonedName })).toBeVisible(
+        {
+          timeout: 10000,
+        },
+      );
 
-    await expect(page.getByText(webhookName)).toBeVisible({
-      timeout: 10000,
-    });
+      await expect(
+        page.locator('[aria-labelledby="display-name"]').getByText(webhookName),
+      ).toBeVisible({
+        timeout: 10000,
+      });
 
-    await page.getByRole("tab", { name: "Article Filters" }).click();
-    await expect(page.locator('input[value="clone-filter-test"]')).toBeVisible({
-      timeout: 10000,
-    });
+      await page.getByRole("tab", { name: "Article Filters" }).click();
+      await expect(
+        page.locator('input[value="clone-filter-test"]'),
+      ).toBeVisible({
+        timeout: 10000,
+      });
 
-    await page.getByRole("tab", { name: "Delivery Rate Limits" }).click();
-    await expect(page.locator('input[value="5"]')).toBeVisible({
-      timeout: 10000,
-    });
+      await page.getByRole("tab", { name: "Delivery Rate Limits" }).click();
+      await expect(page.locator('input[value="5"]')).toBeVisible({
+        timeout: 10000,
+      });
 
-    await page.getByRole("tab", { name: "Custom Placeholders" }).click();
-    await expect(page.getByText("clonedPlaceholder").first()).toBeVisible({
-      timeout: 10000,
-    });
+      await page.getByRole("tab", { name: "Custom Placeholders" }).click();
+      await expect(page.getByText("clonedPlaceholder").first()).toBeVisible({
+        timeout: 10000,
+      });
+    } finally {
+      await clearSupporterStatusInDb();
+    }
   });
 
   test("can delete a connection", async ({ page, testFeedWithConnection }) => {
@@ -642,104 +664,112 @@ test.describe("Copy Connection Settings", () => {
     const channelId = getTestChannelId();
     test.skip(!channelId, "channelId must be configured in e2econfig.json");
 
-    const webhookSource = await createWebhookConnection(
-      page,
-      testFeed.id,
-      channelId!,
-      {
-        name: `Webhook Source ${Date.now()}`,
-        webhookName: "Source Webhook Name",
-        webhookIconUrl: "https://example.com/source-icon.png",
-      },
-    );
+    await setSupporterStatusInDb();
 
-    const webhookTarget = await createWebhookConnection(
-      page,
-      testFeed.id,
-      channelId!,
-      {
-        name: `Webhook Target ${Date.now()}`,
-        webhookName: "Target Webhook Name",
-      },
-    );
+    try {
+      const webhookSource = await createWebhookConnection(
+        page,
+        testFeed.id,
+        channelId!,
+        {
+          name: `Webhook Source ${Date.now()}`,
+          webhookName: "Source Webhook Name",
+          webhookIconUrl: "https://example.com/source-icon.png",
+        },
+      );
 
-    const channelTarget = await createConnection(
-      page,
-      testFeed.id,
-      channelId!,
-      { name: `Channel Target ${Date.now()}` },
-    );
+      const webhookTarget = await createWebhookConnection(
+        page,
+        testFeed.id,
+        channelId!,
+        {
+          name: `Webhook Target ${Date.now()}`,
+          webhookName: "Target Webhook Name",
+        },
+      );
 
-    await page.goto(
-      `/feeds/${testFeed.id}/discord-channel-connections/${webhookSource.id}`,
-    );
+      const channelTarget = await createConnection(
+        page,
+        testFeed.id,
+        channelId!,
+        { name: `Channel Target ${Date.now()}` },
+      );
 
-    await expect(
-      page.getByRole("heading", { name: webhookSource.name }),
-    ).toBeVisible({ timeout: 10000 });
+      await page.goto(
+        `/feeds/${testFeed.id}/discord-channel-connections/${webhookSource.id}`,
+      );
 
-    const actionsButton = page.getByRole("button", {
-      name: "Connection Actions",
-    });
-    await actionsButton.waitFor({ timeout: 10000 });
-    await actionsButton.click();
+      await expect(
+        page.getByRole("heading", { name: webhookSource.name }),
+      ).toBeVisible({ timeout: 10000 });
 
-    await page
-      .getByRole("menuitem")
-      .filter({ hasText: "Copy settings to" })
-      .click();
+      const actionsButton = page.getByRole("button", {
+        name: "Connection Actions",
+      });
+      await actionsButton.waitFor({ timeout: 10000 });
+      await actionsButton.click();
 
-    await expect(
-      page.getByRole("dialog").getByText("Copy connection settings"),
-    ).toBeVisible({ timeout: 10000 });
+      await page
+        .getByRole("menuitem")
+        .filter({ hasText: "Copy settings to" })
+        .click();
 
-    const dialog = page.getByRole("dialog");
-    const webhookCategoryCheckbox = dialog
-      .locator("label")
-      .filter({ hasText: /^Branding/ })
-      .first()
-      .locator("input[type='checkbox']");
-    await webhookCategoryCheckbox.scrollIntoViewIfNeeded();
-    await webhookCategoryCheckbox.check({ force: true });
+      await expect(
+        page.getByRole("dialog").getByText("Copy connection settings"),
+      ).toBeVisible({ timeout: 10000 });
 
-    await checkConnectionCheckbox(page, webhookTarget.name);
-    await checkConnectionCheckbox(page, channelTarget.name);
+      const dialog = page.getByRole("dialog");
+      const webhookCategoryCheckbox = dialog
+        .locator("label")
+        .filter({ hasText: /^Branding/ })
+        .first()
+        .locator("input[type='checkbox']");
+      await webhookCategoryCheckbox.scrollIntoViewIfNeeded();
+      await webhookCategoryCheckbox.check({ force: true });
 
-    await page.getByRole("button", { name: /Copy to 2 connections/i }).click();
+      await checkConnectionCheckbox(page, webhookTarget.name);
+      await checkConnectionCheckbox(page, channelTarget.name);
 
-    await expect(
-      page.getByText(/Successfully copied connection settings/),
-    ).toBeVisible({ timeout: 30000 });
+      await page
+        .getByRole("button", { name: /Copy to 2 connections/i })
+        .click();
 
-    // Navigate to webhook target and verify branding was copied
-    await page.getByRole("link", { name: testFeed.title }).click();
-    await page.getByRole("tab", { name: "Connections" }).click();
-    await page.getByRole("link", { name: webhookTarget.name }).click();
+      await expect(
+        page.getByText(/Successfully copied connection settings/),
+      ).toBeVisible({ timeout: 30000 });
 
-    await expect(
-      page.getByRole("heading", { name: webhookTarget.name }),
-    ).toBeVisible({ timeout: 10000 });
+      // Navigate to webhook target and verify branding was copied
+      await page.getByRole("link", { name: testFeed.title }).click();
+      await page.getByRole("tab", { name: "Connections" }).click();
+      await page.getByRole("link", { name: webhookTarget.name }).click();
 
-    await expect(
-      page.getByLabel("Display Name").getByText("Source Webhook Name"),
-    ).toBeVisible({
-      timeout: 10000,
-    });
+      await expect(
+        page.getByRole("heading", { name: webhookTarget.name }),
+      ).toBeVisible({ timeout: 10000 });
 
-    // Navigate to channel target and verify branding was also copied
-    await page.getByRole("link", { name: testFeed.title }).click();
-    await page.getByRole("tab", { name: "Connections" }).click();
-    await page.getByRole("link", { name: channelTarget.name }).click();
+      await expect(
+        page.getByLabel("Display Name").getByText("Source Webhook Name"),
+      ).toBeVisible({
+        timeout: 10000,
+      });
 
-    await expect(
-      page.getByRole("heading", { name: channelTarget.name }),
-    ).toBeVisible({ timeout: 10000 });
+      // Navigate to channel target and verify branding was also copied
+      await page.getByRole("link", { name: testFeed.title }).click();
+      await page.getByRole("tab", { name: "Connections" }).click();
+      await page.getByRole("link", { name: channelTarget.name }).click();
 
-    await expect(
-      page.getByLabel("Display Name").getByText("Source Webhook Name"),
-    ).toBeVisible({
-      timeout: 10000,
-    });
+      await expect(
+        page.getByRole("heading", { name: channelTarget.name }),
+      ).toBeVisible({ timeout: 10000 });
+
+      await expect(
+        page.getByLabel("Display Name").getByText("Source Webhook Name"),
+      ).toBeVisible({
+        timeout: 10000,
+      });
+    } finally {
+      await clearSupporterStatusInDb();
+    }
   });
 
   test("can copy content and embeds settings", async ({ page, testFeed }) => {

@@ -101,7 +101,9 @@ test.describe("Feed Discovery", () => {
       await searchInput.fill("steam");
       await page.getByRole("button", { name: "Go" }).click();
 
-      await expect(page.getByText(/\d+ result/)).toBeVisible();
+      await expect(
+        page.locator("p").filter({ hasText: /\d+ results? for/ }),
+      ).toBeVisible();
       await expect(page.getByText("Steam News")).toBeVisible();
     });
 
@@ -118,7 +120,9 @@ test.describe("Feed Discovery", () => {
       });
       await searchInput.fill("steam");
       await page.getByRole("button", { name: "Go" }).click();
-      await expect(page.getByText(/\d+ result/)).toBeVisible();
+      await expect(
+        page.locator("p").filter({ hasText: /\d+ results? for/ }),
+      ).toBeVisible();
 
       await page.getByRole("button", { name: "Clear search" }).click();
 
@@ -185,9 +189,9 @@ test.describe("Feed Discovery", () => {
       await searchInput.fill(MOCK_RSS_HTML_PAGE_URL);
       await page.getByRole("button", { name: "Go" }).click();
 
-      await expect(
-        page.getByText("We found a feed at a different URL"),
-      ).toBeVisible({ timeout: 30000 });
+      await expect(page.getByText("Originally entered:")).toBeVisible({
+        timeout: 30000,
+      });
 
       // feedTitle depends on feed-requests service caching state - may show hostname fallback
       await expect(
@@ -197,10 +201,7 @@ test.describe("Feed Discovery", () => {
           .first(),
       ).toBeVisible();
 
-      await expect(page.getByText("Your URL:")).toBeVisible();
       await expect(page.getByText(MOCK_RSS_HTML_PAGE_URL)).toBeVisible();
-
-      await expect(page.getByText("Feed found:")).toBeVisible();
       await expect(page.getByText(/resolved-feed\.xml/).first()).toBeVisible();
     });
 
@@ -263,9 +264,9 @@ test.describe("Feed Discovery", () => {
       await searchInput.fill(htmlUrl);
       await page.getByRole("button", { name: "Go" }).click();
 
-      await expect(
-        page.getByText("We found a feed at a different URL"),
-      ).toBeVisible({ timeout: 30000 });
+      await expect(page.getByText("Originally entered:")).toBeVisible({
+        timeout: 30000,
+      });
 
       // Capture what title is shown on first search
       const resolvedTitle = page.getByText("Resolved Test Feed");
@@ -279,9 +280,9 @@ test.describe("Feed Discovery", () => {
         await searchInput.fill(htmlUrl);
         await page.getByRole("button", { name: "Go" }).click();
 
-        await expect(
-          page.getByText("We found a feed at a different URL"),
-        ).toBeVisible({ timeout: 30000 });
+        await expect(page.getByText("Originally entered:")).toBeVisible({
+          timeout: 30000,
+        });
 
         // The feed title should still show "Resolved Test Feed", not the hostname
         await expect(resolvedTitle.first()).toBeVisible({ timeout: 30000 });
@@ -295,9 +296,9 @@ test.describe("Feed Discovery", () => {
         await searchInput.fill(htmlUrl);
         await page.getByRole("button", { name: "Go" }).click();
 
-        await expect(
-          page.getByText("We found a feed at a different URL"),
-        ).toBeVisible({ timeout: 30000 });
+        await expect(page.getByText("Originally entered:")).toBeVisible({
+          timeout: 30000,
+        });
       }
     });
   });
@@ -398,9 +399,9 @@ test.describe("Feed Discovery", () => {
       await searchInput.fill(MOCK_RSS_HTML_PAGE_URL);
       await page.getByRole("button", { name: "Go" }).click();
 
-      await expect(
-        page.getByText("We found a feed at a different URL"),
-      ).toBeVisible({ timeout: 30000 });
+      await expect(page.getByText("Originally entered:")).toBeVisible({
+        timeout: 30000,
+      });
 
       const addButton = page
         .getByRole("button", { name: /^Add .+ feed$/i })
@@ -444,7 +445,9 @@ test.describe("Feed Discovery", () => {
       await searchInput.fill("Test Error Feed");
       await page.getByRole("button", { name: "Go" }).click();
 
-      await expect(page.getByText("Test Error Feed")).toBeVisible();
+      await expect(
+        page.getByText("Test Error Feed", { exact: true }),
+      ).toBeVisible();
 
       const addButton = page.getByRole("button", {
         name: "Add Test Error Feed feed",

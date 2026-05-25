@@ -18,6 +18,11 @@ test.describe("Paddle Checkout", () => {
     });
     await expect(checkoutHeading).toBeVisible({ timeout: 15000 });
 
+    // Wait for checkout data to load (product name appears after Paddle data loads)
+    await expect(page.getByText(/(Monthly|Annual)/)).toBeVisible({
+      timeout: 30000,
+    });
+
     const paddleFrame = page.frameLocator("iframe").first();
 
     const cardInput = paddleFrame.getByRole("textbox", {
