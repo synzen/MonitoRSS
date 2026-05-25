@@ -18,7 +18,7 @@ test.describe("Message Builder V2", () => {
     const { feed, connection } = testFeedWithConnection;
 
     await page.goto(
-      `/feeds/${feed.id}/discord-channel-connections/${connection.id}/message-builder`,
+      `/feeds/${feed.id}/discord-channel-connections/${connection.id}/message-builder`
     );
 
     // Dismiss the welcome dialog
@@ -35,7 +35,7 @@ test.describe("Message Builder V2", () => {
 
     // Wait for article to load in preview
     await expect(
-      page.getByText("Previewing Article", { exact: true }),
+      page.getByText("Previewing Article", { exact: true })
     ).toBeVisible({ timeout: 15000 });
 
     const tree = page.getByRole("tree");
@@ -54,7 +54,7 @@ test.describe("Message Builder V2", () => {
 
     // Wait for tree to update
     await expect(
-      tree.getByRole("treeitem").first().getByText("Components V2"),
+      tree.getByRole("treeitem").first().getByText("Components V2")
     ).toBeVisible({ timeout: 10000 });
 
     // Helper to add a component from the selected tree item
@@ -75,7 +75,7 @@ test.describe("Message Builder V2", () => {
       page
         .locator("#problems-content")
         .getByRole("button", { name: /Section/ })
-        .first(),
+        .first()
     ).toBeVisible({ timeout: 10000 });
 
     await addComponent("Container", "Add Text Display");
@@ -95,7 +95,7 @@ test.describe("Message Builder V2", () => {
     await expect(
       page
         .locator("#problems-content")
-        .getByRole("button", { name: /Container > Text Display/ }),
+        .getByRole("button", { name: /Container > Text Display/ })
     ).not.toBeVisible({ timeout: 10000 });
 
     // Media Gallery > Gallery Item
@@ -126,7 +126,7 @@ test.describe("Message Builder V2", () => {
 
     // Wait for changes to be detected and Save Changes to be enabled
     await expect(
-      page.getByRole("button", { name: "Save Changes" }),
+      page.getByRole("button", { name: "Save Changes" })
     ).toBeEnabled({ timeout: 10000 });
 
     const previewLoadingBar = page.getByLabel("Updating message preview");
@@ -148,7 +148,7 @@ test.describe("Message Builder V2", () => {
 
       // Section TextDisplay should show the resolved description text
       await expect(
-        page.getByText("This is test article", { exact: false }),
+        page.getByText("This is test article", { exact: false })
       ).toBeVisible();
     }
 
@@ -157,14 +157,14 @@ test.describe("Message Builder V2", () => {
 
     // Verify validation errors cleared after all fields are filled
     await expect(
-      page.locator("#problems-content").getByText("No problems found"),
+      page.locator("#problems-content").getByText("No problems found")
     ).toBeVisible({ timeout: 15000 });
 
     // Send test article (before save)
     await page.getByRole("button", { name: /Send to Discord/i }).click();
 
     await expect(
-      page.getByText("Successfully sent article to Discord."),
+      page.getByText("Successfully sent article to Discord.")
     ).toBeVisible({ timeout: 30000 });
 
     // Close the success alert from the send before saving
@@ -180,7 +180,7 @@ test.describe("Message Builder V2", () => {
 
     // Wait for save to complete - "unsaved changes" text should disappear
     await expect(
-      page.getByText("You are previewing unsaved changes"),
+      page.getByText("You are previewing unsaved changes")
     ).not.toBeVisible({ timeout: 30000 });
 
     // Verify preview components still rendered correctly after save
@@ -190,7 +190,7 @@ test.describe("Message Builder V2", () => {
     await page.getByRole("button", { name: /Send to Discord/i }).click();
 
     await expect(
-      page.getByText("Successfully sent article to Discord."),
+      page.getByText("Successfully sent article to Discord.")
     ).toBeVisible({ timeout: 30000 });
   });
 
@@ -201,7 +201,7 @@ test.describe("Message Builder V2", () => {
     const { feed, connection } = testFeedWithConnection;
 
     await page.goto(
-      `/feeds/${feed.id}/discord-channel-connections/${connection.id}/message-builder`,
+      `/feeds/${feed.id}/discord-channel-connections/${connection.id}/message-builder`
     );
 
     // Dismiss the welcome dialog
@@ -218,7 +218,7 @@ test.describe("Message Builder V2", () => {
 
     // Wait for article to load in preview
     await expect(
-      page.getByText("Previewing Article", { exact: true }),
+      page.getByText("Previewing Article", { exact: true })
     ).toBeVisible({ timeout: 15000 });
 
     const tree = page.getByRole("tree");
@@ -245,7 +245,7 @@ test.describe("Message Builder V2", () => {
     }
 
     await expect(
-      tree.getByRole("treeitem").first().getByText("Components V2"),
+      tree.getByRole("treeitem").first().getByText("Components V2")
     ).toBeVisible({ timeout: 10000 });
 
     async function addComponent(parentText: string, menuItemName: string) {
@@ -306,7 +306,7 @@ test.describe("Message Builder V2", () => {
 
     // Fill character limit
     const charLimitInput = placeholderDialog.locator(
-      'input[inputmode="numeric"]',
+      'input[inputmode="numeric"]'
     );
     await charLimitInput.fill("10");
     await expect(charLimitInput).toHaveValue("10");
@@ -352,13 +352,13 @@ test.describe("Message Builder V2", () => {
     await tree.getByText("Components V2", { exact: true }).click();
 
     await expect(
-      page.getByRole("button", { name: "Save Changes" }),
+      page.getByRole("button", { name: "Save Changes" })
     ).toBeEnabled({ timeout: 10000 });
 
     await page.getByRole("button", { name: "Save Changes" }).click();
 
     await expect(
-      page.getByText("You are previewing unsaved changes"),
+      page.getByText("You are previewing unsaved changes")
     ).not.toBeVisible({ timeout: 30000 });
 
     // Reload page to verify persistence
@@ -377,7 +377,7 @@ test.describe("Message Builder V2", () => {
     }
 
     await expect(
-      page.getByText("Previewing Article", { exact: true }),
+      page.getByText("Previewing Article", { exact: true })
     ).toBeVisible({ timeout: 15000 });
 
     // Click root tree item to check persisted settings
@@ -404,7 +404,7 @@ test.describe("Message Builder V2", () => {
     const { feed, connection } = testFeedWithConnection;
 
     await page.goto(
-      `/feeds/${feed.id}/discord-channel-connections/${connection.id}/message-builder`,
+      `/feeds/${feed.id}/discord-channel-connections/${connection.id}/message-builder`
     );
 
     // Dismiss the welcome dialog
@@ -421,7 +421,7 @@ test.describe("Message Builder V2", () => {
 
     // Wait for article to load in preview
     await expect(
-      page.getByText("Previewing Article", { exact: true }),
+      page.getByText("Previewing Article", { exact: true })
     ).toBeVisible({ timeout: 15000 });
 
     const tree = page.getByRole("tree");
@@ -434,7 +434,7 @@ test.describe("Message Builder V2", () => {
       await switchButton.click();
     }
     await expect(
-      tree.getByRole("treeitem").first().getByText("Components V2"),
+      tree.getByRole("treeitem").first().getByText("Components V2")
     ).toBeVisible({ timeout: 10000 });
 
     async function addComponent(parentText: string, menuItemName: string) {
@@ -486,7 +486,7 @@ test.describe("Message Builder V2", () => {
 
     // Verify warnings appear in Problems section
     const problemsSection = page.locator(
-      '[data-tour-target="problems-section"]',
+      '[data-tour-target="problems-section"]'
     );
 
     // Check that the problems count is at least 1
@@ -498,7 +498,7 @@ test.describe("Message Builder V2", () => {
     await expect(
       page
         .getByText("placeholder that resolved to be empty", { exact: false })
-        .first(),
+        .first()
     ).toBeVisible({ timeout: 10000 });
 
     // Verify warning severity icon in problems list
@@ -506,7 +506,7 @@ test.describe("Message Builder V2", () => {
       page
         .locator('[data-tour-target="problems-section"]')
         .getByText("Warning:", { exact: false })
-        .first(),
+        .first()
     ).toBeVisible({ timeout: 10000 });
 
     // Verify warnings don't block save
@@ -523,7 +523,7 @@ test.describe("Message Builder V2", () => {
 
     // Wait for save to complete
     await expect(
-      page.getByText("You are previewing unsaved changes"),
+      page.getByText("You are previewing unsaved changes")
     ).not.toBeVisible({ timeout: 30000 });
 
     // Now fix the Text Display by changing to a valid placeholder
@@ -536,7 +536,7 @@ test.describe("Message Builder V2", () => {
     // The Text Display warning should be gone, but Thumbnail and Button warnings remain
     // Verify that at least one warning is still present (Thumbnail/Button)
     await expect(
-      page.locator('[aria-label="Warning detected"]').first(),
+      page.locator('[aria-label="Warning detected"]').first()
     ).toBeVisible({ timeout: 10000 });
 
     // Delete the Thumbnail accessory from the Section
@@ -547,7 +547,7 @@ test.describe("Message Builder V2", () => {
     await expect(
       tree
         .getByRole("treeitem", { name: "Section" })
-        .locator('[aria-label="Error detected"]'),
+        .locator('[aria-label="Error detected"]')
     ).toBeVisible({ timeout: 10000 });
 
     // Verify preview does not show "Failed to load preview"
@@ -565,7 +565,7 @@ test.describe("Message Builder V2", () => {
     if (!forumChannelId || !channelId) {
       testInfo.skip(
         true,
-        "forumChannelId and channelId must be configured for this test",
+        "forumChannelId and channelId must be configured for this test"
       );
       return;
     }
@@ -577,7 +577,7 @@ test.describe("Message Builder V2", () => {
       const connection = await createConnection(page, feed.id, forumChannelId);
 
       await page.goto(
-        `/feeds/${feed.id}/discord-channel-connections/${connection.id}/message-builder`,
+        `/feeds/${feed.id}/discord-channel-connections/${connection.id}/message-builder`
       );
 
       // Dismiss the welcome dialog
@@ -593,7 +593,7 @@ test.describe("Message Builder V2", () => {
       await expect(welcomeDialog).not.toBeVisible({ timeout: 5000 });
 
       await expect(
-        page.getByText("Previewing Article", { exact: true }),
+        page.getByText("Previewing Article", { exact: true })
       ).toBeVisible({ timeout: 15000 });
 
       const tree = page.getByRole("tree");
@@ -610,12 +610,12 @@ test.describe("Message Builder V2", () => {
 
       // Save changes
       await expect(
-        page.getByRole("button", { name: "Save Changes" }),
+        page.getByRole("button", { name: "Save Changes" })
       ).toBeEnabled({ timeout: 10000 });
       await page.getByRole("button", { name: "Save Changes" }).click();
 
       await expect(
-        page.getByText("You are previewing unsaved changes"),
+        page.getByText("You are previewing unsaved changes")
       ).not.toBeVisible({ timeout: 30000 });
 
       // Reload to verify persistence
@@ -635,7 +635,7 @@ test.describe("Message Builder V2", () => {
       }
 
       await expect(
-        page.getByText("Previewing Article", { exact: true }),
+        page.getByText("Previewing Article", { exact: true })
       ).toBeVisible({ timeout: 15000 });
 
       await tree.getByRole("treeitem").first().click();
@@ -656,12 +656,12 @@ test.describe("Message Builder V2", () => {
 
     test.skip(
       !serverName || !forumChannelName,
-      "serverName and forumChannelName must be configured in e2econfig.json",
+      "serverName and forumChannelName must be configured in e2econfig.json"
     );
 
     await page.goto(`/feeds/${testFeed.id}`);
     await expect(
-      page.getByRole("button", { name: /Add connection/i }).first(),
+      page.getByRole("button", { name: /Add connection/i }).first()
     ).toBeVisible({ timeout: 10000 });
 
     await page
@@ -693,7 +693,7 @@ test.describe("Message Builder V2", () => {
 
     await page.getByText("Simple Text").first().click();
     await expect(
-      modal.locator("strong").filter({ hasText: "Test Article" }),
+      modal.locator("strong").filter({ hasText: "Test Article" })
     ).toBeVisible({ timeout: 10000 });
 
     await modal.getByLabel("Display Name").fill("E2E Forum Branding Bot");
@@ -704,7 +704,7 @@ test.describe("Message Builder V2", () => {
     await modal.getByRole("button", { name: /Send to Discord/i }).click();
 
     await expect(
-      modal.getByText("Article sent to Discord successfully!"),
+      modal.getByText("Article sent to Discord successfully!")
     ).toBeVisible({ timeout: 30000 });
   });
 
@@ -717,12 +717,12 @@ test.describe("Message Builder V2", () => {
 
     test.skip(
       !serverName || !forumChannelName,
-      "serverName and forumChannelName must be configured in e2econfig.json",
+      "serverName and forumChannelName must be configured in e2econfig.json"
     );
 
     await page.goto(`/feeds/${testFeed.id}`);
     await expect(
-      page.getByRole("button", { name: /Add connection/i }).first(),
+      page.getByRole("button", { name: /Add connection/i }).first()
     ).toBeVisible({ timeout: 10000 });
 
     await page
@@ -754,13 +754,13 @@ test.describe("Message Builder V2", () => {
 
     await page.getByText("Simple Text").first().click();
     await expect(
-      modal.locator("strong").filter({ hasText: "Test Article" }),
+      modal.locator("strong").filter({ hasText: "Test Article" })
     ).toBeVisible({ timeout: 10000 });
 
     await modal.getByRole("button", { name: /Send to Discord/i }).click();
 
     await expect(
-      modal.getByText("Article sent to Discord successfully!"),
+      modal.getByText("Article sent to Discord successfully!")
     ).toBeVisible({ timeout: 30000 });
   });
 
@@ -772,7 +772,7 @@ test.describe("Message Builder V2", () => {
     const { feed, connection } = testFeedWithConnection;
 
     await page.goto(
-      `/feeds/${feed.id}/discord-channel-connections/${connection.id}/message-builder`,
+      `/feeds/${feed.id}/discord-channel-connections/${connection.id}/message-builder`
     );
 
     // Dismiss the welcome dialog
@@ -788,7 +788,7 @@ test.describe("Message Builder V2", () => {
     await expect(welcomeDialog).not.toBeVisible({ timeout: 5000 });
 
     await expect(
-      page.getByText("Previewing Article", { exact: true }),
+      page.getByText("Previewing Article", { exact: true })
     ).toBeVisible({ timeout: 15000 });
 
     const tree = page.getByRole("tree");
@@ -807,7 +807,7 @@ test.describe("Message Builder V2", () => {
       await switchButton.click();
     }
     await expect(
-      tree.getByRole("treeitem").first().getByText("Components V2"),
+      tree.getByRole("treeitem").first().getByText("Components V2")
     ).toBeVisible({ timeout: 10000 });
 
     async function addComponent(parentText: string, menuItemName: string) {
@@ -837,10 +837,10 @@ test.describe("Message Builder V2", () => {
 
     // Verify both tabs are visible
     await expect(
-      emojiPicker.getByRole("tab", { name: "Default" }),
+      emojiPicker.getByRole("tab", { name: "Default" })
     ).toBeVisible();
     await expect(
-      emojiPicker.getByRole("tab", { name: "Server" }),
+      emojiPicker.getByRole("tab", { name: "Server" })
     ).toBeVisible();
 
     // Select the grinning emoji (first in the People category)
@@ -851,12 +851,12 @@ test.describe("Message Builder V2", () => {
 
     // Verify the trigger button now shows the selected emoji
     await expect(
-      page.getByRole("button", { name: /Change emoji, currently/ }),
+      page.getByRole("button", { name: /Change emoji, currently/ })
     ).toBeVisible();
 
     // Verify the remove button is visible
     await expect(
-      page.getByRole("button", { name: "Remove selected emoji" }),
+      page.getByRole("button", { name: "Remove selected emoji" })
     ).toBeVisible();
 
     // Wait for preview to update with emoji
@@ -864,11 +864,11 @@ test.describe("Message Builder V2", () => {
 
     // Save changes
     await expect(
-      page.getByRole("button", { name: "Save Changes" }),
+      page.getByRole("button", { name: "Save Changes" })
     ).toBeEnabled({ timeout: 10000 });
     await page.getByRole("button", { name: "Save Changes" }).click();
     await expect(
-      page.getByText("You are previewing unsaved changes"),
+      page.getByText("You are previewing unsaved changes")
     ).not.toBeVisible({ timeout: 30000 });
 
     // Reload to verify persistence
@@ -886,7 +886,7 @@ test.describe("Message Builder V2", () => {
     }
 
     await expect(
-      page.getByText("Previewing Article", { exact: true }),
+      page.getByText("Previewing Article", { exact: true })
     ).toBeVisible({ timeout: 15000 });
 
     // Select the button in the tree
@@ -894,7 +894,7 @@ test.describe("Message Builder V2", () => {
 
     // Verify emoji persisted — the trigger should show "Change emoji" state
     await expect(
-      page.getByRole("button", { name: /Change emoji, currently/ }),
+      page.getByRole("button", { name: /Change emoji, currently/ })
     ).toBeVisible({ timeout: 10000 });
 
     // Test clearing the emoji
@@ -902,7 +902,7 @@ test.describe("Message Builder V2", () => {
 
     // Verify trigger reverts to "Choose emoji" state
     await expect(
-      page.getByRole("button", { name: "Choose emoji for button" }),
+      page.getByRole("button", { name: "Choose emoji for button" })
     ).toBeVisible({ timeout: 5000 });
   });
 
@@ -946,7 +946,7 @@ test.describe("Message Builder V2", () => {
     });
 
     await page.goto(
-      `/feeds/${feed.id}/discord-channel-connections/${connection.id}/message-builder`,
+      `/feeds/${feed.id}/discord-channel-connections/${connection.id}/message-builder`
     );
 
     const welcomeDialog = page.getByRole("dialog", {
@@ -961,7 +961,7 @@ test.describe("Message Builder V2", () => {
     }
 
     await expect(
-      page.getByText("Previewing Article", { exact: true }),
+      page.getByText("Previewing Article", { exact: true })
     ).toBeVisible({ timeout: 15000 });
 
     const previewLoadingBar = page.getByLabel("Updating message preview");
@@ -973,7 +973,7 @@ test.describe("Message Builder V2", () => {
     });
 
     await expect(
-      page.getByText("This is test article", { exact: false }),
+      page.getByText("This is test article", { exact: false })
     ).toBeVisible({ timeout: 15000 });
   });
 });

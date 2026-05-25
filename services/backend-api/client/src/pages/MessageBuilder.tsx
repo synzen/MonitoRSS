@@ -79,6 +79,7 @@ import {
   usePageAlertContext,
 } from "../contexts/PageAlertContext";
 import convertMessageBuilderStateToConnectionUpdate from "./MessageBuilder/utils/convertMessageBuilderStateToConnectionUpdate";
+import extractMessageBuilderProblems from "./MessageBuilder/utils/extractMessageBuilderProblems";
 import { pages, BlockableFeature } from "../constants";
 import { UserFeedTabSearchParam } from "../constants/userFeedTabSearchParam";
 import { PricingDialogContext } from "../contexts";
