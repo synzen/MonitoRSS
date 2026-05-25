@@ -32,6 +32,7 @@ import { ConfirmModal } from "../../components/ConfirmModal";
 
 import { useMessageBuilderContext } from "./MessageBuilderContext";
 import { DiscordButtonStyle } from "./constants/DiscordButtonStyle";
+import { EmojiPicker } from "./components/EmojiPicker";
 import MessageBuilderFormState from "./types/MessageBuilderFormState";
 import { LegacyRootProperties } from "./componentProperties/LegacyRootProperties";
 import { LegacyTextProperties } from "./componentProperties/LegacyTextProperties";
@@ -564,9 +565,19 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             error={labelError?.message}
             isInvalid={!!labelError}
             as="input"
-            isRequired
+            isRequired={!component.emoji}
             guildId={guildId}
           />
+          <FormControl>
+            <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+              Emoji
+            </FormLabel>
+            <EmojiPicker
+              value={component.emoji}
+              onChange={(emoji) => onChange({ ...component, emoji })}
+              guildId={guildId}
+            />
+          </FormControl>
           <FormControl isInvalid={!!styleError} isRequired>
             <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
               Button Style
@@ -966,14 +977,14 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
     ? getMessageBuilderComponentFormPathsById(messageComponent, selectedComponentId)
     : null;
 
-  // Intentionally skip shouldValidate on content edits. Validation is expensive
-  // (recursive Yup over the whole tree) and runs from handleSubmit on save,
-  // from structural mutations (add/delete/move/switch) in MessageBuilderContext,
-  // and from a debounced trigger in MessageBuilderContent for live problem markers.
+  // shouldValidate clears the specific field's error inline. The debounced
+  // trigger in MessageBuilderContent handles full-tree validation for other fields.
+  // InputWithInsertPlaceholder already debounces at 200ms, so this doesn't run per-keystroke.
   const updateValue = (value: Component) => {
     setValue(formPath as any, value, {
       shouldDirty: true,
       shouldTouch: true,
+      shouldValidate: true,
     });
   };
 

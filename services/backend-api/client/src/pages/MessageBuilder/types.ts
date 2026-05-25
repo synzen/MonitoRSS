@@ -134,12 +134,19 @@ export interface TextDisplayComponent extends BaseComponent {
   content: string;
 }
 
+export interface ButtonEmoji {
+  id?: string;
+  name: string;
+  animated?: boolean;
+}
+
 export interface ButtonComponent extends BaseComponent {
   type: ComponentType.V2Button;
   label: string;
   style: DiscordButtonStyle;
   disabled: boolean;
   href?: string;
+  emoji?: ButtonEmoji;
 }
 
 export interface ActionRowComponent extends BaseComponent {

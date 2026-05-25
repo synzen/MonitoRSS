@@ -11,4 +11,6 @@ export const discordServerQueryKeys = {
 
   allChannels: (serverId: string) =>
     ["server-channels", { serverId, types: [GetDiscordChannelType.All] }] as const,
+
+  serverEmojis: (serverId: string) => ["server-emojis", { serverId }] as const,
 };

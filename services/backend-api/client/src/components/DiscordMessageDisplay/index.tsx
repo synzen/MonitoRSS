@@ -143,18 +143,43 @@ interface DiscordMessageDisplayProps {
 
 // Shared button rendering logic to avoid duplication
 const renderButtonElement = (
-  btn: { style?: number; url?: string | null; disabled?: boolean; label?: string },
-  key: string,
+  btn: {
+    style?: number;
+    url?: string | null;
+    disabled?: boolean;
+    label?: string;
+    emoji?: { id?: string | null; name: string; animated?: boolean } | null;
+  },
+  key: string
 ): React.ReactNode => {
   const styleName = styleNumToName[btn.style || 2] || "Secondary";
   const colors = buttonColors[styleName];
   const isLinkButton = styleName === "Link" && btn.url;
 
+  const emojiElement = btn.emoji ? (
+    btn.emoji.id ? (
+      <Image
+        src={`https://cdn.discordapp.com/emojis/${btn.emoji.id}.${
+          btn.emoji.animated ? "gif" : "png"
+        }`}
+        boxSize="20px"
+        display="inline-block"
+        verticalAlign="middle"
+        mr={btn.label ? 1 : 0}
+        alt={btn.emoji.name}
+      />
+    ) : (
+      <Text as="span" mr={btn.label ? 1 : 0} fontSize="16px" lineHeight="1">
+        {btn.emoji.name}
+      </Text>
+    )
+  ) : null;
+
   return (
     <Button
       key={key}
       as={isLinkButton ? "a" : undefined}
-      href={isLinkButton ? (btn.url ?? undefined) : undefined}
+      href={isLinkButton ? btn.url ?? undefined : undefined}
       target={isLinkButton ? "_blank" : undefined}
       rel={isLinkButton ? "noopener noreferrer" : undefined}
       size="sm"
@@ -176,14 +201,15 @@ const renderButtonElement = (
       textDecoration="none"
       _focus={{ textDecoration: "none" }}
     >
-      {btn.label || "Button"}
+      {emojiElement}
+      {btn.label || (!btn.emoji ? "Button" : null)}
     </Button>
   );
 };
 
 const renderApiAccessory = (
   accessory: DiscordApiComponent["accessory"],
-  key: string,
+  key: string
 ): React.ReactNode => {
   if (!accessory) return null;
 
@@ -255,7 +281,7 @@ const renderApiButton = (btn: DiscordApiComponent["accessory"], key: string): Re
 const renderApiComponent = (
   comp: DiscordApiComponent,
   index: number,
-  mentionResolvers?: MentionResolvers,
+  mentionResolvers?: MentionResolvers
 ): React.ReactNode => {
   const { type } = comp;
   const parserState = mentionResolvers ? { mentionResolvers } : {};
@@ -326,7 +352,7 @@ const renderApiComponent = (
     const renderGalleryItem = (
       item: { media?: { url: string }; spoiler?: boolean; description?: string },
       i: number,
-      height?: string,
+      height?: string
     ) => (
       <Box
         key={`gallery-item-${index}-${i}`}
@@ -593,7 +619,7 @@ const renderApiComponent = (
         )}
         <VStack align="stretch" spacing={2} pl={accentColor ? 2 : 0}>
           {containerComp.components?.map((child, i) =>
-            renderApiComponent(child, i, mentionResolvers),
+            renderApiComponent(child, i, mentionResolvers)
           )}
         </VStack>
       </Box>

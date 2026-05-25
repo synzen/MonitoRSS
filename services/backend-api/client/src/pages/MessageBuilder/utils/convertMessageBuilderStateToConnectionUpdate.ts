@@ -54,6 +54,13 @@ const convertV2ButtonToAPI = (button: ButtonComponent) => ({
   label: button.label || undefined,
   url: button.href || undefined,
   disabled: button.disabled || false,
+  emoji: button.emoji
+    ? {
+        id: button.emoji.id || undefined,
+        name: button.emoji.name,
+        animated: button.emoji.animated || undefined,
+      }
+    : undefined,
 });
 
 const convertV2TextDisplayToAPI = (textDisplay: TextDisplayComponent) => ({
@@ -145,7 +152,7 @@ const convertV2ContainerToAPI = (container: ContainerComponent) => ({
 });
 
 const convertV2RootToConnectionUpdate = (
-  component: V2MessageComponentRoot,
+  component: V2MessageComponentRoot
 ): UpdateDiscordChannelConnectionInput["details"] => {
   const details: UpdateDiscordChannelConnectionInput["details"] = {};
 
@@ -239,7 +246,7 @@ const convertV2RootToConnectionUpdate = (
 };
 
 const convertLegacyRootToConnectionUpdate = (
-  component: LegacyMessageComponentRoot,
+  component: LegacyMessageComponentRoot
 ): UpdateDiscordChannelConnectionInput["details"] => {
   const details: UpdateDiscordChannelConnectionInput["details"] = {};
 
@@ -409,7 +416,7 @@ const convertLegacyRootToConnectionUpdate = (
 };
 
 const convertMessageBuilderStateToConnectionUpdate = (
-  component?: MessageComponentRoot,
+  component?: MessageComponentRoot
 ): UpdateDiscordChannelConnectionInput["details"] => {
   if (!component) return {};
 

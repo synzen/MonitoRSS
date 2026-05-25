@@ -82,6 +82,11 @@ export interface CreateDiscordChannelConnectionPreviewInput {
         label?: string;
         url?: string | null;
         disabled?: boolean;
+        emoji?: {
+          id?: string | null;
+          name: string;
+          animated?: boolean;
+        } | null;
       }>;
       accessory?: {
         type: string;
@@ -89,6 +94,11 @@ export interface CreateDiscordChannelConnectionPreviewInput {
         label?: string;
         url?: string | null;
         disabled?: boolean;
+        emoji?: {
+          id?: string | null;
+          name: string;
+          animated?: boolean;
+        } | null;
       } | null;
     }> | null;
   };
@@ -103,7 +113,7 @@ export type CreateDiscordChannelConnectionPreviewOutput = InferType<
 >;
 
 export const createDiscordChannelConnectionPreview = async (
-  options: CreateDiscordChannelConnectionPreviewInput,
+  options: CreateDiscordChannelConnectionPreviewInput
 ): Promise<CreateDiscordChannelConnectionPreviewOutput> => {
   const res = await fetchRest(
     `/api/v1/user-feeds/${options.feedId}/connections/` +
@@ -114,7 +124,7 @@ export const createDiscordChannelConnectionPreview = async (
         method: "POST",
         body: JSON.stringify(options.data),
       },
-    },
+    }
   );
 
   return res as CreateDiscordChannelConnectionPreviewOutput;

@@ -121,6 +121,30 @@ export async function getServerRolesHandler(
   });
 }
 
+export async function getServerEmojisHandler(
+  request: FastifyRequest<{ Params: ServerParams }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { discordServersService } = request.container;
+  const { serverId } = request.params;
+
+  const allEmojis = await discordServersService.getEmojisOfServer(serverId);
+
+  const availableEmojis = allEmojis.filter(
+    (emoji) => emoji.available !== false,
+  );
+
+  return reply.send({
+    results: availableEmojis.map((emoji) => ({
+      id: emoji.id,
+      name: emoji.name,
+      animated: emoji.animated ?? false,
+      imageUrl: `${DISCORD_CDN_BASE_URL}/emojis/${emoji.id}.${emoji.animated ? "gif" : "png"}`,
+    })),
+    total: availableEmojis.length,
+  });
+}
+
 export async function getServerChannelsHandler(
   request: FastifyRequest<{
     Params: ServerParams;

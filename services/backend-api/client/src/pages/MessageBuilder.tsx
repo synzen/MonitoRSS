@@ -80,6 +80,7 @@ import {
   usePageAlertContext,
 } from "../contexts/PageAlertContext";
 import convertMessageBuilderStateToConnectionUpdate from "./MessageBuilder/utils/convertMessageBuilderStateToConnectionUpdate";
+import extractMessageBuilderProblems from "./MessageBuilder/utils/extractMessageBuilderProblems";
 import { pages, BlockableFeature } from "../constants";
 import { UserFeedTabSearchParam } from "../constants/userFeedTabSearchParam";
 import { PricingDialogContext } from "../contexts";
@@ -178,7 +179,7 @@ const CENTER_PANEL_WIDTH = {
 
 const MessageBuilderContent: React.FC = () => {
   const { resetMessage } = useMessageBuilderContext();
-  const { watch, handleSubmit, formState, setValue, trigger } =
+  const { watch, handleSubmit, formState, setValue, trigger, clearErrors } =
     useFormContext<MessageBuilderFormState>();
   const { setCurrentSelectedId } = useNavigableTreeContext();
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
@@ -186,18 +187,30 @@ const MessageBuilderContent: React.FC = () => {
   const messageComponent = watch("messageComponent");
   const allComponentIds = useMemo(() => collectComponentIds(messageComponent), [messageComponent]);
 
-  // Content edits skip shouldValidate for performance; run Yup shortly after the
-  // user pauses so problem markers stay current without blocking each keystroke.
   const isDirty = formState.isDirty;
+
+  // Debounced full-tree validation. Uses watch(callback) instead of useEffect
+  // with watch("messageComponent") because watch() returns the same object ref
+  // on nested setValue — useEffect deps would never fire.
+  // clearErrors before trigger because trigger(name) merges rather than replaces,
+  // leaving stale nested errors behind.
+  const validationVersion = useRef(0);
   useEffect(() => {
-    if (!isDirty) return undefined;
+    const sub = watch(() => {
+      validationVersion.current += 1;
+      const capturedVersion = validationVersion.current;
 
-    const handle = setTimeout(() => {
-      trigger("messageComponent");
-    }, 400);
+      setTimeout(() => {
+        if (capturedVersion === validationVersion.current) {
+          clearErrors("messageComponent");
+          trigger("messageComponent");
+        }
+      }, 400);
+    });
 
-    return () => clearTimeout(handle);
-  }, [messageComponent, isDirty, trigger]);
+    return () => sub.unsubscribe();
+  }, [watch, trigger]);
+
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
     isOpen: isProblemsDialogOpen,
@@ -326,7 +339,7 @@ const MessageBuilderContent: React.FC = () => {
     };
   }, [hasAnyChanges]);
 
-  const handleSave = handleSubmit(
+  const handleSaveInner = handleSubmit(
     async (data) => {
       if (updateStatus === "loading" || !feedId || !connectionId || !data.messageComponent) {
         return;
@@ -380,12 +393,23 @@ const MessageBuilderContent: React.FC = () => {
       }
     },
     (_errors) => {
-      // Show problems dialog when there are validation errors
-      if (problems.length > 0) {
+      const freshProblems = extractMessageBuilderProblems(
+        _errors.messageComponent,
+        messageComponent,
+      );
+
+      if (freshProblems.length > 0) {
         onProblemsDialogOpen();
       }
     },
   );
+
+  // trigger before handleSubmit so the resolver inside handleSubmit sees fresh
+  // validation state — otherwise it may reject a valid form due to stale errors
+  const handleSave = async () => {
+    await trigger("messageComponent");
+    return handleSaveInner();
+  };
 
   const handleDiscard = () => {
     if (!hasAnyChanges) {

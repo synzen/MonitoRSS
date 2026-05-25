@@ -5,6 +5,7 @@ import {
   getActiveThreadsHandler,
   getServerChannelsHandler,
   getServerRolesHandler,
+  getServerEmojisHandler,
   getServerMembersHandler,
   getServerMemberHandler,
 } from "./discord-servers.handlers";
@@ -68,6 +69,14 @@ export async function discordServersRoutes(
       requireServerPermission(extractServerId),
     ],
     handler: getServerRolesHandler,
+  });
+
+  app.get<{ Params: ServerParams }>("/:serverId/emojis", {
+    preHandler: [
+      requireBotInServer(extractServerId),
+      requireServerPermission(extractServerId),
+    ],
+    handler: getServerEmojisHandler,
   });
 
   app.get<{ Params: ServerParams; Querystring: MembersQuerystring }>(

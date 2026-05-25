@@ -1386,3 +1386,212 @@ describe(
     });
   },
 );
+
+describe(
+  "GET /api/v1/discord-servers/:serverId/emojis",
+  { concurrency: true },
+  () => {
+    it("returns 401 without authentication", async () => {
+      const serverId = generateSnowflake();
+      const response = await ctx.fetch(
+        `/api/v1/discord-servers/${serverId}/emojis`,
+      );
+      assert.strictEqual(response.status, 401);
+    });
+
+    it("returns 404 when bot is not in the server", async () => {
+      const serverId = generateSnowflake();
+      const user = await ctx.asUser(generateSnowflake());
+
+      ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
+        status: 404,
+        body: { message: "Unknown Guild" },
+      });
+
+      const response = await user.fetch(
+        `/api/v1/discord-servers/${serverId}/emojis`,
+      );
+
+      assert.strictEqual(response.status, 404);
+    });
+
+    it("returns 403 when user lacks permission", async () => {
+      const serverId = generateSnowflake();
+      const user = await ctx.asUser(generateSnowflake());
+
+      ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
+        status: 200,
+        body: { id: serverId, name: "Test Server" },
+      });
+
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        user.accessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: serverId,
+              name: "Test Server",
+              owner: false,
+              permissions: "0",
+            },
+          ],
+        },
+      );
+
+      const response = await user.fetch(
+        `/api/v1/discord-servers/${serverId}/emojis`,
+      );
+
+      assert.strictEqual(response.status, 403);
+    });
+
+    it("returns 200 with emojis list and image URLs", async () => {
+      const serverId = generateSnowflake();
+      const user = await ctx.asUser(generateSnowflake());
+
+      ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
+        status: 200,
+        body: { id: serverId, name: "Test Server" },
+      });
+
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        user.accessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: serverId,
+              name: "Test Server",
+              owner: false,
+              permissions: MANAGE_CHANNEL_PERMISSION,
+            },
+          ],
+        },
+      );
+
+      ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}/emojis`, {
+        status: 200,
+        body: [
+          {
+            id: "41771983429993937",
+            name: "LUL",
+            roles: [],
+            require_colons: true,
+            managed: false,
+            animated: false,
+            available: true,
+          },
+          {
+            id: "41771983429993938",
+            name: "PepeLaugh",
+            roles: [],
+            require_colons: true,
+            managed: false,
+            animated: true,
+            available: true,
+          },
+        ],
+      });
+
+      const response = await user.fetch(
+        `/api/v1/discord-servers/${serverId}/emojis`,
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        results: Array<{
+          id: string;
+          name: string;
+          animated: boolean;
+          imageUrl: string;
+        }>;
+        total: number;
+      };
+      assert.strictEqual(body.total, 2);
+
+      const staticEmoji = body.results[0];
+      assert.ok(staticEmoji);
+      assert.strictEqual(staticEmoji.id, "41771983429993937");
+      assert.strictEqual(staticEmoji.name, "LUL");
+      assert.strictEqual(staticEmoji.animated, false);
+      assert.strictEqual(
+        staticEmoji.imageUrl,
+        "https://cdn.discordapp.com/emojis/41771983429993937.png",
+      );
+
+      const animatedEmoji = body.results[1];
+      assert.ok(animatedEmoji);
+      assert.strictEqual(animatedEmoji.id, "41771983429993938");
+      assert.strictEqual(animatedEmoji.name, "PepeLaugh");
+      assert.strictEqual(animatedEmoji.animated, true);
+      assert.strictEqual(
+        animatedEmoji.imageUrl,
+        "https://cdn.discordapp.com/emojis/41771983429993938.gif",
+      );
+    });
+
+    it("filters out unavailable emojis", async () => {
+      const serverId = generateSnowflake();
+      const user = await ctx.asUser(generateSnowflake());
+
+      ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}`, {
+        status: 200,
+        body: { id: serverId, name: "Test Server" },
+      });
+
+      ctx.discordMockServer.registerRouteForToken(
+        "GET",
+        "/users/@me/guilds",
+        user.accessToken.access_token,
+        {
+          status: 200,
+          body: [
+            {
+              id: serverId,
+              name: "Test Server",
+              owner: false,
+              permissions: MANAGE_CHANNEL_PERMISSION,
+            },
+          ],
+        },
+      );
+
+      ctx.discordMockServer.registerRoute("GET", `/guilds/${serverId}/emojis`, {
+        status: 200,
+        body: [
+          {
+            id: "41771983429993937",
+            name: "LUL",
+            animated: false,
+            available: true,
+          },
+          {
+            id: "41771983429993938",
+            name: "OldEmoji",
+            animated: false,
+            available: false,
+          },
+        ],
+      });
+
+      const response = await user.fetch(
+        `/api/v1/discord-servers/${serverId}/emojis`,
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        results: Array<{ id: string; name: string }>;
+        total: number;
+      };
+      assert.strictEqual(body.total, 1);
+      const firstResult = body.results[0];
+      assert.ok(firstResult);
+      assert.strictEqual(firstResult.id, "41771983429993937");
+    });
+  },
+);

@@ -52,9 +52,9 @@ const actionRowSchema = z.object({
 
 // V2 Components
 const emojiSchemaV2 = z.object({
-  id: z.string(),
-  name: z.string().nullable(),
-  animated: z.boolean().nullable(),
+  id: z.string().optional().nullable(),
+  name: z.string(),
+  animated: z.boolean().optional().nullable(),
 });
 
 const textDisplaySchemaV2 = z.object({

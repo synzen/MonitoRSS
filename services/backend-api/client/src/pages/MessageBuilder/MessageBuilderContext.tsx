@@ -573,6 +573,12 @@ export const MessageBuilderProvider: React.FC<{
   defaultValues?: MessageBuilderFormState;
   children: ReactNode;
 }> = ({ children, defaultValues }) => {
+  // mode: "onBlur" reduces input lag vs "onChange", but has RHF quirks:
+  // - isValid stays false when fields use setValue/watch instead of register()
+  // - watch("messageComponent") returns the same ref on nested setValue, so
+  //   useEffect deps won't fire — use watch(callback) subscription instead
+  // - trigger(name) doesn't reliably clear nested errors; call clearErrors first
+  // Do NOT gate behavior on formState.isValid; use formState.errors instead.
   const formMethods = useForm<MessageBuilderFormState>({
     mode: "onBlur",
     resolver: yupResolver(validationSchema),

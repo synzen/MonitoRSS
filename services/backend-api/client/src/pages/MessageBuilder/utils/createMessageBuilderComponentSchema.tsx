@@ -18,9 +18,24 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
     const buttonSchema = baseSchema.shape({
       label: yup
         .string()
-        .required("Expected non-empty Button label")
-        .max(80, "Expected Button label to have at most 80 characters"),
+        .max(80, "Expected Button label to have at most 80 characters")
+        .when("emoji", {
+          is: (emoji: any) => !emoji,
+          then: (schema) => schema.required("Button requires a label or emoji"),
+          otherwise: (schema) => schema.nullable(),
+        }),
       style: yup.string(),
+      // .default(undefined) is required — without it, Yup casts undefined to {}
+      // then fails on name:required() for buttons that have no emoji
+      emoji: yup
+        .object({
+          id: yup.string().optional(),
+          name: yup.string().required(),
+          animated: yup.boolean().optional(),
+        })
+        .optional()
+        .nullable()
+        .default(undefined),
       href: yup.string().when("style", {
         is: DiscordButtonStyle.Link,
         then: (schema) =>

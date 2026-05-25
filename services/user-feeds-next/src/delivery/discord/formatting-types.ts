@@ -76,7 +76,7 @@ export interface DiscordButtonV2 {
   style: number;
   label?: string;
   emoji?: {
-    id: string;
+    id?: string | null;
     name?: string | null;
     animated?: boolean | null;
   } | null;
@@ -139,7 +139,7 @@ export interface DiscordMessageComponent {
     style: number;
     label: string;
     emoji?: {
-      id: string;
+      id?: string | null;
       name?: string | null;
       animated?: boolean | null;
     } | null;
@@ -156,7 +156,7 @@ export interface ButtonInput {
   style: number;
   label: string;
   emoji?: {
-    id: string;
+    id?: string | null;
     name?: string | null;
     animated?: boolean | null;
   } | null;
@@ -185,7 +185,7 @@ export interface ButtonV2Input {
   style: number;
   label?: string;
   emoji?: {
-    id: string;
+    id?: string | null;
     name?: string | null;
     animated?: boolean | null;
   } | null;
