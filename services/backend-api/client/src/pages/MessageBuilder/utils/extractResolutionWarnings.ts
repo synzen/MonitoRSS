@@ -45,7 +45,7 @@ const checkField = (
   templateComponent: Component,
   templateField: string | undefined | null,
   resolvedValue: unknown,
-  fieldLabel: string,
+  fieldLabel: string
 ) => {
   if (!hasPlaceholder(templateField) || !isEmptyResolved(resolvedValue)) {
     return;
@@ -65,7 +65,7 @@ const checkField = (
 const checkAccessory = (
   ctx: WarningContext,
   accessory: ButtonComponent | ThumbnailComponent,
-  resolvedAccessory: ResolvedComponent,
+  resolvedAccessory: ResolvedComponent
 ) => {
   switch (accessory.type) {
     case ComponentType.V2Thumbnail:
@@ -85,7 +85,7 @@ const checkAccessory = (
 const walkV2Components = (
   ctx: WarningContext,
   templateChildren: Component[],
-  resolvedComponents: ResolvedComponent[],
+  resolvedComponents: ResolvedComponent[]
 ) => {
   let resolvedIdx = 0;
 
@@ -186,7 +186,7 @@ const walkV2Components = (
 const walkLegacyEmbeds = (
   ctx: WarningContext,
   templateRoot: MessageComponentRoot,
-  resolvedEmbeds: ResolvedComponent[],
+  resolvedEmbeds: ResolvedComponent[]
 ) => {
   let embedIdx = 0;
   const embedContainerChildren =
@@ -211,7 +211,7 @@ const walkLegacyEmbeds = (
             subComponent,
             subComponent.description,
             resolved.description,
-            "Description",
+            "Description"
           );
           break;
         case ComponentType.LegacyEmbedThumbnail:
@@ -220,7 +220,7 @@ const walkLegacyEmbeds = (
             subComponent,
             subComponent.thumbnailUrl,
             resolved.thumbnail?.url,
-            "Image URL",
+            "Image URL"
           );
           break;
         case ComponentType.LegacyEmbedImage:
@@ -264,7 +264,7 @@ const walkLegacyEmbeds = (
 const walkLegacyButtons = (
   ctx: WarningContext,
   templateRoot: MessageComponentRoot,
-  resolvedComponentRows: ResolvedComponent[],
+  resolvedComponentRows: ResolvedComponent[]
 ) => {
   const actionRows = templateRoot.children.filter((c) => c.type === ComponentType.LegacyActionRow);
 
@@ -287,7 +287,7 @@ const walkLegacyButtons = (
 
 const extractResolutionWarnings = (
   templateRoot: MessageComponentRoot | undefined,
-  resolvedMessages: ResolvedComponent[] | undefined,
+  resolvedMessages: ResolvedComponent[] | undefined
 ): MessageBuilderProblem[] => {
   if (!templateRoot || !resolvedMessages?.length) {
     return [];

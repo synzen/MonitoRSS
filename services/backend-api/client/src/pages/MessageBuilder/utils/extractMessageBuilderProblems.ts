@@ -15,7 +15,7 @@ import getComponentPath from "./getComponentPath";
 
 const extractMessageBuilderProblems = (
   formStateErrors: Merge<FieldError, FieldErrorsImpl<any>> | undefined,
-  messageComponent?: MessageComponentRoot,
+  messageComponent?: MessageComponentRoot
 ) => {
   const problems: Array<MessageBuilderProblem> = [];
 
@@ -111,22 +111,22 @@ const extractMessageBuilderProblems = (
       }
 
       const authorComponent = component.children?.find(
-        (c) => c.type === ComponentType.LegacyEmbedAuthor,
+        (c) => c.type === ComponentType.LegacyEmbedAuthor
       ) as LegacyEmbedAuthorComponent | undefined;
       const titleComponent = component.children?.find(
-        (c) => c.type === ComponentType.LegacyEmbedTitle,
+        (c) => c.type === ComponentType.LegacyEmbedTitle
       ) as LegacyEmbedTitleComponent | undefined;
       const descriptionComponent = component.children?.find(
-        (c) => c.type === ComponentType.LegacyEmbedDescription,
+        (c) => c.type === ComponentType.LegacyEmbedDescription
       ) as LegacyEmbedDescriptionComponent | undefined;
       const footerComponent = component.children?.find(
-        (c) => c.type === ComponentType.LegacyEmbedFooter,
+        (c) => c.type === ComponentType.LegacyEmbedFooter
       ) as LegacyEmbedFooterComponent | undefined;
       const imageComponent = component.children?.find(
-        (c) => c.type === ComponentType.LegacyEmbedImage,
+        (c) => c.type === ComponentType.LegacyEmbedImage
       ) as LegacyEmbedImageComponent | undefined;
       const thumbnailComponent = component.children?.find(
-        (c) => c.type === ComponentType.LegacyEmbedThumbnail,
+        (c) => c.type === ComponentType.LegacyEmbedThumbnail
       ) as LegacyEmbedThumbnailComponent | undefined;
 
       const authorName = authorComponent?.authorName;

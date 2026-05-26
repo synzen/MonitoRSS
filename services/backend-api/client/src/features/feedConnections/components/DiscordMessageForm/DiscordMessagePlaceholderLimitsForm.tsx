@@ -19,43 +19,46 @@ import {
   Thead,
   Tr,
 } from "@chakra-ui/react";
-import { useFieldArray, useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { AddIcon } from "@chakra-ui/icons";
 import { FaEllipsisVertical } from "react-icons/fa6";
-import { DiscordMessageFormData } from "@/types/discord";
 import { PlaceholderLimitDialog } from "../PlaceholderLimitDialog";
 import MessagePlaceholderText from "../../../../components/MessagePlaceholderText";
 
+export interface PlaceholderLimit {
+  characterCount: number;
+  placeholder: string;
+  appendString?: string | null;
+}
+
 interface Props {
-  path?: string;
+  value: PlaceholderLimit[];
+  onChange: (value: PlaceholderLimit[]) => void;
   excludeDescription?: boolean;
   small?: boolean;
 }
 
 export const DiscordMessagePlaceholderLimitsForm = ({
-  path = "placeholderLimits",
+  value,
+  onChange,
   excludeDescription,
   small,
 }: Props) => {
-  const { control } = useFormContext<DiscordMessageFormData>();
   const { t } = useTranslation();
-  const { fields, append, update, remove } = useFieldArray({
-    control,
-    name: path as any,
-  });
 
   const onSubmitNewLimit = (limit: {
     characterCount: number;
     placeholder: string;
     appendString: string;
   }) => {
-    const existingIndex = fields.findIndex((f) => (f as any).placeholder === limit.placeholder);
+    const existingIndex = value.findIndex((f) => f.placeholder === limit.placeholder);
 
     if (existingIndex === -1) {
-      append(limit);
+      onChange([...value, limit]);
     } else {
-      update(existingIndex, limit);
+      const copy = [...value];
+      copy[existingIndex] = limit;
+      onChange(copy);
     }
   };
 
@@ -65,12 +68,12 @@ export const DiscordMessagePlaceholderLimitsForm = ({
         <HStack justifyContent="space-between">
           <Text>
             {t(
-              "features.feedConnections.components.discordMessagePlaceholderLimitsForm.description",
+              "features.feedConnections.components.discordMessagePlaceholderLimitsForm.description"
             )}
           </Text>
         </HStack>
       )}
-      {fields.length && (
+      {value.length > 0 && (
         <Box borderStyle="solid" borderWidth="1px" borderRadius="md">
           <TableContainer bg="gray.900" rounded="md">
             <Table size={small ? "sm" : undefined}>
@@ -78,26 +81,24 @@ export const DiscordMessagePlaceholderLimitsForm = ({
                 <Tr>
                   <Th>
                     {t(
-                      "features.feedConnections.components.discordMessagePlaceholderLimitsForm.placeholderColumnLabel",
+                      "features.feedConnections.components.discordMessagePlaceholderLimitsForm.placeholderColumnLabel"
                     )}
                   </Th>
                   <Th>
                     {t(
-                      "features.feedConnections.components.discordMessagePlaceholderLimitsForm.upperCharacterLimitColumnLabel",
+                      "features.feedConnections.components.discordMessagePlaceholderLimitsForm.upperCharacterLimitColumnLabel"
                     )}
                   </Th>
                   <Th>
                     {t(
-                      "features.feedConnections.components.discordMessagePlaceholderLimitsForm.appendTextColumnLabel",
+                      "features.feedConnections.components.discordMessagePlaceholderLimitsForm.appendTextColumnLabel"
                     )}
                   </Th>
                   <Th isNumeric>Actions</Th>
                 </Tr>
               </Thead>
               <Tbody>
-                {fields.map((field, index) => {
-                  const fieldData = field as any;
-
+                {value.map((fieldData, index) => {
                   return (
                     <Tr key={fieldData.placeholder}>
                       <Td>
@@ -130,7 +131,9 @@ export const DiscordMessagePlaceholderLimitsForm = ({
                               mode="update"
                               trigger={<MenuItem>Update</MenuItem>}
                               onSubmit={(limit) => {
-                                update(index, limit);
+                                const copy = [...value];
+                                copy[index] = limit;
+                                onChange(copy);
                               }}
                               defaultValues={{
                                 placeholder: fieldData.placeholder,
@@ -138,7 +141,13 @@ export const DiscordMessagePlaceholderLimitsForm = ({
                                 characterCount: fieldData.characterCount,
                               }}
                             />
-                            <MenuItem onClick={() => remove(index)}>Delete</MenuItem>
+                            <MenuItem
+                              onClick={() => {
+                                onChange(value.filter((_, i) => i !== index));
+                              }}
+                            >
+                              Delete
+                            </MenuItem>
                           </MenuList>
                         </Menu>
                       </Td>

@@ -485,19 +485,19 @@ export const convertConnectionToMessageBuilderState = (
 
   const { content, embeds, componentRows, componentsV2 } = connection.details;
 
-  // Shared properties for both root types
+  // Order must match SHARED_ROOT_FIELDS in messageBuilderReducer.ts
   const sharedRootProperties = {
-    forumThreadTitle: connection.details?.forumThreadTitle,
-    isForumChannel: connection.details?.channel?.type === "forum",
-    placeholderLimits: connection.details?.placeholderLimits,
-    mentions: connection.mentions,
-    channelNewThreadExcludesPreview: connection.details?.channelNewThreadExcludesPreview,
-    channelNewThreadTitle: connection.details?.channelNewThreadTitle,
-    forumThreadTags: connection.details?.forumThreadTags,
     formatTables: connection.details?.formatter?.formatTables,
     stripImages: connection.details?.formatter?.stripImages,
     ignoreNewLines: connection.details?.formatter?.ignoreNewLines,
     enablePlaceholderFallback: connection.details?.enablePlaceholderFallback,
+    forumThreadTitle: connection.details?.forumThreadTitle,
+    forumThreadTags: connection.details?.forumThreadTags,
+    isForumChannel: connection.details?.channel?.type === "forum",
+    channelNewThreadTitle: connection.details?.channelNewThreadTitle,
+    channelNewThreadExcludesPreview: connection.details?.channelNewThreadExcludesPreview,
+    mentions: connection.mentions,
+    placeholderLimits: connection.details?.placeholderLimits,
   };
 
   // Check if this is a V2 connection (has componentsV2 data)

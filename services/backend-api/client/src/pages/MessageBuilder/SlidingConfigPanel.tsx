@@ -9,12 +9,11 @@ import {
   ModalFooter,
   Button,
 } from "@chakra-ui/react";
-import { useFormContext } from "react-hook-form";
 import { ComponentPropertiesPanel } from "./ComponentPropertiesPanel";
 import getMessageBuilderComponentLabel from "./utils/getMessageBuilderComponentLabel";
 import { useNavigableTreeContext } from "../../contexts/NavigableTreeContext";
 import findMessageBuilderComponentById from "./utils/findMessageBuilderComponentById";
-import MessageBuilderFormState from "./types/MessageBuilderFormState";
+import { useMessageBuilderStateContext } from "./state";
 
 interface SlidingConfigPanelProps {
   onClose: () => void;
@@ -22,8 +21,7 @@ interface SlidingConfigPanelProps {
 }
 
 export const SlidingConfigPanel: React.FC<SlidingConfigPanelProps> = ({ onClose, isOpen }) => {
-  const { watch } = useFormContext<MessageBuilderFormState>();
-  const messageComponent = watch("messageComponent");
+  const { messageComponent } = useMessageBuilderStateContext();
   const { currentSelectedId } = useNavigableTreeContext();
   const { target: component } = currentSelectedId
     ? findMessageBuilderComponentById(messageComponent, currentSelectedId)

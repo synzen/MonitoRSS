@@ -104,7 +104,7 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
             .test("max-embed-fields", "Expected fewer than 25 embed fields", (children) => {
               if (!children) return true;
               const fieldCount = children.filter(
-                (child) => child.type === ComponentType.LegacyEmbedField,
+                (child) => child.type === ComponentType.LegacyEmbedField
               ).length;
 
               return fieldCount <= 25;
@@ -220,7 +220,7 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
                   accessory.type === ComponentType.V2Button ||
                   accessory.type === ComponentType.V2Thumbnail
                 );
-              },
+              }
             )
             .test(
               "validate-accessory-fields",
@@ -250,7 +250,7 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
                 }
 
                 return true;
-              },
+              }
             )
             .required("Expected Section to have an accessory component"),
         });

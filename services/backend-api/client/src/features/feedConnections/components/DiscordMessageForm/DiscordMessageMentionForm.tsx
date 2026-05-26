@@ -10,9 +10,7 @@ import {
   Text,
   useDisclosure,
 } from "@chakra-ui/react";
-import { Controller, useFormContext } from "react-hook-form";
 import { AddIcon, SettingsIcon } from "@chakra-ui/icons";
-import { DiscordMessageFormData } from "@/types/discord";
 import { LogicalFilterExpression } from "../../types";
 import { useDiscordServerRoles } from "../../../discordServers";
 import { DiscordMentionSettingsDialog } from "./DiscordMentionSettingsDialog";
@@ -23,9 +21,18 @@ import {
   SelectedMention,
 } from "../../../../pages/MessageBuilder/InsertMentionDialog";
 
+export interface MentionsValue {
+  targets?: Array<{
+    type: "role" | "user";
+    id: string;
+    filters?: { expression: LogicalFilterExpression } | null;
+  }> | null;
+}
+
 interface Props {
   guildId: string | undefined;
-  path?: string;
+  value: MentionsValue | null | undefined;
+  onChange: (value: MentionsValue) => void;
   excludeDescription?: boolean;
   smallButton?: boolean;
 }
@@ -111,12 +118,28 @@ const MentionCheckbox = ({
 
 export const DiscordMessageMentionForm = ({
   guildId,
+  value,
+  onChange,
   excludeDescription,
   smallButton,
-  path = "mentions",
 }: Props) => {
-  const { control } = useFormContext<DiscordMessageFormData>();
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  const handleMentionSelected = (mention: SelectedMention) => {
+    if (mention.type === "channel") return;
+
+    onChange({
+      ...value,
+      targets: [
+        ...(value?.targets || []),
+        {
+          id: mention.id,
+          type: mention.type,
+          filters: null,
+        },
+      ],
+    });
+  };
 
   return (
     <Stack spacing={4}>
@@ -128,89 +151,63 @@ export const DiscordMessageMentionForm = ({
           it to show up.
         </Text>
       )}
-      <Controller
-        name={path as any}
-        control={control}
-        render={({ field }) => {
-          const mentionsValue = field.value as DiscordMessageFormData["mentions"];
-
-          const handleMentionSelected = (mention: SelectedMention) => {
-            if (mention.type === "channel") return;
-
-            field.onChange({
-              ...field.value,
-              targets: [
-                ...(field.value?.targets || []),
-                {
-                  id: mention.id,
-                  type: mention.type,
-                  filters: null,
-                },
-              ],
-            });
-          };
+      <Flex gap={4} flexWrap="wrap">
+        {value?.targets?.map((target, currentIndex) => {
+          if (!target) {
+            return null;
+          }
 
           return (
-            <Flex gap={4} flexWrap="wrap">
-              {mentionsValue?.targets?.map((target, currentIndex) => {
-                if (!target) {
-                  return null;
-                }
+            <MentionCheckbox
+              small={smallButton}
+              key={target.id}
+              filters={target.filters as any}
+              id={target.id}
+              type={target.type}
+              guildId={guildId}
+              onChangeFilters={(newFilters) => {
+                const copyTargets = [...(value?.targets || [])];
 
-                return (
-                  <MentionCheckbox
-                    small={smallButton}
-                    key={target.id}
-                    filters={target.filters as any}
-                    id={target.id}
-                    type={target.type}
-                    guildId={guildId}
-                    onChangeFilters={(newFilters) => {
-                      const copyTargets = [...(field.value?.targets || [])];
+                copyTargets[currentIndex] = {
+                  ...target,
+                  filters: newFilters,
+                };
 
-                      copyTargets[currentIndex] = {
-                        ...target,
-                        filters: newFilters,
-                      };
+                onChange({
+                  ...value,
+                  targets: copyTargets,
+                });
+              }}
+              onDelete={() => {
+                const copyTargets = [...(value?.targets || [])];
 
-                      field.onChange({
-                        ...field.value,
-                        targets: copyTargets,
-                      });
-                    }}
-                    onDelete={() => {
-                      const copyTargets = [...(field.value?.targets || [])];
+                copyTargets.splice(currentIndex, 1);
 
-                      copyTargets.splice(currentIndex, 1);
-
-                      field.onChange({
-                        ...field.value,
-                        targets: copyTargets,
-                      });
-                    }}
-                  />
-                );
-              })}
-              <Button
-                onClick={onOpen}
-                leftIcon={<AddIcon fontSize="sm" />}
-                size={smallButton ? "sm" : undefined}
-              >
-                Add Mention
-              </Button>
-              {guildId && (
-                <InsertMentionDialog
-                  isOpen={isOpen}
-                  onClose={onClose}
-                  onSelected={handleMentionSelected}
-                  guildId={guildId}
-                  excludeChannels
-                />
-              )}
-            </Flex>
+                onChange({
+                  ...value,
+                  targets: copyTargets,
+                });
+              }}
+            />
           );
-        }}
-      />
+        })}
+        <Button
+          onClick={onOpen}
+          leftIcon={<AddIcon fontSize="sm" />}
+          size={smallButton ? "sm" : undefined}
+        >
+          Add Mention
+        </Button>
+        {guildId && (
+          <InsertMentionDialog
+            isOpen={isOpen}
+            onClose={onClose}
+            onSelected={handleMentionSelected}
+            guildId={guildId}
+            excludeChannels
+          />
+        )}
+      </Flex>
     </Stack>
   );
 };

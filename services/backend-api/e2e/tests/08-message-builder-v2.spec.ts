@@ -69,6 +69,15 @@ test.describe("Message Builder V2", () => {
     await addComponent("Components V2", "Add Section");
     await addComponent("Components V2", "Add Action Row");
     await addComponent("Components V2", "Add Divider");
+
+    // Verify problems populate for incomplete components (Section missing children + accessory)
+    await expect(
+      page
+        .locator("#problems-content")
+        .getByRole("button", { name: /Section/ })
+        .first(),
+    ).toBeVisible({ timeout: 10000 });
+
     await addComponent("Container", "Add Text Display");
     await addComponent("Container", "Add Media Gallery");
     await addComponent("Media Gallery", "Add Gallery Item");
@@ -84,7 +93,9 @@ test.describe("Message Builder V2", () => {
     // Blur by clicking the tree item (also flushes debounced input value)
     await tree.getByRole("treeitem", { name: "Text Display" }).first().click();
     await expect(
-      page.locator("#problems-content").getByRole("button", { name: /Container > Text Display/ }),
+      page
+        .locator("#problems-content")
+        .getByRole("button", { name: /Container > Text Display/ }),
     ).not.toBeVisible({ timeout: 10000 });
 
     // Media Gallery > Gallery Item
@@ -527,6 +538,22 @@ test.describe("Message Builder V2", () => {
     await expect(
       page.locator('[aria-label="Warning detected"]').first(),
     ).toBeVisible({ timeout: 10000 });
+
+    // Delete the Thumbnail accessory from the Section
+    await tree.getByRole("treeitem", { name: "Thumbnail (Accessory)" }).click();
+    await page.getByRole("button", { name: "Delete Component" }).click();
+
+    // Verify error icon appears on the Section tree item (missing accessory)
+    await expect(
+      tree
+        .getByRole("treeitem", { name: "Section" })
+        .locator('[aria-label="Error detected"]'),
+    ).toBeVisible({ timeout: 10000 });
+
+    // Verify preview does not show "Failed to load preview"
+    await expect(page.getByText("Failed to load preview.")).not.toBeVisible({
+      timeout: 5000,
+    });
   });
 
   test("can configure forum thread settings and verify persistence", async ({
@@ -653,6 +680,10 @@ test.describe("Message Builder V2", () => {
     });
     await page.locator("#channel-select").focus();
     await page.locator("#channel-select").press("ArrowDown");
+    await page.locator('[role="option"]').first().waitFor({
+      state: "visible",
+      timeout: 15000,
+    });
     await page
       .locator('[role="option"]')
       .filter({ hasText: forumChannelName! })
@@ -714,6 +745,10 @@ test.describe("Message Builder V2", () => {
     });
     await page.locator("#channel-select").focus();
     await page.locator("#channel-select").press("ArrowDown");
+    await page.locator('[role="option"]').first().waitFor({
+      state: "visible",
+      timeout: 15000,
+    });
     await page
       .locator('[role="option"]')
       .filter({ hasText: forumChannelName! })

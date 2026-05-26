@@ -3,7 +3,7 @@ import { Component, ComponentType, SectionComponent } from "../types";
 function getMessageBuilderComponentFormPathsById(
   root: Component,
   id: string,
-  basePath: string = "messageComponent",
+  basePath: string = "messageComponent"
 ): string | null {
   if (root.id === id) {
     return basePath;
@@ -15,7 +15,7 @@ function getMessageBuilderComponentFormPathsById(
       const childPath = getMessageBuilderComponentFormPathsById(
         child,
         id,
-        `${basePath}.children.${i}`,
+        `${basePath}.children.${i}`
       );
       if (childPath) return childPath;
     }
@@ -27,7 +27,7 @@ function getMessageBuilderComponentFormPathsById(
     const accessoryPath = getMessageBuilderComponentFormPathsById(
       accessory,
       id,
-      `${basePath}.accessory`,
+      `${basePath}.accessory`
     );
     if (accessoryPath) return accessoryPath;
   }

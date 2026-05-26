@@ -197,7 +197,9 @@ test.describe("Paddle Branding Checkout", () => {
     // Phase 7: Wait for provisioning to complete
     const provisioningText = page.getByText(/Provisioning benefits/i);
     await expect(
-      provisioningText.or(modal.getByRole("button", { name: "Save" })),
+      provisioningText.or(
+        modal.getByRole("button", { name: "Save", exact: true }),
+      ),
     ).toBeVisible({ timeout: 60000 });
 
     if (await provisioningText.isVisible().catch(() => false)) {

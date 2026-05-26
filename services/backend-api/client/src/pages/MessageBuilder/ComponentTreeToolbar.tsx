@@ -1,15 +1,13 @@
 import React from "react";
 import { Box, HStack, VStack, Button, Text } from "@chakra-ui/react";
-import { useFormContext } from "react-hook-form";
 import { VscCollapseAll } from "react-icons/vsc";
 import { useNavigableTreeContext } from "../../contexts/NavigableTreeContext";
-import MessageBuilderFormState from "./types/MessageBuilderFormState";
 import { useIsMessageBuilderDesktop } from "../../hooks";
+import { useMessageBuilderStateContext } from "./state";
 
 export const ComponentTreeToolbar: React.FC = () => {
   const { setExpandedIds } = useNavigableTreeContext();
-  const { watch } = useFormContext<MessageBuilderFormState>();
-  const messageComponent = watch("messageComponent");
+  const { messageComponent } = useMessageBuilderStateContext();
   const isDesktop = useIsMessageBuilderDesktop();
 
   const handleCollapseAll = () => {

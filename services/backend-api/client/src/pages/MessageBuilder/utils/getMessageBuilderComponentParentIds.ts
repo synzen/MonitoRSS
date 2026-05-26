@@ -3,7 +3,7 @@ import { Component, ComponentType } from "../types";
 const getMessageBuilderComponentParentIds = (
   component: Component | undefined,
   targetId: string,
-  parents: string[] = [],
+  parents: string[] = []
 ): string[] | null => {
   if (!component) return null;
 

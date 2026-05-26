@@ -1418,6 +1418,57 @@ describe("HTTP API (e2e)", { concurrency: true }, () => {
         );
       });
 
+      it("includes custom:: keys when selectProperties is wildcard with customPlaceholders", async () => {
+        const response = await fetch(`${baseUrl}${endpoint}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": TEST_API_KEY,
+          },
+          body: JSON.stringify({
+            url: PAGINATION_FEED_URL,
+            limit: 1,
+            skip: 0,
+            selectProperties: ["*"],
+            formatter: {
+              options: {},
+              customPlaceholders: [
+                {
+                  id: "cp-test-1",
+                  referenceName: "myTitle",
+                  sourcePlaceholder: "title",
+                  steps: [{ type: "UPPERCASE" }],
+                },
+              ],
+            },
+          }),
+        });
+
+        assert.strictEqual(response.status, 200);
+        const body = (await response.json()) as JsonBody;
+        const result = body.result as JsonBody;
+        const articles = result.articles as JsonBody[];
+        assert.ok(articles.length > 0);
+
+        const firstArticle = articles[0]!;
+        assert.ok(
+          "custom::myTitle" in firstArticle,
+          `Expected custom::myTitle key in article, got keys: ${Object.keys(firstArticle).join(", ")}`,
+        );
+
+        const customValue = firstArticle["custom::myTitle"] as string;
+        assert.ok(
+          customValue && customValue === customValue.toUpperCase(),
+          `Expected uppercased value for custom::myTitle, got: ${customValue}`,
+        );
+
+        const selectedProperties = result.selectedProperties as string[];
+        assert.ok(
+          selectedProperties.includes("custom::myTitle"),
+          `Expected custom::myTitle in selectedProperties, got: ${selectedProperties.join(", ")}`,
+        );
+      });
+
       it("includes extracted:: keys when selectProperties is wildcard", async () => {
         const response = await fetch(`${baseUrl}${endpoint}`, {
           method: "POST",

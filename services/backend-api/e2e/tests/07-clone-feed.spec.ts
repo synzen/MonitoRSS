@@ -282,7 +282,7 @@ test.describe("Clone Feed", () => {
       await expect(page.getByRole("table")).toBeVisible({ timeout: 10000 });
 
       // Click on the cloned feed link with custom title
-      await page.getByRole("link", { name: customTitle }).click();
+      await page.getByRole("link", { name: customTitle, exact: true }).click();
 
       // Verify the cloned feed has the custom title
       await expect(

@@ -14,11 +14,9 @@ import {
   VisuallyHidden,
 } from "@chakra-ui/react";
 import { ChevronRightIcon, LockIcon } from "@chakra-ui/icons";
-import { useFormContext } from "react-hook-form";
-
 import { ArticlePreviewBanner } from "./ArticlePreviewBanner";
 import { useMessageBuilderContext } from "./MessageBuilderContext";
-import MessageBuilderFormState from "./types/MessageBuilderFormState";
+import { useMessageBuilderStateContext } from "./state";
 import { PageAlertContextOutlet, PageAlertProvider } from "../../contexts/PageAlertContext";
 import { useCreateConnectionPreview } from "../../features/feedConnections/hooks";
 import { FeedConnectionType, FeedDiscordChannelConnection } from "../../types";
@@ -80,6 +78,8 @@ const DiscordMessageDisplayWithMentions: React.FC<DiscordMessageDisplayWithMenti
   );
 };
 
+const emptyMessages: any[] = [];
+
 export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
   maxHeight,
   onResolvedMessages,
@@ -90,11 +90,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
   webhooksAllowed,
   brandingChanged,
 }) => {
-  const {
-    watch,
-    formState: { isDirty },
-  } = useFormContext<MessageBuilderFormState>();
-  const messageComponent = watch("messageComponent");
+  const { messageComponent, isDirty, errors } = useMessageBuilderStateContext();
   const { currentArticle } = useMessageBuilderContext();
   const { connection, userFeed } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
   const { data: bot } = useDiscordBot();
@@ -102,10 +98,17 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
   const previewData = convertMessageBuilderStateToConnectionPreviewInput(
     userFeed,
     connection,
-    messageComponent,
+    messageComponent
   );
 
-  const debouncedPreviewData = useDebounce(previewData, 500);
+  const { value: debouncedPreviewData, pending: previewDataIsDebouncing } = useDebounce(
+    previewData,
+    500,
+    { trackPending: true }
+  );
+
+  const hasValidationErrors =
+    errors.messageComponent != null && Object.keys(errors.messageComponent).length > 0;
 
   const hasEmptyTextContent = React.useMemo(() => {
     type V2Component = NonNullable<
@@ -139,8 +142,11 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
     fetchStatus,
     error,
   } = useCreateConnectionPreview(FeedConnectionType.DiscordChannel, {
-    // Do NOT add formState.isValid here — it stays false with mode:"onBlur" + setValue/watch pattern
-    enabled: !!currentArticle?.id && !hasEmptyTextContent,
+    enabled:
+      !!currentArticle?.id &&
+      !hasEmptyTextContent &&
+      !hasValidationErrors &&
+      !previewDataIsDebouncing,
     data: {
       connectionId: connection.id,
       feedId: userFeed.id,
@@ -154,7 +160,19 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
   });
 
   const isFetching = fetchStatus === "fetching";
-  const messages = connectionPreview?.result.messages || [];
+  const messages = connectionPreview?.result.messages ?? emptyMessages;
+  // Google Translate wraps text nodes in <font> elements, which breaks React's
+  // DOM reconciliation. Keying on a version counter forces a full remount when
+  // new preview data arrives, creating fresh DOM nodes instead of patching
+  // translated ones that React can no longer update.
+  const prevMessagesRef = React.useRef(messages);
+  const previewVersionRef = React.useRef(0);
+
+  if (messages !== prevMessagesRef.current) {
+    prevMessagesRef.current = messages;
+    previewVersionRef.current += 1;
+  }
+
   const showEmptyState =
     currentArticle &&
     messages.length === 0 &&
@@ -165,7 +183,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
     onResolvedMessages?.(messages);
   }, [messages]);
 
-  if (error) {
+  if (error && !hasValidationErrors && !previewDataIsDebouncing) {
     return (
       <Stack spacing={0}>
         <PageAlertProvider>
@@ -328,6 +346,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
         </chakra.details>
         <MentionDataProvider serverId={connection.details.channel?.guildId}>
           <DiscordMessageDisplayWithMentions
+            key={previewVersionRef.current}
             messages={messages}
             maxHeight={maxHeight}
             isLoading={isFetching || !currentArticle}

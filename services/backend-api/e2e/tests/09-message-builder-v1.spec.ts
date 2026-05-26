@@ -77,16 +77,21 @@ test.describe("Message Builder V1", () => {
 
     // 1st Embed > Author
     await tree.getByRole("treeitem", { name: "Author" }).click();
-    await page.getByRole("textbox", { name: "Name" }).fill("Author Name");
+    await page
+      .getByRole("textbox", { name: "Name" })
+      .first()
+      .fill("Author Name");
     await page
       .getByRole("textbox", { name: "URL", exact: true })
+      .first()
       .fill("{{link}}");
 
     // 1st Embed > Title
     await tree.getByRole("treeitem", { name: "Title" }).first().click();
-    await page.getByRole("textbox", { name: "Text" }).fill("{{title}}");
+    await page.getByRole("textbox", { name: "Text" }).first().fill("{{title}}");
     await page
       .getByRole("textbox", { name: "URL", exact: true })
+      .first()
       .fill("{{link}}");
 
     // 1st Embed > Description
@@ -99,17 +104,22 @@ test.describe("Message Builder V1", () => {
     await tree.getByRole("treeitem", { name: "Image" }).click();
     await page
       .getByRole("textbox", { name: "Image URL" })
+      .first()
       .fill("{{extracted::description::image1}}");
 
     // 1st Embed > Thumbnail
     await tree.getByRole("treeitem", { name: "Thumbnail" }).click();
     await page
       .getByRole("textbox", { name: "Image URL" })
+      .first()
       .fill("{{extracted::description::image1}}");
 
     // 1st Embed > Footer
     await tree.getByRole("treeitem", { name: "Footer" }).click();
-    await page.getByRole("textbox", { name: "Text" }).fill("Footer text");
+    await page
+      .getByRole("textbox", { name: "Text" })
+      .first()
+      .fill("Footer text");
 
     // 1st Embed > Timestamp
     await tree.getByRole("treeitem", { name: "Timestamp" }).click();
@@ -129,18 +139,26 @@ test.describe("Message Builder V1", () => {
     await tree.getByRole("treeitem", { name: "Title" }).nth(1).click();
     await page
       .getByRole("textbox", { name: "Text" })
+      .first()
       .fill("Second embed title");
 
     // 2nd Embed > Description
     await tree.getByRole("treeitem", { name: "Description" }).nth(1).click();
     await page
       .getByRole("textbox", { name: "Description" })
+      .first()
       .fill("Second embed description");
 
     // Action Row > Button
     await tree.getByRole("treeitem", { name: "Button" }).click();
-    await page.getByRole("textbox", { name: "Button Label" }).fill("Read More");
-    await page.getByRole("textbox", { name: "Link URL" }).fill("{{link}}");
+    await page
+      .getByRole("textbox", { name: "Button Label" })
+      .first()
+      .fill("Read More");
+    await page
+      .getByRole("textbox", { name: "Link URL" })
+      .first()
+      .fill("{{link}}");
 
     // Wait for changes to be detected and Save Changes to be enabled
     await expect(

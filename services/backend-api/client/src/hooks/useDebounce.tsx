@@ -1,27 +1,44 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // see https://github.com/tannerlinsley/react-query/issues/293
 // see https://usehooks.com/useDebounce/
-export function useDebounce<T>(value: T, delay: number) {
-  // State and setters for debounced value
+export function useDebounce<T>(value: T, delay: number): T;
+export function useDebounce<T>(
+  value: T,
+  delay: number,
+  options: { trackPending: true }
+): { value: T; pending: boolean };
+export function useDebounce<T>(
+  value: T,
+  delay: number,
+  options?: { trackPending: boolean }
+): T | { value: T; pending: boolean } {
   const [debouncedValue, setDebouncedValue] = useState(value);
+  const [pending, setPending] = useState(false);
+  const isFirstRender = useRef(true);
 
-  useEffect(
-    () => {
-      // Update debounced value after delay
-      const handler = setTimeout(() => {
-        setDebouncedValue(value);
-      }, delay);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
 
-      // Cancel the timeout if value changes (also on delay change or unmount)
-      // This is how we prevent debounced value from updating if value is changed ...
-      // .. within the delay period. Timeout gets cleared and restarted.
-      return () => {
-        clearTimeout(handler);
-      };
-    },
-    [JSON.stringify(value), delay], // Only re-call effect if value or delay changes
-  );
+      return;
+    }
+
+    setPending(true);
+
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+      setPending(false);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [JSON.stringify(value), delay]);
+
+  if (options?.trackPending) {
+    return { value: debouncedValue, pending };
+  }
 
   return debouncedValue;
 }
