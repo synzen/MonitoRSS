@@ -11,8 +11,9 @@ const COLUMNS = [
 ] as const;
 
 test.describe("Column Visibility", () => {
+  test.describe.configure({ mode: "serial" });
+
   async function setupColumnTest(page: Page) {
-    await enableAllTableColumns(page);
     const feed = await createFeed(page, {
       title: "Column Visibility Test Feed",
       url: `${MOCK_RSS_FEED_URL}?colvis=test&t=${Date.now()}`,
@@ -21,6 +22,7 @@ test.describe("Column Visibility", () => {
   }
 
   async function navigateToFeedsPage(page: Page): Promise<void> {
+    await enableAllTableColumns(page);
     const timestamp = Date.now();
     await page.goto(`/feeds?_t=${timestamp}`, { waitUntil: "networkidle" });
     await page.waitForSelector("table tbody tr", { timeout: 15000 });
