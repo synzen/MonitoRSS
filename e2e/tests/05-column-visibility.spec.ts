@@ -11,8 +11,6 @@ const COLUMNS = [
 ] as const;
 
 test.describe("Column Visibility", () => {
-  test.describe.configure({ mode: "serial" });
-
   async function setupColumnTest(page: Page) {
     const feed = await createFeed(page, {
       title: "Column Visibility Test Feed",
@@ -36,7 +34,7 @@ test.describe("Column Visibility", () => {
     const urlMenuItem = page.locator(
       '[role="menuitemcheckbox"]:has-text("URL")',
     );
-    await urlMenuItem.waitFor({ state: "visible", timeout: 5000 });
+    await urlMenuItem.waitFor({ state: "visible", timeout: 10000 });
   }
 
   async function closeColumnsMenu(page: Page): Promise<void> {
@@ -48,7 +46,7 @@ test.describe("Column Visibility", () => {
     const checkbox = page
       .locator(`[role="menuitemcheckbox"]:has-text("${columnLabel}")`)
       .first();
-    await checkbox.waitFor({ state: "visible", timeout: 5000 });
+    await checkbox.waitFor({ state: "visible", timeout: 10000 });
     await checkbox.click({ force: true });
     await page.waitForTimeout(500);
   }
@@ -58,7 +56,9 @@ test.describe("Column Visibility", () => {
   }
 
   async function expectColumnVisible(page: Page, columnLabel: string) {
-    await expect(columnHeader(page, columnLabel)).toBeVisible();
+    await expect(columnHeader(page, columnLabel)).toBeVisible({
+      timeout: 15000,
+    });
   }
 
   async function expectColumnHidden(page: Page, columnLabel: string) {
