@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "../fixtures/test-fixtures";
-import { createFeed, deleteFeed, enableAllTableColumns } from "../helpers/api";
+import { createFeed, deleteFeed } from "../helpers/api";
 import { MOCK_RSS_FEED_URL } from "../helpers/constants";
 
 const COLUMNS = [
@@ -20,10 +20,26 @@ test.describe("Column Visibility", () => {
   }
 
   async function navigateToFeedsPage(page: Page): Promise<void> {
-    await enableAllTableColumns(page);
     const timestamp = Date.now();
     await page.goto(`/feeds?_t=${timestamp}`, { waitUntil: "networkidle" });
     await page.waitForSelector("table tbody tr", { timeout: 15000 });
+    await ensureAllColumnsVisibleViaMenu(page);
+  }
+
+  async function ensureAllColumnsVisibleViaMenu(page: Page): Promise<void> {
+    await openColumnsMenu(page);
+    for (const column of COLUMNS) {
+      if (!(await isColumnCheckedInMenu(page, column.label))) {
+        const checkbox = page
+          .locator(
+            `[role="menuitemcheckbox"]:has-text("${column.label}")`,
+          )
+          .first();
+        await checkbox.click();
+        await page.waitForTimeout(300);
+      }
+    }
+    await closeColumnsMenu(page);
   }
 
   async function openColumnsMenu(page: Page): Promise<void> {
@@ -31,10 +47,10 @@ test.describe("Column Visibility", () => {
       .locator('button[aria-label^="Display table columns"]')
       .first();
     await columnsButton.click();
-    const urlMenuItem = page.locator(
-      '[role="menuitemcheckbox"]:has-text("URL")',
-    );
-    await urlMenuItem.waitFor({ state: "visible", timeout: 10000 });
+    const firstMenuItem = page.locator(
+      '[role="menuitemcheckbox"]',
+    ).first();
+    await firstMenuItem.waitFor({ state: "visible", timeout: 10000 });
   }
 
   async function closeColumnsMenu(page: Page): Promise<void> {
