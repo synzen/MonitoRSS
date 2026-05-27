@@ -2,13 +2,13 @@ import {
   test,
   expect,
   createAuthenticatedContext,
-} from "../fixtures/test-fixtures";
-import { createFeed, deleteAllUserFeeds } from "../helpers/api";
+} from "../../fixtures/test-fixtures";
+import { createFeed, deleteAllUserFeeds } from "../../helpers/api";
 import {
   MOCK_RSS_FEED_URL,
   MOCK_RSS_HOST,
   MOCK_RSS_HTML_PAGE_URL,
-} from "../helpers/constants";
+} from "../../helpers/constants";
 
 test.describe("Feed Discovery", () => {
   test.describe("Empty State - Read Only", () => {

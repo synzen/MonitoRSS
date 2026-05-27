@@ -13,7 +13,7 @@ The E2E Docker stack (defined in `docker-compose.e2e.yml`) provides all required
 npm run e2e
 
 # Run only regular (non-paddle) tests (assumes Docker stack is already running)
-npx playwright test --project=chromium
+npx playwright test --project=e2e-web
 
 # Run only paddle tests (requires cloudflared + Paddle key)
 npm run e2e:paddle
@@ -31,10 +31,10 @@ The single `playwright.config.ts` defines 4 projects:
 
 | Project           | Purpose                                   | Dependencies                         |
 | ----------------- | ----------------------------------------- | ------------------------------------ |
-| `paddle-setup`    | Starts tunnel, configures Paddle webhooks | —                                    |
-| `paddle-teardown` | Cancels subscriptions, stops tunnel       | (auto, via teardown on paddle-setup) |
-| `chromium`        | Regular tests (non-paddle)                | —                                    |
-| `paddle`          | Paddle checkout tests                     | `paddle-setup`                       |
+| `e2e-paddle-setup`    | Starts tunnel, configures Paddle webhooks | —                                        |
+| `e2e-paddle-teardown` | Cancels subscriptions, stops tunnel       | (auto, via teardown on e2e-paddle-setup) |
+| `e2e-web`             | Regular tests (non-paddle)                | —                                        |
+| `e2e-paddle`          | Paddle checkout tests                     | `e2e-paddle-setup`                       |
 
 ## Paddle Checkout Tests
 
@@ -88,9 +88,9 @@ npm run e2e
 To run only regular (non-paddle) tests (assumes Docker stack is already running):
 
 ```bash
-npx playwright test --project=chromium
+npx playwright test --project=e2e-web
 ```
 
 E2E tests that need a paid/supporter user (e.g. creating webhook connections) should use `setSupporterStatusInDb()` and `clearSupporterStatusInDb()` from `helpers/paddle-db.ts` to set supporter status directly in MongoDB. Do NOT use `ensurePaidSubscriptionState` from `paddle-cleanup.ts` as it relies on Paddle simulation webhooks delivered via Cloudflare tunnels, which is unreliable. Always clean up supporter status in a `finally` block to avoid affecting other tests.
 
-Paddle tests require `--project=paddle` (e.g. `npx playwright test --project=paddle`). Regular tests use `--project=chromium`. Running `npx playwright test` runs everything.
+Paddle tests require `--project=e2e-paddle` (e.g. `npx playwright test --project=e2e-paddle`). Regular tests use `--project=e2e-web`. Running `npx playwright test` runs everything.

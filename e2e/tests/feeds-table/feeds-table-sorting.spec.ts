@@ -3,15 +3,15 @@ import {
   expect,
   type Page,
   type Locator,
-} from "../fixtures/test-fixtures";
+} from "../../fixtures/test-fixtures";
 import {
   createFeed,
   deleteFeed,
   enableAllTableColumns,
   updateFeed,
-} from "../helpers/api";
-import { MOCK_RSS_FEED_URL } from "../helpers/constants";
-import type { Feed } from "../helpers/types";
+} from "../../helpers/api";
+import { MOCK_RSS_FEED_URL } from "../../helpers/constants";
+import type { Feed } from "../../helpers/types";
 
 async function setupSortingFeeds(page: Page) {
   await enableAllTableColumns(page);

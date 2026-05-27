@@ -1,10 +1,10 @@
-import { test, expect } from "../fixtures/test-fixtures";
+import { test, expect } from "../../fixtures/test-fixtures";
 import {
   createFeed,
   createConnectionWithOptions,
   deleteFeed,
   getTestChannelId,
-} from "../helpers/api";
+} from "../../helpers/api";
 
 test.describe("Message Builder V1", () => {
   test("can build v1 message with all components, preview, and send test article before and after saving", async ({

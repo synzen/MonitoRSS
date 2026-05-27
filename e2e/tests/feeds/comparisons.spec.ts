@@ -1,4 +1,4 @@
-import { test, expect } from "../fixtures/test-fixtures";
+import { test, expect } from "../../fixtures/test-fixtures";
 
 test.describe("Comparisons Tab", () => {
   test("shows empty state when no passing or blocking comparisons", async ({

@@ -13,6 +13,7 @@
   "scripts": {
     "build:packages": "npm run build --workspace=packages/contracts --workspace=packages/logger",
     "e2e": "npm run e2e --workspace=e2e",
-    "e2e:paddle": "npm run e2e:paddle --workspace=e2e"
+    "e2e:paddle": "npm run e2e:paddle --workspace=e2e",
+    "e2e:web": "npm run e2e:web --workspace=e2e"
   }
 }

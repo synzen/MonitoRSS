@@ -1,4 +1,4 @@
-import { test, expect } from "../fixtures/test-fixtures";
+import { test, expect } from "../../fixtures/test-fixtures";
 import {
   getTestServerName,
   getTestChannelName,
@@ -7,7 +7,7 @@ import {
   createFeed,
   deleteFeed,
   updateFeed,
-} from "../helpers/api";
+} from "../../helpers/api";
 
 test.describe("Feed Settings", () => {
   test("can view feed settings page", async ({ page, testFeed }) => {

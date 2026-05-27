@@ -1,9 +1,9 @@
-import { test, expect } from "../fixtures/test-fixtures";
-import { ensurePaidSubscriptionState } from "../helpers/paddle-cleanup";
+import { test, expect } from "../../fixtures/test-fixtures";
+import { ensurePaidSubscriptionState } from "../../helpers/paddle-cleanup";
 import {
   setCancellationDateInDb,
   getDiscordUserIdFromPage,
-} from "../helpers/paddle-db";
+} from "../../helpers/paddle-db";
 
 const TIER_1_MONTHLY_PRICE_ID = "pri_01hf01yn08hj2jwtywq7fhsww3";
 

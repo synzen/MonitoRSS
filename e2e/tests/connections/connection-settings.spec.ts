@@ -1,4 +1,4 @@
-import { test, expect } from "../fixtures/test-fixtures";
+import { test, expect } from "../../fixtures/test-fixtures";
 import {
   getTestChannelId,
   getTestChannelName,
@@ -6,12 +6,12 @@ import {
   createWebhookConnection,
   createConnection,
   updateConnection,
-} from "../helpers/api";
+} from "../../helpers/api";
 import {
   setSupporterStatusInDb,
   clearSupporterStatusInDb,
   getDiscordUserIdFromPage,
-} from "../helpers/paddle-db";
+} from "../../helpers/paddle-db";
 
 test.describe("Connection Settings", () => {
   test("can view connection page", async ({ page, testFeedWithConnection }) => {

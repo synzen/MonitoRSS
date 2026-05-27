@@ -5,8 +5,8 @@
     "e2e": "bash e2e-mock.sh",
     "e2e:ui": "npx playwright test --ui",
     "e2e:report": "npx playwright show-report",
-    "e2e:paddle": "npx playwright test --project=paddle",
-    "e2e:chromium": "npx playwright test --project=chromium"
+    "e2e:paddle": "npx playwright test --project=e2e-paddle",
+    "e2e:web": "npx playwright test --project=e2e-web"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",

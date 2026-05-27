@@ -1,5 +1,5 @@
-import { test, expect } from "../fixtures/test-fixtures";
-import { updateConnection } from "../helpers/api";
+import { test, expect } from "../../fixtures/test-fixtures";
+import { updateConnection } from "../../helpers/api";
 
 function getCustomPlaceholdersUrl(feedId: string, connectionId: string) {
   return `/feeds/${feedId}/discord-channel-connections/${connectionId}?view=custom-placeholders`;

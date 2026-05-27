@@ -1,5 +1,5 @@
-import { test, expect, type Page } from "../fixtures/test-fixtures";
-import { getTestServerName, getTestChannelName } from "../helpers/api";
+import { test, expect, type Page } from "../../fixtures/test-fixtures";
+import { getTestServerName, getTestChannelName } from "../../helpers/api";
 
 async function navigateToTemplateModal(
   page: Page,

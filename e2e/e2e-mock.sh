@@ -13,7 +13,7 @@ COMPOSE_FILE="$COMPOSE_PROJECT_DIR/docker-compose.e2e.yml"
 COMPOSE_PROJECT_NAME="monitorss-e2e"
 BACKEND_URL="http://127.0.0.1:8100"
 FRONTEND_URL="http://localhost:3100"
-PLAYWRIGHT_ARGS="${@:---project=chromium}"
+PLAYWRIGHT_ARGS="${@:---project=e2e-web}"
 
 cleanup() {
   echo "Tearing down E2E Docker stack..."

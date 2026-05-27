@@ -1,8 +1,8 @@
 import { test as setup } from "@playwright/test";
 import { writeFileSync } from "fs";
 import { join } from "path";
-import { startTunnel } from "../helpers/tunnel";
-import { updateNotificationUrl } from "../helpers/paddle-api";
+import { startTunnel } from "../../helpers/tunnel";
+import { updateNotificationUrl } from "../../helpers/paddle-api";
 
 const REQUIRED_ENV_VARS = [
   "BACKEND_API_PADDLE_KEY",

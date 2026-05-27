@@ -1,6 +1,6 @@
-import { test, expect } from "../fixtures/test-fixtures";
-import { createFeed, createConnection, getTestChannelId } from "../helpers/api";
-import { MOCK_RSS_FEED_URL } from "../helpers/constants";
+import { test, expect } from "../../fixtures/test-fixtures";
+import { createFeed, createConnection, getTestChannelId } from "../../helpers/api";
+import { MOCK_RSS_FEED_URL } from "../../helpers/constants";
 
 test.describe("Setup Delivery Checklist", () => {
   test.describe("Checklist visibility", () => {

@@ -1,15 +1,15 @@
-import { test, expect, type Page } from "../fixtures/test-fixtures";
+import { test, expect, type Page } from "../../fixtures/test-fixtures";
 import {
   getTestServerName,
   getTestChannelName,
   getTestChannelId,
   createWebhookConnection,
-} from "../helpers/api";
+} from "../../helpers/api";
 import {
   setSupporterStatusInDb,
   clearSupporterStatusInDb,
   getDiscordUserIdFromPage,
-} from "../helpers/paddle-db";
+} from "../../helpers/paddle-db";
 
 async function navigateToTemplateModal(
   page: Page,

@@ -13,7 +13,7 @@ env:
   VITE_PADDLE_CLIENT_TOKEN: ${{ secrets.VITE_PADDLE_CLIENT_TOKEN }}
 
 jobs:
-  chromium:
+  e2e-web:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -35,11 +35,21 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run E2E tests (chromium shard ${{ matrix.shard }}/4)
+      - name: Run E2E tests (web shard ${{ matrix.shard }}/4)
         working-directory: e2e
-        run: bash e2e-mock.sh --project=chromium --shard=${{ matrix.shard }}/4
+        run: bash e2e-mock.sh --project=e2e-web --shard=${{ matrix.shard }}/4
 
-  paddle:
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-web-report-shard-${{ matrix.shard }}
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          retention-days: 30
+
+  e2e-paddle:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -64,4 +74,14 @@ jobs:
 
       - name: Run E2E tests (paddle)
         working-directory: e2e
-        run: bash e2e-mock.sh --project=paddle
+        run: bash e2e-mock.sh --project=e2e-paddle
+
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-paddle-report
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          retention-days: 30

@@ -1,4 +1,4 @@
-import { test, expect } from "../fixtures/test-fixtures";
+import { test, expect } from "../../fixtures/test-fixtures";
 
 test.describe("Feeds List", () => {
   test("Add Feed button is visible", async ({ page, testFeed }) => {

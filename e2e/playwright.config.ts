@@ -5,10 +5,10 @@ import {
 } from "./helpers/constants";
 
 const PADDLE_CHECKOUT_TESTS = [
-  "**/13b-branding-paddle-overlay.spec.ts",
-  "**/14-paddle-checkout.spec.ts",
-  "**/15-paddle-branding-checkout.spec.ts",
-  "**/16-paddle-retain-cancellation.spec.ts",
+  "**/billing/branding-paddle-overlay.spec.ts",
+  "**/billing/paddle-checkout.spec.ts",
+  "**/billing/paddle-branding-checkout.spec.ts",
+  "**/billing/paddle-retain-cancellation.spec.ts",
 ];
 
 export default defineConfig({
@@ -25,18 +25,18 @@ export default defineConfig({
   },
   projects: [
     {
-      name: "paddle-setup",
-      testMatch: "paddle.setup.ts",
-      teardown: "paddle-teardown",
+      name: "e2e-paddle-setup",
+      testMatch: "**/billing/paddle.setup.ts",
+      teardown: "e2e-paddle-teardown",
       use: {},
     },
     {
-      name: "paddle-teardown",
-      testMatch: "paddle.teardown.ts",
+      name: "e2e-paddle-teardown",
+      testMatch: "**/billing/paddle.teardown.ts",
       use: {},
     },
     {
-      name: "chromium",
+      name: "e2e-web",
       use: { ...devices["Desktop Chrome"] },
       testIgnore: [
         ...PADDLE_CHECKOUT_TESTS,
@@ -47,9 +47,9 @@ export default defineConfig({
       ],
     },
     {
-      name: "paddle",
+      name: "e2e-paddle",
       use: { ...devices["Desktop Chrome"] },
-      dependencies: ["paddle-setup"],
+      dependencies: ["e2e-paddle-setup"],
       testMatch: PADDLE_CHECKOUT_TESTS,
     },
   ],

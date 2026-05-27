@@ -1,11 +1,11 @@
-import { test, expect } from "../fixtures/test-fixtures";
+import { test, expect } from "../../fixtures/test-fixtures";
 import {
   getTestChannelId,
   createConnection,
   deleteFeed,
   updateFeed,
   updateConnection,
-} from "../helpers/api";
+} from "../../helpers/api";
 
 test.describe("Clone Feed", () => {
   test("can clone a feed with all settings and connections through the UI", async ({

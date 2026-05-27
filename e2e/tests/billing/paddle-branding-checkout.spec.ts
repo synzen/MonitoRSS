@@ -1,6 +1,6 @@
-import { test, expect, type Page } from "../fixtures/test-fixtures";
-import { getTestServerName, getTestChannelName } from "../helpers/api";
-import { ensureFreeSubscriptionState } from "../helpers/paddle-cleanup";
+import { test, expect, type Page } from "../../fixtures/test-fixtures";
+import { getTestServerName, getTestChannelName } from "../../helpers/api";
+import { ensureFreeSubscriptionState } from "../../helpers/paddle-cleanup";
 
 async function navigateToTemplateModal(
   page: Page,

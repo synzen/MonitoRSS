@@ -1,6 +1,6 @@
 import { test as teardown } from "@playwright/test";
-import { stopTunnel } from "../helpers/tunnel";
-import { cancelAllActiveSubscriptions } from "../helpers/paddle-api";
+import { stopTunnel } from "../../helpers/tunnel";
+import { cancelAllActiveSubscriptions } from "../../helpers/paddle-api";
 
 teardown("cancel subscriptions and stop tunnel", async () => {
   teardown.setTimeout(120_000);

@@ -1,6 +1,6 @@
-import { test, expect, type Page } from "../fixtures/test-fixtures";
-import { createFeed, deleteFeed } from "../helpers/api";
-import { MOCK_RSS_FEED_URL } from "../helpers/constants";
+import { test, expect, type Page } from "../../fixtures/test-fixtures";
+import { createFeed, deleteFeed } from "../../helpers/api";
+import { MOCK_RSS_FEED_URL } from "../../helpers/constants";
 
 const COLUMNS = [
   { id: "computedStatus", label: "Status", defaultVisible: true },
