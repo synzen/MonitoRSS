@@ -13,8 +13,32 @@ env:
   VITE_PADDLE_CLIENT_TOKEN: ${{ secrets.VITE_PADDLE_CLIENT_TOKEN }}
 
 jobs:
-  e2e-web:
+  build:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build E2E Docker images
+        run: docker compose -f docker-compose.e2e.yml build
+
+      - name: Save Docker images
+        run: |
+          docker save \
+            monitorss-e2e-feed-requests-postgres-migration \
+            monitorss-e2e-e2e-user-feeds-api \
+            monitorss-e2e-web-api \
+            | gzip > /tmp/e2e-images.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e2e-docker-images
+          path: /tmp/e2e-images.tar.gz
+          retention-days: 1
+
+  e2e-web:
+    needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -35,9 +59,25 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: e2e-docker-images
+          path: /tmp
+
+      - name: Load Docker images
+        run: docker load < <(gunzip -c /tmp/e2e-images.tar.gz)
+
+      - name: Tag shared images
+        run: |
+          docker tag monitorss-e2e-feed-requests-postgres-migration monitorss-e2e-feed-requests-service
+          docker tag monitorss-e2e-feed-requests-postgres-migration monitorss-e2e-feed-requests-api
+          docker tag monitorss-e2e-e2e-user-feeds-api monitorss-e2e-e2e-user-feeds-service
+          docker tag monitorss-e2e-e2e-user-feeds-api monitorss-e2e-user-feeds-postgres-migration
+          docker tag monitorss-e2e-web-api monitorss-e2e-web-client
+
       - name: Run E2E tests (web shard ${{ matrix.shard }}/4)
         working-directory: e2e
-        run: bash e2e-mock.sh --project=e2e-web --shard=${{ matrix.shard }}/4
+        run: bash e2e-mock.sh --no-build --project=e2e-web --shard=${{ matrix.shard }}/4
 
       - name: Upload test results
         if: ${{ !cancelled() }}
@@ -50,7 +90,7 @@ jobs:
           retention-days: 30
 
   e2e-paddle:
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -72,9 +112,25 @@ jobs:
           curl -fsSL -o cloudflared.deb https://github.com/cloudflare/cloudflared/releases/download/2026.5.1/cloudflared-linux-amd64.deb
           sudo dpkg -i cloudflared.deb
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: e2e-docker-images
+          path: /tmp
+
+      - name: Load Docker images
+        run: docker load < <(gunzip -c /tmp/e2e-images.tar.gz)
+
+      - name: Tag shared images
+        run: |
+          docker tag monitorss-e2e-feed-requests-postgres-migration monitorss-e2e-feed-requests-service
+          docker tag monitorss-e2e-feed-requests-postgres-migration monitorss-e2e-feed-requests-api
+          docker tag monitorss-e2e-e2e-user-feeds-api monitorss-e2e-e2e-user-feeds-service
+          docker tag monitorss-e2e-e2e-user-feeds-api monitorss-e2e-user-feeds-postgres-migration
+          docker tag monitorss-e2e-web-api monitorss-e2e-web-client
+
       - name: Run E2E tests (paddle)
         working-directory: e2e
-        run: bash e2e-mock.sh --project=e2e-paddle
+        run: bash e2e-mock.sh --no-build --project=e2e-paddle
 
       - name: Upload test results
         if: ${{ !cancelled() }}
