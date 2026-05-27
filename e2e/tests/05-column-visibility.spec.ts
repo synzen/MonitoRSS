@@ -47,10 +47,10 @@ test.describe("Column Visibility", () => {
       .locator('button[aria-label^="Display table columns"]')
       .first();
     await columnsButton.click();
-    const firstMenuItem = page.locator(
-      '[role="menuitemcheckbox"]',
-    ).first();
-    await firstMenuItem.waitFor({ state: "visible", timeout: 10000 });
+    const statusMenuItem = page.locator(
+      '[role="menuitemcheckbox"]:has-text("Status")',
+    );
+    await statusMenuItem.waitFor({ state: "visible", timeout: 10000 });
   }
 
   async function closeColumnsMenu(page: Page): Promise<void> {
