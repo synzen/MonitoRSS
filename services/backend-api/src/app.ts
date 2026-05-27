@@ -6,6 +6,7 @@ import compression from "@fastify/compress";
 import fastifyStatic from "@fastify/static";
 import { join } from "path";
 import type { Container } from "./container";
+import { Environment } from "./config";
 import type { SessionAccessToken } from "./infra/auth";
 import {
   errorHandler,
@@ -239,6 +240,19 @@ export async function createApp(
     },
     { prefix: "/api/v1" },
   );
+
+  if (container.config.NODE_ENV !== Environment.Production) {
+    app.post("/__test__/set-session", async (request, reply) => {
+      const { accessToken } = request.body as {
+        accessToken: SessionAccessToken;
+      };
+      request.session.set("accessToken", accessToken);
+      await container.usersService.initDiscordUser(accessToken.discord.id, {
+        email: accessToken.discord.email,
+      });
+      return reply.send({ ok: true });
+    });
+  }
 
   // Serve frontend static files from backend-api/client/dist
   const clientDistPath = join(

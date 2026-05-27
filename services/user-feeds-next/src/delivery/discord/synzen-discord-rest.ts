@@ -27,7 +27,8 @@ export interface SynzenDiscordRestConfig {
   botToken: string;
 }
 
-const DISCORD_API_BASE_URL = "https://discord.com/api/v10";
+const DISCORD_API_BASE_URL =
+  process.env.USER_FEEDS_DISCORD_API_BASE_URL || "https://discord.com/api/v10";
 
 // ============================================================================
 // Factory
