@@ -141,6 +141,12 @@ AGENTS.md
 nul
 dist
 auth*.json
-**/e2e/test-results/*
+**/test-results/*
+**/playwright-report/
 _bmad
 _bmad-output
+
+!docs/
+docs/*
+!docs/adr
+

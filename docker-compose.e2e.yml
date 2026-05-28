@@ -1,0 +1,299 @@
+name: monitorss-e2e
+
+services:
+  # --- Infrastructure ---
+
+  mongo:
+    image: mongo:7.0.2
+    hostname: mongo
+    restart: "no"
+    volumes:
+      - ./rs-initiate.js:/docker-entrypoint-initdb.d/rs-initiate.js
+    tmpfs:
+      - /data/db
+      - /data/configdb
+    ports:
+      - "27018:27017"
+    command: ["--replSet", "dbrs", "--bind_ip_all", "--port", "27017"]
+    networks:
+      - e2e-default
+
+  rabbitmq-broker:
+    image: rabbitmq:3-management-alpine
+    restart: "no"
+    tmpfs:
+      - /var/lib/rabbitmq/mnesia
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - e2e-default
+
+  feed-requests-postgres-db:
+    image: postgres:17-alpine
+    restart: "no"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-d", "postgres", "-U", "postgres"]
+      timeout: 45s
+      interval: 10s
+      retries: 10
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    networks:
+      - e2e-default
+
+  feed-requests-redis-cache:
+    image: redis:7-alpine
+    restart: "no"
+    tmpfs:
+      - /data
+    command: redis-server --save ""
+    networks:
+      - e2e-default
+
+  # --- Migrations ---
+
+  feed-requests-postgres-migration:
+    build:
+      context: services/feed-requests
+      dockerfile: Dockerfile
+      target: build
+    restart: "no"
+    command: "npm run migration:up"
+    depends_on:
+      feed-requests-postgres-db:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=local
+      - FEED_REQUESTS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/feedrequests
+      - FEED_REQUESTS_POSTGRES_SCHEMA=feedrequests
+      - FEED_REQUESTS_API_KEY=feed-requests-api-key
+      - FEED_REQUESTS_API_PORT=5000
+      - FEED_REQUESTS_RABBITMQ_BROKER_URL=amqp://rabbitmq-broker:5672
+      - FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS=48
+      - FEED_REQUESTS_START_TARGET=service
+      - FEED_REQUESTS_REDIS_URI=redis://feed-requests-redis-cache:6379
+      - FEED_REQUESTS_REDIS_DISABLE_CLUSTER=true
+      - FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT=MonitoRSS
+    networks:
+      - e2e-default
+
+  user-feeds-postgres-migration:
+    build:
+      context: services/user-feeds-next
+      dockerfile: Dockerfile.dev
+    restart: "no"
+    command: npx tsx ./src/scripts/run-migrations.ts
+    depends_on:
+      feed-requests-postgres-db:
+        condition: service_healthy
+    environment:
+      - USER_FEEDS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/userfeeds
+      - NODE_ENV=local
+    networks:
+      - e2e-default
+
+  # --- Application Services ---
+
+  feed-requests-service:
+    build:
+      context: services/feed-requests
+      dockerfile: Dockerfile
+      target: build
+    restart: "no"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: node ./dist/main
+    depends_on:
+      feed-requests-postgres-db:
+        condition: service_healthy
+      rabbitmq-broker:
+        condition: service_healthy
+      feed-requests-postgres-migration:
+        condition: service_completed_successfully
+    environment:
+      - NODE_ENV=local
+      - FEED_REQUESTS_START_TARGET=service
+      - FEED_REQUESTS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/feedrequests
+      - FEED_REQUESTS_POSTGRES_SCHEMA=feedrequests
+      - FEED_REQUESTS_API_KEY=feed-requests-api-key
+      - FEED_REQUESTS_API_PORT=5000
+      - FEED_REQUESTS_RABBITMQ_BROKER_URL=amqp://rabbitmq-broker:5672
+      - FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS=48
+      - FEED_REQUESTS_REDIS_URI=redis://feed-requests-redis-cache:6379
+      - FEED_REQUESTS_REDIS_DISABLE_CLUSTER=true
+      - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
+      - FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT=MonitoRSS
+    networks:
+      - e2e-default
+
+  feed-requests-api:
+    build:
+      context: services/feed-requests
+      dockerfile: Dockerfile
+      target: build
+    restart: "no"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: node ./dist/main
+    depends_on:
+      feed-requests-postgres-db:
+        condition: service_healthy
+      rabbitmq-broker:
+        condition: service_healthy
+      feed-requests-postgres-migration:
+        condition: service_completed_successfully
+    environment:
+      - NODE_ENV=local
+      - FEED_REQUESTS_START_TARGET=api
+      - FEED_REQUESTS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/feedrequests
+      - FEED_REQUESTS_POSTGRES_SCHEMA=feedrequests
+      - FEED_REQUESTS_API_KEY=feed-requests-api-key
+      - FEED_REQUESTS_API_PORT=5000
+      - FEED_REQUESTS_RABBITMQ_BROKER_URL=amqp://rabbitmq-broker:5672
+      - FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS=48
+      - FEED_REQUESTS_REDIS_URI=redis://feed-requests-redis-cache:6379
+      - FEED_REQUESTS_REDIS_DISABLE_CLUSTER=true
+      - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
+      - FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT=MonitoRSS
+    networks:
+      - e2e-default
+
+  e2e-user-feeds-service:
+    build:
+      context: services/user-feeds-next
+      dockerfile: Dockerfile.dev
+    restart: "no"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      e2e-user-feeds-api:
+        condition: service_healthy
+    environment:
+      - LOG_LEVEL=debug
+      - USER_FEEDS_START_TARGET=service
+      - NODE_ENV=local
+      - USER_FEEDS_DISCORD_API_BASE_URL=http://host.docker.internal:3002/api/v10
+      - USER_FEEDS_DISCORD_CLIENT_ID=000000000000000001
+      - USER_FEEDS_DISCORD_API_TOKEN=fake-bot-token
+      - USER_FEEDS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/userfeeds
+      - USER_FEEDS_API_PORT=5000
+      - USER_FEEDS_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672
+      - USER_FEEDS_FEED_REQUESTS_API_URL=http://feed-requests-api:5000/v1/feed-requests
+      - USER_FEEDS_FEED_REQUESTS_API_KEY=feed-requests-api-key
+      - USER_FEEDS_API_KEY=user-feeds-api-key
+      - USER_FEEDS_REDIS_URI=redis://feed-requests-redis-cache:6379
+      - USER_FEEDS_REDIS_DISABLE_CLUSTER=true
+    networks:
+      - e2e-default
+
+  e2e-user-feeds-api:
+    build:
+      context: services/user-feeds-next
+      dockerfile: Dockerfile.dev
+    restart: "no"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: "wget --no-verbose --tries=1 --spider http://127.0.0.1:5000/v1/user-feeds/health || exit 1"
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    depends_on:
+      feed-requests-postgres-db:
+        condition: service_healthy
+      rabbitmq-broker:
+        condition: service_healthy
+      user-feeds-postgres-migration:
+        condition: service_completed_successfully
+    environment:
+      - LOG_LEVEL=debug
+      - USER_FEEDS_START_TARGET=api
+      - NODE_ENV=local
+      - USER_FEEDS_DISCORD_API_BASE_URL=http://host.docker.internal:3002/api/v10
+      - USER_FEEDS_DISCORD_CLIENT_ID=000000000000000001
+      - USER_FEEDS_DISCORD_API_TOKEN=fake-bot-token
+      - USER_FEEDS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/userfeeds
+      - USER_FEEDS_API_PORT=5000
+      - USER_FEEDS_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672
+      - USER_FEEDS_FEED_REQUESTS_API_URL=http://feed-requests-api:5000/v1/feed-requests
+      - USER_FEEDS_FEED_REQUESTS_API_KEY=feed-requests-api-key
+      - USER_FEEDS_API_KEY=user-feeds-api-key
+      - USER_FEEDS_REDIS_URI=redis://feed-requests-redis-cache:6379
+      - USER_FEEDS_REDIS_DISABLE_CLUSTER=true
+    networks:
+      - e2e-default
+
+  web-api:
+    build:
+      context: services/backend-api
+      dockerfile: Dockerfile.dev
+    restart: "no"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      mongo:
+        condition: service_started
+      rabbitmq-broker:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:8100/api/v1/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "8100:8100"
+    environment:
+      - BACKEND_API_NODE_ENV=local
+      - BACKEND_API_PORT=8100
+      - BACKEND_API_DISCORD_API_BASE_URL=http://host.docker.internal:3002/api/v9
+      - BACKEND_API_DISCORD_BOT_TOKEN=fake-bot-token
+      - BACKEND_API_DISCORD_CLIENT_ID=000000000000000001
+      - BACKEND_API_DISCORD_CLIENT_SECRET=fake-client-secret
+      - BACKEND_API_DISCORD_REDIRECT_URI=http://localhost:8100/api/v1/discord/callback-v2
+      - BACKEND_API_SESSION_SECRET=e2e-session-secret-that-is-long-enough-for-validation
+      - BACKEND_API_SESSION_SALT=e2esessionsalt16
+      - BACKEND_API_USER_FEEDS_API_HOST=http://e2e-user-feeds-api:5000
+      - BACKEND_API_USER_FEEDS_API_KEY=user-feeds-api-key
+      - BACKEND_API_FEED_REQUESTS_API_HOST=http://feed-requests-api:5000
+      - BACKEND_API_FEED_REQUESTS_API_KEY=feed-requests-api-key
+      - BACKEND_API_FEED_USER_AGENT=MonitoRSS
+      - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
+      - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672/
+      - BACKEND_API_LOGIN_REDIRECT_URI=http://localhost:3100
+      - BACKEND_API_PADDLE_KEY=${BACKEND_API_PADDLE_KEY:-}
+      - BACKEND_API_PADDLE_URL=${BACKEND_API_PADDLE_URL:-}
+      - BACKEND_API_PADDLE_WEBHOOK_SECRET=${BACKEND_API_PADDLE_WEBHOOK_SECRET:-}
+      - BACKEND_API_ENABLE_SUPPORTERS=true
+      - LOG_LEVEL=debug
+      - NODE_ENV=local
+    command: npm run dev
+    networks:
+      - e2e-default
+
+  web-client:
+    build:
+      context: services/backend-api
+      dockerfile: Dockerfile.dev
+    working_dir: /usr/src/app/client
+    restart: "no"
+    depends_on:
+      web-api:
+        condition: service_healthy
+    ports:
+      - "3100:3100"
+    environment:
+      - API_PROXY_URL=http://web-api:8100
+      - VITE_PADDLE_CLIENT_TOKEN=${VITE_PADDLE_CLIENT_TOKEN:-}
+    command: npm run dev -- --host 0.0.0.0 --port 3100
+    networks:
+      - e2e-default
+
+networks:
+  e2e-default:
+    driver: bridge

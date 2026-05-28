@@ -1,0 +1,17 @@
+{
+  "name": "@monitorss/e2e",
+  "private": true,
+  "scripts": {
+    "e2e": "bash e2e-mock.sh",
+    "e2e:ui": "npx playwright test --ui",
+    "e2e:report": "npx playwright show-report",
+    "e2e:paddle": "npx playwright test --project=e2e-paddle",
+    "e2e:web": "npx playwright test --project=e2e-web"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "mongodb": "^6.0.0",
+    "prettier": "^3.8.1",
+    "tsx": "^4.19.0"
+  }
+}

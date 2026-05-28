@@ -89,6 +89,16 @@ export async function handlePaddleWebhookHandler(
   try {
     const { paddleWebhooksService } = request.container;
 
+    const event = requestBody as {
+      event_type: string;
+      data: unknown;
+    };
+
+    logger.info("Paddle webhook received", {
+      eventType: event.event_type,
+      hasSignature: !!signature,
+    });
+
     const isValid = await paddleWebhooksService.isVerifiedWebhookEvent({
       signature,
       requestBody: bodyString,
@@ -101,11 +111,6 @@ export async function handlePaddleWebhookHandler(
       });
       throw new UnauthorizedError();
     }
-
-    const event = requestBody as {
-      event_type: string;
-      data: unknown;
-    };
 
     if (event.event_type === "subscription.canceled") {
       await paddleWebhooksService.handleSubscriptionCancelledEvent(
