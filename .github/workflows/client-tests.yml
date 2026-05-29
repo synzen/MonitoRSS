@@ -1,0 +1,32 @@
+name: Client Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/backend-api/client/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'services/backend-api/client/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: services/backend-api/client/package-lock.json
+
+      - name: Install dependencies
+        working-directory: services/backend-api/client
+        run: npm ci
+
+      - name: Run client tests
+        working-directory: services/backend-api/client
+        run: npx vitest run

@@ -135,6 +135,7 @@ export interface CloneConnectionInput {
   targetFeedIds?: string[];
   targetFeedSelectionType?: UserFeedTargetFeedSelectionType;
   targetFeedSearch?: string;
+  targetFeedExcludeIds?: string[];
 }
 
 export enum UserFeedTargetFeedSelectionType {

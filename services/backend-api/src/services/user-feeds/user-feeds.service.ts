@@ -311,6 +311,7 @@ export class UserFeedsService {
       settings: settingsToCopy,
       targetFeedSearch,
       targetFeedSelectionType,
+      targetFeedExcludeIds,
     },
     discordUserId,
   }: {
@@ -326,6 +327,7 @@ export class UserFeedsService {
       feedIds: inputTargetFeedIds,
       search: targetFeedSearch,
       excludeFeedId: sourceFeed.id,
+      excludeFeedIds: targetFeedExcludeIds,
       ownerDiscordUserId: discordUserId,
     };
 

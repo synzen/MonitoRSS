@@ -189,12 +189,6 @@ export async function createAppTestContext(
 
   const app = await createApp(container);
 
-  app.post("/__test__/set-session", async (request, reply) => {
-    const { accessToken } = request.body as { accessToken: SessionAccessToken };
-    request.session.set("accessToken", accessToken);
-    return reply.send({ ok: true });
-  });
-
   if (options.beforeListen) {
     await options.beforeListen(app);
   }

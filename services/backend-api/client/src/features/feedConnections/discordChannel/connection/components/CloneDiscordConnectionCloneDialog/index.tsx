@@ -43,6 +43,7 @@ const formSchema = object({
 
         return schema;
       }),
+    excludedFeeds: array().of(string().required()).default([]),
     total: number().required(),
   }).required(),
 });
@@ -73,6 +74,7 @@ export const CloneDiscordConnectionCloneDialog = ({
       type: "selected",
       searchTerm: "",
       selectedFeeds: inputDefaultValues.targetFeedIds,
+      excludedFeeds: [],
       total: inputDefaultValues.targetFeedIds.length,
     },
   };
@@ -110,6 +112,8 @@ export const CloneDiscordConnectionCloneDialog = ({
             targetFeedSelectionType: userFeedSelection.type,
             targetFeedSearch: userFeedSelection.searchTerm,
             targetFeedIds: userFeedSelection.selectedFeeds,
+            targetFeedExcludeIds:
+              userFeedSelection.type === "all" ? userFeedSelection.excludedFeeds : undefined,
           },
         });
       } else {
@@ -160,9 +164,14 @@ export const CloneDiscordConnectionCloneDialog = ({
                             field.onChange({
                               type: "selected",
                               selectedFeeds: ids,
+                              excludedFeeds: [],
                               total: ids.length,
                             });
                           }}
+                          excludedIds={field.value.excludedFeeds || []}
+                          onExcludedIdsChange={(ids) =>
+                            field.onChange({ ...field.value, excludedFeeds: ids })
+                          }
                           description="Select the feeds you want to copy this connection to. You can select multiple
                       feeds."
                           isSelectedAll={field.value.type === "all"}
@@ -174,6 +183,7 @@ export const CloneDiscordConnectionCloneDialog = ({
                               selectedFeeds: isChecked
                                 ? Array.from({ length: total }, (_, i) => String(i + 1))
                                 : [],
+                              excludedFeeds: [],
                               total,
                             })
                           }

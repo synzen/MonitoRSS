@@ -75,6 +75,8 @@ npm run e2e:paddle
 
 ## For AI Agents
 
+**Assert through the rendered UI, never via API calls.** Verify outcomes by navigating to the relevant page (e.g. a feed's connections view) and asserting on what is displayed (`getByRole`, `toBeVisible`, `toHaveCount(0)`, input values). Do NOT assert outcomes with `page.request.*` — API calls are only for test setup/teardown (creating and deleting fixtures), never for the assertion itself. An API assertion both diverges from real user behavior and can produce misleading results when its endpoint/shape differs from what the UI shows.
+
 After making code changes, validate with:
 
 ```bash

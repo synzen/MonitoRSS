@@ -371,6 +371,7 @@ export const CloneConnectionBodySchema = Type.Object(
       Type.Union([Type.Literal("all"), Type.Literal("selected")]),
     ),
     targetFeedSearch: Type.Optional(Type.String()),
+    targetFeedExcludeIds: Type.Optional(Type.Array(Type.String())),
   },
   { additionalProperties: false },
 );

@@ -568,6 +568,9 @@ export const CopySettingsBodySchema = Type.Object(
       Type.Enum(UserFeedTargetFeedSelectionType),
     ),
     targetFeedSearch: Type.Optional(Type.String()),
+    targetFeedExcludeIds: Type.Optional(
+      Type.Array(Type.String({ minLength: 1 })),
+    ),
   },
   { additionalProperties: false },
 );

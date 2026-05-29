@@ -9,6 +9,7 @@ export interface CreateDiscordChannelConnectionCloneInput {
     targetFeedIds?: string[];
     targetFeedSelectionType?: "all" | "selected";
     targetFeedSearch?: string;
+    targetFeedExcludeIds?: string[];
   };
 }
 

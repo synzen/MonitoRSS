@@ -626,6 +626,7 @@ export class FeedConnectionsDiscordChannelsService {
       channelId: newChannelId,
       targetFeedSearch,
       targetFeedSelectionType,
+      targetFeedExcludeIds,
     } = input;
 
     let channelDetailsToUse: IDiscordChannelConnection["details"]["channel"] =
@@ -687,6 +688,7 @@ export class FeedConnectionsDiscordChannelsService {
           ? undefined
           : userDiscordUserId,
         search: useSelectedFeeds ? undefined : targetFeedSearch,
+        excludeFeedIds: useSelectedFeeds ? undefined : targetFeedExcludeIds,
         connectionData,
       });
 
