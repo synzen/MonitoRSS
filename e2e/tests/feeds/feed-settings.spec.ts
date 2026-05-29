@@ -6,6 +6,7 @@ import {
   getTestInviteUsername,
   createFeed,
   deleteFeed,
+  bulkDeleteFeeds,
   updateFeed,
 } from "../../helpers/api";
 
@@ -436,15 +437,11 @@ test.describe("Feed Settings", () => {
         blockingComparisons: ["description"],
       });
 
-      const targetFeed1 = await createFeed(page, {
-        title: `Copy Target 1 ${sourceFeed.id}`,
-      });
-      const targetFeed2 = await createFeed(page, {
-        title: `Copy Target 2 ${sourceFeed.id}`,
-      });
-      const targetFeed3 = await createFeed(page, {
-        title: `Copy Target 3 ${sourceFeed.id}`,
-      });
+      const [targetFeed1, targetFeed2, targetFeed3] = await Promise.all([
+        createFeed(page, { title: `Copy Target 1 ${sourceFeed.id}` }),
+        createFeed(page, { title: `Copy Target 2 ${sourceFeed.id}` }),
+        createFeed(page, { title: `Copy Target 3 ${sourceFeed.id}` }),
+      ]);
 
       try {
         await page.goto(`/feeds/${sourceFeed.id}`);
@@ -500,9 +497,11 @@ test.describe("Feed Settings", () => {
           page.locator('input[name="userRefreshRateMinutes"]'),
         ).not.toHaveValue("15", { timeout: 10000 });
       } finally {
-        await deleteFeed(page, targetFeed1.id);
-        await deleteFeed(page, targetFeed2.id);
-        await deleteFeed(page, targetFeed3.id);
+        await bulkDeleteFeeds(page, [
+          targetFeed1.id,
+          targetFeed2.id,
+          targetFeed3.id,
+        ]);
       }
     });
 
@@ -515,15 +514,11 @@ test.describe("Feed Settings", () => {
         userRefreshRateSeconds: 900,
       });
 
-      const targetFeed1 = await createFeed(page, {
-        title: `Copy All Target 1 ${sourceFeed.id}`,
-      });
-      const targetFeed2 = await createFeed(page, {
-        title: `Copy All Target 2 ${sourceFeed.id}`,
-      });
-      const targetFeed3 = await createFeed(page, {
-        title: `Copy All Target 3 ${sourceFeed.id}`,
-      });
+      const [targetFeed1, targetFeed2, targetFeed3] = await Promise.all([
+        createFeed(page, { title: `Copy All Target 1 ${sourceFeed.id}` }),
+        createFeed(page, { title: `Copy All Target 2 ${sourceFeed.id}` }),
+        createFeed(page, { title: `Copy All Target 3 ${sourceFeed.id}` }),
+      ]);
 
       try {
         await page.goto(`/feeds/${sourceFeed.id}`);
@@ -567,9 +562,11 @@ test.describe("Feed Settings", () => {
           page.locator('input[name="userRefreshRateMinutes"]'),
         ).not.toHaveValue("15", { timeout: 10000 });
       } finally {
-        await deleteFeed(page, targetFeed1.id);
-        await deleteFeed(page, targetFeed2.id);
-        await deleteFeed(page, targetFeed3.id);
+        await bulkDeleteFeeds(page, [
+          targetFeed1.id,
+          targetFeed2.id,
+          targetFeed3.id,
+        ]);
       }
     });
 

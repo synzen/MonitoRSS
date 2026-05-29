@@ -6,7 +6,7 @@ import {
   createWebhookConnection,
   createConnection,
   createFeed,
-  deleteFeed,
+  bulkDeleteFeeds,
   updateConnection,
 } from "../../helpers/api";
 import {
@@ -321,15 +321,11 @@ test.describe("Connection Settings", () => {
       { name: connectionName },
     );
 
-    const targetFeed1 = await createFeed(page, {
-      title: `Clone Exclude Target 1 ${testFeed.id}`,
-    });
-    const excludedFeed = await createFeed(page, {
-      title: `Clone Exclude Target 2 ${testFeed.id}`,
-    });
-    const targetFeed3 = await createFeed(page, {
-      title: `Clone Exclude Target 3 ${testFeed.id}`,
-    });
+    const [targetFeed1, excludedFeed, targetFeed3] = await Promise.all([
+      createFeed(page, { title: `Clone Exclude Target 1 ${testFeed.id}` }),
+      createFeed(page, { title: `Clone Exclude Target 2 ${testFeed.id}` }),
+      createFeed(page, { title: `Clone Exclude Target 3 ${testFeed.id}` }),
+    ]);
 
     // Asserts through the UI (by visiting the feed's connections view) whether
     // the cloned connection landed on a given feed.
@@ -396,9 +392,11 @@ test.describe("Connection Settings", () => {
       await expectClonedConnectionOnFeed(targetFeed3, true);
       await expectClonedConnectionOnFeed(excludedFeed, false);
     } finally {
-      await deleteFeed(page, targetFeed1.id);
-      await deleteFeed(page, excludedFeed.id);
-      await deleteFeed(page, targetFeed3.id);
+      await bulkDeleteFeeds(page, [
+        targetFeed1.id,
+        excludedFeed.id,
+        targetFeed3.id,
+      ]);
     }
   });
 

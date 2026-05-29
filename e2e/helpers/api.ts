@@ -75,6 +75,29 @@ export async function deleteFeed(page: Page, feedId: string): Promise<void> {
   }
 }
 
+export async function bulkDeleteFeeds(
+  page: Page,
+  feedIds: string[],
+): Promise<void> {
+  if (!feedIds.length) {
+    return;
+  }
+
+  const response = await page.request.patch("/api/v1/user-feeds", {
+    data: {
+      op: "bulk-delete",
+      data: { feeds: feedIds.map((id) => ({ id })) },
+    },
+  });
+
+  if (!response.ok()) {
+    const text = await response.text();
+    throw new Error(
+      `Failed to bulk-delete feeds: ${response.status()} - ${text}`,
+    );
+  }
+}
+
 export async function createConnection(
   page: Page,
   feedId: string,
@@ -377,7 +400,8 @@ export async function getAllUserFeeds(page: Page): Promise<Feed[]> {
 
 export async function deleteAllUserFeeds(page: Page): Promise<void> {
   const feeds = await getAllUserFeeds(page);
-  for (const feed of feeds) {
-    await deleteFeed(page, feed.id).catch(() => {});
-  }
+  await bulkDeleteFeeds(
+    page,
+    feeds.map((f) => f.id),
+  ).catch(() => {});
 }
