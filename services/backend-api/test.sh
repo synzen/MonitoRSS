@@ -14,5 +14,8 @@ docker compose -f docker-compose.test.yml -p backend-api-next-test up \
   --abort-on-container-exit \
   --exit-code-from tests \
   --attach tests
+status=$?
 
 cleanup
+
+exit $status

@@ -1,0 +1,22 @@
+name: Backend API Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/backend-api/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'services/backend-api/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run backend-api tests
+        working-directory: services/backend-api
+        run: bash test.sh
