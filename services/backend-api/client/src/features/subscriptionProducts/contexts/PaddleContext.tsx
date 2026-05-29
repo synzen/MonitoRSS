@@ -89,7 +89,9 @@ interface ContextProps {
   getChargePreview: (
     items: Array<{ priceId: string; quantity: number }>,
   ) => Promise<{ totalFormatted: string }>;
-  initCancellationFlow: (subscriptionId: string) => Promise<RetainCancellationFlowResult>;
+  initCancellationFlow: (
+    subscriptionId: string,
+  ) => Promise<RetainCancellationFlowResult | undefined>;
 }
 
 export const PaddleContext = createContext<ContextProps>({
@@ -235,7 +237,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
   );
 
   const initCancellationFlow = useCallback(
-    async (subscriptionId: string): Promise<RetainCancellationFlowResult> => {
+    async (subscriptionId: string): Promise<RetainCancellationFlowResult | undefined> => {
       if (!paddle) {
         throw new Error("Paddle is not initialized");
       }

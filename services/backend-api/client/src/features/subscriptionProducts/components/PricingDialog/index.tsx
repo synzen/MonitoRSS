@@ -132,20 +132,20 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
       try {
         const result = await initCancellationFlow(subscriptionId);
 
-        if (result.status === "retained" || result.status === "chose_to_cancel") {
+        if (result?.status === "retained" || result?.status === "chose_to_cancel") {
           notifySuccess("Changes saved!");
 
           return;
         }
 
-        if (result.status === "aborted") {
+        if (result?.status === "aborted") {
           onOpen();
 
           return;
         }
 
-        if (result.status === "error") {
-          const errorDetails = "details" in result ? result.details : "unknown";
+        if (!result || result.status === "error") {
+          const errorDetails = result && "details" in result ? result.details : "flow not shown";
           captureException(new Error(`Paddle Retain error: ${errorDetails}`));
         }
       } catch (err) {
