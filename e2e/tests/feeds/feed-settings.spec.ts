@@ -506,13 +506,13 @@ test.describe("Feed Settings", () => {
       }
     });
 
-    test("can copy settings to all matching feeds", async ({
+    test("can copy settings to all matching feeds except excluded ones", async ({
       page,
       testFeed,
     }) => {
       const sourceFeed = testFeed;
       await updateFeed(page, sourceFeed.id, {
-        userRefreshRateSeconds: 600,
+        userRefreshRateSeconds: 900,
       });
 
       const targetFeed1 = await createFeed(page, {
@@ -538,6 +538,10 @@ test.describe("Feed Settings", () => {
         await clickCheckbox(page, "Refresh Rate");
         await clickCheckbox(page, /Select all \d+ matching feeds/);
 
+        // Select all keeps the individual checkboxes enabled, so uncheck one to
+        // exclude it from the copy.
+        await clickCheckbox(page, new RegExp(targetFeed2.title));
+
         await page
           .getByRole("button", { name: /Copy to \d+ matching feeds/ })
           .click();
@@ -546,21 +550,22 @@ test.describe("Feed Settings", () => {
           page.getByText(/Successfully copied feed settings/i),
         ).toBeVisible({ timeout: 10000 });
 
-        // Verify all target feeds have copied settings via UI
+        // Verify non-excluded target feeds have copied settings via UI
         await navigateToFeedAndTab(page, targetFeed1.title, "Settings");
         await expect(
           page.locator('input[name="userRefreshRateMinutes"]'),
-        ).toHaveValue("10", { timeout: 10000 });
-
-        await navigateToFeedAndTab(page, targetFeed2.title, "Settings");
-        await expect(
-          page.locator('input[name="userRefreshRateMinutes"]'),
-        ).toHaveValue("10", { timeout: 10000 });
+        ).toHaveValue("15", { timeout: 10000 });
 
         await navigateToFeedAndTab(page, targetFeed3.title, "Settings");
         await expect(
           page.locator('input[name="userRefreshRateMinutes"]'),
-        ).toHaveValue("10", { timeout: 10000 });
+        ).toHaveValue("15", { timeout: 10000 });
+
+        // Verify the excluded feed was NOT updated (keeps its default, not 15)
+        await navigateToFeedAndTab(page, targetFeed2.title, "Settings");
+        await expect(
+          page.locator('input[name="userRefreshRateMinutes"]'),
+        ).not.toHaveValue("15", { timeout: 10000 });
       } finally {
         await deleteFeed(page, targetFeed1.id);
         await deleteFeed(page, targetFeed2.id);

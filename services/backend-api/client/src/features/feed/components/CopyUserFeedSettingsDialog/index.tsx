@@ -98,6 +98,7 @@ const formSchema = object({
 
         return schema;
       }),
+    excludedFeeds: array().of(string().required()).default([]),
     total: number().required(),
   }).required(),
 });
@@ -136,6 +137,7 @@ export const CopyUserFeedSettingsDialog = ({
         type: "selected",
         searchTerm: "",
         selectedFeeds: [],
+        excludedFeeds: [],
         total: 0,
       },
     },
@@ -184,7 +186,13 @@ export const CopyUserFeedSettingsDialog = ({
 
   const onSubmit = async ({ checkedSettings, userFeedSelection: targetSelection }: FormData) => {
     try {
-      if (checkedSettings.length === 0 || status === "loading" || !feed) {
+      const excludedFeeds = targetSelection.excludedFeeds ?? [];
+      const effectiveTotal =
+        targetSelection.type === "all"
+          ? targetSelection.total - excludedFeeds.length
+          : targetSelection.selectedFeeds.length;
+
+      if (checkedSettings.length === 0 || effectiveTotal <= 0 || status === "loading" || !feed) {
         return;
       }
 
@@ -196,6 +204,8 @@ export const CopyUserFeedSettingsDialog = ({
             targetSelection.type === "selected" ? targetSelection.selectedFeeds : undefined,
           targetFeedSelectionType: targetSelection.type,
           targetFeedSearch: targetSelection.searchTerm,
+          targetFeedExcludeIds:
+            targetSelection.type === "all" && excludedFeeds.length ? excludedFeeds : undefined,
         },
       });
       onClose();
@@ -401,6 +411,10 @@ export const CopyUserFeedSettingsDialog = ({
                               })
                             }
                             selectedIds={field.value.selectedFeeds || []}
+                            excludedIds={field.value.excludedFeeds || []}
+                            onExcludedIdsChange={(ids) =>
+                              field.onChange({ ...field.value, excludedFeeds: ids })
+                            }
                             description="The feeds that will have their settings overwritten with the selected settings from the source feed."
                             isSelectedAll={field.value.type === "all"}
                             onSelectAll={(totalCount, search, isChecked) => {
@@ -408,6 +422,7 @@ export const CopyUserFeedSettingsDialog = ({
                                 ...field.value,
                                 type: isChecked ? "all" : "selected",
                                 selectedFeeds: field.value.selectedFeeds,
+                                excludedFeeds: [],
                                 total: totalCount,
                                 searchTerm: search,
                               });
@@ -454,7 +469,14 @@ export const CopyUserFeedSettingsDialog = ({
                   handleSubmit(onSubmit)();
                 }}
               >
-                <span>{!isSubmitting && `Copy to ${userFeedSelection.total} matching feeds`}</span>
+                <span>
+                  {!isSubmitting &&
+                    `Copy to ${
+                      userFeedSelection.type === "all"
+                        ? userFeedSelection.total - (userFeedSelection.excludedFeeds?.length ?? 0)
+                        : userFeedSelection.total
+                    } matching feeds`}
+                </span>
                 <span>{isSubmitting && "Copying..."}</span>
               </Button>
             </HStack>

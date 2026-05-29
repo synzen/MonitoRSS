@@ -458,6 +458,66 @@ describe(
           assert.ok(clonedOnOther);
         });
 
+        it("excludes feeds in targetFeedExcludeIds when targetFeedSelectionType is 'all'", async () => {
+          const discordUserId = generateSnowflake();
+          const user = await ctx.asUser(discordUserId);
+
+          const { feedId: sourceFeedId, connectionId: sourceConnectionId } =
+            await createTestFeedWithConnection(ctx, { discordUserId });
+          const { feedId: otherFeedId1 } = await createTestFeedWithConnection(
+            ctx,
+            { discordUserId },
+          );
+          const { feedId: excludedFeedId } = await createTestFeedWithConnection(
+            ctx,
+            { discordUserId },
+          );
+          const { feedId: otherFeedId3 } = await createTestFeedWithConnection(
+            ctx,
+            { discordUserId },
+          );
+
+          const response = await user.fetch(
+            testUrl(sourceFeedId, sourceConnectionId),
+            {
+              method: "POST",
+              body: JSON.stringify(
+                validBody({
+                  targetFeedSelectionType: "all",
+                  targetFeedExcludeIds: [excludedFeedId],
+                }),
+              ),
+            },
+          );
+          assert.strictEqual(response.status, 200);
+
+          const otherFeed1 =
+            await ctx.container.userFeedRepository.findById(otherFeedId1);
+          const excludedFeed =
+            await ctx.container.userFeedRepository.findById(excludedFeedId);
+          const otherFeed3 =
+            await ctx.container.userFeedRepository.findById(otherFeedId3);
+
+          assert.ok(
+            otherFeed1!.connections.discordChannels.find(
+              (c) => c.name === "cloned-connection",
+            ),
+            "Should clone to non-excluded feed 1",
+          );
+          assert.ok(
+            otherFeed3!.connections.discordChannels.find(
+              (c) => c.name === "cloned-connection",
+            ),
+            "Should clone to non-excluded feed 3",
+          );
+          assert.ok(
+            !excludedFeed!.connections.discordChannels.find(
+              (c) => c.name === "cloned-connection",
+            ),
+            "Should NOT clone to the excluded feed",
+          );
+        });
+
         it("uses 'all' mode when targetFeedSelectionType is 'all' even if targetFeedIds are provided", async () => {
           const discordUserId = generateSnowflake();
           const user = await ctx.asUser(discordUserId);

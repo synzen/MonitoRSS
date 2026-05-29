@@ -1012,6 +1012,7 @@ export async function copySettingsHandler(
       targetFeedIds: request.body.targetFeedIds,
       targetFeedSelectionType: request.body.targetFeedSelectionType,
       targetFeedSearch: request.body.targetFeedSearch,
+      targetFeedExcludeIds: request.body.targetFeedExcludeIds,
     },
     discordUserId,
   });

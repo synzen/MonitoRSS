@@ -232,6 +232,7 @@ export interface CloneConnectionToFeedsInput {
   targetFeedIds?: string[];
   ownershipDiscordUserId?: string;
   search?: string;
+  excludeFeedIds?: string[];
   connectionData: Record<string, unknown>;
 }
 
@@ -263,6 +264,7 @@ export interface CopySettingsTarget {
   feedIds?: string[];
   search?: string;
   excludeFeedId: string;
+  excludeFeedIds?: string[];
   ownerDiscordUserId: string;
 }
 

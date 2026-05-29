@@ -25,6 +25,8 @@ interface Props {
   onSelectedIdsChange: (ids: string[]) => void;
   isSelectedAll: boolean;
   onSelectAll: (total: number, search: string, isChecked?: boolean) => void;
+  excludedIds: string[];
+  onExcludedIdsChange: (ids: string[]) => void;
   description: string;
 }
 
@@ -35,6 +37,8 @@ export const SelectableUserFeedList = ({
   onSelectAll,
   selectedIds,
   onSelectedIdsChange,
+  excludedIds,
+  onExcludedIdsChange,
   description,
 }: Props) => {
   const [searchInput, setSearchInput] = useState("");
@@ -143,6 +147,7 @@ export const SelectableUserFeedList = ({
                 onSelectAll(totalCount || 0, search, (e.target as HTMLInputElement).checked)
               }
               isChecked={isSelectedAll}
+              isIndeterminate={isSelectedAll && excludedIds.length > 0}
             >
               Select all {totalCount || 0} matching feeds
             </Checkbox>
@@ -160,15 +165,24 @@ export const SelectableUserFeedList = ({
                       <Checkbox
                         width="100%"
                         onChange={(e) => {
-                          if (e.target.checked && !selectedIds.includes(userFeed.id)) {
+                          if (isSelectedAll) {
+                            if (!e.target.checked && !excludedIds.includes(userFeed.id)) {
+                              onExcludedIdsChange([...excludedIds, userFeed.id]);
+                            } else if (e.target.checked && excludedIds.includes(userFeed.id)) {
+                              onExcludedIdsChange(excludedIds.filter((id) => id !== userFeed.id));
+                            }
+                          } else if (e.target.checked && !selectedIds.includes(userFeed.id)) {
                             onSelectedIdsChange([...selectedIds, userFeed.id]);
                           } else if (!e.target.checked && selectedIds.includes(userFeed.id)) {
                             onSelectedIdsChange(selectedIds.filter((id) => id !== userFeed.id));
                           }
                         }}
-                        isChecked={isSelectedAll || selectedIds.includes(userFeed.id)}
+                        isChecked={
+                          isSelectedAll
+                            ? !excludedIds.includes(userFeed.id)
+                            : selectedIds.includes(userFeed.id)
+                        }
                         isRequired={false}
-                        isDisabled={isSelectedAll}
                       >
                         <chakra.span ml={2} display="block" fontSize="sm" fontWeight={600}>
                           {userFeed.title}

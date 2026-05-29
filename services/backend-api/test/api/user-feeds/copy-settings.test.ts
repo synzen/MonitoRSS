@@ -695,6 +695,65 @@ describe(
       assert.deepStrictEqual(sourceAfter.blockingComparisons, ["guid"]);
     });
 
+    it("excludes feeds in targetFeedExcludeIds when targetFeedSelectionType is all", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+
+      const sourceFeed = await ctx.container.userFeedRepository.create({
+        title: "Source All Excludes",
+        url: "https://example.com/copy-all-excludes-source.xml",
+        user: { id: generateTestId(), discordUserId },
+        blockingComparisons: ["guid"],
+      });
+
+      const targetFeed1 = await ctx.container.userFeedRepository.create({
+        title: "Target Exclude 1",
+        url: "https://example.com/copy-all-excludes-target1.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const excludedFeed = await ctx.container.userFeedRepository.create({
+        title: "Target Exclude 2",
+        url: "https://example.com/copy-all-excludes-target2.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const targetFeed3 = await ctx.container.userFeedRepository.create({
+        title: "Target Exclude 3",
+        url: "https://example.com/copy-all-excludes-target3.xml",
+        user: { id: generateTestId(), discordUserId },
+      });
+
+      const response = await user.fetch(
+        `/api/v1/user-feeds/${sourceFeed.id}/copy-settings`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            settings: [UserFeedCopyableSetting.BlockingComparisons],
+            targetFeedSelectionType: "all",
+            targetFeedExcludeIds: [excludedFeed.id],
+          }),
+        },
+      );
+      assert.strictEqual(response.status, 204);
+
+      const updated1 = await ctx.container.userFeedRepository.findById(
+        targetFeed1.id,
+      );
+      const updatedExcluded = await ctx.container.userFeedRepository.findById(
+        excludedFeed.id,
+      );
+      const updated3 = await ctx.container.userFeedRepository.findById(
+        targetFeed3.id,
+      );
+      assert.ok(updated1);
+      assert.ok(updatedExcluded);
+      assert.ok(updated3);
+      assert.deepStrictEqual(updated1.blockingComparisons, ["guid"]);
+      assert.deepStrictEqual(updated3.blockingComparisons, ["guid"]);
+      assert.strictEqual(updatedExcluded.blockingComparisons?.length, 0);
+    });
+
     it("does not copy settings to feeds owned by other users", async () => {
       const discordUserId = generateSnowflake();
       const otherDiscordUserId = generateSnowflake();

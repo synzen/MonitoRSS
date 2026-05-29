@@ -452,6 +452,7 @@ export async function cloneConnectionHandler(
     targetFeedIds,
     targetFeedSelectionType,
     targetFeedSearch,
+    targetFeedExcludeIds,
   } = request.body;
 
   const result = await feedConnectionsDiscordChannelsService.cloneConnection(
@@ -465,6 +466,7 @@ export async function cloneConnectionHandler(
           | UserFeedTargetFeedSelectionType
           | undefined) ?? UserFeedTargetFeedSelectionType.All,
       targetFeedSearch,
+      targetFeedExcludeIds,
     },
     accessToken.access_token,
     discordUserId,

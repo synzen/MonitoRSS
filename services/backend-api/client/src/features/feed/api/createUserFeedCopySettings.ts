@@ -8,6 +8,7 @@ export interface CreateUserFeedCopySettingsInput {
     targetFeedIds?: string[];
     targetFeedSelectionType?: "all" | "selected";
     targetFeedSearch?: string;
+    targetFeedExcludeIds?: string[];
   };
 }
 

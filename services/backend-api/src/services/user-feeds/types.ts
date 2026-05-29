@@ -228,4 +228,5 @@ export interface CopyUserFeedSettingsInput {
   settings: UserFeedCopyableSetting[];
   targetFeedSelectionType?: UserFeedTargetFeedSelectionType;
   targetFeedSearch?: string;
+  targetFeedExcludeIds?: string[];
 }

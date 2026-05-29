@@ -1441,8 +1441,13 @@ export class UserFeedMongooseRepository
   async cloneConnectionToFeeds(
     input: CloneConnectionToFeedsInput,
   ): Promise<CloneConnectionToFeedsResult> {
-    const { targetFeedIds, ownershipDiscordUserId, search, connectionData } =
-      input;
+    const {
+      targetFeedIds,
+      ownershipDiscordUserId,
+      search,
+      excludeFeedIds,
+      connectionData,
+    } = input;
 
     const useSelectedFeeds = targetFeedIds && targetFeedIds.length > 0;
 
@@ -1456,6 +1461,13 @@ export class UserFeedMongooseRepository
       };
     } else if (ownershipDiscordUserId) {
       feedQuery = {
+        ...(excludeFeedIds?.length
+          ? {
+              _id: {
+                $nin: excludeFeedIds.map((id) => this.stringToObjectId(id)),
+              },
+            }
+          : {}),
         $and: [
           this.getOwnershipFilter(ownershipDiscordUserId),
           ...(search ? [this.getSearchFilter(search)] : []),
@@ -1521,9 +1533,14 @@ export class UserFeedMongooseRepository
       andConditions.push(this.getSearchFilter(target.search));
     }
 
+    const excludedIds = [
+      target.excludeFeedId,
+      ...(target.excludeFeedIds ?? []),
+    ];
+
     return {
       _id: {
-        $ne: this.stringToObjectId(target.excludeFeedId),
+        $nin: excludedIds.map((id) => this.stringToObjectId(id)),
       },
       $and: andConditions,
     };
