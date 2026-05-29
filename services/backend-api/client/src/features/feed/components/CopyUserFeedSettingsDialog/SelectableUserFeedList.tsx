@@ -59,6 +59,10 @@ export const SelectableUserFeedList = ({
 
   const fetchedSoFarCount = data?.pages.reduce((acc, page) => acc + page.results.length, 0) ?? 0;
 
+  const isMasterIndeterminate = isSelectedAll
+    ? excludedIds.length > 0
+    : selectedIds.length > 0;
+
   useEffect(() => {
     if (isSelectedAll) {
       onSelectAll(totalCount || 0, search, true);
@@ -147,7 +151,10 @@ export const SelectableUserFeedList = ({
                 onSelectAll(totalCount || 0, search, (e.target as HTMLInputElement).checked)
               }
               isChecked={isSelectedAll}
-              isIndeterminate={isSelectedAll && excludedIds.length > 0}
+              isIndeterminate={isMasterIndeterminate}
+              inputProps={{
+                "aria-checked": isMasterIndeterminate ? "mixed" : isSelectedAll,
+              }}
             >
               Select all {totalCount || 0} matching feeds
             </Checkbox>

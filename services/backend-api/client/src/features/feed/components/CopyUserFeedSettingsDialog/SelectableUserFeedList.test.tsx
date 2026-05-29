@@ -97,6 +97,16 @@ describe("SelectableUserFeedList", () => {
     expect(screen.getByRole("checkbox", { name: /Feed B/ })).toBeChecked();
   });
 
+  it("shows an indeterminate master checkbox when only some feeds are selected manually", () => {
+    renderList({ isSelectedAll: false, selectedIds: [FEED_A.id] });
+
+    expect(
+      screen.getByRole("checkbox", { name: /Select all 2 matching feeds/ }),
+    ).toBePartiallyChecked();
+    expect(screen.getByRole("checkbox", { name: /Feed A/ })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /Feed B/ })).not.toBeChecked();
+  });
+
   it("loads more feeds when View more feeds is clicked", async () => {
     mockHasNextPage = true;
     renderList({ isSelectedAll: true });
