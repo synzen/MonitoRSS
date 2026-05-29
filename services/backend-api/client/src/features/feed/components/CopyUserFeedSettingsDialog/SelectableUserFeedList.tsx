@@ -30,7 +30,7 @@ interface Props {
   description: string;
 }
 
-const LIMIT = 25;
+const LIMIT = 1;
 
 export const SelectableUserFeedList = ({
   isSelectedAll,
