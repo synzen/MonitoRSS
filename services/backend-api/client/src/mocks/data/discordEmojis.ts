@@ -1,4 +1,4 @@
-import { DiscordEmoji } from "@/features/discordServers/api/getServerEmojis";
+import { DiscordEmoji } from "@/features/discordServers";
 
 const mockDiscordEmojis: DiscordEmoji[] = [
   {

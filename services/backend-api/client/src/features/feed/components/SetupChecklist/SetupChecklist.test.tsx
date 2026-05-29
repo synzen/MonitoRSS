@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { SetupChecklist } from "./index";
 import { SetupChecklistCard } from "./SetupChecklistCard";
 
-vi.mock("../../../feedConnections/components/AddConnectionDialog", () => ({
+vi.mock("../../../feedConnections/AddConnectionDialog", () => ({
   AddConnectionDialog: () => null,
 }));
 

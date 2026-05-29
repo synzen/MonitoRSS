@@ -1,6 +1,6 @@
 import { InferType, array, bool, mixed, object, string } from "yup";
 import dayjs from "dayjs";
-import { CustomPlaceholderStepType } from "../constants/customPlaceholderStepType";
+import { CustomPlaceholderStepType } from "@/constants/customPlaceholderStepType";
 
 const RegexStep = object({
   id: string().required(),

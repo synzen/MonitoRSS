@@ -61,11 +61,8 @@ function generateManyFeeds(count: number): CuratedFeed[] {
   }));
 }
 
-let mockSearchParam: string | undefined;
-
 vi.mock("../../hooks", () => ({
   useCuratedFeeds: (options?: { search?: string; category?: string }) => {
-    mockSearchParam = options?.search;
     let feeds = mockFeeds;
 
     if (options?.search) {
@@ -127,12 +124,8 @@ vi.mock("../../api/createDiscoverySearchEvent", () => ({
 }));
 
 vi.mock("./UrlValidationResult", () => ({
-  UrlValidationResult: (props: { url: string; validationStatus: string }) => (
-    <div
-      data-testid="url-validation-result"
-      data-url={props.url}
-      data-status={props.validationStatus}
-    />
+  UrlValidationResult: ({ url, validationStatus }: { url: string; validationStatus: string }) => (
+    <div data-testid="url-validation-result" data-url={url} data-status={validationStatus} />
   ),
 }));
 
@@ -159,7 +152,6 @@ const renderSearch = (props: Partial<React.ComponentProps<typeof FeedDiscoverySe
 describe("FeedDiscoverySearch", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSearchParam = undefined;
   });
 
   describe("Search submission", () => {
@@ -169,7 +161,7 @@ describe("FeedDiscoverySearch", () => {
       const input = screen.getByLabelText("Search popular feeds or paste a URL");
       await user.type(input, "IGN{Enter}");
 
-      expect(screen.getByText("1 result")).toBeInTheDocument();
+      expect(screen.getAllByText(/1 result for/).length).toBeGreaterThan(0);
       expect(screen.getByText("IGN")).toBeInTheDocument();
     });
 
@@ -180,7 +172,7 @@ describe("FeedDiscoverySearch", () => {
       await user.type(input, "IGN");
       await user.click(screen.getByRole("button", { name: "Go" }));
 
-      expect(screen.getByText("1 result")).toBeInTheDocument();
+      expect(screen.getAllByText(/1 result for/).length).toBeGreaterThan(0);
       expect(screen.getByText("IGN")).toBeInTheDocument();
     });
 
@@ -209,7 +201,7 @@ describe("FeedDiscoverySearch", () => {
       const input = screen.getByLabelText("Search popular feeds or paste a URL");
       await user.type(input, "IGN{Enter}");
 
-      expect(screen.getByText("1 result")).toBeInTheDocument();
+      expect(screen.getAllByText(/1 result for/).length).toBeGreaterThan(0);
 
       await user.clear(input);
       await user.type(input, "{Enter}");
@@ -251,7 +243,10 @@ describe("FeedDiscoverySearch", () => {
 
       expect(
         screen.getByText(
-          "No matches in our popular feeds list. Many websites have feeds - try pasting a URL (e.g., a YouTube channel or news site) and we'll check automatically.",
+          (_, element) =>
+            element?.tagName === "P" &&
+            /No results for/.test(element.textContent ?? "") &&
+            /Many websites have feeds/.test(element.textContent ?? ""),
         ),
       ).toBeInTheDocument();
     });
@@ -515,7 +510,7 @@ describe("FeedDiscoverySearch", () => {
     it("passes through feedActionStates to FeedCard", async () => {
       const { user } = renderSearch({
         feedActionStates: {
-          "https://feeds.feedburner.com/ign/games": {
+          "mock-ign": {
             status: "added",
             settingsUrl: "/feeds/1",
             feedId: "1",
@@ -526,7 +521,9 @@ describe("FeedDiscoverySearch", () => {
       const input = screen.getByLabelText("Search popular feeds or paste a URL");
       await user.type(input, "IGN{Enter}");
 
-      expect(screen.getByRole("button", { name: "IGN feed added" })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Go to feed settings for IGN" }),
+      ).toBeInTheDocument();
     });
 
     it("shows limit-reached on default-state cards when isAtLimit is true", async () => {
@@ -546,7 +543,7 @@ describe("FeedDiscoverySearch", () => {
       const { user } = renderSearch({
         isAtLimit: true,
         feedActionStates: {
-          "https://feeds.feedburner.com/ign/games": {
+          "mock-ign": {
             status: "added",
             settingsUrl: "/feeds/1",
             feedId: "1",
@@ -557,7 +554,9 @@ describe("FeedDiscoverySearch", () => {
       const input = screen.getByLabelText("Search popular feeds or paste a URL");
       await user.type(input, "IGN{Enter}");
 
-      expect(screen.getByRole("button", { name: "IGN feed added" })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Go to feed settings for IGN" }),
+      ).toBeInTheDocument();
     });
   });
 

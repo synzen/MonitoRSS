@@ -36,7 +36,7 @@ import { forwardRef, useEffect, useState } from "react";
 import { useUserFeedRequestsWithPagination } from "../../../hooks";
 import { UserFeedRequestStatus } from "../../../types";
 import { InlineErrorAlert } from "../../../../../components";
-import { useUserFeedContext } from "../../../../../contexts/UserFeedContext";
+import { useUserFeedContext } from "../../../contexts/UserFeedContext";
 import { RequestDetails } from "./RequestDetails";
 import { GetUserFeedRequestsInput } from "../../../api";
 import { DismissableAlert } from "../../../../../components/DismissableAlert";

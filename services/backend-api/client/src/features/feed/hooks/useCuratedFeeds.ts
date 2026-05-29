@@ -78,9 +78,11 @@ export function useCuratedFeeds(options?: UseCuratedFeedsOptions): UseCuratedFee
       if (search) {
         return getCuratedFeeds({ q: search });
       }
+
       if (category) {
         return getCuratedFeeds({ category });
       }
+
       return getCuratedFeeds();
     },
     {

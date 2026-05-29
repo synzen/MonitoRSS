@@ -102,8 +102,8 @@ export const EditUserFeedDialog: React.FC<Props> = ({
       await onUpdate({ title, url: useUrl });
       onClose();
       reset({ title, url: useUrl });
-    } catch (err) {
-      console.error(err);
+    } catch {
+      // Surfaced to the user via the `error` prop; keep the dialog open on failure
     }
   };
 

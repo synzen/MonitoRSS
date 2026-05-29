@@ -47,9 +47,11 @@ export function getPlatformHint(query: string): PlatformHintEntry | null {
 
 export function getNoResultsAnnouncement(query: string): string {
   const hint = getPlatformHint(query);
+
   if (hint) {
     return `${hint.description} For example: ${hint.example}`;
   }
+
   return `No results for ${query}. Many websites have feeds - try pasting a URL (e.g., a YouTube channel or news site) and we'll check automatically.`;
 }
 

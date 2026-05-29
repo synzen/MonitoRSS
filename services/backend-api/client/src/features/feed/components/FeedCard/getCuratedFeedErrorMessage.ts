@@ -1,14 +1,5 @@
 import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage copy";
 
-const TRANSIENT_CODES = new Set<string>([
-  ApiErrorCode.FEED_REQUEST_TIMEOUT,
-  ApiErrorCode.FEED_REQUEST_INTERNAL_ERROR,
-  ApiErrorCode.FEED_REQUEST_TOO_MANY_REQUESTS,
-  ApiErrorCode.FEED_FETCH_FAILED,
-  ApiErrorCode.FEED_INVALID_SSL_CERT,
-  ApiErrorCode.INTERNAL_ERROR,
-]);
-
 const UNAVAILABLE_CODES = new Set<string>([
   ApiErrorCode.FEED_NOT_FOUND,
   ApiErrorCode.FEED_REQUEST_FORBIDDEN,

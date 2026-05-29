@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 import { getUserFeedArticles, GetUserFeedArticlesInput, GetUserFeedArticlesOutput } from "../api";
-import { DiscordFormatOptions } from "../../../types/DiscordFormatOptions";
+import { DiscordFormatOptions } from "@/types/discord/DiscordFormatOptions";
 
 export interface UseUserFeedArticlesProps {
   feedId?: string;

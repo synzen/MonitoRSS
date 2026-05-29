@@ -1,4 +1,4 @@
-import { DiscordServerChannel } from "@/features/discordServers/types/DiscordServerChannel";
+import { DiscordServerChannel } from "@/features/discordServers";
 
 const mockDiscordThreads: DiscordServerChannel[] = [
   {

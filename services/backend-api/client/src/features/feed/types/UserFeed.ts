@@ -9,6 +9,12 @@ export const UserFeedSchema = object({
   title: string().required(),
   url: string().required(),
   inputUrl: string(),
+  /**
+   * Optional team ownership. Null/undefined = personal feed.
+   * Forward-compatibility shell per ADR-005 (team scoping). Backend may ignore
+   * today; becomes the source of truth for team ownership when teams ship.
+   */
+  teamId: string().nullable().optional(),
   sharedAccessDetails: object({
     inviteId: string().required(),
   }).optional(),

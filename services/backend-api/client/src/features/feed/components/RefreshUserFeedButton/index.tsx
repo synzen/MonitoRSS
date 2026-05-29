@@ -2,7 +2,7 @@ import { Box, Button, HStack, Link, Stack, Text } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { ExternalLinkIcon, WarningTwoIcon } from "@chakra-ui/icons";
 import { useCreateUserFeedManualRequest } from "../../hooks";
-import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
+import { useUserFeedContext } from "../../contexts/UserFeedContext";
 import ApiAdapterError from "../../../../utils/ApiAdapterError";
 import { getErrorMessageForArticleRequestStatus } from "../../utils";
 import { usePageAlertContext } from "../../../../contexts/PageAlertContext";

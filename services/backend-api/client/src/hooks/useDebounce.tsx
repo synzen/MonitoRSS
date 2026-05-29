@@ -6,12 +6,13 @@ export function useDebounce<T>(value: T, delay: number): T;
 export function useDebounce<T>(
   value: T,
   delay: number,
-  options: { trackPending: true }
+  options: { trackPending: true },
 ): { value: T; pending: boolean };
+
 export function useDebounce<T>(
   value: T,
   delay: number,
-  options?: { trackPending: boolean }
+  options?: { trackPending: boolean },
 ): T | { value: T; pending: boolean } {
   const [debouncedValue, setDebouncedValue] = useState(value);
   const [pending, setPending] = useState(false);
@@ -21,7 +22,7 @@ export function useDebounce<T>(
     if (isFirstRender.current) {
       isFirstRender.current = false;
 
-      return;
+      return undefined;
     }
 
     setPending(true);

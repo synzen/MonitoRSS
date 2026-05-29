@@ -2,8 +2,11 @@ import "@testing-library/jest-dom";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ChakraProvider } from "@chakra-ui/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { PricingDialogContext } from "../../../../contexts";
+import { PricingDialogContext } from "@/features/subscriptionProducts";
 import { FeedLimitBar } from "./index";
+
+import { useUserFeeds } from "../../hooks";
+import { useDiscordUserMe } from "../../../discordUser";
 
 vi.mock("../../hooks", () => ({
   useUserFeeds: vi.fn(),
@@ -12,9 +15,6 @@ vi.mock("../../hooks", () => ({
 vi.mock("../../../discordUser", () => ({
   useDiscordUserMe: vi.fn(),
 }));
-
-import { useUserFeeds } from "../../hooks";
-import { useDiscordUserMe } from "../../../discordUser";
 
 const mockOnOpen = vi.fn();
 

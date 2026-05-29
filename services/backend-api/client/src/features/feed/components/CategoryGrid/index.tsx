@@ -1,4 +1,4 @@
-import { SimpleGrid, Box, Text, Icon, Flex } from "@chakra-ui/react";
+import { SimpleGrid, Text, Icon, Flex } from "@chakra-ui/react";
 import React, { useRef, useCallback, useState } from "react";
 import {
   FaGamepad,

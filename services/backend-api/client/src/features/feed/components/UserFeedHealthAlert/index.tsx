@@ -12,12 +12,9 @@ import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { UserFeedDisabledCode, UserFeedRequestStatus } from "../../types";
-import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
-import {
-  getErrorMessageForArticleRequestStatus,
-  useCreateUserFeedManualRequest,
-  useUserFeedRequestsWithPagination,
-} from "../..";
+import { useUserFeedContext } from "../../contexts/UserFeedContext";
+import { getErrorMessageForArticleRequestStatus } from "../../utils";
+import { useCreateUserFeedManualRequest, useUserFeedRequestsWithPagination } from "../../hooks";
 import ApiAdapterError from "../../../../utils/ApiAdapterError";
 import { pages } from "../../../../constants";
 import { UserFeedTabSearchParam } from "../../../../constants/userFeedTabSearchParam";

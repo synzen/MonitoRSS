@@ -60,8 +60,10 @@ function createWrapper() {
     defaultOptions: { queries: { retry: false } },
   });
 
-  return ({ children }: { children: React.ReactNode }) =>
+  const Wrapper = ({ children }: { children: React.ReactNode }) =>
     React.createElement(QueryClientProvider, { client: queryClient }, children);
+
+  return Wrapper;
 }
 
 describe("useCuratedFeeds", () => {
@@ -73,11 +75,13 @@ describe("useCuratedFeeds", () => {
           result: { categories: mockCategories, feeds: mockSearchFeeds },
         });
       }
+
       if (input?.category === "gaming") {
         return Promise.resolve({
           result: { categories: mockCategories, feeds: mockGamingCategoryFeeds },
         });
       }
+
       return Promise.resolve({
         result: { categories: mockCategories, feeds: mockPopularFeeds },
       });
@@ -173,7 +177,9 @@ describe("useCuratedFeeds", () => {
         wrapper: createWrapper(),
       });
 
-      await new Promise((r) => setTimeout(r, 30));
+      await new Promise((r) => {
+        setTimeout(r, 30);
+      });
 
       expect(mockGetCuratedFeeds).not.toHaveBeenCalled();
       expect(result.current.data).toBeUndefined();
@@ -184,7 +190,9 @@ describe("useCuratedFeeds", () => {
         wrapper: createWrapper(),
       });
 
-      await new Promise((r) => setTimeout(r, 30));
+      await new Promise((r) => {
+        setTimeout(r, 30);
+      });
 
       expect(mockGetCuratedFeeds).not.toHaveBeenCalled();
       expect(result.current.data).toBeUndefined();

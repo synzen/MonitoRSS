@@ -50,11 +50,10 @@ import { pages, ProductKey } from "../constants";
 import { useCreateUserFeed, useUserFeeds } from "../features/feed";
 import { useCreateUserFeedUrlValidation } from "../features/feed/hooks/useCreateUserFeedUrlValidation";
 import { useDiscordUserMe, useUserMe } from "../features/discordUser";
-import { PricingDialogContext } from "../contexts";
-import { SourceFeedContext, SourceFeedProvider } from "../contexts/SourceFeedContext";
+import { PricingDialogContext } from "@/features/subscriptionProducts";
+import { SourceFeedContext, SourceFeedProvider, SourceFeedSelector } from "@/features/feed";
 import { useCreateUserFeedDeduplicatedUrls } from "../features/feed/hooks/useCreateUserFeedDeduplicatedUrls";
 import { notifyInfo } from "../utils/notifyInfo";
-import { SourceFeedSelector } from "../components/SourceFeedSelector";
 
 interface RowData {
   url: string;

@@ -44,7 +44,7 @@ import {
   DeliveryPreviewStageStatus,
   FilterExplainBlockedDetail,
 } from "../../../types/DeliveryPreview";
-import { useUserFeedContext } from "../../../../../contexts/UserFeedContext";
+import { useUserFeedContext } from "../../../contexts/UserFeedContext";
 import { FilterResultItem } from "./FilterResultItem";
 
 interface Props {

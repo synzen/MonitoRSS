@@ -134,7 +134,7 @@ const handlers = [
       {},
       {
         status: 204,
-      }
+      },
     );
   }),
   http.get("/api/v1/curated-feeds", async ({ request }) => {
@@ -154,7 +154,7 @@ const handlers = [
           code: "INVALID_REQUEST",
           message: "Provide either 'q' or 'category', not both",
         }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -164,16 +164,16 @@ const handlers = [
           code: "VALIDATION_FAILED",
           message: `q must be at least ${CURATED_FEEDS_MIN_SEARCH_LENGTH} characters`,
         }),
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    let feeds = curatedFeedsMock.feeds;
+    let { feeds } = curatedFeedsMock;
 
     if (q) {
       const pattern = new RegExp(escapeRegex(q), "i");
       feeds = feeds.filter(
-        (f) => pattern.test(f.title) || pattern.test(f.domain) || pattern.test(f.description)
+        (f) => pattern.test(f.title) || pattern.test(f.domain) || pattern.test(f.description),
       );
     } else if (category) {
       feeds = feeds.filter((f) => f.category === category);
@@ -201,10 +201,10 @@ const handlers = [
   http.get("/api/v1/discord-users/bot", async () =>
     HttpResponse.json<GetDiscordBotOutput>({
       result: mockDiscordBot,
-    })
+    }),
   ),
   http.get("/api/v1/discord-users/@me", async () =>
-    HttpResponse.json<GetDiscordMeOutput>(mockDiscordUserMe)
+    HttpResponse.json<GetDiscordMeOutput>(mockDiscordUserMe),
   ),
 
   http.get("/api/v1/discord-users/:id", async () => {
@@ -218,7 +218,7 @@ const handlers = [
   http.get("/api/v1/discord-users/@me/auth-status", async () =>
     HttpResponse.json<GetDiscordAuthStatusOutput>({
       authenticated: true,
-    })
+    }),
   ),
 
   http.patch(
@@ -226,7 +226,7 @@ const handlers = [
     async () =>
       new HttpResponse(null, {
         status: 204,
-      })
+      }),
   ),
 
   http.get("/api/v1/discord-users/@me/servers", async () => {
@@ -254,48 +254,48 @@ const handlers = [
         },
         includesBot: true,
       },
-    })
+    }),
   ),
 
   http.get("/api/v1/discord-servers/:serverId/active-threads", async () =>
     HttpResponse.json<GetServerActiveThreadsOutput>({
       total: mockDiscordThreads.length,
       results: mockDiscordThreads,
-    })
+    }),
   ),
 
   http.get("/api/v1/discord-servers/:serverId/channels", () =>
     HttpResponse.json<GetServerChannelsOutput>({
       total: mockDiscordChannels.length,
       results: mockDiscordChannels,
-    })
+    }),
   ),
 
   http.get("/api/v1/discord-servers/:serverId/roles", () =>
     HttpResponse.json<GetServerRolesOutput>({
       total: mockDiscordRoles.length,
       results: mockDiscordRoles,
-    })
+    }),
   ),
 
   http.get("/api/v1/discord-servers/:serverId/emojis", () =>
     HttpResponse.json<GetServerEmojisOutput>({
       total: mockDiscordEmojis.length,
       results: mockDiscordEmojis,
-    })
+    }),
   ),
 
   http.get("/api/v1/discord-servers/:serverId/members", () =>
     HttpResponse.json<GetServerMembersOutput>({
       total: mockDiscordServerMembers.length,
       results: mockDiscordServerMembers,
-    })
+    }),
   ),
 
   http.get("/api/v1/discord-webhooks", () =>
     HttpResponse.json<GetDiscordWebhooksOutput>({
       results: mockDiscordWebhooks,
-    })
+    }),
   ),
 
   http.post("/api/v1/feeds", () =>
@@ -305,8 +305,8 @@ const handlers = [
       }),
       {
         status: 403,
-      }
-    )
+      },
+    ),
   ),
 
   http.get("/api/v1/user-feed-management-invites/pending", async () => {
@@ -340,7 +340,7 @@ const handlers = [
         }),
         {
           status: 404,
-        }
+        },
       );
     }
 
@@ -371,7 +371,7 @@ const handlers = [
 
     mockUserFeedManagementInvites.splice(
       mockUserFeedManagementInvites.findIndex((u) => u.id === id),
-      1
+      1,
     );
 
     await delay(500);
@@ -385,7 +385,7 @@ const handlers = [
     const { id } = params;
 
     const matchedFeed = mockUserFeeds.find((f) =>
-      f.shareManageOptions?.invites.find((u) => u.id === id)
+      f.shareManageOptions?.invites.find((u) => u.id === id),
     );
 
     if (!matchedFeed) {
@@ -395,7 +395,7 @@ const handlers = [
         {},
         {
           status: 404,
-        }
+        },
       );
     }
 
@@ -412,7 +412,7 @@ const handlers = [
   http.delete("/api/v1/user-feed-management-invites/:id", async ({ params }) => {
     const { id } = params;
     const matchedFeed = mockUserFeeds.find((f) =>
-      f.shareManageOptions?.invites.find((u) => u.id === id)
+      f.shareManageOptions?.invites.find((u) => u.id === id),
     );
 
     if (!matchedFeed) {
@@ -423,7 +423,7 @@ const handlers = [
 
     matchedFeed.shareManageOptions?.invites.splice(
       matchedFeed.shareManageOptions?.invites.findIndex((u) => u.id === id),
-      1
+      1,
     );
 
     await delay(500);
@@ -526,7 +526,7 @@ const handlers = [
       {},
       {
         status: 500,
-      }
+      },
     );
   }),
 
@@ -623,7 +623,7 @@ const handlers = [
       },
       {
         status: 200,
-      }
+      },
     );
   }),
 
@@ -647,7 +647,7 @@ const handlers = [
         }),
         {
           status: 404,
-        }
+        },
       );
     }
 
@@ -686,7 +686,7 @@ const handlers = [
         }),
         {
           status: 404,
-        }
+        },
       );
     }
 
@@ -849,7 +849,7 @@ const handlers = [
       {
         result: mockSendTestArticleResult,
       },
-      { status: 200 }
+      { status: 200 },
     );
   }),
 
@@ -866,7 +866,7 @@ const handlers = [
         }),
         {
           status: 404,
-        }
+        },
       );
     }
 
@@ -916,7 +916,7 @@ const handlers = [
       return new HttpResponse(null, {
         status: 204,
       });
-    }
+    },
   ),
 
   http.post("/api/v1/user-feeds/:feedId/connections/discord-channels/:id/test", async () => {
@@ -926,7 +926,7 @@ const handlers = [
       {
         result: mockSendTestArticleResult,
       },
-      { status: 200 }
+      { status: 200 },
     );
   }),
 

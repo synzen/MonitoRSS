@@ -46,7 +46,7 @@ export const DiscordServerSearchSelectv2: React.FC<Props> = ({
     if (!isFetchingServerSettings) {
       setShowLoadingAlert(false);
 
-      return;
+      return undefined;
     }
 
     // Delay to avoid layout shift flash when the check resolves quickly

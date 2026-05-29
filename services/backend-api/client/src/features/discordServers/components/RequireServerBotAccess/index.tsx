@@ -1,7 +1,15 @@
 /* eslint-disable react/jsx-no-useless-fragment */
-import { Alert, AlertDescription, AlertIcon, AlertTitle, Center } from "@chakra-ui/react";
+import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
+  AlertTitle,
+  Box,
+  Center,
+  Flex,
+} from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { DashboardContent, Loading } from "@/components";
+import { Loading } from "@/components";
 import { useDiscordServerAccessStatus } from "../../hooks";
 import { ErrorAlert } from "@/components/ErrorAlert";
 
@@ -28,23 +36,31 @@ export const RequireServerBotAccess = ({ serverId, children }: Props) => {
 
   if (data && !data.result.authorized) {
     return (
-      <DashboardContent>
-        <Alert
-          status="warning"
-          variant="subtle"
-          flexDirection="column"
-          alignItems="center"
-          justifyContent="center"
-          textAlign="center"
-          height="200px"
+      <Flex width="100%" justifyContent="center">
+        <Box
+          maxWidth="7xl"
+          width="100%"
+          paddingX={{ base: 4, lg: 12 }}
+          paddingTop="8"
+          paddingBottom="16"
         >
-          <AlertIcon boxSize="40px" mr={0} />
-          <AlertTitle mt={4} mb={1} fontSize="lg">
-            {t("common.api.missingBotAccessTitle")}
-          </AlertTitle>
-          <AlertDescription>{t("common.api.missingBotAccessMessage")}</AlertDescription>
-        </Alert>
-      </DashboardContent>
+          <Alert
+            status="warning"
+            variant="subtle"
+            flexDirection="column"
+            alignItems="center"
+            justifyContent="center"
+            textAlign="center"
+            height="200px"
+          >
+            <AlertIcon boxSize="40px" mr={0} />
+            <AlertTitle mt={4} mb={1} fontSize="lg">
+              {t("common.api.missingBotAccessTitle")}
+            </AlertTitle>
+            <AlertDescription>{t("common.api.missingBotAccessMessage")}</AlertDescription>
+          </Alert>
+        </Box>
+      </Flex>
     );
   }
 

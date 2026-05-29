@@ -1,5 +1,5 @@
 import { array, boolean, InferType, number, object, string } from "yup";
-import { CustomPlaceholderSchema } from "../CustomPlaceholder";
+import { CustomPlaceholderSchema } from "@/types/CustomPlaceholder";
 import { DiscordComponentButtonStyle, DiscordComponentType } from "../FeedConnection";
 import { ExternalPropertySchema } from "../ArticleInjection";
 

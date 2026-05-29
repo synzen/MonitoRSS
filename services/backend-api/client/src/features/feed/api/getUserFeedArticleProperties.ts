@@ -1,7 +1,7 @@
 import { array, InferType, object, string } from "yup";
 import fetchRest from "../../../utils/fetchRest";
 import { UserFeedArticleRequestStatus } from "../types";
-import { CustomPlaceholder } from "../../../types";
+import { CustomPlaceholder } from "@/types/CustomPlaceholder";
 
 export interface GetUserFeedArticlePropertiesInput {
   feedId: string;

@@ -1,4 +1,4 @@
-import { DiscordRole } from "@/features/discordServers/types/DiscordRole";
+import { DiscordRole } from "@/features/discordServers";
 
 const mockDiscordRoles: DiscordRole[] = [
   {

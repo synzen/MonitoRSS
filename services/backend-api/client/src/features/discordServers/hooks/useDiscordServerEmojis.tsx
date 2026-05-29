@@ -25,7 +25,7 @@ export const useDiscordServerEmojis = ({ serverId, disabled }: Props) => {
     },
     {
       enabled: !!serverId && !disabled,
-    }
+    },
   );
 
   return {

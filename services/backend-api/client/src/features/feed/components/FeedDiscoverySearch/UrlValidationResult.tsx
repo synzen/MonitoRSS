@@ -119,6 +119,7 @@ export const UrlValidationResult = ({
     if (isAdding) return "adding";
     if (isLimitReachedError) return "limit-error";
     if (isAtLimit) return "limit";
+
     return "default";
   };
 
@@ -211,7 +212,6 @@ export const UrlValidationResult = ({
               </AlertDescription>
             </Box>
           </Alert>
-
           <Box
             mt={3}
             borderWidth="1px"

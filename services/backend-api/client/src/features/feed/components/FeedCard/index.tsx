@@ -7,7 +7,6 @@ import {
   Button,
   Spinner,
   Link,
-  Divider,
   Skeleton,
   UnorderedList,
   ListItem,
@@ -28,12 +27,12 @@ import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { getAvatarColor } from "@/utils/getAvatarColor";
-
-dayjs.extend(relativeTime);
 import { getCuratedFeedErrorMessage } from "./getCuratedFeedErrorMessage";
 import { getPreviewErrorMessage } from "./getPreviewErrorMessage";
 import { useCuratedFeedPreview } from "../../hooks/useCuratedFeedPreview";
 import type { GetCuratedFeedPreviewOutput } from "../../api/getCuratedFeedPreview";
+
+dayjs.extend(relativeTime);
 
 interface FeedCardProps {
   feed: {
@@ -170,6 +169,7 @@ export const FeedCard = ({
     if (hasSettingsLink) return "settings";
     if (isAdded && onRemove) return "remove";
     if (isAdded) return "added-disabled";
+
     return "add";
   })();
 
@@ -267,7 +267,6 @@ export const FeedCard = ({
             </Box>
           )}
         </Box>
-
         <Box flex={1} minW="100px" opacity={state === "added" || state === "removing" ? 0.7 : 1}>
           <HStack spacing={2} flexWrap="wrap">
             <Text fontWeight="bold" noOfLines={1} title={feed.title}>
@@ -343,7 +342,6 @@ export const FeedCard = ({
             </Text>
           )}
         </Box>
-
         {!hideActions && !fullWidthAction && (
           <Box flexShrink={0} ml="auto">
             {isAddable && (
@@ -448,7 +446,6 @@ export const FeedCard = ({
           </Box>
         )}
       </HStack>
-
       {state === "error" && (
         <Box mt={2}>
           <HStack spacing={2} align="start">
@@ -494,7 +491,6 @@ export const FeedCard = ({
           )}
         </Box>
       )}
-
       {state === "remove-error" && (
         <Box mt={2}>
           <HStack spacing={2} align="start">
@@ -505,7 +501,6 @@ export const FeedCard = ({
           </HStack>
         </Box>
       )}
-
       {!hideActions && fullWidthAction && (
         <Box mt={3}>
           {isAddable && (
@@ -620,7 +615,6 @@ export const FeedCard = ({
           )}
         </Box>
       )}
-
       {previewEnabled && feed.id && (
         <Box
           as="details"
@@ -628,8 +622,10 @@ export const FeedCard = ({
           open={isPreviewOpen || undefined}
           onToggle={(e: React.SyntheticEvent<HTMLDetailsElement>) => {
             const nowOpen = e.currentTarget.open;
+
             if (nowOpen !== isPreviewOpen) {
               setIsPreviewOpen(nowOpen);
+
               if (nowOpen && !cachedPreview) {
                 setPreviewError(false);
                 fetchPreview()
@@ -672,7 +668,6 @@ export const FeedCard = ({
               <ChevronDownIcon aria-hidden="true" />
             )}
           </Box>
-
           {isPreviewOpen && (
             <Box
               mt={2}
@@ -702,7 +697,6 @@ export const FeedCard = ({
                   ))}
                 </Box>
               )}
-
               {!isPreviewLoading && isPreviewError && (
                 <HStack spacing={2}>
                   <Text color="gray.400" fontSize="sm" role="alert">
@@ -713,7 +707,6 @@ export const FeedCard = ({
                   </Button>
                 </HStack>
               )}
-
               {!isPreviewLoading &&
                 !isPreviewError &&
                 previewArticles &&
@@ -722,7 +715,6 @@ export const FeedCard = ({
                     No articles found in this feed.
                   </Text>
                 )}
-
               {!isPreviewLoading &&
                 !isPreviewError &&
                 previewArticles &&
@@ -747,6 +739,7 @@ export const FeedCard = ({
                       role="list"
                     >
                       {previewArticles.map((article, index) => (
+                        // eslint-disable-next-line react/no-array-index-key -- static preview list, never reordered
                         <ListItem key={index}>
                           <HStack justify="space-between" align="baseline" spacing={3}>
                             {article.url ? (

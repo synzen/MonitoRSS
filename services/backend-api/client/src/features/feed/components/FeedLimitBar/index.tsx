@@ -3,7 +3,7 @@ import { HStack, Text, Button, VisuallyHidden } from "@chakra-ui/react";
 import { WarningIcon } from "@chakra-ui/icons";
 import { useUserFeeds } from "../../hooks";
 import { useDiscordUserMe } from "../../../discordUser";
-import { PricingDialogContext } from "../../../../contexts";
+import { PricingDialogContext } from "@/features/subscriptionProducts";
 
 interface FeedLimitBarProps {
   showOnlyWhenConstrained?: boolean;
@@ -33,7 +33,7 @@ export const FeedLimitBar = ({ showOnlyWhenConstrained = false }: FeedLimitBarPr
   if (isAtLimit) {
     return (
       <HStack justifyContent="space-between" flexWrap="wrap" gap={2}>
-        <HStack>
+        <HStack role="status">
           <WarningIcon color="red.300" aria-hidden="true" />
           <Text color="red.300" fontWeight="semibold">
             Feed limit reached ({currentCount}/{maxCount})
@@ -49,7 +49,7 @@ export const FeedLimitBar = ({ showOnlyWhenConstrained = false }: FeedLimitBarPr
   if (isNearLimit) {
     return (
       <HStack justifyContent="space-between" flexWrap="wrap" gap={2}>
-        <HStack>
+        <HStack role="status">
           <WarningIcon color="yellow.400" aria-hidden="true" />
           <Text color="yellow.400" fontWeight="semibold">
             <VisuallyHidden>Warning:</VisuallyHidden>
@@ -65,7 +65,7 @@ export const FeedLimitBar = ({ showOnlyWhenConstrained = false }: FeedLimitBarPr
 
   return (
     <HStack justifyContent="space-between" flexWrap="wrap" gap={2}>
-      <Text fontWeight="semibold">
+      <Text role="status" fontWeight="semibold">
         Feed Limit: {currentCount}/{maxCount}
       </Text>
       <Button variant="outline" size="sm" onClick={onOpen}>

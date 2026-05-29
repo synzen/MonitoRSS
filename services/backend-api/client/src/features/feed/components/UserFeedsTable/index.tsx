@@ -21,8 +21,8 @@ import { arrayMove, SortableContext, horizontalListSortingStrategy } from "@dnd-
 import { restrictToHorizontalAxis, restrictToParentElement } from "@dnd-kit/modifiers";
 import { Loading } from "@/components";
 import { UserFeedComputedStatus } from "../../types";
-import { UserFeedStatusFilterContext } from "../../../../contexts";
-import { useMultiSelectUserFeedContext } from "../../../../contexts/MultiSelectUserFeedContext";
+import { UserFeedStatusFilterContext } from "../../contexts/UserFeedStatusFilterContext";
+import { useMultiSelectUserFeedContext } from "../../contexts/MultiSelectUserFeedContext";
 import { useTablePreferences, useTableSearch, useFeedTableData } from "./hooks";
 import {
   ActiveFilterChips,
@@ -88,6 +88,7 @@ export const UserFeedsTable: React.FC = () => {
       setSearchParams((prev) => {
         const next = new URLSearchParams(prev);
         next.set("addFeed", term);
+
         return next;
       });
     },

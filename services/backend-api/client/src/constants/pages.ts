@@ -11,6 +11,15 @@ const getConnectionPathByType = (type: FeedConnectionType) => {
   }
 };
 
+/**
+ * Forward-compatibility shell per ADR-005 (team scoping).
+ * When teams ship, pass `{ teamId }` to scope a route to a team workspace.
+ * Personal-scope routes (no `teamId`) stay unprefixed so existing bookmarks survive.
+ */
+export type RouteScope = { teamId?: string };
+
+const scopePrefix = (scope?: RouteScope) => (scope?.teamId ? `/teams/${scope.teamId}` : "");
+
 export const pages = {
   checkout: (priceId: string, feeds?: { quantity: number; priceId: string }) =>
     `/paddle-checkout/${priceId}?${feeds ? `feeds=${feeds.quantity},${feeds.priceId}` : ""}`,
@@ -18,14 +27,18 @@ export const pages = {
     feedId: string;
     connectionType: FeedConnectionType;
     connectionId: string;
+    scope?: RouteScope;
   }) => `${pages.userFeedConnection(data)}/message-builder`,
   addFeeds: () => "/add-feeds",
   userSettings: () => "/settings",
-  userFeeds: () => "/feeds",
+  userFeeds: (scope?: RouteScope) => `${scopePrefix(scope)}/feeds`,
   notFound: () => "/not-found",
   testPaddle: () => "/test-paddle",
-  userFeed: (feedId: string, opts?: { tab?: UserFeedTabSearchParam; new?: boolean }) => {
-    let str = `/feeds/${feedId}${opts?.tab ? opts.tab : ""}`;
+  userFeed: (
+    feedId: string,
+    opts?: { tab?: UserFeedTabSearchParam; new?: boolean; scope?: RouteScope },
+  ) => {
+    let str = `${scopePrefix(opts?.scope)}/feeds/${feedId}${opts?.tab ? opts.tab : ""}`;
 
     if (opts?.tab && opts.new) {
       str += "&new=true";
@@ -40,11 +53,12 @@ export const pages = {
       feedId: string;
       connectionType: FeedConnectionType;
       connectionId: string;
+      scope?: RouteScope;
     },
     opts?: { tab?: UserFeedConnectionTabSearchParam },
   ) =>
-    `/feeds/${data.feedId}${getConnectionPathByType(data.connectionType)}/${data.connectionId}${
-      opts?.tab ? opts.tab : ""
-    }`,
+    `${scopePrefix(data.scope)}/feeds/${data.feedId}${getConnectionPathByType(
+      data.connectionType,
+    )}/${data.connectionId}${opts?.tab ? opts.tab : ""}`,
   loginReddit: () => "/api/v1/reddit/login",
 };

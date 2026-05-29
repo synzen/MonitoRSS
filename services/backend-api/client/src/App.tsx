@@ -8,7 +8,7 @@ import duration from "dayjs/plugin/duration";
 import relativeTime from "dayjs/plugin/relativeTime";
 import advancedFormat from "dayjs/plugin/advancedFormat";
 import dayjs from "dayjs";
-import { SendTestArticleProvider } from "./contexts";
+import { SendTestArticleProvider } from "./features/feedConnections/discordChannel/messageBuilder/contexts/SendTestArticleContext";
 import Pages from "./pages";
 import { AccessibleNavigationAnnouncer } from "./components/AccessibleNavigationAnnouncer";
 

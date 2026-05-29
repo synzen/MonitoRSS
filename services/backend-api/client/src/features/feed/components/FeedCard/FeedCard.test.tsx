@@ -154,7 +154,7 @@ describe("FeedCard", () => {
 
       const btn = screen.getByRole("button", { name: "Add IGN feed" });
       expect(btn).toBeInTheDocument();
-      expect(btn).toHaveTextContent("+ Add");
+      expect(btn).toHaveTextContent("Add");
     });
 
     it("adding state shows busy button", () => {

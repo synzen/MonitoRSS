@@ -1,6 +1,6 @@
 import { array, boolean, InferType, number, object, string } from "yup";
 import { FeedEmbedSchema } from "./FeedEmbed";
-import { CustomPlaceholderSchema } from "./CustomPlaceholder";
+import { CustomPlaceholderSchema } from "@/types/CustomPlaceholder";
 
 export enum FeedConnectionType {
   DiscordChannel = "DISCORD_CHANNEL",
@@ -68,7 +68,7 @@ const DiscordChannelConnectionDetailsSchema = object({
     object({
       id: string().required(),
       components: array(DiscordButtonSchema.required()).required().max(5),
-    }).required()
+    }).required(),
   ).max(5),
   componentsV2: array(
     object({
@@ -85,7 +85,7 @@ const DiscordChannelConnectionDetailsSchema = object({
           }).required(),
           description: string().optional().nullable(),
           spoiler: boolean().optional(),
-        })
+        }),
       ).optional(),
       components: array(
         object({
@@ -104,7 +104,7 @@ const DiscordChannelConnectionDetailsSchema = object({
           })
             .optional()
             .nullable(),
-        })
+        }),
       ).optional(),
       accessory: object({
         type: string().required(),
@@ -127,7 +127,7 @@ const DiscordChannelConnectionDetailsSchema = object({
       })
         .optional()
         .nullable(),
-    }).required()
+    }).required(),
   )
     .optional()
     .nullable(),
@@ -141,7 +141,7 @@ const DiscordChannelConnectionDetailsSchema = object({
       })
         .nullable()
         .default(null),
-    }).required()
+    }).required(),
   )
     .optional()
     .nullable(),
@@ -156,7 +156,7 @@ const DiscordChannelConnectionDetailsSchema = object({
       characterCount: number().min(1).positive().integer().required(),
       placeholder: string().min(1).required(),
       appendString: string().optional().nullable(),
-    }).required()
+    }).required(),
   )
     .optional()
     .nullable()
@@ -185,7 +185,7 @@ const DiscordWebhookConnectionDetailsSchema = object({
       characterCount: number().min(1).positive().integer().required(),
       placeholder: string().min(1).required(),
       appendString: string().optional().nullable(),
-    }).required()
+    }).required(),
   )
     .optional()
     .nullable()
@@ -217,7 +217,7 @@ export const FeedConnectionSchema = object({
       id: string().required(),
       limit: number().positive().integer().required(),
       timeWindowSeconds: number().positive().integer().required(),
-    }).required()
+    }).required(),
   )
     .default(undefined)
     .nullable(),
@@ -229,7 +229,7 @@ export const FeedConnectionSchema = object({
         filters: object({
           expression: object().required(),
         }).nullable(),
-      }).required()
+      }).required(),
     )
       .nullable()
       .default(undefined),

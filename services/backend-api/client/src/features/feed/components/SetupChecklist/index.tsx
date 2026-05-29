@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Button, Collapse, HStack, Stack, Text, VisuallyHidden } from "@chakra-ui/react";
 import { CheckCircleIcon, ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
-import { AddConnectionDialog } from "../../../feedConnections/components/AddConnectionDialog";
+import { AddConnectionDialog } from "../../../feedConnections/AddConnectionDialog";
 import { SetupChecklistCard } from "./SetupChecklistCard";
 
 interface SetupChecklistProps {
@@ -47,6 +47,7 @@ export const SetupChecklist = ({ feeds, onConnectionCreated, onDismiss }: SetupC
       [...feeds].sort((a, b) => {
         if (a.connectionCount === 0 && b.connectionCount > 0) return -1;
         if (a.connectionCount > 0 && b.connectionCount === 0) return 1;
+
         return 0;
       }),
     [feeds],
@@ -134,7 +135,6 @@ export const SetupChecklist = ({ feeds, onConnectionCreated, onDismiss }: SetupC
                 </Box>
               </HStack>
             </Button>
-
             <Collapse in={isExpanded} animateOpacity>
               <Stack
                 id={cardListId}
@@ -159,12 +159,10 @@ export const SetupChecklist = ({ feeds, onConnectionCreated, onDismiss }: SetupC
             </Collapse>
           </>
         )}
-
         <VisuallyHidden role="status" aria-live="polite" aria-atomic="true">
           {announcement}
         </VisuallyHidden>
       </Box>
-
       <AddConnectionDialog
         feedId={activeConnectionFeedId}
         isOpen={!!activeConnectionFeedId}

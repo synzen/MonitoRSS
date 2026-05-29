@@ -12,6 +12,11 @@ export interface GetUserFeedsInput {
     disabledCodes?: UserFeedDisabledCode[];
     hasConnections?: boolean;
   };
+  /**
+   * Optional team scope. Undefined = personal feeds (current behavior).
+   * Forward-compatibility shell per ADR-005 — backend may ignore today.
+   */
+  teamId?: string;
 }
 
 const GetUserFeedsOutputSchema = object({
@@ -37,6 +42,10 @@ export const getUserFeeds = async (options: GetUserFeedsInput): Promise<GetUserF
 
   if (options.filters?.hasConnections !== undefined) {
     params.append(`filters[hasConnections]`, String(options.filters.hasConnections));
+  }
+
+  if (options.teamId) {
+    params.append("teamId", options.teamId);
   }
 
   const searchParams = params.toString();

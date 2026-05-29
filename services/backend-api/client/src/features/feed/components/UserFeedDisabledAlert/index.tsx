@@ -4,7 +4,7 @@ import { useUpdateUserFeed } from "../../hooks";
 import { UserFeedDisabledCode } from "../../types";
 import { UpdateUserFeedInput } from "../../api";
 import { RefreshUserFeedButton } from "../RefreshUserFeedButton";
-import { useUserFeedContext } from "../../../../contexts/UserFeedContext";
+import { useUserFeedContext } from "../../contexts/UserFeedContext";
 import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 
 export const UserFeedDisabledAlert = () => {

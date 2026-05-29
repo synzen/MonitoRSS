@@ -64,8 +64,91 @@ module.exports = {
         jsx: "never",
         ts: "never",
         tsx: "never",
+        json: "always",
       },
     ],
     "react/jsx-props-no-spreading": "off",
   },
+  overrides: [
+    /** ADR-006 rule #1: shared base may not import from features.
+     * Enforces ADR-002 folder model. */
+    {
+      files: [
+        "src/components/**/*.{ts,tsx}",
+        "src/contexts/**/*.{ts,tsx}",
+        "src/hooks/**/*.{ts,tsx}",
+        "src/constants/**/*.{ts,tsx}",
+        "src/types/**/*.{ts,tsx}",
+        "src/utils/**/*.{ts,tsx}",
+      ],
+      rules: {
+        "no-restricted-imports": [
+          "error",
+          {
+            patterns: [
+              {
+                group: ["**/features/*", "@/features/*"],
+                message:
+                  "Shared base modules (components/contexts/hooks/utils/constants/types) may not import from features/. " +
+                  "Either move this code into the feature that depends on it, or invert the dependency. See client/docs/adr/002-folder-model.md.",
+              },
+            ],
+          },
+        ],
+      },
+    },
+    /** ADR-006 rule #2: cross-feature imports must go through the sibling feature's barrel.
+     * Within a feature, files use relative paths freely.
+     * The glob blocks `@/features/<name>/<anything>` (deep imports), allowing only `@/features/<name>` itself. */
+    {
+      files: ["src/features/**/*.{ts,tsx}"],
+      rules: {
+        "no-restricted-imports": [
+          "error",
+          {
+            patterns: [
+              {
+                group: ["@/features/*/*", "@/features/*/*/**"],
+                message:
+                  "Cross-feature imports should go through the sibling feature's index.ts barrel. " +
+                  "Use `import { ... } from '@/features/<name>'` instead of a deep path. " +
+                  "Within the SAME feature, prefer relative imports. " +
+                  "See client/docs/adr/002-folder-model.md.",
+              },
+            ],
+          },
+        ],
+      },
+    },
+    /** ADR-006 rule #3: max-lines warn at 600 / error at 1000.
+     * Exempts: test files (many test cases), mocks (fixtures), large data files. */
+    {
+      files: ["src/**/*.{ts,tsx}"],
+      excludedFiles: [
+        "src/mocks/**",
+        "src/constants/emojis.ts",
+        "**/*.test.{ts,tsx}",
+      ],
+      rules: {
+        "max-lines": [
+          "warn",
+          { max: 600, skipBlankLines: true, skipComments: true },
+        ],
+      },
+    },
+    {
+      files: ["src/**/*.{ts,tsx}"],
+      excludedFiles: [
+        "src/mocks/**",
+        "src/constants/emojis.ts",
+        "**/*.test.{ts,tsx}",
+      ],
+      rules: {
+        "max-lines": [
+          "error",
+          { max: 1000, skipBlankLines: true, skipComments: true },
+        ],
+      },
+    },
+  ],
 };

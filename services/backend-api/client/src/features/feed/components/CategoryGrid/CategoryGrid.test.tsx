@@ -79,9 +79,8 @@ describe("CategoryGrid", () => {
     const radios = screen.getAllByRole("radio");
 
     radios[0].focus();
-    for (let i = 0; i < radios.length; i++) {
-      await user.keyboard("{ArrowRight}");
-    }
+
+    await user.keyboard("{ArrowRight}".repeat(radios.length));
 
     expect(radios[0]).toHaveFocus();
   });

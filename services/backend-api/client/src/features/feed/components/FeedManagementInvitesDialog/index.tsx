@@ -43,16 +43,12 @@ interface Props {
 }
 
 const FeedManagementInviteRow = ({
-  currentNumberOfInvites,
-  onClose,
   invite: {
     id,
     feed: { ownerDiscordUserId, title, url },
     type,
   },
 }: {
-  currentNumberOfInvites: number;
-  onClose: () => void;
   invite: UserFeedManagementInvite;
 }) => {
   const { mutateAsync, status, reset } = useUpdateUserFeedManagementInviteStatus();
@@ -79,10 +75,6 @@ const FeedManagementInviteRow = ({
       });
 
       reset();
-
-      if (currentNumberOfInvites === 1) {
-        // onClose();
-      }
     } catch (err) {
       createErrorAlert({
         title: "Failed to accept feed management invite.",
@@ -112,10 +104,6 @@ const FeedManagementInviteRow = ({
       });
 
       reset();
-
-      if (currentNumberOfInvites === 1) {
-        // onClose();
-      }
     } catch (err) {
       createErrorAlert({
         title: "Failed to decline feed management invite.",
@@ -217,12 +205,7 @@ export const FeedManagementInvitesDialog = ({ trigger }: Props) => {
                       </Thead>
                       <Tbody>
                         {data.results.map((invite) => (
-                          <FeedManagementInviteRow
-                            onClose={onClose}
-                            currentNumberOfInvites={data.results.length}
-                            invite={invite}
-                            key={invite.id}
-                          />
+                          <FeedManagementInviteRow invite={invite} key={invite.id} />
                         ))}
                       </Tbody>
                     </Table>

@@ -12,3 +12,8 @@ export * from "./FeedDiscoverySearch";
 export * from "./CategoryPills";
 export * from "./CategoryGrid";
 export * from "./BrowseFeedsModal";
+export * from "./SearchFeedsModal";
+export * from "./SelectFeedModal";
+export * from "./SourceFeedSelector";
+export * from "./DatePreferencesForm";
+export * from "./UserFeedDetail";

@@ -1,6 +1,5 @@
 import { Alert, AlertDescription, AlertTitle, Box, Stack, Text } from "@chakra-ui/react";
-import { RedditLoginButton } from "../../../../components/RedditLoginButton/RedditLoginButton";
-import { useUserMe } from "../../../discordUser";
+import { RedditLoginButton, useUserMe } from "../../../discordUser";
 
 interface Props {
   url: string;

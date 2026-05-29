@@ -2,7 +2,8 @@ import { array, boolean, InferType, number, object, string } from "yup";
 import fetchRest from "../../../utils/fetchRest";
 import { GetArticlesFilterReturnType, SelectArticlePropertyType } from "../constants";
 import { UserFeedArticleRequestStatus } from "../types";
-import { ExternalProperty, CustomPlaceholder } from "../../../types";
+import { ExternalProperty } from "@/types";
+import { CustomPlaceholder } from "@/types/CustomPlaceholder";
 
 export interface GetUserFeedArticlesInput {
   feedId: string;

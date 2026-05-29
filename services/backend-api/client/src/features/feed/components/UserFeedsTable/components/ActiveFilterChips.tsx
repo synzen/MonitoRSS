@@ -40,6 +40,7 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
     } else {
       searchInputRef?.current?.focus();
     }
+
     onSearchClear();
   };
 
@@ -49,6 +50,7 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
     } else {
       searchInputRef?.current?.focus();
     }
+
     onStatusFiltersClear();
   };
 

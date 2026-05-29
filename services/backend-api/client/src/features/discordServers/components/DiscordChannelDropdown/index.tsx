@@ -1,6 +1,6 @@
 import { Box, FormErrorMessage, FormHelperText } from "@chakra-ui/react";
 import { ThemedSelect } from "@/components";
-import { getChannelIcon } from "@/utils/getChannelIcon";
+import { getChannelIcon } from "@/features/feedConnections";
 import { useDiscordServerChannels } from "../../hooks";
 import { GetDiscordChannelType } from "../../constants";
 

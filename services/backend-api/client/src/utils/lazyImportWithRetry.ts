@@ -32,8 +32,8 @@ export const lazyWithRetries: typeof React.lazy = (importer) => {
 
         try {
           return await import(url.href);
-        } catch (e) {
-          console.log("retrying import");
+        } catch {
+          // swallow and retry on the next loop iteration
         }
       }
 

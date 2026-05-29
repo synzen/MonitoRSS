@@ -9,7 +9,7 @@ import {
 import mockDiscordChannels from "./discordChannels";
 import mockDiscordServers from "./discordServers";
 import mockDiscordWebhooks from "./discordWebhooks";
-import { CustomPlaceholderStepType, UserFeedManagerStatus } from "../../constants";
+import { UserFeedManagerStatus, CustomPlaceholderStepType } from "@/constants";
 
 /**
  * Mock state configuration for connections testing.

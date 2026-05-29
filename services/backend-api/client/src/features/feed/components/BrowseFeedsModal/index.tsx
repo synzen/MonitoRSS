@@ -164,13 +164,16 @@ export const BrowseFeedsModal = ({
 
   const categoryAnnouncement = (() => {
     if (isSearchActive) return "";
+
     if (isFetching) {
       return selectedCategoryLabel ? `Loading ${selectedCategoryLabel} feeds` : "Loading feeds";
     }
+
     if (error) return "Failed to load feeds";
     if (!data) return "";
     const label = selectedCategoryLabel ?? "popular";
     if (totalFeeds === 0) return `No ${label} feeds available`;
+
     return `Showing ${totalFeeds} ${label} feed${totalFeeds !== 1 ? "s" : ""}`;
   })();
 

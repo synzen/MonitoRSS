@@ -25,7 +25,9 @@ export const getServerChannels = async (
   }
 
   const queryString = searchParams.toString();
-  const url = `/api/v1/discord-servers/${options.serverId}/channels${queryString ? `?${queryString}` : ""}`;
+  const url = `/api/v1/discord-servers/${options.serverId}/channels${
+    queryString ? `?${queryString}` : ""
+  }`;
 
   const res = await fetchRest(url, {
     validateSchema: GetServersChannelsOutputSchema,

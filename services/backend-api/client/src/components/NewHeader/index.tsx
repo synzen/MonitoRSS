@@ -13,26 +13,31 @@ import {
   Text,
   chakra,
 } from "@chakra-ui/react";
-import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
-import { FaRightFromBracket } from "react-icons/fa6";
 import { SettingsIcon, InfoIcon } from "@chakra-ui/icons";
 
 import { pages } from "../../constants";
-import { LogoutButton } from "../../features/auth";
-
-import { useDiscordBot, useDiscordUserMe } from "../../features/discordUser";
 import { Loading } from "../Loading";
-import { SearchFeedsModal } from "../SearchFeedsModal";
 
 interface Props {
   invertBackground?: boolean;
+  bot?: { avatar?: string | null; username: string } | null;
+  isBotLoading?: boolean;
+  botError?: { message: string } | null;
+  user?: { iconUrl?: string; username?: string; id?: string };
+  searchSlot?: React.ReactNode;
+  logoutSlot?: React.ReactNode;
 }
 
-export const NewHeader = ({ invertBackground }: Props) => {
-  const { data: discordBotData, status, error } = useDiscordBot();
-  const { data: discordUserMe } = useDiscordUserMe();
-  const { t } = useTranslation();
+export const NewHeader = ({
+  invertBackground,
+  bot,
+  isBotLoading,
+  botError,
+  user,
+  searchSlot,
+  logoutSlot,
+}: Props) => {
   const navigate = useNavigate();
 
   return (
@@ -51,13 +56,13 @@ export const NewHeader = ({ invertBackground }: Props) => {
         >
           <HStack gap={8}>
             <Flex alignItems="center" overflow="hidden">
-              {discordBotData && (
+              {bot && (
                 <Link to={pages.userFeeds()} aria-label="MonitoRSS Home">
                   <Flex alignItems="center" paddingBottom="1" overflow="hidden">
                     <Avatar
-                      src={discordBotData.result.avatar || undefined}
+                      src={bot.avatar || undefined}
                       size="sm"
-                      name={discordBotData.result.username}
+                      name={bot.username}
                       marginRight="2"
                       backgroundColor="transparent"
                     />
@@ -74,41 +79,39 @@ export const NewHeader = ({ invertBackground }: Props) => {
                   </Flex>
                 </Link>
               )}
-              {status === "loading" && (
+              {isBotLoading && (
                 <Box>
                   <Loading />
                 </Box>
               )}
-              {error && <Alert status="error">{error.message}</Alert>}
+              {botError && <Alert status="error">{botError.message}</Alert>}
             </Flex>
-            <HStack>
-              <SearchFeedsModal />
-            </HStack>
+            <HStack>{searchSlot}</HStack>
           </HStack>
           <Flex alignItems="center" paddingY="4">
             <Menu placement="bottom-end">
               <MenuButton as={Button} size="sm" variant="link" aria-label="Account settings">
                 <Avatar
-                  src={discordUserMe?.iconUrl}
+                  src={user?.iconUrl}
                   size="sm"
-                  name={discordUserMe?.username}
+                  name={user?.username}
                   backgroundColor="gray.600"
-                  title={discordUserMe?.username}
+                  title={user?.username}
                   aria-hidden
                 />
               </MenuButton>
               <MenuList>
-                <Box overflow="hidden" paddingX={2} title={discordUserMe?.username}>
+                <Box overflow="hidden" paddingX={2} title={user?.username}>
                   <Text
                     overflow="hidden"
                     maxWidth={300}
                     textOverflow="ellipsis"
                     whiteSpace="nowrap"
                   >
-                    {discordUserMe?.username}
+                    {user?.username}
                   </Text>
                   <Text fontSize="sm" color="whiteAlpha.600">
-                    Discord ID: {discordUserMe?.id}
+                    Discord ID: {user?.id}
                   </Text>
                 </Box>
                 <MenuDivider />
@@ -124,13 +127,7 @@ export const NewHeader = ({ invertBackground }: Props) => {
                 >
                   Discord Support Server
                 </MenuItem>
-                <LogoutButton
-                  trigger={
-                    <MenuItem icon={<FaRightFromBracket />}>
-                      {t("components.pageContentV2.logout")}
-                    </MenuItem>
-                  }
-                />
+                {logoutSlot}
               </MenuList>
             </Menu>
           </Flex>

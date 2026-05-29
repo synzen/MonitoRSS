@@ -17,7 +17,7 @@ import { RepeatIcon } from "@chakra-ui/icons";
 import { Link } from "react-router-dom";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { useUserFeedContext } from "../../../../../contexts/UserFeedContext";
+import { useUserFeedContext } from "../../../contexts/UserFeedContext";
 import { pages } from "../../../../../constants";
 import { UserFeedTabSearchParam } from "../../../../../constants/userFeedTabSearchParam";
 import { useDeliveryPreviewWithPagination } from "../../../hooks/useDeliveryPreviewWithPagination";
@@ -111,7 +111,6 @@ export interface DeliveryPreviewPresentationalProps {
   hasMore?: boolean;
   hasNoConnections?: boolean;
   feedState?: FeedState | null;
-  feedId: string;
   refreshRateSeconds: number;
   nextRetryAtIso?: string | null;
   nextRetryReason?: "REFRESH_RATE" | "HOST_CACHE" | "FAILED_RETRY_BACKOFF" | null;
@@ -131,7 +130,6 @@ export const DeliveryPreviewPresentational = ({
   hasMore = false,
   hasNoConnections = false,
   feedState = null,
-  feedId,
   refreshRateSeconds,
   nextRetryAtIso,
   nextRetryReason,
@@ -315,7 +313,6 @@ export const DeliveryPreview = () => {
       hasMore={hasMore}
       hasNoConnections={hasNoConnections}
       feedState={feedState}
-      feedId={userFeed.id}
       refreshRateSeconds={getEffectiveRefreshRateSeconds(userFeed)}
       nextRetryAtIso={nextRetryAtIso}
       nextRetryReason={nextRetryReason}

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { captureException } from "@sentry/react";
-import { usePaddleContext } from "../../../contexts/PaddleContext";
+import { usePaddleContext } from "../contexts/PaddleContext";
 import { useUserMe } from "../../discordUser";
 import { ProductKey, PRICE_IDS } from "../../../constants";
 import { PricePreview } from "../../../types/PricePreview";

@@ -5,8 +5,8 @@ import { ChakraProvider } from "@chakra-ui/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { CuratedCategory, CuratedFeed } from "../features/feed/types";
-import { PricingDialogContext } from "../contexts";
+import { CuratedFeed } from "../features/feed/types";
+import { PricingDialogContext } from "@/features/subscriptionProducts";
 import { UserFeeds } from "./UserFeeds";
 
 const {
@@ -17,7 +17,7 @@ const {
   curatedFeedsMockImpl,
   mockUnconfiguredFeedsReturn,
 } = vi.hoisted(() => {
-  const _mockCategories = [
+  const categoriesFixture = [
     { id: "gaming", label: "Gaming", count: 25 },
     { id: "specific-games", label: "Specific Games", count: 22 },
     { id: "anime", label: "Anime & Manga", count: 8 },
@@ -46,7 +46,7 @@ const {
     };
   }
 
-  const _allFeeds = _mockCategories.flatMap((cat) =>
+  const feedsFixture = categoriesFixture.flatMap((cat) =>
     Array.from({ length: 3 }, (_, i) =>
       makeFeed({
         id: `mock-${cat.id}-${i}`,
@@ -56,29 +56,29 @@ const {
     ),
   );
 
-  const _mockCreateUserFeed = vi.fn();
-  const _mockUseUserFeedsReturn = vi.fn();
-  const _mockUnconfiguredFeedsReturn = vi.fn();
+  const createUserFeedMock = vi.fn();
+  const useUserFeedsReturnMock = vi.fn();
+  const unconfiguredFeedsReturnMock = vi.fn();
 
-  const _curatedFeedsMockImpl = (options?: { search?: string; category?: string }) => {
-    let feeds = _allFeeds;
+  const curatedFeedsImplFn = (options?: { search?: string; category?: string }) => {
+    let feeds = feedsFixture;
 
     if (options?.category) {
-      feeds = _allFeeds.filter((f) => f.category === options.category);
+      feeds = feedsFixture.filter((f) => f.category === options.category);
     } else if (options?.search) {
       const q = options.search.toLowerCase();
-      feeds = _allFeeds.filter((f) => f.title.toLowerCase().includes(q));
+      feeds = feedsFixture.filter((f) => f.title.toLowerCase().includes(q));
     }
 
     return {
-      data: { feeds, categories: _mockCategories },
+      data: { feeds, categories: categoriesFixture },
       getHighlightFeeds: () =>
-        _mockCategories.map((cat) => ({
+        categoriesFixture.map((cat) => ({
           category: cat,
-          feeds: _allFeeds.filter((f) => f.category === cat.id).slice(0, 3),
+          feeds: feedsFixture.filter((f) => f.category === cat.id).slice(0, 3),
         })),
       getCategoryPreviewText: (categoryId: string) => {
-        const catFeeds = _allFeeds.filter((f) => f.category === categoryId);
+        const catFeeds = feedsFixture.filter((f) => f.category === categoryId);
 
         return catFeeds
           .slice(0, 3)
@@ -93,12 +93,12 @@ const {
   };
 
   return {
-    mockCategories: _mockCategories,
-    allFeeds: _allFeeds,
-    mockCreateUserFeed: _mockCreateUserFeed,
-    mockUseUserFeedsReturn: _mockUseUserFeedsReturn,
-    curatedFeedsMockImpl: _curatedFeedsMockImpl,
-    mockUnconfiguredFeedsReturn: _mockUnconfiguredFeedsReturn,
+    mockCategories: categoriesFixture,
+    allFeeds: feedsFixture,
+    mockCreateUserFeed: createUserFeedMock,
+    mockUseUserFeedsReturn: useUserFeedsReturnMock,
+    curatedFeedsMockImpl: curatedFeedsImplFn,
+    mockUnconfiguredFeedsReturn: unconfiguredFeedsReturnMock,
   };
 });
 
@@ -112,18 +112,14 @@ vi.mock("../features/feed", async () => {
       onSearchChange,
       onAdd,
     }: {
-      feedActionStates: Record<string, unknown>;
-      isAtLimit: boolean;
       onAdd: (feed: CuratedFeed) => void;
-      onRemove: (url: string) => void;
       onSearchChange: (query: string) => void;
-      onFeedAdded: (feedId: string, feedUrl: string) => void;
-      onFeedRemoved: (feedUrl: string) => void;
     }) => (
       <div role="search">
-        <label>
+        <label htmlFor="mock-feed-search-input">
           Search popular feeds or paste a URL
           <input
+            id="mock-feed-search-input"
             aria-label="Search popular feeds or paste a URL"
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
               onSearchChange(e.target.value);
@@ -131,6 +127,7 @@ vi.mock("../features/feed", async () => {
           />
         </label>
         <button
+          type="button"
           aria-label="Go"
           onClick={() => {
             onSearchChange("Gaming");
@@ -139,6 +136,7 @@ vi.mock("../features/feed", async () => {
           Go
         </button>
         <button
+          type="button"
           aria-label="Clear search"
           onClick={() => {
             onSearchChange("");
@@ -147,6 +145,7 @@ vi.mock("../features/feed", async () => {
           Clear search
         </button>
         <button
+          type="button"
           onClick={() =>
             onAdd({
               id: "mock-gaming-0",
@@ -176,6 +175,7 @@ vi.mock("../features/feed", async () => {
         {categories.map((cat: { id: string; label: string; count: number }) => (
           <button
             key={cat.id}
+            type="button"
             role="radio"
             aria-checked={false}
             aria-label={`${cat.label}. ${getCategoryPreviewText(cat.id)}`}
@@ -185,7 +185,12 @@ vi.mock("../features/feed", async () => {
             <span>{getCategoryPreviewText(cat.id)}</span>
           </button>
         ))}
-        <button role="radio" aria-checked={false} onClick={() => onSelectCategory(undefined)}>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={false}
+          onClick={() => onSelectCategory(undefined)}
+        >
           <span>Browse All Categories</span>
           <span>{totalFeedCount} popular feeds to explore →</span>
         </button>
@@ -203,10 +208,11 @@ vi.mock("../features/feed", async () => {
       isOpen ? (
         <div role="dialog">
           <span>Add a Feed</span>
-          <button aria-label="Close" onClick={onClose}>
+          <button type="button" aria-label="Close" onClick={onClose}>
             Close
           </button>
           <button
+            type="button"
             onClick={() =>
               onAdd({
                 id: "mock-test-feed",
@@ -221,8 +227,8 @@ vi.mock("../features/feed", async () => {
           </button>
         </div>
       ) : null,
-    CloneUserFeedDialog: ({ trigger }: { trigger: React.ReactNode }) => <>{trigger}</>,
-    FeedManagementInvitesDialog: ({ trigger }: { trigger: React.ReactNode }) => <>{trigger}</>,
+    CloneUserFeedDialog: ({ trigger }: { trigger: React.ReactNode }) => trigger,
+    FeedManagementInvitesDialog: ({ trigger }: { trigger: React.ReactNode }) => trigger,
     useUserFeeds: () => mockUseUserFeedsReturn(),
     useDeleteUserFeeds: () => ({ mutateAsync: vi.fn() }),
     useDisableUserFeeds: () => ({ mutateAsync: vi.fn() }),
@@ -261,7 +267,8 @@ vi.mock("../features/feed/components/CopyUserFeedSettingsDialog", () => ({
   CopyUserFeedSettingsDialog: () => null,
 }));
 
-vi.mock("../components/ReducedLimitAlert", () => ({
+vi.mock("@/features/subscriptionProducts", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   ReducedLimitAlert: () => null,
 }));
 
@@ -283,7 +290,9 @@ vi.mock("../features/feed/components/SetupChecklist", () => ({
   }) => (
     <div data-testid="setup-checklist" role="region" aria-label="Feed delivery setup">
       <span>{feeds.length} feeds need delivery connections</span>
-      <button onClick={onDismiss}>Done</button>
+      <button type="button" onClick={onDismiss}>
+        Done
+      </button>
     </div>
   ),
 }));

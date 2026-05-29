@@ -9,7 +9,6 @@ export const RadioCardGroup = ({ options }: RadioCardGroupProps) => {
   const { getRootProps, getRadioProps } = useRadioGroup({
     name: "framework",
     defaultValue: "react",
-    onChange: console.log,
   });
 
   const group = getRootProps();

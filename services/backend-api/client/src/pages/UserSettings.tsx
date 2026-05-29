@@ -31,7 +31,6 @@ import { RepeatIcon } from "@chakra-ui/icons";
 import { InferType, bool, object, string } from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, FormProvider, useForm } from "react-hook-form";
-import { useTranslation } from "react-i18next";
 import { useContext, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import dayjs from "dayjs";
@@ -48,11 +47,11 @@ import { useCreateSubscriptionResume } from "../features/subscriptionProducts/ho
 import { ProductKey } from "../constants";
 import getChakraColor from "../utils/getChakraColor";
 import { useGetUpdatePaymentMethodTransaction } from "../features/subscriptionProducts";
-import { PricingDialogContext } from "../contexts";
-import { DatePreferencesForm } from "../components/DatePreferencesForm";
-import { usePaddleContext } from "../contexts/PaddleContext";
+import { PricingDialogContext, usePaddleContext } from "@/features/subscriptionProducts";
+import { DatePreferencesForm } from "@/features/feed";
+
 import { useRemoveRedditLogin } from "../features/feed/hooks/useRemoveRedditLogin";
-import { RedditLoginButton } from "../components/RedditLoginButton/RedditLoginButton";
+import { RedditLoginButton } from "@/features/discordUser";
 import {
   PageAlertContextOutlet,
   PageAlertProvider,
@@ -196,7 +195,6 @@ export const UserSettings = () => {
 
 const UserSettingsInner = () => {
   const { status, data, refetch } = useUserMe();
-  const { t } = useTranslation();
   const { mutateAsync } = useUpdateUserMe();
   const { onOpen: onOpenPricingDialog } = useContext(PricingDialogContext);
   const { redirectToLogin } = useLogin();

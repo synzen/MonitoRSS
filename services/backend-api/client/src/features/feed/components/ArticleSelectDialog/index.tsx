@@ -33,8 +33,8 @@ import { Loading, Menu, ThemedSelect } from "@/components";
 import { useUserFeedArticleProperties, useUserFeedArticlesWithPagination } from "../../hooks";
 import getChakraColor from "../../../../utils/getChakraColor";
 import { useDebounce } from "../../../../hooks";
-import { useGetUserFeedArticlesError } from "../../../feedConnections/hooks";
-import { DiscordFormatOptions } from "../../../../types/DiscordFormatOptions";
+import { useGetUserFeedArticlesError } from "@/features/feedConnections";
+import { DiscordFormatOptions } from "@/types/discord/DiscordFormatOptions";
 
 interface Props {
   feedId: string;

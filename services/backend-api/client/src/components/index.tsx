@@ -1,5 +1,4 @@
 export * from "./CategoryText";
-export * from "./DashboardContent";
 export * from "./Loading";
 export * from "./Menu";
 export * from "./Navbar";
@@ -15,6 +14,4 @@ export * from "./AnimatedComponent";
 export * from "./NewHeader";
 export * from "./SaveUnsavedChangesPopupBar";
 export * from "./FAQ";
-export * from "./SubscriberBlockText";
 export * from "./ResizablePanel";
-export * from "./DiscordMessageDisplay";

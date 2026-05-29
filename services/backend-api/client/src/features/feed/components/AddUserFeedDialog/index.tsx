@@ -47,7 +47,7 @@ import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage copy
 import { useCreateUserFeedUrlValidation } from "../../hooks/useCreateUserFeedUrlValidation";
 import { pages, ProductKey } from "../../../../constants";
 import { useDiscordUserMe, useUserMe } from "../../../discordUser";
-import { PricingDialogContext } from "../../../../contexts";
+import { PricingDialogContext } from "@/features/subscriptionProducts";
 
 const formSchema = object({
   title: string().optional(),

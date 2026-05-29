@@ -117,7 +117,6 @@ export const SetupChecklistCard = ({ feed, onAddConnection }: SetupChecklistCard
               </Box>
             )}
           </Box>
-
           <Box flex={1} minW={0}>
             <Text fontWeight="bold" noOfLines={1} title={feed.title}>
               {feed.title}
@@ -126,13 +125,11 @@ export const SetupChecklistCard = ({ feed, onAddConnection }: SetupChecklistCard
               {domain}
             </Text>
           </Box>
-
           <HStack spacing={3} flexShrink={0} display={{ base: "none", md: "flex" }}>
             {statusIndicator}
             {connectionButton()}
           </HStack>
         </HStack>
-
         <Box display={{ base: "block", md: "none" }}>
           <Box mb={3}>{statusIndicator}</Box>
           {connectionButton("full")}

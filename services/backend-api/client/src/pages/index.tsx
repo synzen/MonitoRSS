@@ -4,13 +4,14 @@ import { Heading, Spinner, Stack } from "@chakra-ui/react";
 import { Suspense } from "react";
 import { RequireAuth } from "@/features/auth";
 import { PageContentV2 } from "../components/PageContentV2";
+import { AppHeader } from "./AppHeader";
 import { pages } from "../constants";
 import { FeedConnectionType } from "../types";
-import { Loading, NewHeader } from "../components";
-import { UserFeedStatusFilterProvider } from "../contexts";
+import { Loading } from "../components";
+import { UserFeedStatusFilterProvider, MultiSelectUserFeedProvider } from "@/features/feed";
 import { NotFound } from "./NotFound";
 import { SuspenseErrorBoundary } from "../components/SuspenseErrorBoundary";
-import { MultiSelectUserFeedProvider } from "../contexts/MultiSelectUserFeedContext";
+
 import { lazyWithRetries } from "../utils/lazyImportWithRetry";
 
 const MessageBuilder = lazyWithRetries(() =>
@@ -25,8 +26,8 @@ const UserFeed = lazyWithRetries(() =>
   import("./UserFeed").then(({ UserFeed: c }) => ({ default: c })),
 );
 
-const ConnectionDiscordChannelSettings = lazyWithRetries(() =>
-  import("./ConnectionDiscordChannelSettings").then(({ ConnectionDiscordChannelSettings: c }) => ({
+const ConnectionSettings = lazyWithRetries(() =>
+  import("./ConnectionSettings").then(({ ConnectionSettings: c }) => ({
     default: c,
   })),
 );
@@ -51,7 +52,7 @@ const Pages: React.FC = () => (
       path={pages.checkout(":priceId")}
       element={
         <RequireAuth>
-          <PageContentV2 invertBackground>
+          <PageContentV2 header={<AppHeader invertBackground />}>
             <SuspenseErrorBoundary>
               <Suspense fallback={<Spinner mt={24} />}>
                 <Checkout cancelUrl={pages.userFeeds()} />
@@ -65,7 +66,7 @@ const Pages: React.FC = () => (
       path={pages.userSettings()}
       element={
         <RequireAuth>
-          <PageContentV2>
+          <PageContentV2 header={<AppHeader />}>
             <SuspenseErrorBoundary>
               <Suspense fallback={<Spinner mt={24} />}>
                 <UserSettings />
@@ -79,7 +80,7 @@ const Pages: React.FC = () => (
       path={pages.addFeeds()}
       element={
         <RequireAuth waitForUserFetch>
-          <NewHeader invertBackground />
+          <AppHeader invertBackground />
           <Suspense fallback={<Spinner mt={24} />}>
             <AddUserFeeds />
           </Suspense>
@@ -90,7 +91,7 @@ const Pages: React.FC = () => (
       path={pages.userFeeds()}
       element={
         <RequireAuth waitForUserFetch>
-          <NewHeader />
+          <AppHeader />
           <Suspense fallback={<Spinner mt={24} />}>
             <MultiSelectUserFeedProvider>
               <UserFeedStatusFilterProvider>
@@ -105,7 +106,7 @@ const Pages: React.FC = () => (
       path={pages.userFeed(":feedId")}
       element={
         <RequireAuth>
-          <PageContentV2>
+          <PageContentV2 header={<AppHeader />}>
             <Suspense fallback={<Spinner mt={24} />}>
               <UserFeed />
             </Suspense>
@@ -121,9 +122,9 @@ const Pages: React.FC = () => (
       })}
       element={
         <RequireAuth>
-          <PageContentV2>
+          <PageContentV2 header={<AppHeader />}>
             <Suspense fallback={<Spinner mt={24} />}>
-              <ConnectionDiscordChannelSettings />
+              <ConnectionSettings connectionType={FeedConnectionType.DiscordChannel} />
             </Suspense>
           </PageContentV2>
         </RequireAuth>

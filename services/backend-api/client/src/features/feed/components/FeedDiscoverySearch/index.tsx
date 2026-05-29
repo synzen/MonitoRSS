@@ -35,6 +35,9 @@ import { PlatformHint, getNoResultsAnnouncement, getPlatformHint } from "./Platf
 import { getFeedCardPropsFromState } from "../../types/FeedActionState";
 import { createDiscoverySearchEvent } from "../../api/createDiscoverySearchEvent";
 
+/* eslint-disable react/no-unused-prop-types --
+   These props are consumed via useFeedDiscoverySearchState(props); react/no-unused-prop-types
+   cannot trace usage through the custom hook, so it false-positives on each field. */
 interface FeedDiscoverySearchProps {
   feedActionStates: Record<string, FeedActionState>;
   isAtLimit: boolean;
@@ -45,6 +48,7 @@ interface FeedDiscoverySearchProps {
   onFeedAdded?: (feedId: string, feedUrl: string) => void;
   onFeedRemoved?: (feedUrl: string) => void;
 }
+/* eslint-enable react/no-unused-prop-types */
 
 const URL_PATTERN = /^https?:\/\//;
 const BATCH_SIZE = 20;
@@ -75,18 +79,21 @@ export function useFeedDiscoverySearchState({
   const isUrlInput = URL_PATTERN.test(activeQuery);
   const hasPlatformHint = !!activeQuery && !isUrlInput && !!getPlatformHint(activeQuery);
   const shouldFetchCurated = !!activeQuery && !isUrlInput && !hasPlatformHint;
+
+  let curatedParams: Parameters<typeof useCuratedFeeds>[0];
+
+  if (shouldFetchCurated) {
+    curatedParams = { search: activeQuery };
+  } else if (hasPlatformHint) {
+    curatedParams = { search: activeQuery, enabled: false };
+  }
+
   const {
     data,
     isFetching: isCuratedFetching,
     error: curatedError,
     refetch: refetchCurated,
-  } = useCuratedFeeds(
-    shouldFetchCurated
-      ? { search: activeQuery }
-      : hasPlatformHint
-        ? { search: activeQuery, enabled: false }
-        : undefined,
-  );
+  } = useCuratedFeeds(curatedParams);
   const isSearching = isCuratedFetching && shouldFetchCurated;
   const hasCuratedError = !!curatedError && shouldFetchCurated;
 
@@ -101,7 +108,7 @@ export function useFeedDiscoverySearchState({
       searchTerm: activeQuery,
       resultCount: totalResults,
     }).catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Fire one analytics event per committed search term, not on every result-count change
   }, [activeQuery]);
 
   const setInputRef = useCallback(
@@ -109,6 +116,8 @@ export function useFeedDiscoverySearchState({
       (inputRef as MutableRefObject<HTMLInputElement | null>).current = node;
 
       if (searchInputRef) {
+        // Forwarded ref: assigning .current is the standard ref-merge pattern
+        // eslint-disable-next-line no-param-reassign
         (searchInputRef as MutableRefObject<HTMLInputElement | null>).current = node;
       }
     },
@@ -197,6 +206,7 @@ export function useFeedDiscoverySearchState({
 
       if (URL_PATTERN.test(trimmed)) {
         resetValidation();
+
         try {
           await validateUrl({ details: { url: trimmed } });
         } catch {
@@ -244,11 +254,16 @@ type SearchStateReturn = ReturnType<typeof useFeedDiscoverySearchState>;
 function getSearchAnnouncement(state: SearchStateReturn): string {
   if (!state.hasActiveSearch || state.isUrlInput) return "";
   if (state.isSearching) return `Loading search results for ${state.activeQuery}`;
+
   if (state.hasCuratedError) {
     return `Failed to load search results for ${state.activeQuery}`;
   }
+
   if (state.totalResults === 0) return getNoResultsAnnouncement(state.activeQuery);
-  return `${state.totalResults} result${state.totalResults !== 1 ? "s" : ""} for ${state.activeQuery}`;
+
+  return `${state.totalResults} result${state.totalResults !== 1 ? "s" : ""} for ${
+    state.activeQuery
+  }`;
 }
 
 export const FeedDiscoverySearchInput = ({ state }: { state: SearchStateReturn }) => (
@@ -267,6 +282,7 @@ export const FeedDiscoverySearchInput = ({ state }: { state: SearchStateReturn }
             value={state.inputValue}
             onChange={(e) => state.setInputValue(e.target.value)}
             placeholder="Search popular feeds or paste a URL"
+            aria-label="Search popular feeds or paste a URL"
             bg="gray.800"
           />
           {state.inputValue && (
@@ -326,7 +342,6 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
           </Text>
         </Box>
       )}
-
       <Box mt={3}>
         {state.totalResults > 0 && (
           <Stack
@@ -366,7 +381,6 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
             })}
           </Stack>
         )}
-
         {state.isUrlInput && (
           <UrlValidationResult
             url={state.activeQuery}
@@ -380,12 +394,10 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
             onFeedRemoved={state.onFeedRemoved}
           />
         )}
-
         {!state.isUrlInput && state.totalResults === 0 && (
           <PlatformHint query={state.activeQuery} />
         )}
       </Box>
-
       {state.totalResults > state.visibleCount && (
         <Button mt={3} onClick={state.handleShowMore} variant="outline" width="full">
           Show more

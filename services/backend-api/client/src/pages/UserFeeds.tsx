@@ -54,8 +54,8 @@ import { ApiErrorCode } from "../utils/getStandardErrorCodeMessage copy";
 import ApiAdapterError from "../utils/ApiAdapterError";
 import { pages } from "../constants";
 import { BoxConstrained, ConfirmModal } from "../components";
-import { UserFeedStatusFilterContext } from "../contexts";
-import { useMultiSelectUserFeedContext } from "../contexts/MultiSelectUserFeedContext";
+import { UserFeedStatusFilterContext, useMultiSelectUserFeedContext } from "@/features/feed";
+
 import {
   PageAlertContextOutlet,
   PageAlertProvider,
@@ -64,7 +64,7 @@ import {
 import { CopyUserFeedSettingsDialog } from "../features/feed/components/CopyUserFeedSettingsDialog";
 import { SetupChecklist } from "../features/feed/components/SetupChecklist";
 import { useUnconfiguredFeeds } from "../features/feed/hooks/useUnconfiguredFeeds";
-import { ReducedLimitAlert } from "../components/ReducedLimitAlert";
+import { ReducedLimitAlert } from "@/features/subscriptionProducts";
 
 export const UserFeeds = () => {
   return (
@@ -185,12 +185,14 @@ const UserFeedsInner: React.FC = () => {
 
   useEffect(() => {
     const addFeedQuery = searchParams.get("addFeed");
+
     if (addFeedQuery && !addFeedParamConsumed.current) {
       addFeedParamConsumed.current = true;
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
           next.delete("addFeed");
+
           return next;
         },
         { replace: true },
@@ -231,6 +233,7 @@ const UserFeedsInner: React.FC = () => {
   const handleCuratedFeedAdd = useCallback(
     async (feed: CuratedFeed) => {
       setFeedActionStates((prev) => ({ ...prev, [feed.id]: { status: "adding" } }));
+
       try {
         const { result } = await createUserFeed({
           details: { curatedFeedId: feed.id, title: feed.title },
@@ -246,8 +249,10 @@ const UserFeedsInner: React.FC = () => {
         setModalSessionAddCount((prev) => prev + 1);
       } catch (err) {
         const apiError = err as ApiAdapterError;
+
         if (apiError.errorCode === ApiErrorCode.FEED_LIMIT_REACHED) {
           setFeedActionStates((prev) => ({ ...prev, [feed.id]: { status: "limit-reached" } }));
+
           if (!limitAlertShownRef.current) {
             limitAlertShownRef.current = true;
             createInfoAlert({
@@ -275,11 +280,13 @@ const UserFeedsInner: React.FC = () => {
   const handleCuratedFeedRemove = useCallback(
     async (feedKey: string) => {
       const currentState = feedActionStates[feedKey];
+
       if (
         !currentState ||
         (currentState.status !== "added" && currentState.status !== "remove-error")
-      )
+      ) {
         return;
+      }
 
       const { feedId, settingsUrl } = currentState;
 
@@ -290,6 +297,7 @@ const UserFeedsInner: React.FC = () => {
         setFeedActionStates((prev) => {
           const next = { ...prev };
           delete next[feedKey];
+
           return next;
         });
         setModalSessionAddCount((prev) => Math.max(prev - 1, 0));
@@ -320,6 +328,7 @@ const UserFeedsInner: React.FC = () => {
     setFeedActionStates((prev) => {
       const next = { ...prev };
       delete next[feedUrl];
+
       return next;
     });
     setModalSessionAddCount((prev) => Math.max(prev - 1, 0));
@@ -344,6 +353,7 @@ const UserFeedsInner: React.FC = () => {
 
   const handleBrowseModalClose = useCallback(() => {
     setIsBrowseModalOpen(false);
+
     if (!isInDiscoveryMode && modalSessionAddCount > 0) {
       createSuccessAlert({
         title: `${modalSessionAddCount} feed${modalSessionAddCount !== 1 ? "s" : ""} added`,
@@ -668,100 +678,93 @@ const UserFeedsInner: React.FC = () => {
         )}
       </Stack>
       {isInDiscoveryMode && (
-        <>
-          <Box>
-            <Stack spacing={6} py={8}>
-              <Stack textAlign="center" spacing={2} role="status" aria-live="polite">
-                {addedFeedKeys.length > 0 ? (
-                  <Stack
-                    textAlign="center"
-                    spacing={3}
-                    bg="gray.800"
-                    borderWidth="1px"
-                    borderColor="whiteAlpha.200"
-                    borderRadius="md"
-                    p={6}
-                    alignItems="center"
-                  >
-                    <CheckCircleIcon color="green.400" boxSize={8} aria-hidden="true" />
-                    <Heading as="h2" size="lg">
-                      {addedFeedKeys.length} feed{addedFeedKeys.length !== 1 ? "s" : ""} added!
-                    </Heading>
-                    <Text color="gray.400">
-                      Add more feeds below, or view your feeds to set up delivery.
-                    </Text>
-                    <Box>
-                      <Button colorScheme="blue" size="sm" onClick={handleExitDiscovery}>
-                        View your feeds{" "}
-                        <Box as="span" aria-hidden="true">
-                          &rarr;
-                        </Box>
-                      </Button>
-                    </Box>
-                  </Stack>
-                ) : (
-                  <>
-                    <Heading as="h2" size="lg">
-                      Get news delivered to your Discord
-                    </Heading>
-                    <Text color="gray.400">
-                      Browse popular feeds to get started, or paste a URL to check any website.
-                    </Text>
-                  </>
-                )}
-              </Stack>
-
-              <Stack spacing={2}>
-                <FeedDiscoverySearch
-                  feedActionStates={feedActionStates}
-                  isAtLimit={isAtLimit}
-                  onAdd={handleCuratedFeedAdd}
-                  onRemove={handleCuratedFeedRemove}
-                  onSearchChange={handleSearchChange}
-                  onFeedAdded={handleUrlFeedAdded}
-                  onFeedRemoved={handleUrlFeedRemoved}
-                />
-                {!isSearchActive && (
-                  <Text color="gray.400" fontSize="sm" textAlign="center">
-                    Many websites support feeds - try pasting a YouTube channel, subreddit, blog, or
-                    news site URL
+        <Box>
+          <Stack spacing={6} py={8}>
+            <Stack textAlign="center" spacing={2} role="status" aria-live="polite">
+              {addedFeedKeys.length > 0 ? (
+                <Stack
+                  textAlign="center"
+                  spacing={3}
+                  bg="gray.800"
+                  borderWidth="1px"
+                  borderColor="whiteAlpha.200"
+                  borderRadius="md"
+                  p={6}
+                  alignItems="center"
+                >
+                  <CheckCircleIcon color="green.400" boxSize={8} aria-hidden="true" />
+                  <Heading as="h2" size="lg">
+                    {addedFeedKeys.length} feed{addedFeedKeys.length !== 1 ? "s" : ""} added!
+                  </Heading>
+                  <Text color="gray.400">
+                    Add more feeds below, or view your feeds to set up delivery.
                   </Text>
-                )}
-                <FeedLimitBar showOnlyWhenConstrained />
-              </Stack>
-
-              {curatedLoading && !isSearchActive && (
-                <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={4}>
-                  {Array.from({ length: 8 }, (_, i) => (
-                    <Skeleton key={i} height="80px" borderRadius="md" />
-                  ))}
-                </SimpleGrid>
-              )}
-              {!!curatedError && !curatedLoading && (
-                <Alert status="error">
-                  <AlertIcon />
-                  <AlertDescription>
-                    Failed to load feeds.{" "}
-                    <Button variant="link" onClick={() => curatedRefetch()} colorScheme="blue">
-                      Retry
+                  <Box>
+                    <Button colorScheme="blue" size="sm" onClick={handleExitDiscovery}>
+                      View your feeds{" "}
+                      <Box as="span" aria-hidden="true">
+                        &rarr;
+                      </Box>
                     </Button>
-                  </AlertDescription>
-                </Alert>
+                  </Box>
+                </Stack>
+              ) : (
+                <>
+                  <Heading as="h2" size="lg">
+                    Get news delivered to your Discord
+                  </Heading>
+                  <Text color="gray.400">
+                    Browse popular feeds to get started, or paste a URL to check any website.
+                  </Text>
+                </>
               )}
-              {!isSearchActive &&
-                curatedData &&
-                !curatedLoading &&
-                curatedData.feeds.length > 0 && (
-                  <CategoryGrid
-                    categories={curatedData.categories}
-                    totalFeedCount={curatedData.feeds.length ?? 0}
-                    getCategoryPreviewText={getCategoryPreviewText}
-                    onSelectCategory={handleOpenBrowseModal}
-                  />
-                )}
             </Stack>
-          </Box>
-        </>
+            <Stack spacing={2}>
+              <FeedDiscoverySearch
+                feedActionStates={feedActionStates}
+                isAtLimit={isAtLimit}
+                onAdd={handleCuratedFeedAdd}
+                onRemove={handleCuratedFeedRemove}
+                onSearchChange={handleSearchChange}
+                onFeedAdded={handleUrlFeedAdded}
+                onFeedRemoved={handleUrlFeedRemoved}
+              />
+              {!isSearchActive && (
+                <Text color="gray.400" fontSize="sm" textAlign="center">
+                  Many websites support feeds - try pasting a YouTube channel, subreddit, blog, or
+                  news site URL
+                </Text>
+              )}
+              <FeedLimitBar showOnlyWhenConstrained />
+            </Stack>
+            {curatedLoading && !isSearchActive && (
+              <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={4}>
+                {Array.from({ length: 8 }, (_, i) => (
+                  <Skeleton key={i} height="80px" borderRadius="md" />
+                ))}
+              </SimpleGrid>
+            )}
+            {!!curatedError && !curatedLoading && (
+              <Alert status="error">
+                <AlertIcon />
+                <AlertDescription>
+                  Failed to load feeds.{" "}
+                  <Button variant="link" onClick={() => curatedRefetch()} colorScheme="blue">
+                    Retry
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+            {!isSearchActive && curatedData && !curatedLoading && curatedData.feeds.length > 0 && (
+              <CategoryGrid
+                categories={curatedData.categories}
+                totalFeedCount={curatedData.feeds.length ?? 0}
+                getCategoryPreviewText={getCategoryPreviewText}
+                onSelectCategory={handleOpenBrowseModal}
+              />
+            )}
+          </Stack>
+        </Box>
       )}
       {isInDiscoveryMode === false && <UserFeedsTable />}
       <BrowseFeedsModal

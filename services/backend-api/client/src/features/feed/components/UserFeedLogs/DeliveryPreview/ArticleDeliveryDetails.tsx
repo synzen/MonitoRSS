@@ -23,7 +23,7 @@ import {
   ArticleDeliveryResult,
   MediumDeliveryResult,
 } from "../../../types/DeliveryPreview";
-import { useUserFeedContext } from "../../../../../contexts/UserFeedContext";
+import { useUserFeedContext } from "../../../contexts/UserFeedContext";
 import { pages } from "../../../../../constants";
 import { FeedConnectionType } from "../../../../../types";
 import { DeliveryChecksModal } from "./DeliveryChecksModal";

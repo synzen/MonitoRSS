@@ -3,9 +3,10 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { CuratedFeed, CuratedCategory } from "../../types";
-import { PricingDialogContext } from "../../../../contexts";
+import { PricingDialogContext } from "@/features/subscriptionProducts";
 import { BrowseFeedsModal } from "./index";
 
 const mockCategories: Array<CuratedCategory & { count: number }> = [
@@ -33,7 +34,7 @@ function makeHighlightFeeds(): CuratedFeed[] {
   const feeds: CuratedFeed[] = [];
 
   mockCategories.forEach((cat) => {
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 3; i += 1) {
       feeds.push(
         makeFeed({
           id: `mock-${cat.id}-${i}`,
@@ -129,14 +130,19 @@ const defaultProps = {
 
 const renderModal = (props: Partial<React.ComponentProps<typeof BrowseFeedsModal>> = {}) => {
   const user = userEvent.setup();
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   const result = render(
-    <ChakraProvider>
-      <MemoryRouter>
-        <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
-          <BrowseFeedsModal {...defaultProps} {...props} />
-        </PricingDialogContext.Provider>
-      </MemoryRouter>
-    </ChakraProvider>,
+    <QueryClientProvider client={queryClient}>
+      <ChakraProvider>
+        <MemoryRouter>
+          <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
+            <BrowseFeedsModal {...defaultProps} {...props} />
+          </PricingDialogContext.Provider>
+        </MemoryRouter>
+      </ChakraProvider>
+    </QueryClientProvider>,
   );
 
   return { user, ...result };
@@ -367,7 +373,7 @@ describe("BrowseFeedsModal", () => {
         <ChakraProvider>
           <MemoryRouter>
             <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
-              <BrowseFeedsModal {...defaultProps} initialCategory="sports" isOpen={true} />
+              <BrowseFeedsModal {...defaultProps} initialCategory="sports" isOpen />
             </PricingDialogContext.Provider>
           </MemoryRouter>
         </ChakraProvider>,
@@ -378,7 +384,7 @@ describe("BrowseFeedsModal", () => {
     });
 
     it("re-opening with no initialCategory shows highlights view", async () => {
-      const { user, rerender } = renderModal({ initialCategory: "gaming" });
+      const { rerender } = renderModal({ initialCategory: "gaming" });
 
       expect(screen.getByRole("radio", { name: /Gaming/ })).toHaveAttribute("aria-checked", "true");
 
@@ -396,7 +402,7 @@ describe("BrowseFeedsModal", () => {
         <ChakraProvider>
           <MemoryRouter>
             <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
-              <BrowseFeedsModal {...defaultProps} initialCategory={undefined} isOpen={true} />
+              <BrowseFeedsModal {...defaultProps} initialCategory={undefined} isOpen />
             </PricingDialogContext.Provider>
           </MemoryRouter>
         </ChakraProvider>,
@@ -521,7 +527,7 @@ describe("BrowseFeedsModal", () => {
       expect(disabledButtons.length).toBeGreaterThan(0);
       disabledButtons.forEach((btn) => {
         expect(btn).toHaveAttribute("aria-disabled", "true");
-        expect(btn).toHaveTextContent("+ Add");
+        expect(btn).toHaveTextContent("Limit reached");
       });
     });
   });
@@ -544,7 +550,7 @@ describe("BrowseFeedsModal", () => {
 
     it("adding state shows spinner on card in category view", async () => {
       const firstFeed = allHighlightFeeds.find((f) => f.category === "gaming")!;
-      const { user } = renderModal({
+      renderModal({
         feedActionStates: { [firstFeed.id]: { status: "adding" } },
         initialCategory: "gaming",
       });
@@ -566,7 +572,7 @@ describe("BrowseFeedsModal", () => {
       });
 
       const addedButton = screen.getByRole("button", {
-        name: `${firstFeed.title} feed added`,
+        name: `Go to feed settings for ${firstFeed.title}`,
       });
       expect(addedButton).toBeInTheDocument();
     });
@@ -602,14 +608,14 @@ describe("BrowseFeedsModal", () => {
       });
 
       expect(
-        screen.getByRole("button", { name: `${gamingFeed.title} feed added` }),
+        screen.getByRole("button", { name: `Go to feed settings for ${gamingFeed.title}` }),
       ).toBeInTheDocument();
 
       await user.click(screen.getByRole("radio", { name: /Anime/ }));
       await user.click(screen.getByRole("radio", { name: /Gaming/ }));
 
       expect(
-        screen.getByRole("button", { name: `${gamingFeed.title} feed added` }),
+        screen.getByRole("button", { name: `Go to feed settings for ${gamingFeed.title}` }),
       ).toBeInTheDocument();
     });
 
@@ -622,7 +628,7 @@ describe("BrowseFeedsModal", () => {
       const { rerender } = renderModal({ feedActionStates, initialCategory: "gaming" });
 
       expect(
-        screen.getByRole("button", { name: `${firstFeed.title} feed added` }),
+        screen.getByRole("button", { name: `Go to feed settings for ${firstFeed.title}` }),
       ).toBeInTheDocument();
 
       rerender(
@@ -648,7 +654,7 @@ describe("BrowseFeedsModal", () => {
                 {...defaultProps}
                 feedActionStates={feedActionStates}
                 initialCategory="gaming"
-                isOpen={true}
+                isOpen
               />
             </PricingDialogContext.Provider>
           </MemoryRouter>
@@ -656,7 +662,7 @@ describe("BrowseFeedsModal", () => {
       );
 
       expect(
-        screen.getByRole("button", { name: `${firstFeed.title} feed added` }),
+        screen.getByRole("button", { name: `Go to feed settings for ${firstFeed.title}` }),
       ).toBeInTheDocument();
     });
   });

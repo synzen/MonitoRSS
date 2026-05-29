@@ -39,7 +39,7 @@ import { UserFeedDeliveryLogStatus } from "../../../types";
 import { InlineErrorAlert } from "../../../../../components";
 import { pages } from "../../../../../constants";
 import { FeedConnectionType } from "../../../../../types";
-import { useUserFeedContext } from "../../../../../contexts/UserFeedContext";
+import { useUserFeedContext } from "../../../contexts/UserFeedContext";
 
 const createStatusLabel = ({ status }: { status: UserFeedDeliveryLogStatus }) => {
   if (status === UserFeedDeliveryLogStatus.DELIVERED) {

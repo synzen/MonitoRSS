@@ -17,33 +17,7 @@ import setupMockBrowserWorker from "./mocks/browser";
 import { ForceDarkMode } from "./components/ForceDarkMode";
 import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
 import App from "./App";
-import { PricingDialogProvider } from "./contexts";
-import { PaddleContextProvider } from "./contexts/PaddleContext";
-
-class GoogleTranslateError extends Error {
-  message = "Google Translate crash was prevented";
-}
-
-function stringifyNode(node: Node): string {
-  let text = "";
-
-  if (node instanceof Text) {
-    text = node.wholeText;
-  } else if (node instanceof Element) {
-    text = node.outerHTML;
-  } else {
-    text = node.textContent || "";
-  }
-
-  return JSON.stringify(
-    {
-      nodeType: node.nodeType,
-      text,
-    },
-    null,
-    2,
-  );
-}
+import { PricingDialogProvider, PaddleContextProvider } from "@/features/subscriptionProducts";
 
 /**
  * From https://github.com/facebook/react/issues/11538#issuecomment-417504600
