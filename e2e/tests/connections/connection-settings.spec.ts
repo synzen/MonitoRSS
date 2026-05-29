@@ -5,6 +5,8 @@ import {
   getTestServerName,
   createWebhookConnection,
   createConnection,
+  createFeed,
+  deleteFeed,
   updateConnection,
 } from "../../helpers/api";
 import {
@@ -298,6 +300,105 @@ test.describe("Connection Settings", () => {
       });
     } finally {
       await clearSupporterStatusInDb(discordUserId);
+    }
+  });
+
+  test("can clone a connection to all matching feeds except excluded ones", async ({
+    page,
+    testFeed,
+  }) => {
+    const channelId = getTestChannelId();
+
+    test.skip(!channelId, "channelId must be configured in e2econfig.json");
+
+    const connectionName = `Clone Exclude Source ${Date.now()}`;
+    const clonedName = `Cloned Exclude ${Date.now()}`;
+
+    const sourceConnection = await createConnection(
+      page,
+      testFeed.id,
+      channelId!,
+      { name: connectionName },
+    );
+
+    const targetFeed1 = await createFeed(page, {
+      title: `Clone Exclude Target 1 ${testFeed.id}`,
+    });
+    const excludedFeed = await createFeed(page, {
+      title: `Clone Exclude Target 2 ${testFeed.id}`,
+    });
+    const targetFeed3 = await createFeed(page, {
+      title: `Clone Exclude Target 3 ${testFeed.id}`,
+    });
+
+    // Asserts through the UI (by visiting the feed's connections view) whether
+    // the cloned connection landed on a given feed.
+    const expectClonedConnectionOnFeed = async (
+      feed: { id: string; title: string },
+      shouldExist: boolean,
+    ) => {
+      await page.goto(`/feeds/${feed.id}?view=connections`);
+      await expect(
+        page.getByRole("heading", { name: feed.title }),
+      ).toBeVisible({ timeout: 10000 });
+
+      const clonedConnectionLink = page.getByRole("link", { name: clonedName });
+
+      if (shouldExist) {
+        await expect(clonedConnectionLink).toBeVisible({ timeout: 10000 });
+      } else {
+        await expect(clonedConnectionLink).toHaveCount(0);
+      }
+    };
+
+    try {
+      await page.goto(
+        `/feeds/${testFeed.id}/discord-channel-connections/${sourceConnection.id}`,
+      );
+      await expect(
+        page.getByRole("heading", { name: connectionName }),
+      ).toBeVisible({ timeout: 10000 });
+
+      await page
+        .getByRole("button", { name: "Connection Actions" })
+        .click();
+      await page.getByRole("menuitem").filter({ hasText: "Clone" }).click();
+
+      const dialog = page.getByRole("dialog");
+      await expect(dialog.getByText("Clone connection")).toBeVisible({
+        timeout: 10000,
+      });
+
+      await dialog.locator("input").first().fill(clonedName);
+
+      // Select all matching feeds, then exclude one (checkboxes stay enabled
+      // under Select all).
+      const selectAll = dialog.getByRole("checkbox", {
+        name: /Select all \d+ matching feeds/,
+      });
+      await selectAll.scrollIntoViewIfNeeded();
+      await selectAll.click({ force: true });
+
+      const excludedCheckbox = dialog.getByRole("checkbox", {
+        name: new RegExp(excludedFeed.title),
+      });
+      await excludedCheckbox.scrollIntoViewIfNeeded();
+      await excludedCheckbox.click({ force: true });
+
+      await dialog.getByRole("button", { name: "Clone" }).click();
+
+      await expect(
+        page.getByText(`Successfully created cloned connection: ${clonedName}`),
+      ).toBeVisible({ timeout: 30000 });
+
+      // Non-excluded feeds received the cloned connection; the excluded one did not.
+      await expectClonedConnectionOnFeed(targetFeed1, true);
+      await expectClonedConnectionOnFeed(targetFeed3, true);
+      await expectClonedConnectionOnFeed(excludedFeed, false);
+    } finally {
+      await deleteFeed(page, targetFeed1.id);
+      await deleteFeed(page, excludedFeed.id);
+      await deleteFeed(page, targetFeed3.id);
     }
   });
 
