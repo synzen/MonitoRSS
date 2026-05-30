@@ -276,6 +276,60 @@ test.describe("Feed Discovery", () => {
     });
   });
 
+  test.describe("Platform Hints", () => {
+    test("shows YouTube hint after browse catalog loads then user searches 'youtube'", async ({
+      page,
+    }) => {
+      await page.goto("/feeds");
+      await expect(
+        page.getByRole("heading", {
+          name: "Get news delivered to your Discord",
+        }),
+      ).toBeVisible({ timeout: 15000 });
+
+      // Wait for the default browse catalog to finish loading so there is stale
+      // data in the React Query cache — the exact scenario that triggered the bug.
+      await expect(
+        page.getByRole("radiogroup", { name: "Feed categories" }),
+      ).toBeVisible();
+
+      const searchInput = page.getByRole("textbox", {
+        name: "Search popular feeds or paste a URL",
+      });
+      await searchInput.fill("youtube");
+      await page.getByRole("button", { name: "Go" }).click();
+
+      await expect(
+        page.getByText("To add a YouTube channel, paste the channel URL.", { exact: true }),
+      ).toBeVisible({ timeout: 5000 });
+    });
+
+    test("shows Reddit hint after browse catalog loads then user searches 'reddit'", async ({
+      page,
+    }) => {
+      await page.goto("/feeds");
+      await expect(
+        page.getByRole("heading", {
+          name: "Get news delivered to your Discord",
+        }),
+      ).toBeVisible({ timeout: 15000 });
+
+      await expect(
+        page.getByRole("radiogroup", { name: "Feed categories" }),
+      ).toBeVisible();
+
+      const searchInput = page.getByRole("textbox", {
+        name: "Search popular feeds or paste a URL",
+      });
+      await searchInput.fill("reddit");
+      await page.getByRole("button", { name: "Go" }).click();
+
+      await expect(
+        page.getByText("To add a subreddit, paste the subreddit URL.", { exact: true }),
+      ).toBeVisible({ timeout: 5000 });
+    });
+  });
+
   test.describe("Empty State - Adding Feeds", () => {
     test.afterAll(async ({ browser }) => {
       const context = await createAuthenticatedContext(browser);

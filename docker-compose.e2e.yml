@@ -13,7 +13,7 @@ services:
       - /data/db
       - /data/configdb
     ports:
-      - "27018:27017"
+      - "27019:27017"
     command: ["--replSet", "dbrs", "--bind_ip_all", "--port", "27017"]
     networks:
       - e2e-default
