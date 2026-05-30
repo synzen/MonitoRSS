@@ -47,7 +47,7 @@ import { useNavigate, Link as RouterLink } from "react-router-dom";
 import { BoxConstrained } from "../components";
 import { AutoResizeTextarea } from "../components/AutoResizeTextarea";
 import { pages, ProductKey } from "../constants";
-import { useCreateUserFeed, useUserFeeds } from "../features/feed";
+import { ensureUrlScheme, useCreateUserFeed, useUserFeeds } from "../features/feed";
 import { useCreateUserFeedUrlValidation } from "../features/feed/hooks/useCreateUserFeedUrlValidation";
 import { useDiscordUserMe, useUserMe } from "../features/discordUser";
 import { PricingDialogContext } from "@/features/subscriptionProducts";
@@ -494,7 +494,12 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
 
   const onChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setError(undefined);
-    setUrls(e.target.value.split("\n").filter((url) => url.trim().length > 0));
+    setUrls(
+      e.target.value
+        .split("\n")
+        .filter((url) => url.trim().length > 0)
+        .map(ensureUrlScheme),
+    );
   };
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {

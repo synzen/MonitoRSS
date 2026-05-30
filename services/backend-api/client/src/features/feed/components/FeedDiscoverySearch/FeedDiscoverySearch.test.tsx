@@ -420,6 +420,39 @@ describe("FeedDiscoverySearch", () => {
 
       expect(mockValidateUrl).not.toHaveBeenCalled();
     });
+
+    it("scheme-less URL with a path triggers validation with https:// prepended", async () => {
+      const { user } = renderSearch();
+
+      const input = screen.getByLabelText("Search popular feeds or paste a URL");
+      await user.type(input, "www.youtube.com/@ChannelName{Enter}");
+
+      expect(mockValidateUrl).toHaveBeenCalledWith({
+        details: { url: "https://www.youtube.com/@ChannelName" },
+      });
+    });
+
+    it("renders UrlValidationResult with the normalized URL for a scheme-less URL", async () => {
+      const { user } = renderSearch();
+
+      const input = screen.getByLabelText("Search popular feeds or paste a URL");
+      await user.type(input, "www.reddit.com/r/SubredditName{Enter}");
+
+      const result = screen.getByTestId("url-validation-result");
+      expect(result).toHaveAttribute("data-url", "https://www.reddit.com/r/SubredditName");
+    });
+
+    it("does not show the YouTube search hint when a YouTube URL is pasted", async () => {
+      const { user } = renderSearch();
+
+      const input = screen.getByLabelText("Search popular feeds or paste a URL");
+      await user.type(input, "www.youtube.com/@ChannelName{Enter}");
+
+      expect(
+        screen.queryByText("To add a YouTube channel, paste the channel URL."),
+      ).not.toBeInTheDocument();
+      expect(screen.getByTestId("url-validation-result")).toBeInTheDocument();
+    });
   });
 
   describe("Progressive disclosure", () => {

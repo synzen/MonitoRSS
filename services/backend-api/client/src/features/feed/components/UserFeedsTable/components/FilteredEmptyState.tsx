@@ -1,7 +1,6 @@
 import { Button, Center, Divider, Heading, Stack, Text } from "@chakra-ui/react";
 import { SearchIcon } from "@chakra-ui/icons";
-
-const URL_PATTERN = /^https?:\/\//;
+import { parseSearchInputAsUrl } from "../../../utils/normalizeUrlInput";
 
 interface FilteredEmptyStateProps {
   onClearAllFilters: () => void;
@@ -15,7 +14,7 @@ export const FilteredEmptyState: React.FC<FilteredEmptyStateProps> = ({
   onSearchForNewFeed,
 }) => {
   const trimmedSearch = searchTerm?.trim();
-  const isUrl = trimmedSearch && URL_PATTERN.test(trimmedSearch);
+  const isUrl = !!trimmedSearch && parseSearchInputAsUrl(trimmedSearch).isUrl;
 
   return (
     <Center py={16}>

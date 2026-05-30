@@ -23,6 +23,7 @@ import { useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useUserFeeds } from "../../hooks/useUserFeeds";
 import { useUserFeedsInfinite } from "../../hooks/useUserFeedsInfinite";
+import { parseSearchInputAsUrl } from "../../utils/normalizeUrlInput";
 import { pages } from "@/constants";
 
 const LIMIT = 20;
@@ -42,8 +43,6 @@ function debounce(func: Function, delay: number) {
     }, delay);
   };
 }
-
-const URL_PATTERN = /^https?:\/\//;
 
 export const SearchFeedsModal = () => {
   const { data: feedCountData } = useUserFeeds({ limit: 1, offset: 0 });
@@ -272,7 +271,7 @@ export const SearchFeedsModal = () => {
                     <Stack py={4} spacing={3} align="center">
                       <Text color="whiteAlpha.700">No feeds found.</Text>
                       {searchInput.trim() &&
-                        (URL_PATTERN.test(searchInput.trim()) ? (
+                        (parseSearchInputAsUrl(searchInput).isUrl ? (
                           <Stack spacing={1} align="center">
                             <Text fontSize="sm" color="whiteAlpha.700">
                               This looks like a feed URL.

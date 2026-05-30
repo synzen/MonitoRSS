@@ -34,6 +34,7 @@ import type { FeedActionState } from "../../types/FeedActionState";
 import { PlatformHint, getNoResultsAnnouncement, getPlatformHint } from "./PlatformHint";
 import { getFeedCardPropsFromState } from "../../types/FeedActionState";
 import { createDiscoverySearchEvent } from "../../api/createDiscoverySearchEvent";
+import { parseSearchInputAsUrl } from "../../utils/normalizeUrlInput";
 
 /* eslint-disable react/no-unused-prop-types --
    These props are consumed via useFeedDiscoverySearchState(props); react/no-unused-prop-types
@@ -50,7 +51,6 @@ interface FeedDiscoverySearchProps {
 }
 /* eslint-enable react/no-unused-prop-types */
 
-const URL_PATTERN = /^https?:\/\//;
 const BATCH_SIZE = 20;
 
 export function useFeedDiscoverySearchState({
@@ -76,7 +76,7 @@ export function useFeedDiscoverySearchState({
     reset: resetValidation,
   } = useCreateUserFeedUrlValidation();
 
-  const isUrlInput = URL_PATTERN.test(activeQuery);
+  const { isUrl: isUrlInput, url: normalizedUrl } = parseSearchInputAsUrl(activeQuery);
   const hasPlatformHint = !!activeQuery && !isUrlInput && !!getPlatformHint(activeQuery);
   const shouldFetchCurated = !!activeQuery && !isUrlInput && !hasPlatformHint;
 
@@ -143,11 +143,13 @@ export function useFeedDiscoverySearchState({
     setVisibleCount(BATCH_SIZE);
     onSearchChange?.(trimmed);
 
-    if (URL_PATTERN.test(trimmed)) {
+    const { isUrl, url } = parseSearchInputAsUrl(trimmed);
+
+    if (isUrl) {
       resetValidation();
 
       try {
-        await validateUrl({ details: { url: trimmed } });
+        await validateUrl({ details: { url } });
       } catch {
         // Error state is handled by the hook's error property
       }
@@ -175,7 +177,7 @@ export function useFeedDiscoverySearchState({
     resetValidation();
 
     try {
-      await validateUrl({ details: { url: activeQuery } });
+      await validateUrl({ details: { url: normalizedUrl } });
     } catch {
       // Error state is handled by the hook's error property
     }
@@ -204,11 +206,13 @@ export function useFeedDiscoverySearchState({
       setVisibleCount(BATCH_SIZE);
       onSearchChange?.(trimmed);
 
-      if (URL_PATTERN.test(trimmed)) {
+      const { isUrl, url } = parseSearchInputAsUrl(trimmed);
+
+      if (isUrl) {
         resetValidation();
 
         try {
-          await validateUrl({ details: { url: trimmed } });
+          await validateUrl({ details: { url } });
         } catch {
           // Error state handled by hook
         }
@@ -222,6 +226,7 @@ export function useFeedDiscoverySearchState({
     setInputValue,
     activeQuery,
     isUrlInput,
+    normalizedUrl,
     hasActiveSearch,
     totalResults,
     visibleResults,
@@ -383,7 +388,7 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
         )}
         {state.isUrlInput && (
           <UrlValidationResult
-            url={state.activeQuery}
+            url={state.normalizedUrl}
             validationStatus={state.validationStatus}
             validationData={state.validationData}
             validationError={state.validationError}
