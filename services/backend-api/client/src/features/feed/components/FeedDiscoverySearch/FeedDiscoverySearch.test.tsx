@@ -62,10 +62,14 @@ function generateManyFeeds(count: number): CuratedFeed[] {
 }
 
 vi.mock("../../hooks", () => ({
-  useCuratedFeeds: (options?: { search?: string; category?: string }) => {
+  useCuratedFeeds: (options?: { search?: string; category?: string; enabled?: boolean }) => {
     let feeds = mockFeeds;
 
-    if (options?.search) {
+    // Faithful to the real hook: a disabled query (URL / platform-hint input) does not run, and
+    // keepPreviousData surfaces the previously fetched browse list rather than a fresh search.
+    if (options?.enabled === false) {
+      feeds = mockFeeds;
+    } else if (options?.search) {
       const q = options.search.toLowerCase();
       feeds = mockFeeds
         .map((f) => {

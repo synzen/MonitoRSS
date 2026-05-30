@@ -98,8 +98,11 @@ export function useFeedDiscoverySearchState({
   const hasCuratedError = !!curatedError && shouldFetchCurated;
 
   const hasActiveSearch = activeQuery.length > 0;
-  const totalResults = isUrlInput ? 0 : (data?.feeds.length ?? 0);
-  const visibleResults = data?.feeds.slice(0, visibleCount) ?? [];
+  // Only count curated feeds when we actually fetch+display them. When the input is a URL or
+  // matches a platform hint, the curated query is disabled but keepPreviousData retains the prior
+  // browse list — counting that stale data would suppress the UrlValidationResult / PlatformHint.
+  const totalResults = shouldFetchCurated ? (data?.feeds.length ?? 0) : 0;
+  const visibleResults = shouldFetchCurated ? (data?.feeds.slice(0, visibleCount) ?? []) : [];
 
   useEffect(() => {
     if (!activeQuery || isUrlInput) return;
