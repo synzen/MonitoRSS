@@ -21,6 +21,7 @@ export interface ScheduleHandlerServiceDeps {
   usersService: UsersService;
   userFeedRepository: IUserFeedRepository;
   messageBrokerService: MessageBrokerService;
+  now?: () => number;
 }
 
 interface UrlBatchItem {
@@ -264,7 +265,8 @@ export class ScheduleHandlerService {
 
   private calculateCurrentSlotWindow(refreshRateSeconds: number): SlotWindow {
     const refreshRateMs = refreshRateSeconds * 1000;
-    const cyclePositionMs = Date.now() % refreshRateMs;
+    const nowMs = this.deps.now ? this.deps.now() : Date.now();
+    const cyclePositionMs = nowMs % refreshRateMs;
     const windowEndMs = cyclePositionMs + SCHEDULER_WINDOW_SIZE_MS;
 
     return {
