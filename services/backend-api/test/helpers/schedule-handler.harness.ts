@@ -204,6 +204,7 @@ export function createScheduleHandlerHarness(): ScheduleHandlerHarness {
         userFeedRepository,
         messageBrokerService:
           messageBrokerService as unknown as ScheduleHandlerServiceDeps["messageBrokerService"],
+        now: () => 0,
       };
 
       const service = new ScheduleHandlerService(serviceDeps);
@@ -228,7 +229,7 @@ export function createScheduleHandlerHarness(): ScheduleHandlerHarness {
               overrides.refreshRateSeconds ?? DEFAULT_REFRESH_RATE_SECONDS,
             userRefreshRateSeconds: overrides.userRefreshRateSeconds,
             feedRequestLookupKey: overrides.feedRequestLookupKey,
-            slotOffsetMs: overrides.slotOffsetMs,
+            slotOffsetMs: overrides.slotOffsetMs ?? 0,
           });
         },
 
@@ -241,7 +242,7 @@ export function createScheduleHandlerHarness(): ScheduleHandlerHarness {
               overrides.refreshRateSeconds ?? DEFAULT_REFRESH_RATE_SECONDS,
             userRefreshRateSeconds: overrides.userRefreshRateSeconds,
             feedRequestLookupKey: overrides.feedRequestLookupKey,
-            slotOffsetMs: overrides.slotOffsetMs,
+            slotOffsetMs: overrides.slotOffsetMs ?? 0,
           });
         },
 
@@ -258,7 +259,7 @@ export function createScheduleHandlerHarness(): ScheduleHandlerHarness {
               input.refreshRateSeconds ?? DEFAULT_REFRESH_RATE_SECONDS,
             userRefreshRateSeconds: input.userRefreshRateSeconds,
             feedRequestLookupKey: input.feedRequestLookupKey,
-            slotOffsetMs: input.slotOffsetMs,
+            slotOffsetMs: input.slotOffsetMs ?? 0,
           });
 
           const updateFields: Record<string, unknown> = {

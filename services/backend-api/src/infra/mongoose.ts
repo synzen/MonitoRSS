@@ -3,7 +3,7 @@ import logger from "./logger";
 
 export async function createMongoConnection(uri: string): Promise<Connection> {
   const connection = mongoose.createConnection(uri, {
-    autoIndex: process.env.NODE_ENV !== "production",
+    autoIndex: true,
   });
 
   await connection.asPromise();

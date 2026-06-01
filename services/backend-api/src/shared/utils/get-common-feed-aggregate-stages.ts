@@ -2,29 +2,21 @@ import type { PipelineStage, FilterQuery } from "mongoose";
 import type { SlotWindow } from "../types/slot-window.types";
 
 function buildSlotWindowFilter(slotWindow: SlotWindow): FilterQuery<unknown> {
-  const legacyFeedFilter = { slotOffsetMs: { $exists: false } };
-
   if (slotWindow.wrapsAroundInterval) {
     const wrappedEndMs = slotWindow.windowEndMs - slotWindow.refreshRateMs;
 
     return {
       $or: [
-        legacyFeedFilter,
         { slotOffsetMs: { $gte: slotWindow.windowStartMs } },
         { slotOffsetMs: { $lt: wrappedEndMs } },
       ],
     };
   } else {
     return {
-      $or: [
-        legacyFeedFilter,
-        {
-          slotOffsetMs: {
-            $gte: slotWindow.windowStartMs,
-            $lt: slotWindow.windowEndMs,
-          },
-        },
-      ],
+      slotOffsetMs: {
+        $gte: slotWindow.windowStartMs,
+        $lt: slotWindow.windowEndMs,
+      },
     };
   }
 }
